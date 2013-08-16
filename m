@@ -1,138 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab3HQAUy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:20:54 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:35031 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757391Ab3HQATS (ORCPT
+	id S1756433Ab3HQAVZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:21:25 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:47970 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459Ab3HQATP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:19:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130816220204.GC21539@fieldses.org>
-References: <20130814230648.GD22316@thunk.org> <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
- <20130815011101.GA3572@thunk.org> <20130815021028.GM6023@dastard>
- <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
- <20130815060149.GP6023@dastard> <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
- <20130815071141.GQ6023@dastard> <CALCETrWyKSMDkgSbg20iWBRfHk0-oU+6A3X9xAEMg3vO=G_gDg@mail.gmail.com>
- <20130815213725.GT6023@dastard> <20130816220204.GC21539@fieldses.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 16 Aug 2013 16:18:33 -0700
-Message-ID: <CALCETrWRjHcAaKcOrB3R54ZtCSNpv-ohDSzViDsP0JOOEhoOzg@mail.gmail.com>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 16 Aug 2013 20:19:15 -0400
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: lf-virt <virtualization@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@gentwo.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH-v3 4/4] vhost/scsi: Add pre-allocation for tv_cmd SGL + upages memory
+Date: Fri, 16 Aug 2013 23:09:09 +0000
+Message-Id: <1376694549-20609-5-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
+References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 3:02 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> On Fri, Aug 16, 2013 at 07:37:25AM +1000, Dave Chinner wrote:
->> On Thu, Aug 15, 2013 at 08:17:18AM -0700, Andy Lutomirski wrote:
->> > On Thu, Aug 15, 2013 at 12:11 AM, Dave Chinner <david@fromorbit.com> wrote:
->> > > On Wed, Aug 14, 2013 at 11:14:37PM -0700, Andy Lutomirski wrote:
->> > >> On Wed, Aug 14, 2013 at 11:01 PM, Dave Chinner <david@fromorbit.com> wrote:
->> > >> > On Wed, Aug 14, 2013 at 09:32:13PM -0700, Andy Lutomirski wrote:
->> > >> >> On Wed, Aug 14, 2013 at 7:10 PM, Dave Chinner <david@fromorbit.com> wrote:
->> > >> >> > On Wed, Aug 14, 2013 at 09:11:01PM -0400, Theodore Ts'o wrote:
->> > >> >> >> On Wed, Aug 14, 2013 at 04:38:12PM -0700, Andy Lutomirski wrote:
->> > >> >> >> > > It would be better to write zeros to it, so we aren't measuring the
->> > >> >> >> > > cost of the unwritten->written conversion.
->> > >> >> >> >
->> > >> >> >> > At the risk of beating a dead horse, how hard would it be to defer
->> > >> >> >> > this part until writeback?
->> > >> >> >>
->> > >> >> >> Part of the work has to be done at write time because we need to
->> > >> >> >> update allocation statistics (i.e., so that we don't have ENOSPC
->> > >> >> >> problems).  The unwritten->written conversion does happen at writeback
->> > >> >> >> (as does the actual block allocation if we are doing delayed
->> > >> >> >> allocation).
->> > >> >> >>
->> > >> >> >> The point is that if the goal is to measure page fault scalability, we
->> > >> >> >> shouldn't have this other stuff happening as the same time as the page
->> > >> >> >> fault workload.
->> > >> >> >
->> > >> >> > Sure, but the real problem is not the block mapping or allocation
->> > >> >> > path - even if the test is changed to take that out of the picture,
->> > >> >> > we still have timestamp updates being done on every single page
->> > >> >> > fault. ext4, XFS and btrfs all do transactional timestamp updates
->> > >> >> > and have nanosecond granularity, so every page fault is resulting in
->> > >> >> > a transaction to update the timestamp of the file being modified.
->> > >> >>
->> > >> >> I have (unmergeable) patches to fix this:
->> > >> >>
->> > >> >> http://comments.gmane.org/gmane.linux.kernel.mm/92476
->> > >> >
->> > >> > The big problem with this approach is that not doing the
->> > >> > timestamp update on page faults is going to break the inode change
->> > >> > version counting because for ext4, btrfs and XFS it takes a
->> > >> > transaction to bump that counter. NFS needs to know the moment a
->> > >> > file is changed in memory, not when it is written to disk. Also, NFS
->> > >> > requires the change to the counter to be persistent over server
->> > >> > failures, so it needs to be changed as part of a transaction....
->> > >>
->> > >> I've been running a kernel that has the file_update_time call
->> > >> commented out for over a year now, and the only problem I've seen is
->> > >> that the timestamp doesn't get updated :)
->> > >>
->> >
->> > [...]
->> >
->> > > If a filesystem is providing an i_version value, then NFS uses it to
->> > > determine whether client side caches are still consistent with the
->> > > server state. If the filesystem does not provide an i_version, then
->> > > NFS falls back to checking c/mtime for changes. If files on the
->> > > server are being modified without either the tiemstamps or i_version
->> > > changing, then it's likely that there will be problems with client
->> > > side cache consistency....
->> >
->> > I didn't think of that at all.
->> >
->> > If userspace does:
->> >
->> > ptr = mmap(...);
->> > ptr[0] = 1;
->> > sleep(1);
->> > ptr[0] = 2;
->> > sleep(1);
->> > munmap();
->> >
->> > Then current kernels will mark the inode changed on (only) the ptr[0]
->> > = 1 line.  My patches will instead mark the inode changed when munmap
->> > is called (or after ptr[0] = 2 if writepages gets called for any
->> > reason).
->> >
->> > I'm not sure which is better.  POSIX actually requires my behavior
->> > (which is most irrelevant).
->>
->> Not by my reading of it. Posix states that c/mtime needs to be
->> updated between the first access and the next msync() call. We
->> update mtime on the first access, and so therefore we conform to the
->> posix requirement....
->>
->> > My behavior also means that, if an NFS
->> > client reads and caches the file between the two writes, then it will
->> > eventually find out that the data is stale.
->>
->> "eventually" is very different behaviour to the current behaviour.
->>
->> My understanding is that NFS v4 delegations require the underlying
->> filesystem to bump the version count on *any* modification made to
->> the file so that delegations can be recalled appropriately.
->
-> Delegations at least shouldn't be an issue here: they're recalled on the
-> open.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Can you translate that into clueless-non-NFS-expert? :)
+This patch adds support for pre-allocation of per tv_cmd descriptor
+scatterlist + user-space page pointer memory using se_sess->sess_cmd_map
+within tcm_vhost_make_nexus() code.
 
-Anyway, I'm sending patches in a sec.  Dave (Hansen), want to test?  I
-played with will-it-scale a bit, but I don't really know what I'm
-doing.
+This includes sanity checks within vhost_scsi_map_to_sgl()
+to reject I/O that exceeds these initial hardcoded values, and
+the necessary cleanup in tcm_vhost_make_nexus() failure path +
+tcm_vhost_drop_nexus().
 
---Andy
+v3 changes:
+  - Rebase to v3.11-rc5 code
+
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Asias He <asias@redhat.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/vhost/scsi.c |   99 ++++++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 80 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+index af178b7..8e8788e 100644
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -56,6 +56,8 @@
+ #define TCM_VHOST_NAMELEN 256
+ #define TCM_VHOST_MAX_CDB_SIZE 32
+ #define TCM_VHOST_DEFAULT_TAGS 256
++#define TCM_VHOST_PREALLOC_SGLS 2048
++#define TCM_VHOST_PREALLOC_PAGES 2048
+ 
+ struct vhost_scsi_inflight {
+ 	/* Wait for the flush operation to finish */
+@@ -81,6 +83,7 @@ struct tcm_vhost_cmd {
+ 	u32 tvc_lun;
+ 	/* Pointer to the SGL formatted memory from virtio-scsi */
+ 	struct scatterlist *tvc_sgl;
++	struct page **tvc_upages;
+ 	/* Pointer to response */
+ 	struct virtio_scsi_cmd_resp __user *tvc_resp;
+ 	/* Pointer to vhost_scsi for our device */
+@@ -458,8 +461,6 @@ static void tcm_vhost_release_cmd(struct se_cmd *se_cmd)
+ 		u32 i;
+ 		for (i = 0; i < tv_cmd->tvc_sgl_count; i++)
+ 			put_page(sg_page(&tv_cmd->tvc_sgl[i]));
+-
+-		kfree(tv_cmd->tvc_sgl);
+         }
+ 
+ 	tcm_vhost_put_inflight(tv_cmd->inflight);
+@@ -716,6 +717,8 @@ vhost_scsi_get_tag(struct vhost_virtqueue *vq,
+ 	struct tcm_vhost_cmd *cmd;
+ 	struct tcm_vhost_nexus *tv_nexus;
+ 	struct se_session *se_sess;
++	struct scatterlist *sg;
++	struct page **pages;
+ 	int tag;
+ 
+ 	tv_nexus = tpg->tpg_nexus;
+@@ -727,8 +730,12 @@ vhost_scsi_get_tag(struct vhost_virtqueue *vq,
+ 
+ 	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, GFP_KERNEL);
+ 	cmd = &((struct tcm_vhost_cmd *)se_sess->sess_cmd_map)[tag];
++	sg = cmd->tvc_sgl;
++	pages = cmd->tvc_upages;
+ 	memset(cmd, 0, sizeof(struct tcm_vhost_cmd));
+ 
++	cmd->tvc_sgl = sg;
++	cmd->tvc_upages = pages;
+ 	cmd->tvc_se_cmd.map_tag = tag;
+ 	cmd->tvc_tag = v_req->tag;
+ 	cmd->tvc_task_attr = v_req->task_attr;
+@@ -746,7 +753,8 @@ vhost_scsi_get_tag(struct vhost_virtqueue *vq,
+  * Returns the number of scatterlist entries used or -errno on error.
+  */
+ static int
+-vhost_scsi_map_to_sgl(struct scatterlist *sgl,
++vhost_scsi_map_to_sgl(struct tcm_vhost_cmd *tv_cmd,
++		      struct scatterlist *sgl,
+ 		      unsigned int sgl_count,
+ 		      struct iovec *iov,
+ 		      int write)
+@@ -758,13 +766,25 @@ vhost_scsi_map_to_sgl(struct scatterlist *sgl,
+ 	struct page **pages;
+ 	int ret, i;
+ 
++	if (sgl_count > TCM_VHOST_PREALLOC_SGLS) {
++		pr_err("vhost_scsi_map_to_sgl() psgl_count: %u greater than"
++		       " preallocated TCM_VHOST_PREALLOC_SGLS: %u\n",
++			sgl_count, TCM_VHOST_PREALLOC_SGLS);
++		return -ENOBUFS;
++	}
++
+ 	pages_nr = iov_num_pages(iov);
+ 	if (pages_nr > sgl_count)
+ 		return -ENOBUFS;
+ 
+-	pages = kmalloc(pages_nr * sizeof(struct page *), GFP_KERNEL);
+-	if (!pages)
+-		return -ENOMEM;
++	if (pages_nr > TCM_VHOST_PREALLOC_PAGES) {
++		pr_err("vhost_scsi_map_to_sgl() pages_nr: %u greater than"
++		       " preallocated TCM_VHOST_PREALLOC_PAGES: %u\n",
++			pages_nr, TCM_VHOST_PREALLOC_PAGES);
++		return -ENOBUFS;
++	}
++
++	pages = tv_cmd->tvc_upages;
+ 
+ 	ret = get_user_pages_fast((unsigned long)ptr, pages_nr, write, pages);
+ 	/* No pages were pinned */
+@@ -789,7 +809,6 @@ vhost_scsi_map_to_sgl(struct scatterlist *sgl,
+ 	}
+ 
+ out:
+-	kfree(pages);
+ 	return ret;
+ }
+ 
+@@ -813,24 +832,20 @@ vhost_scsi_map_iov_to_sgl(struct tcm_vhost_cmd *cmd,
+ 
+ 	/* TODO overflow checking */
+ 
+-	sg = kmalloc(sizeof(cmd->tvc_sgl[0]) * sgl_count, GFP_ATOMIC);
+-	if (!sg)
+-		return -ENOMEM;
+-	pr_debug("%s sg %p sgl_count %u is_err %d\n", __func__,
+-	       sg, sgl_count, !sg);
++	sg = cmd->tvc_sgl;
++	pr_debug("%s sg %p sgl_count %u\n", __func__, sg, sgl_count);
+ 	sg_init_table(sg, sgl_count);
+ 
+-	cmd->tvc_sgl = sg;
+ 	cmd->tvc_sgl_count = sgl_count;
+ 
+ 	pr_debug("Mapping %u iovecs for %u pages\n", niov, sgl_count);
+ 	for (i = 0; i < niov; i++) {
+-		ret = vhost_scsi_map_to_sgl(sg, sgl_count, &iov[i], write);
++		ret = vhost_scsi_map_to_sgl(cmd, sg, sgl_count, &iov[i],
++					    write);
+ 		if (ret < 0) {
+ 			for (i = 0; i < cmd->tvc_sgl_count; i++)
+ 				put_page(sg_page(&cmd->tvc_sgl[i]));
+-			kfree(cmd->tvc_sgl);
+-			cmd->tvc_sgl = NULL;
++
+ 			cmd->tvc_sgl_count = 0;
+ 			return ret;
+ 		}
+@@ -1660,11 +1675,31 @@ static void tcm_vhost_drop_nodeacl(struct se_node_acl *se_acl)
+ 	kfree(nacl);
+ }
+ 
++static void tcm_vhost_free_cmd_map_res(struct tcm_vhost_nexus *nexus,
++				       struct se_session *se_sess)
++{
++	struct tcm_vhost_cmd *tv_cmd;
++	unsigned int i;
++
++	if (!se_sess->sess_cmd_map)
++		return;
++
++	for (i = 0; i < TCM_VHOST_DEFAULT_TAGS; i++) {
++		tv_cmd = &((struct tcm_vhost_cmd *)se_sess->sess_cmd_map)[i];
++
++		kfree(tv_cmd->tvc_sgl);
++		kfree(tv_cmd->tvc_upages);
++	}
++}
++
+ static int tcm_vhost_make_nexus(struct tcm_vhost_tpg *tpg,
+ 				const char *name)
+ {
+ 	struct se_portal_group *se_tpg;
++	struct se_session *se_sess;
+ 	struct tcm_vhost_nexus *tv_nexus;
++	struct tcm_vhost_cmd *tv_cmd;
++	unsigned int i;
+ 
+ 	mutex_lock(&tpg->tv_tpg_mutex);
+ 	if (tpg->tpg_nexus) {
+@@ -1692,6 +1727,26 @@ static int tcm_vhost_make_nexus(struct tcm_vhost_tpg *tpg,
+ 		kfree(tv_nexus);
+ 		return -ENOMEM;
+ 	}
++	se_sess = tv_nexus->tvn_se_sess;
++	for (i = 0; i < TCM_VHOST_DEFAULT_TAGS; i++) {
++		tv_cmd = &((struct tcm_vhost_cmd *)se_sess->sess_cmd_map)[i];
++
++		tv_cmd->tvc_sgl = kzalloc(sizeof(struct scatterlist) *
++					TCM_VHOST_PREALLOC_SGLS, GFP_KERNEL);
++		if (!tv_cmd->tvc_sgl) {
++			mutex_unlock(&tpg->tv_tpg_mutex);
++			pr_err("Unable to allocate tv_cmd->tvc_sgl\n");
++			goto out;
++		}
++
++		tv_cmd->tvc_upages = kzalloc(sizeof(struct page *) *
++					TCM_VHOST_PREALLOC_PAGES, GFP_KERNEL);
++		if (!tv_cmd->tvc_upages) {
++			mutex_unlock(&tpg->tv_tpg_mutex);
++			pr_err("Unable to allocate tv_cmd->tvc_upages\n");
++			goto out;
++		}
++	}
+ 	/*
+ 	 * Since we are running in 'demo mode' this call with generate a
+ 	 * struct se_node_acl for the tcm_vhost struct se_portal_group with
+@@ -1703,9 +1758,7 @@ static int tcm_vhost_make_nexus(struct tcm_vhost_tpg *tpg,
+ 		mutex_unlock(&tpg->tv_tpg_mutex);
+ 		pr_debug("core_tpg_check_initiator_node_acl() failed"
+ 				" for %s\n", name);
+-		transport_free_session(tv_nexus->tvn_se_sess);
+-		kfree(tv_nexus);
+-		return -ENOMEM;
++		goto out;
+ 	}
+ 	/*
+ 	 * Now register the TCM vhost virtual I_T Nexus as active with the
+@@ -1717,6 +1770,12 @@ static int tcm_vhost_make_nexus(struct tcm_vhost_tpg *tpg,
+ 
+ 	mutex_unlock(&tpg->tv_tpg_mutex);
+ 	return 0;
++
++out:
++	tcm_vhost_free_cmd_map_res(tv_nexus, se_sess);
++	transport_free_session(se_sess);
++	kfree(tv_nexus);
++	return -ENOMEM;
+ }
+ 
+ static int tcm_vhost_drop_nexus(struct tcm_vhost_tpg *tpg)
+@@ -1756,6 +1815,8 @@ static int tcm_vhost_drop_nexus(struct tcm_vhost_tpg *tpg)
+ 	pr_debug("TCM_vhost_ConfigFS: Removing I_T Nexus to emulated"
+ 		" %s Initiator Port: %s\n", tcm_vhost_dump_proto_id(tpg->tport),
+ 		tv_nexus->tvn_se_sess->se_node_acl->initiatorname);
++
++	tcm_vhost_free_cmd_map_res(tv_nexus, se_sess);
+ 	/*
+ 	 * Release the SCSI I_T Nexus to the emulated vhost Target Port
+ 	 */
+-- 
+1.7.10.4
+
