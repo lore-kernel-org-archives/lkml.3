@@ -1,95 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab3HQAPk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:15:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51592 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754837Ab3HPWjH (ORCPT
+	id S1757365Ab3HQAQJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:16:09 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:55766 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753568Ab3HQAQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:07 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dominik Dingel <dingel@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 093/133] KVM: s390: move kvm_guest_enter,exit closer to sie
-Date: Fri, 16 Aug 2013 15:33:55 -0700
-Message-Id: <1376692475-28413-94-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 16 Aug 2013 20:16:06 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
+        Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v3 3/5] mm: Notify filesystems when it's time to apply a deferred cmtime update
+Date: Fri, 16 Aug 2013 16:22:10 -0700
+Message-Id: <ec267e95fd21891986373c7af1c72b4c8b507332.1376679411.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <cover.1376679411.git.luto@amacapital.net>
+References: <cover.1376679411.git.luto@amacapital.net>
+In-Reply-To: <cover.1376679411.git.luto@amacapital.net>
+References: <cover.1376679411.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
+Filesystems that defer cmtime updates should update cmtime when any
+of these events happen after a write via a mapping:
 
-------------------
+ - The mapping is written back to disk.  This happens from all kinds
+   of places, all of which eventually call ->writepages.
 
-From: Dominik Dingel <dingel@linux.vnet.ibm.com>
+ - munmap is called or the mapping is removed when the process exits
 
-commit 2b29a9fdcb92bfc6b6f4c412d71505869de61a56 upstream.
+ - msync(MS_ASYNC) is called.  Linux currently does nothing for
+   msync(MS_ASYNC), but POSIX says that cmtime should be updated some
+   time between an mmaped write and the subsequent msync call.
+   MS_SYNC calls ->writepages, but MS_ASYNC needs special handling.
 
-Any uaccess between guest_enter and guest_exit could trigger a page fault,
-the page fault handler would handle it as a guest fault and translate a
-user address as guest address.
+Filesystmes that defer cmtime updates should flush them on munmap or
+exit.  Finding out that this happened through vm_ops is messy, so
+add a new address space op for this.
 
-Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[ kamal: backport to 3.8 (context) ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+It's not strictly necessary to call ->flush_cmtime after ->writepages,
+but it simplifies the fs code.  As an optional optimization,
+filesystems can call mapping_test_clear_cmtime themselves in
+->writepages (as long as they're careful to scan all the pages first
+-- the cmtime bit may not be set when ->writepages is entered).
+
+This patch does not implement the MS_ASYNC case; that's in the next
+patch.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/s390/kvm/kvm-s390.c | 21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ include/linux/fs.h        |  9 +++++++++
+ include/linux/writeback.h |  1 +
+ mm/mmap.c                 |  9 ++++++++-
+ mm/page-writeback.c       | 26 ++++++++++++++++++++++++++
+ 4 files changed, 44 insertions(+), 1 deletion(-)
 
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index 8bafa4f..74e64f8 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -613,14 +613,25 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
- 		kvm_s390_deliver_pending_interrupts(vcpu);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 86cf0a4..f224155 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -350,6 +350,15 @@ struct address_space_operations {
+ 	/* Write back some dirty pages from this mapping. */
+ 	int (*writepages)(struct address_space *, struct writeback_control *);
  
- 	vcpu->arch.sie_block->icptcode = 0;
--	preempt_disable();
--	kvm_guest_enter();
--	preempt_enable();
- 	VCPU_EVENT(vcpu, 6, "entering sie flags %x",
- 		   atomic_read(&vcpu->arch.sie_block->cpuflags));
- 	trace_kvm_s390_sie_enter(vcpu,
- 				 atomic_read(&vcpu->arch.sie_block->cpuflags));
++	/*
++	 * Userspace expects certain system calls to update cmtime if
++	 * a file has been recently written using a shared vma.  In
++	 * cases where cmtime may need to be updated but writepages is
++	 * not called, this is called instead.  (Implementations
++	 * should call mapping_test_clear_cmtime.)
++	 */
++	void (*flush_cmtime)(struct address_space *);
++
+ 	/* Set a page dirty.  Return true if this dirtied it */
+ 	int (*set_page_dirty)(struct page *page);
+ 
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index 4e198ca..f6e8261 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -174,6 +174,7 @@ typedef int (*writepage_t)(struct page *page, struct writeback_control *wbc,
+ 
+ int generic_writepages(struct address_space *mapping,
+ 		       struct writeback_control *wbc);
++void generic_flush_cmtime(struct address_space *mapping);
+ void tag_pages_for_writeback(struct address_space *mapping,
+ 			     pgoff_t start, pgoff_t end);
+ int write_cache_pages(struct address_space *mapping,
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 1edbaa3..7ed7700 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1,3 +1,4 @@
++
+ /*
+  * mm/mmap.c
+  *
+@@ -249,8 +250,14 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
+ 	might_sleep();
+ 	if (vma->vm_ops && vma->vm_ops->close)
+ 		vma->vm_ops->close(vma);
+-	if (vma->vm_file)
++	if (vma->vm_file) {
++		if ((vma->vm_flags & VM_SHARED) && vma->vm_file->f_mapping) {
++			struct address_space *mapping = vma->vm_file->f_mapping;
++			if (mapping->a_ops && mapping->a_ops->flush_cmtime)
++				mapping->a_ops->flush_cmtime(mapping);
++		}
+ 		fput(vma->vm_file);
++	}
+ 	mpol_put(vma_policy(vma));
+ 	kmem_cache_free(vm_area_cachep, vma);
+ 	return next;
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 3f0c895..9ab8c9e 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1928,6 +1928,18 @@ int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
+ 		ret = mapping->a_ops->writepages(mapping, wbc);
+ 	else
+ 		ret = generic_writepages(mapping, wbc);
 +
 +	/*
-+	 * As PF_VCPU will be used in fault handler, between guest_enter
-+	 * and guest_exit should be no uaccess.
++	 * ->writepages will call clear_page_dirty_for_io, which may, in turn,
++	 * mark the mapping for deferred cmtime update.  As an optimization,
++	 * a filesystem can flush the update at the end of ->writepages
++	 * (possibly avoiding a journal transaction, for example), but,
++	 * for simplicity, let filesystems skip that part and just implement
++	 * ->flush_cmtime.
 +	 */
-+	preempt_disable();
-+	kvm_guest_enter();
-+	preempt_enable();
- 	rc = sie64a(vcpu->arch.sie_block, vcpu->run->s.regs.gprs);
-+	kvm_guest_exit();
++	if (mapping->a_ops->flush_cmtime)
++		mapping->a_ops->flush_cmtime(mapping);
 +
-+	VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
-+		   vcpu->arch.sie_block->icptcode);
-+	trace_kvm_s390_sie_exit(vcpu, vcpu->arch.sie_block->icptcode);
-+
- 	if (rc) {
- 		if (kvm_is_ucontrol(vcpu->kvm)) {
- 			rc = SIE_INTERCEPT_UCONTROL;
-@@ -631,10 +642,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
- 			rc = 0;
- 		}
- 	}
--	VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
--		   vcpu->arch.sie_block->icptcode);
--	trace_kvm_s390_sie_exit(vcpu, vcpu->arch.sie_block->icptcode);
--	kvm_guest_exit();
+ 	return ret;
+ }
  
- 	memcpy(&vcpu->run->s.regs.gprs[14], &vcpu->arch.sie_block->gg14, 16);
- 	return rc;
+@@ -1970,6 +1982,20 @@ int write_one_page(struct page *page, int wait)
+ }
+ EXPORT_SYMBOL(write_one_page);
+ 
++/**
++ * generic_flush_cmtime - perform a deferred cmtime update if needed
++ * @mapping: address space structure
++ *
++ * This is a library function, which implements the flush_cmtime()
++ * address_space_operation.
++ */
++void generic_flush_cmtime(struct address_space *mapping)
++{
++	if (mapping_test_clear_cmtime(mapping))
++		inode_update_time_writable(mapping->host);
++}
++EXPORT_SYMBOL(generic_flush_cmtime);
++
+ /*
+  * For address_spaces which do not use buffers nor write back.
+  */
 -- 
-1.8.1.2
+1.8.3.1
 
