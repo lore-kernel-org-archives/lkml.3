@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab3HPP5N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 11:57:13 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:62408 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab3HPP5K (ORCPT
+	id S1753710Ab3HPP6G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 11:58:06 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:48067 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab3HPP6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 11:57:10 -0400
-From: Richard Weinberger <richard@nod.at>
-To: tj@kernel.org
-Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH] print_worker_info: Handle pointer with more care
-Date: Fri, 16 Aug 2013 17:56:46 +0200
-Message-Id: <1376668606-32354-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.3.1
+	Fri, 16 Aug 2013 11:58:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130816155156.GA6953@roeck-us.net>
+References: <20130809173326.75aed3b6@mail.gmx.de>
+	<CACRpkdYe9+Fb-YO4Mn885YtY_YiRWsG1U+sFXo-poThpDOL1dw@mail.gmail.com>
+	<20130816155156.GA6953@roeck-us.net>
+Date: Fri, 16 Aug 2013 17:58:02 +0200
+Message-ID: <CACRpkdaxdkriaO-ufq6JSFONecBRHYstfnUBojGOwQfBaXb8ZA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Fix bit masking in Kontron PLD GPIO driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Michael Brunner <mibru@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Strasser <strassek@engr.orst.edu>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Chris Healy <chealy@imsco-us.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function has a nice comment:
-/*
- * This function is called without any synchronization and @task
- * could be in any state.  Be careful with dereferences.
- */
+On Fri, Aug 16, 2013 at 5:51 PM, Guenter Roeck <linux@roeck-us.net> wrote:
 
-But a few lines later it blindly dereferences a few pointers.
-E.g. It can happen that the worker function is already done,
-then worker->current_pwq is NULL.
+> I think Michael just went on vacation.
+>
+> Clean version is below. He must have sent it to me separately
+> because it worked for me.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- kernel/workqueue.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+Yeah this worked fine ... strange.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 7f5d4be..61382b9 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4465,6 +4465,8 @@ void print_worker_info(const char *log_lvl, struct task_struct *task)
- 	 * could be in any state.  Be careful with dereferences.
- 	 */
- 	worker = probe_kthread_data(task);
-+	if (!worker)
-+		return;
- 
- 	/*
- 	 * Carefully copy the associated workqueue's workfn and name.  Keep
-@@ -4472,7 +4474,13 @@ void print_worker_info(const char *log_lvl, struct task_struct *task)
- 	 */
- 	probe_kernel_read(&fn, &worker->current_func, sizeof(fn));
- 	probe_kernel_read(&pwq, &worker->current_pwq, sizeof(pwq));
-+	if (!pwq)
-+		goto print;
-+
- 	probe_kernel_read(&wq, &pwq->wq, sizeof(wq));
-+	if (!wq)
-+		goto print;
-+
- 	probe_kernel_read(name, wq->name, sizeof(name) - 1);
- 
- 	/* copy worker description */
-@@ -4480,6 +4488,7 @@ void print_worker_info(const char *log_lvl, struct task_struct *task)
- 	if (desc_valid)
- 		probe_kernel_read(desc, worker->desc, sizeof(desc) - 1);
- 
-+print:
- 	if (fn || name[0] || desc[0]) {
- 		printk("%sWorkqueue: %s %pf", log_lvl, name, fn);
- 		if (desc[0])
--- 
-1.8.3.1
+Patch applied.
 
+Yours,
+Linus Walleij
