@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab3HPMjX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 08:39:23 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48533 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756114Ab3HPMjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 08:39:21 -0400
-Message-ID: <520E1C74.7080101@ti.com>
-Date: Fri, 16 Aug 2013 18:05:00 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1756193Ab3HPMkH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 08:40:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50802 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756159Ab3HPMkD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 08:40:03 -0400
+Date: Fri, 16 Aug 2013 05:41:40 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Subject: Re: [ 00/17] 3.4.58-stable review
+Message-ID: <20130816124140.GD24550@kroah.com>
+References: <20130813063501.728847844@linuxfoundation.org>
+ <520A1D56.2050507@roeck-us.net>
+ <20130813175858.GC7336@kroah.com>
+ <20130813201936.GA18358@roeck-us.net>
+ <20130815063158.GB25754@kroah.com>
+ <520C86BD.2020903@roeck-us.net>
+ <CAMuHMdU+EOC_etihOzUC6N0cqc2qHaGm3_L+gyTRxESCGhOzEg@mail.gmail.com>
+ <520DB045.7000309@roeck-us.net>
+ <20130816051041.GA23784@kroah.com>
+ <520DE21D.8000905@roeck-us.net>
 MIME-Version: 1.0
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH v4 1/5] ARM: davinci: fix clock lookup for mdio device
-References: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com> <1376546497-26931-2-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1376546497-26931-2-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520DE21D.8000905@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 August 2013 11:31 AM, Lad, Prabhakar wrote:
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On Fri, Aug 16, 2013 at 01:26:05AM -0700, Guenter Roeck wrote:
+> On 08/15/2013 10:10 PM, Greg Kroah-Hartman wrote:
+> [ .. ]
 > 
-> This patch removes the clock alias for mdio device and adds a entry
-> in clock lookup table, this entry can now be used by both DT and NON
-> DT case.
+> >> three to go (arm:allmodconfig, sparc32:defconfig, and sparc64:allmodconfig).
+> >
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Please add (in this order) the following patches to 3.4.
+> 
+> de36e66d5f sparc32: add ucmpdi2
+> 74c7b28953 sparc32: Add ucmpdi2.o to obj-y instead of lib-y.
+> 
+> This fixes the sparc32:defconfig build error.
 
-Queuing for v3.12
+Now applied, thanks.
 
-Thanks,
-Sekhar
-
+greg k-h
