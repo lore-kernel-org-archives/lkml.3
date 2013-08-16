@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab3HPWhg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:37:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51445 "EHLO
+	id S1756126Ab3HQA2e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:28:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51434 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755869Ab3HPWhb (ORCPT
+	with ESMTP id S1752844Ab3HPWh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:37:31 -0400
+	Fri, 16 Aug 2013 18:37:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Widawsky <ben@bwidawsk.net>, Dave Airlie <airlied@redhat.com>,
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Amit Shah <amit.shah@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 071/133] drm/i915: fix missed hunk after GT access breakage
-Date: Fri, 16 Aug 2013 15:33:33 -0700
-Message-Id: <1376692475-28413-72-git-send-email-kamal@canonical.com>
+Subject: [PATCH 082/133] virtio/console: Add pipe_lock/unlock for splice_write
+Date: Fri, 16 Aug 2013 15:33:44 -0700
+Message-Id: <1376692475-28413-83-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -27,78 +30,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Widawsky <ben@bwidawsk.net>
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 
-commit e1b4d3036c07ff137955fb1c0197ab62534f46ec upstream.
+commit 2b4fbf029dff5a28d9bf646346dea891ec43398a upstream.
 
-Upon some code refactoring, a hunk was missed. This was fixed for
-next, but missed the current trees, and hasn't yet been merged by Dave
-Airlie. It is fixed in:
-commit 907b28c56ea40629aa6595ddfa414ec2fc7da41c
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Fri Jul 19 20:36:52 2013 +0100
+Add pipe_lock/unlock for splice_write to avoid oops by following competition:
 
-    drm/i915: Colocate all GT access routines in the same file
+(1) An application gets fds of a trace buffer, virtio-serial, pipe.
+(2) The application does fork()
+(3) The processes execute splice_read(trace buffer) and
+    splice_write(virtio-serial) via same pipe.
 
-It is introduced by:
-commit 181d1b9e31c668259d3798c521672afb8edd355c
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Sun Jul 21 13:16:24 2013 +0200
+        <parent>                   <child>
+  get fds of a trace buffer,
+         virtio-serial, pipe
+          |
+        fork()----------create--------+
+          |                           |
+      splice(read)                    |           ---+
+      splice(write)                   |              +-- no competition
+          |                       splice(read)       |
+          |                       splice(write)   ---+
+          |                           |
+      splice(read)                    |
+      splice(write)               splice(read)    ------ competition
+          |                       splice(write)
 
-    drm/i915: fix up gt init sequence fallout
+Two processes share a pipe_inode_info structure. If the child execute
+splice(read) when the parent tries to execute splice(write), the
+structure can be broken. Existing virtio-serial driver does not get
+lock for the structure in splice_write, so this competition will induce
+oops.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-[ kamal: backport to 3.8 (context) ]
+<oops messages>
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+ IP: [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+ PGD 7223e067 PUD 72391067 PMD 0
+ Oops: 0000 [#1] SMP
+ Modules linked in: lockd bnep bluetooth rfkill sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd soundcore pcspkr virtio_net virtio_balloon i2c_piix4 i2c_core microcode uinput floppy
+ CPU: 0 PID: 1072 Comm: compete-test Not tainted 3.10.0ws+ #55
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+ task: ffff880071b98000 ti: ffff88007b55e000 task.ti: ffff88007b55e000
+ RIP: 0010:[<ffffffff811a6b5f>]  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+ RSP: 0018:ffff88007b55fd78  EFLAGS: 00010287
+ RAX: 0000000000000000 RBX: ffff88007b55fe20 RCX: 0000000000000000
+ RDX: 0000000000001000 RSI: ffff88007a95ba30 RDI: ffff880036f9e6c0
+ RBP: ffff88007b55fda8 R08: 00000000000006ec R09: ffff880077626708
+ R10: 0000000000000003 R11: ffffffff8139ca59 R12: ffff88007a95ba30
+ R13: 0000000000000000 R14: ffffffff8139dd00 R15: ffff880036f9e6c0
+ FS:  00007f2e2e3a0740(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000000000000018 CR3: 0000000071bd1000 CR4: 00000000000006f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Stack:
+  ffffffff8139ca59 ffff88007b55fe20 ffff880036f9e6c0 ffffffff8139dd00
+  ffff8800776266c0 ffff880077626708 ffff88007b55fde8 ffffffff811a6e8e
+  ffff88007b55fde8 ffffffff8139ca59 ffff880036f9e6c0 ffff88007b55fe20
+ Call Trace:
+  [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
+  [<ffffffff8139dd00>] ? virtcons_restore+0x100/0x100
+  [<ffffffff811a6e8e>] __splice_from_pipe+0x7e/0x90
+  [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
+  [<ffffffff8139d739>] port_fops_splice_write+0xe9/0x140
+  [<ffffffff8127a3f4>] ? selinux_file_permission+0xc4/0x120
+  [<ffffffff8139d650>] ? wait_port_writable+0x1b0/0x1b0
+  [<ffffffff811a6fe0>] do_splice_from+0xa0/0x110
+  [<ffffffff811a951f>] SyS_splice+0x5ff/0x6b0
+  [<ffffffff8161facf>] tracesys+0xdd/0xe2
+ Code: 49 8b 87 80 00 00 00 4c 8d 24 d0 8b 53 04 41 8b 44 24 0c 4d 8b 6c 24 10 39 d0 89 03 76 02 89 13 49 8b 44 24 10 4c 89 e6 4c 89 ff <ff> 50 18 85 c0 0f 85 aa 00 00 00 48 89 da 4c 89 e6 4c 89 ff 41
+ RIP  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+  RSP <ffff88007b55fd78>
+ CR2: 0000000000000018
+ ---[ end trace 24572beb7764de59 ]---
+
+V2: Fix a locking problem for error
+V3: Add Reviewed-by lines and stable@ line in sign-off area
+
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Reviewed-by: Amit Shah <amit.shah@redhat.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_dma.c | 1 +
- drivers/gpu/drm/i915/i915_drv.h | 1 +
- drivers/gpu/drm/i915/intel_pm.c | 6 ++++++
- 3 files changed, 8 insertions(+)
+ drivers/char/virtio_console.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 565a889..7e5f232 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1561,6 +1561,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
- 	intel_detect_pch(dev);
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 0dfd175..3e338a7 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -942,16 +942,21 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
+ 	 * pipe->nrbufs == 0 means there are no data to transfer,
+ 	 * so this returns just 0 for no data.
+ 	 */
+-	if (!pipe->nrbufs)
+-		return 0;
++	pipe_lock(pipe);
++	if (!pipe->nrbufs) {
++		ret = 0;
++		goto error_out;
++	}
  
- 	intel_irq_init(dev);
-+	intel_pm_init(dev);
- 	intel_gt_sanitize(dev);
- 	intel_gt_init(dev);
+ 	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
+ 	if (ret < 0)
+-		return ret;
++		goto error_out;
  
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 8c661512..d47283d 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1328,6 +1328,7 @@ void i915_hangcheck_elapsed(unsigned long data);
- void i915_handle_error(struct drm_device *dev, bool wedged);
+ 	buf = alloc_buf(port->out_vq, 0, pipe->nrbufs);
+-	if (!buf)
+-		return -ENOMEM;
++	if (!buf) {
++		ret = -ENOMEM;
++		goto error_out;
++	}
  
- extern void intel_irq_init(struct drm_device *dev);
-+extern void intel_pm_init(struct drm_device *dev);
- extern void intel_gt_init(struct drm_device *dev);
- extern void intel_gt_sanitize(struct drm_device *dev);
+ 	sgl.n = 0;
+ 	sgl.len = 0;
+@@ -959,12 +964,17 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
+ 	sgl.sg = buf->sg;
+ 	sg_init_table(sgl.sg, sgl.size);
+ 	ret = __splice_from_pipe(pipe, &sd, pipe_to_sg);
++	pipe_unlock(pipe);
+ 	if (likely(ret > 0))
+ 		ret = __send_to_port(port, buf->sg, sgl.n, sgl.len, buf, true);
  
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index 6538d3f..b035d41 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -4447,6 +4447,12 @@ void intel_gt_init(struct drm_device *dev)
- 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
- 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
- 	}
-+}
+ 	if (unlikely(ret <= 0))
+ 		free_buf(buf, true);
+ 	return ret;
 +
-+void intel_pm_init(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+
- 	INIT_DELAYED_WORK(&dev_priv->rps.delayed_resume_work,
- 			  intel_gen6_powersave_work);
++error_out:
++	pipe_unlock(pipe);
++	return ret;
  }
+ 
+ static unsigned int port_fops_poll(struct file *filp, poll_table *wait)
 -- 
 1.8.1.2
 
