@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab3HPBxf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 21:53:35 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:41085 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466Ab3HPBxd (ORCPT
+	id S1753636Ab3HPByJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 21:54:09 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:34803 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588Ab3HPBx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 21:53:33 -0400
-Message-ID: <520D85EE.4050805@oracle.com>
-Date: Fri, 16 Aug 2013 09:52:46 +0800
+	Thu, 15 Aug 2013 21:53:59 -0400
+Message-ID: <520D8617.4000706@oracle.com>
+Date: Fri, 16 Aug 2013 09:53:27 +0800
 From: Bob Liu <bob.liu@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -155,10 +155,10 @@ I'll take a try soon!
 > However, I believe that the promotion will lead to zram and zswap diverging
 > further from each other, both implementing similar functionality and
 > ultimately cause greater maintenance headaches. There is a path that makes
+> zswap a functional replacement for zram and I've seen no good reason why
 
 Agree! I prefer this way too!
 
-> zswap a functional replacement for zram and I've seen no good reason why
 > that path was not taken. Zram cannot be a functional replacment for zswap
 > as there is no obvious sane way writeback could be implemented. Continuing
 > to diverge will ultimately bite someone in the ass.
