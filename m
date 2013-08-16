@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab3HPWhv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:37:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51464 "EHLO
+	id S1756077Ab3HPWiA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:38:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51482 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755994Ab3HPWhm (ORCPT
+	with ESMTP id S1755994Ab3HPWh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:37:42 -0400
+	Fri, 16 Aug 2013 18:37:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neil Horman <nhorman@tuxdriver.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Francois Romieu <romieu@fr.zoreil.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 132/133] 8139cp: Add dma_mapping_error checking
-Date: Fri, 16 Aug 2013 15:34:34 -0700
-Message-Id: <1376692475-28413-133-git-send-email-kamal@canonical.com>
+Subject: [PATCH 130/133] net_sched: info leak in atm_tc_dump_class()
+Date: Fri, 16 Aug 2013 15:34:32 -0700
+Message-Id: <1376692475-28413-131-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -29,151 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit cf3c4c03060b688cbc389ebc5065ebcce5653e96 ]
+[ Upstream commit 8cb3b9c3642c0263d48f31d525bcee7170eedc20 ]
 
-Self explanitory dma_mapping_error addition to the 8139 driver, based on this:
-https://bugzilla.redhat.com/show_bug.cgi?id=947250
+The "pvc" struct has a hole after pvc.sap_family which is not cleared.
 
-It showed several backtraces arising for dma_map_* usage without checking the
-return code on the mapping.  Add the check and abort the rx/tx operation if its
-failed.  Untested as I have no hardware and the reporter has wandered off, but
-seems pretty straightforward.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Jiri Pirko <jiri@resnulli.us>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/realtek/8139cp.c | 48 ++++++++++++++++++++++++++++++++---
- 1 file changed, 45 insertions(+), 3 deletions(-)
+ net/sched/sch_atm.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
-index f945393..9af14e0 100644
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -478,7 +478,7 @@ rx_status_loop:
+diff --git a/net/sched/sch_atm.c b/net/sched/sch_atm.c
+index ca8e0a5..1f9c314 100644
+--- a/net/sched/sch_atm.c
++++ b/net/sched/sch_atm.c
+@@ -605,6 +605,7 @@ static int atm_tc_dump_class(struct Qdisc *sch, unsigned long cl,
+ 		struct sockaddr_atmpvc pvc;
+ 		int state;
  
- 	while (1) {
- 		u32 status, len;
--		dma_addr_t mapping;
-+		dma_addr_t mapping, new_mapping;
- 		struct sk_buff *skb, *new_skb;
- 		struct cp_desc *desc;
- 		const unsigned buflen = cp->rx_buf_sz;
-@@ -520,6 +520,13 @@ rx_status_loop:
- 			goto rx_next;
- 		}
- 
-+		new_mapping = dma_map_single(&cp->pdev->dev, new_skb->data, buflen,
-+					 PCI_DMA_FROMDEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, new_mapping)) {
-+			dev->stats.rx_dropped++;
-+			goto rx_next;
-+		}
-+
- 		dma_unmap_single(&cp->pdev->dev, mapping,
- 				 buflen, PCI_DMA_FROMDEVICE);
- 
-@@ -531,12 +538,11 @@ rx_status_loop:
- 
- 		skb_put(skb, len);
- 
--		mapping = dma_map_single(&cp->pdev->dev, new_skb->data, buflen,
--					 PCI_DMA_FROMDEVICE);
- 		cp->rx_skb[rx_tail] = new_skb;
- 
- 		cp_rx_skb(cp, skb, desc);
- 		rx++;
-+		mapping = new_mapping;
- 
- rx_next:
- 		cp->rx_ring[rx_tail].opts2 = 0;
-@@ -716,6 +722,22 @@ static inline u32 cp_tx_vlan_tag(struct sk_buff *skb)
- 		TxVlanTag | swab16(vlan_tx_tag_get(skb)) : 0x00;
- }
- 
-+static void unwind_tx_frag_mapping(struct cp_private *cp, struct sk_buff *skb,
-+				   int first, int entry_last)
-+{
-+	int frag, index;
-+	struct cp_desc *txd;
-+	skb_frag_t *this_frag;
-+	for (frag = 0; frag+first < entry_last; frag++) {
-+		index = first+frag;
-+		cp->tx_skb[index] = NULL;
-+		txd = &cp->tx_ring[index];
-+		this_frag = &skb_shinfo(skb)->frags[frag];
-+		dma_unmap_single(&cp->pdev->dev, le64_to_cpu(txd->addr),
-+				 skb_frag_size(this_frag), PCI_DMA_TODEVICE);
-+	}
-+}
-+
- static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
- 					struct net_device *dev)
- {
-@@ -749,6 +771,9 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
- 
- 		len = skb->len;
- 		mapping = dma_map_single(&cp->pdev->dev, skb->data, len, PCI_DMA_TODEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, mapping))
-+			goto out_dma_error;
-+
- 		txd->opts2 = opts2;
- 		txd->addr = cpu_to_le64(mapping);
- 		wmb();
-@@ -786,6 +811,9 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
- 		first_len = skb_headlen(skb);
- 		first_mapping = dma_map_single(&cp->pdev->dev, skb->data,
- 					       first_len, PCI_DMA_TODEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, first_mapping))
-+			goto out_dma_error;
-+
- 		cp->tx_skb[entry] = skb;
- 		entry = NEXT_TX(entry);
- 
-@@ -799,6 +827,11 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
- 			mapping = dma_map_single(&cp->pdev->dev,
- 						 skb_frag_address(this_frag),
- 						 len, PCI_DMA_TODEVICE);
-+			if (dma_mapping_error(&cp->pdev->dev, mapping)) {
-+				unwind_tx_frag_mapping(cp, skb, first_entry, entry);
-+				goto out_dma_error;
-+			}
-+
- 			eor = (entry == (CP_TX_RING_SIZE - 1)) ? RingEnd : 0;
- 
- 			ctrl = eor | len | DescOwn;
-@@ -859,11 +892,16 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
- 	if (TX_BUFFS_AVAIL(cp) <= (MAX_SKB_FRAGS + 1))
- 		netif_stop_queue(dev);
- 
-+out_unlock:
- 	spin_unlock_irqrestore(&cp->lock, intr_flags);
- 
- 	cpw8(TxPoll, NormalTxPoll);
- 
- 	return NETDEV_TX_OK;
-+out_dma_error:
-+	kfree_skb(skb);
-+	cp->dev->stats.tx_dropped++;
-+	goto out_unlock;
- }
- 
- /* Set or clear the multicast filter for this adaptor.
-@@ -1054,6 +1092,10 @@ static int cp_refill_rx(struct cp_private *cp)
- 
- 		mapping = dma_map_single(&cp->pdev->dev, skb->data,
- 					 cp->rx_buf_sz, PCI_DMA_FROMDEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, mapping)) {
-+			kfree_skb(skb);
-+			goto err_out;
-+		}
- 		cp->rx_skb[i] = skb;
- 
- 		cp->rx_ring[i].opts2 = 0;
++		memset(&pvc, 0, sizeof(pvc));
+ 		pvc.sap_family = AF_ATMPVC;
+ 		pvc.sap_addr.itf = flow->vcc->dev ? flow->vcc->dev->number : -1;
+ 		pvc.sap_addr.vpi = flow->vcc->vpi;
 -- 
 1.8.1.2
 
