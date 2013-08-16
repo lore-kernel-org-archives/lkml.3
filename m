@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758063Ab3HPWv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:51:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51903 "EHLO
+	id S1758111Ab3HPWv2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:51:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51902 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757223Ab3HPWlL (ORCPT
+	with ESMTP id S1756480Ab3HPWlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Aug 2013 18:41:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleksij Rempel <linux@rempel-privat.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 048/133] ath9k_htc: reboot firmware if it was loaded
-Date: Fri, 16 Aug 2013 15:33:10 -0700
-Message-Id: <1376692475-28413-49-git-send-email-kamal@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 032/133] md/raid5: fix interaction of 'replace' and 'recovery'.
+Date: Fri, 16 Aug 2013 15:32:54 -0700
+Message-Id: <1376692475-28413-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,44 +26,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleksij Rempel <linux@rempel-privat.de>
+From: NeilBrown <neilb@suse.de>
 
-commit 4928bd2ef8ece262f4f314630219999a91eaa440 upstream.
+commit f94c0b6658c7edea8bc19d13be321e3860a3fa54 upstream.
 
-Currently ath9k_htc will reboot firmware only if interface was
-ever started. Which lead to the problem in case where interface
-was never started but module need to be reloaded.
+If a device in a RAID4/5/6 is being replaced while another is being
+recovered, then the writes to the replacement device currently don't
+happen, resulting in corruption when the replacement completes and the
+new drive takes over.
 
-This patch will partially fix bug "ath9k_htc: Target is unresponsive"
-https://github.com/qca/open-ath9k-htc-firmware/issues/1
+This is because the replacement writes are only triggered when
+'s.replacing' is set and not when the similar 's.sync' is set (which
+is the case during resync and recovery - it means all devices need to
+be read).
 
-Reproduction case:
-- plug adapter
-- make sure nothing will touch it. Stop Networkmanager or blacklist mac address of this adapter.
-- rmmod ath9k_htc; sleep 1; modprobe ath9k_htc
+So schedule those writes when s.replacing is set as well.
 
-Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+In this case we cannot use "STRIPE_INSYNC" to record that the
+replacement has happened as that is needed for recording that any
+parity calculation is complete.  So introduce STRIPE_REPLACED to
+record if the replacement has happened.
+
+For safety we should also check that STRIPE_COMPUTE_RUN is not set.
+This has a similar effect to the "s.locked == 0" test.  The latter
+ensure that now IO has been flagged but not started.  The former
+checks if any parity calculation has been flagged by not started.
+We must wait for both of these to complete before triggering the
+'replace'.
+
+Add a similar test to the subsequent check for "are we finished yet".
+This possibly isn't needed (is subsumed in the STRIPE_INSYNC test),
+but it makes it more obvious that the REPLACE will happen before we
+think we are finished.
+
+Finally if a NeedReplace device is not UPTODATE then that is an
+error.  We really must trigger a warning.
+
+This bug was introduced in commit 9a3e1101b827a59ac9036a672f5fa8d5279d0fe2
+(md/raid5:  detect and handle replacements during recovery.)
+which introduced replacement for raid5.
+That was in 3.3-rc3, so any stable kernel since then would benefit
+from this fix.
+
+Reported-by: qindehua <13691222965@163.com>
+Tested-by: qindehua <qindehua@163.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/hif_usb.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/md/raid5.c | 15 ++++++++++-----
+ drivers/md/raid5.h |  1 +
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/hif_usb.c b/drivers/net/wireless/ath/ath9k/hif_usb.c
-index f5dda84..75a6376 100644
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -1289,7 +1289,9 @@ static void ath9k_hif_usb_disconnect(struct usb_interface *interface)
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 9a6ff72..5b022b1 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3491,6 +3491,7 @@ static void handle_stripe(struct stripe_head *sh)
+ 		    test_and_clear_bit(STRIPE_SYNC_REQUESTED, &sh->state)) {
+ 			set_bit(STRIPE_SYNCING, &sh->state);
+ 			clear_bit(STRIPE_INSYNC, &sh->state);
++			clear_bit(STRIPE_REPLACED, &sh->state);
+ 		}
+ 		spin_unlock(&sh->stripe_lock);
+ 	}
+@@ -3636,19 +3637,23 @@ static void handle_stripe(struct stripe_head *sh)
+ 			handle_parity_checks5(conf, sh, &s, disks);
+ 	}
  
- 	usb_set_intfdata(interface, NULL);
- 
--	if (!unplugged && (hif_dev->flags & HIF_USB_START))
-+	/* If firmware was loaded we should drop it
-+	 * go back to first stage bootloader. */
-+	if (!unplugged && (hif_dev->flags & HIF_USB_READY))
- 		ath9k_hif_usb_reboot(udev);
- 
- 	kfree(hif_dev);
+-	if (s.replacing && s.locked == 0
+-	    && !test_bit(STRIPE_INSYNC, &sh->state)) {
++	if ((s.replacing || s.syncing) && s.locked == 0
++	    && !test_bit(STRIPE_COMPUTE_RUN, &sh->state)
++	    && !test_bit(STRIPE_REPLACED, &sh->state)) {
+ 		/* Write out to replacement devices where possible */
+ 		for (i = 0; i < conf->raid_disks; i++)
+-			if (test_bit(R5_UPTODATE, &sh->dev[i].flags) &&
+-			    test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
++			if (test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
++				WARN_ON(!test_bit(R5_UPTODATE, &sh->dev[i].flags));
+ 				set_bit(R5_WantReplace, &sh->dev[i].flags);
+ 				set_bit(R5_LOCKED, &sh->dev[i].flags);
+ 				s.locked++;
+ 			}
+-		set_bit(STRIPE_INSYNC, &sh->state);
++		if (s.replacing)
++			set_bit(STRIPE_INSYNC, &sh->state);
++		set_bit(STRIPE_REPLACED, &sh->state);
+ 	}
+ 	if ((s.syncing || s.replacing) && s.locked == 0 &&
++	    !test_bit(STRIPE_COMPUTE_RUN, &sh->state) &&
+ 	    test_bit(STRIPE_INSYNC, &sh->state)) {
+ 		md_done_sync(conf->mddev, STRIPE_SECTORS, 1);
+ 		clear_bit(STRIPE_SYNCING, &sh->state);
+diff --git a/drivers/md/raid5.h b/drivers/md/raid5.h
+index 050a334..7b20e03 100644
+--- a/drivers/md/raid5.h
++++ b/drivers/md/raid5.h
+@@ -310,6 +310,7 @@ enum {
+ 	STRIPE_SYNC_REQUESTED,
+ 	STRIPE_SYNCING,
+ 	STRIPE_INSYNC,
++	STRIPE_REPLACED,
+ 	STRIPE_PREREAD_ACTIVE,
+ 	STRIPE_DELAYED,
+ 	STRIPE_DEGRADED,
 -- 
 1.8.1.2
 
