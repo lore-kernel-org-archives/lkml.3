@@ -1,107 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab3HPRu1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 13:50:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2324 "EHLO mga02.intel.com"
+	id S1754265Ab3HPRx6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 13:53:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6199 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754337Ab3HPRuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 13:50:12 -0400
+	id S1751527Ab3HPRxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 13:53:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,896,1367996400"; 
-   d="scan'208";a="388341814"
-Date: Fri, 16 Aug 2013 10:50:09 -0700
-From: Sarah Sharp <sarah.a.sharp@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] xhci:prevent "callbacks suppressed" when debug is
- not enabled
-Message-ID: <20130816175009.GE5445@xanatos>
-References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
- <70b3564625bbda6247cc5627041344fef8a762ae.1376582695.git.d.kasatkin@samsung.com>
- <20130816001716.GA7367@kroah.com>
- <20130816172635.GA7975@xanatos>
- <20130816173000.GA8210@xanatos>
- <CACE9dm9Rw55HdwsKRYvecCFCAO137uU4iv5yLnEMzc-0pRZCsg@mail.gmail.com>
- <20130816174516.GA20389@kroah.com>
+   d="scan'208";a="388343533"
+Message-ID: <520E672C.3080102@intel.com>
+Date: Fri, 16 Aug 2013 10:53:48 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130816174516.GA20389@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Thorlton <athorlton@sgi.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>
+Subject: Re: [PATCH 1/8] THP: Use real address for NUMA policy
+References: <87wqo050fc.fsf@tassilo.jf.intel.com> <1376663644-153546-1-git-send-email-athorlton@sgi.com> <1376663644-153546-2-git-send-email-athorlton@sgi.com>
+In-Reply-To: <1376663644-153546-2-git-send-email-athorlton@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 10:45:16AM -0700, Greg KH wrote:
-> On Fri, Aug 16, 2013 at 08:38:12PM +0300, Dmitry Kasatkin wrote:
-> > On Fri, Aug 16, 2013 at 8:30 PM, Sarah Sharp <sarah.a.sharp@intel.com> wrote:
-> > > On Fri, Aug 16, 2013 at 10:26:35AM -0700, Sarah Sharp wrote:
-> > >> On Thu, Aug 15, 2013 at 05:17:16PM -0700, Greg KH wrote:
-> > >> > On Thu, Aug 15, 2013 at 07:04:55PM +0300, Dmitry Kasatkin wrote:
-> > >> > > When debug is not enabled and dev_dbg() will expand to nothing,
-> > >> > > log might be flooded with "callbacks suppressed". If it was not
-> > >> > > done on purpose, better to use dev_dbg_ratelimited() instead.
-> > >> > >
-> > >> > > Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> > >> > > ---
-> > >> > >  drivers/usb/host/xhci-ring.c | 6 ++----
-> > >> > >  1 file changed, 2 insertions(+), 4 deletions(-)
-> > >> >
-> > >> >
-> > >> > Sarah, does this patch conflict with the trace debug patches being
-> > >> > worked on?  I'll hold off on applying it for now, let me know if it's ok
-> > >> > or not.
-> > >>
-> > >> It doesn't conflict with the trace debug patches, because those only
-> > >> effect debugging with xhci_dbg with the host device, not dev_dbg with
-> > >> the USB device.  This should apply fine to usb-next.
-> > >
-> > > At another glance, the patch removes two if blocks, but doesn't
-> > > re-indent the rest of the lines:
-> > >
-> > >> @@ -3060,8 +3060,7 @@ int xhci_queue_intr_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
-> > >>        * to set the polling interval (once the API is added).
-> > >>        */
-> > >>       if (xhci_interval != ep_interval) {
-> > >> -             if (printk_ratelimit())
-> > >> -                     dev_dbg(&urb->dev->dev, "Driver uses different interval"
-> > >> +             dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
-> > >>                                       " (%d microframe%s) than xHCI "
-> > >>                                       "(%d microframe%s)\n",
-> > >>                                       ep_interval,
-> > >
-> > > That should probably be fixed.
-> > 
-> > It actually looks correct when patch is applied.
-> > 
-> > But it depends what you mean of course.
-> > It looks like it was before:
-> > dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
-> >                                        " (%d microframe%s) than xHCI "
-> >                                        "(%d microframe%s)\n",
-> >                                        ep_interval,
-> >                                         ep_interval == 1 ? "" : "s",
-> > 
-> > Or may be you mean:
-> > dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
-> >                                " (%d microframe%s) than xHCI "
-> >                                "(%d microframe%s)\n",
-> >                                ep_interval,
-> >                                ep_interval == 1 ? "" : "s",
+On 08/16/2013 07:33 AM, Alex Thorlton wrote:
+> ---
+>  mm/huge_memory.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
 > 
-> No, it should look like:
-> 
-> 		dev_dbg_ratelimited(&urb->dev->dev,
-> 				    "Driver uses different interval (%d microframe%s) than xHCI (%d microframe%s)\n",
-> 				     ep_interval, ep_interval == 1 ? "" : "s",
-> 
-> and the rest of that call indented the same way.
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index a92012a..55ec681 100644
 
-Or just use the default tabbed indentation in your editor (use '==' if
-you're using vim).  I don't mind if the second line is indented with
-spaces to align with the parenthesis, and the majority of the xHCI
-driver uses cindent vim indentation.  Either way is fine with me though.
+Could you add some actual descriptions to these patches that say why you
+are doing this, and why this particular patch is needed and implemented
+this way?
 
-Sarah Sharp
+You mention that THP is slow for you, then go on to implement some
+non-cached page zero'ing, but you never quite connect the dots.
