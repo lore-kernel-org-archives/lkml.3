@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab3HPNi7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 09:38:59 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:59059 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab3HPNi4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 09:38:56 -0400
-Date: Fri, 16 Aug 2013 15:39:19 +0200 (CEST)
-From: Enrico Mioso <mrkiko.rs@gmail.com>
-X-X-Sender: mrkiko@eeeadesso
-To: =?ISO-8859-15?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH] net: cdc_ncm: Export cdc_ncm_{tx,rx}_fixup functions for
- re-use
-In-Reply-To: <87bo4xx3ef.fsf@nemi.mork.no>
-Message-ID: <alpine.LNX.2.02.1308161534410.23935@eeeadesso>
-References: <alpine.LNX.2.02.1307021241380.8884@eeeadesso> <87wqp9xja5.fsf@nemi.mork.no> <alpine.LNX.2.02.1307101425310.22696@eeeadesso> <0cbf7c81-182e-493c-9c28-5b78160a08f1@email.android.com> <alpine.LNX.2.02.1307170457450.1161@eeeadesso>
- <87bo4xx3ef.fsf@nemi.mork.no>
+	id S1753306Ab3HPNmv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 09:42:51 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:45432 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330Ab3HPNms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 09:42:48 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [GIT PULL] Power management fix for v3.11-rc6
+Date: Fri, 16 Aug 2013 15:53:17 +0200
+Message-ID: <4954983.4OnybMElUM@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers implementing NCM-like protocols, may re-use those functions, as is 
-the case in the huawei_cdc_ncm driver.
-Export them via EXPORT_SYMBOL_GPL.
+Hi Linus,
 
-Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
----
+Please pull from the git repository at
 
- drivers/net/usb/cdc_ncm.c   |    6 ++++--
- include/linux/usb/cdc_ncm.h |    3 +++
- 2 files changed, 7 insertions(+), 2 deletions(-)
-diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
-index 43afde8..62686be 100644
---- a/drivers/net/usb/cdc_ncm.c
-+++ b/drivers/net/usb/cdc_ncm.c
-@@ -858,7 +858,7 @@ static void cdc_ncm_txpath_bh(unsigned long param)
- 	}
- }
- 
--static struct sk_buff *
-+struct sk_buff *
- cdc_ncm_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t flags)
- {
- 	struct sk_buff *skb_out;
-@@ -885,6 +885,7 @@ error:
- 
- 	return NULL;
- }
-+EXPORT_SYMBOL_GPL(cdc_ncm_tx_fixup);
- 
- /* verify NTB header and return offset of first NDP, or negative error */
- int cdc_ncm_rx_verify_nth16(struct cdc_ncm_ctx *ctx, struct sk_buff *skb_in)
-@@ -965,7 +966,7 @@ error:
- }
- EXPORT_SYMBOL_GPL(cdc_ncm_rx_verify_ndp16);
- 
--static int cdc_ncm_rx_fixup(struct usbnet *dev, struct sk_buff *skb_in)
-+int cdc_ncm_rx_fixup(struct usbnet *dev, struct sk_buff *skb_in)
- {
- 	struct sk_buff *skb;
- 	struct cdc_ncm_ctx *ctx = (struct cdc_ncm_ctx *)dev->data[0];
-@@ -1040,6 +1041,7 @@ err_ndp:
- error:
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(cdc_ncm_rx_fixup);
- 
- static void
- cdc_ncm_speed_change(struct cdc_ncm_ctx *ctx,
-diff --git a/include/linux/usb/cdc_ncm.h b/include/linux/usb/cdc_ncm.h
-index cc25b70..163244b 100644
---- a/include/linux/usb/cdc_ncm.h
-+++ b/include/linux/usb/cdc_ncm.h
-@@ -133,3 +133,6 @@ extern void cdc_ncm_unbind(struct usbnet *dev, struct usb_interface *intf);
- extern struct sk_buff *cdc_ncm_fill_tx_frame(struct cdc_ncm_ctx *ctx, struct sk_buff *skb, __le32 sign);
- extern int cdc_ncm_rx_verify_nth16(struct cdc_ncm_ctx *ctx, struct sk_buff *skb_in);
- extern int cdc_ncm_rx_verify_ndp16(struct sk_buff *skb_in, int ndpoffset);
-+struct sk_buff *
-+cdc_ncm_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t flags);
-+int cdc_ncm_rx_fixup(struct usbnet *dev, struct sk_buff *skb_in);
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-3.11-rc6
+
+to receive one power management fix for v3.11-rc6 as
+commit 40fea92ffb5fa0ef26d10ae0fe5688bc8e61c791
+
+  PM / QoS: Fix workqueue deadlock when using pm_qos_update_request_timeout()
+
+on top of commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8
+
+  Linux 3.11-rc5
+
+This fixes a deadlock introduced by the removal of delayed_work_pending()
+checks from kernel/power/qos.c in 3.9, so it is stable material.
+
+Thanks!
+
+
+---------------
+
+Stephen Boyd (1):
+      PM / QoS: Fix workqueue deadlock when using pm_qos_update_request_timeout()
+
+---------------
+
+ kernel/power/qos.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
+
