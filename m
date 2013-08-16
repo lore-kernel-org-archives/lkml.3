@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab3HPQnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 12:43:41 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:32923 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab3HPQnj convert rfc822-to-8bit (ORCPT
+	id S1754515Ab3HPQpv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 12:45:51 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:41143 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab3HPQpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 12:43:39 -0400
-Subject: Re: [PATCH v1 03/14] clk: Add of_clk_match() for device drivers
-Mime-Version: 1.0 (Apple Message framework v1283)
+	Fri, 16 Aug 2013 12:45:49 -0400
+Date: Fri, 16 Aug 2013 12:45:44 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH] print_worker_info: Handle pointer with more care
+Message-ID: <20130816164544.GK2505@htj.dyndns.org>
+References: <1376668606-32354-1-git-send-email-richard@nod.at>
+ <20130816161229.GI2505@htj.dyndns.org>
+ <520E500B.5000408@nod.at>
+ <20130816162844.GJ2505@htj.dyndns.org>
+ <520E55A2.9080900@nod.at>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20130815050226.4443.39100@quantum>
-Date: Fri, 16 Aug 2013 11:43:36 -0500
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0181ACFD-4F25-493C-9143-E197C53282DF@codeaurora.org>
-References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org> <1374713022-6049-4-git-send-email-sboyd@codeaurora.org> <20130812202347.5348.76490@quantum> <20130813054839.GF14845@codeaurora.org> <20130815050226.4443.39100@quantum>
-To: Mike Turquette <mturquette@linaro.org>
-X-Mailer: Apple Mail (2.1283)
+Content-Disposition: inline
+In-Reply-To: <520E55A2.9080900@nod.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-On Aug 15, 2013, at 12:02 AM, Mike Turquette wrote:
+On Fri, Aug 16, 2013 at 06:38:58PM +0200, Richard Weinberger wrote:
+> > cc'ing uml people.  Hey, guys, workqueue uses proble_kernel_read() to
+> > print out workqueue related information during oops because those
+> > events are completely asynchronous and workqueue states may not be
+> > consistently accessible.  It seems like uml doesn't implement
+> > probe_kernel_read() and tries direct derference of incorrect pointers
+> > leading to its own oops.  Maybe uml should check whether the memory is
+> > mapped from probe_kernel_read()?
+> 
+> You are already talking to UML people. ;)
 
->> Right now we have
->> 
->>        pll8: pll8 {
->>                #clock-cells = <0>;
->>                compatible = "qcom,pll";
->>                clocks = <&pxo>;
->>        };
->> 
->> in DT and
->> 
->>        static struct pll_desc pll8_desc = {
->>                .l_reg = 0x3144,
->>                .m_reg = 0x3148,
->>                .n_reg = 0x314c,
->>                .config_reg = 0x3154,
->>                .mode_reg = 0x3140,
->>                .status_reg = 0x3158,
->>                .status_bit = 16,
->>        };
->> 
->> in C. Do you want everything to be in DT? Something like:
->> 
->>        pll8: pll8@3140 {
->>                #clock-cells = <0>;
->>                compatible = "qcom,pll";
->>                clocks = <&pxo>;
->>                reg = <0x3140 0x20>;
->>        };
->> 
->> and then assume that all those registers are offset from the base
->> register and that the status bit is 16 (it usually is but not
->> always)?
+Ooh... :)
 
-I think its reasonable to put the various regs associated with a clock in the .dts like the example you show, but we should be going down to bit level details.  If we think of each clock as its own device its reasonable that the clock would have some set of registers associated with it.
+> Anyway, I'll investigate into that.
+> What I see so far is that pwq is NULL after probe_kernel_read().
 
--k
+Yeah, and that should be fine.  &pwq->wq would be just an offset of wq
+from NULL which is an invalid pointer but probe_kernel_read() should
+be able to handle that and probably just return 0 or -1 (all bits
+set).  I *think* what's necessary is making probe_kernel_read() use
+mincore() to fine out whether the requested address is mapped (it
+should return -EFAULT if not) and try to dereference the address iff
+it's mapped.
+
+Thanks.
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+tejun
