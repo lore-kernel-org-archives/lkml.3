@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab3HPJxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 05:53:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39192 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755446Ab3HPJxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 05:53:15 -0400
-Date: Fri, 16 Aug 2013 11:53:02 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: linux-mtd@lists.infradead.org, Marek Vasut <marex@denx.de>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH] m25p80 / fast read
-Message-ID: <20130816095302.GA1380@pengutronix.de>
-References: <1376302946-11534-1-git-send-email-s.hauer@pengutronix.de>
+	id S1755535Ab3HPJzR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 05:55:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36740 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755446Ab3HPJzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 05:55:13 -0400
+Date: Fri, 16 Aug 2013 12:56:55 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] vhost: switch to use vhost_add_used_n()
+Message-ID: <20130816095655.GB21821@redhat.com>
+References: <1376630190-5912-1-git-send-email-jasowang@redhat.com>
+ <1376630190-5912-4-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376302946-11534-1-git-send-email-s.hauer@pengutronix.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:51:49 up 25 days, 14:09, 32 users,  load average: 11.73, 5.77,
- 2.50
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1376630190-5912-4-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Artem,
+On Fri, Aug 16, 2013 at 01:16:27PM +0800, Jason Wang wrote:
+> Let vhost_add_used() to use vhost_add_used_n() to reduce the code duplication.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Any chance you take this for the next merge window?
+Does compiler inline it then?
+Reason I ask, last time I checked put_user inside vhost_add_used
+was much cheaper than copy_to_user inside vhost_add_used_n,
+so I wouldn't be surprised if this hurt performance.
+Did you check?
 
-Thanks
- Sascha
-
-On Mon, Aug 12, 2013 at 12:22:22PM +0200, Sascha Hauer wrote:
-> The following adds support for the mr25h10 chip to to the m25p80
-> driver.
+> ---
+>  drivers/vhost/vhost.c |   43 ++-----------------------------------------
+>  1 files changed, 2 insertions(+), 41 deletions(-)
 > 
-> This driver currently has the problem that it unconditionally uses
-> the fast_read command once it's enabled in Kconfig which of course
-> leads to problems with multiboard kernels. This series adds a flag
-> to the chip specific data to solve this. Also some unnecessary ifdefs
-> are removed.
-> 
-> Sascha
-> 
-> ----------------------------------------------------------------
-> Markus Niebel (1):
->       mtd: m25p80: add support for mr25h10
-> 
-> Sascha Hauer (3):
->       mtd: m25p80: Pass flags through CAT25_INFO macro
->       mtd: m25p80: make CONFIG_M25PXX_USE_FAST_READ safe to enable
->       mtd: m25p80: remove unnecessary ifdef
-> 
->  drivers/mtd/devices/m25p80.c | 23 +++++++++++++----------
->  1 file changed, 13 insertions(+), 10 deletions(-)
-> 
-> ______________________________________________________
-> Linux MTD discussion mailing list
-> http://lists.infradead.org/mailman/listinfo/linux-mtd/
-> 
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index e58cf00..c479452 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -1332,48 +1332,9 @@ EXPORT_SYMBOL_GPL(vhost_discard_vq_desc);
+>   * want to notify the guest, using eventfd. */
+>  int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head, int len)
+>  {
+> -	struct vring_used_elem __user *used;
+> +	struct vring_used_elem heads = { head, len };
+>  
+> -	/* The virtqueue contains a ring of used buffers.  Get a pointer to the
+> -	 * next entry in that used ring. */
+> -	used = &vq->used->ring[vq->last_used_idx % vq->num];
+> -	if (__put_user(head, &used->id)) {
+> -		vq_err(vq, "Failed to write used id");
+> -		return -EFAULT;
+> -	}
+> -	if (__put_user(len, &used->len)) {
+> -		vq_err(vq, "Failed to write used len");
+> -		return -EFAULT;
+> -	}
+> -	/* Make sure buffer is written before we update index. */
+> -	smp_wmb();
+> -	if (__put_user(vq->last_used_idx + 1, &vq->used->idx)) {
+> -		vq_err(vq, "Failed to increment used idx");
+> -		return -EFAULT;
+> -	}
+> -	if (unlikely(vq->log_used)) {
+> -		/* Make sure data is seen before log. */
+> -		smp_wmb();
+> -		/* Log used ring entry write. */
+> -		log_write(vq->log_base,
+> -			  vq->log_addr +
+> -			   ((void __user *)used - (void __user *)vq->used),
+> -			  sizeof *used);
+> -		/* Log used index update. */
+> -		log_write(vq->log_base,
+> -			  vq->log_addr + offsetof(struct vring_used, idx),
+> -			  sizeof vq->used->idx);
+> -		if (vq->log_ctx)
+> -			eventfd_signal(vq->log_ctx, 1);
+> -	}
+> -	vq->last_used_idx++;
+> -	/* If the driver never bothers to signal in a very long while,
+> -	 * used index might wrap around. If that happens, invalidate
+> -	 * signalled_used index we stored. TODO: make sure driver
+> -	 * signals at least once in 2^16 and remove this. */
+> -	if (unlikely(vq->last_used_idx == vq->signalled_used))
+> -		vq->signalled_used_valid = false;
+> -	return 0;
+> +	return vhost_add_used_n(vq, &heads, 1);
+>  }
+>  EXPORT_SYMBOL_GPL(vhost_add_used);
+>  
+> -- 
+> 1.7.1
