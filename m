@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab3HPKqn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 06:46:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38705 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab3HPKqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 06:46:38 -0400
-Message-ID: <520E0307.70704@linutronix.de>
-Date: Fri, 16 Aug 2013 12:46:31 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	id S1752922Ab3HPKrJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 06:47:09 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49921 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752555Ab3HPKrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 06:47:04 -0400
+Message-ID: <520E0304.5050906@ti.com>
+Date: Fri, 16 Aug 2013 13:46:28 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>
-CC: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, Russ.Dill@ti.com
-Subject: Re: [PATCH 4/4] iio: ti_am335x_adc: Add continuous sampling and trigger
- support
-References: <1376424303-22740-1-git-send-email-zubair.lutfullah@gmail.com> <1376424303-22740-5-git-send-email-zubair.lutfullah@gmail.com> <520CBEC6.8010400@kernel.org> <20130816100702.GD26895@linutronix.de> <520E0E22.4000403@kernel.org>
-In-Reply-To: <520E0E22.4000403@kernel.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, USB list <linux-usb@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: linux-next: Tree for Aug 15 (usb/phy/phy-am335x-control.c)
+References: <20130815165829.6a401f104ee2a98dd48bcb58@canb.auug.org.au> <520D0AD7.6050002@infradead.org>
+In-Reply-To: <520D0AD7.6050002@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2013 01:33 PM, Jonathan Cameron wrote:
-> Ah, fixes-togreg is for this cycle, whereas new stuff like this needs
-> to go on the togreg branch.  Hence please rebase on the togreg branch
-> instead.
++Sebastian,
 
-But he needs "iio: ti_am335x_adc: Fix wrong samples received on 1st
-read" from that branch. How should the rebase be done?
-
+On 08/15/2013 08:07 PM, Randy Dunlap wrote:
+> On 08/14/13 23:58, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Changes since 20130814:
+>>
 > 
-> That would explain it.
+> on i386 and x86_64:
+> 
+> drivers/usb/phy/phy-am335x-control.c:45:3: error: implicit declaration of function '__WARN' [-Werror=implicit-function-declaration]
+> 
+> 
 
-Sebastian
