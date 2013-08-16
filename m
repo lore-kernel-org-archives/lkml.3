@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab3HPHui (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 03:50:38 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59245 "EHLO
+	id S1753851Ab3HPHyp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 03:54:45 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:60958 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab3HPHuf (ORCPT
+	with ESMTP id S1752019Ab3HPHyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 03:50:35 -0400
+	Fri, 16 Aug 2013 03:54:44 -0400
 X-Originating-IP: 108.223.40.66
-Message-ID: <520DD9CA.90305@roeck-us.net>
-Date: Fri, 16 Aug 2013 00:50:34 -0700
+Message-ID: <520DDAC2.2030609@roeck-us.net>
+Date: Fri, 16 Aug 2013 00:54:42 -0700
 From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Max Filippov <jcmvbkbc@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: Linux kernel cross-compilers
-References: <520C9A39.3030808@roeck-us.net> <CAMo8BfKyqZYMkh96wyZSpYUpXwqFQZkco=XgtjUrNG-jSzW5pA@mail.gmail.com> <20130816054823.GB28445@thor.bakeyournoodle.com> <CAMo8Bf+veq_DU7-hnB0yySy6YWpwU2TYx3U9e89c_m8Mv9Cv5w@mail.gmail.com>
-In-Reply-To: <CAMo8Bf+veq_DU7-hnB0yySy6YWpwU2TYx3U9e89c_m8Mv9Cv5w@mail.gmail.com>
+References: <520C9A39.3030808@roeck-us.net> <20130816054732.GA28445@thor.bakeyournoodle.com>
+In-Reply-To: <20130816054732.GA28445@thor.bakeyournoodle.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2013 12:22 AM, Max Filippov wrote:
-> On Fri, Aug 16, 2013 at 9:48 AM, Tony Breeds <tony@bakeyournoodle.com> wrote:
->> On Thu, Aug 15, 2013 at 01:46:16PM +0400, Max Filippov wrote:
+On 08/15/2013 10:47 PM, Tony Breeds wrote:
+> On Thu, Aug 15, 2013 at 02:07:05AM -0700, Guenter Roeck wrote:
+>> Hi Tony,
 >>
->>> Yes, xtensa compiler/linker is known to have issues with link-time
->>> relaxation; e.g. it may fail to build linux image without CONFIG_LD_NO_RELAX.
->>
->> Is there something I can do at linker build time to help with this?
+>> would it be possible to provide an arm64 cross-compiler on https://www.kernel.org/pub/tools/crosstool/ ?
 >
-> I don't think so. Apparently it's not a linker configuration issue, it's a bug.
+> I have one built I just need to upload it.  I'll try and do it this
+> weekend.
 >
-CONFIG_LD_NO_RELAX doesn't help.
+Would be great.
 
-For reference, here is the error:
+>> Also, the xtensa compiler fails for me with an odd error message on one of my servers.
+>> Have you heard about any problems with it from others ?
+>
+> Nope.  Sorry, but it looks like you're being looked after there.
+>
+No far not helping. I had hoped it is a known problem that has been fixed with a later
+gcc or binutils version, but it looks like it isn't widely seen.
 
-xtensa-linux-objcopy: Unable to change endianness of input file(s)
-make[2]: *** [arch/xtensa/boot/boot-elf/Image.o] Error 1
-make[1]: *** [boot-elf] Error 2
-make: *** [zImage] Error 2
+>> c6x is supposed to be supported by gcc now. No idea if that helps anything, though.
+>
+> Thanks.  I have tried to build a 4.8.1 cx6 toolchain but It hasn't
+> worked todate.  I'll keep trying as time permits.
 
-Oddly enough, I only see the problem on one of three servers.
+Too bad. Thanks for trying!
 
 Guenter
 
