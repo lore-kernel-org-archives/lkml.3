@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab3HPC2S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 22:28:18 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:48095 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905Ab3HPC2M (ORCPT
+	id S1754899Ab3HPC2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 22:28:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57590 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab3HPC2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 22:28:12 -0400
+	Thu, 15 Aug 2013 22:28:04 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Subject: [PATCH 19/34] cpufreq: maple: remove calls to cpufreq_notify_transition()
-Date: Fri, 16 Aug 2013 07:55:16 +0530
-Message-Id: <f25256fa5fc04dd5ddf585d1fea4d2ce7e196b56.1376619363.git.viresh.kumar@linaro.org>
+        John Crispin <blogic@openwrt.org>
+Subject: [PATCH 18/34] cpufreq: loongson2: remove calls to cpufreq_notify_transition()
+Date: Fri, 16 Aug 2013 07:55:15 +0530
+Message-Id: <4bd67c506fc1b3deb79dd33f62e85800dd94e7e0.1376619363.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376619363.git.viresh.kumar@linaro.org>
 References: <cover.1376619363.git.viresh.kumar@linaro.org>
@@ -46,48 +46,51 @@ frequency change, this one removes it from this driver.
 
 Some related minor cleanups are also done along with it.
 
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: John Crispin <blogic@openwrt.org>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/maple-cpufreq.c | 18 +-----------------
- 1 file changed, 1 insertion(+), 17 deletions(-)
+ drivers/cpufreq/loongson2_cpufreq.c | 16 ----------------
+ 1 file changed, 16 deletions(-)
 
-diff --git a/drivers/cpufreq/maple-cpufreq.c b/drivers/cpufreq/maple-cpufreq.c
-index b508147..45db7a2 100644
---- a/drivers/cpufreq/maple-cpufreq.c
-+++ b/drivers/cpufreq/maple-cpufreq.c
-@@ -69,8 +69,6 @@ static struct cpufreq_frequency_table maple_cpu_freqs[] = {
-  */
- static int maple_pmode_cur;
- 
--static DEFINE_MUTEX(maple_switch_mutex);
--
- static const u32 *maple_pmode_data;
- static int maple_pmode_max;
- 
-@@ -133,21 +131,7 @@ static int maple_scom_query_freq(void)
- static int maple_cpufreq_target(struct cpufreq_policy *policy,
- 	unsigned int index)
+diff --git a/drivers/cpufreq/loongson2_cpufreq.c b/drivers/cpufreq/loongson2_cpufreq.c
+index c33347c..6232d29 100644
+--- a/drivers/cpufreq/loongson2_cpufreq.c
++++ b/drivers/cpufreq/loongson2_cpufreq.c
+@@ -57,7 +57,6 @@ static int loongson2_cpufreq_target(struct cpufreq_policy *policy,
  {
+ 	unsigned int cpu = policy->cpu;
+ 	cpumask_t cpus_allowed;
 -	struct cpufreq_freqs freqs;
--	int rc;
+ 	unsigned int freq;
+ 
+ 	cpus_allowed = current->cpus_allowed;
+@@ -67,26 +66,11 @@ static int loongson2_cpufreq_target(struct cpufreq_policy *policy,
+ 	    ((cpu_clock_freq / 1000) *
+ 	     loongson2_clockmod_table[index].driver_data) / 8;
+ 
+-	pr_debug("cpufreq: requested frequency %u Hz\n",
+-			loongson2_clockmod_table[index].frequency * 1000);
 -
--	mutex_lock(&maple_switch_mutex);
+-	freqs.old = loongson2_cpufreq_get(cpu);
+-	freqs.new = freq;
+-	freqs.flags = 0;
 -
--	freqs.old = maple_cpu_freqs[maple_pmode_cur].frequency;
--	freqs.new = maple_cpu_freqs[index].frequency;
--
+-	/* notifiers */
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
--	rc = maple_scom_switch_freq(index);
+-
+ 	set_cpus_allowed_ptr(current, &cpus_allowed);
+ 
+ 	/* setting the cpu frequency */
+ 	clk_set_rate(cpuclk, freq);
+ 
+-	/* notifiers */
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
 -
--	mutex_unlock(&maple_switch_mutex);
+-	pr_debug("cpufreq: set frequency %u kHz\n", freq);
 -
--	return rc;
-+	return maple_scom_switch_freq(index);
+ 	return 0;
  }
  
- static unsigned int maple_cpufreq_get_speed(unsigned int cpu)
 -- 
 1.7.12.rc2.18.g61b472e
 
