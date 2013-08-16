@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab3HPOPF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 10:15:05 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:26232 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab3HPOPC (ORCPT
+	id S1754564Ab3HPOQF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 10:16:05 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:62600 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676Ab3HPOQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 10:15:02 -0400
-Message-ID: <520E33D1.4040005@oracle.com>
-Date: Fri, 16 Aug 2013 08:14:41 -0600
-From: Khalid Aziz <khalid.aziz@oracle.com>
-Organization: Oracle Corp
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 16 Aug 2013 10:16:01 -0400
+Message-ID: <520E341D.4080206@baylibre.com>
+Date: Fri, 16 Aug 2013 16:15:57 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>, akpm@linux-foundation.org
-CC: aarcange@redhat.com, hannes@cmpxchg.org, mgorman@suse.de, riel@redhat.com,
-        minchan@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] Fix aio performance regression for database caused
- by THP
-References: <1376590389.24607.33.camel@concerto> <20130816090425.GA2162@shutemov.name>
-In-Reply-To: <20130816090425.GA2162@shutemov.name>
+To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+CC: akpm@linux-foundation.org, khilman@linaro.org, tony@atomide.com,
+        rob.herring@calxeda.com, mark.rutland@arm.com, a.zummo@towertech.it,
+        rob@landley.net, grant.likely@linaro.org, rtc-linux@googlegroups.com,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com, sudhakar.raj@ti.com
+Subject: Re: [PATCH v3 1/2] rtc: omap: update of_device_id to reflect latest
+ ip revisions
+References: <1376653017-21935-1-git-send-email-gururaja.hebbar@ti.com> <1376653017-21935-2-git-send-email-gururaja.hebbar@ti.com>
+In-Reply-To: <1376653017-21935-2-git-send-email-gururaja.hebbar@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2013 03:04 AM, Kirill A. Shutemov wrote:
-> On Thu, Aug 15, 2013 at 12:13:09PM -0600, Khalid Aziz wrote:
->>
->> -	if (likely(page != page_head && get_page_unless_zero(page_head))) {
->> +	/*
->> +	 * If this is a hugetlbfs page, it can not be split under
->> +	 * us. Simply increment refcount for head page
->> +	 */
->> +	if (PageHuge(page)) {
->> +		page_head = compound_head(page);
->> +		atomic_inc(&page_head->_count);
->> +		got = true;
+Hi Gururaja,
+
+On 16/08/2013 13:36, Hebbar, Gururaja wrote:
+> The syntax of compatible property in DT is to mention the Most specific
+> match to most generic match.
 >
-> Why not just return here and don't increase indentantion level for rest of
-> the function?
+> Since AM335x is the platform with latest IP revision, add it 1st in
+> the device id table.
+
+I don't understand why? The order should not matter at all.
+
+I've tried to follow the thread you had with Mark on the v2, but AFAIK, 
+you've never answered to his latest question.
+
+Moreover, checking the differences between the Davinci and the am3352 
+RTC IP, I would not claim that both are compatible.
+
+Sure you can use the am3352 with the Davinci driver, but you will lose 
+the wakeup functionality without even being notify about that.
+
+For my point of view, compatible mean that the HW will still be fully 
+functional with both versions of the driver, which is not the case here.
+
+am3352 DTS must use the ti,am3352-rtc to have the expected behavior. 
+Using the ti,da830-rtc version will not make the board working as 
+expected. So we cannot claim the compatibility.
+
+> This way, we can add new matching compatible as 1st and maintain old
+> compatible string for backwards compatibility.
 >
+> ex:
+> 	compatible = "ti,am3352-rtc", "ti,da830-rtc";
+>
+> Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
+> CC: mark.rutland@arm.com
+> ---
+> Changes in v3:
+> 	- new patch
+>
+> :100644 100644 dc62cc3... 2f0968c... M	drivers/rtc/rtc-omap.c
+>   drivers/rtc/rtc-omap.c |    6 +++---
+>   1 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+> index dc62cc3..2f0968c 100644
+> --- a/drivers/rtc/rtc-omap.c
+> +++ b/drivers/rtc/rtc-omap.c
+> @@ -330,12 +330,12 @@ static struct platform_device_id omap_rtc_devtype[] = {
+>   MODULE_DEVICE_TABLE(platform, omap_rtc_devtype);
+>
+>   static const struct of_device_id omap_rtc_of_match[] = {
+> -	{	.compatible	= "ti,da830-rtc",
+> -		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_DA830_IDX],
+> -	},
+>   	{	.compatible	= "ti,am3352-rtc",
+>   		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_AM335X_IDX],
+>   	},
+> +	{	.compatible	= "ti,da830-rtc",
+> +		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_DA830_IDX],
+> +	},
+>   	{},
+>   };
+>   MODULE_DEVICE_TABLE(of, omap_rtc_of_match);
 
-Good point.
+Bottom-line, if you get rid of the old compatible entry, you will not 
+have to play some trick with the entries order.
 
-Andrew, I can rework the patch if you would like.
+Regards,
+Benoit
 
-Thanks,
-Khalid
+
