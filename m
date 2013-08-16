@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab3HPQwo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 12:52:44 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:53430 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab3HPQwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 12:52:43 -0400
+	id S1754639Ab3HPQxO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 12:53:14 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753205Ab3HPQxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 12:53:11 -0400
+Message-ID: <520E58F3.4080309@nod.at>
+Date: Fri, 16 Aug 2013 18:53:07 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130815111959.GQ24092@twins.programming.kicks-ass.net>
-References: <1375778203-31343-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1375778203-31343-3-git-send-email-iamjoonsoo.kim@lge.com>
-	<20130815111959.GQ24092@twins.programming.kicks-ass.net>
-Date: Sat, 17 Aug 2013 01:52:43 +0900
-Message-ID: <CAAmzW4Nxt0=teMQ425ps6WAPP6gaVzihn_iUL3r8T4-tP4tXXQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] sched: factor out code to should_we_balance()
-From: JoonSoo Kim <js1304@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH] print_worker_info: Handle pointer with more care
+References: <1376668606-32354-1-git-send-email-richard@nod.at> <20130816161229.GI2505@htj.dyndns.org> <520E500B.5000408@nod.at> <20130816162844.GJ2505@htj.dyndns.org> <520E55A2.9080900@nod.at> <20130816164544.GK2505@htj.dyndns.org>
+In-Reply-To: <20130816164544.GK2505@htj.dyndns.org>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Peter.
+Am 16.08.2013 18:45, schrieb Tejun Heo:
+> Hello,
+> 
+> On Fri, Aug 16, 2013 at 06:38:58PM +0200, Richard Weinberger wrote:
+>>> cc'ing uml people.  Hey, guys, workqueue uses proble_kernel_read() to
+>>> print out workqueue related information during oops because those
+>>> events are completely asynchronous and workqueue states may not be
+>>> consistently accessible.  It seems like uml doesn't implement
+>>> probe_kernel_read() and tries direct derference of incorrect pointers
+>>> leading to its own oops.  Maybe uml should check whether the memory is
+>>> mapped from probe_kernel_read()?
+>>
+>> You are already talking to UML people. ;)
+> 
+> Ooh... :)
+> 
+>> Anyway, I'll investigate into that.
+>> What I see so far is that pwq is NULL after probe_kernel_read().
+> 
+> Yeah, and that should be fine.  &pwq->wq would be just an offset of wq
 
-2013/8/15 Peter Zijlstra <peterz@infradead.org>:
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5120,11 +5120,8 @@ static int load_balance(int this_cpu, st
->
->         schedstat_inc(sd, lb_count[idle]);
->
-> -       if (!should_we_balance(&env)) {
-> -               *should_balance = 0;
-> +       if (!(*should_balance = should_we_balance(&env)))
->                 goto out_balanced;
-> -       } else
-> -               *should_balance = 1;
->
->  redo:
->         group = find_busiest_group(&env);
->
+Yep. Now my brain also parsed the C notation correctly.
+Sorry for the completely wrong patch.
 
-Looks better!
+> from NULL which is an invalid pointer but probe_kernel_read() should
+> be able to handle that and probably just return 0 or -1 (all bits
+> set).  I *think* what's necessary is making probe_kernel_read() use
+> mincore() to fine out whether the requested address is mapped (it
+> should return -EFAULT if not) and try to dereference the address iff
+> it's mapped.
 
-Thanks!
+UML needs a custom probe_kernel_read()? Fine. :)
+
+Thanks,
+//richard
+
