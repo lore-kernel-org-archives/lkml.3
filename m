@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757682Ab3HPWqW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:46:22 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:42534 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757633Ab3HPWqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:46:01 -0400
-Date: Fri, 16 Aug 2013 14:49:05 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        "Eric W . Biederman" <ebiederm@xmission.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>
-Subject: Re: [PATCH 1/8] THP: Use real address for NUMA policy
-Message-ID: <20130816194905.GR26093@sgi.com>
-References: <87wqo050fc.fsf@tassilo.jf.intel.com>
- <1376663644-153546-1-git-send-email-athorlton@sgi.com>
- <1376663644-153546-2-git-send-email-athorlton@sgi.com>
- <520E672C.3080102@intel.com>
- <20130816181728.GQ26093@sgi.com>
- <20130816194635.GB24092@twins.programming.kicks-ass.net>
+	id S1757599Ab3HPWpw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:45:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56556 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753974Ab3HPWpu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:45:50 -0400
+Date: Fri, 16 Aug 2013 13:50:17 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: Re: [PATCH RFC 1/3] spmi: Linux driver framework for SPMI
+Message-ID: <20130816205017.GA2198@kroah.com>
+References: <cover.1376596224.git.joshc@codeaurora.org>
+ <02deef1d90121011ab1df90ad704ef0ee36e2584.1376596224.git.joshc@codeaurora.org>
+ <20130816184614.GA31510@kroah.com>
+ <20130816194714.GH4035@joshc.qualcomm.com>
+ <20130816195849.GA17974@kroah.com>
+ <20130816204055.GK4035@joshc.qualcomm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130816194635.GB24092@twins.programming.kicks-ass.net>
+In-Reply-To: <20130816204055.GK4035@joshc.qualcomm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 09:46:35PM +0200, Peter Zijlstra wrote:
-> On Fri, Aug 16, 2013 at 01:17:28PM -0500, Alex Thorlton wrote:
-> > I actually didn't write these patches (made a few tweaks to get them
-> > running on the latest kernel though).  They were submitted last July by 
-> > Peter Zijlstra. 
+On Fri, Aug 16, 2013 at 03:40:55PM -0500, Josh Cartwright wrote:
+> On Fri, Aug 16, 2013 at 12:58:49PM -0700, Greg Kroah-Hartman wrote:
+> > On Fri, Aug 16, 2013 at 02:47:15PM -0500, Josh Cartwright wrote:
+> > > > > +#ifdef CONFIG_DEBUG_FS
+> > > > 
+> > > > Why?  If debugfs isn't enabled, the functions should just compile away
+> > > > with the debugfs_() calls, so no need to do this type of thing here,
+> > > > right?
+> > > 
+> > > Not sure I follow you, but it may be because this is a bit misleading.
+> > > 
+> > > Currently CONFIG_DEBUG_FS is being extended to also mean "do you want
+> > > the SPMI core to create device entries?".  It would probably make more
+> > > sense to have a CONFIG_SPMI_DEBUG option which is def_bool DEBUG_FS, as
+> > > other busses have.
+> > > 
+> > > The #ifdef here would then be #ifdef CONFIG_SPMI_DEBUG, as well as in
+> > > the Makefile:
+> > > 
+> > >   spmi-core-$(CONFIG_SPMI_DEBUG) += spmi-dbgfs.o
+> > 
+> > If debugfs is enabled why wouldn't you want debugfs entries for your
+> > devices?  Don't assume a user is going to be able to rebuild their
+> > kernel just for debugging stuff (hint, they usually aren't), so having
+> > these present, if they don't cause any performance issues, is usually
+> > best to always have around.
 > 
-> By Kirill, I don't think I've ever touched them.
+> Okay, that makes sense.
 > 
-> > The messages from the original submission can be found here:
-> > https://lkml.org/lkml/2012/7/20/165
+> So, backing up a step, you're original comment was regarding the
+> CONFIG_DEBUG_FS conditional in spmi-dbgfs.h:
 > 
-> As can be seen by this posting you reference ;-)
+> On Fri, Aug 16, 2013 at 11:46:14AM -0700, Greg Kroah-Hartman wrote:
+> > > --- /dev/null
+> > > +++ b/drivers/spmi/spmi-dbgfs.h
+> > > @@ -0,0 +1,37 @@
+> > > +/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+> > > + *
+> > > + * This program is free software; you can redistribute it and/or modify
+> > > + * it under the terms of the GNU General Public License version 2 and
+> > > + * only version 2 as published by the Free Software Foundation.
+> > > + *
+> > > + * This program is distributed in the hope that it will be useful,
+> > > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > > + * GNU General Public License for more details.
+> > > + */
+> > > +#ifndef _SPMI_DBGFS_H
+> > > +#define _SPMI_DBGFS_H
+> > > +
+> > > +#include <linux/spmi.h>
+> > > +#include <linux/debugfs.h>
+> > > +
+> > > +#ifdef CONFIG_DEBUG_FS
+> > 
+> > Why?  If debugfs isn't enabled, the functions should just compile away
+> > with the debugfs_() calls, so no need to do this type of thing here,
+> > right?
+> 
+> The reason why this is done is because the spmi debugfs support code is
+> is only built-in when CONFIG_DEBUG_FS is set.
+> 
+> Would you rather it always be built-in (well, whenever SPMI support is
+> included), and rely on the debugfs_* shims to handle the
+> !CONFIG_DEBUG_FS case?
 
-Sorry about that!  Not sure where I got the idea that you wrote them,
-must've gotten some names mixed up somewhere.
+Yes, that makes the logic in your driver simpler, and easier to review.
+The compiler will just compile away almost all of the logic if debugfs
+isn't present, so there shouldn't be any big size difference.
+
+thanks,
+
+greg k-h
