@@ -1,71 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab3HPWlv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:41:51 -0400
-Received: from winston.telenet-ops.be ([195.130.137.75]:43180 "EHLO
-	winston.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754991Ab3HPWlr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:41:47 -0400
-X-Greylist: delayed 1054 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Aug 2013 18:41:46 EDT
-Date: Fri, 16 Aug 2013 23:55:38 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [git pull] m68k updates for 3.11-rc6
-Message-ID: <alpine.DEB.2.02.1308162324580.23373@ayla.of.borg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757438Ab3HPWl7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:41:59 -0400
+Received: from fieldses.org ([174.143.236.118]:33038 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752356Ab3HPWlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:41:55 -0400
+Date: Fri, 16 Aug 2013 18:02:04 -0400
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+Message-ID: <20130816220204.GC21539@fieldses.org>
+References: <20130814230648.GD22316@thunk.org>
+ <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
+ <20130815011101.GA3572@thunk.org>
+ <20130815021028.GM6023@dastard>
+ <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
+ <20130815060149.GP6023@dastard>
+ <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
+ <20130815071141.GQ6023@dastard>
+ <CALCETrWyKSMDkgSbg20iWBRfHk0-oU+6A3X9xAEMg3vO=G_gDg@mail.gmail.com>
+ <20130815213725.GT6023@dastard>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130815213725.GT6023@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+On Fri, Aug 16, 2013 at 07:37:25AM +1000, Dave Chinner wrote:
+> On Thu, Aug 15, 2013 at 08:17:18AM -0700, Andy Lutomirski wrote:
+> > On Thu, Aug 15, 2013 at 12:11 AM, Dave Chinner <david@fromorbit.com> wrote:
+> > > On Wed, Aug 14, 2013 at 11:14:37PM -0700, Andy Lutomirski wrote:
+> > >> On Wed, Aug 14, 2013 at 11:01 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > >> > On Wed, Aug 14, 2013 at 09:32:13PM -0700, Andy Lutomirski wrote:
+> > >> >> On Wed, Aug 14, 2013 at 7:10 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > >> >> > On Wed, Aug 14, 2013 at 09:11:01PM -0400, Theodore Ts'o wrote:
+> > >> >> >> On Wed, Aug 14, 2013 at 04:38:12PM -0700, Andy Lutomirski wrote:
+> > >> >> >> > > It would be better to write zeros to it, so we aren't measuring the
+> > >> >> >> > > cost of the unwritten->written conversion.
+> > >> >> >> >
+> > >> >> >> > At the risk of beating a dead horse, how hard would it be to defer
+> > >> >> >> > this part until writeback?
+> > >> >> >>
+> > >> >> >> Part of the work has to be done at write time because we need to
+> > >> >> >> update allocation statistics (i.e., so that we don't have ENOSPC
+> > >> >> >> problems).  The unwritten->written conversion does happen at writeback
+> > >> >> >> (as does the actual block allocation if we are doing delayed
+> > >> >> >> allocation).
+> > >> >> >>
+> > >> >> >> The point is that if the goal is to measure page fault scalability, we
+> > >> >> >> shouldn't have this other stuff happening as the same time as the page
+> > >> >> >> fault workload.
+> > >> >> >
+> > >> >> > Sure, but the real problem is not the block mapping or allocation
+> > >> >> > path - even if the test is changed to take that out of the picture,
+> > >> >> > we still have timestamp updates being done on every single page
+> > >> >> > fault. ext4, XFS and btrfs all do transactional timestamp updates
+> > >> >> > and have nanosecond granularity, so every page fault is resulting in
+> > >> >> > a transaction to update the timestamp of the file being modified.
+> > >> >>
+> > >> >> I have (unmergeable) patches to fix this:
+> > >> >>
+> > >> >> http://comments.gmane.org/gmane.linux.kernel.mm/92476
+> > >> >
+> > >> > The big problem with this approach is that not doing the
+> > >> > timestamp update on page faults is going to break the inode change
+> > >> > version counting because for ext4, btrfs and XFS it takes a
+> > >> > transaction to bump that counter. NFS needs to know the moment a
+> > >> > file is changed in memory, not when it is written to disk. Also, NFS
+> > >> > requires the change to the counter to be persistent over server
+> > >> > failures, so it needs to be changed as part of a transaction....
+> > >>
+> > >> I've been running a kernel that has the file_update_time call
+> > >> commented out for over a year now, and the only problem I've seen is
+> > >> that the timestamp doesn't get updated :)
+> > >>
+> > 
+> > [...]
+> > 
+> > > If a filesystem is providing an i_version value, then NFS uses it to
+> > > determine whether client side caches are still consistent with the
+> > > server state. If the filesystem does not provide an i_version, then
+> > > NFS falls back to checking c/mtime for changes. If files on the
+> > > server are being modified without either the tiemstamps or i_version
+> > > changing, then it's likely that there will be problems with client
+> > > side cache consistency....
+> > 
+> > I didn't think of that at all.
+> > 
+> > If userspace does:
+> > 
+> > ptr = mmap(...);
+> > ptr[0] = 1;
+> > sleep(1);
+> > ptr[0] = 2;
+> > sleep(1);
+> > munmap();
+> > 
+> > Then current kernels will mark the inode changed on (only) the ptr[0]
+> > = 1 line.  My patches will instead mark the inode changed when munmap
+> > is called (or after ptr[0] = 2 if writepages gets called for any
+> > reason).
+> > 
+> > I'm not sure which is better.  POSIX actually requires my behavior
+> > (which is most irrelevant).
+> 
+> Not by my reading of it. Posix states that c/mtime needs to be
+> updated between the first access and the next msync() call. We
+> update mtime on the first access, and so therefore we conform to the
+> posix requirement....
+> 
+> > My behavior also means that, if an NFS
+> > client reads and caches the file between the two writes, then it will
+> > eventually find out that the data is stale.
+> 
+> "eventually" is very different behaviour to the current behaviour.
+> 
+> My understanding is that NFS v4 delegations require the underlying
+> filesystem to bump the version count on *any* modification made to
+> the file so that delegations can be recalled appropriately.
 
-The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
+Delegations at least shouldn't be an issue here: they're recalled on the
+open.
 
-  Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
+--b.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-3.11
-
-for you to fetch changes up to ea077b1b96e073eac5c3c5590529e964767fc5f7:
-
-  m68k: Truncate base in do_div() (2013-08-14 11:46:30 +0200)
-
-----------------------------------------------------------------
-Andreas Schwab (1):
-      m68k: Truncate base in do_div()
-
-Geert Uytterhoeven (1):
-      m68k/atari: ARAnyM - Fix NatFeat module support
-
-Summary:
-
-These are two critical fixes, needed by distro kernels, and thus also
-destined for stable:
-  - The do_div() commit fixes a crash in mounting btrfs volumes, which was
-    a regression from 3.2,
-  - The ARAnyM fix allows to have NatFeat drivers as loadable modules,
-    which is needed for initrds.
-
-Thanks for pulling!
-
- arch/m68k/emu/natfeat.c       |   23 +++++++++++++++++++----
- arch/m68k/include/asm/div64.h |    9 +++++----
- 2 files changed, 24 insertions(+), 8 deletions(-)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+> So not
+> informing the filesystem that the file data has been changed is
+> going to cause problems.
