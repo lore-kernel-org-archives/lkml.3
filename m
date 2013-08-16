@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab3HPQJj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 12:09:39 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39566 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752912Ab3HPQJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 12:09:26 -0400
-Message-ID: <520E4E92.7070902@ti.com>
-Date: Fri, 16 Aug 2013 21:38:50 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753588Ab3HPQMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 12:12:34 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:57023 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575Ab3HPQMd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 12:12:33 -0400
+Date: Fri, 16 Aug 2013 12:12:29 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] print_worker_info: Handle pointer with more care
+Message-ID: <20130816161229.GI2505@htj.dyndns.org>
+References: <1376668606-32354-1-git-send-email-richard@nod.at>
 MIME-Version: 1.0
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH v5 1/2] ARM: davinci: da850: add DT node for ethernet
-References: <1376662262-21795-1-git-send-email-prabhakar.csengg@gmail.com> <1376662262-21795-2-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1376662262-21795-2-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376668606-32354-1-git-send-email-richard@nod.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/16/2013 7:41 PM, Lad, Prabhakar wrote:
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On Fri, Aug 16, 2013 at 05:56:46PM +0200, Richard Weinberger wrote:
+> The function has a nice comment:
+> /*
+>  * This function is called without any synchronization and @task
+>  * could be in any state.  Be careful with dereferences.
+>  */
 > 
-> Add ethernet device tree node information and pinmux for mii to da850 by
-> providing interrupt details and local mac address.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  arch/arm/boot/dts/da850-evm.dts |    5 +++++
->  arch/arm/boot/dts/da850.dtsi    |   30 ++++++++++++++++++++++++++++++
->  2 files changed, 35 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
-> index 1f8cfdd..44f3fbc 100644
-> --- a/arch/arm/boot/dts/da850-evm.dts
-> +++ b/arch/arm/boot/dts/da850-evm.dts
-> @@ -96,6 +96,11 @@
->  			pinctrl-0 = <&mdio_pins>;
->  			bus_freq = <2200000>;
->  		};
-> +		ethernet: emac@1e20000 {
+> But a few lines later it blindly dereferences a few pointers.
+> E.g. It can happen that the worker function is already done,
+> then worker->current_pwq is NULL.
+...
+>  	probe_kernel_read(&fn, &worker->current_func, sizeof(fn));
+>  	probe_kernel_read(&pwq, &worker->current_pwq, sizeof(pwq));
+> +	if (!pwq)
+> +		goto print;
+> +
+>  	probe_kernel_read(&wq, &pwq->wq, sizeof(wq));
+> +	if (!wq)
+> +		goto print;
+> +
 
-You misunderstood what Sergei said. This should be:
+But none of the above are dereferences.  &ptr->field is offset
+calculation, not a dereference.
 
-	eth0: ethernet@1e20000 {
+Thanks.
 
-Thanks,
-Sekhar
+-- 
+tejun
