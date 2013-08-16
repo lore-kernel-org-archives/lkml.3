@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3HPJpB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 05:45:01 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:48202 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026Ab3HPJpA (ORCPT
+	id S1755295Ab3HPJqB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 05:46:01 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:35734 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754904Ab3HPJp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 05:45:00 -0400
+	Fri, 16 Aug 2013 05:45:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <520DEF05.9030803@roeck-us.net>
-References: <520C9A39.3030808@roeck-us.net>
-	<CAMo8BfKyqZYMkh96wyZSpYUpXwqFQZkco=XgtjUrNG-jSzW5pA@mail.gmail.com>
-	<20130816054823.GB28445@thor.bakeyournoodle.com>
-	<CAMo8Bf+veq_DU7-hnB0yySy6YWpwU2TYx3U9e89c_m8Mv9Cv5w@mail.gmail.com>
-	<520DD9CA.90305@roeck-us.net>
-	<CAMo8BfLvVk+2CyQD28otU265J4rvbt0Eg11Vqr4u4zjKjrTanw@mail.gmail.com>
-	<520DEF05.9030803@roeck-us.net>
-Date: Fri, 16 Aug 2013 13:45:00 +0400
-Message-ID: <CAMo8BfKWFGxr6a48tFqGCourOcWOTO9rmCHy3Q05jR_QEuq=Cg@mail.gmail.com>
-Subject: Re: Linux kernel cross-compilers
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1376643218.59144.YahooMailNeo@web160103.mail.bf1.yahoo.com>
+References: <1376643218.59144.YahooMailNeo@web160103.mail.bf1.yahoo.com>
+Date: Fri, 16 Aug 2013 18:45:56 +0900
+Message-ID: <CADoNuNfiX7bNKB8eRjeiA+9vBnExgDsCjzUJv4ji7xUw1g35dw@mail.gmail.com>
+Subject: Re: usb: misc: usb3503: connect and intn mismatch in OF vs variable assignments
+From: Dongjin Kim <tobetter@gmail.com>
+To: Alban Browaeys <prahal@yahoo.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Guenter,
->> can you share a complete build log with V=1?
->>
->
-> http://roeck-us.net/linux/logs/make.xtensa.log.bad
-> http://roeck-us.net/linux/logs/make.xtensa.log.ok
->
-> Key difference: the failing command in the bad case is
->         xtensa-linux-objcopy -O elf32-xtensa-le
-> and in the good case
->         xtensa-linux-objcopy -O elf32-xtensa-be
->
-> Same compiler (4.6.3 from kernel.org), same configuration file, same command
-> line.
-> Configuration file is generated from defconfig, and the resulting .config
-> file
-> is the same in both cases.
->
-> If I execute make and expicitly set BIG_ENDIAN=1 on the failing system as
-> parameter to it,
-> it works fine. If I set BIG_ENDIAN=0 on the passing system, it fails.
->
-> I am puzzled. Guess there must be something different, but I have no idea
-> what it might be.
+Hi,
 
-What is the output of
+The patch is submitted by Mark Brown a week ago, and might be queued already.
 
-echo -e __XTENSA_EB__ | xtensa-linux-gcc -E -
+[1] http://www.spinics.net/lists/linux-usb/msg91410.html
 
-on the failing system?
+Thanks,
+Dongjin.
 
--- 
-Thanks.
--- Max
+On Fri, Aug 16, 2013 at 5:53 PM, Alban Browaeys <prahal@yahoo.com> wrote:
+> hub->gpio_intn  = of_get_named_gpio(np, "connect-gpios", 0);
+> and
+> hub->gpio_connect = of_get_named_gpio(np, "intn-gpios", 0);
+>
+> I guess they should be switched , that is connect-gpios bound to hub->gpio_connect
+> and intn-gpios to hub->gpio_int.
+>
+> Sorry not to provides a patch. I thought that this issue might ends up with dts relying
+> on this broken behaviour if not pointed early ...
+> Either way if not fixed soon , I will have completed my branch cleanup (I also have other patches
+> to this file ie drivers/usb/misc/usb3503.c).
+>
+> Best regards
+> Alban
+>
