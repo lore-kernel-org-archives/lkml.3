@@ -1,74 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab3HPHFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 03:05:09 -0400
-Received: from sauhun.de ([89.238.76.85]:55753 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752212Ab3HPHFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 03:05:07 -0400
-Date: Fri, 16 Aug 2013 09:05:00 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Kukjin Kim <kgene.kim@samsung.com>, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, taeggyun.ko@samsung.com, balbi@ti.com,
-        thomas.abraham@linaro.org
-Subject: Re: [PATCH v10] i2c: exynos5: add High Speed I2C controller driver
-Message-ID: <20130816070500.GA3046@katana>
-References: <1354021236-28596-2-git-send-email-ch.naveen@samsung.com>
- <1371638905-30633-1-git-send-email-ch.naveen@samsung.com>
- <3925484.kHD24rQYyy@amdc1227>
- <20130815131226.GI17155@katana>
- <CAHfPSqBnj2OTHdbnW3SCRf7SL1maMsWau1+9DWFLYRBM+1HOJQ@mail.gmail.com>
+	id S1753004Ab3HPHFf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 03:05:35 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:63021 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab3HPHFd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 03:05:33 -0400
+Message-ID: <520DCF2C.1020903@huawei.com>
+Date: Fri, 16 Aug 2013 15:05:16 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
-Content-Disposition: inline
-In-Reply-To: <CAHfPSqBnj2OTHdbnW3SCRf7SL1maMsWau1+9DWFLYRBM+1HOJQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH] cgroup: change cgroup_from_id() to css_from_id()
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Now we want cgroup core to always provide the css to use to the
+subsystems, so change this API to css_from_id().
 
---BOKacYhQ+x31HxR3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Uninline css_from_id(), because it's getting bigger and cgroup_css()
+has been unexported.
 
+While at it, remove the #ifdef.
 
-> Once, we fix this problem. i planned to rebase and submit.
->=20
-> Is it okey with you?
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ include/linux/cgroup.h | 20 ++------------------
+ kernel/cgroup.c        | 22 ++++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 18 deletions(-)
 
-Perfectly fine. Thanks for the heads up.
-
-
---BOKacYhQ+x31HxR3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSDc8cAAoJEBQN5MwUoCm25cIP/22yNBOO1nSiKedOZMw4S5EI
-hsywrjpoLQXfJXswRER+c1RSBya7S9JVahPxlJ0dIJXdTi+WYLaVBsZEzLsup6zh
-tJIydVzskt3aHozFIr77byir3xEtilZBnJ2RsUnjp+hOJteAb00x4CXm13fA3J6e
-StzvjnZ+C14kxbUbv7inuj2ARg6BON3FV3YNHKBJx1y4vPCfvAmBnL1L0c9UFTvi
-U5+Vg1LRqdhPh3V549yrS5tP4Lv8NdSYpVs8fKHuDvyKLG49D56lw+Jl51lkkeKb
-v6I3zB++1DL/zp/Bvx6f6HkWduytqbHU38sDGDxcmiY5C6DlGees5590vkkBP1Qv
-veM53ULgiDjWDOPBGXZWXf9JTzTSmFVUQVL9ajNGyP8b3JCCuBj4pMXTtoZkFY7e
-hCzoD5hqOa5wl60qJYhi4bQ/uJ8uBjbbOjYpcBkshEnsNlYMTDJvULLORU5lMywh
-ukOLwOMH7fZC0GjTBKaboz87JNX+iE2YZ9POzVWlDHwcDWXMVrMRTo+uQIfT1lnd
-Ql0ReWOAvfqm5HMcoKVHhVn+tH5uqipJVLeScDBIpwIhXOK3SzkWKYBsdPdC5RuA
-spD7ez64NgxHpN7sWlxExygec1q06CTf+tvy6TVMxLQrJR8OCWPmzwrbXau+kDqh
-5YgQuxeg+avitKCNkpnh
-=Oa2x
------END PGP SIGNATURE-----
-
---BOKacYhQ+x31HxR3--
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 11a6419..50186f0 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -742,27 +742,11 @@ static inline struct cgroup *task_cgroup(struct task_struct *task,
+ 	return task_css(task, subsys_id)->cgroup;
+ }
+ 
+-/**
+- * cgroup_from_id - lookup cgroup by id
+- * @ss: cgroup subsys to be looked into
+- * @id: the cgroup id
+- *
+- * Returns the cgroup if there's valid one with @id, otherwise returns NULL.
+- * Should be called under rcu_read_lock().
+- */
+-static inline struct cgroup *cgroup_from_id(struct cgroup_subsys *ss, int id)
+-{
+-#ifdef CONFIG_PROVE_RCU
+-	rcu_lockdep_assert(rcu_read_lock_held() ||
+-			   lockdep_is_held(&cgroup_mutex),
+-			   "cgroup_from_id() needs proper protection");
+-#endif
+-	return idr_find(&ss->root->cgroup_idr, id);
+-}
+-
+ struct cgroup_subsys_state *css_next_child(struct cgroup_subsys_state *pos,
+ 					   struct cgroup_subsys_state *parent);
+ 
++struct cgroup_subsys_state *css_from_id(struct cgroup_subsys *ss, int id);
++
+ /**
+  * css_for_each_child - iterate through children of a css
+  * @pos: the css * to use as the loop cursor
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 99785d6..6ec2377 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -5710,6 +5710,28 @@ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id)
+ 	return css ? css : ERR_PTR(-ENOENT);
+ }
+ 
++/**
++ * css_from_id - lookup css by id
++ * @ss: cgroup subsys to be looked into
++ * @id: the cgroup id
++ *
++ * Returns the css if there's valid one with @id, otherwise returns NULL.
++ * Should be called under rcu_read_lock().
++ */
++struct cgroup_subsys_state *css_from_id(struct cgroup_subsys *ss, int id)
++{
++	struct cgroup *cgrp;
++
++	rcu_lockdep_assert(rcu_read_lock_held() ||
++			   lockdep_is_held(&cgroup_mutex),
++			   "css_from_id() needs proper protection");
++
++	cgrp = idr_find(&ss->root->cgroup_idr, id);
++	if (cgrp)
++		return cgroup_css(cgrp, ss->subsys_id);
++	return NULL;
++}
++
+ #ifdef CONFIG_CGROUP_DEBUG
+ static struct cgroup_subsys_state *
+ debug_css_alloc(struct cgroup_subsys_state *parent_css)
+-- 
+1.8.0.2
