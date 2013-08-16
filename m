@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab3HPWjP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:39:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51597 "EHLO
+	id S1756503Ab3HPWjV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:39:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51611 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756399Ab3HPWjK (ORCPT
+	with ESMTP id S1756419Ab3HPWjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:10 -0400
+	Fri, 16 Aug 2013 18:39:17 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Sandeen <sandeen@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Amit Shah <amit.shah@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 087/133] ext4: destroy ext4_es_cachep on module unload
-Date: Fri, 16 Aug 2013 15:33:49 -0700
-Message-Id: <1376692475-28413-88-git-send-email-kamal@canonical.com>
+Subject: [PATCH 081/133] virtio/console: Quit from splice_write if pipe->nrbufs is 0
+Date: Fri, 16 Aug 2013 15:33:43 -0700
+Message-Id: <1376692475-28413-82-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -27,33 +30,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 
-commit dd12ed144e9797094c04736f97aa27d5fe401476 upstream.
+commit 68c034fefe20eaf7d5569aae84584b07987ce50a upstream.
 
-Without this, module can't be reloaded.
+Quit from splice_write if pipe->nrbufs is 0 for avoiding oops in virtio-serial.
 
-[  500.521980] kmem_cache_sanity_check (ext4_extent_status): Cache name already exists.
+When an application was doing splice from a kernel buffer to virtio-serial on
+a guest, the application received signal(SIGINT). This situation will normally
+happen, but the kernel executed a kernel panic by oops as follows:
 
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+ BUG: unable to handle kernel paging request at ffff882071c8ef28
+ IP: [<ffffffff812de48f>] sg_init_table+0x2f/0x50
+ PGD 1fac067 PUD 0
+ Oops: 0000 [#1] SMP
+ Modules linked in: lockd sunrpc bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd microcode virtio_balloon virtio_net pcspkr soundcore i2c_piix4 i2c_core uinput floppy
+ CPU: 1 PID: 908 Comm: trace-cmd Not tainted 3.10.0+ #49
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+ task: ffff880071c64650 ti: ffff88007bf24000 task.ti: ffff88007bf24000
+ RIP: 0010:[<ffffffff812de48f>]  [<ffffffff812de48f>] sg_init_table+0x2f/0x50
+ RSP: 0018:ffff88007bf25dd8  EFLAGS: 00010286
+ RAX: 0000001fffffffe0 RBX: ffff882071c8ef28 RCX: 0000000000000000
+ RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880071c8ef48
+ RBP: ffff88007bf25de8 R08: ffff88007fd15d40 R09: ffff880071c8ef48
+ R10: ffffea0001c71040 R11: ffffffff8139c555 R12: 0000000000000000
+ R13: ffff88007506a3c0 R14: ffff88007c862500 R15: ffff880071c8ef00
+ FS:  00007f0a3646c740(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: ffff882071c8ef28 CR3: 000000007acbb000 CR4: 00000000000006e0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Stack:
+  ffff880071c8ef48 ffff88007bf25e20 ffff88007bf25e88 ffffffff8139d6fa
+  ffff88007bf25e28 ffffffff8127a3f4 0000000000000000 0000000000000000
+  ffff880071c8ef48 0000100000000000 0000000000000003 ffff88007bf25e08
+ Call Trace:
+  [<ffffffff8139d6fa>] port_fops_splice_write+0xaa/0x130
+  [<ffffffff8127a3f4>] ? selinux_file_permission+0xc4/0x120
+  [<ffffffff8139d650>] ? wait_port_writable+0x1b0/0x1b0
+  [<ffffffff811a6fe0>] do_splice_from+0xa0/0x110
+  [<ffffffff811a951f>] SyS_splice+0x5ff/0x6b0
+  [<ffffffff8161f8c2>] system_call_fastpath+0x16/0x1b
+ Code: c1 e2 05 48 89 e5 48 83 ec 10 4c 89 65 f8 41 89 f4 31 f6 48 89 5d f0 48 89 fb e8 8d ce ff ff 41 8d 44 24 ff 48 c1 e0 05 48 01 c3 <48> 8b 03 48 83 e0 fe 48 83 c8 02 48 89 03 48 8b 5d f0 4c 8b 65
+ RIP  [<ffffffff812de48f>] sg_init_table+0x2f/0x50
+  RSP <ffff88007bf25dd8>
+ CR2: ffff882071c8ef28
+ ---[ end trace 86323505eb42ea8f ]---
+
+It seems to induce pagefault in sg_init_tabel() when pipe->nrbufs is equal to
+zero. This may happen in a following situation:
+
+(1) The application normally does splice(read) from a kernel buffer, then does
+    splice(write) to virtio-serial.
+(2) The application receives SIGINT when is doing splice(read), so splice(read)
+    is failed by EINTR. However, the application does not finish the operation.
+(3) The application tries to do splice(write) without pipe->nrbufs.
+(4) The virtio-console driver tries to touch scatterlist structure sgl in
+    sg_init_table(), but the region is out of bound.
+
+To avoid the case, a kernel should check whether pipe->nrbufs is empty or not
+when splice_write is executed in the virtio-console driver.
+
+V3: Add Reviewed-by lines and stable@ line in sign-off area.
+
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Reviewed-by: Amit Shah <amit.shah@redhat.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/super.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/char/virtio_console.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index f036930..d757050 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -5370,6 +5370,7 @@ static void __exit ext4_exit_fs(void)
- 	kset_unregister(ext4_kset);
- 	ext4_exit_system_zone();
- 	ext4_exit_pageio();
-+	ext4_exit_es();
- }
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index a4b7aa0..0dfd175 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -938,6 +938,13 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
+ 	if (is_rproc_serial(port->out_vq->vdev))
+ 		return -EINVAL;
  
- MODULE_AUTHOR("Remy Card, Stephen Tweedie, Andrew Morton, Andreas Dilger, Theodore Ts'o and others");
++	/*
++	 * pipe->nrbufs == 0 means there are no data to transfer,
++	 * so this returns just 0 for no data.
++	 */
++	if (!pipe->nrbufs)
++		return 0;
++
+ 	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
+ 	if (ret < 0)
+ 		return ret;
 -- 
 1.8.1.2
 
