@@ -1,87 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab3HPQc2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 12:32:28 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:36637 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab3HPQcY (ORCPT
+	id S1754123Ab3HPQdQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 12:33:16 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:55501 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753598Ab3HPQdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 12:32:24 -0400
-Date: Fri, 16 Aug 2013 18:32:19 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-Message-ID: <20130816163217.GF24210@somewhere>
-References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com>
- <1376667753-29014-3-git-send-email-fweisbec@gmail.com>
- <20130816160201.GA31682@redhat.com>
+	Fri, 16 Aug 2013 12:33:12 -0400
+Message-ID: <520E5444.1000700@baylibre.com>
+Date: Fri, 16 Aug 2013 18:33:08 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130816160201.GA31682@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sekhar Nori <nsekhar@ti.com>
+CC: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>, mark.rutland@arm.com,
+        a.zummo@towertech.it, davinci-linux-open-source@linux.davincidsp.com,
+        khilman@linaro.org, rtc-linux@googlegroups.com,
+        devicetree@vger.kernel.org, tony@atomide.com,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        sudhakar.raj@ti.com, rob@landley.net, grant.likely@linaro.org,
+        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 1/2] rtc: omap: update of_device_id to reflect latest
+ ip revisions
+References: <1376653017-21935-1-git-send-email-gururaja.hebbar@ti.com> <1376653017-21935-2-git-send-email-gururaja.hebbar@ti.com> <520E341D.4080206@baylibre.com> <520E482A.1070504@ti.com>
+In-Reply-To: <520E482A.1070504@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 06:02:01PM +0200, Oleg Nesterov wrote:
-> Thanks Frederic!
-> 
-> I'll try to read this series carefully later. Not that I think
-> I can help, you certainly understand this much better.
-> 
-> Just one question below,
-> 
-> On 08/16, Frederic Weisbecker wrote:
-> >
-> > @@ -499,12 +509,15 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
-> >  	if (last_update_time)
-> >  		*last_update_time = ktime_to_us(now);
-> >  
-> > -	if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
-> > -		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-> > -		iowait = ktime_add(ts->iowait_sleeptime, delta);
-> > -	} else {
-> > -		iowait = ts->iowait_sleeptime;
-> > -	}
-> > +	do {
-> > +		seq = read_seqcount_begin(&ts->sleeptime_seq);
-> > +		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
-> > +			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-> > +			iowait = ktime_add(ts->iowait_sleeptime, delta);
-> > +		} else {
-> > +			iowait = ts->iowait_sleeptime;
-> > +		}
-> > +	} while (read_seqcount_retry(&ts->sleeptime_seq, seq));
-> 
-> Unless I missread this patch, this is still racy a bit.
-> 
-> Suppose it is called on CPU_0 and cpu == 1. Suppose that
-> ts->idle_active == T and nr_iowait_cpu(cpu) == 1.
-> 
-> So we return iowait_sleeptime + delta.
-> 
-> Suppose that we call get_cpu_iowait_time_us() again. By this time
-> the task which incremented ->nr_iowait can be woken up on another
-> CPU, and it can do atomic_dec(rq->nr_iowait). So the next time
-> we return iowait_sleeptime, and this is not monotonic again.
-> 
-> No?
+Hi Sekhar,
 
-OTOH, io_schedule() does:
+On 16/08/2013 17:41, Sekhar Nori wrote:
+> 
+> On 8/16/2013 7:45 PM, Benoit Cousson wrote:
+>> Hi Gururaja,
+>>
+>> On 16/08/2013 13:36, Hebbar, Gururaja wrote:
+>>> The syntax of compatible property in DT is to mention the Most specific
+>>> match to most generic match.
+>>>
+>>> Since AM335x is the platform with latest IP revision, add it 1st in
+>>> the device id table.
+>>
+>> I don't understand why? The order should not matter at all.
+> 
+> Yes, it should not. We are trying to work around a bug in the kernel
+> where the compatible order is not honored (instead the order in
+> of_match[] array matters). There were patches being discussed to fix this.
+> 
+>>
+>> I've tried to follow the thread you had with Mark on the v2, but AFAIK,
+>> you've never answered to his latest question.
+>>
+>> Moreover, checking the differences between the Davinci and the am3352
+>> RTC IP, I would not claim that both are compatible.
+>>
+>> Sure you can use the am3352 with the Davinci driver, but you will lose
+>> the wakeup functionality without even being notify about that.
+> 
+> When the kernel is fixed for the bug pointed out above, this should not
+> happen with properly defined compatible property.
+> 
+>>
+>> For my point of view, compatible mean that the HW will still be fully
+>> functional with both versions of the driver, which is not the case here.
+> 
+> I do not think that's the interpretation of compatible. Its goes from
+> most specific to most generic per the ePAPR spec. That in itself says
+> that 100% functionality is not expected if you don't find a match for
+> the more specific property.
 
-      atomic_inc(&rq->nr_iowait);
-      schedule();
-      atomic_dec(&rq->nr_iowait);
+Well, to be honest I checked as well the official documentation, and this is far from being clear:
 
-How do we handle that when the task is migrated after it goes to sleep? I don't
-see the nr_iowait is decreased from the src CPU and increased on the dest CPU.
+page 21 of the ePAPR:
 
-I don't either see that iowait tasks can't be migrated.
+"
+Property: compatible
+Value type: <stringlist>
+
+Description:
+ The compatible property value consists of one or more strings that define the specific 
+ programming model for the device. This list of strings should be used by a client program for
+ device driver selection. The property value consists of a concatenated list of null terminated
+ strings, from most specific to most general. They allow a device to express its compatibility
+ with a family of similar devices, potentially allowing a single device driver to match against
+ several devices.
+ 
+ The recommended format is “manufacturer,model”, where manufacturer is a
+ string describing the name of the manufacturer (such as a stock ticker symbol), and model
+ specifies the model number.
+
+Example:
+ compatible = “fsl,mpc8641-uart”, “ns16550";
+ In this example, an operating system would first try to locate a device driver that supported
+ fsl,mpc8641-uart. If a driver was not found, it would then try to locate a driver that supported
+ the more general ns16550 device type.
+"
+
+In this example, the generic vs specific is just about the driver. You could have one driver that manage 10 different UARTs or a specific one that manage only your HW. 
+
+There is no assumption about the lost of functionality by using the generic version of the driver. How the user is supposed to know the amount of functionality he will lose, and if this is acceptable to him.
+I'd rather have an error at boot saying that the driver is not compatible with the HW and thus I will have to upgrade the kernel, than booting a kernel that will not work as expected because some functionality are missing for that specific HW.
+
+Claiming that a piece of HW is compatible with an other one that is just a subset in term of functionality is wrong. You can claim that the ti,da830-rtc is compatible with the ti,am3352-rtc driver, but not the opposite.
+
+>> am3352 DTS must use the ti,am3352-rtc to have the expected behavior.
+> 
+> Yes, that's what patch 2/2 does.
+> 
+>> Using the ti,da830-rtc version will not make the board working as
+>> expected. So we cannot claim the compatibility.
+> 
+> Ideally, the DT file was *always* written as
+> 
+> 	compatible = "ti,am3352-rtc", "ti,da830-rtc";
+> 
+> even when there was no kernel support for AM3352 RTC.
+
+You could do that only for the davinci DTS, because it is a subset of the am3352 but you cannot do that for the am3352 as explained before.
+
+> That way, there is no need to update the .dts[i] file. As kernel gains
+> functionality, more features (like rtc wake) is available to users.
+
+Well, you cannot anticipate the HW evolution anyway and you did not know when Davinci DTS was done that an am3352 will exist in the future and reuse the same IP.
+Moreover DT is a ABI, so extending it according to the HW feature evolution is absolutely normal.
+
+Every SoC that are using a RTC with the same programing model than the da830 can claim the compatibility. A SoC that is using a newer version of the IP with an extended programming model cannot claim that.
+
+> Otherwise they get plain RTC functionality - but at least they get
+> something instead of no RTC.
+
+Because you assume that this feature is not important and thus you can use the plain RTC, but what if someone is buying that HW because of this new feature. Without that feature his system will just not work properly.
+Saying that this is compatible whereas you lost functionality is lying to the customer for my point of view.
+
+Regards,
+Benoit
+
