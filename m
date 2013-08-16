@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab3HQAOY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:14:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51616 "EHLO
+	id S1756306Ab3HQAO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:14:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51602 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756488Ab3HPWjU (ORCPT
+	with ESMTP id S1755012Ab3HPWjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:20 -0400
+	Fri, 16 Aug 2013 18:39:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 092/133] virtio: console: return -ENODEV on all read operations after unplug
-Date: Fri, 16 Aug 2013 15:33:54 -0700
-Message-Id: <1376692475-28413-93-git-send-email-kamal@canonical.com>
+Subject: [PATCH 088/133] virtio: console: fix race with port unplug and open/close
+Date: Fri, 16 Aug 2013 15:33:50 -0700
+Message-Id: <1376692475-28413-89-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -29,50 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Amit Shah <amit.shah@redhat.com>
 
-commit 96f97a83910cdb9d89d127c5ee523f8fc040a804 upstream.
+commit 057b82be3ca3d066478e43b162fc082930a746c9 upstream.
 
-If a port gets unplugged while a user is blocked on read(), -ENODEV is
-returned.  However, subsequent read()s returned 0, indicating there's no
-host-side connection (but not indicating the device went away).
+There's a window between find_port_by_devt() returning a port and us
+taking a kref on the port, where the port could get unplugged.  Fix it
+by taking the reference in find_port_by_devt() itself.
 
-This also happened when a port was unplugged and the user didn't have
-any blocking operation pending.  If the user didn't monitor the SIGIO
-signal, they won't have a chance to find out if the port went away.
+Problem reported and analyzed by Mateusz Guzik.
 
-Fix by returning -ENODEV on all read()s after the port gets unplugged.
-write() already behaves this way.
-
+Reported-by: Mateusz Guzik <mguzik@redhat.com>
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/char/virtio_console.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/char/virtio_console.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 62834bc..12829ae 100644
+index 3e338a7..ff015e7 100644
 --- a/drivers/char/virtio_console.c
 +++ b/drivers/char/virtio_console.c
-@@ -755,6 +755,10 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
+@@ -278,9 +278,12 @@ static struct port *find_port_by_devt_in_portdev(struct ports_device *portdev,
+ 	unsigned long flags;
  
- 	port = filp->private_data;
+ 	spin_lock_irqsave(&portdev->ports_lock, flags);
+-	list_for_each_entry(port, &portdev->ports, list)
+-		if (port->cdev->dev == dev)
++	list_for_each_entry(port, &portdev->ports, list) {
++		if (port->cdev->dev == dev) {
++			kref_get(&port->kref);
+ 			goto out;
++		}
++	}
+ 	port = NULL;
+ out:
+ 	spin_unlock_irqrestore(&portdev->ports_lock, flags);
+@@ -1042,14 +1045,10 @@ static int port_fops_open(struct inode *inode, struct file *filp)
+ 	struct port *port;
+ 	int ret;
  
-+	/* Port is hot-unplugged. */
-+	if (!port->guest_connected)
-+		return -ENODEV;
-+
- 	if (!port_has_data(port)) {
- 		/*
- 		 * If nothing's connected on the host just return 0 in
-@@ -771,7 +775,7 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
- 		if (ret < 0)
- 			return ret;
- 	}
--	/* Port got hot-unplugged. */
-+	/* Port got hot-unplugged while we were waiting above. */
- 	if (!port->guest_connected)
- 		return -ENODEV;
++	/* We get the port with a kref here */
+ 	port = find_port_by_devt(cdev->dev);
+ 	filp->private_data = port;
+ 
+-	/* Prevent against a port getting hot-unplugged at the same time */
+-	spin_lock_irq(&port->portdev->ports_lock);
+-	kref_get(&port->kref);
+-	spin_unlock_irq(&port->portdev->ports_lock);
+-
  	/*
+ 	 * Don't allow opening of console port devices -- that's done
+ 	 * via /dev/hvc
 -- 
 1.8.1.2
 
