@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab3HPWkN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:40:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51758 "EHLO
+	id S1756974Ab3HPWkT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:40:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51764 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756924Ab3HPWkI (ORCPT
+	with ESMTP id S1753636Ab3HPWkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:40:08 -0400
+	Fri, 16 Aug 2013 18:40:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 108/133] drm: Don't pass negative delta to ktime_sub_ns()
-Date: Fri, 16 Aug 2013 15:34:10 -0700
-Message-Id: <1376692475-28413-109-git-send-email-kamal@canonical.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Vinod Koul <vinod.koul@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 060/133] dma: pl330: Fix cyclic transfers
+Date: Fri, 16 Aug 2013 15:33:22 -0700
+Message-Id: <1376692475-28413-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,45 +27,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit e91abf80a0998f326107874c88d549f94839f13c upstream.
+commit fc51446021f42aca8906e701fc2292965aafcb15 upstream.
 
-It takes an unsigned value. This happens not to blow up on 64-bit
-architectures, but it does on 32-bit, causing
-drm_calc_vbltimestamp_from_scanoutpos() to calculate totally bogus
-timestamps for vblank events. Which in turn causes e.g. gnome-shell to
-hang after a DPMS off cycle with current xf86-video-ati Git.
+Allocate a descriptor for each period of a cyclic transfer, not just the first.
+Also since the callback needs to be called for each finished period make sure to
+initialize the callback and callback_param fields of each descriptor in a cyclic
+transfer.
 
-[airlied: regression introduced in drm: use monotonic time in drm_calc_vbltimestamp_from_scanoutpos]
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59339
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59836
-Tested-by: shui yangwei <yangweix.shui@intel.com>
-Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
-Reviewed-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/drm_irq.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/dma/pl330.c | 93 ++++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 67 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
-index 570dac6..0f3cdda 100644
---- a/drivers/gpu/drm/drm_irq.c
-+++ b/drivers/gpu/drm/drm_irq.c
-@@ -704,7 +704,10 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
- 	/* Subtract time delta from raw timestamp to get final
- 	 * vblank_time timestamp for end of vblank.
- 	 */
--	etime = ktime_sub_ns(etime, delta_ns);
-+	if (delta_ns < 0)
-+		etime = ktime_add_ns(etime, -delta_ns);
-+	else
-+		etime = ktime_sub_ns(etime, delta_ns);
- 	*vblank_time = ktime_to_timeval(etime);
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 4bed3f1..9cfe424 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2501,6 +2501,10 @@ static dma_cookie_t pl330_tx_submit(struct dma_async_tx_descriptor *tx)
+ 	/* Assign cookies to all nodes */
+ 	while (!list_empty(&last->node)) {
+ 		desc = list_entry(last->node.next, struct dma_pl330_desc, node);
++		if (pch->cyclic) {
++			desc->txd.callback = last->txd.callback;
++			desc->txd.callback_param = last->txd.callback_param;
++		}
  
- 	DRM_DEBUG("crtc %d : v %d p(%d,%d)@ %ld.%ld -> %ld.%ld [e %d us, %d rep]\n",
+ 		dma_cookie_assign(&desc->txd);
+ 
+@@ -2684,45 +2688,82 @@ static struct dma_async_tx_descriptor *pl330_prep_dma_cyclic(
+ 		size_t period_len, enum dma_transfer_direction direction,
+ 		unsigned long flags, void *context)
+ {
+-	struct dma_pl330_desc *desc;
++	struct dma_pl330_desc *desc = NULL, *first = NULL;
+ 	struct dma_pl330_chan *pch = to_pchan(chan);
++	struct dma_pl330_dmac *pdmac = pch->dmac;
++	unsigned int i;
+ 	dma_addr_t dst;
+ 	dma_addr_t src;
+ 
+-	desc = pl330_get_desc(pch);
+-	if (!desc) {
+-		dev_err(pch->dmac->pif.dev, "%s:%d Unable to fetch desc\n",
+-			__func__, __LINE__);
++	if (len % period_len != 0)
+ 		return NULL;
+-	}
+ 
+-	switch (direction) {
+-	case DMA_MEM_TO_DEV:
+-		desc->rqcfg.src_inc = 1;
+-		desc->rqcfg.dst_inc = 0;
+-		desc->req.rqtype = MEMTODEV;
+-		src = dma_addr;
+-		dst = pch->fifo_addr;
+-		break;
+-	case DMA_DEV_TO_MEM:
+-		desc->rqcfg.src_inc = 0;
+-		desc->rqcfg.dst_inc = 1;
+-		desc->req.rqtype = DEVTOMEM;
+-		src = pch->fifo_addr;
+-		dst = dma_addr;
+-		break;
+-	default:
++	if (!is_slave_direction(direction)) {
+ 		dev_err(pch->dmac->pif.dev, "%s:%d Invalid dma direction\n",
+ 		__func__, __LINE__);
+ 		return NULL;
+ 	}
+ 
+-	desc->rqcfg.brst_size = pch->burst_sz;
+-	desc->rqcfg.brst_len = 1;
++	for (i = 0; i < len / period_len; i++) {
++		desc = pl330_get_desc(pch);
++		if (!desc) {
++			dev_err(pch->dmac->pif.dev, "%s:%d Unable to fetch desc\n",
++				__func__, __LINE__);
+ 
+-	pch->cyclic = true;
++			if (!first)
++				return NULL;
++
++			spin_lock_irqsave(&pdmac->pool_lock, flags);
++
++			while (!list_empty(&first->node)) {
++				desc = list_entry(first->node.next,
++						struct dma_pl330_desc, node);
++				list_move_tail(&desc->node, &pdmac->desc_pool);
++			}
++
++			list_move_tail(&first->node, &pdmac->desc_pool);
+ 
+-	fill_px(&desc->px, dst, src, period_len);
++			spin_unlock_irqrestore(&pdmac->pool_lock, flags);
++
++			return NULL;
++		}
++
++		switch (direction) {
++		case DMA_MEM_TO_DEV:
++			desc->rqcfg.src_inc = 1;
++			desc->rqcfg.dst_inc = 0;
++			desc->req.rqtype = MEMTODEV;
++			src = dma_addr;
++			dst = pch->fifo_addr;
++			break;
++		case DMA_DEV_TO_MEM:
++			desc->rqcfg.src_inc = 0;
++			desc->rqcfg.dst_inc = 1;
++			desc->req.rqtype = DEVTOMEM;
++			src = pch->fifo_addr;
++			dst = dma_addr;
++			break;
++		default:
++			break;
++		}
++
++		desc->rqcfg.brst_size = pch->burst_sz;
++		desc->rqcfg.brst_len = 1;
++		fill_px(&desc->px, dst, src, period_len);
++
++		if (!first)
++			first = desc;
++		else
++			list_add_tail(&desc->node, &first->node);
++
++		dma_addr += period_len;
++	}
++
++	if (!desc)
++		return NULL;
++
++	pch->cyclic = true;
++	desc->txd.flags = flags;
+ 
+ 	return &desc->txd;
+ }
 -- 
 1.8.1.2
 
