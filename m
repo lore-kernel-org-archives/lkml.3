@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757829Ab3HPWrl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:47:41 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39262 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757805Ab3HPWrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:47:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,897,1367996400"; 
-   d="scan'208";a="363878652"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, peterz@infradead.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/6] x86: Add 1/2/4/8 byte optimization to 64bit __copy_{from,to}_user_inatomic
-Date: Fri, 16 Aug 2013 14:17:19 -0700
-Message-Id: <1376687844-19857-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
-References: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
+	id S1757876Ab3HPWrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:47:51 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:18718 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757852Ab3HPWrq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:47:46 -0400
+Message-ID: <520EAC07.5050106@hp.com>
+Date: Fri, 16 Aug 2013 18:47:35 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Harvey Harrison <harvey.harrison@gmail.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v3 0/3] qrwlock: Introducing a queue read/write lock implementation
+References: <1375315259-29392-1-git-send-email-Waiman.Long@hp.com> <520A811A.7080907@hp.com> <20130814102041.GG10849@gmail.com> <520BA109.1000501@hp.com> <20130814155751.GA17821@gmail.com>
+In-Reply-To: <20130814155751.GA17821@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 08/14/2013 11:57 AM, Ingo Molnar wrote:
+> * Waiman Long<waiman.long@hp.com>  wrote:
+>
+>> On 08/14/2013 06:20 AM, Ingo Molnar wrote:
+>>> * Waiman Long<waiman.long@hp.com>   wrote:
+>>>
+>>>> I would like to share with you a rwlock related system crash that I
+>>>> encountered during my testing with hackbench on an 80-core DL980. The
+>>>> kernel crash because of a "watchdog detected hard lockup on cpu 79". The
+>>>> crashing CPU was running "write_lock_irq(&tasklist_lock)" in
+>>>> forget_original_parent() of the exit code path when I interrupted the
+>>>> hackbench which was spawning thousands of processes. Apparently, the
+>>>> remote CPU was not able to get the lock for a sufficient long time due
+>>>> to the unfairness of the rwlock which I think my version of queue rwlock
+>>>> will be able to alleviate this issue.
+>>>>
+>>>> So far, I was not able to reproduce the crash. I will try to see if I
+>>>> could more consistently reproduce it.
+>>> Was it an actual crash/lockup, or a longish hang followed by a lock
+>>> detector splat followed by the system eventually recovering back to
+>>> working order?
+>>>
+>>> Thanks,
+>>>
+>>> 	Ingo
+>> It was an actual crash initiated by the NMI handler. I think the
+>> system was in a halt state after that.
+> Could be a CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE=1 kernel?
+>
+> Thanks,
+>
+> 	Ingo
 
-The 64bit __copy_{from,to}_user_inatomic always called
-copy_from_user_generic, but skipped the special optimizations for 1/2/4/8
-byte accesses.
+My test system was a RHEL6.4 system. The 3.10 kernel config file was 
+based on the original RHEL6.4 config file. So yes, the 
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE parameter was set.
 
-This especially hurts the futex call, which accesses the 4 byte futex
-user value with a complicated fast string operation in a function call,
-instead of a single movl.
+I also found that when I bump the process count up to about 30k range, 
+interrupting the main hack_bench process may not cause the other spawned 
+process to die out. I will further investigate this phenomenon later 
+next week.
 
-Use __copy_{from,to}_user for _inatomic instead to get the same
-optimizations. The only problem was the might_fault() in those functions.
-So move that to new wrapper and call __copy_{f,t}_user_nocheck()
-from *_inatomic directly.
-
-32bit already did this correctly by duplicating the code.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/include/asm/uaccess_64.h | 24 ++++++++++++++++++------
- 1 file changed, 18 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
-index 4f7923d..64476bb 100644
---- a/arch/x86/include/asm/uaccess_64.h
-+++ b/arch/x86/include/asm/uaccess_64.h
-@@ -77,11 +77,10 @@ int copy_to_user(void __user *dst, const void *src, unsigned size)
- }
- 
- static __always_inline __must_check
--int __copy_from_user(void *dst, const void __user *src, unsigned size)
-+int __copy_from_user_nocheck(void *dst, const void __user *src, unsigned size)
- {
- 	int ret = 0;
- 
--	might_fault();
- 	if (!__builtin_constant_p(size))
- 		return copy_user_generic(dst, (__force void *)src, size);
- 	switch (size) {
-@@ -121,11 +120,17 @@ int __copy_from_user(void *dst, const void __user *src, unsigned size)
- }
- 
- static __always_inline __must_check
--int __copy_to_user(void __user *dst, const void *src, unsigned size)
-+int __copy_from_user(void *dst, const void __user *src, unsigned size)
-+{
-+	might_fault();
-+	return __copy_from_user_nocheck(dst, src, size);
-+}
-+
-+static __always_inline __must_check
-+int __copy_to_user_nocheck(void __user *dst, const void *src, unsigned size)
- {
- 	int ret = 0;
- 
--	might_fault();
- 	if (!__builtin_constant_p(size))
- 		return copy_user_generic((__force void *)dst, src, size);
- 	switch (size) {
-@@ -165,6 +170,13 @@ int __copy_to_user(void __user *dst, const void *src, unsigned size)
- }
- 
- static __always_inline __must_check
-+int __copy_to_user(void __user *dst, const void *src, unsigned size)
-+{
-+	might_fault();
-+	return __copy_to_user_nocheck(dst, src, size);
-+}
-+
-+static __always_inline __must_check
- int __copy_in_user(void __user *dst, const void __user *src, unsigned size)
- {
- 	int ret = 0;
-@@ -220,13 +232,13 @@ int __copy_in_user(void __user *dst, const void __user *src, unsigned size)
- static __must_check __always_inline int
- __copy_from_user_inatomic(void *dst, const void __user *src, unsigned size)
- {
--	return copy_user_generic(dst, (__force const void *)src, size);
-+	return __copy_from_user_nocheck(dst, (__force const void *)src, size);
- }
- 
- static __must_check __always_inline int
- __copy_to_user_inatomic(void __user *dst, const void *src, unsigned size)
- {
--	return copy_user_generic((__force void *)dst, src, size);
-+	return __copy_to_user_nocheck((__force void *)dst, src, size);
- }
- 
- extern long __copy_user_nocache(void *dst, const void __user *src,
--- 
-1.8.3.1
-
+Regards,
+Longman
