@@ -1,120 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab3HPSMy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 14:12:54 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52638 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518Ab3HPSMu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 14:12:50 -0400
-Message-ID: <520E6B9E.5080706@baylibre.com>
-Date: Fri, 16 Aug 2013 20:12:46 +0200
-From: Benoit Cousson <bcousson@baylibre.com>
-Organization: BayLibre
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1754463Ab3HPSRN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 14:17:13 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:49210 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752518Ab3HPSRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 14:17:08 -0400
+Date: Fri, 16 Aug 2013 13:17:28 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>
+Subject: Re: [PATCH 1/8] THP: Use real address for NUMA policy
+Message-ID: <20130816181728.GQ26093@sgi.com>
+References: <87wqo050fc.fsf@tassilo.jf.intel.com>
+ <1376663644-153546-1-git-send-email-athorlton@sgi.com>
+ <1376663644-153546-2-git-send-email-athorlton@sgi.com>
+ <520E672C.3080102@intel.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "khilman@linaro.org" <khilman@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "rob@landley.net" <rob@landley.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "sudhakar.raj@ti.com" <sudhakar.raj@ti.com>
-Subject: Re: [PATCH v3 1/2] rtc: omap: update of_device_id to reflect latest
- ip revisions
-References: <1376653017-21935-1-git-send-email-gururaja.hebbar@ti.com> <1376653017-21935-2-git-send-email-gururaja.hebbar@ti.com> <520E341D.4080206@baylibre.com> <20130816172022.GA3719@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130816172022.GA3719@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520E672C.3080102@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+> Could you add some actual descriptions to these patches that say why you
+> are doing this, and why this particular patch is needed and implemented
+> this way?
+> 
+> You mention that THP is slow for you, then go on to implement some
+> non-cached page zero'ing, but you never quite connect the dots.
 
-On 16/08/2013 19:20, Mark Rutland wrote:
-> Hi Benoit,
->
-> On Fri, Aug 16, 2013 at 03:15:57PM +0100, Benoit Cousson wrote:
->> Hi Gururaja,
->>
->> On 16/08/2013 13:36, Hebbar, Gururaja wrote:
->>> The syntax of compatible property in DT is to mention the Most specific
->>> match to most generic match.
->>>
->>> Since AM335x is the platform with latest IP revision, add it 1st in
->>> the device id table.
->>
->> I don't understand why? The order should not matter at all.
->>
->> I've tried to follow the thread you had with Mark on the v2, but AFAIK,
->> you've never answered to his latest question.
->>
->> Moreover, checking the differences between the Davinci and the am3352
->> RTC IP, I would not claim that both are compatible.
->>
->> Sure you can use the am3352 with the Davinci driver, but you will lose
->> the wakeup functionality without even being notify about that.
->
-> Could you describe the wakeup functionality, and how it differs between
-> the am3352-rtc and the da830-rtc?
+I actually didn't write these patches (made a few tweaks to get them
+running on the latest kernel though).  They were submitted last July by 
+Peter Zijlstra.  Andi Kleen suggested that I re-run some of my tests
+using these patches to see whether they solved my issue.  I just
+included my updated patches so that people could confirm that I'd pulled
+them forward properly.
 
-AFAIK, da830-rtc does not have that functionality at all. This is 
-something that was added to the am3352-rtc.
+The messages from the original submission can be found here:
+https://lkml.org/lkml/2012/7/20/165
 
-> As I understand it, the am3352 functionality is a superset of the da830
-> functionality. You can use the old driver, and get some functionality,
-> or use the new driver and get it all.
+I did write the patch that these were submitted in response to, to
+control THP on a per-process basis, but it looks like we're probably
+going to end up taking this in a different direction, pending some more
+test results.
 
-Mmm, what your are saying now seems to make sense to me as well. So I'm 
-even more confused :-)
-
-> That means that am3352-rtc is compatible with da830. As long as the
-> kernel first checks for am3352-rtc, there will be *no* loss of
-> functionality. All this does is enable older kernels to use the hardware
-> in some fashion, and given the older kernel didn't have support for the
-> am3352-rtc features, this is a *gain* in functionality, not a loss.
->
->>
->> For my point of view, compatible mean that the HW will still be fully
->> functional with both versions of the driver, which is not the case here.
->
-> What? A driver for any entry in the compatible list should be able to
-> drive the hardware to *some* level of functionality. We list from
-> most-specific to most-general to allow a graceful degradation from fully
-> supported to bare minimum functionality.
-
-OK, but where is it written in the DT spec that this is what the 
-compatible is supposed to mean?
-
-I'm quoting it again:
-"
-The compatible property value consists of one or more strings that 
-define the specific programming model for the device. This list of 
-strings should be used by a client program for device driver selection. 
-The property value consists of a concatenated list of null terminated
-strings, from most specific to most general. They allow a device to 
-express its compatibility with a family of similar devices, potentially 
-allowing a single device driver to match against several devices.
-"
-
-The graceful degradation or the loss of functionality is not something 
-that I really understand in that text.
-
-Anyway, I'm probably too tired... I'll go back home, and think about 
-that after the week-end.
-
-Regards,
-Benoit
-
+- Alex
