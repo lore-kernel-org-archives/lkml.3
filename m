@@ -1,39 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab3HPMp2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 08:45:28 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52328 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611Ab3HPMpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 08:45:25 -0400
-Message-ID: <520E1DE2.3090401@ti.com>
-Date: Fri, 16 Aug 2013 18:11:06 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753031Ab3HPMsG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 08:48:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51085 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab3HPMsB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 08:48:01 -0400
+Date: Fri, 16 Aug 2013 05:49:38 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Bob Liu <bob.liu@oracle.com>
+Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v6 0/5] zram/zsmalloc promotion
+Message-ID: <20130816124938.GA15291@kroah.com>
+References: <1376459736-7384-1-git-send-email-minchan@kernel.org>
+ <20130814174050.GN2296@suse.de>
+ <20130814185820.GA2753@gmail.com>
+ <20130815171250.GA2296@suse.de>
+ <20130816042641.GA2893@gmail.com>
+ <20130816083347.GD2296@suse.de>
+ <20130816091223.GF2296@suse.de>
+ <520DEE5F.70106@oracle.com>
 MIME-Version: 1.0
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH v4 2/5] ARM: davinci: da850: add DT node for mdio device
-References: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com> <1376546497-26931-3-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1376546497-26931-3-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520DEE5F.70106@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 August 2013 11:31 AM, Lad, Prabhakar wrote:
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On Fri, Aug 16, 2013 at 05:18:23PM +0800, Bob Liu wrote:
+> Hi Mel,
 > 
-> Add mdio device tree node information to da850 by
-> providing register details and bus frequency of mdio.
+> On 08/16/2013 05:12 PM, Mel Gorman wrote:
+> > On Fri, Aug 16, 2013 at 09:33:47AM +0100, Mel Gorman wrote:
+> >> On Fri, Aug 16, 2013 at 01:26:41PM +0900, Minchan Kim wrote:
+> >> <SNIP>
+> >> It'll get even more entertaining if/when someone ever tries
+> >> to reimplement zcache although since Dan left I do not believe anyone is
+> >> planning to try.
+> > 
+> > I should mention that Bob Liu did some work with zcache recently but is
+> > now looking like it'll be dropped from staging. I did not look at the
+> > details and I have no idea if anything else is planned with it.
+> > 
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> The plan is like this:
+> Zcache dropped from staging.
 
-Queuing for v3.12
+It's already gone in linux-next and will show up as deleted in 3.12-rc1.
 
-Thanks,
-Sekhar
-
+greg k-h
