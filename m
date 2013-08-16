@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab3HPOw6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 10:52:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41585 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406Ab3HPOwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 10:52:54 -0400
-Date: Fri, 16 Aug 2013 16:47:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jaromir Capik <jcapik@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Ania Honess <ahoness@redhat.com>, atomlin@redhat.com, asolanas@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: proc/stat: idle goes backward
-Message-ID: <20130816144704.GA25904@redhat.com>
-References: <v5wUE000000000000000000000000000000000000000000000MRITO500uRRuI-89T-iqXCkOVGWF4w@sfdc.net> <1904614521.2884383.1376487067689.JavaMail.root@redhat.com> <1277145964.2082352.1376490809716.JavaMail.root@redhat.com>
+	id S1754274Ab3HPOx5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 10:53:57 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:63420 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab3HPOxx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 10:53:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277145964.2082352.1376490809716.JavaMail.root@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1375889038-7953-1-git-send-email-larsi@wh2.tu-dresden.de>
+References: <1375889038-7953-1-git-send-email-larsi@wh2.tu-dresden.de>
+Date: Fri, 16 Aug 2013 16:53:53 +0200
+Message-ID: <CACRpkdZX5tNmY0KcUrghv8TzVVP_vmgfxje+LMKpEbFfyQMTUA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: adnp: Fix segfault if request_threaded_irq fails
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+Cc: Lars Poeschel <poeschel@lemonage.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, Aug 7, 2013 at 5:23 PM, Lars Poeschel <larsi@wh2.tu-dresden.de> wrote:
 
-Out customer reports that "idle" field is not monotonic. So far this
-is all I know. I do not know how to reproduce, etc.
+> From: Lars Poeschel <poeschel@lemonage.de>
+>
+> In case request_threaded_irq inside adnp_irq_setup fails, the driver
+> segfaults. This is because irq_domain_remove is called twice with
+> the same pointer. First time in adnp_irq_setup and then a second time
+> after leaving adnp_irq_setup in the error path of adnp_i2c_probe
+> inside adnp_teardown.
+> This fixes this by removing the call to irq_domain_remove from
+> adnp_irq_setup.
+>
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
 
-But when I look at this code, this looks really possible even
-ignoring drivers/cpuidle/ which plays with update_ts_time_stats().
+Patch applied.
 
-So, get_cpu_idle_time_us(last_update_time => NULL) does:
-
-	if (ts->idle_active && !nr_iowait_cpu(cpu)) {
-		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-
-		idle = ktime_add(ts->idle_sleeptime, delta);
-	} else {
-		idle = ts->idle_sleeptime;
-	}
-
-
-Suppose that ts->idle_active == T. By the time we calculate
-
-	idle = ktime_add(ts->idle_sleeptime, delta);
-
-this cpu can be already non-idle and ->idle_sleeptime can be already
-updated by tick_nohz_stop_idle(), we return the wrong value.
-
-If user-space reads /proc/stat again after that, "idle" can obviously
-go back.
-
-get_cpu_iowait_time_us() has the same problem.
-
-Plus nr_iowait_cpu() can change in between even if cpu stays idle,
-io_schedule() can return on another CPU.
-
-Questions:
-
-	- Any other reason why it can be non-monotonic?
-
-	- Should we fix this or should we document that userspace
-	  should handle this itself?
-
-	  IOW, is this is bug or not?
-
-Oleg.
-
+Yours,
+Linus Walleij
