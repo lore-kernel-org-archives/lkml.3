@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab3HPX7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 19:59:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51812 "EHLO
+	id S1754181Ab3HQAA1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:00:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51810 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757048Ab3HPWkq (ORCPT
+	with ESMTP id S1757043Ab3HPWkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:40:46 -0400
+	Fri, 16 Aug 2013 18:40:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 097/133] [SCSI] Don't attempt to send extended INQUIRY command if skip_vpd_pages is set
-Date: Fri, 16 Aug 2013 15:33:59 -0700
-Message-Id: <1376692475-28413-98-git-send-email-kamal@canonical.com>
+Subject: [PATCH 072/133] ARM: poison the vectors page
+Date: Fri, 16 Aug 2013 15:33:34 -0700
+Message-Id: <1376692475-28413-73-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,36 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 7562523e84ddc742fe1f9db8bd76b01acca89f6b upstream.
+commit f928d4f2a86f46b030fa0850385b4391fc2b5918 upstream.
 
-If a device has the skip_vpd_pages flag set we should simply fail the
-scsi_get_vpd_page() call.
+Fill the empty regions of the vectors page with an exception generating
+instruction.  This ensures that any inappropriate branch to the vector
+page is appropriately trapped, rather than just encountering some code
+to execute.  (The vectors page was filled with zero before, which
+corresponds with the "andeq r0, r0, r0" instruction - a no-op.)
 
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Stuart Foster <smf.linux@ntlworld.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Acked-by Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/scsi.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/kernel/traps.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 3b1ea34..eaa808e 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -1031,6 +1031,9 @@ int scsi_get_vpd_page(struct scsi_device *sdev, u8 page, unsigned char *buf,
- {
- 	int i, result;
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index b0179b8..a4f84b0 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -824,10 +824,20 @@ void __init early_trap_init(void *vectors_base)
+ 	extern char __vectors_start[], __vectors_end[];
+ 	extern char __kuser_helper_start[], __kuser_helper_end[];
+ 	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
++	unsigned i;
  
-+	if (sdev->skip_vpd_pages)
-+		goto fail;
+ 	vectors_page = vectors_base;
+ 
+ 	/*
++	 * Poison the vectors page with an undefined instruction.  This
++	 * instruction is chosen to be undefined for both ARM and Thumb
++	 * ISAs.  The Thumb version is an undefined instruction with a
++	 * branch back to the undefined instruction.
++	 */
++	for (i = 0; i < PAGE_SIZE / sizeof(u32); i++)
++		((u32 *)vectors_base)[i] = 0xe7fddef1;
 +
- 	/* Ask for all the pages supported by this device */
- 	result = scsi_vpd_inquiry(sdev, buf, 0, buf_len);
- 	if (result)
++	/*
+ 	 * Copy the vectors, stubs and kuser helpers (in entry-armv.S)
+ 	 * into the vector page, mapped at 0xffff0000, and ensure these
+ 	 * are visible to the instruction stream.
 -- 
 1.8.1.2
 
