@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab3HQAIN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:08:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51695 "EHLO
+	id S1755928Ab3HQAIc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:08:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51684 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756739Ab3HPWju (ORCPT
+	with ESMTP id S1756714Ab3HPWjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:50 -0400
+	Fri, 16 Aug 2013 18:39:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Fleig <andreasfleig@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 098/133] ACPI / PM: Fix /proc/acpi/wakeup for devices w/o bus or parent
-Date: Fri, 16 Aug 2013 15:34:00 -0700
-Message-Id: <1376692475-28413-99-git-send-email-kamal@canonical.com>
+Subject: [PATCH 046/133] iwlwifi: add DELL SKU for 5150 HMC
+Date: Fri, 16 Aug 2013 15:33:08 -0700
+Message-Id: <1376692475-28413-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,47 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Fleig <andreasfleig@gmail.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 65ab96f60621c4da8f1b4087a57b788bc4d8f27b upstream.
+commit a1923f1d4723e5757cefdd60f7c7ab30e472007a upstream.
 
-Fix /proc/acpi/wakeup for devices without bus or parent
+This SKU was missing in the list of supported devices
 
-This patch fixes printing the wakeup status for devices without a bus
-or parent, such as laptop lid switches and sleep buttons. These devices
-have an empty physical_node_list, because acpi_bind_one is never run
-for them.
+https://bugzilla.kernel.org/show_bug.cgi?id=60577
 
-[rjw: White space and coding style.]
-Signed-off-by: Andreas Fleig <andreasfleig@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[ kamal: 3.8.y-stable prereq for 623cf33c ]
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/proc.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/net/wireless/iwlwifi/pcie/drv.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/acpi/proc.c b/drivers/acpi/proc.c
-index ef98796..52ce767 100644
---- a/drivers/acpi/proc.c
-+++ b/drivers/acpi/proc.c
-@@ -311,11 +311,12 @@ acpi_system_wakeup_device_seq_show(struct seq_file *seq, void *offset)
- 			   dev->pnp.bus_id,
- 			   (u32) dev->wakeup.sleep_state);
+diff --git a/drivers/net/wireless/iwlwifi/pcie/drv.c b/drivers/net/wireless/iwlwifi/pcie/drv.c
+index 2c18171..8fee66f 100644
+--- a/drivers/net/wireless/iwlwifi/pcie/drv.c
++++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
+@@ -131,6 +131,7 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_card_ids) = {
+ 	{IWL_PCI_DEVICE(0x423C, 0x1306, iwl5150_abg_cfg)}, /* Half Mini Card */
+ 	{IWL_PCI_DEVICE(0x423C, 0x1221, iwl5150_agn_cfg)}, /* Mini Card */
+ 	{IWL_PCI_DEVICE(0x423C, 0x1321, iwl5150_agn_cfg)}, /* Half Mini Card */
++	{IWL_PCI_DEVICE(0x423C, 0x1326, iwl5150_abg_cfg)}, /* Half Mini Card */
  
--		if (!dev->physical_node_count)
-+		if (!dev->physical_node_count) {
- 			seq_printf(seq, "%c%-8s\n",
--				dev->wakeup.flags.run_wake ?
--				'*' : ' ', "disabled");
--		else {
-+				dev->wakeup.flags.run_wake ? '*' : ' ',
-+				device_may_wakeup(&dev->dev) ?
-+					"enabled" : "disabled");
-+		} else {
- 			struct device *ldev;
- 			list_for_each_entry(entry, &dev->physical_node_list,
- 					node) {
+ 	{IWL_PCI_DEVICE(0x423D, 0x1211, iwl5150_agn_cfg)}, /* Mini Card */
+ 	{IWL_PCI_DEVICE(0x423D, 0x1311, iwl5150_agn_cfg)}, /* Half Mini Card */
 -- 
 1.8.1.2
 
