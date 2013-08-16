@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab3HQAKe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:10:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51664 "EHLO
+	id S1756611Ab3HPWja (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:39:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51641 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138Ab3HPWjd (ORCPT
+	with ESMTP id S1756566Ab3HPWj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:33 -0400
+	Fri, 16 Aug 2013 18:39:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleksij Rempel <linux@rempel-privat.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 047/133] ath9k_htc: do some initial hardware configuration
-Date: Fri, 16 Aug 2013 15:33:09 -0700
-Message-Id: <1376692475-28413-48-git-send-email-kamal@canonical.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 086/133] ext4: make sure group number is bumped after a inode allocation race
+Date: Fri, 16 Aug 2013 15:33:48 -0700
+Message-Id: <1376692475-28413-87-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,40 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleksij Rempel <linux@rempel-privat.de>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit dc2a87f519a4d8cb376ab54f22b6b98a943b51ce upstream.
+commit a34eb503742fd25155fd6cff6163daacead9fbc3 upstream.
 
-Currently we configure harwdare and clock, only after
-interface start. In this case, if we reload module or
-reboot PC without configuring adapter, firmware will freeze.
-There is no software way to reset adpter.
+When we try to allocate an inode, and there is a race between two
+CPU's trying to grab the same inode, _and_ this inode is the last free
+inode in the block group, make sure the group number is bumped before
+we continue searching the rest of the block groups.  Otherwise, we end
+up searching the current block group twice, and we end up skipping
+searching the last block group.  So in the unlikely situation where
+almost all of the inodes are allocated, it's possible that we will
+return ENOSPC even though there might be free inodes in that last
+block group.
 
-This patch add initial configuration and set it in
-disabled state, to avoid this freeze. Behaviour of this patch
-should be similar to: ifconfig wlan0 up; ifconfig wlan0 down.
-
-Bug: https://github.com/qca/open-ath9k-htc-firmware/issues/1
-Tested-by: Bo Shi <cnshibo@gmail.com>
-Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_init.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/ialloc.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_init.c b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-index 0663653..351123a 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-@@ -846,6 +846,7 @@ static int ath9k_init_device(struct ath9k_htc_priv *priv,
- 	if (error != 0)
- 		goto err_rx;
- 
-+	ath9k_hw_disable(priv->ah);
- #ifdef CONFIG_MAC80211_LEDS
- 	/* must be initialized before ieee80211_register_hw */
- 	priv->led_cdev.default_trigger = ieee80211_create_tpt_led_trigger(priv->hw,
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index ec2909e..f4da2a3 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -715,11 +715,8 @@ repeat_in_this_group:
+ 		ino = ext4_find_next_zero_bit((unsigned long *)
+ 					      inode_bitmap_bh->b_data,
+ 					      EXT4_INODES_PER_GROUP(sb), ino);
+-		if (ino >= EXT4_INODES_PER_GROUP(sb)) {
+-			if (++group == ngroups)
+-				group = 0;
+-			continue;
+-		}
++		if (ino >= EXT4_INODES_PER_GROUP(sb))
++			goto next_group;
+ 		if (group == 0 && (ino+1) < EXT4_FIRST_INO(sb)) {
+ 			ext4_error(sb, "reserved inode found cleared - "
+ 				   "inode=%lu", ino + 1);
+@@ -737,6 +734,9 @@ repeat_in_this_group:
+ 			goto got; /* we grabbed the inode! */
+ 		if (ino < EXT4_INODES_PER_GROUP(sb))
+ 			goto repeat_in_this_group;
++next_group:
++		if (++group == ngroups)
++			group = 0;
+ 	}
+ 	err = -ENOSPC;
+ 	goto out;
 -- 
 1.8.1.2
 
