@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab3HPJTH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 05:19:07 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37962 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab3HPJTB (ORCPT
+	id S1754525Ab3HPJVQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 05:21:16 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50542 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754444Ab3HPJVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 05:19:01 -0400
-Message-ID: <520DEE5F.70106@oracle.com>
-Date: Fri, 16 Aug 2013 17:18:23 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Fri, 16 Aug 2013 05:21:12 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <520DEF05.9030803@roeck-us.net>
+Date: Fri, 16 Aug 2013 02:21:09 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v6 0/5] zram/zsmalloc promotion
-References: <1376459736-7384-1-git-send-email-minchan@kernel.org> <20130814174050.GN2296@suse.de> <20130814185820.GA2753@gmail.com> <20130815171250.GA2296@suse.de> <20130816042641.GA2893@gmail.com> <20130816083347.GD2296@suse.de> <20130816091223.GF2296@suse.de>
-In-Reply-To: <20130816091223.GF2296@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Max Filippov <jcmvbkbc@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Linux kernel cross-compilers
+References: <520C9A39.3030808@roeck-us.net> <CAMo8BfKyqZYMkh96wyZSpYUpXwqFQZkco=XgtjUrNG-jSzW5pA@mail.gmail.com> <20130816054823.GB28445@thor.bakeyournoodle.com> <CAMo8Bf+veq_DU7-hnB0yySy6YWpwU2TYx3U9e89c_m8Mv9Cv5w@mail.gmail.com> <520DD9CA.90305@roeck-us.net> <CAMo8BfLvVk+2CyQD28otU265J4rvbt0Eg11Vqr4u4zjKjrTanw@mail.gmail.com>
+In-Reply-To: <CAMo8BfLvVk+2CyQD28otU265J4rvbt0Eg11Vqr4u4zjKjrTanw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+On 08/16/2013 01:31 AM, Max Filippov wrote:
+> On Fri, Aug 16, 2013 at 11:50 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> On 08/16/2013 12:22 AM, Max Filippov wrote:
+>>>
+>>> On Fri, Aug 16, 2013 at 9:48 AM, Tony Breeds <tony@bakeyournoodle.com>
+>>> wrote:
+>>>>
+>>>> On Thu, Aug 15, 2013 at 01:46:16PM +0400, Max Filippov wrote:
+>>>>
+>>>>> Yes, xtensa compiler/linker is known to have issues with link-time
+>>>>> relaxation; e.g. it may fail to build linux image without
+>>>>> CONFIG_LD_NO_RELAX.
+>>>>
+>>>>
+>>>> Is there something I can do at linker build time to help with this?
+>>>
+>>>
+>>> I don't think so. Apparently it's not a linker configuration issue, it's a
+>>> bug.
+>>>
+>> CONFIG_LD_NO_RELAX doesn't help.
+>>
+>> For reference, here is the error:
+>>
+>> xtensa-linux-objcopy: Unable to change endianness of input file(s)
+>> make[2]: *** [arch/xtensa/boot/boot-elf/Image.o] Error 1
+>> make[1]: *** [boot-elf] Error 2
+>> make: *** [zImage] Error 2
+>>
+>> Oddly enough, I only see the problem on one of three servers.
+>
+> Guenter,
+> can you share a complete build log with V=1?
+>
 
-On 08/16/2013 05:12 PM, Mel Gorman wrote:
-> On Fri, Aug 16, 2013 at 09:33:47AM +0100, Mel Gorman wrote:
->> On Fri, Aug 16, 2013 at 01:26:41PM +0900, Minchan Kim wrote:
->> <SNIP>
->> It'll get even more entertaining if/when someone ever tries
->> to reimplement zcache although since Dan left I do not believe anyone is
->> planning to try.
-> 
-> I should mention that Bob Liu did some work with zcache recently but is
-> now looking like it'll be dropped from staging. I did not look at the
-> details and I have no idea if anything else is planned with it.
-> 
+http://roeck-us.net/linux/logs/make.xtensa.log.bad
+http://roeck-us.net/linux/logs/make.xtensa.log.ok
 
-The plan is like this:
-Zcache dropped from staging.
-As a result, for swap pages compression using zswap(zram).
-For file pages compression using my new implemention of zcache(v3)
-mm/zcache.c
+Key difference: the failing command in the bad case is
+	xtensa-linux-objcopy -O elf32-xtensa-le
+and in the good case
+	xtensa-linux-objcopy -O elf32-xtensa-be
 
-If there is requirement we can merge zswap and zcachev3 in future!
+Same compiler (4.6.3 from kernel.org), same configuration file, same command line.
+Configuration file is generated from defconfig, and the resulting .config file
+is the same in both cases.
 
--- 
-Regards,
--Bob
+If I execute make and expicitly set BIG_ENDIAN=1 on the failing system as parameter to it,
+it works fine. If I set BIG_ENDIAN=0 on the passing system, it fails.
+
+I am puzzled. Guess there must be something different, but I have no idea what it might be.
+
+If I execute the command which sets BIG_ENDIAN manually from the shell (from
+arch/xtensa/boot/Makefile), it returns 1 on both systems.
+
+If you have an idea what is going on please let me know.
+
+Thanks,
+Guenter
+
