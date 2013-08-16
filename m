@@ -1,152 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756324Ab3HQAWL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:22:11 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:38819 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab3HQAWI (ORCPT
+	id S1756858Ab3HQAWc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:22:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51584 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756517Ab3HPWjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:22:08 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 2/5] fs: Add inode_update_time_writable
-Date: Fri, 16 Aug 2013 16:22:09 -0700
-Message-Id: <a27accc2d9460b7ef194a203f305a18dafe926e8.1376679411.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <cover.1376679411.git.luto@amacapital.net>
-References: <cover.1376679411.git.luto@amacapital.net>
-In-Reply-To: <cover.1376679411.git.luto@amacapital.net>
-References: <cover.1376679411.git.luto@amacapital.net>
+	Fri, 16 Aug 2013 18:39:01 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Stefan (metze) Metzmacher" <metze@samba.org>,
+        Sachin Prabhu <sprabhu@redhat.com>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <smfrench@gmail.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 116/133] cifs: don't instantiate new dentries in readdir for inodes that need to be revalidated immediately
+Date: Fri, 16 Aug 2013 15:34:18 -0700
+Message-Id: <1376692475-28413-117-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is like file_update_time, except that it acts on a struct inode *
-instead of a struct file *.
+3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+------------------
+
+From: Jeff Layton <jlayton@redhat.com>
+
+commit 757c4f6260febff982276818bb946df89c1105aa upstream.
+
+David reported that commit c2b93e06 (cifs: only set ops for inodes in
+I_NEW state) caused a regression with mfsymlinks. Prior to that patch,
+if a mfsymlink dentry was instantiated at readdir time, the inode would
+get a new set of ops when it was revalidated. After that patch, this
+did not occur.
+
+This patch addresses this by simply skipping instantiating dentries in
+the readdir codepath when we know that they will need to be immediately
+revalidated. The next attempt to use that dentry will cause a new lookup
+to occur (which is basically what we want to happen anyway).
+
+Cc: "Stefan (metze) Metzmacher" <metze@samba.org>
+Cc: Sachin Prabhu <sprabhu@redhat.com>
+Reported-and-Tested-by: David McBride <dwm37@cam.ac.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/inode.c         | 72 ++++++++++++++++++++++++++++++++++++++++++------------
- include/linux/fs.h |  1 +
- 2 files changed, 58 insertions(+), 15 deletions(-)
+ fs/cifs/readdir.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/fs/inode.c b/fs/inode.c
-index d6dfb09..bc90c12 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1637,6 +1637,34 @@ int file_remove_suid(struct file *file)
- }
- EXPORT_SYMBOL(file_remove_suid);
+diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
+index cdd6ff4..5e636a8 100644
+--- a/fs/cifs/readdir.c
++++ b/fs/cifs/readdir.c
+@@ -113,6 +113,14 @@ cifs_prime_dcache(struct dentry *parent, struct qstr *name,
+ 			return;
+ 	}
  
-+/*
-+ * This does the work that's common to file_update_time and
-+ * inode_update_time.
-+ */
-+static int prepare_update_cmtime(struct inode *inode, struct timespec *now)
-+{
-+	int sync_it;
++	/*
++	 * If we know that the inode will need to be revalidated immediately,
++	 * then don't create a new dentry for it. We'll end up doing an on
++	 * the wire call either way and this spares us an invalidation.
++	 */
++	if (fattr->cf_flags & CIFS_FATTR_NEED_REVAL)
++		return;
 +
-+	/* First try to exhaust all avenues to not sync */
-+	if (IS_NOCMTIME(inode))
-+		return 0;
-+
-+	*now = current_fs_time(inode->i_sb);
-+	if (!timespec_equal(&inode->i_mtime, now))
-+		sync_it = S_MTIME;
-+
-+	if (!timespec_equal(&inode->i_ctime, now))
-+		sync_it |= S_CTIME;
-+
-+	if (IS_I_VERSION(inode))
-+		sync_it |= S_VERSION;
-+
-+	if (!sync_it)
-+		return 0;
-+
-+	return sync_it;
-+}
-+
- /**
-  *	file_update_time	-	update mtime and ctime time
-  *	@file: file accessed
-@@ -1654,23 +1682,9 @@ int file_update_time(struct file *file)
- {
- 	struct inode *inode = file_inode(file);
- 	struct timespec now;
--	int sync_it = 0;
-+	int sync_it = prepare_update_cmtime(inode, &now);
- 	int ret;
- 
--	/* First try to exhaust all avenues to not sync */
--	if (IS_NOCMTIME(inode))
--		return 0;
--
--	now = current_fs_time(inode->i_sb);
--	if (!timespec_equal(&inode->i_mtime, &now))
--		sync_it = S_MTIME;
--
--	if (!timespec_equal(&inode->i_ctime, &now))
--		sync_it |= S_CTIME;
--
--	if (IS_I_VERSION(inode))
--		sync_it |= S_VERSION;
--
- 	if (!sync_it)
- 		return 0;
- 
-@@ -1685,6 +1699,34 @@ int file_update_time(struct file *file)
- }
- EXPORT_SYMBOL(file_update_time);
- 
-+/**
-+ *	inode_update_time_writable	-	update mtime and ctime time
-+ *	@inode: inode accessed
-+ *
-+ *	This is like file_update_time, but it assumes the mnt is writable
-+ *	and takes an inode parameter instead.  (We need to assume the mnt
-+ *	was writable because inodes aren't associated with any particular
-+ *	mnt.
-+ */
-+
-+int inode_update_time_writable(struct inode *inode)
-+{
-+	struct timespec now;
-+	int sync_it = prepare_update_cmtime(inode, &now);
-+	int ret;
-+
-+	if (!sync_it)
-+		return 0;
-+
-+	/* sb_start_pagefault and update_time can both sleep. */
-+	sb_start_pagefault(inode->i_sb);
-+	ret = update_time(inode, &now, sync_it);
-+	sb_end_pagefault(inode->i_sb);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(inode_update_time_writable);
-+
- int inode_needs_sync(struct inode *inode)
- {
- 	if (IS_SYNC(inode))
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9818747..86cf0a4 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2590,6 +2590,7 @@ extern int inode_newsize_ok(const struct inode *, loff_t offset);
- extern void setattr_copy(struct inode *inode, const struct iattr *attr);
- 
- extern int file_update_time(struct file *file);
-+extern int inode_update_time_writable(struct inode *inode);
- 
- extern int generic_show_options(struct seq_file *m, struct dentry *root);
- extern void save_mount_options(struct super_block *sb, char *options);
+ 	dentry = d_alloc(parent, name);
+ 	if (!dentry)
+ 		return;
 -- 
-1.8.3.1
+1.8.1.2
 
