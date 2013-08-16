@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab3HPWOx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:14:53 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:46879 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab3HPWOv (ORCPT
+	id S1753625Ab3HPWPG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:15:06 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:53186 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab3HPWPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:14:51 -0400
-Date: Fri, 16 Aug 2013 22:10:02 +0100
-From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, Russ.Dill@ti.com
-Subject: Re: [PATCH 4/4] iio: ti_am335x_adc: Add continuous sampling and
- trigger support
-Message-ID: <20130816210955.GA2528@gmail.com>
-References: <1376424303-22740-1-git-send-email-zubair.lutfullah@gmail.com>
- <1376424303-22740-5-git-send-email-zubair.lutfullah@gmail.com>
- <20130816145949.GE1263@linutronix.de>
+	Fri, 16 Aug 2013 18:15:02 -0400
+Date: Fri, 16 Aug 2013 15:21:10 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: Re: [PATCH RFC 1/3] spmi: Linux driver framework for SPMI
+Message-ID: <20130816202110.GJ4035@joshc.qualcomm.com>
+References: <cover.1376596224.git.joshc@codeaurora.org>
+ <02deef1d90121011ab1df90ad704ef0ee36e2584.1376596224.git.joshc@codeaurora.org>
+ <20130816184921.GB31510@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130816145949.GE1263@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130816184921.GB31510@kroah.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 04:59:49PM +0200, Sebastian Andrzej Siewior wrote:
-> * Zubair Lutfullah | 2013-08-13 21:05:03 [+0100]:
+On Fri, Aug 16, 2013 at 11:49:21AM -0700, Greg Kroah-Hartman wrote:
+> On Fri, Aug 09, 2013 at 01:37:09PM -0700, Josh Cartwright wrote:
+> > +++ b/drivers/spmi/spmi.c
+> > @@ -0,0 +1,449 @@
+[..]
+> > +static void spmi_ctrl_release(struct device *dev)
+> > +{
+> > +	struct spmi_controller *ctrl = to_spmi_controller(dev);
+> > +	complete(&ctrl->dev_released);
 > 
-> >diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-> >index 3ceac3e..0d7e313 100644
-> >--- a/drivers/iio/adc/ti_am335x_adc.c
-> >+++ b/drivers/iio/adc/ti_am335x_adc.c
-> …
+> When is this memory going to be freed?
 > 
-> >+static int tiadc_buffer_postdisable(struct iio_dev *indio_dev)
-> >+{
-> >+	struct tiadc_device *adc_dev = iio_priv(indio_dev);
-> >+	int config;
-> >+
-> >+	tiadc_step_config(indio_dev);
-> >+	if (adc_dev->mfd_tscadc->tsc_cell == -1) {
-> >+		config = tiadc_readl(adc_dev, REG_CTRL);
-> >+		tiadc_writel(adc_dev, REG_CTRL, (config | CNTRLREG_TSCSSENB));
-> >+	}
+> Ah, you think it will be when you remove the device later on:
 > 
-> This kind of check is bad. The tsc cell may have been created but the
-> driver not enabled or loaded. Further you should document why you need
-> to enable / disable the ADC in this places and only if the TSC part is
-> not active.
+> > +int spmi_del_controller(struct spmi_controller *ctrl)
+> > +{
+> > +	struct spmi_controller *found;
+> > +
+> > +	if (!ctrl)
+> > +		return -EINVAL;
+> > +
+> > +	/* Check that the ctrl has been added */
+> > +	mutex_lock(&board_lock);
+> > +	found = idr_find(&ctrl_idr, ctrl->nr);
+> > +	mutex_unlock(&board_lock);
+> > +
+> > +	if (found != ctrl)
+> > +		return -EINVAL;
+> > +
+> > +	spmi_dfs_del_controller(ctrl);
+> > +
+> > +	/* Remove all the clients associated with this controller */
+> > +	mutex_lock(&board_lock);
+> > +	bus_for_each_dev(&spmi_bus_type, NULL, ctrl, spmi_ctrl_remove_device);
+> > +	idr_remove(&ctrl_idr, ctrl->nr);
+> > +	mutex_unlock(&board_lock);
+> > +
+> > +	init_completion(&ctrl->dev_released);
+> > +	device_unregister(&ctrl->dev);
+> > +	wait_for_completion(&ctrl->dev_released);
 > 
-> Sebastian
+> But you just leaked memory, right?
+> 
+> You should never have to wait for this to happen, why did you need to
+> add this?  Why not just a simple call to kfree() in the release
+> function?
 
-Noted. I'll look into it.
+Unfortunately, the reason why this was necessary may be lost to history.  :(
 
-Thanks for pointing it out.
+I'll do some testing with the completion removed and a simple kfree() in
+the release and see if there is any fallout.
 
-Zubair
+Thanks,
+  Josh
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
