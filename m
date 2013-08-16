@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab3HPPTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 11:19:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32302 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755048Ab3HPPTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 11:19:33 -0400
-Date: Fri, 16 Aug 2013 17:13:39 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jaromir Capik <jcapik@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ania Honess <ahoness@redhat.com>, atomlin@redhat.com,
-        asolanas@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: proc/stat: idle goes backward
-Message-ID: <20130816151339.GA29675@redhat.com>
-References: <v5wUE000000000000000000000000000000000000000000000MRITO500uRRuI-89T-iqXCkOVGWF4w@sfdc.net> <1904614521.2884383.1376487067689.JavaMail.root@redhat.com> <1277145964.2082352.1376490809716.JavaMail.root@redhat.com> <20130816144704.GA25904@redhat.com> <20130816150122.GB24210@somewhere>
+	id S1755244Ab3HPPVV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 11:21:21 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:38401 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755142Ab3HPPVS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 11:21:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130816150122.GB24210@somewhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1376490038-32382-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1376490038-32382-1-git-send-email-ricardo.ribalda@gmail.com>
+Date: Fri, 16 Aug 2013 17:21:18 +0200
+Message-ID: <CACRpkdbOPL7K2yc_zAo0-b-Y0mXCRXJfc7YYDhcb0K3uj76BBQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio-pca953x: Fix read for chips with more than 8 gpios
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Ruder <andy@aeruder.net>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16, Frederic Weisbecker wrote:
+On Wed, Aug 14, 2013 at 4:20 PM, Ricardo Ribalda Delgado
+<ricardo.ribalda@gmail.com> wrote:
+
+> pca953x_read_single returns ONLY the value of the 8 inputs of the
+> same bank.
 >
-> On Fri, Aug 16, 2013 at 04:47:04PM +0200, Oleg Nesterov wrote:
-> >
-> > Questions:
-> >
-> > 	- Any other reason why it can be non-monotonic?
-> >
-> > 	- Should we fix this or should we document that userspace
-> > 	  should handle this itself?
-> >
-> > 	  IOW, is this is bug or not?
+> off can have a value from 0 to 15, therefore we have to find the
+> offset of that gpio within that bank.
 >
-> I don't know if we want to fix it (I personally think we should because it is not the
-> first time I hear complains about this) but if we do, here is a possible fix:
+> Without this patch gpios 8-15 will always be read as zero.
 >
-> https://lkml.org/lkml/2013/8/8/638
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 
-Thanks! it is not easy to read the patches on lkml.org and I do
-not understand this code enough. But it seems that this should
-address my concerns, including the "even ignoring drivers/cpuidle/".
+Nice! But it turns out I already had an identical patch by
+Andrew Ruder acked by Gregory Clement in my patch queue.
 
-Except, I am not sure that these changes handle the case when
-nr_iowait() change in between.
-
-Are you going to resend?
-
-Oleg.
-
+Yours,
+Linus Walleij
