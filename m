@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913Ab3HQADR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:03:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51770 "EHLO
+	id S1756900Ab3HPWkG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:40:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51746 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756955Ab3HPWkR (ORCPT
+	with ESMTP id S1756871Ab3HPWkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:40:17 -0400
+	Fri, 16 Aug 2013 18:40:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 065/133] ALSA: compress: fix the return value for SNDRV_COMPRESS_VERSION
-Date: Fri, 16 Aug 2013 15:33:27 -0700
-Message-Id: <1376692475-28413-66-git-send-email-kamal@canonical.com>
+Subject: [PATCH 091/133] virtio: console: fix raising SIGIO after port unplug
+Date: Fri, 16 Aug 2013 15:33:53 -0700
+Message-Id: <1376692475-28413-92-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -27,35 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vinod Koul <vinod.koul@intel.com>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit a8d30608eaed6cc759b8e2e8a8bbbb42591f797f upstream.
+commit 92d3453815fbe74d539c86b60dab39ecdf01bb99 upstream.
 
-the return value of SNDRV_COMPRESS_VERSION always return default -ENOTTY as the
-return value was never updated for this call
-assign return value from put_user()
+SIGIO should be sent when a port gets unplugged.  It should only be sent
+to prcesses that have the port opened, and have asked for SIGIO to be
+delivered.  We were clearing out guest_connected before calling
+send_sigio_to_port(), resulting in a sigio not getting sent to
+processes.
 
-Reported-by: Haynes <hgeorge@codeaurora.org>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix by setting guest_connected to false after invoking the sigio
+function.
+
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/core/compress_offload.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/virtio_console.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
-index ad11dc9..2401d06 100644
---- a/sound/core/compress_offload.c
-+++ b/sound/core/compress_offload.c
-@@ -608,7 +608,7 @@ static long snd_compr_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
- 	mutex_lock(&stream->device->lock);
- 	switch (_IOC_NR(cmd)) {
- 	case _IOC_NR(SNDRV_COMPRESS_IOCTL_VERSION):
--		put_user(SNDRV_COMPRESS_VERSION,
-+		retval = put_user(SNDRV_COMPRESS_VERSION,
- 				(int __user *)arg) ? -EFAULT : 0;
- 		break;
- 	case _IOC_NR(SNDRV_COMPRESS_GET_CAPS):
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 615804c..62834bc 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1557,12 +1557,14 @@ static void unplug_port(struct port *port)
+ 	spin_unlock_irq(&port->portdev->ports_lock);
+ 
+ 	if (port->guest_connected) {
++		/* Let the app know the port is going down. */
++		send_sigio_to_port(port);
++
++		/* Do this after sigio is actually sent */
+ 		port->guest_connected = false;
+ 		port->host_connected = false;
+-		wake_up_interruptible(&port->waitqueue);
+ 
+-		/* Let the app know the port is going down. */
+-		send_sigio_to_port(port);
++		wake_up_interruptible(&port->waitqueue);
+ 	}
+ 
+ 	if (is_console_port(port)) {
 -- 
 1.8.1.2
 
