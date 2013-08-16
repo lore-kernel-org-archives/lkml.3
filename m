@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757112Ab3HPWkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:40:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51800 "EHLO
+	id S1756477Ab3HPWlE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:41:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51860 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757023Ab3HPWk2 (ORCPT
+	with ESMTP id S1756389Ab3HPWk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:40:28 -0400
+	Fri, 16 Aug 2013 18:40:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 099/133] ACPI / PM: Walk physical_node_list under physical_node_lock
-Date: Fri, 16 Aug 2013 15:34:01 -0700
-Message-Id: <1376692475-28413-100-git-send-email-kamal@canonical.com>
+Subject: [PATCH 070/133] drm/radeon/atom: initialize more atom interpretor elements to 0
+Date: Fri, 16 Aug 2013 15:33:32 -0700
+Message-Id: <1376692475-28413-71-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -27,68 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 623cf33cb055b1e81fa47e4fc16789b2c129e31e upstream.
+commit 42a21826dc54583cdb79cc8477732e911ac9c376 upstream.
 
-The list of physical devices corresponding to an ACPI device
-object is walked by acpi_system_wakeup_device_seq_show() and
-physical_device_enable_wakeup() without taking that object's
-physical_node_lock mutex.  Since each of those functions may be
-run at any time as a result of a user space action, the lack of
-appropriate locking in them may lead to a kernel crash if that
-happens during device hot-add or hot-remove involving the device
-object in question.
+The ProcessAuxChannel table on some rv635 boards assumes
+the divmul members are initialized to 0 otherwise we get
+an invalid fb offset since it has a bad mask set when
+setting the fb base.  While here initialize all the
+atom interpretor elements to 0.
 
-Fix the issue by modifying acpi_system_wakeup_device_seq_show() and
-physical_device_enable_wakeup() to use physical_node_lock as
-appropriate.
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60639
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/proc.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/gpu/drm/radeon/atom.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/acpi/proc.c b/drivers/acpi/proc.c
-index 52ce767..8fa2d08 100644
---- a/drivers/acpi/proc.c
-+++ b/drivers/acpi/proc.c
-@@ -311,6 +311,8 @@ acpi_system_wakeup_device_seq_show(struct seq_file *seq, void *offset)
- 			   dev->pnp.bus_id,
- 			   (u32) dev->wakeup.sleep_state);
+diff --git a/drivers/gpu/drm/radeon/atom.c b/drivers/gpu/drm/radeon/atom.c
+index 43672b6..daa1e34 100644
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -1222,12 +1222,17 @@ int atom_execute_table(struct atom_context *ctx, int index, uint32_t * params)
+ 	int r;
  
-+		mutex_lock(&dev->physical_node_lock);
-+
- 		if (!dev->physical_node_count) {
- 			seq_printf(seq, "%c%-8s\n",
- 				dev->wakeup.flags.run_wake ? '*' : ' ',
-@@ -338,6 +340,8 @@ acpi_system_wakeup_device_seq_show(struct seq_file *seq, void *offset)
- 				put_device(ldev);
- 			}
- 		}
-+
-+		mutex_unlock(&dev->physical_node_lock);
- 	}
- 	mutex_unlock(&acpi_device_lock);
- 	return 0;
-@@ -347,12 +351,16 @@ static void physical_device_enable_wakeup(struct acpi_device *adev)
- {
- 	struct acpi_device_physical_node *entry;
- 
-+	mutex_lock(&adev->physical_node_lock);
-+
- 	list_for_each_entry(entry,
- 		&adev->physical_node_list, node)
- 		if (entry->dev && device_can_wakeup(entry->dev)) {
- 			bool enable = !device_may_wakeup(entry->dev);
- 			device_set_wakeup_enable(entry->dev, enable);
- 		}
-+
-+	mutex_unlock(&adev->physical_node_lock);
- }
- 
- static ssize_t
+ 	mutex_lock(&ctx->mutex);
++	/* reset data block */
++	ctx->data_block = 0;
+ 	/* reset reg block */
+ 	ctx->reg_block = 0;
+ 	/* reset fb window */
+ 	ctx->fb_base = 0;
+ 	/* reset io mode */
+ 	ctx->io_mode = ATOM_IO_MM;
++	/* reset divmul */
++	ctx->divmul[0] = 0;
++	ctx->divmul[1] = 0;
+ 	r = atom_execute_table_locked(ctx, index, params);
+ 	mutex_unlock(&ctx->mutex);
+ 	return r;
 -- 
 1.8.1.2
 
