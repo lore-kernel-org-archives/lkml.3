@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902Ab3HPWsU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:48:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:34598 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757852Ab3HPWsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:48:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,897,1367996400"; 
-   d="scan'208";a="282994846"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, peterz@infradead.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 6/6] sched: Inline the need_resched test into the caller for _cond_resched
-Date: Fri, 16 Aug 2013 14:17:24 -0700
-Message-Id: <1376687844-19857-7-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
-References: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
+	id S1757273Ab3HPWlS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:41:18 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:53229 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757212Ab3HPWlI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:41:08 -0400
+Date: Fri, 16 Aug 2013 22:42:24 +0100
+From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
+        dmitry.torokhov@gmail.com, sameo@linux.intel.com, lee.jones@linaro.org,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Russ.Dill@ti.com
+Subject: Re: [PATCH 1/4] input: ti_am335x_tsc: correct step mask update after
+ IRQ
+Message-ID: <20130816214224.GE2636@gmail.com>
+References: <1376412499-21007-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1376412499-21007-2-git-send-email-zubair.lutfullah@gmail.com>
+ <20130816085350.GA26895@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130816085350.GA26895@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Fri, Aug 16, 2013 at 10:53:50AM +0200, Sebastian Andrzej Siewior wrote:
+> * Zubair Lutfullah | 2013-08-13 17:48:16 [+0100]:
+> 
+> >@@ -316,7 +318,7 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+> > 
+> > 	if (irqclr) {
+> > 		titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
+> >-		am335x_tsc_se_update(ts_dev->mfd_tscadc);
+> >+		am335x_tsc_se_set(ts_dev->mfd_tscadc, ts_dev->step_mask);
+> > 		return IRQ_HANDLED;
+> > 	}
+> > 	return IRQ_NONE;
+> 
+> titsc_step_config() computes the mask once since it does not change. It
+> is then assigned via am335x_tsc_se_set() to ->reg_se_cache() and later
+> always udpated via am335x_tsc_se_update(). This should ensure that ADC's
+> and TSC's bits are in sync and clear each other out.
+> Now you call am335x_tsc_se_set() in every irq which adds the TSC's mask
+> to ->reg_se_cache but why? It was never removed.
+> 
+> Sebastian
 
-_cond_resched does at least two explicit calls just to decide to do
-nothing: _cond_resched and should_resched(). Inline a need_resched()
-into the caller to avoid these calls in the common case of no reschedule
-being needed.
+The problem is when ADC/TSC are used together.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/linux/sched.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+reg_se_cache would get updated with masks in the se_set function in MFD core.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 97f4b78..dd3fafc 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2435,7 +2435,7 @@ extern int __cond_resched_softirq(void);
- 
- #ifdef CONFIG_PREEMPT_VOLUNTARY
- extern int _cond_resched(void);
--# define might_resched() _cond_resched()
-+# define might_resched() (need_resched() ? _cond_resched() : 0)
- #else
- # define might_resched() do { } while (0)
- #endif
--- 
-1.8.3.1
+>From TSC driver, the TSC steps would be set in the reg_se_cache variable.
+>From ADC driver, the ADC steps would be set in the reg_se_cache variable.
 
+But the ADC masks weren't being cleared from the reg_se_cache variable
+anywhere.
+
+After a while of using ADC/TSC together, the reg_se_cache 
+variable would have FFFF always. Resulting in redundant sampling 
+and data in ADC FIFO0.
+
+MFD has received fixes to update the reg_se_cache upon 
+every call to the se_set functions.
+
+Thus, the step_mask must be set every time to ensure
+that it is updated correctly every time.
+
+Hope that clears the confusion.
+This TSC/ADC sharing can be pretty confusing.
+
+Thanks
+Zubair
