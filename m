@@ -1,118 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab3HPB2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 21:28:47 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:48497 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab3HPB2p convert rfc822-to-8bit (ORCPT
+	id S1753329Ab3HPBbW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 21:31:22 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34652 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab3HPBbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 21:28:45 -0400
+	Thu, 15 Aug 2013 21:31:20 -0400
+Date: Thu, 15 Aug 2013 18:31:19 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v1 03/14] clk: Add of_clk_match() for device drivers
+Message-ID: <20130816013118.GC27999@codeaurora.org>
+References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
+ <1374713022-6049-4-git-send-email-sboyd@codeaurora.org>
+ <20130812202347.5348.76490@quantum>
+ <20130813054839.GF14845@codeaurora.org>
+ <20130815050226.4443.39100@quantum>
 MIME-Version: 1.0
-In-Reply-To: <20130815100719.GB25875@lee--X1>
-References: <1376468930-9794-1-git-send-email-chao.xie@marvell.com>
-	<1376468930-9794-4-git-send-email-chao.xie@marvell.com>
-	<20130814174227.GI4046@lee--X1>
-	<CADApbejPaRRX5OM5Ho8-bV2vaKLODOjhOh2Abzb8Auniwdukkw@mail.gmail.com>
-	<20130815100719.GB25875@lee--X1>
-Date: Fri, 16 Aug 2013 09:28:44 +0800
-Message-ID: <CADApbegsSEaHhTBoy+STf2EDE3t8NR-K0GMWr1ObRPZkmPsYxQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] mfd: 88pm800: add device tree support
-From: Chao Xie <xiechao.mail@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Chao Xie <chao.xie@marvell.com>, sameo@linux.intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130815050226.4443.39100@quantum>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 6:07 PM, Lee Jones <lee.jones@linaro.org> wrote:
->> >> +Optional parent device properties:
->> >> +- marvell,88pm800-irq-write-clear: inicates whether interrupt status is cleared by write
->> >> +- marvell,88pm800-battery-detection: indicats whether need 88pm800 to support battery
->> >> +                             detection or not.
->> >
->> > Not sure what these are. This is why you need to CC the Device Tree
->> > guys.
->> >
->> It is the 88pm805's own configuration.
->> 88pm800-irq-write-clear: when irq happens, the status register is
->> write clear or read clear.
->> 88pm800-battery-detection: whether the battery is connected to chip.
->> It means that whether
->> the chip be aware of battery or not.
->
-> As you are adding vendor specific bindings, you need to Cc the Device
-> Tree mailing list.
->
->> >> +     if (IS_ENABLED(CONFIG_OF)) {
->> >> +             if (!pdata) {
->> >> +                     pdata = devm_kzalloc(&client->dev,
->> >> +                                          sizeof(*pdata), GFP_KERNEL);
->> >> +                     if (!pdata)
->> >> +                             return -ENOMEM;
->> >> +             }
->> >> +             ret = pm800_dt_init(node, &client->dev, pdata);
->> >> +             if (ret)
->> >> +                     return ret;
->> >> +     } else if (!pdata) {
->> >> +             return -EINVAL;
->> >> +     }
->> >
->> > Replace with:
->> >
->> >         if (!pdata) {
->> >                 if (node)
->> >                         /* <blah> populate pdata with DT </blah> */
->> >                 else
->> >                         return -EINVAL;
->> >         }
->> >
->> The orignial code will cover the following situation.
->> 1. DT enabled, and user pass pdata
->> 2. DT enabled, but user do not pass pdata
->> 3. DT disabled, user pass pdata
->> 4. DT disabled, user do not pass pdata.
->>
->> 88pm805 has a callback for config the it based on platform requirment.
->> I do not want to remove this callback now, because it includes so many
->> configurations.
->> So i allow user can pass pdata with callback if the platform needs to
->> configure the chip.
->
-> Mixing DT with pdata is a bad idea. If you need to pass a call-back
-> pointer, then _only_ use pdata i.e. get all of your platform specific
-> information from pdata, rather than just over-writing sections of it
-> with information retrieved from Device Tree.
->
-> So:
->
-> If pdata  - use pdata and ignore DT completely
-> If !pdata:
->    If DT  - use DT
->    If !DT - return -EINVAL
->
-> Out of interest, what does your call-back do?
->
-Without the callback, the soc still can work.
-The callback does job relates to power saving and CP's requirment.
-1. LPM configure for the chip based on AP/CP's requriment.
-2. 88pm800 OSC configuration
-3. Some output pin configuration of 88pm800, for example reset_out_n pin
+On 08/14, Mike Turquette wrote:
+> Quoting Stephen Boyd (2013-08-12 22:48:39)
+> > On 08/12, Mike Turquette wrote:
+> > > Quoting Stephen Boyd (2013-07-24 17:43:31)
+> > > > In similar fashion as of_regulator_match() add an of_clk_match()
+> > > > function that finds an initializes clock init_data structs from
+> > > > devicetree. Drivers should use this API to find clocks that their
+> > > > device is providing and then iterate over their match table
+> > > > registering the clocks with the init data parsed.
+> > > > 
+> > > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > > 
+> > > Stephen,
+> > > 
+> > > In general I like this approach. Writing real device drivers for clock
+> > > controllers is The Right Way and of_clk_match helps.
+> > > 
+> > > Am I reading this correctly that the base register addresses/offsets for
+> > > the clock nodes still come from C files? For example I still see
+> > > pll8_desc defining reg stuff in drivers/clk/msm/gcc-8960.c.
+> > 
+> > I think we may be able to put the registers in DT but I don't
+> > know why we need to do that if we're already matching up nodes
+> > with C structs.
+> 
+> The reason to do so is to remove the per-clock data from the kernel
+> sources entirely. Separating logic and data.
 
-I want to abstract the callback step by step, so the first step are the patches
-that enable DT first.
+Ok.
 
-For the patch 0001 and 0002 are fixes, so if these two patches are all
-right, can you
-merge them? Then i will submit the 2 DT related patches again with cc
-to device tree maillist.
+> 
+> > It also made me want to introduce devm_of_iomap()
+> > which just seemed wrong (if you have a dev struct why can't you
+> > use devm_ioremap()).
+> > 
+[snip]
+> > 
+> > This is great for making the kernel DT-data-driven, but I
+> > couldn't find any other driver that was describing register level
+> > details in DT.
+> 
+> Yeah, this sucks. Building a binding from a C struct is a bad idea. How
+> many permutations are there? Hopefully some clocks use the same bit
+> shifts and have reliable register offsets, with the only difference
+> being base address. If this is the case then a compatible string could
+> be done for each permutation assuming that number is low and manageable.
 
-Thanks.
+In the multimedia controller almost every clock has a different
+register layout. Making a compatible string for each clock is
+pretty much what I've done if you consider that I match up the
+name of the node to a struct instead of matching a compatible
+string to a struct. In the global controller it's more sane,
+following a single register layout per compatible string.
+Remember though, all the single bit clocks (gates or what we call
+branches) have a completely random location for their on/off bit
+and status bit.
 
-> --
-> Lee Jones
-> Linaro ST-Ericsson Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+> 
+> > 
+> > The good news is that newer clock controllers follow a standard
+> > and so we can specify one or two register properties and the type
+> > of clock and we're pretty much done. The software interface
+> > hasn't been randomized like on earlier controllers and bits
+> > within registers are always the same.
+> 
+> This does not suck. Just for the sake of argument let's say that you
+> only had to deal with this new and improved register layout and not the
+> old (current) stuff. Do you still see a reason to match DT data up with
+> C struct data objects in the kernel?
+
+I would still need to match up frequency tables unless I figure
+out a way to put that in DT too.
+
+> 
+> > We still have some clocks
+> > that are just on/off switches though and so we'll have to put
+> > register level details like which bit turns that clock on in DT
+> > (which I believe is not preferred/allowed?). I don't see any way
+> > to avoid that if we want it to be entirely DT driven.
+> 
+> This is what I'm doing for the generic clock bindings. No one has
+> screamed over that stuff so I guess rules were meant to be broken.
+> 
+ 
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
