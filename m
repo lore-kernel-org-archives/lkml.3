@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab3HPQsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 12:48:19 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59003 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765Ab3HPQsN (ORCPT
+	id S1754602Ab3HPQtd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 12:49:33 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:42440 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753598Ab3HPQtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 12:48:13 -0400
-Message-ID: <520E5583.2080604@wwwdotorg.org>
-Date: Fri, 16 Aug 2013 10:38:27 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 16 Aug 2013 12:49:31 -0400
+Date: Fri, 16 Aug 2013 18:49:27 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20130816164925.GI24210@somewhere>
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com>
+ <1376667753-29014-3-git-send-email-fweisbec@gmail.com>
+ <20130816160201.GA31682@redhat.com>
+ <20130816163217.GF24210@somewhere>
+ <20130816163355.GA766@redhat.com>
 MIME-Version: 1.0
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-CC: mturquette@linaro.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        pgaikwad@nvidia.com, pdeschrijver@nvidia.com
-Subject: Re: [PATCH RESEND] clk: tegra30: Don't wait for PLL_U lock bit
-References: <1376510979-21562-1-git-send-email-ttynkkynen@nvidia.com> <1376510979-21562-2-git-send-email-ttynkkynen@nvidia.com>
-In-Reply-To: <1376510979-21562-2-git-send-email-ttynkkynen@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130816163355.GA766@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 02:09 PM, Tuomas Tynkkynen wrote:
-> The lock bit on PLL_U does not seem to be working correctly and
-> sometimes never gets set when waiting for the PLL to come up.
-> Remove the TEGRA_PLL_USE_LOCK flag to use a constant delay.
+On Fri, Aug 16, 2013 at 06:33:55PM +0200, Oleg Nesterov wrote:
+> On 08/16, Frederic Weisbecker wrote:
+> >
+> > On Fri, Aug 16, 2013 at 06:02:01PM +0200, Oleg Nesterov wrote:
+> > >
+> > > Unless I missread this patch, this is still racy a bit.
+> > >
+> > > Suppose it is called on CPU_0 and cpu == 1. Suppose that
+> > > ts->idle_active == T and nr_iowait_cpu(cpu) == 1.
+> > >
+> > > So we return iowait_sleeptime + delta.
+> > >
+> > > Suppose that we call get_cpu_iowait_time_us() again. By this time
+> > > the task which incremented ->nr_iowait can be woken up on another
+> > > CPU, and it can do atomic_dec(rq->nr_iowait). So the next time
+> > > we return iowait_sleeptime, and this is not monotonic again.
+> > >
+> > > No?
+> >
+> > OTOH, io_schedule() does:
+> >
+> >       atomic_inc(&rq->nr_iowait);
+> >       schedule();
+> >       atomic_dec(&rq->nr_iowait);
+> >
+> > How do we handle that when the task is migrated after it goes to sleep?
+> 
+> or even before it goes to sleep. This is what I meant.
+> 
+> > I don't either see that iowait tasks can't be migrated.
+> 
+> But probably this is fine? This is just the non-precise accounting.
+> 
+> But otoh, I agree. The whole idea about per-cpu nr_iowait looks a
+> bit strange.
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
 
-(Mike I assume you'll take this through the clock tree)
+My bad, I thought it was doing:
 
-I do suspect there's some underlying issue that needs fixing so that
-PLL_U does report lock as expected. However, this fix does enable USB to
-work correctly on Tegra30 right now (so I assume it is locking, but just
-isn't reporting it), and should have zero negative fallout since nothing
-else uses PLL_U. I'm following up internally to work out why the PLL
-isn't reporting that it's locking as expected.
+   inc(this_rq->nr_iowait)
+   schedule()
+   dec(this_rq->nr_iowait)
+
+But it actually uses the src CPU all along.
