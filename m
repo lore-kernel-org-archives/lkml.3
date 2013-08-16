@@ -1,91 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab3HPIbY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 04:31:24 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61922 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459Ab3HPIbU (ORCPT
+	id S1754189Ab3HPIcG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 04:32:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56326 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754038Ab3HPIcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 04:31:20 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <520DE356.9060506@roeck-us.net>
-Date: Fri, 16 Aug 2013 01:31:18 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 16 Aug 2013 04:32:00 -0400
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Alasdair Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com,
-        sparclinux@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] dm cache: Avoid conflicting remove_mapping() in mq policy
-References: <1374825451-30463-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1374825451-30463-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <520DD9CA.90305@roeck-us.net>
+References: <520C9A39.3030808@roeck-us.net>
+	<CAMo8BfKyqZYMkh96wyZSpYUpXwqFQZkco=XgtjUrNG-jSzW5pA@mail.gmail.com>
+	<20130816054823.GB28445@thor.bakeyournoodle.com>
+	<CAMo8Bf+veq_DU7-hnB0yySy6YWpwU2TYx3U9e89c_m8Mv9Cv5w@mail.gmail.com>
+	<520DD9CA.90305@roeck-us.net>
+Date: Fri, 16 Aug 2013 12:31:59 +0400
+Message-ID: <CAMo8BfLvVk+2CyQD28otU265J4rvbt0Eg11Vqr4u4zjKjrTanw@mail.gmail.com>
+Subject: Re: Linux kernel cross-compilers
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 12:57 AM, Geert Uytterhoeven wrote:
-> On sparc32, which includes <linux/swap.h> from <asm/pgtable_32.h>:
+On Fri, Aug 16, 2013 at 11:50 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 08/16/2013 12:22 AM, Max Filippov wrote:
+>>
+>> On Fri, Aug 16, 2013 at 9:48 AM, Tony Breeds <tony@bakeyournoodle.com>
+>> wrote:
+>>>
+>>> On Thu, Aug 15, 2013 at 01:46:16PM +0400, Max Filippov wrote:
+>>>
+>>>> Yes, xtensa compiler/linker is known to have issues with link-time
+>>>> relaxation; e.g. it may fail to build linux image without
+>>>> CONFIG_LD_NO_RELAX.
+>>>
+>>>
+>>> Is there something I can do at linker build time to help with this?
+>>
+>>
+>> I don't think so. Apparently it's not a linker configuration issue, it's a
+>> bug.
+>>
+> CONFIG_LD_NO_RELAX doesn't help.
 >
-> drivers/md/dm-cache-policy-mq.c:962:13: error: conflicting types for 'remove_mapping'
-> include/linux/swap.h:285:12: note: previous declaration of 'remove_mapping' was here
+> For reference, here is the error:
 >
-> As mq_remove_mapping() already exists, and the local remove_mapping() is
-> used only once, inline it manually to avoid the conflict.
+> xtensa-linux-objcopy: Unable to change endianness of input file(s)
+> make[2]: *** [arch/xtensa/boot/boot-elf/Image.o] Error 1
+> make[1]: *** [boot-elf] Error 2
+> make: *** [zImage] Error 2
 >
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Oddly enough, I only see the problem on one of three servers.
 
-Is this patch going anyhere ? The problem breaks the sparc32:allmodconfig build,
-so it would be useful to get it fixed.
+Guenter,
+can you share a complete build log with V=1?
 
-Thanks,
-Guenter
-
-> ---
-> I think this is also needed on hexagon, which includes <linux/swap.h> from
-> <asm/pgtable.h>.
->
->   drivers/md/dm-cache-policy-mq.c |   16 +++++++---------
->   1 file changed, 7 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/md/dm-cache-policy-mq.c b/drivers/md/dm-cache-policy-mq.c
-> index dc112a7..4296155 100644
-> --- a/drivers/md/dm-cache-policy-mq.c
-> +++ b/drivers/md/dm-cache-policy-mq.c
-> @@ -959,23 +959,21 @@ out:
->   	return r;
->   }
->
-> -static void remove_mapping(struct mq_policy *mq, dm_oblock_t oblock)
-> +static void mq_remove_mapping(struct dm_cache_policy *p, dm_oblock_t oblock)
->   {
-> -	struct entry *e = hash_lookup(mq, oblock);
-> +	struct mq_policy *mq = to_mq_policy(p);
-> +	struct entry *e;
-> +
-> +	mutex_lock(&mq->lock);
-> +
-> +	e = hash_lookup(mq, oblock);
->
->   	BUG_ON(!e || !e->in_cache);
->
->   	del(mq, e);
->   	e->in_cache = false;
->   	push(mq, e);
-> -}
->
-> -static void mq_remove_mapping(struct dm_cache_policy *p, dm_oblock_t oblock)
-> -{
-> -	struct mq_policy *mq = to_mq_policy(p);
-> -
-> -	mutex_lock(&mq->lock);
-> -	remove_mapping(mq, oblock);
->   	mutex_unlock(&mq->lock);
->   }
->
->
-
+-- 
+Thanks.
+-- Max
