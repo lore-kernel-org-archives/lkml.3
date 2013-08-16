@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab3HPWja (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:39:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51641 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756566Ab3HPWj0 (ORCPT
+	id S1755599Ab3HQALE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:11:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57674 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754490Ab3HQAKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:26 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 086/133] ext4: make sure group number is bumped after a inode allocation race
-Date: Fri, 16 Aug 2013 15:33:48 -0700
-Message-Id: <1376692475-28413-87-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 16 Aug 2013 20:10:50 -0400
+Date: Fri, 16 Aug 2013 12:58:49 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: Re: [PATCH RFC 1/3] spmi: Linux driver framework for SPMI
+Message-ID: <20130816195849.GA17974@kroah.com>
+References: <cover.1376596224.git.joshc@codeaurora.org>
+ <02deef1d90121011ab1df90ad704ef0ee36e2584.1376596224.git.joshc@codeaurora.org>
+ <20130816184614.GA31510@kroah.com>
+ <20130816194714.GH4035@joshc.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130816194714.GH4035@joshc.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Aug 16, 2013 at 02:47:15PM -0500, Josh Cartwright wrote:
+> > > +#ifdef CONFIG_DEBUG_FS
+> > 
+> > Why?  If debugfs isn't enabled, the functions should just compile away
+> > with the debugfs_() calls, so no need to do this type of thing here,
+> > right?
+> 
+> Not sure I follow you, but it may be because this is a bit misleading.
+> 
+> Currently CONFIG_DEBUG_FS is being extended to also mean "do you want
+> the SPMI core to create device entries?".  It would probably make more
+> sense to have a CONFIG_SPMI_DEBUG option which is def_bool DEBUG_FS, as
+> other busses have.
+> 
+> The #ifdef here would then be #ifdef CONFIG_SPMI_DEBUG, as well as in
+> the Makefile:
+> 
+>   spmi-core-$(CONFIG_SPMI_DEBUG) += spmi-dbgfs.o
 
-------------------
+If debugfs is enabled why wouldn't you want debugfs entries for your
+devices?  Don't assume a user is going to be able to rebuild their
+kernel just for debugging stuff (hint, they usually aren't), so having
+these present, if they don't cause any performance issues, is usually
+best to always have around.
 
-From: Theodore Ts'o <tytso@mit.edu>
+thanks,
 
-commit a34eb503742fd25155fd6cff6163daacead9fbc3 upstream.
-
-When we try to allocate an inode, and there is a race between two
-CPU's trying to grab the same inode, _and_ this inode is the last free
-inode in the block group, make sure the group number is bumped before
-we continue searching the rest of the block groups.  Otherwise, we end
-up searching the current block group twice, and we end up skipping
-searching the last block group.  So in the unlikely situation where
-almost all of the inodes are allocated, it's possible that we will
-return ENOSPC even though there might be free inodes in that last
-block group.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/ext4/ialloc.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index ec2909e..f4da2a3 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -715,11 +715,8 @@ repeat_in_this_group:
- 		ino = ext4_find_next_zero_bit((unsigned long *)
- 					      inode_bitmap_bh->b_data,
- 					      EXT4_INODES_PER_GROUP(sb), ino);
--		if (ino >= EXT4_INODES_PER_GROUP(sb)) {
--			if (++group == ngroups)
--				group = 0;
--			continue;
--		}
-+		if (ino >= EXT4_INODES_PER_GROUP(sb))
-+			goto next_group;
- 		if (group == 0 && (ino+1) < EXT4_FIRST_INO(sb)) {
- 			ext4_error(sb, "reserved inode found cleared - "
- 				   "inode=%lu", ino + 1);
-@@ -737,6 +734,9 @@ repeat_in_this_group:
- 			goto got; /* we grabbed the inode! */
- 		if (ino < EXT4_INODES_PER_GROUP(sb))
- 			goto repeat_in_this_group;
-+next_group:
-+		if (++group == ngroups)
-+			group = 0;
- 	}
- 	err = -ENOSPC;
- 	goto out;
--- 
-1.8.1.2
-
+greg k-h
