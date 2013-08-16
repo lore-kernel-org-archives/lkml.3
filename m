@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab3HPNSw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 09:18:52 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:39684 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478Ab3HPNSr (ORCPT
+	id S1754495Ab3HPNTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 09:19:06 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:33091 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab3HPNS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 09:18:47 -0400
-Subject: [RFC PATCH v2 08/11] powerpc/pseries: Read and write to the
- 'compressed' flag of pstore
+	Fri, 16 Aug 2013 09:18:58 -0400
+Subject: [RFC PATCH v2 09/11] erst: Read and write to the 'compressed' flag
+ of pstore
 To: linuxppc-dev@ozlabs.org, tony.luck@intel.com, linux-kernel@vger.kernel.org,
         keescook@chromium.org
 From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 Cc: jkenisto@linux.vnet.ibm.com, ananth@in.ibm.com, benh@kernel.crashing.org,
         cbouatmailru@gmail.com, mahesh@linux.vnet.ibm.com, ccross@android.com
-Date: Fri, 16 Aug 2013 18:48:36 +0530
-Message-ID: <20130816131836.3338.4640.stgit@aruna-ThinkPad-T420>
+Date: Fri, 16 Aug 2013 18:48:47 +0530
+Message-ID: <20130816131847.3338.90091.stgit@aruna-ThinkPad-T420>
 In-Reply-To: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
 References: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
 User-Agent: StGit/0.16-41-gd1dd
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081613-5490-0000-0000-000003FF3E1E
+x-cbid: 13081613-9264-0000-0000-0000045728A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If data returned from pstore is compressed, nvram's write callback
-will add a flag ERR_TYPE_KERNEL_PANIC_GZ indicating the data is compressed
-while writing to nvram. If the data read from nvram is compressed, nvram's
-read callback will set the flag 'compressed'. The patch adds backward
-compatibilty with old format oops header when reading from pstore.
+In pstore write, set the section type to CPER_SECTION_TYPE_DMESG_COMPR
+if the data is compressed. In pstore read, read the section type and
+update the 'compressed' flag accordingly.
 
 Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 ---
- arch/powerpc/platforms/pseries/nvram.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/acpi/apei/erst.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
-index 6c4dc52a..d276cd3 100644
---- a/arch/powerpc/platforms/pseries/nvram.c
-+++ b/arch/powerpc/platforms/pseries/nvram.c
-@@ -581,6 +581,9 @@ static int nvram_pstore_write(enum pstore_type_id type,
- 	oops_hdr->report_length = (u16) size;
- 	oops_hdr->timestamp = get_seconds();
- 
-+	if (compressed)
-+		err_type = ERR_TYPE_KERNEL_PANIC_GZ;
-+
- 	rc = nvram_write_os_partition(&oops_log_partition, oops_buf,
- 		(int) (sizeof(*oops_hdr) + size), err_type, count);
- 
-@@ -687,6 +690,11 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
- 			return -ENOMEM;
- 		memcpy(*buf, buff + hdr_size, length);
- 		kfree(buff);
-+
-+		if (err_type == ERR_TYPE_KERNEL_PANIC_GZ)
-+			*compressed = true;
-+		else
-+			*compressed = false;
- 		return length;
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index b0dca8e..62df189 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -956,6 +956,9 @@ static struct pstore_info erst_info = {
+ #define CPER_SECTION_TYPE_DMESG						\
+ 	UUID_LE(0xc197e04e, 0xd545, 0x4a70, 0x9c, 0x17, 0xa5, 0x54,	\
+ 		0x94, 0x19, 0xeb, 0x12)
++#define CPER_SECTION_TYPE_DMESG_Z					\
++	UUID_LE(0x4f118707, 0x04dd, 0x4055, 0xb5, 0xdd, 0x95, 0x6d,	\
++		0x34, 0xdd, 0xfa, 0xc6)
+ #define CPER_SECTION_TYPE_MCE						\
+ 	UUID_LE(0xfe08ffbe, 0x95e4, 0x4be7, 0xbc, 0x73, 0x40, 0x96,	\
+ 		0x04, 0x4a, 0x38, 0xfc)
+@@ -1034,7 +1037,12 @@ skip:
  	}
- 
+ 	memcpy(*buf, rcd->data, len - sizeof(*rcd));
+ 	*id = record_id;
++	*compressed = false;
+ 	if (uuid_le_cmp(rcd->sec_hdr.section_type,
++			CPER_SECTION_TYPE_DMESG_Z) == 0) {
++		*type = PSTORE_TYPE_DMESG;
++		*compressed = true;
++	} else if (uuid_le_cmp(rcd->sec_hdr.section_type,
+ 			CPER_SECTION_TYPE_DMESG) == 0)
+ 		*type = PSTORE_TYPE_DMESG;
+ 	else if (uuid_le_cmp(rcd->sec_hdr.section_type,
+@@ -1085,7 +1093,10 @@ static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
+ 	rcd->sec_hdr.flags = CPER_SEC_PRIMARY;
+ 	switch (type) {
+ 	case PSTORE_TYPE_DMESG:
+-		rcd->sec_hdr.section_type = CPER_SECTION_TYPE_DMESG;
++		if (compressed)
++			rcd->sec_hdr.section_type = CPER_SECTION_TYPE_DMESG_Z;
++		else
++			rcd->sec_hdr.section_type = CPER_SECTION_TYPE_DMESG;
+ 		break;
+ 	case PSTORE_TYPE_MCE:
+ 		rcd->sec_hdr.section_type = CPER_SECTION_TYPE_MCE;
 
