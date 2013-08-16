@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab3HQATX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:19:23 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:47971 "EHLO
+	id S1757474Ab3HQATZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:19:25 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:47969 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160Ab3HQATP (ORCPT
+	with ESMTP id S1753957Ab3HQATP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Aug 2013 20:19:15 -0400
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
@@ -18,138 +18,72 @@ Cc: lf-virt <virtualization@lists.linux-foundation.org>,
         Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
         Christoph Lameter <cl@gentwo.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v3 3/4] vhost/scsi: Convert to per-cpu ida_alloc + ida_free command map
-Date: Fri, 16 Aug 2013 23:09:08 +0000
-Message-Id: <1376694549-20609-4-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH-v3 0/4] target/vhost-scsi: Add per-cpu ida tag pre-allocation for v3.12
+Date: Fri, 16 Aug 2013 23:09:05 +0000
+Message-Id: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
-References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch changes vhost/scsi to use transport_init_session_tags()
-pre-allocation logic for per-cpu session tag pooling with internal
-ida_alloc() + ida_free() calls based upon the saved se_cmd->map_tag id.
+Hi folks,
 
-FIXME: Make transport_init_session_tags() number of tags setup
-configurable per vring client setting via configfs
+This is an updated series for adding tag pre-allocation support of
+target fabric descriptor memory, utilizing Kent's latest per-cpu ida
+bits here, along with Christoph Lameter's latest comments:
 
-v3 changes:
- - Update to percpu-ida usage
- - Rebase to v3.11-rc5 code
+   [PATCH 04/10] idr: Percpu ida
+   http://marc.info/?l=linux-kernel&m=137160026006974&w=2
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Asias He <asias@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/vhost/scsi.c |   33 +++++++++++++++++++++------------
- 1 file changed, 21 insertions(+), 12 deletions(-)
+The first patch is a standalone version of per-cpu-ida, seperate from
+the full idr rewrite from Kent that is still being discussed.  Given
+that I have a number of other target items aside from this series that
+depend on this code, I'd like to go ahead and include this standalone
+version into target-pending/for-next as a v3.12 item.
 
-diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-index 0c27c7d..af178b7 100644
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -48,12 +48,14 @@
- #include <linux/virtio_scsi.h>
- #include <linux/llist.h>
- #include <linux/bitmap.h>
-+#include <linux/idr.h>
- 
- #include "vhost.h"
- 
- #define TCM_VHOST_VERSION  "v0.1"
- #define TCM_VHOST_NAMELEN 256
- #define TCM_VHOST_MAX_CDB_SIZE 32
-+#define TCM_VHOST_DEFAULT_TAGS 256
- 
- struct vhost_scsi_inflight {
- 	/* Wait for the flush operation to finish */
-@@ -450,6 +452,7 @@ static void tcm_vhost_release_cmd(struct se_cmd *se_cmd)
- {
- 	struct tcm_vhost_cmd *tv_cmd = container_of(se_cmd,
- 				struct tcm_vhost_cmd, tvc_se_cmd);
-+	struct se_session *se_sess = se_cmd->se_sess;
- 
- 	if (tv_cmd->tvc_sgl_count) {
- 		u32 i;
-@@ -460,7 +463,7 @@ static void tcm_vhost_release_cmd(struct se_cmd *se_cmd)
-         }
- 
- 	tcm_vhost_put_inflight(tv_cmd->inflight);
--	kfree(tv_cmd);
-+	percpu_ida_free(&se_sess->sess_tag_pool, se_cmd->map_tag);
- }
- 
- static int tcm_vhost_shutdown_session(struct se_session *se_sess)
-@@ -704,7 +707,7 @@ static void vhost_scsi_complete_cmd_work(struct vhost_work *work)
- }
- 
- static struct tcm_vhost_cmd *
--vhost_scsi_allocate_cmd(struct vhost_virtqueue *vq,
-+vhost_scsi_get_tag(struct vhost_virtqueue *vq,
- 			struct tcm_vhost_tpg *tpg,
- 			struct virtio_scsi_cmd_req *v_req,
- 			u32 exp_data_len,
-@@ -712,18 +715,21 @@ vhost_scsi_allocate_cmd(struct vhost_virtqueue *vq,
- {
- 	struct tcm_vhost_cmd *cmd;
- 	struct tcm_vhost_nexus *tv_nexus;
-+	struct se_session *se_sess;
-+	int tag;
- 
- 	tv_nexus = tpg->tpg_nexus;
- 	if (!tv_nexus) {
- 		pr_err("Unable to locate active struct tcm_vhost_nexus\n");
- 		return ERR_PTR(-EIO);
- 	}
-+	se_sess = tv_nexus->tvn_se_sess;
- 
--	cmd = kzalloc(sizeof(struct tcm_vhost_cmd), GFP_ATOMIC);
--	if (!cmd) {
--		pr_err("Unable to allocate struct tcm_vhost_cmd\n");
--		return ERR_PTR(-ENOMEM);
--	}
-+	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, GFP_KERNEL);
-+	cmd = &((struct tcm_vhost_cmd *)se_sess->sess_cmd_map)[tag];
-+	memset(cmd, 0, sizeof(struct tcm_vhost_cmd));
-+
-+	cmd->tvc_se_cmd.map_tag = tag;
- 	cmd->tvc_tag = v_req->tag;
- 	cmd->tvc_task_attr = v_req->task_attr;
- 	cmd->tvc_exp_data_len = exp_data_len;
-@@ -989,10 +995,10 @@ vhost_scsi_handle_vq(struct vhost_scsi *vs, struct vhost_virtqueue *vq)
- 		for (i = 0; i < data_num; i++)
- 			exp_data_len += vq->iov[data_first + i].iov_len;
- 
--		cmd = vhost_scsi_allocate_cmd(vq, tpg, &v_req,
--					exp_data_len, data_direction);
-+		cmd = vhost_scsi_get_tag(vq, tpg, &v_req,
-+					 exp_data_len, data_direction);
- 		if (IS_ERR(cmd)) {
--			vq_err(vq, "vhost_scsi_allocate_cmd failed %ld\n",
-+			vq_err(vq, "vhost_scsi_get_tag failed %ld\n",
- 					PTR_ERR(cmd));
- 			goto err_cmd;
- 		}
-@@ -1675,9 +1681,12 @@ static int tcm_vhost_make_nexus(struct tcm_vhost_tpg *tpg,
- 		return -ENOMEM;
- 	}
- 	/*
--	 *  Initialize the struct se_session pointer
-+	 *  Initialize the struct se_session pointer and setup tagpool
-+	 *  for struct tcm_vhost_cmd descriptors
- 	 */
--	tv_nexus->tvn_se_sess = transport_init_session();
-+	tv_nexus->tvn_se_sess = transport_init_session_tags(
-+					TCM_VHOST_DEFAULT_TAGS,
-+					sizeof(struct tcm_vhost_cmd));
- 	if (IS_ERR(tv_nexus->tvn_se_sess)) {
- 		mutex_unlock(&tpg->tv_tpg_mutex);
- 		kfree(tv_nexus);
+Jens has also expressed interest in a blk-mq conversion to use these
+per-cpu-ida primatives, so getting this piece merged for v3.12 would
+make life easier for both of us.  ;)
+
+The second patch includes target-core setup of se_sess->sess_cmd_map +
+se_sess->sess_tag_pool resources at session creation time, using
+fabric independent code in transport_init_session_tags().
+
+The third patch is the initial conversion of vhost-scsi fabric code
+to use per-cpu ida logic for obtaining a new tcm_vhost_cmd descriptor
+via vhost_scsi_get_tag() during vhost_work_fn_t->handle_kick() ->
+vhost_scsi_handle_vq() callback execution.
+
+And the forth patch is a vhost-scsi change that adds pre-allocation of
+per tcm_vhost_cmd descriptor scatterlist + user-space page pointer
+memory, that allows the last two fast-path allocations to be dropped
+from tcm_vhost_submission_work() -> vhost_scsi_map_to_sgl() fast-path
+execution.
+
+Please review as v3.12 material.
+
+Thanks!
+
+--nab
+
+Kent Overstreet (1):
+  idr: Percpu ida
+
+Nicholas Bellinger (3):
+  target: Add transport_init_session_tags using per-cpu ida
+  vhost/scsi: Convert to per-cpu ida_alloc + ida_free command map
+  vhost/scsi: Add pre-allocation for tv_cmd SGL + upages memory
+
+ drivers/target/target_core_transport.c |   33 ++++
+ drivers/vhost/scsi.c                   |  132 +++++++++----
+ include/linux/idr.h                    |   53 ++++++
+ include/target/target_core_base.h      |    5 +
+ include/target/target_core_fabric.h    |    1 +
+ lib/idr.c                              |  316 +++++++++++++++++++++++++++++++-
+ 6 files changed, 501 insertions(+), 39 deletions(-)
+
 -- 
 1.7.10.4
 
