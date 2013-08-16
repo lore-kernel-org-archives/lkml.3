@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab3HPNre (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 09:47:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51440 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab3HPNrb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 09:47:31 -0400
-Date: Fri, 16 Aug 2013 06:49:07 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Enrico Mioso <mrkiko.rs@gmail.com>
-Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net: cdc_ncm: Export cdc_ncm_{tx,rx}_fixup functions for
- re-use
-Message-ID: <20130816134907.GA10987@kroah.com>
-References: <alpine.LNX.2.02.1307021241380.8884@eeeadesso>
- <87wqp9xja5.fsf@nemi.mork.no>
- <alpine.LNX.2.02.1307101425310.22696@eeeadesso>
- <0cbf7c81-182e-493c-9c28-5b78160a08f1@email.android.com>
- <alpine.LNX.2.02.1307170457450.1161@eeeadesso>
- <87bo4xx3ef.fsf@nemi.mork.no>
- <alpine.LNX.2.02.1308161534410.23935@eeeadesso>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.02.1308161534410.23935@eeeadesso>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754573Ab3HPNtV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 09:49:21 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62525 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751446Ab3HPNtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 09:49:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,895,1367996400"; 
+   d="scan'208";a="387317666"
+Message-ID: <1376661291.2089.361.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] m25p80 / fast read
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-mtd@lists.infradead.org, Marek Vasut <marex@denx.de>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Date: Fri, 16 Aug 2013 16:54:51 +0300
+In-Reply-To: <1376302946-11534-1-git-send-email-s.hauer@pengutronix.de>
+References: <1376302946-11534-1-git-send-email-s.hauer@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 03:39:19PM +0200, Enrico Mioso wrote:
-> Some drivers implementing NCM-like protocols, may re-use those functions, as is 
-> the case in the huawei_cdc_ncm driver.
+On Mon, 2013-08-12 at 12:22 +0200, Sascha Hauer wrote:
+> The following adds support for the mr25h10 chip to to the m25p80
+> driver.
+> 
+> This driver currently has the problem that it unconditionally uses
+> the fast_read command once it's enabled in Kconfig which of course
+> leads to problems with multiboard kernels. This series adds a flag
+> to the chip specific data to solve this. Also some unnecessary ifdefs
+> are removed.
 
-Where is that driver at, I don't see it in the kernel tree.
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-> Export them via EXPORT_SYMBOL_GPL.
+I'll let Biran take a look, and tomorrow apply, unless he applies
+himself or has objections.
 
-Normally we don't export symbols until code that actually uses the
-symbols lands in the tree at the same time.
+-- 
+Best Regards,
+Artem Bityutskiy
 
-thanks,
-
-greg k-h
