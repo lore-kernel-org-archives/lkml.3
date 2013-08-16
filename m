@@ -1,148 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab3HPWWP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:22:15 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:52680 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839Ab3HPWWL (ORCPT
+	id S1754899Ab3HPWW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:22:27 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:50322 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752373Ab3HPWWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:22:11 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Fri, 16 Aug 2013 18:22:23 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC 3/4] ARM: tegra: Call of_platform_populate() early
-Date: Fri, 16 Aug 2013 22:39:22 +0200
-Message-Id: <1376685563-1053-4-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1376685563-1053-1-git-send-email-treding@nvidia.com>
-References: <1376685563-1053-1-git-send-email-treding@nvidia.com>
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [RFC v1 4/5] ARM: mvebu: add Armada 1500 and Sony NSZ-GS7 device tree files
+Date: Fri, 16 Aug 2013 21:41:37 +0200
+Message-Id: <1376682098-10580-5-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the new early device registration functionality it is now possible
-to register devices much earlier in the boot process. Move the call to
-of_platform_populate() from tegra_dt_init() to tegra_dt_init_irq() and
-allow drivers that require to be run early to access the struct device
-associated with a device node.
+This adds very basic device tree files for the Marvell Armada 1500 SoC
+and the Sony NSZ-GS7 GoogleTV board. Currently, SoC only has nodes for
+cpus, some clocks, l2 cache controller, local timer, apb timers, uart,
+and interrupt controllers.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+The clocks are fixed-clock placeholders until a real DT clock provider
+is available. Cache controller node may be wrong and was just guessed
+out of Armada 370 and GPL'd 1500 source. Timers except clocksource have
+not really been tested.
+
+The separation into soc/apb and soc/sm-apb may be removed, but it looks
+like Armada 1500 has a separate peripheral bus for the System Manager
+core that can also been accessed by CPUs. (If you look closely on GTV
+boot logs, you can see SM and CPU fighting for UART ;) )
+
+The Sony NSZ-GS7 is a GoogleTV consumer device comprising the SoC above.
+Since last week or so, there is a way to install a custom u-boot and
+boot stock, unsigned kernels easily. Just ask Google about it, if you
+are willing to void your warranty.
+
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
- arch/arm/mach-tegra/common.c | 33 +++++++++++++++++++++++++++++++++
- arch/arm/mach-tegra/tegra.c  | 32 --------------------------------
- 2 files changed, 33 insertions(+), 32 deletions(-)
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/boot/dts/Makefile                     |    3 +-
+ arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts |   29 +++
+ arch/arm/boot/dts/armada-1500.dtsi             |  225 ++++++++++++++++++++++++
+ 3 files changed, 256 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts
+ create mode 100644 arch/arm/boot/dts/armada-1500.dtsi
 
-diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
-index 94a119a..24dc09b 100644
---- a/arch/arm/mach-tegra/common.c
-+++ b/arch/arm/mach-tegra/common.c
-@@ -25,6 +25,9 @@
- #include <linux/reboot.h>
- #include <linux/irqchip.h>
- #include <linux/clk-provider.h>
-+#include <linux/sys_soc.h>
-+#include <linux/slab.h>
-+#include <linux/of_platform.h>
- 
- #include <asm/hardware/cache-l2x0.h>
- 
-@@ -61,6 +64,36 @@ u32 tegra_uart_config[4] = {
- #ifdef CONFIG_OF
- void __init tegra_dt_init_irq(void)
- {
-+	struct soc_device_attribute *soc_dev_attr;
-+	struct soc_device *soc_dev;
-+	struct device *parent = NULL;
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 641b3c9..3186904 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -103,7 +103,8 @@ dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+ 	armada-370-rd.dtb \
+ 	armada-xp-db.dtb \
+ 	armada-xp-gp.dtb \
+-	armada-xp-openblocks-ax3-4.dtb
++	armada-xp-openblocks-ax3-4.dtb \
++	armada-1500-sony-nsz-gs7.dtb
+ dtb-$(CONFIG_ARCH_MXC) += \
+ 	imx25-karo-tx25.dtb \
+ 	imx25-pdk.dtb \
+diff --git a/arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts b/arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts
+new file mode 100644
+index 0000000..b76c4b8
+--- /dev/null
++++ b/arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts
+@@ -0,0 +1,29 @@
++/*
++ * Device Tree file for Sony NSZ-GS7
++ *
++ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
 +
-+	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-+	if (!soc_dev_attr)
-+		goto out;
++/dts-v1/;
 +
-+	soc_dev_attr->family = kasprintf(GFP_KERNEL, "Tegra");
-+	soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d", tegra_revision);
-+	soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%d", tegra_chip_id);
++#include "armada-1500.dtsi"
 +
-+	soc_dev = soc_device_register(soc_dev_attr);
-+	if (IS_ERR(soc_dev)) {
-+		kfree(soc_dev_attr->family);
-+		kfree(soc_dev_attr->revision);
-+		kfree(soc_dev_attr->soc_id);
-+		kfree(soc_dev_attr);
-+		goto out;
-+	}
++/ {
++	model = "Sony NSZ-GS7";
++	compatible = "sony,nsz-gs7", "marvell,armada-1500";
 +
-+	parent = soc_device_to_device(soc_dev);
++	chosen {
++		bootargs = "console=ttyS0,115200 earlyprintk verbose debug";
++	};
 +
-+	/*
-+	 * Finished with the static registrations now; fill in the missing
-+	 * devices
-+	 */
-+out:
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, parent);
++	memory {
++		device_type = "memory";
++		reg = <0x00000000 0x40000000>; /* 1 GB */
++	};
++};
 +
- 	of_clk_init(NULL);
- 	tegra_pmc_init();
- 	tegra_init_irq();
-diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
-index 5b86055..9abb71e 100644
---- a/arch/arm/mach-tegra/tegra.c
-+++ b/arch/arm/mach-tegra/tegra.c
-@@ -27,11 +27,9 @@
- #include <linux/of.h>
- #include <linux/of_address.h>
- #include <linux/of_fdt.h>
--#include <linux/of_platform.h>
- #include <linux/pda_power.h>
- #include <linux/io.h>
- #include <linux/slab.h>
--#include <linux/sys_soc.h>
- #include <linux/usb/tegra_usb_phy.h>
- #include <linux/clk/tegra.h>
- 
-@@ -47,37 +45,7 @@
- 
- static void __init tegra_dt_init(void)
- {
--	struct soc_device_attribute *soc_dev_attr;
--	struct soc_device *soc_dev;
--	struct device *parent = NULL;
--
- 	tegra_clocks_apply_init_table();
--
--	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
--	if (!soc_dev_attr)
--		goto out;
--
--	soc_dev_attr->family = kasprintf(GFP_KERNEL, "Tegra");
--	soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d", tegra_revision);
--	soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%d", tegra_chip_id);
--
--	soc_dev = soc_device_register(soc_dev_attr);
--	if (IS_ERR(soc_dev)) {
--		kfree(soc_dev_attr->family);
--		kfree(soc_dev_attr->revision);
--		kfree(soc_dev_attr->soc_id);
--		kfree(soc_dev_attr);
--		goto out;
--	}
--
--	parent = soc_device_to_device(soc_dev);
--
--	/*
--	 * Finished with the static registrations now; fill in the missing
--	 * devices
--	 */
--out:
--	of_platform_populate(NULL, of_default_bus_match_table, NULL, parent);
- }
- 
- static void __init paz00_init(void)
++&uart0 { status = "okay"; };
+diff --git a/arch/arm/boot/dts/armada-1500.dtsi b/arch/arm/boot/dts/armada-1500.dtsi
+new file mode 100644
+index 0000000..51e0420
+--- /dev/null
++++ b/arch/arm/boot/dts/armada-1500.dtsi
+@@ -0,0 +1,225 @@
++/*
++ * Device Tree Include file for Marvell Armada 1500 SoC
++ *
++ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include "skeleton.dtsi"
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++
++/ {
++	model = "Marvell Armada 1500 SoC";
++	compatible = "marvell,armada-1500";
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			compatible = "marvell,sheeva-v7";
++			device_type = "cpu";
++			next-level-cache = <&l2>;
++			reg = <0>;
++		};
++
++		cpu@1 {
++			compatible = "marvell,sheeva-v7";
++			device_type = "cpu";
++			next-level-cache = <&l2>;
++			reg = <1>;
++		};
++	};
++
++	clocks {
++		/* 25MHz reference crystal */
++		ref25: oscillator {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <25000000>;
++		};
++
++		cpu0clk: cpu0-clock {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <1200000000>;
++		};
++
++		cfgclk: cfg-clock {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <100000000>;
++		};
++	};
++
++	soc {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		interrupt-parent = <&gic>;
++
++		ranges = <0 0xf6000000 0x3000000>;
++
++		l2: l2-cache-controller@1ac0000 {
++			compatible = "marvell,aurora-outer-cache";
++			reg = <0x1ac0000 0x1000>;
++			cache-level = <2>;
++		};
++
++		gic: interrupt-controller@1ad0000 {
++			compatible = "arm,cortex-a9-gic";
++			reg = <0x1ad1000 0x1000
++			       0x1ad0100 0x0100>;
++			interrupt-controller;
++			#interrupt-cells = <3>;
++		};
++
++		local-timer@1ad0600 {
++			compatible = "arm,cortex-a9-twd-timer";
++			reg = <0x1ad0600 0x20>;
++			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&cpu0clk>;
++		};
++
++		apb {
++			compatible = "simple-bus";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			ranges = <0 0x1e80000 0x10000>;
++			interrupt-parent = <&aic>;
++
++			timer0: timer@2c00 {
++				compatible = "snps,dw-apb-timer-osc";
++				reg = <0x2c00 0x14>;
++				interrupts = <8>;
++				clocks = <&cfgclk>;
++				clock-names = "timer";
++				status = "okay";
++			};
++
++			timer1: timer@2c14 {
++				compatible = "snps,dw-apb-timer-osc";
++				reg = <0x2c14 0x14>;
++				interrupts = <9>;
++				clocks = <&cfgclk>;
++				clock-names = "timer";
++				status = "okay";
++			};
++
++			timer2: timer@2c28 {
++				compatible = "snps,dw-apb-timer-sp";
++				reg = <0x2c28 0x14>;
++				interrupts = <10>;
++				clocks = <&cfgclk>;
++				clock-names = "timer";
++				status = "okay";
++			};
++
++			timer3: timer@2c3c {
++				compatible = "snps,dw-apb-timer-sp";
++				reg = <0x2c3c 0x14>;
++				interrupts = <11>;
++				clocks = <&cfgclk>;
++				clock-names = "timer";
++				status = "okay";
++			};
++
++			timer4: timer@2c50 {
++				compatible = "snps,dw-apb-timer-sp";
++				reg = <0x2c50 0x14>;
++				interrupts = <12>;
++				clocks = <&cfgclk>;
++				clock-names = "timer";
++				status = "disabled";
++			};
++
++			timer5: timer@2c64 {
++				compatible = "snps,dw-apb-timer-sp";
++				reg = <0x2c64 0x14>;
++				interrupts = <13>;
++				clocks = <&cfgclk>;
++				clock-names = "timer";
++				status = "disabled";
++			};
++
++			timer6: timer@2c78 {
++				compatible = "snps,dw-apb-timer-sp";
++				reg = <0x2c78 0x14>;
++				interrupts = <14>;
++				clocks = <&cfgclk>;
++				clock-names = "timer";
++				status = "disabled";
++			};
++
++			timer7: timer@2c8c {
++				compatible = "snps,dw-apb-timer-sp";
++				reg = <0x2c8c 0x14>;
++				interrupts = <15>;
++				clocks = <&cfgclk>;
++				clock-names = "timer";
++				status = "disabled";
++			};
++
++			aic: interrupt-controller@3000 {
++				compatible = "marvell,armada-1500-apb-intc";
++				reg = <0x3000 0xc00>;
++				interrupt-controller;
++				#interrupt-cells = <1>;
++				interrupt-parent = <&gic>;
++				interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
++			};
++		};
++
++		sm-apb {
++			compatible = "simple-bus";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			ranges = <0 0x1fc0000 0x10000>;
++			interrupt-parent = <&sic>;
++
++			sic: interrupt-controller@e000 {
++				compatible = "marvell,armada-1500-apb-intc";
++				reg = <0xe000 0x400>;
++				interrupt-controller;
++				#interrupt-cells = <1>;
++				interrupt-parent = <&gic>;
++				interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
++			};
++
++			uart0: serial@9000 {
++				compatible = "snps,dw-apb-uart";
++				reg = <0x9000 0x100>;
++				reg-shift = <2>;
++				reg-io-width = <1>;
++				interrupts = <8>;
++				clock-frequency = <25000000>;
++				status = "disabled";
++			};
++
++			uart1: serial@a000 {
++				compatible = "snps,dw-apb-uart";
++				reg = <0xa000 0x100>;
++				reg-shift = <2>;
++				reg-io-width = <1>;
++				interrupts = <9>;
++				clock-frequency = <25000000>;
++				status = "disabled";
++			};
++
++			uart2: serial@b000 {
++				compatible = "snps,dw-apb-uart";
++				reg = <0xb000 0x100>;
++				reg-shift = <2>;
++				reg-io-width = <1>;
++				interrupts = <10>;
++				clock-frequency = <25000000>;
++				status = "disabled";
++			};
++		};
++	};
++ };
 -- 
-1.8.3.4
+1.7.10.4
 
