@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab3HPRS6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 13:18:58 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:50209 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab3HPRSz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 13:18:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130814162225.5f1107bd44b11df41703b3d6@linux-foundation.org>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<20130814162225.5f1107bd44b11df41703b3d6@linux-foundation.org>
-Date: Sat, 17 Aug 2013 02:18:55 +0900
-Message-ID: <CAAmzW4PpPqGYpGY=zkMmrwLWgQH9xxOb9r3iwzVrWmgcWFbxzQ@mail.gmail.com>
-Subject: Re: [PATCH v2 00/20] mm, hugetlb: remove a hugetlb_instantiation_mutex
-From: JoonSoo Kim <js1304@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754874Ab3HPRTS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 13:19:18 -0400
+Received: from mail.tpi.com ([74.45.170.26]:33654 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752751Ab3HPRTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 13:19:14 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
+To: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Yacine Belkadi <yacine.belkadi.1@gmail.com>
+Subject: [PATCH 3.11-rc5 1/2] ALSA: pcm: Add snd_printd_ratelimit()
+Date: Fri, 16 Aug 2013 11:18:59 -0600
+Message-Id: <1376673540-2201-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/8/15 Andrew Morton <akpm@linux-foundation.org>:
-> On Fri,  9 Aug 2013 18:26:18 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->
->> Without a hugetlb_instantiation_mutex, if parallel fault occur, we can
->> fail to allocate a hugepage, because many threads dequeue a hugepage
->> to handle a fault of same address. This makes reserved pool shortage
->> just for a little while and this cause faulting thread to get a SIGBUS
->> signal, although there are enough hugepages.
->>
->> To solve this problem, we already have a nice solution, that is,
->> a hugetlb_instantiation_mutex. This blocks other threads to dive into
->> a fault handler. This solve the problem clearly, but it introduce
->> performance degradation, because it serialize all fault handling.
->>
->> Now, I try to remove a hugetlb_instantiation_mutex to get rid of
->> performance problem reported by Davidlohr Bueso [1].
->>
->> This patchset consist of 4 parts roughly.
->>
->> Part 1. (1-6) Random fix and clean-up. Enhancing error handling.
->>
->>       These can be merged into mainline separately.
->>
->> Part 2. (7-9) Protect region tracking via it's own spinlock, instead of
->>       the hugetlb_instantiation_mutex.
->>
->>       Breaking dependency on the hugetlb_instantiation_mutex for
->>       tracking a region is also needed by other approaches like as
->>       'table mutexes', so these can be merged into mainline separately.
->>
->> Part 3. (10-13) Clean-up.
->>
->>       IMO, these make code really simple, so these are worth to go into
->>       mainline separately, regardless success of my approach.
->>
->> Part 4. (14-20) Remove a hugetlb_instantiation_mutex.
->>
->>       Almost patches are just for clean-up to error handling path.
->>       In patch 19, retry approach is implemented that if faulted thread
->>       failed to allocate a hugepage, it continue to run a fault handler
->>       until there is no concurrent thread having a hugepage. This causes
->>       threads who want to get a last hugepage to be serialized, so
->>       threads don't get a SIGBUS if enough hugepage exist.
->>       In patch 20, remove a hugetlb_instantiation_mutex.
->
-> I grabbed the first six easy ones.  I'm getting a bit cross-eyed from
-> all the reviewing lately so I'll wait and see if someone else takes an
-> interest in the other patches, sorry.
+Direct calls to printk_limit() will emit log noise even when CONFIG_SND_DEBUG is not
+defined. Add a wrapper macro around printk_limit() that is conditionally defined by
+CONFIG_SND_DEBUG.
 
-Hello, Andrew.
-Thanks for reviewing this and merging the first six patches.
-There is no hurry to me, so I'd willingly wait for someone to review this.
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Yacine Belkadi <yacine.belkadi.1@gmail.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
 
-Thanks.
+checkpatch is moaning about the use of printk_ratelimit(), but
+printk_ratelimited() seems like overkill for a debug feature.
+
+WARNING: Prefer printk_ratelimited or pr_<level>_ratelimited to printk_ratelimit
+#38: FILE: include/sound/core.h:382:
++#define snd_printd_ratelimit() printk_ratelimit()
+
+ include/sound/core.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/include/sound/core.h b/include/sound/core.h
+index c586617..2a14f1f 100644
+--- a/include/sound/core.h
++++ b/include/sound/core.h
+@@ -27,6 +27,7 @@
+ #include <linux/rwsem.h>		/* struct rw_semaphore */
+ #include <linux/pm.h>			/* pm_message_t */
+ #include <linux/stringify.h>
++#include <linux/printk.h>
+ 
+ /* number of supported soundcards */
+ #ifdef CONFIG_SND_DYNAMIC_MINORS
+@@ -376,6 +377,11 @@ void __snd_printk(unsigned int level, const char *file, int line,
+ #define snd_BUG()		WARN(1, "BUG?\n")
+ 
+ /**
++ * Suppress high rates of output when CONFIG_SND_DEBUG is enabled.
++ */
++#define snd_printd_ratelimit() printk_ratelimit()
++
++/**
+  * snd_BUG_ON - debugging check macro
+  * @cond: condition to evaluate
+  *
+@@ -398,6 +404,8 @@ static inline void _snd_printd(int level, const char *format, ...) {}
+ 	unlikely(__ret_warn_on); \
+ })
+ 
++static inline bool snd_printd_ratelimit(void) { return false; }
++
+ #endif /* CONFIG_SND_DEBUG */
+ 
+ #ifdef CONFIG_SND_DEBUG_VERBOSE
+-- 
+1.7.9.5
+
