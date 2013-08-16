@@ -1,302 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab3HPEMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 00:12:22 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:45902 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586Ab3HPEMP (ORCPT
+	id S1751205Ab3HPE06 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 00:26:58 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:39841 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979Ab3HPE0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 00:12:15 -0400
-From: Won Kang <wkang77@gmail.com>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, dan.carpenter@oracle.com,
-        yongjun_wei@trendmicro.com.cn, joe@perches.com,
-        sachin.kamat@linaro.org, Won Kang <wonkang@gctsemi.com>
-Subject: [PATCH 2/2] staging: gdm7240: a TTY rewrite according to the latest TTY APIs
-Date: Fri, 16 Aug 2013 13:13:44 +0900
-Message-Id: <1376626424-2919-2-git-send-email-wonkang@gctsemi.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1376626424-2919-1-git-send-email-wonkang@gctsemi.com>
-References: <1376036357-7216-1-git-send-email-wonkang@gctsemi.com>
- <1376626424-2919-1-git-send-email-wonkang@gctsemi.com>
+	Fri, 16 Aug 2013 00:26:52 -0400
+Date: Fri, 16 Aug 2013 13:26:41 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v6 0/5] zram/zsmalloc promotion
+Message-ID: <20130816042641.GA2893@gmail.com>
+References: <1376459736-7384-1-git-send-email-minchan@kernel.org>
+ <20130814174050.GN2296@suse.de>
+ <20130814185820.GA2753@gmail.com>
+ <20130815171250.GA2296@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130815171250.GA2296@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed mis-use of mutex for gdm_table. gdm_table is refered to only
-inside tty_install and port destrcut, and usb callbacks use internal
-reference which was saved during urb submission
+Hi Mel,
 
-Signed-off-by: Won Kang <wonkang@gctsemi.com>
----
- drivers/staging/gdm724x/gdm_mux.c |    9 ++++----
- drivers/staging/gdm724x/gdm_mux.h |   14 +++++++++---
- drivers/staging/gdm724x/gdm_tty.c |   45 ++++++++++++++++---------------------
- drivers/staging/gdm724x/gdm_tty.h |   33 ++++++++++++++++++---------
- 4 files changed, 56 insertions(+), 45 deletions(-)
+On Thu, Aug 15, 2013 at 06:12:50PM +0100, Mel Gorman wrote:
+> On Thu, Aug 15, 2013 at 03:58:20AM +0900, Minchan Kim wrote:
+> > > <SNIP>
+> > >
+> > > I do not believe this is a problem for zram as such because I do not
+> > > think it ever writes back to disk and is immune from the unpredictable
+> > > performance characteristics problem. The problem for zram using zsmalloc
+> > > is OOM killing. If it's used for swap then there is no guarantee that
+> > > killing processes frees memory and that could result in an OOM storm.
+> > > Of course there is no guarantee that memory is freed with zbud either but
+> > > you are guaranteed that freeing 50%+1 of the compressed pages will free a
+> > > single physical page. The characteristics for zsmalloc are much more severe.
+> > > This might be managable in an applicance with very careful control of the
+> > > applications that are running but not for general servers or desktops.
+> > 
+> > Fair enough but let's think of current usecase for zram.
+> > As I said in description, most of user for zram are embedded products.
+> > So, most of them has no swap storage and hate OOM kill because OOM is
+> > already very very slow path so system slow response is really thing
+> > we want to avoid. We prefer early process kill to slow response.
+> > That's why custom low memory killer/notifier is popular in embedded side.
+> > so actually, OOM storm problem shouldn't be a big problem under
+> > well-control limited system. 
+> > 
+> 
+> Which zswap could also do if
+> 
+> a) it had a pseudo block device that failed all writes
+> b) zsmalloc was pluggable
+> 
+> I recognise this sucks because zram is already in the field but if zram
+> is promoted then zram and zswap will continue to diverge further with no
+> reconcilation in sight.
+> 
+> Part of the point of using zswap was that potentially zcache could be
+> implemented on top of it and so all file cache could be stored compressed
+> in memory. AFAIK, it's not possible to do the same thing for zram because
+> of the lack of writeback capabilities. Maybe it could be done if zram
+> could be configured to write to an underlying storage device but it may
+> be very clumsy to configure. I don't know as I never investigated it and
+> to be honest, I'm struggling to remember how I got involved anywhere near
+> zswap/zcache/zram/zwtf in the first place.
+> 
+> > > If it's used for something like tmpfs then it becomes much worse. Normal
+> > > tmpfs without swap can lockup if tmpfs is allowed to fill memory. In a
+> > > sane configuration, lockups will be avoided and deleting a tmpfs file is
+> > > guaranteed to free memory. When zram is used to back tmpfs, there is no
+> > > guarantee that any memory is freed due to fragmentation of the compressed
+> > > pages. The only way to recover the memory may be to kill applications
+> > > holding tmpfs files open and then delete them which is fairly drastic
+> > > action in a normal server environment.
+> > 
+> > Indeed.
+> > Actually, I had a plan to support zsmalloc compaction. The zsmalloc exposes
+> > handle instead of pure pointer so it could migrate some zpages to somewhere
+> > to pack in. Then, it could help above problem and OOM storm problem.
+> > Anyway, it's a totally new feature and requires many changes and experiement.
+> > Although we don't have such feature, zram is still good for many people.
+> > 
+> 
+> And is zsmalloc was pluggable for zswap then it would also benefit.
 
-diff --git a/drivers/staging/gdm724x/gdm_mux.c b/drivers/staging/gdm724x/gdm_mux.c
-index b630bab..9e217ff 100644
---- a/drivers/staging/gdm724x/gdm_mux.c
-+++ b/drivers/staging/gdm724x/gdm_mux.c
-@@ -25,7 +25,6 @@
- #include <linux/usb/cdc.h>
- 
- #include "gdm_mux.h"
--#include "gdm_tty.h"
- 
- struct workqueue_struct *mux_rx_wq;
- 
-@@ -196,7 +195,7 @@ static int up_to_host(struct mux_rx *r)
- 		ret = r->callback(mux_header->data,
- 				payload_size,
- 				index,
--				mux_dev->minor[index],
-+				mux_dev->tty_dev,
- 				RECV_PACKET_PROCESS_CONTINUE
- 				);
- 		if (ret == TO_HOST_BUFFER_REQUEST_FAIL) {
-@@ -209,7 +208,7 @@ static int up_to_host(struct mux_rx *r)
- 			ret = r->callback(NULL,
- 					0,
- 					index,
--					mux_dev->minor[index],
-+					mux_dev->tty_dev,
- 					RECV_PACKET_PROCESS_COMPLETE
- 					);
- 			break;
-@@ -283,7 +282,7 @@ static void gdm_mux_rcv_complete(struct urb *urb)
- }
- 
- static int gdm_mux_recv(void *priv_dev,
--			int (*cb)(void *data, int len, int tty_index, int minor, int complete)
-+			int (*cb)(void *data, int len, int tty_index, struct tty_dev *tty_dev, int complete)
- 			)
- {
- 	struct mux_dev *mux_dev = priv_dev;
-@@ -562,7 +561,7 @@ static int gdm_mux_probe(struct usb_interface *intf, const struct usb_device_id
- 		goto out;
- 	}
- 	for (i = 0; i < TTY_MAX_COUNT; i++)
--		mux_dev->minor[i] = tty_dev->minor[i];
-+		mux_dev->tty_dev = tty_dev;
- 
- out:
- 	if (ret < 0) {
-diff --git a/drivers/staging/gdm724x/gdm_mux.h b/drivers/staging/gdm724x/gdm_mux.h
-index d5b0b54..0163b24 100644
---- a/drivers/staging/gdm724x/gdm_mux.h
-+++ b/drivers/staging/gdm724x/gdm_mux.h
-@@ -18,6 +18,8 @@
- #include <linux/usb.h>
- #include <linux/list.h>
- 
-+#include "gdm_tty.h"
-+
- #define PM_NORMAL 0
- #define PM_SUSPEND 1
- 
-@@ -57,7 +59,10 @@ struct mux_rx {
- 	void *mux_dev;
- 	u32 offset;
- 	u32 len;
--	int (*callback)(void *data, int len, int tty_index, int minor,
-+	int (*callback)(void *data,
-+			int len,
-+			int tty_index,
-+			struct tty_dev *tty_dev,
- 			int complete);
- };
- 
-@@ -78,10 +83,13 @@ struct mux_dev {
- 	struct delayed_work work_rx;
- 	struct usb_interface *intf;
- 	int usb_state;
--	int (*rx_cb)(void *data, int len, int tty_index, int minor,
-+	int (*rx_cb)(void *data,
-+		     int len,
-+		     int tty_index,
-+		     struct tty_dev *tty_dev,
- 		     int complete);
- 	spinlock_t write_lock;
--	u8 minor[2];
-+	struct tty_dev *tty_dev;
- };
- 
- #endif /* _GDM_MUX_H_ */
-diff --git a/drivers/staging/gdm724x/gdm_tty.c b/drivers/staging/gdm724x/gdm_tty.c
-index 5bcf882..c1530b7 100644
---- a/drivers/staging/gdm724x/gdm_tty.c
-+++ b/drivers/staging/gdm724x/gdm_tty.c
-@@ -89,19 +89,22 @@ static int gdm_tty_install(struct tty_driver *driver, struct tty_struct *tty)
- 
- 	mutex_lock(&gdm_table_lock);
- 	gdm = gdm_table[i][j];
--	mutex_unlock(&gdm_table_lock);
--	if (gdm == NULL)
-+	if (gdm == NULL) {
-+		mutex_unlock(&gdm_table_lock);
- 		return -ENODEV;
-+	}
- 
- 	tty_port_get(&gdm->port);
- 
- 	ret = tty_standard_install(driver, tty);
- 	if (ret) {
- 		tty_port_put(&gdm->port);
-+		mutex_unlock(&gdm_table_lock);
- 		return ret;
- 	}
- 
- 	tty->driver_data = gdm;
-+	mutex_unlock(&gdm_table_lock);
- 
- 	return 0;
- }
-@@ -130,14 +133,13 @@ static void gdm_tty_close(struct tty_struct *tty, struct file *filp)
- 	tty_port_close(&gdm->port, tty, filp);
- }
- 
--static int gdm_tty_recv_complete(void *data, int len, int index, int minor, int complete)
-+static int gdm_tty_recv_complete(void *data,
-+				 int len,
-+				 int index,
-+				 struct tty_dev *tty_dev,
-+				 int complete)
- {
--	struct gdm *gdm;
--
--	mutex_lock(&gdm_table_lock);
--	gdm = gdm_table[index][minor];
--	mutex_unlock(&gdm_table_lock);
--
-+	struct gdm *gdm = tty_dev->gdm[index];
- 	if (!GDM_TTY_READY(gdm)) {
- 		if (complete == RECV_PACKET_PROCESS_COMPLETE)
- 			gdm_tty_recv(gdm, gdm_tty_recv_complete);
-@@ -223,31 +225,29 @@ int register_lte_tty_device(struct tty_dev *tty_dev, struct device *device)
- 			return -ENOMEM;
- 
- 		mutex_lock(&gdm_table_lock);
--
- 		for (j = 0; j < GDM_TTY_MINOR; j++) {
- 			if (!gdm_table[i][j])
- 				break;
- 		}
- 
- 		if (j == GDM_TTY_MINOR) {
--			tty_dev->minor[i] = GDM_TTY_MINOR;
-+			kfree(gdm);
- 			mutex_unlock(&gdm_table_lock);
- 			return -EINVAL;
- 		}
- 
- 		gdm_table[i][j] = gdm;
--
- 		mutex_unlock(&gdm_table_lock);
- 
--		tty_dev->minor[i] = j;
--
-+		tty_dev->gdm[i] = gdm;
- 		tty_port_init(&gdm->port);
-+
- 		gdm->port.ops = &gdm_port_ops;
- 		gdm->index = i;
- 		gdm->minor = j;
- 		gdm->tty_dev = tty_dev;
- 
--		tty_port_register_device(&gdm->port, gdm_driver[i], j, device);
-+		tty_port_register_device(&gdm->port, gdm_driver[i], gdm->minor, device);
- 	}
- 
- 	for (i = 0; i < MAX_ISSUE_NUM; i++)
-@@ -261,31 +261,24 @@ void unregister_lte_tty_device(struct tty_dev *tty_dev)
- 	struct gdm *gdm;
- 	struct tty_struct *tty;
- 	int i;
--	int j;
- 
- 	for (i = 0; i < TTY_MAX_COUNT; i++) {
--
--		j = tty_dev->minor[i];
--
--		if (j >= GDM_TTY_MINOR)
-+		gdm = tty_dev->gdm[i];
-+		if (!gdm)
- 			continue;
- 
- 		mutex_lock(&gdm_table_lock);
--		gdm = gdm_table[i][j];
-+		gdm_table[gdm->index][gdm->minor] = NULL;
- 		mutex_unlock(&gdm_table_lock);
- 
--		if (!gdm)
--			continue;
--
- 		tty = tty_port_tty_get(&gdm->port);
- 		if (tty) {
- 			tty_vhangup(tty);
- 			tty_kref_put(tty);
- 		}
- 
--		tty_unregister_device(gdm_driver[i], j);
-+		tty_unregister_device(gdm_driver[i], gdm->minor);
- 		tty_port_put(&gdm->port);
--
- 	}
- }
- 
-diff --git a/drivers/staging/gdm724x/gdm_tty.h b/drivers/staging/gdm724x/gdm_tty.h
-index 64db5e6..297438b 100644
---- a/drivers/staging/gdm724x/gdm_tty.h
-+++ b/drivers/staging/gdm724x/gdm_tty.h
-@@ -33,17 +33,6 @@ enum RECV_PACKET_PROCESS {
- 	RECV_PACKET_PROCESS_CONTINUE = 1,
- };
- 
--struct tty_dev {
--	void *priv_dev;
--	int (*send_func)(void *priv_dev, void *data, int len, int tty_index,
--			void (*cb)(void *cb_data), void *cb_data);
--	int (*recv_func)(void *priv_dev, int (*cb)(void *data, int len,
--			 int tty_index, int minor, int complete));
--	int (*send_control)(void *priv_dev, int request, int value, void *data,
--			    int len);
--	u8 minor[2];
--};
--
- struct gdm {
- 	struct tty_dev *tty_dev;
- 	struct tty_port port;
-@@ -51,6 +40,28 @@ struct gdm {
- 	unsigned int minor;
- };
- 
-+struct tty_dev {
-+	void *priv_dev;
-+	int (*send_func)(void *priv_dev,
-+			 void *data,
-+			 int len,
-+			 int tty_index,
-+			 void (*cb)(void *cb_data),
-+			 void *cb_data);
-+	int (*recv_func)(void *priv_dev,
-+			 int (*cb)(void *data,
-+				   int len,
-+				   int tty_index,
-+				   struct tty_dev *tty_dev,
-+				   int complete));
-+	int (*send_control)(void *priv_dev,
-+			    int request,
-+			    int value,
-+			    void *data,
-+			    int len);
-+	struct gdm *gdm[2];
-+};
-+
- int register_lte_tty_driver(void);
- void unregister_lte_tty_driver(void);
- int register_lte_tty_device(struct tty_dev *tty_dev, struct device *dev);
+But zswap isn't pseudo block device so it couldn't be used for block device.
+Let say one usecase for using zram-blk.
+
+1) Many embedded system don't have swap so although tmpfs can support swapout
+it's pointless still so such systems should have sane configuration to limit
+memory space so it's not only zram problem.
+
+2) Many embedded system don't have enough memory. Let's assume short-lived
+file growing up until half of system memory once in a while. We don't want
+to write it on flash by wear-leveing issue and very slowness so we want to use
+in-memory but if we uses tmpfs, it should evict half of working set to cover
+them when the size reach peak. zram would be better choice.
+
+> 
+> > > These are the sort of reason why I feel that zram has limited cases where
+> > > it is safe to use and zswap has a wider range of applications. At least
+> > > I would be very unhappy to try supporting zram in the field for normal
+> > > servers. zswap should be able to replace the functionality of zram+swap
+> > > by backing zswap with a pseudo block device that rejects all writes. I
+> > 
+> > One of difference between zswap and zram is asynchronous I/O support.
+> 
+> As zram is not writing to disk, how compelling is asynchronous IO? If
+> zswap was backed by the pseudo device is there a measurable bottleneck?
+
+Compression. It was really bottlneck point. I had an internal patch which
+can make zram use various compressor, not only LZO.
+The better good compressor was, the more bottlenck compressor was.
+
+> 
+> > I guess frontswap is synchronous by semantic while zram could support
+> > asynchronous I/O.
+> > 
+> > > do not know why this never happened but guess the zswap people never were
+> > > interested and the zram people never tried. Why was the pseudo device
+> > > to avoid writebacks never implemented? Why was the underlying allocator
+> > > not made pluggable to optionally use zsmalloc when the user did not care
+> > > that it had terrible writeback characteristics?
+> > 
+> > I remember you suggested to make zsmalloc with pluggable for zswap.
+> > But I don't know why zswap people didn't implement it.
+> > 
+> > > 
+> > > zswap cannot replicate zram+tmpfs but I also think that such a configuration
+> > > is a bad idea anyway. As zram is already being deployed then it might get
+> > 
+> > It seems your big concern of zsmalloc is fragmentaion so if zsmalloc can
+> > support compaction, it would mitigate the concern.
+> > 
+> 
+> Even if it supported zsmalloc I would still wonder why zswap is not using
+> it as a pluggable option :(
+> 
+> > > promoted anyway but personally I think compressed memory continues to be
+> > 
+> > I admit zram might have limitations but it has helped lots of people.
+> > It's not an imaginary scenario.
+> > 
+> 
+> I know.
+> 
+> > Please, let's not do get out of zram from kernel tree and stall it on staging
+> > forever with preventing new features. 
+> > Please, let's promote, expose it to more potential users, receive more
+> > complains from them, recruit more contributors and let's enhance.
+> > 
+> 
+> As this is already used heavily in the field and I am not responsible
+> for maintaining it I am not going to object to it being promoted. I can
+> always push that it be disabled in distribution configs as it is not
+> suitable for general workloads for reason already discussed.
+> 
+> However, I believe that the promotion will lead to zram and zswap diverging
+> further from each other, both implementing similar functionality and
+> ultimately cause greater maintenance headaches. There is a path that makes
+> zswap a functional replacement for zram and I've seen no good reason why
+> that path was not taken. Zram cannot be a functional replacment for zswap
+> as there is no obvious sane way writeback could be implemented. Continuing
+
+Then, do you think current zswap's writeback is sane way?
+I didn't raise an issue because I didn't want to be a blocker when zswap was
+promoted. Actually, I didn't like that way because I thought swap-writeback
+feature should be implemented by VM itself rather than some hooked driver
+internal logic. VM alreay has a lot information so it would handle multipe
+heterogenous swap more efficenlty like cache hierachy without LRU inversing.
+It could solve current zswap LRU inversing problem generally and help others
+who want to configure multiple swap system as well as zram.
+
+> to diverge will ultimately bite someone in the ass.
+
+Mel, current zram situation is following as.
+
+1) There are a lot users in the world.
+2) So, many valuable contributions have been in there.
+2) The new feature development of zram had stalled because Greg asserted
+   he doesn't accept new feature until promote will be done and recently,
+   he said he will remove zram in staging if anybody doesn't try to promote
+3) You are saying zram shouldn't be promote. IOW, zram should go away.
+
+Right? Then, What should we zram developers do?
+What's next step for zram which is really perfect for embedded system?
+We should really lose a chance to enhance zram although fresh zswap
+couldn't replace old zram?
+
+Mel, please consider embedded world although they are very little voice
+in this core subsystem.
+
+
+> 
+
+> -- 
+> Mel Gorman
+> SUSE Labs
+
 -- 
-1.7.10.4
-
+Kind regards,
+Minchan Kim
