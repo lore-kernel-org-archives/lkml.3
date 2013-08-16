@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab3HPNGQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 09:06:16 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:38006 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab3HPNGJ (ORCPT
+	id S1753912Ab3HPNJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 09:09:23 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:57129 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753394Ab3HPNJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 09:06:09 -0400
+	Fri, 16 Aug 2013 09:09:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <1374871193-403-1-git-send-email-achew@nvidia.com>
-References: <1374871193-403-1-git-send-email-achew@nvidia.com>
-Date: Fri, 16 Aug 2013 15:06:08 +0200
-Message-ID: <CACRpkdbtqOpJq15roU7pp0DOeJkJm8YDQXW6jeR1zKCkJDw5Aw@mail.gmail.com>
-Subject: Re: [PATCH V2] gpio: palmas: Fix misreported GPIO out value
+In-Reply-To: <20130719041952.GA29001@dev.danweeks.net>
+References: <20130719041952.GA29001@dev.danweeks.net>
+Date: Fri, 16 Aug 2013 15:09:16 +0200
+Message-ID: <CACRpkdZeoYgrVwZ6jdChiB0ciJ76N5CFtEPUaLZE5VnpOmT79w@mail.gmail.com>
+Subject: Re: [PATCH] gpio-mcp23s08: i2c: auto-select base if no DT match or
+ platform data
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Andrew Chew <achew@nvidia.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+To: "Daniel M. Weeks" <dan@danweeks.net>
+Cc: Grant Likely <grant.likely@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 10:39 PM, Andrew Chew <achew@nvidia.com> wrote:
+On Fri, Jul 19, 2013 at 6:19 AM, Daniel M. Weeks <dan@danweeks.net> wrote:
 
-> It seems that the value read back from the PALMAS_GPIO_DATA_IN register
-> isn't valid if the GPIO direction is out.  When that's the case, we can
-> read back the PALMAS_GPIO_DATA_OUT register to get the proper output value.
+> The call to gpiochip_add made by this driver is capable of auto-selecting a
+> base if one is not provided. However, it was not called unless there was
+> already a DT entry or platform data. This patch calls it even if the base is
+> not already known so that gpiochip_add can attempt to find a usable base.
 >
-> Change-Id: Iaf877e538cfdb37a6759c45ec3c6e4ee31078709
+> Signed-off-by: Daniel M. Weeks <dan@danweeks.net>
 
-Very interesting that you use gerrit, but the kernel community does not
-want this.
-
-> Signed-off-by: Andrew Chew <achew@nvidia.com>
-> ---
-> V2: Fixed a warning from using test_bit with an int instead of long.  Keeping
->     the int and just masking that bit in the raw now.
-
-Applied with change-id stripped and Laxman's ACK.
+Patch applied with Lars' ACK.
 
 Yours,
 Linus Walleij
