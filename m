@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab3HPF15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 01:27:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62878 "EHLO mx1.redhat.com"
+	id S1752155Ab3HPF2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 01:28:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6044 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab3HPF14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 01:27:56 -0400
+	id S1751798Ab3HPF16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 01:27:58 -0400
 From: Jason Wang <jasowang@redhat.com>
 To: mst@redhat.com, kvm@vger.kernel.org,
         virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH 0/6] vhost code cleanup and minor enhancement
-Date: Fri, 16 Aug 2013 13:16:24 +0800
-Message-Id: <1376630190-5912-1-git-send-email-jasowang@redhat.com>
+Subject: [PATCH 1/6] vhost_net: make vhost_zerocopy_signal_used() returns void
+Date: Fri, 16 Aug 2013 13:16:25 +0800
+Message-Id: <1376630190-5912-2-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1376630190-5912-1-git-send-email-jasowang@redhat.com>
+References: <1376630190-5912-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all:
+None of its caller use its return value, so let it return void.
 
-This series tries to unify and simplify vhost codes especially for zerocopy.
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/vhost/net.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-Plase review.
-
-Thanks
-
-Jason Wang (6):
-  vhost_net: make vhost_zerocopy_signal_used() returns void
-  vhost_net: use vhost_add_used_and_signal_n() in
-    vhost_zerocopy_signal_used()
-  vhost: switch to use vhost_add_used_n()
-  vhost_net: determine whether or not to use zerocopy at one time
-  vhost_net: poll vhost queue after marking DMA is done
-  vhost_net: remove the max pending check
-
- drivers/vhost/net.c   |   86 +++++++++++++++++++-----------------------------
- drivers/vhost/vhost.c |   43 +-----------------------
- 2 files changed, 36 insertions(+), 93 deletions(-)
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 969a859..280ee66 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -276,8 +276,8 @@ static void copy_iovec_hdr(const struct iovec *from, struct iovec *to,
+  * of used idx. Once lower device DMA done contiguously, we will signal KVM
+  * guest used idx.
+  */
+-static int vhost_zerocopy_signal_used(struct vhost_net *net,
+-				      struct vhost_virtqueue *vq)
++static void vhost_zerocopy_signal_used(struct vhost_net *net,
++				       struct vhost_virtqueue *vq)
+ {
+ 	struct vhost_net_virtqueue *nvq =
+ 		container_of(vq, struct vhost_net_virtqueue, vq);
+@@ -297,7 +297,6 @@ static int vhost_zerocopy_signal_used(struct vhost_net *net,
+ 	}
+ 	if (j)
+ 		nvq->done_idx = i;
+-	return j;
+ }
+ 
+ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+-- 
+1.7.1
 
