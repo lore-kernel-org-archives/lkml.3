@@ -1,132 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3HPIN1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 04:13:27 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:52624 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab3HPIKo (ORCPT
+	id S1753848Ab3HPIR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 04:17:56 -0400
+Received: from mailrelay.embarq.synacor.com ([208.47.184.3]:43750 "EHLO
+	mailrelay.embarq.synacor.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753203Ab3HPIRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 04:10:44 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r7G8AaMC017142, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>, <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 4/7] r8152: adjust some duplicated code
-Date: Fri, 16 Aug 2013 16:09:35 +0800
-Message-ID: <1376640578-4258-4-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1376640578-4258-1-git-send-email-hayeswang@realtek.com>
-References: <1376640578-4258-1-git-send-email-hayeswang@realtek.com>
+	Fri, 16 Aug 2013 04:17:44 -0400
+X_CMAE_Category: 0,0 Undefined,Undefined
+X-CNFS-Analysis: v=2.1 cv=GOgxTI9K c=1 sm=0 tr=0 a=Hhc/OnKmOS1xKI2oHPQhqg==:117 a=K-v-2zaBAAAA:8 a=NOhQgPSOqKMA:10 a=FKkrIqjQGGEA:10 a=YTHtZiAxaJsA:10 a=v5kPk0z85XoA:10 a=IkcTkHD0fZMA:10 a=I_5RNyk1AAAA:8 a=-QqkG6h1qm3kugPPIj8A:9 a=QEXdDO2ut3YA:10 a=VPGGq8MqRZ4A:10 a=vocENqzrUekA:10
+X-CM-Score: 0
+Date: Fri, 16 Aug 2013 04:17:42 -0400 (EDT)
+From: Pole Olasis <allied6@centurylink.net>
+Reply-To: Pole Olasis <tradesoft@firemail.de>
+Message-ID: <135111461.1839041.1376641062729.JavaMail.root@md05.embarq.synacor.com>
+Subject: Request
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.206.11.63, 12.199.141.164]
+X-Mailer: Zimbra 6.0.5_GA_2328.RHEL5_64 (zclient/6.0.5_GA_2328.RHEL5_64)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Use r8152_get_tx_agg for getting tx agg list
-- Replace submit rx with goto submit
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 55 +++++++++++++++++++++++++------------------------
- 1 file changed, 28 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 41b99ce..4dee76b 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1067,6 +1067,24 @@ err1:
- 	return -ENOMEM;
- }
- 
-+static struct tx_agg *r8152_get_tx_agg(struct r8152 *tp)
-+{
-+	struct tx_agg *agg = NULL;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&tp->tx_lock, flags);
-+	if (!list_empty(&tp->tx_free)) {
-+		struct list_head *cursor;
-+
-+		cursor = tp->tx_free.next;
-+		list_del_init(cursor);
-+		agg = list_entry(cursor, struct tx_agg, list);
-+	}
-+	spin_unlock_irqrestore(&tp->tx_lock, flags);
-+
-+	return agg;
-+}
-+
- static void
- r8152_tx_csum(struct r8152 *tp, struct tx_desc *desc, struct sk_buff *skb)
- {
-@@ -1139,15 +1157,8 @@ static void rx_bottom(struct r8152 *tp)
- 
- 		agg = list_entry(cursor, struct rx_agg, list);
- 		urb = agg->urb;
--		if (urb->actual_length < ETH_ZLEN) {
--			ret = r8152_submit_rx(tp, agg, GFP_ATOMIC);
--			spin_lock_irqsave(&tp->rx_lock, flags);
--			if (ret && ret != -ENODEV) {
--				list_add_tail(&agg->list, next);
--				tasklet_schedule(&tp->tl);
--			}
--			continue;
--		}
-+		if (urb->actual_length < ETH_ZLEN)
-+			goto submit;
- 
- 		len_used = 0;
- 		rx_desc = agg->head;
-@@ -1181,6 +1192,7 @@ static void rx_bottom(struct r8152 *tp)
- 			len_used += sizeof(struct rx_desc) + pkt_len;
- 		}
- 
-+submit:
- 		ret = r8152_submit_rx(tp, agg, GFP_ATOMIC);
- 		spin_lock_irqsave(&tp->rx_lock, flags);
- 		if (ret && ret != -ENODEV) {
-@@ -1205,16 +1217,10 @@ static void tx_bottom(struct r8152 *tp)
- 
- next_agg:
- 	agg = NULL;
--	spin_lock_irqsave(&tp->tx_lock, flags);
--	if (!skb_queue_empty(&tp->tx_queue) && !list_empty(&tp->tx_free)) {
--		struct list_head *cursor;
--
--		cursor = tp->tx_free.next;
--		list_del_init(cursor);
--		agg = list_entry(cursor, struct tx_agg, list);
--	}
--	spin_unlock_irqrestore(&tp->tx_lock, flags);
-+	if (skb_queue_empty(&tp->tx_queue))
-+		return;
- 
-+	agg = r8152_get_tx_agg(tp);
- 	if (!agg)
- 		return;
- 
-@@ -1382,15 +1388,10 @@ static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
- 
- 	skb_tx_timestamp(skb);
- 
--	spin_lock_irqsave(&tp->tx_lock, flags);
--	if (!list_empty(&tp->tx_free) && skb_queue_empty(&tp->tx_queue)) {
--		struct list_head *cursor;
--
--		cursor = tp->tx_free.next;
--		list_del_init(cursor);
--		agg = list_entry(cursor, struct tx_agg, list);
--	}
--	spin_unlock_irqrestore(&tp->tx_lock, flags);
-+	/* If tx_queue is not empty, it means at least one previous packt */
-+	/* is waiting for sending. Don't send current one before it.      */
-+	if (skb_queue_empty(&tp->tx_queue))
-+		agg = r8152_get_tx_agg(tp);
- 
- 	if (!agg) {
- 		skb_queue_tail(&tp->tx_queue, skb);
--- 
-1.8.3.1
-
+We need a representative in your area.We're a small new firm engaged in export.Approximately 80K monthly from customers,& 10% each is your commission.To know more, reply.Pole Olasis,
