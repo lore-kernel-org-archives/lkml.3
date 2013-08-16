@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024Ab3HQAe0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:34:26 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:45834 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358Ab3HQAeY (ORCPT
+	id S1756233Ab3HQAa3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:30:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51384 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754970Ab3HPWfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:34:24 -0400
-Date: Fri, 16 Aug 2013 13:19:36 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Max Filippov <jcmvbkbc@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Linux kernel cross-compilers
-Message-ID: <20130816201936.GC4568@roeck-us.net>
-References: <520C9A39.3030808@roeck-us.net>
- <CAMo8BfKyqZYMkh96wyZSpYUpXwqFQZkco=XgtjUrNG-jSzW5pA@mail.gmail.com>
- <20130816054823.GB28445@thor.bakeyournoodle.com>
- <CAMo8Bf+veq_DU7-hnB0yySy6YWpwU2TYx3U9e89c_m8Mv9Cv5w@mail.gmail.com>
- <520DD9CA.90305@roeck-us.net>
- <CAMo8BfLvVk+2CyQD28otU265J4rvbt0Eg11Vqr4u4zjKjrTanw@mail.gmail.com>
- <520DEF05.9030803@roeck-us.net>
- <CAMo8BfKWFGxr6a48tFqGCourOcWOTO9rmCHy3Q05jR_QEuq=Cg@mail.gmail.com>
- <520E48A7.3050401@roeck-us.net>
- <20130816192651.GA13953@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130816192651.GA13953@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 16 Aug 2013 18:35:14 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jeff Skirvin <jeffrey.d.skirvin@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 020/133] [SCSI] isci: Fix a race condition in the SSP task management path
+Date: Fri, 16 Aug 2013 15:32:42 -0700
+Message-Id: <1376692475-28413-21-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 09:26:51PM +0200, Sam Ravnborg wrote:
-> On Fri, Aug 16, 2013 at 08:43:35AM -0700, Guenter Roeck wrote:
-> > On 08/16/2013 02:45 AM, Max Filippov wrote:
-> >>>> Guenter,
-> >>>> can you share a complete build log with V=1?
-> >>>>
-> >>>
-> >>> http://roeck-us.net/linux/logs/make.xtensa.log.bad
-> >>> http://roeck-us.net/linux/logs/make.xtensa.log.ok
-> >>>
-> >>> Key difference: the failing command in the bad case is
-> >>>          xtensa-linux-objcopy -O elf32-xtensa-le
-> >>> and in the good case
-> >>>          xtensa-linux-objcopy -O elf32-xtensa-be
-> >>>
-> >>> Same compiler (4.6.3 from kernel.org), same configuration file, same command
-> >>> line.
-> >>> Configuration file is generated from defconfig, and the resulting .config
-> >>> file
-> >>> is the same in both cases.
-> >>>
-> >>> If I execute make and expicitly set BIG_ENDIAN=1 on the failing system as
-> >>> parameter to it,
-> >>> it works fine. If I set BIG_ENDIAN=0 on the passing system, it fails.
-> >>>
-> >>> I am puzzled. Guess there must be something different, but I have no idea
-> >>> what it might be.
-> >>
-> >> What is the output of
-> >>
-> >> echo -e __XTENSA_EB__ | xtensa-linux-gcc -E -
-> >>
-> >> on the failing system?
-> >>
-> > It is "1", but that let me pinpoint the problem.
-> >
-> > On the failing system, the version of echo executed by make does
-> > not understand the "-e" option. Thus, when running arch/xtensa/boot/Makefile,
-> > "echo -e __XTENSA_EB__" returns "-e __XTENSA_EB__", which doesn't compile,
-> > and BIG_ENDIAN ends up being 0. So the compiler is completely innocent.
-> >
-> > I found out the root source: SHELL is set the /bin/sh, which on the failing
-> > system points to /bin/dash (default in Ubuntu, or at least it used to be).
-> > dash apparently has a built-in version of echo which does not understand '-e'.
-> 
-> Could you try to replace "echo -e bla" with "printf "bla".
-> Kbuild.include uses some similar tricks but here printf is used.
-> Maybe this can be dash compatible then
-> 
-"echo" would do perfectly fine in this case. Besides, there are more
-"echo -e" in arch/xtensa/Makefile. Those only cause unpredictable build
-results (because neither big endian not little endian is set because of it),
-but no errors.
+3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
 
-Problem is that "echo -e" is used elsewhere in various kernel makefiles,
-not just for xtensa. Those don't cause odd errors like the one I observed,
-but may result in unpredictable behavior. I am not sure if I should try
-to fix that.
+------------------
 
-Maybe we should just put "don't try to compile the linux kernel with dash
-as default shell" as a note somewhere.
+From: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
 
-Guenter
+commit 96f15f29038e58e1b0a96483e2b369ff446becf1 upstream.
+
+This commit fixes a race condition in the isci driver abort task and SSP
+device task management path.  The race is caused when an I/O termination
+in the SCU hardware is necessary because of an SSP target timeout condition,
+and the check of the I/O end state races against the HW-termination-driven
+end state.  The failure of the race meant that no TMF was sent to the device
+to clean-up the pending I/O.
+
+Signed-off-by: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
+Reviewed-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/scsi/isci/task.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/scsi/isci/task.c b/drivers/scsi/isci/task.c
+index b6f19a1..572ab51 100644
+--- a/drivers/scsi/isci/task.c
++++ b/drivers/scsi/isci/task.c
+@@ -491,6 +491,7 @@ int isci_task_abort_task(struct sas_task *task)
+ 	struct isci_tmf           tmf;
+ 	int                       ret = TMF_RESP_FUNC_FAILED;
+ 	unsigned long             flags;
++	int                       target_done_already = 0;
+ 
+ 	/* Get the isci_request reference from the task.  Note that
+ 	 * this check does not depend on the pending request list
+@@ -505,9 +506,11 @@ int isci_task_abort_task(struct sas_task *task)
+ 	/* If task is already done, the request isn't valid */
+ 	if (!(task->task_state_flags & SAS_TASK_STATE_DONE) &&
+ 	    (task->task_state_flags & SAS_TASK_AT_INITIATOR) &&
+-	    old_request)
++	    old_request) {
+ 		idev = isci_get_device(task->dev->lldd_dev);
+-
++		target_done_already = test_bit(IREQ_COMPLETE_IN_TARGET,
++					       &old_request->flags);
++	}
+ 	spin_unlock(&task->task_state_lock);
+ 	spin_unlock_irqrestore(&ihost->scic_lock, flags);
+ 
+@@ -561,7 +564,7 @@ int isci_task_abort_task(struct sas_task *task)
+ 
+ 	if (task->task_proto == SAS_PROTOCOL_SMP ||
+ 	    sas_protocol_ata(task->task_proto) ||
+-	    test_bit(IREQ_COMPLETE_IN_TARGET, &old_request->flags) ||
++	    target_done_already ||
+ 	    test_bit(IDEV_GONE, &idev->flags)) {
+ 
+ 		spin_unlock_irqrestore(&ihost->scic_lock, flags);
+-- 
+1.8.1.2
+
