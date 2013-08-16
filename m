@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab3HPSDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 14:03:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48248 "EHLO mga02.intel.com"
+	id S1754059Ab3HPSHL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 14:07:11 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:59686 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752971Ab3HPSDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 14:03:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,896,1367996400"; 
-   d="scan'208";a="363788060"
-Message-ID: <520E6951.2040909@intel.com>
-Date: Fri, 16 Aug 2013 11:02:57 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Alex Thorlton <athorlton@sgi.com>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        "Eric W . Biederman" <ebiederm@xmission.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>
-Subject: Re: [PATCH 5/8] mm: make clear_huge_page cache clear only around
- the fault address
-References: <87wqo050fc.fsf@tassilo.jf.intel.com> <1376663644-153546-1-git-send-email-athorlton@sgi.com> <1376663644-153546-6-git-send-email-athorlton@sgi.com>
-In-Reply-To: <1376663644-153546-6-git-send-email-athorlton@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752518Ab3HPSHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 14:07:08 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Cc: laforge@gnumonks.org
+Subject: [PATCH] Omnikey Cardman 4000: pull in ioctl.h in user header
+Date: Fri, 16 Aug 2013 14:07:09 -0400
+Message-Id: <1376676429-3953-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2013 07:34 AM, Alex Thorlton wrote:
-> +#if ARCH_HAS_USER_NOCACHE == 0
-> +#define clear_user_highpage_nocache clear_user_highpage
-> +#endif
-...
->  		cond_resched();
-> -		clear_user_highpage(p, addr + i * PAGE_SIZE);
-> +		vaddr = haddr + i*PAGE_SIZE;
-> +		if (!ARCH_HAS_USER_NOCACHE  || i == target)
-> +			clear_user_highpage(p, vaddr);
-> +		else
-> +			clear_user_highpage_nocache(p, vaddr);
->  	}
->  }
+This file uses the ioctl helpers (_IOR/_IOW/etc...), so include ioctl.h
+for the definitions.
 
-Is the check for !ARCH_HAS_USER_NOCACHE in there really necessary?  That
-logic seems like it would be taken care of by that #define.
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ include/uapi/linux/cm4000_cs.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-Plus, if you don't check 'ARCH_HAS_USER_NOCACHE' like this, you don't
-need to define a value for it, and you can axe the:
+diff --git a/include/uapi/linux/cm4000_cs.h b/include/uapi/linux/cm4000_cs.h
+index bc51f77..1217f75 100644
+--- a/include/uapi/linux/cm4000_cs.h
++++ b/include/uapi/linux/cm4000_cs.h
+@@ -2,6 +2,7 @@
+ #define _UAPI_CM4000_H_
+ 
+ #include <linux/types.h>
++#include <linux/ioctl.h>
+ 
+ #define	MAX_ATR			33
+ 
+-- 
+1.8.3.2
 
-+#ifndef ARCH_HAS_USER_NOCACHE
-+#define ARCH_HAS_USER_NOCACHE 0
-+#endif
