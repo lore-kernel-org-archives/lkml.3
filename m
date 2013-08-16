@@ -1,169 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3HPByJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 21:54:09 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:34803 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab3HPBx7 (ORCPT
+	id S1753623Ab3HPCFg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 22:05:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44846 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543Ab3HPCFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 21:53:59 -0400
-Message-ID: <520D8617.4000706@oracle.com>
-Date: Fri, 16 Aug 2013 09:53:27 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 15 Aug 2013 22:05:35 -0400
+Date: Thu, 15 Aug 2013 19:07:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] Staging driver fixes for 3.11-rc6
+Message-ID: <20130816020710.GA7876@kroah.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v6 0/5] zram/zsmalloc promotion
-References: <1376459736-7384-1-git-send-email-minchan@kernel.org> <20130814174050.GN2296@suse.de> <20130814185820.GA2753@gmail.com> <20130815171250.GA2296@suse.de>
-In-Reply-To: <20130815171250.GA2296@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
 
-On 08/16/2013 01:12 AM, Mel Gorman wrote:
-> On Thu, Aug 15, 2013 at 03:58:20AM +0900, Minchan Kim wrote:
->>> <SNIP>
->>>
->>> I do not believe this is a problem for zram as such because I do not
->>> think it ever writes back to disk and is immune from the unpredictable
->>> performance characteristics problem. The problem for zram using zsmalloc
->>> is OOM killing. If it's used for swap then there is no guarantee that
->>> killing processes frees memory and that could result in an OOM storm.
->>> Of course there is no guarantee that memory is freed with zbud either but
->>> you are guaranteed that freeing 50%+1 of the compressed pages will free a
->>> single physical page. The characteristics for zsmalloc are much more severe.
->>> This might be managable in an applicance with very careful control of the
->>> applications that are running but not for general servers or desktops.
->>
->> Fair enough but let's think of current usecase for zram.
->> As I said in description, most of user for zram are embedded products.
->> So, most of them has no swap storage and hate OOM kill because OOM is
->> already very very slow path so system slow response is really thing
->> we want to avoid. We prefer early process kill to slow response.
->> That's why custom low memory killer/notifier is popular in embedded side.
->> so actually, OOM storm problem shouldn't be a big problem under
->> well-control limited system. 
->>
-> 
-> Which zswap could also do if
-> 
-> a) it had a pseudo block device that failed all writes
-> b) zsmalloc was pluggable
-> 
+  Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
 
-I'll take a try soon!
+are available in the git repository at:
 
-> I recognise this sucks because zram is already in the field but if zram
-> is promoted then zram and zswap will continue to diverge further with no
-> reconcilation in sight.
-> 
-> Part of the point of using zswap was that potentially zcache could be
-> implemented on top of it and so all file cache could be stored compressed
-> in memory. AFAIK, it's not possible to do the same thing for zram because
-> of the lack of writeback capabilities. Maybe it could be done if zram
-> could be configured to write to an underlying storage device but it may
-> be very clumsy to configure. I don't know as I never investigated it and
-> to be honest, I'm struggling to remember how I got involved anywhere near
-> zswap/zcache/zram/zwtf in the first place.
-> 
->>> If it's used for something like tmpfs then it becomes much worse. Normal
->>> tmpfs without swap can lockup if tmpfs is allowed to fill memory. In a
->>> sane configuration, lockups will be avoided and deleting a tmpfs file is
->>> guaranteed to free memory. When zram is used to back tmpfs, there is no
->>> guarantee that any memory is freed due to fragmentation of the compressed
->>> pages. The only way to recover the memory may be to kill applications
->>> holding tmpfs files open and then delete them which is fairly drastic
->>> action in a normal server environment.
->>
->> Indeed.
->> Actually, I had a plan to support zsmalloc compaction. The zsmalloc exposes
->> handle instead of pure pointer so it could migrate some zpages to somewhere
->> to pack in. Then, it could help above problem and OOM storm problem.
->> Anyway, it's a totally new feature and requires many changes and experiement.
->> Although we don't have such feature, zram is still good for many people.
->>
-> 
-> And is zsmalloc was pluggable for zswap then it would also benefit.
-> 
->>> These are the sort of reason why I feel that zram has limited cases where
->>> it is safe to use and zswap has a wider range of applications. At least
->>> I would be very unhappy to try supporting zram in the field for normal
->>> servers. zswap should be able to replace the functionality of zram+swap
->>> by backing zswap with a pseudo block device that rejects all writes. I
->>
->> One of difference between zswap and zram is asynchronous I/O support.
-> 
-> As zram is not writing to disk, how compelling is asynchronous IO? If
-> zswap was backed by the pseudo device is there a measurable bottleneck?
-> 
->> I guess frontswap is synchronous by semantic while zram could support
->> asynchronous I/O.
->>
->>> do not know why this never happened but guess the zswap people never were
->>> interested and the zram people never tried. Why was the pseudo device
->>> to avoid writebacks never implemented? Why was the underlying allocator
->>> not made pluggable to optionally use zsmalloc when the user did not care
->>> that it had terrible writeback characteristics?
->>
->> I remember you suggested to make zsmalloc with pluggable for zswap.
->> But I don't know why zswap people didn't implement it.
->>
->>>
->>> zswap cannot replicate zram+tmpfs but I also think that such a configuration
->>> is a bad idea anyway. As zram is already being deployed then it might get
->>
->> It seems your big concern of zsmalloc is fragmentaion so if zsmalloc can
->> support compaction, it would mitigate the concern.
->>
-> 
-> Even if it supported zsmalloc I would still wonder why zswap is not using
-> it as a pluggable option :(
-> 
->>> promoted anyway but personally I think compressed memory continues to be
->>
->> I admit zram might have limitations but it has helped lots of people.
->> It's not an imaginary scenario.
->>
-> 
-> I know.
-> 
->> Please, let's not do get out of zram from kernel tree and stall it on staging
->> forever with preventing new features. 
->> Please, let's promote, expose it to more potential users, receive more
->> complains from them, recruit more contributors and let's enhance.
->>
-> 
-> As this is already used heavily in the field and I am not responsible
-> for maintaining it I am not going to object to it being promoted. I can
-> always push that it be disabled in distribution configs as it is not
-> suitable for general workloads for reason already discussed.
-> 
-> However, I believe that the promotion will lead to zram and zswap diverging
-> further from each other, both implementing similar functionality and
-> ultimately cause greater maintenance headaches. There is a path that makes
-> zswap a functional replacement for zram and I've seen no good reason why
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.11-rc6
 
-Agree! I prefer this way too!
+for you to fetch changes up to ff8a43c10f1440f07a5faca0c1556921259f7f76:
 
-> that path was not taken. Zram cannot be a functional replacment for zswap
-> as there is no obvious sane way writeback could be implemented. Continuing
-> to diverge will ultimately bite someone in the ass.
-> 
+  USB: keyspan: fix null-deref at disconnect and release (2013-08-14 12:49:27 -0700)
 
--- 
-Regards,
--Bob
+----------------------------------------------------------------
+USB fixes for 3.11-rc6
+
+Here are some small USB fixes for 3.11-rc6 that have accumulated.
+
+Nothing huge, a EHCI fix that solves a much-reported audio USB problem,
+some usb-serial driver endian fixes and other minor fixes, a wireless
+USB oops fix, and two new quirks.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Alan Stern (1):
+      USB: EHCI: accept very late isochronous URBs
+
+Johan Hovold (6):
+      USB: mos7840: fix big-endian probe
+      USB: usbtmc: fix big-endian probe of Rigol devices
+      USB: adutux: fix big-endian device-type reporting
+      USB: ti_usb_3410_5052: fix big-endian firmware handling
+      USB: mos7720: fix broken control requests
+      USB: keyspan: fix null-deref at disconnect and release
+
+Matt Burtch (1):
+      USB-Serial: Fix error handling of usb_wwan
+
+Oliver Neukum (1):
+      usb: add two quirky touchscreen
+
+Thomas Pugliese (1):
+      wusbcore: fix kernel panic when disconnecting a wireless USB->serial device
+
+ drivers/usb/class/usbtmc.c            |  8 ++++----
+ drivers/usb/core/quirks.c             |  6 ++++++
+ drivers/usb/host/ehci-sched.c         | 13 ++++++-------
+ drivers/usb/misc/adutux.c             |  2 +-
+ drivers/usb/serial/keyspan.c          |  2 +-
+ drivers/usb/serial/mos7720.c          | 21 ++++++++++++++-------
+ drivers/usb/serial/mos7840.c          |  2 +-
+ drivers/usb/serial/ti_usb_3410_5052.c |  9 +++++----
+ drivers/usb/serial/usb_wwan.c         | 20 ++++++++++----------
+ drivers/usb/wusbcore/wa-xfer.c        |  9 +++++++--
+ 10 files changed, 55 insertions(+), 37 deletions(-)
