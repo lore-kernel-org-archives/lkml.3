@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab3HPQkP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 12:40:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34103 "EHLO mx1.redhat.com"
+	id S1754563Ab3HPQkt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 12:40:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7849 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752409Ab3HPQkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 12:40:11 -0400
-Date: Fri, 16 Aug 2013 18:41:57 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Mike Christie <mchristie@fusionio.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-Message-ID: <20130816164156.GA14582@dhcp-26-207.brq.redhat.com>
-References: <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
- <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
- <1374248000.2266.20.camel@dabdike>
- <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
- <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
- <51EAA33C.9010405@fusionio.com>
- <20130809191542.GD25306@dhcp-26-207.brq.redhat.com>
- <1376079457.5171.172.camel@haakon3.risingtidesystems.com>
- <20130815162316.GA27882@dhcp-26-207.brq.redhat.com>
- <1376619569.5171.217.camel@haakon3.risingtidesystems.com>
+	id S1753223Ab3HPQkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 12:40:46 -0400
+Date: Fri, 16 Aug 2013 18:33:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20130816163355.GA766@redhat.com>
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-3-git-send-email-fweisbec@gmail.com> <20130816160201.GA31682@redhat.com> <20130816163217.GF24210@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376619569.5171.217.camel@haakon3.risingtidesystems.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130816163217.GF24210@somewhere>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 07:19:29PM -0700, Nicholas A. Bellinger wrote:
-> I'm playing with a patch to do this, but am currently getting hung-up on
-> what appear to be some separate blk-mq reserved_tags > 0 bugs, the first
-> of which is passing queue_depth=1 + reserved_tags=1 is broken, and
-> results in tags->nr_free = 0.
+On 08/16, Frederic Weisbecker wrote:
+>
+> On Fri, Aug 16, 2013 at 06:02:01PM +0200, Oleg Nesterov wrote:
+> >
+> > Unless I missread this patch, this is still racy a bit.
+> >
+> > Suppose it is called on CPU_0 and cpu == 1. Suppose that
+> > ts->idle_active == T and nr_iowait_cpu(cpu) == 1.
+> >
+> > So we return iowait_sleeptime + delta.
+> >
+> > Suppose that we call get_cpu_iowait_time_us() again. By this time
+> > the task which incremented ->nr_iowait can be woken up on another
+> > CPU, and it can do atomic_dec(rq->nr_iowait). So the next time
+> > we return iowait_sleeptime, and this is not monotonic again.
+> >
+> > No?
+>
+> OTOH, io_schedule() does:
+>
+>       atomic_inc(&rq->nr_iowait);
+>       schedule();
+>       atomic_dec(&rq->nr_iowait);
+>
+> How do we handle that when the task is migrated after it goes to sleep?
 
-That is not a bug - please look at Jens replies in this thread some week ago.
-In short, queue_depth=1 means 1 tags in total and reserved_tags=1 results
-in zero normal tags. You need to request the depth=2 and reserved_tags=1.
+or even before it goes to sleep. This is what I meant.
 
-But yes, this is a separate topic and I am looking forward to hear from Jens
-wrt flushes.
+> I don't either see that iowait tasks can't be migrated.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+But probably this is fine? This is just the non-precise accounting.
+
+But otoh, I agree. The whole idea about per-cpu nr_iowait looks a
+bit strange.
+
+Oleg.
+
