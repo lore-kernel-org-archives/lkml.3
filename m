@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756306Ab3HQAO4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:14:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51602 "EHLO
+	id S1756644Ab3HQAPk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:15:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51592 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012Ab3HPWjN (ORCPT
+	with ESMTP id S1754837Ab3HPWjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:13 -0400
+	Fri, 16 Aug 2013 18:39:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+Cc: Dominik Dingel <dingel@linux.vnet.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 088/133] virtio: console: fix race with port unplug and open/close
-Date: Fri, 16 Aug 2013 15:33:50 -0700
-Message-Id: <1376692475-28413-89-git-send-email-kamal@canonical.com>
+Subject: [PATCH 093/133] KVM: s390: move kvm_guest_enter,exit closer to sie
+Date: Fri, 16 Aug 2013 15:33:55 -0700
+Message-Id: <1376692475-28413-94-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -27,59 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: Dominik Dingel <dingel@linux.vnet.ibm.com>
 
-commit 057b82be3ca3d066478e43b162fc082930a746c9 upstream.
+commit 2b29a9fdcb92bfc6b6f4c412d71505869de61a56 upstream.
 
-There's a window between find_port_by_devt() returning a port and us
-taking a kref on the port, where the port could get unplugged.  Fix it
-by taking the reference in find_port_by_devt() itself.
+Any uaccess between guest_enter and guest_exit could trigger a page fault,
+the page fault handler would handle it as a guest fault and translate a
+user address as guest address.
 
-Problem reported and analyzed by Mateusz Guzik.
-
-Reported-by: Mateusz Guzik <mguzik@redhat.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/char/virtio_console.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ arch/s390/kvm/kvm-s390.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 3e338a7..ff015e7 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -278,9 +278,12 @@ static struct port *find_port_by_devt_in_portdev(struct ports_device *portdev,
- 	unsigned long flags;
+diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
+index 8bafa4f..74e64f8 100644
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -613,14 +613,25 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ 		kvm_s390_deliver_pending_interrupts(vcpu);
  
- 	spin_lock_irqsave(&portdev->ports_lock, flags);
--	list_for_each_entry(port, &portdev->ports, list)
--		if (port->cdev->dev == dev)
-+	list_for_each_entry(port, &portdev->ports, list) {
-+		if (port->cdev->dev == dev) {
-+			kref_get(&port->kref);
- 			goto out;
-+		}
-+	}
- 	port = NULL;
- out:
- 	spin_unlock_irqrestore(&portdev->ports_lock, flags);
-@@ -1042,14 +1045,10 @@ static int port_fops_open(struct inode *inode, struct file *filp)
- 	struct port *port;
- 	int ret;
+ 	vcpu->arch.sie_block->icptcode = 0;
+-	preempt_disable();
+-	kvm_guest_enter();
+-	preempt_enable();
+ 	VCPU_EVENT(vcpu, 6, "entering sie flags %x",
+ 		   atomic_read(&vcpu->arch.sie_block->cpuflags));
+ 	trace_kvm_s390_sie_enter(vcpu,
+ 				 atomic_read(&vcpu->arch.sie_block->cpuflags));
++
++	/*
++	 * As PF_VCPU will be used in fault handler, between guest_enter
++	 * and guest_exit should be no uaccess.
++	 */
++	preempt_disable();
++	kvm_guest_enter();
++	preempt_enable();
+ 	rc = sie64a(vcpu->arch.sie_block, vcpu->run->s.regs.gprs);
++	kvm_guest_exit();
++
++	VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
++		   vcpu->arch.sie_block->icptcode);
++	trace_kvm_s390_sie_exit(vcpu, vcpu->arch.sie_block->icptcode);
++
+ 	if (rc) {
+ 		if (kvm_is_ucontrol(vcpu->kvm)) {
+ 			rc = SIE_INTERCEPT_UCONTROL;
+@@ -631,10 +642,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ 			rc = 0;
+ 		}
+ 	}
+-	VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
+-		   vcpu->arch.sie_block->icptcode);
+-	trace_kvm_s390_sie_exit(vcpu, vcpu->arch.sie_block->icptcode);
+-	kvm_guest_exit();
  
-+	/* We get the port with a kref here */
- 	port = find_port_by_devt(cdev->dev);
- 	filp->private_data = port;
- 
--	/* Prevent against a port getting hot-unplugged at the same time */
--	spin_lock_irq(&port->portdev->ports_lock);
--	kref_get(&port->kref);
--	spin_unlock_irq(&port->portdev->ports_lock);
--
- 	/*
- 	 * Don't allow opening of console port devices -- that's done
- 	 * via /dev/hvc
+ 	memcpy(&vcpu->run->s.regs.gprs[14], &vcpu->arch.sie_block->gg14, 16);
+ 	return rc;
 -- 
 1.8.1.2
 
