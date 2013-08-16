@@ -1,155 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324Ab3HQAQd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:16:33 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:51513 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757086Ab3HQAQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757273Ab3HQAQb (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 16 Aug 2013 20:16:31 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 4/5] mm: Scan for dirty ptes and update cmtime on MS_ASYNC
-Date: Fri, 16 Aug 2013 16:22:11 -0700
-Message-Id: <1c0ffd25b5adb4ea65a29e8858ab4674b10aa9df.1376679411.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <cover.1376679411.git.luto@amacapital.net>
-References: <cover.1376679411.git.luto@amacapital.net>
-In-Reply-To: <cover.1376679411.git.luto@amacapital.net>
-References: <cover.1376679411.git.luto@amacapital.net>
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:62549 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476Ab3HQAQZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 20:16:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <520E48A7.3050401@roeck-us.net>
+References: <520C9A39.3030808@roeck-us.net>
+	<CAMo8BfKyqZYMkh96wyZSpYUpXwqFQZkco=XgtjUrNG-jSzW5pA@mail.gmail.com>
+	<20130816054823.GB28445@thor.bakeyournoodle.com>
+	<CAMo8Bf+veq_DU7-hnB0yySy6YWpwU2TYx3U9e89c_m8Mv9Cv5w@mail.gmail.com>
+	<520DD9CA.90305@roeck-us.net>
+	<CAMo8BfLvVk+2CyQD28otU265J4rvbt0Eg11Vqr4u4zjKjrTanw@mail.gmail.com>
+	<520DEF05.9030803@roeck-us.net>
+	<CAMo8BfKWFGxr6a48tFqGCourOcWOTO9rmCHy3Q05jR_QEuq=Cg@mail.gmail.com>
+	<520E48A7.3050401@roeck-us.net>
+Date: Fri, 16 Aug 2013 23:09:38 +0400
+Message-ID: <CAMo8BfK8pwMy7MPqrhRH2XPjfgu+H2pGhxBjbxKqnHwficKNFw@mail.gmail.com>
+Subject: Re: Linux kernel cross-compilers
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Zankel <chris@zankel.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is probably unimportant but improves POSIX compliance.
+On Fri, Aug 16, 2013 at 7:43 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 08/16/2013 02:45 AM, Max Filippov wrote:
+>>>>
+>>>> Guenter,
+>>>> can you share a complete build log with V=1?
+>>>>
+>>>
+>>> http://roeck-us.net/linux/logs/make.xtensa.log.bad
+>>> http://roeck-us.net/linux/logs/make.xtensa.log.ok
+>>>
+>>> Key difference: the failing command in the bad case is
+>>>          xtensa-linux-objcopy -O elf32-xtensa-le
+>>> and in the good case
+>>>          xtensa-linux-objcopy -O elf32-xtensa-be
+>>>
+>>> Same compiler (4.6.3 from kernel.org), same configuration file, same
+>>> command
+>>> line.
+>>> Configuration file is generated from defconfig, and the resulting .config
+>>> file
+>>> is the same in both cases.
+>>>
+>>> If I execute make and expicitly set BIG_ENDIAN=1 on the failing system as
+>>> parameter to it,
+>>> it works fine. If I set BIG_ENDIAN=0 on the passing system, it fails.
+>>>
+>>> I am puzzled. Guess there must be something different, but I have no idea
+>>> what it might be.
+>>
+>>
+>> What is the output of
+>>
+>> echo -e __XTENSA_EB__ | xtensa-linux-gcc -E -
+>>
+>> on the failing system?
+>>
+> It is "1", but that let me pinpoint the problem.
+>
+> On the failing system, the version of echo executed by make does
+> not understand the "-e" option. Thus, when running
+> arch/xtensa/boot/Makefile,
+> "echo -e __XTENSA_EB__" returns "-e __XTENSA_EB__", which doesn't compile,
+> and BIG_ENDIAN ends up being 0. So the compiler is completely innocent.
+>
+> I found out the root source: SHELL is set the /bin/sh, which on the failing
+> system points to /bin/dash (default in Ubuntu, or at least it used to be).
+> dash apparently has a built-in version of echo which does not understand
+> '-e'.
+> Oh well.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- mm/msync.c | 83 +++++++++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 72 insertions(+), 11 deletions(-)
+Cool. OTOH I don't think that we need to -e to output __XTENSA_EB__.
+Will send a patch for that.
 
-diff --git a/mm/msync.c b/mm/msync.c
-index 632df45..9e41acd 100644
---- a/mm/msync.c
-+++ b/mm/msync.c
-@@ -13,13 +13,16 @@
- #include <linux/file.h>
- #include <linux/syscalls.h>
- #include <linux/sched.h>
-+#include <linux/rmap.h>
-+#include <linux/pagemap.h>
- 
- /*
-  * MS_SYNC syncs the entire file - including mappings.
-  *
-  * MS_ASYNC does not start I/O (it used to, up to 2.5.67).
-  * Nor does it marks the relevant pages dirty (it used to up to 2.6.17).
-- * Now it doesn't do anything, since dirty pages are properly tracked.
-+ * Now all it does is ensure that file timestamps get updated, since POSIX
-+ * requires it.  We track dirty pages correct without MS_ASYNC.
-  *
-  * The application may now run fsync() to
-  * write out the dirty pages and wait on the writeout and check the result.
-@@ -28,6 +31,57 @@
-  * So by _not_ starting I/O in MS_ASYNC we provide complete flexibility to
-  * applications.
-  */
-+
-+static int msync_async_range(struct vm_area_struct *vma,
-+			      unsigned long *start, unsigned long end)
-+{
-+	struct mm_struct *mm;
-+	struct address_space *mapping;
-+	int iters = 0;
-+
-+	while (*start < end && *start < vma->vm_end && iters < 128) {
-+		unsigned int page_mask, page_increm;
-+
-+		/*
-+		 * Require that the pte writable (because otherwise it can't
-+		 * be dirty, so there's nothing to clean).
-+		 *
-+		 * In theory we could check the pte dirty bit, but this is
-+		 * awkward and barely worth it.
-+		 */
-+		struct page *page = follow_page_mask(vma, *start,
-+						     FOLL_GET | FOLL_WRITE,
-+						     &page_mask);
-+
-+		if (page && !IS_ERR(page)) {
-+			if (lock_page_killable(page) == 0) {
-+				page_mkclean(page);
-+				unlock_page(page);
-+			}
-+			put_page(page);
-+		}
-+
-+		if (IS_ERR(page))
-+			return PTR_ERR(page);
-+
-+		page_increm = 1 + (~(*start >> PAGE_SHIFT) & page_mask);
-+		*start += page_increm * PAGE_SIZE;
-+		cond_resched();
-+		iters++;
-+	}
-+
-+	/* XXX: try to do this only once? */
-+	mapping = vma->vm_file->f_mapping;
-+	if (mapping->a_ops->flush_cmtime)
-+		mapping->a_ops->flush_cmtime(mapping);
-+
-+	/* Give mmap_sem writers a chance. */
-+	mm = current->mm;
-+	up_read(&mm->mmap_sem);
-+	down_read(&mm->mmap_sem);
-+	return 0;
-+}
-+
- SYSCALL_DEFINE3(msync, unsigned long, start, size_t, len, int, flags)
- {
- 	unsigned long end;
-@@ -77,18 +131,25 @@ SYSCALL_DEFINE3(msync, unsigned long, start, size_t, len, int, flags)
- 			goto out_unlock;
- 		}
- 		file = vma->vm_file;
--		start = vma->vm_end;
--		if ((flags & MS_SYNC) && file &&
--				(vma->vm_flags & VM_SHARED)) {
--			get_file(file);
--			up_read(&mm->mmap_sem);
--			error = vfs_fsync(file, 0);
--			fput(file);
--			if (error || start >= end)
--				goto out;
--			down_read(&mm->mmap_sem);
-+		if (file && vma->vm_flags & VM_SHARED) {
-+			if (flags & MS_SYNC) {
-+				start = vma->vm_end;
-+				get_file(file);
-+				up_read(&mm->mmap_sem);
-+				error = vfs_fsync(file, 0);
-+				fput(file);
-+				if (error || start >= end)
-+					goto out;
-+				down_read(&mm->mmap_sem);
-+			} else if ((vma->vm_flags & VM_WRITE) &&
-+				   file->f_mapping) {
-+				error = msync_async_range(vma, &start, end);
-+			} else {
-+				start = vma->vm_end;
-+			}
- 			vma = find_vma(mm, start);
- 		} else {
-+			start = vma->vm_end;
- 			if (start >= end) {
- 				error = 0;
- 				goto out_unlock;
 -- 
-1.8.3.1
-
+Thanks.
+-- Max
