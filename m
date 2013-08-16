@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab3HPC3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 22:29:19 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38468 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214Ab3HPC3N (ORCPT
+	id S1755337Ab3HPC3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 22:29:24 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:64193 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755294Ab3HPC3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 22:29:13 -0400
+	Thu, 15 Aug 2013 22:29:20 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
@@ -14,9 +14,9 @@ Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>,
         Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 27/34] cpufreq: s3c: remove calls to cpufreq_notify_transition()
-Date: Fri, 16 Aug 2013 07:55:24 +0530
-Message-Id: <0be9b361e489242664f6f9369c4352d01bf4f009.1376619363.git.viresh.kumar@linaro.org>
+Subject: [PATCH 28/34] cpufreq: s5pv210: remove calls to cpufreq_notify_transition()
+Date: Fri, 16 Aug 2013 07:55:25 +0530
+Message-Id: <18ddada60c1c5b96c6771eb6047a4d5703d3a136.1376619363.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376619363.git.viresh.kumar@linaro.org>
 References: <cover.1376619363.git.viresh.kumar@linaro.org>
@@ -49,155 +49,74 @@ Some related minor cleanups are also done along with it.
 Cc: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/s3c2416-cpufreq.c | 21 ++++-------------
- drivers/cpufreq/s3c64xx-cpufreq.c | 48 +++++++++++++--------------------------
- 2 files changed, 20 insertions(+), 49 deletions(-)
+ drivers/cpufreq/s5pv210-cpufreq.c | 16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/cpufreq/s3c2416-cpufreq.c b/drivers/cpufreq/s3c2416-cpufreq.c
-index 9b22cc4..0e13914 100644
---- a/drivers/cpufreq/s3c2416-cpufreq.c
-+++ b/drivers/cpufreq/s3c2416-cpufreq.c
-@@ -220,7 +220,7 @@ static int s3c2416_cpufreq_set_target(struct cpufreq_policy *policy,
- 				      unsigned int index)
- {
- 	struct s3c2416_data *s3c_freq = &s3c2416_cpufreq;
--	struct cpufreq_freqs freqs;
-+	unsigned int new_freq;
- 	int idx, ret, to_dvs = 0;
+diff --git a/drivers/cpufreq/s5pv210-cpufreq.c b/drivers/cpufreq/s5pv210-cpufreq.c
+index 76a4177..efa1080 100644
+--- a/drivers/cpufreq/s5pv210-cpufreq.c
++++ b/drivers/cpufreq/s5pv210-cpufreq.c
+@@ -26,7 +26,6 @@
+ static struct clk *cpu_clk;
+ static struct clk *dmc0_clk;
+ static struct clk *dmc1_clk;
+-static struct cpufreq_freqs freqs;
+ static DEFINE_MUTEX(set_freq_lock);
  
- 	mutex_lock(&cpufreq_lock);
-@@ -237,25 +237,14 @@ static int s3c2416_cpufreq_set_target(struct cpufreq_policy *policy,
- 		goto out;
- 	}
- 
--	freqs.flags = 0;
--	freqs.old = s3c_freq->is_dvs ? FREQ_DVS
--				     : clk_get_rate(s3c_freq->armclk) / 1000;
--
- 	/* When leavin dvs mode, always switch the armdiv to the hclk rate
- 	 * The S3C2416 has stability issues when switching directly to
- 	 * higher frequencies.
- 	 */
--	freqs.new = (s3c_freq->is_dvs && !to_dvs)
-+	new_freq = (s3c_freq->is_dvs && !to_dvs)
- 				? clk_get_rate(s3c_freq->hclk) / 1000
- 				: s3c_freq->freq_table[index].frequency;
- 
--	pr_debug("cpufreq: Transition %d-%dkHz\n", freqs.old, freqs.new);
--
--	if (!to_dvs && freqs.old == freqs.new)
--		goto out;
--
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
--
- 	if (to_dvs) {
- 		pr_debug("cpufreq: enter dvs\n");
- 		ret = s3c2416_cpufreq_enter_dvs(s3c_freq, idx);
-@@ -263,12 +252,10 @@ static int s3c2416_cpufreq_set_target(struct cpufreq_policy *policy,
- 		pr_debug("cpufreq: leave dvs\n");
- 		ret = s3c2416_cpufreq_leave_dvs(s3c_freq, idx);
- 	} else {
--		pr_debug("cpufreq: change armdiv to %dkHz\n", freqs.new);
--		ret = s3c2416_cpufreq_set_armdiv(s3c_freq, freqs.new);
-+		pr_debug("cpufreq: change armdiv to %dkHz\n", new_freq);
-+		ret = s3c2416_cpufreq_set_armdiv(s3c_freq, new_freq);
- 	}
- 
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--
- out:
- 	mutex_unlock(&cpufreq_lock);
- 
-diff --git a/drivers/cpufreq/s3c64xx-cpufreq.c b/drivers/cpufreq/s3c64xx-cpufreq.c
-index 5357dc4..a983559 100644
---- a/drivers/cpufreq/s3c64xx-cpufreq.c
-+++ b/drivers/cpufreq/s3c64xx-cpufreq.c
-@@ -65,54 +65,46 @@ static unsigned int s3c64xx_cpufreq_get_speed(unsigned int cpu)
- static int s3c64xx_cpufreq_set_target(struct cpufreq_policy *policy,
- 				      unsigned int index)
- {
--	int ret;
--	struct cpufreq_freqs freqs;
- 	struct s3c64xx_dvfs *dvfs;
+ /* APLL M,P,S values for 1G/800Mhz */
+@@ -179,6 +178,7 @@ static int s5pv210_target(struct cpufreq_policy *policy, unsigned int index)
+ 	unsigned int priv_index;
+ 	unsigned int pll_changing = 0;
+ 	unsigned int bus_speed_changing = 0;
 +	unsigned int old_freq, new_freq;
-+	int ret;
+ 	int arm_volt, int_volt;
+ 	int ret = 0;
  
--	freqs.old = clk_get_rate(armclk) / 1000;
--	freqs.new = s3c64xx_freq_table[index].frequency;
--	freqs.flags = 0;
-+	old_freq = clk_get_rate(armclk) / 1000;
-+	new_freq = s3c64xx_freq_table[index].frequency;
- 	dvfs = &s3c64xx_dvfs_table[s3c64xx_freq_table[index].driver_data];
+@@ -193,12 +193,12 @@ static int s5pv210_target(struct cpufreq_policy *policy, unsigned int index)
+ 		goto exit;
+ 	}
  
--	pr_debug("Transition %d-%dkHz\n", freqs.old, freqs.new);
--
+-	freqs.old = s5pv210_getspeed(0);
+-	freqs.new = s5pv210_freq_table[index].frequency;
++	old_freq = s5pv210_getspeed(0);
++	new_freq = s5pv210_freq_table[index].frequency;
+ 
+ 	/* Finding current running level index */
+ 	if (cpufreq_frequency_table_target(policy, s5pv210_freq_table,
+-					   freqs.old, CPUFREQ_RELATION_H,
++					   old_freq, CPUFREQ_RELATION_H,
+ 					   &priv_index)) {
+ 		ret = -EINVAL;
+ 		goto exit;
+@@ -207,7 +207,7 @@ static int s5pv210_target(struct cpufreq_policy *policy, unsigned int index)
+ 	arm_volt = dvs_conf[index].arm_volt;
+ 	int_volt = dvs_conf[index].int_volt;
+ 
+-	if (freqs.new > freqs.old) {
++	if (new_freq > old_freq) {
+ 		ret = regulator_set_voltage(arm_regulator,
+ 				arm_volt, arm_volt_max);
+ 		if (ret)
+@@ -219,8 +219,6 @@ static int s5pv210_target(struct cpufreq_policy *policy, unsigned int index)
+ 			goto exit;
+ 	}
+ 
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
 -
- #ifdef CONFIG_REGULATOR
--	if (vddarm && freqs.new > freqs.old) {
-+	if (vddarm && new_freq > old_freq) {
- 		ret = regulator_set_voltage(vddarm,
- 					    dvfs->vddarm_min,
- 					    dvfs->vddarm_max);
- 		if (ret != 0) {
- 			pr_err("Failed to set VDDARM for %dkHz: %d\n",
--			       freqs.new, ret);
--			freqs.new = freqs.old;
--			goto post_notify;
-+			       new_freq, ret);
-+			return ret;
+ 	/* Check if there need to change PLL */
+ 	if ((index == L0) || (priv_index == L0))
+ 		pll_changing = 1;
+@@ -431,9 +429,7 @@ static int s5pv210_target(struct cpufreq_policy *policy, unsigned int index)
  		}
  	}
- #endif
  
--	ret = clk_set_rate(armclk, freqs.new * 1000);
-+	ret = clk_set_rate(armclk, new_freq * 1000);
- 	if (ret < 0) {
- 		pr_err("Failed to set rate %dkHz: %d\n",
--		       freqs.new, ret);
--		freqs.new = freqs.old;
-+		       new_freq, ret);
-+		return ret;
- 	}
- 
--post_notify:
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--	if (ret)
--		goto err;
--
- #ifdef CONFIG_REGULATOR
--	if (vddarm && freqs.new < freqs.old) {
-+	if (vddarm && new_freq < old_freq) {
- 		ret = regulator_set_voltage(vddarm,
- 					    dvfs->vddarm_min,
- 					    dvfs->vddarm_max);
- 		if (ret != 0) {
- 			pr_err("Failed to set VDDARM for %dkHz: %d\n",
--			       freqs.new, ret);
--			goto err_clk;
-+			       new_freq, ret);
-+			if (clk_set_rate(armclk, old_freq * 1000) < 0)
-+				pr_err("Failed to restore original clock rate\n");
-+
-+			return ret;
- 		}
- 	}
- #endif
-@@ -121,14 +113,6 @@ post_notify:
- 		 clk_get_rate(armclk) / 1000);
- 
- 	return 0;
--
--err_clk:
--	if (clk_set_rate(armclk, freqs.old * 1000) < 0)
--		pr_err("Failed to restore original clock rate\n");
--err:
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
 -
--	return ret;
- }
+-	if (freqs.new < freqs.old) {
++	if (new_freq < old_freq) {
+ 		regulator_set_voltage(int_regulator,
+ 				int_volt, int_volt_max);
  
- #ifdef CONFIG_REGULATOR
 -- 
 1.7.12.rc2.18.g61b472e
 
