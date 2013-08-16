@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623Ab3HPKPs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 06:15:48 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:61259 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257Ab3HPKPn (ORCPT
+	id S1753985Ab3HPKR3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 06:17:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38617 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab3HPKRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 06:15:43 -0400
-Message-ID: <520DFBC8.4040509@ozlabs.ru>
-Date: Fri, 16 Aug 2013 20:15:36 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 16 Aug 2013 06:17:22 -0400
+Date: Fri, 16 Aug 2013 12:17:14 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, Russ.Dill@ti.com
+Subject: Re: [PATCH 4/4] iio: ti_am335x_adc: Add continuous sampling and
+ trigger support
+Message-ID: <20130816101714.GE26895@linutronix.de>
+References: <1376424303-22740-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1376424303-22740-5-git-send-email-zubair.lutfullah@gmail.com>
+ <520CBEC6.8010400@kernel.org>
+ <20130816100702.GD26895@linutronix.de>
 MIME-Version: 1.0
-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-CC: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        benh@au1.ibm.com, paulus@au1.ibm.com
-Subject: Re: [PATCH 2/2] powerpc/iommu: check dev->iommu_group before remove
- a device from iommu_group
-References: <1376647687-20550-1-git-send-email-weiyang@linux.vnet.ibm.com> <1376647687-20550-3-git-send-email-weiyang@linux.vnet.ibm.com>
-In-Reply-To: <1376647687-20550-3-git-send-email-weiyang@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130816100702.GD26895@linutronix.de>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2013 08:08 PM, Wei Yang wrote:
-> ---
->  arch/powerpc/kernel/iommu.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-> index b20ff17..5abf7c3 100644
-> --- a/arch/powerpc/kernel/iommu.c
-> +++ b/arch/powerpc/kernel/iommu.c
-> @@ -1149,7 +1149,8 @@ static int iommu_bus_notifier(struct notifier_block *nb,
->  	case BUS_NOTIFY_ADD_DEVICE:
->  		return iommu_add_device(dev);
->  	case BUS_NOTIFY_DEL_DEVICE:
-> -		iommu_del_device(dev);
-> +		if (dev->iommu_group)
-> +			iommu_del_device(dev);
->  		return 0;
->  	default:
->  		return 0;
-> 
+* Sebastian Andrzej Siewior | 2013-08-16 12:07:02 [+0200]:
 
-This one seems redundant, no?
+>* Jonathan Cameron | 2013-08-15 12:43:02 [+0100]:
+>
+>It did apply with no trouble here.
+
+and with
+
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index 93129ec..fdd9810 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -156,6 +156,7 @@ config TI_ADC081C
+ config TI_AM335X_ADC
+ 	tristate "TI's ADC driver"
+ 	depends on MFD_TI_AM335X_TSCADC
++	select IIO_TRIGGERED_BUFFER
+ 	help
+ 	  Say yes here to build support for Texas Instruments ADC
+ 	  driver which is also a MFD client.
 
 
--- 
-Alexey
+it links :)
+
+Sebastian
