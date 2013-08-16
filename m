@@ -1,103 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469Ab3HPWm4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:42:56 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55940 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab3HPWmw (ORCPT
+	id S1757500Ab3HPWnf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:43:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51961 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757337Ab3HPWl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:42:52 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19nGruM2g3ZpwyzMim1LPdKlfVKKj9seJU=
-Date: Fri, 16 Aug 2013 15:50:46 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC v1 4/5] ARM: mvebu: add Armada 1500 and Sony NSZ-GS7
- device tree files
-Message-ID: <20130816195046.GU13964@titan.lakedaemon.net>
-References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1376682098-10580-5-git-send-email-sebastian.hesselbarth@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376682098-10580-5-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 16 Aug 2013 18:41:29 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 049/133] ARM: 7790/1: Fix deferred mm switch on VIVT processors
+Date: Fri, 16 Aug 2013 15:33:11 -0700
+Message-Id: <1376692475-28413-50-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 09:41:37PM +0200, Sebastian Hesselbarth wrote:
-> This adds very basic device tree files for the Marvell Armada 1500 SoC
-> and the Sony NSZ-GS7 GoogleTV board. Currently, SoC only has nodes for
-> cpus, some clocks, l2 cache controller, local timer, apb timers, uart,
-> and interrupt controllers.
-> 
-> The clocks are fixed-clock placeholders until a real DT clock provider
-> is available. Cache controller node may be wrong and was just guessed
-> out of Armada 370 and GPL'd 1500 source. Timers except clocksource have
-> not really been tested.
-> 
-> The separation into soc/apb and soc/sm-apb may be removed, but it looks
-> like Armada 1500 has a separate peripheral bus for the System Manager
-> core that can also been accessed by CPUs. (If you look closely on GTV
-> boot logs, you can see SM and CPU fighting for UART ;) )
-> 
-> The Sony NSZ-GS7 is a GoogleTV consumer device comprising the SoC above.
-> Since last week or so, there is a way to install a custom u-boot and
-> boot stock, unsigned kernels easily. Just ask Google about it, if you
-> are willing to void your warranty.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/boot/dts/Makefile                     |    3 +-
->  arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts |   29 +++
->  arch/arm/boot/dts/armada-1500.dtsi             |  225 ++++++++++++++++++++++++
->  3 files changed, 256 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts
->  create mode 100644 arch/arm/boot/dts/armada-1500.dtsi
-> 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index 641b3c9..3186904 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -103,7 +103,8 @@ dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
->  	armada-370-rd.dtb \
->  	armada-xp-db.dtb \
->  	armada-xp-gp.dtb \
-> -	armada-xp-openblocks-ax3-4.dtb
-> +	armada-xp-openblocks-ax3-4.dtb \
-> +	armada-1500-sony-nsz-gs7.dtb
+3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
 
-alphabetical.
+------------------
 
-And now I need to pick up a googleTV... 
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-thx,
+commit bdae73cd374e28db544fdd9b77de689a36e3c129 upstream.
 
-Jason.
+As of commit b9d4d42ad9 (ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on
+pre-ARMv6 CPUs), the mm switching on VIVT processors is done in the
+finish_arch_post_lock_switch() function to avoid whole cache flushing
+with interrupts disabled. The need for deferred mm switch is stored as a
+thread flag (TIF_SWITCH_MM). However, with preemption enabled, we can
+have another thread switch before finish_arch_post_lock_switch(). If the
+new thread has the same mm as the previous 'next' thread, the scheduler
+will not call switch_mm() and the TIF_SWITCH_MM flag won't be set for
+the new thread.
+
+This patch moves the switch pending flag to the mm_context_t structure
+since this is specific to the mm rather than thread.
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/arm/include/asm/mmu.h         |  2 ++
+ arch/arm/include/asm/mmu_context.h | 20 ++++++++++++++++----
+ arch/arm/include/asm/thread_info.h |  1 -
+ 3 files changed, 18 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/include/asm/mmu.h b/arch/arm/include/asm/mmu.h
+index e3d5554..d1b4998 100644
+--- a/arch/arm/include/asm/mmu.h
++++ b/arch/arm/include/asm/mmu.h
+@@ -6,6 +6,8 @@
+ typedef struct {
+ #ifdef CONFIG_CPU_HAS_ASID
+ 	atomic64_t	id;
++#else
++	int		switch_pending;
+ #endif
+ 	unsigned int	vmalloc_seq;
+ } mm_context_t;
+diff --git a/arch/arm/include/asm/mmu_context.h b/arch/arm/include/asm/mmu_context.h
+index 863a661..3da6557 100644
+--- a/arch/arm/include/asm/mmu_context.h
++++ b/arch/arm/include/asm/mmu_context.h
+@@ -45,7 +45,7 @@ static inline void check_and_switch_context(struct mm_struct *mm,
+ 		 * on non-ASID CPUs, the old mm will remain valid until the
+ 		 * finish_arch_post_lock_switch() call.
+ 		 */
+-		set_ti_thread_flag(task_thread_info(tsk), TIF_SWITCH_MM);
++		mm->context.switch_pending = 1;
+ 	else
+ 		cpu_switch_mm(mm->pgd, mm);
+ }
+@@ -54,9 +54,21 @@ static inline void check_and_switch_context(struct mm_struct *mm,
+ 	finish_arch_post_lock_switch
+ static inline void finish_arch_post_lock_switch(void)
+ {
+-	if (test_and_clear_thread_flag(TIF_SWITCH_MM)) {
+-		struct mm_struct *mm = current->mm;
+-		cpu_switch_mm(mm->pgd, mm);
++	struct mm_struct *mm = current->mm;
++
++	if (mm && mm->context.switch_pending) {
++		/*
++		 * Preemption must be disabled during cpu_switch_mm() as we
++		 * have some stateful cache flush implementations. Check
++		 * switch_pending again in case we were preempted and the
++		 * switch to this mm was already done.
++		 */
++		preempt_disable();
++		if (mm->context.switch_pending) {
++			mm->context.switch_pending = 0;
++			cpu_switch_mm(mm->pgd, mm);
++		}
++		preempt_enable_no_resched();
+ 	}
+ }
+ 
+diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
+index cddda1f..20038ae 100644
+--- a/arch/arm/include/asm/thread_info.h
++++ b/arch/arm/include/asm/thread_info.h
+@@ -155,7 +155,6 @@ extern int vfp_restore_user_hwstate(struct user_vfp __user *,
+ #define TIF_USING_IWMMXT	17
+ #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
+ #define TIF_RESTORE_SIGMASK	20
+-#define TIF_SWITCH_MM		22	/* deferred switch_mm */
+ 
+ #define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
+ #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
+-- 
+1.8.1.2
+
