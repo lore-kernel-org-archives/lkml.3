@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab3HPC2Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 22:28:24 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:63135 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754918Ab3HPC2U (ORCPT
+	id S1755058Ab3HPC2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 22:28:41 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:37071 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755018Ab3HPC2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 22:28:20 -0400
+	Thu, 15 Aug 2013 22:28:36 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH 20/34] cpufreq: omap: remove calls to cpufreq_notify_transition()
-Date: Fri, 16 Aug 2013 07:55:17 +0530
-Message-Id: <f739f242fa9af3309bb454e2a885dd6dd3f80380.1376619363.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 22/34] cpufreq: pasemi: remove calls to cpufreq_notify_transition()
+Date: Fri, 16 Aug 2013 07:55:19 +0530
+Message-Id: <dfbad8b084e7b64ab383fcd50ee458bbe717c5c5.1376619363.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376619363.git.viresh.kumar@linaro.org>
 References: <cover.1376619363.git.viresh.kumar@linaro.org>
@@ -46,96 +45,50 @@ frequency change, this one removes it from this driver.
 
 Some related minor cleanups are also done along with it.
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/omap-cpufreq.c | 39 ++++++++++++++-------------------------
- 1 file changed, 14 insertions(+), 25 deletions(-)
+ drivers/cpufreq/pasemi-cpufreq.c | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
-index 92d45e6..97610a3 100644
---- a/drivers/cpufreq/omap-cpufreq.c
-+++ b/drivers/cpufreq/omap-cpufreq.c
-@@ -53,15 +53,15 @@ static unsigned int omap_getspeed(unsigned int cpu)
+diff --git a/drivers/cpufreq/pasemi-cpufreq.c b/drivers/cpufreq/pasemi-cpufreq.c
+index aaee5fa..4d69958 100644
+--- a/drivers/cpufreq/pasemi-cpufreq.c
++++ b/drivers/cpufreq/pasemi-cpufreq.c
+@@ -51,8 +51,6 @@
+ static void __iomem *sdcpwr_mapbase;
+ static void __iomem *sdcasr_mapbase;
  
- static int omap_target(struct cpufreq_policy *policy, unsigned int index)
+-static DEFINE_MUTEX(pas_switch_mutex);
+-
+ /* Current astate, is used when waking up from power savings on
+  * one core, in case the other core has switched states during
+  * the idle time.
+@@ -249,15 +247,8 @@ static int pas_cpufreq_cpu_exit(struct cpufreq_policy *policy)
+ static int pas_cpufreq_target(struct cpufreq_policy *policy,
+ 			      unsigned int pas_astate_new)
  {
--	int r, ret = 0;
 -	struct cpufreq_freqs freqs;
-+	int r, ret;
- 	struct opp *opp;
- 	unsigned long freq, volt = 0, volt_old = 0, tol = 0;
-+	unsigned int old_freq, new_freq;
+ 	int i;
  
--	freqs.old = omap_getspeed(policy->cpu);
--	freqs.new = freq_table[index].frequency;
-+	old_freq = omap_getspeed(policy->cpu);
-+	new_freq = freq_table[index].frequency;
- 
--	freq = freqs.new * 1000;
-+	freq = new_freq * 1000;
- 	ret = clk_round_rate(mpu_clk, freq);
- 	if (IS_ERR_VALUE(ret)) {
- 		dev_warn(mpu_dev,
-@@ -77,7 +77,7 @@ static int omap_target(struct cpufreq_policy *policy, unsigned int index)
- 		if (IS_ERR(opp)) {
- 			rcu_read_unlock();
- 			dev_err(mpu_dev, "%s: unable to find MPU OPP for %d\n",
--				__func__, freqs.new);
-+				__func__, new_freq);
- 			return -EINVAL;
- 		}
- 		volt = opp_get_voltage(opp);
-@@ -87,43 +87,32 @@ static int omap_target(struct cpufreq_policy *policy, unsigned int index)
- 	}
- 
- 	dev_dbg(mpu_dev, "cpufreq-omap: %u MHz, %ld mV --> %u MHz, %ld mV\n", 
--		freqs.old / 1000, volt_old ? volt_old / 1000 : -1,
--		freqs.new / 1000, volt ? volt / 1000 : -1);
+-	freqs.old = policy->cur;
+-	freqs.new = pas_freqs[pas_astate_new].frequency;
 -
--	/* notifiers */
+-	mutex_lock(&pas_switch_mutex);
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
-+		old_freq / 1000, volt_old ? volt_old / 1000 : -1,
-+		new_freq / 1000, volt ? volt / 1000 : -1);
- 
- 	/* scaling up?  scale voltage before frequency */
--	if (mpu_reg && (freqs.new > freqs.old)) {
-+	if (mpu_reg && (new_freq > old_freq)) {
- 		r = regulator_set_voltage(mpu_reg, volt - tol, volt + tol);
- 		if (r < 0) {
- 			dev_warn(mpu_dev, "%s: unable to scale voltage up.\n",
- 				 __func__);
--			freqs.new = freqs.old;
--			goto done;
-+			return r;
- 		}
- 	}
- 
--	ret = clk_set_rate(mpu_clk, freqs.new * 1000);
-+	ret = clk_set_rate(mpu_clk, new_freq * 1000);
- 
- 	/* scaling down?  scale voltage after frequency */
--	if (mpu_reg && (freqs.new < freqs.old)) {
-+	if (mpu_reg && (new_freq < old_freq)) {
- 		r = regulator_set_voltage(mpu_reg, volt - tol, volt + tol);
- 		if (r < 0) {
- 			dev_warn(mpu_dev, "%s: unable to scale voltage down.\n",
- 				 __func__);
--			ret = clk_set_rate(mpu_clk, freqs.old * 1000);
--			freqs.new = freqs.old;
--			goto done;
-+			clk_set_rate(mpu_clk, old_freq * 1000);
-+			return r;
- 		}
- 	}
- 
--	freqs.new = omap_getspeed(policy->cpu);
 -
--done:
--	/* notifiers */
+ 	pr_debug("setting frequency for cpu %d to %d kHz, 1/%d of max frequency\n",
+ 		 policy->cpu,
+ 		 pas_freqs[pas_astate_new].frequency,
+@@ -268,10 +259,7 @@ static int pas_cpufreq_target(struct cpufreq_policy *policy,
+ 	for_each_online_cpu(i)
+ 		set_astate(i, pas_astate_new);
+ 
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+-	mutex_unlock(&pas_switch_mutex);
 -
- 	return ret;
+-	ppc_proc_freq = freqs.new * 1000ul;
++	ppc_proc_freq = pas_freqs[pas_astate_new].frequency * 1000ul;
+ 	return 0;
  }
  
 -- 
