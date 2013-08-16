@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3HQA2e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:28:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51434 "EHLO
+	id S1756755Ab3HQA2x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:28:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51422 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab3HPWh0 (ORCPT
+	with ESMTP id S1755851Ab3HPWhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:37:26 -0400
+	Fri, 16 Aug 2013 18:37:18 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Amit Shah <amit.shah@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 082/133] virtio/console: Add pipe_lock/unlock for splice_write
-Date: Fri, 16 Aug 2013 15:33:44 -0700
-Message-Id: <1376692475-28413-83-git-send-email-kamal@canonical.com>
+Subject: [PATCH 075/133] ARM: use linker magic for vectors and vector stubs
+Date: Fri, 16 Aug 2013 15:33:37 -0700
+Message-Id: <1376692475-28413-76-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -30,144 +27,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 2b4fbf029dff5a28d9bf646346dea891ec43398a upstream.
+commit b9b32bf70f2fb710b07c94e13afbc729afe221da upstream.
 
-Add pipe_lock/unlock for splice_write to avoid oops by following competition:
+Use linker magic to create the vectors and vector stubs: we can tell the
+linker to place them at an appropriate VMA, but keep the LMA within the
+kernel.  This gets rid of some unnecessary symbol manipulation, and
+have the linker calculate the relocations appropriately.
 
-(1) An application gets fds of a trace buffer, virtio-serial, pipe.
-(2) The application does fork()
-(3) The processes execute splice_read(trace buffer) and
-    splice_write(virtio-serial) via same pipe.
-
-        <parent>                   <child>
-  get fds of a trace buffer,
-         virtio-serial, pipe
-          |
-        fork()----------create--------+
-          |                           |
-      splice(read)                    |           ---+
-      splice(write)                   |              +-- no competition
-          |                       splice(read)       |
-          |                       splice(write)   ---+
-          |                           |
-      splice(read)                    |
-      splice(write)               splice(read)    ------ competition
-          |                       splice(write)
-
-Two processes share a pipe_inode_info structure. If the child execute
-splice(read) when the parent tries to execute splice(write), the
-structure can be broken. Existing virtio-serial driver does not get
-lock for the structure in splice_write, so this competition will induce
-oops.
-
-<oops messages>
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
- IP: [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
- PGD 7223e067 PUD 72391067 PMD 0
- Oops: 0000 [#1] SMP
- Modules linked in: lockd bnep bluetooth rfkill sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd soundcore pcspkr virtio_net virtio_balloon i2c_piix4 i2c_core microcode uinput floppy
- CPU: 0 PID: 1072 Comm: compete-test Not tainted 3.10.0ws+ #55
- Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
- task: ffff880071b98000 ti: ffff88007b55e000 task.ti: ffff88007b55e000
- RIP: 0010:[<ffffffff811a6b5f>]  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
- RSP: 0018:ffff88007b55fd78  EFLAGS: 00010287
- RAX: 0000000000000000 RBX: ffff88007b55fe20 RCX: 0000000000000000
- RDX: 0000000000001000 RSI: ffff88007a95ba30 RDI: ffff880036f9e6c0
- RBP: ffff88007b55fda8 R08: 00000000000006ec R09: ffff880077626708
- R10: 0000000000000003 R11: ffffffff8139ca59 R12: ffff88007a95ba30
- R13: 0000000000000000 R14: ffffffff8139dd00 R15: ffff880036f9e6c0
- FS:  00007f2e2e3a0740(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 0000000000000018 CR3: 0000000071bd1000 CR4: 00000000000006f0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Stack:
-  ffffffff8139ca59 ffff88007b55fe20 ffff880036f9e6c0 ffffffff8139dd00
-  ffff8800776266c0 ffff880077626708 ffff88007b55fde8 ffffffff811a6e8e
-  ffff88007b55fde8 ffffffff8139ca59 ffff880036f9e6c0 ffff88007b55fe20
- Call Trace:
-  [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
-  [<ffffffff8139dd00>] ? virtcons_restore+0x100/0x100
-  [<ffffffff811a6e8e>] __splice_from_pipe+0x7e/0x90
-  [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
-  [<ffffffff8139d739>] port_fops_splice_write+0xe9/0x140
-  [<ffffffff8127a3f4>] ? selinux_file_permission+0xc4/0x120
-  [<ffffffff8139d650>] ? wait_port_writable+0x1b0/0x1b0
-  [<ffffffff811a6fe0>] do_splice_from+0xa0/0x110
-  [<ffffffff811a951f>] SyS_splice+0x5ff/0x6b0
-  [<ffffffff8161facf>] tracesys+0xdd/0xe2
- Code: 49 8b 87 80 00 00 00 4c 8d 24 d0 8b 53 04 41 8b 44 24 0c 4d 8b 6c 24 10 39 d0 89 03 76 02 89 13 49 8b 44 24 10 4c 89 e6 4c 89 ff <ff> 50 18 85 c0 0f 85 aa 00 00 00 48 89 da 4c 89 e6 4c 89 ff 41
- RIP  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
-  RSP <ffff88007b55fd78>
- CR2: 0000000000000018
- ---[ end trace 24572beb7764de59 ]---
-
-V2: Fix a locking problem for error
-V3: Add Reviewed-by lines and stable@ line in sign-off area
-
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Reviewed-by: Amit Shah <amit.shah@redhat.com>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Amit Shah <amit.shah@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/char/virtio_console.c | 20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ arch/arm/kernel/entry-armv.S  | 28 ++++++++++------------------
+ arch/arm/kernel/vmlinux.lds.S | 17 +++++++++++++++++
+ 2 files changed, 27 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 0dfd175..3e338a7 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -942,16 +942,21 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
- 	 * pipe->nrbufs == 0 means there are no data to transfer,
- 	 * so this returns just 0 for no data.
- 	 */
--	if (!pipe->nrbufs)
--		return 0;
-+	pipe_lock(pipe);
-+	if (!pipe->nrbufs) {
-+		ret = 0;
-+		goto error_out;
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index a4af8e8..c19779f 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -1035,7 +1035,7 @@ ENDPROC(vector_\name)
+ 1:
+ 	.endm
+ 
+-	.globl	__stubs_start
++	.section .stubs, "ax", %progbits
+ __stubs_start:
+ 	@ This must be the first word
+ 	.word	vector_swi
+@@ -1162,24 +1162,16 @@ vector_addrexcptn:
+ vector_fiq:
+ 	subs	pc, lr, #4
+ 
+-	.globl	__stubs_end
+-__stubs_end:
+-
+-	.equ	stubs_offset, __vectors_start + 0x1000 - __stubs_start
+-
+-	.globl	__vectors_start
++	.section .vectors, "ax", %progbits
+ __vectors_start:
+-	W(b)	vector_rst + stubs_offset
+-	W(b)	vector_und + stubs_offset
+-	W(ldr)	pc, .LCvswi + stubs_offset
+-	W(b)	vector_pabt + stubs_offset
+-	W(b)	vector_dabt + stubs_offset
+-	W(b)	vector_addrexcptn + stubs_offset
+-	W(b)	vector_irq + stubs_offset
+-	W(b)	vector_fiq + stubs_offset
+-
+-	.globl	__vectors_end
+-__vectors_end:
++	W(b)	vector_rst
++	W(b)	vector_und
++	W(ldr)	pc, __vectors_start + 0x1000
++	W(b)	vector_pabt
++	W(b)	vector_dabt
++	W(b)	vector_addrexcptn
++	W(b)	vector_irq
++	W(b)	vector_fiq
+ 
+ 	.data
+ 
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index 11c1785..f9036ac 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -148,6 +148,23 @@ SECTIONS
+ 	. = ALIGN(PAGE_SIZE);
+ 	__init_begin = .;
+ #endif
++	/*
++	 * The vectors and stubs are relocatable code, and the
++	 * only thing that matters is their relative offsets
++	 */
++	__vectors_start = .;
++	.vectors 0 : AT(__vectors_start) {
++		*(.vectors)
 +	}
- 
- 	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
- 	if (ret < 0)
--		return ret;
-+		goto error_out;
- 
- 	buf = alloc_buf(port->out_vq, 0, pipe->nrbufs);
--	if (!buf)
--		return -ENOMEM;
-+	if (!buf) {
-+		ret = -ENOMEM;
-+		goto error_out;
-+	}
- 
- 	sgl.n = 0;
- 	sgl.len = 0;
-@@ -959,12 +964,17 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
- 	sgl.sg = buf->sg;
- 	sg_init_table(sgl.sg, sgl.size);
- 	ret = __splice_from_pipe(pipe, &sd, pipe_to_sg);
-+	pipe_unlock(pipe);
- 	if (likely(ret > 0))
- 		ret = __send_to_port(port, buf->sg, sgl.n, sgl.len, buf, true);
- 
- 	if (unlikely(ret <= 0))
- 		free_buf(buf, true);
- 	return ret;
++	. = __vectors_start + SIZEOF(.vectors);
++	__vectors_end = .;
 +
-+error_out:
-+	pipe_unlock(pipe);
-+	return ret;
- }
++	__stubs_start = .;
++	.stubs 0x1000 : AT(__stubs_start) {
++		*(.stubs)
++	}
++	. = __stubs_start + SIZEOF(.stubs);
++	__stubs_end = .;
  
- static unsigned int port_fops_poll(struct file *filp, poll_table *wait)
+ 	INIT_TEXT_SECTION(8)
+ 	.exit.text : {
 -- 
 1.8.1.2
 
