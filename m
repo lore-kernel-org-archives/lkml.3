@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab3HPNuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 09:50:14 -0400
-Received: from mailman.olhcc.edu ([66.210.239.126]:42583 "EHLO
-	mailman.olhcc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab3HPNuL convert rfc822-to-8bit (ORCPT
+	id S1754853Ab3HPNuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 09:50:52 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:54449 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735Ab3HPNuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 09:50:11 -0400
-X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Aug 2013 09:50:10 EDT
-From: "Roussel, Daniel" <droussel@olhcc.edu>
-Subject: It is Private
-Thread-Topic: It is Private
-Thread-Index: Ac6ahsJJwPrSacCuQ/+jQVENlt6kKw==
-Date: Fri, 16 Aug 2013 13:44:41 +0000
-Message-ID: <5F01BFF2D455C0448CD3A8E018CC7FAFB47E8224@VSP-3.hcc.local>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [84.120.98.49]
-x-kse-antivirus-interceptor-info: scan successful
-x-kse-antivirus-info: Clean
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Fri, 16 Aug 2013 09:50:44 -0400
+Date: Fri, 16 Aug 2013 15:51:10 +0200 (CEST)
+From: Enrico Mioso <mrkiko.rs@gmail.com>
+X-X-Sender: mrkiko@eeeadesso
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Enrico Mioso <mrkiko.rs@gmail.com>,
+        =?ISO-8859-15?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] net: cdc_ncm: Export cdc_ncm_{tx,rx}_fixup functions
+ for re-use
+In-Reply-To: <20130816134907.GA10987@kroah.com>
+Message-ID: <alpine.LNX.2.02.1308161550050.24009@eeeadesso>
+References: <alpine.LNX.2.02.1307021241380.8884@eeeadesso> <87wqp9xja5.fsf@nemi.mork.no> <alpine.LNX.2.02.1307101425310.22696@eeeadesso> <0cbf7c81-182e-493c-9c28-5b78160a08f1@email.android.com> <alpine.LNX.2.02.1307170457450.1161@eeeadesso> <87bo4xx3ef.fsf@nemi.mork.no>
+ <alpine.LNX.2.02.1308161534410.23935@eeeadesso> <20130816134907.GA10987@kroah.com>
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is Private
+Yes, you're right. I'm sorry - this time I didn't apply numbering scheme to 
+those 3 patches - yet they are consequential, but not depending on each other 
+from a strict point of view.
 
-I am George Daniels, a Banker and credit system programmer (HSBC bank).
-I saw your email address while browsing through  the bank D.T.C Screen in my office yesterday so I decided to use this very chance to know you. I believe we should use every opportunity to know each other better. However, I am contacting you for obvious reason which you will understand.
+Thank you for your review Greg!
 
-I am sending this mail just to know if this email address is OK,
-reply me back so that I will send  more details to you.
-I have a very important thing to discuss with you, I look forward to receiving your response at
-georgedaniels@postino.net<mailto:georgedaniels@postino.net>. Have a pleasant day.
 
-George Daniels
+On Fri, 16 Aug 2013, Greg Kroah-Hartman wrote:
+
+==Date: Fri, 16 Aug 2013 06:49:07 -0700
+==From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+==To: Enrico Mioso <mrkiko.rs@gmail.com>
+==Cc: Bj?rn Mork <bjorn@mork.no>, linux-kernel@vger.kernel.org,
+==    linux-usb@vger.kernel.org, netdev@vger.kernel.org
+==Subject: Re: [PATCH] net: cdc_ncm: Export cdc_ncm_{tx,
+==    rx}_fixup functions for re-use
+==
+==On Fri, Aug 16, 2013 at 03:39:19PM +0200, Enrico Mioso wrote:
+==> Some drivers implementing NCM-like protocols, may re-use those functions, as is 
+==> the case in the huawei_cdc_ncm driver.
+==
+==Where is that driver at, I don't see it in the kernel tree.
+==
+==> Export them via EXPORT_SYMBOL_GPL.
+==
+==Normally we don't export symbols until code that actually uses the
+==symbols lands in the tree at the same time.
+==
+==thanks,
+==
+==greg k-h
+==
