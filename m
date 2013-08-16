@@ -1,96 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab3HPIsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 04:48:21 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46597 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754632Ab3HPIsQ convert rfc822-to-8bit (ORCPT
+	id S1754712Ab3HPIsf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 04:48:35 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:43053 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754632Ab3HPIsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 04:48:16 -0400
-Message-ID: <520DE753.8090601@arm.com>
-Date: Fri, 16 Aug 2013 09:48:19 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 16 Aug 2013 04:48:24 -0400
+Date: Fri, 16 Aug 2013 09:48:16 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Chao Xie <xiechao.mail@gmail.com>
+Cc: Chao Xie <chao.xie@marvell.com>, sameo@linux.intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] mfd: 88pm800: add device tree support
+Message-ID: <20130816084816.GA3916@lee--X1>
+References: <1376468930-9794-1-git-send-email-chao.xie@marvell.com>
+ <1376468930-9794-4-git-send-email-chao.xie@marvell.com>
+ <20130814174227.GI4046@lee--X1>
+ <CADApbejPaRRX5OM5Ho8-bV2vaKLODOjhOh2Abzb8Auniwdukkw@mail.gmail.com>
+ <20130815100719.GB25875@lee--X1>
+ <CADApbegsSEaHhTBoy+STf2EDE3t8NR-K0GMWr1ObRPZkmPsYxQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "microblaze-uclinux@itee.uq.edu.au" 
-	<microblaze-uclinux@itee.uq.edu.au>,
-        "linux@openrisc.net" <linux@openrisc.net>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [RFC PATCH 3/4] powerpc: refactor of_get_cpu_node to support
- other architectures
-References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>  <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>  <1376586580-5409-4-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376628563.4255.137.camel@pasglop>
-In-Reply-To: <1376628563.4255.137.camel@pasglop>
-X-OriginalArrivalTime: 16 Aug 2013 08:48:11.0228 (UTC) FILETIME=[5662E1C0:01CE9A5D]
-X-MC-Unique: 113081609481401001
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADApbegsSEaHhTBoy+STf2EDE3t8NR-K0GMWr1ObRPZkmPsYxQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/08/13 05:49, Benjamin Herrenschmidt wrote:
-> On Thu, 2013-08-15 at 18:09 +0100, Sudeep KarkadaNagesha wrote:
->> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->>
->> Currently different drivers requiring to access cpu device node are
->> parsing the device tree themselves. Since the ordering in the DT need
->> not match the logical cpu ordering, the parsing logic needs to consider
->> that. However, this has resulted in lots of code duplication and in some
->> cases even incorrect logic.
+On Fri, 16 Aug 2013, Chao Xie wrote:
+
+> On Thu, Aug 15, 2013 at 6:07 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> >> >> +Optional parent device properties:
+> >> >> +- marvell,88pm800-irq-write-clear: inicates whether interrupt status is cleared by write
+> >> >> +- marvell,88pm800-battery-detection: indicats whether need 88pm800 to support battery
+> >> >> +                             detection or not.
+> >> >
+> >> > Not sure what these are. This is why you need to CC the Device Tree
+> >> > guys.
+> >> >
+> >> It is the 88pm805's own configuration.
+> >> 88pm800-irq-write-clear: when irq happens, the status register is
+> >> write clear or read clear.
+> >> 88pm800-battery-detection: whether the battery is connected to chip.
+> >> It means that whether
+> >> the chip be aware of battery or not.
+> >
+> > As you are adding vendor specific bindings, you need to Cc the Device
+> > Tree mailing list.
+> >
+> >> >> +     if (IS_ENABLED(CONFIG_OF)) {
+> >> >> +             if (!pdata) {
+> >> >> +                     pdata = devm_kzalloc(&client->dev,
+> >> >> +                                          sizeof(*pdata), GFP_KERNEL);
+> >> >> +                     if (!pdata)
+> >> >> +                             return -ENOMEM;
+> >> >> +             }
+> >> >> +             ret = pm800_dt_init(node, &client->dev, pdata);
+> >> >> +             if (ret)
+> >> >> +                     return ret;
+> >> >> +     } else if (!pdata) {
+> >> >> +             return -EINVAL;
+> >> >> +     }
+> >> >
+> >> > Replace with:
+> >> >
+> >> >         if (!pdata) {
+> >> >                 if (node)
+> >> >                         /* <blah> populate pdata with DT </blah> */
+> >> >                 else
+> >> >                         return -EINVAL;
+> >> >         }
+> >> >
+> >> The orignial code will cover the following situation.
+> >> 1. DT enabled, and user pass pdata
+> >> 2. DT enabled, but user do not pass pdata
+> >> 3. DT disabled, user pass pdata
+> >> 4. DT disabled, user do not pass pdata.
+> >>
+> >> 88pm805 has a callback for config the it based on platform requirment.
+> >> I do not want to remove this callback now, because it includes so many
+> >> configurations.
+> >> So i allow user can pass pdata with callback if the platform needs to
+> >> configure the chip.
+> >
+> > Mixing DT with pdata is a bad idea. If you need to pass a call-back
+> > pointer, then _only_ use pdata i.e. get all of your platform specific
+> > information from pdata, rather than just over-writing sections of it
+> > with information retrieved from Device Tree.
+> >
+> > So:
+> >
+> > If pdata  - use pdata and ignore DT completely
+> > If !pdata:
+> >    If DT  - use DT
+> >    If !DT - return -EINVAL
+> >
+> > Out of interest, what does your call-back do?
+> >
+> Without the callback, the soc still can work.
+> The callback does job relates to power saving and CP's requirment.
+> 1. LPM configure for the chip based on AP/CP's requriment.
+> 2. 88pm800 OSC configuration
+> 3. Some output pin configuration of 88pm800, for example reset_out_n pin
 > 
->  .../...
-> 
->>  
->> +bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
->> +{
->> +	return (int)phys_id == get_hard_smp_processor_id(cpu);
->> +}
-> 
-> Naming is a bit gross. You might want to make it clearer that
-> we are talking about CPU IDs in the device-tree here.
-> 
-Any particular preference to the name or just a note is sufficient.
-Also unlike PPC, in ARM we don't set hard processor id value based
-values read from device tree. DT must contain the values matching to the
-hardware ID registers.
+> I want to abstract the callback step by step, so the first step are the patches
+> that enable DT first.
 
->> +static bool __of_find_n_match_cpu_property(struct device_node *cpun,
->> +			const char *prop_name, int cpu, unsigned int *thread)
->> +{
->> +	const __be32 *cell;
->> +	int ac, prop_len, tid;
->> +	u64 hwid;
->> +
->> +	ac = of_n_addr_cells(cpun);
->> +	cell = of_get_property(cpun, prop_name, &prop_len);
->> +	if (!cell)
->> +		return false;
->> +	prop_len /= sizeof(*cell);
->> +	for (tid = 0; tid < prop_len; tid++) {
->> +		hwid = of_read_number(cell, ac);
->> +		if (arch_match_cpu_phys_id(cpu, hwid)) {
->> +			if (thread)
->> +				*thread = tid;
->> +			return true;
->> +		}
-> 
-> Missing:          cell += ac;
-Ah, missed it while refactoring, will fix it. Thanks
+I think the first step is to fix the call-back. I can't say for sure
+as I haven't seen it, but the chances are that it can be implemented
+in a different way and eradicated. I'm keen not to accept the code
+above, as I believe it's fundamentally broken.
 
-Regards,
-Sudeep
+> For the patch 0001 and 0002 are fixes, so if these two patches are all
+> right, can you
+> merge them? Then i will submit the 2 DT related patches again with cc
+> to device tree maillist.
 
+I don't think you sent patches 1 and 2 to me? Can you resend them as a
+separate patch-set please?
 
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
