@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab3HQAXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:23:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51529 "EHLO
+	id S1756132Ab3HPWiK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:38:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51503 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756224Ab3HPWim (ORCPT
+	with ESMTP id S1755175Ab3HPWiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:38:42 -0400
+	Fri, 16 Aug 2013 18:38:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Curt Brune <curt@cumulusnetworks.com>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Yonghua Zheng <younghua.zheng@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 110/133] hwmon: (adt7470) Fix incorrect return code check
-Date: Fri, 16 Aug 2013 15:34:12 -0700
-Message-Id: <1376692475-28413-111-git-send-email-kamal@canonical.com>
+Subject: [PATCH 122/133] fs/proc/task_mmu.c: fix buffer overflow in add_page_map()
+Date: Fri, 16 Aug 2013 15:34:24 -0700
+Message-Id: <1376692475-28413-123-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -27,44 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Curt Brune <curt@cumulusnetworks.com>
+From: yonghua zheng <younghua.zheng@gmail.com>
 
-commit 93d783bcca69bfacc8dc739d8a050498402587b5 upstream.
+commit 8c8296223f3abb142be8fc31711b18a704c0e7d8 upstream.
 
-In adt7470_write_word_data(), which writes two bytes using
-i2c_smbus_write_byte_data(), the return codes are incorrectly AND-ed
-together when they should be OR-ed together.
+Recently we met quite a lot of random kernel panic issues after enabling
+CONFIG_PROC_PAGE_MONITOR.  After debuggind we found this has something
+to do with following bug in pagemap:
 
-The return code of i2c_smbus_write_byte_data() is zero for success.
+In struct pagemapread:
 
-The upshot is only the first byte was ever written to the hardware.
-The 2nd byte was never written out.
+  struct pagemapread {
+      int pos, len;
+      pagemap_entry_t *buffer;
+      bool v2;
+  };
 
-I noticed that trying to set the fan speed limits was not working
-correctly on my system.  Setting the fan speed limits is the only
-code that uses adt7470_write_word_data().  After making the change
-the limit settings work and the alarms work also.
+pos is number of PM_ENTRY_BYTES in buffer, but len is the size of
+buffer, it is a mistake to compare pos and len in add_page_map() for
+checking buffer is full or not, and this can lead to buffer overflow and
+random kernel panic issue.
 
-Signed-off-by: Curt Brune <curt@cumulusnetworks.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Correct len to be total number of PM_ENTRY_BYTES in buffer.
+
+[akpm@linux-foundation.org: document pagemapread.pos and .len units, fix PM_ENTRY_BYTES definition]
+Signed-off-by: Yonghua Zheng <younghua.zheng@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/adt7470.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/proc/task_mmu.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/hwmon/adt7470.c b/drivers/hwmon/adt7470.c
-index 39ecb1a..aa63420 100644
---- a/drivers/hwmon/adt7470.c
-+++ b/drivers/hwmon/adt7470.c
-@@ -215,7 +215,7 @@ static inline int adt7470_write_word_data(struct i2c_client *client, u8 reg,
- 					  u16 value)
- {
- 	return i2c_smbus_write_byte_data(client, reg, value & 0xFF)
--	       && i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
-+	       || i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
- }
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index ca5ce7f..f31d90f 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -792,14 +792,14 @@ typedef struct {
+ } pagemap_entry_t;
  
- static void adt7470_init_client(struct i2c_client *client)
+ struct pagemapread {
+-	int pos, len;
++	int pos, len;		/* units: PM_ENTRY_BYTES, not bytes */
+ 	pagemap_entry_t *buffer;
+ };
+ 
+ #define PAGEMAP_WALK_SIZE	(PMD_SIZE)
+ #define PAGEMAP_WALK_MASK	(PMD_MASK)
+ 
+-#define PM_ENTRY_BYTES      sizeof(u64)
++#define PM_ENTRY_BYTES      sizeof(pagemap_entry_t)
+ #define PM_STATUS_BITS      3
+ #define PM_STATUS_OFFSET    (64 - PM_STATUS_BITS)
+ #define PM_STATUS_MASK      (((1LL << PM_STATUS_BITS) - 1) << PM_STATUS_OFFSET)
+@@ -1038,8 +1038,8 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+ 	if (!count)
+ 		goto out_task;
+ 
+-	pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+-	pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
++	pm.len = (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
++	pm.buffer = kmalloc(pm.len * PM_ENTRY_BYTES, GFP_TEMPORARY);
+ 	ret = -ENOMEM;
+ 	if (!pm.buffer)
+ 		goto out_task;
 -- 
 1.8.1.2
 
