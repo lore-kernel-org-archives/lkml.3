@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab3HPWM1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:12:27 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:57550 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab3HPWMX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:12:23 -0400
-Date: Fri, 16 Aug 2013 23:02:28 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: "Theodore Ts'o" <tytso@thunk.org>
-Cc: linux-kernel@vger.kernel.org,
-        ksummit-2013-discuss@lists.linuxfoundation.org
-Subject: Re: Kernel summit 2013: Call for Hobbyists
-Message-ID: <20130816210228.GA15233@electric-eye.fr.zoreil.com>
-References: <nsxbo4zzo36.fsf@lambda.thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <nsxbo4zzo36.fsf@lambda.thunk.org>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752947Ab3HPWOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:14:09 -0400
+Received: from gate.crashing.org ([63.228.1.57]:40134 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751420Ab3HPWOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:14:07 -0400
+Message-ID: <1376691186.25016.4.camel@pasglop>
+Subject: Re: [RFC PATCH v2 3/4] powerpc: refactor of_get_cpu_node to support
+ other architectures
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, Jonas Bonn <jonas@southpole.se>,
+        Michal Simek <monstr@monstr.eu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Date: Sat, 17 Aug 2013 08:13:06 +1000
+In-Reply-To: <1376674791-28244-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+References: <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+	 <1376674791-28244-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+	 <1376674791-28244-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Theodore Ts'o <tytso@thunk.org> :
-[...]
-> To apply, please send a proposal outlining what you do, what you'd bring
-> to the kernel summit
+On Fri, 2013-08-16 at 18:39 +0100, Sudeep KarkadaNagesha wrote:
+> +static bool __of_find_n_match_cpu_property(struct device_node *cpun,
+> +                       const char *prop_name, int cpu, unsigned int
+> *thread)
+> +{
+> +       const __be32 *cell;
+> +       int ac, prop_len, tid;
+> +       u64 hwid;
+> +
+> +       ac = of_n_addr_cells(cpun);
+> +       cell = of_get_property(cpun, prop_name, &prop_len);
+> +       if (!cell)
+> +               return false;
+> +       prop_len /= sizeof(*cell);
+> +       for (tid = 0; tid < prop_len; tid++) {
+> +               hwid = of_read_number(cell, ac);
+> +               if (arch_match_cpu_phys_id(cpu, hwid)) {
+> +                       if (thread)
+> +                               *thread = tid;
+> +                       return true;
+> +               }
+> +               cell += ac;
+> +       }
+> +       return false;
+> +}
 
-An umbrella to start with. :o)
+The only problem I can see here is if "ac" is not 1, that will not work
+for the ibm,ppc-interrupt-server#s case. IE. The latter is always 1 cell
+per entry, only "reg" depends on #address-cells.
 
-While the (highly variable amount of) kernel work I do is intellectually
-rewarding at times, it's not exactly the kind of cool or important thing
-that deserves to be talked about in a yearly meetup.
+However that's only a theorical problem since on ppc #address-cells of
+/cpus is always 1...
 
-As a hobbyist, I have less time than most pro and must cope with
-whatever brain juice remains after the paid work. It doesn't make me
-an endangered species urging for positive discrimination.
+Cheers,
+Ben.
 
-Things may be quite different for hobbyists with cool projects. I'm
-curious to know if such a thing exists and if he/she does not turn
-into something else anyway.
 
--- 
-Ueimor
