@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab3HPSrt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 14:47:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40376 "EHLO
+	id S1755410Ab3HPSry (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 14:47:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40378 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755291Ab3HPSrr (ORCPT
+	with ESMTP id S1755291Ab3HPSru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 14:47:47 -0400
-Date: Fri, 16 Aug 2013 11:46:46 -0700
-From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
-Message-ID: <tip-e4c711cfd32f3c74a699af3121a3b0ff631328a7@git.kernel.org>
+	Fri, 16 Aug 2013 14:47:50 -0400
+Date: Fri, 16 Aug 2013 11:47:07 -0700
+From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
+Message-ID: <tip-899396cf7b4b31e08be358411ad5c0c066069ebc@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        gaolong@kylinos.com.cn, torvalds@linux-foundation.org,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, oleg@redhat.com
+        peterz@infradead.org, zheng.z.yan@intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        gaolong@kylinos.com.cn, torvalds@linux-foundation.org,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, oleg@redhat.com, tglx@linutronix.de
-In-Reply-To: <20130813143325.GA5541@redhat.com>
-References: <20130813143325.GA5541@redhat.com>
+        zheng.z.yan@intel.com, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1375856245-10717-1-git-send-email-zheng.z.yan@intel.com>
+References: <1375856245-10717-1-git-send-email-zheng.z.yan@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix the theoretical signal_wake_up()
-  vs. schedule() race
-Git-Commit-ID: e4c711cfd32f3c74a699af3121a3b0ff631328a7
+Subject: [tip:perf/core] perf/x86/intel/uncore:
+  Add auxiliary pci device support
+Git-Commit-ID: 899396cf7b4b31e08be358411ad5c0c066069ebc
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,126 +28,303 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Aug 2013 11:46:53 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Aug 2013 11:47:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e4c711cfd32f3c74a699af3121a3b0ff631328a7
-Gitweb:     http://git.kernel.org/tip/e4c711cfd32f3c74a699af3121a3b0ff631328a7
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Tue, 13 Aug 2013 16:33:25 +0200
+Commit-ID:  899396cf7b4b31e08be358411ad5c0c066069ebc
+Gitweb:     http://git.kernel.org/tip/899396cf7b4b31e08be358411ad5c0c066069ebc
+Author:     Yan, Zheng <zheng.z.yan@intel.com>
+AuthorDate: Wed, 7 Aug 2013 14:17:23 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 16 Aug 2013 17:44:54 +0200
+CommitDate: Fri, 16 Aug 2013 17:55:48 +0200
 
-sched: Fix the theoretical signal_wake_up() vs. schedule() race
+perf/x86/intel/uncore: Add auxiliary pci device support
 
-This is only theoretical, but after try_to_wake_up(p) was changed
-to check p->state under p->pi_lock the code like
+The QPI uncore boxes have two pairs of MATCH/MASK registers that
+user to filter packet traffic serviced by QPI link layer. These
+registers are in auxiliary PCI devices.
 
-	__set_current_state(TASK_INTERRUPTIBLE);
-	schedule();
+This patch changes the meaning of (struct pci_device_id)->driver_data.
+The first 8 bits are device index of the same uncore type, the second
+8 bytes are uncore type index. Auxiliary PCI device's type is defined
+as UNCORE_EXTRA_PCI_DEV(0xff)
 
-can miss a signal. This is the special case of wait-for-condition,
-it relies on try_to_wake_up/schedule interaction and thus it does
-not need mb() between __set_current_state() and if(signal_pending).
-
-However, this __set_current_state() can move into the critical
-section protected by rq->lock, now that try_to_wake_up() takes
-another lock we need to ensure that it can't be reordered with
-"if (signal_pending(current))" check inside that section.
-
-The patch is actually one-liner, it simply adds smp_wmb() before
-spin_lock_irq(rq->lock). This is what try_to_wake_up() already
-does by the same reason.
-
-We turn this wmb() into the new helper, smp_mb__before_spinlock(),
-for better documentation and to allow the architectures to change
-the default implementation.
-
-While at it, kill smp_mb__after_lock(), it has no callers.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Long Gao <gaolong@kylinos.com.cn>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20130813143325.GA5541@redhat.com
+Link: http://lkml.kernel.org/r/1375856245-10717-1-git-send-email-zheng.z.yan@intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/spinlock.h |  4 ----
- include/linux/spinlock.h        | 14 +++++++++++---
- kernel/sched/core.c             | 14 +++++++++++++-
- 3 files changed, 24 insertions(+), 8 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 111 ++++++++++++++------------
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |   9 +++
+ 2 files changed, 68 insertions(+), 52 deletions(-)
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 33692ea..e3ddd7d 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -233,8 +233,4 @@ static inline void arch_write_unlock(arch_rwlock_t *rw)
- #define arch_read_relax(lock)	cpu_relax()
- #define arch_write_relax(lock)	cpu_relax()
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index cad791d..7ce9b35 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -6,6 +6,8 @@ static struct intel_uncore_type **pci_uncores = empty_uncore;
+ /* pci bus to socket mapping */
+ static int pcibus_to_physid[256] = { [0 ... 255] = -1, };
  
--/* The {read|write|spin}_lock() on x86 are full memory barriers. */
--static inline void smp_mb__after_lock(void) { }
--#define ARCH_HAS_SMP_MB_AFTER_LOCK
++static struct pci_dev *extra_pci_dev[UNCORE_SOCKET_MAX][UNCORE_EXTRA_PCI_DEV_MAX];
++
+ static DEFINE_RAW_SPINLOCK(uncore_box_lock);
+ 
+ /* mask of cpus that collect uncore events */
+@@ -807,43 +809,43 @@ static struct intel_uncore_type *snbep_pci_uncores[] = {
+ static DEFINE_PCI_DEVICE_TABLE(snbep_uncore_pci_ids) = {
+ 	{ /* Home Agent */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_HA),
+-		.driver_data = SNBEP_PCI_UNCORE_HA,
++		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_HA, 0),
+ 	},
+ 	{ /* MC Channel 0 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC0),
+-		.driver_data = SNBEP_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_IMC, 0),
+ 	},
+ 	{ /* MC Channel 1 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC1),
+-		.driver_data = SNBEP_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_IMC, 1),
+ 	},
+ 	{ /* MC Channel 2 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC2),
+-		.driver_data = SNBEP_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_IMC, 2),
+ 	},
+ 	{ /* MC Channel 3 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC3),
+-		.driver_data = SNBEP_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_IMC, 3),
+ 	},
+ 	{ /* QPI Port 0 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_QPI0),
+-		.driver_data = SNBEP_PCI_UNCORE_QPI,
++		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_QPI, 0),
+ 	},
+ 	{ /* QPI Port 1 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_QPI1),
+-		.driver_data = SNBEP_PCI_UNCORE_QPI,
++		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_QPI, 1),
+ 	},
+ 	{ /* R2PCIe */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R2PCIE),
+-		.driver_data = SNBEP_PCI_UNCORE_R2PCIE,
++		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_R2PCIE, 0),
+ 	},
+ 	{ /* R3QPI Link 0 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R3QPI0),
+-		.driver_data = SNBEP_PCI_UNCORE_R3QPI,
++		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_R3QPI, 0),
+ 	},
+ 	{ /* R3QPI Link 1 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R3QPI1),
+-		.driver_data = SNBEP_PCI_UNCORE_R3QPI,
++		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_R3QPI, 1),
+ 	},
+ 	{ /* end: all zeroes */ }
+ };
+@@ -1256,71 +1258,71 @@ static struct intel_uncore_type *ivt_pci_uncores[] = {
+ static DEFINE_PCI_DEVICE_TABLE(ivt_uncore_pci_ids) = {
+ 	{ /* Home Agent 0 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe30),
+-		.driver_data = IVT_PCI_UNCORE_HA,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_HA, 0),
+ 	},
+ 	{ /* Home Agent 1 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe38),
+-		.driver_data = IVT_PCI_UNCORE_HA,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_HA, 1),
+ 	},
+ 	{ /* MC0 Channel 0 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb4),
+-		.driver_data = IVT_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 0),
+ 	},
+ 	{ /* MC0 Channel 1 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb5),
+-		.driver_data = IVT_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 1),
+ 	},
+ 	{ /* MC0 Channel 3 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb0),
+-		.driver_data = IVT_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 2),
+ 	},
+ 	{ /* MC0 Channel 4 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb1),
+-		.driver_data = IVT_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 3),
+ 	},
+ 	{ /* MC1 Channel 0 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef4),
+-		.driver_data = IVT_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 4),
+ 	},
+ 	{ /* MC1 Channel 1 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef5),
+-		.driver_data = IVT_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 5),
+ 	},
+ 	{ /* MC1 Channel 3 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef0),
+-		.driver_data = IVT_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 6),
+ 	},
+ 	{ /* MC1 Channel 4 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef1),
+-		.driver_data = IVT_PCI_UNCORE_IMC,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 7),
+ 	},
+ 	{ /* QPI0 Port 0 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe32),
+-		.driver_data = IVT_PCI_UNCORE_QPI,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_QPI, 0),
+ 	},
+ 	{ /* QPI0 Port 1 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe33),
+-		.driver_data = IVT_PCI_UNCORE_QPI,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_QPI, 1),
+ 	},
+ 	{ /* QPI1 Port 2 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe3a),
+-		.driver_data = IVT_PCI_UNCORE_QPI,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_QPI, 2),
+ 	},
+ 	{ /* R2PCIe */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe34),
+-		.driver_data = IVT_PCI_UNCORE_R2PCIE,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_R2PCIE, 0),
+ 	},
+ 	{ /* R3QPI0 Link 0 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe36),
+-		.driver_data = IVT_PCI_UNCORE_R3QPI,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_R3QPI, 0),
+ 	},
+ 	{ /* R3QPI0 Link 1 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe37),
+-		.driver_data = IVT_PCI_UNCORE_R3QPI,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_R3QPI, 1),
+ 	},
+ 	{ /* R3QPI1 Link 2 */
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe3e),
+-		.driver_data = IVT_PCI_UNCORE_R3QPI,
++		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_R3QPI, 2),
+ 	},
+ 	{ /* end: all zeroes */ }
+ };
+@@ -3167,16 +3169,24 @@ static bool pcidrv_registered;
+ /*
+  * add a pci uncore device
+  */
+-static int uncore_pci_add(struct intel_uncore_type *type, struct pci_dev *pdev)
++static int uncore_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
+ 	struct intel_uncore_pmu *pmu;
+ 	struct intel_uncore_box *box;
+-	int i, phys_id;
++	struct intel_uncore_type *type;
++	int phys_id;
+ 
+ 	phys_id = pcibus_to_physid[pdev->bus->number];
+ 	if (phys_id < 0)
+ 		return -ENODEV;
+ 
++	if (UNCORE_PCI_DEV_TYPE(id->driver_data) == UNCORE_EXTRA_PCI_DEV) {
++		extra_pci_dev[phys_id][UNCORE_PCI_DEV_IDX(id->driver_data)] = pdev;
++		pci_set_drvdata(pdev, NULL);
++		return 0;
++	}
++
++	type = pci_uncores[UNCORE_PCI_DEV_TYPE(id->driver_data)];
+ 	box = uncore_alloc_box(type, 0);
+ 	if (!box)
+ 		return -ENOMEM;
+@@ -3185,21 +3195,11 @@ static int uncore_pci_add(struct intel_uncore_type *type, struct pci_dev *pdev)
+ 	 * for performance monitoring unit with multiple boxes,
+ 	 * each box has a different function id.
+ 	 */
+-	for (i = 0; i < type->num_boxes; i++) {
+-		pmu = &type->pmus[i];
+-		if (pmu->func_id == pdev->devfn)
+-			break;
+-		if (pmu->func_id < 0) {
+-			pmu->func_id = pdev->devfn;
+-			break;
+-		}
+-		pmu = NULL;
+-	}
 -
- #endif /* _ASM_X86_SPINLOCK_H */
-diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
-index 7d537ce..75f3494 100644
---- a/include/linux/spinlock.h
-+++ b/include/linux/spinlock.h
-@@ -117,9 +117,17 @@ do {								\
- #endif /*arch_spin_is_contended*/
- #endif
+-	if (!pmu) {
+-		kfree(box);
+-		return -EINVAL;
+-	}
++	pmu = &type->pmus[UNCORE_PCI_DEV_IDX(id->driver_data)];
++	if (pmu->func_id < 0)
++		pmu->func_id = pdev->devfn;
++	else
++		WARN_ON_ONCE(pmu->func_id != pdev->devfn);
  
--/* The lock does not imply full memory barrier. */
--#ifndef ARCH_HAS_SMP_MB_AFTER_LOCK
--static inline void smp_mb__after_lock(void) { smp_mb(); }
-+/*
-+ * Despite its name it doesn't necessarily has to be a full barrier.
-+ * It should only guarantee that a STORE before the critical section
-+ * can not be reordered with a LOAD inside this section.
-+ * spin_lock() is the one-way barrier, this LOAD can not escape out
-+ * of the region. So the default implementation simply ensures that
-+ * a STORE can not move into the critical section, smp_wmb() should
-+ * serialize it with another STORE done by spin_lock().
-+ */
-+#ifndef smp_mb__before_spinlock
-+#define smp_mb__before_spinlock()	smp_wmb()
- #endif
+ 	box->phys_id = phys_id;
+ 	box->pci_dev = pdev;
+@@ -3217,9 +3217,22 @@ static int uncore_pci_add(struct intel_uncore_type *type, struct pci_dev *pdev)
+ static void uncore_pci_remove(struct pci_dev *pdev)
+ {
+ 	struct intel_uncore_box *box = pci_get_drvdata(pdev);
+-	struct intel_uncore_pmu *pmu = box->pmu;
+-	int cpu, phys_id = pcibus_to_physid[pdev->bus->number];
++	struct intel_uncore_pmu *pmu;
++	int i, cpu, phys_id = pcibus_to_physid[pdev->bus->number];
  
- /**
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index cf8f100..d60b325 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1491,7 +1491,13 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
- 	unsigned long flags;
- 	int cpu, success = 0;
++	box = pci_get_drvdata(pdev);
++	if (!box) {
++		for (i = 0; i < UNCORE_EXTRA_PCI_DEV_MAX; i++) {
++			if (extra_pci_dev[phys_id][i] == pdev) {
++				extra_pci_dev[phys_id][i] = NULL;
++				break;
++			}
++		}
++		WARN_ON_ONCE(i >= UNCORE_EXTRA_PCI_DEV_MAX);
++		return;
++	}
++
++	pmu = box->pmu;
+ 	if (WARN_ON_ONCE(phys_id != box->phys_id))
+ 		return;
  
--	smp_wmb();
-+	/*
-+	 * If we are going to wake up a thread waiting for CONDITION we
-+	 * need to ensure that CONDITION=1 done by the caller can not be
-+	 * reordered with p->state check below. This pairs with mb() in
-+	 * set_current_state() the waiting thread does.
-+	 */
-+	smp_mb__before_spinlock();
- 	raw_spin_lock_irqsave(&p->pi_lock, flags);
- 	if (!(p->state & state))
- 		goto out;
-@@ -2394,6 +2400,12 @@ need_resched:
- 	if (sched_feat(HRTICK))
- 		hrtick_clear(rq);
+@@ -3240,12 +3253,6 @@ static void uncore_pci_remove(struct pci_dev *pdev)
+ 	kfree(box);
+ }
  
-+	/*
-+	 * Make sure that signal_pending_state()->signal_pending() below
-+	 * can't be reordered with __set_current_state(TASK_INTERRUPTIBLE)
-+	 * done by the caller to avoid the race with signal_wake_up().
-+	 */
-+	smp_mb__before_spinlock();
- 	raw_spin_lock_irq(&rq->lock);
+-static int uncore_pci_probe(struct pci_dev *pdev,
+-			    const struct pci_device_id *id)
+-{
+-	return uncore_pci_add(pci_uncores[id->driver_data], pdev);
+-}
+-
+ static int __init uncore_pci_init(void)
+ {
+ 	int ret;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index 47b3d00..ede5a8c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -12,6 +12,15 @@
+ #define UNCORE_PMC_IDX_FIXED		UNCORE_PMC_IDX_MAX_GENERIC
+ #define UNCORE_PMC_IDX_MAX		(UNCORE_PMC_IDX_FIXED + 1)
  
- 	switch_count = &prev->nivcsw;
++#define UNCORE_PCI_DEV_DATA(type, idx)	((type << 8) | idx)
++#define UNCORE_PCI_DEV_TYPE(data)	((data >> 8) & 0xff)
++#define UNCORE_PCI_DEV_IDX(data)	(data & 0xff)
++#define UNCORE_EXTRA_PCI_DEV		0xff
++#define UNCORE_EXTRA_PCI_DEV_MAX	0
++
++/* support up to 8 sockets */
++#define UNCORE_SOCKET_MAX		8
++
+ #define UNCORE_EVENT_CONSTRAINT(c, n) EVENT_CONSTRAINT(c, n, 0xff)
+ 
+ /* SNB event control */
