@@ -1,156 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab3HPWb5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:31:57 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:53513 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592Ab3HPWby (ORCPT
+	id S1754671Ab3HPWdr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:33:47 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:55907 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab3HPWdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:31:54 -0400
+	Fri, 16 Aug 2013 18:33:45 -0400
+Message-ID: <520E8384.2010209@gmail.com>
+Date: Fri, 16 Aug 2013 21:54:44 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1376684395.6529.5.camel@hermes>
-References: <C9C6655E-4974-4C04-8CEE-CA16563F4CC5@gmail.com>
-	<CANq1E4STAFLpDoyLHxXVXqk7mjzmBr1jO3XuxL2B+cJzgHe0vA@mail.gmail.com>
-	<1376684395.6529.5.camel@hermes>
-Date: Fri, 16 Aug 2013 22:36:13 +0200
-Message-ID: <CANq1E4S5iH+oe=P12J7TghjAq8sTHhEDWQ=CfPumjjVyEX=GuQ@mail.gmail.com>
-Subject: Re: [PATCH v2] efifb: prevent null dereferences by removing unused
- array indices from dmi_list
-From: David Herrmann <dh.herrmann@gmail.com>
-To: James Bates <james.h.bates@gmail.com>
-Cc: Peter Jones <pjones@redhat.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC v1 4/5] ARM: mvebu: add Armada 1500 and Sony NSZ-GS7 device
+ tree files
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376682098-10580-5-git-send-email-sebastian.hesselbarth@gmail.com> <20130816195046.GU13964@titan.lakedaemon.net>
+In-Reply-To: <20130816195046.GU13964@titan.lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 08/16/2013 09:50 PM, Jason Cooper wrote:
+> On Fri, Aug 16, 2013 at 09:41:37PM +0200, Sebastian Hesselbarth wrote:
+>> This adds very basic device tree files for the Marvell Armada 1500 SoC
+>> and the Sony NSZ-GS7 GoogleTV board. Currently, SoC only has nodes for
+>> cpus, some clocks, l2 cache controller, local timer, apb timers, uart,
+>> and interrupt controllers.
+[...]
+>> ---
+>>   arch/arm/boot/dts/Makefile                     |    3 +-
+>>   arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts |   29 +++
+>>   arch/arm/boot/dts/armada-1500.dtsi             |  225 ++++++++++++++++++++++++
+>>   3 files changed, 256 insertions(+), 1 deletion(-)
+>>   create mode 100644 arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts
+>>   create mode 100644 arch/arm/boot/dts/armada-1500.dtsi
+>>
+>> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+>> index 641b3c9..3186904 100644
+>> --- a/arch/arm/boot/dts/Makefile
+>> +++ b/arch/arm/boot/dts/Makefile
+>> @@ -103,7 +103,8 @@ dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+>>   	armada-370-rd.dtb \
+>>   	armada-xp-db.dtb \
+>>   	armada-xp-gp.dtb \
+>> -	armada-xp-openblocks-ax3-4.dtb
+>> +	armada-xp-openblocks-ax3-4.dtb \
+>> +	armada-1500-sony-nsz-gs7.dtb
+>
+> alphabetical.
 
-On Fri, Aug 16, 2013 at 10:19 PM, James Bates <james.h.bates@gmail.com> wrote:
-> On Fri, 2013-08-16 at 15:37 +0200, David Herrmann wrote:
->
-> Hi
-> (CC'ing hpa)
->
-> Yepp, this patch looks good:
-> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
->
-> However, I'd like to see some code to prevent this from happening
-> again. It isn't really obvious that removing an entry will result in a
-> NULL-deref. I am not the maintainer of this code, but I'd really like
-> to see a "(dmi_list[i].optname && !strcmp())" check in efifb_setup().
-> Otherwise we _will_ run into this again.
->
-> Side note: this code got moved to arch/x86/kernel/sysfb_efi.c in the
-> x86 tree. I am adding hpa here so he will remember this once Linus
-> gets a merge conflict (iff the sysfb changes get merged through the
-> x86 tree).
->
-> Thanks
-> David
->
-> Sure thing, here is the patch again, with the extra check in efifb_setup()
-> (it turns out one can simply
-> switch around the order of the checks: implicitly initialized dmi_list items
-> will have base == 0):
+Dammit, true! ;)
 
-You can put such comments below the "---" in your patch so they will
-not show up in the commit-message (between commit message and the
-diffstat).
+> And now I need to pick up a googleTV...
 
-> Full patch v2:
->
-> the dmi_list array is initialized using gnu designated initializers, and
-> therefore
-> contains fewer explicitly defined entries as there are elements in it. This
-> is because the enum above with M_blabla constants contains more items than
-> the designated
-> initializer. Those elements not explicitly initialized are implicitly set to
-> 0.
->
-> Now efifb_setup(), L.322 & L.323, loops through all these array elements,
-> and performs
-> a strcmp o a field (optname) in each item. For non explicitly initialized
-> elements this
-> will be a null pointer:
->
->                         for (i = 0; i < M_UNKNOWN; i++) {
->                                 if (!strcmp(this_opt, dmi_list[i].optname)
-> &&
->
-> On my macbook6,1 the predefined values are for some reason incorrect, and
-> most parameters
-> are preset correctly by my efi bootloader (elilo). but stride/line_length is
-> not detected
-> correctly and so I wish to set it explicitly using a
-> "video=efifb:stride:2048" command-line
-> argument. Because of the above null dereference, an exception (presumably)
-> occurs before
-> the parsing code (L.333) is ever reached. I say presumably since the mac
-> hangs on boot
-> without a console, and I can therefore not see any output.
->
-> By removing the unused values from the enum, and thus preventing implicitly
-> initialized items
-> in the dmi_list array, the null dereference does not occur, my customer
-> command-line arg is
-> parsed correctly, and my console displays correctly.
->
-> This patch removes the unused enum values, and also guards against any
-> future implicit
-> initializing by inverting the check order in the if statement, and checking
-> first whether
-> dmi_list[i].base is null.
->
-> Signed-off-by: James Bates <james.h.bates@yahoo.com>
-> ---
-> drivers/video/efifb.c | 7 ++-----
-> 1 file changed, 2 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-> index 50fe668..161757b 100644
->
-> --- a/drivers/video/efifb.c
-> +++ b/drivers/video/efifb.c
-> @@ -50,12 +50,9 @@ enum {
-> M_MINI_3_1, /* Mac Mini, 3,1th gen */
-> M_MINI_4_1, /* Mac Mini, 4,1th gen */
-> M_MB, /* MacBook */
-> - M_MB_2, /* MacBook, 2nd rev. */
-> - M_MB_3, /* MacBook, 3rd rev. */
-> M_MB_5_1, /* MacBook, 5th rev. */
-> M_MB_6_1, /* MacBook, 6th rev. */
-> M_MB_7_1, /* MacBook, 7th rev. */
-> - M_MB_SR, /* MacBook, 2nd gen, (Santa Rosa) */
-> M_MBA, /* MacBook Air */
-> M_MBA_3, /* Macbook Air, 3rd rev */
-> M_MBP, /* MacBook Pro */
-> @@ -323,8 +320,8 @@ static int __init efifb_setup(char *options)
-> if (!*this_opt) continue;
->
->
-> for (i = 0; i < M_UNKNOWN; i++) {
-> - if (!strcmp(this_opt, dmi_list[i].optname) &&
-> -     dmi_list[i].base != 0) {
-> + if (dmi_list[i].base != 0 &&
+Jep, go shopping :)
 
->From a quick glance, M_MBA_3 has "base == 0" but is a valid entry. Hm,
-I think we can be sure that there will never be a framebuffer at phys
-0, so yeah, I am fine with this.
+Unfortunately, I (again) put too many people in Cc and all 5 patches
+are stuck waiting for moderator approval. With 5 DT maintainers it isn't
+easy to get those though to MLs.
 
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Sebastian
 
-Regards
-David
-
-> +     !strcmp(this_opt, dmi_list[i].optname)) {
-> screen_info.lfb_base = dmi_list[i].base;
-> screen_info.lfb_linelength = dmi_list[i].stride;
-> screen_info.lfb_width = dmi_list[i].width;
-> --
->
