@@ -1,137 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab3HPLaP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 07:30:15 -0400
-Received: from relay.parallels.com ([195.214.232.42]:49730 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471Ab3HPLaL (ORCPT
+	id S1754923Ab3HPLiG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 07:38:06 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55605 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754727Ab3HPLhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 07:30:11 -0400
-Subject: [PATCH 2/2] fuse: wait for writeback in fuse_file_fallocate() -v2
-From: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: miklos@szeredi.hu, fuse-devel@lists.sourceforge.net, bfoster@redhat.com,
-        xemul@parallels.com, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Fri, 16 Aug 2013 15:30:27 +0400
-Message-ID: <20130816112854.5630.1907.stgit@maximpc.sw.ru>
-In-Reply-To: <20130812163935.10366.88320.stgit@maximpc.sw.ru>
-References: <20130812163935.10366.88320.stgit@maximpc.sw.ru>
-User-Agent: StGit/0.15
+	Fri, 16 Aug 2013 07:37:53 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: <akpm@linux-foundation.org>, <khilman@linaro.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>
+CC: <rob.herring@calxeda.com>, <mark.rutland@arm.com>, <a.zummo@towertech.it>,
+        <rob@landley.net>, <grant.likely@linaro.org>,
+        <rtc-linux@googlegroups.com>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <sudhakar.raj@ti.com>, <gururaja.hebbar@ti.com>
+Subject: [PATCH v3 0/2] rtc: omap: update AM335x rtc ip revision
+Date: Fri, 16 Aug 2013 17:06:55 +0530
+Message-ID: <1376653017-21935-1-git-send-email-gururaja.hebbar@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch fixes a race between mmap-ed write and fallocate(PUNCH_HOLE):
+The syntax of compatible property in DT is to mention the Most specific
+match to most generic match.
 
-1) An user makes a page dirty via mmap-ed write.
-2) The user performs fallocate(2) with mode == PUNCH_HOLE|KEEP_SIZE
-   and <offset, size> covering the page.
-3) Before truncate_pagecache_range call from fuse_file_fallocate,
-   the page goes to write-back. The page is fully processed by fuse_writepage
-   (including end_page_writeback on the page), but fuse_flush_writepages did
-   nothing because fi->writectr < 0.
-4) truncate_pagecache_range is called and fuse_file_fallocate is finishing
-   by calling fuse_release_nowrite. The latter triggers processing queued
-   write-back request which will write stale data to the hole soon.
+Since AM335x is the platform with latest IP revision, add it 1st in
+the device id table.
 
-Changed in v2 (thanks to Brian for suggestion):
- - Do not truncate page cache until FUSE_FALLOCATE succeeded. Otherwise,
-   we can end up in returning -ENOTSUPP while user data is already punched
-   from page cache. Use filemap_write_and_wait_range() instead.
+This way, we can add new matching compatible as 1st and maintain old
+compatible string for backwards compatibility.
 
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
----
- fs/fuse/file.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 48 insertions(+), 6 deletions(-)
+ex:
+	compatible = "ti,am3352-rtc", "ti,da830-rtc";
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index d1715b3..e88ba8b 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -344,6 +344,31 @@ static bool fuse_page_is_writeback(struct inode *inode, pgoff_t index)
- 	return found;
- }
- 
-+static bool fuse_range_is_writeback(struct inode *inode, pgoff_t idx_from,
-+				    pgoff_t idx_to)
-+{
-+	struct fuse_conn *fc = get_fuse_conn(inode);
-+	struct fuse_inode *fi = get_fuse_inode(inode);
-+	struct fuse_req *req;
-+	bool found = false;
-+
-+	spin_lock(&fc->lock);
-+	list_for_each_entry(req, &fi->writepages, writepages_entry) {
-+		pgoff_t curr_index;
-+
-+		BUG_ON(req->inode != inode);
-+		curr_index = req->misc.write.in.offset >> PAGE_CACHE_SHIFT;
-+		if (!(idx_from >= curr_index + req->num_pages ||
-+		      idx_to < curr_index)) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	spin_unlock(&fc->lock);
-+
-+	return found;
-+}
-+
- /*
-  * Wait for page writeback to be completed.
-  *
-@@ -358,6 +383,19 @@ static int fuse_wait_on_page_writeback(struct inode *inode, pgoff_t index)
- 	return 0;
- }
- 
-+static void fuse_wait_on_writeback(struct inode *inode, pgoff_t start,
-+				   size_t bytes)
-+{
-+	struct fuse_inode *fi = get_fuse_inode(inode);
-+	pgoff_t idx_from, idx_to;
-+
-+	idx_from = start >> PAGE_CACHE_SHIFT;
-+	idx_to = (start + bytes - 1) >> PAGE_CACHE_SHIFT;
-+
-+	wait_event(fi->page_waitq,
-+		   !fuse_range_is_writeback(inode, idx_from, idx_to));
-+}
-+
- static int fuse_flush(struct file *file, fl_owner_t id)
- {
- 	struct inode *inode = file_inode(file);
-@@ -2478,8 +2516,15 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
- 
- 	if (lock_inode) {
- 		mutex_lock(&inode->i_mutex);
--		if (mode & FALLOC_FL_PUNCH_HOLE)
--			fuse_set_nowrite(inode);
-+		if (mode & FALLOC_FL_PUNCH_HOLE) {
-+			loff_t endbyte = offset + length - 1;
-+			err = filemap_write_and_wait_range(inode->i_mapping,
-+							   offset, endbyte);
-+			if (err)
-+				goto out;
-+
-+			fuse_wait_on_writeback(inode, offset, length);
-+		}
- 	}
- 
- 	req = fuse_get_req_nopages(fc);
-@@ -2514,11 +2559,8 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
- 	fuse_invalidate_attr(inode);
- 
- out:
--	if (lock_inode) {
--		if (mode & FALLOC_FL_PUNCH_HOLE)
--			fuse_release_nowrite(inode);
-+	if (lock_inode)
- 		mutex_unlock(&inode->i_mutex);
--	}
- 
- 	return err;
- }
+Also, update am335x .dtsi file (am33xx.dtsi) as above.
+
+Note:
+This is a part of previously submitted patch-set [1]. Out of 4 patches,
+3 was accepted and 1 got an acceptable NAK. Hence resubmitting only the
+rejected + updated changes.
+
+Changes in V3:
+	- As per Mark Rutland's suggestion [2], maintain old compatible
+	  string and add the new matching string as the 1st compatible.
+
+Changes in V2:
+	- Coding style corrections (remove extra space, use lower case
+	  for hex numbers
+	- use prefix ARM: for commit subject keeping with arch/arm
+	  convention)
+	- use "[AM/am]3352" instead of "[AM/am]335x" to keep the all
+	  usages in sync.
+	- Use index defined for struct members so they remain in sync
+	- Add new compatible to existing one so that when driver
+	  supports enhanced features of hardware, they are available
+	  to the user else the basic functionality still works
+
+[2]
+https://lkml.org/lkml/2013/7/3/74
+[1]
+https://lkml.org/lkml/2013/8/1/442
+
+Hebbar Gururaja (1):
+  ARM: dts: AM33XX: update rtc node compatibility
+
+Hebbar, Gururaja (1):
+  rtc: omap: update of_device_id to reflect latest ip revisions
+
+ arch/arm/boot/dts/am33xx.dtsi |    2 +-
+ drivers/rtc/rtc-omap.c        |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
