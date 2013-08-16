@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab3HPQBG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 12:01:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50437 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab3HPQBC (ORCPT
+	id S1754213Ab3HPQCr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 12:02:47 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40570 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab3HPQCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 12:01:02 -0400
-Date: Fri, 16 Aug 2013 18:00:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 4/4] nohz: Convert a few places to use local per cpu
- accesses
-Message-ID: <20130816160043.GA24092@twins.programming.kicks-ass.net>
-References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com>
- <1376667753-29014-5-git-send-email-fweisbec@gmail.com>
+	Fri, 16 Aug 2013 12:02:43 -0400
+Message-ID: <520E4D1F.3000509@wwwdotorg.org>
+Date: Fri, 16 Aug 2013 10:02:39 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376667753-29014-5-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Caizhiyong <caizhiyong@huawei.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Karel Zak <kzak@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
+        Quyaxin <quyaxin@huawei.com>
+Subject: Re: [PATCH] block: support embedded device command line partition
+References: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com> <520CF92A.90909@wwwdotorg.org> <C3050A4DBA34F345975765E43127F10F1C0643F8@szxeml512-mbx.china.huawei.com>
+In-Reply-To: <C3050A4DBA34F345975765E43127F10F1C0643F8@szxeml512-mbx.china.huawei.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK so these patches look ok to me -- didn't read in detail though.
+On 08/15/2013 08:54 PM, Caizhiyong wrote:
+>>> +blkdevparts=<blkdev-def>[;<blkdev-def>]
+>>> +  <blkdev-def> := <blkdev-id>:<partdef>[,<partdef>]
+>>> +    <partdef> := <size>[@<offset>](part-name)
+>>> +
+>>> +<blkdev-id>
+>>> +    block device disk name, embedded device used fixed block device,
+>>> +    it's disk name also fixed. such as: mmcblk0, mmcblk1, mmcblk0boot0.
+>>
+>> The device-name isn't always fixed.
+>>
+>> For example, what if there are multiple SDHCI controllers, one hosting a
+>> fixed eMMC device and the other an SD card? It's quite typical for the
+>> eMMC's device name (which is likely what should be affected by this
+>> feature) to be mmcblk0 when no SD card is present, yet be mmcblk1 when
+>> an SD card is present. Is there a more precise/stable way to define
+>> which device the command-line option applies to?
+>   
+> Yes. Fixed is for single controller.
+> For multiple controllers, currently, there is not a simple way.
+> I tend to do something in the eMMC driver, such as initialize order,
+> but I have not tried.
 
-On Fri, Aug 16, 2013 at 05:42:33PM +0200, Frederic Weisbecker wrote:
-> A few functions use remote per CPU access APIs when they
-> deal with local values.
+There have been proposals before to try and create a fixed naming for
+the controllers (or rather the block devices they generate...) but
+they've been rejected. I don't think we should rely on being able to do
+that.
+
+>>> +
+>>> +<offset>
+>>> +    partition start address, in bytes.
+>>> +
+>>> +(part-name)
+>>> +    partition name, kernel send uevent with "PARTNAME". application can create
+>>> +    a link to block device partition with the name "PARTNAME".
+>>> +    user space application can access partition by partition name.
+>>
+>> Do partitions usually have a PARTNAME attribute when probed through
+>> normal mechanisms like MBR? If so, I guess this is fine.
+>>
+>> Perhaps we can just use , as the delimiter for all fields, rather than
+>> special-casing part-name to use (), so:
+>>
+>> size,offset,partname,size,offset,partname,...
+>>
+>> The partname field could easily be empty if not needed.
 > 
-> Just to the right conversion to improve performance, code
-> readability and debug checks.
+> If no need partname, your bootargs are mmcblk0:1G,1G,1G,...
 
-> @@ -410,7 +408,7 @@ static void tick_nohz_update_jiffies(ktime_t now)
->  
->  static void tick_nohz_stop_idle(int cpu, ktime_t now)
->  {
-> -	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
-> +	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+Well, you always need the offset too. I don't think there's any harm in
+forcing all fields to be specified in all cases; it makes the whole
+system much more regular and less error-prone.
 
-What's there from stopping someone from calling this with cpu !=
-smp_processor_id() ? 
+Alternatively, use a different separator between fields for a given
+partition, and between partitions, e.g.:
 
-> @@ -1020,7 +1018,7 @@ static void tick_nohz_kick_tick(int cpu, ktime_t now)
->  
->  static inline void tick_check_nohz(int cpu)
->  {
-> -	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
-> +	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
->  	ktime_t now;
->  
->  	if (!ts->idle_active && !ts->tick_stopped)
+size,offset,partname;size,offset,partname
 
-idem
+That way, you know that if you see a ; you're looking at a new
+partition, and hence the partname field need not always be specified.
+Although, if you want to specify a partname but not an offset you'd
+still need empty fields, so just requiring all fields to always be
+present still seems safest to me.
