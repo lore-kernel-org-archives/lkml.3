@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900Ab3HPWkG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:40:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51746 "EHLO
+	id S1755035Ab3HQADw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:03:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51753 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871Ab3HPWkC (ORCPT
+	with ESMTP id S1756871Ab3HPWkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:40:02 -0400
+	Fri, 16 Aug 2013 18:40:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+Cc: Stanislaw Gruszka <stf_xl@wp.pl>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 091/133] virtio: console: fix raising SIGIO after port unplug
-Date: Fri, 16 Aug 2013 15:33:53 -0700
-Message-Id: <1376692475-28413-92-git-send-email-kamal@canonical.com>
+Subject: [PATCH 066/133] rt2x00: fix stop queue
+Date: Fri, 16 Aug 2013 15:33:28 -0700
+Message-Id: <1376692475-28413-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -27,48 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit 92d3453815fbe74d539c86b60dab39ecdf01bb99 upstream.
+commit e2288b66fe7ff0288382b2af671b4da558b44472 upstream.
 
-SIGIO should be sent when a port gets unplugged.  It should only be sent
-to prcesses that have the port opened, and have asked for SIGIO to be
-delivered.  We were clearing out guest_connected before calling
-send_sigio_to_port(), resulting in a sigio not getting sent to
-processes.
+Since we clear QUEUE_STARTED in rt2x00queue_stop_queue(), following
+call to rt2x00queue_pause_queue() reduce to noop, i.e we do not
+stop queue in mac80211.
 
-Fix by setting guest_connected to false after invoking the sigio
-function.
+To fix that introduce rt2x00queue_pause_queue_nocheck() function,
+which will stop queue in mac80211 directly.
 
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Note that rt2x00_start_queue() explicitly set QUEUE_PAUSED bit.
+
+Note also that reordering operations i.e. first call to
+rt2x00queue_pause_queue() and then clear QUEUE_STARTED bit, will race
+with rt2x00queue_unpause_queue(), so calling ieee80211_stop_queue()
+directly is the only available solution to fix the problem without
+major rework.
+
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/char/virtio_console.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00queue.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 615804c..62834bc 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1557,12 +1557,14 @@ static void unplug_port(struct port *port)
- 	spin_unlock_irq(&port->portdev->ports_lock);
+diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wireless/rt2x00/rt2x00queue.c
+index e488b94..a57032e 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -877,13 +877,8 @@ void rt2x00queue_index_inc(struct queue_entry *entry, enum queue_index index)
+ 	spin_unlock_irqrestore(&queue->index_lock, irqflags);
+ }
  
- 	if (port->guest_connected) {
-+		/* Let the app know the port is going down. */
-+		send_sigio_to_port(port);
+-void rt2x00queue_pause_queue(struct data_queue *queue)
++void rt2x00queue_pause_queue_nocheck(struct data_queue *queue)
+ {
+-	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
+-	    !test_bit(QUEUE_STARTED, &queue->flags) ||
+-	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
+-		return;
+-
+ 	switch (queue->qid) {
+ 	case QID_AC_VO:
+ 	case QID_AC_VI:
+@@ -899,6 +894,15 @@ void rt2x00queue_pause_queue(struct data_queue *queue)
+ 		break;
+ 	}
+ }
++void rt2x00queue_pause_queue(struct data_queue *queue)
++{
++	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
++	    !test_bit(QUEUE_STARTED, &queue->flags) ||
++	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
++		return;
 +
-+		/* Do this after sigio is actually sent */
- 		port->guest_connected = false;
- 		port->host_connected = false;
--		wake_up_interruptible(&port->waitqueue);
++	rt2x00queue_pause_queue_nocheck(queue);
++}
+ EXPORT_SYMBOL_GPL(rt2x00queue_pause_queue);
  
--		/* Let the app know the port is going down. */
--		send_sigio_to_port(port);
-+		wake_up_interruptible(&port->waitqueue);
+ void rt2x00queue_unpause_queue(struct data_queue *queue)
+@@ -960,7 +964,7 @@ void rt2x00queue_stop_queue(struct data_queue *queue)
+ 		return;
  	}
  
- 	if (is_console_port(port)) {
+-	rt2x00queue_pause_queue(queue);
++	rt2x00queue_pause_queue_nocheck(queue);
+ 
+ 	queue->rt2x00dev->ops->lib->stop_queue(queue);
+ 
 -- 
 1.8.1.2
 
