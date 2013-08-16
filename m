@@ -1,173 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab3HPP2k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 11:28:40 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:38529 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318Ab3HPP2C (ORCPT
+	id S1755501Ab3HPP2q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 11:28:46 -0400
+Received: from titanium.nobletdesign.com ([64.34.172.148]:55138 "EHLO
+	titanium.nobletdesign.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399Ab3HPP2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 11:28:02 -0400
-From: Matt Porter <matt.porter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: [PATCH 2/2] usb: gadget: ffs: add ACM + FunctionFS configuration
-Date: Fri, 16 Aug 2013 11:27:48 -0400
-Message-Id: <1376666868-32581-3-git-send-email-matt.porter@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1376666868-32581-1-git-send-email-matt.porter@linaro.org>
-References: <1376666868-32581-1-git-send-email-matt.porter@linaro.org>
+	Fri, 16 Aug 2013 11:28:43 -0400
+Message-ID: <520E4528.7020002@gnat.ca>
+Date: Fri, 16 Aug 2013 09:28:40 -0600
+From: "Nathanael D. Noblet" <nathanael@gnat.ca>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Jaroslav Kysela <perex@perex.cz>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Kailang Yang <kailang@realtek.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: RealTek Inverted Mic Patch
+References: <520D399B.6020607@gnat.ca> <s5hvc36ma1m.wl%tiwai@suse.de>
+In-Reply-To: <s5hvc36ma1m.wl%tiwai@suse.de>
+Content-Type: multipart/mixed;
+ boundary="------------060706030203010406020903"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds an additional configuration to g_ffs to allow for
-CDC ACM support in conjuction with FunctionFS. A module
-parameter is added to allow for multiple ACM ports to
-be instantiated.
+This is a multi-part message in MIME format.
+--------------060706030203010406020903
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Matt Porter <matt.porter@linaro.org>
----
- drivers/usb/gadget/Kconfig |    9 ++++++
- drivers/usb/gadget/g_ffs.c |   71 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 80 insertions(+)
+Hello,
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 1292a82..fa3c845 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -882,6 +882,15 @@ config USB_FUNCTIONFS_RNDIS
- 	help
- 	  Include a configuration with RNDIS function (Ethernet) and the Filesystem.
- 
-+config USB_FUNCTIONFS_ACM
-+	bool "Include configuration with CDC ACM (Serial)"
-+	depends on USB_FUNCTIONFS
-+	select USB_U_SERIAL
-+	select USB_F_ACM
-+	help
-+	  Include a configuration with CDC ACM function (Serial) and the
-+	  Function Filesystem.
-+
- config USB_FUNCTIONFS_GENERIC
- 	bool "Include 'pure' configuration"
- 	depends on USB_FUNCTIONFS
-diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
-index 686b776..0849d3c 100644
---- a/drivers/usb/gadget/g_ffs.c
-+++ b/drivers/usb/gadget/g_ffs.c
-@@ -53,6 +53,14 @@ USB_ETHERNET_MODULE_PARAMETERS();
- struct eth_dev;
- #endif
- 
-+static int acm_ports = 1;
-+#ifdef CONFIG_USB_FUNCTIONFS_ACM
-+#  include "u_serial.h"
-+static int acm_bind_config(struct usb_configuration *c, int ports);
-+module_param(acm_ports, int, S_IRUGO|S_IWUSR);
-+MODULE_PARM_DESC(acm_ports, "Number of ACM serial ports to instantiate");
-+#endif
-+
- #include "f_fs.c"
- 
- #define DRIVER_NAME	"g_ffs"
-@@ -127,6 +135,9 @@ static struct usb_string gfs_strings[] = {
- #ifdef CONFIG_USB_FUNCTIONFS_ETH
- 	{ .s = "FunctionFS + ECM" },
- #endif
-+#ifdef CONFIG_USB_FUNCTIONFS_ACM
-+	{ .s = "FunctionFS + ACM" },
-+#endif
- #ifdef CONFIG_USB_FUNCTIONFS_GENERIC
- 	{ .s = "FunctionFS" },
- #endif
-@@ -145,6 +156,7 @@ struct gfs_configuration {
- 	struct usb_configuration c;
- 	int (*eth)(struct usb_configuration *c, u8 *ethaddr,
- 			struct eth_dev *dev);
-+	int (*acm)(struct usb_configuration *c, int ports);
- } gfs_configurations[] = {
- #ifdef CONFIG_USB_FUNCTIONFS_RNDIS
- 	{
-@@ -158,6 +170,12 @@ struct gfs_configuration {
- 	},
- #endif
- 
-+#ifdef CONFIG_USB_FUNCTIONFS_ACM
-+	{
-+		.acm		= acm_bind_config,
-+	},
-+#endif
-+
- #ifdef CONFIG_USB_FUNCTIONFS_GENERIC
- 	{
- 	},
-@@ -456,6 +474,12 @@ static int gfs_do_config(struct usb_configuration *c)
- 			return ret;
- 	}
- 
-+	if (gc->acm) {
-+		ret = gc->acm(c, acm_ports);
-+		if (unlikely(ret < 0))
-+			return ret;
-+	}
-+
- 	for (i = 0; i < func_num; i++) {
- 		ret = functionfs_bind_config(c->cdev, c, ffs_tab[i].ffs_data);
- 		if (unlikely(ret < 0))
-@@ -489,3 +513,50 @@ static int eth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN],
- }
- 
- #endif
-+
-+#ifdef CONFIG_USB_FUNCTIONFS_ACM
-+
-+static struct usb_function_instance *fi[MAX_U_SERIAL_PORTS];
-+static struct usb_function *f[MAX_U_SERIAL_PORTS];
-+
-+static int acm_bind_config(struct usb_configuration *c, int ports)
-+{
-+	int i, ret;
-+
-+	for (i = 0; i < ports; i++) {
-+		fi[i] = usb_get_function_instance("acm");
-+		if (IS_ERR(fi[i])) {
-+			ret = PTR_ERR(fi[i]);
-+			goto err_get_fi;
-+		}
-+
-+		f[i] = usb_get_function(fi[i]);
-+		if (IS_ERR(f[i])) {
-+			ret = PTR_ERR(f[i]);
-+			goto err_get_f;
-+		}
-+
-+		ret = usb_add_function(c, f[i]);
-+		if (ret)
-+			goto err_add_f;
-+	}
-+
-+	return 0;
-+
-+err_add_f:
-+	usb_put_function(f[i]);
-+err_get_f:
-+	usb_put_function_instance(fi[i]);
-+err_get_fi:
-+	i--;
-+	while (i >= 0) {
-+		usb_remove_function(c, f[i]);
-+		usb_put_function(f[i]);
-+		usb_put_function_instance(fi[i]);
-+		i--;
-+	}
-+
-+	return ret;
-+}
-+
-+#endif
+   Thanks for applying it - there is one more piece of hardware that 
+needs the same type of fix. Here's an updated patch...
+just the addition of
+
+SND_PCI_QUIRK(0x1025, 0x022f, "Acer Aspire One", ALC662_FIXUP_INV_DMIC),
+
+over and above what was already in the last patch..
+
+On 08/16/2013 12:20 AM, Takashi Iwai wrote:
+> At Thu, 15 Aug 2013 14:27:07 -0600,
+> Nathanael D. Noblet wrote:
+>>
+>> Hello,
+>>
+>>     I have hardware that suffers from an internal phase inverted mic that
+>> isn't properly detected. Below is a patch that fixes the issue for my
+>> particular hardware.
+>>
+>> Pre patch alsa-info:
+>>
+>> http://www.alsa-project.org/db/?f=a922c77ddf473a8f478ec334fa9dca684f213b59
+>>
+>> Post patch alsa-info:
+>> http://www.alsa-project.org/db/?f=14cd25b323d3bbb02fabbac78e62851569893c3f
+>>
+>> Incase you care. The patch is small. I don't know if you need any kind
+>> of signed off/written by etc for something so small. In any case there
+>> is no intellectual property in this at all. Feel free to do as you wish
+>> with it. However including it in the kernel would make my life easier.
+>
+> Thanks, I fixed it in sound git tree now.
+>
+>
+> Takashi
+>
+>>
+>> Thanks,
+>> --
+>> Nathanael d. Noblet
+>> t 403.875.4613
+>> [2 alsa-realtek-inverted-mic.patch <text/x-patch (7bit)>]
+>> --- a/sound/pci/hda/patch_realtek.c.org	2013-08-15 13:17:49.804492932 -0600
+>> +++ b/sound/pci/hda/patch_realtek.c	2013-08-15 13:18:40.582364931 -0600
+>> @@ -4208,6 +4208,7 @@
+>>   	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Ideapad Y550", ALC662_FIXUP_IDEAPAD),
+>>   	SND_PCI_QUIRK(0x19da, 0xa130, "Zotac Z68", ALC662_FIXUP_ZOTAC_Z68),
+>>   	SND_PCI_QUIRK(0x1b35, 0x2206, "CZC P10T", ALC662_FIXUP_CZC_P10T),
+>> +    SND_PCI_QUIRK(0x1025, 0x034a, "Gateway LT27", ALC662_FIXUP_INV_DMIC),
+>>
+>>   #if 0
+>>   	/* Below is a quirk table taken from the old code.
+>
+
+
 -- 
-1.7.9.5
+Nathanael d. Noblet
+t 403.875.4613
 
+--------------060706030203010406020903
+Content-Type: text/x-patch;
+ name="alsa-realtek-inverted-mic.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="alsa-realtek-inverted-mic.patch"
+
+--- a/sound/pci/hda/patch_realtek.c	2013-08-15 13:17:49.804492932 -0600
++++ b/sound/pci/hda/patch_realtek.c	2013-08-15 15:17:46.390273328 -0600
+@@ -4208,6 +4208,8 @@
+ 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Ideapad Y550", ALC662_FIXUP_IDEAPAD),
+ 	SND_PCI_QUIRK(0x19da, 0xa130, "Zotac Z68", ALC662_FIXUP_ZOTAC_Z68),
+ 	SND_PCI_QUIRK(0x1b35, 0x2206, "CZC P10T", ALC662_FIXUP_CZC_P10T),
++	SND_PCI_QUIRK(0x1025, 0x034a, "Gateway LT27", ALC662_FIXUP_INV_DMIC),
++	SND_PCI_QUIRK(0x1025, 0x022f, "Acer Aspire One", ALC662_FIXUP_INV_DMIC),
+ 
+ #if 0
+ 	/* Below is a quirk table taken from the old code.
+
+--------------060706030203010406020903--
