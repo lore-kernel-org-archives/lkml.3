@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab3HPC2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 22:28:55 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:36762 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755107Ab3HPC2v (ORCPT
+	id S1755127Ab3HPC3D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 22:29:03 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:40978 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508Ab3HPC26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 22:28:51 -0400
+	Thu, 15 Aug 2013 22:28:58 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 24/34] cpufreq: powernow: remove calls to cpufreq_notify_transition()
-Date: Fri, 16 Aug 2013 07:55:21 +0530
-Message-Id: <68dee0a7584dcc2ee8a8afa2cb29e6af80cf99a4.1376619363.git.viresh.kumar@linaro.org>
+Subject: [PATCH 25/34] cpufreq: ppc: remove calls to cpufreq_notify_transition()
+Date: Fri, 16 Aug 2013 07:55:22 +0530
+Message-Id: <95d6f504e95c5508e9597ed60c3a91b47e5b741d.1376619363.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376619363.git.viresh.kumar@linaro.org>
 References: <cover.1376619363.git.viresh.kumar@linaro.org>
@@ -47,125 +47,94 @@ Some related minor cleanups are also done along with it.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/powernow-k6.c |  8 --------
- drivers/cpufreq/powernow-k7.c | 11 +----------
- drivers/cpufreq/powernow-k8.c | 15 +--------------
- 3 files changed, 2 insertions(+), 32 deletions(-)
+ drivers/cpufreq/ppc-corenet-cpufreq.c | 19 +------------------
+ drivers/cpufreq/ppc_cbe_cpufreq.c     | 19 +------------------
+ 2 files changed, 2 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
-index 643e795..fedbe87 100644
---- a/drivers/cpufreq/powernow-k6.c
-+++ b/drivers/cpufreq/powernow-k6.c
-@@ -73,18 +73,12 @@ static int powernow_k6_target(struct cpufreq_policy *policy,
+diff --git a/drivers/cpufreq/ppc-corenet-cpufreq.c b/drivers/cpufreq/ppc-corenet-cpufreq.c
+index 79d8e9c..3f7be46 100644
+--- a/drivers/cpufreq/ppc-corenet-cpufreq.c
++++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
+@@ -69,8 +69,6 @@ static const struct soc_data sdata[] = {
+ static u32 min_cpufreq;
+ static const u32 *fmask;
+ 
+-/* serialize frequency changes  */
+-static DEFINE_MUTEX(cpufreq_lock);
+ static DEFINE_PER_CPU(struct cpu_data *, cpu_data);
+ 
+ /* cpumask in a cluster */
+@@ -253,26 +251,11 @@ static int __exit corenet_cpufreq_cpu_exit(struct cpufreq_policy *policy)
+ static int corenet_cpufreq_target(struct cpufreq_policy *policy,
+ 		unsigned int index)
  {
- 	unsigned long outvalue = 0, invalue = 0;
- 	unsigned long msrval;
 -	struct cpufreq_freqs freqs;
+ 	struct clk *parent;
+-	int ret;
+ 	struct cpu_data *data = per_cpu(cpu_data, policy->cpu);
  
- 	if (clock_ratio[best_i].driver_data > max_multiplier) {
- 		printk(KERN_ERR PFX "invalid target frequency\n");
- 		return -EINVAL;
- 	}
- 
--	freqs.old = busfreq * powernow_k6_get_cpu_multiplier();
--	freqs.new = busfreq * clock_ratio[best_i].driver_data;
+-	freqs.old = policy->cur;
+-	freqs.new = data->table[index].frequency;
 -
+-	mutex_lock(&cpufreq_lock);
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
 -
- 	/* we now need to transform best_i to the BVC format, see AMD#23446 */
- 
- 	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
-@@ -98,8 +92,6 @@ static int powernow_k6_target(struct cpufreq_policy *policy,
- 	msrval = POWERNOW_IOPORT + 0x0;
- 	wrmsr(MSR_K6_EPMR, msrval, 0); /* disable it again */
- 
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--
- 	return 0;
- }
- 
-diff --git a/drivers/cpufreq/powernow-k7.c b/drivers/cpufreq/powernow-k7.c
-index 946708a..8e52463 100644
---- a/drivers/cpufreq/powernow-k7.c
-+++ b/drivers/cpufreq/powernow-k7.c
-@@ -251,7 +251,6 @@ static void change_VID(int vid)
- static int powernow_target(struct cpufreq_policy *policy, unsigned int index)
- {
- 	u8 fid, vid;
--	struct cpufreq_freqs freqs;
- 	union msr_fidvidstatus fidvidstatus;
- 	int cfid;
- 
-@@ -265,18 +264,13 @@ static int powernow_target(struct cpufreq_policy *policy, unsigned int index)
- 
- 	rdmsrl(MSR_K7_FID_VID_STATUS, fidvidstatus.val);
- 	cfid = fidvidstatus.bits.CFID;
--	freqs.old = fsb * fid_codes[cfid] / 10;
--
--	freqs.new = powernow_table[index].frequency;
--
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
- 
- 	/* Now do the magic poking into the MSRs.  */
- 
- 	if (have_a0 == 1)	/* A0 errata 5 */
- 		local_irq_disable();
- 
--	if (freqs.old > freqs.new) {
-+	if (fsb * fid_codes[cfid] / 10 > powernow_table[index].frequency) {
- 		/* Going down, so change FID first */
- 		change_FID(fid);
- 		change_VID(vid);
-@@ -286,12 +280,9 @@ static int powernow_target(struct cpufreq_policy *policy, unsigned int index)
- 		change_FID(fid);
- 	}
- 
--
- 	if (have_a0 == 1)
- 		local_irq_enable();
- 
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--
- 	return 0;
- }
- 
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index 62a1ce4..b00eabe 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -931,8 +931,6 @@ static int transition_frequency_fidvid(struct powernow_k8_data *data,
- 	struct cpufreq_policy *policy;
- 	u32 fid = 0;
- 	u32 vid = 0;
--	int res;
--	struct cpufreq_freqs freqs;
- 
- 	pr_debug("cpu %d transition to index %u\n", smp_processor_id(), index);
- 
-@@ -957,22 +955,11 @@ static int transition_frequency_fidvid(struct powernow_k8_data *data,
- 
- 	pr_debug("cpu %d, changing to fid 0x%x, vid 0x%x\n",
- 		smp_processor_id(), fid, vid);
--	freqs.old = find_khz_freq_from_fid(data->currfid);
--	freqs.new = find_khz_freq_from_fid(fid);
- 
- 	policy = cpufreq_cpu_get(smp_processor_id());
- 	cpufreq_cpu_put(policy);
- 
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
--
--	res = transition_fid_vid(data, fid, vid);
--	if (res)
+ 	parent = of_clk_get(data->parent, data->table[index].driver_data);
+-	ret = clk_set_parent(data->clk, parent);
+-	if (ret)
 -		freqs.new = freqs.old;
--	else
--		freqs.new = find_khz_freq_from_fid(data->currfid);
 -
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--	return res;
-+	return transition_fid_vid(data, fid, vid);
+-	mutex_unlock(&cpufreq_lock);
+-
+-	return ret;
++	return clk_set_parent(data->clk, parent);
  }
  
- struct powernowk8_target_arg {
+ static struct cpufreq_driver ppc_corenet_cpufreq_driver = {
+diff --git a/drivers/cpufreq/ppc_cbe_cpufreq.c b/drivers/cpufreq/ppc_cbe_cpufreq.c
+index 52f707d..e42ca9c 100644
+--- a/drivers/cpufreq/ppc_cbe_cpufreq.c
++++ b/drivers/cpufreq/ppc_cbe_cpufreq.c
+@@ -30,9 +30,6 @@
+ 
+ #include "ppc_cbe_cpufreq.h"
+ 
+-static DEFINE_MUTEX(cbe_switch_mutex);
+-
+-
+ /* the CBE supports an 8 step frequency scaling */
+ static struct cpufreq_frequency_table cbe_freqs[] = {
+ 	{1,	0},
+@@ -131,27 +128,13 @@ static int cbe_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ static int cbe_cpufreq_target(struct cpufreq_policy *policy,
+ 			      unsigned int cbe_pmode_new)
+ {
+-	int rc;
+-	struct cpufreq_freqs freqs;
+-
+-	freqs.old = policy->cur;
+-	freqs.new = cbe_freqs[cbe_pmode_new].frequency;
+-
+-	mutex_lock(&cbe_switch_mutex);
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+-
+ 	pr_debug("setting frequency for cpu %d to %d kHz, " \
+ 		 "1/%d of max frequency\n",
+ 		 policy->cpu,
+ 		 cbe_freqs[cbe_pmode_new].frequency,
+ 		 cbe_freqs[cbe_pmode_new].driver_data);
+ 
+-	rc = set_pmode(policy->cpu, cbe_pmode_new);
+-
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+-	mutex_unlock(&cbe_switch_mutex);
+-
+-	return rc;
++	return set_pmode(policy->cpu, cbe_pmode_new);
+ }
+ 
+ static struct cpufreq_driver cbe_cpufreq_driver = {
 -- 
 1.7.12.rc2.18.g61b472e
 
