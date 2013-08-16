@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab3HPHIn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 03:08:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58399 "EHLO song.cn.fujitsu.com"
+	id S1753292Ab3HPHIg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 03:08:36 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:29462 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752373Ab3HPHIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 03:08:17 -0400
+	id S1751420Ab3HPHIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 03:08:18 -0400
 X-IronPort-AV: E=Sophos;i="4.89,892,1367942400"; 
-   d="scan'208";a="8217640"
+   d="scan'208";a="8217642"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, lenb@kernel.org,
         rjw@sisk.pl, liwanp@linux.vnet.ibm.com, tj@kernel.org,
         akpm@linux-foundation.org
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: [PATCH 4/6] acpi cleanup: Use pr_err() instead of printk() in arch/x86/mm/srat.c
-Date: Fri, 16 Aug 2013 15:06:47 +0800
-Message-Id: <1376636809-10159-5-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH 6/6] acpi: Return -ENOENT in acpi_table_parse() and fix wrong comment.
+Date: Fri, 16 Aug 2013 15:06:49 +0800
+Message-Id: <1376636809-10159-7-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1376636809-10159-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1376636809-10159-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -28,53 +28,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use pr_err() instead of printk() in arch/x86/mm/srat.c
+The comment about return value of acpi_table_parse() is incorrect.
+This patch fix it.
+
+Furthermore, if the table is not found, return 1 means nothing, and
+make it difficult to write the comment. So return -ENOENT when the
+table is not found, and correct the comment.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/srat.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/acpi/tables.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-index 6286e89..32b9597 100644
---- a/arch/x86/mm/srat.c
-+++ b/arch/x86/mm/srat.c
-@@ -33,7 +33,7 @@ static __init int setup_node(int pxm)
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index 5a5263b..e6de24f 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -278,12 +278,13 @@ acpi_table_parse_madt(enum acpi_madt_type id,
  
- static __init void bad_srat(void)
+ /**
+  * acpi_table_parse - find table with @id, run @handler on it
+- *
+  * @id: table id to find
+  * @handler: handler to run
+  *
+  * Scan the ACPI System Descriptor Table (STD) for a table matching @id,
+- * run @handler on it.  Return 0 if table found, return on if not.
++ * run @handler on it.
++ *
++ * Return 0 on success, -errno on failure.
+  */
+ int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
  {
--	printk(KERN_ERR "SRAT: SRAT not used.\n");
-+	pr_err("SRAT: SRAT not used.\n");
- 	acpi_numa = -1;
+@@ -306,7 +307,7 @@ int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
+ 		early_acpi_os_unmap_memory(table, tbl_size);
+ 		return 0;
+ 	} else
+-		return 1;
++		return -ENOENT;
  }
  
-@@ -77,7 +77,7 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
- 	}
- 	node = setup_node(pxm);
- 	if (node < 0) {
--		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
-+		pr_err("SRAT: Too many proximity domains %x\n", pxm);
- 		bad_srat();
- 		return;
- 	}
-@@ -113,7 +113,7 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
- 		pxm |= *((unsigned int*)pa->proximity_domain_hi) << 8;
- 	node = setup_node(pxm);
- 	if (node < 0) {
--		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
-+		pr_err("SRAT: Too many proximity domains %x\n", pxm);
- 		bad_srat();
- 		return;
- 	}
-@@ -160,7 +160,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 
- 	node = setup_node(pxm);
- 	if (node < 0) {
--		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
-+		pr_err("SRAT: Too many proximity domains.\n");
- 		goto out_err_bad_srat;
- 	}
- 
+ /* 
 -- 
 1.7.1
 
