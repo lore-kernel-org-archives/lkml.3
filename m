@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab3HPKMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 06:12:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:20414 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751148Ab3HPKMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 06:12:44 -0400
-X-IronPort-AV: E=Sophos;i="4.89,894,1367942400"; 
-   d="scan'208";a="8219334"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, lenb@kernel.org,
-        rjw@sisk.pl, liwanp@linux.vnet.ibm.com, tj@kernel.org, joe@perches.com,
-        akpm@linux-foundation.org
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: [PATCH 4/6] acpi cleanup: Use pr_err() instead of printk() in arch/x86/mm/srat.c
-Date: Fri, 16 Aug 2013 18:11:23 +0800
-Message-Id: <1376647883-17379-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1376637949.1947.3.camel@joe-AO722>
-References: <1376637949.1947.3.camel@joe-AO722>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/16 18:11:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/16 18:11:05,
-	Serialize complete at 2013/08/16 18:11:05
+	id S1752465Ab3HPKOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 06:14:22 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45476 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751446Ab3HPKOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 06:14:18 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <balbi@ti.com>, <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>
+CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <grant.likely@linaro.org>,
+        <rob@landley.net>, <ian.campbell@citrix.com>, <swarren@wwwdotorg.org>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
+        <rob.herring@calxeda.com>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <bcousson@baylibre.com>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH 0/2] Enable USB ID pin detection using extcon for DRA7xx
+Date: Fri, 16 Aug 2013 15:43:47 +0530
+Message-ID: <1376648029-30659-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use pr_err() instead of printk() in arch/x86/mm/srat.c
+Hi,
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Joe Perches <joe@perches.com>
----
- arch/x86/mm/srat.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+These patches add support for USB ID pin detection using extcon framework. 
+The ID pin on DRA7xx is connected via the gpio expander pcf8575. 
+The interrupt line of the same is connected to the gpio 11 of bank 6. 
+The following driver relies on  the  gpio interrupt to notify the actual 
+ID pin values by which the dwc3 driver determines the HOST/Peripheral roles.
 
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-index 591f4bb..d1e3b95 100644
---- a/arch/x86/mm/srat.c
-+++ b/arch/x86/mm/srat.c
-@@ -35,7 +35,7 @@ static __init int setup_node(int pxm)
- 
- static __init void bad_srat(void)
- {
--	printk(KERN_ERR "SRAT: SRAT not used.\n");
-+	pr_err("SRAT not used.\n");
- 	acpi_numa = -1;
- }
- 
-@@ -79,7 +79,7 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
- 	}
- 	node = setup_node(pxm);
- 	if (node < 0) {
--		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
-+		pr_err("Too many proximity domains %x\n", pxm);
- 		bad_srat();
- 		return;
- 	}
-@@ -115,7 +115,7 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
- 		pxm |= *((unsigned int*)pa->proximity_domain_hi) << 8;
- 	node = setup_node(pxm);
- 	if (node < 0) {
--		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
-+		pr_err("Too many proximity domains %x\n", pxm);
- 		bad_srat();
- 		return;
- 	}
-@@ -162,7 +162,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 
- 	node = setup_node(pxm);
- 	if (node < 0) {
--		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
-+		pr_err("Too many proximity domains.\n");
- 		goto out_err_bad_srat;
- 	}
- 
+Optionally a polling method is also available if the gpio interrupts 
+are not used on boards.
+
+These patches are on top of following merges.
+v3.11-rc3 dra7 baseport tree [1] , with balbi/next ,control-usb multi instance support [2],
+chanwoo/extcon-next, roger's patches for USB host adaptation[3] and Archit's patch to 
+Enable pcf857x GPIO expander for Device Tree[4].
+
+Patches are available at 
+extcon_dra7xx-v2
+in git tree
+git://git.ti.com/~georgecherian/ti-linux-kernel/georgec-connectivity-linux-feature-tree.git 
+
+[1] - dra7 base tree
+	https://github.com/lokeshvutla/linux/tree/dra7-3.11-rc3-base
+[2] - multiple control-usb instances
+	https://github.com/rogerq/linux/tree/usb-control-module
+[3] - [PATCH 0/4] ARM: DRA7-evm: USB host adaptation
+	https://lkml.org/lkml/2013/8/1/335
+[4] - [PATCH] gpio: Enable pcf857x GPIO expander for Device Tree
+ 	https://lkml.org/lkml/2013/6/6/333
+
+
+George Cherian (2):
+  extcon: extcon-dra7xx: Add extcon driver for USB ID detection
+  arm: dts: dra7-evm: Add extcon dt nodes for USB ID detection
+
+ .../devicetree/bindings/extcon/extcon-dra7xx.txt   |  19 ++
+ arch/arm/boot/dts/dra7-evm.dts                     |  42 +++-
+ drivers/extcon/Kconfig                             |   7 +
+ drivers/extcon/Makefile                            |   1 +
+ drivers/extcon/extcon-dra7xx.c                     | 234 +++++++++++++++++++++
+ 5 files changed, 302 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
+ create mode 100644 drivers/extcon/extcon-dra7xx.c
+
 -- 
-1.7.1
+1.8.1.4
 
