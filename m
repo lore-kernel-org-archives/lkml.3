@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab3HPCZt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 22:25:49 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:56426 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753203Ab3HPCZq (ORCPT
+	id S1754060Ab3HPC0E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 22:26:04 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:59583 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753929Ab3HPCZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 22:25:46 -0400
+	Thu, 15 Aug 2013 22:25:59 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
@@ -27,24 +27,17 @@ Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         sparclinux@vger.kernel.org, spear-devel@list.st.com,
         Stephen Warren <swarren@nvidia.com>, Steven Miao <realmz6@gmail.com>,
         Tony Luck <tony.luck@intel.com>
-Subject: [PATCH 00/34] CPUFreq: Move freq change notifications out of drivers
-Date: Fri, 16 Aug 2013 07:54:57 +0530
-Message-Id: <cover.1376619363.git.viresh.kumar@linaro.org>
+Subject: [PATCH 01/34] cpufreq: move freq change notifications to cpufreq core
+Date: Fri, 16 Aug 2013 07:54:58 +0530
+Message-Id: <8d083bb5c2d167aa0b52f48c3f17a1320b3e0249.1376619363.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1376619363.git.viresh.kumar@linaro.org>
+References: <cover.1376619363.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1376619363.git.viresh.kumar@linaro.org>
+References: <cover.1376619363.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Another 452 lines gone :)
-
-Total stats upto now for all the 5 patchsets:
-Viresh Kumar (186):
-...
-69 files changed, 700 insertions(+), 2451 deletions(-)
-
-Net: 1751 lines gone..
-
------x-------------x----------------
 
 Most of the drivers do following in their ->target_index() routines:
 
@@ -69,27 +62,6 @@ They may continue doing notification from their own code and so this patch
 introduces another flag: CPUFREQ_NO_NOTIFICATION, which will be set by such
 drivers.
 
-This is Fifth part of my cleanup work for CPUFreq, first three are (And
-obviously its rebased over them):
-
-1: cpufreq: Introduce cpufreq_table_validate_and_show()
-https://lkml.org/lkml/2013/8/8/263
-
-2: cpufreq: define generic routines for cpufreq drivers
-https://lkml.org/lkml/2013/8/10/48
-
-3. CPUFreq: Implement light weight ->target(): for 3.13
-https://lkml.org/lkml/2013/8/13/349
-
-4. CPUFreq: set policy->cur in cpufreq core instead of drivers
-https://lkml.org/lkml/2013/8/14/288
-
-All these are pushed here:
-https://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/for-v3.13
-
---
-viresh
-
 Cc: Andrew Lunn <andrew@lunn.ch>
 Cc: David S. Miller <davem@davemloft.net>
 Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
@@ -110,91 +82,82 @@ Cc: spear-devel@list.st.com
 Cc: Stephen Warren <swarren@nvidia.com>
 Cc: Steven Miao <realmz6@gmail.com>
 Cc: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/cpufreq.c | 34 ++++++++++++++++++++++++++++++++++
+ include/linux/cpufreq.h   |  6 ++++++
+ 2 files changed, 40 insertions(+)
 
-Viresh Kumar (34):
-  cpufreq: move freq change notifications to cpufreq core
-  cpufreq: acpi: remove calls to cpufreq_notify_transition()
-  cpufreq: arm_big_little: remove calls to cpufreq_notify_transition()
-  cpufreq: at32ap: remove calls to cpufreq_notify_transition()
-  cpufreq: blackfin: remove calls to cpufreq_notify_transition()
-  cpufreq: cpu0: remove calls to cpufreq_notify_transition()
-  cpufreq: cris: remove calls to cpufreq_notify_transition()
-  cpufreq: davinci: remove calls to cpufreq_notify_transition()
-  cpufreq: dbx500: remove calls to cpufreq_notify_transition()
-  cpufreq: e_powersaver: remove calls to cpufreq_notify_transition()
-  cpufreq: elanfreq: remove calls to cpufreq_notify_transition()
-  cpufreq: exynos: remove calls to cpufreq_notify_transition()
-  cpufreq: exynos5440: set CPUFREQ_NO_NOTIFICATION flag
-  cpufreq: ia64-acpi: remove calls to cpufreq_notify_transition()
-  cpufreq: imx6q: remove calls to cpufreq_notify_transition()
-  cpufreq: kirkwood: remove calls to cpufreq_notify_transition()
-  cpufreq: longhaul: set CPUFREQ_NO_NOTIFICATION flag
-  cpufreq: loongson2: remove calls to cpufreq_notify_transition()
-  cpufreq: maple: remove calls to cpufreq_notify_transition()
-  cpufreq: omap: remove calls to cpufreq_notify_transition()
-  cpufreq: p4-clockmod: remove calls to cpufreq_notify_transition()
-  cpufreq: pasemi: remove calls to cpufreq_notify_transition()
-  cpufreq: pmac: remove calls to cpufreq_notify_transition()
-  cpufreq: powernow: remove calls to cpufreq_notify_transition()
-  cpufreq: ppc: remove calls to cpufreq_notify_transition()
-  cpufreq: pxa: remove calls to cpufreq_notify_transition()
-  cpufreq: s3c: remove calls to cpufreq_notify_transition()
-  cpufreq: s5pv210: remove calls to cpufreq_notify_transition()
-  cpufreq: sa11x0: remove calls to cpufreq_notify_transition()
-  cpufreq: sc520: remove calls to cpufreq_notify_transition()
-  cpufreq: sparc: remove calls to cpufreq_notify_transition()
-  cpufreq: SPEAr: remove calls to cpufreq_notify_transition()
-  cpufreq: speedstep: remove calls to cpufreq_notify_transition()
-  cpufreq: tegra: remove calls to cpufreq_notify_transition()
-
- drivers/cpufreq/acpi-cpufreq.c         | 14 ++-------
- drivers/cpufreq/arm_big_little.c       | 25 ++--------------
- drivers/cpufreq/at32ap-cpufreq.c       | 22 ++++++--------
- drivers/cpufreq/blackfin-cpufreq.c     | 22 +++++---------
- drivers/cpufreq/cpufreq-cpu0.c         | 33 ++++++++-------------
- drivers/cpufreq/cpufreq.c              | 34 +++++++++++++++++++++
- drivers/cpufreq/cris-artpec3-cpufreq.c |  8 -----
- drivers/cpufreq/cris-etraxfs-cpufreq.c |  8 -----
- drivers/cpufreq/davinci-cpufreq.c      | 30 +++++++------------
- drivers/cpufreq/dbx500-cpufreq.c       | 22 +-------------
- drivers/cpufreq/e_powersaver.c         | 23 ++-------------
- drivers/cpufreq/elanfreq.c             | 13 --------
- drivers/cpufreq/exynos-cpufreq.c       | 28 +++++-------------
- drivers/cpufreq/exynos5440-cpufreq.c   |  2 +-
- drivers/cpufreq/ia64-acpi-cpufreq.c    | 19 ------------
- drivers/cpufreq/imx6q-cpufreq.c        | 39 ++++++++++--------------
- drivers/cpufreq/kirkwood-cpufreq.c     | 54 +++++++++++++---------------------
- drivers/cpufreq/longhaul.c             |  1 +
- drivers/cpufreq/loongson2_cpufreq.c    | 16 ----------
- drivers/cpufreq/maple-cpufreq.c        | 18 +-----------
- drivers/cpufreq/omap-cpufreq.c         | 39 +++++++++---------------
- drivers/cpufreq/p4-clockmod.c          | 10 -------
- drivers/cpufreq/pasemi-cpufreq.c       | 14 +--------
- drivers/cpufreq/pmac32-cpufreq.c       | 20 +++----------
- drivers/cpufreq/pmac64-cpufreq.c       | 18 +-----------
- drivers/cpufreq/powernow-k6.c          |  8 -----
- drivers/cpufreq/powernow-k7.c          | 11 +------
- drivers/cpufreq/powernow-k8.c          | 15 +---------
- drivers/cpufreq/ppc-corenet-cpufreq.c  | 19 +-----------
- drivers/cpufreq/ppc_cbe_cpufreq.c      | 19 +-----------
- drivers/cpufreq/pxa2xx-cpufreq.c       | 27 ++++-------------
- drivers/cpufreq/pxa3xx-cpufreq.c       | 12 --------
- drivers/cpufreq/s3c2416-cpufreq.c      | 21 +++----------
- drivers/cpufreq/s3c64xx-cpufreq.c      | 48 ++++++++++--------------------
- drivers/cpufreq/s5pv210-cpufreq.c      | 16 ++++------
- drivers/cpufreq/sa1100-cpufreq.c       | 17 ++++-------
- drivers/cpufreq/sa1110-cpufreq.c       | 12 ++------
- drivers/cpufreq/sc520_freq.c           | 11 -------
- drivers/cpufreq/sparc-us2e-cpufreq.c   |  7 -----
- drivers/cpufreq/sparc-us3-cpufreq.c    |  7 -----
- drivers/cpufreq/spear-cpufreq.c        | 13 +-------
- drivers/cpufreq/speedstep-centrino.c   | 20 +------------
- drivers/cpufreq/speedstep-ich.c        |  9 ------
- drivers/cpufreq/speedstep-smi.c        |  7 -----
- drivers/cpufreq/tegra-cpufreq.c        | 25 ++++------------
- include/linux/cpufreq.h                |  6 ++++
- 46 files changed, 205 insertions(+), 657 deletions(-)
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index a7a1d3e..2782949 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1673,6 +1673,9 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+ 		retval = cpufreq_driver->target(policy, target_freq, relation);
+ 	else if (cpufreq_driver->target_index) {
+ 		struct cpufreq_frequency_table *freq_table;
++		struct cpufreq_freqs freqs;
++		unsigned long flags;
++		bool notify;
+ 		int index;
+ 
+ 		freq_table = cpufreq_frequency_get_table(policy->cpu);
+@@ -1691,7 +1694,38 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+ 		if (freq_table[index].frequency == policy->cur)
+ 			return 0;
+ 
++		read_lock_irqsave(&cpufreq_driver_lock, flags);
++		notify = !(cpufreq_driver->flags | CPUFREQ_NO_NOTIFICATION);
++		read_unlock_irqrestore(&cpufreq_driver_lock, flags);
++
++		if (notify) {
++			freqs.old = policy->cur;
++			freqs.new = freq_table[index].frequency;
++
++			pr_debug("%s: cpu: %d, oldfreq: %u, new freq: %u\n",
++					__func__, policy->cpu, freqs.old,
++					freqs.new);
++
++			cpufreq_notify_transition(policy, &freqs,
++					CPUFREQ_PRECHANGE);
++		}
++
+ 		retval = cpufreq_driver->target_index(policy, index);
++		if (retval)
++			pr_err("%s: Failed to change cpu frequency: %d\n",
++					__func__, retval);
++
++		if (notify) {
++			/*
++			 * Notify with old freq in case we failed to change
++			 * frequency
++			 */
++			if (retval)
++				freqs.new = freqs.old;
++
++			cpufreq_notify_transition(policy, &freqs,
++					CPUFREQ_POSTCHANGE);
++		}
+ 	}
+ 
+ 	return retval;
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index ff9c8df..62ce478 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -221,6 +221,12 @@ struct cpufreq_driver {
+ 					 * frequency transitions */
+ #define CPUFREQ_PM_NO_WARN	0x04	/* don't warn on suspend/resume speed
+ 					 * mismatches */
++/*
++ * Driver will call cpufreq_notify_transition() in its target_index() routine
++ * and so cpufreq core must not call it. Only useful for drivers that implement
++ * target_index(), unused otherwise.
++ */
++#define CPUFREQ_NO_NOTIFICATION	0x08
+ 
+ int cpufreq_register_driver(struct cpufreq_driver *driver_data);
+ int cpufreq_unregister_driver(struct cpufreq_driver *driver_data);
 -- 
 1.7.12.rc2.18.g61b472e
 
