@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab3HPLAg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 07:00:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38917 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753189Ab3HPLAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 07:00:34 -0400
-Date: Fri, 16 Aug 2013 13:00:31 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Tebulin <tebulin@googlemail.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please continue
- your great work! :-)
-Message-ID: <20130816110031.GA13507@dhcp22.suse.cz>
-References: <520BB225.8030807@gmail.com>
- <20130814174039.GA24033@dhcp22.suse.cz>
- <CA+55aFwAz7GdcB6nC0Th42y8eAM591sKO1=mYh5SWgyuDdHzcA@mail.gmail.com>
- <20130814182756.GD24033@dhcp22.suse.cz>
- <CA+55aFxB6Wyj3G3Ju8E7bjH-706vi3vysuATUZ13h1tdYbCbnQ@mail.gmail.com>
- <520C9E78.2020401@gmail.com>
- <CA+55aFy2D2hTc_ina1DvungsCL4WU2OTM=bnVb8sDyDcGVCBEQ@mail.gmail.com>
- <CA+55aFxuUrcod=X2t2yqR_zJ4s1uaCsGB-p1oLTQrG+y+Z2PbA@mail.gmail.com>
- <520D5ED2.9040403@gmail.com>
- <CA+55aFwFx7uhtDTX5vfiYRo+keLmuvxvSFupU4nB8g1KCN-WVg@mail.gmail.com>
+	id S1753902Ab3HPLE2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 07:04:28 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:59756 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722Ab3HPLEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 07:04:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwFx7uhtDTX5vfiYRo+keLmuvxvSFupU4nB8g1KCN-WVg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130816085419.GD26086@mwanda>
+References: <1376595295-7820-1-git-send-email-jfrederich@gmail.com>
+	<20130816071338.GC26086@mwanda>
+	<CAF92urq-bL_y9zjt9THh-LJjxrMYmdjwr7RssgBk+zxC-OhRdQ@mail.gmail.com>
+	<20130816085419.GD26086@mwanda>
+Date: Fri, 16 Aug 2013 13:04:24 +0200
+Message-ID: <CAF92urrHpaJpTv3qQf55ENTjVqkJdX9ewxHQaqP7oWV4h23YFg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] Staging: olpc_dcon: replace some magic numbers
+From: Jens Frederich <jfrederich@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: devel@driverdev.osuosl.org, Greg KH <gregkh@linuxfoundation.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>, Daniel Drake <dsd@laptop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 15-08-13 17:33:28, Linus Torvalds wrote:
-> On Thu, Aug 15, 2013 at 4:05 PM, Ben Tebulin <tebulin@googlemail.com> wrote:
-> >
-> >> Ben, please test. I'm worried that the problem you see is something
-> >> even more fundamentally wrong with the whole "oops, must flush in the
-> >> middle" logic, but I'm _hoping_ this fixes it.
-> >
-> > It's gone.
-> >
-> > Really!
-> >
-> > I git-fsck'ed successfully around 30 times in a row.
-> > And even all the other things still seem to work ;-)
-> 
-> Goodie. I think I'm just going to commit it (with the speling fixes
-> for other architectures) asap. It's bigger than I'd like, but it's a
-> lot simpler than the alternatives of trying to figure out exactly
-> which call chain got things wrong with the previous confusing model.
+On Fri, Aug 16, 2013 at 10:54 AM, Dan Carpenter
+<dan.carpenter@oracle.com> wrote:
+> On Fri, Aug 16, 2013 at 09:40:38AM +0200, Jens Frederich wrote:
+>> On Fri, Aug 16, 2013 at 9:13 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+>> > On Thu, Aug 15, 2013 at 09:34:55PM +0200, Jens Frederich wrote:
+>> >> The 0x42 initialize squence 0x101 is wrong.  According to
+>> >> the specification Bit 8 is reserved, thus not in use.
+>> >> I removed it.
+>> >
+>> > Really these code changes should be in a separate patch and labeled
+>> > "Don't set reserved bit." instead of hidden away inside a cleanup
+>> > patch.
+>> >
+>>
+>> The patch is applied. Still, good to know. It's not so easy to find the
+>> right patch granularity as newbie.
+>>
+>
+> Yeah.  Staging is for educating people about kernel process as much
+> as it is about writing code.
+>
 
-I was thinking about teaching __tlb_remove_page to update the range
-automatically from the given address.
+Yeah, I know it.  Isn't easy to dive in the kernel process.  I'm writing
+lots of in house code (vector.com), but the development process is
+very different.
 
-But your patch looks good to me as well.
+> The rule here is "Don't mix code changes into a cleanup patches."
+> What we want is if you have a bug then you can look through
+> `git log --oneline` output and guess which patch introduced the bug.
+> This patch is a cleanup patch so it shouldn't introduce any code
+> changes or any bugs.
+>
+> Meanwhile, if you are making a code change you can make any cleanups
+> you need to in order to do the change.  Also if there is an existing
+> checkpatch warning on any of the lines you touch, then that's ok to
+> fix as well.  Or if there are tiny related changes than that's fine.
+>
+> There are three problems with big patches:
+> 1) It breaks the --oneline summary to mix two things into one patch.
+> 2) It makes the patch harder to review.  For example, sometimes
+>    people fix a bug and rename 10 variables as well.
+> 3) The more lines your patch is, the more chance there is that we
+>    will reject it based on one of those lines.  You don't like
+>    redoing patches and we don't like making people redo them.  So
+>    small patches are better and put the more controversial ones at
+>    the end so the first patches can be applied.
+>
+> No one totally agrees what "small closely related cleanups" means so
+> it's better to be conservative.
+>
 
-Feel free to add
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Thanks for the detail information, you're right.  I know it, it's a general
+problem.
 
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
+thanks,
+jens
