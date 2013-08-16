@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758143Ab3HPWwl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:52:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56480 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758072Ab3HPWwj (ORCPT
+	id S1758195Ab3HPWxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:53:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51866 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756453Ab3HPWlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:52:39 -0400
-Message-ID: <520E8C7E.90802@infradead.org>
-Date: Fri, 16 Aug 2013 13:33:02 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+	Fri, 16 Aug 2013 18:41:01 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Android Kernel Team <kernel-team@android.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peng Tao <tao.peng@emc.com>, hpdd-discuss <hpdd-discuss@ml01.01.org>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: linux-next: Tree for Aug 16 (lustre)
-References: <20130816171634.8cb22a8f67d6dce8669d9899@canb.auug.org.au>
-In-Reply-To: <20130816171634.8cb22a8f67d6dce8669d9899@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 027/133] staging: android: logger: Correct write offset reset on error
+Date: Fri, 16 Aug 2013 15:32:49 -0700
+Message-Id: <1376692475-28413-28-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/13 00:16, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20130815:
-> 
+3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
 
-lustre needs to depend on PROC_FS or provide stub functions for when
-CONFIG_PROC_FS is not enabled, otherwise there are build errors and
-warnings:
+------------------
 
+From: Karlis Ogsts <karlis.ogsts@sonymobile.com>
 
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c: In function 'lprocfs_lmv_init_vars':
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:232:26: error: 'lprocfs_lmv_module_vars' undeclared (first use in this function)
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:232:26: note: each undeclared identifier is reported only once for each function it appears in
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:233:26: error: 'lprocfs_lmv_obd_vars' undeclared (first use in this function)
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c: At top level:
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:45:28: warning: 'lprocfs_module_vars' defined but not used [-Wunused-variable]
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:46:28: warning: 'lprocfs_obd_vars' defined but not used [-Wunused-variable]
+commit 72bb99cfe9c57d2044445fb34bbc95b4c0bae6f2 upstream.
 
+In the situation that a writer fails to copy data from userspace it will reset
+the write offset to the value it had before it went to sleep. This discarding
+any messages written while aquiring the mutex.
 
+Therefore the reset offset needs to be retrieved after acquiring the mutex.
 
+Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/staging/android/logger.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+index dbc63cb..316cb2c 100644
+--- a/drivers/staging/android/logger.c
++++ b/drivers/staging/android/logger.c
+@@ -371,7 +371,7 @@ static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 			 unsigned long nr_segs, loff_t ppos)
+ {
+ 	struct logger_log *log = file_get_log(iocb->ki_filp);
+-	size_t orig = log->w_off;
++	size_t orig;
+ 	struct logger_entry header;
+ 	struct timespec now;
+ 	ssize_t ret = 0;
+@@ -390,6 +390,8 @@ static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 
+ 	mutex_lock(&log->mutex);
+ 
++	orig = log->w_off;
++
+ 	/*
+ 	 * Fix up any readers, pulling them forward to the first readable
+ 	 * entry after (what will be) the new write offset. We do this now
 -- 
-~Randy
+1.8.1.2
+
