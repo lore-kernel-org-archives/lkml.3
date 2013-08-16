@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935Ab3HQBYD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 21:24:03 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49499 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab3HQBYA (ORCPT
+	id S1752624Ab3HQB1B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 21:27:01 -0400
+Received: from smtp01.smtpout.orange.fr ([80.12.242.123]:20593 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752257Ab3HQB07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 21:24:00 -0400
-X-AuditID: 9c930179-b7c0bae0000040ac-70-520ed0ae3082
-Date: Sat, 17 Aug 2013 10:24:22 +0900
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Richard Laager <rlaager@wiktel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Chanho Min <chanho.min@lge.com>,
-        Richard Yao <ryao@gentoo.org>, linux-kernel@vger.kernel.org,
-        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com
-Subject: Re: [PATCH] Correct the LZ4 license
-Message-ID: <20130817012422.GA7038@hulk>
-References: <520D8C4C.7000704@gentoo.org>
- <1376689529-15080-1-git-send-email-rlaager@wiktel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376689529-15080-1-git-send-email-rlaager@wiktel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 16 Aug 2013 21:26:59 -0400
+From: Yann Cantin <yann.cantin@laposte.net>
+To: linux-input@vger.kernel.org, linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        dmitry.torokhov@gmail.com, jkosina@suse.cz, rob@landley.net,
+        gregkh@linuxfoundation.org
+Subject: [PATCH 0/2] new USB eBeam input driver
+Date: Fri, 16 Aug 2013 22:25:41 +0200
+Message-Id: <1376684743-25047-1-git-send-email-yann.cantin@laposte.net>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 04:45:29PM -0500, Richard Laager wrote:
-> The LZ4 code is listed as using the "BSD 2-Clause License".
-> 
-> Signed-off-by: Richard Laager <rlaager@wiktel.com>
-> ---
->  lib/lz4/lz4_compress.c   |    4 ++--
->  lib/lz4/lz4_decompress.c |    6 +++---
->  lib/lz4/lz4hc_compress.c |    4 ++--
->  3 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/lib/lz4/lz4_compress.c b/lib/lz4/lz4_compress.c
-> index fd94058..28321d8 100644
-> --- a/lib/lz4/lz4_compress.c
-> +++ b/lib/lz4/lz4_compress.c
-> @@ -437,7 +437,7 @@ int lz4_compress(const unsigned char *src, size_t src_len,
->  exit:
->  	return ret;
->  }
-> -EXPORT_SYMBOL_GPL(lz4_compress);
-> +EXPORT_SYMBOL(lz4_compress);
->  
-> -MODULE_LICENSE("GPL");
-> +MODULE_LICENSE("Dual BSD/GPL");
->  MODULE_DESCRIPTION("LZ4 compressor");
-> diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
-> index d3414ea..411be80 100644
-> --- a/lib/lz4/lz4_decompress.c
-> +++ b/lib/lz4/lz4_decompress.c
-> @@ -299,7 +299,7 @@ exit_0:
->  	return ret;
->  }
->  #ifndef STATIC
-> -EXPORT_SYMBOL_GPL(lz4_decompress);
-> +EXPORT_SYMBOL(lz4_decompress);
->  #endif
->  
->  int lz4_decompress_unknownoutputsize(const char *src, size_t src_len,
-> @@ -319,8 +319,8 @@ exit_0:
->  	return ret;
->  }
->  #ifndef STATIC
-> -EXPORT_SYMBOL_GPL(lz4_decompress_unknownoutputsize);
-> +EXPORT_SYMBOL(lz4_decompress_unknownoutputsize);
->  
-> -MODULE_LICENSE("GPL");
-> +MODULE_LICENSE("Dual BSD/GPL");
->  MODULE_DESCRIPTION("LZ4 Decompressor");
->  #endif
-> diff --git a/lib/lz4/lz4hc_compress.c b/lib/lz4/lz4hc_compress.c
-> index eb1a74f..f344f76 100644
-> --- a/lib/lz4/lz4hc_compress.c
-> +++ b/lib/lz4/lz4hc_compress.c
-> @@ -533,7 +533,7 @@ int lz4hc_compress(const unsigned char *src, size_t src_len,
->  exit:
->  	return ret;
->  }
-> -EXPORT_SYMBOL_GPL(lz4hc_compress);
-> +EXPORT_SYMBOL(lz4hc_compress);
->  
-> -MODULE_LICENSE("GPL");
-> +MODULE_LICENSE("Dual BSD/GPL");
->  MODULE_DESCRIPTION("LZ4HC compressor");
+Hi,
 
-Acked-by: Kyungsik Lee <kyungsik.lee@lge.com>
+New USB input driver for eBeam devices.
 
-Thanks,
-Kyungsik
+Currently supported (tested) :
+- Luidia eBeam classic projection and edge projection models
+- Nec "interactive solution" NP01Wi1 & NP01Wi2 accessories.
+
+>From basic usb point of view, all these devices are
+indistinguishable : they have the same usb ids and (blank) hid
+report descriptors. There's other re-branded hardware that need to be
+test, but i bet on same ids.
+
+Patch 1 to blacklist the devices for hid generic-usb.
+
+Patch 2 is the actual driver.
+
+Notable stuff :
+- use div64_s64 for portable 64/64-bits divisions.
+- 13 sysfs custom files : 9 values for the transformation matrix,
+  4 for xy ranges and a calibration trigger.
+
+The module run fine since 3.3.6 kernel, both x86_32 and 64, actually
+run in production on a 3.8.13 and compile without errors on
+today's linus tree.
+
+Side note :
+- This driver was first submit and discuss last year.
+
+Thanks for your help.
+
