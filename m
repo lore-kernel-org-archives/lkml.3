@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab3HPQ3j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 12:29:39 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:37185 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518Ab3HPQ3g (ORCPT
+	id S1753672Ab3HPQc2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 12:32:28 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:36637 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab3HPQcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 12:29:36 -0400
+	Fri, 16 Aug 2013 12:32:24 -0400
+Date: Fri, 16 Aug 2013 18:32:19 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20130816163217.GF24210@somewhere>
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com>
+ <1376667753-29014-3-git-send-email-fweisbec@gmail.com>
+ <20130816160201.GA31682@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdbOPL7K2yc_zAo0-b-Y0mXCRXJfc7YYDhcb0K3uj76BBQ@mail.gmail.com>
-References: <1376490038-32382-1-git-send-email-ricardo.ribalda@gmail.com> <CACRpkdbOPL7K2yc_zAo0-b-Y0mXCRXJfc7YYDhcb0K3uj76BBQ@mail.gmail.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Fri, 16 Aug 2013 18:29:15 +0200
-Message-ID: <CAPybu_3VLzn08Y2Kq3Wn6g+UkaWG5mnMdm3Xdqghat6qN2Ah=g@mail.gmail.com>
-Subject: Re: [PATCH] gpio-pca953x: Fix read for chips with more than 8 gpios
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Ruder <andy@aeruder.net>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130816160201.GA31682@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus
+On Fri, Aug 16, 2013 at 06:02:01PM +0200, Oleg Nesterov wrote:
+> Thanks Frederic!
+> 
+> I'll try to read this series carefully later. Not that I think
+> I can help, you certainly understand this much better.
+> 
+> Just one question below,
+> 
+> On 08/16, Frederic Weisbecker wrote:
+> >
+> > @@ -499,12 +509,15 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+> >  	if (last_update_time)
+> >  		*last_update_time = ktime_to_us(now);
+> >  
+> > -	if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+> > -		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+> > -		iowait = ktime_add(ts->iowait_sleeptime, delta);
+> > -	} else {
+> > -		iowait = ts->iowait_sleeptime;
+> > -	}
+> > +	do {
+> > +		seq = read_seqcount_begin(&ts->sleeptime_seq);
+> > +		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+> > +			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+> > +			iowait = ktime_add(ts->iowait_sleeptime, delta);
+> > +		} else {
+> > +			iowait = ts->iowait_sleeptime;
+> > +		}
+> > +	} while (read_seqcount_retry(&ts->sleeptime_seq, seq));
+> 
+> Unless I missread this patch, this is still racy a bit.
+> 
+> Suppose it is called on CPU_0 and cpu == 1. Suppose that
+> ts->idle_active == T and nr_iowait_cpu(cpu) == 1.
+> 
+> So we return iowait_sleeptime + delta.
+> 
+> Suppose that we call get_cpu_iowait_time_us() again. By this time
+> the task which incremented ->nr_iowait can be woken up on another
+> CPU, and it can do atomic_dec(rq->nr_iowait). So the next time
+> we return iowait_sleeptime, and this is not monotonic again.
+> 
+> No?
 
-I tried to google it when I sent it, but I didnt found anything. Glad
-to hear it is alreay in the queue :)
+OTOH, io_schedule() does:
 
-Regards!
+      atomic_inc(&rq->nr_iowait);
+      schedule();
+      atomic_dec(&rq->nr_iowait);
 
-On Fri, Aug 16, 2013 at 5:21 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Aug 14, 2013 at 4:20 PM, Ricardo Ribalda Delgado
-> <ricardo.ribalda@gmail.com> wrote:
->
->> pca953x_read_single returns ONLY the value of the 8 inputs of the
->> same bank.
->>
->> off can have a value from 0 to 15, therefore we have to find the
->> offset of that gpio within that bank.
->>
->> Without this patch gpios 8-15 will always be read as zero.
->>
->> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
->
-> Nice! But it turns out I already had an identical patch by
-> Andrew Ruder acked by Gregory Clement in my patch queue.
->
-> Yours,
-> Linus Walleij
+How do we handle that when the task is migrated after it goes to sleep? I don't
+see the nr_iowait is decreased from the src CPU and increased on the dest CPU.
 
-
-
--- 
-Ricardo Ribalda
+I don't either see that iowait tasks can't be migrated.
