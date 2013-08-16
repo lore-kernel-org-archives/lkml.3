@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567Ab3HPHIR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 03:08:17 -0400
+	id S1753189Ab3HPHIU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 03:08:20 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:29462 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751420Ab3HPHIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 03:08:14 -0400
+	id S1751965Ab3HPHIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 03:08:17 -0400
 X-IronPort-AV: E=Sophos;i="4.89,892,1367942400"; 
-   d="scan'208";a="8217636"
+   d="scan'208";a="8217639"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, lenb@kernel.org,
         rjw@sisk.pl, liwanp@linux.vnet.ibm.com, tj@kernel.org,
         akpm@linux-foundation.org
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: [PATCH 3/6] acpi cleanup: Use pr_info() instead of printk() in arch/x86/mm/srat.c
-Date: Fri, 16 Aug 2013 15:06:46 +0800
-Message-Id: <1376636809-10159-4-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH 5/6] acpi: Check if @id is NULL in acpi_table_parse()
+Date: Fri, 16 Aug 2013 15:06:48 +0800
+Message-Id: <1376636809-10159-6-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1376636809-10159-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1376636809-10159-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/08/16 15:06:32,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/16 15:06:36,
-	Serialize complete at 2013/08/16 15:06:36
+ 2013/08/16 15:06:38,
+	Serialize complete at 2013/08/16 15:06:38
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use pr_info() instead of printk() in arch/x86/mm/srat.c.
+strncmp() does not check if the params are NULL. In acpi_table_parse(),
+if @id is NULL, the kernel will panic.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/srat.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/acpi/tables.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-index 71411aa..6286e89 100644
---- a/arch/x86/mm/srat.c
-+++ b/arch/x86/mm/srat.c
-@@ -71,8 +71,8 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
- 	pxm = pa->proximity_domain;
- 	apic_id = pa->apic_id;
- 	if (!apic->apic_id_valid(apic_id)) {
--		printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
--			 pxm, apic_id);
-+		pr_info("SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
-+			pxm, apic_id);
- 		return;
- 	}
- 	node = setup_node(pxm);
-@@ -83,13 +83,13 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
- 	}
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index d67a1fe..5a5263b 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -293,7 +293,7 @@ int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
+ 	if (acpi_disabled)
+ 		return -ENODEV;
  
- 	if (apic_id >= MAX_LOCAL_APIC) {
--		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
-+		pr_info("SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
- 		return;
- 	}
- 	set_apicid_to_node(apic_id, node);
- 	node_set(node, numa_nodes_parsed);
- 	acpi_numa = 1;
--	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
-+	pr_info("SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
- 	       pxm, apic_id, node);
- }
+-	if (!handler)
++	if (!id || !handler)
+ 		return -EINVAL;
  
-@@ -124,14 +124,14 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
- 		apic_id = pa->apic_id;
- 
- 	if (apic_id >= MAX_LOCAL_APIC) {
--		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
-+		pr_info("SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
- 		return;
- 	}
- 
- 	set_apicid_to_node(apic_id, node);
- 	node_set(node, numa_nodes_parsed);
- 	acpi_numa = 1;
--	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
-+	pr_info("SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
- 	       pxm, apic_id, node);
- }
- 
+ 	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
 -- 
 1.7.1
 
