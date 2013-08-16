@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab3HQAIc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:08:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51684 "EHLO
+	id S1756074Ab3HQAIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:08:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51680 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756714Ab3HPWjq (ORCPT
+	with ESMTP id S1756629Ab3HPWjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:46 -0400
+	Fri, 16 Aug 2013 18:39:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: William Gulland <wgulland@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 046/133] iwlwifi: add DELL SKU for 5150 HMC
-Date: Fri, 16 Aug 2013 15:33:08 -0700
-Message-Id: <1376692475-28413-47-git-send-email-kamal@canonical.com>
+Subject: [PATCH 041/133] usb: Clear both buffers when clearing a control transfer TT buffer.
+Date: Fri, 16 Aug 2013 15:33:03 -0700
+Message-Id: <1376692475-28413-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,33 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: William Gulland <wgulland@google.com>
 
-commit a1923f1d4723e5757cefdd60f7c7ab30e472007a upstream.
+commit 2c7b871b9102c497ba8f972aa5d38532f05b654d upstream.
 
-This SKU was missing in the list of supported devices
+Control transfers have both IN and OUT (or SETUP) packets, so when
+clearing TT buffers for a control transfer it's necessary to send
+two HUB_CLEAR_TT_BUFFER requests to the hub.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=60577
-
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: William Gulland <wgulland@google.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/pcie/drv.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/core/hub.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/net/wireless/iwlwifi/pcie/drv.c b/drivers/net/wireless/iwlwifi/pcie/drv.c
-index 2c18171..8fee66f 100644
---- a/drivers/net/wireless/iwlwifi/pcie/drv.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
-@@ -131,6 +131,7 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_card_ids) = {
- 	{IWL_PCI_DEVICE(0x423C, 0x1306, iwl5150_abg_cfg)}, /* Half Mini Card */
- 	{IWL_PCI_DEVICE(0x423C, 0x1221, iwl5150_agn_cfg)}, /* Mini Card */
- 	{IWL_PCI_DEVICE(0x423C, 0x1321, iwl5150_agn_cfg)}, /* Half Mini Card */
-+	{IWL_PCI_DEVICE(0x423C, 0x1326, iwl5150_abg_cfg)}, /* Half Mini Card */
- 
- 	{IWL_PCI_DEVICE(0x423D, 0x1211, iwl5150_agn_cfg)}, /* Mini Card */
- 	{IWL_PCI_DEVICE(0x423D, 0x1311, iwl5150_agn_cfg)}, /* Half Mini Card */
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 2a89588..d96ca07 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -725,6 +725,15 @@ resubmit:
+ static inline int
+ hub_clear_tt_buffer (struct usb_device *hdev, u16 devinfo, u16 tt)
+ {
++	/* Need to clear both directions for control ep */
++	if (((devinfo >> 11) & USB_ENDPOINT_XFERTYPE_MASK) ==
++			USB_ENDPOINT_XFER_CONTROL) {
++		int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
++				HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
++				devinfo ^ 0x8000, tt, NULL, 0, 1000);
++		if (status)
++			return status;
++	}
+ 	return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+ 			       HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
+ 			       tt, NULL, 0, 1000);
 -- 
 1.8.1.2
 
