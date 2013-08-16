@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab3HPPc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 11:32:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33010 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752336Ab3HPPcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 11:32:51 -0400
-Date: Fri, 16 Aug 2013 10:32:26 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Matt Porter <matt.porter@linaro.org>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: Re: [PATCH 2/2] usb: gadget: ffs: add ACM + FunctionFS configuration
-Message-ID: <20130816153226.GO15861@radagast>
-Reply-To: <balbi@ti.com>
-References: <1376666868-32581-1-git-send-email-matt.porter@linaro.org>
- <1376666868-32581-3-git-send-email-matt.porter@linaro.org>
+	id S1754268Ab3HPPdY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 11:33:24 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:33562 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753901Ab3HPPdS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 11:33:18 -0400
+Date: Fri, 16 Aug 2013 17:32:49 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, Roger Quadros <rogerq@ti.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, USB list <linux-usb@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH] usb: phy: am335x-control: make it compile with
+Message-ID: <20130816153249.GA3570@breakpoint.cc>
+References: <20130815165829.6a401f104ee2a98dd48bcb58@canb.auug.org.au>
+ <520D0AD7.6050002@infradead.org>
+ <520E0304.5050906@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Uw+RRa3pmtkgiNaD"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376666868-32581-3-git-send-email-matt.porter@linaro.org>
+In-Reply-To: <520E0304.5050906@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Uw+RRa3pmtkgiNaD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-On Fri, Aug 16, 2013 at 11:27:48AM -0400, Matt Porter wrote:
-> Adds an additional configuration to g_ffs to allow for
-> CDC ACM support in conjuction with FunctionFS. A module
-> parameter is added to allow for multiple ACM ports to
-> be instantiated.
->=20
-> Signed-off-by: Matt Porter <matt.porter@linaro.org>
+Randy reported this
+|drivers/usb/phy/phy-am335x-control.c:45:3: error: implicit declaration
+|of function '__WARN' [-Werror=implicit-function-declaration]
 
-the whole idea of the configfs interface was that we wouldn't add this
-sort of patch to the kernel anymore. What's wrong with building your
-device through configfs in userland ?
+and left it as an excercice to figure out that this happens only with
+CONFIG_BUG=n. As a fix I replace it with WARN_ON(). And there is a space
+before return so fix this, too.
 
---=20
-balbi
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/usb/phy/phy-am335x-control.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---Uw+RRa3pmtkgiNaD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/drivers/usb/phy/phy-am335x-control.c b/drivers/usb/phy/phy-am335x-control.c
+index 7597545..22cf07d 100644
+--- a/drivers/usb/phy/phy-am335x-control.c
++++ b/drivers/usb/phy/phy-am335x-control.c
+@@ -42,8 +42,8 @@ static void am335x_phy_power(struct phy_control *phy_ctrl, u32 id, bool on)
+ 		reg = AM335X_USB1_CTRL;
+ 		break;
+ 	default:
+-		__WARN();
+-		 return;
++		WARN_ON(1);
++		return;
+ 	}
+ 
+ 	val = readl(usb_ctrl->phy_reg + reg);
+-- 
+1.8.4.rc2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSDkYJAAoJEIaOsuA1yqREn2IP/2M8ENBU4LcPnIWT5NJvjhrT
-GuKLyRE9UZDvmSrJ/oOGd/GIJT/pq+1pj1ft6979Np6JtIrFzbjRpl8Jr50gHRzp
-cTttKVnT3gQx+NTRzs1qtOQQn0P7Jki7mGzNAlWqoYhd4cP6OqhTo9m/0vMfycV8
-u6fEJ6A41UnM6wrE11ktm9IW1TJjTseglIjjXjZajtOfFZ6TOGfz9785ZbD3v+qe
-WCEPR3fIlTOOIx8B71/WRIAllTlOS8yGesK2wzcI78ri66MwFf+FekOo7B0qzpoD
-sRpmSQTsEZsvn4MwyOcQ/VBNHVWY5bwmZFicjZg+/OKANjaYTAHEOcq1ugHv5uX3
-1YisQ08CTInwCS6Z589JYgV+42TD1o9rAWI+I+ouYo528iqHY6cqDb8wR25TeOl3
-gjcUHyKNjIX4NEDuJzT12ds6Q4uOkj9HI+VotlVLpLn3edW4Ld4jXhIJmSFgDrkn
-HrHOjyDacYXKQMj5JdGX82RwNTFTLIeop7+hhb6TXVUGKQ153deGFPlJr16WDb0Y
-E4LXUcq1ELpazn8doRTtvqnut3XhEpKl61uc+mG4SCsnSosIUBUUydIawoJKQW+J
-Lhpho/h36qaXGQA0CzXX0qTtT2V3+Ll3PrBLeL65xIDHD1exBuwqtVamZVfgj0ZZ
-fW7G9aYgK0ShfBLPPIa+
-=qaP3
------END PGP SIGNATURE-----
-
---Uw+RRa3pmtkgiNaD--
