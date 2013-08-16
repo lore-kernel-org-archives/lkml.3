@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab3HQABR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:01:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51786 "EHLO
+	id S1754536Ab3HQABQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:01:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51793 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756995Ab3HPWkX (ORCPT
+	with ESMTP id S1757008Ab3HPWk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:40:23 -0400
+	Fri, 16 Aug 2013 18:40:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jacob Keller <jacob.e.keller@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 062/133] ixgbe: Fix Tx Hang issue with lldpad on 82598EB
-Date: Fri, 16 Aug 2013 15:33:24 -0700
-Message-Id: <1376692475-28413-63-git-send-email-kamal@canonical.com>
+Subject: [PATCH 061/133] USB: mos7840: fix pointer casts
+Date: Fri, 16 Aug 2013 15:33:23 -0700
+Message-Id: <1376692475-28413-62-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -29,39 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacob Keller <jacob.e.keller@intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 1eb9ac14c34a948bf1538bfb9034e8ab29099a64 upstream.
+commit 683a0e4d7971c3186dc4d429027debfe309129aa upstream.
 
-This patch fixes an issue with the 82598EB device, where lldpad is causing Tx
-Hangs on the card as soon as it attempts to configure DCB for the device. The
-adapter will continually Tx hang and reset in a loop.
+Silence compiler warnings on 64-bit systems introduced by commit
+05cf0dec ("USB: mos7840: fix race in led handling") which uses the
+usb-serial data pointer to temporarily store the device type during
+probe but failed to add the required casts.
 
-Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Tested-by: Jack Morgan <jack.morgan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[gregkh - change uintptr_t to unsigned long]
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/serial/mos7840.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
-index 87592b4..b3c05de 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
-@@ -108,9 +108,8 @@ s32 ixgbe_dcb_config_tx_desc_arbiter_82598(struct ixgbe_hw *hw,
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index 0116855..ab2f48f 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -2353,14 +2353,14 @@ static int mos7840_probe(struct usb_serial *serial,
  
- 	/* Enable arbiter */
- 	reg &= ~IXGBE_DPMCS_ARBDIS;
--	/* Enable DFP and Recycle mode */
--	reg |= (IXGBE_DPMCS_TDPAC | IXGBE_DPMCS_TRM);
- 	reg |= IXGBE_DPMCS_TSOEF;
-+
- 	/* Configure Max TSO packet size 34KB including payload and headers */
- 	reg |= (0x4 << IXGBE_DPMCS_MTSOS_SHIFT);
+ 	kfree(buf);
+ out:
+-	usb_set_serial_data(serial, (void *)device_type);
++	usb_set_serial_data(serial, (void *)(unsigned long)device_type);
  
+ 	return 0;
+ }
+ 
+ static int mos7840_calc_num_ports(struct usb_serial *serial)
+ {
+-	int device_type = (int)usb_get_serial_data(serial);
++	int device_type = (unsigned long)usb_get_serial_data(serial);
+ 	int mos7840_num_ports;
+ 
+ 	mos7840_num_ports = (device_type >> 4) & 0x000F;
+@@ -2371,7 +2371,7 @@ static int mos7840_calc_num_ports(struct usb_serial *serial)
+ static int mos7840_port_probe(struct usb_serial_port *port)
+ {
+ 	struct usb_serial *serial = port->serial;
+-	int device_type = (int)usb_get_serial_data(serial);
++	int device_type = (unsigned long)usb_get_serial_data(serial);
+ 	struct moschip_port *mos7840_port;
+ 	int status;
+ 	int pnum;
 -- 
 1.8.1.2
 
