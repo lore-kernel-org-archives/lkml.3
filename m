@@ -1,98 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab3HPWrS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:47:18 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36353 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752947Ab3HPWrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:47:14 -0400
-Date: Fri, 16 Aug 2013 23:46:54 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20130816224654.GV30073@sirena.org.uk>
-References: <20130816200009.GU30073@sirena.org.uk>
- <Pine.LNX.4.44L0.1308161625520.1532-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6qFdnjy6dKaiDX/E"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1308161625520.1532-100000@iolanthe.rowland.org>
-X-Cookie: There is a fly on your nose.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1757829Ab3HPWrl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:47:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39262 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757805Ab3HPWrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:47:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,897,1367996400"; 
+   d="scan'208";a="363878652"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, peterz@infradead.org, akpm@linux-foundation.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/6] x86: Add 1/2/4/8 byte optimization to 64bit __copy_{from,to}_user_inatomic
+Date: Fri, 16 Aug 2013 14:17:19 -0700
+Message-Id: <1376687844-19857-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
+References: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Andi Kleen <ak@linux.intel.com>
 
---6qFdnjy6dKaiDX/E
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The 64bit __copy_{from,to}_user_inatomic always called
+copy_from_user_generic, but skipped the special optimizations for 1/2/4/8
+byte accesses.
 
-On Fri, Aug 16, 2013 at 04:39:47PM -0400, Alan Stern wrote:
-> On Fri, 16 Aug 2013, Mark Brown wrote:
+This especially hurts the futex call, which accesses the 4 byte futex
+user value with a complicated fast string operation in a function call,
+instead of a single movl.
 
-> > The device in this context is a running instance of the driver.
+Use __copy_{from,to}_user for _inatomic instead to get the same
+optimizations. The only problem was the might_fault() in those functions.
+So move that to new wrapper and call __copy_{f,t}_user_nocheck()
+from *_inatomic directly.
 
-> It's kind of difficult to understand what you're saying.  Obviously the
-> literal meaning is not what you had in mind, because a device can't be
-> a driver (or even a running instance of a driver).  Maybe you meant
-> that the word "device" above should have been the word "driver".
+32bit already did this correctly by duplicating the code.
 
-I don't think using device to refer to an instance of the running driver
-is that obscure a usage to be honest...
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/include/asm/uaccess_64.h | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
 
-> So you seem to be saying that significant modifications would be needed=
-=20
-> to get platform information to the driver.  I don't see why.  Lots and=20
-> lots of drivers use platform information right now.
+diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
+index 4f7923d..64476bb 100644
+--- a/arch/x86/include/asm/uaccess_64.h
++++ b/arch/x86/include/asm/uaccess_64.h
+@@ -77,11 +77,10 @@ int copy_to_user(void __user *dst, const void *src, unsigned size)
+ }
+ 
+ static __always_inline __must_check
+-int __copy_from_user(void *dst, const void __user *src, unsigned size)
++int __copy_from_user_nocheck(void *dst, const void __user *src, unsigned size)
+ {
+ 	int ret = 0;
+ 
+-	might_fault();
+ 	if (!__builtin_constant_p(size))
+ 		return copy_user_generic(dst, (__force void *)src, size);
+ 	switch (size) {
+@@ -121,11 +120,17 @@ int __copy_from_user(void *dst, const void __user *src, unsigned size)
+ }
+ 
+ static __always_inline __must_check
+-int __copy_to_user(void __user *dst, const void *src, unsigned size)
++int __copy_from_user(void *dst, const void __user *src, unsigned size)
++{
++	might_fault();
++	return __copy_from_user_nocheck(dst, src, size);
++}
++
++static __always_inline __must_check
++int __copy_to_user_nocheck(void __user *dst, const void *src, unsigned size)
+ {
+ 	int ret = 0;
+ 
+-	might_fault();
+ 	if (!__builtin_constant_p(size))
+ 		return copy_user_generic((__force void *)dst, src, size);
+ 	switch (size) {
+@@ -165,6 +170,13 @@ int __copy_to_user(void __user *dst, const void *src, unsigned size)
+ }
+ 
+ static __always_inline __must_check
++int __copy_to_user(void __user *dst, const void *src, unsigned size)
++{
++	might_fault();
++	return __copy_to_user_nocheck(dst, src, size);
++}
++
++static __always_inline __must_check
+ int __copy_in_user(void __user *dst, const void __user *src, unsigned size)
+ {
+ 	int ret = 0;
+@@ -220,13 +232,13 @@ int __copy_in_user(void __user *dst, const void __user *src, unsigned size)
+ static __must_check __always_inline int
+ __copy_from_user_inatomic(void *dst, const void __user *src, unsigned size)
+ {
+-	return copy_user_generic(dst, (__force const void *)src, size);
++	return __copy_from_user_nocheck(dst, (__force const void *)src, size);
+ }
+ 
+ static __must_check __always_inline int
+ __copy_to_user_inatomic(void __user *dst, const void *src, unsigned size)
+ {
+-	return copy_user_generic((__force void *)dst, src, size);
++	return __copy_to_user_nocheck((__force void *)dst, src, size);
+ }
+ 
+ extern long __copy_user_nocache(void *dst, const void __user *src,
+-- 
+1.8.3.1
 
-> Besides, you need to get the platform information to the driver in any=20
-> case, no matter how you decide to solve the chicken-and-egg problem. =20
-> It shouldn't be a factor in deciding which solution to use.
-
-It's not that this is hard, it's that I don't see how if you already
-have some concept of the device in the kernel data structures (which you
-must have in order to be able to provide platform data when it's needed)
-anything is gained by not using that when dealing with bootstrapping
-issues.
-
-Anyway, I think it's time to try to implement something rather than talk
-about it.
-
---6qFdnjy6dKaiDX/E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSDqvaAAoJELSic+t+oim9HAYP/1C8U3l0mluWUZu3I26nQY1X
-hXu9D/4seUH/AUamUFIoxdo+4BiWYSc7ChsVLdzaArKwQrlRyoOdqqlWts6eqHVA
-dOY0eoxbiuPQ7nGhlPurm/LCtBWWgvHZ9ry5enZLD69gyHwpL8NhS35LXNGPMed2
-bJ2P04w/JZ2NlQOS0Vlzu+VKXug77L3ph8vQxbsZsm4tEWKLj5gjRUjHlnZy1gbt
-NUuzJQnii08imdfO/u85DsS2Jhgk3guEuTqlNAoGSqtMc4tnCtXIcNXLsXefPata
-+RcsgsDajgCVicP3moHSuMJf40987T4wp9TMzk+kGSyGlAnFIFMqj3bo4jbFoDtF
-18+lse7g8+ZjwEthTxfYcyWoyh03zwpLqq+AIWLGrHcjW2vKqG4C4XC8z6uAPSIT
-7VyVhboWAOpgzj9OL+st6b5ATRxilb3ugLpLvxcmnfFeP1ksvOEkuUDOXHKWkQ9E
-kId08flHisXqMmfByPzDucQYxDZPeEVIBVz+PnWIbudtqO6EfKEQJD0L+WsE9d0+
-qLhulUdLt3qY39yMG4OQ0FYEcisJvfpaB7gW2jQnj6YCzIL9I2Te191Sujrp+6QG
-If/oo+6ee4QAk7nwvAbBVRrc2na5t4YJk+8kjIwNqQ4+PSwz2kfdOod1W2Z8yqZ4
-IzECHx8jBvLowYTfVTCI
-=jugJ
------END PGP SIGNATURE-----
-
---6qFdnjy6dKaiDX/E--
