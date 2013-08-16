@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab3HQARa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:17:30 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:46817 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754618Ab3HQAR2 (ORCPT
+	id S1756407Ab3HPWjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:39:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51566 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756309Ab3HPWiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:17:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <1376515431-9504-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1376515431-9504-1-git-send-email-ricardo.ribalda@gmail.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Fri, 16 Aug 2013 17:17:06 -0700
-Message-ID: <CAK5ve-J7mZqK6uZSa1dx+4sfq77zXK4iF0Z1Y=rWBJ5KG8OcLQ@mail.gmail.com>
-Subject: Re: [PATCH v4 0/5] PCA9633: Add support to PCA9634 and fix some problems
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Peter Meerwald <p.meerwald@bct-electronic.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 16 Aug 2013 18:38:55 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Piotr Sarna <p.sarna@partner.samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 118/133] ext4: fix mount/remount error messages for incompatible mount options
+Date: Fri, 16 Aug 2013 15:34:20 -0700
+Message-Id: <1376692475-28413-119-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 2:23 PM, Ricardo Ribalda Delgado
-<ricardo.ribalda@gmail.com> wrote:
-> Add Support for the PCA9634 chip. Simimart to the 9633, but with 8 outputs instead of 4.
-> Fix bug when 2 chips where present on the system, the ledclass will fail and the chip wont probe.
-> Protect ledout register with a mutex to support updates of more than leds at the same time
-> Fix device tree parsing
->
-> v5: Contains feedback from Bryan Wu
-> Bryan: Fix device tree bindings documentation
->
+3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
 
-Thanks, I've already merged this new patchset into my tree.
+------------------
 
--Bryan
+From: Piotr Sarna <p.sarna@partner.samsung.com>
 
-> v4: Rebase to latest leds-next and new patch to Fix the dt parsing
->
-> v3: Contains feedback from Bryan Wu
-> Bryan: Rename pca9633 to pca963x
->
-> v2: Contains feedback from Peter Meerwald
-> Peter: Fix typo on commit message. Add bus number to name
->
-> Ricardo Ribalda Delgado (5):
->   leds-pca9633: Add support for PCA9634
->   leds-pca9633: Unique naming of the LEDs
->   leds-pca9633: Add mutex to the ledout register
->   leds-pca9633: Rename to leds-pca963x
->   leds-pca963x: Fix device tree parsing
->
->  Documentation/devicetree/bindings/leds/pca9633.txt |   46 --
->  Documentation/devicetree/bindings/leds/pca963x.txt |   47 ++
->  drivers/leds/Kconfig                               |    9 +-
->  drivers/leds/Makefile                              |    2 +-
->  drivers/leds/leds-pca9633.c                        |  393 -----------------
->  drivers/leds/leds-pca963x.c                        |  461 ++++++++++++++++++++
->  include/linux/platform_data/leds-pca9633.h         |   41 --
->  include/linux/platform_data/leds-pca963x.h         |   42 ++
->  8 files changed, 556 insertions(+), 485 deletions(-)
->  delete mode 100644 Documentation/devicetree/bindings/leds/pca9633.txt
->  create mode 100644 Documentation/devicetree/bindings/leds/pca963x.txt
->  delete mode 100644 drivers/leds/leds-pca9633.c
->  create mode 100644 drivers/leds/leds-pca963x.c
->  delete mode 100644 include/linux/platform_data/leds-pca9633.h
->  create mode 100644 include/linux/platform_data/leds-pca963x.h
->
-> --
-> 1.7.10.4
->
+commit 6ae6514b33f941d3386da0dfbe2942766eab1577 upstream.
+
+Commit 5688978 ("ext4: improve handling of conflicting mount options")
+introduced incorrect messages shown while choosing wrong mount options.
+
+First of all, both cases of incorrect mount options,
+"data=journal,delalloc" and "data=journal,dioread_nolock" result in
+the same error message.
+
+Secondly, the problem above isn't solved for remount option: the
+mismatched parameter is simply ignored.  Moreover, ext4_msg states
+that remount with options "data=journal,delalloc" succeeded, which is
+not true.
+
+To fix it up, I added a simple check after parse_options() call to
+ensure that data=journal and delalloc/dioread_nolock parameters are
+not present at the same time.
+
+Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
+Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ fs/ext4/super.c | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 1e4b5926..b83f75d 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3440,7 +3440,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 		}
+ 		if (test_opt(sb, DIOREAD_NOLOCK)) {
+ 			ext4_msg(sb, KERN_ERR, "can't mount with "
+-				 "both data=journal and delalloc");
++				 "both data=journal and dioread_nolock");
+ 			goto failed_mount;
+ 		}
+ 		if (test_opt(sb, DELALLOC))
+@@ -4618,6 +4618,21 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+ 		goto restore_opts;
+ 	}
+ 
++	if (test_opt(sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA) {
++		if (test_opt2(sb, EXPLICIT_DELALLOC)) {
++			ext4_msg(sb, KERN_ERR, "can't mount with "
++				 "both data=journal and delalloc");
++			err = -EINVAL;
++			goto restore_opts;
++		}
++		if (test_opt(sb, DIOREAD_NOLOCK)) {
++			ext4_msg(sb, KERN_ERR, "can't mount with "
++				 "both data=journal and dioread_nolock");
++			err = -EINVAL;
++			goto restore_opts;
++		}
++	}
++
+ 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
+ 		ext4_abort(sb, "Abort forced by user");
+ 
+-- 
+1.8.1.2
+
