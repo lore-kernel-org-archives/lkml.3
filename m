@@ -1,118 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab3HQAk5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:40:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57819 "EHLO
+	id S1752943Ab3HQAk4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:40:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57815 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab3HQAkv (ORCPT
+	with ESMTP id S1751737Ab3HQAku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:40:51 -0400
-Date: Fri, 16 Aug 2013 15:39:32 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ali Ayoub <ali@dev.mellanox.co.il>
-Cc: Shannon Nelson <shannon.nelson@intel.com>, netdev@vger.kernel.org,
-        davem@davemloft.net, dwmw2@infradead.org, jeffrey.t.kirsher@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] ixgbe: request_firmware for configuration parameters
-Message-ID: <20130816223932.GB31247@kroah.com>
-References: <20130111020046.15463.72333.stgit@starfish.jf.intel.com>
- <20130111182547.GA22231@kroah.com>
- <CAP-MU4MzG_P9fz3_eix=zgzyjijZ5qo1mpKE=r_K7y3xcJqc5Q@mail.gmail.com>
- <20130111194134.GA4817@kroah.com>
- <520EA447.6090309@dev.mellanox.co.il>
+	Fri, 16 Aug 2013 20:40:50 -0400
+Date: Fri, 16 Aug 2013 15:08:07 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 2/4] driver core: Allow early registration of devices
+Message-ID: <20130816220807.GA6848@kroah.com>
+References: <1376685563-1053-1-git-send-email-treding@nvidia.com>
+ <1376685563-1053-3-git-send-email-treding@nvidia.com>
+ <20130816210637.GC2198@kroah.com>
+ <20130816215530.GA14464@mithrandir>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <520EA447.6090309@dev.mellanox.co.il>
+In-Reply-To: <20130816215530.GA14464@mithrandir>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 03:14:31PM -0700, Ali Ayoub wrote:
-> On 1/11/2013 11:41 AM, Greg KH wrote:
-
-Seriously?  Restarting a thread from over 6 months ago?  Why?
-
-> > On Fri, Jan 11, 2013 at 11:30:54AM -0800, Shannon Nelson wrote:
-> >> On Fri, Jan 11, 2013 at 10:25 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >>> On Thu, Jan 10, 2013 at 06:02:20PM -0800, Shannon Nelson wrote:
-> >>>> Most networking dials and knobs can be set using ethtool, ifconfig, ip link
-> >>>> commands, or sysfs entries, all of which can be driven by startup scripts
-> >>>> and other configuration tools.  However, they all depend on having a netdev
-> >>>> already set up, and we have some low-level device functionality that needs
-> >>>> to be sorted out before we start setting up MSI-x and memory allocations.
-> >>
-> >>> Ick, please don't abuse request_firmware() for this type of thing.
-> >>
-> >> Yeah, it seemed ugly to me at first as well, but it grew on me as I
-> >> realized that it does solve a problem in a rather elegant way.  While
-> >> working this up I discussed this with Mr. Woodhouse thinking that as a
-> >> firmware tree maintainer he'd have a similar reaction, but he actually
-> >> wasn't opposed to it (David, please speak up if I'm misrepresenting
-> >> your comments).
+On Fri, Aug 16, 2013 at 11:55:31PM +0200, Thierry Reding wrote:
+> > > +	list_for_each_entry(private, &device_early_list, early) {
+> > > +		struct device *dev = private->device;
+> > > +		int err;
+> > > +
+> > > +		if (dev->bus == &platform_bus_type) {
 > > 
-> > David maintains the external firmware tree repo, not the in-kernel
-> > firmware core code (which I used to maintain.)
-> > 
-> >>> What's wrong with configfs?  It sounds like it will fit your need, and
-> >>> that is what is created for.
-> >>
-> >> configfs has similar problems as sysfs - the driver needs to create
-> >> the hooks before it has all the info it might need for some hooks,
-> >> there is no persistence across reboots, and I don't think it will help
-> >> for initrd images.  Additionally, there would need to be some userland
-> >> mechanism to notice that the hooks were there and to feed it the
-> >> startup info.  Using a file in the firmware path gives us persistence
-> >> and a way for the driver to get info before having to set up
-> >> filesystem hooks.  It also gives us a way to get special config info
-> >> into the boot image.  And the whole mechanism already exists,
-> >> including UDEV hooks that can do more fancy stuff if needed.
-> > 
-> > Yes, but you are now starting to use "configuration files" for kernel
-> > drivers, which we have resisted for 20+ years for a variety of good
-> > reasons. You can't just ignore all of the arguments to not do this all
-> > of a sudden because you feel your driver is somehow "special" here.
+> > Why special case the platform bus?  We are trying to move things off of
+> > the platform bus, don't make it harder to do that :)
 > 
-> Other device drivers of other vendors (not only netdevs) need such a
-> mechanism as well,
+> I heard about that, but I must have missed the thread where this was
+> discussed. Can you point me to it?
 
-Specifics please.
+I thought it was on lkml, but it might have been limited to linux-arm
+and the ksummit-discuss mailing list on one of the threads there.
+Sorry, I can't recall it at the moment.
 
-> I think it's a general requirement for many drivers that normally need
-> low level configurations for device initialization in the very first
-> stage of the driver load.
-
-I do not, but feel free to prove me otherwise.
-
-> > All of the above issues you seem to have with sysfs and configfs can be
-> > resolved with userspace code, and having your driver not do anything to
-> > the hardware until it is told to by userspace.
+> > > +			struct platform_device *pdev = to_platform_device(dev);
+> > > +
+> > > +			err = platform_device_early_fixup(pdev);
+> > > +			if (err < 0)
+> > > +				dev_err(&pdev->dev,
+> > > +					"failed to fixup device %s: %d\n",
+> > > +					dev_name(&pdev->dev), err);
+> > > +		}
+> > 
+> > You should just have a bus callback that can be made here that, if
+> > present, can be called.  That way any bus can handle this type of thing,
+> > not just the platform one.
 > 
-> To tell the driver not to do anything until it's configured by a
-> userspace code will require a module param for non-default-configs
-> (which brings us back to the original argument of avoiding module params).
+> You mean something like an .early_fixup() in struct bus_type?
 
-No, never use a module paramater for configuring a driver or a device.
-That's not what they are there for.
+Yes.
 
-> By having userspace code to feed configfs/sysfs nodes, and making it
-> available in initrd; we will end up having similar mechanism to
-> request_firmware().
+> That would indeed be much cleaner. As I mentioned this is a very early
+> prototype and this particular hunk exists specifically to fixup the
+> platform devices created by the device tree helpers so that the kernel
+> actually boots to the login prompt.
 
-Close, but not the same.  That's why we created configfs, please use it.
+That's fine, I was giving you feedback on why I wouldn't take this as-is :)
 
-> I think this kind of "low level init configuration" can be seen as a
-> firmware configuration, we can put some limitation on fetching the
-> config file, or propose a new function such as request_firmware_config()
-> that uses the same uevent hooks, and leverages the available userspace
-> tools that already supported in initrd and meant to serve the same
-> purpose - of feeding the driver the suitable firmware and configuration
-> to get started.
+> > Not that I really like the whole idea anyway, but I doubt there's much I
+> > can do about it...
+> 
+> Well, getting feedback from you and others is precisely the reason why I
+> wanted to post this early. There must be a reason why you don't like it,
+> so perhaps you can share your thoughts and we can mould this into
+> something that you'd be more comfortable with.
 
-Nope, I do not, please don't abuse the interface like this, it's not
-going to be allowed at this point in time.
+Ideally we would have the rest of the system up and running (i.e. sysfs)
+before having to deal with devices and drivers.  As it is, you are
+"special casing" a number of special devices on special platforms to
+work around architectural issues on those platforms.  Stuff that ideally
+would never need to be done, except for crazy hardware designers :)
 
-Wait, what "point in time", this was a 6 month old conversation...
+So I understand that it is needed, in some special cases, but that
+doesn't mean I have to like it...
 
-greg "what month is this?" k-h
+> To be honest I don't particularly like it either. It's very hackish for
+> core code. But on the other hand there are a few device/driver ordering
+> problems that this (or something similar) would help solve. I'm
+> certainly open to discuss alternatives and perhaps there's a much
+> cleaner way to solve the problem.
+
+As this usually is needed on a case-by-case basis, I'm hoping that your
+case really does need this, right?  If so, there's not much the kernel
+can do except add hooks like this to make it work properly.
+
+thanks,
+
+greg k-h
