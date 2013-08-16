@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701Ab3HPNUs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 09:20:48 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:44184 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab3HPNUm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 09:20:42 -0400
-Message-ID: <520E2726.304@baylibre.com>
-Date: Fri, 16 Aug 2013 15:20:38 +0200
-From: Benoit Cousson <bcousson@baylibre.com>
-Organization: BayLibre
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1754791Ab3HPNVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 09:21:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27645 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754680Ab3HPNUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 09:20:46 -0400
+Date: Fri, 16 Aug 2013 15:15:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Zach Levis <zach@zachsthings.com>
+Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        dan.carpenter@oracle.com, keescook@chromium.org,
+        cody@linux.vnet.ibm.com, zml@linux.vnet.ibm.com
+Subject: Re: [PATCH v5 2/3] fs/binfmts: Better handling of binfmt loops
+Message-ID: <20130816131501.GA21774@redhat.com>
+References: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com> <1376583641-10298-3-git-send-email-zach@zachsthings.com>
 MIME-Version: 1.0
-To: Ruslan Bilovol <ruslan.bilovol@ti.com>
-CC: linux-omap <linux-omap@vger.kernel.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        uri.y@variscite.com, Nishanth Menon <nm@ti.com>
-Subject: Re: [PATCH v2 0/2] omap4/twl6030: typical connection to omap4 as
- a separate dtsi file
-References: <1376469348-10797-1-git-send-email-ruslan.bilovol@ti.com> <520B8B45.1010300@baylibre.com> <CAB=otbTUk68CLmgQsEoefMMFTAnZCAMbZa-yiYmn1b3F1X8BiQ@mail.gmail.com>
-In-Reply-To: <CAB=otbTUk68CLmgQsEoefMMFTAnZCAMbZa-yiYmn1b3F1X8BiQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376583641-10298-3-git-send-email-zach@zachsthings.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ruslan,
+On 08/15, Zach Levis wrote:
+>
+> +static bool update_prev_binfmts(struct linux_binprm *bprm,
+> +				struct linux_binfmt *cur_fmt)
+> +{
+> +
+> +	if (!try_module_get(cur_fmt->module))
+> +		return false;
+> +	if (bprm->previous_binfmts[1])
+> +		put_binfmt(bprm->previous_binfmts[1]);
+> +	bprm->previous_binfmts[1] = bprm->previous_binfmts[0];
+> +	bprm->previous_binfmts[0] = cur_fmt;
+> +	return true;
+> +}
 
-On 16/08/2013 14:04, Ruslan Bilovol wrote:
-> Hi Benoit,
-> 
-> On Wed, Aug 14, 2013 at 4:51 PM, Benoit Cousson <bcousson@baylibre.com> wrote:
->> Hi Ruslan,
->>
->> On 14/08/2013 10:35, Ruslan Bilovol wrote:
->>>
->>> Hello,
->>>
->>> There is no functional changes between v1 and v2 - just
->>> added the patch for omap4-var-som - Uri Yosef confirmed
->>> this board have the same connection of OMAP4<->TWL6030 as
->>> SDP4430 board
->>
->>
->> The series looks good to me, but it will be good to have a test for Panda
->> and Variscite boards before merging it.
-> 
-> Okay, so I just verified this patch series on PandaBoard ES2. Should I
-> resubmit this series with
-> fixed commit message?
+Still can't understand the logic behind this function and its usage.
+IOW, what ->previous_binfmts[] actually means? previous_binfmts[1]
+could be a caller or the previous fmt which was called at the same
+depth.
 
-No, that's fine, I already applied it and fixed the subject and the changelog.
+> @@ -1393,15 +1498,38 @@ int search_binary_handler(struct linux_binprm *bprm)
+>  	list_for_each_entry(fmt, &formats, lh) {
+>  		if (!try_module_get(fmt->module))
+>  			continue;
+> +
+> +		if (!update_prev_binfmts(bprm, fmt))
+> +			continue;
+> +
+>  		read_unlock(&binfmt_lock);
+> +
+>  		bprm->recursion_depth++;
+>  		retval = fmt->load_binary(bprm);
+>  		bprm->recursion_depth--;
+> -		if (retval >= 0 || retval != -ENOEXEC ||
+> -		    bprm->mm == NULL || bprm->file == NULL) {
+> +		if (retval == -ELOOP
+> +		    && bprm->recursion_depth == 0) { /* cur, previous */
+> +			pr_err("Too much recursion with binfmts (0:%s, -1:%s) in file %s, skipping (base %s).\n",
+> +				binfmt_name(bprm->previous_binfmts[0]),
+> +				binfmt_name(bprm->previous_binfmts[1]),
+> +				bprm->filename,
+> +				fmt->name);
+> +
+> +			free_arg_pages(bprm);
+> +			if (bprm->interp != bprm->filename)
+> +				kfree(bprm->interp);
 
-Here it is:
+this doesn't look safe too, kfree(interp) can be called twice.
 
-commit 2e25df1e5a4af906a9b25332719ace000063eb0d
-Author: Ruslan Bilovol <ruslan.bilovol@ti.com>
-Date:   Wed Aug 14 11:35:47 2013 +0300
+and once again, we should not lose -ELOOP as an error code if the
+next fmt returns ENOEXEC.
 
-    ARM: dts: twl6030: Move common configuration for OMAP4 boards in a separate dtsi file
-    
-    The OMAP4 SoC family uses specially-designed PMIC (power management IC)
-    companion chip for power management needs: TWL6030/TWL6032.
-    Therefore there is a typical connection of PMIC to OMAP4 so we can
-    move it into separate .dtsi file and do not duplicate over
-    board-specific files.
-    
-    Tested on OMAP4 SDP board and compile-tested for Panda board
-    
-    Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
-    Signed-off-by: Benoit Cousson <bcousson@baylibre.com>
+But the main problem (in my opinion) is that this doesn't worth the
+trouble, sorry.
 
-
-Just let me know if you are OK with the updated version.
-
-> However I cannot verify the patch for Variscite board because I do not
-> own any such board so
-> you can drop that patch. But maybe Uri Yosef can verify it. Uri?
-
-It seems that Uri cannot test it right now, so I will have to drop that one.
-
-Thanks,
-Benoit
+Oleg.
 
