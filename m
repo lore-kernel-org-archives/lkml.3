@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab3HPO7y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 10:59:54 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39922 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab3HPO7v convert rfc822-to-8bit (ORCPT
+	id S1753996Ab3HPPAc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 11:00:32 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:58075 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab3HPPA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 10:59:51 -0400
-Date: Fri, 16 Aug 2013 16:59:49 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Cc: jic23@cam.ac.uk, dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, Russ.Dill@ti.com
-Subject: Re: [PATCH 4/4] iio: ti_am335x_adc: Add continuous sampling and
- trigger support
-Message-ID: <20130816145949.GE1263@linutronix.de>
-References: <1376424303-22740-1-git-send-email-zubair.lutfullah@gmail.com>
- <1376424303-22740-5-git-send-email-zubair.lutfullah@gmail.com>
+	Fri, 16 Aug 2013 11:00:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1376424303-22740-5-git-send-email-zubair.lutfullah@gmail.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1375123145-31648-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1375123145-31648-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	<1375123145-31648-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Date: Fri, 16 Aug 2013 17:00:29 +0200
+Message-ID: <CACRpkdarBoKge2Z5wFW46KAsd0N942TYzpoxCRt0AmcU8ad0Rw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] gpio: pcf857x: Add OF support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Zubair Lutfullah | 2013-08-13 21:05:03 [+0100]:
+On Mon, Jul 29, 2013 at 8:39 PM, Laurent Pinchart
+<laurent.pinchart+renesas@ideasonboard.com> wrote:
 
->diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
->index 3ceac3e..0d7e313 100644
->--- a/drivers/iio/adc/ti_am335x_adc.c
->+++ b/drivers/iio/adc/ti_am335x_adc.c
-…
+> Add DT bindings for the pcf857x-compatible chips and parse the device
+> tree node in the driver.
+>
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+> ---
+>  .../devicetree/bindings/gpio/gpio-pcf857x.txt      | 69 ++++++++++++++++++++++
 
->+static int tiadc_buffer_postdisable(struct iio_dev *indio_dev)
->+{
->+	struct tiadc_device *adc_dev = iio_priv(indio_dev);
->+	int config;
->+
->+	tiadc_step_config(indio_dev);
->+	if (adc_dev->mfd_tscadc->tsc_cell == -1) {
->+		config = tiadc_readl(adc_dev, REG_CTRL);
->+		tiadc_writel(adc_dev, REG_CTRL, (config | CNTRLREG_TSCSSENB));
->+	}
+Do you think you can get one of the DT bindings mainatiners to ACK
+this part?
 
-This kind of check is bad. The tsc cell may have been created but the
-driver not enabled or loaded. Further you should document why you need
-to enable / disable the ADC in this places and only if the TSC part is
-not active.
+I am told we need to get more strict on binding review.
 
-Sebastian
+It will be subject to timeout if it takes to long and you made a reasonable
+effort to get their consent though.
+
+> +  - interrupt-controller: Identifies the node as an interrupt controller.
+> +  - #interrupt-cells: Number of cells to encode an interrupt source, shall be 2.
+> +  - interrupt-parent: phandle of the parent interrupt controller.
+> +  - interrupts: Interrupt specifier for the controllers interrupt.
+
+So this is another one of of those GPIO controller that are
+also interrupt controllers.
+
+So it will be subject to the same dilemma as the OMAP
+expander that has caused so much stir :-(
+
+Can you provide your input in the discussion regarding my
+patch with the subject:
+"RFC: interrupt consistency check for OF GPIO IRQs"
+
+This patch will affect this driver also, in a very direct way, by just
+stealing and setting as input any GPIO line used for an IRQ.
+
+> +Please refer to gpio.txt in this directory for details of the common GPIO
+> +bindings used by client devices.
+> +
+> +Example: PCF8575 I/O expander node
+> +
+> +       pcf8575: gpio@20 {
+> +               compatible = "nxp,pcf8575";
+> +               reg = <0x20>;
+> +               interrupt-parent = <&irqpin2>;
+> +               interrupts = <3 0>;
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +       };
+
+Not gpio-controller?
+
+Apart from that it looks good, please help out with the
+gpio-controller vs interrupt-controller dilemma if you can
+because it's getting really frustrating...
+
+Yours,
+Linus Walleij
