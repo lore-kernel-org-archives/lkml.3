@@ -1,145 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab3HQATU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:19:20 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:47972 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754663Ab3HQATP (ORCPT
+	id S1755017Ab3HQAUy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:20:54 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:35031 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757391Ab3HQATS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:19:15 -0400
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: lf-virt <virtualization@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Lameter <cl@gentwo.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v3 2/4] target: Add transport_init_session_tags using per-cpu ida
-Date: Fri, 16 Aug 2013 23:09:07 +0000
-Message-Id: <1376694549-20609-3-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
-References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
+	Fri, 16 Aug 2013 20:19:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130816220204.GC21539@fieldses.org>
+References: <20130814230648.GD22316@thunk.org> <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
+ <20130815011101.GA3572@thunk.org> <20130815021028.GM6023@dastard>
+ <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
+ <20130815060149.GP6023@dastard> <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
+ <20130815071141.GQ6023@dastard> <CALCETrWyKSMDkgSbg20iWBRfHk0-oU+6A3X9xAEMg3vO=G_gDg@mail.gmail.com>
+ <20130815213725.GT6023@dastard> <20130816220204.GC21539@fieldses.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 16 Aug 2013 16:18:33 -0700
+Message-ID: <CALCETrWRjHcAaKcOrB3R54ZtCSNpv-ohDSzViDsP0JOOEhoOzg@mail.gmail.com>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Fri, Aug 16, 2013 at 3:02 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> On Fri, Aug 16, 2013 at 07:37:25AM +1000, Dave Chinner wrote:
+>> On Thu, Aug 15, 2013 at 08:17:18AM -0700, Andy Lutomirski wrote:
+>> > On Thu, Aug 15, 2013 at 12:11 AM, Dave Chinner <david@fromorbit.com> wrote:
+>> > > On Wed, Aug 14, 2013 at 11:14:37PM -0700, Andy Lutomirski wrote:
+>> > >> On Wed, Aug 14, 2013 at 11:01 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> > >> > On Wed, Aug 14, 2013 at 09:32:13PM -0700, Andy Lutomirski wrote:
+>> > >> >> On Wed, Aug 14, 2013 at 7:10 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> > >> >> > On Wed, Aug 14, 2013 at 09:11:01PM -0400, Theodore Ts'o wrote:
+>> > >> >> >> On Wed, Aug 14, 2013 at 04:38:12PM -0700, Andy Lutomirski wrote:
+>> > >> >> >> > > It would be better to write zeros to it, so we aren't measuring the
+>> > >> >> >> > > cost of the unwritten->written conversion.
+>> > >> >> >> >
+>> > >> >> >> > At the risk of beating a dead horse, how hard would it be to defer
+>> > >> >> >> > this part until writeback?
+>> > >> >> >>
+>> > >> >> >> Part of the work has to be done at write time because we need to
+>> > >> >> >> update allocation statistics (i.e., so that we don't have ENOSPC
+>> > >> >> >> problems).  The unwritten->written conversion does happen at writeback
+>> > >> >> >> (as does the actual block allocation if we are doing delayed
+>> > >> >> >> allocation).
+>> > >> >> >>
+>> > >> >> >> The point is that if the goal is to measure page fault scalability, we
+>> > >> >> >> shouldn't have this other stuff happening as the same time as the page
+>> > >> >> >> fault workload.
+>> > >> >> >
+>> > >> >> > Sure, but the real problem is not the block mapping or allocation
+>> > >> >> > path - even if the test is changed to take that out of the picture,
+>> > >> >> > we still have timestamp updates being done on every single page
+>> > >> >> > fault. ext4, XFS and btrfs all do transactional timestamp updates
+>> > >> >> > and have nanosecond granularity, so every page fault is resulting in
+>> > >> >> > a transaction to update the timestamp of the file being modified.
+>> > >> >>
+>> > >> >> I have (unmergeable) patches to fix this:
+>> > >> >>
+>> > >> >> http://comments.gmane.org/gmane.linux.kernel.mm/92476
+>> > >> >
+>> > >> > The big problem with this approach is that not doing the
+>> > >> > timestamp update on page faults is going to break the inode change
+>> > >> > version counting because for ext4, btrfs and XFS it takes a
+>> > >> > transaction to bump that counter. NFS needs to know the moment a
+>> > >> > file is changed in memory, not when it is written to disk. Also, NFS
+>> > >> > requires the change to the counter to be persistent over server
+>> > >> > failures, so it needs to be changed as part of a transaction....
+>> > >>
+>> > >> I've been running a kernel that has the file_update_time call
+>> > >> commented out for over a year now, and the only problem I've seen is
+>> > >> that the timestamp doesn't get updated :)
+>> > >>
+>> >
+>> > [...]
+>> >
+>> > > If a filesystem is providing an i_version value, then NFS uses it to
+>> > > determine whether client side caches are still consistent with the
+>> > > server state. If the filesystem does not provide an i_version, then
+>> > > NFS falls back to checking c/mtime for changes. If files on the
+>> > > server are being modified without either the tiemstamps or i_version
+>> > > changing, then it's likely that there will be problems with client
+>> > > side cache consistency....
+>> >
+>> > I didn't think of that at all.
+>> >
+>> > If userspace does:
+>> >
+>> > ptr = mmap(...);
+>> > ptr[0] = 1;
+>> > sleep(1);
+>> > ptr[0] = 2;
+>> > sleep(1);
+>> > munmap();
+>> >
+>> > Then current kernels will mark the inode changed on (only) the ptr[0]
+>> > = 1 line.  My patches will instead mark the inode changed when munmap
+>> > is called (or after ptr[0] = 2 if writepages gets called for any
+>> > reason).
+>> >
+>> > I'm not sure which is better.  POSIX actually requires my behavior
+>> > (which is most irrelevant).
+>>
+>> Not by my reading of it. Posix states that c/mtime needs to be
+>> updated between the first access and the next msync() call. We
+>> update mtime on the first access, and so therefore we conform to the
+>> posix requirement....
+>>
+>> > My behavior also means that, if an NFS
+>> > client reads and caches the file between the two writes, then it will
+>> > eventually find out that the data is stale.
+>>
+>> "eventually" is very different behaviour to the current behaviour.
+>>
+>> My understanding is that NFS v4 delegations require the underlying
+>> filesystem to bump the version count on *any* modification made to
+>> the file so that delegations can be recalled appropriately.
+>
+> Delegations at least shouldn't be an issue here: they're recalled on the
+> open.
 
-This patch adds lib/idr.c based transport_init_session_tags() logic
-that allows fabric drivers to setup a per-cpu se_sess->sess_tag_pool
-and associated se_sess->sess_cmd_map for basic tagged pre-allocation
-of fabric descriptor sized memory.
+Can you translate that into clueless-non-NFS-expert? :)
 
-v3: Update to percpu-ida usage
+Anyway, I'm sending patches in a sec.  Dave (Hansen), want to test?  I
+played with will-it-scale a bit, but I don't really know what I'm
+doing.
 
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Asias He <asias@redhat.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_transport.c |   33 ++++++++++++++++++++++++++++++++
- include/target/target_core_base.h      |    5 +++++
- include/target/target_core_fabric.h    |    1 +
- 3 files changed, 39 insertions(+)
-
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 7172d00..64ceb51 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -232,6 +232,35 @@ struct se_session *transport_init_session(void)
- }
- EXPORT_SYMBOL(transport_init_session);
- 
-+struct se_session *transport_init_session_tags(unsigned int tag_num,
-+					       unsigned int tag_size)
-+{
-+	struct se_session *se_sess;
-+	int rc;
-+
-+	se_sess = transport_init_session();
-+	if (IS_ERR(se_sess))
-+		return se_sess;
-+
-+	se_sess->sess_cmd_map = kzalloc(tag_num * tag_size, GFP_KERNEL);
-+	if (!se_sess->sess_cmd_map) {
-+		pr_err("Unable to allocate se_sess->sess_cmd_map\n");
-+		transport_free_session(se_sess);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	rc = percpu_ida_init(&se_sess->sess_tag_pool, tag_num);
-+	if (rc < 0) {
-+		pr_err("Unable to init se_sess->sess_tag_pool,"
-+			" tag_num: %u\n", tag_num);
-+		transport_free_session(se_sess);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	return se_sess;
-+}
-+EXPORT_SYMBOL(transport_init_session_tags);
-+
- /*
-  * Called with spin_lock_irqsave(&struct se_portal_group->session_lock called.
-  */
-@@ -367,6 +396,10 @@ EXPORT_SYMBOL(transport_deregister_session_configfs);
- 
- void transport_free_session(struct se_session *se_sess)
- {
-+	if (se_sess->sess_cmd_map) {
-+		percpu_ida_destroy(&se_sess->sess_tag_pool);
-+		kfree(se_sess->sess_cmd_map);
-+	}
- 	kmem_cache_free(se_sess_cache, se_sess);
- }
- EXPORT_SYMBOL(transport_free_session);
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index e34fc90..360e4a3 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -5,6 +5,7 @@
- #include <linux/configfs.h>
- #include <linux/dma-mapping.h>
- #include <linux/blkdev.h>
-+#include <linux/idr.h>
- #include <scsi/scsi_cmnd.h>
- #include <net/sock.h>
- #include <net/tcp.h>
-@@ -415,6 +416,8 @@ struct se_cmd {
- 	enum dma_data_direction	data_direction;
- 	/* For SAM Task Attribute */
- 	int			sam_task_attr;
-+	/* Used for se_sess->sess_tag_pool */
-+	unsigned int		map_tag;
- 	/* Transport protocol dependent state, see transport_state_table */
- 	enum transport_state_table t_state;
- 	unsigned		cmd_wait_set:1;
-@@ -536,6 +539,8 @@ struct se_session {
- 	struct list_head	sess_wait_list;
- 	spinlock_t		sess_cmd_lock;
- 	struct kref		sess_kref;
-+	void			*sess_cmd_map;
-+	struct percpu_ida	sess_tag_pool;
- };
- 
- struct se_device;
-diff --git a/include/target/target_core_fabric.h b/include/target/target_core_fabric.h
-index 7a16178..b13afb6 100644
---- a/include/target/target_core_fabric.h
-+++ b/include/target/target_core_fabric.h
-@@ -84,6 +84,7 @@ struct target_core_fabric_ops {
- };
- 
- struct se_session *transport_init_session(void);
-+struct se_session *transport_init_session_tags(unsigned int, unsigned int);
- void	__transport_register_session(struct se_portal_group *,
- 		struct se_node_acl *, struct se_session *, void *);
- void	transport_register_session(struct se_portal_group *,
--- 
-1.7.10.4
-
+--Andy
