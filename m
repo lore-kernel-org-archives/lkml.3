@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab3HQAGA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:06:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51731 "EHLO
+	id S1755337Ab3HQAGS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:06:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51725 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815Ab3HPWj5 (ORCPT
+	with ESMTP id S1756800Ab3HPWj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:57 -0400
+	Fri, 16 Aug 2013 18:39:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 100/133] regmap: Add missing header for !CONFIG_REGMAP stubs
-Date: Fri, 16 Aug 2013 15:34:02 -0700
-Message-Id: <1376692475-28413-101-git-send-email-kamal@canonical.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 101/133] userns: unshare_userns(&cred) should not populate cred on failure
+Date: Fri, 16 Aug 2013 15:34:03 -0700
+Message-Id: <1376692475-28413-102-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,38 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 49ccc142f9cbc33fdda18e8fa90c1c5b4a79c0ad upstream.
+commit 6160968cee8b90a5dd95318d716e31d7775c4ef3 upstream.
 
-regmap.h requires linux/err.h if CONFIG_REGMAP is not defined. Without it I get
-error.
-CC      drivers/media/platform/exynos4-is/fimc-reg.o
-In file included from drivers/media/platform/exynos4-is/fimc-reg.c:14:0:
-include/linux/regmap.h: In function ‘regmap_write’:
-include/linux/regmap.h:525:10: error: ‘EINVAL’ undeclared (first use in this function)
-include/linux/regmap.h:525:10: note: each undeclared identifier is reported only once for each function it appears in
+unshare_userns(new_cred) does *new_cred = prepare_creds() before
+create_user_ns() which can fail. However, the caller expects that
+it doesn't need to take care of new_cred if unshare_userns() fails.
 
-Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+We could change the single caller, sys_unshare(), but I think it
+would be more clean to avoid the side effects on failure, so with
+this patch unshare_userns() does put_cred() itself and initializes
+*new_cred only if create_user_ns() succeeeds.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/regmap.h | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/user_namespace.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index b7e95bf..6a0b639 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -15,6 +15,7 @@
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index f359dc7..38ae0f5 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -105,16 +105,21 @@ int create_user_ns(struct cred *new)
+ int unshare_userns(unsigned long unshare_flags, struct cred **new_cred)
+ {
+ 	struct cred *cred;
++	int err = -ENOMEM;
  
- #include <linux/list.h>
- #include <linux/rbtree.h>
-+#include <linux/err.h>
+ 	if (!(unshare_flags & CLONE_NEWUSER))
+ 		return 0;
  
- struct module;
- struct device;
+ 	cred = prepare_creds();
+-	if (!cred)
+-		return -ENOMEM;
++	if (cred) {
++		err = create_user_ns(cred);
++		if (err)
++			put_cred(cred);
++		else
++			*new_cred = cred;
++	}
+ 
+-	*new_cred = cred;
+-	return create_user_ns(cred);
++	return err;
+ }
+ 
+ void free_user_ns(struct kref *kref)
 -- 
 1.8.1.2
 
