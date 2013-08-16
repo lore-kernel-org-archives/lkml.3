@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab3HPWQK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:16:10 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53187 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144Ab3HPWPC convert rfc822-to-8bit (ORCPT
+	id S1754204Ab3HPWQs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:16:48 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:44392 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab3HPWQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:15:02 -0400
-Subject: Re: [PATCH RFC 3/3] spmi: document the PMIC arbiter SPMI bindings
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20130816192549.GG4035@joshc.qualcomm.com>
-Date: Fri, 16 Aug 2013 14:48:59 -0500
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
+	Fri, 16 Aug 2013 18:16:46 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>, devicetree@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A1FAB0A0-C205-4401-838C-B745B5B95FF3@codeaurora.org>
-References: <cover.1376596224.git.joshc@codeaurora.org> <b639088d50df93caaef8fe7e09c12953b1153ce8.1376596224.git.joshc@codeaurora.org> <D1534646-7CB5-4EE7-8C1E-1C607BE22396@codeaurora.org> <20130816192549.GG4035@joshc.qualcomm.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC 4/4] OF: Add device pointer to struct device_node
+Date: Fri, 16 Aug 2013 22:39:23 +0200
+Message-Id: <1376685563-1053-5-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1376685563-1053-1-git-send-email-treding@nvidia.com>
+References: <1376685563-1053-1-git-send-email-treding@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/of/device.c   |  2 ++
+ drivers/of/platform.c | 10 +---------
+ include/linux/of.h    |  2 ++
+ 3 files changed, 5 insertions(+), 9 deletions(-)
 
-On Aug 16, 2013, at 2:25 PM, Josh Cartwright wrote:
-
-> Hey Kumar-
-> 
-> Thanks for the review.
-> 
-> On Fri, Aug 16, 2013 at 01:53:27PM -0500, Kumar Gala wrote:
->> On Aug 9, 2013, at 3:37 PM, Josh Cartwright wrote:
->> 
->>> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
->>> ---
->>> .../devicetree/bindings/spmi/spmi-pmic-arb.txt     | 26 ++++++++++++++++++++++
->>> 1 file changed, 26 insertions(+)
->>> create mode 100644 Documentation/devicetree/bindings/spmi/spmi-pmic-arb.txt
->> 
->> As this is a qcom specific binding, I think the file name should be msm-spmi-pmic-arb.txt or something like that.
-> 
-> Agreed.  It might be nice to use a vendor prefix in the name too.  How's qcom,msm-pmic-arb.txt sound?
-
-Sounds good, as I see we have other examples of having a comma in file names for bindings.
-
-- k
-
+diff --git a/drivers/of/device.c b/drivers/of/device.c
+index f685e55..8f8e715 100644
+--- a/drivers/of/device.c
++++ b/drivers/of/device.c
+@@ -63,6 +63,8 @@ int of_device_add(struct platform_device *ofdev)
+ 	if (!ofdev->dev.parent)
+ 		set_dev_node(&ofdev->dev, of_node_to_nid(ofdev->dev.of_node));
+ 
++	ofdev->dev.of_node->dev = &ofdev->dev;
++
+ 	return device_add(&ofdev->dev);
+ }
+ 
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index b0d1ff8..0ae68bd 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -31,11 +31,6 @@ const struct of_device_id of_default_bus_match_table[] = {
+ 	{} /* Empty terminated list */
+ };
+ 
+-static int of_dev_node_match(struct device *dev, void *data)
+-{
+-	return dev->of_node == data;
+-}
+-
+ /**
+  * of_find_device_by_node - Find the platform_device associated with a node
+  * @np: Pointer to device tree node
+@@ -44,10 +39,7 @@ static int of_dev_node_match(struct device *dev, void *data)
+  */
+ struct platform_device *of_find_device_by_node(struct device_node *np)
+ {
+-	struct device *dev;
+-
+-	dev = bus_find_device(&platform_bus_type, NULL, np, of_dev_node_match);
+-	return dev ? to_platform_device(dev) : NULL;
++	return np->dev ? to_platform_device(np->dev) : NULL;
+ }
+ EXPORT_SYMBOL(of_find_device_by_node);
+ 
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 17ce8a6..e583a6d 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -65,6 +65,8 @@ struct device_node {
+ 	unsigned int unique_id;
+ 	struct of_irq_controller *irq_trans;
+ #endif
++
++	struct device *dev;
+ };
+ 
+ #define MAX_PHANDLE_ARGS 8
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.8.3.4
 
