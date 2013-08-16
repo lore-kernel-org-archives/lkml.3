@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757803Ab3HQAag (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:30:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51356 "EHLO
+	id S1757772Ab3HQAaf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:30:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51378 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab3HPWfM (ORCPT
+	with ESMTP id S1754521Ab3HPWfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:35:12 -0400
+	Fri, 16 Aug 2013 18:35:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Barry Grussling <barry@grussling.com>,
+Cc: Ren Bigcren <bigcren.ren@sonymobile.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Oskar Andero <oskar.andero@sonymobile.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 012/133] usb: cp210x support SEL C662 Vendor/Device
-Date: Fri, 16 Aug 2013 15:32:34 -0700
-Message-Id: <1376692475-28413-13-git-send-email-kamal@canonical.com>
+Subject: [PATCH 009/133] USB: storage: Add MicroVault Flash Drive to unusual_devs
+Date: Fri, 16 Aug 2013 15:32:31 -0700
+Message-Id: <1376692475-28413-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,32 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Barry Grussling <barry@grussling.com>
+From: Ren Bigcren <bigcren.ren@sonymobile.com>
 
-commit b579fa52f6be0b4157ca9cc5e94d44a2c89a7e95 upstream.
+commit e7a6121f4929c17215f0cdca3726f4bf3e4e9529 upstream.
 
-This patch adds support for the Schweitzer Engineering Laboratories
-C662 USB cable based off the CP210x driver.
+The device report an error capacity when read_capacity_16().
+Using read_capacity_10() can get the correct capacity.
 
-Signed-off-by: Barry Grussling <barry@grussling.com>
+Signed-off-by: Ren Bigcren <bigcren.ren@sonymobile.com>
+Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/storage/unusual_devs.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 8585c6e..d0e9f5d 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -149,6 +149,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
-+	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index b75e90b..f828c76 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -657,6 +657,13 @@ UNUSUAL_DEV(  0x054c, 0x016a, 0x0000, 0x9999,
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_FIX_INQUIRY ),
+ 
++/* Submitted by Ren Bigcren <bigcren.ren@sonymobile.com> */
++UNUSUAL_DEV(  0x054c, 0x02a5, 0x0100, 0x0100,
++		"Sony Corp.",
++		"MicroVault Flash Drive",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NO_READ_CAPACITY_16 ),
++
+ /* floppy reports multiple luns */
+ UNUSUAL_DEV(  0x055d, 0x2020, 0x0000, 0x0210,
+ 		"SAMSUNG",
 -- 
 1.8.1.2
 
