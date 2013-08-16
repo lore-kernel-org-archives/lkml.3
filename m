@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab3HPX5c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 19:57:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51848 "EHLO
+	id S1752504Ab3HPX5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 19:57:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51835 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757128Ab3HPWkz (ORCPT
+	with ESMTP id S1757108Ab3HPWkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:40:55 -0400
+	Fri, 16 Aug 2013 18:40:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Clemens Ladisch <clemens@ladisch.de>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 059/133] firewire: fix libdc1394/FlyCap2 iso event regression
-Date: Fri, 16 Aug 2013 15:33:21 -0700
-Message-Id: <1376692475-28413-60-git-send-email-kamal@canonical.com>
+Subject: [PATCH 063/133] Revert "cpuidle: Quickly notice prediction failure in general case"
+Date: Fri, 16 Aug 2013 15:33:25 -0700
+Message-Id: <1376692475-28413-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,109 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 0699a73af3811b66b1ab5650575acee5eea841ab upstream.
+commit 228b30234f258a193317874854eee1ca7807186e upstream.
 
-Commit 18d627113b83 (firewire: prevent dropping of completed iso packet
-header data) was intended to be an obvious bug fix, but libdc1394 and
-FlyCap2 depend on the old behaviour by ignoring all returned information
-and thus not noticing that not all packets have been received yet.  The
-result was that the video frame buffers would be saved before they
-contained the correct data.
+Revert commit e11538d1 (cpuidle: Quickly notice prediction failure in
+general case), since it depends on commit 69a37be (cpuidle: Quickly
+notice prediction failure for repeat mode) that has been identified
+as the source of a significant performance regression in v3.8 and
+later.
 
-Reintroduce the old behaviour for old clients.
-
-Tested-by: Stepan Salenikovich <stepan.salenikovich@gmail.com>
-Tested-by: Josep Bosch <jep250@gmail.com>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Requested-by: Jeremy Eder <jeder@redhat.com>
+Tested-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/firewire/core-cdev.c       |  3 +++
- drivers/firewire/ohci.c            | 10 ++++++++--
- include/linux/firewire.h           |  1 +
- include/uapi/linux/firewire-cdev.h |  4 ++--
- 4 files changed, 14 insertions(+), 4 deletions(-)
+ drivers/cpuidle/governors/menu.c | 35 +----------------------------------
+ 1 file changed, 1 insertion(+), 34 deletions(-)
 
-diff --git a/drivers/firewire/core-cdev.c b/drivers/firewire/core-cdev.c
-index f8d2287..87ae86f 100644
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -54,6 +54,7 @@
- #define FW_CDEV_KERNEL_VERSION			5
- #define FW_CDEV_VERSION_EVENT_REQUEST2		4
- #define FW_CDEV_VERSION_ALLOCATE_REGION_END	4
-+#define FW_CDEV_VERSION_AUTO_FLUSH_ISO_OVERFLOW	5
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index fe343a0..b69a87e 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -34,7 +34,7 @@
+ static DEFINE_PER_CPU(struct hrtimer, menu_hrtimer);
+ static DEFINE_PER_CPU(int, hrtimer_status);
+ /* menu hrtimer mode */
+-enum {MENU_HRTIMER_STOP, MENU_HRTIMER_REPEAT, MENU_HRTIMER_GENERAL};
++enum {MENU_HRTIMER_STOP, MENU_HRTIMER_REPEAT};
  
- struct client {
- 	u32 version;
-@@ -1009,6 +1010,8 @@ static int ioctl_create_iso_context(struct client *client, union ioctl_arg *arg)
- 			a->channel, a->speed, a->header_size, cb, client);
- 	if (IS_ERR(context))
- 		return PTR_ERR(context);
-+	if (client->version < FW_CDEV_VERSION_AUTO_FLUSH_ISO_OVERFLOW)
-+		context->drop_overflow_headers = true;
+ /*
+  * Concepts and ideas behind the menu governor
+@@ -116,13 +116,6 @@ enum {MENU_HRTIMER_STOP, MENU_HRTIMER_REPEAT, MENU_HRTIMER_GENERAL};
+  *
+  */
  
- 	/* We only support one context at this time. */
- 	spin_lock_irq(&client->lock);
-diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-index 6ce6e07..41474aa 100644
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -2729,8 +2729,11 @@ static void copy_iso_headers(struct iso_context *ctx, const u32 *dma_hdr)
+-/*
+- * The C-state residency is so long that is is worthwhile to exit
+- * from the shallow C-state and re-enter into a deeper C-state.
+- */
+-static unsigned int perfect_cstate_ms __read_mostly = 30;
+-module_param(perfect_cstate_ms, uint, 0000);
+-
+ struct menu_device {
+ 	int		last_state_idx;
+ 	int             needs_update;
+@@ -223,16 +216,6 @@ EXPORT_SYMBOL_GPL(menu_hrtimer_cancel);
+ static enum hrtimer_restart menu_hrtimer_notify(struct hrtimer *hrtimer)
  {
- 	u32 *ctx_hdr;
+ 	int cpu = smp_processor_id();
+-	struct menu_device *data = &per_cpu(menu_devices, cpu);
+-
+-	/* In general case, the expected residency is much larger than
+-	 *  deepest C-state target residency, but prediction logic still
+-	 *  predicts a small predicted residency, so the prediction
+-	 *  history is totally broken if the timer is triggered.
+-	 *  So reset the correction factor.
+-	 */
+-	if (per_cpu(hrtimer_status, cpu) == MENU_HRTIMER_GENERAL)
+-		data->correction_factor[data->bucket] = RESOLUTION * DECAY;
  
--	if (ctx->header_length + ctx->base.header_size > PAGE_SIZE)
-+	if (ctx->header_length + ctx->base.header_size > PAGE_SIZE) {
-+		if (ctx->base.drop_overflow_headers)
-+			return;
- 		flush_iso_completions(ctx);
-+	}
+ 	per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_STOP;
  
- 	ctx_hdr = ctx->header + ctx->header_length;
- 	ctx->last_timestamp = (u16)le32_to_cpu((__force __le32)dma_hdr[0]);
-@@ -2890,8 +2893,11 @@ static int handle_it_packet(struct context *context,
+@@ -389,7 +372,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	/* not deepest C-state chosen for low predicted residency */
+ 	if (low_predicted) {
+ 		unsigned int timer_us = 0;
+-		unsigned int perfect_us = 0;
  
- 	sync_it_packet_for_cpu(context, d);
+ 		/*
+ 		 * Set a timer to detect whether this sleep is much
+@@ -400,28 +382,13 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 		 */
+ 		timer_us = 2 * (data->predicted_us + MAX_DEVIATION);
  
--	if (ctx->header_length + 4 > PAGE_SIZE)
-+	if (ctx->header_length + 4 > PAGE_SIZE) {
-+		if (ctx->base.drop_overflow_headers)
-+			return 1;
- 		flush_iso_completions(ctx);
-+	}
+-		perfect_us = perfect_cstate_ms * 1000;
+-
+ 		if (repeat && (4 * timer_us < data->expected_us)) {
+ 			RCU_NONIDLE(hrtimer_start(hrtmr,
+ 				ns_to_ktime(1000 * timer_us),
+ 				HRTIMER_MODE_REL_PINNED));
+ 			/* In repeat case, menu hrtimer is started */
+ 			per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_REPEAT;
+-		} else if (perfect_us < data->expected_us) {
+-			/*
+-			 * The next timer is long. This could be because
+-			 * we did not make a useful prediction.
+-			 * In that case, it makes sense to re-enter
+-			 * into a deeper C-state after some time.
+-			 */
+-			RCU_NONIDLE(hrtimer_start(hrtmr,
+-				ns_to_ktime(1000 * timer_us),
+-				HRTIMER_MODE_REL_PINNED));
+-			/* In general case, menu hrtimer is started */
+-			per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_GENERAL;
+ 		}
+-
+ 	}
  
- 	ctx_hdr = ctx->header + ctx->header_length;
- 	ctx->last_timestamp = le16_to_cpu(last->res_count);
-diff --git a/include/linux/firewire.h b/include/linux/firewire.h
-index 191501a..217e4b4 100644
---- a/include/linux/firewire.h
-+++ b/include/linux/firewire.h
-@@ -434,6 +434,7 @@ struct fw_iso_context {
- 	int type;
- 	int channel;
- 	int speed;
-+	bool drop_overflow_headers;
- 	size_t header_size;
- 	union {
- 		fw_iso_callback_t sc;
-diff --git a/include/uapi/linux/firewire-cdev.h b/include/uapi/linux/firewire-cdev.h
-index d500369..1db453e 100644
---- a/include/uapi/linux/firewire-cdev.h
-+++ b/include/uapi/linux/firewire-cdev.h
-@@ -215,8 +215,8 @@ struct fw_cdev_event_request2 {
-  * with the %FW_CDEV_ISO_INTERRUPT bit set, when explicitly requested with
-  * %FW_CDEV_IOC_FLUSH_ISO, or when there have been so many completed packets
-  * without the interrupt bit set that the kernel's internal buffer for @header
-- * is about to overflow.  (In the last case, kernels with ABI version < 5 drop
-- * header data up to the next interrupt packet.)
-+ * is about to overflow.  (In the last case, ABI versions < 5 drop header data
-+ * up to the next interrupt packet.)
-  *
-  * Isochronous transmit events (context type %FW_CDEV_ISO_CONTEXT_TRANSMIT):
-  *
+ 	return data->last_state_idx;
 -- 
 1.8.1.2
 
