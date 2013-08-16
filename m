@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab3HPPaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 11:30:22 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:45351 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424Ab3HPPaP (ORCPT
+	id S1754982Ab3HPPbE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 11:31:04 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:49134 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab3HPPa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 11:30:15 -0400
-Date: Fri, 16 Aug 2013 17:30:11 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jaromir Capik <jcapik@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ania Honess <ahoness@redhat.com>, atomlin@redhat.com,
-        asolanas@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: proc/stat: idle goes backward
-Message-ID: <20130816153010.GC24210@somewhere>
-References: <v5wUE000000000000000000000000000000000000000000000MRITO500uRRuI-89T-iqXCkOVGWF4w@sfdc.net>
- <1904614521.2884383.1376487067689.JavaMail.root@redhat.com>
- <1277145964.2082352.1376490809716.JavaMail.root@redhat.com>
- <20130816144704.GA25904@redhat.com>
- <20130816150122.GB24210@somewhere>
- <20130816151339.GA29675@redhat.com>
+	Fri, 16 Aug 2013 11:30:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130816151339.GA29675@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpom7yk3Zq5JABZ6T+Z_AcMn5G1hoswZK8T=viYv0fp0mcg@mail.gmail.com>
+References: <cover.1376619363.git.viresh.kumar@linaro.org>
+	<333bf5868dfbfb6de474f060dc216fa6d33848e2.1376619363.git.viresh.kumar@linaro.org>
+	<CAOLK0pz7e8nQVnZY0a-j_Fd_kFOqF8ZS4tRfYw1S+25Lv8GoFQ@mail.gmail.com>
+	<CAOLK0pyVDSc6x1u8Ro6ng1dH8ELqc3P9jPHamgiXBn6sWDgm8w@mail.gmail.com>
+	<CAKohpom7yk3Zq5JABZ6T+Z_AcMn5G1hoswZK8T=viYv0fp0mcg@mail.gmail.com>
+Date: Fri, 16 Aug 2013 23:30:56 +0800
+Message-ID: <CAOLK0py25j2g+X0rCzDjxvFac1ZZcOS0y_sehTFYYwkz8FrUHg@mail.gmail.com>
+Subject: Re: [PATCH 02/34] cpufreq: acpi: remove calls to cpufreq_notify_transition()
+From: Lan Tianyu <lantianyu1986@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 05:13:39PM +0200, Oleg Nesterov wrote:
-> On 08/16, Frederic Weisbecker wrote:
-> >
-> > On Fri, Aug 16, 2013 at 04:47:04PM +0200, Oleg Nesterov wrote:
-> > >
-> > > Questions:
-> > >
-> > > 	- Any other reason why it can be non-monotonic?
-> > >
-> > > 	- Should we fix this or should we document that userspace
-> > > 	  should handle this itself?
-> > >
-> > > 	  IOW, is this is bug or not?
-> >
-> > I don't know if we want to fix it (I personally think we should because it is not the
-> > first time I hear complains about this) but if we do, here is a possible fix:
-> >
-> > https://lkml.org/lkml/2013/8/8/638
-> 
-> Thanks! it is not easy to read the patches on lkml.org and I do
-> not understand this code enough. But it seems that this should
-> address my concerns, including the "even ignoring drivers/cpuidle/".
-> 
-> Except, I am not sure that these changes handle the case when
-> nr_iowait() change in between.
+2013/8/16 Viresh Kumar <viresh.kumar@linaro.org>:
+> On 16 August 2013 13:24, Lan Tianyu <lantianyu1986@gmail.com> wrote:
+>> Sorry for misoperation.
+>
+> No Problem...
+>
+>>                 One concern. Target() callback may return before changing
+>> cpufreq actually due to some check failures. After this change, prechange
+>> event will be triggered when these check failures take place. I am not sure
+>> whether this should be took into account.
+>
+> Yes, if you see the first patch of this series, it takes this into
+> account.. In case
+> target() failed and returned an error, we simply notify the POST CHANGE
+> notification with old frequencies instead of new ones. I believe that would be
+> enough..
 
-Yeah it handles iowait and idle sleeps.
+Yes, I have seen it but I missed the following two patches because they
+are not in the linux-pm tree. You moved the cpufreq_frequency_table_target()
+to cpufreq core and before notifying PRE CHANGE notification. The major
+check has been done. Now I think it's ok. Thanks for explanation.
 
-> 
-> Are you going to resend?
+http://www.spinics.net/lists/cpufreq/msg06970.html
+http://www.spinics.net/lists/cpufreq/msg06896.html
 
-I'm more than happy that you want to review these patches.
-I'm resending.
+Reviewed-by: Lan Tianyu <tianyu.lan@intel.com>
 
-Thanks.
+>
+> This is exactly what acpi-cpufreq and others are doing currently.
+>
+> Hope I answered your question well?
+>
+> --
+> viresh
 
-> 
-> Oleg.
-> 
+
+
+-- 
+Best regards
+Tianyu Lan
