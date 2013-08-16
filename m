@@ -1,32 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab3HPIHl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 04:07:41 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:50955 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab3HPIG3 convert rfc822-to-8bit (ORCPT
+	id S1752912Ab3HPIJK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 04:09:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:31815 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab3HPIJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 04:06:29 -0400
-MIME-Version: 1.0
-Date: Fri, 16 Aug 2013 16:06:26 +0800
-X-Google-Sender-Auth: iw4tt8b-b2QeA3RygG2v09uL1Ks
-Message-ID: <CADRPPNSD+uj_t5+qbNW29y7SuJkB_vMck-DGFJFV4A0AmPC6pQ@mail.gmail.com>
-Subject: System suspend states and device driver suspend() callback
-From: Li Yang <leoli@freescale.com>
-To: linux-pm@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 Aug 2013 04:09:00 -0400
+From: Vaughan Cao <vaughan.cao@oracle.com>
+To: konrad.wilk@oracle.com, jeremy@goop.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: vaughan.cao@oracle.com
+Subject: [PATCH] xen: initialize xen panic handler for PVHVM
+Date: Fri, 16 Aug 2013 16:10:56 +0800
+Message-Id: <1376640656-32381-1-git-send-email-vaughan.cao@oracle.com>
+X-Mailer: git-send-email 1.7.11.7
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guys,
+kernel use callback linked in panic_notifier_list to notice others when panic
+happens.
+NORET_TYPE void panic(const char * fmt, ...){
+    ...
+    atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
+}
+When xen aware this, it will call xen_reboot(SHUTDOWN_crash) to send out an
+event with reason code - SHUTDOWN_crash.
+xen_panic_handler_init() is defined to register on panic_notifier_list but
+we only call it in xen_arch_setup which only be called by pvm, this patch is
+ necessary for pvhvm.
 
-Is there a standard way for the device drivers to know if the system
-is going to “standby” mode or “mem” mode when the suspend() callbacks
-are called?
+Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
+---
+ arch/x86/xen/enlighten.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Regards,
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 4aec5ed..53e5726 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1713,6 +1713,8 @@ static void __init xen_hvm_guest_init(void)
+ 
+ 	xen_hvm_init_shared_info();
+ 
++	xen_panic_handler_init();
++
+ 	if (xen_feature(XENFEAT_hvm_callback_vector))
+ 		xen_have_vector_callback = 1;
+ 	xen_hvm_smp_init();
+-- 
+1.7.11.7
 
-Leo
