@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab3HPRaI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 13:30:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14083 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518Ab3HPRaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 13:30:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,896,1367996400"; 
-   d="scan'208";a="388330390"
-Date: Fri, 16 Aug 2013 10:30:00 -0700
-From: Sarah Sharp <sarah.a.sharp@intel.com>
+	id S1754544Ab3HPRak (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 13:30:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53839 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765Ab3HPRag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 13:30:36 -0400
+Date: Fri, 16 Aug 2013 10:30:35 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
 To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-kernel@vger.kernel.org,
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-kernel@vger.kernel.org,
         dmitry.kasatkin@gmail.com
 Subject: Re: [PATCH 2/2] xhci:prevent "callbacks suppressed" when debug is
  not enabled
-Message-ID: <20130816173000.GA8210@xanatos>
+Message-ID: <20130816173035.GA15607@kroah.com>
 References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
  <70b3564625bbda6247cc5627041344fef8a762ae.1376582695.git.d.kasatkin@samsung.com>
  <20130816001716.GA7367@kroah.com>
@@ -52,20 +49,8 @@ On Fri, Aug 16, 2013 at 10:26:35AM -0700, Sarah Sharp wrote:
 > effect debugging with xhci_dbg with the host device, not dev_dbg with
 > the USB device.  This should apply fine to usb-next.
 
-At another glance, the patch removes two if blocks, but doesn't
-re-indent the rest of the lines:
+Ok, can I get your ack for it so I can apply it?
 
-> @@ -3060,8 +3060,7 @@ int xhci_queue_intr_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
->        * to set the polling interval (once the API is added).
->        */
->       if (xhci_interval != ep_interval) {
-> -             if (printk_ratelimit())
-> -                     dev_dbg(&urb->dev->dev, "Driver uses different interval"
-> +             dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
->                                       " (%d microframe%s) than xHCI "
->                                       "(%d microframe%s)\n",
->                                       ep_interval,
+thanks,
 
-That should probably be fixed.
-
-Sarah Sharp
+greg k-h
