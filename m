@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab3HPSlT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 14:41:19 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:41611 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab3HPSlL (ORCPT
+	id S1754392Ab3HPSqJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 14:46:09 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:36356 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439Ab3HPSqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 14:41:11 -0400
-Date: Fri, 16 Aug 2013 13:41:00 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Hansen <dave@sr71.net>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] drivers: base: dynamic memory block creation
-Message-ID: <20130816184100.GA7265@variantweb.net>
-References: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <5959614.447qgH8r7c@vostro.rjw.lan>
+	Fri, 16 Aug 2013 14:46:07 -0400
+Message-ID: <520E7377.1080808@cogentembedded.com>
+Date: Fri, 16 Aug 2013 22:46:15 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5959614.447qgH8r7c@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081618-1542-0000-0000-0000009502E7
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+CC: Sekhar Nori <nsekhar@ti.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 1/2] ARM: davinci: da850: add DT node for ethernet
+References: <1376662262-21795-1-git-send-email-prabhakar.csengg@gmail.com> <1376662262-21795-2-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1376662262-21795-2-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 02:01:09AM +0200, Rafael J. Wysocki wrote:
-> On Wednesday, August 14, 2013 02:31:45 PM Seth Jennings wrote:
-> > Large memory systems (~1TB or more) experience boot delays on the order
-> > of minutes due to the initializing the memory configuration part of
-> > sysfs at /sys/devices/system/memory/.
-> > 
-> > ppc64 has a normal memory block size of 256M (however sometimes as low
-> > as 16M depending on the system LMB size), and (I think) x86 is 128M.  With
-> > 1TB of RAM and a 256M block size, that's 4k memory blocks with 20 sysfs
-> > entries per block that's around 80k items that need be created at boot
-> > time in sysfs.  Some systems go up to 16TB where the issue is even more
-> > severe.
-> > 
-> > This patch provides a means by which users can prevent the creation of
-> > the memory block attributes at boot time, yet still dynamically create
-> > them if they are needed.
-> > 
-> > This patch creates a new boot parameter, "largememory" that will prevent
-> > memory_dev_init() from creating all of the memory block sysfs attributes
-> > at boot time.  Instead, a new root attribute "show" will allow
-> > the dynamic creation of the memory block devices.
-> > Another new root attribute "present" shows the memory blocks present in
-> > the system; the valid inputs for the "show" attribute.
-> 
-> I wonder how this is going to work with the ACPI device object binding to
-> memory blocks that's in 3.11-rc.
+Hello.
 
-Thanks for pointing this out.  Yes the walking of the memory blocks in
-this code will present a problem for the dynamic creation of memory
-blocks :/  Sounds like there are some other challenges (backward
-compatibility, no boot paramater) that I'll have to look at as well.
+On 08/16/2013 06:11 PM, Lad, Prabhakar wrote:
 
-Seth
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-> 
-> That stuff will only work if the memory blocks are already there when
-> acpi_memory_enable_device() runs and that is called from the ACPI namespace
-> scanning code executed (1) during boot and (2) during hotplug.  So I don't
-> think you can just create them on the fly at run time as a result of a
-> sysfs write.
-> 
-> Thanks,
-> Rafael
-> 
+> Add ethernet device tree node information and pinmux for mii to da850 by
+> providing interrupt details and local mac address.
+
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>   arch/arm/boot/dts/da850-evm.dts |    5 +++++
+>   arch/arm/boot/dts/da850.dtsi    |   30 ++++++++++++++++++++++++++++++
+>   2 files changed, 35 insertions(+)
+
+> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+> index 1f8cfdd..44f3fbc 100644
+> --- a/arch/arm/boot/dts/da850-evm.dts
+> +++ b/arch/arm/boot/dts/da850-evm.dts
+> @@ -96,6 +96,11 @@
+>   			pinctrl-0 = <&mdio_pins>;
+>   			bus_freq = <2200000>;
+>   		};
+> +		ethernet: emac@1e20000 {
+
+    Why label the node in the board file too?
+
+> +			status = "okay";
+> +			pinctrl-names = "default";
+> +			pinctrl-0 = <&mii_pins>;
+> +		};
+>   	};
+>   	nand_cs3@62000000 {
+>   		status = "okay";
+> diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+> index d5138b4..a5d30d9 100644
+> --- a/arch/arm/boot/dts/da850.dtsi
+> +++ b/arch/arm/boot/dts/da850.dtsi
+[...]
+> @@ -226,6 +242,20 @@
+>   			#size-cells = <0>;
+>   			reg = <0x224000 0x1000>;
+>   		};
+> +		ethernet: emac@1e20000 {
+
+    I said node should be named "ethernet", not labelled. You're the second 
+person that doesn't know the difference between the two. :-)
+
+WBR, Sergei
 
