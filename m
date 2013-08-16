@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab3HPLR4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 07:17:56 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:9812 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab3HPLRu (ORCPT
+	id S1754521Ab3HPLV4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 07:21:56 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:49290 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab3HPLVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 07:17:50 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-ab-520e0a5d6867
-Date: Fri, 16 Aug 2013 20:17:49 +0900
+	Fri, 16 Aug 2013 07:21:53 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-3d-520e0b4f5247
+Date: Fri, 16 Aug 2013 20:21:51 +0900
 From: Cho KyongHo <pullip.cho@samsung.com>
 To: "'Joerg Roedel'" <joro@8bytes.org>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>,
-        "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: Re: [PATCH v9 04/16] iommu/exynos: allocate lv2 page table from own
- slab
-Message-id: <20130816201749.a4bbaa8e85fc5a2d4e0b02ad@samsung.com>
-In-reply-to: <20130814105615.GG4491@8bytes.org>
-References: <002801ce941a$fb6369e0$f22a3da0$@samsung.com>
- <2544843.sndV7usHTj@amdc1227>
- <20130809145849.790a9800f4f9893b30e54a1c@samsung.com>
- <2101296.S6JDU5igl3@flatron> <20130814105615.GG4491@8bytes.org>
+Cc: "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
+        linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
+        linux-samsung-soc@vger.kernel.org, kvmarm@lists.cs.columbia.edu,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
+        "'Varun Sethi'" <Varun.Sethi@freescale.com>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] iommu/exynos: Follow kernel coding style for
+ __sysmmu_enable return type
+Message-id: <20130816202151.b47fae1e9ed249d06baa37d1@samsung.com>
+In-reply-to: <20130814131547.GA5889@8bytes.org>
+References: <1374766502-14823-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1374766502-14823-2-git-send-email-a.motakis@virtualopensystems.com>
+ <003101ce89ed$52317330$f6945990$@samsung.com>
+ <20130814131547.GA5889@8bytes.org>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+ZkW4sF1+QwYRVMhZ37p5jtZh/BEi8
-	OvKDyWLBfmuLztkb2C16F1xls/h46ji7xabH11gtLu+aw2Yx4/w+JosLKzayW0xZdJjV4uSf
-	XkaLluu9TBbrZ7xmsVi16w+jg4DHk4PzmDxmN1xk8dg56y67x51re9g8zm9aw+yxeUm9x+Qb
-	yxk9+rasYvT4vEnO48rRM0wBXFFcNimpOZllqUX6dglcGZfbt7IXXGOp2NDTwtjAeIS5i5GT
-	Q0LARGLbrT8sELaYxIV769m6GLk4hASWMUr8nniPEabozsavjBCJRYwSC55/ZYJwJjFJ9M/+
-	D9bOIqAq0XTjDjuIzSagJbF67nGwbhEBFYmWcz+YQRqYBeazSuy68IMVJCEsECyx6dlPsCJe
-	AUeJmWuvA8U5ODgF9CUWX5OGWHCZUeLP6gYmiDMsJC40dbBD1AtK/Jh8D2wxM9CyzduaWCFs
-	eYnNa96CLZMQ2MIhsXbPJzaI6wQkvk0+xAKyQEJAVmLTAaj/JSUOrrjBMoFRbBaSsbOQjJ2F
-	ZOwCRuZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGCEpoH8H490D1ocYk4FWTmSWEk3OB6aQ
-	vJJ4Q2MzIwtTE1NjI3NLM9KElcR51VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwzthm
-	oSmxa8HOpRsl4rMYl2osYvT2XCPBelViYcxix3VC+n/Wmvyw6Li2L5ElZkfz8it7a4SmxFXr
-	c+k3ZUfGlggt5tQ9Z9f1iX/hIm2RyStfuFjec2lmnp9z8eKtKetKDGeGcUyR2rao6uQyBuXG
-	sJ6Lrpcc8z6o2h3eZaL5ZNsBlTUtCcEcSizFGYmGWsxFxYkAl4nw8xcDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIKsWRmVeSWpSXmKPExsVy+t9jAd1YLr4gg69nxCzu3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZvHx1HF2i02Pr7FaXN41h81ixvl9TBYXVmxkt5iy6DCrxck/
-	vYwWLdd7mSzWz3jNYrFq1x9GBwGPJwfnMXnMbrjI4rFz1l12jzvX9rB5nN+0htlj85J6j8k3
-	ljN69G1ZxejxeZOcx5WjZ5gCuKIaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3M
-	lRTyEnNTbZVcfAJ03TJzgH5RUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLW
-	MWZcbt/KXnCNpWJDTwtjA+MR5i5GTg4JAROJOxu/MkLYYhIX7q1n62Lk4hASWMQoseD5VyYI
-	ZxKTRP/s/ywgVSwCqhJNN+6wg9hsAloSq+ceB+sWEVCRaDn3gxmkgVlgPqvErgs/WEESwgLB
-	Epue/QQr4hVwlJi59jpQnIODU0BfYvE1aYgFlxkl/qxuYII4w0LiQlMHO0S9oMSPyffAFjMD
-	Ldu8rYkVwpaX2LzmLfMERoFZSMpmISmbhaRsASPzKkbR1ILkguKk9FwjveLE3OLSvHS95Pzc
-	TYzgBPNMegfjqgaLQ4wCHIxKPLwME3mDhFgTy4orcw8xSnAwK4nwTnkIFOJNSaysSi3Kjy8q
-	zUktPsSYDAyOicxSosn5wOSXVxJvaGxiZmRpZGZhZGJuTpqwkjjvwVbrQCGB9MSS1OzU1ILU
-	IpgtTBycUg2M819+W3vHUMN61ydh0d3H3bdXKWq5+s75m3xT/e05g1LtEGYOz2iNno4Ts6Je
-	l8p1e0/SXX3MJeTv9Umhob1f4pgq17a8c2077XqDwS+FszxrTVPM5VMWUU+Mri+cOP3ViU5x
-	7a4Hk4895I+zdLrzzeN4+War2J9rdunzdK6J+JGz5rf7ymQPJZbijERDLeai4kQAzebQvHQD	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zfV1/br4gg48rNS3u3D3HarFgv7VF
+	5+wN7BYfTx1nt9j0+BqrxeVdc9gsZpzfx2Rx8k8vo8XMW2tYHDg9nhycx+Tx73A/k8eda3vY
+	PM5vWsPssXlJvcfkG8sZPT5vkvO4cvQMUwBHFJdNSmpOZllqkb5dAlfG0xlX2AtmslYs3bOK
+	sYHxG3MXIyeHhICJxJ0/k1khbDGJC/fWs3UxcnEICSxjlFh/5jFc0fd7XawQiUWMErMfT2KG
+	cCYxSbQdXQTWziKgKnF+zUI2EJtNQEti9dzjjCC2iICKRMu5H2ANzAJnmSSeLZoGViQskCxx
+	72srWBGvgKPE3uvNLCA2p4C+xL/5m9ghNrxjlHixaT7UgRYSF5o62CEaBCV+TL4H1sAMtG3z
+	tiZWCFteYvOat2DbJAQ+skvcXv4B6jwBiW+TDwE1cAAlZCU2HYD6TVLi4IobLBMYxWYhGTsL
+	ydhZSMYuYGRexSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7iRESq707GG8fsD7EmAy0ciKzlGhy
+	PjDW80riDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA
+	2BUvU7XgoLSz5myuluzpXDcuVWe4r+87dtpMtOtsVNlOP+O1T5a8L7vYdVp7R8DhWI8qo418
+	KhJfNI5pCDk+SXNYInqDvS4v4kG07i1FT7XW1fc/OS+9nFKwXKzX2fBqVtkUTQX2ODt7P6bw
+	AC2tDT9PJCz5O/uFWOjOnPJ9D5l1pk3zVtZUYinOSDTUYi4qTgQAdXKfyusCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jAV1/br4gg+8XVSzu3D3HarFgv7VF
+	5+wN7BYfTx1nt9j0+BqrxeVdc9gsZpzfx2Rx8k8vo8XMW2tYHDg9nhycx+Tx73A/k8eda3vY
+	PM5vWsPssXlJvcfkG8sZPT5vkvO4cvQMUwBHVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7yp
+	mYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QeUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC
+	4HqMDNBAwjrGjKczrrAXzGStWLpnFWMD4zfmLkZODgkBE4nv97pYIWwxiQv31rN1MXJxCAks
+	YpSY/XgSM4QziUmi7egisCoWAVWJ82sWsoHYbAJaEqvnHmcEsUUEVCRazv0Aa2AWOMsk8WzR
+	NLAiYYFkiXtfW8GKeAUcJfZeb2YBsTkF9CX+zd/EDrHhHaPEi03zoe6wkLjQ1MEO0SAo8WPy
+	PbAGZqBtm7c1sULY8hKb17xlnsAoMAtJ2SwkZbOQlC1gZF7FKJpakFxQnJSea6hXnJhbXJqX
+	rpecn7uJEZwInkntYFzZYHGIUYCDUYmHl2Eib5AQa2JZcWXuIUYJDmYlEd4pD4FCvCmJlVWp
+	RfnxRaU5qcWHGJOB4TGRWUo0OR+YpPJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKa
+	nZpakFoEs4WJg1OqgbHudZfE72s8ZkdXTnFdVsYiUTKtV6ZnCvuGExZ77E0b4+1Pcj1t3X3r
+	teBsE3HPdWrnd+v9/mnY/uv84k27L9m5cjibfpwh+rBYj/XI/hLJbZVB9kJzPxyeterabN3N
+	jJzmUx/+Xiw0yflPfcPXniD/x1UrZvn8z4kXlf/DcCvPfA1zX9N9S0slluKMREMt5qLiRABm
+	nzawSAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -70,21 +62,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Aug 2013 12:56:16 +0200, 'Joerg Roedel' wrote:
-> On Fri, Aug 09, 2013 at 09:55:30AM +0200, Tomasz Figa wrote:
-> > Oh, this is a valid point, but it was more a nitpick about the coding 
-> > style. Single path error handling (with goto) is widely used in the kernel 
-> > in cases when more than one thing has to be undone and so I suggested this 
-> > method of error handling here as well.
+On Wed, 14 Aug 2013 15:15:49 +0200, 'Joerg Roedel' wrote:
+> KyongHo,
 > 
-> I agree with that review from Tomasz, the error-handling should look
-> similar to all the other places in the kernel and use goto.
+> On Fri, Jul 26, 2013 at 07:46:01PM +0900, Cho KyongHo wrote:
+> > __sysmmu_enable() must return 1 if it is called with the same page table.
+> > I have fixed it exynos_iommu_attach_device() to always return zero on success
+> > in the next patchset which I will post today.
+> > 
+> > Thank you.
 > 
+> When you are fine with these patches please put them on-top of your
+> patch-set when you re-submit. I will take them from there then.
+> 
+
 Ok.
 
-Thanks.
+Antonios,
+
+Would you mind
+if I submit your 2 patches on top of my patches with your signed-off?
 
 KyongHo.
+
 > 
 > 	Joerg
 > 
