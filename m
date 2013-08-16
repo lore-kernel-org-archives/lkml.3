@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab3HPWOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:14:43 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:40773 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab3HPWOl (ORCPT
+	id S1753503Ab3HPWOx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:14:53 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:46879 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab3HPWOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:14:41 -0400
-Message-ID: <520EA447.6090309@dev.mellanox.co.il>
-Date: Fri, 16 Aug 2013 15:14:31 -0700
-From: Ali Ayoub <ali@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Fri, 16 Aug 2013 18:14:51 -0400
+Date: Fri, 16 Aug 2013 22:10:02 +0100
+From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, Russ.Dill@ti.com
+Subject: Re: [PATCH 4/4] iio: ti_am335x_adc: Add continuous sampling and
+ trigger support
+Message-ID: <20130816210955.GA2528@gmail.com>
+References: <1376424303-22740-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1376424303-22740-5-git-send-email-zubair.lutfullah@gmail.com>
+ <20130816145949.GE1263@linutronix.de>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Shannon Nelson <shannon.nelson@intel.com>, netdev@vger.kernel.org,
-        davem@davemloft.net, dwmw2@infradead.org, jeffrey.t.kirsher@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] ixgbe: request_firmware for configuration parameters
-References: <20130111020046.15463.72333.stgit@starfish.jf.intel.com> <20130111182547.GA22231@kroah.com> <CAP-MU4MzG_P9fz3_eix=zgzyjijZ5qo1mpKE=r_K7y3xcJqc5Q@mail.gmail.com> <20130111194134.GA4817@kroah.com>
-In-Reply-To: <20130111194134.GA4817@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130816145949.GE1263@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/11/2013 11:41 AM, Greg KH wrote:
-> On Fri, Jan 11, 2013 at 11:30:54AM -0800, Shannon Nelson wrote:
->> On Fri, Jan 11, 2013 at 10:25 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>> On Thu, Jan 10, 2013 at 06:02:20PM -0800, Shannon Nelson wrote:
->>>> Most networking dials and knobs can be set using ethtool, ifconfig, ip link
->>>> commands, or sysfs entries, all of which can be driven by startup scripts
->>>> and other configuration tools.  However, they all depend on having a netdev
->>>> already set up, and we have some low-level device functionality that needs
->>>> to be sorted out before we start setting up MSI-x and memory allocations.
->>
->>> Ick, please don't abuse request_firmware() for this type of thing.
->>
->> Yeah, it seemed ugly to me at first as well, but it grew on me as I
->> realized that it does solve a problem in a rather elegant way.  While
->> working this up I discussed this with Mr. Woodhouse thinking that as a
->> firmware tree maintainer he'd have a similar reaction, but he actually
->> wasn't opposed to it (David, please speak up if I'm misrepresenting
->> your comments).
+On Fri, Aug 16, 2013 at 04:59:49PM +0200, Sebastian Andrzej Siewior wrote:
+> * Zubair Lutfullah | 2013-08-13 21:05:03 [+0100]:
 > 
-> David maintains the external firmware tree repo, not the in-kernel
-> firmware core code (which I used to maintain.)
+> >diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+> >index 3ceac3e..0d7e313 100644
+> >--- a/drivers/iio/adc/ti_am335x_adc.c
+> >+++ b/drivers/iio/adc/ti_am335x_adc.c
+> …
 > 
->>> What's wrong with configfs?  It sounds like it will fit your need, and
->>> that is what is created for.
->>
->> configfs has similar problems as sysfs - the driver needs to create
->> the hooks before it has all the info it might need for some hooks,
->> there is no persistence across reboots, and I don't think it will help
->> for initrd images.  Additionally, there would need to be some userland
->> mechanism to notice that the hooks were there and to feed it the
->> startup info.  Using a file in the firmware path gives us persistence
->> and a way for the driver to get info before having to set up
->> filesystem hooks.  It also gives us a way to get special config info
->> into the boot image.  And the whole mechanism already exists,
->> including UDEV hooks that can do more fancy stuff if needed.
+> >+static int tiadc_buffer_postdisable(struct iio_dev *indio_dev)
+> >+{
+> >+	struct tiadc_device *adc_dev = iio_priv(indio_dev);
+> >+	int config;
+> >+
+> >+	tiadc_step_config(indio_dev);
+> >+	if (adc_dev->mfd_tscadc->tsc_cell == -1) {
+> >+		config = tiadc_readl(adc_dev, REG_CTRL);
+> >+		tiadc_writel(adc_dev, REG_CTRL, (config | CNTRLREG_TSCSSENB));
+> >+	}
 > 
-> Yes, but you are now starting to use "configuration files" for kernel
-> drivers, which we have resisted for 20+ years for a variety of good
-> reasons. You can't just ignore all of the arguments to not do this all
-> of a sudden because you feel your driver is somehow "special" here.
+> This kind of check is bad. The tsc cell may have been created but the
+> driver not enabled or loaded. Further you should document why you need
+> to enable / disable the ADC in this places and only if the TSC part is
+> not active.
+> 
+> Sebastian
 
-Other device drivers of other vendors (not only netdevs) need such a
-mechanism as well, I think it's a general requirement for many drivers
-that normally need low level configurations for device initialization in
-the very first stage of the driver load.
+Noted. I'll look into it.
 
-> All of the above issues you seem to have with sysfs and configfs can be
-> resolved with userspace code, and having your driver not do anything to
-> the hardware until it is told to by userspace.
+Thanks for pointing it out.
 
-To tell the driver not to do anything until it's configured by a
-userspace code will require a module param for non-default-configs
-(which brings us back to the original argument of avoiding module params).
-
-By having userspace code to feed configfs/sysfs nodes, and making it
-available in initrd; we will end up having similar mechanism to
-request_firmware().
-
-I think this kind of "low level init configuration" can be seen as a
-firmware configuration, we can put some limitation on fetching the
-config file, or propose a new function such as request_firmware_config()
-that uses the same uevent hooks, and leverages the available userspace
-tools that already supported in initrd and meant to serve the same
-purpose - of feeding the driver the suitable firmware and configuration
-to get started.
-
-Ali;
+Zubair
