@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab3HPARo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 20:17:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44189 "EHLO
+	id S1752947Ab3HPAUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 20:20:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44201 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540Ab3HPARn (ORCPT
+	with ESMTP id S1752397Ab3HPAU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 20:17:43 -0400
-Date: Thu, 15 Aug 2013 17:19:18 -0700
+	Thu, 15 Aug 2013 20:20:29 -0400
+Date: Thu, 15 Aug 2013 17:22:04 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: "paulmcquad@gmail.com" <paulmcquad@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] Staging:BCM:DDRInit.c:Replacing __FUNCTION__
-Message-ID: <20130816001918.GA7450@kroah.com>
-References: <alpine.DEB.2.02.1308152213010.7299@paul87-DT2110>
+To: Jens Frederich <jfrederich@gmail.com>
+Cc: devel@driverdev.osuosl.org, Jon Nettleton <jon.nettleton@gmail.com>,
+        Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: olpc_dcon: more big endian conformity
+Message-ID: <20130816002204.GA16114@kroah.com>
+References: <1375650256-12411-1-git-send-email-jfrederich@gmail.com>
+ <20130812210720.GA10370@kroah.com>
+ <CAF92urqkWhXO0_DiFG5hp4qDXLYEoATrrvOw-JXQvWvHQp3QDQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1308152213010.7299@paul87-DT2110>
+In-Reply-To: <CAF92urqkWhXO0_DiFG5hp4qDXLYEoATrrvOw-JXQvWvHQp3QDQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 10:21:29PM +0100, paulmcquad@gmail.com wrote:
+On Thu, Aug 15, 2013 at 09:54:05PM +0200, Jens Frederich wrote:
+> On Mon, Aug 12, 2013 at 11:07 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Sun, Aug 04, 2013 at 11:04:16PM +0200, Jens Frederich wrote:
+> >> Using an int which is casted to unsigned char as inbuf is messy.
+> >> The code won't work on big endian systems.  The patch should fix
+> >> this.
+> >>
+> >> Signed-off-by: Jens Frederich <jfrederich@gmail.com>
+> >
+> > This patch doesn't apply at all, can you refresh it against my
+> > staging-next branch and resend it so that I can apply it?
+> >
 > 
-> __Function__ gets replaced with __func__
-> 
-> Signed-Off-By: Paul McQuade <paulmcquad@gmail.com>
-> ---
->  drivers/staging/bcm/DDRInit.c |   54 
-> ++++++++++++++++++++---------------------
->  1 file changed, 27 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
-> index 8c696b6..f5eda96 100644
-> --- a/drivers/staging/bcm/DDRInit.c
-> +++ b/drivers/staging/bcm/DDRInit.c
-> @@ -828,13 +828,13 @@ int ddr_init(struct bcm_mini_adapter *Adapter)
->  		{
->  				retval= rdmalt(Adapter,(UINT)0x0f000830, 
-> &uiResetValue, sizeof(uiResetValue));
->  				if(retval < 0) {
-> -					BCM_DEBUG_PRINT(Adapter,CMHOST, 
-> RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-> +					BCM_DEBUG_PRINT(Adapter, CMHOST, 
-> RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
+> Sorry for the duplicated patch 3.  The subject:
+> [PATCH] Staging: olpc_dcon: more big endian conformity and
+> [PATCH 3/3] Staging: olpc_dcon: more big endian conformity
+> is equal for the Google mail client and lands in the same
+> thread.  I'd use Mutt.
 
-This patch is line-wrapped, and can't be applied :(
+I do use mutt, and see two copies of this patch sent.
 
-Can you take a look at the file, Documentation/email_clients.txt and fix
-up your email client so that you can send patches properly?
+What happened to patch 1/3, I never got that.
 
 thanks,
 
