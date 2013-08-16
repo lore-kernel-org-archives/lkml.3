@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab3HPKU1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 06:20:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37440 "EHLO mga09.intel.com"
+	id S1755026Ab3HPKWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 06:22:19 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48953 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751721Ab3HPKUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 06:20:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,894,1367996400"; 
-   d="scan'208";a="388115419"
-Date: Fri, 16 Aug 2013 13:20:17 +0300
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        Dave Airlie <airlied@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i915: Update VGA arbiter support for newer devices
-Message-ID: <20130816102017.GK7159@intel.com>
-References: <20130815223917.27890.28003.stgit@bling.home>
- <CAPM=9twr6Ho7PCFdL9GubzDNPedO9tBvC1YPofpkJ01Avx=8_g@mail.gmail.com>
- <1376607255.13642.155.camel@ul30vt.home>
+	id S1753929Ab3HPKVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 06:21:34 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <bcousson@baylibre.com>, <swarren@wwwdotorg.org>, <tony@atomide.com>,
+        <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
+        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>, <kishon@ti.com>, <balbi@ti.com>
+Subject: [PATCH v2] extcon: palmas: Modified the compatible type to *ti,palmas-usb-vid*
+Date: Fri, 16 Aug 2013 15:50:48 +0530
+Message-ID: <1376648448-27447-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1376607255.13642.155.camel@ul30vt.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 04:54:15PM -0600, Alex Williamson wrote:
-> On Fri, 2013-08-16 at 08:49 +1000, Dave Airlie wrote:
-> > On Fri, Aug 16, 2013 at 8:43 AM, Alex Williamson
-> > <alex.williamson@redhat.com> wrote:
-> > > This is intended to add VGA arbiter support for Intel HD graphics on
-> > > Core processors.  The old GMCH registers no longer exist, so even
-> > > though it appears that i915 participates in VGA arbitration, it doesn't
-> > > work.  On Intel HD graphics we already attempt to disable VGA regions
-> > > of the device.  This makes registering as a VGA client unnecessary since
-> > > we don't intend to operate differently depending on how many VGA devices
-> > > are present.  We can disable VGA memory regions by clearing a memory
-> > > enable bit in the VGA MSR.  That only leaves VGA IO, which we update
-> > > the VGA arbiter to know that we don't participate in VGA memory
-> > > arbitration.  We also add a hook on unload to re-enable memory and
-> > > reinstate VGA memory arbitration.
-> > 
-> > I would think there is still a VGA disable bit on the Intel device
-> > somewhere, we'd just need
-> > Intel to look in the docs and find it. A bit that can nuke both i/o
-> > and cmd regs.
-> 
-> The only bit available is in the GGC and is a keyed/locked register that
-> not only disables VGA memory and I/O, but also modifies the class code
-> of the device.  Early Core processors didn't lock this, but it's
-> untouchable in newer ones AFAICT.  Thanks,
+The Palmas device contains only a USB VID detector, so modified the
+compatible type to *ti,palmas-usb-vid*.
 
-I've not found anything else in the docs. And also we _need_ VGA I/O
-access to make i915_disable_vga() work. It's not 100% clear whether
-we really need to poke at the sequencer register in modern hardware,
-but the docs do still list it as a mandatory step. So even if we were
-to have a global "disable VGA I/O and mem bit" we'd need to make sure
-we already disabled VGA eg. after resume when the BIOS had a chance to
-turn the VGA display back on. I think there were also some BIOSen that
-turned VGA display back on when closing/opening the laptop lid. Not
-sure what would even happen with those if totally disabled VGA I/O
-access. I'm not sure they actually frob with the VGA regs though.
-Could be they just turn on the VGA display bit in the VGA_CONTROL
-register.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+Changes from v1:
+* removed the existing compatible types and changed it to *ti,palmas-usb-vid*
 
+ Documentation/devicetree/bindings/extcon/extcon-palmas.txt |    4 ++--
+ drivers/extcon/extcon-palmas.c                             |    3 +--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
+index 7dab6a8..00859f6 100644
+--- a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
++++ b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
+@@ -2,7 +2,7 @@ EXTCON FOR PALMAS/TWL CHIPS
+ 
+ PALMAS USB COMPARATOR
+ Required Properties:
+- - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb"
++ - compatible : Should be "ti,palmas-usb-vid".
+ 
+ Optional Properties:
+  - ti,wakeup : To enable the wakeup comparator in probe
+@@ -10,6 +10,6 @@ Optional Properties:
+  - ti,enable-vbus-detection: Perform VBUS detection.
+ 
+ palmas-usb {
+-       compatible = "ti,twl6035-usb", "ti,palmas-usb";
++       compatible = "ti,palmas-usb-vid";
+        ti,wakeup;
+ };
+diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
+index 89fdd05..f3ed2d7 100644
+--- a/drivers/extcon/extcon-palmas.c
++++ b/drivers/extcon/extcon-palmas.c
+@@ -267,8 +267,7 @@ static const struct dev_pm_ops palmas_pm_ops = {
+ };
+ 
+ static struct of_device_id of_palmas_match_tbl[] = {
+-	{ .compatible = "ti,palmas-usb", },
+-	{ .compatible = "ti,twl6035-usb", },
++	{ .compatible = "ti,palmas-usb-vid", },
+ 	{ /* end */ }
+ };
+ 
 -- 
-Ville Syrjälä
-Intel OTC
+1.7.10.4
+
