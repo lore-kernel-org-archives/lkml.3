@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab3HQAFK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:05:10 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:62113 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756835Ab3HPWj6 (ORCPT
+	id S1755124Ab3HQAFI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:05:08 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59357 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758Ab3HQAFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:58 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [RFC v1 0/5] ARM: Initial support for Marvell Armada 1500
-Date: Fri, 16 Aug 2013 21:41:33 +0200
-Message-Id: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 16 Aug 2013 20:05:04 -0400
+Date: Fri, 16 Aug 2013 14:50:44 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: Re: [PATCH RFC 1/3] spmi: Linux driver framework for SPMI
+Message-ID: <20130816195044.GI4035@joshc.qualcomm.com>
+References: <cover.1376596224.git.joshc@codeaurora.org>
+ <02deef1d90121011ab1df90ad704ef0ee36e2584.1376596224.git.joshc@codeaurora.org>
+ <20130816184614.GA31510@kroah.com>
+ <20130816194714.GH4035@joshc.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130816194714.GH4035@joshc.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a RFC adding initial support for the Marvell Armada 1500
-(88DE3100) found on various consumer devices (Chromecast, GoogleTV).
+On Fri, Aug 16, 2013 at 02:47:14PM -0500, Josh Cartwright wrote:
+> > 
+> > Why?  If debugfs isn't enabled, the functions should just compile away
+> > with the debugfs_() calls, so no need to do this type of thing here,
+> > right?
+> 
+> Not sure I follow you, but it may be because this is a bit misleading.
+> 
+> Currently CONFIG_DEBUG_FS is being extended to also mean "do you want
+> the SPMI core to create device entries?".  It would probably make more
+                      debugfs -^
 
-Actually, it is a two-fold RFC also raising discussions on mach-mvebu
-cleanup roadmap to allow other SoCs to hop into it. While mach-mvebu
-originally was created to add support for Armada 370/XP and merge
-existing Marvell Orion familiy into it, I am not so sure about
-Armada 1500 fits that well (the mbus has gone!).
-
-If you are brave enough to try this on any GoogleTV, hit Google for
-instructions on how to get a unlocked u-boot and void your warranty :)
-The patches are based on v3.11-rc5 directly.
-
-This cover letter and the separate patches have also been Cc'd to the
-respective maintainers to clear up some questions before posting a real
-patch set.
-
-Sebastian Hesselbarth (5):
-  irqchip: add Armada 1500 APB interrupt controller
-  ARM: mvebu: add Armada 1500 to defconfig
-  ARM: mvebu: add Armada 150 uart to lowlevel debug
-  ARM: mvebu: add Armada 1500 and Sony NSZ-GS7 device tree files
-  ARM: mvebu: add board init for Armada 1500
-
- arch/arm/boot/dts/Makefile                     |    3 +-
- arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts |   29 +++
- arch/arm/boot/dts/armada-1500.dtsi             |  225 ++++++++++++++++++++++++
- arch/arm/configs/mvebu_defconfig               |    1 +
- arch/arm/include/debug/mvebu.S                 |   26 +--
- arch/arm/mach-mvebu/Kconfig                    |   15 ++
- arch/arm/mach-mvebu/Makefile                   |   13 +-
- arch/arm/mach-mvebu/armada-1500.c              |   63 +++++++
- drivers/irqchip/Makefile                       |    1 +
- drivers/irqchip/irq-armada-1500-apb.c          |  108 ++++++++++++
- 10 files changed, 467 insertions(+), 17 deletions(-)
- create mode 100644 arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts
- create mode 100644 arch/arm/boot/dts/armada-1500.dtsi
- create mode 100644 arch/arm/mach-mvebu/armada-1500.c
- create mode 100644 drivers/irqchip/irq-armada-1500-apb.c
-
----
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
 -- 
-1.7.10.4
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
