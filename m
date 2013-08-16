@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab3HPW2K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:28:10 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43419 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab3HPW2I (ORCPT
+	id S1754444Ab3HPW2l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:28:41 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:36502 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754286Ab3HPW2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:28:08 -0400
-Message-ID: <520E9898.7040107@wwwdotorg.org>
-Date: Fri, 16 Aug 2013 15:24:40 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 16 Aug 2013 18:28:39 -0400
+Date: Fri, 16 Aug 2013 22:31:33 +0100
+From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
+        dmitry.torokhov@gmail.com, sameo@linux.intel.com, lee.jones@linaro.org,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Russ.Dill@ti.com
+Subject: Re: [PATCH 3/4] input: ti_tsc: Enable shared IRQ for TSC and add
+ overrun, underflow checks
+Message-ID: <20130816213132.GD2636@gmail.com>
+References: <1376412499-21007-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1376412499-21007-4-git-send-email-zubair.lutfullah@gmail.com>
+ <20130816091409.GC26895@linutronix.de>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Kevin Hilman <khilman@linaro.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@surriel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Zlatko Calusic <zcalusic@bitsync.net>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        "sfr@canb.auug.org.au linux-arm-kernel" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [patch v2 3/3] mm: page_alloc: fair zone allocator policy
-References: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org> <1375457846-21521-4-git-send-email-hannes@cmpxchg.org> <20130807145828.GQ2296@suse.de> <20130807153743.GH715@cmpxchg.org> <20130808041623.GL1845@cmpxchg.org> <87haepblo2.fsf@kernel.org> <20130816201814.GA26409@cmpxchg.org>
-In-Reply-To: <20130816201814.GA26409@cmpxchg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130816091409.GC26895@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2013 02:18 PM, Johannes Weiner wrote:
-> Hi Kevin,
+On Fri, Aug 16, 2013 at 11:14:09AM +0200, Sebastian Andrzej Siewior wrote:
+> * Zubair Lutfullah | 2013-08-13 17:48:18 [+0100]:
+> >+	if ((status & IRQENB_FIFO0OVRRUN) ||
+> >+			(status & IRQENB_FIFO0UNDRFLW)) {
+> >+
+> >+		config = titsc_readl(ts_dev, REG_CTRL);
+> >+		config &= ~(CNTRLREG_TSCSSENB);
+> >+		titsc_writel(ts_dev, REG_CTRL, config);
+> >+
+> >+		if (status & IRQENB_FIFO0UNDRFLW) {
+> >+			titsc_writel(ts_dev, REG_IRQSTATUS,
+> >+				(status | IRQENB_FIFO0UNDRFLW));
+> >+			irqclr |= IRQENB_FIFO0UNDRFLW;
+> >+		} else {
+> >+			titsc_writel(ts_dev, REG_IRQSTATUS,
+> >+				(status | IRQENB_FIFO0OVRRUN));
+> >+			irqclr |= IRQENB_FIFO0OVRRUN;
+> >+		}
 > 
-> On Fri, Aug 16, 2013 at 10:17:01AM -0700, Kevin Hilman wrote:
->> Johannes Weiner <hannes@cmpxchg.org> writes:
->>> On Wed, Aug 07, 2013 at 11:37:43AM -0400, Johannes Weiner wrote:
->>> Subject: [patch] mm: page_alloc: use vmstats for fair zone allocation batching
->>>
->>> Avoid dirtying the same cache line with every single page allocation
->>> by making the fair per-zone allocation batch a vmstat item, which will
->>> turn it into batched percpu counters on SMP.
->>>
->>> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
->>
->> I bisected several boot failures on various ARM platform in
->> next-20130816 down to this patch (commit 67131f9837 in linux-next.)
->>
->> Simply reverting it got things booting again on top of -next.  Example
->> boot crash below.
+> You don't do anything on overflow / underflow. Is this due to the fact
+> once enabled for FIFO1 it also triggers for FIFO0?
 > 
-> Thanks for the bisect and report!
-> 
-> I deref the percpu pointers before initializing them properly.  It
-> didn't trigger on x86 because the percpu offset added to the pointer
-> is big enough so that it does not fall into PFN 0, but it probably
-> ended up corrupting something...
-> 
-> Could you try this patch on top of linux-next instead of the revert?
+The TSCADC module doesn't recover from these interrupts.
 
-That patch,
-Tested-by: Stephen Warren <swarren@nvidia.com>
+> >+		titsc_writel(ts_dev, REG_CTRL,
+> >+			(config | CNTRLREG_TSCSSENB));
+
+The fix is to re-enable the module after disabling 
+and clearing the interrupts.
+
+That is what the handler is doing.
+> >+	} else if (status & IRQENB_FIFO0THRES) {
+> > 		titsc_read_coordinates(ts_dev, &x, &y, &z1, &z2);
+> > 
+> > 		if (ts_dev->pen_down && z1 != 0 && z2 != 0) {
+> >@@ -317,9 +342,11 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+> > 	}
+> > 
+> > 	if (irqclr) {
+> >-		titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
+> >+		titsc_writel(ts_dev, REG_IRQSTATUS, (status | irqclr));
+> 
+> Shouldn't FIFO1UNDRFLW & OVRRUN be handled by the adc driver? Why do you
+> or the unhandled bits as well here?
+FIFO1 is only used by TSC. ADC doesn't touch it.
+> 
+> > 		am335x_tsc_se_set(ts_dev->mfd_tscadc, ts_dev->step_mask);
+> >-		return IRQ_HANDLED;
+> >+		status = titsc_readl(ts_dev, REG_IRQSTATUS);
+> >+		if (status == false)
+> >+			return IRQ_HANDLED;
+> 
+> And why this? If you something you handled it, if you didn't you return
+> NONE. Why does it depend on REG_IRQSTATUS?
+
+These quirks are to handle the situation where both IRQs happen
+simultaneously. Which can occur when someone is using the TSC
+while continuously sampling using the ADC.
+
+REG_IRQSTATUS has flags for FIFO0 used by ADC as well.
+
+If there are still those IRQs to handle, then IRQ_NONE is returned.
+Otherwise, all IRQ flags are clear so IRQ_HANDLED is returned.
+
+Thanks
+Zubair
