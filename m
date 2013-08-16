@@ -1,320 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640Ab3HPFCE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 01:02:04 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:40524 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab3HPFCB (ORCPT
+	id S1751721Ab3HPFJL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 01:09:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46019 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab3HPFJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 01:02:01 -0400
-Date: Thu, 15 Aug 2013 22:02:01 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Li Wang <liwang@ubuntukylin.com>
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Subject: Re: [PATCH v5] Ceph: Punch hole support for kernel client
-In-Reply-To: <1376538704-6659-1-git-send-email-liwang@ubuntukylin.com>
-Message-ID: <alpine.DEB.2.00.1308152201170.1479@cobra.newdream.net>
-References: <1376538704-6659-1-git-send-email-liwang@ubuntukylin.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 16 Aug 2013 01:09:06 -0400
+Date: Thu, 15 Aug 2013 22:10:41 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Subject: Re: [ 00/17] 3.4.58-stable review
+Message-ID: <20130816051041.GA23784@kroah.com>
+References: <20130813063501.728847844@linuxfoundation.org>
+ <520A1D56.2050507@roeck-us.net>
+ <20130813175858.GC7336@kroah.com>
+ <20130813201936.GA18358@roeck-us.net>
+ <20130815063158.GB25754@kroah.com>
+ <520C86BD.2020903@roeck-us.net>
+ <CAMuHMdU+EOC_etihOzUC6N0cqc2qHaGm3_L+gyTRxESCGhOzEg@mail.gmail.com>
+ <520DB045.7000309@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520DB045.7000309@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've applied this to the testing branch and moved to the better fsx in the 
-qa suite.
+On Thu, Aug 15, 2013 at 09:53:25PM -0700, Guenter Roeck wrote:
+> On 08/15/2013 12:55 AM, Geert Uytterhoeven wrote:
+> > On Thu, Aug 15, 2013 at 9:43 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> >> I screwed up my stable repo clone again :(, so the full build will take a
+> >> bit.
+> >>
+> >> mips builds on on 3.4 with all patches applied now fail with:
+> >> arch/mips/include/asm/page.h: Assembler messages:
+> >> arch/mips/include/asm/page.h:178: Error: Unrecognized opcode `static inline
+> >> int pfn_valid(unsigned long pfn)'
+> >> arch/mips/include/asm/page.h:179: Error: junk at end of line, first
+> >> unrecognized character is `{'
+> >> arch/mips/include/asm/page.h:181: Error: Unrecognized opcode `extern
+> >> unsigned long max_mapnr'
+> >> arch/mips/include/asm/page.h:183: Error: Unrecognized opcode `return
+> >> pfn>=ARCH_PFN_OFFSET&&pfn<max_mapnr'
+> >> arch/mips/include/asm/page.h:184: Error: junk at end of line, first
+> >> unrecognized character is `}'
+> >>
+> >> This is the error I referred to above. Reverting above pfn rework patch
+> >> fixes that problem,
+> >> so you might want to remove that patch from the patch queue for now.
+> >
+> > Perhaps this one got applied too soon?
+> >
+> >   commit 730b8dfe016dd1e91f73d8d3e6724da91397171c
+> > Author: Ralf Baechle <ralf@linux-mips.org>
+> > Date:   Fri Dec 28 15:18:02 2012 +0100
+> >
+> >      MIPS: page.h: Remove now unnecessary #ifndef __ASSEMBLY__ wrapper.
+> >
+> >      Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+> >
+> 
+> Actually, you are on the right track, only in the opposite direction.
+> The problem is that commit 8b9232141b changed
+> 	#define pfn_valid ...
+> to
+> 	static inline pfn_valid()
+> in arch/mips/include/asm/page.h. In the 3.4 kernel the file _is_
+> still included from assembler code. This obviously doesn't work.
+> 
+> Fix would be to surround the new static inline function with #ifndef __ASSEMBLY__.
+> With this change, "mips allmodconfig" compiles with the 3.4 kernel.
+> It should be a safe change, since the static inline will never be used
+> from assembler code.
+> 
+> Question is if that would be acceptable as back-port of 8b9232141b to 3.4.
+> Greg, any comments ? If it is ok I can submit a back-port request with
+> the modified patch to -stable. That would be one more build fixed,
+> three to go (arm:allmodconfig, sparc32:defconfig, and sparc64:allmodconfig).
 
-The ceph-fuse patches are still in wip-fallocate until I can run the fs 
-test suite against them.
+That sounds reasonable to me, as it is a valid fix, and I do know of
+some MIPS people using 3.4 (although their versions all seem to be
+heavily patched, perhaps for issues like this, I don't really know...)
 
-Thanks!
-sage
+So, feel free to send such a backport on to me.
 
+thanks,
 
-On Thu, 15 Aug 2013, Li Wang wrote:
-
-> This patch implements fallocate and punch hole support for Ceph kernel client.
-> 
-> Signed-off-by: Li Wang <liwang@ubuntukylin.com>
-> Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-> ---
-> Against v3:
-> 
-> Passed the fsx test from xfstests.
-> 
-> Truncate rather than delete the first object. Thanks go to Sage and Zheng for the explanation.
-> 
-> Silence the OSD ENOENT complaints.
-> ---
->  fs/ceph/file.c        |  196 +++++++++++++++++++++++++++++++++++++++++++++++++
->  net/ceph/osd_client.c |   11 ++-
->  2 files changed, 205 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ceph/file.c b/fs/ceph/file.c
-> index 2ddf061..e2bcd5c 100644
-> --- a/fs/ceph/file.c
-> +++ b/fs/ceph/file.c
-> @@ -8,6 +8,7 @@
->  #include <linux/namei.h>
->  #include <linux/writeback.h>
->  #include <linux/aio.h>
-> +#include <linux/falloc.h>
->  
->  #include "super.h"
->  #include "mds_client.h"
-> @@ -871,6 +872,200 @@ out:
->  	return offset;
->  }
->  
-> +static inline void ceph_zero_partial_page(
-> +	struct inode *inode, loff_t offset, unsigned size)
-> +{
-> +	struct page *page;
-> +	pgoff_t index = offset >> PAGE_CACHE_SHIFT;
-> +
-> +	page = find_lock_page(inode->i_mapping, index);
-> +	if (page) {
-> +		wait_on_page_writeback(page);
-> +		zero_user(page, offset & (PAGE_CACHE_SIZE - 1), size);
-> +		unlock_page(page);
-> +		page_cache_release(page);
-> +	}
-> +}
-> +
-> +static void ceph_zero_pagecache_range(struct inode *inode, loff_t offset,
-> +				      loff_t length)
-> +{
-> +	loff_t nearly = round_up(offset, PAGE_CACHE_SIZE);
-> +	if (offset < nearly) {
-> +		loff_t size = nearly - offset;
-> +		if (length < size)
-> +			size = length;
-> +		ceph_zero_partial_page(inode, offset, size);
-> +		offset += size;
-> +		length -= size;
-> +	}
-> +	if (length >= PAGE_CACHE_SIZE) {
-> +		loff_t size = round_down(length, PAGE_CACHE_SIZE);
-> +		truncate_pagecache_range(inode, offset, offset + size - 1);
-> +		offset += size;
-> +		length -= size;
-> +	}
-> +	if (length)
-> +		ceph_zero_partial_page(inode, offset, length);
-> +}
-> +
-> +static int ceph_zero_partial_object(struct inode *inode,
-> +				    loff_t offset, loff_t *length)
-> +{
-> +	struct ceph_inode_info *ci = ceph_inode(inode);
-> +	struct ceph_fs_client *fsc = ceph_inode_to_client(inode);
-> +	struct ceph_osd_request *req;
-> +	int ret = 0;
-> +	loff_t zero = 0;
-> +	int op;
-> +
-> +	if (!length) {
-> +		op = offset ? CEPH_OSD_OP_DELETE : CEPH_OSD_OP_TRUNCATE;
-> +		length = &zero;
-> +	} else {
-> +		op = CEPH_OSD_OP_ZERO;
-> +	}
-> +
-> +	req = ceph_osdc_new_request(&fsc->client->osdc, &ci->i_layout,
-> +					ceph_vino(inode),
-> +					offset, length,
-> +					1, op,
-> +					CEPH_OSD_FLAG_WRITE |
-> +					CEPH_OSD_FLAG_ONDISK,
-> +					NULL, 0, 0, false);
-> +	if (IS_ERR(req)) {
-> +		ret = PTR_ERR(req);
-> +		goto out;
-> +	}
-> +
-> +	ceph_osdc_build_request(req, offset, NULL, ceph_vino(inode).snap,
-> +				&inode->i_mtime);
-> +
-> +	ret = ceph_osdc_start_request(&fsc->client->osdc, req, false);
-> +	if (!ret) {
-> +		ret = ceph_osdc_wait_request(&fsc->client->osdc, req);
-> +		if (ret == -ENOENT)
-> +			ret = 0;
-> +	}
-> +	ceph_osdc_put_request(req);
-> +
-> +out:
-> +	return ret;
-> +}
-> +
-> +static int ceph_zero_objects(struct inode *inode, loff_t offset, loff_t length)
-> +{
-> +	int ret = 0;
-> +	struct ceph_inode_info *ci = ceph_inode(inode);
-> +	__s32 stripe_unit = ceph_file_layout_su(ci->i_layout);
-> +	__s32 stripe_count = ceph_file_layout_stripe_count(ci->i_layout);
-> +	__s32 object_size = ceph_file_layout_object_size(ci->i_layout);
-> +	loff_t object_set_size = (loff_t)object_size * stripe_count;
-> +
-> +	loff_t nearly = (offset + object_set_size - 1)
-> +			/ object_set_size * object_set_size;
-> +	while (length && offset < nearly) {
-> +		loff_t size = length;
-> +		ret = ceph_zero_partial_object(inode, offset, &size);
-> +		if (ret < 0)
-> +			return ret;
-> +		offset += size;
-> +		length -= size;
-> +	}
-> +	while (length >= object_set_size) {
-> +		int i;
-> +		loff_t pos = offset;
-> +		for (i = 0; i < stripe_count; ++i) {
-> +			ret = ceph_zero_partial_object(inode, pos, NULL);
-> +			if (ret < 0)
-> +				return ret;
-> +			pos += stripe_unit;
-> +		}
-> +		offset += object_set_size;
-> +		length -= object_set_size;
-> +	}
-> +	while (length) {
-> +		loff_t size = length;
-> +		ret = ceph_zero_partial_object(inode, offset, &size);
-> +		if (ret < 0)
-> +			return ret;
-> +		offset += size;
-> +		length -= size;
-> +	}
-> +	return ret;
-> +}
-> +
-> +static long ceph_fallocate(struct file *file, int mode,
-> +				loff_t offset, loff_t length)
-> +{
-> +	struct ceph_file_info *fi = file->private_data;
-> +	struct inode *inode = file->f_dentry->d_inode;
-> +	struct ceph_inode_info *ci = ceph_inode(inode);
-> +	struct ceph_osd_client *osdc =
-> +		&ceph_inode_to_client(inode)->client->osdc;
-> +	int want, got = 0;
-> +	int dirty;
-> +	int ret = 0;
-> +	loff_t endoff = 0;
-> +	loff_t size;
-> +
-> +	if (!S_ISREG(inode->i_mode))
-> +		return -EOPNOTSUPP;
-> +
-> +	if (IS_SWAPFILE(inode))
-> +		return -ETXTBSY;
-> +
-> +	mutex_lock(&inode->i_mutex);
-> +
-> +	if (ceph_snap(inode) != CEPH_NOSNAP) {
-> +		ret = -EROFS;
-> +		goto unlock;
-> +	}
-> +
-> +	if (ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL) &&
-> +		!(mode & FALLOC_FL_PUNCH_HOLE)) {
-> +		ret = -ENOSPC;
-> +		goto unlock;
-> +	}
-> +
-> +	size = i_size_read(inode);
-> +	if (!(mode & FALLOC_FL_KEEP_SIZE))
-> +		endoff = offset + length;
-> +
-> +	if (fi->fmode & CEPH_FILE_MODE_LAZY)
-> +		want = CEPH_CAP_FILE_BUFFER | CEPH_CAP_FILE_LAZYIO;
-> +	else
-> +		want = CEPH_CAP_FILE_BUFFER;
-> +
-> +	ret = ceph_get_caps(ci, CEPH_CAP_FILE_WR, want, &got, endoff);
-> +	if (ret < 0)
-> +		goto unlock;
-> +
-> +	if (mode & FALLOC_FL_PUNCH_HOLE) {
-> +		if (offset < size)
-> +			ceph_zero_pagecache_range(inode, offset, length);
-> +		ret = ceph_zero_objects(inode, offset, length);
-> +	} else if (endoff > size) {
-> +		truncate_pagecache_range(inode, size, -1);
-> +		if (ceph_inode_set_size(inode, endoff))
-> +			ceph_check_caps(ceph_inode(inode),
-> +				CHECK_CAPS_AUTHONLY, NULL);
-> +	}
-> +
-> +	if (!ret) {
-> +		spin_lock(&ci->i_ceph_lock);
-> +		dirty = __ceph_mark_dirty_caps(ci, CEPH_CAP_FILE_WR);
-> +		spin_unlock(&ci->i_ceph_lock);
-> +		if (dirty)
-> +			__mark_inode_dirty(inode, dirty);
-> +	}
-> +
-> +	ceph_put_cap_refs(ci, got);
-> +unlock:
-> +	mutex_unlock(&inode->i_mutex);
-> +	return ret;
-> +}
-> +
->  const struct file_operations ceph_file_fops = {
->  	.open = ceph_open,
->  	.release = ceph_release,
-> @@ -887,5 +1082,6 @@ const struct file_operations ceph_file_fops = {
->  	.splice_write = generic_file_splice_write,
->  	.unlocked_ioctl = ceph_ioctl,
->  	.compat_ioctl	= ceph_ioctl,
-> +	.fallocate	= ceph_fallocate,
->  };
->  
-> diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
-> index dd47889..c1d15ab 100644
-> --- a/net/ceph/osd_client.c
-> +++ b/net/ceph/osd_client.c
-> @@ -503,7 +503,9 @@ void osd_req_op_extent_init(struct ceph_osd_request *osd_req,
->  	struct ceph_osd_req_op *op = _osd_req_op_init(osd_req, which, opcode);
->  	size_t payload_len = 0;
->  
-> -	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE);
-> +	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE &&
-> +	       opcode != CEPH_OSD_OP_DELETE && opcode != CEPH_OSD_OP_ZERO &&
-> +	       opcode != CEPH_OSD_OP_TRUNCATE);
->  
->  	op->extent.offset = offset;
->  	op->extent.length = length;
-> @@ -631,6 +633,9 @@ static u64 osd_req_encode_op(struct ceph_osd_request *req,
->  		break;
->  	case CEPH_OSD_OP_READ:
->  	case CEPH_OSD_OP_WRITE:
-> +	case CEPH_OSD_OP_ZERO:
-> +	case CEPH_OSD_OP_DELETE:
-> +	case CEPH_OSD_OP_TRUNCATE:
->  		if (src->op == CEPH_OSD_OP_WRITE)
->  			request_data_len = src->extent.length;
->  		dst->extent.offset = cpu_to_le64(src->extent.offset);
-> @@ -715,7 +720,9 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
->  	u64 object_base;
->  	int r;
->  
-> -	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE);
-> +	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE &&
-> +	       opcode != CEPH_OSD_OP_DELETE && opcode != CEPH_OSD_OP_ZERO &&
-> +	       opcode != CEPH_OSD_OP_TRUNCATE);
->  
->  	req = ceph_osdc_alloc_request(osdc, snapc, num_ops, use_mempool,
->  					GFP_NOFS);
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+greg k-h
