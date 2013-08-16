@@ -1,103 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab3HQADw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:03:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51753 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871Ab3HPWkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:40:06 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <stf_xl@wp.pl>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 066/133] rt2x00: fix stop queue
-Date: Fri, 16 Aug 2013 15:33:28 -0700
-Message-Id: <1376692475-28413-67-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1755094Ab3HQAED (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:04:03 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53015 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754975Ab3HQADu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 20:03:50 -0400
+Date: Fri, 16 Aug 2013 16:18:14 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Zlatko Calusic <zcalusic@bitsync.net>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        "sfr@canb.auug.org.au linux-arm-kernel" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [patch v2 3/3] mm: page_alloc: fair zone allocator policy
+Message-ID: <20130816201814.GA26409@cmpxchg.org>
+References: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org>
+ <1375457846-21521-4-git-send-email-hannes@cmpxchg.org>
+ <20130807145828.GQ2296@suse.de>
+ <20130807153743.GH715@cmpxchg.org>
+ <20130808041623.GL1845@cmpxchg.org>
+ <87haepblo2.fsf@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87haepblo2.fsf@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
+Hi Kevin,
 
-------------------
+On Fri, Aug 16, 2013 at 10:17:01AM -0700, Kevin Hilman wrote:
+> Johannes Weiner <hannes@cmpxchg.org> writes:
+> > On Wed, Aug 07, 2013 at 11:37:43AM -0400, Johannes Weiner wrote:
+> > Subject: [patch] mm: page_alloc: use vmstats for fair zone allocation batching
+> >
+> > Avoid dirtying the same cache line with every single page allocation
+> > by making the fair per-zone allocation batch a vmstat item, which will
+> > turn it into batched percpu counters on SMP.
+> >
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> I bisected several boot failures on various ARM platform in
+> next-20130816 down to this patch (commit 67131f9837 in linux-next.)
+> 
+> Simply reverting it got things booting again on top of -next.  Example
+> boot crash below.
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+Thanks for the bisect and report!
 
-commit e2288b66fe7ff0288382b2af671b4da558b44472 upstream.
+I deref the percpu pointers before initializing them properly.  It
+didn't trigger on x86 because the percpu offset added to the pointer
+is big enough so that it does not fall into PFN 0, but it probably
+ended up corrupting something...
 
-Since we clear QUEUE_STARTED in rt2x00queue_stop_queue(), following
-call to rt2x00queue_pause_queue() reduce to noop, i.e we do not
-stop queue in mac80211.
+Could you try this patch on top of linux-next instead of the revert?
 
-To fix that introduce rt2x00queue_pause_queue_nocheck() function,
-which will stop queue in mac80211 directly.
+Thanks,
+Johannes
 
-Note that rt2x00_start_queue() explicitly set QUEUE_PAUSED bit.
-
-Note also that reordering operations i.e. first call to
-rt2x00queue_pause_queue() and then clear QUEUE_STARTED bit, will race
-with rt2x00queue_unpause_queue(), so calling ieee80211_stop_queue()
-directly is the only available solution to fix the problem without
-major rework.
-
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2x00queue.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: page_alloc: use vmstats for fair zone allocation batching fix
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wireless/rt2x00/rt2x00queue.c
-index e488b94..a57032e 100644
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -877,13 +877,8 @@ void rt2x00queue_index_inc(struct queue_entry *entry, enum queue_index index)
- 	spin_unlock_irqrestore(&queue->index_lock, irqflags);
- }
+Initialize the per-cpu counters before modifying them.  Otherwise:
+
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 3.11.0-rc5-next-20130816 (khilman@paris) (gcc version 4.7.2 (Ubuntu/Linaro 4.7.2-1ubuntu1) ) #30 SMP Fri Aug 16 09:47:32 PDT 2013
+[    0.000000] CPU: ARMv7 Processor [413fc082] revision 2 (ARMv7), cr=10c53c7d
+[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+[    0.000000] Machine: Generic AM33XX (Flattened Device Tree), model: TI AM335x BeagleBone
+[    0.000000] bootconsole [earlycon0] enabled
+[    0.000000] Memory policy: ECC disabled, Data cache writeback
+[    0.000000] On node 0 totalpages: 130816
+[    0.000000] free_area_init_node: node 0, pgdat c081d400, node_mem_map c12fc000
+[    0.000000]   Normal zone: 1024 pages used for memmap
+[    0.000000]   Normal zone: 0 pages reserved
+[    0.000000] Unable to handle kernel NULL pointer dereference at virtual address 00000026
+[    0.000000] pgd = c0004000
+[    0.000000] [00000026] *pgd=00000000
+[    0.000000] Internal error: Oops: 5 [#1] SMP ARM
+[    0.000000] Modules linked in:
+[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.11.0-rc5-next-20130816 #30
+[    0.000000] task: c0793c70 ti: c0788000 task.ti: c0788000
+[    0.000000] PC is at __mod_zone_page_state+0x2c/0xb4
+[    0.000000] LR is at mod_zone_page_state+0x2c/0x4c
+
+Reported-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/page_alloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 6a95d39..b9e8f2f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4826,11 +4826,11 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 		spin_lock_init(&zone->lru_lock);
+ 		zone_seqlock_init(zone);
+ 		zone->zone_pgdat = pgdat;
++		zone_pcp_init(zone);
  
--void rt2x00queue_pause_queue(struct data_queue *queue)
-+void rt2x00queue_pause_queue_nocheck(struct data_queue *queue)
- {
--	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
--	    !test_bit(QUEUE_STARTED, &queue->flags) ||
--	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
--		return;
--
- 	switch (queue->qid) {
- 	case QID_AC_VO:
- 	case QID_AC_VI:
-@@ -899,6 +894,15 @@ void rt2x00queue_pause_queue(struct data_queue *queue)
- 		break;
- 	}
- }
-+void rt2x00queue_pause_queue(struct data_queue *queue)
-+{
-+	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
-+	    !test_bit(QUEUE_STARTED, &queue->flags) ||
-+	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
-+		return;
-+
-+	rt2x00queue_pause_queue_nocheck(queue);
-+}
- EXPORT_SYMBOL_GPL(rt2x00queue_pause_queue);
+ 		/* For bootup, initialized properly in watermark setup */
+ 		mod_zone_page_state(zone, NR_ALLOC_BATCH, zone->managed_pages);
  
- void rt2x00queue_unpause_queue(struct data_queue *queue)
-@@ -960,7 +964,7 @@ void rt2x00queue_stop_queue(struct data_queue *queue)
- 		return;
- 	}
- 
--	rt2x00queue_pause_queue(queue);
-+	rt2x00queue_pause_queue_nocheck(queue);
- 
- 	queue->rt2x00dev->ops->lib->stop_queue(queue);
- 
+-		zone_pcp_init(zone);
+ 		lruvec_init(&zone->lruvec);
+ 		if (!size)
+ 			continue;
 -- 
-1.8.1.2
+1.8.3.2
 
