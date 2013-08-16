@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab3HPX7E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 19:59:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51822 "EHLO
+	id S1757077Ab3HPWks (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:40:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51803 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757074Ab3HPWkt (ORCPT
+	with ESMTP id S1757027Ab3HPWk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:40:49 -0400
+	Fri, 16 Aug 2013 18:40:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 106/133] drm/i915: do not disable backlight on vgaswitcheroo switch off
-Date: Fri, 16 Aug 2013 15:34:08 -0700
-Message-Id: <1376692475-28413-107-git-send-email-kamal@canonical.com>
+Subject: [PATCH 067/133] USB: serial: ftdi_sio: add more RT Systems ftdi devices
+Date: Fri, 16 Aug 2013 15:33:29 -0700
+Message-Id: <1376692475-28413-68-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,63 +28,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
 
-commit 3f577573cd5482a32f85bd131e52f7cb4b9ac518 upstream.
+commit fed1f1ed90bce42ea010e2904cbc04e7b8304940 upstream.
 
-On muxed systems, the other vgaswitcheroo client may depend on i915 to
-handle the backlight. We began switching off the backlight since
+RT Systems makes many usb serial cables based on the ftdi_sio driver for
+programming various amateur radios.  This patch is a full listing of
+their current product offerings and should allow these cables to all
+be recognized.
 
-commit a261b246ebd552fd5d5a8ed84cc931bb821c427f
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Thu Jul 26 19:21:47 2012 +0200
-
-    drm/i915: disable all crtcs at suspend time
-
-breaking backlight on discreet graphics in (some) muxed systems.
-
-Keep the backlight on when the state is changed through vgaswitcheroo.
-
-Note: The alternative would be to add a quirk table to achieve the same
-based on system identifiers, but AFAICS it would asymptotically approach
-effectively the same as this patch as more IDs are added, but with the
-maintenance burden of the quirk table.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=55311
-Tested-by: Fede <fedevx@yahoo.com>
-Tested-by: Aximab <laurent.debian@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59785
-Tested-by: sfievet <sebastien.fievet@free.fr>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: Rick Farina (Zero_Chaos) <zerochaos@gentoo.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_panel.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     | 31 ++++++++++++++++++++++++++++---
+ drivers/usb/serial/ftdi_sio_ids.h | 34 +++++++++++++++++++++++++++++-----
+ 2 files changed, 57 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index cc6346d..8df501a 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -295,6 +295,17 @@ void intel_panel_disable_backlight(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 86a1892..2bc1966 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -737,9 +737,34 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
+ 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_RTS01_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29A_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29F_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S01_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29C_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_81B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_82B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5D_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K4Y_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5G_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S05_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_60_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_61_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_64_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_65_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92D_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_W5R_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_A5R_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_PW1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
+ 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 6dd7925..1b8af46 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -815,11 +815,35 @@
+ /*
+  * RT Systems programming cables for various ham radios
+  */
+-#define RTSYSTEMS_VID			0x2100	/* Vendor ID */
+-#define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
+-#define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
+-#define RTSYSTEMS_RTS01_PID		0x9e57	/* USB-RTS01 Radio Cable */
+-
++#define RTSYSTEMS_VID		0x2100	/* Vendor ID */
++#define RTSYSTEMS_USB_S03_PID	0x9001	/* RTS-03 USB to Serial Adapter */
++#define RTSYSTEMS_USB_59_PID	0x9e50	/* USB-59 USB to 8 pin plug */
++#define RTSYSTEMS_USB_57A_PID	0x9e51	/* USB-57A USB to 4pin 3.5mm plug */
++#define RTSYSTEMS_USB_57B_PID	0x9e52	/* USB-57B USB to extended 4pin 3.5mm plug */
++#define RTSYSTEMS_USB_29A_PID	0x9e53	/* USB-29A USB to 3.5mm stereo plug */
++#define RTSYSTEMS_USB_29B_PID	0x9e54	/* USB-29B USB to 6 pin mini din */
++#define RTSYSTEMS_USB_29F_PID	0x9e55	/* USB-29F USB to 6 pin modular plug */
++#define RTSYSTEMS_USB_62B_PID	0x9e56	/* USB-62B USB to 8 pin mini din plug*/
++#define RTSYSTEMS_USB_S01_PID	0x9e57	/* USB-RTS01 USB to 3.5 mm stereo plug*/
++#define RTSYSTEMS_USB_63_PID	0x9e58	/* USB-63 USB to 9 pin female*/
++#define RTSYSTEMS_USB_29C_PID	0x9e59	/* USB-29C USB to 4 pin modular plug*/
++#define RTSYSTEMS_USB_81B_PID	0x9e5A	/* USB-81 USB to 8 pin mini din plug*/
++#define RTSYSTEMS_USB_82B_PID	0x9e5B	/* USB-82 USB to 2.5 mm stereo plug*/
++#define RTSYSTEMS_USB_K5D_PID	0x9e5C	/* USB-K5D USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_K4Y_PID	0x9e5D	/* USB-K4Y USB to 2.5/3.5 mm plugs*/
++#define RTSYSTEMS_USB_K5G_PID	0x9e5E	/* USB-K5G USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_S05_PID	0x9e5F	/* USB-RTS05 USB to 2.5 mm stereo plug*/
++#define RTSYSTEMS_USB_60_PID	0x9e60	/* USB-60 USB to 6 pin din*/
++#define RTSYSTEMS_USB_61_PID	0x9e61	/* USB-61 USB to 6 pin mini din*/
++#define RTSYSTEMS_USB_62_PID	0x9e62	/* USB-62 USB to 8 pin mini din*/
++#define RTSYSTEMS_USB_63B_PID	0x9e63	/* USB-63 USB to 9 pin female*/
++#define RTSYSTEMS_USB_64_PID	0x9e64	/* USB-64 USB to 9 pin male*/
++#define RTSYSTEMS_USB_65_PID	0x9e65	/* USB-65 USB to 9 pin female null modem*/
++#define RTSYSTEMS_USB_92_PID	0x9e66	/* USB-92 USB to 12 pin plug*/
++#define RTSYSTEMS_USB_92D_PID	0x9e67	/* USB-92D USB to 12 pin plug data*/
++#define RTSYSTEMS_USB_W5R_PID	0x9e68	/* USB-W5R USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_A5R_PID	0x9e69	/* USB-A5R USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_PW1_PID	0x9e6A	/* USB-PW1 USB to 8 pin modular plug*/
  
-+	/*
-+	 * Do not disable backlight on the vgaswitcheroo path. When switching
-+	 * away from i915, the other client may depend on i915 to handle the
-+	 * backlight. This will leave the backlight on unnecessarily when
-+	 * another client is not activated.
-+	 */
-+	if (dev->switch_power_state == DRM_SWITCH_POWER_CHANGING) {
-+		DRM_DEBUG_DRIVER("Skipping backlight disable on vga switch\n");
-+		return;
-+	}
-+
- 	dev_priv->backlight_enabled = false;
- 	intel_panel_actually_set_backlight(dev, 0);
- 
+ /*
+  * Physik Instrumente
 -- 
 1.8.1.2
 
