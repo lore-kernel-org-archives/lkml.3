@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab3HPNTG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 09:19:06 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:33091 "EHLO
+	id S1754619Ab3HPNT0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 09:19:26 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:33103 "EHLO
 	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab3HPNS6 (ORCPT
+	with ESMTP id S1754072Ab3HPNTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 09:18:58 -0400
-Subject: [RFC PATCH v2 09/11] erst: Read and write to the 'compressed' flag
- of pstore
+	Fri, 16 Aug 2013 09:19:20 -0400
+Subject: [RFC PATCH v2 11/11] pstore/ram: Read and write to the 'compressed'
+ flag of pstore
 To: linuxppc-dev@ozlabs.org, tony.luck@intel.com, linux-kernel@vger.kernel.org,
         keescook@chromium.org
 From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 Cc: jkenisto@linux.vnet.ibm.com, ananth@in.ibm.com, benh@kernel.crashing.org,
         cbouatmailru@gmail.com, mahesh@linux.vnet.ibm.com, ccross@android.com
-Date: Fri, 16 Aug 2013 18:48:47 +0530
-Message-ID: <20130816131847.3338.90091.stgit@aruna-ThinkPad-T420>
+Date: Fri, 16 Aug 2013 18:49:07 +0530
+Message-ID: <20130816131907.3338.76154.stgit@aruna-ThinkPad-T420>
 In-Reply-To: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
 References: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
 User-Agent: StGit/0.16-41-gd1dd
@@ -24,57 +24,98 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081613-9264-0000-0000-0000045728A0
+x-cbid: 13081613-9264-0000-0000-0000045728BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In pstore write, set the section type to CPER_SECTION_TYPE_DMESG_COMPR
-if the data is compressed. In pstore read, read the section type and
-update the 'compressed' flag accordingly.
+In pstore write, add character 'C'(compressed) or 'D'(decompressed)
+in the header while writing to Ram persistent buffer. In pstore read,
+read the header and update the 'compressed' flag accordingly.
 
 Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 ---
- drivers/acpi/apei/erst.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ fs/pstore/ram.c |   36 ++++++++++++++++++++++++++++--------
+ 1 file changed, 28 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index b0dca8e..62df189 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -956,6 +956,9 @@ static struct pstore_info erst_info = {
- #define CPER_SECTION_TYPE_DMESG						\
- 	UUID_LE(0xc197e04e, 0xd545, 0x4a70, 0x9c, 0x17, 0xa5, 0x54,	\
- 		0x94, 0x19, 0xeb, 0x12)
-+#define CPER_SECTION_TYPE_DMESG_Z					\
-+	UUID_LE(0x4f118707, 0x04dd, 0x4055, 0xb5, 0xdd, 0x95, 0x6d,	\
-+		0x34, 0xdd, 0xfa, 0xc6)
- #define CPER_SECTION_TYPE_MCE						\
- 	UUID_LE(0xfe08ffbe, 0x95e4, 0x4be7, 0xbc, 0x73, 0x40, 0x96,	\
- 		0x04, 0x4a, 0x38, 0xfc)
-@@ -1034,7 +1037,12 @@ skip:
- 	}
- 	memcpy(*buf, rcd->data, len - sizeof(*rcd));
- 	*id = record_id;
-+	*compressed = false;
- 	if (uuid_le_cmp(rcd->sec_hdr.section_type,
-+			CPER_SECTION_TYPE_DMESG_Z) == 0) {
-+		*type = PSTORE_TYPE_DMESG;
-+		*compressed = true;
-+	} else if (uuid_le_cmp(rcd->sec_hdr.section_type,
- 			CPER_SECTION_TYPE_DMESG) == 0)
- 		*type = PSTORE_TYPE_DMESG;
- 	else if (uuid_le_cmp(rcd->sec_hdr.section_type,
-@@ -1085,7 +1093,10 @@ static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
- 	rcd->sec_hdr.flags = CPER_SEC_PRIMARY;
- 	switch (type) {
- 	case PSTORE_TYPE_DMESG:
--		rcd->sec_hdr.section_type = CPER_SECTION_TYPE_DMESG;
-+		if (compressed)
-+			rcd->sec_hdr.section_type = CPER_SECTION_TYPE_DMESG_Z;
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 2927223..4027c20 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -131,6 +131,27 @@ ramoops_get_next_prz(struct persistent_ram_zone *przs[], uint *c, uint max,
+ 	return prz;
+ }
+ 
++static void ramoops_read_kmsg_hdr(char *buffer, struct timespec *time,
++				  bool *compressed)
++{
++	char data_type;
++
++	if (sscanf(buffer, RAMOOPS_KERNMSG_HDR "%lu.%lu-%c\n",
++			&time->tv_sec, &time->tv_nsec, &data_type) == 3) {
++		if (data_type == 'C')
++			*compressed = true;
 +		else
-+			rcd->sec_hdr.section_type = CPER_SECTION_TYPE_DMESG;
- 		break;
- 	case PSTORE_TYPE_MCE:
- 		rcd->sec_hdr.section_type = CPER_SECTION_TYPE_MCE;
++			*compressed = false;
++	} else if (sscanf(buffer, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
++			&time->tv_sec, &time->tv_nsec) == 2) {
++			*compressed = false;
++	} else {
++		time->tv_sec = 0;
++		time->tv_nsec = 0;
++		*compressed = false;
++	}
++}
++
+ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+ 				   int *count, struct timespec *time,
+ 				   char **buf, bool *compressed,
+@@ -153,10 +174,6 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+ 	if (!prz)
+ 		return 0;
+ 
+-	/* TODO(kees): Bogus time for the moment. */
+-	time->tv_sec = 0;
+-	time->tv_nsec = 0;
+-
+ 	size = persistent_ram_old_size(prz);
+ 
+ 	/* ECC correction notice */
+@@ -167,12 +184,14 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+ 		return -ENOMEM;
+ 
+ 	memcpy(*buf, persistent_ram_old(prz), size);
++	ramoops_read_kmsg_hdr(*buf, time, compressed);
+ 	persistent_ram_ecc_string(prz, *buf + size, ecc_notice_size + 1);
+ 
+ 	return size + ecc_notice_size;
+ }
+ 
+-static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
++static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz,
++				     bool compressed)
+ {
+ 	char *hdr;
+ 	struct timespec timestamp;
+@@ -183,8 +202,9 @@ static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
+ 		timestamp.tv_sec = 0;
+ 		timestamp.tv_nsec = 0;
+ 	}
+-	hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
+-		(long)timestamp.tv_sec, (long)(timestamp.tv_nsec / 1000));
++	hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu-%c\n",
++		(long)timestamp.tv_sec, (long)(timestamp.tv_nsec / 1000),
++		compressed ? 'C' : 'D');
+ 	WARN_ON_ONCE(!hdr);
+ 	len = hdr ? strlen(hdr) : 0;
+ 	persistent_ram_write(prz, hdr, len);
+@@ -243,7 +263,7 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
+ 
+ 	prz = cxt->przs[cxt->dump_write_cnt];
+ 
+-	hlen = ramoops_write_kmsg_hdr(prz);
++	hlen = ramoops_write_kmsg_hdr(prz, compressed);
+ 	if (size + hlen > prz->buffer_size)
+ 		size = prz->buffer_size - hlen;
+ 	persistent_ram_write(prz, buf, size);
 
