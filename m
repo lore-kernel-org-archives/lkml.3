@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab3HPOM2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 10:12:28 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:44481 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab3HPOMZ (ORCPT
+	id S1753717Ab3HPOMk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 10:12:40 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:58586 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364Ab3HPOMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 10:12:25 -0400
+	Fri, 16 Aug 2013 10:12:35 -0400
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: Sekhar Nori <nsekhar@ti.com>
 Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
@@ -14,32 +14,91 @@ Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         devicetree-discuss@lists.ozlabs.org,
         linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v5 0/2] ARM: davinci: da850: add ethernet driver DT support
-Date: Fri, 16 Aug 2013 19:41:00 +0530
-Message-Id: <1376662262-21795-1-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v5 1/2] ARM: davinci: da850: add DT node for ethernet
+Date: Fri, 16 Aug 2013 19:41:01 +0530
+Message-Id: <1376662262-21795-2-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1376662262-21795-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1376662262-21795-1-git-send-email-prabhakar.csengg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-This patch set enables Ethernet support through device tree model.
-This patch set enables mii interface only and is being tested to boot via
-rootfs. 
+Add ethernet device tree node information and pinmux for mii to da850 by
+providing interrupt details and local mac address.
 
-Patches 1-2 of v4 are queued for v3-12, just resending patch
-4-5 by fixing review comments pointed by Sergei
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ arch/arm/boot/dts/da850-evm.dts |    5 +++++
+ arch/arm/boot/dts/da850.dtsi    |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+)
 
-Lad, Prabhakar (2):
-  ARM: davinci: da850: add DT node for ethernet
-  ARM: davinci: da850: add OF_DEV_AUXDATA entry for davinci_emac
-
- arch/arm/boot/dts/da850-evm.dts  |    5 +++++
- arch/arm/boot/dts/da850.dtsi     |   30 ++++++++++++++++++++++++++++++
- arch/arm/mach-davinci/da8xx-dt.c |    2 ++
- 3 files changed, 37 insertions(+)
-
+diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+index 1f8cfdd..44f3fbc 100644
+--- a/arch/arm/boot/dts/da850-evm.dts
++++ b/arch/arm/boot/dts/da850-evm.dts
+@@ -96,6 +96,11 @@
+ 			pinctrl-0 = <&mdio_pins>;
+ 			bus_freq = <2200000>;
+ 		};
++		ethernet: emac@1e20000 {
++			status = "okay";
++			pinctrl-names = "default";
++			pinctrl-0 = <&mii_pins>;
++		};
+ 	};
+ 	nand_cs3@62000000 {
+ 		status = "okay";
+diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+index d5138b4..a5d30d9 100644
+--- a/arch/arm/boot/dts/da850.dtsi
++++ b/arch/arm/boot/dts/da850.dtsi
+@@ -131,6 +131,22 @@
+ 					0x10 0x00000088 0x000000ff
+ 				>;
+ 			};
++			mii_pins: pinmux_mii_pins {
++				pinctrl-single,bits = <
++					/*
++					 * MII_TXEN, MII_TXCLK, MII_COL
++					 * MII_TXD_3, MII_TXD_2, MII_TXD_1
++					 * MII_TXD_0
++					 */
++					0x8 0x88888880 0xfffffff0
++					/*
++					 * MII_RXER, MII_CRS, MII_RXCLK
++					 * MII_RXDV, MII_RXD_3, MII_RXD_2
++					 * MII_RXD_1, MII_RXD_0
++					 */
++					0xc 0x88888888 0xffffffff
++				>;
++			};
+ 
+ 		};
+ 		serial0: serial@1c42000 {
+@@ -226,6 +242,20 @@
+ 			#size-cells = <0>;
+ 			reg = <0x224000 0x1000>;
+ 		};
++		ethernet: emac@1e20000 {
++			compatible = "ti,davinci-dm6467-emac";
++			reg = <0x220000 0x4000>;
++			ti,davinci-ctrl-reg-offset = <0x3000>;
++			ti,davinci-ctrl-mod-reg-offset = <0x2000>;
++			ti,davinci-ctrl-ram-offset = <0>;
++			ti,davinci-ctrl-ram-size = <0x2000>;
++			local-mac-address = [ 00 00 00 00 00 00 ];
++			interrupts = <33
++					34
++					35
++					36
++					>;
++		};
+ 	};
+ 	nand_cs3@62000000 {
+ 		compatible = "ti,davinci-nand";
 -- 
 1.7.9.5
 
