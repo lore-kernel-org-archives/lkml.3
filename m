@@ -1,68 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab3HQAV4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:21:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51586 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab3HPWjC (ORCPT
+	id S1756324Ab3HQAWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:22:11 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:38819 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343Ab3HQAWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:02 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 113/133] sched: Ensure update_cfs_shares() is called for parents of continuously-running tasks
-Date: Fri, 16 Aug 2013 15:34:15 -0700
-Message-Id: <1376692475-28413-114-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 16 Aug 2013 20:22:08 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
+        Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v3 2/5] fs: Add inode_update_time_writable
+Date: Fri, 16 Aug 2013 16:22:09 -0700
+Message-Id: <a27accc2d9460b7ef194a203f305a18dafe926e8.1376679411.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <cover.1376679411.git.luto@amacapital.net>
+References: <cover.1376679411.git.luto@amacapital.net>
+In-Reply-To: <cover.1376679411.git.luto@amacapital.net>
+References: <cover.1376679411.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
+This is like file_update_time, except that it acts on a struct inode *
+instead of a struct file *.
 
-------------------
-
-From: Peter Zijlstra <peterz@infradead.org>
-
-commit bf0bd948d1682e3996adc093b43021ed391983e6 upstream.
-
-We typically update a task_group's shares within the dequeue/enqueue
-path.  However, continuously running tasks sharing a CPU are not
-subject to these updates as they are only put/picked.  Unfortunately,
-when we reverted f269ae046 (in 17bc14b7), we lost the augmenting
-periodic update that was supposed to account for this; resulting in a
-potential loss of fairness.
-
-To fix this, re-introduce the explicit update in
-update_cfs_rq_blocked_load() [called via entity_tick()].
-
-Reported-by: Max Hailperin <max@gustavus.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Paul Turner <pjt@google.com>
-Link: http://lkml.kernel.org/n/tip-9545m3apw5d93ubyrotrj31y@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- kernel/sched/fair.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/inode.c         | 72 ++++++++++++++++++++++++++++++++++++++++++------------
+ include/linux/fs.h |  1 +
+ 2 files changed, 58 insertions(+), 15 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 81fa536..7d0374f 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1964,6 +1964,7 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
- 	 */
- 	update_entity_load_avg(curr, 1);
- 	update_cfs_rq_blocked_load(cfs_rq, 1);
-+	update_cfs_shares(cfs_rq);
+diff --git a/fs/inode.c b/fs/inode.c
+index d6dfb09..bc90c12 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1637,6 +1637,34 @@ int file_remove_suid(struct file *file)
+ }
+ EXPORT_SYMBOL(file_remove_suid);
  
- #ifdef CONFIG_SCHED_HRTICK
- 	/*
++/*
++ * This does the work that's common to file_update_time and
++ * inode_update_time.
++ */
++static int prepare_update_cmtime(struct inode *inode, struct timespec *now)
++{
++	int sync_it;
++
++	/* First try to exhaust all avenues to not sync */
++	if (IS_NOCMTIME(inode))
++		return 0;
++
++	*now = current_fs_time(inode->i_sb);
++	if (!timespec_equal(&inode->i_mtime, now))
++		sync_it = S_MTIME;
++
++	if (!timespec_equal(&inode->i_ctime, now))
++		sync_it |= S_CTIME;
++
++	if (IS_I_VERSION(inode))
++		sync_it |= S_VERSION;
++
++	if (!sync_it)
++		return 0;
++
++	return sync_it;
++}
++
+ /**
+  *	file_update_time	-	update mtime and ctime time
+  *	@file: file accessed
+@@ -1654,23 +1682,9 @@ int file_update_time(struct file *file)
+ {
+ 	struct inode *inode = file_inode(file);
+ 	struct timespec now;
+-	int sync_it = 0;
++	int sync_it = prepare_update_cmtime(inode, &now);
+ 	int ret;
+ 
+-	/* First try to exhaust all avenues to not sync */
+-	if (IS_NOCMTIME(inode))
+-		return 0;
+-
+-	now = current_fs_time(inode->i_sb);
+-	if (!timespec_equal(&inode->i_mtime, &now))
+-		sync_it = S_MTIME;
+-
+-	if (!timespec_equal(&inode->i_ctime, &now))
+-		sync_it |= S_CTIME;
+-
+-	if (IS_I_VERSION(inode))
+-		sync_it |= S_VERSION;
+-
+ 	if (!sync_it)
+ 		return 0;
+ 
+@@ -1685,6 +1699,34 @@ int file_update_time(struct file *file)
+ }
+ EXPORT_SYMBOL(file_update_time);
+ 
++/**
++ *	inode_update_time_writable	-	update mtime and ctime time
++ *	@inode: inode accessed
++ *
++ *	This is like file_update_time, but it assumes the mnt is writable
++ *	and takes an inode parameter instead.  (We need to assume the mnt
++ *	was writable because inodes aren't associated with any particular
++ *	mnt.
++ */
++
++int inode_update_time_writable(struct inode *inode)
++{
++	struct timespec now;
++	int sync_it = prepare_update_cmtime(inode, &now);
++	int ret;
++
++	if (!sync_it)
++		return 0;
++
++	/* sb_start_pagefault and update_time can both sleep. */
++	sb_start_pagefault(inode->i_sb);
++	ret = update_time(inode, &now, sync_it);
++	sb_end_pagefault(inode->i_sb);
++
++	return ret;
++}
++EXPORT_SYMBOL(inode_update_time_writable);
++
+ int inode_needs_sync(struct inode *inode)
+ {
+ 	if (IS_SYNC(inode))
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 9818747..86cf0a4 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2590,6 +2590,7 @@ extern int inode_newsize_ok(const struct inode *, loff_t offset);
+ extern void setattr_copy(struct inode *inode, const struct iattr *attr);
+ 
+ extern int file_update_time(struct file *file);
++extern int inode_update_time_writable(struct inode *inode);
+ 
+ extern int generic_show_options(struct seq_file *m, struct dentry *root);
+ extern void save_mount_options(struct super_block *sb, char *options);
 -- 
-1.8.1.2
+1.8.3.1
 
