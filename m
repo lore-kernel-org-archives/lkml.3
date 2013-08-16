@@ -1,98 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab3HPW2l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:28:41 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:36502 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab3HPW2j (ORCPT
+	id S1754638Ab3HPWaH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:30:07 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54103 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306Ab3HPWaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:28:39 -0400
-Date: Fri, 16 Aug 2013 22:31:33 +0100
-From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
-        dmitry.torokhov@gmail.com, sameo@linux.intel.com, lee.jones@linaro.org,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Russ.Dill@ti.com
-Subject: Re: [PATCH 3/4] input: ti_tsc: Enable shared IRQ for TSC and add
- overrun, underflow checks
-Message-ID: <20130816213132.GD2636@gmail.com>
-References: <1376412499-21007-1-git-send-email-zubair.lutfullah@gmail.com>
- <1376412499-21007-4-git-send-email-zubair.lutfullah@gmail.com>
- <20130816091409.GC26895@linutronix.de>
+	Fri, 16 Aug 2013 18:30:02 -0400
+Date: Fri, 16 Aug 2013 14:25:49 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH RFC 3/3] spmi: document the PMIC arbiter SPMI bindings
+Message-ID: <20130816192549.GG4035@joshc.qualcomm.com>
+References: <cover.1376596224.git.joshc@codeaurora.org>
+ <b639088d50df93caaef8fe7e09c12953b1153ce8.1376596224.git.joshc@codeaurora.org>
+ <D1534646-7CB5-4EE7-8C1E-1C607BE22396@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130816091409.GC26895@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <D1534646-7CB5-4EE7-8C1E-1C607BE22396@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 11:14:09AM +0200, Sebastian Andrzej Siewior wrote:
-> * Zubair Lutfullah | 2013-08-13 17:48:18 [+0100]:
-> >+	if ((status & IRQENB_FIFO0OVRRUN) ||
-> >+			(status & IRQENB_FIFO0UNDRFLW)) {
-> >+
-> >+		config = titsc_readl(ts_dev, REG_CTRL);
-> >+		config &= ~(CNTRLREG_TSCSSENB);
-> >+		titsc_writel(ts_dev, REG_CTRL, config);
-> >+
-> >+		if (status & IRQENB_FIFO0UNDRFLW) {
-> >+			titsc_writel(ts_dev, REG_IRQSTATUS,
-> >+				(status | IRQENB_FIFO0UNDRFLW));
-> >+			irqclr |= IRQENB_FIFO0UNDRFLW;
-> >+		} else {
-> >+			titsc_writel(ts_dev, REG_IRQSTATUS,
-> >+				(status | IRQENB_FIFO0OVRRUN));
-> >+			irqclr |= IRQENB_FIFO0OVRRUN;
-> >+		}
+Hey Kumar-
+
+Thanks for the review.
+
+On Fri, Aug 16, 2013 at 01:53:27PM -0500, Kumar Gala wrote:
+> On Aug 9, 2013, at 3:37 PM, Josh Cartwright wrote:
 > 
-> You don't do anything on overflow / underflow. Is this due to the fact
-> once enabled for FIFO1 it also triggers for FIFO0?
+> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> > ---
+> > .../devicetree/bindings/spmi/spmi-pmic-arb.txt     | 26 ++++++++++++++++++++++
+> > 1 file changed, 26 insertions(+)
+> > create mode 100644 Documentation/devicetree/bindings/spmi/spmi-pmic-arb.txt
 > 
-The TSCADC module doesn't recover from these interrupts.
+> As this is a qcom specific binding, I think the file name should be msm-spmi-pmic-arb.txt or something like that.
 
-> >+		titsc_writel(ts_dev, REG_CTRL,
-> >+			(config | CNTRLREG_TSCSSENB));
+Agreed.  It might be nice to use a vendor prefix in the name too.  How's qcom,msm-pmic-arb.txt sound?
 
-The fix is to re-enable the module after disabling 
-and clearing the interrupts.
-
-That is what the handler is doing.
-> >+	} else if (status & IRQENB_FIFO0THRES) {
-> > 		titsc_read_coordinates(ts_dev, &x, &y, &z1, &z2);
-> > 
-> > 		if (ts_dev->pen_down && z1 != 0 && z2 != 0) {
-> >@@ -317,9 +342,11 @@ static irqreturn_t titsc_irq(int irq, void *dev)
-> > 	}
-> > 
-> > 	if (irqclr) {
-> >-		titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
-> >+		titsc_writel(ts_dev, REG_IRQSTATUS, (status | irqclr));
+> > diff --git a/Documentation/devicetree/bindings/spmi/spmi-pmic-arb.txt b/Documentation/devicetree/bindings/spmi/spmi-pmic-arb.txt
+> > new file mode 100644
+> > index 0000000..1c14bf4
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/spmi/spmi-pmic-arb.txt
+> > @@ -0,0 +1,26 @@
+> > +Qualcomm SPMI Controller (PMIC Arbiter)
 > 
-> Shouldn't FIFO1UNDRFLW & OVRRUN be handled by the adc driver? Why do you
-> or the unhandled bits as well here?
-FIFO1 is only used by TSC. ADC doesn't touch it.
+> We should get in the habit of trying to have at least one sentence about what the device is or does.
+
+Certainly.
+
+> > +
+> > +Required properties:
+> > +- compatible : should be "qcom,spmi-pmic-arb".
+> > +- reg-names  : should be "core", "intr", "cnfg"
+> > +- reg : offset and length of the PMIC Arbiter Core register map.
+> > +- reg : offset and length of the PMIC Arbiter Interrupt controller register map.
+> > +- reg : offset and length of the PMIC Arbiter Configuration register map.
+> > +- #address-cells : must be set to 1
+> > +- #size-cells : must be set to 0
 > 
-> > 		am335x_tsc_se_set(ts_dev->mfd_tscadc, ts_dev->step_mask);
-> >-		return IRQ_HANDLED;
-> >+		status = titsc_readl(ts_dev, REG_IRQSTATUS);
-> >+		if (status == false)
-> >+			return IRQ_HANDLED;
-> 
-> And why this? If you something you handled it, if you didn't you return
-> NONE. Why does it depend on REG_IRQSTATUS?
+> Hmm, you aren't describe anything about child nodes.
 
-These quirks are to handle the situation where both IRQs happen
-simultaneously. Which can occur when someone is using the TSC
-while continuously sampling using the ADC.
+Indeed.  I'll put together a generic SPMI binding document as you had
+suggested before and reference it in this binding.
 
-REG_IRQSTATUS has flags for FIFO0 used by ADC as well.
+  Josh
 
-If there are still those IRQs to handle, then IRQ_NONE is returned.
-Otherwise, all IRQ flags are clear so IRQ_HANDLED is returned.
-
-Thanks
-Zubair
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
