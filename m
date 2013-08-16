@@ -1,72 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab3HPRHP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 13:07:15 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:37347 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab3HPRHL (ORCPT
+	id S1754735Ab3HPRHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 13:07:45 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:59776 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644Ab3HPRHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 13:07:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130815110905.GO24092@twins.programming.kicks-ass.net>
-References: <1375778203-31343-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1375778203-31343-4-git-send-email-iamjoonsoo.kim@lge.com>
-	<20130815110905.GO24092@twins.programming.kicks-ass.net>
-Date: Sat, 17 Aug 2013 02:07:10 +0900
-Message-ID: <CAAmzW4Mf+dsQEGMe5vzg8VTO8UjN8jJQ44RkAsPMfLX3_r4Urw@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] sched: clean-up struct sd_lb_stat
-From: JoonSoo Kim <js1304@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 16 Aug 2013 13:07:41 -0400
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v6] ARM: davinci: da850: add DT node for ethernet
+Date: Fri, 16 Aug 2013 22:37:09 +0530
+Message-Id: <1376672829-4220-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/8/15 Peter Zijlstra <peterz@infradead.org>:
-> On Tue, Aug 06, 2013 at 05:36:43PM +0900, Joonsoo Kim wrote:
->> There is no reason to maintain separate variables for this_group
->> and busiest_group in sd_lb_stat, except saving some space.
->> But this structure is always allocated in stack, so this saving
->> isn't really benificial.
->>
->> This patch unify these variables, so IMO, readability may be improved.
->>
->> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> So I like the idea I had to reformat some of the code and I think we can
-> do less memsets. See how the below reduces the sds memset by the two
-> sgs. If we never set busiest we'll never look at sds->busiest_stat so we
-> don't need to clear that. And if we make the sgs memset in
-> update_sd_lb_stats() unconditional we'll cover sds->this_stats while
-> reducing complexity.
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-At first glance, below changes look good.
-When I return to the office on next Monday, I will look at it in detail.
-Just one comment below.
+Add ethernet device tree node information and pinmux for mii to da850 by
+providing interrupt details and local mac address.
 
-> @@ -4890,13 +4893,12 @@ static inline void calculate_imbalance(s
->   *                return the least loaded group whose CPUs can be
->   *                put to idle by rebalancing its tasks onto our group.
->   */
-> -static struct sched_group *
-> -find_busiest_group(struct lb_env *env)
-> +static struct sched_group *find_busiest_group(struct lb_env *env)
->  {
-> -       struct sd_lb_stats sds;
->         struct sg_lb_stats *this, *busiest;
-> +       struct sd_lb_stats sds;
->
-> -       memset(&sds, 0, sizeof(sds));
-> +       memset(&sds, 0, sizeof(sds) - 2*sizeof(struct sg_lb_stats));
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ Changes for v6:
+ 1: Fixed review comment pointed by Sergei.
+ 
+ arch/arm/boot/dts/da850-evm.dts |    5 +++++
+ arch/arm/boot/dts/da850.dtsi    |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+)
 
-How about using offsetof() macro, instead of using subtraction to
-calculate size?
+diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+index 1f8cfdd..588ce58 100644
+--- a/arch/arm/boot/dts/da850-evm.dts
++++ b/arch/arm/boot/dts/da850-evm.dts
+@@ -96,6 +96,11 @@
+ 			pinctrl-0 = <&mdio_pins>;
+ 			bus_freq = <2200000>;
+ 		};
++		eth0: ethernet@1e20000 {
++			status = "okay";
++			pinctrl-names = "default";
++			pinctrl-0 = <&mii_pins>;
++		};
+ 	};
+ 	nand_cs3@62000000 {
+ 		status = "okay";
+diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+index d5138b4..8d17346 100644
+--- a/arch/arm/boot/dts/da850.dtsi
++++ b/arch/arm/boot/dts/da850.dtsi
+@@ -131,6 +131,22 @@
+ 					0x10 0x00000088 0x000000ff
+ 				>;
+ 			};
++			mii_pins: pinmux_mii_pins {
++				pinctrl-single,bits = <
++					/*
++					 * MII_TXEN, MII_TXCLK, MII_COL
++					 * MII_TXD_3, MII_TXD_2, MII_TXD_1
++					 * MII_TXD_0
++					 */
++					0x8 0x88888880 0xfffffff0
++					/*
++					 * MII_RXER, MII_CRS, MII_RXCLK
++					 * MII_RXDV, MII_RXD_3, MII_RXD_2
++					 * MII_RXD_1, MII_RXD_0
++					 */
++					0xc 0x88888888 0xffffffff
++				>;
++			};
+ 
+ 		};
+ 		serial0: serial@1c42000 {
+@@ -226,6 +242,20 @@
+ 			#size-cells = <0>;
+ 			reg = <0x224000 0x1000>;
+ 		};
++		eth0: ethernet@1e20000 {
++			compatible = "ti,davinci-dm6467-emac";
++			reg = <0x220000 0x4000>;
++			ti,davinci-ctrl-reg-offset = <0x3000>;
++			ti,davinci-ctrl-mod-reg-offset = <0x2000>;
++			ti,davinci-ctrl-ram-offset = <0>;
++			ti,davinci-ctrl-ram-size = <0x2000>;
++			local-mac-address = [ 00 00 00 00 00 00 ];
++			interrupts = <33
++					34
++					35
++					36
++					>;
++		};
+ 	};
+ 	nand_cs3@62000000 {
+ 		compatible = "ti,davinci-nand";
+-- 
+1.7.9.5
 
-Thanks.
