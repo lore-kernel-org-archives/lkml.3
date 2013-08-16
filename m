@@ -1,114 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab3HPNTP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 09:19:15 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:58268 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072Ab3HPNTI (ORCPT
+	id S1754701Ab3HPNUs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 09:20:48 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:44184 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab3HPNUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 09:19:08 -0400
-Subject: [RFC PATCH v2 10/11] efi-pstore: Read and write to the 'compressed'
- flag of pstore
-To: linuxppc-dev@ozlabs.org, tony.luck@intel.com, linux-kernel@vger.kernel.org,
-        keescook@chromium.org
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: jkenisto@linux.vnet.ibm.com, ananth@in.ibm.com, benh@kernel.crashing.org,
-        cbouatmailru@gmail.com, mahesh@linux.vnet.ibm.com, ccross@android.com
-Date: Fri, 16 Aug 2013 18:48:57 +0530
-Message-ID: <20130816131857.3338.26295.stgit@aruna-ThinkPad-T420>
-In-Reply-To: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
-References: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
-User-Agent: StGit/0.16-41-gd1dd
+	Fri, 16 Aug 2013 09:20:42 -0400
+Message-ID: <520E2726.304@baylibre.com>
+Date: Fri, 16 Aug 2013 15:20:38 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Ruslan Bilovol <ruslan.bilovol@ti.com>
+CC: linux-omap <linux-omap@vger.kernel.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        uri.y@variscite.com, Nishanth Menon <nm@ti.com>
+Subject: Re: [PATCH v2 0/2] omap4/twl6030: typical connection to omap4 as
+ a separate dtsi file
+References: <1376469348-10797-1-git-send-email-ruslan.bilovol@ti.com> <520B8B45.1010300@baylibre.com> <CAB=otbTUk68CLmgQsEoefMMFTAnZCAMbZa-yiYmn1b3F1X8BiQ@mail.gmail.com>
+In-Reply-To: <CAB=otbTUk68CLmgQsEoefMMFTAnZCAMbZa-yiYmn1b3F1X8BiQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081700-3568-0000-0000-00000417FA7E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In pstore write, Efi will add a character 'C'(compressed) or
-D'(decompressed) in its header while writing to persistent store.
-In pstore read, read the header and update the 'compressed' flag
-accordingly.
+Hi Ruslan,
 
-Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
----
- drivers/firmware/efi/efi-pstore.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+On 16/08/2013 14:04, Ruslan Bilovol wrote:
+> Hi Benoit,
+> 
+> On Wed, Aug 14, 2013 at 4:51 PM, Benoit Cousson <bcousson@baylibre.com> wrote:
+>> Hi Ruslan,
+>>
+>> On 14/08/2013 10:35, Ruslan Bilovol wrote:
+>>>
+>>> Hello,
+>>>
+>>> There is no functional changes between v1 and v2 - just
+>>> added the patch for omap4-var-som - Uri Yosef confirmed
+>>> this board have the same connection of OMAP4<->TWL6030 as
+>>> SDP4430 board
+>>
+>>
+>> The series looks good to me, but it will be good to have a test for Panda
+>> and Variscite boards before merging it.
+> 
+> Okay, so I just verified this patch series on PandaBoard ES2. Should I
+> resubmit this series with
+> fixed commit message?
 
-diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
-index 9a5425f..5002d50 100644
---- a/drivers/firmware/efi/efi-pstore.c
-+++ b/drivers/firmware/efi/efi-pstore.c
-@@ -35,6 +35,7 @@ struct pstore_read_data {
- 	enum pstore_type_id *type;
- 	int *count;
- 	struct timespec *timespec;
-+	bool *compressed;
- 	char **buf;
- };
- 
-@@ -42,7 +43,7 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
- {
- 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
- 	struct pstore_read_data *cb_data = data;
--	char name[DUMP_NAME_LEN];
-+	char name[DUMP_NAME_LEN], data_type;
- 	int i;
- 	int cnt;
- 	unsigned int part;
-@@ -54,12 +55,23 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
- 	for (i = 0; i < DUMP_NAME_LEN; i++)
- 		name[i] = entry->var.VariableName[i];
- 
--	if (sscanf(name, "dump-type%u-%u-%d-%lu",
-+	if (sscanf(name, "dump-type%u-%u-%d-%lu-%c",
-+		   cb_data->type, &part, &cnt, &time, &data_type) == 5) {
-+		*cb_data->id = part;
-+		*cb_data->count = cnt;
-+		cb_data->timespec->tv_sec = time;
-+		cb_data->timespec->tv_nsec = 0;
-+		if (data_type == 'C')
-+			*cb_data->compressed = true;
-+		else
-+			*cb_data->compressed = false;
-+	} else if (sscanf(name, "dump-type%u-%u-%d-%lu",
- 		   cb_data->type, &part, &cnt, &time) == 4) {
- 		*cb_data->id = part;
- 		*cb_data->count = cnt;
- 		cb_data->timespec->tv_sec = time;
- 		cb_data->timespec->tv_nsec = 0;
-+		*cb_data->compressed = false;
- 	} else if (sscanf(name, "dump-type%u-%u-%lu",
- 			  cb_data->type, &part, &time) == 3) {
- 		/*
-@@ -71,6 +83,7 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
- 		*cb_data->count = 0;
- 		cb_data->timespec->tv_sec = time;
- 		cb_data->timespec->tv_nsec = 0;
-+		*cb_data->compressed = false;
- 	} else
- 		return 0;
- 
-@@ -96,6 +109,7 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 	data.type = type;
- 	data.count = count;
- 	data.timespec = timespec;
-+	data.compressed = compressed;
- 	data.buf = buf;
- 
- 	return __efivar_entry_iter(efi_pstore_read_func, &efivar_sysfs_list, &data,
-@@ -112,8 +126,8 @@ static int efi_pstore_write(enum pstore_type_id type,
- 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
- 	int i, ret = 0;
- 
--	sprintf(name, "dump-type%u-%u-%d-%lu", type, part, count,
--		get_seconds());
-+	sprintf(name, "dump-type%u-%u-%d-%lu-%c", type, part, count,
-+		get_seconds(), compressed ? 'C' : 'D');
- 
- 	for (i = 0; i < DUMP_NAME_LEN; i++)
- 		efi_name[i] = name[i];
+No, that's fine, I already applied it and fixed the subject and the changelog.
+
+Here it is:
+
+commit 2e25df1e5a4af906a9b25332719ace000063eb0d
+Author: Ruslan Bilovol <ruslan.bilovol@ti.com>
+Date:   Wed Aug 14 11:35:47 2013 +0300
+
+    ARM: dts: twl6030: Move common configuration for OMAP4 boards in a separate dtsi file
+    
+    The OMAP4 SoC family uses specially-designed PMIC (power management IC)
+    companion chip for power management needs: TWL6030/TWL6032.
+    Therefore there is a typical connection of PMIC to OMAP4 so we can
+    move it into separate .dtsi file and do not duplicate over
+    board-specific files.
+    
+    Tested on OMAP4 SDP board and compile-tested for Panda board
+    
+    Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
+    Signed-off-by: Benoit Cousson <bcousson@baylibre.com>
+
+
+Just let me know if you are OK with the updated version.
+
+> However I cannot verify the patch for Variscite board because I do not
+> own any such board so
+> you can drop that patch. But maybe Uri Yosef can verify it. Uri?
+
+It seems that Uri cannot test it right now, so I will have to drop that one.
+
+Thanks,
+Benoit
 
