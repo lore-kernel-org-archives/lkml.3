@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab3HPNtV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 09:49:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62525 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab3HPNtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 09:49:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,895,1367996400"; 
-   d="scan'208";a="387317666"
-Message-ID: <1376661291.2089.361.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] m25p80 / fast read
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-mtd@lists.infradead.org, Marek Vasut <marex@denx.de>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Date: Fri, 16 Aug 2013 16:54:51 +0300
-In-Reply-To: <1376302946-11534-1-git-send-email-s.hauer@pengutronix.de>
-References: <1376302946-11534-1-git-send-email-s.hauer@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754669Ab3HPNuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 09:50:14 -0400
+Received: from mailman.olhcc.edu ([66.210.239.126]:42583 "EHLO
+	mailman.olhcc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab3HPNuL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 09:50:11 -0400
+X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Aug 2013 09:50:10 EDT
+From: "Roussel, Daniel" <droussel@olhcc.edu>
+Subject: It is Private
+Thread-Topic: It is Private
+Thread-Index: Ac6ahsJJwPrSacCuQ/+jQVENlt6kKw==
+Date: Fri, 16 Aug 2013 13:44:41 +0000
+Message-ID: <5F01BFF2D455C0448CD3A8E018CC7FAFB47E8224@VSP-3.hcc.local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [84.120.98.49]
+x-kse-antivirus-interceptor-info: scan successful
+x-kse-antivirus-info: Clean
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-12 at 12:22 +0200, Sascha Hauer wrote:
-> The following adds support for the mr25h10 chip to to the m25p80
-> driver.
-> 
-> This driver currently has the problem that it unconditionally uses
-> the fast_read command once it's enabled in Kconfig which of course
-> leads to problems with multiboard kernels. This series adds a flag
-> to the chip specific data to solve this. Also some unnecessary ifdefs
-> are removed.
+It is Private
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+I am George Daniels, a Banker and credit system programmer (HSBC bank).
+I saw your email address while browsing through  the bank D.T.C Screen in my office yesterday so I decided to use this very chance to know you. I believe we should use every opportunity to know each other better. However, I am contacting you for obvious reason which you will understand.
 
-I'll let Biran take a look, and tomorrow apply, unless he applies
-himself or has objections.
+I am sending this mail just to know if this email address is OK,
+reply me back so that I will send  more details to you.
+I have a very important thing to discuss with you, I look forward to receiving your response at
+georgedaniels@postino.net<mailto:georgedaniels@postino.net>. Have a pleasant day.
 
--- 
-Best Regards,
-Artem Bityutskiy
-
+George Daniels
