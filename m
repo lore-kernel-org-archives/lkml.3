@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111Ab3HPWv2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:51:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51902 "EHLO
+	id S1758068Ab3HPWv6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:51:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51886 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab3HPWlL (ORCPT
+	with ESMTP id S1755111Ab3HPWlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:41:11 -0400
+	Fri, 16 Aug 2013 18:41:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 032/133] md/raid5: fix interaction of 'replace' and 'recovery'.
-Date: Fri, 16 Aug 2013 15:32:54 -0700
-Message-Id: <1376692475-28413-33-git-send-email-kamal@canonical.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 026/133] staging: comedi: fix a race between do_cmd_ioctl() and read/write
+Date: Fri, 16 Aug 2013 15:32:48 -0700
+Message-Id: <1376692475-28413-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -26,110 +28,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit f94c0b6658c7edea8bc19d13be321e3860a3fa54 upstream.
+commit 4b18f08be01a7b3c7b6df497137b6e3cb28adaa3 upstream.
 
-If a device in a RAID4/5/6 is being replaced while another is being
-recovered, then the writes to the replacement device currently don't
-happen, resulting in corruption when the replacement completes and the
-new drive takes over.
+`do_cmd_ioctl()` is called with the comedi device's mutex locked to
+process the `COMEDI_CMD` ioctl to set up comedi's asynchronous command
+handling on a comedi subdevice.  `comedi_read()` and `comedi_write()`
+are the `read` and `write` handlers for the comedi device, but do not
+lock the mutex (for performance reasons, as some things can hold the
+mutex for quite a long time).
 
-This is because the replacement writes are only triggered when
-'s.replacing' is set and not when the similar 's.sync' is set (which
-is the case during resync and recovery - it means all devices need to
-be read).
+There is a race condition if `comedi_read()` or `comedi_write()` is
+running at the same time and for the same file object and comedi
+subdevice as `do_cmd_ioctl()`.  `do_cmd_ioctl()` sets the subdevice's
+`busy` pointer to the file object way before it sets the `SRF_RUNNING` flag
+in the subdevice's `runflags` member.  `comedi_read() and
+`comedi_write()` check the subdevice's `busy` pointer is pointing to the
+current file object, then if the `SRF_RUNNING` flag is not set, will call
+`do_become_nonbusy()` to shut down the asyncronous command.  Bad things
+can happen if the asynchronous command is being shutdown and set up at
+the same time.
 
-So schedule those writes when s.replacing is set as well.
+To prevent the race, don't set the `busy` pointer until
+after the `SRF_RUNNING` flag has been set.  Also, make sure the mutex is
+held in `comedi_read()` and `comedi_write()` while calling
+`do_become_nonbusy()` in order to avoid moving the race condition to a
+point within that function.
 
-In this case we cannot use "STRIPE_INSYNC" to record that the
-replacement has happened as that is needed for recording that any
-parity calculation is complete.  So introduce STRIPE_REPLACED to
-record if the replacement has happened.
+Change some error handling `goto cleanup` statements in `do_cmd_ioctl()`
+to simple `return -ERRFOO` statements as a result of changing when the
+`busy` pointer is set.
 
-For safety we should also check that STRIPE_COMPUTE_RUN is not set.
-This has a similar effect to the "s.locked == 0" test.  The latter
-ensure that now IO has been flagged but not started.  The former
-checks if any parity calculation has been flagged by not started.
-We must wait for both of these to complete before triggering the
-'replace'.
-
-Add a similar test to the subsequent check for "are we finished yet".
-This possibly isn't needed (is subsumed in the STRIPE_INSYNC test),
-but it makes it more obvious that the REPLACE will happen before we
-think we are finished.
-
-Finally if a NeedReplace device is not UPTODATE then that is an
-error.  We really must trigger a warning.
-
-This bug was introduced in commit 9a3e1101b827a59ac9036a672f5fa8d5279d0fe2
-(md/raid5:  detect and handle replacements during recovery.)
-which introduced replacement for raid5.
-That was in 3.3-rc3, so any stable kernel since then would benefit
-from this fix.
-
-Reported-by: qindehua <13691222965@163.com>
-Tested-by: qindehua <qindehua@163.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/raid5.c | 15 ++++++++++-----
- drivers/md/raid5.h |  1 +
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ drivers/staging/comedi/comedi_fops.c | 25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 9a6ff72..5b022b1 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -3491,6 +3491,7 @@ static void handle_stripe(struct stripe_head *sh)
- 		    test_and_clear_bit(STRIPE_SYNC_REQUESTED, &sh->state)) {
- 			set_bit(STRIPE_SYNCING, &sh->state);
- 			clear_bit(STRIPE_INSYNC, &sh->state);
-+			clear_bit(STRIPE_REPLACED, &sh->state);
- 		}
- 		spin_unlock(&sh->stripe_lock);
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index 929452e..fbd9231 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1180,22 +1180,19 @@ static int do_cmd_ioctl(struct comedi_device *dev,
+ 		DPRINTK("subdevice busy\n");
+ 		return -EBUSY;
  	}
-@@ -3636,19 +3637,23 @@ static void handle_stripe(struct stripe_head *sh)
- 			handle_parity_checks5(conf, sh, &s, disks);
+-	s->busy = file;
+ 
+ 	/* make sure channel/gain list isn't too long */
+ 	if (cmd.chanlist_len > s->len_chanlist) {
+ 		DPRINTK("channel/gain list too long %u > %d\n",
+ 			cmd.chanlist_len, s->len_chanlist);
+-		ret = -EINVAL;
+-		goto cleanup;
++		return -EINVAL;
  	}
  
--	if (s.replacing && s.locked == 0
--	    && !test_bit(STRIPE_INSYNC, &sh->state)) {
-+	if ((s.replacing || s.syncing) && s.locked == 0
-+	    && !test_bit(STRIPE_COMPUTE_RUN, &sh->state)
-+	    && !test_bit(STRIPE_REPLACED, &sh->state)) {
- 		/* Write out to replacement devices where possible */
- 		for (i = 0; i < conf->raid_disks; i++)
--			if (test_bit(R5_UPTODATE, &sh->dev[i].flags) &&
--			    test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
-+			if (test_bit(R5_NeedReplace, &sh->dev[i].flags)) {
-+				WARN_ON(!test_bit(R5_UPTODATE, &sh->dev[i].flags));
- 				set_bit(R5_WantReplace, &sh->dev[i].flags);
- 				set_bit(R5_LOCKED, &sh->dev[i].flags);
- 				s.locked++;
- 			}
--		set_bit(STRIPE_INSYNC, &sh->state);
-+		if (s.replacing)
-+			set_bit(STRIPE_INSYNC, &sh->state);
-+		set_bit(STRIPE_REPLACED, &sh->state);
+ 	/* make sure channel/gain list isn't too short */
+ 	if (cmd.chanlist_len < 1) {
+ 		DPRINTK("channel/gain list too short %u < 1\n",
+ 			cmd.chanlist_len);
+-		ret = -EINVAL;
+-		goto cleanup;
++		return -EINVAL;
  	}
- 	if ((s.syncing || s.replacing) && s.locked == 0 &&
-+	    !test_bit(STRIPE_COMPUTE_RUN, &sh->state) &&
- 	    test_bit(STRIPE_INSYNC, &sh->state)) {
- 		md_done_sync(conf->mddev, STRIPE_SECTORS, 1);
- 		clear_bit(STRIPE_SYNCING, &sh->state);
-diff --git a/drivers/md/raid5.h b/drivers/md/raid5.h
-index 050a334..7b20e03 100644
---- a/drivers/md/raid5.h
-+++ b/drivers/md/raid5.h
-@@ -310,6 +310,7 @@ enum {
- 	STRIPE_SYNC_REQUESTED,
- 	STRIPE_SYNCING,
- 	STRIPE_INSYNC,
-+	STRIPE_REPLACED,
- 	STRIPE_PREREAD_ACTIVE,
- 	STRIPE_DELAYED,
- 	STRIPE_DEGRADED,
+ 
+ 	async->cmd = cmd;
+@@ -1205,8 +1202,7 @@ static int do_cmd_ioctl(struct comedi_device *dev,
+ 	    kmalloc(async->cmd.chanlist_len * sizeof(int), GFP_KERNEL);
+ 	if (!async->cmd.chanlist) {
+ 		DPRINTK("allocation failed\n");
+-		ret = -ENOMEM;
+-		goto cleanup;
++		return -ENOMEM;
+ 	}
+ 
+ 	if (copy_from_user(async->cmd.chanlist, user_chanlist,
+@@ -1258,6 +1254,9 @@ static int do_cmd_ioctl(struct comedi_device *dev,
+ 
+ 	comedi_set_subdevice_runflags(s, ~0, SRF_USER | SRF_RUNNING);
+ 
++	/* set s->busy _after_ setting SRF_RUNNING flag to avoid race with
++	 * comedi_read() or comedi_write() */
++	s->busy = file;
+ 	ret = s->do_cmd(dev, s);
+ 	if (ret == 0)
+ 		return 0;
+@@ -1860,6 +1859,7 @@ static ssize_t comedi_write(struct file *file, const char __user *buf,
+ 
+ 		if (!(comedi_get_subdevice_runflags(s) & SRF_RUNNING)) {
+ 			if (count == 0) {
++				mutex_lock(&dev->mutex);
+ 				if (comedi_get_subdevice_runflags(s) &
+ 					SRF_ERROR) {
+ 					retval = -EPIPE;
+@@ -1867,6 +1867,7 @@ static ssize_t comedi_write(struct file *file, const char __user *buf,
+ 					retval = 0;
+ 				}
+ 				do_become_nonbusy(dev, s);
++				mutex_unlock(&dev->mutex);
+ 			}
+ 			break;
+ 		}
+@@ -1981,6 +1982,7 @@ static ssize_t comedi_read(struct file *file, char __user *buf, size_t nbytes,
+ 
+ 		if (n == 0) {
+ 			if (!(comedi_get_subdevice_runflags(s) & SRF_RUNNING)) {
++				mutex_lock(&dev->mutex);
+ 				do_become_nonbusy(dev, s);
+ 				if (comedi_get_subdevice_runflags(s) &
+ 				    SRF_ERROR) {
+@@ -1988,6 +1990,7 @@ static ssize_t comedi_read(struct file *file, char __user *buf, size_t nbytes,
+ 				} else {
+ 					retval = 0;
+ 				}
++				mutex_unlock(&dev->mutex);
+ 				break;
+ 			}
+ 			if (file->f_flags & O_NONBLOCK) {
+@@ -2025,9 +2028,11 @@ static ssize_t comedi_read(struct file *file, char __user *buf, size_t nbytes,
+ 		buf += n;
+ 		break;		/* makes device work like a pipe */
+ 	}
+-	if (!(comedi_get_subdevice_runflags(s) & (SRF_ERROR | SRF_RUNNING)) &&
+-	    async->buf_read_count - async->buf_write_count == 0) {
+-		do_become_nonbusy(dev, s);
++	if (!(comedi_get_subdevice_runflags(s) & (SRF_ERROR | SRF_RUNNING))) {
++		mutex_lock(&dev->mutex);
++		if (async->buf_read_count - async->buf_write_count == 0)
++			do_become_nonbusy(dev, s);
++		mutex_unlock(&dev->mutex);
+ 	}
+ 	set_current_state(TASK_RUNNING);
+ 	remove_wait_queue(&async->wait_head, &wait);
 -- 
 1.8.1.2
 
