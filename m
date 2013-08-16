@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab3HPQjH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 12:39:07 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753150Ab3HPQjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 12:39:05 -0400
-Message-ID: <520E55A2.9080900@nod.at>
-Date: Fri, 16 Aug 2013 18:38:58 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754444Ab3HPQkP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 12:40:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34103 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752409Ab3HPQkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 12:40:11 -0400
+Date: Fri, 16 Aug 2013 18:41:57 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Mike Christie <mchristie@fusionio.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Message-ID: <20130816164156.GA14582@dhcp-26-207.brq.redhat.com>
+References: <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
+ <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
+ <1374248000.2266.20.camel@dabdike>
+ <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+ <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+ <51EAA33C.9010405@fusionio.com>
+ <20130809191542.GD25306@dhcp-26-207.brq.redhat.com>
+ <1376079457.5171.172.camel@haakon3.risingtidesystems.com>
+ <20130815162316.GA27882@dhcp-26-207.brq.redhat.com>
+ <1376619569.5171.217.camel@haakon3.risingtidesystems.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [PATCH] print_worker_info: Handle pointer with more care
-References: <1376668606-32354-1-git-send-email-richard@nod.at> <20130816161229.GI2505@htj.dyndns.org> <520E500B.5000408@nod.at> <20130816162844.GJ2505@htj.dyndns.org>
-In-Reply-To: <20130816162844.GJ2505@htj.dyndns.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376619569.5171.217.camel@haakon3.risingtidesystems.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.08.2013 18:28, schrieb Tejun Heo:
-> On Fri, Aug 16, 2013 at 06:15:07PM +0200, Richard Weinberger wrote:
->> On UML I hit the case that pwq is NULL.
->> Then we oops at &pwq->wq...
-> 
-> Hmmm?  I'm confused.  &pwq->wq is pwq's pointer + wq's offset in pwq.
-> It doesn't involve dereferencing pwq->wq.  Maybe uml isn't
-> implementing probe_kernel_thread()?  Now that I think about it, I'm
-> not sure how it could.
-> 
-> cc'ing uml people.  Hey, guys, workqueue uses proble_kernel_read() to
-> print out workqueue related information during oops because those
-> events are completely asynchronous and workqueue states may not be
-> consistently accessible.  It seems like uml doesn't implement
-> probe_kernel_read() and tries direct derference of incorrect pointers
-> leading to its own oops.  Maybe uml should check whether the memory is
-> mapped from probe_kernel_read()?
+On Thu, Aug 15, 2013 at 07:19:29PM -0700, Nicholas A. Bellinger wrote:
+> I'm playing with a patch to do this, but am currently getting hung-up on
+> what appear to be some separate blk-mq reserved_tags > 0 bugs, the first
+> of which is passing queue_depth=1 + reserved_tags=1 is broken, and
+> results in tags->nr_free = 0.
 
-You are already talking to UML people. ;)
-Anyway, I'll investigate into that.
-What I see so far is that pwq is NULL after probe_kernel_read().
+That is not a bug - please look at Jens replies in this thread some week ago.
+In short, queue_depth=1 means 1 tags in total and reserved_tags=1 results
+in zero normal tags. You need to request the depth=2 and reserved_tags=1.
 
-Thanks,
-//richard
+But yes, this is a separate topic and I am looking forward to hear from Jens
+wrt flushes.
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
