@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab3HPWha (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:37:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51440 "EHLO
+	id S1755981Ab3HPWhi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:37:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51449 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755869Ab3HPWh2 (ORCPT
+	with ESMTP id S1754727Ab3HPWhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:37:28 -0400
+	Fri, 16 Aug 2013 18:37:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 076/133] ARM: update FIQ support for relocation of vectors
-Date: Fri, 16 Aug 2013 15:33:38 -0700
-Message-Id: <1376692475-28413-77-git-send-email-kamal@canonical.com>
+Subject: [PATCH 085/133] x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
+Date: Fri, 16 Aug 2013 15:33:47 -0700
+Message-Id: <1376692475-28413-86-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,82 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: "H.J. Lu" <hjl.tools@gmail.com>
 
-commit e39e3f3ebfef03450cf7bfa7a974a8c61f7980c8 upstream.
+commit eaa5a990191d204ba0f9d35dbe5505ec2cdd1460 upstream.
 
-FIQ should no longer copy the FIQ code into the user visible vector
-page.  Instead, it should use the hidden page.  This change makes
-that happen.
+GCC will optimize mxcsr_feature_mask_init in arch/x86/kernel/i387.c:
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = fx_scratch.mxcsr_mask;
+		if (mask == 0)
+			mask = 0x0000ffbf;
+
+to
+
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = 0x0000ffbf;
+
+since asm statement doesn’t say it will update fx_scratch.  As the
+result, the DAZ bit will be cleared.  This patch fixes it. This bug
+dates back to at least kernel 2.6.12.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/kernel/entry-armv.S |  3 +++
- arch/arm/kernel/fiq.c        | 19 ++++++++++++++-----
- 2 files changed, 17 insertions(+), 5 deletions(-)
+ arch/x86/kernel/i387.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index c19779f..4c28aff 100644
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -1162,6 +1162,9 @@ vector_addrexcptn:
- vector_fiq:
- 	subs	pc, lr, #4
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index cb33909..f7ea30d 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -116,7 +116,7 @@ static void __cpuinit mxcsr_feature_mask_init(void)
  
-+	.globl	vector_fiq_offset
-+	.equ	vector_fiq_offset, vector_fiq
-+
- 	.section .vectors, "ax", %progbits
- __vectors_start:
- 	W(b)	vector_rst
-diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
-index 2adda11..25442f4 100644
---- a/arch/arm/kernel/fiq.c
-+++ b/arch/arm/kernel/fiq.c
-@@ -47,6 +47,11 @@
- #include <asm/irq.h>
- #include <asm/traps.h>
- 
-+#define FIQ_OFFSET ({					\
-+		extern void *vector_fiq_offset;		\
-+		(unsigned)&vector_fiq_offset;		\
-+	})
-+
- static unsigned long no_fiq_insn;
- 
- /* Default reacquire function
-@@ -80,13 +85,16 @@ int show_fiq_list(struct seq_file *p, int prec)
- void set_fiq_handler(void *start, unsigned int length)
- {
- #if defined(CONFIG_CPU_USE_DOMAINS)
--	memcpy((void *)0xffff001c, start, length);
-+	void *base = (void *)0xffff0000;
- #else
--	memcpy(vectors_page + 0x1c, start, length);
-+	void *base = vectors_page;
- #endif
--	flush_icache_range(0xffff001c, 0xffff001c + length);
-+	unsigned offset = FIQ_OFFSET;
-+
-+	memcpy(base + offset, start, length);
-+	flush_icache_range(0xffff0000 + offset, 0xffff0000 + offset + length);
- 	if (!vectors_high())
--		flush_icache_range(0x1c, 0x1c + length);
-+		flush_icache_range(offset, offset + length);
- }
- 
- int claim_fiq(struct fiq_handler *f)
-@@ -144,6 +152,7 @@ EXPORT_SYMBOL(disable_fiq);
- 
- void __init init_FIQ(int start)
- {
--	no_fiq_insn = *(unsigned long *)0xffff001c;
-+	unsigned offset = FIQ_OFFSET;
-+	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
- 	fiq_start = start;
- }
+ 	if (cpu_has_fxsr) {
+ 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+-		asm volatile("fxsave %0" : : "m" (fx_scratch));
++		asm volatile("fxsave %0" : "+m" (fx_scratch));
+ 		mask = fx_scratch.mxcsr_mask;
+ 		if (mask == 0)
+ 			mask = 0x0000ffbf;
 -- 
 1.8.1.2
 
