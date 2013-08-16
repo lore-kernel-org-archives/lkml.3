@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab3HPQCr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 12:02:47 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40570 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527Ab3HPQCn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 12:02:43 -0400
-Message-ID: <520E4D1F.3000509@wwwdotorg.org>
-Date: Fri, 16 Aug 2013 10:02:39 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752578Ab3HPQJO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 12:09:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44508 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751634Ab3HPQJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 12:09:09 -0400
+Date: Fri, 16 Aug 2013 18:02:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20130816160201.GA31682@redhat.com>
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-3-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-To: Caizhiyong <caizhiyong@huawei.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Karel Zak <kzak@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
-        Quyaxin <quyaxin@huawei.com>
-Subject: Re: [PATCH] block: support embedded device command line partition
-References: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com> <520CF92A.90909@wwwdotorg.org> <C3050A4DBA34F345975765E43127F10F1C0643F8@szxeml512-mbx.china.huawei.com>
-In-Reply-To: <C3050A4DBA34F345975765E43127F10F1C0643F8@szxeml512-mbx.china.huawei.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376667753-29014-3-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2013 08:54 PM, Caizhiyong wrote:
->>> +blkdevparts=<blkdev-def>[;<blkdev-def>]
->>> +  <blkdev-def> := <blkdev-id>:<partdef>[,<partdef>]
->>> +    <partdef> := <size>[@<offset>](part-name)
->>> +
->>> +<blkdev-id>
->>> +    block device disk name, embedded device used fixed block device,
->>> +    it's disk name also fixed. such as: mmcblk0, mmcblk1, mmcblk0boot0.
->>
->> The device-name isn't always fixed.
->>
->> For example, what if there are multiple SDHCI controllers, one hosting a
->> fixed eMMC device and the other an SD card? It's quite typical for the
->> eMMC's device name (which is likely what should be affected by this
->> feature) to be mmcblk0 when no SD card is present, yet be mmcblk1 when
->> an SD card is present. Is there a more precise/stable way to define
->> which device the command-line option applies to?
->   
-> Yes. Fixed is for single controller.
-> For multiple controllers, currently, there is not a simple way.
-> I tend to do something in the eMMC driver, such as initialize order,
-> but I have not tried.
+Thanks Frederic!
 
-There have been proposals before to try and create a fixed naming for
-the controllers (or rather the block devices they generate...) but
-they've been rejected. I don't think we should rely on being able to do
-that.
+I'll try to read this series carefully later. Not that I think
+I can help, you certainly understand this much better.
 
->>> +
->>> +<offset>
->>> +    partition start address, in bytes.
->>> +
->>> +(part-name)
->>> +    partition name, kernel send uevent with "PARTNAME". application can create
->>> +    a link to block device partition with the name "PARTNAME".
->>> +    user space application can access partition by partition name.
->>
->> Do partitions usually have a PARTNAME attribute when probed through
->> normal mechanisms like MBR? If so, I guess this is fine.
->>
->> Perhaps we can just use , as the delimiter for all fields, rather than
->> special-casing part-name to use (), so:
->>
->> size,offset,partname,size,offset,partname,...
->>
->> The partname field could easily be empty if not needed.
-> 
-> If no need partname, your bootargs are mmcblk0:1G,1G,1G,...
+Just one question below,
 
-Well, you always need the offset too. I don't think there's any harm in
-forcing all fields to be specified in all cases; it makes the whole
-system much more regular and less error-prone.
+On 08/16, Frederic Weisbecker wrote:
+>
+> @@ -499,12 +509,15 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+>  	if (last_update_time)
+>  		*last_update_time = ktime_to_us(now);
+>  
+> -	if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+> -		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+> -		iowait = ktime_add(ts->iowait_sleeptime, delta);
+> -	} else {
+> -		iowait = ts->iowait_sleeptime;
+> -	}
+> +	do {
+> +		seq = read_seqcount_begin(&ts->sleeptime_seq);
+> +		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+> +			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+> +			iowait = ktime_add(ts->iowait_sleeptime, delta);
+> +		} else {
+> +			iowait = ts->iowait_sleeptime;
+> +		}
+> +	} while (read_seqcount_retry(&ts->sleeptime_seq, seq));
 
-Alternatively, use a different separator between fields for a given
-partition, and between partitions, e.g.:
+Unless I missread this patch, this is still racy a bit.
 
-size,offset,partname;size,offset,partname
+Suppose it is called on CPU_0 and cpu == 1. Suppose that
+ts->idle_active == T and nr_iowait_cpu(cpu) == 1.
 
-That way, you know that if you see a ; you're looking at a new
-partition, and hence the partname field need not always be specified.
-Although, if you want to specify a partname but not an offset you'd
-still need empty fields, so just requiring all fields to always be
-present still seems safest to me.
+So we return iowait_sleeptime + delta.
+
+Suppose that we call get_cpu_iowait_time_us() again. By this time
+the task which incremented ->nr_iowait can be woken up on another
+CPU, and it can do atomic_dec(rq->nr_iowait). So the next time
+we return iowait_sleeptime, and this is not monotonic again.
+
+No?
+
+Oleg.
+
