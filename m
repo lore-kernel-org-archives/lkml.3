@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3HPKWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 06:22:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48953 "EHLO comal.ext.ti.com"
+	id S1755152Ab3HPKWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 06:22:30 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45837 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753929Ab3HPKVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 06:21:34 -0400
+	id S1754835Ab3HPKWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 06:22:13 -0400
+Message-ID: <520DFD2D.9020408@ti.com>
+Date: Fri, 16 Aug 2013 15:51:33 +0530
 From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <bcousson@baylibre.com>, <swarren@wwwdotorg.org>, <tony@atomide.com>,
-        <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>
-CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
-        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <kishon@ti.com>, <balbi@ti.com>
-Subject: [PATCH v2] extcon: palmas: Modified the compatible type to *ti,palmas-usb-vid*
-Date: Fri, 16 Aug 2013 15:50:48 +0530
-Message-ID: <1376648448-27447-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Benoit Cousson <bcousson@baylibre.com>
+CC: "J, KEERTHY" <j-keerthy@ti.com>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>
+Subject: Re: [PATCH] arm: omap5: dts: split SMPS10 dt node
+References: <1376300221-15172-1-git-send-email-kishon@ti.com> <520A32CF.1010701@baylibre.com> <520A4685.7050503@ti.com> <520A474F.9080500@baylibre.com> <520DB559.80305@ti.com> <520DE8C1.2080406@baylibre.com>
+In-Reply-To: <520DE8C1.2080406@baylibre.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Palmas device contains only a USB VID detector, so modified the
-compatible type to *ti,palmas-usb-vid*.
+On Friday 16 August 2013 02:24 PM, Benoit Cousson wrote:
+> On 16/08/2013 07:15, Kishon Vijay Abraham I wrote:
+>> Hi Benoit,
+>>
+>> On Tuesday 13 August 2013 08:18 PM, Benoit Cousson wrote:
+>>> On 13/08/2013 16:45, Kishon Vijay Abraham I wrote:
+>>>> Hi,
+>>>>
+>>>> On Tuesday 13 August 2013 06:51 PM, Benoit Cousson wrote:
+>>>>> Hi Kishon,
+>>>>>
+>>>>> On 12/08/2013 11:37, Kishon Vijay Abraham I wrote:
+>>>>>> SMPS10 has two outputs OUT1 and OUT2. Hence SMPS10 is modeled as
+>>>>>> two regulators. The dt node is split to reflect it.
+>>>>>
+>>>>> Mmm, I'm curious. How is it supposed to work?
+>>>>>
+>>>>> Do you have dedicated control on each output?
+>>>>
+>>>> Yes. It can be controlled by setting different values to the same bit fields.
+>>>> You can refer [1] where we actually implement SMPS10 as two different
+>>>> regulators.
+>>>>
+>>>> [1] -> http://permalink.gmane.org/gmane.linux.kernel/1542521
+>>>
+>>> Great, thanks.
+>>>
+>>> Can we merge that one safely if the driver changed are not done yet?
+>>
+>> I think it shouldn't cause any issues. However Mark has already merged the
+>> driver changes.
+> 
+> Cool. I've just applied your patch in for_3.12/dts
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
-Changes from v1:
-* removed the existing compatible types and changed it to *ti,palmas-usb-vid*
+Thanks :-)
 
- Documentation/devicetree/bindings/extcon/extcon-palmas.txt |    4 ++--
- drivers/extcon/extcon-palmas.c                             |    3 +--
- 2 files changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
-index 7dab6a8..00859f6 100644
---- a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
-+++ b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
-@@ -2,7 +2,7 @@ EXTCON FOR PALMAS/TWL CHIPS
- 
- PALMAS USB COMPARATOR
- Required Properties:
-- - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb"
-+ - compatible : Should be "ti,palmas-usb-vid".
- 
- Optional Properties:
-  - ti,wakeup : To enable the wakeup comparator in probe
-@@ -10,6 +10,6 @@ Optional Properties:
-  - ti,enable-vbus-detection: Perform VBUS detection.
- 
- palmas-usb {
--       compatible = "ti,twl6035-usb", "ti,palmas-usb";
-+       compatible = "ti,palmas-usb-vid";
-        ti,wakeup;
- };
-diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
-index 89fdd05..f3ed2d7 100644
---- a/drivers/extcon/extcon-palmas.c
-+++ b/drivers/extcon/extcon-palmas.c
-@@ -267,8 +267,7 @@ static const struct dev_pm_ops palmas_pm_ops = {
- };
- 
- static struct of_device_id of_palmas_match_tbl[] = {
--	{ .compatible = "ti,palmas-usb", },
--	{ .compatible = "ti,twl6035-usb", },
-+	{ .compatible = "ti,palmas-usb-vid", },
- 	{ /* end */ }
- };
- 
--- 
-1.7.10.4
-
+Regards
+Kishon
