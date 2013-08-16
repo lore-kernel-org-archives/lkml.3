@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab3HPWlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:41:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51953 "EHLO
+	id S1757444Ab3HPWmm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:42:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51968 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757291Ab3HPWl1 (ORCPT
+	with ESMTP id S1757356Ab3HPWlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:41:27 -0400
+	Fri, 16 Aug 2013 18:41:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wolfram Sang <wsa@the-dreams.de>,
+Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 056/133] serial: mxs: fix buffer overflow
-Date: Fri, 16 Aug 2013 15:33:18 -0700
-Message-Id: <1376692475-28413-57-git-send-email-kamal@canonical.com>
+Subject: [PATCH 053/133] USB: mos7840: fix device-type detection
+Date: Fri, 16 Aug 2013 15:33:15 -0700
+Message-Id: <1376692475-28413-54-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,34 +28,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa@the-dreams.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 4829e7650f8a40645e4e32b26a37fb833a5e75f0 upstream.
+commit 40c24f2893ba0ba7df485871f6aac0c197ceef5b upstream.
 
-SMATCH correctly found an off-by-one error:
+Fix race in device-type detection introduced by commit 0eafe4de ("USB:
+serial: mos7840: add support for MCS7810 devices") which used a static
+variable to hold the device type.
 
-drivers/tty/serial/mxs-auart.c:889 auart_console_write() error: buffer overflow 'auart_port' 5 <= 5
+Move type detection to probe and use serial data to store the device
+type.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/tty/serial/mxs-auart.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/mos7840.c | 75 +++++++++++++++++++++-----------------------
+ 1 file changed, 35 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
-index f0d17ee..6b00fa5 100644
---- a/drivers/tty/serial/mxs-auart.c
-+++ b/drivers/tty/serial/mxs-auart.c
-@@ -885,7 +885,7 @@ auart_console_write(struct console *co, const char *str, unsigned int count)
- 	unsigned int old_ctrl0, old_ctrl2;
- 	unsigned int to = 1000;
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index eab52f6..343a179 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -187,8 +187,6 @@ enum mos7840_flag {
+ 	MOS7840_FLAG_CTRL_BUSY,
+ };
  
--	if (co->index >	MXS_AUART_PORTS || co->index < 0)
-+	if (co->index >= MXS_AUART_PORTS || co->index < 0)
- 		return;
+-static int device_type;
+-
+ static const struct usb_device_id id_table[] = {
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
+@@ -867,18 +865,6 @@ static void mos7840_bulk_out_data_callback(struct urb *urb)
+ /************************************************************************/
+ /*       D R I V E R  T T Y  I N T E R F A C E  F U N C T I O N S       */
+ /************************************************************************/
+-#ifdef MCSSerialProbe
+-static int mos7840_serial_probe(struct usb_serial *serial,
+-				const struct usb_device_id *id)
+-{
+-
+-	/*need to implement the mode_reg reading and updating\
+-	   structures usb_serial_ device_type\
+-	   (i.e num_ports, num_bulkin,bulkout etc) */
+-	/* Also we can update the changes  attach */
+-	return 1;
+-}
+-#endif
  
- 	s = auart_port[co->index];
+ /*****************************************************************************
+  * mos7840_open
+@@ -2333,38 +2319,48 @@ static int mos7810_check(struct usb_serial *serial)
+ 	return 0;
+ }
+ 
+-static int mos7840_calc_num_ports(struct usb_serial *serial)
++static int mos7840_probe(struct usb_serial *serial,
++				const struct usb_device_id *id)
+ {
+-	__u16 data = 0x00;
++	u16 product = serial->dev->descriptor.idProduct;
+ 	u8 *buf;
+-	int mos7840_num_ports;
++	int device_type;
++
++	if (product == MOSCHIP_DEVICE_ID_7810 ||
++		product == MOSCHIP_DEVICE_ID_7820) {
++		device_type = product;
++		goto out;
++	}
+ 
+ 	buf = kzalloc(VENDOR_READ_LENGTH, GFP_KERNEL);
+-	if (buf) {
+-		usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
++	if (!buf)
++		return -ENOMEM;
++
++	usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+ 			MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, buf,
+ 			VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
+-		data = *buf;
+-		kfree(buf);
+-	}
+ 
+-	if (serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7810 ||
+-		serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7820) {
+-		device_type = serial->dev->descriptor.idProduct;
+-	} else {
+-		/* For a MCS7840 device GPIO0 must be set to 1 */
+-		if ((data & 0x01) == 1)
+-			device_type = MOSCHIP_DEVICE_ID_7840;
+-		else if (mos7810_check(serial))
+-			device_type = MOSCHIP_DEVICE_ID_7810;
+-		else
+-			device_type = MOSCHIP_DEVICE_ID_7820;
+-	}
++	/* For a MCS7840 device GPIO0 must be set to 1 */
++	if (buf[0] & 0x01)
++		device_type = MOSCHIP_DEVICE_ID_7840;
++	else if (mos7810_check(serial))
++		device_type = MOSCHIP_DEVICE_ID_7810;
++	else
++		device_type = MOSCHIP_DEVICE_ID_7820;
++
++	kfree(buf);
++out:
++	usb_set_serial_data(serial, (void *)device_type);
++
++	return 0;
++}
++
++static int mos7840_calc_num_ports(struct usb_serial *serial)
++{
++	int device_type = (int)usb_get_serial_data(serial);
++	int mos7840_num_ports;
+ 
+ 	mos7840_num_ports = (device_type >> 4) & 0x000F;
+-	serial->num_bulk_in = mos7840_num_ports;
+-	serial->num_bulk_out = mos7840_num_ports;
+-	serial->num_ports = mos7840_num_ports;
+ 
+ 	return mos7840_num_ports;
+ }
+@@ -2372,6 +2368,7 @@ static int mos7840_calc_num_ports(struct usb_serial *serial)
+ static int mos7840_port_probe(struct usb_serial_port *port)
+ {
+ 	struct usb_serial *serial = port->serial;
++	int device_type = (int)usb_get_serial_data(serial);
+ 	struct moschip_port *mos7840_port;
+ 	int status;
+ 	int pnum;
+@@ -2630,9 +2627,7 @@ static struct usb_serial_driver moschip7840_4port_device = {
+ 	.throttle = mos7840_throttle,
+ 	.unthrottle = mos7840_unthrottle,
+ 	.calc_num_ports = mos7840_calc_num_ports,
+-#ifdef MCSSerialProbe
+-	.probe = mos7840_serial_probe,
+-#endif
++	.probe = mos7840_probe,
+ 	.ioctl = mos7840_ioctl,
+ 	.set_termios = mos7840_set_termios,
+ 	.break_ctl = mos7840_break,
 -- 
 1.8.1.2
 
