@@ -1,166 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab3HPRkc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 13:40:32 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:38197 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab3HPRju (ORCPT
+	id S1754890Ab3HPRme (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 13:42:34 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:59387 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab3HPRma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 13:39:50 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Sudeep.KarkadaNagesha@arm.com,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [RFC PATCH v2 3/4] powerpc: refactor of_get_cpu_node to support other architectures
-Date: Fri, 16 Aug 2013 18:39:50 +0100
-Message-Id: <1376674791-28244-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376674791-28244-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376674791-28244-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 16 Aug 2013 17:39:46.0126 (UTC) FILETIME=[993A16E0:01CE9AA7]
-X-MC-Unique: 113081618394800901
-Content-Type: text/plain; charset=WINDOWS-1252
+	Fri, 16 Aug 2013 13:42:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130816173850.GC7975@xanatos>
+References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
+	<70b3564625bbda6247cc5627041344fef8a762ae.1376582695.git.d.kasatkin@samsung.com>
+	<20130816001716.GA7367@kroah.com>
+	<20130816172635.GA7975@xanatos>
+	<20130816173035.GA15607@kroah.com>
+	<20130816173850.GC7975@xanatos>
+Date: Fri, 16 Aug 2013 20:42:29 +0300
+Message-ID: <CACE9dm9_CgTRrBBn8nOfq0=YZPNo1rWraqWq4jccH6cpJpAPPg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] xhci:prevent "callbacks suppressed" when debug is not enabled
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7GHenVW024402
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+On Fri, Aug 16, 2013 at 8:38 PM, Sarah Sharp
+<sarah.a.sharp@linux.intel.com> wrote:
+> On Fri, Aug 16, 2013 at 10:30:35AM -0700, Greg KH wrote:
+>> On Fri, Aug 16, 2013 at 10:26:35AM -0700, Sarah Sharp wrote:
+>> > On Thu, Aug 15, 2013 at 05:17:16PM -0700, Greg KH wrote:
+>> > > On Thu, Aug 15, 2013 at 07:04:55PM +0300, Dmitry Kasatkin wrote:
+>> > > > When debug is not enabled and dev_dbg() will expand to nothing,
+>> > > > log might be flooded with "callbacks suppressed". If it was not
+>> > > > done on purpose, better to use dev_dbg_ratelimited() instead.
+>> > > >
+>> > > > Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+>> > > > ---
+>> > > >  drivers/usb/host/xhci-ring.c | 6 ++----
+>> > > >  1 file changed, 2 insertions(+), 4 deletions(-)
+>> > >
+>> > >
+>> > > Sarah, does this patch conflict with the trace debug patches being
+>> > > worked on?  I'll hold off on applying it for now, let me know if it's ok
+>> > > or not.
+>> >
+>> > It doesn't conflict with the trace debug patches, because those only
+>> > effect debugging with xhci_dbg with the host device, not dev_dbg with
+>> > the USB device.  This should apply fine to usb-next.
+>>
+>> Ok, can I get your ack for it so I can apply it?
+>
+> Dmitry, can you fix the indentation issue and resubmit this?  I'll ack
+> it then.
+>
+> Sarah Sharp
 
-Currently different drivers requiring to access cpu device node are
-parsing the device tree themselves. Since the ordering in the DT need
-not match the logical cpu ordering, the parsing logic needs to consider
-that. However, this has resulted in lots of code duplication and in some
-cases even incorrect logic.
+Sure.
 
-It's better to consolidate them by adding support for getting cpu
-device node for a given logical cpu index in DT core library. However
-logical to physical index mapping can be architecture specific.
-
-PowerPC has it's own implementation to get the cpu node for a given
-logical index.
-
-This patch refactors the current implementation of of_get_cpu_node.
-This in preparation to move the implementation to DT core library.
-It separates out the logical to physical mapping so that a default
-matching of the physical id to the logical cpu index can be added
-when moved to common code. Architecture specific code can override it.
-
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
----
- arch/powerpc/kernel/prom.c | 76 ++++++++++++++++++++++++++++------------------
- 1 file changed, 47 insertions(+), 29 deletions(-)
-
-diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-index eb23ac9..fb12be6 100644
---- a/arch/powerpc/kernel/prom.c
-+++ b/arch/powerpc/kernel/prom.c
-@@ -865,45 +865,63 @@ static int __init prom_reconfig_setup(void)
- __initcall(prom_reconfig_setup);
- #endif
- 
-+bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
-+{
-+	return (int)phys_id == get_hard_smp_processor_id(cpu);
-+}
-+
-+static bool __of_find_n_match_cpu_property(struct device_node *cpun,
-+			const char *prop_name, int cpu, unsigned int *thread)
-+{
-+	const __be32 *cell;
-+	int ac, prop_len, tid;
-+	u64 hwid;
-+
-+	ac = of_n_addr_cells(cpun);
-+	cell = of_get_property(cpun, prop_name, &prop_len);
-+	if (!cell)
-+		return false;
-+	prop_len /= sizeof(*cell);
-+	for (tid = 0; tid < prop_len; tid++) {
-+		hwid = of_read_number(cell, ac);
-+		if (arch_match_cpu_phys_id(cpu, hwid)) {
-+			if (thread)
-+				*thread = tid;
-+			return true;
-+		}
-+		cell += ac;
-+	}
-+	return false;
-+}
-+
- /* Find the device node for a given logical cpu number, also returns the cpu
-  * local thread number (index in ibm,interrupt-server#s) if relevant and
-  * asked for (non NULL)
-  */
- struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
- {
--	int hardid;
--	struct device_node *np;
-+	struct device_node *cpun, *cpus;
- 
--	hardid = get_hard_smp_processor_id(cpu);
-+	cpus = of_find_node_by_path("/cpus");
-+	if (!cpus) {
-+		pr_warn("Missing cpus node, bailing out\n");
-+		return NULL;
-+	}
- 
--	for_each_node_by_type(np, "cpu") {
--		const u32 *intserv;
--		unsigned int plen, t;
-+	for_each_child_of_node(cpus, cpun) {
-+		if (of_node_cmp(cpun->type, "cpu"))
-+			continue;
- 
--		/* Check for ibm,ppc-interrupt-server#s. If it doesn't exist
--		 * fallback to "reg" property and assume no threads
-+		/* Check for historical "ibm,ppc-interrupt-server#s" property
-+		 * for thread ids on PowerPC. If it doesn't exist fallback to
-+		 * standard "reg" property.
- 		 */
--		intserv = of_get_property(np, "ibm,ppc-interrupt-server#s",
--				&plen);
--		if (intserv == NULL) {
--			const u32 *reg = of_get_property(np, "reg", NULL);
--			if (reg == NULL)
--				continue;
--			if (*reg == hardid) {
--				if (thread)
--					*thread = 0;
--				return np;
--			}
--		} else {
--			plen /= sizeof(u32);
--			for (t = 0; t < plen; t++) {
--				if (hardid == intserv[t]) {
--					if (thread)
--						*thread = t;
--					return np;
--				}
--			}
--		}
-+		if (__of_find_n_match_cpu_property(cpun,
-+				"ibm,ppc-interrupt-server#s", cpu, thread))
-+			return cpun;
-+
-+		if (__of_find_n_match_cpu_property(cpun, "reg", cpu, thread))
-+			return cpun;
- 	}
- 	return NULL;
- }
--- 
-1.8.1.2
-
-
+Thanks
+Dmitry
