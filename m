@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab3HPMEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 08:04:34 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:58915 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112Ab3HPMEb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 08:04:31 -0400
+	id S1755554Ab3HPMGp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 08:06:45 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53717 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754372Ab3HPMGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 08:06:41 -0400
+Message-ID: <520E14C5.9090308@ti.com>
+Date: Fri, 16 Aug 2013 17:32:13 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <520B8B45.1010300@baylibre.com>
-References: <1376469348-10797-1-git-send-email-ruslan.bilovol@ti.com>
-	<520B8B45.1010300@baylibre.com>
-Date: Fri, 16 Aug 2013 15:04:29 +0300
-X-Google-Sender-Auth: tqLNaR0ZSoWI8KazD-btzZVSBBA
-Message-ID: <CAB=otbTUk68CLmgQsEoefMMFTAnZCAMbZa-yiYmn1b3F1X8BiQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/2] omap4/twl6030: typical connection to omap4 as a
- separate dtsi file
-From: Ruslan Bilovol <ruslan.bilovol@ti.com>
-To: Benoit Cousson <bcousson@baylibre.com>
-Cc: linux-omap <linux-omap@vger.kernel.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        uri.y@variscite.com, Nishanth Menon <nm@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hebbar Gururaja <gururaja.hebbar@ti.com>
+CC: <khilman@linaro.org>, <tony@atomide.com>, <benoit.cousson@gmail.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch V2 2/4] ARM: Davinci: da8xx/omap-l1: Remove hard coding
+ of rtc device wakeup
+References: <1372841225-18813-1-git-send-email-gururaja.hebbar@ti.com> <1372841225-18813-3-git-send-email-gururaja.hebbar@ti.com>
+In-Reply-To: <1372841225-18813-3-git-send-email-gururaja.hebbar@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+On Wednesday 03 July 2013 02:17 PM, Hebbar Gururaja wrote:
+> Since now rtc-omap driver itself calls deice_init_wakeup(dev, true),
+> duplicate call from the rtc device registration can be removed.
+> 
+> This is basically a partial revert of the prev commit
+> 
+> commit 75c99bb0006ee065b4e2995078d779418b0fab54
+> Author: Sekhar Nori <nsekhar@ti.com>
+> 
+>     davinci: da8xx/omap-l1: mark RTC as a wakeup source
+> 
+> Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+> Acked-by: Kevin Hilman <khilman@linaro.org>
+> Acked-by: Sekhar Nori <nsekhar@ti.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
 
-On Wed, Aug 14, 2013 at 4:51 PM, Benoit Cousson <bcousson@baylibre.com> wrote:
-> Hi Ruslan,
->
-> On 14/08/2013 10:35, Ruslan Bilovol wrote:
->>
->> Hello,
->>
->> There is no functional changes between v1 and v2 - just
->> added the patch for omap4-var-som - Uri Yosef confirmed
->> this board have the same connection of OMAP4<->TWL6030 as
->> SDP4430 board
->
->
-> The series looks good to me, but it will be good to have a test for Panda
-> and Variscite boards before merging it.
+Queuing for v3.12. In subject line, please use lower case except for
+acronyms and for "ARM". Also, we dont use omap-l1 to avoid confusion
+with the real omaps. Just da8xx is enough. I have fixed these locally
+this time.
 
-Okay, so I just verified this patch series on PandaBoard ES2. Should I
-resubmit this series with
-fixed commit message?
-However I cannot verify the patch for Variscite board because I do not
-own any such board so
-you can drop that patch. But maybe Uri Yosef can verify it. Uri?
+Thanks,
+Sekhar
 
->
-> Regards,
-> Benoit
-
--- 
-Best regards,
-Ruslan Bilvol
