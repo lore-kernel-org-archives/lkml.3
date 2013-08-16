@@ -1,98 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab3HPC02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 22:26:28 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:43144 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab3HPC0V (ORCPT
+	id S1753403Ab3HPCym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 22:54:42 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:57502 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752987Ab3HPCyh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 22:26:21 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: [PATCH 04/34] cpufreq: at32ap: remove calls to cpufreq_notify_transition()
-Date: Fri, 16 Aug 2013 07:55:01 +0530
-Message-Id: <1507bf552f7f9f61197c599236be870e739b337c.1376619363.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1376619363.git.viresh.kumar@linaro.org>
-References: <cover.1376619363.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1376619363.git.viresh.kumar@linaro.org>
-References: <cover.1376619363.git.viresh.kumar@linaro.org>
+	Thu, 15 Aug 2013 22:54:37 -0400
+From: Caizhiyong <caizhiyong@huawei.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Karel Zak <kzak@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
+        Quyaxin <quyaxin@huawei.com>
+Subject: RE: [PATCH] block: support embedded device command line partition
+Thread-Topic: [PATCH] block: support embedded device command line partition
+Thread-Index: Ac6QL80+CfVf2IEATPuoaFA0S7oaSQJXItIAACUqDBA=
+Date: Fri, 16 Aug 2013 02:54:04 +0000
+Message-ID: <C3050A4DBA34F345975765E43127F10F1C0643F8@szxeml512-mbx.china.huawei.com>
+References: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com>
+ <520CF92A.90909@wwwdotorg.org>
+In-Reply-To: <520CF92A.90909@wwwdotorg.org>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.67.223.18]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the drivers do following in their ->target_index() routines:
+> > +blkdevparts=<blkdev-def>[;<blkdev-def>]
+> > +  <blkdev-def> := <blkdev-id>:<partdef>[,<partdef>]
+> > +    <partdef> := <size>[@<offset>](part-name)
+> > +
+> > +<blkdev-id>
+> > +    block device disk name, embedded device used fixed block device,
+> > +    it's disk name also fixed. such as: mmcblk0, mmcblk1, mmcblk0boot0.
+> 
+> The device-name isn't always fixed.
+> 
+> For example, what if there are multiple SDHCI controllers, one hosting a
+> fixed eMMC device and the other an SD card? It's quite typical for the
+> eMMC's device name (which is likely what should be affected by this
+> feature) to be mmcblk0 when no SD card is present, yet be mmcblk1 when
+> an SD card is present. Is there a more precise/stable way to define
+> which device the command-line option applies to?
+  
+Yes. Fixed is for single controller.
+For multiple controllers, currently, there is not a simple way.
+I tend to do something in the eMMC driver, such as initialize order,
+but I have not tried.
 
-	struct cpufreq_freqs freqs;
-	freqs.old = old freq...
-	freqs.new = new freq...
+> 
+> For the root= command-line option, we use UUID= or PARTUUID= to work
+> around this issue, but that won't work for naming the whole device.
+> 
+> What about using the MMIO address of the controller hosting the device,
+> or something like that?
+> 
 
-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+  MMIO may be not a good idea, it is not intuitive. 
 
-	/* Change rate here */
+> > +<size>
+> > +    partition size, in bytes, such as: 512, 1m, 1G.
+> 
+> s/m/M/?
+> 
+> I assume M/G are MiB/GiB?
+> 
+> Does it make sense to allow specifying the sizes in units of
+> sectors/blocks? If so, which specific block/sector size in the case of
+> things like NAND flash which IIRC have multiple types/levels of sectors;
+> perhaps this is a bad idea. I guess we could easily add this feature
+> later by introducing a new suffix, so no need to solve the issue now.
+> 
+> > +
+> > +<offset>
+> > +    partition start address, in bytes.
+> > +
+> > +(part-name)
+> > +    partition name, kernel send uevent with "PARTNAME". application can create
+> > +    a link to block device partition with the name "PARTNAME".
+> > +    user space application can access partition by partition name.
+> 
+> Do partitions usually have a PARTNAME attribute when probed through
+> normal mechanisms like MBR? If so, I guess this is fine.
+> 
+> Perhaps we can just use , as the delimiter for all fields, rather than
+> special-casing part-name to use (), so:
+> 
+> size,offset,partname,size,offset,partname,...
+> 
+> The partname field could easily be empty if not needed.
+> 
 
-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
-
-This is replicated over all cpufreq drivers today and there doesn't exists a
-good enough reason why this shouldn't be moved to cpufreq core instead.
-
-Earlier patches have added support in cpufreq core to do cpufreq notification on
-frequency change, this one removes it from this driver.
-
-Some related minor cleanups are also done along with it.
-
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/at32ap-cpufreq.c | 22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/cpufreq/at32ap-cpufreq.c b/drivers/cpufreq/at32ap-cpufreq.c
-index 81d0752..856ad80 100644
---- a/drivers/cpufreq/at32ap-cpufreq.c
-+++ b/drivers/cpufreq/at32ap-cpufreq.c
-@@ -37,27 +37,23 @@ static unsigned long	loops_per_jiffy_ref;
+If no need partname, your bootargs are mmcblk0:1G,1G,1G,...
  
- static int at32_set_target(struct cpufreq_policy *policy, unsigned int index)
- {
--	struct cpufreq_freqs freqs;
-+	unsigned int old_freq, new_freq;
- 
--	freqs.old = at32_get_speed(0);
--	freqs.new = freq_table[index].frequency;
-+	old_freq = at32_get_speed(0);
-+	new_freq = freq_table[index].frequency;
- 
- 	if (!ref_freq) {
--		ref_freq = freqs.old;
-+		ref_freq = old_freq;
- 		loops_per_jiffy_ref = boot_cpu_data.loops_per_jiffy;
- 	}
- 
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
--	if (freqs.old < freqs.new)
-+	if (old_freq < new_freq)
- 		boot_cpu_data.loops_per_jiffy = cpufreq_scale(
--				loops_per_jiffy_ref, ref_freq, freqs.new);
--	clk_set_rate(cpuclk, freqs.new * 1000);
--	if (freqs.new < freqs.old)
-+				loops_per_jiffy_ref, ref_freq, new_freq);
-+	clk_set_rate(cpuclk, new_freq * 1000);
-+	if (new_freq < old_freq)
- 		boot_cpu_data.loops_per_jiffy = cpufreq_scale(
--				loops_per_jiffy_ref, ref_freq, freqs.new);
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--
--	pr_debug("cpufreq: set frequency %u Hz\n", freqs.new * 1000);
-+				loops_per_jiffy_ref, ref_freq, new_freq);
- 
- 	return 0;
- }
--- 
-1.7.12.rc2.18.g61b472e
+> > +Example:
+> > +    eMMC disk name is "mmcblk0" and "mmcblk0boot0"
+> > +
+> > +  bootargs:
+> > +
+> 'blkdevparts=mmcblk0:1G(data0),1G(data1),-;mmcblk0boot0:1m(boot),-(kernel)'
+> > +
+> > +  dmesg:
+> > +    mmcblk0: p1(data0) p2(data1) p3()
+> > +    mmcblk0boot0: p1(boot) p2(kernel)
 
