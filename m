@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab3HPWiK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:38:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51503 "EHLO
+	id S1755119Ab3HQAYs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:24:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51498 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175Ab3HPWiG (ORCPT
+	with ESMTP id S1756084Ab3HPWiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:38:06 -0400
+	Fri, 16 Aug 2013 18:38:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yonghua Zheng <younghua.zheng@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Michal Tesar <mtesar@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 122/133] fs/proc/task_mmu.c: fix buffer overflow in add_page_map()
-Date: Fri, 16 Aug 2013 15:34:24 -0700
-Message-Id: <1376692475-28413-123-git-send-email-kamal@canonical.com>
+Subject: [PATCH 124/133] sysctl net: Keep tcp_syn_retries inside the boundary
+Date: Fri, 16 Aug 2013 15:34:26 -0700
+Message-Id: <1376692475-28413-125-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -29,70 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: yonghua zheng <younghua.zheng@gmail.com>
+From: Michal Tesar <mtesar@redhat.com>
 
-commit 8c8296223f3abb142be8fc31711b18a704c0e7d8 upstream.
+[ Upstream commit 651e92716aaae60fc41b9652f54cb6803896e0da ]
 
-Recently we met quite a lot of random kernel panic issues after enabling
-CONFIG_PROC_PAGE_MONITOR.  After debuggind we found this has something
-to do with following bug in pagemap:
+Limit the min/max value passed to the
+/proc/sys/net/ipv4/tcp_syn_retries.
 
-In struct pagemapread:
-
-  struct pagemapread {
-      int pos, len;
-      pagemap_entry_t *buffer;
-      bool v2;
-  };
-
-pos is number of PM_ENTRY_BYTES in buffer, but len is the size of
-buffer, it is a mistake to compare pos and len in add_page_map() for
-checking buffer is full or not, and this can lead to buffer overflow and
-random kernel panic issue.
-
-Correct len to be total number of PM_ENTRY_BYTES in buffer.
-
-[akpm@linux-foundation.org: document pagemapread.pos and .len units, fix PM_ENTRY_BYTES definition]
-Signed-off-by: Yonghua Zheng <younghua.zheng@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michal Tesar <mtesar@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/proc/task_mmu.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/ipv4/sysctl_net_ipv4.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index ca5ce7f..f31d90f 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -792,14 +792,14 @@ typedef struct {
- } pagemap_entry_t;
+diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+index d84400b..63632ea 100644
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -35,6 +35,8 @@ static int tcp_adv_win_scale_min = -31;
+ static int tcp_adv_win_scale_max = 31;
+ static int ip_ttl_min = 1;
+ static int ip_ttl_max = 255;
++static int tcp_syn_retries_min = 1;
++static int tcp_syn_retries_max = MAX_TCP_SYNCNT;
+ static int ip_ping_group_range_min[] = { 0, 0 };
+ static int ip_ping_group_range_max[] = { GID_T_MAX, GID_T_MAX };
  
- struct pagemapread {
--	int pos, len;
-+	int pos, len;		/* units: PM_ENTRY_BYTES, not bytes */
- 	pagemap_entry_t *buffer;
- };
- 
- #define PAGEMAP_WALK_SIZE	(PMD_SIZE)
- #define PAGEMAP_WALK_MASK	(PMD_MASK)
- 
--#define PM_ENTRY_BYTES      sizeof(u64)
-+#define PM_ENTRY_BYTES      sizeof(pagemap_entry_t)
- #define PM_STATUS_BITS      3
- #define PM_STATUS_OFFSET    (64 - PM_STATUS_BITS)
- #define PM_STATUS_MASK      (((1LL << PM_STATUS_BITS) - 1) << PM_STATUS_OFFSET)
-@@ -1038,8 +1038,8 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
- 	if (!count)
- 		goto out_task;
- 
--	pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
--	pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
-+	pm.len = (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
-+	pm.buffer = kmalloc(pm.len * PM_ENTRY_BYTES, GFP_TEMPORARY);
- 	ret = -ENOMEM;
- 	if (!pm.buffer)
- 		goto out_task;
+@@ -330,7 +332,9 @@ static struct ctl_table ipv4_table[] = {
+ 		.data		= &sysctl_tcp_syn_retries,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &tcp_syn_retries_min,
++		.extra2		= &tcp_syn_retries_max
+ 	},
+ 	{
+ 		.procname	= "tcp_synack_retries",
 -- 
 1.8.1.2
 
