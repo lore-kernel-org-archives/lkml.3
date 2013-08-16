@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab3HPWYj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:24:39 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:51744 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408Ab3HPWYg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:24:36 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC 1/4] driver core: Register SoC bus after platform bus
-Date: Fri, 16 Aug 2013 22:39:20 +0200
-Message-Id: <1376685563-1053-2-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1376685563-1053-1-git-send-email-treding@nvidia.com>
-References: <1376685563-1053-1-git-send-email-treding@nvidia.com>
+	id S1755131Ab3HPWZJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:25:09 -0400
+Received: from spam2.wiktel.com ([69.89.207.152]:41894 "EHLO spam2.wiktel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754463Ab3HPWZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:25:07 -0400
+X-Greylist: delayed 602 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Aug 2013 18:25:07 EDT
+From: Richard Laager <rlaager@wiktel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kyungsik Lee <kyungsik.lee@lge.com>, Chanho Min <chanho.min@lge.com>,
+        Richard Yao <ryao@gentoo.org>, linux-kernel@vger.kernel.org,
+        Richard Laager <rlaager@wiktel.com>
+Subject: [PATCH] Correct the LZ4 license
+Date: Fri, 16 Aug 2013 16:45:29 -0500
+Message-Id: <1376689529-15080-1-git-send-email-rlaager@wiktel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <520D8C4C.7000704@gentoo.org>
+References: <520D8C4C.7000704@gentoo.org>
+X-bounce-key: wiktel.com-1;rlaager@wiktel.com;1376689533;HjxcFoDHY/0xvgcNt/3FIqaTmh4;
+X-Spam-Score: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of registering the SoC bus as a core initcall, call it directly
-from driver_init() to make it explicit when it is called. This is done
-in preparation for early device registration support.
+The LZ4 code is listed as using the "BSD 2-Clause License".
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Richard Laager <rlaager@wiktel.com>
 ---
- drivers/base/base.h |  5 +++++
- drivers/base/init.c |  1 +
- drivers/base/soc.c  | 11 +----------
- 3 files changed, 7 insertions(+), 10 deletions(-)
+ lib/lz4/lz4_compress.c   |    4 ++--
+ lib/lz4/lz4_decompress.c |    6 +++---
+ lib/lz4/lz4hc_compress.c |    4 ++--
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/base/base.h b/drivers/base/base.h
-index 2cbc677..77e0722 100644
---- a/drivers/base/base.h
-+++ b/drivers/base/base.h
-@@ -99,6 +99,11 @@ extern int hypervisor_init(void);
- static inline int hypervisor_init(void) { return 0; }
+diff --git a/lib/lz4/lz4_compress.c b/lib/lz4/lz4_compress.c
+index fd94058..28321d8 100644
+--- a/lib/lz4/lz4_compress.c
++++ b/lib/lz4/lz4_compress.c
+@@ -437,7 +437,7 @@ int lz4_compress(const unsigned char *src, size_t src_len,
+ exit:
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(lz4_compress);
++EXPORT_SYMBOL(lz4_compress);
+ 
+-MODULE_LICENSE("GPL");
++MODULE_LICENSE("Dual BSD/GPL");
+ MODULE_DESCRIPTION("LZ4 compressor");
+diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
+index d3414ea..411be80 100644
+--- a/lib/lz4/lz4_decompress.c
++++ b/lib/lz4/lz4_decompress.c
+@@ -299,7 +299,7 @@ exit_0:
+ 	return ret;
+ }
+ #ifndef STATIC
+-EXPORT_SYMBOL_GPL(lz4_decompress);
++EXPORT_SYMBOL(lz4_decompress);
  #endif
- extern int platform_bus_init(void);
-+#ifdef CONFIG_SOC_BUS
-+extern int soc_bus_init(void);
-+#else
-+static inline int soc_bus_init(void) { return 0; }
-+#endif
- extern void cpu_dev_init(void);
  
- struct kobject *virtual_device_parent(struct device *dev);
-diff --git a/drivers/base/init.c b/drivers/base/init.c
-index c16f0b8..a4c4090 100644
---- a/drivers/base/init.c
-+++ b/drivers/base/init.c
-@@ -31,6 +31,7 @@ void __init driver_init(void)
- 	 * core core pieces.
- 	 */
- 	platform_bus_init();
-+	soc_bus_init();
- 	cpu_dev_init();
- 	memory_dev_init();
+ int lz4_decompress_unknownoutputsize(const char *src, size_t src_len,
+@@ -319,8 +319,8 @@ exit_0:
+ 	return ret;
  }
-diff --git a/drivers/base/soc.c b/drivers/base/soc.c
-index 72b5e72..ea116f4 100644
---- a/drivers/base/soc.c
-+++ b/drivers/base/soc.c
-@@ -166,16 +166,7 @@ void soc_device_unregister(struct soc_device *soc_dev)
- 	device_unregister(&soc_dev->dev);
- }
+ #ifndef STATIC
+-EXPORT_SYMBOL_GPL(lz4_decompress_unknownoutputsize);
++EXPORT_SYMBOL(lz4_decompress_unknownoutputsize);
  
--static int __init soc_bus_register(void)
-+int __init soc_bus_init(void)
- {
- 	return bus_register(&soc_bus_type);
+-MODULE_LICENSE("GPL");
++MODULE_LICENSE("Dual BSD/GPL");
+ MODULE_DESCRIPTION("LZ4 Decompressor");
+ #endif
+diff --git a/lib/lz4/lz4hc_compress.c b/lib/lz4/lz4hc_compress.c
+index eb1a74f..f344f76 100644
+--- a/lib/lz4/lz4hc_compress.c
++++ b/lib/lz4/lz4hc_compress.c
+@@ -533,7 +533,7 @@ int lz4hc_compress(const unsigned char *src, size_t src_len,
+ exit:
+ 	return ret;
  }
--core_initcall(soc_bus_register);
--
--static void __exit soc_bus_unregister(void)
--{
--	ida_destroy(&soc_ida);
--
--	bus_unregister(&soc_bus_type);
--}
--module_exit(soc_bus_unregister);
+-EXPORT_SYMBOL_GPL(lz4hc_compress);
++EXPORT_SYMBOL(lz4hc_compress);
+ 
+-MODULE_LICENSE("GPL");
++MODULE_LICENSE("Dual BSD/GPL");
+ MODULE_DESCRIPTION("LZ4HC compressor");
 -- 
-1.8.3.4
+1.7.9.5
 
