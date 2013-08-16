@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab3HPNvO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 09:51:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51500 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab3HPNvJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 09:51:09 -0400
-Date: Fri, 16 Aug 2013 06:52:45 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Enrico Mioso <mrkiko.rs@gmail.com>
-Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net: cdc_ncm: Export cdc_ncm_{tx,rx}_fixup functions for
- re-use
-Message-ID: <20130816135245.GA11236@kroah.com>
-References: <alpine.LNX.2.02.1307021241380.8884@eeeadesso>
- <87wqp9xja5.fsf@nemi.mork.no>
- <alpine.LNX.2.02.1307101425310.22696@eeeadesso>
- <0cbf7c81-182e-493c-9c28-5b78160a08f1@email.android.com>
- <alpine.LNX.2.02.1307170457450.1161@eeeadesso>
- <87bo4xx3ef.fsf@nemi.mork.no>
- <alpine.LNX.2.02.1308161534410.23935@eeeadesso>
- <20130816134907.GA10987@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130816134907.GA10987@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752186Ab3HPOCB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 10:02:01 -0400
+Received: from mga03.intel.com ([143.182.124.21]:28448 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751503Ab3HPOCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 10:02:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,895,1367996400"; 
+   d="scan'208";a="282840142"
+Message-ID: <1376662051.2089.371.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/1] ubi: remove and create MTD device back when UBI
+ volume is resized
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 16 Aug 2013 17:07:31 +0300
+In-Reply-To: <1376306265-8671-1-git-send-email-Andrew.Rybchenko@oktetlabs.ru>
+References: <1376306265-8671-1-git-send-email-Andrew.Rybchenko@oktetlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 06:49:07AM -0700, Greg Kroah-Hartman wrote:
-> On Fri, Aug 16, 2013 at 03:39:19PM +0200, Enrico Mioso wrote:
-> > Some drivers implementing NCM-like protocols, may re-use those functions, as is 
-> > the case in the huawei_cdc_ncm driver.
+On Mon, 2013-08-12 at 15:17 +0400, Andrew Rybchenko wrote:
+> If underlying MTD device size is simply corrected (as it was before),
+> MTD block device is not notified about MTD device size change. As the
+> result, for example, mount fails after create with zero size, resize,
+> write file system image.
 > 
-> Where is that driver at, I don't see it in the kernel tree.
+> Side effect of the patch is change of MTD device number on resize/update.
+> 
+> Signed-off-by: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 
-And you sent it in a different email, sorry about that.
+Usually MTD devices never change their size, and the whole MTD subsystem
+is implemented with this assumption, and the users of the MTD interface
+have the same assumption - MTD devices do not size change their size.
 
-Normally you would number the patches (i.e. [1/3], and so on), so that
-people know which order to apply them in, and that there really is 3
-patches in the series...
+So this change is fixing one problem by introducing another problem -
+now not only the size may change, but the device number may change, and
+even more ...
 
-thanks,
+> +		gluebi_remove(&nt->vi);
 
-greg k-h
+... the device may just disappear for a while (not, the mtd mutex is
+dropped here).
+
+> +		gluebi_create(&nt->di, &nt->vi);
+
+... then appear again in a different form :-)
+
+When you remove the device, you also remove its sysfs files. And then
+re-creates it. What an app keeps it open? Not big deal, it'll just get a
+read error next time it reads it.
+
+Anyway, this patch is not ideal.
+
+I guess the right way to solve the problem would be to just prohibit
+re-sizing a UBI volumes if we use gluebi.
+
+Or just put the entire emulated MTD device to some "invalid" state if
+the underlying UBI volume was resized. May be not always, but only if it
+became smaller.
+
+Or something else.
+
+Anyway, I do acknowledge this is a problem, but I am not sure this is a
+good solution...
+
+-- 
+Best Regards,
+Artem Bityutskiy
+
