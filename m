@@ -1,50 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab3HQANO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:13:14 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33899 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757097Ab3HQANI (ORCPT
+	id S1757207Ab3HQANz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:13:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51628 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756569Ab3HPWjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:13:08 -0400
-Message-ID: <520EADFC.5000607@wwwdotorg.org>
-Date: Fri, 16 Aug 2013 16:55:56 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: ohad@wizery.com, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Jeffrey Hugo <jhugo@codeaurora.org>,
-        Eric Holmberg <eholmber@codeaurora.org>
-Subject: Re: [PATCH v3] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex
- block
-References: <1376507361-26907-1-git-send-email-galak@codeaurora.org>
-In-Reply-To: <1376507361-26907-1-git-send-email-galak@codeaurora.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Aug 2013 18:39:22 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 045/133] iwlwifi: mvm: refuse connection to APs with BI < 16
+Date: Fri, 16 Aug 2013 15:33:07 -0700
+Message-Id: <1376692475-28413-46-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 01:09 PM, Kumar Gala wrote:
-> Add driver for Qualcomm MSM Hardware Mutex block that exists on newer MSM
-> SoC (MSM8974, etc).
+3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
 
-> diff --git a/Documentation/devicetree/bindings/hwlock/msm-tcsr-mutex.txt b/Documentation/devicetree/bindings/hwlock/msm-tcsr-mutex.txt
+------------------
 
-> +Required properties:
-> +- compatible: should be "qcom,tcsr-mutex"
-> +- reg: Should contain registers location and length of mutex registers
-> +- reg-names:
-> +	"mutex-base"  - string to identify mutex registers
-> +- qcom,num-locks: the number of locks/mutexes supported
+From: Johannes Berg <johannes.berg@intel.com>
 
-Doesn't the block support any interrupts? I suppose the interrupts
-property can be optional though even if it does.
+commit 48bc13072109ea58465542aa1ee31b4e1065468a upstream.
 
-Aside from the comments re: reg-names, this binding seems fine.
+Due to a firmware bug, it crashes when the beacon interval
+is smaller than 16. Avoid this by refusing the station state
+change creating the AP station, causing mac80211 to abandon
+the attempt to connect to the AP, and eventually wpa_s to
+blacklist it.
+
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[ luis: backported to 3.5:
+  - file renamed: drivers/net/wireless/iwlwifi/mvm/mac80211.c ->
+    drivers/net/wireless/iwlwifi/iwl-mac80211.c
+  - adjusted context
+  - changed IWL_ERR 1st argument to 'priv'
+  - removed redundant condition in 'if' statement ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/wireless/iwlwifi/dvm/mac80211.c | 19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/dvm/mac80211.c b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
+index 3163e0f..c784f69 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
+@@ -786,9 +786,23 @@ static int iwlagn_mac_sta_state(struct ieee80211_hw *hw,
+ 	mutex_lock(&priv->mutex);
+ 	if (vif->type == NL80211_IFTYPE_STATION) {
+ 		if (old_state == IEEE80211_STA_NOTEXIST &&
+-		    new_state == IEEE80211_STA_NONE)
++		    new_state == IEEE80211_STA_NONE) {
++			/*
++			 * Firmware bug - it'll crash if the beacon interval is less
++			 * than 16. We can't avoid connecting at all, so refuse the
++			 * station state change, this will cause mac80211 to abandon
++			 * attempts to connect to this AP, and eventually wpa_s will
++			 * blacklist the AP...
++			 */
++			if (vif->bss_conf.beacon_int < 16) {
++				IWL_ERR(priv,
++					"AP %pM beacon interval is %d, refusing due to firmware bug!\n",
++					sta->addr, vif->bss_conf.beacon_int);
++				ret = -EINVAL;
++				goto out_unlock;
++			}
+ 			op = ADD;
+-		else if (old_state == IEEE80211_STA_NONE &&
++		} else if (old_state == IEEE80211_STA_NONE &&
+ 			 new_state == IEEE80211_STA_NOTEXIST)
+ 			op = REMOVE;
+ 		else if (old_state == IEEE80211_STA_AUTH &&
+@@ -856,6 +870,7 @@ static int iwlagn_mac_sta_state(struct ieee80211_hw *hw,
+ 	if (iwl_is_rfkill(priv))
+ 		ret = 0;
+ 
++out_unlock:
+ 	mutex_unlock(&priv->mutex);
+ 	IWL_DEBUG_MAC80211(priv, "leave\n");
+ 
+-- 
+1.8.1.2
+
