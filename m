@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab3HPWWB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:22:01 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:41304 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab3HPWV7 (ORCPT
+	id S1754859Ab3HPWWP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:22:15 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:52680 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839Ab3HPWWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:21:59 -0400
+	Fri, 16 Aug 2013 18:22:11 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Grant Likely <grant.likely@linaro.org>
 Cc: Rob Herring <rob.herring@calxeda.com>,
@@ -16,9 +16,9 @@ Cc: Rob Herring <rob.herring@calxeda.com>,
         Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC 2/4] driver core: Allow early registration of devices
-Date: Fri, 16 Aug 2013 22:39:21 +0200
-Message-Id: <1376685563-1053-3-git-send-email-treding@nvidia.com>
+Subject: [RFC 3/4] ARM: tegra: Call of_platform_populate() early
+Date: Fri, 16 Aug 2013 22:39:22 +0200
+Message-Id: <1376685563-1053-4-git-send-email-treding@nvidia.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1376685563-1053-1-git-send-email-treding@nvidia.com>
 References: <1376685563-1053-1-git-send-email-treding@nvidia.com>
@@ -26,199 +26,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Systems that boot from the devicetree currently have to rely on hacks or
-workarounds to setup devices such as interrupt controllers early because
-no (platform) device is available yet. This introduces inconsistencies
-in the way that these drivers have to be written and precludes them from
-using APIs (such as regmap or device logging functions) that rely on a
-struct device being available.
-
-This patch is an attempt at rectifying this by allowing devices to be
-registered early. Early in this case means sometime after kmalloc() can
-be used but before sysfs has been setup. The latter is important because
-a large part of the device registration is hooking the device up with
-sysfs. Since sysfs becomes available rather late in the boot process,
-devices added early will be temporarily added to a list and not hooked
-up to sysfs.
-
-Once sysfs is up (or more precisely within driver_init()), the list of
-early devices is processed to fully register the devices
+Using the new early device registration functionality it is now possible
+to register devices much earlier in the boot process. Move the call to
+of_platform_populate() from tegra_dt_init() to tegra_dt_init_irq() and
+allow drivers that require to be run early to access the struct device
+associated with a device node.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/base/base.h |   3 ++
- drivers/base/core.c | 107 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/base/init.c |   2 +
- 3 files changed, 112 insertions(+)
+ arch/arm/mach-tegra/common.c | 33 +++++++++++++++++++++++++++++++++
+ arch/arm/mach-tegra/tegra.c  | 32 --------------------------------
+ 2 files changed, 33 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/base/base.h b/drivers/base/base.h
-index 77e0722..bf33d2e 100644
---- a/drivers/base/base.h
-+++ b/drivers/base/base.h
-@@ -76,6 +76,7 @@ struct device_private {
- 	struct klist_node knode_driver;
- 	struct klist_node knode_bus;
- 	struct list_head deferred_probe;
-+	struct list_head early;
- 	void *driver_data;
- 	struct device *device;
- };
-@@ -98,6 +99,8 @@ extern int hypervisor_init(void);
- #else
- static inline int hypervisor_init(void) { return 0; }
- #endif
-+extern int device_early_init(void);
-+extern int device_early_done(void);
- extern int platform_bus_init(void);
- #ifdef CONFIG_SOC_BUS
- extern int soc_bus_init(void);
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 09a99d6..cb240a7 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -20,6 +20,7 @@
- #include <linux/notifier.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/of_irq.h>
- #include <linux/genhd.h>
- #include <linux/kallsyms.h>
- #include <linux/mutex.h>
-@@ -1020,6 +1021,102 @@ int device_private_init(struct device *dev)
- 	klist_init(&dev->p->klist_children, klist_children_get,
- 		   klist_children_put);
- 	INIT_LIST_HEAD(&dev->p->deferred_probe);
-+	INIT_LIST_HEAD(&dev->p->early);
-+	return 0;
-+}
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index 94a119a..24dc09b 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -25,6 +25,9 @@
+ #include <linux/reboot.h>
+ #include <linux/irqchip.h>
+ #include <linux/clk-provider.h>
++#include <linux/sys_soc.h>
++#include <linux/slab.h>
++#include <linux/of_platform.h>
+ 
+ #include <asm/hardware/cache-l2x0.h>
+ 
+@@ -61,6 +64,36 @@ u32 tegra_uart_config[4] = {
+ #ifdef CONFIG_OF
+ void __init tegra_dt_init_irq(void)
+ {
++	struct soc_device_attribute *soc_dev_attr;
++	struct soc_device *soc_dev;
++	struct device *parent = NULL;
 +
-+/*
-+ * Early device registration support
-+ *
-+ * Some devices such as interrupt controllers need to be available very
-+ * early in the boot process. One of the bigger issues is that a lot of
-+ * the device registration code relies on sysfs having been initialized
-+ * in order to construct proper entries. However that has not completed
-+ * yet this early, so we initialize only the very minimal fields of the
-+ * device early and defer full initialization (including creating sysfs
-+ * directories and links) until later.
-+ */
-+static DEFINE_MUTEX(device_early_mutex);
-+static LIST_HEAD(device_early_list);
-+static bool device_is_early = true;
++	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
++	if (!soc_dev_attr)
++		goto out;
 +
-+/*
-+ * Keep a list of early registered devices so that they can be fully
-+ * registered at a later point in time.
-+ */
-+static void device_early_add(struct device *dev)
-+{
-+	mutex_lock(&device_early_mutex);
-+	list_add_tail(&dev->p->early, &device_early_list);
-+	mutex_unlock(&device_early_mutex);
-+}
++	soc_dev_attr->family = kasprintf(GFP_KERNEL, "Tegra");
++	soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d", tegra_revision);
++	soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%d", tegra_chip_id);
 +
-+/*
-+ * Mark the early device registration phase as completed.
-+ */
-+int __init device_early_init(void)
-+{
-+	device_is_early = false;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Fixup platform devices instantiated from device tree. The problem is
-+ * that since early registration happens before interrupt controllers
-+ * have been setup, the OF core code won't know how to map interrupts.
-+ */
-+int __init platform_device_early_fixup(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	unsigned int num_reg, num_irq, num;
-+	struct resource *res;
-+	int err;
-+
-+	num_reg = pdev->num_resources;
-+	num_irq = of_irq_count(np);
-+	num = num_reg + num_irq;
-+
-+	res = krealloc(pdev->resource, sizeof(*res) * num, GFP_KERNEL);
-+	if (!res)
-+		return -ENOMEM;
-+
-+	err = of_irq_to_resource_table(np, res + num_reg, num_irq);
-+	if (err != num_irq)
-+		return -EINVAL;
-+
-+	pdev->num_resources = num_reg + num_irq;
-+	pdev->resource = res;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Fully register early devices.
-+ */
-+int __init device_early_done(void)
-+{
-+	struct device_private *private;
-+
-+	list_for_each_entry(private, &device_early_list, early) {
-+		struct device *dev = private->device;
-+		int err;
-+
-+		if (dev->bus == &platform_bus_type) {
-+			struct platform_device *pdev = to_platform_device(dev);
-+
-+			err = platform_device_early_fixup(pdev);
-+			if (err < 0)
-+				dev_err(&pdev->dev,
-+					"failed to fixup device %s: %d\n",
-+					dev_name(&pdev->dev), err);
-+		}
-+
-+		err = device_add(dev);
-+		if (err < 0)
-+			pr_err("failed to add device %s\n", dev_name(dev));
++	soc_dev = soc_device_register(soc_dev_attr);
++	if (IS_ERR(soc_dev)) {
++		kfree(soc_dev_attr->family);
++		kfree(soc_dev_attr->revision);
++		kfree(soc_dev_attr->soc_id);
++		kfree(soc_dev_attr);
++		goto out;
 +	}
 +
- 	return 0;
- }
- 
-@@ -1063,6 +1160,16 @@ int device_add(struct device *dev)
- 	}
- 
- 	/*
-+	 * If the device is registered early, defer everything below to a
-+	 * later point in time where sysfs has been properly initialized.
-+	 */
-+	if (device_is_early) {
-+		device_early_add(dev);
-+		put_device(dev);
-+		return 0;
-+	}
++	parent = soc_device_to_device(soc_dev);
 +
 +	/*
- 	 * for statically allocated devices, which should all be converted
- 	 * some day, we need to initialize the name. We prevent reading back
- 	 * the name, and force the use of dev_name()
-diff --git a/drivers/base/init.c b/drivers/base/init.c
-index a4c4090..caa1c43 100644
---- a/drivers/base/init.c
-+++ b/drivers/base/init.c
-@@ -30,8 +30,10 @@ void __init driver_init(void)
- 	/* These are also core pieces, but must come after the
- 	 * core core pieces.
- 	 */
-+	device_early_init();
- 	platform_bus_init();
- 	soc_bus_init();
-+	device_early_done();
- 	cpu_dev_init();
- 	memory_dev_init();
++	 * Finished with the static registrations now; fill in the missing
++	 * devices
++	 */
++out:
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, parent);
++
+ 	of_clk_init(NULL);
+ 	tegra_pmc_init();
+ 	tegra_init_irq();
+diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
+index 5b86055..9abb71e 100644
+--- a/arch/arm/mach-tegra/tegra.c
++++ b/arch/arm/mach-tegra/tegra.c
+@@ -27,11 +27,9 @@
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_fdt.h>
+-#include <linux/of_platform.h>
+ #include <linux/pda_power.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
+-#include <linux/sys_soc.h>
+ #include <linux/usb/tegra_usb_phy.h>
+ #include <linux/clk/tegra.h>
+ 
+@@ -47,37 +45,7 @@
+ 
+ static void __init tegra_dt_init(void)
+ {
+-	struct soc_device_attribute *soc_dev_attr;
+-	struct soc_device *soc_dev;
+-	struct device *parent = NULL;
+-
+ 	tegra_clocks_apply_init_table();
+-
+-	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
+-	if (!soc_dev_attr)
+-		goto out;
+-
+-	soc_dev_attr->family = kasprintf(GFP_KERNEL, "Tegra");
+-	soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d", tegra_revision);
+-	soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%d", tegra_chip_id);
+-
+-	soc_dev = soc_device_register(soc_dev_attr);
+-	if (IS_ERR(soc_dev)) {
+-		kfree(soc_dev_attr->family);
+-		kfree(soc_dev_attr->revision);
+-		kfree(soc_dev_attr->soc_id);
+-		kfree(soc_dev_attr);
+-		goto out;
+-	}
+-
+-	parent = soc_device_to_device(soc_dev);
+-
+-	/*
+-	 * Finished with the static registrations now; fill in the missing
+-	 * devices
+-	 */
+-out:
+-	of_platform_populate(NULL, of_default_bus_match_table, NULL, parent);
  }
+ 
+ static void __init paz00_init(void)
 -- 
 1.8.3.4
 
