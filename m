@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758195Ab3HPWxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:53:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51866 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756453Ab3HPWlB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:41:01 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Android Kernel Team <kernel-team@android.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 027/133] staging: android: logger: Correct write offset reset on error
-Date: Fri, 16 Aug 2013 15:32:49 -0700
-Message-Id: <1376692475-28413-28-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1758217Ab3HPWxa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:53:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56782 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758167Ab3HPWxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:53:11 -0400
+Date: Fri, 16 Aug 2013 17:18:10 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Alasdair G Kergon <agk@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: please fetch new git-based DM 'for-next' branch [was: Re: [git pull]
+ device-mapper changes for 3.11]
+Message-ID: <20130816211810.GA8668@redhat.com>
+References: <20130711013448.GD32399@agk-dp.fab.redhat.com>
+ <20130711162040.8a82cb97a6c647c4f61f919b@canb.auug.org.au>
+ <20130711135522.GN8530@agk-dp.fab.redhat.com>
+ <20130712110303.06095e7b41c49c35bcd61fab@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130712110303.06095e7b41c49c35bcd61fab@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jul 11 2013 at  9:03pm -0400,
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-------------------
+> Hi Alasdair,
+> 
+> On Thu, 11 Jul 2013 14:55:22 +0100 Alasdair G Kergon <agk@redhat.com> wrote:
+> >
+> > On Thu, Jul 11, 2013 at 04:20:40PM +1000, Stephen Rothwell wrote:
+> > > Alistair, is there some reason that you cannot maintain some relatively
+> > > stable git tree for me to fetch (instead of the quilt series).  
+> > 
+> > Well Mike Snitzer is becoming a joint maintainer and this also requires
+> > changes to the workflow so watch this space.
+> 
+> OK, noted.
 
-From: Karlis Ogsts <karlis.ogsts@sonymobile.com>
+Hi Stephen,
 
-commit 72bb99cfe9c57d2044445fb34bbc95b4c0bae6f2 upstream.
+To access all future DM changes for linux-next, please switch from
+Alasdair's quilt tree to using the 'for-next' branch of the DM git repo:
 
-In the situation that a writer fails to copy data from userspace it will reset
-the write offset to the value it had before it went to sleep. This discarding
-any messages written while aquiring the mutex.
+git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git
 
-Therefore the reset offset needs to be retrieved after acquiring the mutex.
-
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/staging/android/logger.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
-index dbc63cb..316cb2c 100644
---- a/drivers/staging/android/logger.c
-+++ b/drivers/staging/android/logger.c
-@@ -371,7 +371,7 @@ static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 			 unsigned long nr_segs, loff_t ppos)
- {
- 	struct logger_log *log = file_get_log(iocb->ki_filp);
--	size_t orig = log->w_off;
-+	size_t orig;
- 	struct logger_entry header;
- 	struct timespec now;
- 	ssize_t ret = 0;
-@@ -390,6 +390,8 @@ static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 
- 	mutex_lock(&log->mutex);
- 
-+	orig = log->w_off;
-+
- 	/*
- 	 * Fix up any readers, pulling them forward to the first readable
- 	 * entry after (what will be) the new write offset. We do this now
--- 
-1.8.1.2
-
+Thanks,
+Mike
