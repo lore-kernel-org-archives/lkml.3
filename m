@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab3HPWhU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:37:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51417 "EHLO
+	id S1755897Ab3HPWh2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:37:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51426 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754466Ab3HPWhQ (ORCPT
+	with ESMTP id S1755869Ab3HPWhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:37:16 -0400
+	Fri, 16 Aug 2013 18:37:19 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Haitao Zhang <haitao.zhang@canonical.com>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 080/133] drm/i915: Make data/link N value power of two
-Date: Fri, 16 Aug 2013 15:33:42 -0700
-Message-Id: <1376692475-28413-81-git-send-email-kamal@canonical.com>
+Subject: [PATCH 077/133] ARM: allow kuser helpers to be removed from the vector page
+Date: Fri, 16 Aug 2013 15:33:39 -0700
+Message-Id: <1376692475-28413-78-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,121 +27,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit a65851af59387146a28a928c3e7bb17dabc5db72 upstream.
+commit f6f91b0d9fd971c630cef908dde8fe8795aefbf8 upstream.
 
-The BIOS uses power of two values for the data/link N value.
+Provide a kernel configuration option to allow the kernel user helpers
+to be removed from the vector page, thereby preventing their use with
+ROP (return orientated programming) attacks.  This option is only
+visible for CPU architectures which natively support all the operations
+which kernel user helpers would normally provide, and must be enabled
+with caution.
 
-Follow suit to make the Zotac DP to dual-HDMI dongle work.
-
-v2: Clean up the magic numbers and defines
-    Change the N clamping to be a bit easier on the eye
-    Rename intel_reduce_ratio to intel_reduce_m_n_ratio
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=49402
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59810
-Tested-by:  Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[Haitao Zhang: backport to 3.8]
-Signed-off-by: Haitao Zhang <haitao.zhang@canonical.com>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_reg.h      | 12 ++++--------
- drivers/gpu/drm/i915/intel_display.c | 23 +++++++++++++++--------
- 2 files changed, 19 insertions(+), 16 deletions(-)
+ arch/arm/kernel/entry-armv.S |  3 +++
+ arch/arm/kernel/traps.c      | 23 ++++++++++++++---------
+ arch/arm/mm/Kconfig          | 34 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 51 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index b7315e3..24f0368 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -2602,14 +2602,14 @@
- #define _PIPEB_GMCH_DATA_M			0x71050
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index 4c28aff..5492d72 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -795,6 +795,7 @@ ENDPROC(__switch_to)
+ 	.endr
+ 	.endm
  
- /* Transfer unit size for display port - 1, default is 0x3f (for TU size 64) */
--#define   PIPE_GMCH_DATA_M_TU_SIZE_MASK		(0x3f << 25)
--#define   PIPE_GMCH_DATA_M_TU_SIZE_SHIFT	25
-+#define  TU_SIZE(x)             (((x)-1) << 25) /* default size 64 */
-+#define  TU_SIZE_MASK           (0x3f << 25)
++#ifdef CONFIG_KUSER_HELPERS
+ 	.align	5
+ 	.globl	__kuser_helper_start
+ __kuser_helper_start:
+@@ -981,6 +982,8 @@ __kuser_helper_version:				@ 0xffff0ffc
+ 	.globl	__kuser_helper_end
+ __kuser_helper_end:
  
--#define   PIPE_GMCH_DATA_M_MASK			(0xffffff)
-+#define  DATA_LINK_M_N_MASK	(0xffffff)
-+#define  DATA_LINK_N_MAX	(0x800000)
- 
- #define _PIPEA_GMCH_DATA_N			0x70054
- #define _PIPEB_GMCH_DATA_N			0x71054
--#define   PIPE_GMCH_DATA_N_MASK			(0xffffff)
++#endif
++
+  THUMB(	.thumb	)
  
  /*
-  * Computing Link M and N values for the Display Port link
-@@ -2624,11 +2624,9 @@
- 
- #define _PIPEA_DP_LINK_M				0x70060
- #define _PIPEB_DP_LINK_M				0x71060
--#define   PIPEA_DP_LINK_M_MASK			(0xffffff)
- 
- #define _PIPEA_DP_LINK_N				0x70064
- #define _PIPEB_DP_LINK_N				0x71064
--#define   PIPEA_DP_LINK_N_MASK			(0xffffff)
- 
- #define PIPE_GMCH_DATA_M(pipe) _PIPE(pipe, _PIPEA_GMCH_DATA_M, _PIPEB_GMCH_DATA_M)
- #define PIPE_GMCH_DATA_N(pipe) _PIPE(pipe, _PIPEA_GMCH_DATA_N, _PIPEB_GMCH_DATA_N)
-@@ -3294,8 +3292,6 @@
- 
- 
- #define _PIPEA_DATA_M1           0x60030
--#define  TU_SIZE(x)             (((x)-1) << 25) /* default size 64 */
--#define  TU_SIZE_MASK           0x7e000000
- #define  PIPE_DATA_M1_OFFSET    0
- #define _PIPEA_DATA_N1           0x60034
- #define  PIPE_DATA_N1_OFFSET    0
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index e094040..1f20ac5 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4042,26 +4042,33 @@ struct fdi_m_n {
- static void
- fdi_reduce_ratio(u32 *num, u32 *den)
- {
--	while (*num > 0xffffff || *den > 0xffffff) {
-+	while (*num > DATA_LINK_M_N_MASK ||
-+	       *den > DATA_LINK_M_N_MASK) {
- 		*num >>= 1;
- 		*den >>= 1;
- 	}
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 366aa93..1392beb 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -807,23 +807,32 @@ void __init trap_init(void)
+ 	return;
  }
  
-+static void compute_m_n(unsigned int m, unsigned int n,
-+			uint32_t *ret_m, uint32_t *ret_n)
-+{
-+	*ret_n = min_t(unsigned int, roundup_pow_of_two(n), DATA_LINK_N_MAX);
-+	*ret_m = div_u64((uint64_t) m * *ret_n, n);
-+	fdi_reduce_ratio(ret_m, ret_n);
-+}
+-static void __init kuser_get_tls_init(unsigned long vectors)
++#ifdef CONFIG_KUSER_HELPERS
++static void __init kuser_init(void *vectors)
+ {
++	extern char __kuser_helper_start[], __kuser_helper_end[];
++	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
 +
- static void
- ironlake_compute_m_n(int bits_per_pixel, int nlanes, int pixel_clock,
- 		     int link_clock, struct fdi_m_n *m_n)
- {
- 	m_n->tu = 64; /* default size */
- 
--	/* BUG_ON(pixel_clock > INT_MAX / 36); */
--	m_n->gmch_m = bits_per_pixel * pixel_clock;
--	m_n->gmch_n = link_clock * nlanes * 8;
--	fdi_reduce_ratio(&m_n->gmch_m, &m_n->gmch_n);
-+	compute_m_n(bits_per_pixel * pixel_clock,
-+		    link_clock * nlanes * 8,
-+		    &m_n->gmch_m, &m_n->gmch_n);
- 
--	m_n->link_m = pixel_clock;
--	m_n->link_n = link_clock;
--	fdi_reduce_ratio(&m_n->link_m, &m_n->link_n);
-+	compute_m_n(pixel_clock, link_clock,
-+		    &m_n->link_m, &m_n->link_n);
++	memcpy(vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
++
+ 	/*
+ 	 * vectors + 0xfe0 = __kuser_get_tls
+ 	 * vectors + 0xfe8 = hardware TLS instruction at 0xffff0fe8
+ 	 */
+ 	if (tls_emu || has_tls_reg)
+-		memcpy((void *)vectors + 0xfe0, (void *)vectors + 0xfe8, 4);
++		memcpy(vectors + 0xfe0, vectors + 0xfe8, 4);
++}
++#else
++static void __init kuser_init(void *vectors)
++{
  }
++#endif
  
- static inline bool intel_panel_use_ssc(struct drm_i915_private *dev_priv)
+ void __init early_trap_init(void *vectors_base)
+ {
+ 	unsigned long vectors = (unsigned long)vectors_base;
+ 	extern char __stubs_start[], __stubs_end[];
+ 	extern char __vectors_start[], __vectors_end[];
+-	extern char __kuser_helper_start[], __kuser_helper_end[];
+-	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
+ 	unsigned i;
+ 
+ 	vectors_page = vectors_base;
+@@ -844,12 +853,8 @@ void __init early_trap_init(void *vectors_base)
+ 	 */
+ 	memcpy((void *)vectors, __vectors_start, __vectors_end - __vectors_start);
+ 	memcpy((void *)vectors + 0x1000, __stubs_start, __stubs_end - __stubs_start);
+-	memcpy((void *)vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
+ 
+-	/*
+-	 * Do processor specific fixups for the kuser helpers
+-	 */
+-	kuser_get_tls_init(vectors);
++	kuser_init(vectors_base);
+ 
+ 	/*
+ 	 * Copy signal return handlers into the vector page, and
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 3fd629d..1d5ee0a 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -404,24 +404,28 @@ config CPU_32v3
+ 	select CPU_USE_DOMAINS if MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select TLS_REG_EMUL if SMP || !MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v4
+ 	bool
+ 	select CPU_USE_DOMAINS if MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select TLS_REG_EMUL if SMP || !MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v4T
+ 	bool
+ 	select CPU_USE_DOMAINS if MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select TLS_REG_EMUL if SMP || !MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v5
+ 	bool
+ 	select CPU_USE_DOMAINS if MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select TLS_REG_EMUL if SMP || !MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v6
+ 	bool
+@@ -756,6 +760,7 @@ config CPU_BPREDICT_DISABLE
+ 
+ config TLS_REG_EMUL
+ 	bool
++	select NEED_KUSER_HELPERS
+ 	help
+ 	  An SMP system using a pre-ARMv6 processor (there are apparently
+ 	  a few prototypes like that in existence) and therefore access to
+@@ -763,11 +768,40 @@ config TLS_REG_EMUL
+ 
+ config NEEDS_SYSCALL_FOR_CMPXCHG
+ 	bool
++	select NEED_KUSER_HELPERS
+ 	help
+ 	  SMP on a pre-ARMv6 processor?  Well OK then.
+ 	  Forget about fast user space cmpxchg support.
+ 	  It is just not possible.
+ 
++config NEED_KUSER_HELPERS
++	bool
++
++config KUSER_HELPERS
++	bool "Enable kuser helpers in vector page" if !NEED_KUSER_HELPERS
++	default y
++	help
++	  Warning: disabling this option may break user programs.
++
++	  Provide kuser helpers in the vector page.  The kernel provides
++	  helper code to userspace in read only form at a fixed location
++	  in the high vector page to allow userspace to be independent of
++	  the CPU type fitted to the system.  This permits binaries to be
++	  run on ARMv4 through to ARMv7 without modification.
++
++	  However, the fixed address nature of these helpers can be used
++	  by ROP (return orientated programming) authors when creating
++	  exploits.
++
++	  If all of the binaries and libraries which run on your platform
++	  are built specifically for your platform, and make no use of
++	  these helpers, then you can turn this option off.  However,
++	  when such an binary or library is run, it will receive a SIGILL
++	  signal, which will terminate the program.
++
++	  Say N here only if you are absolutely certain that you do not
++	  need these helpers; otherwise, the safe option is to say Y.
++
+ config DMA_CACHE_RWFO
+ 	bool "Enable read/write for ownership DMA cache maintenance"
+ 	depends on CPU_V6K && SMP
 -- 
 1.8.1.2
 
