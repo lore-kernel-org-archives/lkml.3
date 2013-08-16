@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab3HPWKG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:10:06 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52949 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab3HPWKD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:10:03 -0400
-Subject: Re: [PATCH RFC 1/3] spmi: Linux driver framework for SPMI
-Mime-Version: 1.0 (Apple Message framework v1283)
+	id S1751771Ab3HPWKr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:10:47 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:42649 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751529Ab3HPWKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:10:45 -0400
+Date: Fri, 16 Aug 2013 17:00:34 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH v6 3/5] zsmalloc: move it under zram
+Message-ID: <20130816220034.GD7265@variantweb.net>
+References: <1376459736-7384-1-git-send-email-minchan@kernel.org>
+ <1376459736-7384-4-git-send-email-minchan@kernel.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <02deef1d90121011ab1df90ad704ef0ee36e2584.1376596224.git.joshc@codeaurora.org>
-Date: Fri, 16 Aug 2013 14:04:22 -0500
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org, Gilad Avidov <gavidov@codeaurora.org>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1E157BCF-C34F-4839-AFE0-CBECA828B221@codeaurora.org>
-References: <cover.1376596224.git.joshc@codeaurora.org> <02deef1d90121011ab1df90ad704ef0ee36e2584.1376596224.git.joshc@codeaurora.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+Content-Disposition: inline
+In-Reply-To: <1376459736-7384-4-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081622-5806-0000-0000-000022743717
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Aug 9, 2013, at 3:37 PM, Josh Cartwright wrote:
-
-> From: Kenneth Heitke <kheitke@codeaurora.org>
+On Wed, Aug 14, 2013 at 02:55:34PM +0900, Minchan Kim wrote:
+> This patch moves zsmalloc under zram directory because there
+> isn't any other user any more.
 > 
-> System Power Management Interface (SPMI) is a specification
-> developed by the MIPI (Mobile Industry Process Interface) Alliance
-> optimized for the real time control of Power Management ICs (PMIC).
+> Before that, description will explain why we have needed custom
+> allocator.
 > 
-> SPMI is a two-wire serial interface that supports up to 4 master
-> devices and up to 16 logical slaves.
-> 
-> The framework supports message APIs, multiple busses (1 controller
-> per bus) and multiple clients/slave devices per controller.
-> 
-> Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
-> Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> ---
-> drivers/Kconfig                 |   2 +
-> drivers/Makefile                |   1 +
-> drivers/of/Kconfig              |   6 +
-> drivers/of/Makefile             |   1 +
-> drivers/of/of_spmi.c            |  74 +++++
-> drivers/spmi/Kconfig            |   9 +
-> drivers/spmi/Makefile           |   7 +
-> drivers/spmi/spmi-dbgfs.c       | 591 ++++++++++++++++++++++++++++++++++++++++
-> drivers/spmi/spmi-dbgfs.h       |  37 +++
-> drivers/spmi/spmi.c             | 449 ++++++++++++++++++++++++++++++
-> include/linux/mod_devicetable.h |   8 +
-> include/linux/of_spmi.h         |  37 +++
-> include/linux/spmi.h            | 337 +++++++++++++++++++++++
-> 13 files changed, 1559 insertions(+)
-> create mode 100644 drivers/of/of_spmi.c
-> create mode 100644 drivers/spmi/Kconfig
-> create mode 100644 drivers/spmi/Makefile
-> create mode 100644 drivers/spmi/spmi-dbgfs.c
-> create mode 100644 drivers/spmi/spmi-dbgfs.h
-> create mode 100644 drivers/spmi/spmi.c
-> create mode 100644 include/linux/of_spmi.h
-> create mode 100644 include/linux/spmi.h
+> Zsmalloc is a new slab-based memory allocator for storing
+> compressed pages.  It is designed for low fragmentation and
+> high allocation success rate on large object, but <= PAGE_SIZE
+> allocations.
 
-Looks like you are missing a patch for the general OF binding for SPMI
+One things zsmalloc will probably have to address before Andrew deems it
+worthy is the "memmap peekers" issue.  I had to make this change in zbud
+before Andrew would accept it and this is one of the reasons I have yet
+to implement zsmalloc support for zswap yet.
 
-- k
+Basically, zsmalloc makes the assumption that once the kernel page
+allocator gives it a page for the pool, zsmalloc can stuff whatever
+metatdata it wants into the struct page.  The problem comes when some
+parts of the kernel do not obtain the struct page pointer via the
+allocator but via walking the memmap.  Those routines will make certain
+assumption about the state and structure of the data in the struct page,
+leading to issues.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+My solution for zbud was to move the metadata into the pool pages
+themselves, using the first block of each page for metadata regarding that
+page.
+
+Andrew might also have something to say about the placement of
+zsmalloc.c.  IIRC, if it was going to be merged, he wanted it in mm/ if
+it was going to be messing around in the struct page.
+
+Seth
 
