@@ -1,174 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab3HPWmm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:42:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51968 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757356Ab3HPWlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:41:32 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 053/133] USB: mos7840: fix device-type detection
-Date: Fri, 16 Aug 2013 15:33:15 -0700
-Message-Id: <1376692475-28413-54-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1757460Ab3HPWmu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:42:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3923 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753570Ab3HPWmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:42:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,897,1367996400"; 
+   d="scan'208";a="388429648"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, peterz@infradead.org, akpm@linux-foundation.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 4/6] Move might_sleep and friends from kernel.h to sched.h
+Date: Fri, 16 Aug 2013 14:17:22 -0700
+Message-Id: <1376687844-19857-5-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
+References: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
+From: Andi Kleen <ak@linux.intel.com>
 
-------------------
+These are really related to scheduling, so they should be in sched.h
+Users usually will need to schedule anyways.
 
-From: Johan Hovold <jhovold@gmail.com>
+The advantage of having them there is that we can access some of the
+scheduler inlines to make their fast path more efficient. This will come
+in a followon patch.
 
-commit 40c24f2893ba0ba7df485871f6aac0c197ceef5b upstream.
-
-Fix race in device-type detection introduced by commit 0eafe4de ("USB:
-serial: mos7840: add support for MCS7810 devices") which used a static
-variable to hold the device type.
-
-Move type detection to probe and use serial data to store the device
-type.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/usb/serial/mos7840.c | 75 +++++++++++++++++++++-----------------------
- 1 file changed, 35 insertions(+), 40 deletions(-)
+ include/linux/kernel.h | 35 -----------------------------------
+ include/linux/sched.h  | 37 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+), 35 deletions(-)
 
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index eab52f6..343a179 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -187,8 +187,6 @@ enum mos7840_flag {
- 	MOS7840_FLAG_CTRL_BUSY,
- };
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 482ad2d..badcc13 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -141,35 +141,6 @@ struct completion;
+ struct pt_regs;
+ struct user;
  
--static int device_type;
--
- static const struct usb_device_id id_table[] = {
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
-@@ -867,18 +865,6 @@ static void mos7840_bulk_out_data_callback(struct urb *urb)
- /************************************************************************/
- /*       D R I V E R  T T Y  I N T E R F A C E  F U N C T I O N S       */
- /************************************************************************/
--#ifdef MCSSerialProbe
--static int mos7840_serial_probe(struct usb_serial *serial,
--				const struct usb_device_id *id)
--{
--
--	/*need to implement the mode_reg reading and updating\
--	   structures usb_serial_ device_type\
--	   (i.e num_ports, num_bulkin,bulkout etc) */
--	/* Also we can update the changes  attach */
--	return 1;
--}
+-#ifdef CONFIG_PREEMPT_VOLUNTARY
+-extern int _cond_resched(void);
+-# define might_resched() _cond_resched()
+-#else
+-# define might_resched() do { } while (0)
 -#endif
+-
+-#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+-  void __might_sleep(const char *file, int line, int preempt_offset);
+-/**
+- * might_sleep - annotation for functions that can sleep
+- *
+- * this macro will print a stack trace if it is executed in an atomic
+- * context (spinlock, irq-handler, ...).
+- *
+- * This is a useful debugging help to be able to catch problems early and not
+- * be bitten later when the calling function happens to sleep when it is not
+- * supposed to.
+- */
+-# define might_sleep() \
+-	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
+-#else
+-  static inline void __might_sleep(const char *file, int line,
+-				   int preempt_offset) { }
+-# define might_sleep() do { might_resched(); } while (0)
+-#endif
+-
+-#define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
+-
+ /*
+  * abs() handles unsigned and signed longs, ints, shorts and chars.  For all
+  * input types abs() returns a signed long.
+@@ -193,12 +164,6 @@ extern int _cond_resched(void);
+ 		(__x < 0) ? -__x : __x;		\
+ 	})
  
- /*****************************************************************************
-  * mos7840_open
-@@ -2333,38 +2319,48 @@ static int mos7810_check(struct usb_serial *serial)
- 	return 0;
+-#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
+-void might_fault(void);
+-#else
+-static inline void might_fault(void) { }
+-#endif
+-
+ extern struct atomic_notifier_head panic_notifier_list;
+ extern long (*panic_blink)(int state);
+ __printf(1, 2)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d722490..97f4b78 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2433,6 +2433,35 @@ extern int __cond_resched_softirq(void);
+ 	__cond_resched_softirq();					\
+ })
+ 
++#ifdef CONFIG_PREEMPT_VOLUNTARY
++extern int _cond_resched(void);
++# define might_resched() _cond_resched()
++#else
++# define might_resched() do { } while (0)
++#endif
++
++#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
++ void __might_sleep(const char *file, int line, int preempt_offset);
++/**
++ * might_sleep - annotation for functions that can sleep
++ *
++ * this macro will print a stack trace if it is executed in an atomic
++ * context (spinlock, irq-handler, ...).
++ *
++ * This is a useful debugging help to be able to catch problems early and not
++ * be bitten later when the calling function happens to sleep when it is not
++ * supposed to.
++ */
++# define might_sleep() \
++	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
++#else
++  static inline void __might_sleep(const char *file, int line,
++				   int preempt_offset) { }
++# define might_sleep() do { might_resched(); } while (0)
++#endif
++
++#define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
++
+ static inline void cond_resched_rcu(void)
+ {
+ #if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
+@@ -2442,6 +2471,14 @@ static inline void cond_resched_rcu(void)
+ #endif
  }
  
--static int mos7840_calc_num_ports(struct usb_serial *serial)
-+static int mos7840_probe(struct usb_serial *serial,
-+				const struct usb_device_id *id)
- {
--	__u16 data = 0x00;
-+	u16 product = serial->dev->descriptor.idProduct;
- 	u8 *buf;
--	int mos7840_num_ports;
-+	int device_type;
-+
-+	if (product == MOSCHIP_DEVICE_ID_7810 ||
-+		product == MOSCHIP_DEVICE_ID_7820) {
-+		device_type = product;
-+		goto out;
-+	}
- 
- 	buf = kzalloc(VENDOR_READ_LENGTH, GFP_KERNEL);
--	if (buf) {
--		usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
- 			MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, buf,
- 			VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
--		data = *buf;
--		kfree(buf);
--	}
- 
--	if (serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7810 ||
--		serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7820) {
--		device_type = serial->dev->descriptor.idProduct;
--	} else {
--		/* For a MCS7840 device GPIO0 must be set to 1 */
--		if ((data & 0x01) == 1)
--			device_type = MOSCHIP_DEVICE_ID_7840;
--		else if (mos7810_check(serial))
--			device_type = MOSCHIP_DEVICE_ID_7810;
--		else
--			device_type = MOSCHIP_DEVICE_ID_7820;
--	}
-+	/* For a MCS7840 device GPIO0 must be set to 1 */
-+	if (buf[0] & 0x01)
-+		device_type = MOSCHIP_DEVICE_ID_7840;
-+	else if (mos7810_check(serial))
-+		device_type = MOSCHIP_DEVICE_ID_7810;
-+	else
-+		device_type = MOSCHIP_DEVICE_ID_7820;
-+
-+	kfree(buf);
-+out:
-+	usb_set_serial_data(serial, (void *)device_type);
-+
-+	return 0;
-+}
-+
-+static int mos7840_calc_num_ports(struct usb_serial *serial)
++#ifdef CONFIG_PROVE_LOCKING
++void might_fault(void);
++#else
++static inline void might_fault(void)
 +{
-+	int device_type = (int)usb_get_serial_data(serial);
-+	int mos7840_num_ports;
- 
- 	mos7840_num_ports = (device_type >> 4) & 0x000F;
--	serial->num_bulk_in = mos7840_num_ports;
--	serial->num_bulk_out = mos7840_num_ports;
--	serial->num_ports = mos7840_num_ports;
- 
- 	return mos7840_num_ports;
- }
-@@ -2372,6 +2368,7 @@ static int mos7840_calc_num_ports(struct usb_serial *serial)
- static int mos7840_port_probe(struct usb_serial_port *port)
- {
- 	struct usb_serial *serial = port->serial;
-+	int device_type = (int)usb_get_serial_data(serial);
- 	struct moschip_port *mos7840_port;
- 	int status;
- 	int pnum;
-@@ -2630,9 +2627,7 @@ static struct usb_serial_driver moschip7840_4port_device = {
- 	.throttle = mos7840_throttle,
- 	.unthrottle = mos7840_unthrottle,
- 	.calc_num_ports = mos7840_calc_num_ports,
--#ifdef MCSSerialProbe
--	.probe = mos7840_serial_probe,
--#endif
-+	.probe = mos7840_probe,
- 	.ioctl = mos7840_ioctl,
- 	.set_termios = mos7840_set_termios,
- 	.break_ctl = mos7840_break,
++}
++#endif
++
+ /*
+  * Does a critical section need to be broken due to another
+  * task waiting?: (technically does not depend on CONFIG_PREEMPT,
 -- 
-1.8.1.2
+1.8.3.1
 
