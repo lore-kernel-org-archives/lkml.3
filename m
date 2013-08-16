@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab3HPPlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 11:41:17 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:33589 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753239Ab3HPPlN (ORCPT
+	id S1754246Ab3HPPme (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 11:42:34 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:64199 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239Ab3HPPm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 11:41:13 -0400
-Date: Fri, 16 Aug 2013 17:40:55 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, Roger Quadros <rogerq@ti.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, USB list <linux-usb@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
-Subject: [PATCH] dma: cpp41: make it compile with CONFIG_BUG=n
-Message-ID: <20130816154055.GB3570@breakpoint.cc>
-References: <20130815165829.6a401f104ee2a98dd48bcb58@canb.auug.org.au>
- <520D0AD7.6050002@infradead.org>
- <520E0304.5050906@ti.com>
+	Fri, 16 Aug 2013 11:42:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520E0304.5050906@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <82440653.410050.1376665340121.JavaMail.root@mail>
+References: <CACRpkdZdeVNtJSmc6Lr6j=oO9FLsAvjyrwhYS0j4OoAEhxCN9g@mail.gmail.com>
+	<82440653.410050.1376665340121.JavaMail.root@mail>
+Date: Fri, 16 Aug 2013 17:42:25 +0200
+Message-ID: <CACRpkdYX_u3yn0AhyMpCSYoQQJdaWJeK_GztxNM_LUL15WpAhA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: (gpio-pca953x) move header to linux/platform_data/
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel@savoirfairelinux.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+On Fri, Aug 16, 2013 at 5:02 PM, Vivien Didelot
+<vivien.didelot@savoirfairelinux.com> wrote:
 
-Before Randy figures out that this does not compile with CONFIG_BUG=n
-here is a fix for it.
+>> Why does the GPIO driver need platform data from the
+>> I2C driver???
+>>
+>> Can't this just be made to go away?
+>
+> I didn't dig that much in the driver, but I cannot imagine
+> another way to pass, for instance, the setup callback.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/dma/cppi41.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hm so this is some combined platform data for I2C *and* GPIO?
 
-diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
-index 5dcebca..e696178 100644
---- a/drivers/dma/cppi41.c
-+++ b/drivers/dma/cppi41.c
-@@ -579,7 +579,7 @@ static int cppi41_tear_down_chan(struct cppi41_channel *c)
- 				WARN_ON(!c->is_tx && !(pd0 & TD_DESC_IS_RX));
- 				WARN_ON((pd0 & 0x1f) != c->port_num);
- 			} else {
--				__WARN();
-+				WARN_ON_ONCE(1);
- 			}
- 			c->td_seen = 1;
- 		}
--- 
-1.8.4.rc2
+Hmm ugly, but OK then.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+Yours,
+Linus Walleij
