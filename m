@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab3HQALE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:11:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57674 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490Ab3HQAKu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:10:50 -0400
-Date: Fri, 16 Aug 2013 12:58:49 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>
-Subject: Re: [PATCH RFC 1/3] spmi: Linux driver framework for SPMI
-Message-ID: <20130816195849.GA17974@kroah.com>
-References: <cover.1376596224.git.joshc@codeaurora.org>
- <02deef1d90121011ab1df90ad704ef0ee36e2584.1376596224.git.joshc@codeaurora.org>
- <20130816184614.GA31510@kroah.com>
- <20130816194714.GH4035@joshc.qualcomm.com>
+	id S1756385Ab3HQALI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:11:08 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:40782 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755546Ab3HQALF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 20:11:05 -0400
+Date: Fri, 16 Aug 2013 14:01:06 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memblock, numa: Binary search node id
+Message-ID: <20130816190106.GD22182@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <1376545589-32129-1-git-send-email-yinghai@kernel.org> <20130815134348.bb119a7987af0bb64ed77b7b@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130816194714.GH4035@joshc.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130815134348.bb119a7987af0bb64ed77b7b@linux-foundation.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 02:47:15PM -0500, Josh Cartwright wrote:
-> > > +#ifdef CONFIG_DEBUG_FS
+On Thu, Aug 15, 2013 at 01:43:48PM -0700, Andrew Morton wrote:
+> On Wed, 14 Aug 2013 22:46:29 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
+> 
+> > Current early_pfn_to_nid() on arch that support memblock go
+> > over memblock.memory one by one, so will take too many try
+> > near the end.
 > > 
-> > Why?  If debugfs isn't enabled, the functions should just compile away
-> > with the debugfs_() calls, so no need to do this type of thing here,
-> > right?
+> > We can use existing memblock_search to find the node id for
+> > given pfn, that could save some time on bigger system that
+> > have many entries memblock.memory array.
 > 
-> Not sure I follow you, but it may be because this is a bit misleading.
-> 
-> Currently CONFIG_DEBUG_FS is being extended to also mean "do you want
-> the SPMI core to create device entries?".  It would probably make more
-> sense to have a CONFIG_SPMI_DEBUG option which is def_bool DEBUG_FS, as
-> other busses have.
-> 
-> The #ifdef here would then be #ifdef CONFIG_SPMI_DEBUG, as well as in
-> the Makefile:
-> 
->   spmi-core-$(CONFIG_SPMI_DEBUG) += spmi-dbgfs.o
+> Looks nice.  I wonder how much difference it makes.
 
-If debugfs is enabled why wouldn't you want debugfs entries for your
-devices?  Don't assume a user is going to be able to rebuild their
-kernel just for debugging stuff (hint, they usually aren't), so having
-these present, if they don't cause any performance issues, is usually
-best to always have around.
+Here are the timing differences for several machines.
+In each case with the patch less time was spent in __early_pfn_to_nid().
 
-thanks,
 
-greg k-h
+                        3.11-rc5        with patch      difference (%)
+                        --------        ----------      --------------
+UV1: 256 nodes  9TB:     411.66          402.47         -9.19 (2.23%)
+UV2: 255 nodes 16TB:    1141.02         1138.12         -2.90 (0.25%)
+UV2:  64 nodes  2TB:     128.15          126.53         -1.62 (1.26%)
+UV2:  32 nodes  2TB:     121.87          121.07         -0.80 (0.66%)
+                        Time in seconds.
+
+Acked-by: Russ Anderson <rja@sgi.com>
+ 
+> > ...
+> >
+> > --- linux-2.6.orig/include/linux/memblock.h
+> > +++ linux-2.6/include/linux/memblock.h
+> > @@ -60,6 +60,8 @@ int memblock_reserve(phys_addr_t base, p
+> >  void memblock_trim_memory(phys_addr_t align);
+> >  
+> >  #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+> > +int memblock_search_pfn_nid(unsigned long pfn, unsigned long *start_pfn,
+> > +			    unsigned long  *end_pfn);
+> >  void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+> >  			  unsigned long *out_end_pfn, int *out_nid);
+> >  
+> > Index: linux-2.6/mm/memblock.c
+> > ===================================================================
+> > --- linux-2.6.orig/mm/memblock.c
+> > +++ linux-2.6/mm/memblock.c
+> > @@ -914,6 +914,24 @@ int __init_memblock memblock_is_memory(p
+> >  	return memblock_search(&memblock.memory, addr) != -1;
+> >  }
+> >  
+> > +#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+> > +int __init_memblock memblock_search_pfn_nid(unsigned long pfn,
+> > +			 unsigned long *start_pfn, unsigned long *end_pfn)
+> > +{
+> > +	struct memblock_type *type = &memblock.memory;
+> > +	int mid = memblock_search(type, (phys_addr_t)pfn << PAGE_SHIFT);
+> > +
+> > +	if (mid == -1)
+> > +		return -1;
+> > +
+> > +	*start_pfn = type->regions[mid].base >> PAGE_SHIFT;
+> > +	*end_pfn = (type->regions[mid].base + type->regions[mid].size)
+> > +			>> PAGE_SHIFT;
+> > +
+> > +	return type->regions[mid].nid;
+> > +}
+> > +#endif
+> 
+> This function will have no callers if
+> CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID=y.  That's not too bad as the
+> function is __init_memblock.  But this depends on
+> CONFIG_ARCH_DISCARD_MEMBLOCK.  Messy :(
+> 
+
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
