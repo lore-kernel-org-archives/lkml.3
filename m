@@ -1,151 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab3HPWmu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:42:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3923 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753570Ab3HPWmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:42:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,897,1367996400"; 
-   d="scan'208";a="388429648"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, peterz@infradead.org, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 4/6] Move might_sleep and friends from kernel.h to sched.h
-Date: Fri, 16 Aug 2013 14:17:22 -0700
-Message-Id: <1376687844-19857-5-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
-References: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
+	id S1757469Ab3HPWm4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:42:56 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55940 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab3HPWmw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:42:52 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19nGruM2g3ZpwyzMim1LPdKlfVKKj9seJU=
+Date: Fri, 16 Aug 2013 15:50:46 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC v1 4/5] ARM: mvebu: add Armada 1500 and Sony NSZ-GS7
+ device tree files
+Message-ID: <20130816195046.GU13964@titan.lakedaemon.net>
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1376682098-10580-5-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376682098-10580-5-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Fri, Aug 16, 2013 at 09:41:37PM +0200, Sebastian Hesselbarth wrote:
+> This adds very basic device tree files for the Marvell Armada 1500 SoC
+> and the Sony NSZ-GS7 GoogleTV board. Currently, SoC only has nodes for
+> cpus, some clocks, l2 cache controller, local timer, apb timers, uart,
+> and interrupt controllers.
+> 
+> The clocks are fixed-clock placeholders until a real DT clock provider
+> is available. Cache controller node may be wrong and was just guessed
+> out of Armada 370 and GPL'd 1500 source. Timers except clocksource have
+> not really been tested.
+> 
+> The separation into soc/apb and soc/sm-apb may be removed, but it looks
+> like Armada 1500 has a separate peripheral bus for the System Manager
+> core that can also been accessed by CPUs. (If you look closely on GTV
+> boot logs, you can see SM and CPU fighting for UART ;) )
+> 
+> The Sony NSZ-GS7 is a GoogleTV consumer device comprising the SoC above.
+> Since last week or so, there is a way to install a custom u-boot and
+> boot stock, unsigned kernels easily. Just ask Google about it, if you
+> are willing to void your warranty.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Stephen Warren <swarren@wwwdotorg.org>
+> Cc: Ian Campbell <ian.campbell@citrix.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/Makefile                     |    3 +-
+>  arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts |   29 +++
+>  arch/arm/boot/dts/armada-1500.dtsi             |  225 ++++++++++++++++++++++++
+>  3 files changed, 256 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts
+>  create mode 100644 arch/arm/boot/dts/armada-1500.dtsi
+> 
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 641b3c9..3186904 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -103,7 +103,8 @@ dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+>  	armada-370-rd.dtb \
+>  	armada-xp-db.dtb \
+>  	armada-xp-gp.dtb \
+> -	armada-xp-openblocks-ax3-4.dtb
+> +	armada-xp-openblocks-ax3-4.dtb \
+> +	armada-1500-sony-nsz-gs7.dtb
 
-These are really related to scheduling, so they should be in sched.h
-Users usually will need to schedule anyways.
+alphabetical.
 
-The advantage of having them there is that we can access some of the
-scheduler inlines to make their fast path more efficient. This will come
-in a followon patch.
+And now I need to pick up a googleTV... 
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/linux/kernel.h | 35 -----------------------------------
- include/linux/sched.h  | 37 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+), 35 deletions(-)
+thx,
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 482ad2d..badcc13 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -141,35 +141,6 @@ struct completion;
- struct pt_regs;
- struct user;
- 
--#ifdef CONFIG_PREEMPT_VOLUNTARY
--extern int _cond_resched(void);
--# define might_resched() _cond_resched()
--#else
--# define might_resched() do { } while (0)
--#endif
--
--#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
--  void __might_sleep(const char *file, int line, int preempt_offset);
--/**
-- * might_sleep - annotation for functions that can sleep
-- *
-- * this macro will print a stack trace if it is executed in an atomic
-- * context (spinlock, irq-handler, ...).
-- *
-- * This is a useful debugging help to be able to catch problems early and not
-- * be bitten later when the calling function happens to sleep when it is not
-- * supposed to.
-- */
--# define might_sleep() \
--	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
--#else
--  static inline void __might_sleep(const char *file, int line,
--				   int preempt_offset) { }
--# define might_sleep() do { might_resched(); } while (0)
--#endif
--
--#define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
--
- /*
-  * abs() handles unsigned and signed longs, ints, shorts and chars.  For all
-  * input types abs() returns a signed long.
-@@ -193,12 +164,6 @@ extern int _cond_resched(void);
- 		(__x < 0) ? -__x : __x;		\
- 	})
- 
--#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
--void might_fault(void);
--#else
--static inline void might_fault(void) { }
--#endif
--
- extern struct atomic_notifier_head panic_notifier_list;
- extern long (*panic_blink)(int state);
- __printf(1, 2)
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d722490..97f4b78 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2433,6 +2433,35 @@ extern int __cond_resched_softirq(void);
- 	__cond_resched_softirq();					\
- })
- 
-+#ifdef CONFIG_PREEMPT_VOLUNTARY
-+extern int _cond_resched(void);
-+# define might_resched() _cond_resched()
-+#else
-+# define might_resched() do { } while (0)
-+#endif
-+
-+#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
-+ void __might_sleep(const char *file, int line, int preempt_offset);
-+/**
-+ * might_sleep - annotation for functions that can sleep
-+ *
-+ * this macro will print a stack trace if it is executed in an atomic
-+ * context (spinlock, irq-handler, ...).
-+ *
-+ * This is a useful debugging help to be able to catch problems early and not
-+ * be bitten later when the calling function happens to sleep when it is not
-+ * supposed to.
-+ */
-+# define might_sleep() \
-+	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
-+#else
-+  static inline void __might_sleep(const char *file, int line,
-+				   int preempt_offset) { }
-+# define might_sleep() do { might_resched(); } while (0)
-+#endif
-+
-+#define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
-+
- static inline void cond_resched_rcu(void)
- {
- #if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
-@@ -2442,6 +2471,14 @@ static inline void cond_resched_rcu(void)
- #endif
- }
- 
-+#ifdef CONFIG_PROVE_LOCKING
-+void might_fault(void);
-+#else
-+static inline void might_fault(void)
-+{
-+}
-+#endif
-+
- /*
-  * Does a critical section need to be broken due to another
-  * task waiting?: (technically does not depend on CONFIG_PREEMPT,
--- 
-1.8.3.1
-
+Jason.
