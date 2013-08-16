@@ -1,40 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab3HQATu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:19:50 -0400
-Received: from smtp-s04.adinet.com.uy ([200.40.30.64]:57288 "EHLO
-	smtp-s01.adinet.com.uy" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757448Ab3HQATY (ORCPT
+	id S1757423Ab3HQATU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:19:20 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:47972 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754663Ab3HQATP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:19:24 -0400
-X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Aug 2013 20:19:23 EDT
-X-CNFS-ANALYSIS: v=2.0 cv=XsrTyC59 c=1 sm=2 a=m9k+4w/bP6kxJnZDEydTug==:17
- a=fc5eX-7etnwA:10 a=lkbrnGkaV94A:10 a=IkcTkHD0fZMA:10 a=MkT04gfWAAAA:8
- a=uKjqEd65QDLFaUwUpiwA:9 a=QEXdDO2ut3YA:10 a=kTbYlp8LzlxKigRG:21
- a=IATmrUbCQQ6l7HZg:21 a=cHZeHg9rOoc8+HWka+jrjA==:117
-Message-ID: <17818107.3567821376696283594.JavaMail.defaultUser@defaultHost>
-Date: Fri, 16 Aug 2013 20:38:03 -0300 (UYT)
-From: "blessingzamba133@adinet.com.uy" <blessingzamba133@adinet.com.uy>
-Subject: Hello dear
-MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 174.136.98.202
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 16 Aug 2013 20:19:15 -0400
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: lf-virt <virtualization@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@gentwo.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH-v3 2/4] target: Add transport_init_session_tags using per-cpu ida
+Date: Fri, 16 Aug 2013 23:09:07 +0000
+Message-Id: <1376694549-20609-3-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
+References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Hello dear
-How are you today I hope all is well with you, my name is 
-miss blessing zamba 24 years old girl is my pleasure to contact you after
- viewing your profile  which really interest me to communicating with 
-you please if you have the desire with me so we can get to know each 
-other better and see what happens in the future?. I'll be very glad if 
-you could send me mail back to my personal e-mail for more easy 
-communication and to know more about each other.i will tell you why i 
-make this contact with you in my next email and i will send you my 
-picture when I receive your response, i am waiting to hear from you, and
- I wish you all the best on your life. thank you and have a nice day
-miss blessing
+This patch adds lib/idr.c based transport_init_session_tags() logic
+that allows fabric drivers to setup a per-cpu se_sess->sess_tag_pool
+and associated se_sess->sess_cmd_map for basic tagged pre-allocation
+of fabric descriptor sized memory.
+
+v3: Update to percpu-ida usage
+
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Asias He <asias@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/target_core_transport.c |   33 ++++++++++++++++++++++++++++++++
+ include/target/target_core_base.h      |    5 +++++
+ include/target/target_core_fabric.h    |    1 +
+ 3 files changed, 39 insertions(+)
+
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 7172d00..64ceb51 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -232,6 +232,35 @@ struct se_session *transport_init_session(void)
+ }
+ EXPORT_SYMBOL(transport_init_session);
+ 
++struct se_session *transport_init_session_tags(unsigned int tag_num,
++					       unsigned int tag_size)
++{
++	struct se_session *se_sess;
++	int rc;
++
++	se_sess = transport_init_session();
++	if (IS_ERR(se_sess))
++		return se_sess;
++
++	se_sess->sess_cmd_map = kzalloc(tag_num * tag_size, GFP_KERNEL);
++	if (!se_sess->sess_cmd_map) {
++		pr_err("Unable to allocate se_sess->sess_cmd_map\n");
++		transport_free_session(se_sess);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	rc = percpu_ida_init(&se_sess->sess_tag_pool, tag_num);
++	if (rc < 0) {
++		pr_err("Unable to init se_sess->sess_tag_pool,"
++			" tag_num: %u\n", tag_num);
++		transport_free_session(se_sess);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	return se_sess;
++}
++EXPORT_SYMBOL(transport_init_session_tags);
++
+ /*
+  * Called with spin_lock_irqsave(&struct se_portal_group->session_lock called.
+  */
+@@ -367,6 +396,10 @@ EXPORT_SYMBOL(transport_deregister_session_configfs);
+ 
+ void transport_free_session(struct se_session *se_sess)
+ {
++	if (se_sess->sess_cmd_map) {
++		percpu_ida_destroy(&se_sess->sess_tag_pool);
++		kfree(se_sess->sess_cmd_map);
++	}
+ 	kmem_cache_free(se_sess_cache, se_sess);
+ }
+ EXPORT_SYMBOL(transport_free_session);
+diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
+index e34fc90..360e4a3 100644
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -5,6 +5,7 @@
+ #include <linux/configfs.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/blkdev.h>
++#include <linux/idr.h>
+ #include <scsi/scsi_cmnd.h>
+ #include <net/sock.h>
+ #include <net/tcp.h>
+@@ -415,6 +416,8 @@ struct se_cmd {
+ 	enum dma_data_direction	data_direction;
+ 	/* For SAM Task Attribute */
+ 	int			sam_task_attr;
++	/* Used for se_sess->sess_tag_pool */
++	unsigned int		map_tag;
+ 	/* Transport protocol dependent state, see transport_state_table */
+ 	enum transport_state_table t_state;
+ 	unsigned		cmd_wait_set:1;
+@@ -536,6 +539,8 @@ struct se_session {
+ 	struct list_head	sess_wait_list;
+ 	spinlock_t		sess_cmd_lock;
+ 	struct kref		sess_kref;
++	void			*sess_cmd_map;
++	struct percpu_ida	sess_tag_pool;
+ };
+ 
+ struct se_device;
+diff --git a/include/target/target_core_fabric.h b/include/target/target_core_fabric.h
+index 7a16178..b13afb6 100644
+--- a/include/target/target_core_fabric.h
++++ b/include/target/target_core_fabric.h
+@@ -84,6 +84,7 @@ struct target_core_fabric_ops {
+ };
+ 
+ struct se_session *transport_init_session(void);
++struct se_session *transport_init_session_tags(unsigned int, unsigned int);
+ void	__transport_register_session(struct se_portal_group *,
+ 		struct se_node_acl *, struct se_session *, void *);
+ void	transport_register_session(struct se_portal_group *,
+-- 
+1.7.10.4
+
