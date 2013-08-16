@@ -1,69 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab3HPWKr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:10:47 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42649 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab3HPWKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:10:45 -0400
-Date: Fri, 16 Aug 2013 17:00:34 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH v6 3/5] zsmalloc: move it under zram
-Message-ID: <20130816220034.GD7265@variantweb.net>
-References: <1376459736-7384-1-git-send-email-minchan@kernel.org>
- <1376459736-7384-4-git-send-email-minchan@kernel.org>
+	id S1752224Ab3HPWLB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:11:01 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:65233 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943Ab3HPWK7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:10:59 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376459736-7384-4-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081622-5806-0000-0000-000022743717
+Content-Transfer-Encoding: 8BIT
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1375804317-10576-3-git-send-email-s.nawrocki@samsung.com>
+Cc: linux@arm.linux.org.uk, jiada_wang@mentor.com, broonie@kernel.org,
+        vapier@gentoo.org, ralf@linux-mips.org, lethal@linux-sh.org,
+        kyungmin.park@samsung.com, shawn.guo@linaro.org,
+        sebastian.hesselbarth@gmail.com, LW@KARO-electronics.de,
+        t.figa@samsung.com, g.liakhovetski@gmx.de,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, Sylwester Nawrocki <s.nawrocki@samsung.com>
+References: <1375804317-10576-1-git-send-email-s.nawrocki@samsung.com>
+ <1375804317-10576-3-git-send-email-s.nawrocki@samsung.com>
+Message-ID: <20130816214841.4443.10515@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH RFC 2/2] clk: implement clk_unregister
+Date: Fri, 16 Aug 2013 14:48:41 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 02:55:34PM +0900, Minchan Kim wrote:
-> This patch moves zsmalloc under zram directory because there
-> isn't any other user any more.
+Quoting Sylwester Nawrocki (2013-08-06 08:51:57)
+> +/*
+> + * Empty clk_ops for unregistered clocks. These are used temporarily
+> + * after clk_unregister() was called on a clock and until last clock
+> + * consumer calls clk_put() and the struct clk object is freed.
+> + */
+> +static int clk_dummy_prepare_enable(struct clk_hw *hw)
+> +{
+> +       return -ENXIO;
+> +}
+> +
+> +static void clk_dummy_disable_unprepare(struct clk_hw *hw)
+> +{
+> +       WARN_ON(1);
+> +}
+> +
+> +static int clk_dummy_set_rate(struct clk_hw *hw, unsigned long rate,
+> +                                       unsigned long parent_rate)
+> +{
+> +       return -ENXIO;
+> +}
+> +
+> +static int clk_dummy_set_parent(struct clk_hw *hw, u8 index)
+> +{
+> +       return -ENXIO;
+> +}
+> +
+> +static const struct clk_ops clk_dummy_ops = {
+> +       .enable         = clk_dummy_prepare_enable,
+> +       .disable        = clk_dummy_disable_unprepare,
+> +       .prepare        = clk_dummy_prepare_enable,
+> +       .unprepare      = clk_dummy_disable_unprepare,
+> +       .set_rate       = clk_dummy_set_rate,
+> +       .set_parent     = clk_dummy_set_parent,
+> +};
+
+Don't use "clk_dummy_*" here. The use of dummy often implies that
+operations will return success in the absence of actual hardware but
+these return an error, and rightly so. So maybe rename the functions and
+clk_ops instance to something like "clk_nodev_*" or "clk_missing_*"?
+
+> +
+>  /**
+>   * clk_unregister - unregister a currently registered clock
+>   * @clk: clock to unregister
+> - *
+> - * Currently unimplemented.
+>   */
+> -void clk_unregister(struct clk *clk) {}
+> +void clk_unregister(struct clk *clk)
+> +{
+> +       unsigned long flags;
+> +
+> +       clk_prepare_lock();
+> +
+> +       if (!clk || IS_ERR(clk)) {
+> +               pr_err("%s: invalid clock: %p\n", __func__, clk);
+> +               goto out;
+> +       }
+> +
+> +       if (clk->ops == &clk_dummy_ops) {
+> +               pr_err("%s: unregistered clock: %s\n", __func__, clk->name);
+> +               goto out;
+> +       }
+> +       /*
+> +        * Assign dummy clock ops for consumers that might still hold
+> +        * a reference to this clock.
+> +        */
+> +       flags = clk_enable_lock();
+> +       clk->ops = &clk_dummy_ops;
+> +       clk_enable_unlock(flags);
+> +
+> +       if (!hlist_empty(&clk->children)) {
+> +               struct clk *child;
+> +
+> +               /* Reparent all children to the orphan list. */
+> +               hlist_for_each_entry(child, &clk->children, child_node)
+> +                       clk_set_parent(child, NULL);
+> +       }
+
+This looks pretty good. A remaining problem is re-loading the clock
+provider module will have string name conflicts with the old
+unregistered clocks (but not yet released) clocks during calls to
+__clk_lookup.
+
+The best solution would be to refactor clk.c to not use string name
+lookups but that is probably too big of an issue for the purpose of this
+series (but it will happen some day).
+
+A short term solution would be to poison the clock's string name here.
+Reallocate the clk->name string with some poison data so that name
+conflicts don't occur. What do you think?
+
+Regards,
+Mike
+
+> +
+> +       clk_debug_unregister(clk);
+> +
+> +       hlist_del_init(&clk->child_node);
+> +
+> +       if (clk->prepare_count)
+> +               pr_warn("%s: unregistering prepared clock: %s\n",
+> +                                       __func__, clk->name);
+> +
+> +       kref_put(&clk->ref, __clk_release);
+> +out:
+> +       clk_prepare_unlock();
+> +}
+>  EXPORT_SYMBOL_GPL(clk_unregister);
 > 
-> Before that, description will explain why we have needed custom
-> allocator.
+>  static void devm_clk_release(struct device *dev, void *res)
+> @@ -1861,6 +1973,7 @@ int __clk_get(struct clk *clk)
+>         if (!try_module_get(clk->owner))
+>                 return 0;
 > 
-> Zsmalloc is a new slab-based memory allocator for storing
-> compressed pages.  It is designed for low fragmentation and
-> high allocation success rate on large object, but <= PAGE_SIZE
-> allocations.
-
-One things zsmalloc will probably have to address before Andrew deems it
-worthy is the "memmap peekers" issue.  I had to make this change in zbud
-before Andrew would accept it and this is one of the reasons I have yet
-to implement zsmalloc support for zswap yet.
-
-Basically, zsmalloc makes the assumption that once the kernel page
-allocator gives it a page for the pool, zsmalloc can stuff whatever
-metatdata it wants into the struct page.  The problem comes when some
-parts of the kernel do not obtain the struct page pointer via the
-allocator but via walking the memmap.  Those routines will make certain
-assumption about the state and structure of the data in the struct page,
-leading to issues.
-
-My solution for zbud was to move the metadata into the pool pages
-themselves, using the first block of each page for metadata regarding that
-page.
-
-Andrew might also have something to say about the placement of
-zsmalloc.c.  IIRC, if it was going to be merged, he wanted it in mm/ if
-it was going to be messing around in the struct page.
-
-Seth
-
+> +       kref_get(&clk->ref);
+>         return 1;
+>  }
+>  EXPORT_SYMBOL(__clk_get);
+> @@ -1870,6 +1983,10 @@ void __clk_put(struct clk *clk)
+>         if (!clk || IS_ERR(clk))
+>                 return;
+> 
+> +       clk_prepare_lock();
+> +       kref_put(&clk->ref, __clk_release);
+> +       clk_prepare_unlock();
+> +
+>         module_put(clk->owner);
+>  }
+>  EXPORT_SYMBOL(__clk_put);
+> diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+> index b7c0b58..36c1fc8 100644
+> --- a/include/linux/clk-private.h
+> +++ b/include/linux/clk-private.h
+> @@ -12,6 +12,7 @@
+>  #define __LINUX_CLK_PRIVATE_H
+> 
+>  #include <linux/clk-provider.h>
+> +#include <linux/kref.h>
+>  #include <linux/list.h>
+> 
+>  /*
+> @@ -47,6 +48,7 @@ struct clk {
+>  #ifdef CONFIG_COMMON_CLK_DEBUG
+>         struct dentry           *dentry;
+>  #endif
+> +       struct kref             ref;
+>  };
+> 
+>  /*
+> --
+> 1.7.9.5
