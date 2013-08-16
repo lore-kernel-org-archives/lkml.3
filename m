@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab3HPRiz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 13:38:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19406 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824Ab3HPRiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 13:38:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,896,1367996400"; 
-   d="scan'208";a="388335279"
-Date: Fri, 16 Aug 2013 10:38:50 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@gmail.com
-Subject: Re: [PATCH 2/2] xhci:prevent "callbacks suppressed" when debug is
- not enabled
-Message-ID: <20130816173850.GC7975@xanatos>
-References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
- <70b3564625bbda6247cc5627041344fef8a762ae.1376582695.git.d.kasatkin@samsung.com>
- <20130816001716.GA7367@kroah.com>
- <20130816172635.GA7975@xanatos>
- <20130816173035.GA15607@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130816173035.GA15607@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755014Ab3HPRj5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 13:39:57 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38183 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752373Ab3HPRju (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 13:39:50 -0400
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Sudeep.KarkadaNagesha@arm.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Subject: [RFC PATCH v2 0/4] DT: move of_get_cpu_node from PPC to DT core
+Date: Fri, 16 Aug 2013 18:39:49 +0100
+Message-Id: <1376674791-28244-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+References: <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 16 Aug 2013 17:39:45.0438 (UTC) FILETIME=[98D11BE0:01CE9AA7]
+X-MC-Unique: 113081618394800201
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7GHe0Ll024387
 
-On Fri, Aug 16, 2013 at 10:30:35AM -0700, Greg KH wrote:
-> On Fri, Aug 16, 2013 at 10:26:35AM -0700, Sarah Sharp wrote:
-> > On Thu, Aug 15, 2013 at 05:17:16PM -0700, Greg KH wrote:
-> > > On Thu, Aug 15, 2013 at 07:04:55PM +0300, Dmitry Kasatkin wrote:
-> > > > When debug is not enabled and dev_dbg() will expand to nothing,
-> > > > log might be flooded with "callbacks suppressed". If it was not
-> > > > done on purpose, better to use dev_dbg_ratelimited() instead.
-> > > > 
-> > > > Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> > > > ---
-> > > >  drivers/usb/host/xhci-ring.c | 6 ++----
-> > > >  1 file changed, 2 insertions(+), 4 deletions(-)
-> > > 
-> > > 
-> > > Sarah, does this patch conflict with the trace debug patches being
-> > > worked on?  I'll hold off on applying it for now, let me know if it's ok
-> > > or not.
-> > 
-> > It doesn't conflict with the trace debug patches, because those only
-> > effect debugging with xhci_dbg with the host device, not dev_dbg with
-> > the USB device.  This should apply fine to usb-next.
-> 
-> Ok, can I get your ack for it so I can apply it?
+From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-Dmitry, can you fix the indentation issue and resubmit this?  I'll ack
-it then.
+Hi,
 
-Sarah Sharp
+This series needs to be prepended with the original series[1][2][3]
+Except the first patch in the original series(which is merged into this
+as last patch), there is no other change(apart from function signature)
+I am posting only this part for feedback separately for review as the
+original series is already reviewed and acked.
+
+v1->v2:
+- Fixed an issue - updating cell pointer
+- Documentated in arch_match_cpu_phys_id that phys_id are values read
+  from the device tree only in the weak definition
+
+[Since first 2 patches have not changed, microblaze and openrisc lists are
+bouncing for non-members, I am not resending them again. Michal(for
+microblaze) has acked when it was first pointed. I am waiting for response
+from Jonas(for openrisc)]
+
+Rob, Ben,
+
+If you are OK with these patches and ACK, I can combine and post the complete
+series.
+
+Regards,
+Sudeep
+
+Sudeep KarkadaNagesha (4):
+  microblaze: remove undefined of_get_cpu_node declaration
+  openrisc: remove undefined of_get_cpu_node declaration
+  powerpc: refactor of_get_cpu_node to support other architectures
+  of: move of_get_cpu_node implementation to DT core library
+
+ arch/microblaze/include/asm/prom.h |  3 --
+ arch/openrisc/include/asm/prom.h   |  3 --
+ arch/powerpc/include/asm/prom.h    |  3 --
+ arch/powerpc/kernel/prom.c         | 43 +----------------
+ drivers/of/base.c                  | 96 ++++++++++++++++++++++++++++++++++++++
+ include/linux/cpu.h                |  1 +
+ include/linux/of.h                 |  7 +++
+ 7 files changed, 106 insertions(+), 50 deletions(-)
+
+-- 
+1.8.1.2
+
+
