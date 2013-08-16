@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab3HPAxD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 20:53:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44436 "EHLO
+	id S1752922Ab3HPA4y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 20:56:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44449 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab3HPAxB (ORCPT
+	with ESMTP id S1751737Ab3HPA4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 20:53:01 -0400
-Date: Thu, 15 Aug 2013 17:54:37 -0700
+	Thu, 15 Aug 2013 20:56:53 -0400
+Date: Thu, 15 Aug 2013 17:58:28 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
@@ -16,7 +16,7 @@ Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         stable <stable@vger.kernel.org>
 Subject: Re: [ 00/17] 3.4.58-stable review
-Message-ID: <20130816005437.GB23424@kroah.com>
+Message-ID: <20130816005828.GC23424@kroah.com>
 References: <20130813063501.728847844@linuxfoundation.org>
  <520A1D56.2050507@roeck-us.net>
  <20130813175858.GC7336@kroah.com>
@@ -26,17 +26,17 @@ References: <20130813063501.728847844@linuxfoundation.org>
  <CAMuHMdVsR3Af+ccWMq6aU99UUAtCXyf8Ss0fbSYw7tR_w2mwkA@mail.gmail.com>
  <520B5873.6010708@roeck-us.net>
  <20130815063648.GE25754@kroah.com>
- <520C93E8.8080802@roeck-us.net>
+ <520C9A57.9080400@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <520C93E8.8080802@roeck-us.net>
+In-Reply-To: <520C9A57.9080400@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 01:40:08AM -0700, Guenter Roeck wrote:
+On Thu, Aug 15, 2013 at 02:07:35AM -0700, Guenter Roeck wrote:
 > On 08/14/2013 11:36 PM, Greg Kroah-Hartman wrote:
 > > On Wed, Aug 14, 2013 at 03:14:11AM -0700, Guenter Roeck wrote:
 > >> On 08/14/2013 01:26 AM, Geert Uytterhoeven wrote:
@@ -92,10 +92,33 @@ On Thu, Aug 15, 2013 at 01:40:08AM -0700, Guenter Roeck wrote:
 > >> So, in summary, we have
 > >>
 > >> 473e162e CRIS: Add _sdata to vmlinux.lds.S
+> >> 69349c2d cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
+> >> 7b91747d cris: posix_types.h, include asm-generic/posix_types.h
+> >>
+> >> With those three patches applied, cris targets build in 3.4.y.
+> >
+> > Wonderful, I've now applied all of these.
+> >
+> > Anything else I'm missing for 3.4?
+> >
 > 
-> 473e162e also fixes the cris builds in 3.0, so it might make sense to apply it there as well,
-> at least if 3.0 has some lifetime left.
+> frv build in 3.4 is fixed with
+> 
+> b9e892f frv: Use core allocator for task_struct
+> 25d0c52 frv: Use correct size for task_struct allocation
+> 
+> 25d0c52 must be applied first.
 
-It's easy enough, I've queued it up now.
+Where did you get those git ids from?
+
+cce4517f33384c3794c759e206cc8e1bb6df146b is frv: Use correct size for
+task_struct allocation.
+
+c6ae063aaf3786b9db7f19a90bf4ed8aaebb7f90 is frv: Use core allocator for
+task_struct.
+
+I'll queue them up, but you might want to check your git tree...
+
+thanks,
 
 greg k-h
