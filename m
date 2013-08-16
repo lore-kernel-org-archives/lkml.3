@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab3HPKeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 06:34:01 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42410 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab3HPKd5 (ORCPT
+	id S1751743Ab3HPKe6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 06:34:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44490 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab3HPKex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 06:33:57 -0400
-Message-ID: <520E0E22.4000403@kernel.org>
-Date: Fri, 16 Aug 2013 12:33:54 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 16 Aug 2013 06:34:53 -0400
+Date: Fri, 16 Aug 2013 12:34:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        Rik van Riel <riel@surriel.com>
+Subject: Re: [PATCH 6/6] sched, fair: Rework and comment the group_imb code
+Message-ID: <20130816103438.GX3008@twins.programming.kicks-ass.net>
+References: <20130816101221.028189677@chello.nl>
+ <20130816101545.356818143@infradead.org>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, Russ.Dill@ti.com
-Subject: Re: [PATCH 4/4] iio: ti_am335x_adc: Add continuous sampling and trigger
- support
-References: <1376424303-22740-1-git-send-email-zubair.lutfullah@gmail.com> <1376424303-22740-5-git-send-email-zubair.lutfullah@gmail.com> <520CBEC6.8010400@kernel.org> <20130816100702.GD26895@linutronix.de>
-In-Reply-To: <20130816100702.GD26895@linutronix.de>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130816101545.356818143@infradead.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/13 11:07, Sebastian Andrzej Siewior wrote:
-> * Jonathan Cameron | 2013-08-15 12:43:02 [+0100]:
-> 
->> Hi,
-> Hi Jonathan,
-> 
->> Whilst the below review is based on what we have here, I tried to apply it
->> to the latest iio.git togreg branch (which for this driver should be
->> much the same as staging-next and hence linux-next).  It's not even
->> close and I can't immediately spot where some of the changes came
->> from.  Have I missed a precursor patch or is this based on an
->> older version of this driver?
-> 
-> I took the four patches, checkout iio/fixes-togreg and then
-> 
-> |git am -3 iio.mbox
-> |Applying: input: ti_am335x_tsc: correct step mask update after IRQ
-> |Applying: input: ti_am335x_tsc: Increase sequencer delay time
-> |Applying: input: ti_am335x_tsc: Enable shared IRQ for TSC, add overrun and underflow checks
-> |Applying: iio: ti_am335x_adc: Add continuous sampling and trigger support
-> 
-> It did apply with no trouble here.
-> Let me look at your comments…
+On Fri, Aug 16, 2013 at 12:12:27PM +0200, Peter Zijlstra wrote:
+> +/*
+> + * Group imbalance indicates (and tries to solve) the problem where balancing
+> + * groups is inadequate due to tsk_cpus_allowed() constraints.
+> + *
+> + * Imagine a situation of two groups of 4 cpus each and 4 tasks each with a
+> + * cpumask covering 1 cpu of the first group and 3 cpus of the second group.
+> + * Something like:
+> + *
+> + * 	{ 0 1 2 3 } { 4 5 6 7 }
+> + * 	        *     * * *
 
-Ah, fixes-togreg is for this cycle, whereas new stuff like this needs
-to go on the togreg branch.  Hence please rebase on the togreg branch
-instead.
+And yes, people think this is a reasonable thing to do :/
 
-That would explain it.
+> + *
+> + * If we were to balance group-wise we'd place two tasks in the first group and
+> + * two tasks in the second group. Clearly this is undesired as it will overload
+> + * cpu 3 and leave one of the cpus in the second group unused.
+> + *
+> + * The current solution to this issue is detecting the skew in the first group
+> + * by noticing it has a cpu that is overloaded while the remaining cpus are
+> + * idle -- or rather, there's a distinct imbalance in the cpus; see
+> + * sg_imbalanced().
+> + *
+> + * When this is so detected; this group becomes a candidate for busiest; see
+> + * update_sd_pick_busiest(). And calculcate_imbalance() and
+> + * find_busiest_group() avoid some of the usual balance conditional to allow it
+> + * to create an effective group imbalance.
+> + *
+> + * This is a somewhat tricky proposition since the next run might not find the
+> + * group imbalance and decide the groups need to be balanced again. A most
+> + * subtle and fragile situation.
+> + */
+
+One of the things that I know about which can (and does) go wrong with
+this is that we typically pull 'all' tasks to the balance cpu only to
+then let future (lower) load-balance passes spread that out again.
+
+But until its spread out, we have this spike in the task distribution
+that will trigger the group_imb condition.
