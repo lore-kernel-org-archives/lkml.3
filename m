@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab3HPWlZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:41:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51928 "EHLO
+	id S1757400Ab3HPWli (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:41:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51963 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757291Ab3HPWlV (ORCPT
+	with ESMTP id S1757344Ab3HPWla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:41:21 -0400
+	Fri, 16 Aug 2013 18:41:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Tomasz=20Mo=C5=84?= <desowin@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: "Ewan D. Milne" <emilne@redhat.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 051/133] mwifiex: Add missing endian conversion.
-Date: Fri, 16 Aug 2013 15:33:13 -0700
-Message-Id: <1376692475-28413-52-git-send-email-kamal@canonical.com>
+Subject: [PATCH 022/133] [SCSI] sd: fix crash when UA received on DIF enabled device
+Date: Fri, 16 Aug 2013 15:32:44 -0700
+Message-Id: <1376692475-28413-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,36 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Tomasz=20Mo=C5=84?= <desowin@gmail.com>
+From: "Ewan D. Milne" <emilne@redhat.com>
 
-commit 83e612f632c3897be29ef02e0472f6d63e258378 upstream.
+commit 085b513f97d8d799d28491239be4b451bcd8c2c5 upstream.
 
-Both type and pkt_len variables are in host endian and these should be in
-Little Endian in the payload.
+sd_prep_fn will allocate a larger CDB for the command via mempool_alloc
+for devices using DIF type 2 protection.  This CDB was being freed
+in sd_done, which results in a kernel crash if the command is retried
+due to a UNIT ATTENTION.  This change moves the code to free the larger
+CDB into sd_unprep_fn instead, which is invoked after the request is
+complete.
 
-Signed-off-by: Tomasz Moń <desowin@gmail.com>
-Acked-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+It is no longer necessary to call scsi_print_command separately for
+this case as the ->cmnd will no longer be NULL in the normal code path.
+
+Also removed conditional test for DIF type 2 when freeing the larger
+CDB because the protection_type could have been changed via sysfs while
+the command was executing.
+
+Signed-off-by: Ewan D. Milne <emilne@redhat.com>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/mwifiex/sdio.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/sd.c | 22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/sdio.c b/drivers/net/wireless/mwifiex/sdio.c
-index 5a1c1d0..86c025d 100644
---- a/drivers/net/wireless/mwifiex/sdio.c
-+++ b/drivers/net/wireless/mwifiex/sdio.c
-@@ -1455,8 +1455,8 @@ static int mwifiex_sdio_host_to_card(struct mwifiex_adapter *adapter,
- 	/* Allocate buffer and copy payload */
- 	blk_size = MWIFIEX_SDIO_BLOCK_SIZE;
- 	buf_block_len = (pkt_len + blk_size - 1) / blk_size;
--	*(u16 *) &payload[0] = (u16) pkt_len;
--	*(u16 *) &payload[2] = type;
-+	*(__le16 *)&payload[0] = cpu_to_le16((u16)pkt_len);
-+	*(__le16 *)&payload[2] = cpu_to_le16(type);
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index f5fcf65..a1dcdc3 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -828,10 +828,17 @@ static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
  
- 	/*
- 	 * This is SDIO specific header
+ static void sd_unprep_fn(struct request_queue *q, struct request *rq)
+ {
++	struct scsi_cmnd *SCpnt = rq->special;
++
+ 	if (rq->cmd_flags & REQ_DISCARD) {
+ 		free_page((unsigned long)rq->buffer);
+ 		rq->buffer = NULL;
+ 	}
++	if (SCpnt->cmnd != rq->cmd) {
++		mempool_free(SCpnt->cmnd, sd_cdb_pool);
++		SCpnt->cmnd = NULL;
++		SCpnt->cmd_len = 0;
++	}
+ }
+ 
+ /**
+@@ -1722,21 +1729,6 @@ static int sd_done(struct scsi_cmnd *SCpnt)
+ 	if (rq_data_dir(SCpnt->request) == READ && scsi_prot_sg_count(SCpnt))
+ 		sd_dif_complete(SCpnt, good_bytes);
+ 
+-	if (scsi_host_dif_capable(sdkp->device->host, sdkp->protection_type)
+-	    == SD_DIF_TYPE2_PROTECTION && SCpnt->cmnd != SCpnt->request->cmd) {
+-
+-		/* We have to print a failed command here as the
+-		 * extended CDB gets freed before scsi_io_completion()
+-		 * is called.
+-		 */
+-		if (result)
+-			scsi_print_command(SCpnt);
+-
+-		mempool_free(SCpnt->cmnd, sd_cdb_pool);
+-		SCpnt->cmnd = NULL;
+-		SCpnt->cmd_len = 0;
+-	}
+-
+ 	return good_bytes;
+ }
+ 
 -- 
 1.8.1.2
 
