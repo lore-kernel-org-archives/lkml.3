@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab3HPC0R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 22:26:17 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:33632 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753929Ab3HPC0O (ORCPT
+	id S1754392Ab3HPC0d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 22:26:33 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:47468 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754288Ab3HPC02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 22:26:14 -0400
+	Thu, 15 Aug 2013 22:26:28 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 03/34] cpufreq: arm_big_little: remove calls to cpufreq_notify_transition()
-Date: Fri, 16 Aug 2013 07:55:00 +0530
-Message-Id: <abfababbb45f34fbc43e51a183d27e20adb0beae.1376619363.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Steven Miao <realmz6@gmail.com>
+Subject: [PATCH 05/34] cpufreq: blackfin: remove calls to cpufreq_notify_transition()
+Date: Fri, 16 Aug 2013 07:55:02 +0530
+Message-Id: <f2d1c020e86a1b95fa38eab1d127bb9645e01b3c.1376619363.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376619363.git.viresh.kumar@linaro.org>
 References: <cover.1376619363.git.viresh.kumar@linaro.org>
@@ -45,49 +46,69 @@ frequency change, this one removes it from this driver.
 
 Some related minor cleanups are also done along with it.
 
+Cc: Steven Miao <realmz6@gmail.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/arm_big_little.c | 25 +++----------------------
- 1 file changed, 3 insertions(+), 22 deletions(-)
+ drivers/cpufreq/blackfin-cpufreq.c | 22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
-index daf4423..e3e8f25 100644
---- a/drivers/cpufreq/arm_big_little.c
-+++ b/drivers/cpufreq/arm_big_little.c
-@@ -51,30 +51,11 @@ static unsigned int bL_cpufreq_get(unsigned int cpu)
- static int bL_cpufreq_set_target(struct cpufreq_policy *policy,
- 		unsigned int index)
- {
+diff --git a/drivers/cpufreq/blackfin-cpufreq.c b/drivers/cpufreq/blackfin-cpufreq.c
+index 12528b2..e9e63fc 100644
+--- a/drivers/cpufreq/blackfin-cpufreq.c
++++ b/drivers/cpufreq/blackfin-cpufreq.c
+@@ -132,27 +132,23 @@ static int bfin_target(struct cpufreq_policy *policy, unsigned int index)
+ #ifndef CONFIG_BF60x
+ 	unsigned int plldiv;
+ #endif
 -	struct cpufreq_freqs freqs;
--	u32 cpu = policy->cpu, cur_cluster;
--	int ret = 0;
-+	u32 cur_cluster;
+ 	static unsigned long lpj_ref;
+ 	static unsigned int  lpj_ref_freq;
++	unsigned int old_freq, new_freq;
+ 	int ret = 0;
  
- 	cur_cluster = cpu_to_cluster(policy->cpu);
--
--	freqs.old = bL_cpufreq_get(policy->cpu);
--	freqs.new = freq_table[cur_cluster][index].frequency;
--
--	pr_debug("%s: cpu: %d, cluster: %d, oldfreq: %d, target freq: %d, new freq: %d\n",
--			__func__, cpu, cur_cluster, freqs.old, freqs.new,
--			freqs.new);
+ #if defined(CONFIG_CYCLES_CLOCKSOURCE)
+ 	cycles_t cycles;
+ #endif
+ 
+-	freqs.old = bfin_getfreq_khz(0);
+-	freqs.new = bfin_freq_table[index].frequency;
++	old_freq = bfin_getfreq_khz(0);
++	new_freq = bfin_freq_table[index].frequency;
+ 
+-	pr_debug("cpufreq: changing cclk to %lu; target = %u, oldfreq = %u\n",
+-			freqs.new, freqs.new, freqs.old);
 -
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
--
--	ret = clk_set_rate(clk[cur_cluster], freqs.new * 1000);
--	if (ret) {
--		pr_err("clk_set_rate failed: %d\n", ret);
--		freqs.new = freqs.old;
--	}
--
+ #ifndef CONFIG_BF60x
+ 	plldiv = (bfin_read_PLL_DIV() & SSEL) | dpm_state_table[index].csel;
+ 	bfin_write_PLL_DIV(plldiv);
+ #else
+-	ret = cpu_set_cclk(policy->cpu, freqs.new * 1000);
++	ret = cpu_set_cclk(policy->cpu, new_freq * 1000);
+ 	if (ret != 0) {
+ 		WARN_ONCE(ret, "cpufreq set freq failed %d\n", ret);
+ 		return ret;
+@@ -168,17 +164,13 @@ static int bfin_target(struct cpufreq_policy *policy, unsigned int index)
+ #endif
+ 	if (!lpj_ref_freq) {
+ 		lpj_ref = loops_per_jiffy;
+-		lpj_ref_freq = freqs.old;
++		lpj_ref_freq = old_freq;
+ 	}
+-	if (freqs.new != freqs.old) {
++	if (new_freq != old_freq) {
+ 		loops_per_jiffy = cpufreq_scale(lpj_ref,
+-				lpj_ref_freq, freqs.new);
++				lpj_ref_freq, new_freq);
+ 	}
+ 
+-	/* TODO: just test case for cycles clock source, remove later */
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
 -
--	return ret;
-+	return clk_set_rate(clk[cur_cluster],
-+			freq_table[cur_cluster][index].frequency * 1000);
+-	pr_debug("cpufreq: done\n");
+ 	return ret;
  }
  
- static void put_cluster_clk_and_freq_table(struct device *cpu_dev)
 -- 
 1.7.12.rc2.18.g61b472e
 
