@@ -1,170 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab3HPWub (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:50:31 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:62408 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754627Ab3HPWu1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:50:27 -0400
-From: Richard Weinberger <richard@nod.at>
-To: user-mode-linux-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        <tj@kernel.org>, <stable@vger.kernel.org>
-Subject: [PATCH] um: Implement probe_kernel_read()
-Date: Fri, 16 Aug 2013 21:44:48 +0200
-Message-Id: <1376682288-25315-1-git-send-email-richard@nod.at>
+	id S1757911Ab3HPWsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:48:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19162 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754522Ab3HPWsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:48:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,897,1367996400"; 
+   d="scan'208";a="282994845"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, peterz@infradead.org, akpm@linux-foundation.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 5/6] sched: mark should_resched() __always_inline
+Date: Fri, 16 Aug 2013 14:17:23 -0700
+Message-Id: <1376687844-19857-6-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
+References: <1376687844-19857-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UML needs it's own probe_kernel_read() to handle kernel
-mode faults correctly.
-The implementation uses mincore() on the host side to detect
-whether a page is owned by the UML kernel process.
+From: Andi Kleen <ak@linux.intel.com>
 
-This fixes also a possible crash when sysrq-t is used.
-Starting with 3.10 sysrq-t calls probe_kernel_read() to
-read details from the kernel workers. As kernel worker are
-completely async pointers may turn NULL while reading them.
+At least gcc 4.6 and some earlier ones does not inline this function.
+Since it's small and on relatively hot paths force inline it.
 
-Cc: <tj@kernel.org>
-Cc: <stable@vger.kernel.org> # 3.10.x
-Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/um/include/shared/os.h |  1 +
- arch/um/kernel/Makefile     |  2 +-
- arch/um/kernel/maccess.c    | 24 +++++++++++++++++++++
- arch/um/os-Linux/process.c  | 52 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 78 insertions(+), 1 deletion(-)
- create mode 100644 arch/um/kernel/maccess.c
+ kernel/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/um/include/shared/os.h b/arch/um/include/shared/os.h
-index 95feaa4..c70a234 100644
---- a/arch/um/include/shared/os.h
-+++ b/arch/um/include/shared/os.h
-@@ -200,6 +200,7 @@ extern int os_unmap_memory(void *addr, int len);
- extern int os_drop_memory(void *addr, int length);
- extern int can_drop_memory(void);
- extern void os_flush_stdout(void);
-+extern int os_mincore(void *addr, unsigned long len);
- 
- /* execvp.c */
- extern int execvp_noalloc(char *buf, const char *file, char *const argv[]);
-diff --git a/arch/um/kernel/Makefile b/arch/um/kernel/Makefile
-index babe218..d8b78a0 100644
---- a/arch/um/kernel/Makefile
-+++ b/arch/um/kernel/Makefile
-@@ -13,7 +13,7 @@ clean-files :=
- obj-y = config.o exec.o exitcode.o irq.o ksyms.o mem.o \
- 	physmem.o process.o ptrace.o reboot.o sigio.o \
- 	signal.o smp.o syscall.o sysrq.o time.o tlb.o trap.o \
--	um_arch.o umid.o skas/
-+	um_arch.o umid.o maccess.o skas/
- 
- obj-$(CONFIG_BLK_DEV_INITRD) += initrd.o
- obj-$(CONFIG_GPROF)	+= gprof_syms.o
-diff --git a/arch/um/kernel/maccess.c b/arch/um/kernel/maccess.c
-new file mode 100644
-index 0000000..214e2e0
---- /dev/null
-+++ b/arch/um/kernel/maccess.c
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright (C) 2013 Richard Weinberger <richrd@nod.at>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/uaccess.h>
-+#include <linux/kernel.h>
-+#include <os.h>
-+
-+long probe_kernel_read(void *dst, const void *src, size_t size)
-+{
-+	void *psrc = (void *)rounddown((u64)src, PAGE_SIZE);
-+
-+	if ((u64)src < PAGE_SIZE || size <= 0)
-+		return -EFAULT;
-+
-+	if (os_mincore(psrc, size) <= 0)
-+		return -EFAULT;
-+
-+	return __probe_kernel_read(dst, src, size);
-+}
-diff --git a/arch/um/os-Linux/process.c b/arch/um/os-Linux/process.c
-index b8f34c9..67b9c8f 100644
---- a/arch/um/os-Linux/process.c
-+++ b/arch/um/os-Linux/process.c
-@@ -4,6 +4,7 @@
-  */
- 
- #include <stdio.h>
-+#include <stdlib.h>
- #include <unistd.h>
- #include <errno.h>
- #include <signal.h>
-@@ -232,6 +233,57 @@ out:
- 	return ok;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 74d7c04..23df96a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3767,7 +3767,7 @@ SYSCALL_DEFINE0(sched_yield)
+ 	return 0;
  }
  
-+static int os_page_mincore(void *addr)
-+{
-+	char vec[2];
-+	int ret;
-+
-+	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
-+	if (ret < 0) {
-+		if (errno == ENOMEM || errno == EINVAL)
-+			return 0;
-+		else
-+			return -errno;
-+	}
-+
-+	return vec[0] & 1;
-+}
-+
-+int os_mincore(void *addr, unsigned long len)
-+{
-+	char *vec;
-+	int ret, i;
-+
-+	if (len <= UM_KERN_PAGE_SIZE)
-+		return os_page_mincore(addr);
-+
-+	vec = calloc(1, (len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE);
-+	if (!vec)
-+		return -ENOMEM;
-+
-+	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
-+	if (ret < 0) {
-+		if (errno == ENOMEM || errno == EINVAL)
-+			ret = 0;
-+		else
-+			ret = -errno;
-+
-+		goto out;
-+	}
-+
-+	for (i = 0; i < ((len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE); i++) {
-+		if (!(vec[i] & 1)) {
-+			ret = 0;
-+			goto out;
-+		}
-+	}
-+
-+	ret = 1;
-+out:
-+	free(vec);
-+	return ret;
-+}
-+
- void init_new_thread_signals(void)
+-static inline int should_resched(void)
++static __always_inline int should_resched(void)
  {
- 	set_handler(SIGSEGV);
+ 	return need_resched() && !(preempt_count() & PREEMPT_ACTIVE);
+ }
 -- 
 1.8.3.1
 
