@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab3HPKrJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 06:47:09 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49921 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555Ab3HPKrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 06:47:04 -0400
-Message-ID: <520E0304.5050906@ti.com>
-Date: Fri, 16 Aug 2013 13:46:28 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, USB list <linux-usb@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: linux-next: Tree for Aug 15 (usb/phy/phy-am335x-control.c)
-References: <20130815165829.6a401f104ee2a98dd48bcb58@canb.auug.org.au> <520D0AD7.6050002@infradead.org>
-In-Reply-To: <520D0AD7.6050002@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752746Ab3HPKqx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 06:46:53 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:36167 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab3HPKqs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 06:46:48 -0400
+From: Jens Frederich <jfrederich@gmail.com>
+To: gregkh@linuxfoundation.com
+Cc: dsd@laptop.org, jon.nettleton@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Jens Frederich <jfrederich@gmail.com>
+Subject: [PATCH] Staging: olpc_dcon: fix typo in olpc_dcon.h
+Date: Fri, 16 Aug 2013 12:46:32 +0200
+Message-Id: <1376649992-6127-1-git-send-email-jfrederich@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+Sebastian,
+The backlight brightness register (DCON_REG_BRIGHT) address is 0xa.
 
-On 08/15/2013 08:07 PM, Randy Dunlap wrote:
-> On 08/14/13 23:58, Stephen Rothwell wrote:
->> Hi all,
->>
->> Changes since 20130814:
->>
-> 
-> on i386 and x86_64:
-> 
-> drivers/usb/phy/phy-am335x-control.c:45:3: error: implicit declaration of function '__WARN' [-Werror=implicit-function-declaration]
-> 
-> 
+Signed-off-by: Jens Frederich <jfrederich@gmail.com>
+
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon.h b/drivers/staging/olpc_dcon/olpc_dcon.h
+index 524ee49..e2663b1 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon.h
++++ b/drivers/staging/olpc_dcon/olpc_dcon.h
+@@ -30,7 +30,7 @@
+ #define DCON_REG_VSYNC_WIDTH	0x7
+ #define DCON_REG_TIMEOUT	0x8
+ #define DCON_REG_SCAN_INT	0x9
+-#define DCON_REG_BRIGHT		0x10
++#define DCON_REG_BRIGHT		0xa
+ #define DCON_REG_MEM_OPT_A	0x41
+ #define DCON_REG_MEM_OPT_B	0x42
+ 
+-- 
+1.7.9.5
 
