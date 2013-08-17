@@ -1,77 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab3HQTdT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 15:33:19 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55300 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754632Ab3HQTdQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 15:33:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [RFC v1 0/5] ARM: Initial support for Marvell Armada 1500
-Date: Sat, 17 Aug 2013 21:32:59 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308172132.59402.arnd@arndb.de>
-X-Provags-ID: V02:K0:ghibXrEfpWtBceZZYjkUaAN+Qj+ycG/gtIk9VUdQW9c
- qbXLUX5+DLdjplZoN/X3LeJLg5Xybe5X9pW8E58BmP7u+gxCXY
- rwGGsvC08TF4pINoTGjOvvwrNM2M4DQMiABCH01IhKxwtGiB8q
- brFvQgzhb4ugYwauRyiaK6HOyQrUhjM5WoCn15OWa5Pt39xj2E
- tq4IDQYGYcF0lH9WR9r046cp1gEDBQM5IGiaY0HY/YY1qTp0OM
- rOBh3A1SIQNnQOCuDs1lC9TUA9My91jG2d4pZLn1zrzOxP+PUQ
- dYzcJhiE1XBBu0ltUbYhF5YKIRj7o+6Jqz33k266rnSl16qh3x
- APLHoNY/UrzrMOY01Qr4=
+	id S1754665Ab3HQTc2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 15:32:28 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53193 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754399Ab3HQTc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 15:32:26 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        Vlastimil Babka <vbabka@suse.cz>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch 2/9] mm: shmem: save one radix tree lookup when truncating swapped pages
+Date: Sat, 17 Aug 2013 15:31:16 -0400
+Message-Id: <1376767883-4411-3-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1376767883-4411-1-git-send-email-hannes@cmpxchg.org>
+References: <1376767883-4411-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 August 2013, Sebastian Hesselbarth wrote:
-> This is a RFC adding initial support for the Marvell Armada 1500
-> (88DE3100) found on various consumer devices (Chromecast, GoogleTV).
-> 
-> Actually, it is a two-fold RFC also raising discussions on mach-mvebu
-> cleanup roadmap to allow other SoCs to hop into it. While mach-mvebu
-> originally was created to add support for Armada 370/XP and merge
-> existing Marvell Orion familiy into it, I am not so sure about
-> Armada 1500 fits that well (the mbus has gone!).
-> 
-> If you are brave enough to try this on any GoogleTV, hit Google for
-> instructions on how to get a unlocked u-boot and void your warranty :)
-> The patches are based on v3.11-rc5 directly.
-> 
-> This cover letter and the separate patches have also been Cc'd to the
-> respective maintainers to clear up some questions before posting a real
-> patch set.
+Page cache radix tree slots are usually stabilized by the page lock,
+but shmem's swap cookies have no such thing.  Because the overall
+truncation loop is lockless, the swap entry is currently confirmed by
+a tree lookup and then deleted by another tree lookup under the same
+tree lock region.
 
-Great stuff!
+Use radix_tree_delete_item() instead, which does the verification and
+deletion with only one lookup.  This also allows removing the
+delete-only special case from shmem_radix_tree_replace().
 
-Regarding the question about the directory, is there going to be any
-shared code with the files present in mach-mvebu, e.g. the SMP support
-that I assume is planned for a later point?
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/shmem.c | 25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
-If there is shared code, it's probably best to have it in here. Otherwise
-I don't care either way: We have precedent for fairly unrelated platforms
-(ev2+shmobile, or the mach-bcm) being in the same directory for practical
-reasons, and you can also create an almost empty directory now as we are
-likely going to consolidate all "trivial" platforms in the future. Once
-the l2x0 and clock init code as well as the early mapping has been
-addressed, there won't be any platform code left.
+diff --git a/mm/shmem.c b/mm/shmem.c
+index c93dcd6..8510534 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -242,19 +242,17 @@ static int shmem_radix_tree_replace(struct address_space *mapping,
+ 			pgoff_t index, void *expected, void *replacement)
+ {
+ 	void **pslot;
+-	void *item = NULL;
++	void *item;
+ 
+ 	VM_BUG_ON(!expected);
++	VM_BUG_ON(!replacement);
+ 	pslot = radix_tree_lookup_slot(&mapping->page_tree, index);
+-	if (pslot)
+-		item = radix_tree_deref_slot_protected(pslot,
+-							&mapping->tree_lock);
++	if (!pslot)
++		return -ENOENT;
++	item = radix_tree_deref_slot_protected(pslot, &mapping->tree_lock);
+ 	if (item != expected)
+ 		return -ENOENT;
+-	if (replacement)
+-		radix_tree_replace_slot(pslot, replacement);
+-	else
+-		radix_tree_delete(&mapping->page_tree, index);
++	radix_tree_replace_slot(pslot, replacement);
+ 	return 0;
+ }
+ 
+@@ -386,14 +384,15 @@ export:
+ static int shmem_free_swap(struct address_space *mapping,
+ 			   pgoff_t index, void *radswap)
+ {
+-	int error;
++	void *old;
+ 
+ 	spin_lock_irq(&mapping->tree_lock);
+-	error = shmem_radix_tree_replace(mapping, index, radswap, NULL);
++	old = radix_tree_delete_item(&mapping->page_tree, index, radswap);
+ 	spin_unlock_irq(&mapping->tree_lock);
+-	if (!error)
+-		free_swap_and_cache(radix_to_swp_entry(radswap));
+-	return error;
++	if (old != radswap)
++		return -ENOENT;
++	free_swap_and_cache(radix_to_swp_entry(radswap));
++	return 0;
+ }
+ 
+ /*
+-- 
+1.8.3.2
 
-	Arnd
