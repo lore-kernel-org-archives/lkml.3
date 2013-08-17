@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab3HQNB3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 09:01:29 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:43530 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab3HQNB2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 09:01:28 -0400
-Message-ID: <520F7424.8030301@gmail.com>
-Date: Sat, 17 Aug 2013 15:01:24 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	id S1753327Ab3HQNFq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 09:05:46 -0400
+Received: from imap.thunk.org ([74.207.234.97]:44952 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753055Ab3HQNFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 09:05:45 -0400
+Date: Sat, 17 Aug 2013 09:05:42 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: torvalds@linux-foundation.org
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] jbd2 bug fixes for v3.11-rc6
+Message-ID: <20130817130542.GA32430@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	torvalds@linux-foundation.org, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC v1 5/5] ARM: mvebu: add board init for Armada 1500
-References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376682098-10580-6-git-send-email-sebastian.hesselbarth@gmail.com> <20130816204831.GX13964@titan.lakedaemon.net>
-In-Reply-To: <20130816204831.GX13964@titan.lakedaemon.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2013 10:48 PM, Jason Cooper wrote:
-> On Fri, Aug 16, 2013 at 09:41:38PM +0200, Sebastian Hesselbarth wrote:
->> This adds initial setup for the Marvell Armada 1500 SoCs. The code
->> is fairly straight-forward, but especially _timer_and_clk_init()
->> can be simplified by using default arch hooks. I will have some time
->> until mach-mvebu is prepared for other SoCs moving over, so I can
->> catch up with latest machine simplifications.
->>
->> I am not so sure about the .map_io but I didn't yet fully understand
->> the mapping requirement. Anyway, it is required for iomap and friends
->> to work and basically remaps physical register addressed onto the same
->> virtual addresses.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> ---
-[...]
->> +obj-$(CONFIG_MACH_ARMADA_1500)		+= armada-1500.o
->
-> guess what?  :)
->
-> I swear I had a more substantive comment when I started this.  But after
-> a suitable application of gray matter, these nits were all that were
-> left. :(
+The following changes since commit cde2d7a796f7e895e25b43471ed658079345636d:
 
-Jason,
+  ext4: flush the extent status cache during EXT4_IOC_SWAP_BOOT (2013-08-12 09:29:30 -0400)
 
-thanks for teaching me the alphabet again :) Of course, all your 
-comments will be fixed for a real patch set.
+are available in the git repository at:
 
-I hope Thomas and Gregory will have some time to comment on the
-mach-mvebu integration soon which also affects Orion SoCs.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
 
-But its weekend, next merge window is far, above just fails to boot
-into anything useful due to the lack of drivers - relax :)
+for you to fetch changes up to a361293f5fedea0016a10599f409631a15d47ee7:
 
-Sebastian
+  jbd2: Fix oops in jbd2_journal_file_inode() (2013-08-16 21:19:41 -0400)
+
+----------------------------------------------------------------
+Two jbd2 bug fixes, one of which is a regression fix.
+
+----------------------------------------------------------------
+Jan Kara (2):
+      jbd2: Fix use after free after error in jbd2_journal_dirty_metadata()
+      jbd2: Fix oops in jbd2_journal_file_inode()
+
+ fs/ext4/ext4.h      |  1 +
+ fs/ext4/ext4_jbd2.c |  8 ++++----
+ fs/ext4/file.c      | 21 ++++-----------------
+ fs/ext4/inode.c     | 43 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 52 insertions(+), 21 deletions(-)
