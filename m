@@ -1,89 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab3HQBFv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 21:05:51 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:53631 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab3HQBFt (ORCPT
+	id S1751935Ab3HQBYD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 21:24:03 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49499 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab3HQBYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 21:05:49 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19IQNCOL+8hw8jOQ0oQnj0U3NglciOdJG8=
-Date: Fri, 16 Aug 2013 16:22:16 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC v1 4/5] ARM: mvebu: add Armada 1500 and Sony NSZ-GS7
- device tree files
-Message-ID: <20130816202216.GV13964@titan.lakedaemon.net>
-References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1376682098-10580-5-git-send-email-sebastian.hesselbarth@gmail.com>
+	Fri, 16 Aug 2013 21:24:00 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-70-520ed0ae3082
+Date: Sat, 17 Aug 2013 10:24:22 +0900
+From: Kyungsik Lee <kyungsik.lee@lge.com>
+To: Richard Laager <rlaager@wiktel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Chanho Min <chanho.min@lge.com>,
+        Richard Yao <ryao@gentoo.org>, linux-kernel@vger.kernel.org,
+        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com
+Subject: Re: [PATCH] Correct the LZ4 license
+Message-ID: <20130817012422.GA7038@hulk>
+References: <520D8C4C.7000704@gentoo.org>
+ <1376689529-15080-1-git-send-email-rlaager@wiktel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376682098-10580-5-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1376689529-15080-1-git-send-email-rlaager@wiktel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 09:41:37PM +0200, Sebastian Hesselbarth wrote:
-> This adds very basic device tree files for the Marvell Armada 1500 SoC
-> and the Sony NSZ-GS7 GoogleTV board. Currently, SoC only has nodes for
-> cpus, some clocks, l2 cache controller, local timer, apb timers, uart,
-> and interrupt controllers.
+On Fri, Aug 16, 2013 at 04:45:29PM -0500, Richard Laager wrote:
+> The LZ4 code is listed as using the "BSD 2-Clause License".
 > 
-> The clocks are fixed-clock placeholders until a real DT clock provider
-> is available. Cache controller node may be wrong and was just guessed
-> out of Armada 370 and GPL'd 1500 source. Timers except clocksource have
-> not really been tested.
-> 
-> The separation into soc/apb and soc/sm-apb may be removed, but it looks
-> like Armada 1500 has a separate peripheral bus for the System Manager
-> core that can also been accessed by CPUs. (If you look closely on GTV
-> boot logs, you can see SM and CPU fighting for UART ;) )
-> 
-> The Sony NSZ-GS7 is a GoogleTV consumer device comprising the SoC above.
-> Since last week or so, there is a way to install a custom u-boot and
-> boot stock, unsigned kernels easily. Just ask Google about it, if you
-> are willing to void your warranty.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Signed-off-by: Richard Laager <rlaager@wiktel.com>
 > ---
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/boot/dts/Makefile                     |    3 +-
->  arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts |   29 +++
->  arch/arm/boot/dts/armada-1500.dtsi             |  225 ++++++++++++++++++++++++
->  3 files changed, 256 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/armada-1500-sony-nsz-gs7.dts
->  create mode 100644 arch/arm/boot/dts/armada-1500.dtsi
+>  lib/lz4/lz4_compress.c   |    4 ++--
+>  lib/lz4/lz4_decompress.c |    6 +++---
+>  lib/lz4/lz4hc_compress.c |    4 ++--
+>  3 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/lib/lz4/lz4_compress.c b/lib/lz4/lz4_compress.c
+> index fd94058..28321d8 100644
+> --- a/lib/lz4/lz4_compress.c
+> +++ b/lib/lz4/lz4_compress.c
+> @@ -437,7 +437,7 @@ int lz4_compress(const unsigned char *src, size_t src_len,
+>  exit:
+>  	return ret;
+>  }
+> -EXPORT_SYMBOL_GPL(lz4_compress);
+> +EXPORT_SYMBOL(lz4_compress);
+>  
+> -MODULE_LICENSE("GPL");
+> +MODULE_LICENSE("Dual BSD/GPL");
+>  MODULE_DESCRIPTION("LZ4 compressor");
+> diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
+> index d3414ea..411be80 100644
+> --- a/lib/lz4/lz4_decompress.c
+> +++ b/lib/lz4/lz4_decompress.c
+> @@ -299,7 +299,7 @@ exit_0:
+>  	return ret;
+>  }
+>  #ifndef STATIC
+> -EXPORT_SYMBOL_GPL(lz4_decompress);
+> +EXPORT_SYMBOL(lz4_decompress);
+>  #endif
+>  
+>  int lz4_decompress_unknownoutputsize(const char *src, size_t src_len,
+> @@ -319,8 +319,8 @@ exit_0:
+>  	return ret;
+>  }
+>  #ifndef STATIC
+> -EXPORT_SYMBOL_GPL(lz4_decompress_unknownoutputsize);
+> +EXPORT_SYMBOL(lz4_decompress_unknownoutputsize);
+>  
+> -MODULE_LICENSE("GPL");
+> +MODULE_LICENSE("Dual BSD/GPL");
+>  MODULE_DESCRIPTION("LZ4 Decompressor");
+>  #endif
+> diff --git a/lib/lz4/lz4hc_compress.c b/lib/lz4/lz4hc_compress.c
+> index eb1a74f..f344f76 100644
+> --- a/lib/lz4/lz4hc_compress.c
+> +++ b/lib/lz4/lz4hc_compress.c
+> @@ -533,7 +533,7 @@ int lz4hc_compress(const unsigned char *src, size_t src_len,
+>  exit:
+>  	return ret;
+>  }
+> -EXPORT_SYMBOL_GPL(lz4hc_compress);
+> +EXPORT_SYMBOL(lz4hc_compress);
+>  
+> -MODULE_LICENSE("GPL");
+> +MODULE_LICENSE("Dual BSD/GPL");
+>  MODULE_DESCRIPTION("LZ4HC compressor");
 
-Also, binding docs?
+Acked-by: Kyungsik Lee <kyungsik.lee@lge.com>
 
-thx,
-
-Jason.
+Thanks,
+Kyungsik
