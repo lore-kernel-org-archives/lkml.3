@@ -1,66 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab3HQT3r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 15:29:47 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:59571 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272Ab3HQT3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 15:29:45 -0400
-Message-ID: <520FDD33.2070605@kernel.org>
-Date: Sat, 17 Aug 2013 21:29:39 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
-        jic23@cam.ac.uk, denis.ciocca@st.com,
-        srinivas.pandruvada@linux.intel.com, lars@metafoo.de
-Subject: Re: [PATCH v4 1/2] staging: iio: Documentation sysfs-bus-iio add
- power_mode
-References: <1376655125-13421-1-git-send-email-o.v.kravchenko@globallogic.com>
-In-Reply-To: <1376655125-13421-1-git-send-email-o.v.kravchenko@globallogic.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754696Ab3HQTcb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 15:32:31 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53201 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754632Ab3HQTc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 15:32:28 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        Vlastimil Babka <vbabka@suse.cz>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch 5/9] mm + fs: store shadow entries in page cache
+Date: Sat, 17 Aug 2013 15:31:19 -0400
+Message-Id: <1376767883-4411-6-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1376767883-4411-1-git-send-email-hannes@cmpxchg.org>
+References: <1376767883-4411-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/13 13:12, Oleksandr Kravchenko wrote:
-> Add description about in_accelX_power_mode and
-> in_accel_power_mode_available.
-> 
-Right now this is very much chip specific so it wants to go in
-sysfs-bus-iio-accel-bma180  If / when it turns up in lots of parts
-we can discuss whether it is a good general purpose interface
-or not.
+Reclaim will be leaving shadow entries in the page cache radix tree
+upon evicting the real page.  As those pages are found from the LRU,
+an iput() can lead to the inode being freed concurrently.  At this
+point, reclaim must no longer install shadow pages because the inode
+freeing code needs to ensure the page tree is really empty.
 
+Add an address_space flag, AS_EXITING, that the inode freeing code
+sets under the tree lock before doing the final truncate.  Reclaim
+will check for this flag before installing shadow pages.
 
-> Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-> ---
->  Documentation/ABI/testing/sysfs-bus-iio |   10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-> index dda81ff..1a333f3 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-iio
-> +++ b/Documentation/ABI/testing/sysfs-bus-iio
-> @@ -792,3 +792,13 @@ Contact:	linux-iio@vger.kernel.org
->  Description:
->  		This attribute is used to read the amount of quadrature error
->  		present in the device at a given time.
-> +
-> +What:		/sys/.../iio:deviceX/in_accelX_power_mode
-> +KernelVersion:	3.11
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Specifies the chip power mode.
-> +		low_noise: reduce noise level from ADC,
-> +		low_power: enable low current consumption.
-> +		For a list of available output power modes read
-> +		in_accel_power_mode_available.
-> 
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ fs/block_dev.c          |  2 +-
+ fs/inode.c              |  7 ++++++-
+ fs/nilfs2/inode.c       |  4 ++--
+ include/linux/fs.h      |  1 +
+ include/linux/pagemap.h | 13 ++++++++++++-
+ mm/filemap.c            | 16 ++++++++++++----
+ mm/truncate.c           |  5 +++--
+ mm/vmscan.c             |  2 +-
+ 8 files changed, 38 insertions(+), 12 deletions(-)
+
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index c7bda5c..26b992d14 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -83,7 +83,7 @@ void kill_bdev(struct block_device *bdev)
+ {
+ 	struct address_space *mapping = bdev->bd_inode->i_mapping;
+ 
+-	if (mapping->nrpages == 0)
++	if (mapping->nrpages == 0 && mapping->nrshadows == 0)
+ 		return;
+ 
+ 	invalidate_bh_lrus();
+diff --git a/fs/inode.c b/fs/inode.c
+index e315c0a..8862b1b 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -503,6 +503,7 @@ void clear_inode(struct inode *inode)
+ 	 */
+ 	spin_lock_irq(&inode->i_data.tree_lock);
+ 	BUG_ON(inode->i_data.nrpages);
++	BUG_ON(inode->i_data.nrshadows);
+ 	spin_unlock_irq(&inode->i_data.tree_lock);
+ 	BUG_ON(!list_empty(&inode->i_data.private_list));
+ 	BUG_ON(!(inode->i_state & I_FREEING));
+@@ -545,10 +546,14 @@ static void evict(struct inode *inode)
+ 	 */
+ 	inode_wait_for_writeback(inode);
+ 
++	spin_lock_irq(&inode->i_data.tree_lock);
++	mapping_set_exiting(&inode->i_data);
++	spin_unlock_irq(&inode->i_data.tree_lock);
++
+ 	if (op->evict_inode) {
+ 		op->evict_inode(inode);
+ 	} else {
+-		if (inode->i_data.nrpages)
++		if (inode->i_data.nrpages || inode->i_data.nrshadows)
+ 			truncate_inode_pages(&inode->i_data, 0);
+ 		clear_inode(inode);
+ 	}
+diff --git a/fs/nilfs2/inode.c b/fs/nilfs2/inode.c
+index b1a5277..047bafb 100644
+--- a/fs/nilfs2/inode.c
++++ b/fs/nilfs2/inode.c
+@@ -783,7 +783,7 @@ void nilfs_evict_inode(struct inode *inode)
+ 	int ret;
+ 
+ 	if (inode->i_nlink || !ii->i_root || unlikely(is_bad_inode(inode))) {
+-		if (inode->i_data.nrpages)
++		if (inode->i_data.nrpages || inode->i_data.nrshadows)
+ 			truncate_inode_pages(&inode->i_data, 0);
+ 		clear_inode(inode);
+ 		nilfs_clear_inode(inode);
+@@ -791,7 +791,7 @@ void nilfs_evict_inode(struct inode *inode)
+ 	}
+ 	nilfs_transaction_begin(sb, &ti, 0); /* never fails */
+ 
+-	if (inode->i_data.nrpages)
++	if (inode->i_data.nrpages || inode->i_data.nrshadows)
+ 		truncate_inode_pages(&inode->i_data, 0);
+ 
+ 	/* TODO: some of the following operations may fail.  */
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index b09ddc0..ac5d84e 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -416,6 +416,7 @@ struct address_space {
+ 	struct mutex		i_mmap_mutex;	/* protect tree, count, list */
+ 	/* Protected by tree_lock together with the radix tree */
+ 	unsigned long		nrpages;	/* number of total pages */
++	unsigned long		nrshadows;	/* number of shadow entries */
+ 	pgoff_t			writeback_index;/* writeback starts here */
+ 	const struct address_space_operations *a_ops;	/* methods */
+ 	unsigned long		flags;		/* error bits/gfp mask */
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index b6854b7..db3a78b 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -25,6 +25,7 @@ enum mapping_flags {
+ 	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
+ 	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
+ 	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
++	AS_EXITING	= __GFP_BITS_SHIFT + 5, /* inode is being evicted */
+ };
+ 
+ static inline void mapping_set_error(struct address_space *mapping, int error)
+@@ -69,6 +70,16 @@ static inline int mapping_balloon(struct address_space *mapping)
+ 	return mapping && test_bit(AS_BALLOON_MAP, &mapping->flags);
+ }
+ 
++static inline void mapping_set_exiting(struct address_space *mapping)
++{
++	set_bit(AS_EXITING, &mapping->flags);
++}
++
++static inline int mapping_exiting(struct address_space *mapping)
++{
++	return test_bit(AS_EXITING, &mapping->flags);
++}
++
+ static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
+ {
+ 	return (__force gfp_t)mapping->flags & __GFP_BITS_MASK;
+@@ -547,7 +558,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
+ 				pgoff_t index, gfp_t gfp_mask);
+ extern void delete_from_page_cache(struct page *page);
+-extern void __delete_from_page_cache(struct page *page);
++extern void __delete_from_page_cache(struct page *page, void *shadow);
+ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask);
+ 
+ /*
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 254eb16..34b2f0b 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -112,7 +112,7 @@
+  * sure the page is locked and that nobody else uses it - or that usage
+  * is safe.  The caller must hold the mapping's tree_lock.
+  */
+-void __delete_from_page_cache(struct page *page)
++void __delete_from_page_cache(struct page *page, void *shadow)
+ {
+ 	struct address_space *mapping = page->mapping;
+ 
+@@ -127,7 +127,14 @@ void __delete_from_page_cache(struct page *page)
+ 	else
+ 		cleancache_invalidate_page(mapping, page);
+ 
+-	radix_tree_delete(&mapping->page_tree, page->index);
++	if (shadow) {
++		void **slot;
++
++		slot = radix_tree_lookup_slot(&mapping->page_tree, page->index);
++		radix_tree_replace_slot(slot, shadow);
++		mapping->nrshadows++;
++	} else
++		radix_tree_delete(&mapping->page_tree, page->index);
+ 	page->mapping = NULL;
+ 	/* Leave page->index set: truncation lookup relies upon it */
+ 	mapping->nrpages--;
+@@ -166,7 +173,7 @@ void delete_from_page_cache(struct page *page)
+ 
+ 	freepage = mapping->a_ops->freepage;
+ 	spin_lock_irq(&mapping->tree_lock);
+-	__delete_from_page_cache(page);
++	__delete_from_page_cache(page, NULL);
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	mem_cgroup_uncharge_cache_page(page);
+ 
+@@ -426,7 +433,7 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+ 		new->index = offset;
+ 
+ 		spin_lock_irq(&mapping->tree_lock);
+-		__delete_from_page_cache(old);
++		__delete_from_page_cache(old, NULL);
+ 		error = radix_tree_insert(&mapping->page_tree, offset, new);
+ 		BUG_ON(error);
+ 		mapping->nrpages++;
+@@ -459,6 +466,7 @@ static int page_cache_insert(struct address_space *mapping, pgoff_t offset,
+ 		if (!radix_tree_exceptional_entry(p))
+ 			return -EEXIST;
+ 		radix_tree_replace_slot(slot, page);
++		mapping->nrshadows--;
+ 		return 0;
+ 	}
+ 	return radix_tree_insert(&mapping->page_tree, offset, page);
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 21e4851..5c85dd4 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -35,7 +35,8 @@ static void clear_exceptional_entry(struct address_space *mapping,
+ 	 * without the tree itself locked.  These unlocked entries
+ 	 * need verification under the tree lock.
+ 	 */
+-	radix_tree_delete_item(&mapping->page_tree, index, page);
++	if (radix_tree_delete_item(&mapping->page_tree, index, page) == page)
++		mapping->nrshadows--;
+ 	spin_unlock_irq(&mapping->tree_lock);
+ }
+ 
+@@ -481,7 +482,7 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
+ 		goto failed;
+ 
+ 	BUG_ON(page_has_private(page));
+-	__delete_from_page_cache(page);
++	__delete_from_page_cache(page, NULL);
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	mem_cgroup_uncharge_cache_page(page);
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a3bf7fd..dd5f67c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -545,7 +545,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
+ 
+ 		freepage = mapping->a_ops->freepage;
+ 
+-		__delete_from_page_cache(page);
++		__delete_from_page_cache(page, NULL);
+ 		spin_unlock_irq(&mapping->tree_lock);
+ 		mem_cgroup_uncharge_cache_page(page);
+ 
+-- 
+1.8.3.2
+
