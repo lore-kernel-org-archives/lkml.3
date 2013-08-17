@@ -1,78 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab3HQOCA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 10:02:00 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:34317 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205Ab3HQOB6 (ORCPT
+	id S1753544Ab3HQO5D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 10:57:03 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:49597 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753437Ab3HQO5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 10:01:58 -0400
-MIME-Version: 1.0
-Date: Sat, 17 Aug 2013 09:01:58 -0500
-Message-ID: <CAKcLGm8EMruO5e8yw+nArTjyCGSvLB5pjnGZYvz0xdF9M99iwQ@mail.gmail.com>
-Subject: BUG: scheduling while atomic 3.10.7 in ZRAM Swap
-From: Mitch Harder <mitch.harder@sabayonlinux.org>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 17 Aug 2013 10:57:01 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Lars Poeschel <poeschel@lemonage.de>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v2] pinctrl: queue GPIO operations instead of defering
+Date: Sat, 17 Aug 2013 16:56:50 +0200
+Message-Id: <1376751410-14560-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm encountering a BUG while using a ZRAM Swap device.
+We currently defer probing of the caller if a pinctrl GPIO
+request or direction setting comes in before the range mapping
+a certain GPIO to a certain pin controller is available.
 
-The call trace seems to involve the changes recently added to 3.10.6
-by the patch:
-zram: use zram->lock to protect zram_free_page() in swap free notify path
+This can end up with a circular dependency: the GPIO driver
+needs the pin controller to be ready and the pin controller
+need the GPIO driver to be ready. This also happens if
+pin controllers and GPIO controllers compiled as modules
+are inserted in a certain order.
 
-The hardware is a x86 single CPU AMD Athlon XP system with 1GB RAM.
+To break this circular dependence, queue any GPIO
+operations coming to the framework until the range is ready,
+instead of deferring the probe of the caller.
 
-I'm implementing a 352MB ZRAM swap device, and also have 1GB swap
-space on the hard disk.
+On the Nomadik we get this situation with the pinctrl
+driver when moving to requesting GPIOs off the gpiochip
+right after it has been added, and with this patch the
+boot dilemma is sorted out nicely, as can be seen in this
+condensed bootlog:
 
-The log include multiple messages similar to the following:
+pinctrl core: initialized pinctrl subsystem
+gpio 101e4000.gpio: at address cc852000
+gpio 101e5000.gpio: at address cc854000
+gpio 101e6000.gpio: at address cc856000
+pinctrl core: queueing pinctrl request for GPIO 104
+gpio 101e7000.gpio: at address cc858000
+pinctrl core: requested queued GPIO 104
+pinctrl-nomadik pinctrl.0: initialized Nomadik pin control driver
 
-[ 3019.011511] BUG: scheduling while atomic: cc1/23223/0x00000001
-[ 3019.011517] Modules linked in: zram(C) nvidia(PO) nvidia_agp
-i2c_nforce2 xts gf128mul sha256_generic
-[ 3019.011528] CPU: 0 PID: 23223 Comm: cc1 Tainted: P         C O 3.10.7-std #1
-[ 3019.011531] Hardware name:    /MS-6570, BIOS 6.00 PG 03/29/2004
-[ 3019.011534]  f18d0c88 f18d0c88 e8673d30 c1859479 e8673d48 c1853a6d
-c1a11f18 f4f1b79c
-[ 3019.011539]  00005ab7 00000001 e8673dc8 c185e9dd e8673d60 c11130f0
-f6298e00 00000000
-[ 3019.011543]  c1b61b40 c10d8c40 f4f1b4f0 00001000 f4f1b4f0 00000001
-e8673d8c c10250ac
-[ 3019.011548] Call Trace:
-[ 3019.011561]  [<c1859479>] dump_stack+0x16/0x18
-[ 3019.011566]  [<c1853a6d>] __schedule_bug+0x4e/0x5c
-[ 3019.011573]  [<c185e9dd>] __schedule+0x4fd/0x5a0
-[ 3019.011580]  [<c11130f0>] ? bio_put+0x40/0x70
-[ 3019.011586]  [<c10d8c40>] ? end_swap_bio_read+0x30/0x80
-[ 3019.011593]  [<c10250ac>] ? kmap_atomic_prot+0x4c/0xd0
-[ 3019.011597]  [<c1025143>] ? kmap_atomic+0x13/0x20
-[ 3019.011604]  [<c10b5678>] ? get_page_from_freelist+0x278/0x500
-[ 3019.011609]  [<c185f112>] schedule+0x22/0x60
-[ 3019.011613]  [<c185f745>] rwsem_down_write_failed+0x95/0x110
-[ 3019.011618]  [<c13e4a76>] call_rwsem_down_write_failed+0x6/0x8
-[ 3019.011623]  [<f80430b0>] ? zram_free_page+0xb0/0xb0 [zram]
-[ 3019.011627]  [<c185e1d4>] ? down_write+0x24/0x30
-[ 3019.011630]  [<f80430d9>] zram_slot_free_notify+0x29/0x50 [zram]
-[ 3019.011635]  [<c10da084>] swap_entry_free+0xe4/0x140
-[ 3019.011639]  [<c10da498>] swapcache_free+0x28/0x40
-[ 3019.011643]  [<c10d95b6>] delete_from_swap_cache+0x26/0x40
-[ 3019.011646]  [<c10da55e>] reuse_swap_page+0x6e/0x80
-[ 3019.011652]  [<c10cba05>] do_wp_page.isra.84+0x225/0x5c0
-[ 3019.011656]  [<c10b9c32>] ? lru_cache_add_lru+0x22/0x40
-[ 3019.011662]  [<c10d427c>] ? page_add_new_anon_rmap+0x5c/0xa0
-[ 3019.011666]  [<c10cd34b>] handle_pte_fault+0x2db/0x5e0
-[ 3019.011669]  [<c10cd6d7>] handle_mm_fault+0x87/0xd0
-[ 3019.011674]  [<c18628e0>] ? __do_page_fault+0x480/0x480
-[ 3019.011677]  [<c18625d8>] __do_page_fault+0x178/0x480
-[ 3019.011683]  [<c1030cff>] ? __do_softirq+0x10f/0x1e0
-[ 3019.011691]  [<c1081e78>] ? handle_level_irq+0x58/0x90
-[ 3019.011695]  [<c1030ed4>] ? irq_exit+0x54/0x90
-[ 3019.011700]  [<c1866718>] ? do_IRQ+0x48/0x94
-[ 3019.011706]  [<c10e8607>] ? SyS_write+0x57/0xa0
-[ 3019.011710]  [<c18628e0>] ? __do_page_fault+0x480/0x480
-[ 3019.011713]  [<c18628ed>] do_page_fault+0xd/0x10
-[ 3019.011717]  [<c185fd21>] error_code+0x65/0x6c
+ChangeLog v1->v2:
+- Apart from queueing requests, also queue direction setting
+  operations.
+
+Cc: Haojian Zhuang <haojian.zhuang@linaro.org>
+Cc: Lars Poeschel <poeschel@lemonage.de>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/core.c | 123 +++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 119 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index a97b717..41c7479 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -404,7 +404,111 @@ static int pinctrl_get_device_gpio_range(unsigned gpio,
+ 		}
+ 	}
+ 
+-	return -EPROBE_DEFER;
++	return -EINVAL;
++}
++
++/**
++ * enum pinctrl_gpio_operation - queued operations type for GPIOs
++ * @PINCTRL_GPIO_REQUEST: queued request operation
++ * @PINCTRL_SET_DIR_OUT: queued set as output operation
++ * @PINCTRL_SET_DIR_IN: queued set as input operation
++ */
++enum pinctrl_gpio_operation {
++	PINCTRL_GPIO_REQUEST,
++	PINCTRL_GPIO_DIR_OUT,
++	PINCTRL_GPIO_DIR_IN,
++};
++
++/**
++ * struct pinctrl_gpio_op - a queue list holder
++ * @node: a list node for list processing
++ * @gpio: the targeted gpio for this operation
++ * @request: true of this is a request, then the gpio will be requested
++ * @input: if this is not a request, we're setting the direction
++ * Queued GPIO range-based deferred operations are stored in this list.
++ */
++struct pinctrl_gpio_op {
++	struct list_head node;
++	int gpio;
++	enum pinctrl_gpio_operation op;
++};
++
++static LIST_HEAD(pinctrl_queued_gpio_ops);
++
++static int pinctrl_queue_gpio_operation(int gpio,
++					enum pinctrl_gpio_operation op)
++{
++	struct pinctrl_gpio_op *qop;
++
++	/*
++	 * We get to this point if pinctrl_*_gpio() is called
++	 * from a GPIO driver which does not yet have a registered
++	 * pinctrl driver backend, and thus no ranges are defined for
++	 * it. This could happen during system start up or if we're
++	 * probing pin controllers as modules. Queue the request and
++	 * handle it when and if the range arrives.
++	 */
++	qop = kzalloc(sizeof(struct pinctrl_gpio_op), GFP_KERNEL);
++	if (!qop)
++		return -ENOMEM;
++	qop->gpio = gpio;
++	qop->op = op;
++	list_add_tail(&qop->node, &pinctrl_queued_gpio_ops);
++	pr_info("queueing pinctrl request for GPIO %d\n", qop->gpio);
++	return 0;
++}
++
++
++/**
++ * pinctrl_process_queued_gpio_ops() - process queued GPIO operations
++ *
++ * This is called whenever a new GPIO range is added to see if some GPIO
++ * driver has outstanding operations to GPIOs in the range, and then these
++ * get processed at this point.
++ */
++static void pinctrl_process_queued_gpio_ops(void)
++{
++	struct list_head *node, *tmp;
++
++        list_for_each_safe(node, tmp, &pinctrl_queued_gpio_ops) {
++                struct pinctrl_gpio_op *op =
++			list_entry(node, struct pinctrl_gpio_op, node);
++		struct pinctrl_dev *pctldev;
++		struct pinctrl_gpio_range *range;
++		int pin;
++		int ret;
++
++		ret = pinctrl_get_device_gpio_range(op->gpio, &pctldev, &range);
++		if (ret)
++			continue;
++
++		/* Convert to the pin controllers number space */
++		pin = gpio_to_pin(range, op->gpio);
++
++		switch(op->op) {
++		case PINCTRL_GPIO_REQUEST:
++			ret = pinmux_request_gpio(pctldev, range, pin, op->gpio);
++			if (ret)
++				pr_err("failed to request queued GPIO %d\n",
++					op->gpio);
++			else
++				pr_info("requested queued GPIO %d\n", op->gpio);
++			break;
++		case PINCTRL_GPIO_DIR_IN:
++		case PINCTRL_GPIO_DIR_OUT:
++			ret = pinmux_gpio_direction(pctldev, range, pin,
++					op->op == PINCTRL_GPIO_DIR_IN);
++			if (ret)
++				pr_err("failed to set direction on queued GPIO %d\n",
++				       op->gpio);
++			break;
++		default:
++			pr_err("unknown queued GPIO operation\n");
++			break;
++		}
++		list_del(node);
++		kfree(op);
++        }
+ }
+ 
+ /**
+@@ -421,6 +525,8 @@ void pinctrl_add_gpio_range(struct pinctrl_dev *pctldev,
+ 	mutex_lock(&pctldev->mutex);
+ 	list_add_tail(&range->node, &pctldev->gpio_ranges);
+ 	mutex_unlock(&pctldev->mutex);
++	/* Maybe we have outstanding GPIO requests for this range? */
++	pinctrl_process_queued_gpio_ops();
+ }
+ EXPORT_SYMBOL_GPL(pinctrl_add_gpio_range);
+ 
+@@ -552,8 +658,8 @@ int pinctrl_request_gpio(unsigned gpio)
+ 	ret = pinctrl_get_device_gpio_range(gpio, &pctldev, &range);
+ 	if (ret) {
+ 		if (pinctrl_ready_for_gpio_range(gpio))
+-			ret = 0;
+-		return ret;
++			return 0;
++		return pinctrl_queue_gpio_operation(gpio, PINCTRL_GPIO_REQUEST);
+ 	}
+ 
+ 	/* Convert to the pin controllers number space */
+@@ -604,7 +710,16 @@ static int pinctrl_gpio_direction(unsigned gpio, bool input)
+ 
+ 	ret = pinctrl_get_device_gpio_range(gpio, &pctldev, &range);
+ 	if (ret) {
+-		return ret;
++		/* Maybe this pin does not have a pinctrl back-end at all? */
++		if (pinctrl_ready_for_gpio_range(gpio))
++			return 0;
++		/* Que the operation until the range arrives */
++		if (input)
++			return pinctrl_queue_gpio_operation(gpio,
++							PINCTRL_GPIO_DIR_IN);
++		else
++			return pinctrl_queue_gpio_operation(gpio,
++							PINCTRL_GPIO_DIR_OUT);
+ 	}
+ 
+ 	mutex_lock(&pctldev->mutex);
+-- 
+1.8.1.4
+
