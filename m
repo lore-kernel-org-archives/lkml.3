@@ -1,184 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab3HQIzI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 04:55:08 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:62160 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab3HQIzF (ORCPT
+	id S1752712Ab3HQI6e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 04:58:34 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:45790 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab3HQI6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 04:55:05 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Lars Poeschel <poeschel@lemonage.de>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH] pinctrl: queue GPIO request instead of defering
-Date: Sat, 17 Aug 2013 10:54:52 +0200
-Message-Id: <1376729692-21108-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.8.1.4
+	Sat, 17 Aug 2013 04:58:31 -0400
+Date: Sat, 17 Aug 2013 09:58:25 +0100
+From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
+        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bigeasy@linutronix.de, gregkh@linuxfoundation.org, Russ.Dill@ti.com
+Subject: Re: [PATCH 4/4] iio: ti_am335x_adc: Add continuous sampling and
+ trigger support
+Message-ID: <20130817085824.GA5090@gmail.com>
+References: <1376424303-22740-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1376424303-22740-5-git-send-email-zubair.lutfullah@gmail.com>
+ <520CBEC6.8010400@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520CBEC6.8010400@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently defer probing of the caller if a pinctrl GPIO
-request comes in before the range mapping a certain GPIO to
-a certain pin controller is available.
+On Thu, Aug 15, 2013 at 12:43:02PM +0100, Jonathan Cameron wrote:
+> Note I'd also like a much more detailed description in the patch header.
+> 
+> I would also expect an option for the trigger to be supplied from the
+> chip itself based on fifo watershead interrupts.  Thus the adc could be
+> operated at full rate without losing data.  As you described in a previous
+> email this is much more similar to a one shot osciloscope trigger where it
+> grabs the next set of readings.  Now this is an interesting option, but
+> it isn't the standard one for IIO.  I'd be interested to see a proposal
+> for adding this functionality to the core in a more general fashion.
 
-If this pinctrl_gpio_request() is done for a GPIO driver
-adding the range from the gpiochip side (as is recommended)
-they can end up with a circular dependency: the GPIO driver
-needs the pin controller to be ready and the pin controller
-need the GPIO driver to be ready. This also happens if
-pin controllers and GPIO controllers compiled as modules
-are inserted in a certain order.
+When I read trigger, this functionality is what comes to my mind.
+Not the single scan current implementation in IIO. My background I guess.
 
-To break this circular dependence, queue any requests
-coming to the framework until the range is ready, instead
-of deferring the probe of the caller.
+Adding this feature to the core feels a bit above my level at the moment.
+I'd like to get this driver sorted first.
+> 
+> For now I'd be much happier if this driver conformed to more or less the
+> standard form with the one exception being that the 'trigger' is based on
+> the fifo threshold and so it might appear to grab multiple scans of the
+> enabled channels for each trigger (which is fine). Even if we provide the
+> functionality sketched out above, it would still be as core functionality, not
+> in the driver as you have done here.
+> 
+> Jonathan
 
-On the Nomadik we get this situation with the pinctrl
-driver when moving to requesting GPIOs off the gpiochip
-right after it has been added, and with this patch the
-boot dilemma is sorted out nicely, as can be seen in this
-condensed bootlog:
+Will that affect the way generic_buffer.c will read from the driver?
 
-pinctrl core: initialized pinctrl subsystem
-gpio 101e4000.gpio: at address cc852000
-gpio 101e5000.gpio: at address cc854000
-gpio 101e6000.gpio: at address cc856000
-pinctrl core: queueing pinctrl request for GPIO 104
-gpio 101e7000.gpio: at address cc858000
-pinctrl core: requested queued GPIO 104
-pinctrl-nomadik pinctrl.0: initialized Nomadik pin control driver
+Rest comments below.
 
-Cc: Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: Lars Poeschel <poeschel@lemonage.de>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-Some testing of this would be appreciated, especially for
-HiSilicon etc that already have some complicated GPIO ranges.
----
- drivers/pinctrl/core.c | 73 +++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 70 insertions(+), 3 deletions(-)
+> > diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+> > +	/* FIFO Overrun. Clear flag. Disable/Enable ADC to recover */
+> > +	if (status & IRQENB_FIFO1OVRRUN) {
+> > +		config = tiadc_readl(adc_dev, REG_CTRL);
+> > +		config &= ~(CNTRLREG_TSCSSENB);
+> > +		tiadc_writel(adc_dev, REG_CTRL, config);
+> > +		tiadc_writel(adc_dev, REG_IRQSTATUS, IRQENB_FIFO1OVRRUN |
+> > +				IRQENB_FIFO1UNDRFLW | IRQENB_FIFO1THRES);
+> > +		tiadc_writel(adc_dev, REG_CTRL, (config | CNTRLREG_TSCSSENB));
+> > +	} else if (status & IRQENB_FIFO1THRES) {
+> 
+> I'd normally expect this interrupt to drive a trigger that in turn results in
+> the data being dumped into the software buffers.
+> 
+The work handler is sort of providing similar functionality..
+But, I guess using the trigger ABI is more efficient.
+> > +
+> > +	tiadc_writel(adc_dev,  REG_IRQSTATUS, IRQENB_FIFO1THRES |
+> > +			 IRQENB_FIFO1OVRRUN | IRQENB_FIFO1UNDRFLW);
+> > +	tiadc_writel(adc_dev,  REG_IRQENABLE, IRQENB_FIFO1THRES
+> > +				| IRQENB_FIFO1OVRRUN);
+> > +
+> > +	iio_trigger_notify_done(indio_dev->trig);
+> Are you actually done?  What happens if another trigger turns up in the
+> meantime?  I'd expect this to occur only after the results of the trigger
+> have been handled.
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 2a00239..59cbf41 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -404,9 +404,11 @@ static int pinctrl_get_device_gpio_range(unsigned gpio,
- 		}
- 	}
- 
--	return -EPROBE_DEFER;
-+	return -EINVAL;
- }
- 
-+static void pinctrl_process_queued_gpio_requests(void);
-+
- /**
-  * pinctrl_add_gpio_range() - register a GPIO range for a controller
-  * @pctldev: pin controller device to add the range to
-@@ -421,6 +423,8 @@ void pinctrl_add_gpio_range(struct pinctrl_dev *pctldev,
- 	mutex_lock(&pctldev->mutex);
- 	list_add_tail(&range->node, &pctldev->gpio_ranges);
- 	mutex_unlock(&pctldev->mutex);
-+	/* Maybe we have outstanding GPIO requests for this range? */
-+	pinctrl_process_queued_gpio_requests();
- }
- EXPORT_SYMBOL_GPL(pinctrl_add_gpio_range);
- 
-@@ -534,6 +538,16 @@ int pinctrl_get_group_selector(struct pinctrl_dev *pctldev,
- 	return -EINVAL;
- }
- 
-+/*
-+ * Queued GPIO requests are stored in this list.
-+ */
-+struct pinctrl_gpio_req {
-+	struct list_head node;
-+	int gpio;
-+};
-+
-+static LIST_HEAD(pinctrl_queued_gpio_requests);
-+
- /**
-  * pinctrl_request_gpio() - request a single pin to be used in as GPIO
-  * @gpio: the GPIO pin number from the GPIO subsystem number space
-@@ -551,9 +565,26 @@ int pinctrl_request_gpio(unsigned gpio)
- 
- 	ret = pinctrl_get_device_gpio_range(gpio, &pctldev, &range);
- 	if (ret) {
-+		/* Maybe this pin does not have a pinctrl back-end at all? */
- 		if (pinctrl_ready_for_gpio_range(gpio))
--			ret = 0;
--		return ret;
-+			return 0;
-+		/*
-+		 * We get to this point if pinctrl_request_gpio() is called
-+		 * from a GPIO driver which does not yet have a registered
-+		 * pinctrl driver backend, and thus no ranges are defined for
-+		 * it. This could happen during system start up or if we're
-+		 * probing pin controllers as modules. Queue the request and
-+		 * handle it when and if the range arrives.
-+		 */
-+		struct pinctrl_gpio_req *req =
-+			kzalloc(sizeof(struct pinctrl_gpio_req), GFP_KERNEL);
-+
-+		if (!req)
-+			return -ENOMEM;
-+		req->gpio = gpio;
-+		list_add_tail(&req->node, &pinctrl_queued_gpio_requests);
-+		pr_info("queueing pinctrl request for GPIO %d\n", req->gpio);
-+		return 0;
- 	}
- 
- 	/* Convert to the pin controllers number space */
-@@ -566,6 +597,42 @@ int pinctrl_request_gpio(unsigned gpio)
- EXPORT_SYMBOL_GPL(pinctrl_request_gpio);
- 
- /**
-+ * pinctrl_process_queued_gpio_requests() - process queued GPIO requests
-+ *
-+ * This is called whenever a new GPIO range is added to see if some GPIO
-+ * driver has outstanding requests to GPIOs in the range, and then these
-+ * get processed at this point.
-+ */
-+static void pinctrl_process_queued_gpio_requests(void)
-+{
-+	struct list_head *node, *tmp;
-+
-+        list_for_each_safe(node, tmp, &pinctrl_queued_gpio_requests) {
-+                struct pinctrl_gpio_req *req =
-+			list_entry(node, struct pinctrl_gpio_req, node);
-+		struct pinctrl_dev *pctldev;
-+		struct pinctrl_gpio_range *range;
-+		int pin;
-+		int ret;
-+
-+		ret = pinctrl_get_device_gpio_range(req->gpio, &pctldev, &range);
-+		if (ret)
-+			continue;
-+
-+		/* Convert to the pin controllers number space */
-+		pin = gpio_to_pin(range, req->gpio);
-+		ret = pinmux_request_gpio(pctldev, range, pin, req->gpio);
-+
-+		if (ret)
-+			pr_err("failed to request queued GPIO %d\n", req->gpio);
-+		else
-+			pr_info("requested queued GPIO %d\n", req->gpio);
-+                list_del(node);
-+                kfree(req);
-+        }
-+}
-+
-+/**
-  * pinctrl_free_gpio() - free control on a single pin, currently used as GPIO
-  * @gpio: the GPIO pin number from the GPIO subsystem number space
-  *
--- 
-1.8.1.4
+Indeed Done is passed immediately while ADC is still sampling.
+Because of the way the trigger was used and structure of the driver.
 
+> > +static int tiadc_buffer_preenable(struct iio_dev *indio_dev)
+> > +{
+> Don't have pointless wrappers like this.
+
+Noted
+> > +	return iio_sw_buffer_preenable(indio_dev);
+> > +}
+> > +
+> > +static void tiadc_adc_work(struct work_struct *work_s)
+> > +{
+> > +	struct tiadc_device *adc_dev =
+> > +		container_of(work_s, struct tiadc_device, poll_work);
+> > +	struct iio_dev *indio_dev = iio_priv_to_dev(adc_dev);
+> > +	struct iio_buffer *buffer = indio_dev->buffer;
+> > +	int i, j, k, fifo1count, read;
+> > +	unsigned int config;
+> So normally we'd just fill with one sample hence for this case
+> I'd expect to push out whatever samples are in the fifo right now
+> then return.  The next trigger would grab the next lot etc.
+>
+Again. If I understand correctly, 
+
+I restructure the driver so that
+enabling the buffer via userspace starts sampling the ADC channels.
+Preenable/postenable do all that hard work.
+
+I need to use iio_trigger_register to create an IIO trigger inside the
+driver.
+
+The IRQ handler for FIFO Threshold causes a trigger event.
+
+The trigger handler pushes the entire fifo to userspace.
+
+I'd like a small ACK before I get to work.
+Just to make sure I got things correctly.
+
+Thanks for the input
+Zubair
