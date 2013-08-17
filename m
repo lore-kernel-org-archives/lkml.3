@@ -1,185 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab3HQK0t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 06:26:49 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:42494 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab3HQK0q (ORCPT
+	id S1752722Ab3HQK1m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 06:27:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56206 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596Ab3HQK1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 06:26:46 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 2/4] driver core: Allow early registration of devices
-Date: Sat, 17 Aug 2013 12:26:40 +0200
-Message-ID: <3558931.NyoikKT8ha@flatron>
-User-Agent: KMail/4.11 (Linux/3.10.6-gentoo; KDE/4.11.0; x86_64; ; )
-In-Reply-To: <CACxGe6uhiKY7a0+aViEamwKbE2tJicVc8CMZChBUaf+KYTs5rw@mail.gmail.com>
-References: <1376685563-1053-1-git-send-email-treding@nvidia.com> <20130816215530.GA14464@mithrandir> <CACxGe6uhiKY7a0+aViEamwKbE2tJicVc8CMZChBUaf+KYTs5rw@mail.gmail.com>
+	Sat, 17 Aug 2013 06:27:40 -0400
+Date: Sat, 17 Aug 2013 20:27:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Teigland <teigland@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: linux-next: manual merge of the dlm tree with Linus' tree
+Message-ID: <20130817102734.GA12640@rothwell.emu.id.au>
+References: <20130816114050.5f4bf4b21f1bde305235ac42@canb.auug.org.au>
+ <20130816150441.GA20568@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
+Content-Disposition: inline
+In-Reply-To: <20130816150441.GA20568@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 of August 2013 23:20:55 Grant Likely wrote:
-> On Fri, Aug 16, 2013 at 10:55 PM, Thierry Reding
-> 
-> <thierry.reding@gmail.com> wrote:
-> > On Fri, Aug 16, 2013 at 02:06:37PM -0700, Greg Kroah-Hartman wrote:
-> >> On Fri, Aug 16, 2013 at 10:39:21PM +0200, Thierry Reding wrote:
-> >> > +static DEFINE_MUTEX(device_early_mutex);
-> >> > +static LIST_HEAD(device_early_list);
-> >> > +static bool device_is_early = true;
-> >> > +
-> >> > +/*
-> >> > + * Keep a list of early registered devices so that they can be
-> >> > fully
-> >> > + * registered at a later point in time.
-> >> > + */
-> >> > +static void device_early_add(struct device *dev)
-> >> 
-> >> __init?
-> > 
-> > Yes.
-> > 
-> >> > +{
-> >> > +   mutex_lock(&device_early_mutex);
-> >> > +   list_add_tail(&dev->p->early, &device_early_list);
-> >> > +   mutex_unlock(&device_early_mutex);
-> >> > +}
-> >> > +
-> >> > +/*
-> >> > + * Mark the early device registration phase as completed.
-> >> > + */
-> >> > +int __init device_early_init(void)
-> >> > +{
-> >> > +   device_is_early = false;
-> >> > +
-> >> > +   return 0;
-> >> > +}
-> >> > +
-> >> > +/*
-> >> > + * Fixup platform devices instantiated from device tree. The
-> >> > problem is + * that since early registration happens before
-> >> > interrupt controllers + * have been setup, the OF core code won't
-> >> > know how to map interrupts. + */
-> >> > +int __init platform_device_early_fixup(struct platform_device
-> >> > *pdev)
-> >> 
-> >> This shouldn't be in this file, because:
-> >> > +/*
-> >> > + * Fully register early devices.
-> >> > + */
-> >> > +int __init device_early_done(void)
-> >> > +{
-> >> > +   struct device_private *private;
-> >> > +
-> >> > +   list_for_each_entry(private, &device_early_list, early) {
-> >> > +           struct device *dev = private->device;
-> >> > +           int err;
-> >> > +
-> >> > +           if (dev->bus == &platform_bus_type) {
-> >> 
-> >> Why special case the platform bus?  We are trying to move things off
-> >> of
-> >> the platform bus, don't make it harder to do that :)
-> > 
-> > I heard about that, but I must have missed the thread where this was
-> > discussed. Can you point me to it?
-> > 
-> >> > +                   struct platform_device *pdev =
-> >> > to_platform_device(dev); +
-> >> > +                   err = platform_device_early_fixup(pdev);
-> >> > +                   if (err < 0)
-> >> > +                           dev_err(&pdev->dev,
-> >> > +                                   "failed to fixup device %s:
-> >> > %d\n",
-> >> > +                                   dev_name(&pdev->dev), err);
-> >> > +           }
-> >> 
-> >> You should just have a bus callback that can be made here that, if
-> >> present, can be called.  That way any bus can handle this type of
-> >> thing, not just the platform one.
-> > 
-> > You mean something like an .early_fixup() in struct bus_type? That
-> > would indeed be much cleaner. As I mentioned this is a very early
-> > prototype and this particular hunk exists specifically to fixup the
-> > platform devices created by the device tree helpers so that the
-> > kernel actually boots to the login prompt.
-> > 
-> >> Not that I really like the whole idea anyway, but I doubt there's
-> >> much I can do about it...
-> > 
-> > Well, getting feedback from you and others is precisely the reason why
-> > I wanted to post this early. There must be a reason why you don't
-> > like it, so perhaps you can share your thoughts and we can mould this
-> > into something that you'd be more comfortable with.
-> > 
-> > To be honest I don't particularly like it either. It's very hackish
-> > for
-> > core code. But on the other hand there are a few device/driver
-> > ordering
-> > problems that this (or something similar) would help solve. I'm
-> > certainly open to discuss alternatives and perhaps there's a much
-> > cleaner way to solve the problem.
-> 
-> And on that note, I think we're all in agreement that it's ugly!
-> Looking at it now, I don't think it is the right approach.
-> 
-> In the big scheme of things, there really aren't a lot of devices that
-> will need this functionality. Something I don't have a good handle on
-> is the set of devices needed to be created early. Yes, some of the
-> clocks and power rails need to be set up, but do all of them? Yes, the
-> interrupts need to be set up, but was of_irq_init() a mistake?
-> Cascaded interrupt controllers really could be normal devices if there
-> isn't anything critical for early boot connected to them (ie. the
-> timer). If irq references were changed to be parsed at .probe() time
-> instead of device registration time, the deferred probe would have
-> everything needed to make sure the interrupt controllers get probed
-> before the users.
-> 
-> Also, for the devices that are created early, is it really appropriate
-> to use APIs that require a struct device? I could easily argue that
-> anything done at early boot should only be the bare minimum to allow
-> the kernel to get to initcalls, and so mucking about with devices is
-> inappropriate because it really messes with the assumptions made in
-> the design of the driver model.
 
-Please correct me if I'm wrong, but to get to initcalls you need a timer. 
-However a timer driver might need interrupts (to tick) and clocks (to get 
-the frequency).
+--PNTmBPCT7hxwcZjr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-At least this is what happens on the platforms I work with. They don't 
-need any special early registration method, though. We just special case 
-those drivers, as Thierry pointed, so they don't use device based APIs.
+Hi David,
 
-However if we consider a more complex setup, let's say that the timer 
-driver needs to access some special registers, which are shared with other 
-drivers as well (again not a completely exotic case, as I already met this 
-when working with timer and PWM drivers for older Samsung platforms and 
-had to hack things a bit). One would suggest using regmap here, but it is 
-a device based API.
+On Fri, Aug 16, 2013 at 11:04:41AM -0400, David Teigland wrote:
+> On Fri, Aug 16, 2013 at 11:40:50AM +1000, Stephen Rothwell wrote:
+> >=20
+> > Today's linux-next merge of the dlm tree got a conflict in fs/dlm/user.c
+> > between commit 201d3dfa4da1 ("dlm: kill the unnecessary and wrong
+> > device_close()->recalc_sigpending()") from Linus' tree and commit
+> > c6ca7bc91d51 ("dlm: remove signal blocking") from the dlm tree.
+> >=20
+> > I fixed it up (the latter is a superset of the former, so I just used i=
+t)
+> > and can carry the fix as necessary (no action is required).
+>=20
+> Thanks, what's the procedure to get the right thing merged in the end?
+> Apply Oleg's patch to my tree followed by my own?
 
-This also connects to a different (and probably less relevant) issue of 
-of_clk_init() and all the whole family of_whatever_init() helpers, which 
-(all or at least some of them) must be explicitly called from platform 
-code of every platform. If we could turn those drivers into normal drivers 
-dealing with devices this could go away.
+Just leave it alone, Linus will do what I did when he merges the dlm
+tree during the next merge window (or whenever he is asked to merge it).
 
-To clarify, I'm not really for or against doing this, I'm just adding some 
-points that came to my mind while reading this thread (hopefully something 
-useful).
+--=20
+Cheers,
+Stephen Rothwell
 
-Best regards,
-Tomasz
+--PNTmBPCT7hxwcZjr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSD1AVAAoJEECxmPOUX5FEw74P/0jenVaWFFxXsTo4oKeBGeXs
++NC6JshPMgWqgDB+1NLUjeQwvk4CiXEcSZrqihq7PpFfsQALtYchK0skGyNY3nPp
+HQMUWhonUWwmpZsvUrzC9hYty8LWquWRw6PLF1lHVfrHBgtxhi4r68PFD9bOia5Z
+viIUaYGnMI6A623Q9fVrcotOfpT2R2PlENbKZv+BXOfQHWZKN4DTaN4tbBei0Daz
+yjhk8fAqQv/LGQ14hNh8EkW063UHIosyFJePB4AhhrQtB9sRTQE1RHLxDxdKemGM
+5hT5oKrj9qeoJp02eFRnFmo5VtUGyHAyq+EVL7nnTki0+ouT5mpPzYpvcTSU1vrZ
+XKyzKLCdEXoA6PLJUYfSY3xomfokokzugd3vvS/kU1msb6KJ/qmzPStjiZuT7cj0
+DqlkUAZre5f2PqtqRakSBc4vQ6rVfA7PMyb1zCxMkGh0SZ+6zTf11ScqyioTeodz
+7jjDT2dvzzujvKilHZ93A4rlOlcJfgeL9NsRpw2wz2673cXPlBLgt/gVkg7HYXyZ
+i/Wm+DEj+7W2GU3m0RSXYIu8BQE3pqxVDQntOvkOlRvc58QFzvOF+VFDt6pwq2lW
+sFBHdpj2MbaFI6qvU42V8jCNit/JjVGc2/X9AEJc3ajIpZjwheC4m8LULizcYMvv
+a0a15wfpEZdFbaAmDUn9
+=3aA3
+-----END PGP SIGNATURE-----
+
+--PNTmBPCT7hxwcZjr--
