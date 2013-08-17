@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab3HQNFq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 09:05:46 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44952 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab3HQNFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 09:05:45 -0400
-Date: Sat, 17 Aug 2013 09:05:42 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: torvalds@linux-foundation.org
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] jbd2 bug fixes for v3.11-rc6
-Message-ID: <20130817130542.GA32430@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	torvalds@linux-foundation.org, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org
+	id S1753278Ab3HQNYc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 09:24:32 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:45494 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092Ab3HQNYa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 09:24:30 -0400
+Message-ID: <520F798C.2040606@gmail.com>
+Date: Sat, 17 Aug 2013 15:24:28 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v1 1/5] irqchip: add Armada 1500 APB interrupt controller
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376682098-10580-2-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1376682098-10580-2-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit cde2d7a796f7e895e25b43471ed658079345636d:
+On 08/16/2013 09:41 PM, Sebastian Hesselbarth wrote:
+> This adds irqchip drivers for the secondary interrupt controllers found
+> on Armada 1500 APB and SYSMGT APB bus.
+>
+> I tried to find a compatible irqchip driver within v3.11-rc5, but there
+> is no. I guess that it is a common IP core to buy for your SoC, so maybe
+> one of the maintainers knows a better name for it. Could be DesignWare
+> type-of as timers are DW, too.
 
-  ext4: flush the extent status cache during EXT4_IOC_SWAP_BOOT (2013-08-12 09:29:30 -0400)
+ From a quick look into Synopsys DW ip library, it probably matches 
+dw_apb_ictl best and should be named accordingly. Next round will
+name the source dw_apb_ictl.c and corresponding compatible
+"snps,dw-apb-ictl".
 
-are available in the git repository at:
+In addition, it looks like the ip can support up to 64 irqs. For orion
+irq, I have used a "mavell,#interrupts" to allow to pass the number of
+supported irqs. Above driver should also exploit a similar
+snps-prefixed property.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
-
-for you to fetch changes up to a361293f5fedea0016a10599f409631a15d47ee7:
-
-  jbd2: Fix oops in jbd2_journal_file_inode() (2013-08-16 21:19:41 -0400)
-
-----------------------------------------------------------------
-Two jbd2 bug fixes, one of which is a regression fix.
-
-----------------------------------------------------------------
-Jan Kara (2):
-      jbd2: Fix use after free after error in jbd2_journal_dirty_metadata()
-      jbd2: Fix oops in jbd2_journal_file_inode()
-
- fs/ext4/ext4.h      |  1 +
- fs/ext4/ext4_jbd2.c |  8 ++++----
- fs/ext4/file.c      | 21 ++++-----------------
- fs/ext4/inode.c     | 43 +++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 52 insertions(+), 21 deletions(-)
+Sebastian
