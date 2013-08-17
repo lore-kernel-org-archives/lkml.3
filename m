@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab3HQMao (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 08:30:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54433 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752917Ab3HQMam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 08:30:42 -0400
-Date: Sat, 17 Aug 2013 13:30:39 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Frank Mayhar <fmayhar@google.com>
-Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: [dm-devel] [PATCH] dm: Make MIN_IOS, et al, tunable via sysctl.
-Message-ID: <20130817123039.GR1762@agk-dp.fab.redhat.com>
-Mail-Followup-To: Frank Mayhar <fmayhar@google.com>,
-	linux-kernel@vger.kernel.org, dm-devel@redhat.com
-References: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
+	id S1753208Ab3HQNB3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 09:01:29 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:43530 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab3HQNB2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 09:01:28 -0400
+Message-ID: <520F7424.8030301@gmail.com>
+Date: Sat, 17 Aug 2013 15:01:24 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v1 5/5] ARM: mvebu: add board init for Armada 1500
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376682098-10580-6-git-send-email-sebastian.hesselbarth@gmail.com> <20130816204831.GX13964@titan.lakedaemon.net>
+In-Reply-To: <20130816204831.GX13964@titan.lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 03:55:21PM -0700, Frank Mayhar wrote:
-> This patch fixes that by changing the hardcoded MIN_IOS (and certain
-> other) #defines in dm-crypt, dm-io, dm-mpath, dm-snap and dm itself to
-> sysctl-modifiable values.  This lets us change the size of these pools
-> on the fly, we can reduce the size of the pools and reduce memory
-> pressure.
- 
-Did you consider using module_param_named()?
-(E.g. dm_verity_prefetch_cluster in dm-verity.)
+On 08/16/2013 10:48 PM, Jason Cooper wrote:
+> On Fri, Aug 16, 2013 at 09:41:38PM +0200, Sebastian Hesselbarth wrote:
+>> This adds initial setup for the Marvell Armada 1500 SoCs. The code
+>> is fairly straight-forward, but especially _timer_and_clk_init()
+>> can be simplified by using default arch hooks. I will have some time
+>> until mach-mvebu is prepared for other SoCs moving over, so I can
+>> catch up with latest machine simplifications.
+>>
+>> I am not so sure about the .map_io but I didn't yet fully understand
+>> the mapping requirement. Anyway, it is required for iomap and friends
+>> to work and basically remaps physical register addressed onto the same
+>> virtual addresses.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+[...]
+>> +obj-$(CONFIG_MACH_ARMADA_1500)		+= armada-1500.o
+>
+> guess what?  :)
+>
+> I swear I had a more substantive comment when I started this.  But after
+> a suitable application of gray matter, these nits were all that were
+> left. :(
 
-Alasdair
+Jason,
 
+thanks for teaching me the alphabet again :) Of course, all your 
+comments will be fixed for a real patch set.
+
+I hope Thomas and Gregory will have some time to comment on the
+mach-mvebu integration soon which also affects Orion SoCs.
+
+But its weekend, next merge window is far, above just fails to boot
+into anything useful due to the lack of drivers - relax :)
+
+Sebastian
