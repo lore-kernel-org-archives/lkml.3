@@ -1,34 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab3HQJ71 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 05:59:27 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:62828 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab3HQJ7Y (ORCPT
+	id S1752526Ab3HQK0t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 06:26:49 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:42494 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab3HQK0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 05:59:24 -0400
+	Sat, 17 Aug 2013 06:26:46 -0400
 From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Lars Poeschel <poeschel@lemonage.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
-        swarren@wwwdotorg.org, mark.rutland@arm.com, ian.campbell@citrix.com,
-        galak@codeaurora.org, pawel.moll@arm.com
-Subject: Re: [PATCH v2] RFC: interrupt consistency check for OF GPIO IRQs
-Date: Sat, 17 Aug 2013 11:59:17 +0200
-Message-ID: <9241298.URG9CVQFmF@flatron>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 2/4] driver core: Allow early registration of devices
+Date: Sat, 17 Aug 2013 12:26:40 +0200
+Message-ID: <3558931.NyoikKT8ha@flatron>
 User-Agent: KMail/4.11 (Linux/3.10.6-gentoo; KDE/4.11.0; x86_64; ; )
-In-Reply-To: <CACRpkdZqtn80rkpGokpjwoeEWTx+f_ug1zqOHBA1SeSz9Oj7mA@mail.gmail.com>
-References: <1376387195-27469-1-git-send-email-larsi@wh2.tu-dresden.de> <1955836.AOXICuVgjP@flatron> <CACRpkdZqtn80rkpGokpjwoeEWTx+f_ug1zqOHBA1SeSz9Oj7mA@mail.gmail.com>
+In-Reply-To: <CACxGe6uhiKY7a0+aViEamwKbE2tJicVc8CMZChBUaf+KYTs5rw@mail.gmail.com>
+References: <1376685563-1053-1-git-send-email-treding@nvidia.com> <20130816215530.GA14464@mithrandir> <CACxGe6uhiKY7a0+aViEamwKbE2tJicVc8CMZChBUaf+KYTs5rw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -36,193 +31,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Ccing DT maintainers, as they may have some ideas as well]
-
-On Saturday 17 of August 2013 02:16:11 Linus Walleij wrote:
-> On Thu, Aug 15, 2013 at 11:53 AM, Tomasz Figa <tomasz.figa@gmail.com> 
-wrote:
-> >> +             /* Check if we have an IRQ parent, else continue */
-> >> +             irq_parent = of_irq_find_parent(child);
-> >> +             if (!irq_parent)
-> >> +                     continue;
-> > 
-> > You can probably put the irq_parent node here to not duplicate calls
-> > in
-> > both code paths below.
+On Friday 16 of August 2013 23:20:55 Grant Likely wrote:
+> On Fri, Aug 16, 2013 at 10:55 PM, Thierry Reding
 > 
-> But...
-> 
-> >> +             /* Is it so that this very GPIO chip is the parent? */
-> >> +             if (irq_parent != gcn) {
-> 
-> I am using it here in this comparison.
-
-You don't seem to be dereferencing it in this comparison.
-
-> >> +                     of_node_put(irq_parent);
-> >> +                     continue;
-> >> +             }
-> >> +             of_node_put(irq_parent);
-> 
-> Then here I put it.
-> 
-> >> +             num_irq = of_irq_count(gcn);
-> >> +             for (i = 0; i < num_irq; i++) {
-> >> +                     /*
-> >> +                      * The first cell is always the local IRQ
-> >> number,
+> <thierry.reding@gmail.com> wrote:
+> > On Fri, Aug 16, 2013 at 02:06:37PM -0700, Greg Kroah-Hartman wrote:
+> >> On Fri, Aug 16, 2013 at 10:39:21PM +0200, Thierry Reding wrote:
+> >> > +static DEFINE_MUTEX(device_early_mutex);
+> >> > +static LIST_HEAD(device_early_list);
+> >> > +static bool device_is_early = true;
+> >> > +
+> >> > +/*
+> >> > + * Keep a list of early registered devices so that they can be
+> >> > fully
+> >> > + * registered at a later point in time.
+> >> > + */
+> >> > +static void device_early_add(struct device *dev)
+> >> 
+> >> __init?
 > > 
-> > and
+> > Yes.
 > > 
-> >> +                      * this corresponds to the GPIO line offset for
-> >> a
+> >> > +{
+> >> > +   mutex_lock(&device_early_mutex);
+> >> > +   list_add_tail(&dev->p->early, &device_early_list);
+> >> > +   mutex_unlock(&device_early_mutex);
+> >> > +}
+> >> > +
+> >> > +/*
+> >> > + * Mark the early device registration phase as completed.
+> >> > + */
+> >> > +int __init device_early_init(void)
+> >> > +{
+> >> > +   device_is_early = false;
+> >> > +
+> >> > +   return 0;
+> >> > +}
+> >> > +
+> >> > +/*
+> >> > + * Fixup platform devices instantiated from device tree. The
+> >> > problem is + * that since early registration happens before
+> >> > interrupt controllers + * have been setup, the OF core code won't
+> >> > know how to map interrupts. + */
+> >> > +int __init platform_device_early_fixup(struct platform_device
+> >> > *pdev)
+> >> 
+> >> This shouldn't be in this file, because:
+> >> > +/*
+> >> > + * Fully register early devices.
+> >> > + */
+> >> > +int __init device_early_done(void)
+> >> > +{
+> >> > +   struct device_private *private;
+> >> > +
+> >> > +   list_for_each_entry(private, &device_early_list, early) {
+> >> > +           struct device *dev = private->device;
+> >> > +           int err;
+> >> > +
+> >> > +           if (dev->bus == &platform_bus_type) {
+> >> 
+> >> Why special case the platform bus?  We are trying to move things off
+> >> of
+> >> the platform bus, don't make it harder to do that :)
 > > 
-> > GPIO
+> > I heard about that, but I must have missed the thread where this was
+> > discussed. Can you point me to it?
 > > 
-> >> +                      * chip.
-> >> +                      *
-> >> +                      * FIXME: take interrupt-cells into account
-> >> here.
+> >> > +                   struct platform_device *pdev =
+> >> > to_platform_device(dev); +
+> >> > +                   err = platform_device_early_fixup(pdev);
+> >> > +                   if (err < 0)
+> >> > +                           dev_err(&pdev->dev,
+> >> > +                                   "failed to fixup device %s:
+> >> > %d\n",
+> >> > +                                   dev_name(&pdev->dev), err);
+> >> > +           }
+> >> 
+> >> You should just have a bus callback that can be made here that, if
+> >> present, can be called.  That way any bus can handle this type of
+> >> thing, not just the platform one.
 > > 
-> > This is the biggest problem of this patch. It assumes that there is
-> > only a single and shared GPIO/interrupt specification scheme, which
-> > might not be true.
+> > You mean something like an .early_fixup() in struct bus_type? That
+> > would indeed be much cleaner. As I mentioned this is a very early
+> > prototype and this particular hunk exists specifically to fixup the
+> > platform devices created by the device tree helpers so that the
+> > kernel actually boots to the login prompt.
 > > 
-> > First of all, almost all interrupt bindings have an extra,
-> > semi-generic
-> > flags field as last cell in the specifier. Now there can be more than
-> > one> 
-> > cell used to index GPIOs and interrupts, for example:
-> >         interrupts = <1 3 8>
+> >> Not that I really like the whole idea anyway, but I doubt there's
+> >> much I can do about it...
 > > 
-> > which could mean: bank 1, pin 3, low level triggered.
+> > Well, getting feedback from you and others is precisely the reason why
+> > I wanted to post this early. There must be a reason why you don't
+> > like it, so perhaps you can share your thoughts and we can mould this
+> > into something that you'd be more comfortable with.
+> > 
+> > To be honest I don't particularly like it either. It's very hackish
+> > for
+> > core code. But on the other hand there are a few device/driver
+> > ordering
+> > problems that this (or something similar) would help solve. I'm
+> > certainly open to discuss alternatives and perhaps there's a much
+> > cleaner way to solve the problem.
 > 
-> You are right, but:
-> Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-> Specifies how to handle the one-celled and two-celled versions.
+> And on that note, I think we're all in agreement that it's ugly!
+> Looking at it now, I don't think it is the right approach.
 > 
-> And nothing else is specified. So it's not overly complex.
-
-The documentation states that:
-
-	It is the responsibility of the interrupt controller's binding to 
-	define the length and format of the interrupt specifier.
-
-Then two _example_ formats follow, preceded by following statement:
-
-	The following two variants are commonly used:
-
-I already know a variant which uses three (Exynos combiner) and four 
-(S3C24xx interrupt controller) cells. They are not pin controllers, but 
-you can't stop anyone from adopting similar or even more complex 
-specifiers formats for their hardware, especially when it matches more 
-closely the interrupt/pin layout used in their hardware.
-
-> But we have to read out the #interrupt-cells specifier from the
-> controller I guess, but since we the gcn pointer we can do this
-> easily. (I'll fix...)
+> In the big scheme of things, there really aren't a lot of devices that
+> will need this functionality. Something I don't have a good handle on
+> is the set of devices needed to be created early. Yes, some of the
+> clocks and power rails need to be set up, but do all of them? Yes, the
+> interrupts need to be set up, but was of_irq_init() a mistake?
+> Cascaded interrupt controllers really could be normal devices if there
+> isn't anything critical for early boot connected to them (ie. the
+> timer). If irq references were changed to be parsed at .probe() time
+> instead of device registration time, the deferred probe would have
+> everything needed to make sure the interrupt controllers get probed
+> before the users.
 > 
-> > I think you may need to reuse a lot of the code that normally parses
-> > the interrupts property, i.e. the irq_of_parse_and_map() path, which
-> > will then give you the hwirq index inside your irq chip, which may
-> > (or may not) be the same as the GPIO offset inside your GPIO chip.
-> 
-> We don't need to map it, and that's the hard part of that code.
-> We just need to add some code to check the number of
-> cells.
+> Also, for the devices that are created early, is it really appropriate
+> to use APIs that require a struct device? I could easily argue that
+> anything done at early boot should only be the bare minimum to allow
+> the kernel to get to initcalls, and so mucking about with devices is
+> inappropriate because it really messes with the assumptions made in
+> the design of the driver model.
 
-Not really. Only the interrupt controller's driver (or rather its .xlate() 
-callback) knows how to map all the cells into hwirq index. So we must at 
-least get the irq domain associated with the node and call its .xlate() 
-callback with requested count of cells.
+Please correct me if I'm wrong, but to get to initcalls you need a timer. 
+However a timer driver might need interrupts (to tick) and clocks (to get 
+the frequency).
 
-> > If you're unlucky enough to spot a controller that uses completely
-> > different numbering schemes for GPIOs and interrupts, then you're
-> > probably screwed, because only the driver for this controller can
-> > know the mapping between them.
-> 
-> But the binding documents state how this shall be done, as illustrated.
-> Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+At least this is what happens on the platforms I work with. They don't 
+need any special early registration method, though. We just special case 
+those drivers, as Thierry pointed, so they don't use device based APIs.
 
-No. Both specifier formats shown in the documentation are just examples. 
-As I already quoted, specifier format is up to the binding of particular 
-interrupt controller, without any restrictions.
+However if we consider a more complex setup, let's say that the timer 
+driver needs to access some special registers, which are shared with other 
+drivers as well (again not a completely exotic case, as I already met this 
+when working with timer and PWM drivers for older Samsung platforms and 
+had to hack things a bit). One would suggest using regmap here, but it is 
+a device based API.
 
-> Documentation/devicetree/bindings/gpio/gpio.txt
-> 
-> >> +                             if (ret)
-> >> +                                     pr_err("gpiolib OF: could not
-> > 
-> > request IRQ GPIO %d (%d)\n",
-> > 
-> >> +                                            gc->base + offset,
-> >> offset);> 
-> > Would some kind of error handling be a bad idea here? Like, for
-> > example, marking this IRQ as invalid or something among these lines.
-> 
-> Sorry I'm not following. The GPIO core has no clue of how the
-> driver implements its irqchip and no handle on it so it cannot
-> go in and mark any interrupts.
+This also connects to a different (and probably less relevant) issue of 
+of_clk_init() and all the whole family of_whatever_init() helpers, which 
+(all or at least some of them) must be explicitly called from platform 
+code of every platform. If we could turn those drivers into normal drivers 
+dealing with devices this could go away.
 
-Well, this code already tries to map GPIO pins into interrupts. As I 
-explained above, you will need to get access to irq domain anyway, so it 
-shouldn't be a problem to do some operations on interrupts here.
-
-But...
-
-> >> +                             ret = gpio_direction_input(gc->base +
-> > 
-> > offset);
-> > 
-> >> +                             if (ret)
-> >> +                                     pr_err("gpiolib OF: could not
-> >> set
-> > 
-> > IRQ GPIO %d (%d) as input\n",
-> > 
-> >> +                                            gc->base + offset,
-> >> offset);> 
-> > I'm not sure if this is the correct action if someone already
-> > requested
-> > the GPIO before and probably already set it up with their own set of
-> > parameters (not necessarily the same as enforced by calling
-> > gpio_direction_input()).
-> 
-> What do you mean with " someone already requested the GPIO
-> before" here?
-> 
-> This code is run right after the gpiochip is added, noone has a
-> chance of requesting anything before this happens. This is the
-> general idea: steal all GPIOs marked to be used as interrupts
-> so no other consumer can get at them.
-
-...yes, I haven't noticed that this is called from gpiochip add context 
-and so gotten it wrong a bit. Please ignore the original comment 
-(including previous one as well, since it is unlikely that request_gpio() 
-will fail for us).
-
-> >> +                     } else {
-> >> +                             gpio_free(gc->base + offset);
-> > 
-> > What if the request failed? This would mean calling gpio_free() on a
-> > GPIO previously requested by someone else.
-> 
-> Noone can request before us, as stated.
-
-Right.
-
-> >> +#define of_gpiochip_request_irq_lines(np, gc) \
-> >> +     of_gpiochip_x_irq_lines(np, gc, 1)
-> >> +
-> >> +#define of_gpiochip_free_irq_lines(np, gc) \
-> >> +     of_gpiochip_x_irq_lines(np, gc, 0)
-> > 
-> > Aha, so the x is a wildcard. Fine, although it makes the code slightly
-> > less reader-friendly IMHO.
-> 
-> I renamed it a bit.
-
-OK.
+To clarify, I'm not really for or against doing this, I'm just adding some 
+points that came to my mind while reading this thread (hopefully something 
+useful).
 
 Best regards,
 Tomasz
