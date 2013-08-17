@@ -1,73 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab3HQPou (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 11:44:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58359 "EHLO mail.skyhub.de"
+	id S1753822Ab3HQQMv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 12:12:51 -0400
+Received: from mail.suza.ac.tz ([41.204.150.68]:56037 "EHLO mail.suza.ac.tz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606Ab3HQPot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 11:44:49 -0400
-Date: Sat, 17 Aug 2013 17:44:47 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Joe Perches <joe@perches.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Youquan Song <youquan.song@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Youquan Song <youquan.song@intel.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
-Message-ID: <20130817154447.GB10005@pd.tnic>
-References: <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com>
- <20130724062254.GA16400@redhat.com>
- <CAE9FiQWbVDRpLUCUTF=Jpmm-nn6kgBYFW25PPTEiPK-R-mX0jA@mail.gmail.com>
- <20130729170514.GB30371@linux-youquan.bj.intel.com>
- <20130814184040.GA6726@linux-youquan.bj.intel.com>
- <20130814111105.GA13772@gmail.com>
- <20130817134454.GA16835@linux-youquan.bj.intel.com>
- <20130817074256.GA18772@gmail.com>
- <20130817082419.GA10005@pd.tnic>
- <1376730231.1954.7.camel@joe-AO722>
+	id S1753444Ab3HQQMu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 12:12:50 -0400
+X-Greylist: delayed 20276 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Aug 2013 12:12:50 EDT
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1376730231.1954.7.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: VERY URGENT..
+To: Recipients <974358han@gmail.com>
+From: "Mr. M. barlow" <974358han@gmail.com>
+Date: Sat, 17 Aug 2013 09:24:43 +0100
+Reply-To: 974358han@gmail.com
+X-Priority: 1 (High)
+Message-Id: <20130817113134.3BF3B493292@mail.suza.ac.tz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 17, 2013 at 02:03:51AM -0700, Joe Perches wrote:
-> checkpatch tends to be used for firs patch submissions and
-> adding it would only encourage a new wave of trivial whitespace
-> patches.
+Hello, I am Mr. M. barlow from Paris, France. I have been advised to contact you regarding my business investment in your country. For urgent response and more details, kindly get back to me via this E-mail: cmrbarlow0001@yahoo.com.hk or Telephone number below. Thank you as I wait for your response.
 
-Nope, we definitely don't want that...
+Mr. M. barlow.
++33-753-194-496
 
-> I think there are already way, _way_ too many existing instances
-> of comments that are of the form
-> 	/* foo
-> 	 * ...
-> to add that.
-> 
-> There are 10s of thousands outside of net/ and drivers/net/.
-
-... unless there's a way to detect new submissions and scream only
-for those. I.e., look at lines starting with "+" which don't have
-corresponding "-" lines.
-
-This would need a bit of experimenting and is not trivial though, maybe
-Algorithm::Diff could even help there.
-
-Sounds like a mini-project for a perl dude :-)
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Sent from Orange Wireless BlackBerry Smartphone, France.
