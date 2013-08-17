@@ -1,101 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab3HQQ0p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 12:26:45 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42151 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753657Ab3HQQ0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 12:26:44 -0400
-Message-ID: <1376756803.2027.7.camel@joe-AO722>
-Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Youquan Song <youquan.song@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Youquan Song <youquan.song@intel.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Sat, 17 Aug 2013 09:26:43 -0700
-In-Reply-To: <20130817154447.GB10005@pd.tnic>
-References: <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com>
-	 <20130724062254.GA16400@redhat.com>
-	 <CAE9FiQWbVDRpLUCUTF=Jpmm-nn6kgBYFW25PPTEiPK-R-mX0jA@mail.gmail.com>
-	 <20130729170514.GB30371@linux-youquan.bj.intel.com>
-	 <20130814184040.GA6726@linux-youquan.bj.intel.com>
-	 <20130814111105.GA13772@gmail.com>
-	 <20130817134454.GA16835@linux-youquan.bj.intel.com>
-	 <20130817074256.GA18772@gmail.com> <20130817082419.GA10005@pd.tnic>
-	 <1376730231.1954.7.camel@joe-AO722> <20130817154447.GB10005@pd.tnic>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753975Ab3HQQqR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 12:46:17 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:62408 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657Ab3HQQqQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 12:46:16 -0400
+From: Richard Weinberger <richard@nod.at>
+To: user-mode-linux-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        <stian@nixia.no>, <tj@kernel.org>, <stable@vger.kernel.org>
+Subject: [PATCH v2] um: Implement probe_kernel_read()
+Date: Sat, 17 Aug 2013 18:46:00 +0200
+Message-Id: <1376757960-17112-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-08-17 at 17:44 +0200, Borislav Petkov wrote:
-> On Sat, Aug 17, 2013 at 02:03:51AM -0700, Joe Perches wrote:
-> > checkpatch tends to be used for firs patch submissions and
-> > adding it would only encourage a new wave of trivial whitespace
-> > patches.
-> 
-> Nope, we definitely don't want that...
-> 
-> > I think there are already way, _way_ too many existing instances
-> > of comments that are of the form
-> > 	/* foo
-> > 	 * ...
-> > to add that.
-> > 
-> > There are 10s of thousands outside of net/ and drivers/net/.
-> 
-> ... unless there's a way to detect new submissions and scream only
-> for those. I.e., look at lines starting with "+" which don't have
-> corresponding "-" lines.
+UML needs it's own probe_kernel_read() to handle kernel
+mode faults correctly.
+The implementation uses mincore() on the host side to detect
+whether a page is owned by the UML kernel process.
 
-No, that's not the right way to do that.
-That bit's relatively easy because checkpatch only looks
-at files when there's a specific command line -f flag.
-So just check the existence of the -f command line flag
-(!$file) and for an added comment that starts "/* foo" without
-a comment termination */ after it on the same line.
+This fixes also a possible crash when sysrq-t is used.
+Starting with 3.10 sysrq-t calls probe_kernel_read() to
+read details from the kernel workers. As kernel worker are
+completely async pointers may turn NULL while reading them.
 
-> This would need a bit of experimenting and is not trivial though, maybe
-> Algorithm::Diff could even help there.
-> 
-> Sounds like a mini-project for a perl dude :-)
+Cc: <stian@nixia.no>
+Cc: <tj@kernel.org>
+Cc: <stable@vger.kernel.org> # 3.10.x
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/um/include/shared/os.h |  1 +
+ arch/um/kernel/Makefile     |  2 +-
+ arch/um/kernel/maccess.c    | 24 +++++++++++++++++++++
+ arch/um/os-Linux/process.c  | 52 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 78 insertions(+), 1 deletion(-)
+ create mode 100644 arch/um/kernel/maccess.c
 
-I'm not one of those...
-
-This might work though
-
- scripts/checkpatch.pl | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9ba4fc4..abe820a 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2119,6 +2119,15 @@ sub process {
- 			}
- 		}
+diff --git a/arch/um/include/shared/os.h b/arch/um/include/shared/os.h
+index 95feaa4..c70a234 100644
+--- a/arch/um/include/shared/os.h
++++ b/arch/um/include/shared/os.h
+@@ -200,6 +200,7 @@ extern int os_unmap_memory(void *addr, int len);
+ extern int os_drop_memory(void *addr, int length);
+ extern int can_drop_memory(void);
+ extern void os_flush_stdout(void);
++extern int os_mincore(void *addr, unsigned long len);
  
-+		if (!$file &&
-+		    $realfile !~ m@^(drivers/net/|net/)@ &&
-+		    $rawline =~ /^\+/ &&	#Added line
-+		    $rawline !~ m@/\*.*\*/@ &&	#whole comments
-+		    $rawline =~ m@/\*+.+@) {	#unterminated comment
-+			WARN("COMMENT_STYLE",
-+			     "block comments use an empty /* line\n" . $herecurr);
-+		}
+ /* execvp.c */
+ extern int execvp_noalloc(char *buf, const char *file, char *const argv[]);
+diff --git a/arch/um/kernel/Makefile b/arch/um/kernel/Makefile
+index babe218..d8b78a0 100644
+--- a/arch/um/kernel/Makefile
++++ b/arch/um/kernel/Makefile
+@@ -13,7 +13,7 @@ clean-files :=
+ obj-y = config.o exec.o exitcode.o irq.o ksyms.o mem.o \
+ 	physmem.o process.o ptrace.o reboot.o sigio.o \
+ 	signal.o smp.o syscall.o sysrq.o time.o tlb.o trap.o \
+-	um_arch.o umid.o skas/
++	um_arch.o umid.o maccess.o skas/
+ 
+ obj-$(CONFIG_BLK_DEV_INITRD) += initrd.o
+ obj-$(CONFIG_GPROF)	+= gprof_syms.o
+diff --git a/arch/um/kernel/maccess.c b/arch/um/kernel/maccess.c
+new file mode 100644
+index 0000000..1f3d5c4
+--- /dev/null
++++ b/arch/um/kernel/maccess.c
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (C) 2013 Richard Weinberger <richrd@nod.at>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
- 		if ($realfile =~ m@^(drivers/net/|net/)@ &&
- 		    $prevrawline =~ /^\+[ \t]*\/\*[ \t]*$/ &&
- 		    $rawline =~ /^\+[ \t]*\*/) {
-
++#include <linux/uaccess.h>
++#include <linux/kernel.h>
++#include <os.h>
++
++long probe_kernel_read(void *dst, const void *src, size_t size)
++{
++	void *psrc = (void *)rounddown((unsigned long)src, PAGE_SIZE);
++
++	if ((unsigned long)src < PAGE_SIZE || size <= 0)
++		return -EFAULT;
++
++	if (os_mincore(psrc, size + src - psrc) <= 0)
++		return -EFAULT;
++
++	return __probe_kernel_read(dst, src, size);
++}
+diff --git a/arch/um/os-Linux/process.c b/arch/um/os-Linux/process.c
+index b8f34c9..67b9c8f 100644
+--- a/arch/um/os-Linux/process.c
++++ b/arch/um/os-Linux/process.c
+@@ -4,6 +4,7 @@
+  */
+ 
+ #include <stdio.h>
++#include <stdlib.h>
+ #include <unistd.h>
+ #include <errno.h>
+ #include <signal.h>
+@@ -232,6 +233,57 @@ out:
+ 	return ok;
+ }
+ 
++static int os_page_mincore(void *addr)
++{
++	char vec[2];
++	int ret;
++
++	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
++	if (ret < 0) {
++		if (errno == ENOMEM || errno == EINVAL)
++			return 0;
++		else
++			return -errno;
++	}
++
++	return vec[0] & 1;
++}
++
++int os_mincore(void *addr, unsigned long len)
++{
++	char *vec;
++	int ret, i;
++
++	if (len <= UM_KERN_PAGE_SIZE)
++		return os_page_mincore(addr);
++
++	vec = calloc(1, (len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE);
++	if (!vec)
++		return -ENOMEM;
++
++	ret = mincore(addr, UM_KERN_PAGE_SIZE, vec);
++	if (ret < 0) {
++		if (errno == ENOMEM || errno == EINVAL)
++			ret = 0;
++		else
++			ret = -errno;
++
++		goto out;
++	}
++
++	for (i = 0; i < ((len + UM_KERN_PAGE_SIZE - 1) / UM_KERN_PAGE_SIZE); i++) {
++		if (!(vec[i] & 1)) {
++			ret = 0;
++			goto out;
++		}
++	}
++
++	ret = 1;
++out:
++	free(vec);
++	return ret;
++}
++
+ void init_new_thread_signals(void)
+ {
+ 	set_handler(SIGSEGV);
+-- 
+1.8.3.1
 
