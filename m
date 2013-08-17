@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab3HQGoi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 02:44:38 -0400
-Received: from fallback3.mail.ru ([94.100.176.58]:52708 "EHLO
-	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab3HQGog (ORCPT
+	id S1752406Ab3HQGow (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 02:44:52 -0400
+Received: from fallback7.mail.ru ([94.100.176.135]:53241 "EHLO
+	fallback7.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab3HQGoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 02:44:36 -0400
+	Sat, 17 Aug 2013 02:44:38 -0400
 From: Alexander Shiyan <shc_work@mail.ru>
 To: rtc-linux@googlegroups.com
 Cc: Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
         Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH RESEND 1/3] rtc: ds1742: Using devm_ioremap_resource()
-Date: Sat, 17 Aug 2013 10:43:54 +0400
-Message-Id: <1376721836-27153-1-git-send-email-shc_work@mail.ru>
+Subject: [PATCH RESEND 3/3] rtc: ds1742: Report to RTC core if retrieved time is invalid
+Date: Sat, 17 Aug 2013 10:43:56 +0400
+Message-Id: <1376721836-27153-3-git-send-email-shc_work@mail.ru>
 X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1376721836-27153-1-git-send-email-shc_work@mail.ru>
+References: <1376721836-27153-1-git-send-email-shc_work@mail.ru>
 X-Spam: Not detected
 X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces devm_request_mem_region() and devm_ioremap()
-by devm_ioremap_resource().
+Let RTC core decides if the retrieved time is invalid,
+instead of processing errors in the driver.
 
 Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 ---
- drivers/rtc/rtc-ds1742.c | 18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+ drivers/rtc/rtc-ds1742.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/drivers/rtc/rtc-ds1742.c b/drivers/rtc/rtc-ds1742.c
-index eccdc62..9fba0ae 100644
+index 139934f..17b73fd 100644
 --- a/drivers/rtc/rtc-ds1742.c
 +++ b/drivers/rtc/rtc-ds1742.c
-@@ -56,7 +56,6 @@ struct rtc_plat_data {
- 	void __iomem *ioaddr_nvram;
- 	void __iomem *ioaddr_rtc;
- 	size_t size_nvram;
--	size_t size;
- 	unsigned long last_jiffies;
- 	struct bin_attribute nvram_attr;
- };
-@@ -168,22 +167,17 @@ static int ds1742_rtc_probe(struct platform_device *pdev)
- 	void __iomem *ioaddr;
- 	int ret = 0;
+@@ -115,11 +115,7 @@ static int ds1742_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 	/* year is 1900 + tm->tm_year */
+ 	tm->tm_year = bcd2bin(year) + bcd2bin(century) * 100 - 1900;
  
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENODEV;
- 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
- 	if (!pdata)
- 		return -ENOMEM;
--	pdata->size = resource_size(res);
--	if (!devm_request_mem_region(&pdev->dev, res->start, pdata->size,
--		pdev->name))
--		return -EBUSY;
--	ioaddr = devm_ioremap(&pdev->dev, res->start, pdata->size);
--	if (!ioaddr)
--		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	ioaddr = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(ioaddr))
-+		return PTR_ERR(ioaddr);
+-	if (rtc_valid_tm(tm) < 0) {
+-		dev_err(dev, "retrieved date/time is not valid.\n");
+-		rtc_time_to_tm(0, tm);
+-	}
+-	return 0;
++	return rtc_valid_tm(tm);
+ }
  
- 	pdata->ioaddr_nvram = ioaddr;
--	pdata->size_nvram = pdata->size - RTC_SIZE;
-+	pdata->size_nvram = resource_size(res) - RTC_SIZE;
- 	pdata->ioaddr_rtc = ioaddr + pdata->size_nvram;
- 
- 	sysfs_bin_attr_init(&pdata->nvram_attr);
+ static const struct rtc_class_ops ds1742_rtc_ops = {
 -- 
 1.8.1.5
 
