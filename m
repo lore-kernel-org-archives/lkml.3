@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab3HQQ4W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 12:56:22 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:52432 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669Ab3HQQ4V (ORCPT
+	id S1754178Ab3HQS0c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 14:26:32 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:34175 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025Ab3HQS0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 12:56:21 -0400
-Date: Sat, 17 Aug 2013 18:56:18 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>
-Subject: Re: Linux kernel cross-compilers
-Message-ID: <20130817165618.GA14751@merkur.ravnborg.org>
-References: <520C9A39.3030808@roeck-us.net> <CAMo8BfKyqZYMkh96wyZSpYUpXwqFQZkco=XgtjUrNG-jSzW5pA@mail.gmail.com> <20130816054823.GB28445@thor.bakeyournoodle.com> <CAMo8Bf+veq_DU7-hnB0yySy6YWpwU2TYx3U9e89c_m8Mv9Cv5w@mail.gmail.com> <520DD9CA.90305@roeck-us.net> <CAMo8BfLvVk+2CyQD28otU265J4rvbt0Eg11Vqr4u4zjKjrTanw@mail.gmail.com> <520DEF05.9030803@roeck-us.net> <CAMo8BfKWFGxr6a48tFqGCourOcWOTO9rmCHy3Q05jR_QEuq=Cg@mail.gmail.com> <520E48A7.3050401@roeck-us.net> <CAMo8BfK8pwMy7MPqrhRH2XPjfgu+H2pGhxBjbxKqnHwficKNFw@mail.gmail.com>
+	Sat, 17 Aug 2013 14:26:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMo8BfK8pwMy7MPqrhRH2XPjfgu+H2pGhxBjbxKqnHwficKNFw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130816131907.3338.76154.stgit@aruna-ThinkPad-T420>
+References: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
+	<20130816131907.3338.76154.stgit@aruna-ThinkPad-T420>
+Date: Sat, 17 Aug 2013 11:26:30 -0700
+X-Google-Sender-Auth: TcYsCHk4KYLnTvAiXudoHEM2NAM
+Message-ID: <CAGXu5jLzE3duC3vB8PTpvYroWmJDSU9ZSR3AKopKgRAwGZx4Fw@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 11/11] pstore/ram: Read and write to the
+ 'compressed' flag of pstore
+From: Kees Cook <keescook@chromium.org>
+To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Cc: linuxppc-dev@ozlabs.org, Tony Luck <tony.luck@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, jkenisto@linux.vnet.ibm.com,
+        ananth@in.ibm.com, benh@kernel.crashing.org,
+        Anton Vorontsov <cbouatmailru@gmail.com>, mahesh@linux.vnet.ibm.com,
+        Colin Cross <ccross@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > I found out the root source: SHELL is set the /bin/sh, which on the failing
-> > system points to /bin/dash (default in Ubuntu, or at least it used to be).
-> > dash apparently has a built-in version of echo which does not understand
-> > '-e'.
-> > Oh well.
-> 
-> Cool. OTOH I don't think that we need to -e to output __XTENSA_EB__.
-> Will send a patch for that.
+On Fri, Aug 16, 2013 at 6:19 AM, Aruna Balakrishnaiah
+<aruna@linux.vnet.ibm.com> wrote:
+> In pstore write, add character 'C'(compressed) or 'D'(decompressed)
+> in the header while writing to Ram persistent buffer. In pstore read,
+> read the header and update the 'compressed' flag accordingly.
+>
+> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 
-Could you please take a look at the other places that uses "echo -e".
-At least one usage inarch/x86/Makefiel looks questionable.
-grep did not turn up many uses.
+Nice work!
 
-	Sam
+Acked-by: Kees Cook <keescook@chromium.org>
+
+-- 
+Kees Cook
+Chrome OS Security
