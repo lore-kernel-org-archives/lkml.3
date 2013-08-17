@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab3HQScy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 14:32:54 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:48807 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076Ab3HQScx (ORCPT
+	id S1754289Ab3HQTCw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 15:02:52 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51317 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754213Ab3HQTCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 14:32:53 -0400
+	Sat, 17 Aug 2013 15:02:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [RFC v1 3/5] ARM: mvebu: add Armada 150 uart to lowlevel debug
+Date: Sat, 17 Aug 2013 21:01:51 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376682098-10580-4-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1376682098-10580-4-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31CBF152@ORSMSX106.amr.corp.intel.com>
-References: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
-	<3908561D78D1C84285E8C5FCA982C28F31CBF152@ORSMSX106.amr.corp.intel.com>
-Date: Sat, 17 Aug 2013 11:32:52 -0700
-X-Google-Sender-Auth: pevzkVzB3U1M3eOHt4Dueyc4UZA
-Message-ID: <CAGXu5jLFa+bC-atqy9X7yFJipB69qnPP_MqDRBgag10Q2Fas6A@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 00/11] Add (de)compression support to pstore
-From: Kees Cook <keescook@chromium.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jkenisto@linux.vnet.ibm.com" <jkenisto@linux.vnet.ibm.com>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        "mahesh@linux.vnet.ibm.com" <mahesh@linux.vnet.ibm.com>,
-        "ccross@android.com" <ccross@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308172101.51537.arnd@arndb.de>
+X-Provags-ID: V02:K0:nHiBD/mLKLe8HyCUCjuMypaRgjHDg12P+lnFVQvGqTU
+ jSbQWs97t3EQs36TAqqiBcqdz+soiiC+xI845+SdheNhsxdIJD
+ f4qwtOxG53Rwjz2M+93NB4AtuZQFxE3YPBj7c4p73/li0658CN
+ 3R69FCZsH9XfMRQZx2XV5rKLs906150BVq/LguggG4VCz5ZcUA
+ Zj/ymoRseuvesGi3keGD7zPvNoRZVYx5hNrR6zwcW4W6hdol9m
+ e4L0dvB53pyAsWyWoW89TudFWTNJnGwMfXeq+hGvfk08TgC0im
+ y9sKpy5roQpckKA8q1L90JDHQ11FfJG0RYni5xG48ZRY1V7rUt
+ BB1vKRrfD5onNb6ZIKSM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 3:15 PM, Luck, Tony <tony.luck@intel.com> wrote:
->> Needs testing with erst backend, efivars and persistent ram.
->
-> Tested against ERST - works fine for me now.
->
-> Need to stare at the code to see if there are any more bits that could be cleaned up.
->
-> Thanks for addressing my issues from v1
+On Friday 16 August 2013, Sebastian Hesselbarth wrote:
+> 
+> -#ifdef CONFIG_DEBUG_MVEBU_UART_ALTERNATE
+> -#define ARMADA_370_XP_REGS_PHYS_BASE   0xf1000000
+> -#else
+> -#define ARMADA_370_XP_REGS_PHYS_BASE   0xd0000000
+> +#if defined(CONFIG_MACH_ARMADA_1500)
+> +#define MVEBU_REGS_PHYS_BASE   0xf7f80000
+> +#define MVEBU_REGS_VIRT_BASE   0xf7f80000
+> +#define MVEBU_UART0_OFFSET     0x00049000
+> +#elif defined(CONFIG_DEBUG_MVEBU_UART)
+> +#define MVEBU_REGS_PHYS_BASE   0xd0000000
+> +#define MVEBU_REGS_VIRT_BASE   0xfec00000
+> +#define MVEBU_UART0_OFFSET     0x00012000
+> +#else /* CONFIG_DEBUG_MVEBU_UART_ALTERNATE */
 
-Yeah, this is great. While I haven't tested it myself yet, the code
-seems to be in good shape. I acked the ram piece separately, but
-consider the entire series:
+It seems wrong to base this on CONFIG_MACH_ARMADA_1500. I think you need to
+add a new config option just like we have for all other platforms. The above
+makes it impossible to build a multiplatform kernel and select 
+CONFIG_DEBUG_MVEBU_UART for debugging while keeping CONFIG_MACH_ARMADA_1500
+enabled.
 
-Reviewed-by: Kees Cook <keescook@chromium.org>
-
-Thanks!
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+	Arnd
