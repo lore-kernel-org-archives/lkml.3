@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab3HQUtc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 16:49:32 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:37828 "EHLO mail.ispras.ru"
+	id S1754761Ab3HQUxq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 16:53:46 -0400
+Received: from plane.gmane.org ([80.91.229.3]:39421 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754638Ab3HQUtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 16:49:31 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] [media] dvb_demux: fix deadlock in dmx_section_feed_release_filter()
-Date: Sat, 17 Aug 2013 23:48:51 +0300
-Message-Id: <1376772531-8963-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.1.2
+	id S1754643Ab3HQUxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 16:53:45 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Ilari Stenroth <ilari.stenroth@gmail.com>
+Subject: Re: arch/x86/kernel/cpu/intel.c needs an update for Haswell?
+Date: Sat, 17 Aug 2013 23:53:31 +0300
+Message-ID: <520FE2CB.3070302@gmail.com>
+References: <kt91u2$jhs$1@ger.gmane.org> <20130730193530.GB23299@pd.tnic> <kt951r$m5m$1@ger.gmane.org> <20130730195402.GD23299@pd.tnic> <51FA220B.5070307@intel.com> <51FF127D.4030004@intel.com> <51FF150D.8000103@intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+Cc: "H. Peter Anvin" <h.peter.anvin@intel.com>, Alex Shi <alex.shi@intel.com>
+X-Gmane-NNTP-Posting-Host: gw.stenroth.fi
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+In-Reply-To: <51FF150D.8000103@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dmx_section_feed_release_filter() locks dvbdmx->mutex and
-if the feed is still filtering, it calls feed->stop_filtering(feed).
-stop_filtering() is implemented by dmx_section_feed_stop_filtering()
-that first of all try to lock the same mutex: dvbdmx->mutex.
-That leads to a deadlock.
+On 5.8.2013 5.59, H. Peter Anvin wrote:
+> On 08/04/2013 07:48 PM, Alex Shi wrote:
+>>
+>> Any comments on this, Peter? :)
+>>
+> 
+> Sounds like you have done the measurements, so it seems fine.
+> 
+> 	-hpa
+> 
 
-It does not happen often in practice because all callers of
-release_filter() stop filtering by themselves.
-So the problem can happen in case of race condition only.
+I've been using these patches. No compalints.
+Should the patches get pulled to linux-next tree for wider testing?
 
-The patch proposes to unlock dvbdmx->mutex before call feed->stop_filtering(feed)
-and recheck feed->is_filtering after reacquiring mutex.
+--
+Ilari Stenroth
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/media/dvb-core/dvb_demux.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/media/dvb-core/dvb_demux.c b/drivers/media/dvb-core/dvb_demux.c
-index 3485655..9d517af 100644
---- a/drivers/media/dvb-core/dvb_demux.c
-+++ b/drivers/media/dvb-core/dvb_demux.c
-@@ -1027,8 +1027,11 @@ static int dmx_section_feed_release_filter(struct dmx_section_feed *feed,
- 		return -EINVAL;
- 	}
- 
--	if (feed->is_filtering)
-+	while (feed->is_filtering) {
-+		mutex_unlock(&dvbdmx->mutex);
- 		feed->stop_filtering(feed);
-+		mutex_lock(&dvbdmx->mutex);
-+	}
- 
- 	spin_lock_irq(&dvbdmx->lock);
- 	f = dvbdmxfeed->filter;
--- 
-1.8.1.2
 
