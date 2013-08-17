@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab3HQW5v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 18:57:51 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:38936 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754866Ab3HQW5u (ORCPT
+	id S1752220Ab3HQXOK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 19:14:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37305 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab3HQXOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 18:57:50 -0400
+	Sat, 17 Aug 2013 19:14:09 -0400
+Date: Sat, 17 Aug 2013 16:15:52 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: mingo@redhat.com, hpa@linux.intel.com, tglx@linutronix.de,
+        benh@kernel.crashing.org, x86@kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        rjw@sisk.pl, fenghua.yu@intel.com, bp@suse.de,
+        srivatsa.bhat@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH 2/4] hotplug, x86: Add hotplug lock to missing places
+Message-ID: <20130817231552.GA20169@kroah.com>
+References: <1376768819-28975-1-git-send-email-toshi.kani@hp.com>
+ <1376768819-28975-3-git-send-email-toshi.kani@hp.com>
 MIME-Version: 1.0
-In-Reply-To: <20130817152853.GA24838@amd.pavel.ucw.cz>
-References: <CAP+fKSpvJqeh8JCHisByDBsGWPOWOcDN4qeVYJOn1tgg8HR0eg@mail.gmail.com>
-	<51F1B015.50804@hurleysoftware.com>
-	<20130730124117.41DC55E4006@freak.gnuservers.com.ar>
-	<51F7E4ED.4050409@hurleysoftware.com>
-	<20130808175839.GB21618@gnuservers.com.ar>
-	<20130817152853.GA24838@amd.pavel.ucw.cz>
-Date: Sun, 18 Aug 2013 00:57:50 +0200
-Message-ID: <CAP+fKSp5ze3-qWHY_D_e3AXxnFM-AB9FBfRLjy0yOFnOp6bp4w@mail.gmail.com>
-Subject: Re: Large pastes into readline enabled programs causes breakage from
- v2.6.31 onwards
-From: Margarita Manterola <margamanterola@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Maximiliano Curia <maxy@debian.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376768819-28975-3-git-send-email-toshi.kani@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Aug 17, 2013 at 01:46:57PM -0600, Toshi Kani wrote:
+> lock_device_hotplug() serializes CPU & Memory online/offline and hotplug
+> operations.  However, this lock is not held in the debug interfaces below
+> that initiate CPU online/offline operations.
+> 
+>  - _debug_hotplug_cpu(), cpu0 hotplug test interface enabled by
+>    CONFIG_DEBUG_HOTPLUG_CPU0.
+>  - cpu_probe_store() and cpu_release_store(), cpu hotplug test interface
+>    enabled by CONFIG_ARCH_CPU_PROBE_RELEASE.
+> 
+> This patch changes the above interfaces to hold lock_device_hotplug().
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> ---
+>  arch/x86/kernel/topology.c |    2 ++
+>  drivers/base/cpu.c         |   16 ++++++++++++++--
+>  2 files changed, 16 insertions(+), 2 deletions(-)
 
-On Sat, Aug 17, 2013 at 5:28 PM, Pavel Machek <pavel@ucw.cz> wrote:
-
->> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
->> index 4bf0fc0..2ba7f4e 100644
->> --- a/drivers/tty/n_tty.c
->> +++ b/drivers/tty/n_tty.c
->> @@ -149,7 +149,8 @@ static int set_room(struct tty_struct *tty)
->>          * characters will be beeped.
->>          */
->>         if (left <= 0)
->> -               left = ldata->icanon && !ldata->canon_data;
->> +               if (waitqueue_active(&tty->read_wait))
->> +                       left = ldata->icanon && !ldata->canon_data;
->>         old_left = tty->receive_room;
->>         tty->receive_room = left;
-
-> Was this applied? You may want to cc rjw... it is a regression, it is
-> not pretty, and it is something I blieve I hit but thought it was some
-> kind of "X weirdness".
-
-There were no replies to the previous mail asking for comments, and as
-far as I can see this has not been applied. I don't know who rjw is,
-could you be a bit more explicit, please?
-
--- 
-Besos,
-Marga
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
