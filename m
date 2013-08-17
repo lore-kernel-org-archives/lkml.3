@@ -1,167 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365Ab3HQAQJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:16:09 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:55766 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568Ab3HQAQG (ORCPT
+	id S1757272Ab3HQAQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:16:18 -0400
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:40481 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756991Ab3HQAQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:16:06 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 3/5] mm: Notify filesystems when it's time to apply a deferred cmtime update
-Date: Fri, 16 Aug 2013 16:22:10 -0700
-Message-Id: <ec267e95fd21891986373c7af1c72b4c8b507332.1376679411.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <cover.1376679411.git.luto@amacapital.net>
-References: <cover.1376679411.git.luto@amacapital.net>
-In-Reply-To: <cover.1376679411.git.luto@amacapital.net>
-References: <cover.1376679411.git.luto@amacapital.net>
+	Fri, 16 Aug 2013 20:16:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAFECyb_OMY6eEbkbYTC4sE56Za0rC+KFNFRbGWb2ECEqhiKbTQ@mail.gmail.com>
+References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org>
+	<CAFECyb_OMY6eEbkbYTC4sE56Za0rC+KFNFRbGWb2ECEqhiKbTQ@mail.gmail.com>
+Date: Fri, 16 Aug 2013 17:16:09 -0700
+Message-ID: <CAFECyb-1a_9AY_qicTRCw5f3haMJ7ucsMc8U3ReMmMjWCJdRFg@mail.gmail.com>
+Subject: Re: [PATCH V3 RFC 00/16] EFI stub for ARM
+From: Roy Franz <roy.franz@linaro.org>
+To: linux-efi@vger.kernel.org, matt.fleming@intel.com
+Cc: Leif Lindholm <leif.lindholm@linaro.org>, linux-kernel@vger.kernel.org,
+        Dave Martin <dave.martin@arm.com>, Mark Salter <msalter@redhat.com>,
+        Roy Franz <roy.franz@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Filesystems that defer cmtime updates should update cmtime when any
-of these events happen after a write via a mapping:
+On Tue, Aug 13, 2013 at 10:58 AM, Roy Franz <roy.franz@linaro.org> wrote:
+> On Fri, Aug 9, 2013 at 4:26 PM, Roy Franz <roy.franz@linaro.org> wrote:
+>>
+>> This patch series adds EFI stub support for the ARM architecture.
+>> Some code that was previously only used by x86/x86_64 is now shared
+>> and has been made more general.  The stub for ARM is implemented in
+>> a similar manner to x86 in that it is a shim layer between EFI and
+>> the normal zImage/bzImage boot process, and that an image with the
+>> stub configured is bootable as both a zImage and EFI application.
+>>
+>> This patch now (new for v3) series depends on the
+>> "arm: Add [U]EFI runtime services support" patches by leif.lindholm@linaro.org.
+>> The Kconfig option now depends on the "CONFIG_EFI" option that his series
+>> adds, and this option will ensure a little endian configuration.  Also, the
+>> EFI support is used to handle the EFI memory map the stub passes to the kernel.
+>> There are some minor changes to be coordinated with the EFI runtime services
+>> patch series, so I have put this back to RFC status.  These changes should be
+>> minor and relate to final device tree bindings.
+>>
+>> Changes since v2:
+>> * EFI bugfix "correct call to free_pages" that patch series
+>>   depends on now in mainline
+>> * remove "-fno-stack-protector" from decompressor Makefile.  The current code doesn't
+>>   trigger the stack protection, so the decompressor now compiles with it still
+>>   on.  Note that there has never been any stack protection in the decompressor
+>>   since the stack usage doesn't trigger the heuristic in GCC, so right now
+>>   the "-fno-stack-protector" is a noop.
+>> * Changed EFI command line handling to not have a fixed limit.
+>> * Change FDT memory allocation to retry with a larger allocation if
+>>   first educated guess is inadequate.
+>> * Correctly set 'SizeOfCode' in PE/COFF header.
+>> * Reviewed ".setup" section that is in x86 PE/COFF header.  This is used for x86
+>>   to account for code that is not in the .text section.  We don't need this
+>>   for ARM, as all of our code is in the .text section, or in the PE/COFF header
+>>   itself.
+>> * Moved EFI_STUB_ERROR #define to header file to share between stub C and ASM.
+>> * Variety of cleanups and fixes in head.S.
+>> * Changed update_fdt_and_exit_boot() to just update the device tree, and
+>>   renamed appropriately.  Memory allocations moved out of this function as
+>>   well, which enables the retries if the initial FDT size is too small.
+>>   Note that in order to do the retried allocations, the original FDT and
+>>   command line memory regions are left allocated.  This is OK since the kernel
+>>   has the memory map and will free these allocations along with the initrd
+>>   and new fdt allocations.
+>> * Added prefix to all prints, reduced number of prints, and reviewed all
+>>   messages.
+>> * Change mixed usage of dtb/fdt to all be fdt or "device tree" in efi-stub.c
+>> * remove unnecessary zimage_size variable from relocate_kernel()
+>> * correct return types on EFI functions - should be efi_status_t, not int.
+>>
+>>
+>>
+>> Changes since V1:
+>> * Updated head.S based on feedback from Dave Martin.  ARM/THUMB
+>>   switches now much cleaner.
+>> * Broke up changes to x86 and common code into more patches.
+>>   10 more patches in this series.
+>>
+>> Roy Franz (16):
+>>   Move common EFI stub code from x86 arch code to common location
+>>   Add system pointer argument to shared EFI stub related     functions
+>>     so they no longer use global system table     pointer as they did
+>>     when part of eboot.c.     This code is now shared, so using a
+>>     global variable     as part of the interface is not that nice.
+>>     Also,     by avoiding any global variables in the ARM EFI stub,
+>>     this allows the code to be position independent without
+>>     requiring GOT fixups.
+>>   Rename memory allocation/free functions
+>>   Add minimum address parameter to efi_low_alloc()
+>>   rename __get_map() to efi_get_memory_map(), add parameter     to
+>>     optionally return mmap key. The mmap key is required     to exit
+>>     EFI boot services, and allows efi_get_memory_map()     to be used
+>>     for getting final memory map.
+>>   Enforce minimum alignment of 1 page on allocations.     The
+>>     efi_high_alloc() and efi_low_alloc() functions     use the
+>>     EFI_ALLOCATE_ADDRESS option to the EFI     function
+>>     allocate_pages(), which requires a minimum     of page alignment,
+>>     and rejects all other requests.
+>>   Allow efi_free() to be called with size of 0, and do nothing in that
+>>     case.
+>>   Generalize handle_ramdisks() and rename to handle_cmdline_files().
+>>   Renames in handle_cmdline_files() to complete generalization.
+>>   Move EFI_READ_CHUNK_SIZE define to shared location.
+>>   Add proper definitions for some EFI function pointers.
+>>   Fix types in EFI calls to match EFI function definitions.
+>>   resolve warnings found on ARM compile
+>>   Add strstr to compressed string.c for ARM.
+>>   Add EFI stub for ARM
+>>   Add config EFI_STUB for ARM to Kconfig
+>>
+>>  arch/arm/Kconfig                       |   11 +
+>>  arch/arm/boot/compressed/Makefile      |   15 +-
+>>  arch/arm/boot/compressed/efi-header.S  |  111 +++++++
+>>  arch/arm/boot/compressed/efi-stub.c    |  448 ++++++++++++++++++++++++++++
+>>  arch/arm/boot/compressed/efi-stub.h    |    5 +
+>>  arch/arm/boot/compressed/head.S        |   90 +++++-
+>>  arch/arm/boot/compressed/string.c      |   21 ++
+>>  arch/x86/boot/compressed/eboot.c       |  490 ++-----------------------------
+>>  arch/x86/boot/compressed/eboot.h       |    9 -
+>>  drivers/firmware/efi/efi-stub-helper.c |  505 ++++++++++++++++++++++++++++++++
+>>  include/linux/efi.h                    |   51 +++-
+>>  11 files changed, 1263 insertions(+), 493 deletions(-)
+>>  create mode 100644 arch/arm/boot/compressed/efi-header.S
+>>  create mode 100644 arch/arm/boot/compressed/efi-stub.c
+>>  create mode 100644 arch/arm/boot/compressed/efi-stub.h
+>>  create mode 100644 drivers/firmware/efi/efi-stub-helper.c
+>>
+>> --
+>> 1.7.10.4
+>>
+>
+> Hi Matt,
+>
+>    Do you have any more feedback on the X86 and common code (patches
+> 1-13) that needs to be addressed?  Mark Salter has a working ARM64 EFI
+> stub implemented based on these patches, so the common code has now
+> been tested with another architecture, and he has acked these patches.
+> If the current patches are OK, can this be queued for 3.12? (and into
+> linux-next, if appropriate)
+> The ARM portion may take a little longer based on the EFI runtime
+> services patch dependencies, but getting the common code merged would
+> allow the ARM64 EFI stub work to go forward independently.
+>
+> I can resend patches 1-13 as a new series of x86/common only changes
+> if you would like.
+>
+> Thanks,
+> Roy
 
- - The mapping is written back to disk.  This happens from all kinds
-   of places, all of which eventually call ->writepages.
+Hi Matt,
 
- - munmap is called or the mapping is removed when the process exits
+   Any thoughts on taking the x86/common parts for 3.12?
 
- - msync(MS_ASYNC) is called.  Linux currently does nothing for
-   msync(MS_ASYNC), but POSIX says that cmtime should be updated some
-   time between an mmaped write and the subsequent msync call.
-   MS_SYNC calls ->writepages, but MS_ASYNC needs special handling.
-
-Filesystmes that defer cmtime updates should flush them on munmap or
-exit.  Finding out that this happened through vm_ops is messy, so
-add a new address space op for this.
-
-It's not strictly necessary to call ->flush_cmtime after ->writepages,
-but it simplifies the fs code.  As an optional optimization,
-filesystems can call mapping_test_clear_cmtime themselves in
-->writepages (as long as they're careful to scan all the pages first
--- the cmtime bit may not be set when ->writepages is entered).
-
-This patch does not implement the MS_ASYNC case; that's in the next
-patch.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- include/linux/fs.h        |  9 +++++++++
- include/linux/writeback.h |  1 +
- mm/mmap.c                 |  9 ++++++++-
- mm/page-writeback.c       | 26 ++++++++++++++++++++++++++
- 4 files changed, 44 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 86cf0a4..f224155 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -350,6 +350,15 @@ struct address_space_operations {
- 	/* Write back some dirty pages from this mapping. */
- 	int (*writepages)(struct address_space *, struct writeback_control *);
- 
-+	/*
-+	 * Userspace expects certain system calls to update cmtime if
-+	 * a file has been recently written using a shared vma.  In
-+	 * cases where cmtime may need to be updated but writepages is
-+	 * not called, this is called instead.  (Implementations
-+	 * should call mapping_test_clear_cmtime.)
-+	 */
-+	void (*flush_cmtime)(struct address_space *);
-+
- 	/* Set a page dirty.  Return true if this dirtied it */
- 	int (*set_page_dirty)(struct page *page);
- 
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index 4e198ca..f6e8261 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -174,6 +174,7 @@ typedef int (*writepage_t)(struct page *page, struct writeback_control *wbc,
- 
- int generic_writepages(struct address_space *mapping,
- 		       struct writeback_control *wbc);
-+void generic_flush_cmtime(struct address_space *mapping);
- void tag_pages_for_writeback(struct address_space *mapping,
- 			     pgoff_t start, pgoff_t end);
- int write_cache_pages(struct address_space *mapping,
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 1edbaa3..7ed7700 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1,3 +1,4 @@
-+
- /*
-  * mm/mmap.c
-  *
-@@ -249,8 +250,14 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
- 	might_sleep();
- 	if (vma->vm_ops && vma->vm_ops->close)
- 		vma->vm_ops->close(vma);
--	if (vma->vm_file)
-+	if (vma->vm_file) {
-+		if ((vma->vm_flags & VM_SHARED) && vma->vm_file->f_mapping) {
-+			struct address_space *mapping = vma->vm_file->f_mapping;
-+			if (mapping->a_ops && mapping->a_ops->flush_cmtime)
-+				mapping->a_ops->flush_cmtime(mapping);
-+		}
- 		fput(vma->vm_file);
-+	}
- 	mpol_put(vma_policy(vma));
- 	kmem_cache_free(vm_area_cachep, vma);
- 	return next;
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 3f0c895..9ab8c9e 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1928,6 +1928,18 @@ int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
- 		ret = mapping->a_ops->writepages(mapping, wbc);
- 	else
- 		ret = generic_writepages(mapping, wbc);
-+
-+	/*
-+	 * ->writepages will call clear_page_dirty_for_io, which may, in turn,
-+	 * mark the mapping for deferred cmtime update.  As an optimization,
-+	 * a filesystem can flush the update at the end of ->writepages
-+	 * (possibly avoiding a journal transaction, for example), but,
-+	 * for simplicity, let filesystems skip that part and just implement
-+	 * ->flush_cmtime.
-+	 */
-+	if (mapping->a_ops->flush_cmtime)
-+		mapping->a_ops->flush_cmtime(mapping);
-+
- 	return ret;
- }
- 
-@@ -1970,6 +1982,20 @@ int write_one_page(struct page *page, int wait)
- }
- EXPORT_SYMBOL(write_one_page);
- 
-+/**
-+ * generic_flush_cmtime - perform a deferred cmtime update if needed
-+ * @mapping: address space structure
-+ *
-+ * This is a library function, which implements the flush_cmtime()
-+ * address_space_operation.
-+ */
-+void generic_flush_cmtime(struct address_space *mapping)
-+{
-+	if (mapping_test_clear_cmtime(mapping))
-+		inode_update_time_writable(mapping->host);
-+}
-+EXPORT_SYMBOL(generic_flush_cmtime);
-+
- /*
-  * For address_spaces which do not use buffers nor write back.
-  */
--- 
-1.8.3.1
-
+Thanks,
+Roy
