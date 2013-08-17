@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab3HQNi4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 09:38:56 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:41618
-	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753115Ab3HQNiy (ORCPT
+	id S1753365Ab3HQOCA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 10:02:00 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:34317 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205Ab3HQOB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 09:38:54 -0400
-Date: Sat, 17 Aug 2013 13:38:51 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Rui Xiang <rui.xiang@huawei.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, netdev@vger.kernel.org,
-        containers@lists.linux-foundation.org, serge.hallyn@ubuntu.com,
-        linux-kernel@vger.kernel.org, libo.chen@huawei.com,
-        netfilter-devel@vger.kernel.org, guz.fnst@cn.fujitsu.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v3 00/11] Add namespace support for syslog
-Message-ID: <20130817133851.GA11175@mail.hallyn.com>
-References: <1375861035-24320-1-git-send-email-rui.xiang@huawei.com>
- <878v0evssv.fsf@xmission.com>
- <5202F65F.40002@cn.fujitsu.com>
- <52037D50.2050109@huawei.com>
- <20130814153017.GA18403@mail.hallyn.com>
- <87a9kkcc38.fsf@xmission.com>
+	Sat, 17 Aug 2013 10:01:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9kkcc38.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Sat, 17 Aug 2013 09:01:58 -0500
+Message-ID: <CAKcLGm8EMruO5e8yw+nArTjyCGSvLB5pjnGZYvz0xdF9M99iwQ@mail.gmail.com>
+Subject: BUG: scheduling while atomic 3.10.7 in ZRAM Swap
+From: Mitch Harder <mitch.harder@sabayonlinux.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> "Serge E. Hallyn" <serge@hallyn.com> writes:
-> 
-> > Quoting Rui Xiang (rui.xiang@huawei.com):
-> >> On 2013/8/8 9:37, Gao feng wrote:
-> >> > On 08/07/2013 03:55 PM, Eric W. Biederman wrote:
-> >> >>
-> >> >> Since this still has not been addressed.  I am going to repeat Andrews
-> >> >> objection again.
-> >> >>
-> >> >> Isn't there a better way to get iptables information out than to use
-> >> >> syslog.  I did not have time to follow up on that but it did appear that
-> >> >> someone did have a better way to get the information out.
-> >> >>
-> >> >> Essentially the argument against this goes.  The kernel logging facility
-> >> >> is really not a particularly good tool to be using for anything other
-> >> >> than kernel debugging information, and there appear to be no substantial
-> >> >> uses for a separate syslog that should not be done in other ways.
-> >> > 
-> >> > containerizing syslog is not only for iptables, it also isolates the /dev/kmsg,
-> >> > /proc/kmsg, syslog(2)... user space tools in container may use this interface
-> >> > to read/generate syslog.
-> >> > 
-> >> > But I don't know how important/urgent this containerizing syslog work is,
-> >> > Rui Xiang, can you find an important/popular user space tool which uses this
-> >> > interfaces to generate kernel syslog?
-> >> > 
-> >> 
-> >> There are some other cases. Some warnings (bad mount options for tmpfs,
-> >> bad uid owner for many of them, etc) emerged in the container should
-> >> be exported to the container. Some belong on the host - if they show 
-> >> a corrupt superblock which may indicate an attempt by the container 
-> >> to crash the kernel. Like these, Kernel will print out warnings when 
-> >> userspace in container uses a deprecated something or other, and these
-> >> logs should be invisible and specific for current container.
-> >> 
-> >> I can't say this work is terribly compelling and important, but the 
-> >> impact may be obvious, IMO.
-> >
-> > Aug  9 21:49:13 sergeh1 kernel: [4644829.672768] init: Failed to spawn network-interface (veth8Ehlvj) post-stop process: unable to change root directory: No such file ricr:aeohgrticr  cfe rty444984 n:aetswnw-ta(ht -rrsultheoit: hlrro<4865i:i sntkta(ht ttpe btheoit: hlrrob r6ezt)nrgoadgte644915 c0pt(tyg ti wd a
-> > Aug  9 21:49:13 sergeh1 kernel: X3f d-6:uigitra ora
-> > Aug  9 22:19:54 sergeh1 kernel: 6[642.175 X3f d-6:mutdflsse ihodrddt oe==99 rfl=lccnanrdfutwt-etn"nm=/a/ah/x/lu-ui/m.AExdu"pi=91 om=mut sye"x3name="/devlo0" lg=r"ol pmc r=3an19pfel-nireu-tntgne/rc/cldudmHEqu d97o=otfy=x"ra=d/o/fg""8b:o vhc)nrgibdte646013 veeMzWe oso d<[4715]xr r1eMc egset
-> > Aug
-> 
-> That is certainly a mess.  Now I don't believe we allow processes in a
-> user namespace to write to the kernels log (certainly we shouldn't be)
-> so part of that is not a problem.
+I'm encountering a BUG while using a ZRAM Swap device.
 
-I'll have to test with user namespaces (next week - don't have a
-setup right now)
+The call trace seems to involve the changes recently added to 3.10.6
+by the patch:
+zram: use zram->lock to protect zram_free_page() in swap free notify path
 
-However user namespaces can't be used in every case, due especially to
-device restrictions and cap_capable calls.  So it may not be ok to say
-"user namespaces will stop this."
+The hardware is a x86 single CPU AMD Athlon XP system with 1GB RAM.
 
-> What is interleaving messages into syslog?
+I'm implementing a 352MB ZRAM swap device, and also have 1GB swap
+space on the hard disk.
 
-Heh, I'm actually not sure.  I do know it happens every time I start
-a container.  I believe one of the sources is net/ipv6/addrconf.c.
-Another looks like a apparmor=denied message (I say that due to the
-"name=" in the garbled output).  Which would beg the question is this
-actually a bug in audit.  (This is on a 3.2 kernel)  Another other may
-be an upstart job relating to the nic going up.
+The log include multiple messages similar to the following:
 
-> And to be clear my only perspective is that we need to make certain we
-> have this thought out.
-
-Agreed.  I need to test a few things as soon as I have time.
-
--serge
+[ 3019.011511] BUG: scheduling while atomic: cc1/23223/0x00000001
+[ 3019.011517] Modules linked in: zram(C) nvidia(PO) nvidia_agp
+i2c_nforce2 xts gf128mul sha256_generic
+[ 3019.011528] CPU: 0 PID: 23223 Comm: cc1 Tainted: P         C O 3.10.7-std #1
+[ 3019.011531] Hardware name:    /MS-6570, BIOS 6.00 PG 03/29/2004
+[ 3019.011534]  f18d0c88 f18d0c88 e8673d30 c1859479 e8673d48 c1853a6d
+c1a11f18 f4f1b79c
+[ 3019.011539]  00005ab7 00000001 e8673dc8 c185e9dd e8673d60 c11130f0
+f6298e00 00000000
+[ 3019.011543]  c1b61b40 c10d8c40 f4f1b4f0 00001000 f4f1b4f0 00000001
+e8673d8c c10250ac
+[ 3019.011548] Call Trace:
+[ 3019.011561]  [<c1859479>] dump_stack+0x16/0x18
+[ 3019.011566]  [<c1853a6d>] __schedule_bug+0x4e/0x5c
+[ 3019.011573]  [<c185e9dd>] __schedule+0x4fd/0x5a0
+[ 3019.011580]  [<c11130f0>] ? bio_put+0x40/0x70
+[ 3019.011586]  [<c10d8c40>] ? end_swap_bio_read+0x30/0x80
+[ 3019.011593]  [<c10250ac>] ? kmap_atomic_prot+0x4c/0xd0
+[ 3019.011597]  [<c1025143>] ? kmap_atomic+0x13/0x20
+[ 3019.011604]  [<c10b5678>] ? get_page_from_freelist+0x278/0x500
+[ 3019.011609]  [<c185f112>] schedule+0x22/0x60
+[ 3019.011613]  [<c185f745>] rwsem_down_write_failed+0x95/0x110
+[ 3019.011618]  [<c13e4a76>] call_rwsem_down_write_failed+0x6/0x8
+[ 3019.011623]  [<f80430b0>] ? zram_free_page+0xb0/0xb0 [zram]
+[ 3019.011627]  [<c185e1d4>] ? down_write+0x24/0x30
+[ 3019.011630]  [<f80430d9>] zram_slot_free_notify+0x29/0x50 [zram]
+[ 3019.011635]  [<c10da084>] swap_entry_free+0xe4/0x140
+[ 3019.011639]  [<c10da498>] swapcache_free+0x28/0x40
+[ 3019.011643]  [<c10d95b6>] delete_from_swap_cache+0x26/0x40
+[ 3019.011646]  [<c10da55e>] reuse_swap_page+0x6e/0x80
+[ 3019.011652]  [<c10cba05>] do_wp_page.isra.84+0x225/0x5c0
+[ 3019.011656]  [<c10b9c32>] ? lru_cache_add_lru+0x22/0x40
+[ 3019.011662]  [<c10d427c>] ? page_add_new_anon_rmap+0x5c/0xa0
+[ 3019.011666]  [<c10cd34b>] handle_pte_fault+0x2db/0x5e0
+[ 3019.011669]  [<c10cd6d7>] handle_mm_fault+0x87/0xd0
+[ 3019.011674]  [<c18628e0>] ? __do_page_fault+0x480/0x480
+[ 3019.011677]  [<c18625d8>] __do_page_fault+0x178/0x480
+[ 3019.011683]  [<c1030cff>] ? __do_softirq+0x10f/0x1e0
+[ 3019.011691]  [<c1081e78>] ? handle_level_irq+0x58/0x90
+[ 3019.011695]  [<c1030ed4>] ? irq_exit+0x54/0x90
+[ 3019.011700]  [<c1866718>] ? do_IRQ+0x48/0x94
+[ 3019.011706]  [<c10e8607>] ? SyS_write+0x57/0xa0
+[ 3019.011710]  [<c18628e0>] ? __do_page_fault+0x480/0x480
+[ 3019.011713]  [<c18628ed>] do_page_fault+0xd/0x10
+[ 3019.011717]  [<c185fd21>] error_code+0x65/0x6c
