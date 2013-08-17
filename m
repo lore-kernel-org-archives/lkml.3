@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3HQS0c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 14:26:32 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:34175 "EHLO
+	id S1754223Ab3HQScy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 14:32:54 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:48807 "EHLO
 	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754025Ab3HQS0b (ORCPT
+	with ESMTP id S1754076Ab3HQScx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 14:26:31 -0400
+	Sat, 17 Aug 2013 14:32:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130816131907.3338.76154.stgit@aruna-ThinkPad-T420>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31CBF152@ORSMSX106.amr.corp.intel.com>
 References: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
-	<20130816131907.3338.76154.stgit@aruna-ThinkPad-T420>
-Date: Sat, 17 Aug 2013 11:26:30 -0700
-X-Google-Sender-Auth: TcYsCHk4KYLnTvAiXudoHEM2NAM
-Message-ID: <CAGXu5jLzE3duC3vB8PTpvYroWmJDSU9ZSR3AKopKgRAwGZx4Fw@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 11/11] pstore/ram: Read and write to the
- 'compressed' flag of pstore
+	<3908561D78D1C84285E8C5FCA982C28F31CBF152@ORSMSX106.amr.corp.intel.com>
+Date: Sat, 17 Aug 2013 11:32:52 -0700
+X-Google-Sender-Auth: pevzkVzB3U1M3eOHt4Dueyc4UZA
+Message-ID: <CAGXu5jLFa+bC-atqy9X7yFJipB69qnPP_MqDRBgag10Q2Fas6A@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 00/11] Add (de)compression support to pstore
 From: Kees Cook <keescook@chromium.org>
-To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: linuxppc-dev@ozlabs.org, Tony Luck <tony.luck@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, jkenisto@linux.vnet.ibm.com,
-        ananth@in.ibm.com, benh@kernel.crashing.org,
-        Anton Vorontsov <cbouatmailru@gmail.com>, mahesh@linux.vnet.ibm.com,
-        Colin Cross <ccross@android.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jkenisto@linux.vnet.ibm.com" <jkenisto@linux.vnet.ibm.com>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        "mahesh@linux.vnet.ibm.com" <mahesh@linux.vnet.ibm.com>,
+        "ccross@android.com" <ccross@android.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 6:19 AM, Aruna Balakrishnaiah
-<aruna@linux.vnet.ibm.com> wrote:
-> In pstore write, add character 'C'(compressed) or 'D'(decompressed)
-> in the header while writing to Ram persistent buffer. In pstore read,
-> read the header and update the 'compressed' flag accordingly.
+On Fri, Aug 16, 2013 at 3:15 PM, Luck, Tony <tony.luck@intel.com> wrote:
+>> Needs testing with erst backend, efivars and persistent ram.
 >
-> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+> Tested against ERST - works fine for me now.
+>
+> Need to stare at the code to see if there are any more bits that could be cleaned up.
+>
+> Thanks for addressing my issues from v1
 
-Nice work!
+Yeah, this is great. While I haven't tested it myself yet, the code
+seems to be in good shape. I acked the ram piece separately, but
+consider the entire series:
 
-Acked-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Kees Cook <keescook@chromium.org>
+
+Thanks!
+
+-Kees
 
 -- 
 Kees Cook
