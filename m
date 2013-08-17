@@ -1,95 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab3HQASX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:18:23 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:54308 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663Ab3HQAST (ORCPT
+	id S1757373Ab3HQAS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:18:27 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:61777 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757212Ab3HQASY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:18:19 -0400
-Date: Fri, 16 Aug 2013 14:07:37 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dave Hansen <dave@sr71.net>, Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] drivers: base: dynamic memory block creation
-Message-ID: <20130816190737.GC7265@variantweb.net>
-References: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130814194043.GA10469@kroah.com>
+	Fri, 16 Aug 2013 20:18:24 -0400
+Message-ID: <520EC144.5090505@dev.mellanox.co.il>
+Date: Fri, 16 Aug 2013 17:18:12 -0700
+From: Ali Ayoub <ali@dev.mellanox.co.il>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130814194043.GA10469@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081619-7606-0000-0000-00000E66D744
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Shannon Nelson <shannon.nelson@intel.com>, netdev@vger.kernel.org,
+        davem@davemloft.net, dwmw2@infradead.org, jeffrey.t.kirsher@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] ixgbe: request_firmware for configuration parameters
+References: <20130111020046.15463.72333.stgit@starfish.jf.intel.com> <20130111182547.GA22231@kroah.com> <CAP-MU4MzG_P9fz3_eix=zgzyjijZ5qo1mpKE=r_K7y3xcJqc5Q@mail.gmail.com> <20130111194134.GA4817@kroah.com> <520EA447.6090309@dev.mellanox.co.il> <20130816223932.GB31247@kroah.com>
+In-Reply-To: <20130816223932.GB31247@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 12:40:43PM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Aug 14, 2013 at 02:31:45PM -0500, Seth Jennings wrote:
-> > Large memory systems (~1TB or more) experience boot delays on the order
-> > of minutes due to the initializing the memory configuration part of
-> > sysfs at /sys/devices/system/memory/.
-> > 
-> > ppc64 has a normal memory block size of 256M (however sometimes as low
-> > as 16M depending on the system LMB size), and (I think) x86 is 128M.  With
-> > 1TB of RAM and a 256M block size, that's 4k memory blocks with 20 sysfs
-> > entries per block that's around 80k items that need be created at boot
-> > time in sysfs.  Some systems go up to 16TB where the issue is even more
-> > severe.
-> > 
-> > This patch provides a means by which users can prevent the creation of
-> > the memory block attributes at boot time, yet still dynamically create
-> > them if they are needed.
-> > 
-> > This patch creates a new boot parameter, "largememory" that will prevent
-> > memory_dev_init() from creating all of the memory block sysfs attributes
-> > at boot time.  Instead, a new root attribute "show" will allow
-> > the dynamic creation of the memory block devices.
-> > Another new root attribute "present" shows the memory blocks present in
-> > the system; the valid inputs for the "show" attribute.
+On 8/16/2013 3:39 PM, Greg KH wrote:
+> On Fri, Aug 16, 2013 at 03:14:31PM -0700, Ali Ayoub wrote:
+>> On 1/11/2013 11:41 AM, Greg KH wrote:
 > 
-> Ick, no new boot parameters please, that's just a mess for distros and
-> users.
+> Seriously?  Restarting a thread from over 6 months ago?
 
-Yes, I agreed it isn't the best.  The reason for it is backward
-compatibility; or rather the user saying "I knowingly forfeit backward
-compatibility in favor of fast boot time and all my userspace tools are
-aware of the new requirement to show memory blocks before trying to use
-them".
+Yes, it's an old thread, but still relevant for current code.
 
-The only suggestion I heard that would make full backward compatibility
-possible is one from Dave to create a new filesystem for memory blocks
-(not sysfs) where the memory block directories would be dynamically
-created as programs tried to access/open them. But you'd still have the
-issue of requiring user intervention to mount that "memoryfs" at
-/sys/devices/system/memory (or whatever your sysfs mount point was).
+> Why?
 
-So it's tricky.
+Because currently there is no good alternative for module params for
+device drivers that need to have low level configs in init time.
+I found Shannon proposal in this thread the closest to what I am looking
+for to configure the device driver and yet not to use module params.
+Thus, pinged this thread.
 
+>> Other device drivers of other vendors (not only netdevs) need such a
+>> mechanism as well,
 > 
-> How about tying this into the work that has been happening on lkml with
-> booting large-memory systems faster?  The work there should solve the
-> problems you are seeing here (i.e. add memory after booting).  It looks
-> like this is the same issue you are having here, just in a different
-> part of the kernel.
+> Specifics please.
+>
+>> I think it's a general requirement for many drivers that normally need
+>> low level configurations for device initialization in the very first
+>> stage of the driver load.
+> 
+> I do not, but feel free to prove me otherwise.
 
-I assume you are referring to the "[RFC v3 0/5] Transparent on-demand
-struct page initialization embedded in the buddy allocator" thread.  I
-think that trying to solve a different problem than I am trying to solve
-though.  IIUC, that patch series is deferring the initialization of the
-actually memory pages.
+A driver that claims the PCI device needs some configuration in init
+time such as: amount of resources to be allocated in the cache,
+interrupt mode, maximum allowed resources to be created for a specific
+type, number of event queues, etc. See for example:
+/drivers/net/ethernet/mellanox/mlx4/main.c
 
-I'm working on breaking out just the refactoring patches (no functional
-change) into a reviewable patch series.  Thanks for your time looking at
-this!
+This driver doesn't necessary register a logical device, it may claim
+the PCI device only (e.g. for an HCA), and provide an infrastructure for
+upper layer protocols to register a logical device (nic, hba, etc.) on
+top of it.
 
-Seth
+The type of configuration needed varies between vendors, and they are
+normally passed in HW initialization stage. So even if we have a tool to
+configure the device (such as ethtool for netdevs) it wouldn't be a
+replacement for the module param, because some systems requires
+non-default (init) configurations, and if we load the driver with the
+default, and then use a user-space tool to "adjust" the configuration
+we'll have a "glitch" where the driver was loaded with unsuitable
+configs for the system.
+
+>>> All of the above issues you seem to have with sysfs and configfs can be
+>>> resolved with userspace code, and having your driver not do anything to
+>>> the hardware until it is told to by userspace.
+>>
+>> To tell the driver not to do anything until it's configured by a
+>> userspace code will require a module param for non-default-configs
+>> (which brings us back to the original argument of avoiding module params).
+> 
+> No, never use a module paramater for configuring a driver or a device.
+> That's not what they are there for.
+>
+>> By having userspace code to feed configfs/sysfs nodes, and making it
+>> available in initrd; we will end up having similar mechanism to
+>> request_firmware().
+> 
+> Close, but not the same.  That's why we created configfs, please use it.
+
+configfs requires from the driver to provide the hooks before the HW is
+initialized, while module params allow passing information to the driver
+in init time before any driver hooks are ready.
+
+The proposal of changing the driver not to configure the HW until it's
+triggered by userspace service through configfs, means that we need:
+
+a. To have driver config to toggle between the mode where the driver
+"waits" for configfs, and the "auto" mode where the driver loads with
+the default-configs (when using mod params for example, the driver
+simply loads with the defaults when there is modprobe config files).
+
+b. To have the userspace mechanism to feed the configs nodes, to store
+the configs in a file to keep them persistent between reboots, and make
+these userspace services available in initrd.
+
+I don't see how this is better than module params, or
+request_firmware_config().
 
