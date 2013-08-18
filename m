@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3HRREM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 13:04:12 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54714 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753814Ab3HRREL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 13:04:11 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
-Date: Sun, 18 Aug 2013 18:03:46 +0100
-Message-Id: <1376845426-21799-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.4.rc3
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] regulator: core: Use bool for exclusivitity flag
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1754497Ab3HRRGS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 13:06:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52812 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753631Ab3HRRGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Aug 2013 13:06:17 -0400
+Date: Sun, 18 Aug 2013 19:00:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 3/4] nohz: Consolidate sleep time stats read code
+Message-ID: <20130818170001.GC21310@redhat.com>
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-4-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376667753-29014-4-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On 08/16, Frederic Weisbecker wrote:
+>
+> get_cpu_idle_time_us() and get_cpu_iowait_time_us() mostly share
+> the same code. Lets consolidate both implementations.
 
-Just for neatness.
+Personally I like every patch which consolidates the code ;)
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/regulator/core.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+>  	do {
+>  		seq = read_seqcount_begin(&ts->sleeptime_seq);
+> -		if (ts->idle_active && !nr_iowait_cpu(cpu)) {
+> +		if (io)
+> +			sleep = ts->iowait_sleeptime;
+> +		else
+> +			sleep = ts->idle_sleeptime;
+> +
+> +		if (ts->idle_active)
+> +			continue;
+> +
+> +		if ((io && nr_iowait_cpu(cpu)) || (!io && !nr_iowait_cpu(cpu))) {
+>  			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+> -			idle = ktime_add(ts->idle_sleeptime, delta);
+> -		} else {
+> -			idle = ts->idle_sleeptime;
+> +			sleep = ktime_add(sleep, delta);
+>  		}
+>  	} while (read_seqcount_retry(&ts->sleeptime_seq, seq));
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 77943ed..b471706 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1243,7 +1243,7 @@ static struct regulator_dev *regulator_dev_lookup(struct device *dev,
- 
- /* Internal regulator request function */
- static struct regulator *_regulator_get(struct device *dev, const char *id,
--					int exclusive)
-+					bool exclusive)
- {
- 	struct regulator_dev *rdev;
- 	struct regulator *regulator = ERR_PTR(-EPROBE_DEFER);
-@@ -1349,7 +1349,7 @@ out:
-  */
- struct regulator *regulator_get(struct device *dev, const char *id)
- {
--	return _regulator_get(dev, id, 0);
-+	return _regulator_get(dev, id, false);
- }
- EXPORT_SYMBOL_GPL(regulator_get);
- 
-@@ -1410,7 +1410,7 @@ EXPORT_SYMBOL_GPL(devm_regulator_get);
-  */
- struct regulator *regulator_get_exclusive(struct device *dev, const char *id)
- {
--	return _regulator_get(dev, id, 1);
-+	return _regulator_get(dev, id, true);
- }
- EXPORT_SYMBOL_GPL(regulator_get_exclusive);
- 
--- 
-1.8.4.rc3
+Cosmetic/subjective, feel free to ignore. but perhaps
+
+		if (ts->idle_active && io == !!nr_iowait_cpu(cpu)) {
+			...
+		}
+
+looks more understandable.
+
+Oleg.
 
