@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab3HRUm6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:42:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43683 "EHLO
+	id S1756853Ab3HRUnZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:43:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43681 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393Ab3HRUfD (ORCPT
+	with ESMTP id S1756326Ab3HRUfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:35:03 -0400
+	Sun, 18 Aug 2013 16:35:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 27/45] ALSA: hda - Add pinfix for LG LW25 laptop
-Date: Sun, 18 Aug 2013 13:36:16 -0700
-Message-Id: <20130818203622.886162329@linuxfoundation.org>
+Subject: [ 26/45] ALSA: hda - Fix missing mute controls for CX5051
+Date: Sun, 18 Aug 2013 13:36:15 -0700
+Message-Id: <20130818203622.818940171@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -28,51 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit db8a38e5063a4daf61252e65d47ab3495c705f4c upstream.
+commit f69910ddbd8c29391958cf82b598dd78fe5c8640 upstream.
 
-Correct the pins for a line-in and a headphone on LG LW25 laptop with
-ALC880 codec.  Other pins seem fine.
+We've added a fake mute control (setting the amp volume to zero) for
+CX5051 at commit [3868137e: ALSA: hda - Add a fake mute feature], but
+this feature was overlooked in the generic parser implementation.  Now
+the driver lacks of mute controls on these codecs.
 
-Reported-and-tested-by: Joonas Saarinen <jonskunator@gmail.com>
+The fix is just to check both AC_AMPCAP_MUTE and AC_AMPCAP_MIN_MUTE
+bits in each place checking the amp capabilities.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=59001
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ sound/pci/hda/hda_generic.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1027,6 +1027,7 @@ enum {
- 	ALC880_FIXUP_GPIO2,
- 	ALC880_FIXUP_MEDION_RIM,
- 	ALC880_FIXUP_LG,
-+	ALC880_FIXUP_LG_LW25,
- 	ALC880_FIXUP_W810,
- 	ALC880_FIXUP_EAPD_COEF,
- 	ALC880_FIXUP_TCL_S700,
-@@ -1085,6 +1086,14 @@ static const struct hda_fixup alc880_fix
- 			{ }
- 		}
- 	},
-+	[ALC880_FIXUP_LG_LW25] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = (const struct hda_pintbl[]) {
-+			{ 0x1a, 0x0181344f }, /* line-in */
-+			{ 0x1b, 0x0321403f }, /* headphone */
-+			{ }
-+		}
-+	},
- 	[ALC880_FIXUP_W810] = {
- 		.type = HDA_FIXUP_PINS,
- 		.v.pins = (const struct hda_pintbl[]) {
-@@ -1337,6 +1346,7 @@ static const struct snd_pci_quirk alc880
- 	SND_PCI_QUIRK(0x1854, 0x003b, "LG", ALC880_FIXUP_LG),
- 	SND_PCI_QUIRK(0x1854, 0x005f, "LG P1 Express", ALC880_FIXUP_LG),
- 	SND_PCI_QUIRK(0x1854, 0x0068, "LG w1", ALC880_FIXUP_LG),
-+	SND_PCI_QUIRK(0x1854, 0x0077, "LG LW25", ALC880_FIXUP_LG_LW25),
- 	SND_PCI_QUIRK(0x19db, 0x4188, "TCL S700", ALC880_FIXUP_TCL_S700),
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -519,7 +519,7 @@ static bool same_amp_caps(struct hda_cod
+ }
  
- 	/* Below is the copied entries from alc880_quirks.c.
+ #define nid_has_mute(codec, nid, dir) \
+-	check_amp_caps(codec, nid, dir, AC_AMPCAP_MUTE)
++	check_amp_caps(codec, nid, dir, (AC_AMPCAP_MUTE | AC_AMPCAP_MIN_MUTE))
+ #define nid_has_volume(codec, nid, dir) \
+ 	check_amp_caps(codec, nid, dir, AC_AMPCAP_NUM_STEPS)
+ 
+@@ -621,7 +621,7 @@ static int get_amp_val_to_activate(struc
+ 		if (enable)
+ 			val = (caps & AC_AMPCAP_OFFSET) >> AC_AMPCAP_OFFSET_SHIFT;
+ 	}
+-	if (caps & AC_AMPCAP_MUTE) {
++	if (caps & (AC_AMPCAP_MUTE | AC_AMPCAP_MIN_MUTE)) {
+ 		if (!enable)
+ 			val |= HDA_AMP_MUTE;
+ 	}
+@@ -645,7 +645,7 @@ static unsigned int get_amp_mask_to_modi
+ {
+ 	unsigned int mask = 0xff;
+ 
+-	if (caps & AC_AMPCAP_MUTE) {
++	if (caps & (AC_AMPCAP_MUTE | AC_AMPCAP_MIN_MUTE)) {
+ 		if (is_ctl_associated(codec, nid, dir, idx, NID_PATH_MUTE_CTL))
+ 			mask &= ~0x80;
+ 	}
 
 
