@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab3HRMnj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 08:43:39 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:56213 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755236Ab3HRMni (ORCPT
+	id S1755485Ab3HRNdK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 09:33:10 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:65495 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755420Ab3HRNdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 08:43:38 -0400
-Message-ID: <1376829813.3391.7.camel@phoenix>
-Subject: [PATCH] Documentation: pinctrl: Fix example code for
- pinctrl_register
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Sun, 18 Aug 2013 20:43:33 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 18 Aug 2013 09:33:07 -0400
+MIME-Version: 1.0
+X-Originating-IP: [176.92.241.197]
+In-Reply-To: <20130816202151.b47fae1e9ed249d06baa37d1@samsung.com>
+References: <1374766502-14823-1-git-send-email-a.motakis@virtualopensystems.com>
+	<1374766502-14823-2-git-send-email-a.motakis@virtualopensystems.com>
+	<003101ce89ed$52317330$f6945990$@samsung.com>
+	<20130814131547.GA5889@8bytes.org>
+	<20130816202151.b47fae1e9ed249d06baa37d1@samsung.com>
+Date: Sun, 18 Aug 2013 15:33:07 +0200
+Message-ID: <CAG8rG2zf8CUu+1qRURRhvX8RsNx8CLXJU85qnsFjCvm0FYYuRg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] iommu/exynos: Follow kernel coding style for
+ __sysmmu_enable return type
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: Joerg Roedel <joro@8bytes.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Varun Sethi <Varun.Sethi@freescale.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pinctrl_register() returns NULL on error, fix it.
+Yes, of course, I have no objections.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- Documentation/pinctrl.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index e7bee9b..c0ffd30 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -81,7 +81,7 @@ int __init foo_probe(void)
- 	struct pinctrl_dev *pctl;
- 
- 	pctl = pinctrl_register(&foo_desc, <PARENT>, NULL);
--	if (IS_ERR(pctl))
-+	if (!pctl)
- 		pr_err("could not register foo pin driver\n");
- }
- 
--- 
-1.8.1.2
-
-
-
+On Fri, Aug 16, 2013 at 1:21 PM, Cho KyongHo <pullip.cho@samsung.com> wrote:
+> On Wed, 14 Aug 2013 15:15:49 +0200, 'Joerg Roedel' wrote:
+>> KyongHo,
+>>
+>> On Fri, Jul 26, 2013 at 07:46:01PM +0900, Cho KyongHo wrote:
+>> > __sysmmu_enable() must return 1 if it is called with the same page table.
+>> > I have fixed it exynos_iommu_attach_device() to always return zero on success
+>> > in the next patchset which I will post today.
+>> >
+>> > Thank you.
+>>
+>> When you are fine with these patches please put them on-top of your
+>> patch-set when you re-submit. I will take them from there then.
+>>
+>
+> Ok.
+>
+> Antonios,
+>
+> Would you mind
+> if I submit your 2 patches on top of my patches with your signed-off?
+>
+> KyongHo.
+>
+>>
+>>       Joerg
+>>
+>>
