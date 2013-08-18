@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab3HRLUM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 07:20:12 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:60742 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab3HRLUJ (ORCPT
+	id S1755289Ab3HRMQG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 08:16:06 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:52450 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754330Ab3HRMQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 07:20:09 -0400
-Date: Sun, 18 Aug 2013 07:20:05 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: [GIT PULL] cgroup fixes for v3.11-rc5
-Message-ID: <20130818112005.GD7093@htj.dyndns.org>
+	Sun, 18 Aug 2013 08:16:04 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] [media] media/v4l2: VIDEO_SH_VEU should depend on HAS_DMA
+Date: Sun, 18 Aug 2013 14:15:37 +0200
+Message-Id: <1376828137-12806-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+If NO_DMA=y:
 
-This pull request contains one patch to fix the return value of
-cpuset's cgroups interface function, which used to always return
--ENODEV for the writes on the "memory_pressure_enabled" file.
+drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
+drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ‘dma_mmap_coherent’
+drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
+drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ‘dma_get_sgtable’
 
-The fix is available in the following branch
+Commit da508f5799659241a359e2d07abb8af905f6291c ("[media] media/v4l2:
+VIDEOBUF2_DMA_CONTIG should depend on HAS_DMA") added a dependency on
+HAS_DMA to VIDEO_SH_VEU, as it selects VIDEOBUF2_DMA_CONTIG.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.11-fixes
+However, this got lost in the merge conflict resolution in commit
+df90e2258950fd631cdbf322c1ee1f22068391aa ("Merge branch 'devel-for-v3.10'
+into v4l_for_linus").
 
-for you to fetch changes up to a903f0865a190f8778c73df1a810ea6e25e5d7cf:
+Re-add the dependency to fix this.
 
-  cpuset: fix the return value of cpuset_write_u64() (2013-08-13 10:54:40 -0400)
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/media/platform/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks.
-
-----------------------------------------------------------------
-Li Zefan (1):
-      cpuset: fix the return value of cpuset_write_u64()
-
- kernel/cpuset.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index e565778..010a008 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1608,11 +1608,13 @@ static int cpuset_write_u64(struct cgroup *cgrp, struct cftype *cft, u64 val)
- {
- 	struct cpuset *cs = cgroup_cs(cgrp);
- 	cpuset_filetype_t type = cft->private;
--	int retval = -ENODEV;
-+	int retval = 0;
+diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+index 08de865..126d0fc 100644
+--- a/drivers/media/platform/Kconfig
++++ b/drivers/media/platform/Kconfig
+@@ -203,7 +203,7 @@ config VIDEO_SAMSUNG_EXYNOS_GSC
  
- 	mutex_lock(&cpuset_mutex);
--	if (!is_cpuset_online(cs))
-+	if (!is_cpuset_online(cs)) {
-+		retval = -ENODEV;
- 		goto out_unlock;
-+	}
- 
- 	switch (type) {
- 	case FILE_CPU_EXCLUSIVE:
+ config VIDEO_SH_VEU
+ 	tristate "SuperH VEU mem2mem video processing driver"
+-	depends on VIDEO_DEV && VIDEO_V4L2 && GENERIC_HARDIRQS
++	depends on VIDEO_DEV && VIDEO_V4L2 && GENERIC_HARDIRQS && HAS_DMA
+ 	select VIDEOBUF2_DMA_CONTIG
+ 	select V4L2_MEM2MEM_DEV
+ 	help
+-- 
+1.7.9.5
 
---
-tejun
