@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab3HRUex (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:34:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43604 "EHLO
+	id S1757010Ab3HRUqM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:46:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43629 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756224Ab3HRUeu (ORCPT
+	with ESMTP id S1756290Ab3HRUey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:34:50 -0400
+	Sun, 18 Aug 2013 16:34:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 10/45] ARM: KVM: add missing dsb before invalidating Stage-2 TLBs
-Date: Sun, 18 Aug 2013 13:35:59 -0700
-Message-Id: <20130818203621.708004822@linuxfoundation.org>
+        Chris Wright <chrisw@sous-sol.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 16/45] mac80211: continue using disabled channels while connected
+Date: Sun, 18 Aug 2013 13:36:05 -0700
+Message-Id: <20130818203622.145334675@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -28,34 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Zyngier <marc.zyngier@arm.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 479c5ae2f8a55509b691494cd13691d3dc31d102 upstream.
+commit ddfe49b42d8ad4bfdf92d63d4a74f162660d878d upstream.
 
-When performing a Stage-2 TLB invalidation, it is necessary to
-make sure the write to the page tables is observable by all CPUs.
+In case the AP has different regulatory information than we do,
+it can happen that we connect to an AP based on e.g. the world
+roaming regulatory data, and then update our database with the
+AP's country information disables the channel the AP is using.
+If this happens on an HT AP, the bandwidth tracking code will
+hit the WARN_ON() and disconnect. Since that's not very useful,
+ignore the channel-disable flag in bandwidth tracking.
 
-For this purpose, add a dsb instruction to __kvm_tlb_flush_vmid_ipa
-before doing the TLB invalidation itself.
-
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Reported-by: Chris Wright <chrisw@sous-sol.org>
+Tested-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kvm/interrupts.S |    1 +
- 1 file changed, 1 insertion(+)
+ net/mac80211/mlme.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/arch/arm/kvm/interrupts.S
-+++ b/arch/arm/kvm/interrupts.S
-@@ -49,6 +49,7 @@ __kvm_hyp_code_start:
- ENTRY(__kvm_tlb_flush_vmid_ipa)
- 	push	{r2, r3}
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -361,8 +361,17 @@ out:
+ 	if (ret & IEEE80211_STA_DISABLE_VHT)
+ 		vht_chandef = *chandef;
  
-+	dsb	ishst
- 	add	r0, r0, #KVM_VTTBR
- 	ldrd	r2, r3, [r0]
- 	mcrr	p15, 6, r2, r3, c2	@ Write VTTBR
++	/*
++	 * Ignore the DISABLED flag when we're already connected and only
++	 * tracking the APs beacon for bandwidth changes - otherwise we
++	 * might get disconnected here if we connect to an AP, update our
++	 * regulatory information based on the AP's country IE and the
++	 * information we have is wrong/outdated and disables the channel
++	 * that we're actually using for the connection to the AP.
++	 */
+ 	while (!cfg80211_chandef_usable(sdata->local->hw.wiphy, chandef,
+-					IEEE80211_CHAN_DISABLED)) {
++					tracking ? 0 :
++						   IEEE80211_CHAN_DISABLED)) {
+ 		if (WARN_ON(chandef->width == NL80211_CHAN_WIDTH_20_NOHT)) {
+ 			ret = IEEE80211_STA_DISABLE_HT |
+ 			      IEEE80211_STA_DISABLE_VHT;
 
 
