@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab3HRKyo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 06:54:44 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:57569 "EHLO
+	id S1754475Ab3HRLBr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 07:01:47 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:46831 "EHLO
 	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab3HRKyn (ORCPT
+	with ESMTP id S1754165Ab3HRLBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 06:54:43 -0400
+	Sun, 18 Aug 2013 07:01:45 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Airlie <airlied@linux.ie>, Andrew Morton <akpm@linux-foundation.org>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH -resend] drm: DRM should depend on HAS_DMA
-Date: Sun, 18 Aug 2013 12:54:25 +0200
-Message-Id: <1376823265-14845-1-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH v2] of_net.h: Make of_get_phy_mode() return int i.s.o. const int
+Date: Sun, 18 Aug 2013 13:01:30 +0200
+Message-Id: <1376823690-29179-1-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If NO_DMA=y:
-
-drivers/built-in.o: In function `__drm_pci_free':
-drivers/gpu/drm/drm_pci.c:112: undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `drm_pci_alloc':
-drivers/gpu/drm/drm_pci.c:72: undefined reference to `dma_alloc_coherent'
-drivers/built-in.o: In function `drm_gem_unmap_dma_buf':
-drivers/gpu/drm/drm_prime.c:87: undefined reference to `dma_unmap_sg'
-drivers/built-in.o: In function `drm_gem_map_dma_buf':
-drivers/gpu/drm/drm_prime.c:78: undefined reference to `dma_map_sg'
+include/linux/of_net.h:16: warning: type qualifiers ignored on function return type
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/gpu/drm/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+v2: update the actual function in drivers/of/of_net.c.
 
-diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-index a7c54c8..626bc0c 100644
---- a/drivers/gpu/drm/Kconfig
-+++ b/drivers/gpu/drm/Kconfig
-@@ -6,7 +6,7 @@
- #
- menuconfig DRM
- 	tristate "Direct Rendering Manager (XFree86 4.1.0 and higher DRI support)"
--	depends on (AGP || AGP=n) && !EMULATED_CMPXCHG && MMU
-+	depends on (AGP || AGP=n) && !EMULATED_CMPXCHG && MMU && HAS_DMA
- 	select HDMI
- 	select I2C
- 	select I2C_ALGOBIT
+ drivers/of/of_net.c    |    2 +-
+ include/linux/of_net.h |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
+index ea174c8..8f9be2e 100644
+--- a/drivers/of/of_net.c
++++ b/drivers/of/of_net.c
+@@ -39,7 +39,7 @@ static const char *phy_modes[] = {
+  * The function gets phy interface string from property 'phy-mode',
+  * and return its index in phy_modes table, or errno in error case.
+  */
+-const int of_get_phy_mode(struct device_node *np)
++int of_get_phy_mode(struct device_node *np)
+ {
+ 	const char *pm;
+ 	int err, i;
+diff --git a/include/linux/of_net.h b/include/linux/of_net.h
+index 61bf53b..34597c8 100644
+--- a/include/linux/of_net.h
++++ b/include/linux/of_net.h
+@@ -9,10 +9,10 @@
+ 
+ #ifdef CONFIG_OF_NET
+ #include <linux/of.h>
+-extern const int of_get_phy_mode(struct device_node *np);
++extern int of_get_phy_mode(struct device_node *np);
+ extern const void *of_get_mac_address(struct device_node *np);
+ #else
+-static inline const int of_get_phy_mode(struct device_node *np)
++static inline int of_get_phy_mode(struct device_node *np)
+ {
+ 	return -ENODEV;
+ }
 -- 
 1.7.9.5
 
