@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab3HRTiV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 15:38:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43137 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab3HRTiU (ORCPT
+	id S1754696Ab3HRTjQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 15:39:16 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:42912 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666Ab3HRTjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 15:38:20 -0400
-Date: Sun, 18 Aug 2013 12:40:05 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Yann Droneaud <yann@droneaud.fr>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, Wei Shuai <cpuwolf@gmail.com>,
-        Frans Klaver <frans.klaver@xsens.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: serial: fix stringify operator in usb-serial-simple
-Message-ID: <20130818194005.GA19107@kroah.com>
-References: <1376854140-16904-1-git-send-email-yann@droneaud.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376854140-16904-1-git-send-email-yann@droneaud.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 18 Aug 2013 15:39:14 -0400
+From: Thiagarajan Thangavel <write2thiagu@gmail.com>
+To: grant.likely@linaro.org
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH 2/2] drivers: block :swim3: fixed the errors on coding style
+Date: Mon, 19 Aug 2013 01:09:00 +0530
+Message-Id: <1376854740-17580-1-git-send-email-write2thiagu@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 18, 2013 at 09:29:00PM +0200, Yann Droneaud wrote:
-> From: Yann Droneaud <ydroneaud@opteya.com>
-> 
-> usb-serial-simple uses an unknown stringify macro that make
-> all drivers being named "stringify(vendor)".
-> 
-> This can be a problem when two drivers have the same (wrong) name:
-> 
->     kernel: usbcore: registered new interface driver usb_serial_simple
->     kernel: usbserial: USB Serial support registered for stringify(vendor)
->     kernel Error: Driver 'stringify(vendor)' is already registered, aborting...
->     kernel: usbserial: problem -16 when registering driver stringify(vendor)
->     kernel: usbserial: USB Serial deregistering driver stringify(vendor)
->     kernel: usbcore: deregistering interface driver usb_serial_simple
-> 
+Fixed the coding style errors
 
-Ugh, sorry about that, I thought there used to be a stringify() macro
-that used to do this.  Nice patch, I'll queue it up.
+Signed-off-by: Thiagarajan Thangavel <write2thiagu@gmail.com>
+---
+ drivers/block/swim3.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-greg k-h
+diff --git a/drivers/block/swim3.c b/drivers/block/swim3.c
+index a473e25..89c9a85 100644
+--- a/drivers/block/swim3.c
++++ b/drivers/block/swim3.c
+@@ -783,7 +783,7 @@ static irqreturn_t swim3_interrupt(int irq, void *dev_id)
+ 				act(fs);
+ 			} else {
+ 				swim3_err("Error %sing block %ld (err=%x)\n",
+-				       rq_data_dir(req) == WRITE ? "writ" : "read",
++				rq_data_dir(req) == WRITE ? "writ" : "read",
+ 				       (long)blk_rq_pos(req), err);
+ 				swim3_end_request(fs, -EIO, 0);
+ 				fs->state = idle;
+@@ -894,7 +894,18 @@ static int fd_eject(struct floppy_state *fs)
+ 	return err;
+ }
+ 
+-static struct floppy_struct floppy_type = { 2880, 18, 2, 80, 0, 0x1B, 0x00, 0xCF, 0x6C, NULL };	/*  7 1.44MB 3.5"   */
++static struct floppy_struct floppy_type = {
++	2880,
++	18,
++	2,
++	80,
++	0,
++	0x1B,
++	0x00,
++	0xCF,
++	0x6C,
++	NULL
++};	/*  7 1.44MB 3.5"   */
+ 
+ static int floppy_locked_ioctl(struct block_device *bdev, fmode_t mode,
+ 			unsigned int cmd, unsigned long param)
+-- 
+1.7.9.5
+
