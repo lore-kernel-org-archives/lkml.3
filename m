@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab3HRUry (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:47:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43579 "EHLO
+	id S1756537Ab3HRUsT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:48:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43573 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756137Ab3HRUdb (ORCPT
+	with ESMTP id S1756129Ab3HRUdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Aug 2013 16:33:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Takashi Iwai <tiwai@suse.de>,
+        Michal Simek <michal.simek@xilinx.com>,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [ 06/34] sound: Fix make allmodconfig on MIPS
-Date: Sun, 18 Aug 2013 13:34:19 -0700
-Message-Id: <20130818203300.123829982@linuxfoundation.org>
+Subject: [ 05/34] microblaze: Update microblaze defconfigs
+Date: Sun, 18 Aug 2013 13:34:18 -0700
+Message-Id: <20130818203300.056576051@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -28,33 +27,249 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Michal Simek <michal.simek@xilinx.com>
 
-commit d4702b189c6b951c1cb3260036ff998f719bfb62 upstream.
+commit d0e045401f268a8de6f87d65678214748b772680 upstream.
 
-The compile of soundcard.c is broken on MIPS when allmodconfig is used
-because of the missing MAX_DMA_CHANNELS definition.  As a simple
-workaround, just add a Kconfig dependency.
+The main reason is 0-day testing system which can directly
+use these defconfigs for testing.
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Enable support for all xilinx drivers which Microblaze
+can use and disable dependency on external rootfs.cpio.
+There is only one exception which is axi ethernet driver
+which still uses NO_IRQ which is not defined for Microblaze.
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/oss/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ arch/microblaze/configs/mmu_defconfig   |   49 ++++++++++++++--------
+ arch/microblaze/configs/nommu_defconfig |   71 ++++++++++++++++++--------------
+ 2 files changed, 75 insertions(+), 45 deletions(-)
 
---- a/sound/oss/Kconfig
-+++ b/sound/oss/Kconfig
-@@ -250,6 +250,7 @@ config MSND_FIFOSIZE
- menuconfig SOUND_OSS
- 	tristate "OSS sound modules"
- 	depends on ISA_DMA_API && VIRT_TO_BUS
-+	depends on !ISA_DMA_SUPPORT_BROKEN
- 	help
- 	  OSS is the Open Sound System suite of sound card drivers.  They make
- 	  sound programming easier since they provide a common API.  Say Y or
+--- a/arch/microblaze/configs/mmu_defconfig
++++ b/arch/microblaze/configs/mmu_defconfig
+@@ -1,25 +1,22 @@
+ CONFIG_EXPERIMENTAL=y
+ CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_FHANDLE=y
++CONFIG_AUDIT=y
++CONFIG_AUDIT_LOGINUID_IMMUTABLE=y
+ CONFIG_IKCONFIG=y
+ CONFIG_IKCONFIG_PROC=y
++CONFIG_SYSFS_DEPRECATED=y
+ CONFIG_SYSFS_DEPRECATED_V2=y
+-CONFIG_BLK_DEV_INITRD=y
+-CONFIG_INITRAMFS_SOURCE="rootfs.cpio"
+-CONFIG_INITRAMFS_COMPRESSION_GZIP=y
+-# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
+-CONFIG_EXPERT=y
+ CONFIG_KALLSYMS_ALL=y
+-CONFIG_KALLSYMS_EXTRA_PASS=y
+-# CONFIG_HOTPLUG is not set
+ # CONFIG_BASE_FULL is not set
+-# CONFIG_FUTEX is not set
+-# CONFIG_EPOLL is not set
+-# CONFIG_SIGNALFD is not set
+-# CONFIG_SHMEM is not set
++CONFIG_EMBEDDED=y
+ CONFIG_SLAB=y
+ CONFIG_MODULES=y
+ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
++CONFIG_PARTITION_ADVANCED=y
++# CONFIG_EFI_PARTITION is not set
+ CONFIG_OPT_LIB_ASM=y
+ CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR=1
+ CONFIG_XILINX_MICROBLAZE0_USE_PCMP_INSTR=1
+@@ -37,33 +34,53 @@ CONFIG_UNIX=y
+ CONFIG_INET=y
+ # CONFIG_INET_LRO is not set
+ # CONFIG_IPV6 is not set
++CONFIG_MTD=y
+ CONFIG_PROC_DEVICETREE=y
+ CONFIG_BLK_DEV_RAM=y
+ CONFIG_BLK_DEV_RAM_SIZE=8192
+ CONFIG_NETDEVICES=y
+-CONFIG_NET_ETHERNET=y
+ CONFIG_XILINX_EMACLITE=y
++CONFIG_XILINX_LL_TEMAC=y
+ # CONFIG_INPUT is not set
+ # CONFIG_SERIO is not set
+ # CONFIG_VT is not set
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
+ CONFIG_SERIAL_UARTLITE=y
+ CONFIG_SERIAL_UARTLITE_CONSOLE=y
+ # CONFIG_HW_RANDOM is not set
++CONFIG_XILINX_HWICAP=y
++CONFIG_I2C=y
++CONFIG_I2C_XILINX=y
++CONFIG_SPI=y
++CONFIG_SPI_XILINX=y
++CONFIG_GPIOLIB=y
++CONFIG_GPIO_SYSFS=y
++CONFIG_GPIO_XILINX=y
+ # CONFIG_HWMON is not set
++CONFIG_WATCHDOG=y
++CONFIG_XILINX_WATCHDOG=y
++CONFIG_FB=y
++CONFIG_FB_XILINX=y
+ # CONFIG_USB_SUPPORT is not set
++CONFIG_UIO=y
++CONFIG_UIO_PDRV=y
++CONFIG_UIO_PDRV_GENIRQ=y
++CONFIG_UIO_DMEM_GENIRQ=y
+ CONFIG_EXT2_FS=y
+ # CONFIG_DNOTIFY is not set
++CONFIG_CRAMFS=y
++CONFIG_ROMFS_FS=y
+ CONFIG_NFS_FS=y
+-CONFIG_NFS_V3=y
+ CONFIG_CIFS=y
+ CONFIG_CIFS_STATS=y
+ CONFIG_CIFS_STATS2=y
+-CONFIG_PARTITION_ADVANCED=y
+-CONFIG_DEBUG_KERNEL=y
+ CONFIG_DETECT_HUNG_TASK=y
+ CONFIG_DEBUG_SLAB=y
+ CONFIG_DEBUG_SPINLOCK=y
+ CONFIG_DEBUG_INFO=y
+-# CONFIG_RCU_CPU_STALL_DETECTOR is not set
+ CONFIG_EARLY_PRINTK=y
++CONFIG_KEYS=y
++CONFIG_ENCRYPTED_KEYS=y
++CONFIG_KEYS_DEBUG_PROC_KEYS=y
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
+--- a/arch/microblaze/configs/nommu_defconfig
++++ b/arch/microblaze/configs/nommu_defconfig
+@@ -1,41 +1,40 @@
+ CONFIG_EXPERIMENTAL=y
+ CONFIG_SYSVIPC=y
+ CONFIG_POSIX_MQUEUE=y
++CONFIG_FHANDLE=y
++CONFIG_AUDIT=y
++CONFIG_AUDIT_LOGINUID_IMMUTABLE=y
+ CONFIG_BSD_PROCESS_ACCT=y
+ CONFIG_BSD_PROCESS_ACCT_V3=y
+ CONFIG_IKCONFIG=y
+ CONFIG_IKCONFIG_PROC=y
++CONFIG_SYSFS_DEPRECATED=y
+ CONFIG_SYSFS_DEPRECATED_V2=y
+-CONFIG_EXPERT=y
+ CONFIG_KALLSYMS_ALL=y
+-CONFIG_KALLSYMS_EXTRA_PASS=y
+-# CONFIG_HOTPLUG is not set
+ # CONFIG_BASE_FULL is not set
++CONFIG_EMBEDDED=y
+ CONFIG_SLAB=y
+ CONFIG_MODULES=y
+ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+-# CONFIG_OPT_LIB_FUNCTION is not set
++CONFIG_PARTITION_ADVANCED=y
++# CONFIG_EFI_PARTITION is not set
+ CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR=1
+ CONFIG_XILINX_MICROBLAZE0_USE_PCMP_INSTR=1
+ CONFIG_XILINX_MICROBLAZE0_USE_BARREL=1
+ CONFIG_XILINX_MICROBLAZE0_USE_DIV=1
+ CONFIG_XILINX_MICROBLAZE0_USE_HW_MUL=2
+ CONFIG_XILINX_MICROBLAZE0_USE_FPU=2
+-CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_HZ_100=y
+ CONFIG_CMDLINE_BOOL=y
+-CONFIG_BINFMT_FLAT=y
++CONFIG_CMDLINE_FORCE=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+ CONFIG_INET=y
+ # CONFIG_INET_LRO is not set
+ # CONFIG_IPV6 is not set
+-# CONFIG_PREVENT_FIRMWARE_BUILD is not set
+ CONFIG_MTD=y
+-CONFIG_MTD_CONCAT=y
+-CONFIG_MTD_PARTITIONS=y
+ CONFIG_MTD_CMDLINE_PARTS=y
+ CONFIG_MTD_CHAR=y
+ CONFIG_MTD_BLOCK=y
+@@ -45,41 +44,55 @@ CONFIG_MTD_CFI_AMDSTD=y
+ CONFIG_MTD_RAM=y
+ CONFIG_MTD_UCLINUX=y
+ CONFIG_PROC_DEVICETREE=y
+-CONFIG_BLK_DEV_NBD=y
+ CONFIG_BLK_DEV_RAM=y
++CONFIG_BLK_DEV_RAM_SIZE=8192
+ CONFIG_NETDEVICES=y
+-CONFIG_NET_ETHERNET=y
++CONFIG_XILINX_EMACLITE=y
++CONFIG_XILINX_LL_TEMAC=y
+ # CONFIG_INPUT is not set
+ # CONFIG_SERIO is not set
+ # CONFIG_VT is not set
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
+ CONFIG_SERIAL_UARTLITE=y
+ CONFIG_SERIAL_UARTLITE_CONSOLE=y
+-CONFIG_HW_RANDOM=y
++# CONFIG_HW_RANDOM is not set
++CONFIG_XILINX_HWICAP=y
++CONFIG_I2C=y
++CONFIG_I2C_XILINX=y
++CONFIG_SPI=y
++CONFIG_SPI_XILINX=y
++CONFIG_GPIOLIB=y
++CONFIG_GPIO_SYSFS=y
++CONFIG_GPIO_XILINX=y
+ # CONFIG_HWMON is not set
+-CONFIG_VIDEO_OUTPUT_CONTROL=y
++CONFIG_WATCHDOG=y
++CONFIG_XILINX_WATCHDOG=y
++CONFIG_FB=y
++CONFIG_FB_XILINX=y
++# CONFIG_USB_SUPPORT is not set
++CONFIG_UIO=y
++CONFIG_UIO_PDRV=y
++CONFIG_UIO_PDRV_GENIRQ=y
++CONFIG_UIO_DMEM_GENIRQ=y
+ CONFIG_EXT2_FS=y
+ # CONFIG_DNOTIFY is not set
+ CONFIG_CRAMFS=y
+ CONFIG_ROMFS_FS=y
+ CONFIG_NFS_FS=y
+-CONFIG_NFS_V3=y
+ CONFIG_NFS_V3_ACL=y
+-CONFIG_UNUSED_SYMBOLS=y
+-CONFIG_DEBUG_FS=y
+-CONFIG_DEBUG_KERNEL=y
+-CONFIG_DEBUG_SHIRQ=y
++CONFIG_NLS=y
+ CONFIG_DETECT_HUNG_TASK=y
+-CONFIG_SCHEDSTATS=y
+-CONFIG_TIMER_STATS=y
+-CONFIG_DEBUG_OBJECTS=y
+-CONFIG_DEBUG_OBJECTS_SELFTEST=y
+-CONFIG_DEBUG_OBJECTS_FREE=y
+-CONFIG_DEBUG_OBJECTS_TIMERS=y
++CONFIG_DEBUG_SLAB=y
++CONFIG_DEBUG_SPINLOCK=y
+ CONFIG_DEBUG_INFO=y
+-CONFIG_DEBUG_LIST=y
+-CONFIG_DEBUG_SG=y
+-# CONFIG_RCU_CPU_STALL_DETECTOR is not set
+-CONFIG_SYSCTL_SYSCALL_CHECK=y
+ CONFIG_EARLY_PRINTK=y
++CONFIG_KEYS=y
++CONFIG_ENCRYPTED_KEYS=y
++CONFIG_KEYS_DEBUG_PROC_KEYS=y
++CONFIG_CRYPTO_ECB=y
++CONFIG_CRYPTO_MD4=y
++CONFIG_CRYPTO_MD5=y
++CONFIG_CRYPTO_ARC4=y
++CONFIG_CRYPTO_DES=y
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
+-# CONFIG_CRC32 is not set
 
 
