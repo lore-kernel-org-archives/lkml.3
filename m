@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab3HRUdR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:33:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43461 "EHLO
+	id S1755776Ab3HRUxm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:53:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43483 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755450Ab3HRUdN (ORCPT
+	with ESMTP id S1755989Ab3HRUdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:33:13 -0400
+	Sun, 18 Aug 2013 16:33:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Howells <dhowells@redhat.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 14/34] frv: Use correct size for task_struct allocation
-Date: Sun, 18 Aug 2013 13:34:27 -0700
-Message-Id: <20130818203300.663467283@linuxfoundation.org>
+        Alexander Lyakas <alex.bolshoy@gmail.com>, NeilBrown <neilb@suse.de>,
+        Jack Wang <jinpu.wang@profitbricks.com>
+Subject: [ 18/34] md/raid1,raid10: use freeze_array in place of raise_barrier in various places.
+Date: Sun, 18 Aug 2013 13:34:31 -0700
+Message-Id: <20130818203300.933588263@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -28,48 +27,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: NeilBrown <neilb@suse.de>
 
-commit cce4517f33384c3794c759e206cc8e1bb6df146b upstream.
+commit e2d59925221cd562e07fee38ec8839f7209ae603 upstream.
 
-alloc_task_struct_node() allocates THREAD_SIZE and maintains some
-weird refcount in the allocated memory. This never blew up as
-task_struct size on 32bit machines was always less than THREAD_SIZE
+Various places in raid1 and raid10 are calling raise_barrier when they
+really should call freeze_array.
+The former is only intended to be called from "make_request".
+The later has extra checks for 'nr_queued' and makes a call to
+flush_pending_writes(), so it is safe to call it from within the
+management thread.
 
-Allocate just sizeof(struct task_struct) and get rid of the magic
-refcounting.
+Using raise_barrier will sometimes deadlock.  Using freeze_array
+should not.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: David Howells <dhowells@redhat.com>
-Link: http://lkml.kernel.org/r/20120503085033.898475542@linutronix.de
-Cc: Guenter Roeck <linux@roeck-us.net>
+As 'freeze_array' currently expects one request to be pending (in
+handle_read_error - the only previous caller), we need to pass
+it the number of pending requests (extra) to ignore.
+
+The deadlock was made particularly noticeable by commits
+050b66152f87c7 (raid10) and 6b740b8d79252f13 (raid1) which
+appeared in 3.4, so the fix is appropriate for any -stable
+kernel since then.
+
+This patch probably won't apply directly to some early kernels and
+will need to be applied by hand.
+
+Cc: stable@vger.kernel.org
+Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+[adjust context to make it can be apply on top of 3.4 ]
+Signed-off-by: Jack Wang <jinpu.wang@profitbricks.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/frv/kernel/process.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ drivers/md/raid1.c  |   22 +++++++++++-----------
+ drivers/md/raid10.c |   14 +++++++-------
+ 2 files changed, 18 insertions(+), 18 deletions(-)
 
---- a/arch/frv/kernel/process.c
-+++ b/arch/frv/kernel/process.c
-@@ -46,17 +46,12 @@ EXPORT_SYMBOL(pm_power_off);
- 
- struct task_struct *alloc_task_struct_node(int node)
- {
--	struct task_struct *p = kmalloc_node(THREAD_SIZE, GFP_KERNEL, node);
--
--	if (p)
--		atomic_set((atomic_t *)(p+1), 1);
--	return p;
-+	return kmalloc_node(sizeof(task_struct), GFP_KERNEL, node);
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -812,17 +812,17 @@ static void allow_barrier(struct r1conf
+ 	wake_up(&conf->wait_barrier);
  }
  
- void free_task_struct(struct task_struct *p)
+-static void freeze_array(struct r1conf *conf)
++static void freeze_array(struct r1conf *conf, int extra)
  {
--	if (atomic_dec_and_test((atomic_t *)(p+1)))
--		kfree(p);
-+	kfree(p);
+ 	/* stop syncio and normal IO and wait for everything to
+ 	 * go quite.
+ 	 * We increment barrier and nr_waiting, and then
+-	 * wait until nr_pending match nr_queued+1
++	 * wait until nr_pending match nr_queued+extra
+ 	 * This is called in the context of one normal IO request
+ 	 * that has failed. Thus any sync request that might be pending
+ 	 * will be blocked by nr_pending, and we need to wait for
+ 	 * pending IO requests to complete or be queued for re-try.
+-	 * Thus the number queued (nr_queued) plus this request (1)
++	 * Thus the number queued (nr_queued) plus this request (extra)
+ 	 * must match the number of pending IOs (nr_pending) before
+ 	 * we continue.
+ 	 */
+@@ -830,7 +830,7 @@ static void freeze_array(struct r1conf *
+ 	conf->barrier++;
+ 	conf->nr_waiting++;
+ 	wait_event_lock_irq(conf->wait_barrier,
+-			    conf->nr_pending == conf->nr_queued+1,
++			    conf->nr_pending == conf->nr_queued+extra,
+ 			    conf->resync_lock,
+ 			    flush_pending_writes(conf));
+ 	spin_unlock_irq(&conf->resync_lock);
+@@ -1432,8 +1432,8 @@ static int raid1_add_disk(struct mddev *
+ 		 * we wait for all outstanding requests to complete.
+ 		 */
+ 		synchronize_sched();
+-		raise_barrier(conf);
+-		lower_barrier(conf);
++		freeze_array(conf, 0);
++		unfreeze_array(conf);
+ 		clear_bit(Unmerged, &rdev->flags);
+ 	}
+ 	md_integrity_add_rdev(rdev, mddev);
+@@ -1481,11 +1481,11 @@ static int raid1_remove_disk(struct mdde
+ 			 */
+ 			struct md_rdev *repl =
+ 				conf->mirrors[conf->raid_disks + number].rdev;
+-			raise_barrier(conf);
++			freeze_array(conf, 0);
+ 			clear_bit(Replacement, &repl->flags);
+ 			p->rdev = repl;
+ 			conf->mirrors[conf->raid_disks + number].rdev = NULL;
+-			lower_barrier(conf);
++			unfreeze_array(conf);
+ 			clear_bit(WantReplacement, &rdev->flags);
+ 		} else
+ 			clear_bit(WantReplacement, &rdev->flags);
+@@ -2100,7 +2100,7 @@ static void handle_read_error(struct r1c
+ 	 * frozen
+ 	 */
+ 	if (mddev->ro == 0) {
+-		freeze_array(conf);
++		freeze_array(conf, 1);
+ 		fix_read_error(conf, r1_bio->read_disk,
+ 			       r1_bio->sector, r1_bio->sectors);
+ 		unfreeze_array(conf);
+@@ -2855,7 +2855,7 @@ static int raid1_reshape(struct mddev *m
+ 		return -ENOMEM;
+ 	}
+ 
+-	raise_barrier(conf);
++	freeze_array(conf, 0);
+ 
+ 	/* ok, everything is stopped */
+ 	oldpool = conf->r1bio_pool;
+@@ -2887,7 +2887,7 @@ static int raid1_reshape(struct mddev *m
+ 	mddev->delta_disks = 0;
+ 
+ 	conf->last_used = 0; /* just make sure it is in-range */
+-	lower_barrier(conf);
++	unfreeze_array(conf);
+ 
+ 	set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 	md_wakeup_thread(mddev->thread);
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -952,17 +952,17 @@ static void allow_barrier(struct r10conf
+ 	wake_up(&conf->wait_barrier);
  }
  
- static void core_sleep_idle(void)
+-static void freeze_array(struct r10conf *conf)
++static void freeze_array(struct r10conf *conf, int extra)
+ {
+ 	/* stop syncio and normal IO and wait for everything to
+ 	 * go quiet.
+ 	 * We increment barrier and nr_waiting, and then
+-	 * wait until nr_pending match nr_queued+1
++	 * wait until nr_pending match nr_queued+extra
+ 	 * This is called in the context of one normal IO request
+ 	 * that has failed. Thus any sync request that might be pending
+ 	 * will be blocked by nr_pending, and we need to wait for
+ 	 * pending IO requests to complete or be queued for re-try.
+-	 * Thus the number queued (nr_queued) plus this request (1)
++	 * Thus the number queued (nr_queued) plus this request (extra)
+ 	 * must match the number of pending IOs (nr_pending) before
+ 	 * we continue.
+ 	 */
+@@ -970,7 +970,7 @@ static void freeze_array(struct r10conf
+ 	conf->barrier++;
+ 	conf->nr_waiting++;
+ 	wait_event_lock_irq(conf->wait_barrier,
+-			    conf->nr_pending == conf->nr_queued+1,
++			    conf->nr_pending == conf->nr_queued+extra,
+ 			    conf->resync_lock,
+ 			    flush_pending_writes(conf));
+ 
+@@ -1619,8 +1619,8 @@ static int raid10_add_disk(struct mddev
+ 		 * we wait for all outstanding requests to complete.
+ 		 */
+ 		synchronize_sched();
+-		raise_barrier(conf, 0);
+-		lower_barrier(conf);
++		freeze_array(conf, 0);
++		unfreeze_array(conf);
+ 		clear_bit(Unmerged, &rdev->flags);
+ 	}
+ 	md_integrity_add_rdev(rdev, mddev);
+@@ -2410,7 +2410,7 @@ static void handle_read_error(struct mdd
+ 	r10_bio->devs[slot].bio = NULL;
+ 
+ 	if (mddev->ro == 0) {
+-		freeze_array(conf);
++		freeze_array(conf, 1);
+ 		fix_read_error(conf, mddev, r10_bio);
+ 		unfreeze_array(conf);
+ 	} else
 
 
