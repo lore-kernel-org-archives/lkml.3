@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab3HRDCo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 23:02:44 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:51492 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299Ab3HRDCn (ORCPT
+	id S1755098Ab3HRDDS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 23:03:18 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:64980 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754360Ab3HRDDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 23:02:43 -0400
-X-Originating-IP: 50.43.39.152
-Date: Sat, 17 Aug 2013 20:02:34 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 4/9] nohz_full: Add rcu_dyntick data for
- scalable detection of all-idle state
-Message-ID: <20130818030234.GG28923@leaf>
-References: <20130818014918.GA27827@linux.vnet.ibm.com>
- <1376790584-28120-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1376790584-28120-4-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376790584-28120-4-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 17 Aug 2013 23:03:16 -0400
+From: "Nicholas A. Bellinger" <nab@daterainc.com>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Tejun Heo <tj@kernel.org>,
+        Nicholas Bellinger <nab@daterainc.com>
+Subject: [PATCH 0/2] iscsi/iser-target: Add per-cpu ida tag pre-allocation for v3.12
+Date: Sun, 18 Aug 2013 02:47:29 +0000
+Message-Id: <1376794051-9835-1-git-send-email-nab@daterainc.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 17, 2013 at 06:49:39PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> This commit adds fields to the rcu_dyntick structure that are used to
-> detect idle CPUs.  These new fields differ from the existing ones in
-> that the existing ones consider a CPU executing in user mode to be idle,
-> where the new ones consider CPUs executing in user mode to be busy.
-> The handling of these new fields is otherwise quite similar to that for
-> the exiting fields.  This commit also adds the initialization required
-> for these fields.
-> 
-> So, why is usermode execution treated differently, with RCU considering
-> it a quiescent state equivalent to idle, while in contrast the new
-> full-system idle state detection considers usermode execution to be
-> non-idle?
-> 
-> It turns out that although one of RCU's quiescent states is usermode
-> execution, it is not a full-system idle state.  This is because the
-> purpose of the full-system idle state is not RCU, but rather determining
-> when accurate timekeeping can safely be disabled.  Whenever accurate
-> timekeeping is required in a CONFIG_NO_HZ_FULL kernel, at least one
-> CPU must keep the scheduling-clock tick going.  If even one CPU is
-> executing in user mode, accurate timekeeping is requires, particularly for
-> architectures where gettimeofday() and friends do not enter the kernel.
-> Only when all CPUs are really and truly idle can accurate timekeeping be
-> disabled, allowing all CPUs to turn off the scheduling clock interrupt,
-> thus greatly improving energy efficiency.
-> 
-> This naturally raises the question "Why is this code in RCU rather than in
-> timekeeping?", and the answer is that RCU has the data and infrastructure
-> to efficiently make this determination.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
+From: Nicholas Bellinger <nab@daterainc.com>
 
-One comment below.  With that change:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Hi folks,
 
-> +#ifdef CONFIG_NO_HZ_FULL_SYSIDLE
-> +
-> +/*
-> + * Initialize dynticks sysidle state for CPUs coming online.
-> + */
-> +static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp)
-> +{
-> +	rdtp->dynticks_idle_nesting = DYNTICK_TASK_NEST_VALUE;
-> +}
-> +
-> +#else /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
-> +
-> +static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp)
-> +{
-> +}
-> +
-> +#endif /* #else #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
+This series adds tag pre-allocation support of iscsi_cmd descriptors with
+iscsi/iser-target code, utilizing Kent's latest per-cpu ida bits posted
+earlier here:
 
-Just move the ifdef around the function body:
+  [PATCH-v3 1/4] idr: Percpu ida
+  http://marc.info/?l=linux-virtualization&m=137669883717043&w=2
 
-static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp)
-{
-#ifdef CONFIG_NO_HZ_FULL_SYSIDLE
-	rdtp->dynticks_idle_nesting = DYNTICK_TASK_NEST_VALUE;
-#endif /* CONFIG_NO_HZ_FULL_SYSIDLE */
-}
+and a slightly modified version of the associated target-core patch here:
 
-- Josh Triplett
+  [PATCH-v3 2/4] target: Add transport_init_session_tags using per-cpu ida
+  http://marc.info/?l=linux-virtualization&m=137669888117057&w=2
+
+Please review as v3.12 material.
+
+Thanks!
+
+--nab
+
+Nicholas Bellinger (2):
+  iscsi/iser-target: Convert to command priv_size usage
+  iscsi-target: Convert to per-cpu ida_alloc + ida_free command map
+
+ drivers/infiniband/ulp/isert/ib_isert.c      |  114 +++++++++-----------------
+ drivers/infiniband/ulp/isert/ib_isert.h      |    2 +-
+ drivers/target/iscsi/iscsi_target.c          |   16 +----
+ drivers/target/iscsi/iscsi_target.h          |    1 -
+ drivers/target/iscsi/iscsi_target_configfs.c |    2 +-
+ drivers/target/iscsi/iscsi_target_core.h     |    3 +-
+ drivers/target/iscsi/iscsi_target_nego.c     |   22 +++++-
+ drivers/target/iscsi/iscsi_target_util.c     |   41 +++++----
+ include/target/iscsi/iscsi_transport.h       |    8 ++-
+ 9 files changed, 94 insertions(+), 115 deletions(-)
+
+-- 
+1.7.2.5
+
