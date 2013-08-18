@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab3HRBhp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 21:37:45 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:45452 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab3HRBho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 21:37:44 -0400
-Date: Sat, 17 Aug 2013 18:37:35 -0700
+	id S1754307Ab3HRBiM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 21:38:12 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:55870 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399Ab3HRBiJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 21:38:09 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: [PATCH tip/core/rcu 0/11] Fixes for 3.12
-Message-ID: <20130818013735.GA27234@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Kevin Easton <kevin@guarana.org>
+Subject: [PATCH tip/core/rcu 11/11] jiffies: Avoid undefined behavior from signed overflow
+Date: Sat, 17 Aug 2013 18:37:56 -0700
+Message-Id: <1376789876-27594-11-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1376789876-27594-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130818013735.GA27234@linux.vnet.ibm.com>
+ <1376789876-27594-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081801-7182-0000-0000-0000081FEFA5
+x-cbid: 13081801-2398-0000-0000-0000019901C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This series contains a number of miscellaneous fixes:
+According to the C standard 3.4.3p3, overflow of a signed integer results
+in undefined behavior.  This commit therefore changes the definitions
+of time_after(), time_after_eq(), time_after64(), and time_after_eq64()
+to avoid this undefined behavior.  The trick is that the subtraction
+is done using unsigned arithmetic, which according to 6.2.5p9 cannot
+overflow because it is defined as modulo arithmetic.  This has the added
+(though admittedly quite small) benefit of shortening two lines of code
+by four characters each.
 
-1.	Switch to expedited grace periods during hibernation operations
-	(courtesy of Borislav Petkov).
+Note that the C standard considers the cast from unsigned to
+signed to be implementation-defined, see 6.3.1.3p3.  However, on a
+two-complement system, an implementation that defines anything other
+than a reinterpretation of the bits is free come to me, and I will be
+happy to act as a witness for its being committed to an insane asylum.
+(Although I have nothing against saturating arithmetic or signals in
+some cases, these things really should not be the default.)
 
-2.	Restrict above expediting to systems of 256 or fewer CPUs.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Kevin Easton <kevin@guarana.org>
+[ paulmck: Included time_after64() and time_after_eq64(), as suggested
+  by Eric Dumazet, also fixed commit message.]
+---
+ include/linux/jiffies.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-3.	Make RCU debugobjects fixup actions leak callbacks rather than
-	risking corrupting the callback lists.
-
-4.	Propagate above callback leaking to debugobjects's callers.
-
-5.	Make call_rcu() leak callbacks when debugobjects indicates an error.
-
-6.	Switch to expedited grace periods during suspend/resume operations
-	(Courtesy of Bjørn Mork).
-
-7.	Avoid needless self-wakeups from the grace-period kthreads.
-
-8.	Make list_first_or_null_rcu() use list_entry_rcu() (courtesy of
-	Tejun Heo).
-
-9.	Fix irq_work_queue() build error for TREE_PREEMPT_RCU for some
-	configurations (courtesy of James Hogan).
-
-10.	Simplify _rcu_barrier() processing per Linus Torvalds feedback.
-
-11.	Avoid signed-overflow undefined behavior in time_after() and friends.
-
-							Thanx, Paul
-
-
- b/include/linux/debugobjects.h |    6 +-
- b/include/linux/jiffies.h      |    8 +--
- b/include/linux/rculist.h      |    5 +-
- b/init/Kconfig                 |    1 
- b/kernel/rcu.h                 |   10 ++--
- b/kernel/rcupdate.c            |  100 -----------------------------------------
- b/kernel/rcutree.c             |   62 ++++++++++++++++++++++---
- b/lib/debugobjects.c           |   20 +++++---
- 8 files changed, 86 insertions(+), 126 deletions(-)
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 97ba4e7..d235e88 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -101,13 +101,13 @@ static inline u64 get_jiffies_64(void)
+ #define time_after(a,b)		\
+ 	(typecheck(unsigned long, a) && \
+ 	 typecheck(unsigned long, b) && \
+-	 ((long)(b) - (long)(a) < 0))
++	 ((long)((b) - (a)) < 0))
+ #define time_before(a,b)	time_after(b,a)
+ 
+ #define time_after_eq(a,b)	\
+ 	(typecheck(unsigned long, a) && \
+ 	 typecheck(unsigned long, b) && \
+-	 ((long)(a) - (long)(b) >= 0))
++	 ((long)((a) - (b)) >= 0))
+ #define time_before_eq(a,b)	time_after_eq(b,a)
+ 
+ /*
+@@ -130,13 +130,13 @@ static inline u64 get_jiffies_64(void)
+ #define time_after64(a,b)	\
+ 	(typecheck(__u64, a) &&	\
+ 	 typecheck(__u64, b) && \
+-	 ((__s64)(b) - (__s64)(a) < 0))
++	 ((__s64)((b) - (a)) < 0))
+ #define time_before64(a,b)	time_after64(b,a)
+ 
+ #define time_after_eq64(a,b)	\
+ 	(typecheck(__u64, a) && \
+ 	 typecheck(__u64, b) && \
+-	 ((__s64)(a) - (__s64)(b) >= 0))
++	 ((__s64)((a) - (b)) >= 0))
+ #define time_before_eq64(a,b)	time_after_eq64(b,a)
+ 
+ #define time_in_range64(a, b, c) \
+-- 
+1.8.1.5
 
