@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab3HRUnZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:43:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43681 "EHLO
+	id S1756876Ab3HRUnk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:43:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43676 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326Ab3HRUfC (ORCPT
+	with ESMTP id S1756387Ab3HRUfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:35:02 -0400
+	Sun, 18 Aug 2013 16:35:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 26/45] ALSA: hda - Fix missing mute controls for CX5051
-Date: Sun, 18 Aug 2013 13:36:15 -0700
-Message-Id: <20130818203622.818940171@linuxfoundation.org>
+        Torsten Schenk <torsten.schenk@zoho.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 25/45] ALSA: 6fire: make buffers DMA-able (midi)
+Date: Sun, 18 Aug 2013 13:36:14 -0700
+Message-Id: <20130818203622.751615025@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -26,54 +26,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Torsten Schenk <torsten.schenk@zoho.com>
 
-commit f69910ddbd8c29391958cf82b598dd78fe5c8640 upstream.
+commit 4c2aee0032b70083dafebd733ed9c774633b2fa3 upstream.
 
-We've added a fake mute control (setting the amp volume to zero) for
-CX5051 at commit [3868137e: ALSA: hda - Add a fake mute feature], but
-this feature was overlooked in the generic parser implementation.  Now
-the driver lacks of mute controls on these codecs.
+Patch makes midi output buffer DMA-able by allocating it separately.
 
-The fix is just to check both AC_AMPCAP_MUTE and AC_AMPCAP_MIN_MUTE
-bits in each place checking the amp capabilities.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=59001
+Signed-off-by: Torsten Schenk <torsten.schenk@zoho.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ sound/usb/6fire/midi.c |   16 +++++++++++++++-
+ sound/usb/6fire/midi.h |    6 +-----
+ 2 files changed, 16 insertions(+), 6 deletions(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -519,7 +519,7 @@ static bool same_amp_caps(struct hda_cod
- }
+--- a/sound/usb/6fire/midi.c
++++ b/sound/usb/6fire/midi.c
+@@ -19,6 +19,10 @@
+ #include "chip.h"
+ #include "comm.h"
  
- #define nid_has_mute(codec, nid, dir) \
--	check_amp_caps(codec, nid, dir, AC_AMPCAP_MUTE)
-+	check_amp_caps(codec, nid, dir, (AC_AMPCAP_MUTE | AC_AMPCAP_MIN_MUTE))
- #define nid_has_volume(codec, nid, dir) \
- 	check_amp_caps(codec, nid, dir, AC_AMPCAP_NUM_STEPS)
- 
-@@ -621,7 +621,7 @@ static int get_amp_val_to_activate(struc
- 		if (enable)
- 			val = (caps & AC_AMPCAP_OFFSET) >> AC_AMPCAP_OFFSET_SHIFT;
- 	}
--	if (caps & AC_AMPCAP_MUTE) {
-+	if (caps & (AC_AMPCAP_MUTE | AC_AMPCAP_MIN_MUTE)) {
- 		if (!enable)
- 			val |= HDA_AMP_MUTE;
- 	}
-@@ -645,7 +645,7 @@ static unsigned int get_amp_mask_to_modi
++enum {
++	MIDI_BUFSIZE = 64
++};
++
+ static void usb6fire_midi_out_handler(struct urb *urb)
  {
- 	unsigned int mask = 0xff;
+ 	struct midi_runtime *rt = urb->context;
+@@ -156,6 +160,12 @@ int usb6fire_midi_init(struct sfire_chip
+ 	if (!rt)
+ 		return -ENOMEM;
  
--	if (caps & AC_AMPCAP_MUTE) {
-+	if (caps & (AC_AMPCAP_MUTE | AC_AMPCAP_MIN_MUTE)) {
- 		if (is_ctl_associated(codec, nid, dir, idx, NID_PATH_MUTE_CTL))
- 			mask &= ~0x80;
- 	}
++	rt->out_buffer = kzalloc(MIDI_BUFSIZE, GFP_KERNEL);
++	if (!rt->out_buffer) {
++		kfree(rt);
++		return -ENOMEM;
++	}
++
+ 	rt->chip = chip;
+ 	rt->in_received = usb6fire_midi_in_received;
+ 	rt->out_buffer[0] = 0x80; /* 'send midi' command */
+@@ -169,6 +179,7 @@ int usb6fire_midi_init(struct sfire_chip
+ 
+ 	ret = snd_rawmidi_new(chip->card, "6FireUSB", 0, 1, 1, &rt->instance);
+ 	if (ret < 0) {
++		kfree(rt->out_buffer);
+ 		kfree(rt);
+ 		snd_printk(KERN_ERR PREFIX "unable to create midi.\n");
+ 		return ret;
+@@ -197,6 +208,9 @@ void usb6fire_midi_abort(struct sfire_ch
+ 
+ void usb6fire_midi_destroy(struct sfire_chip *chip)
+ {
+-	kfree(chip->midi);
++	struct midi_runtime *rt = chip->midi;
++
++	kfree(rt->out_buffer);
++	kfree(rt);
+ 	chip->midi = NULL;
+ }
+--- a/sound/usb/6fire/midi.h
++++ b/sound/usb/6fire/midi.h
+@@ -16,10 +16,6 @@
+ 
+ #include "common.h"
+ 
+-enum {
+-	MIDI_BUFSIZE = 64
+-};
+-
+ struct midi_runtime {
+ 	struct sfire_chip *chip;
+ 	struct snd_rawmidi *instance;
+@@ -32,7 +28,7 @@ struct midi_runtime {
+ 	struct snd_rawmidi_substream *out;
+ 	struct urb out_urb;
+ 	u8 out_serial; /* serial number of out packet */
+-	u8 out_buffer[MIDI_BUFSIZE];
++	u8 *out_buffer;
+ 	int buffer_offset;
+ 
+ 	void (*in_received)(struct midi_runtime *rt, u8 *data, int length);
 
 
