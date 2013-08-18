@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab3HRUde (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:33:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43562 "EHLO
+	id S1755725Ab3HRUdi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:33:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755967Ab3HRUd3 (ORCPT
+	with ESMTP id S1756176Ab3HRUde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:33:29 -0400
+	Sun, 18 Aug 2013 16:33:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>, Takashi Iwai <tiwai@suse.de>,
-        Giacomo Comes <comes@naic.edu>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Haitao Zhang <haitao.zhang@canonical.com>
-Subject: [ 03/34] drm/i915/lvds: ditch ->prepare special case
-Date: Sun, 18 Aug 2013 13:34:16 -0700
-Message-Id: <20130818203259.895868326@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 09/34] vm: add no-mmu vm_iomap_memory() stub
+Date: Sun, 18 Aug 2013 13:34:22 -0700
+Message-Id: <20130818203300.326339244@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -28,66 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 520c41cf2fa029d1e8b923ac2026f96664f17c4b upstream.
+commit 3c0b9de6d37a481673e81001c57ca0e410c72346 upstream.
 
-LVDS is the first output where dpms on/off and prepare/commit don't
-perfectly match. Now the idea behind this special case seems to be
-that for simple resolution changes on the LVDS we don't need to stop
-the pipe, because (at least on newer chips) we can adjust the panel
-fitter on the fly.
+I think we could just move the full vm_iomap_memory() function into
+util.h or similar, but I didn't get any reply from anybody actually
+using nommu even to this trivial patch, so I'm not going to touch it any
+more than required.
 
-There are a few problems with the current code though:
-- We still stop and restart the pipe unconditionally, because the crtc
-  helper code isn't flexible enough.
-- We show some ugly flickering, especially when changing crtcs (this
-  the crtc helper would actually take into account, but we don't
-  implement the encoder->get_crtc callback required to make this work
-  properly).
+Here's the fairly minimal stub to make the nommu case at least
+potentially work.  It doesn't seem like anybody cares, though.
 
-So it doesn't even work as advertised. I agree that it would be nice
-to do resolution changes on LVDS (and also eDP) whithout blacking the
-screen where the panel fitter allows to do that. But imo we should
-implement this as a special case a few layers up in the mode set code,
-akin to how we already detect simple framebuffer changes (and only
-update the required registers with ->mode_set_base).
-
-Until this is all in place, make our lives easier and just rip it out.
-
-Also note that this seems to fix actual bugs with enabling the lvds
-output, see:
-
-http://lists.freedesktop.org/archives/intel-gfx/2012-July/018614.html
-
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: Giacomo Comes <comes@naic.edu>
-Tested-by: Takashi Iwai <tiwai@suse.de>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Haitao Zhang <haitao.zhang@canonical.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ mm/nommu.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -408,13 +408,7 @@ static void intel_lvds_prepare(struct dr
- {
- 	struct intel_lvds *intel_lvds = to_intel_lvds(encoder);
- 
--	/*
--	 * Prior to Ironlake, we must disable the pipe if we want to adjust
--	 * the panel fitter. However at all other times we can just reset
--	 * the registers regardless.
--	 */
--	if (!HAS_PCH_SPLIT(encoder->dev) && intel_lvds->pfit_dirty)
--		intel_lvds_disable(intel_lvds);
-+	intel_lvds_disable(intel_lvds);
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1856,6 +1856,16 @@ int remap_pfn_range(struct vm_area_struc
  }
+ EXPORT_SYMBOL(remap_pfn_range);
  
- static void intel_lvds_commit(struct drm_encoder *encoder)
++int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
++{
++	unsigned long pfn = start >> PAGE_SHIFT;
++	unsigned long vm_len = vma->vm_end - vma->vm_start;
++
++	pfn += vma->vm_pgoff;
++	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
++}
++EXPORT_SYMBOL(vm_iomap_memory);
++
+ int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
+ 			unsigned long pgoff)
+ {
 
 
