@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab3HRLBr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 07:01:47 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:46831 "EHLO
+	id S1755244Ab3HRLEe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 07:04:34 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:36452 "EHLO
 	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754165Ab3HRLBp (ORCPT
+	with ESMTP id S1754189Ab3HRLEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 07:01:45 -0400
+	Sun, 18 Aug 2013 07:04:33 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH v2] of_net.h: Make of_get_phy_mode() return int i.s.o. const int
-Date: Sun, 18 Aug 2013 13:01:30 +0200
-Message-Id: <1376823690-29179-1-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH RESEND] mtd: MTD_NAND_DENALI should depend on HAS_DMA
+Date: Sun, 18 Aug 2013 13:03:59 +0200
+Message-Id: <1376823839-5853-1-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-include/linux/of_net.h:16: warning: type qualifiers ignored on function return type
+If NO_DMA=y:
+
+drivers/built-in.o: In function `denali_remove':
+drivers/mtd/nand/denali.c:1605: undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `denali_read_page_raw':
+drivers/mtd/nand/denali.c:1190: undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `denali_read_page':
+drivers/mtd/nand/denali.c:1140: undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `write_page':
+drivers/mtd/nand/denali.c:1051: undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `denali_init':
+drivers/mtd/nand/denali.c:1433: undefined reference to `dma_set_mask'
+drivers/mtd/nand/denali.c:1438: undefined reference to `dma_map_single'
+drivers/mtd/nand/denali.c:1442: undefined reference to `dma_mapping_error'
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
-v2: update the actual function in drivers/of/of_net.c.
+ drivers/mtd/nand/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
- drivers/of/of_net.c    |    2 +-
- include/linux/of_net.h |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
-index ea174c8..8f9be2e 100644
---- a/drivers/of/of_net.c
-+++ b/drivers/of/of_net.c
-@@ -39,7 +39,7 @@ static const char *phy_modes[] = {
-  * The function gets phy interface string from property 'phy-mode',
-  * and return its index in phy_modes table, or errno in error case.
-  */
--const int of_get_phy_mode(struct device_node *np)
-+int of_get_phy_mode(struct device_node *np)
- {
- 	const char *pm;
- 	int err, i;
-diff --git a/include/linux/of_net.h b/include/linux/of_net.h
-index 61bf53b..34597c8 100644
---- a/include/linux/of_net.h
-+++ b/include/linux/of_net.h
-@@ -9,10 +9,10 @@
+diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+index 50543f1..25b8a91 100644
+--- a/drivers/mtd/nand/Kconfig
++++ b/drivers/mtd/nand/Kconfig
+@@ -43,6 +43,7 @@ config MTD_SM_COMMON
  
- #ifdef CONFIG_OF_NET
- #include <linux/of.h>
--extern const int of_get_phy_mode(struct device_node *np);
-+extern int of_get_phy_mode(struct device_node *np);
- extern const void *of_get_mac_address(struct device_node *np);
- #else
--static inline const int of_get_phy_mode(struct device_node *np)
-+static inline int of_get_phy_mode(struct device_node *np)
- {
- 	return -ENODEV;
- }
+ config MTD_NAND_DENALI
+         tristate "Support Denali NAND controller"
++	depends on HAS_DMA
+         help
+ 	  Enable support for the Denali NAND controller.  This should be
+ 	  combined with either the PCI or platform drivers to provide device
 -- 
 1.7.9.5
 
