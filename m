@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab3HRUs7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:48:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43907 "EHLO
+	id S1756089Ab3HRUd0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:33:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43506 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755868Ab3HRUs4 (ORCPT
+	with ESMTP id S1755967Ab3HRUdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:48:56 -0400
-Date: Sun, 18 Aug 2013 13:50:42 -0700
+	Sun, 18 Aug 2013 16:33:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 41/45] m68k: Truncate base in do_div()
-Message-ID: <20130818205042.GA22572@kroah.com>
-References: <20130818203620.996166594@linuxfoundation.org>
- <20130818203623.850246787@linuxfoundation.org>
- <CAMuHMdWP2f_9526y9g5n=vf_Nga5XyC36JZhi7f5mMqMV4mW+w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdWP2f_9526y9g5n=vf_Nga5XyC36JZhi7f5mMqMV4mW+w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [ 22/34] af_key: initialize satype in key_notify_policy_flush()
+Date: Sun, 18 Aug 2013 13:34:35 -0700
+Message-Id: <20130818203301.204191927@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
+In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
+References: <20130818203259.653403173@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 18, 2013 at 10:39:01PM +0200, Geert Uytterhoeven wrote:
-> On Sun, Aug 18, 2013 at 10:36 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > 3.10-stable review patch.  If anyone has any objections, please let me know.
-> >
-> > ------------------
-> >
-> > From: Andreas Schwab <schwab@linux-m68k.org>
-> >
-> > commit ea077b1b96e073eac5c3c5590529e964767fc5f7 upstream.
-> >
-> > Explicitly truncate the second operand of do_div() to 32 bits to guard
-> > against bogus code calling it with a 64-bit divisor.
-> >
-> > [Thorsten]
-> >
-> > After upgrading from 3.2 to 3.10, mounting a btrfs volume fails with:
-> >
-> > btrfs: setting nodatacow, compression disabled
-> > btrfs: enabling auto recovery
-> > btrfs: disk space caching is enabled
-> 
-> What happened to the rest of the commit message?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-It looks like quilt will cut off the rest of the message after it sees
-the "*** ZERO DIVIDE ***   FORMAT=2" line.
+------------------
 
-I don't know why it does that, never noticed that before, I'll go fix
-this up, thanks.
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-greg k-h
+commit 85dfb745ee40232876663ae206cba35f24ab2a40 upstream.
+
+This field was left uninitialized. Some user daemons perform check against this
+field.
+
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ net/key/af_key.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/net/key/af_key.c
++++ b/net/key/af_key.c
+@@ -2687,6 +2687,7 @@ static int key_notify_policy_flush(const
+ 	hdr->sadb_msg_pid = c->pid;
+ 	hdr->sadb_msg_version = PF_KEY_V2;
+ 	hdr->sadb_msg_errno = (uint8_t) 0;
++	hdr->sadb_msg_satype = SADB_SATYPE_UNSPEC;
+ 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
+ 	hdr->sadb_msg_reserved = 0;
+ 	pfkey_broadcast(skb_out, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
+
+
