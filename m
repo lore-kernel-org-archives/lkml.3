@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab3HRB0H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 21:26:07 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:55399 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab3HRB0D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 21:26:03 -0400
+	id S1753593Ab3HRB0P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 21:26:15 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:52642 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752917Ab3HRB0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 21:26:06 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,63 +14,61 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 3/3] doc: Fix memory-barrier control-dependency example
-Date: Sat, 17 Aug 2013 18:25:53 -0700
-Message-Id: <1376789153-27138-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/3] rcu: Fix rcu_barrier() documentation
+Date: Sat, 17 Aug 2013 18:25:51 -0700
+Message-Id: <1376789153-27138-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1376789153-27138-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20130818012522.GA27015@linux.vnet.ibm.com>
 References: <20130818012522.GA27015@linux.vnet.ibm.com>
- <1376789153-27138-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081801-2398-0000-0000-00000198F930
+x-cbid: 13081801-0320-0000-0000-000000B65C15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Each control-dependency example needs its barriers between the "if"
-condition and the body of the "if" because a control dependency is
-a dependency induced by a branch.  This commit makes the needed
-adjustment.
+There was a time when rcu_barrier() was guaranteed to wait for at least
+a grace period, but that time ended due to energy-efficiency concerns.
+So now rcu_barrier() is a no-op if there are no RCU callbacks queued in
+the system.  This commit updates the documentation to reflect this change.
 
-Reported-by: Yongming Shen <symingz@gmail.com>
+Now, rcu_barrier() often does wait for a grace period, so, one could
+imagine some modification to rcu_barrier() to more efficiently handle
+cases where both rcu_barrier() and a grace period are needed.  But this
+must wait until someone shows a real-world need for a change.
+
+Reported-by: Bob Copeland <bob@cozybit.com>
+Reported-by: Johannes Berg <johannes@sipsolutions.net>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/memory-barriers.txt | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ Documentation/RCU/rcubarrier.txt | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index fa5d8a9..c8c42e6 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -531,9 +531,10 @@ dependency barrier to make it work correctly.  Consider the following bit of
- code:
+diff --git a/Documentation/RCU/rcubarrier.txt b/Documentation/RCU/rcubarrier.txt
+index 2e319d1..b10cfe7 100644
+--- a/Documentation/RCU/rcubarrier.txt
++++ b/Documentation/RCU/rcubarrier.txt
+@@ -70,10 +70,14 @@ in realtime kernels in order to avoid excessive scheduling latencies.
  
- 	q = &a;
--	if (p)
-+	if (p) {
-+		<data dependency barrier>
- 		q = &b;
--	<data dependency barrier>
-+	}
- 	x = *q;
+ rcu_barrier()
  
- This will not have the desired effect because there is no actual data
-@@ -542,9 +543,10 @@ attempting to predict the outcome in advance.  In such a case what's actually
- required is:
+-We instead need the rcu_barrier() primitive. This primitive is similar
+-to synchronize_rcu(), but instead of waiting solely for a grace
+-period to elapse, it also waits for all outstanding RCU callbacks to
+-complete. Pseudo-code using rcu_barrier() is as follows:
++We instead need the rcu_barrier() primitive.  Rather than waiting for
++a grace period to elapse, rcu_barrier() waits for all outstanding RCU
++callbacks to complete.  Please note that rcu_barrier() does -not- imply
++synchronize_rcu(), in particular, if there are no RCU callbacks queued
++anywhere, rcu_barrier() is within its rights to return immediately,
++without waiting for a grace period to elapse.
++
++Pseudo-code using rcu_barrier() is as follows:
  
- 	q = &a;
--	if (p)
-+	if (p) {
-+		<read barrier>
- 		q = &b;
--	<read barrier>
-+	}
- 	x = *q;
- 
- 
+    1. Prevent any new RCU callbacks from being posted.
+    2. Execute rcu_barrier().
 -- 
 1.8.1.5
 
