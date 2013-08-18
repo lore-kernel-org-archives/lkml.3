@@ -1,111 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab3HQXi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 19:38:26 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:60864 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab3HQXiZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 19:38:25 -0400
-Date: Sat, 17 Aug 2013 16:38:17 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 1/7] nohz_full: Add Kconfig parameter for
- scalable detection of all-idle state
-Message-ID: <20130817233817.GA14768@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130726231848.GA12967@linux.vnet.ibm.com>
- <1374880764-14248-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130805010453.GB6894@somewhere>
+	id S1752399Ab3HRAtL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 20:49:11 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:47335 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752017Ab3HRAtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 20:49:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: mingo@redhat.com, hpa@linux.intel.com, tglx@linutronix.de,
+        gregkh@linuxfoundation.org, benh@kernel.crashing.org, x86@kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, bp@suse.de, srivatsa.bhat@linux.vnet.ibm.com,
+        isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH 1/4] hotplug, x86: Fix online state in cpu0 debug interface
+Date: Sun, 18 Aug 2013 02:59:35 +0200
+Message-ID: <2432072.Zy8S4hcMML@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1376768819-28975-2-git-send-email-toshi.kani@hp.com>
+References: <1376768819-28975-1-git-send-email-toshi.kani@hp.com> <1376768819-28975-2-git-send-email-toshi.kani@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130805010453.GB6894@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081723-5518-0000-0000-00001149696B
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 03:04:55AM +0200, Frederic Weisbecker wrote:
-> On Fri, Jul 26, 2013 at 04:19:18PM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > At least one CPU must keep the scheduling-clock tick running for
-> > timekeeping purposes whenever there is a non-idle CPU.  However, with
-> > the new nohz_full adaptive-idle machinery, it is difficult to distinguish
-> > between all CPUs really being idle as opposed to all non-idle CPUs being
-> > in adaptive-ticks mode.  This commit therefore adds a Kconfig parameter
-> > as a first step towards enabling a scalable detection of full-system
-> > idle state.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  kernel/time/Kconfig | 23 +++++++++++++++++++++++
-> >  1 file changed, 23 insertions(+)
-> > 
-> > diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-> > index 70f27e8..a613c2a 100644
-> > --- a/kernel/time/Kconfig
-> > +++ b/kernel/time/Kconfig
-> > @@ -134,6 +134,29 @@ config NO_HZ_FULL_ALL
-> >  	 Note the boot CPU will still be kept outside the range to
-> >  	 handle the timekeeping duty.
-> >  
-> > +config NO_HZ_FULL_SYSIDLE
-> > +	bool "Detect full-system idle state for full dynticks system"
-> > +	depends on NO_HZ_FULL
-> > +	default n
-> > +	help
-> > +	 At least one CPU must keep the scheduling-clock tick running
-> > +	 for timekeeping purposes whenever there is a non-idle CPU,
-> > +	 where "non-idle" includes CPUs with a single runnable task
-> > +	 in adaptive-idle mode.
+On Saturday, August 17, 2013 01:46:56 PM Toshi Kani wrote:
+> _debug_hotplug_cpu() is a debug interface that puts cpu0 offline during
+> boot-up when CONFIG_DEBUG_HOTPLUG_CPU0 is set.  After cpu0 is put offline
+> in this interface, however, /sys/devices/system/cpu/cpu0/online still
+> shows 1 (online).
 > 
-> "adaptive-idle" is particularly confusing here. How about this:
+> This patch fixes _debug_hotplug_cpu() to update dev->offline when CPU
+> online/offline operation succeeded.
 > 
->     'where "non-idle" also includes dynticks CPUs as long they are
->     running non-idle tasks.' 
-> 
->           Because the underlying adaptive-tick
-> > +	 support cannot distinguish between all CPUs being idle and
-> > +	 all CPUs each running a single task in adaptive-idle mode,
-> 
-> s/adaptive-idle/dynticks
-> 
-> Thanks.
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 
-Good point, fixed.
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-							Thanx, Paul
-
-> > +	 the underlying support simply ensures that there is always
-> > +	 a CPU handling the scheduling-clock tick, whether or not all
-> > +	 CPUs are idle.  This Kconfig option enables scalable detection
-> > +	 of the all-CPUs-idle state, thus allowing the scheduling-clock
-> > +	 tick to be disabled when all CPUs are idle.  Note that scalable
-> > +	 detection of the all-CPUs-idle state means that larger systems
-> > +	 will be slower to declare the all-CPUs-idle state.
-> > +
-> > +	 Say Y if you would like to help debug all-CPUs-idle detection.
-> > +
-> > +	 Say N if you are unsure.
-> > +
-> >  config NO_HZ
-> >  	bool "Old Idle dynticks config"
-> >  	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
-> > -- 
-> > 1.8.1.5
-> > 
+> ---
+>  arch/x86/kernel/topology.c |    7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
 > 
-
+> diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
+> index 6e60b5f..5823bbd 100644
+> --- a/arch/x86/kernel/topology.c
+> +++ b/arch/x86/kernel/topology.c
+> @@ -72,16 +72,19 @@ int __ref _debug_hotplug_cpu(int cpu, int action)
+>  		ret = cpu_down(cpu);
+>  		if (!ret) {
+>  			pr_info("CPU %u is now offline\n", cpu);
+> +			dev->offline = true;
+>  			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
+>  		} else
+>  			pr_debug("Can't offline CPU%d.\n", cpu);
+>  		break;
+>  	case 1:
+>  		ret = cpu_up(cpu);
+> -		if (!ret)
+> +		if (!ret) {
+> +			dev->offline = false;
+>  			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
+> -		else
+> +		} else {
+>  			pr_debug("Can't online CPU%d.\n", cpu);
+> +		}
+>  		break;
+>  	default:
+>  		ret = -EINVAL;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
