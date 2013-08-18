@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab3HRU3i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:29:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43414 "EHLO
+	id S1754980Ab3HRUaM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:30:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43391 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576Ab3HRU2v (ORCPT
+	with ESMTP id S1755515Ab3HRU2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:28:51 -0400
+	Sun, 18 Aug 2013 16:28:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [ 12/12] vm: add no-mmu vm_iomap_memory() stub
-Date: Sun, 18 Aug 2013 13:30:21 -0700
-Message-Id: <20130818202952.173639767@linuxfoundation.org>
+Subject: [ 07/12] sparc32: add ucmpdi2
+Date: Sun, 18 Aug 2013 13:30:16 -0700
+Message-Id: <20130818202951.330332228@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818202949.875887601@linuxfoundation.org>
 References: <20130818202949.875887601@linuxfoundation.org>
@@ -27,44 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Sam Ravnborg <sam@ravnborg.org>
 
-commit 3c0b9de6d37a481673e81001c57ca0e410c72346 upstream.
+commit de36e66d5fa52bc6e2dacd95c701a1762b5308a7 upstream.
 
-I think we could just move the full vm_iomap_memory() function into
-util.h or similar, but I didn't get any reply from anybody actually
-using nommu even to this trivial patch, so I'm not going to touch it any
-more than required.
+Based on copy from microblaze add ucmpdi2 implementation.
+This fixes build of niu driver which failed with:
 
-Here's the fairly minimal stub to make the nommu case at least
-potentially work.  It doesn't seem like anybody cares, though.
+drivers/built-in.o: In function `niu_get_nfc':
+niu.c:(.text+0x91494): undefined reference to `__ucmpdi2'
 
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This driver will never be used on a sparc32 system,
+but patch added to fix build breakage with all*config builds.
+
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/nommu.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/sparc/lib/Makefile  |    2 +-
+ arch/sparc/lib/ucmpdi2.c |   19 +++++++++++++++++++
+ 2 files changed, 20 insertions(+), 1 deletion(-)
 
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -1826,6 +1826,16 @@ int remap_pfn_range(struct vm_area_struc
- }
- EXPORT_SYMBOL(remap_pfn_range);
+--- a/arch/sparc/lib/Makefile
++++ b/arch/sparc/lib/Makefile
+@@ -15,7 +15,7 @@ lib-$(CONFIG_SPARC32) += divdi3.o udivdi
+ lib-$(CONFIG_SPARC32) += copy_user.o locks.o
+ lib-y                 += atomic_$(BITS).o
+ lib-$(CONFIG_SPARC32) += lshrdi3.o ashldi3.o
+-lib-$(CONFIG_SPARC32) += muldi3.o bitext.o cmpdi2.o
++lib-$(CONFIG_SPARC32) += muldi3.o bitext.o cmpdi2.o ucmpdi2.o
  
-+int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
+ lib-$(CONFIG_SPARC64) += copy_page.o clear_page.o bzero.o
+ lib-$(CONFIG_SPARC64) += csum_copy.o csum_copy_from_user.o csum_copy_to_user.o
+--- /dev/null
++++ b/arch/sparc/lib/ucmpdi2.c
+@@ -0,0 +1,19 @@
++#include <linux/module.h>
++#include "libgcc.h"
++
++word_type __ucmpdi2(unsigned long long a, unsigned long long b)
 +{
-+	unsigned long pfn = start >> PAGE_SHIFT;
-+	unsigned long vm_len = vma->vm_end - vma->vm_start;
++	const DWunion au = {.ll = a};
++	const DWunion bu = {.ll = b};
 +
-+	pfn += vma->vm_pgoff;
-+	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
++	if ((unsigned int) au.s.high < (unsigned int) bu.s.high)
++		return 0;
++	else if ((unsigned int) au.s.high > (unsigned int) bu.s.high)
++		return 2;
++	if ((unsigned int) au.s.low < (unsigned int) bu.s.low)
++		return 0;
++	else if ((unsigned int) au.s.low > (unsigned int) bu.s.low)
++		return 2;
++	return 1;
 +}
-+EXPORT_SYMBOL(vm_iomap_memory);
-+
- int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
- 			unsigned long pgoff)
- {
++EXPORT_SYMBOL(__ucmpdi2);
 
 
