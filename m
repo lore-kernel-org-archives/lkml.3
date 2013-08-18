@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab3HRFVb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 01:21:31 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:56694 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755079Ab3HRFVa (ORCPT
+	id S1755294Ab3HRFVq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 01:21:46 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37471 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755229Ab3HRFVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 01:21:30 -0400
+	Sun, 18 Aug 2013 01:21:45 -0400
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         Sekhar Nori <nsekhar@ti.com>
@@ -17,9 +17,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Kevin Hilman <khilman@linaro.org>,
         Philip Avinash <avinashphilip@ti.com>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v3 6/7] ARM: davinci: dmxxx: gpio device creation
-Date: Sun, 18 Aug 2013 10:49:02 +0530
-Message-Id: <1376803143-13738-7-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v3 7/7] ARM: davinci: Start using gpiolib API inplace of inline functions
+Date: Sun, 18 Aug 2013 10:49:03 +0530
+Message-Id: <1376803143-13738-8-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1376803143-13738-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1376803143-13738-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -29,853 +29,443 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Philip Avinash <avinashphilip@ti.com>
 
-Create davinci gpio device and remove gpio references in
-davinci_soc_info structure for dmxxx platforms. Also add Memory and IRQ
-resources for GPIO platform device. Also rearrange header file inclusion
-in group basis.
+Remove NEED_MACH_GPIO_H config select option for ARCH_DAVINCI to start
+use gpiolib interface for davinci platforms. However with this software
+latencies for gpio_get/set APIs will affect. Latency has increased by 18
+microsecond with gpiolib API as compared with inline API's.
+
+Software latency is calculated on da850 EVM for gpio_get_value API by
+taking the printk timing for API execution with interrupts disabled.
+Experiment has done for inline and gpiolib API interface.
+
+  inline gpio API with interrupt disabled
+  [   29.734337] before gpio_get
+  [   29.736847] after gpio_get
+
+  Time difference 0.00251
+
+  gpio library with interrupt disabled
+  [  272.876763] before gpio_get
+  [  272.879291] after gpio_get
+
+  Time difference 0.002528
+  Latency increased by (0.002528 -  0.00251) = 18 microsecond.
+
+Also being here
+- Moved following definitions from mach folder to include directory
+	struct davinci_gpio_controller
+	Macro GPIO(x)
+	inline function __gpio_mask
+- Removed GPIO_TYPE_DAVINCI enum definition as GPIO Davinci is converted
+  to Linux device driver model.
+- With removal of select option of NEED_MACH_GPIO_H for ARCH_DAVINCI,
+  gpio-tnetv107x also start using gpiolib interface. Hence removes
+  related header files
+	arch/arm/mach-davinci/include/mach/gpio-davinci.h
+	arch/arm/mach-davinci/include/mach/gpio.h
+
+  and include linux/platform_data/gpio-davinci.h header file to support
+  gpio-davinci platform definitions.
 
 Signed-off-by: Philip Avinash <avinashphilip@ti.com>
 Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/mach-davinci/board-dm355-evm.c           |   33 +++++++-----
- arch/arm/mach-davinci/board-dm355-leopard.c       |   30 ++++++-----
- arch/arm/mach-davinci/board-dm365-evm.c           |   30 ++++++-----
- arch/arm/mach-davinci/board-dm644x-evm.c          |   40 ++++++++------
- arch/arm/mach-davinci/board-dm646x-evm.c          |   37 +++++++------
- arch/arm/mach-davinci/board-neuros-osd2.c         |   18 ++++---
- arch/arm/mach-davinci/davinci.h                   |   17 +++---
- arch/arm/mach-davinci/dm355.c                     |   54 +++++++++++++------
- arch/arm/mach-davinci/dm365.c                     |   58 ++++++++++++++-------
- arch/arm/mach-davinci/dm644x.c                    |   47 ++++++++++++-----
- arch/arm/mach-davinci/dm646x.c                    |   47 ++++++++++++-----
- arch/arm/mach-davinci/include/mach/common.h       |    2 +
- arch/arm/mach-davinci/include/mach/gpio-davinci.h |    2 -
- 13 files changed, 272 insertions(+), 143 deletions(-)
+ arch/arm/Kconfig                                  |    1 -
+ arch/arm/mach-davinci/da830.c                     |    1 -
+ arch/arm/mach-davinci/da850.c                     |    1 -
+ arch/arm/mach-davinci/dm355.c                     |    1 -
+ arch/arm/mach-davinci/dm365.c                     |    1 -
+ arch/arm/mach-davinci/dm644x.c                    |    1 -
+ arch/arm/mach-davinci/dm646x.c                    |    1 -
+ arch/arm/mach-davinci/include/mach/gpio-davinci.h |   90 ---------------------
+ arch/arm/mach-davinci/include/mach/gpio.h         |   88 --------------------
+ arch/arm/mach-davinci/tnetv107x.c                 |   14 ++--
+ drivers/gpio/gpio-tnetv107x.c                     |    5 +-
+ include/linux/platform_data/gpio-davinci.h        |   34 ++++++++
+ 12 files changed, 44 insertions(+), 194 deletions(-)
+ delete mode 100644 arch/arm/mach-davinci/include/mach/gpio-davinci.h
+ delete mode 100644 arch/arm/mach-davinci/include/mach/gpio.h
 
-diff --git a/arch/arm/mach-davinci/board-dm355-evm.c b/arch/arm/mach-davinci/board-dm355-evm.c
-index 42b23a3..4712fb4 100644
---- a/arch/arm/mach-davinci/board-dm355-evm.c
-+++ b/arch/arm/mach-davinci/board-dm355-evm.c
-@@ -8,29 +8,31 @@
-  * is licensed "as is" without any warranty of any kind, whether express
-  * or implied.
-  */
--#include <linux/kernel.h>
--#include <linux/init.h>
-+#include <linux/clk.h>
- #include <linux/err.h>
--#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
- #include <linux/mtd/mtd.h>
--#include <linux/mtd/partitions.h>
- #include <linux/mtd/nand.h>
--#include <linux/i2c.h>
--#include <linux/gpio.h>
--#include <linux/clk.h>
-+#include <linux/mtd/partitions.h>
-+#include <linux/platform_data/i2c-davinci.h>
-+#include <linux/platform_data/mmc-davinci.h>
-+#include <linux/platform_data/mtd-davinci.h>
-+#include <linux/platform_data/usb-davinci.h>
-+#include <linux/platform_device.h>
-+#include <linux/spi/eeprom.h>
-+#include <linux/spi/spi.h>
- #include <linux/videodev2.h>
-+
- #include <media/tvp514x.h>
--#include <linux/spi/spi.h>
--#include <linux/spi/eeprom.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- 
--#include <linux/platform_data/i2c-davinci.h>
-+#include <mach/common.h>
- #include <mach/serial.h>
--#include <linux/platform_data/mtd-davinci.h>
--#include <linux/platform_data/mmc-davinci.h>
--#include <linux/platform_data/usb-davinci.h>
- 
- #include "davinci.h"
- 
-@@ -375,6 +377,11 @@ static struct spi_board_info dm355_evm_spi_info[] __initconst = {
- static __init void dm355_evm_init(void)
- {
- 	struct clk *aemif;
-+	int ret;
-+
-+	ret = dm355_gpio_register();
-+	if (ret)
-+		pr_warn("%s: GPIO init failed: %d\n", __func__, ret);
- 
- 	gpio_request(1, "dm9000");
- 	gpio_direction_input(1);
-diff --git a/arch/arm/mach-davinci/board-dm355-leopard.c b/arch/arm/mach-davinci/board-dm355-leopard.c
-index d9eb1c9..fbaeea8 100644
---- a/arch/arm/mach-davinci/board-dm355-leopard.c
-+++ b/arch/arm/mach-davinci/board-dm355-leopard.c
-@@ -7,27 +7,28 @@
-  * License version 2. This program is licensed "as is" without any
-  * warranty of any kind, whether express or implied.
-  */
--#include <linux/kernel.h>
--#include <linux/init.h>
-+#include <linux/clk.h>
- #include <linux/err.h>
--#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
- #include <linux/mtd/mtd.h>
--#include <linux/mtd/partitions.h>
- #include <linux/mtd/nand.h>
--#include <linux/i2c.h>
--#include <linux/gpio.h>
--#include <linux/clk.h>
--#include <linux/spi/spi.h>
-+#include <linux/mtd/partitions.h>
-+#include <linux/platform_data/i2c-davinci.h>
-+#include <linux/platform_data/mmc-davinci.h>
-+#include <linux/platform_data/mtd-davinci.h>
-+#include <linux/platform_data/usb-davinci.h>
-+#include <linux/platform_device.h>
- #include <linux/spi/eeprom.h>
-+#include <linux/spi/spi.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- 
--#include <linux/platform_data/i2c-davinci.h>
-+#include <mach/common.h>
- #include <mach/serial.h>
--#include <linux/platform_data/mtd-davinci.h>
--#include <linux/platform_data/mmc-davinci.h>
--#include <linux/platform_data/usb-davinci.h>
- 
- #include "davinci.h"
- 
-@@ -233,6 +234,11 @@ static struct spi_board_info dm355_leopard_spi_info[] __initconst = {
- static __init void dm355_leopard_init(void)
- {
- 	struct clk *aemif;
-+	int ret;
-+
-+	ret = dm355_gpio_register();
-+	if (ret)
-+		pr_warn("%s: GPIO init failed: %d\n", __func__, ret);
- 
- 	gpio_request(9, "dm9000");
- 	gpio_direction_input(9);
-diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-index 000e2ab..9c1dd31 100644
---- a/arch/arm/mach-davinci/board-dm365-evm.c
-+++ b/arch/arm/mach-davinci/board-dm365-evm.c
-@@ -12,33 +12,33 @@
-  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  * GNU General Public License for more details.
-  */
--#include <linux/kernel.h>
--#include <linux/init.h>
-+#include <linux/clk.h>
- #include <linux/err.h>
- #include <linux/i2c.h>
--#include <linux/io.h>
--#include <linux/clk.h>
- #include <linux/i2c/at24.h>
-+#include <linux/init.h>
-+#include <linux/input.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
- #include <linux/leds.h>
- #include <linux/mtd/mtd.h>
-+#include <linux/mtd/nand.h>
- #include <linux/mtd/partitions.h>
-+#include <linux/platform_data/i2c-davinci.h>
-+#include <linux/platform_data/keyscan-davinci.h>
-+#include <linux/platform_data/mmc-davinci.h>
-+#include <linux/platform_data/mtd-davinci.h>
- #include <linux/slab.h>
--#include <linux/mtd/nand.h>
--#include <linux/input.h>
--#include <linux/spi/spi.h>
- #include <linux/spi/eeprom.h>
-+#include <linux/spi/spi.h>
- #include <linux/v4l2-dv-timings.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- 
--#include <mach/mux.h>
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ba412e0..c298bec 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -845,7 +845,6 @@ config ARCH_DAVINCI
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_IRQ_CHIP
+ 	select HAVE_IDE
+-	select NEED_MACH_GPIO_H
+ 	select TI_PRIV_EDMA
+ 	select USE_OF
+ 	select ZONE_DMA
+diff --git a/arch/arm/mach-davinci/da830.c b/arch/arm/mach-davinci/da830.c
+index da498ee..771d0e7 100644
+--- a/arch/arm/mach-davinci/da830.c
++++ b/arch/arm/mach-davinci/da830.c
+@@ -18,7 +18,6 @@
  #include <mach/common.h>
--#include <linux/platform_data/i2c-davinci.h>
-+#include <mach/mux.h>
- #include <mach/serial.h>
--#include <linux/platform_data/mmc-davinci.h>
--#include <linux/platform_data/mtd-davinci.h>
--#include <linux/platform_data/keyscan-davinci.h>
- 
- #include <media/ths7303.h>
- #include <media/tvp514x.h>
-@@ -743,6 +743,12 @@ static struct spi_board_info dm365_evm_spi_info[] __initconst = {
- 
- static __init void dm365_evm_init(void)
- {
-+	int ret;
-+
-+	ret = dm365_gpio_register();
-+	if (ret)
-+		pr_warn("%s: GPIO init failed: %d\n", __func__, ret);
-+
- 	evm_init_i2c();
- 	davinci_serial_init(dm365_serial_device);
- 
-diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
-index 462812b..d0894d8 100644
---- a/arch/arm/mach-davinci/board-dm644x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm644x-evm.c
-@@ -8,37 +8,42 @@
-  * is licensed "as is" without any warranty of any kind, whether express
-  * or implied.
-  */
--#include <linux/kernel.h>
--#include <linux/init.h>
-+#include <linux/clk.h>
- #include <linux/dma-mapping.h>
--#include <linux/platform_device.h>
-+#include <linux/err.h>
- #include <linux/gpio.h>
- #include <linux/i2c.h>
--#include <linux/i2c/pcf857x.h>
- #include <linux/i2c/at24.h>
-+#include <linux/i2c/pcf857x.h>
-+#include <linux/init.h>
-+#include <linux/input.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/leds.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/nand.h>
- #include <linux/mtd/partitions.h>
- #include <linux/mtd/physmap.h>
- #include <linux/phy.h>
--#include <linux/clk.h>
--#include <linux/videodev2.h>
-+#include <linux/platform_data/i2c-davinci.h>
-+#include <linux/platform_data/keyscan-davinci.h>
-+#include <linux/platform_data/mmc-davinci.h>
-+#include <linux/platform_data/mtd-davinci.h>
-+#include <linux/platform_data/mtd-davinci-aemif.h>
-+#include <linux/platform_data/usb-davinci.h>
-+#include <linux/slab.h>
-+#include <linux/spi/eeprom.h>
-+#include <linux/spi/spi.h>
- #include <linux/v4l2-dv-timings.h>
--#include <linux/export.h>
--
--#include <media/tvp514x.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- 
- #include <mach/common.h>
--#include <linux/platform_data/i2c-davinci.h>
--#include <mach/serial.h>
- #include <mach/mux.h>
--#include <linux/platform_data/mtd-davinci.h>
--#include <linux/platform_data/mmc-davinci.h>
--#include <linux/platform_data/usb-davinci.h>
--#include <linux/platform_data/mtd-davinci-aemif.h>
-+#include <mach/serial.h>
-+
-+#include <media/tvp514x.h>
- 
- #include "davinci.h"
- 
-@@ -753,9 +758,14 @@ static int davinci_phy_fixup(struct phy_device *phydev)
- 
- static __init void davinci_evm_init(void)
- {
-+	int ret;
- 	struct clk *aemif_clk;
- 	struct davinci_soc_info *soc_info = &davinci_soc_info;
- 
-+	ret = dm644x_gpio_register();
-+	if (ret)
-+		pr_warn("%s: GPIO init failed: %d\n", __func__, ret);
-+
- 	aemif_clk = clk_get(NULL, "aemif");
- 	clk_prepare_enable(aemif_clk);
- 
-diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
-index 734cc02..e5e4cf0 100644
---- a/arch/arm/mach-davinci/board-dm646x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-@@ -16,37 +16,37 @@
-  * Included Files
-  **************************************************************************/
- 
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/leds.h>
-+#include <linux/clk.h>
-+#include <linux/export.h>
- #include <linux/gpio.h>
--#include <linux/platform_device.h>
- #include <linux/i2c.h>
- #include <linux/i2c/at24.h>
- #include <linux/i2c/pcf857x.h>
--
--#include <media/tvp514x.h>
--#include <media/adv7343.h>
--
-+#include <linux/init.h>
-+#include <mach/irqs.h>
-+#include <linux/kernel.h>
-+#include <linux/leds.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/nand.h>
- #include <linux/mtd/partitions.h>
--#include <linux/clk.h>
--#include <linux/export.h>
-+#include <linux/platform_data/i2c-davinci.h>
-+#include <linux/platform_data/mtd-davinci.h>
-+#include <linux/platform_data/mtd-davinci-aemif.h>
-+#include <linux/platform_device.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- 
-+#include <mach/cdce949.h>
-+#include <mach/clock.h>
- #include <mach/common.h>
- #include <mach/serial.h>
--#include <linux/platform_data/i2c-davinci.h>
--#include <linux/platform_data/mtd-davinci.h>
--#include <mach/clock.h>
--#include <mach/cdce949.h>
--#include <linux/platform_data/mtd-davinci-aemif.h>
- 
--#include "davinci.h"
-+#include <media/tvp514x.h>
-+#include <media/adv7343.h>
-+
- #include "clock.h"
-+#include "davinci.h"
- 
- #define NAND_BLOCK_SIZE		SZ_128K
- 
-@@ -785,8 +785,13 @@ static struct edma_rsv_info dm646x_edma_rsv[] = {
- 
- static __init void evm_init(void)
- {
-+	int ret;
- 	struct davinci_soc_info *soc_info = &davinci_soc_info;
- 
-+	ret = dm646x_gpio_register();
-+	if (ret)
-+		pr_warn("evm_init: GPIO init failed: %d\n", ret);
-+
- 	evm_init_i2c();
- 	davinci_serial_init(dm646x_serial_device);
- 	dm646x_init_mcasp0(&dm646x_evm_snd_data[0]);
-diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
-index 8e156e0..322eabd 100644
---- a/arch/arm/mach-davinci/board-neuros-osd2.c
-+++ b/arch/arm/mach-davinci/board-neuros-osd2.c
-@@ -23,20 +23,21 @@
-  * License version 2. This program is licensed "as is" without any
-  * warranty of any kind, whether express or implied.
-  */
--#include <linux/platform_device.h>
- #include <linux/gpio.h>
- #include <linux/mtd/partitions.h>
-+#include <linux/platform_data/gpio-davinci.h>
-+#include <linux/platform_data/i2c-davinci.h>
-+#include <linux/platform_data/mmc-davinci.h>
-+#include <linux/platform_data/mtd-davinci.h>
-+#include <linux/platform_data/usb-davinci.h>
-+#include <linux/platform_device.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- 
- #include <mach/common.h>
--#include <linux/platform_data/i2c-davinci.h>
--#include <mach/serial.h>
- #include <mach/mux.h>
--#include <linux/platform_data/mtd-davinci.h>
--#include <linux/platform_data/mmc-davinci.h>
--#include <linux/platform_data/usb-davinci.h>
-+#include <mach/serial.h>
- 
- #include "davinci.h"
- 
-@@ -168,9 +169,14 @@ static struct davinci_mmc_config davinci_ntosd2_mmc_config = {
- 
- static __init void davinci_ntosd2_init(void)
- {
-+	int ret;
- 	struct clk *aemif_clk;
- 	struct davinci_soc_info *soc_info = &davinci_soc_info;
- 
-+	ret = dm644x_gpio_register();
-+	if (ret)
-+		pr_warn("%s: GPIO init failed: %d\n", __func__, ret);
-+
- 	aemif_clk = clk_get(NULL, "aemif");
- 	clk_prepare_enable(aemif_clk);
- 
-diff --git a/arch/arm/mach-davinci/davinci.h b/arch/arm/mach-davinci/davinci.h
-index 6dfc038..e297cb7 100644
---- a/arch/arm/mach-davinci/davinci.h
-+++ b/arch/arm/mach-davinci/davinci.h
-@@ -18,22 +18,23 @@
- #define __DAVINCI_H
- 
- #include <linux/clk.h>
--#include <linux/videodev2.h>
- #include <linux/davinci_emac.h>
--#include <linux/platform_device.h>
--#include <linux/spi/spi.h>
- #include <linux/platform_data/davinci_asp.h>
- #include <linux/platform_data/edma.h>
- #include <linux/platform_data/keyscan-davinci.h>
-+#include <linux/platform_device.h>
-+#include <linux/spi/spi.h>
-+#include <linux/videodev2.h>
-+
- #include <mach/hardware.h>
- 
--#include <media/davinci/vpfe_capture.h>
--#include <media/davinci/vpif_types.h>
--#include <media/davinci/vpss.h>
- #include <media/davinci/vpbe_types.h>
- #include <media/davinci/vpbe_venc.h>
- #include <media/davinci/vpbe.h>
- #include <media/davinci/vpbe_osd.h>
-+#include <media/davinci/vpfe_capture.h>
-+#include <media/davinci/vpif_types.h>
-+#include <media/davinci/vpss.h>
- 
- #define DAVINCI_SYSTEM_MODULE_BASE	0x01c40000
- #define SYSMOD_VDAC_CONFIG		0x2c
-@@ -84,6 +85,7 @@ void dm355_init_spi0(unsigned chipselect_mask,
- 		const struct spi_board_info *info, unsigned len);
- void dm355_init_asp1(u32 evt_enable, struct snd_platform_data *pdata);
- int dm355_init_video(struct vpfe_config *, struct vpbe_config *);
-+int dm355_gpio_register(void);
- 
- /* DM365 function declarations */
- void dm365_init(void);
-@@ -94,11 +96,13 @@ void dm365_init_rtc(void);
- void dm365_init_spi0(unsigned chipselect_mask,
- 			const struct spi_board_info *info, unsigned len);
- int dm365_init_video(struct vpfe_config *, struct vpbe_config *);
-+int dm365_gpio_register(void);
- 
- /* DM644x function declarations */
- void dm644x_init(void);
- void dm644x_init_asp(struct snd_platform_data *pdata);
- int dm644x_init_video(struct vpfe_config *, struct vpbe_config *);
-+int dm644x_gpio_register(void);
- 
- /* DM646x function declarations */
- void dm646x_init(void);
-@@ -108,6 +112,7 @@ int dm646x_init_edma(struct edma_rsv_info *rsv);
- void dm646x_video_init(void);
- void dm646x_setup_vpif(struct vpif_display_config *,
- 		       struct vpif_capture_config *);
-+int dm646x_gpio_register(void);
- 
- extern struct platform_device dm365_serial_device[];
- extern struct platform_device dm355_serial_device[];
+ #include <mach/cputype.h>
+ #include <mach/da8xx.h>
+-#include <mach/gpio-davinci.h>
+ #include <mach/irqs.h>
+ #include <mach/psc.h>
+ #include <mach/time.h>
+diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
+index c6608c4..94ef9bf 100644
+--- a/arch/arm/mach-davinci/da850.c
++++ b/arch/arm/mach-davinci/da850.c
+@@ -25,7 +25,6 @@
+ #include <mach/cpufreq.h>
+ #include <mach/cputype.h>
+ #include <mach/da8xx.h>
+-#include <mach/gpio-davinci.h>
+ #include <mach/irqs.h>
+ #include <mach/pm.h>
+ #include <mach/psc.h>
 diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
-index 0f3cb48..3eb5ffe 100644
+index 3eb5ffe..55e79b6 100644
 --- a/arch/arm/mach-davinci/dm355.c
 +++ b/arch/arm/mach-davinci/dm355.c
-@@ -8,31 +8,31 @@
-  * is licensed "as is" without any warranty of any kind, whether express
-  * or implied.
-  */
--#include <linux/init.h>
- #include <linux/clk.h>
--#include <linux/serial_8250.h>
--#include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
--
-+#include <linux/init.h>
-+#include <linux/platform_data/edma.h>
-+#include <linux/platform_data/gpio-davinci.h>
-+#include <linux/platform_data/spi-davinci.h>
-+#include <linux/platform_device.h>
-+#include <linux/serial_8250.h>
- #include <linux/spi/spi.h>
+@@ -22,7 +22,6 @@
  
- #include <asm/mach/map.h>
- 
-+#include <mach/common.h>
+ #include <mach/common.h>
  #include <mach/cputype.h>
--#include <mach/psc.h>
--#include <mach/mux.h>
-+#include <mach/gpio-davinci.h>
- #include <mach/irqs.h>
--#include <mach/time.h>
-+#include <mach/mux.h>
-+#include <mach/psc.h>
- #include <mach/serial.h>
--#include <mach/common.h>
--#include <linux/platform_data/spi-davinci.h>
 -#include <mach/gpio-davinci.h>
--#include <linux/platform_data/edma.h>
-+#include <mach/time.h>
- 
--#include "davinci.h"
-+#include "asp.h"
- #include "clock.h"
-+#include "davinci.h"
- #include "mux.h"
--#include "asp.h"
- 
- #define DM355_UART2_BASE	(IO_PHYS + 0x206000)
- #define DM355_OSD_BASE		(IO_PHYS + 0x70200)
-@@ -886,6 +886,30 @@ static struct platform_device dm355_vpbe_dev = {
- 	},
- };
- 
-+static struct resource dm355_gpio_resources[] = {
-+	{	/* registers */
-+		.start	= DAVINCI_GPIO_BASE,
-+		.end	= DAVINCI_GPIO_BASE + SZ_4K - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{	/* interrupt */
-+		.start	= IRQ_DM355_GPIOBNK0,
-+		.end	= IRQ_DM355_GPIOBNK6,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct davinci_gpio_platform_data dm355_gpio_platform_data = {
-+	.ngpio = 104,
-+	.intc_irq_num = DAVINCI_N_AINTC_IRQ,
-+};
-+
-+int __init dm355_gpio_register()
-+{
-+	return davinci_gpio_register(dm355_gpio_resources,
-+				     sizeof(dm355_gpio_resources),
-+				     &dm355_gpio_platform_data);
-+}
- /*----------------------------------------------------------------------*/
- 
- static struct map_desc dm355_io_desc[] = {
-@@ -1005,10 +1029,6 @@ static struct davinci_soc_info davinci_soc_info_dm355 = {
- 	.intc_irq_prios		= dm355_default_priorities,
- 	.intc_irq_num		= DAVINCI_N_AINTC_IRQ,
- 	.timer_info		= &dm355_timer_info,
--	.gpio_type		= GPIO_TYPE_DAVINCI,
--	.gpio_base		= DAVINCI_GPIO_BASE,
--	.gpio_num		= 104,
--	.gpio_irq		= IRQ_DM355_GPIOBNK0,
- 	.sram_dma		= 0x00010000,
- 	.sram_len		= SZ_32K,
- };
+ #include <mach/irqs.h>
+ #include <mach/mux.h>
+ #include <mach/psc.h>
 diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
-index 278080d..9bb60f1 100644
+index 9bb60f1..d539e7a 100644
 --- a/arch/arm/mach-davinci/dm365.c
 +++ b/arch/arm/mach-davinci/dm365.c
-@@ -12,31 +12,32 @@
+@@ -27,7 +27,6 @@
+ 
+ #include <mach/common.h>
+ #include <mach/cputype.h>
+-#include <mach/gpio-davinci.h>
+ #include <mach/irqs.h>
+ #include <mach/mux.h>
+ #include <mach/psc.h>
+diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
+index 9f5f059..fb16a0c 100644
+--- a/arch/arm/mach-davinci/dm644x.c
++++ b/arch/arm/mach-davinci/dm644x.c
+@@ -19,7 +19,6 @@
+ 
+ #include <mach/common.h>
+ #include <mach/cputype.h>
+-#include <mach/gpio-davinci.h>
+ #include <mach/irqs.h>
+ #include <mach/mux.h>
+ #include <mach/psc.h>
+diff --git a/arch/arm/mach-davinci/dm646x.c b/arch/arm/mach-davinci/dm646x.c
+index 02042d5..fd48282 100644
+--- a/arch/arm/mach-davinci/dm646x.c
++++ b/arch/arm/mach-davinci/dm646x.c
+@@ -20,7 +20,6 @@
+ 
+ #include <mach/common.h>
+ #include <mach/cputype.h>
+-#include <mach/gpio-davinci.h>
+ #include <mach/irqs.h>
+ #include <mach/mux.h>
+ #include <mach/psc.h>
+diff --git a/arch/arm/mach-davinci/include/mach/gpio-davinci.h b/arch/arm/mach-davinci/include/mach/gpio-davinci.h
+deleted file mode 100644
+index 0d63b24..0000000
+--- a/arch/arm/mach-davinci/include/mach/gpio-davinci.h
++++ /dev/null
+@@ -1,90 +0,0 @@
+-/*
+- * TI DaVinci GPIO Support
+- *
+- * Copyright (c) 2006 David Brownell
+- * Copyright (c) 2007, MontaVista Software, Inc. <source@mvista.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- */
+-
+-#ifndef	__DAVINCI_DAVINCI_GPIO_H
+-#define	__DAVINCI_DAVINCI_GPIO_H
+-
+-#include <linux/io.h>
+-#include <linux/spinlock.h>
+-
+-#include <asm-generic/gpio.h>
+-
+-#include <mach/irqs.h>
+-#include <mach/common.h>
+-
+-enum davinci_gpio_type {
+-	GPIO_TYPE_DAVINCI = 0,
+-	GPIO_TYPE_TNETV107X,
+-};
+-
+-/*
+- * basic gpio routines
+- *
+- * board-specific init should be done by arch/.../.../board-XXX.c (maybe
+- * initializing banks together) rather than boot loaders; kexec() won't
+- * go through boot loaders.
+- *
+- * the gpio clock will be turned on when gpios are used, and you may also
+- * need to pay attention to PINMUX registers to be sure those pins are
+- * used as gpios, not with other peripherals.
+- *
+- * On-chip GPIOs are numbered 0..(DAVINCI_N_GPIO-1).  For documentation,
+- * and maybe for later updates, code may write GPIO(N).  These may be
+- * all 1.8V signals, all 3.3V ones, or a mix of the two.  A given chip
+- * may not support all the GPIOs in that range.
+- *
+- * GPIOs can also be on external chips, numbered after the ones built-in
+- * to the DaVinci chip.  For now, they won't be usable as IRQ sources.
+- */
+-#define	GPIO(X)		(X)		/* 0 <= X <= (DAVINCI_N_GPIO - 1) */
+-
+-/* Convert GPIO signal to GPIO pin number */
+-#define GPIO_TO_PIN(bank, gpio)	(16 * (bank) + (gpio))
+-
+-struct davinci_gpio_controller {
+-	struct gpio_chip	chip;
+-	int			irq_base;
+-	spinlock_t		lock;
+-	void __iomem		*regs;
+-	void __iomem		*set_data;
+-	void __iomem		*clr_data;
+-	void __iomem		*in_data;
+-	unsigned		gpio_irq;
+-};
+-
+-/* The __gpio_to_controller() and __gpio_mask() functions inline to constants
+- * with constant parameters; or in outlined code they execute at runtime.
+- *
+- * You'd access the controller directly when reading or writing more than
+- * one gpio value at a time, and to support wired logic where the value
+- * being driven by the cpu need not match the value read back.
+- *
+- * These are NOT part of the cross-platform GPIO interface
+- */
+-static inline struct davinci_gpio_controller *
+-__gpio_to_controller(unsigned gpio)
+-{
+-	struct davinci_gpio_controller *ctlrs = davinci_soc_info.gpio_ctlrs;
+-	int index = gpio / 32;
+-
+-	if (!ctlrs || index >= davinci_soc_info.gpio_ctlrs_num)
+-		return NULL;
+-
+-	return ctlrs + index;
+-}
+-
+-static inline u32 __gpio_mask(unsigned gpio)
+-{
+-	return 1 << (gpio % 32);
+-}
+-
+-#endif	/* __DAVINCI_DAVINCI_GPIO_H */
+diff --git a/arch/arm/mach-davinci/include/mach/gpio.h b/arch/arm/mach-davinci/include/mach/gpio.h
+deleted file mode 100644
+index 960e9de..0000000
+--- a/arch/arm/mach-davinci/include/mach/gpio.h
++++ /dev/null
+@@ -1,88 +0,0 @@
+-/*
+- * TI DaVinci GPIO Support
+- *
+- * Copyright (c) 2006 David Brownell
+- * Copyright (c) 2007, MontaVista Software, Inc. <source@mvista.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- */
+-
+-#ifndef	__DAVINCI_GPIO_H
+-#define	__DAVINCI_GPIO_H
+-
+-#include <asm-generic/gpio.h>
+-
+-#define __ARM_GPIOLIB_COMPLEX
+-
+-/* The inline versions use the static inlines in the driver header */
+-#include "gpio-davinci.h"
+-
+-/*
+- * The get/set/clear functions will inline when called with constant
+- * parameters referencing built-in GPIOs, for low-overhead bitbanging.
+- *
+- * gpio_set_value() will inline only on traditional Davinci style controllers
+- * with distinct set/clear registers.
+- *
+- * Otherwise, calls with variable parameters or referencing external
+- * GPIOs (e.g. on GPIO expander chips) use outlined functions.
+- */
+-static inline void gpio_set_value(unsigned gpio, int value)
+-{
+-	if (__builtin_constant_p(value) && gpio < davinci_soc_info.gpio_num) {
+-		struct davinci_gpio_controller *ctlr;
+-		u32				mask;
+-
+-		ctlr = __gpio_to_controller(gpio);
+-
+-		if (ctlr->set_data != ctlr->clr_data) {
+-			mask = __gpio_mask(gpio);
+-			if (value)
+-				__raw_writel(mask, ctlr->set_data);
+-			else
+-				__raw_writel(mask, ctlr->clr_data);
+-			return;
+-		}
+-	}
+-
+-	__gpio_set_value(gpio, value);
+-}
+-
+-/* Returns zero or nonzero; works for gpios configured as inputs OR
+- * as outputs, at least for built-in GPIOs.
+- *
+- * NOTE: for built-in GPIOs, changes in reported values are synchronized
+- * to the GPIO clock.  This is easily seen after calling gpio_set_value()
+- * and then immediately gpio_get_value(), where the gpio_get_value() will
+- * return the old value until the GPIO clock ticks and the new value gets
+- * latched.
+- */
+-static inline int gpio_get_value(unsigned gpio)
+-{
+-	struct davinci_gpio_controller *ctlr;
+-
+-	if (!__builtin_constant_p(gpio) || gpio >= davinci_soc_info.gpio_num)
+-		return __gpio_get_value(gpio);
+-
+-	ctlr = __gpio_to_controller(gpio);
+-	return __gpio_mask(gpio) & __raw_readl(ctlr->in_data);
+-}
+-
+-static inline int gpio_cansleep(unsigned gpio)
+-{
+-	if (__builtin_constant_p(gpio) && gpio < davinci_soc_info.gpio_num)
+-		return 0;
+-	else
+-		return __gpio_cansleep(gpio);
+-}
+-
+-static inline int irq_to_gpio(unsigned irq)
+-{
+-	/* don't support the reverse mapping */
+-	return -ENOSYS;
+-}
+-
+-#endif				/* __DAVINCI_GPIO_H */
+diff --git a/arch/arm/mach-davinci/tnetv107x.c b/arch/arm/mach-davinci/tnetv107x.c
+index f4d7fbb..e2cbc40 100644
+--- a/arch/arm/mach-davinci/tnetv107x.c
++++ b/arch/arm/mach-davinci/tnetv107x.c
+@@ -12,26 +12,26 @@
   * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   * GNU General Public License for more details.
   */
--#include <linux/init.h>
- #include <linux/clk.h>
--#include <linux/serial_8250.h>
--#include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
--#include <linux/spi/spi.h>
-+#include <linux/init.h>
- #include <linux/platform_data/edma.h>
-+#include <linux/platform_data/gpio-davinci.h>
-+#include <linux/platform_data/keyscan-davinci.h>
-+#include <linux/platform_data/spi-davinci.h>
-+#include <linux/platform_device.h>
-+#include <linux/serial_8250.h>
-+#include <linux/spi/spi.h>
- 
- #include <asm/mach/map.h>
- 
-+#include <mach/common.h>
- #include <mach/cputype.h>
--#include <mach/psc.h>
--#include <mach/mux.h>
-+#include <mach/gpio-davinci.h>
- #include <mach/irqs.h>
--#include <mach/time.h>
-+#include <mach/mux.h>
-+#include <mach/psc.h>
- #include <mach/serial.h>
--#include <mach/common.h>
--#include <linux/platform_data/keyscan-davinci.h>
--#include <linux/platform_data/spi-davinci.h>
--#include <mach/gpio-davinci.h>
-+#include <mach/time.h>
- 
--#include "davinci.h"
-+#include "asp.h"
- #include "clock.h"
-+#include "davinci.h"
- #include "mux.h"
--#include "asp.h"
- 
- #define DM365_REF_FREQ		24000000	/* 24 MHz on the DM365 EVM */
- #define DM365_RTC_BASE			0x01c69000
-@@ -698,6 +699,32 @@ void __init dm365_init_spi0(unsigned chipselect_mask,
- 	platform_device_register(&dm365_spi0_device);
- }
- 
-+static struct resource dm365_gpio_resources[] = {
-+	{	/* registers */
-+		.start	= DAVINCI_GPIO_BASE,
-+		.end	= DAVINCI_GPIO_BASE + SZ_4K - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{	/* interrupt */
-+		.start	= IRQ_DM365_GPIO0,
-+		.end	= IRQ_DM365_GPIO7,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct davinci_gpio_platform_data dm365_gpio_platform_data = {
-+	.ngpio = 104,
-+	.intc_irq_num = DAVINCI_N_AINTC_IRQ,
-+	.gpio_unbanked = 8,
-+};
-+
-+int __init dm365_gpio_register()
-+{
-+	return davinci_gpio_register(dm365_gpio_resources,
-+				     sizeof(dm365_gpio_resources),
-+				     &dm365_gpio_platform_data);
-+}
-+
- static struct emac_platform_data dm365_emac_pdata = {
- 	.ctrl_reg_offset	= DM365_EMAC_CNTRL_OFFSET,
- 	.ctrl_mod_reg_offset	= DM365_EMAC_CNTRL_MOD_OFFSET,
-@@ -1105,11 +1132,6 @@ static struct davinci_soc_info davinci_soc_info_dm365 = {
- 	.intc_irq_prios		= dm365_default_priorities,
- 	.intc_irq_num		= DAVINCI_N_AINTC_IRQ,
- 	.timer_info		= &dm365_timer_info,
--	.gpio_type		= GPIO_TYPE_DAVINCI,
--	.gpio_base		= DAVINCI_GPIO_BASE,
--	.gpio_num		= 104,
--	.gpio_irq		= IRQ_DM365_GPIO0,
--	.gpio_unbanked		= 8,	/* really 16 ... skip muxed GPIOs */
- 	.emac_pdata		= &dm365_emac_pdata,
- 	.sram_dma		= 0x00010000,
- 	.sram_len		= SZ_32K,
-diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
-index 4f74682..9f5f059 100644
---- a/arch/arm/mach-davinci/dm644x.c
-+++ b/arch/arm/mach-davinci/dm644x.c
-@@ -8,27 +8,28 @@
-  * is licensed "as is" without any warranty of any kind, whether express
-  * or implied.
-  */
--#include <linux/init.h>
- #include <linux/clk.h>
--#include <linux/serial_8250.h>
--#include <linux/platform_device.h>
-+#include <linux/init.h>
- #include <linux/platform_data/edma.h>
-+#include <linux/platform_device.h>
-+#include <linux/platform_data/gpio-davinci.h>
-+#include <linux/serial_8250.h>
- 
- #include <asm/mach/map.h>
- 
-+#include <mach/common.h>
- #include <mach/cputype.h>
-+#include <mach/gpio-davinci.h>
- #include <mach/irqs.h>
--#include <mach/psc.h>
- #include <mach/mux.h>
--#include <mach/time.h>
-+#include <mach/psc.h>
- #include <mach/serial.h>
--#include <mach/common.h>
--#include <mach/gpio-davinci.h>
-+#include <mach/time.h>
- 
--#include "davinci.h"
-+#include "asp.h"
- #include "clock.h"
-+#include "davinci.h"
- #include "mux.h"
--#include "asp.h"
- 
- /*
-  * Device specific clocks
-@@ -771,6 +772,30 @@ static struct platform_device dm644x_vpbe_dev = {
- 	},
- };
- 
-+static struct resource dm644_gpio_resources[] = {
-+	{	/* registers */
-+		.start	= DAVINCI_GPIO_BASE,
-+		.end	= DAVINCI_GPIO_BASE + SZ_4K - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{	/* interrupt */
-+		.start	= IRQ_GPIOBNK0,
-+		.end	= IRQ_GPIOBNK4,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct davinci_gpio_platform_data dm644_gpio_platform_data = {
-+	.ngpio = 71,
-+	.intc_irq_num = DAVINCI_N_AINTC_IRQ,
-+};
-+
-+int __init dm644x_gpio_register()
-+{
-+	return davinci_gpio_register(dm644_gpio_resources,
-+				     sizeof(dm644_gpio_resources),
-+				     &dm644_gpio_platform_data);
-+}
- /*----------------------------------------------------------------------*/
- 
- static struct map_desc dm644x_io_desc[] = {
-@@ -897,10 +922,6 @@ static struct davinci_soc_info davinci_soc_info_dm644x = {
- 	.intc_irq_prios 	= dm644x_default_priorities,
- 	.intc_irq_num		= DAVINCI_N_AINTC_IRQ,
- 	.timer_info		= &dm644x_timer_info,
--	.gpio_type		= GPIO_TYPE_DAVINCI,
--	.gpio_base		= DAVINCI_GPIO_BASE,
--	.gpio_num		= 71,
--	.gpio_irq		= IRQ_GPIOBNK0,
- 	.emac_pdata		= &dm644x_emac_pdata,
- 	.sram_dma		= 0x00008000,
- 	.sram_len		= SZ_16K,
-diff --git a/arch/arm/mach-davinci/dm646x.c b/arch/arm/mach-davinci/dm646x.c
-index 68f8d1f..02042d5 100644
---- a/arch/arm/mach-davinci/dm646x.c
-+++ b/arch/arm/mach-davinci/dm646x.c
-@@ -8,28 +8,29 @@
-  * is licensed "as is" without any warranty of any kind, whether express
-  * or implied.
-  */
 +#include <linux/clk.h>
- #include <linux/dma-mapping.h>
++#include <linux/err.h>
+ #include <linux/gpio.h>
+-#include <linux/kernel.h>
  #include <linux/init.h>
 -#include <linux/clk.h>
--#include <linux/serial_8250.h>
--#include <linux/platform_device.h>
- #include <linux/platform_data/edma.h>
+ #include <linux/io.h>
+-#include <linux/err.h>
++#include <linux/kernel.h>
 +#include <linux/platform_data/gpio-davinci.h>
-+#include <linux/platform_device.h>
-+#include <linux/serial_8250.h>
+ #include <linux/platform_device.h>
+ #include <linux/reboot.h>
  
  #include <asm/mach/map.h>
  
-+#include <mach/common.h>
- #include <mach/cputype.h>
-+#include <mach/gpio-davinci.h>
- #include <mach/irqs.h>
--#include <mach/psc.h>
- #include <mach/mux.h>
+ #include <mach/common.h>
 -#include <mach/time.h>
+ #include <mach/cputype.h>
+-#include <mach/psc.h>
+ #include <mach/cp_intc.h>
+-#include <mach/irqs.h>
+ #include <mach/hardware.h>
++#include <mach/irqs.h>
 +#include <mach/psc.h>
- #include <mach/serial.h>
--#include <mach/common.h>
--#include <mach/gpio-davinci.h>
 +#include <mach/time.h>
+ #include <mach/tnetv107x.h>
+-#include <mach/gpio-davinci.h>
  
--#include "davinci.h"
-+#include "asp.h"
  #include "clock.h"
-+#include "davinci.h"
  #include "mux.h"
--#include "asp.h"
+diff --git a/drivers/gpio/gpio-tnetv107x.c b/drivers/gpio/gpio-tnetv107x.c
+index 3fa3e28..b5689f6 100644
+--- a/drivers/gpio/gpio-tnetv107x.c
++++ b/drivers/gpio/gpio-tnetv107x.c
+@@ -12,9 +12,10 @@
+  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  */
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+ #include <linux/gpio.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/platform_data/gpio-davinci.h>
  
- #define DAVINCI_VPIF_BASE       (0x01C12000)
+ #include <mach/common.h>
+ #include <mach/tnetv107x.h>
+diff --git a/include/linux/platform_data/gpio-davinci.h b/include/linux/platform_data/gpio-davinci.h
+index 2fcc125..0df700d 100644
+--- a/include/linux/platform_data/gpio-davinci.h
++++ b/include/linux/platform_data/gpio-davinci.h
+@@ -16,10 +16,44 @@
+ #ifndef __DAVINCI_GPIO_PLATFORM_H
+ #define __DAVINCI_GPIO_PLATFORM_H
  
-@@ -748,6 +749,30 @@ static struct platform_device vpif_capture_dev = {
- 	.num_resources	= ARRAY_SIZE(vpif_capture_resource),
++#include <linux/io.h>
++#include <linux/spinlock.h>
++
++#include <asm-generic/gpio.h>
++
++enum davinci_gpio_type {
++	GPIO_TYPE_TNETV107X = 0,
++};
++
+ struct davinci_gpio_platform_data {
+ 	u32	ngpio;
+ 	u32	gpio_unbanked;
+ 	u32	intc_irq_num;
  };
  
-+static struct resource dm646x_gpio_resources[] = {
-+	{	/* registers */
-+		.start	= DAVINCI_GPIO_BASE,
-+		.end	= DAVINCI_GPIO_BASE + SZ_4K - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{	/* interrupt */
-+		.start	= IRQ_DM646X_GPIOBNK0,
-+		.end	= IRQ_DM646X_GPIOBNK2,
-+		.flags	= IORESOURCE_IRQ,
-+	},
++
++struct davinci_gpio_controller {
++	struct gpio_chip	chip;
++	int			irq_base;
++	spinlock_t		lock;
++	void __iomem		*regs;
++	void __iomem		*set_data;
++	void __iomem		*clr_data;
++	void __iomem		*in_data;
++	int			gpio_unbanked;
++	unsigned		gpio_irq;
 +};
 +
-+static struct davinci_gpio_platform_data dm646x_gpio_platform_data = {
-+	.ngpio = 43,
-+	.intc_irq_num = DAVINCI_N_AINTC_IRQ,
-+};
++/*
++ * basic gpio routines
++ */
++#define	GPIO(X)		(X)	/* 0 <= X <= (DAVINCI_N_GPIO - 1) */
 +
-+int __init dm646x_gpio_register()
++/* Convert GPIO signal to GPIO pin number */
++#define GPIO_TO_PIN(bank, gpio)	(16 * (bank) + (gpio))
++
++static inline u32 __gpio_mask(unsigned gpio)
 +{
-+	return davinci_gpio_register(dm646x_gpio_resources,
-+				     sizeof(dm646x_gpio_resources),
-+				     &dm646x_gpio_platform_data);
++	return 1 << (gpio % 32);
 +}
- /*----------------------------------------------------------------------*/
- 
- static struct map_desc dm646x_io_desc[] = {
-@@ -874,10 +899,6 @@ static struct davinci_soc_info davinci_soc_info_dm646x = {
- 	.intc_irq_prios		= dm646x_default_priorities,
- 	.intc_irq_num		= DAVINCI_N_AINTC_IRQ,
- 	.timer_info		= &dm646x_timer_info,
--	.gpio_type		= GPIO_TYPE_DAVINCI,
--	.gpio_base		= DAVINCI_GPIO_BASE,
--	.gpio_num		= 43, /* Only 33 usable */
--	.gpio_irq		= IRQ_DM646X_GPIOBNK0,
- 	.emac_pdata		= &dm646x_emac_pdata,
- 	.sram_dma		= 0x10010000,
- 	.sram_len		= SZ_32K,
-diff --git a/arch/arm/mach-davinci/include/mach/common.h b/arch/arm/mach-davinci/include/mach/common.h
-index 0b3c169..4bb25e2 100644
---- a/arch/arm/mach-davinci/include/mach/common.h
-+++ b/arch/arm/mach-davinci/include/mach/common.h
-@@ -38,6 +38,8 @@ struct davinci_timer_info {
- 
- struct davinci_gpio_controller;
- 
-+#define DAVINCI_GPIO_BASE 0x01c67000
-+
- /*
-  * SoC info passed into common davinci modules.
-  *
-diff --git a/arch/arm/mach-davinci/include/mach/gpio-davinci.h b/arch/arm/mach-davinci/include/mach/gpio-davinci.h
-index 551ba43..0d63b24 100644
---- a/arch/arm/mach-davinci/include/mach/gpio-davinci.h
-+++ b/arch/arm/mach-davinci/include/mach/gpio-davinci.h
-@@ -21,8 +21,6 @@
- #include <mach/irqs.h>
- #include <mach/common.h>
- 
--#define DAVINCI_GPIO_BASE 0x01C67000
--
- enum davinci_gpio_type {
- 	GPIO_TYPE_DAVINCI = 0,
- 	GPIO_TYPE_TNETV107X,
+ #endif
 -- 
 1.7.9.5
 
