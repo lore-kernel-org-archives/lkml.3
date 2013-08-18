@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab3HRUhx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:37:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43761 "EHLO
+	id S1756734Ab3HRUiV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:38:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43751 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756553Ab3HRUfS (ORCPT
+	with ESMTP id S1756545Ab3HRUfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:35:18 -0400
+	Sun, 18 Aug 2013 16:35:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Hailperin <max@gustavus.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 07/45] sched: Ensure update_cfs_shares() is called for parents of continuously-running tasks
-Date: Sun, 18 Aug 2013 13:35:56 -0700
-Message-Id: <20130818203621.504406997@linuxfoundation.org>
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Adrian Sendroiu <molecula2788@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 05/45] x86 get_unmapped_area(): use proper mmap base for bottom-up direction
+Date: Sun, 18 Aug 2013 13:35:54 -0700
+Message-Id: <20130818203621.368077110@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -28,40 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Radu Caragea <sinaelgl@gmail.com>
 
-commit bf0bd948d1682e3996adc093b43021ed391983e6 upstream.
+commit df54d6fa54275ce59660453e29d1228c2b45a826 upstream.
 
-We typically update a task_group's shares within the dequeue/enqueue
-path.  However, continuously running tasks sharing a CPU are not
-subject to these updates as they are only put/picked.  Unfortunately,
-when we reverted f269ae046 (in 17bc14b7), we lost the augmenting
-periodic update that was supposed to account for this; resulting in a
-potential loss of fairness.
+When the stack is set to unlimited, the bottomup direction is used for
+mmap-ings but the mmap_base is not used and thus effectively renders
+ASLR for mmapings along with PIE useless.
 
-To fix this, re-introduce the explicit update in
-update_cfs_rq_blocked_load() [called via entity_tick()].
-
-Reported-by: Max Hailperin <max@gustavus.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Paul Turner <pjt@google.com>
-Link: http://lkml.kernel.org/n/tip-9545m3apw5d93ubyrotrj31y@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Adrian Sendroiu <molecula2788@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/fair.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/sys_x86_64.c |    2 +-
+ arch/x86/mm/mmap.c           |    2 +-
+ include/linux/sched.h        |    1 +
+ 3 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1984,6 +1984,7 @@ entity_tick(struct cfs_rq *cfs_rq, struc
- 	 */
- 	update_entity_load_avg(curr, 1);
- 	update_cfs_rq_blocked_load(cfs_rq, 1);
-+	update_cfs_shares(cfs_rq);
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -101,7 +101,7 @@ static void find_start_end(unsigned long
+ 				*begin = new_begin;
+ 		}
+ 	} else {
+-		*begin = TASK_UNMAPPED_BASE;
++		*begin = mmap_legacy_base();
+ 		*end = TASK_SIZE;
+ 	}
+ }
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -98,7 +98,7 @@ static unsigned long mmap_base(void)
+  * Bottom-up (legacy) layout on X86_32 did not support randomization, X86_64
+  * does, but not when emulating X86_32
+  */
+-static unsigned long mmap_legacy_base(void)
++unsigned long mmap_legacy_base(void)
+ {
+ 	if (mmap_is_ia32())
+ 		return TASK_UNMAPPED_BASE;
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -314,6 +314,7 @@ struct nsproxy;
+ struct user_namespace;
  
- #ifdef CONFIG_SCHED_HRTICK
- 	/*
+ #ifdef CONFIG_MMU
++extern unsigned long mmap_legacy_base(void);
+ extern void arch_pick_mmap_layout(struct mm_struct *mm);
+ extern unsigned long
+ arch_get_unmapped_area(struct file *, unsigned long, unsigned long,
 
 
