@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234Ab3HRUeI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:34:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43589 "EHLO
+	id S1756152Ab3HRUdc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:33:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43568 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756159Ab3HRUdd (ORCPT
+	with ESMTP id S1756128Ab3HRUda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:33:33 -0400
+	Sun, 18 Aug 2013 16:33:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jiri Kosina <jkosina@suse.cz>, Guenter Roeck <linux@roeck-us.net>
-Subject: [ 08/34] HID: microsoft: do not use compound literal - fix build
-Date: Sun, 18 Aug 2013 13:34:21 -0700
-Message-Id: <20130818203300.258997062@linuxfoundation.org>
+        Markos Chandras <markos.chandras@imgtec.com>,
+        "Steven J. Hill" <Steven.Hill@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Guenter Roeck <linux@roeck-us.net>,
+        linux-mips@linux-mips.org
+Subject: [ 04/34] MIPS: Expose missing pci_io{map,unmap} declarations
+Date: Sun, 18 Aug 2013 13:34:17 -0700
+Message-Id: <20130818203259.963776562@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -27,43 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit 6b90466cfec2a2fe027187d675d8d14217c12d82 upstream.
+commit 78857614104a26cdada4c53eea104752042bf5a1 upstream.
 
-In patch "HID: microsoft: fix invalid rdesc for 3k kbd" I fixed
-support for MS 3k keyboards. However the added check using memcmp and
-a compound statement breaks build on architectures where memcmp is a
-macro with parameters.
+The GENERIC_PCI_IOMAP does not depend on CONFIG_PCI so move
+it to the CONFIG_MIPS symbol so it's always selected for MIPS.
+This fixes the missing pci_iomap declaration for MIPS.
+Moreover, the pci_iounmap function was not defined in the
+io.h header file if the CONFIG_PCI symbol is not set,
+but it should since MIPS is not using CONFIG_GENERIC_IOMAP.
 
-hid-microsoft.c:51:18: error: macro "memcmp" passed 6 arguments, but takes just 3
+This fixes the following problem on a allyesconfig:
 
-On x86_64, memcmp is a function, so I did not see the error.
+drivers/net/ethernet/3com/3c59x.c:1031:2: error: implicit declaration of
+function 'pci_iomap' [-Werror=implicit-function-declaration]
+drivers/net/ethernet/3com/3c59x.c:1044:3: error: implicit declaration of
+function 'pci_iounmap' [-Werror=implicit-function-declaration]
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Acked-by: Steven J. Hill <Steven.Hill@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/5478/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-microsoft.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/mips/Kconfig          |    2 +-
+ arch/mips/include/asm/io.h |    5 +++++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-microsoft.c
-+++ b/drivers/hid/hid-microsoft.c
-@@ -47,9 +47,9 @@ static __u8 *ms_report_fixup(struct hid_
- 		rdesc[559] = 0x45;
- 	}
- 	/* the same as above (s/usage/physical/) */
--	if ((quirks & MS_RDESC_3K) && *rsize == 106 &&
--			!memcmp((char []){ 0x19, 0x00, 0x29, 0xff },
--				&rdesc[94], 4)) {
-+	if ((quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
-+			rdesc[95] == 0x00 && rdesc[96] == 0x29 &&
-+			rdesc[97] == 0xff) {
- 		rdesc[94] = 0x35;
- 		rdesc[96] = 0x45;
- 	}
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -24,6 +24,7 @@ config MIPS
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_IRQ_SHOW
++	select GENERIC_PCI_IOMAP
+ 	select HAVE_ARCH_JUMP_LABEL
+ 	select IRQ_FORCED_THREADING
+ 	select HAVE_MEMBLOCK
+@@ -2356,7 +2357,6 @@ config PCI
+ 	bool "Support for PCI controller"
+ 	depends on HW_HAS_PCI
+ 	select PCI_DOMAINS
+-	select GENERIC_PCI_IOMAP
+ 	select NO_GENERIC_PCI_IOPORT_MAP
+ 	help
+ 	  Find out whether you have a PCI motherboard. PCI is the name of a
+--- a/arch/mips/include/asm/io.h
++++ b/arch/mips/include/asm/io.h
+@@ -168,6 +168,11 @@ static inline void * isa_bus_to_virt(uns
+ extern void __iomem * __ioremap(phys_t offset, phys_t size, unsigned long flags);
+ extern void __iounmap(const volatile void __iomem *addr);
+ 
++#ifndef CONFIG_PCI
++struct pci_dev;
++static inline void pci_iounmap(struct pci_dev *dev, void __iomem *addr) {}
++#endif
++
+ static inline void __iomem * __ioremap_mode(phys_t offset, unsigned long size,
+ 	unsigned long flags)
+ {
 
 
