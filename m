@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848Ab3HRUyk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:54:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43467 "EHLO
+	id S1756925Ab3HRUy6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:54:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43448 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619Ab3HRUdO (ORCPT
+	with ESMTP id S1755607Ab3HRUdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:33:14 -0400
+	Sun, 18 Aug 2013 16:33:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Howells <dhowells@redhat.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 15/34] frv: Use core allocator for task_struct
-Date: Sun, 18 Aug 2013 13:34:28 -0700
-Message-Id: <20130818203300.730889337@linuxfoundation.org>
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 12/34] CRIS: Add _sdata to vmlinux.lds.S
+Date: Sun, 18 Aug 2013 13:34:25 -0700
+Message-Id: <20130818203300.528709308@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -28,52 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Jesper Nilsson <jesper.nilsson@axis.com>
 
-commit c6ae063aaf3786b9db7f19a90bf4ed8aaebb7f90 upstream.
+commit 473e162eea465e60578edb93341752e7f1c1dacc upstream.
 
-There is no point having a copy of the core allocator.
+Fixes link error:
+  LD      vmlinux
+kernel/built-in.o: In function `core_kernel_data':
+(.text+0x13e44): undefined reference to `_sdata'
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: David Howells <dhowells@redhat.com>
-Link: http://lkml.kernel.org/r/20120503085033.967140188@linutronix.de
+Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
 Cc: Guenter Roeck <linux@roeck-us.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/frv/include/asm/thread_info.h |    2 --
- arch/frv/kernel/process.c          |   10 ----------
- 2 files changed, 12 deletions(-)
+ arch/cris/kernel/vmlinux.lds.S |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/frv/include/asm/thread_info.h
-+++ b/arch/frv/include/asm/thread_info.h
-@@ -21,8 +21,6 @@
+--- a/arch/cris/kernel/vmlinux.lds.S
++++ b/arch/cris/kernel/vmlinux.lds.S
+@@ -52,6 +52,7 @@ SECTIONS
  
- #define THREAD_SIZE		8192
+ 	EXCEPTION_TABLE(4)
  
--#define __HAVE_ARCH_TASK_STRUCT_ALLOCATOR
--
- /*
-  * low level task data that entry.S needs immediate access to
-  * - this struct should fit entirely inside of one cache line
---- a/arch/frv/kernel/process.c
-+++ b/arch/frv/kernel/process.c
-@@ -44,16 +44,6 @@ asmlinkage void ret_from_fork(void);
- void (*pm_power_off)(void);
- EXPORT_SYMBOL(pm_power_off);
++	_sdata = .;
+ 	RODATA
  
--struct task_struct *alloc_task_struct_node(int node)
--{
--	return kmalloc_node(sizeof(task_struct), GFP_KERNEL, node);
--}
--
--void free_task_struct(struct task_struct *p)
--{
--	kfree(p);
--}
--
- static void core_sleep_idle(void)
- {
- #ifdef LED_DEBUG_SLEEP
+ 	. = ALIGN (4);
 
 
