@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab3HRUvq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:51:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43519 "EHLO
+	id S1757328Ab3HRUwG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:52:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43514 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042Ab3HRUdW (ORCPT
+	with ESMTP id S1756034Ab3HRUdV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:33:22 -0400
+	Sun, 18 Aug 2013 16:33:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephane Grosjean <s.grosjean@peak-system.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 25/34] can: pcan_usb: fix wrong memcpy() bytes length
-Date: Sun, 18 Aug 2013 13:34:38 -0700
-Message-Id: <20130818203301.405581673@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 24/34] iwl4965: reset firmware after rfkill off
+Date: Sun, 18 Aug 2013 13:34:37 -0700
+Message-Id: <20130818203301.338372087@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -28,35 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephane Grosjean <s.grosjean@peak-system.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 3c322a56b01695df15c70bfdc2d02e0ccd80654e upstream.
+commit 788f7a56fce1bcb2067b62b851a086fca48a0056 upstream.
 
-Fix possibly wrong memcpy() bytes length since some CAN records received from
-PCAN-USB could define a DLC field in range [9..15].
-In that case, the real DLC value MUST be used to move forward the record pointer
-but, only 8 bytes max. MUST be copied into the data field of the struct
-can_frame object of the skb given to the network core.
+Using rfkill switch can make firmware unstable, what cause various
+Microcode errors and kernel warnings. Reseting firmware just after
+rfkill off (radio on) helped with that.
 
-Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Resolve:
+https://bugzilla.redhat.com/show_bug.cgi?id=977053
+
+Reported-and-tested-by: Justin Pearce <whitefox@guardianfox.net>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/peak_usb/pcan_usb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlegacy/4965-mac.c |   10 +++++-----
+ drivers/net/wireless/iwlegacy/common.c   |    1 +
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/net/can/usb/peak_usb/pcan_usb.c
-+++ b/drivers/net/can/usb/peak_usb/pcan_usb.c
-@@ -649,7 +649,7 @@ static int pcan_usb_decode_data(struct p
- 		if ((mc->ptr + rec_len) > mc->end)
- 			goto decode_failed;
+--- a/drivers/net/wireless/iwlegacy/4965-mac.c
++++ b/drivers/net/wireless/iwlegacy/4965-mac.c
+@@ -4411,12 +4411,12 @@ il4965_irq_tasklet(struct il_priv *il)
+ 		 * is killed. Hence update the killswitch state here. The
+ 		 * rfkill handler will care about restarting if needed.
+ 		 */
+-		if (!test_bit(S_ALIVE, &il->status)) {
+-			if (hw_rf_kill)
+-				set_bit(S_RFKILL, &il->status);
+-			else
+-				clear_bit(S_RFKILL, &il->status);
++		if (hw_rf_kill) {
++			set_bit(S_RFKILL, &il->status);
++		} else {
++			clear_bit(S_RFKILL, &il->status);
+ 			wiphy_rfkill_set_hw_state(il->hw->wiphy, hw_rf_kill);
++			il_force_reset(il, true);
+ 		}
  
--		memcpy(cf->data, mc->ptr, rec_len);
-+		memcpy(cf->data, mc->ptr, cf->can_dlc);
- 		mc->ptr += rec_len;
- 	}
+ 		handled |= CSR_INT_BIT_RF_KILL;
+--- a/drivers/net/wireless/iwlegacy/common.c
++++ b/drivers/net/wireless/iwlegacy/common.c
+@@ -4659,6 +4659,7 @@ il_force_reset(struct il_priv *il, bool
  
+ 	return 0;
+ }
++EXPORT_SYMBOL(il_force_reset);
+ 
+ int
+ il_mac_change_interface(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 
 
