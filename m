@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab3HRW5R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 18:57:17 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40367 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754996Ab3HRW5Q convert rfc822-to-8bit (ORCPT
+	id S1755592Ab3HRXXA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 19:23:00 -0400
+Received: from nm19-vm6.bullet.mail.sg3.yahoo.com ([106.10.149.117]:38163 "EHLO
+	nm19-vm6.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754855Ab3HRXW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 18:57:16 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <cooloney@gmail.com>
-CC: =?iso-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Milo Kim <woogyom.kim@gmail.com>
-Subject: RE: [PATCH 01/10] leds: lp55xx: add common data structure for
- program
-Thread-Topic: [PATCH 01/10] leds: lp55xx: add common data structure for
- program
-Thread-Index: AQHOlA1Xw1EX7CXaFUe1LSqTxFyADZmS/1oAgAijZtA=
-Date: Sun, 18 Aug 2013 22:57:09 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E888D0@DQHE06.ent.ti.com>
-References: <1375948794-6286-1-git-send-email-milo.kim@ti.com>
- <1375948794-6286-2-git-send-email-milo.kim@ti.com>
- <CAK5ve-K10M3+=ctxu+5hU=pPz1_x6p1JgQS6jEin-LfxnP8Hog@mail.gmail.com>
-In-Reply-To: <CAK5ve-K10M3+=ctxu+5hU=pPz1_x6p1JgQS6jEin-LfxnP8Hog@mail.gmail.com>
-Accept-Language: en-US, ko-KR
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sun, 18 Aug 2013 19:22:59 -0400
+X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Aug 2013 19:22:59 EDT
+X-Yahoo-Newman-Id: 121388.82614.bm@smtp137.mail.sg3.yahoo.com
+Message-ID: <121388.82614.bm@smtp137.mail.sg3.yahoo.com>
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Cwy9YMQVM1mmekTVMYKTnZ9Jd1EJ3e2wHQZOY7BU9TFy232
+ mhFI9XJBm7A_xQeNLdwxBXya09gHVUH86wEnDQJNDfae0KtVdeJ3t5Y3GWVG
+ QRzSu.w7gWAK3s17wayg2UjeqUZx9tYrdlZscQ9Robebv0nbUWEqGTthMTzk
+ Bcz497QtpxJbrUsVb4DmSDwZNVJlXIB_a3AGN0uXgV2kB7VQ2lBYiYyHmrf3
+ wR2QPLWAmEM7J3.vb8aoPI9SidBBatY6EiEryAZtO4rTVfcFaaAq3mpLVwgU
+ QahRBxa1Og2s2_uOh7IFCWIkPdaL6RFmLm_hACneSqhagK_ji83CJg9mCfv6
+ zYYq3mWyQarawGS.f7cCnNBPqCFvMY_7qJb0XWEK1Gye0tYXPPGPHfT2cF74
+ pxBgEZnTlnNWkmHZYwZzuqy2n5ZqVwJzD9sat2YYL3TadMnvP_hFN0LMzmPH
+ Hjg1kxd1kEwNu77fXSwEBVZeP997SAlT38hoY4RNGUNhwe4jzcjOj0zoBx7m
+ o.U.qOXZc8y5gaq1BdaGC
+X-Yahoo-SMTP: z7FtC3mswBAGWthNQF2THvGRy0ltAJ0-
+X-Rocket-Received: from IMAY016I8N5S41P (eagdrympgx@124.42.238.124 with )
+        by smtp137.mail.sg3.yahoo.com with SMTP; 18 Aug 2013 16:16:48 -0700 PDT
+X-mailer: Cupid
+From: "eagdrympgx" <eagdrympgx@yahoo.com>
+Subject: cf
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain
+Date: Mon, 19 Aug 2013 07:10:26 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7INNGw5001115
 
-Hi Bryan,
+*-------------------------------------------------**********************-------------------------------
 
-> -----Original Message-----
-> From: Bryan Wu [mailto:cooloney@gmail.com]
-> Sent: Wednesday, August 14, 2013 3:56 AM
-> To: Milo Kim
-> Cc: Pali Roh·r; Linux LED Subsystem; lkml; Kim, Milo
-> Subject: Re: [PATCH 01/10] leds: lp55xx: add common data structure for
-> program
-> 
-> On Thu, Aug 8, 2013 at 12:59 AM, Milo Kim <woogyom.kim@gmail.com> wrote:
-> > LP55xx family devices have internal three program engines which are
-> > used for loading LED patterns.
-> > To maintain legacy device attributes, specific data structure is used,
-> 'mode'
-> > and 'led_mux'.
-> > The mode is used for showing/storing current engine mode such like
-> > disabled, load and run.
-> > Then led_mux is used for showing/storing current output LED selection.
-> > This is only for LP5523/55231.
-> >
-> 
-> This patch looks good to me, but the commit message format is little bit odd
-> to me. I will fix that and merge into my tree.
-
-Thanks for your help.
-Can I get more detailed information about this format problem?
-I need to check my configurations.
-
-Thanks,
-Milo-
+”–π„∏Ê∑—£¨◊…—Ø∑—£¨◊°Àﬁ£¨Ω®£¨ŒÂΩµ»µ»£¨
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
