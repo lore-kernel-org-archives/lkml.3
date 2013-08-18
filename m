@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab3HRBiM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 21:38:12 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:55870 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399Ab3HRBiJ (ORCPT
+	id S1753929Ab3HRBiK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 21:38:10 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:54340 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912Ab3HRBiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 21:38:09 -0400
+	Sat, 17 Aug 2013 21:38:06 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,95 +15,117 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Kevin Easton <kevin@guarana.org>
-Subject: [PATCH tip/core/rcu 11/11] jiffies: Avoid undefined behavior from signed overflow
-Date: Sat, 17 Aug 2013 18:37:56 -0700
-Message-Id: <1376789876-27594-11-git-send-email-paulmck@linux.vnet.ibm.com>
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Rik van Riel <riel@surriel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH tip/core/rcu 05/11] rcu: Make call_rcu() leak callbacks for debug-object errors
+Date: Sat, 17 Aug 2013 18:37:50 -0700
+Message-Id: <1376789876-27594-5-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1376789876-27594-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130818013735.GA27234@linux.vnet.ibm.com>
  <1376789876-27594-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081801-2398-0000-0000-0000019901C7
+x-cbid: 13081801-4834-0000-0000-00000A4507CB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-According to the C standard 3.4.3p3, overflow of a signed integer results
-in undefined behavior.  This commit therefore changes the definitions
-of time_after(), time_after_eq(), time_after64(), and time_after_eq64()
-to avoid this undefined behavior.  The trick is that the subtraction
-is done using unsigned arithmetic, which according to 6.2.5p9 cannot
-overflow because it is defined as modulo arithmetic.  This has the added
-(though admittedly quite small) benefit of shortening two lines of code
-by four characters each.
+If someone does a duplicate call_rcu(), the worst thing the second
+call_rcu() could do would be to actually queue the callback the second
+time because doing so corrupts whatever list the callback was already
+queued on.  This commit therefore makes __call_rcu() check the new
+return value from debug-objects and leak the callback upon error.
+This commit also substitutes rcu_leak_callback() for whatever callback
+function was previously in place in order to avoid freeing the callback
+out from under any readers that might still be referencing it.
 
-Note that the C standard considers the cast from unsigned to
-signed to be implementation-defined, see 6.3.1.3p3.  However, on a
-two-complement system, an implementation that defines anything other
-than a reinterpretation of the bits is free come to me, and I will be
-happy to act as a witness for its being committed to an insane asylum.
-(Although I have nothing against saturating arithmetic or signals in
-some cases, these things really should not be the default.)
+These changes increase the probability that the debug-objects error
+messages will actually make it somewhere visible.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Rik van Riel <riel@surriel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Kevin Easton <kevin@guarana.org>
-[ paulmck: Included time_after64() and time_after_eq64(), as suggested
-  by Eric Dumazet, also fixed commit message.]
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
 ---
- include/linux/jiffies.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/rcu.h     | 10 +++++++---
+ kernel/rcutree.c | 14 +++++++++++++-
+ 2 files changed, 20 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 97ba4e7..d235e88 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -101,13 +101,13 @@ static inline u64 get_jiffies_64(void)
- #define time_after(a,b)		\
- 	(typecheck(unsigned long, a) && \
- 	 typecheck(unsigned long, b) && \
--	 ((long)(b) - (long)(a) < 0))
-+	 ((long)((b) - (a)) < 0))
- #define time_before(a,b)	time_after(b,a)
+diff --git a/kernel/rcu.h b/kernel/rcu.h
+index 0a90ccc..7713196 100644
+--- a/kernel/rcu.h
++++ b/kernel/rcu.h
+@@ -67,12 +67,15 @@
  
- #define time_after_eq(a,b)	\
- 	(typecheck(unsigned long, a) && \
- 	 typecheck(unsigned long, b) && \
--	 ((long)(a) - (long)(b) >= 0))
-+	 ((long)((a) - (b)) >= 0))
- #define time_before_eq(a,b)	time_after_eq(b,a)
+ extern struct debug_obj_descr rcuhead_debug_descr;
+ 
+-static inline void debug_rcu_head_queue(struct rcu_head *head)
++static inline int debug_rcu_head_queue(struct rcu_head *head)
+ {
+-	debug_object_activate(head, &rcuhead_debug_descr);
++	int r1;
++
++	r1 = debug_object_activate(head, &rcuhead_debug_descr);
+ 	debug_object_active_state(head, &rcuhead_debug_descr,
+ 				  STATE_RCU_HEAD_READY,
+ 				  STATE_RCU_HEAD_QUEUED);
++	return r1;
+ }
+ 
+ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+@@ -83,8 +86,9 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+ 	debug_object_deactivate(head, &rcuhead_debug_descr);
+ }
+ #else	/* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+-static inline void debug_rcu_head_queue(struct rcu_head *head)
++static inline int debug_rcu_head_queue(struct rcu_head *head)
+ {
++	return 0;
+ }
+ 
+ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 6ec33dc..405f2303 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -2305,6 +2305,13 @@ static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
+ }
  
  /*
-@@ -130,13 +130,13 @@ static inline u64 get_jiffies_64(void)
- #define time_after64(a,b)	\
- 	(typecheck(__u64, a) &&	\
- 	 typecheck(__u64, b) && \
--	 ((__s64)(b) - (__s64)(a) < 0))
-+	 ((__s64)((b) - (a)) < 0))
- #define time_before64(a,b)	time_after64(b,a)
++ * RCU callback function to leak a callback.
++ */
++static void rcu_leak_callback(struct rcu_head *rhp)
++{
++}
++
++/*
+  * Helper function for call_rcu() and friends.  The cpu argument will
+  * normally be -1, indicating "currently running CPU".  It may specify
+  * a CPU only if that CPU is a no-CBs CPU.  Currently, only _rcu_barrier()
+@@ -2318,7 +2325,12 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 	struct rcu_data *rdp;
  
- #define time_after_eq64(a,b)	\
- 	(typecheck(__u64, a) && \
- 	 typecheck(__u64, b) && \
--	 ((__s64)(a) - (__s64)(b) >= 0))
-+	 ((__s64)((a) - (b)) >= 0))
- #define time_before_eq64(a,b)	time_after_eq64(b,a)
+ 	WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
+-	debug_rcu_head_queue(head);
++	if (debug_rcu_head_queue(head)) {
++		/* Probable double call_rcu(), so leak the callback. */
++		ACCESS_ONCE(head->func) = rcu_leak_callback;
++		WARN_ONCE(1, "__call_rcu(): Leaked duplicate callback\n");
++		return;
++	}
+ 	head->func = func;
+ 	head->next = NULL;
  
- #define time_in_range64(a, b, c) \
 -- 
 1.8.1.5
 
