@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab3HRUd3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:33:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43545 "EHLO
+	id S1756198Ab3HRUdl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:33:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43597 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755967Ab3HRUd0 (ORCPT
+	with ESMTP id S1755649Ab3HRUde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:33:26 -0400
+	Sun, 18 Aug 2013 16:33:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Chris Zankel <chris@zankel.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 30/34] xtensa: replace xtensa-specific _f{data,text} by _s{data,text}
-Date: Sun, 18 Aug 2013 13:34:43 -0700
-Message-Id: <20130818203301.742116883@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Jan Kara <jack@suse.cz>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 34/34] jbd2: Fix use after free after error in jbd2_journal_dirty_metadata()
+Date: Sun, 18 Aug 2013 13:34:47 -0700
+Message-Id: <20130818203302.013900260@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -30,71 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 5e7b6ed8e9bf3c8e3bb579fd0aec64f6526f8c81 upstream.
+commit 91aa11fae1cf8c2fd67be0609692ea9741cdcc43 upstream.
 
-commit a2d063ac216c161 ("extable, core_kernel_data(): Make sure all archs
-define _sdata") missed xtensa.  Xtensa does have a start of data marker,
-but calls it _fdata, causing
+When jbd2_journal_dirty_metadata() returns error,
+__ext4_handle_dirty_metadata() stops the handle. However callers of this
+function do not count with that fact and still happily used now freed
+handle. This use after free can result in various issues but very likely
+we oops soon.
 
-    kernel/built-in.o:(.text+0x964): undefined reference to `_sdata'
+The motivation of adding __ext4_journal_stop() into
+__ext4_handle_dirty_metadata() in commit 9ea7a0df seems to be only to
+improve error reporting. So replace __ext4_journal_stop() with
+ext4_journal_abort_handle() which was there before that commit and add
+WARN_ON_ONCE() to dump stack to provide useful information.
 
-_stext was already defined, but it was duplicated by _fdata.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Chris Zankel <chris@zankel.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
+Reported-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/kernel/vmlinux.lds.S |    3 +--
- arch/xtensa/mm/init.c            |    6 +++---
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ fs/ext4/ext4_jbd2.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/xtensa/kernel/vmlinux.lds.S
-+++ b/arch/xtensa/kernel/vmlinux.lds.S
-@@ -83,7 +83,6 @@ SECTIONS
+--- a/fs/ext4/ext4_jbd2.c
++++ b/fs/ext4/ext4_jbd2.c
+@@ -109,10 +109,10 @@ int __ext4_handle_dirty_metadata(const c
  
-   _text = .;
-   _stext = .;
--  _ftext = .;
- 
-   .text :
-   {
-@@ -112,7 +111,7 @@ SECTIONS
-   EXCEPTION_TABLE(16)
-   /* Data section */
- 
--  _fdata = .;
-+  _sdata = .;
-   RW_DATA_SECTION(XCHAL_ICACHE_LINESIZE, PAGE_SIZE, THREAD_SIZE)
-   _edata = .;
- 
---- a/arch/xtensa/mm/init.c
-+++ b/arch/xtensa/mm/init.c
-@@ -29,7 +29,7 @@
- 
- /* References to section boundaries */
- 
--extern char _ftext, _etext, _fdata, _edata, _rodata_end;
-+extern char _stext, _etext, _sdata, _edata, _rodata_end;
- extern char __init_begin, __init_end;
- 
- /*
-@@ -197,8 +197,8 @@ void __init mem_init(void)
- 			reservedpages++;
- 	}
- 
--	codesize =  (unsigned long) &_etext - (unsigned long) &_ftext;
--	datasize =  (unsigned long) &_edata - (unsigned long) &_fdata;
-+	codesize =  (unsigned long) &_etext - (unsigned long) &_stext;
-+	datasize =  (unsigned long) &_edata - (unsigned long) &_sdata;
- 	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
- 
- 	printk("Memory: %luk/%luk available (%ldk kernel code, %ldk reserved, "
+ 	if (ext4_handle_valid(handle)) {
+ 		err = jbd2_journal_dirty_metadata(handle, bh);
+-		if (err) {
+-			/* Errors can only happen if there is a bug */
+-			handle->h_err = err;
+-			__ext4_journal_stop(where, line, handle);
++		/* Errors can only happen if there is a bug */
++		if (WARN_ON_ONCE(err)) {
++			ext4_journal_abort_handle(where, line, __func__, bh,
++						  handle, err);
+ 		}
+ 	} else {
+ 		if (inode)
 
 
