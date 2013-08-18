@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab3HRUaM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:30:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43391 "EHLO
+	id S1755475Ab3HRU2r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:28:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43373 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755515Ab3HRU2s (ORCPT
+	with ESMTP id S1754744Ab3HRU2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:28:48 -0400
+	Sun, 18 Aug 2013 16:28:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sam Ravnborg <sam@ravnborg.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 07/12] sparc32: add ucmpdi2
-Date: Sun, 18 Aug 2013 13:30:16 -0700
-Message-Id: <20130818202951.330332228@linuxfoundation.org>
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [ 03/12] af_key: initialize satype in key_notify_policy_flush()
+Date: Sun, 18 Aug 2013 13:30:12 -0700
+Message-Id: <20130818202950.443321529@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818202949.875887601@linuxfoundation.org>
 References: <20130818202949.875887601@linuxfoundation.org>
@@ -28,61 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sam Ravnborg <sam@ravnborg.org>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit de36e66d5fa52bc6e2dacd95c701a1762b5308a7 upstream.
+commit 85dfb745ee40232876663ae206cba35f24ab2a40 upstream.
 
-Based on copy from microblaze add ucmpdi2 implementation.
-This fixes build of niu driver which failed with:
+This field was left uninitialized. Some user daemons perform check against this
+field.
 
-drivers/built-in.o: In function `niu_get_nfc':
-niu.c:(.text+0x91494): undefined reference to `__ucmpdi2'
-
-This driver will never be used on a sparc32 system,
-but patch added to fix build breakage with all*config builds.
-
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sparc/lib/Makefile  |    2 +-
- arch/sparc/lib/ucmpdi2.c |   19 +++++++++++++++++++
- 2 files changed, 20 insertions(+), 1 deletion(-)
+ net/key/af_key.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/sparc/lib/Makefile
-+++ b/arch/sparc/lib/Makefile
-@@ -15,7 +15,7 @@ lib-$(CONFIG_SPARC32) += divdi3.o udivdi
- lib-$(CONFIG_SPARC32) += copy_user.o locks.o
- lib-y                 += atomic_$(BITS).o
- lib-$(CONFIG_SPARC32) += lshrdi3.o ashldi3.o
--lib-$(CONFIG_SPARC32) += muldi3.o bitext.o cmpdi2.o
-+lib-$(CONFIG_SPARC32) += muldi3.o bitext.o cmpdi2.o ucmpdi2.o
- 
- lib-$(CONFIG_SPARC64) += copy_page.o clear_page.o bzero.o
- lib-$(CONFIG_SPARC64) += csum_copy.o csum_copy_from_user.o csum_copy_to_user.o
---- /dev/null
-+++ b/arch/sparc/lib/ucmpdi2.c
-@@ -0,0 +1,19 @@
-+#include <linux/module.h>
-+#include "libgcc.h"
-+
-+word_type __ucmpdi2(unsigned long long a, unsigned long long b)
-+{
-+	const DWunion au = {.ll = a};
-+	const DWunion bu = {.ll = b};
-+
-+	if ((unsigned int) au.s.high < (unsigned int) bu.s.high)
-+		return 0;
-+	else if ((unsigned int) au.s.high > (unsigned int) bu.s.high)
-+		return 2;
-+	if ((unsigned int) au.s.low < (unsigned int) bu.s.low)
-+		return 0;
-+	else if ((unsigned int) au.s.low > (unsigned int) bu.s.low)
-+		return 2;
-+	return 1;
-+}
-+EXPORT_SYMBOL(__ucmpdi2);
+--- a/net/key/af_key.c
++++ b/net/key/af_key.c
+@@ -2687,6 +2687,7 @@ static int key_notify_policy_flush(const
+ 	hdr->sadb_msg_pid = c->pid;
+ 	hdr->sadb_msg_version = PF_KEY_V2;
+ 	hdr->sadb_msg_errno = (uint8_t) 0;
++	hdr->sadb_msg_satype = SADB_SATYPE_UNSPEC;
+ 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
+ 	hdr->sadb_msg_reserved = 0;
+ 	pfkey_broadcast(skb_out, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
 
 
