@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab3HRUwY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:52:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43511 "EHLO
+	id S1757353Ab3HRUwo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:52:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43499 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756033Ab3HRUdU (ORCPT
+	with ESMTP id S1756011Ab3HRUdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:33:20 -0400
+	Sun, 18 Aug 2013 16:33:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 23/34] iwl4965: set power mode early
-Date: Sun, 18 Aug 2013 13:34:36 -0700
-Message-Id: <20130818203301.271318024@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 20/34] sparc32: Add ucmpdi2.o to obj-y instead of lib-y.
+Date: Sun, 18 Aug 2013 13:34:33 -0700
+Message-Id: <20130818203301.069195806@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -27,43 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit eca396d7a5bdcc1fd67b1b12f737c213ac78a6f4 upstream.
+commit 74c7b28953d4eaa6a479c187aeafcfc0280da5e8 upstream.
 
-If device was put into a sleep and system was restarted or module
-reloaded, we have to wake device up before sending other commands.
-Otherwise it will fail to start with Microcode error.
+Otherwise if no references exist in the static kernel image,
+we won't export the symbol properly to modules.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlegacy/4965-mac.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/sparc/lib/Makefile |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlegacy/4965-mac.c
-+++ b/drivers/net/wireless/iwlegacy/4965-mac.c
-@@ -5285,6 +5285,9 @@ il4965_alive_start(struct il_priv *il)
+--- a/arch/sparc/lib/Makefile
++++ b/arch/sparc/lib/Makefile
+@@ -15,7 +15,7 @@ lib-$(CONFIG_SPARC32) += divdi3.o udivdi
+ lib-$(CONFIG_SPARC32) += copy_user.o locks.o
+ lib-y                 += atomic_$(BITS).o
+ lib-$(CONFIG_SPARC32) += lshrdi3.o ashldi3.o
+-lib-$(CONFIG_SPARC32) += muldi3.o bitext.o cmpdi2.o ucmpdi2.o
++lib-$(CONFIG_SPARC32) += muldi3.o bitext.o cmpdi2.o
  
- 	il->active_rate = RATES_MASK;
+ lib-$(CONFIG_SPARC64) += copy_page.o clear_page.o bzero.o
+ lib-$(CONFIG_SPARC64) += csum_copy.o csum_copy_from_user.o csum_copy_to_user.o
+@@ -40,7 +40,7 @@ lib-$(CONFIG_SPARC64) += copy_in_user.o
+ lib-$(CONFIG_SPARC64) += mcount.o ipcsum.o xor.o hweight.o ffs.o
  
-+	il_power_update_mode(il, true);
-+	D_INFO("Updated power mode\n");
-+
- 	if (il_is_associated(il)) {
- 		struct il_rxon_cmd *active_rxon =
- 		    (struct il_rxon_cmd *)&il->active;
-@@ -5315,9 +5318,6 @@ il4965_alive_start(struct il_priv *il)
- 	D_INFO("ALIVE processing complete.\n");
- 	wake_up(&il->wait_command_queue);
- 
--	il_power_update_mode(il, true);
--	D_INFO("Updated power mode\n");
--
- 	return;
- 
- restart:
+ obj-y                 += iomap.o
+-obj-$(CONFIG_SPARC32) += atomic32.o
++obj-$(CONFIG_SPARC32) += atomic32.o ucmpdi2.o
+ obj-y                 += ksyms.o
+ obj-$(CONFIG_SPARC64) += PeeCeeI.o
+ obj-y                 += usercopy.o
 
 
