@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab3HRTjQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 15:39:16 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:42912 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab3HRTjO (ORCPT
+	id S1754837Ab3HRTwG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 15:52:06 -0400
+Received: from mx-out.ocsa-data.net ([194.36.166.37]:57967 "EHLO
+	mx-out.ocsa-data.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754548Ab3HRTwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 15:39:14 -0400
-From: Thiagarajan Thangavel <write2thiagu@gmail.com>
-To: grant.likely@linaro.org
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH 2/2] drivers: block :swim3: fixed the errors on coding style
-Date: Mon, 19 Aug 2013 01:09:00 +0530
-Message-Id: <1376854740-17580-1-git-send-email-write2thiagu@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 18 Aug 2013 15:52:04 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Sun, 18 Aug 2013 21:52:01 +0200
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: serial: fix stringify operator in usb-serial-simple
+Organization: OPTEYA
+In-Reply-To: <20130818194005.GA19107@kroah.com>
+References: <1376854140-16904-1-git-send-email-yann@droneaud.fr>
+ <20130818194005.GA19107@kroah.com>
+Message-ID: <337474112b013ace0fd0a4e1d535f13d@meuh.org>
+User-Agent: Roundcube Webmail/0.9.2
+X-abuse-contact: abuse@ocsa-data.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the coding style errors
+Le 18.08.2013 21:40, Greg Kroah-Hartman a écrit :
+> On Sun, Aug 18, 2013 at 09:29:00PM +0200, Yann Droneaud wrote:
+> 
+> Ugh, sorry about that, I thought there used to be a stringify() macro
+> that used to do this.  Nice patch, I'll queue it up.
+> 
 
-Signed-off-by: Thiagarajan Thangavel <write2thiagu@gmail.com>
----
- drivers/block/swim3.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+That's __stringify() which is defined in <linux/stringify.h> but:
+1) inside a string (eg "__stringify(vendor)") it's gonna never work;
+2) it's not required here, __stringify(vendor) would be needed
+    if vendor was itself a macro and the macro content was to be
+    converted to a string.
 
-diff --git a/drivers/block/swim3.c b/drivers/block/swim3.c
-index a473e25..89c9a85 100644
---- a/drivers/block/swim3.c
-+++ b/drivers/block/swim3.c
-@@ -783,7 +783,7 @@ static irqreturn_t swim3_interrupt(int irq, void *dev_id)
- 				act(fs);
- 			} else {
- 				swim3_err("Error %sing block %ld (err=%x)\n",
--				       rq_data_dir(req) == WRITE ? "writ" : "read",
-+				rq_data_dir(req) == WRITE ? "writ" : "read",
- 				       (long)blk_rq_pos(req), err);
- 				swim3_end_request(fs, -EIO, 0);
- 				fs->state = idle;
-@@ -894,7 +894,18 @@ static int fd_eject(struct floppy_state *fs)
- 	return err;
- }
- 
--static struct floppy_struct floppy_type = { 2880, 18, 2, 80, 0, 0x1B, 0x00, 0xCF, 0x6C, NULL };	/*  7 1.44MB 3.5"   */
-+static struct floppy_struct floppy_type = {
-+	2880,
-+	18,
-+	2,
-+	80,
-+	0,
-+	0x1B,
-+	0x00,
-+	0xCF,
-+	0x6C,
-+	NULL
-+};	/*  7 1.44MB 3.5"   */
- 
- static int floppy_locked_ioctl(struct block_device *bdev, fmode_t mode,
- 			unsigned int cmd, unsigned long param)
+Regards.
+
 -- 
-1.7.9.5
+Yann Droneaud
+OPTEYA
 
