@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab3HRUv0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:51:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43522 "EHLO
+	id S1757317Ab3HRUvq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:51:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43519 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756060Ab3HRUdX (ORCPT
+	with ESMTP id S1756042Ab3HRUdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:33:23 -0400
+	Sun, 18 Aug 2013 16:33:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrei Otcheretianski <andrei.otcheretianski@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+        Stephane Grosjean <s.grosjean@peak-system.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 26/34] genetlink: fix family dump race
-Date: Sun, 18 Aug 2013 13:34:39 -0700
-Message-Id: <20130818203301.472742556@linuxfoundation.org>
+Subject: [ 25/34] can: pcan_usb: fix wrong memcpy() bytes length
+Date: Sun, 18 Aug 2013 13:34:38 -0700
+Message-Id: <20130818203301.405581673@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -28,54 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Stephane Grosjean <s.grosjean@peak-system.com>
 
-commit 58ad436fcf49810aa006016107f494c9ac9013db upstream.
+commit 3c322a56b01695df15c70bfdc2d02e0ccd80654e upstream.
 
-When dumping generic netlink families, only the first dump call
-is locked with genl_lock(), which protects the list of families,
-and thus subsequent calls can access the data without locking,
-racing against family addition/removal. This can cause a crash.
-Fix it - the locking needs to be conditional because the first
-time around it's already locked.
+Fix possibly wrong memcpy() bytes length since some CAN records received from
+PCAN-USB could define a DLC field in range [9..15].
+In that case, the real DLC value MUST be used to move forward the record pointer
+but, only 8 bytes max. MUST be copied into the data field of the struct
+can_frame object of the skb given to the network core.
 
-A similar bug was reported to me on an old kernel (3.4.47) but
-the exact scenario that happened there is no longer possible,
-on those kernels the first round wasn't locked either. Looking
-at the current code I found the race described above, which had
-also existed on the old kernel.
-
-Reported-by: Andrei Otcheretianski <andrei.otcheretianski@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netlink/genetlink.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/can/usb/peak_usb/pcan_usb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/netlink/genetlink.c
-+++ b/net/netlink/genetlink.c
-@@ -744,6 +744,10 @@ static int ctrl_dumpfamily(struct sk_buf
- 	struct net *net = sock_net(skb->sk);
- 	int chains_to_skip = cb->args[0];
- 	int fams_to_skip = cb->args[1];
-+	bool need_locking = chains_to_skip || fams_to_skip;
-+
-+	if (need_locking)
-+		genl_lock();
+--- a/drivers/net/can/usb/peak_usb/pcan_usb.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb.c
+@@ -649,7 +649,7 @@ static int pcan_usb_decode_data(struct p
+ 		if ((mc->ptr + rec_len) > mc->end)
+ 			goto decode_failed;
  
- 	for (i = chains_to_skip; i < GENL_FAM_TAB_SIZE; i++) {
- 		n = 0;
-@@ -765,6 +769,9 @@ errout:
- 	cb->args[0] = i;
- 	cb->args[1] = n;
- 
-+	if (need_locking)
-+		genl_unlock();
-+
- 	return skb->len;
- }
+-		memcpy(cf->data, mc->ptr, rec_len);
++		memcpy(cf->data, mc->ptr, cf->can_dlc);
+ 		mc->ptr += rec_len;
+ 	}
  
 
 
