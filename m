@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab3HRUsT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:48:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43573 "EHLO
+	id S1756539Ab3HRUsk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:48:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43557 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756129Ab3HRUdb (ORCPT
+	with ESMTP id S1756106Ab3HRUd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:33:31 -0400
+	Sun, 18 Aug 2013 16:33:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Simek <michal.simek@xilinx.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 05/34] microblaze: Update microblaze defconfigs
-Date: Sun, 18 Aug 2013 13:34:18 -0700
-Message-Id: <20130818203300.056576051@linuxfoundation.org>
+        Thorsten Glaser <tg@debian.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 33/34] m68k/atari: ARAnyM - Fix NatFeat module support
+Date: Sun, 18 Aug 2013 13:34:46 -0700
+Message-Id: <20130818203301.944907690@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -27,249 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Simek <michal.simek@xilinx.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit d0e045401f268a8de6f87d65678214748b772680 upstream.
+commit e8184e10f89736a23ea6eea8e24cd524c5c513d2 upstream.
 
-The main reason is 0-day testing system which can directly
-use these defconfigs for testing.
+As pointed out by Andreas Schwab, pointers passed to ARAnyM NatFeat calls
+should be physical addresses, not virtual addresses.
 
-Enable support for all xilinx drivers which Microblaze
-can use and disable dependency on external rootfs.cpio.
-There is only one exception which is axi ethernet driver
-which still uses NO_IRQ which is not defined for Microblaze.
+Fortunately on Atari, physical and virtual kernel addresses are the same,
+as long as normal kernel memory is concerned, so this usually worked fine
+without conversion.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-Cc: Guenter Roeck <linux@roeck-us.net>
+But for modules, pointers to literal strings are located in vmalloc()ed
+memory. Depending on the version of ARAnyM, this causes the nf_get_id()
+call to just fail, or worse, crash ARAnyM itself with e.g.
+
+    Gotcha! Illegal memory access. Atari PC = $968c
+
+This is a big issue for distro kernels, who want to have all drivers as
+loadable modules in an initrd.
+
+Add a wrapper for nf_get_id() that copies the literal to the stack to
+work around this issue.
+
+Reported-by: Thorsten Glaser <tg@debian.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/microblaze/configs/mmu_defconfig   |   49 ++++++++++++++--------
- arch/microblaze/configs/nommu_defconfig |   71 ++++++++++++++++++--------------
- 2 files changed, 75 insertions(+), 45 deletions(-)
+ arch/m68k/emu/natfeat.c |   23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
---- a/arch/microblaze/configs/mmu_defconfig
-+++ b/arch/microblaze/configs/mmu_defconfig
-@@ -1,25 +1,22 @@
- CONFIG_EXPERIMENTAL=y
- CONFIG_SYSVIPC=y
-+CONFIG_POSIX_MQUEUE=y
-+CONFIG_FHANDLE=y
-+CONFIG_AUDIT=y
-+CONFIG_AUDIT_LOGINUID_IMMUTABLE=y
- CONFIG_IKCONFIG=y
- CONFIG_IKCONFIG_PROC=y
-+CONFIG_SYSFS_DEPRECATED=y
- CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_BLK_DEV_INITRD=y
--CONFIG_INITRAMFS_SOURCE="rootfs.cpio"
--CONFIG_INITRAMFS_COMPRESSION_GZIP=y
--# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
--CONFIG_EXPERT=y
- CONFIG_KALLSYMS_ALL=y
--CONFIG_KALLSYMS_EXTRA_PASS=y
--# CONFIG_HOTPLUG is not set
- # CONFIG_BASE_FULL is not set
--# CONFIG_FUTEX is not set
--# CONFIG_EPOLL is not set
--# CONFIG_SIGNALFD is not set
--# CONFIG_SHMEM is not set
-+CONFIG_EMBEDDED=y
- CONFIG_SLAB=y
- CONFIG_MODULES=y
- CONFIG_MODULE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
-+CONFIG_PARTITION_ADVANCED=y
-+# CONFIG_EFI_PARTITION is not set
- CONFIG_OPT_LIB_ASM=y
- CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR=1
- CONFIG_XILINX_MICROBLAZE0_USE_PCMP_INSTR=1
-@@ -37,33 +34,53 @@ CONFIG_UNIX=y
- CONFIG_INET=y
- # CONFIG_INET_LRO is not set
- # CONFIG_IPV6 is not set
-+CONFIG_MTD=y
- CONFIG_PROC_DEVICETREE=y
- CONFIG_BLK_DEV_RAM=y
- CONFIG_BLK_DEV_RAM_SIZE=8192
- CONFIG_NETDEVICES=y
--CONFIG_NET_ETHERNET=y
- CONFIG_XILINX_EMACLITE=y
-+CONFIG_XILINX_LL_TEMAC=y
- # CONFIG_INPUT is not set
- # CONFIG_SERIO is not set
- # CONFIG_VT is not set
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_SERIAL_UARTLITE=y
- CONFIG_SERIAL_UARTLITE_CONSOLE=y
- # CONFIG_HW_RANDOM is not set
-+CONFIG_XILINX_HWICAP=y
-+CONFIG_I2C=y
-+CONFIG_I2C_XILINX=y
-+CONFIG_SPI=y
-+CONFIG_SPI_XILINX=y
-+CONFIG_GPIOLIB=y
-+CONFIG_GPIO_SYSFS=y
-+CONFIG_GPIO_XILINX=y
- # CONFIG_HWMON is not set
-+CONFIG_WATCHDOG=y
-+CONFIG_XILINX_WATCHDOG=y
-+CONFIG_FB=y
-+CONFIG_FB_XILINX=y
- # CONFIG_USB_SUPPORT is not set
-+CONFIG_UIO=y
-+CONFIG_UIO_PDRV=y
-+CONFIG_UIO_PDRV_GENIRQ=y
-+CONFIG_UIO_DMEM_GENIRQ=y
- CONFIG_EXT2_FS=y
- # CONFIG_DNOTIFY is not set
-+CONFIG_CRAMFS=y
-+CONFIG_ROMFS_FS=y
- CONFIG_NFS_FS=y
--CONFIG_NFS_V3=y
- CONFIG_CIFS=y
- CONFIG_CIFS_STATS=y
- CONFIG_CIFS_STATS2=y
--CONFIG_PARTITION_ADVANCED=y
--CONFIG_DEBUG_KERNEL=y
- CONFIG_DETECT_HUNG_TASK=y
- CONFIG_DEBUG_SLAB=y
- CONFIG_DEBUG_SPINLOCK=y
- CONFIG_DEBUG_INFO=y
--# CONFIG_RCU_CPU_STALL_DETECTOR is not set
- CONFIG_EARLY_PRINTK=y
-+CONFIG_KEYS=y
-+CONFIG_ENCRYPTED_KEYS=y
-+CONFIG_KEYS_DEBUG_PROC_KEYS=y
- # CONFIG_CRYPTO_ANSI_CPRNG is not set
---- a/arch/microblaze/configs/nommu_defconfig
-+++ b/arch/microblaze/configs/nommu_defconfig
-@@ -1,41 +1,40 @@
- CONFIG_EXPERIMENTAL=y
- CONFIG_SYSVIPC=y
- CONFIG_POSIX_MQUEUE=y
-+CONFIG_FHANDLE=y
-+CONFIG_AUDIT=y
-+CONFIG_AUDIT_LOGINUID_IMMUTABLE=y
- CONFIG_BSD_PROCESS_ACCT=y
- CONFIG_BSD_PROCESS_ACCT_V3=y
- CONFIG_IKCONFIG=y
- CONFIG_IKCONFIG_PROC=y
-+CONFIG_SYSFS_DEPRECATED=y
- CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_EXPERT=y
- CONFIG_KALLSYMS_ALL=y
--CONFIG_KALLSYMS_EXTRA_PASS=y
--# CONFIG_HOTPLUG is not set
- # CONFIG_BASE_FULL is not set
-+CONFIG_EMBEDDED=y
- CONFIG_SLAB=y
- CONFIG_MODULES=y
- CONFIG_MODULE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
--# CONFIG_OPT_LIB_FUNCTION is not set
-+CONFIG_PARTITION_ADVANCED=y
-+# CONFIG_EFI_PARTITION is not set
- CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR=1
- CONFIG_XILINX_MICROBLAZE0_USE_PCMP_INSTR=1
- CONFIG_XILINX_MICROBLAZE0_USE_BARREL=1
- CONFIG_XILINX_MICROBLAZE0_USE_DIV=1
- CONFIG_XILINX_MICROBLAZE0_USE_HW_MUL=2
- CONFIG_XILINX_MICROBLAZE0_USE_FPU=2
--CONFIG_HIGH_RES_TIMERS=y
- CONFIG_HZ_100=y
- CONFIG_CMDLINE_BOOL=y
--CONFIG_BINFMT_FLAT=y
-+CONFIG_CMDLINE_FORCE=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
- CONFIG_INET=y
- # CONFIG_INET_LRO is not set
- # CONFIG_IPV6 is not set
--# CONFIG_PREVENT_FIRMWARE_BUILD is not set
- CONFIG_MTD=y
--CONFIG_MTD_CONCAT=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-@@ -45,41 +44,55 @@ CONFIG_MTD_CFI_AMDSTD=y
- CONFIG_MTD_RAM=y
- CONFIG_MTD_UCLINUX=y
- CONFIG_PROC_DEVICETREE=y
--CONFIG_BLK_DEV_NBD=y
- CONFIG_BLK_DEV_RAM=y
-+CONFIG_BLK_DEV_RAM_SIZE=8192
- CONFIG_NETDEVICES=y
--CONFIG_NET_ETHERNET=y
-+CONFIG_XILINX_EMACLITE=y
-+CONFIG_XILINX_LL_TEMAC=y
- # CONFIG_INPUT is not set
- # CONFIG_SERIO is not set
- # CONFIG_VT is not set
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_SERIAL_UARTLITE=y
- CONFIG_SERIAL_UARTLITE_CONSOLE=y
--CONFIG_HW_RANDOM=y
-+# CONFIG_HW_RANDOM is not set
-+CONFIG_XILINX_HWICAP=y
-+CONFIG_I2C=y
-+CONFIG_I2C_XILINX=y
-+CONFIG_SPI=y
-+CONFIG_SPI_XILINX=y
-+CONFIG_GPIOLIB=y
-+CONFIG_GPIO_SYSFS=y
-+CONFIG_GPIO_XILINX=y
- # CONFIG_HWMON is not set
--CONFIG_VIDEO_OUTPUT_CONTROL=y
-+CONFIG_WATCHDOG=y
-+CONFIG_XILINX_WATCHDOG=y
-+CONFIG_FB=y
-+CONFIG_FB_XILINX=y
-+# CONFIG_USB_SUPPORT is not set
-+CONFIG_UIO=y
-+CONFIG_UIO_PDRV=y
-+CONFIG_UIO_PDRV_GENIRQ=y
-+CONFIG_UIO_DMEM_GENIRQ=y
- CONFIG_EXT2_FS=y
- # CONFIG_DNOTIFY is not set
- CONFIG_CRAMFS=y
- CONFIG_ROMFS_FS=y
- CONFIG_NFS_FS=y
--CONFIG_NFS_V3=y
- CONFIG_NFS_V3_ACL=y
--CONFIG_UNUSED_SYMBOLS=y
--CONFIG_DEBUG_FS=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_DEBUG_SHIRQ=y
-+CONFIG_NLS=y
- CONFIG_DETECT_HUNG_TASK=y
--CONFIG_SCHEDSTATS=y
--CONFIG_TIMER_STATS=y
--CONFIG_DEBUG_OBJECTS=y
--CONFIG_DEBUG_OBJECTS_SELFTEST=y
--CONFIG_DEBUG_OBJECTS_FREE=y
--CONFIG_DEBUG_OBJECTS_TIMERS=y
-+CONFIG_DEBUG_SLAB=y
-+CONFIG_DEBUG_SPINLOCK=y
- CONFIG_DEBUG_INFO=y
--CONFIG_DEBUG_LIST=y
--CONFIG_DEBUG_SG=y
--# CONFIG_RCU_CPU_STALL_DETECTOR is not set
--CONFIG_SYSCTL_SYSCALL_CHECK=y
- CONFIG_EARLY_PRINTK=y
-+CONFIG_KEYS=y
-+CONFIG_ENCRYPTED_KEYS=y
-+CONFIG_KEYS_DEBUG_PROC_KEYS=y
-+CONFIG_CRYPTO_ECB=y
-+CONFIG_CRYPTO_MD4=y
-+CONFIG_CRYPTO_MD5=y
-+CONFIG_CRYPTO_ARC4=y
-+CONFIG_CRYPTO_DES=y
- # CONFIG_CRYPTO_ANSI_CPRNG is not set
--# CONFIG_CRC32 is not set
+--- a/arch/m68k/emu/natfeat.c
++++ b/arch/m68k/emu/natfeat.c
+@@ -18,9 +18,11 @@
+ #include <asm/machdep.h>
+ #include <asm/natfeat.h>
+ 
++extern long nf_get_id2(const char *feature_name);
++
+ asm("\n"
+-"	.global nf_get_id,nf_call\n"
+-"nf_get_id:\n"
++"	.global nf_get_id2,nf_call\n"
++"nf_get_id2:\n"
+ "	.short	0x7300\n"
+ "	rts\n"
+ "nf_call:\n"
+@@ -29,12 +31,25 @@ asm("\n"
+ "1:	moveq.l	#0,%d0\n"
+ "	rts\n"
+ "	.section __ex_table,\"a\"\n"
+-"	.long	nf_get_id,1b\n"
++"	.long	nf_get_id2,1b\n"
+ "	.long	nf_call,1b\n"
+ "	.previous");
+-EXPORT_SYMBOL_GPL(nf_get_id);
+ EXPORT_SYMBOL_GPL(nf_call);
+ 
++long nf_get_id(const char *feature_name)
++{
++	/* feature_name may be in vmalloc()ed memory, so make a copy */
++	char name_copy[32];
++	size_t n;
++
++	n = strlcpy(name_copy, feature_name, sizeof(name_copy));
++	if (n >= sizeof(name_copy))
++		return 0;
++
++	return nf_get_id2(name_copy);
++}
++EXPORT_SYMBOL_GPL(nf_get_id);
++
+ void nfprint(const char *fmt, ...)
+ {
+ 	static char buf[256];
 
 
