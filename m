@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab3HRQz5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 12:55:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21082 "EHLO mx1.redhat.com"
+	id S1754443Ab3HRRAZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 13:00:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39871 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754223Ab3HRQzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 12:55:54 -0400
-Date: Sun, 18 Aug 2013 18:49:37 +0200
+	id S1753143Ab3HRRAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Aug 2013 13:00:24 -0400
+Date: Sun, 18 Aug 2013 18:54:00 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -16,13 +16,13 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 1/4] nohz: Only update sleeptime stats locally
-Message-ID: <20130818164937.GA21310@redhat.com>
-References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-2-git-send-email-fweisbec@gmail.com>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20130818165400.GB21310@redhat.com>
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-3-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376667753-29014-2-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1376667753-29014-3-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,53 +30,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 08/16, Frederic Weisbecker wrote:
 >
-> To fix this, lets only update the sleeptime stats locally when the CPU
-> exits from idle.
+> This fixes a reported bug where non-monotonic sleeptime stats are returned by /proc/stat
+> when it is frequently read.
 
-I am in no position to ack the changes in this area, but I like this
-change very much. Because, as a code reader, I was totally confused by
+Plus it fixes the problems with 32bit machines reading u64 values.
 
-	if (last_update_time)
-		update_ts_time_stats()
-
-code and it looks "obviously wrong".
-
-I added more cc's. It seems to me that 9366d840 "cpufreq: governors:
-Calculate iowait time only when necessary" doesn't realize what
-
-	-       u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
-	+       u64 idle_time = get_cpu_idle_time_us(cpu, io_busy ? wall : NULL);
-
-actually means. OTOH, get_cpu_iowait_time_us() was called with
-last_update_time != NULL even before this patch...
-
-In short. This looks like the clear fix to me, but I do not understand
-this code enough, and I think that cpufreq should know about this change.
-
->  static void tick_nohz_stop_idle(int cpu, ktime_t now)
->  {
->  	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
-> +	ktime_t delta;
->  
-> -	update_ts_time_stats(cpu, ts, now, NULL);
-> +	/* Updates the per cpu time idle statistics counters */
-> +	delta = ktime_sub(now, ts->idle_entrytime);
-> +	if (nr_iowait_cpu(cpu) > 0)
-> +		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
-> +	else
-> +		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
-> +	ts->idle_entrytime = now;
->  	ts->idle_active = 0;
-
-With or without this change, why we update ->idle_entrytime in this case?
-Looks harmless, but a bit confusing.
-
-While this doesn't really matter, we could probably even kill ->idle_active
-and use !!ts->idle_entrytime instead.
-
-> @@ -473,17 +458,14 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
-
-And I think that we should kill this last_update_time argument later.
+But perhaps the changelog should mention other races we discussed.
 
 Oleg.
 
