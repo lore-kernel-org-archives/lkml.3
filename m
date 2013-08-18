@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3HRMke (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 08:40:34 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:55387 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755236Ab3HRMkd (ORCPT
+	id S1755468Ab3HRMnj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 08:43:39 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:56213 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755236Ab3HRMni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 08:40:33 -0400
-Message-ID: <1376829629.3391.5.camel@phoenix>
-Subject: [PATCH 2/2] pinctrl: core: Hold pctldev->mutex mutex lock while
- traversing gpio_ranges list
+	Sun, 18 Aug 2013 08:43:38 -0400
+Message-ID: <1376829813.3391.7.camel@phoenix>
+Subject: [PATCH] Documentation: pinctrl: Fix example code for
+ pinctrl_register
 From: Axel Lin <axel.lin@ingics.com>
 To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Haojian Zhuang <haojian.zhuang@linaro.org>, linux-kernel@vger.kernel.org
-Date: Sun, 18 Aug 2013 20:40:29 +0800
-In-Reply-To: <1376829262.3391.1.camel@phoenix>
-References: <1376829262.3391.1.camel@phoenix>
+Cc: linux-kernel@vger.kernel.org
+Date: Sun, 18 Aug 2013 20:43:33 +0800
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
@@ -24,35 +22,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hold pctldev->mutex mutex_lock when traverse the list.
+pinctrl_register() returns NULL on error, fix it.
 
 Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/pinctrl/core.c | 3 +++
- 1 file changed, 3 insertions(+)
+ Documentation/pinctrl.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index c670527..4adef2f 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -357,14 +357,17 @@ static bool pinctrl_ready_for_gpio_range(unsigned gpio)
- 	/* Loop over the pin controllers */
- 	list_for_each_entry(pctldev, &pinctrldev_list, node) {
- 		/* Loop over the ranges */
-+		mutex_lock(&pctldev->mutex);
- 		list_for_each_entry(range, &pctldev->gpio_ranges, node) {
- 			/* Check if any gpio range overlapped with gpio chip */
- 			if (range->base + range->npins - 1 < chip->base ||
- 			    range->base > chip->base + chip->ngpio - 1)
- 				continue;
-+			mutex_unlock(&pctldev->mutex);
- 			mutex_unlock(&pinctrldev_list_mutex);
- 			return true;
- 		}
-+		mutex_unlock(&pctldev->mutex);
- 	}
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index e7bee9b..c0ffd30 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -81,7 +81,7 @@ int __init foo_probe(void)
+ 	struct pinctrl_dev *pctl;
  
- 	mutex_unlock(&pinctrldev_list_mutex);
+ 	pctl = pinctrl_register(&foo_desc, <PARENT>, NULL);
+-	if (IS_ERR(pctl))
++	if (!pctl)
+ 		pr_err("could not register foo pin driver\n");
+ }
+ 
 -- 
 1.8.1.2
 
