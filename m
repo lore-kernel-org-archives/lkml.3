@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab3HRUvD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:51:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43528 "EHLO
+	id S1756813Ab3HRUv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:51:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43522 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756064Ab3HRUdX (ORCPT
+	with ESMTP id S1756060Ab3HRUdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Aug 2013 16:33:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [ 27/34] usb: add two quirky touchscreen
-Date: Sun, 18 Aug 2013 13:34:40 -0700
-Message-Id: <20130818203301.540170948@linuxfoundation.org>
+        Andrei Otcheretianski <andrei.otcheretianski@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 26/34] genetlink: fix family dump race
+Date: Sun, 18 Aug 2013 13:34:39 -0700
+Message-Id: <20130818203301.472742556@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -26,33 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 304ab4ab079a8ed03ce39f1d274964a532db036b upstream.
+commit 58ad436fcf49810aa006016107f494c9ac9013db upstream.
 
-These devices tend to become unresponsive after S3
+When dumping generic netlink families, only the first dump call
+is locked with genl_lock(), which protects the list of families,
+and thus subsequent calls can access the data without locking,
+racing against family addition/removal. This can cause a crash.
+Fix it - the locking needs to be conditional because the first
+time around it's already locked.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+A similar bug was reported to me on an old kernel (3.4.47) but
+the exact scenario that happened there is no longer possible,
+on those kernels the first round wasn't locked either. Looking
+at the current code I found the race described above, which had
+also existed on the old kernel.
+
+Reported-by: Andrei Otcheretianski <andrei.otcheretianski@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/quirks.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/netlink/genetlink.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -100,6 +100,12 @@ static const struct usb_device_id usb_qu
- 	{ USB_DEVICE(0x04d8, 0x000c), .driver_info =
- 			USB_QUIRK_CONFIG_INTF_STRINGS },
+--- a/net/netlink/genetlink.c
++++ b/net/netlink/genetlink.c
+@@ -744,6 +744,10 @@ static int ctrl_dumpfamily(struct sk_buf
+ 	struct net *net = sock_net(skb->sk);
+ 	int chains_to_skip = cb->args[0];
+ 	int fams_to_skip = cb->args[1];
++	bool need_locking = chains_to_skip || fams_to_skip;
++
++	if (need_locking)
++		genl_lock();
  
-+	/* CarrolTouch 4000U */
-+	{ USB_DEVICE(0x04e7, 0x0009), .driver_info = USB_QUIRK_RESET_RESUME },
+ 	for (i = chains_to_skip; i < GENL_FAM_TAB_SIZE; i++) {
+ 		n = 0;
+@@ -765,6 +769,9 @@ errout:
+ 	cb->args[0] = i;
+ 	cb->args[1] = n;
+ 
++	if (need_locking)
++		genl_unlock();
 +
-+	/* CarrolTouch 4500U */
-+	{ USB_DEVICE(0x04e7, 0x0030), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Samsung Android phone modem - ID conflict with SPH-I500 */
- 	{ USB_DEVICE(0x04e8, 0x6601), .driver_info =
- 			USB_QUIRK_CONFIG_INTF_STRINGS },
+ 	return skb->len;
+ }
+ 
 
 
