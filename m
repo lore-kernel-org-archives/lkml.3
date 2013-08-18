@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab3HRUzp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:55:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43921 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756348Ab3HRUz2 (ORCPT
+	id S1755664Ab3HRVBt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 17:01:49 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:64839 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755154Ab3HRVBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:55:28 -0400
-Date: Sun, 18 Aug 2013 13:57:13 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: High load which eventually leads to lockup
-Message-ID: <20130818205713.GA32563@kroah.com>
-References: <OF4D0C0FB6.A839872C-ONC1257BCB.004FDEBA-C1257BCB.004FDEBC@transmode.se>
+	Sun, 18 Aug 2013 17:01:48 -0400
+Message-ID: <52115262.70402@gmail.com>
+Date: Mon, 19 Aug 2013 01:01:54 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <OF4D0C0FB6.A839872C-ONC1257BCB.004FDEBA-C1257BCB.004FDEBC@transmode.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Jason Cooper <jason@lakedaemon.net>, Russell King <linux@arm.linux.org.uk>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC v1 5/5] ARM: mvebu: add board init for Armada 1500
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376682098-10580-6-git-send-email-sebastian.hesselbarth@gmail.com> <20130816204831.GX13964@titan.lakedaemon.net> <201308172108.38824.arnd@arndb.de>
+In-Reply-To: <201308172108.38824.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 18, 2013 at 04:32:23PM +0200, Joakim Tjernlund wrote:
-> The last week I have had 4 lockups which required power on/off.
-> Before getting there I noticed that the machine was getting slow.
-> 
-> top reported high load(5-10) but there was no process consuming CPU except
-> for migration/0 which were spicing 100% on and off. 
-> Ping times went up with a factor of 40 too.
-> 
-> Eventually I got a few entries in the kernel log:
-> Aug 16 12:40:51 gentoo-jocke kernel: Modules linked in: nfnetlink_log nfnetlink bluetooth rfkill sg isofs ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp ip6table_filter ip6_tables iptable_filter ip_tables ebtables x_tables autofs4 nfsd dm_crypt vboxnetadp(O) vboxnetflt(O) vboxdrv(O) usbhid dm_mod kvm_intel kvm snd_hda_codec_hdmi aesni_intel ablk_helper cryptd xts lrw gf128mul snd_hda_codec_realtek ehci_pci ehci_hcd usbcore snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd microcode usb_common radeon e1000e ttm firmware_class ptp pps_core pcspkr
-> Aug 16 12:40:51 gentoo-jocke kernel: CPU 0 
-> Aug 16 12:40:51 gentoo-jocke kernel: Pid: 2421, comm: X Tainted: G           O 3.9.11 #1 Hewlett-Packard HP Compaq 8200 Elite CMT PC/1494
+On 08/17/2013 09:08 PM, Arnd Bergmann wrote:
+> On Friday 16 August 2013, Jason Cooper wrote:
+>>> +
+>>> +#define ARMADA_1500_REG_BASE_VIRT	0xf6000000
+>>> +#define ARMADA_1500_REG_BASE_SIZE	0x03000000
+>>> +
+>>> +static struct map_desc armada_1500_io_desc[] __initdata = {
+>>> +	{
+>>> +		.virtual	= ARMADA_1500_REG_BASE_VIRT,
+>>> +		.pfn		= __phys_to_pfn(ARMADA_1500_REG_BASE_VIRT),
+>>> +		.length		= ARMADA_1500_REG_BASE_SIZE,
+>>> +		.type		= MT_DEVICE,
+>>> +	},
+>>> +};
+>
+> You should really try to find out what driver uses this. If you have a requirement
+> that VIRT == PHYS here, the most likely explanation is that some driver accidentally
+> uses readl/writel on the physical address rather than on the result of ioremap.
+>
+> You can try shrinking the area using bisection until you have found the offending
+> driver based on the address.
 
-The virtual box drivers are a huge mess.  Seriously, I really don't even
-know how the things are able to work at all (virtual table pointers from
-userspace through to the kernel?)  I spent a bunch of time to try to
-clean them up and get them into mergable state, but without the ability
-to also fix up the userspace side, that ended up being a dead-end.
+While bringing up timer and irq, I had no luck without that mapping,
+but I didn't try without later on. There is no driver requiring it,
+as I either only use mainline drivers that never knew about A1500
+before, or I have written it on my own (dw-apb-ictl).
 
-Can you duplicate the problem without these modules loaded?  I'd blame
-them for any problems you might ever have, given how crazy they are.
+I don't think it is required and will try to remove it, now that I
+know I have set up core stuff correctly and it boots.
 
-thanks,
+>>> +static void __init armada_1500_timer_and_clk_init(void)
+>>> +{
+>>> +	of_clk_init(NULL);
+>>> +	clocksource_of_init();
+>>> +}
+>>> +
+>>> +static void __init armada_1500_dt_init(void)
+>>> +{
+>>> +	l2x0_of_init(0x70c00000, 0xfeffffff);
+>
+> New platforms should call this as 'l2x0_of_init(0, 0);' and get the bits from DT.
 
-greg k-h
+Ok.
+
+> Note that we should really change the common code to do both the of_clk_init()
+> and the l2x0_of_init() automatically, but that needs to be done with some care,
+> in order to not break any of the existing platforms. Would you be able to do
+> one of the two? We can then get the next person that wants to add a platform
+> to do the last one ;-)
+
+Scary but that reduces armada-1500.c to MACH descriptor and DT
+compatible only ;) I don't expect any weird hacks required for
+it anyway.
+
+Sebastian
+
