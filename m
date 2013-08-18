@@ -1,120 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab3HRUix (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:38:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43746 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756529Ab3HRUfP (ORCPT
+	id S1756763Ab3HRUjG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:39:06 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:61022 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755503Ab3HRUjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:35:15 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Simek <michal.simek@xilinx.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 04/45] microblaze: fix clone syscall
-Date: Sun, 18 Aug 2013 13:35:53 -0700
-Message-Id: <20130818203621.300794639@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
-In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
+	Sun, 18 Aug 2013 16:39:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130818203623.850246787@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	<20130818203623.850246787@linuxfoundation.org>
+Date: Sun, 18 Aug 2013 22:39:01 +0200
+X-Google-Sender-Auth: e6nSXjOYjoM-iXghAUPGISnk0Io
+Message-ID: <CAMuHMdWP2f_9526y9g5n=vf_Nga5XyC36JZhi7f5mMqMV4mW+w@mail.gmail.com>
+Subject: Re: [ 41/45] m68k: Truncate base in do_div()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Sun, Aug 18, 2013 at 10:36 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> 3.10-stable review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: Andreas Schwab <schwab@linux-m68k.org>
+>
+> commit ea077b1b96e073eac5c3c5590529e964767fc5f7 upstream.
+>
+> Explicitly truncate the second operand of do_div() to 32 bits to guard
+> against bogus code calling it with a 64-bit divisor.
+>
+> [Thorsten]
+>
+> After upgrading from 3.2 to 3.10, mounting a btrfs volume fails with:
+>
+> btrfs: setting nodatacow, compression disabled
+> btrfs: enabling auto recovery
+> btrfs: disk space caching is enabled
 
-------------------
+What happened to the rest of the commit message?
 
-From: Michal Simek <michal.simek@xilinx.com>
+> ---
+>  arch/m68k/include/asm/div64.h |    9 +++++----
 
-commit dfa9771a7c4784bafd0673bc7abcee3813088b77 upstream.
+Gr{oetje,eeting}s,
 
-Fix inadvertent breakage in the clone syscall ABI for Microblaze that
-was introduced in commit f3268edbe6fe ("microblaze: switch to generic
-fork/vfork/clone").
+                        Geert
 
-The Microblaze syscall ABI for clone takes the parent tid address in the
-4th argument; the third argument slot is used for the stack size.  The
-incorrectly-used CLONE_BACKWARDS type assigned parent tid to the 3rd
-slot.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-This commit restores the original ABI so that existing userspace libc
-code will work correctly.
-
-All kernel versions from v3.8-rc1 were affected.
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/Kconfig             |    6 ++++++
- arch/microblaze/Kconfig  |    2 +-
- include/linux/syscalls.h |    5 +++++
- kernel/fork.c            |    6 ++++++
- 4 files changed, 18 insertions(+), 1 deletion(-)
-
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -404,6 +404,12 @@ config CLONE_BACKWARDS2
- 	help
- 	  Architecture has the first two arguments of clone(2) swapped.
- 
-+config CLONE_BACKWARDS3
-+	bool
-+	help
-+	  Architecture has tls passed as the 3rd argument of clone(2),
-+	  not the 5th one.
-+
- config ODD_RT_SIGACTION
- 	bool
- 	help
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -28,7 +28,7 @@ config MICROBLAZE
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_IDLE_POLL_SETUP
- 	select MODULES_USE_ELF_RELA
--	select CLONE_BACKWARDS
-+	select CLONE_BACKWARDS3
- 
- config SWAP
- 	def_bool n
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -802,9 +802,14 @@ asmlinkage long sys_vfork(void);
- asmlinkage long sys_clone(unsigned long, unsigned long, int __user *, int,
- 	       int __user *);
- #else
-+#ifdef CONFIG_CLONE_BACKWARDS3
-+asmlinkage long sys_clone(unsigned long, unsigned long, int, int __user *,
-+			  int __user *, int);
-+#else
- asmlinkage long sys_clone(unsigned long, unsigned long, int __user *,
- 	       int __user *, int);
- #endif
-+#endif
- 
- asmlinkage long sys_execve(const char __user *filename,
- 		const char __user *const __user *argv,
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1675,6 +1675,12 @@ SYSCALL_DEFINE5(clone, unsigned long, ne
- 		 int __user *, parent_tidptr,
- 		 int __user *, child_tidptr,
- 		 int, tls_val)
-+#elif defined(CONFIG_CLONE_BACKWARDS3)
-+SYSCALL_DEFINE6(clone, unsigned long, clone_flags, unsigned long, newsp,
-+		int, stack_size,
-+		int __user *, parent_tidptr,
-+		int __user *, child_tidptr,
-+		int, tls_val)
- #else
- SYSCALL_DEFINE5(clone, unsigned long, clone_flags, unsigned long, newsp,
- 		 int __user *, parent_tidptr,
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
