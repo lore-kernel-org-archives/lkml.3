@@ -1,134 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab3HRSGH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 14:06:07 -0400
-Received: from mail.eperm.de ([89.247.134.16]:54633 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754350Ab3HRSGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 14:06:05 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: sandyinchina@gmail.com, Theodore Tso <tytso@mit.edu>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
-Subject: [PATCH][RFC] Tests on 200 different CPUs/Arches and OSes with CPU Jitter RNG
-Date: Sun, 18 Aug 2013 20:05:52 +0200
-Message-ID: <2846522.WmUuVkVV56@tauon>
-User-Agent: KMail/4.10.5 (Linux/3.10.6-200.fc19.x86_64; KDE/4.10.5; x86_64; ; )
+	id S1754622Ab3HRSNZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 14:13:25 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:40165 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754362Ab3HRSNX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Aug 2013 14:13:23 -0400
+Message-ID: <52110EBF.9010209@samsung.com>
+Date: Mon, 19 Aug 2013 03:13:19 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
+CC: kgene.kim@samsung.com, Dan Williams <djbw@fb.com>,
+        Vinod Koul <vinod.koul@intel.com>, linus.walleij@linaro.org,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] ARM: S3C24XX: add dmaengine based dma-driver
+References: <201308141359.13872.heiko@sntech.de>
+In-Reply-To: <201308141359.13872.heiko@sntech.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sandy, Ted,
-
-(this is a reply to [3])
-
-I prepared a new release of the CPU Jitter RNG available at [1]. The 
-core of the RNG remains unchanged. However, there are the following 
-changes:
-
-- addition of a patch to integrate the RNG into /dev/random as explained 
-in appendix B.3 of [2], although the long-term goal of the RNG is rather 
-the integration into the kernel crypto API when considering the Linux 
-kernel as outlined in appendix B.1 of [2]
-
-- ensure that the code is compiled without optimization based on the 
-reasons outlined in section 5.1 of [2]
-
-- addition of chapter 5.1 to [2] explaining how the entropy is collected
-
-- additional code to execute the CPU Jitter RNG on different OSes 
-(specifically AIX, MacOS and z/OS -- other Unixes are good without 
-additional changes)
-
-
->On Tue, May 21, 2013 at 3:01 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-
->> I continue to be suspicious about claims that userspace timing
->> measurements are measuring anything other than OS behaviour.
-
+On 08/14/13 20:59, Heiko Stübner wrote:
+> This series tries to provide a basic dmaengine driver for the s3c24xx
+> SoCs to subsequently retire the old one with custom API.
 >
->Yes, but they do seem to contain some entropy. See links in the
->original post of this thread, the havege stuff and especially the
->McGuire et al paper.
-
-With the initially shown implementation and documentation I did not 
-really show that sufficient entropy is gathered from the CPU execution 
-jitter -- i.e. that there is unpredictable jitter in the execution time. 
-With a new test I now closed that hole. The newly added test 
-measures the entropy gathered during execution jitter collection, i.e. 
-heart of the RNG in terms of how much statistical entropy it provides. 
-The description of the test is given in section 5.1 of [2]. To ensure 
-that the statistical entropy measurements are indeed showing the 
-information theoretical entropy, section 4.4 of [2] outlines that 
-patterns are not identified in the output of the RNG which would 
-diminish the information theoretical entropy compared to the statistical 
-entropy.
-
-That test was then executed on about 200 different systems with the 
-results given in appendix F of [2]. The table stated there supported by 
-the many graphs demonstrates that the CPU Jitter random number generator 
-delivers high-quality entropy on:
-
-- a large range of CPUs ranging from embedded systems of MIPS and ARM 
-CPUs, covering desktop systems with AMD and Intel x86 32 bit and 64 bit 
-CPUs up to server CPUs of Intel Itanium, Sparc, POWER and IBM System Z;
-
-- a large range of operating systems: Linux (including Android), 
-OpenBSD, FreeBSD, NetBSD, AIX, OpenIndiana (OpenSolaris), AIX, z/OS;
-
-- a range of different compilers: GCC, Clang and the z/OS C compiler.
-
-The test results show an interesting yet common trend -- i.e. common for 
-the different CPU types: the newer the CPU is, the more CPU execution 
-time jitter is present.
-
-[2] appendix F.37 contains entropy measurements on different operating 
-systems on the very same hardware, indicating that the jitter 
-measurements are present regardless of the OS.
-
-With the test results, Ted's concerns should be removed.
-
-[...]
-
-
->> For devices like Linux routers, what we desperately need is hardware
->> assist;  [or] mix
->> in additional timing information either at kernel device driver
->> level,
->> or from systems such as HAVEGE.
-
-The concern with HAVEGE is that it is very complex. The implementation 
-is far from being straight forward.
-
->> 
->> What I'm against is relying only on solutions such as HAVEGE or
->> replacing /dev/random with something scheme that only relies on CPU
->> timing and ignores interrupt timing.
-
+> Since v1 three big changes happened (appart from fixing received comments):
 >
->My question is how to incorporate some of that into /dev/random.
->At one point, timing info was used along with other stuff. Some
->of that got deleted later, What is the current state? Should we
->add more?
+> For one the limitation of sg-lists to 1 element is gone.Secondly the
+> specifics of the virtual channels (target bus, handshake, etc) are not
+> encoded with channel ids but in the platformdata - making a later dt
+> binding easier, as these informations can there be gathered by the xlate
+> function. And lastly I also added a preliminary mechanism to handle the
+> specific needs for the earlier variants of the driver.
+>
+> While s3c2443 and later can use any channel for any peripheral with just
+> marking the target-peripheral-id in a register, earlier SoCs can only use
+> specific channels and the target-ids also vary depending on the channel.
+>
+> Therefore on newer SoCs the chansel element only needs to contain the
+> requested target-id, while on the older variants use it to encode both
+> the valid channels and the channel-specific peripheral-id.
+>
+> On affected SoCs the target-id is always 3 bit wide, so we use these and
+> an additional 4th bit to hold the valid state. As the older SoCs all have
+> 4 dma channels this can live happily in an u16 element.
+>
+> The s3c24xx series will most likely not see any new offspring, but even
+> if it happens any new model will probably use the newer more flexible
+> variant of the dma controller, so this should not restrict anything
+> in the future.
+>
+> Example:
+> SDI is valid on channels 0, 2 and 3 - with varying hw request sources.
+> For it the chansel field would look like
+>
+>   ((BIT(3) | 1)<<  3 * 4) | // channel 3, with request source 1
+>   ((BIT(3) | 2)<<  2 * 4) | // channel 2, with request source 2
+>   ((BIT(3) | 2)<<  0 * 4)   // channel 0, with request source 2
+>
+>
+> Heiko Stuebner (4):
+>    ARM: S3C24XX: number the dma clocks
+>    dmaengine: add driver for Samsung s3c24xx SoCs
+>    ARM: S3C24XX: add platform-devices for new dma driver for s3c2412 and
+>      s3c2443
+>    ARM: SAMSUNG: set s3c24xx_dma_filter for s3c64xx-spi0 device
+>
+>   arch/arm/mach-s3c24xx/clock-s3c2412.c     |    8 +-
+>   arch/arm/mach-s3c24xx/common-s3c2443.c    |   12 +-
+>   arch/arm/mach-s3c24xx/common.c            |  106 +++
+>   arch/arm/mach-s3c24xx/common.h            |    3 +
+>   arch/arm/mach-s3c24xx/mach-jive.c         |    1 +
+>   arch/arm/mach-s3c24xx/mach-smdk2413.c     |    1 +
+>   arch/arm/mach-s3c24xx/mach-smdk2416.c     |    1 +
+>   arch/arm/mach-s3c24xx/mach-smdk2443.c     |    1 +
+>   arch/arm/mach-s3c24xx/mach-vstms.c        |    1 +
+>   arch/arm/plat-samsung/devs.c              |    5 +-
+>   drivers/dma/Kconfig                       |   12 +
+>   drivers/dma/Makefile                      |    1 +
+>   drivers/dma/s3c24xx-dma.c                 | 1255 +++++++++++++++++++++++++++++
+>   include/linux/platform_data/dma-s3c24xx.h |   43 +
+>   14 files changed, 1439 insertions(+), 11 deletions(-)
+>   create mode 100644 drivers/dma/s3c24xx-dma.c
+>   create mode 100644 include/linux/platform_data/dma-s3c24xx.h
+>
+Looks good to me, but I need ack from Vinod, dma maintainer.
 
-Please see the suggestion for an integration with /dev/random given in 
-appendix B.3 of [2]. The source code for the integration is given in 
-patches/linux-3.9-random.patch which is described in patches/README. The 
-patch only utilizes the CPU Jitter RNG when the entropy in the entropy 
-pool falls below the low threshold, i.e. when no entropy from other 
-sources is present.
+Vinod, if you're OK on this, please let us know so that I could take 
+this whole series into samsung tree.
 
-[1] http://www.chronox.de/jent/jitterentropy-20130818.tar.bz2
-
-[2] http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.pdf
-
-[3] http://www.gossamer-threads.com/lists/linux/kernel/1716565#1716565
-
-
-Ciao
-Stephan
--- 
-| Cui bono? |
+Thanks,
+Kukjin
