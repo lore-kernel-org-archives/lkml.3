@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab3HRDJb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 23:09:31 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38872 "EHLO
+	id S1754962Ab3HRDLa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 23:11:30 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:37147 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752947Ab3HRDJa (ORCPT
+	with ESMTP id S1753864Ab3HRDL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 23:09:30 -0400
+	Sat, 17 Aug 2013 23:11:29 -0400
 X-Originating-IP: 50.43.39.152
-Date: Sat, 17 Aug 2013 20:09:21 -0700
+Date: Sat, 17 Aug 2013 20:11:20 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -17,76 +17,54 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/9] nohz_full: Add full-system idle states
- and variables
-Message-ID: <20130818030920.GI28923@leaf>
+Subject: Re: [PATCH tip/core/rcu 7/9] nohz_full: Add full-system-idle
+ arguments to API
+Message-ID: <20130818031120.GJ28923@leaf>
 References: <20130818014918.GA27827@linux.vnet.ibm.com>
  <1376790584-28120-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1376790584-28120-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1376790584-28120-7-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376790584-28120-6-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1376790584-28120-7-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 17, 2013 at 06:49:41PM -0700, Paul E. McKenney wrote:
+On Sat, Aug 17, 2013 at 06:49:42PM -0700, Paul E. McKenney wrote:
 > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> This commit adds control variables and states for full-system idle.
-> The system will progress through the states in numerical order when
-> the system is fully idle (other than the timekeeping CPU), and reset
-> down to the initial state if any non-timekeeping CPU goes non-idle.
-> The current state is kept in full_sysidle_state.
-> 
-> A RCU_SYSIDLE_SMALL macro is defined, and systems with this number
-> of CPUs or fewer move through the states more aggressively.  The idea
-> is that the resulting memory contention is less of a problem on small
-> systems.  Architectures can adjust this value (which defaults to 8)
-> using CONFIG_ARCH_RCU_SYSIDLE_SMALL.
-> 
-> One flavor of RCU will be in charge of driving the state machine,
-> defined by rcu_sysidle_state.  This should be the busiest flavor of RCU.
+> This commit adds an isidle and jiffies argument to force_qs_rnp(),
+> dyntick_save_progress_counter(), and rcu_implicit_dynticks_qs() to enable
+> RCU's force-quiescent-state process to check for full-system idle.
 > 
 > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > Cc: Frederic Weisbecker <fweisbec@gmail.com>
 > Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> [ paulmck: Use true and false for boolean constants per Lai Jiangshan. ]
 
-One issue (and one question) below; with the issue addressed,
+One optional comment below; with or without that,
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  kernel/rcutree_plugin.h | 28 ++++++++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
+>  kernel/rcutree.c | 23 ++++++++++++++++-------
+>  1 file changed, 16 insertions(+), 7 deletions(-)
 > 
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index eab81da..64a05b9f 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -2378,6 +2378,34 @@ static void rcu_kick_nohz_cpu(int cpu)
->  #ifdef CONFIG_NO_HZ_FULL_SYSIDLE
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index b0d2cc3..f1a0b05 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -246,7 +246,9 @@ module_param(jiffies_till_next_fqs, ulong, 0644);
 >  
->  /*
-> + * Handle small systems specially, accelerating their transition into
-> + * full idle state.  Allow arches to override this code's idea of
-> + * what constitutes a "small" system.
-> + */
-> +#ifdef CONFIG_ARCH_RCU_SYSIDLE_SMALL
+>  static void rcu_start_gp_advanced(struct rcu_state *rsp, struct rcu_node *rnp,
+>  				  struct rcu_data *rdp);
+> -static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *));
+> +static void force_qs_rnp(struct rcu_state *rsp,
+> +			 int (*f)(struct rcu_data *, bool *, unsigned long *),
+> +			 bool *isidle, unsigned long *maxj);
 
-I don't see any Kconfig creating this new config option.
-
-Also, why not simply define this config option unconditionally, with a
-default of 8, and then use its value directly?
-
-> +static int __maybe_unused full_sysidle_state; /* Current system-idle state. */
-> +#define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
-> +#define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
-> +#define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
-> +#define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
-> +#define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
-
-Perhaps there's a kernel style rule I'm not thinking of that makes it
-verboten, but: why not use an enum for a state variable like this?
+You might consider giving the parameters of the function pointer names
+(both here and in the definition), to make it more self-documenting.
 
 - Josh Triplett
