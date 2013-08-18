@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528Ab3HRBuA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 21:50:00 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:47370 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900Ab3HRBt4 (ORCPT
+	id S1754427Ab3HRBt6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 21:49:58 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39719 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab3HRBt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 17 Aug 2013 21:49:56 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -15,83 +15,100 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 6/9] nohz_full: Add full-system idle states and variables
-Date: Sat, 17 Aug 2013 18:49:41 -0700
-Message-Id: <1376790584-28120-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/9] nohz_full: Add testing information to documentation
+Date: Sat, 17 Aug 2013 18:49:37 -0700
+Message-Id: <1376790584-28120-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1376790584-28120-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130818014918.GA27827@linux.vnet.ibm.com>
  <1376790584-28120-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081801-7606-0000-0000-00000E6C16F9
+x-cbid: 13081801-5518-0000-0000-00001149AD61
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit adds control variables and states for full-system idle.
-The system will progress through the states in numerical order when
-the system is fully idle (other than the timekeeping CPU), and reset
-down to the initial state if any non-timekeeping CPU goes non-idle.
-The current state is kept in full_sysidle_state.
-
-A RCU_SYSIDLE_SMALL macro is defined, and systems with this number
-of CPUs or fewer move through the states more aggressively.  The idea
-is that the resulting memory contention is less of a problem on small
-systems.  Architectures can adjust this value (which defaults to 8)
-using CONFIG_ARCH_RCU_SYSIDLE_SMALL.
-
-One flavor of RCU will be in charge of driving the state machine,
-defined by rcu_sysidle_state.  This should be the busiest flavor of RCU.
+This commit adds information about testing nohz_full, and also emphasizes
+the fact that you need a multi-CPU system to get any benefit from nohz_full.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/rcutree_plugin.h | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ Documentation/timers/NO_HZ.txt | 44 ++++++++++++++++++++++++++++++++----------
+ 1 file changed, 34 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index eab81da..64a05b9f 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -2378,6 +2378,34 @@ static void rcu_kick_nohz_cpu(int cpu)
- #ifdef CONFIG_NO_HZ_FULL_SYSIDLE
+diff --git a/Documentation/timers/NO_HZ.txt b/Documentation/timers/NO_HZ.txt
+index 8869758..cca122f 100644
+--- a/Documentation/timers/NO_HZ.txt
++++ b/Documentation/timers/NO_HZ.txt
+@@ -24,8 +24,8 @@ There are three main ways of managing scheduling-clock interrupts
+ 	workloads, you will normally -not- want this option.
  
- /*
-+ * Handle small systems specially, accelerating their transition into
-+ * full idle state.  Allow arches to override this code's idea of
-+ * what constitutes a "small" system.
-+ */
-+#ifdef CONFIG_ARCH_RCU_SYSIDLE_SMALL
-+#define RCU_SYSIDLE_SMALL CONFIG_ARCH_RCU_SYSIDLE_SMALL
-+#else /* #ifdef CONFIG_ARCH_RCU_SYSIDLE_SMALL */
-+#define RCU_SYSIDLE_SMALL 8
-+#endif
+ These three cases are described in the following three sections, followed
+-by a third section on RCU-specific considerations and a fourth and final
+-section listing known issues.
++by a third section on RCU-specific considerations, a fourth section
++discussing testing, and a fifth and final section listing known issues.
+ 
+ 
+ NEVER OMIT SCHEDULING-CLOCK TICKS
+@@ -121,14 +121,15 @@ boot parameter specifies the adaptive-ticks CPUs.  For example,
+ "nohz_full=1,6-8" says that CPUs 1, 6, 7, and 8 are to be adaptive-ticks
+ CPUs.  Note that you are prohibited from marking all of the CPUs as
+ adaptive-tick CPUs:  At least one non-adaptive-tick CPU must remain
+-online to handle timekeeping tasks in order to ensure that system calls
+-like gettimeofday() returns accurate values on adaptive-tick CPUs.
+-(This is not an issue for CONFIG_NO_HZ_IDLE=y because there are no
+-running user processes to observe slight drifts in clock rate.)
+-Therefore, the boot CPU is prohibited from entering adaptive-ticks
+-mode.  Specifying a "nohz_full=" mask that includes the boot CPU will
+-result in a boot-time error message, and the boot CPU will be removed
+-from the mask.
++online to handle timekeeping tasks in order to ensure that system
++calls like gettimeofday() returns accurate values on adaptive-tick CPUs.
++(This is not an issue for CONFIG_NO_HZ_IDLE=y because there are no running
++user processes to observe slight drifts in clock rate.)  Therefore, the
++boot CPU is prohibited from entering adaptive-ticks mode.  Specifying a
++"nohz_full=" mask that includes the boot CPU will result in a boot-time
++error message, and the boot CPU will be removed from the mask.  Note that
++this means that your system must have at least two CPUs in order for
++CONFIG_NO_HZ_FULL=y to do anything for you.
+ 
+ Alternatively, the CONFIG_NO_HZ_FULL_ALL=y Kconfig parameter specifies
+ that all CPUs other than the boot CPU are adaptive-ticks CPUs.  This
+@@ -232,6 +233,29 @@ scheduler will decide where to run them, which might or might not be
+ where you want them to run.
+ 
+ 
++TESTING
 +
-+/*
-+ * Define RCU flavor that holds sysidle state.  This needs to be the
-+ * most active flavor of RCU.
-+ */
-+#ifdef CONFIG_PREEMPT_RCU
-+static struct rcu_state __maybe_unused *rcu_sysidle_state = &rcu_preempt_state;
-+#else /* #ifdef CONFIG_PREEMPT_RCU */
-+static struct rcu_state __maybe_unused *rcu_sysidle_state = &rcu_sched_state;
-+#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
++So you enable all the OS-jitter features described in this document,
++but do not see any change in your workload's behavior.  Is this because
++your workload isn't affected that much by OS jitter, or is it because
++something else is in the way?  This section helps answer this question
++by providing a simple OS-jitter test suite, which is available on branch
++master of the following git archive:
 +
-+static int __maybe_unused full_sysidle_state; /* Current system-idle state. */
-+#define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
-+#define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
-+#define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
-+#define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
-+#define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
++git://git.kernel.org/pub/scm/linux/kernel/git/frederic/dynticks-testing.git
 +
-+/*
-  * Invoked to note exit from irq or task transition to idle.  Note that
-  * usermode execution does -not- count as idle here!  After all, we want
-  * to detect full-system idle states, not RCU quiescent states and grace
++Clone this archive and follow the instructions in the README file.
++This test procedure will produce a trace that will allow you to evaluate
++whether or not you have succeeded in removing OS jitter from your system.
++If this trace shows that you have removed OS jitter as much as is
++possible, then you can conclude that your workload is not all that
++sensitive to OS jitter.
++
++Note: this test requires that your system have at least two CPUs.
++We do not currently have a good way to remove OS jitter from single-CPU
++systems.
++
++
+ KNOWN ISSUES
+ 
+ o	Dyntick-idle slows transitions to and from idle slightly.
 -- 
 1.8.1.5
 
