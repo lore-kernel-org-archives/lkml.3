@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab3HRUf3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:35:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43793 "EHLO
+	id S1756637Ab3HRUf2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:35:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43791 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756590Ab3HRUfY (ORCPT
+	with ESMTP id S1756589Ab3HRUfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:35:24 -0400
+	Sun, 18 Aug 2013 16:35:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 43/45] s390: Fix broken build
-Date: Sun, 18 Aug 2013 13:36:32 -0700
-Message-Id: <20130818203623.985028222@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 45/45] cpuset: fix the return value of cpuset_write_u64()
+Date: Sun, 18 Aug 2013 13:36:34 -0700
+Message-Id: <20130818203624.119951332@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -27,41 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 215b28a5308f3d332df2ee09ef11fda45d7e4a92 upstream.
+commit a903f0865a190f8778c73df1a810ea6e25e5d7cf upstream.
 
-Fix this build error:
+Writing to this file always returns -ENODEV:
 
-  In file included from fs/exec.c:61:0:
-  arch/s390/include/asm/tlb.h:35:23: error: expected identifier or '(' before 'unsigned'
-  arch/s390/include/asm/tlb.h:36:1: warning: no semicolon at end of struct or union [enabled by default]
-  arch/s390/include/asm/tlb.h: In function 'tlb_gather_mmu':
-  arch/s390/include/asm/tlb.h:57:5: error: 'struct mmu_gather' has no member named 'end'
+  # echo 1 > cpuset.memory_pressure_enabled
+  -bash: echo: write error: No such device
 
-Broken due to commit 2b047252d0 ("Fix TLB gather virtual address range
-invalidation corner cases").
-
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-[ Oh well. We had build testing for ppc amd um, but no s390  - Linus ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/tlb.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/cpuset.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/s390/include/asm/tlb.h
-+++ b/arch/s390/include/asm/tlb.h
-@@ -32,7 +32,7 @@ struct mmu_gather {
- 	struct mm_struct *mm;
- 	struct mmu_table_batch *batch;
- 	unsigned int fullmm;
--	unsigned long start, unsigned long end;
-+	unsigned long start, end;
- };
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1502,11 +1502,13 @@ static int cpuset_write_u64(struct cgrou
+ {
+ 	struct cpuset *cs = cgroup_cs(cgrp);
+ 	cpuset_filetype_t type = cft->private;
+-	int retval = -ENODEV;
++	int retval = 0;
  
- struct mmu_table_batch {
+ 	mutex_lock(&cpuset_mutex);
+-	if (!is_cpuset_online(cs))
++	if (!is_cpuset_online(cs)) {
++		retval = -ENODEV;
+ 		goto out_unlock;
++	}
+ 
+ 	switch (type) {
+ 	case FILE_CPU_EXCLUSIVE:
 
 
