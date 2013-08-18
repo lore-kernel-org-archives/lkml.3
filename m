@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3HRQzv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 12:55:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50868 "EHLO comal.ext.ti.com"
+	id S1754375Ab3HRQz5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 12:55:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21082 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753602Ab3HRQzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 12:55:49 -0400
-Message-ID: <5210FC71.3010600@ti.com>
-Date: Sun, 18 Aug 2013 22:25:13 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754223Ab3HRQzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Aug 2013 12:55:54 -0400
+Date: Sun, 18 Aug 2013 18:49:37 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 1/4] nohz: Only update sleeptime stats locally
+Message-ID: <20130818164937.GA21310@redhat.com>
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-2-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        <netdev@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 1/2] ARM: davinci: da850: add DT node for ethernet
-References: <1376662262-21795-1-git-send-email-prabhakar.csengg@gmail.com> <1376662262-21795-2-git-send-email-prabhakar.csengg@gmail.com> <520E7377.1080808@cogentembedded.com>
-In-Reply-To: <520E7377.1080808@cogentembedded.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376667753-29014-2-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/17/2013 12:16 AM, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 08/16/2013 06:11 PM, Lad, Prabhakar wrote:
-> 
->> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> 
->> Add ethernet device tree node information and pinmux for mii to da850 by
->> providing interrupt details and local mac address.
-> 
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> ---
->>   arch/arm/boot/dts/da850-evm.dts |    5 +++++
->>   arch/arm/boot/dts/da850.dtsi    |   30 ++++++++++++++++++++++++++++++
->>   2 files changed, 35 insertions(+)
-> 
->> diff --git a/arch/arm/boot/dts/da850-evm.dts
->> b/arch/arm/boot/dts/da850-evm.dts
->> index 1f8cfdd..44f3fbc 100644
->> --- a/arch/arm/boot/dts/da850-evm.dts
->> +++ b/arch/arm/boot/dts/da850-evm.dts
->> @@ -96,6 +96,11 @@
->>               pinctrl-0 = <&mdio_pins>;
->>               bus_freq = <2200000>;
->>           };
->> +        ethernet: emac@1e20000 {
-> 
->    Why label the node in the board file too?
+On 08/16, Frederic Weisbecker wrote:
+>
+> To fix this, lets only update the sleeptime stats locally when the CPU
+> exits from idle.
 
-May be not required, but all other entries in da850-evm.dts have labels
-too. Other .dts files like am335x-bone.dts use labels too (even though
-they are never used in references). So I am inclined to let this be like
-this and if needed have all the labels removed through a separate patch
-- at least we remain consistent within the file that way.
+I am in no position to ack the changes in this area, but I like this
+change very much. Because, as a code reader, I was totally confused by
 
-Prabhakar,
+	if (last_update_time)
+		update_ts_time_stats()
 
-Please mind the new e-mail address of the devicetree list.
+code and it looks "obviously wrong".
 
-Thanks,
-Sekhar
+I added more cc's. It seems to me that 9366d840 "cpufreq: governors:
+Calculate iowait time only when necessary" doesn't realize what
+
+	-       u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
+	+       u64 idle_time = get_cpu_idle_time_us(cpu, io_busy ? wall : NULL);
+
+actually means. OTOH, get_cpu_iowait_time_us() was called with
+last_update_time != NULL even before this patch...
+
+In short. This looks like the clear fix to me, but I do not understand
+this code enough, and I think that cpufreq should know about this change.
+
+>  static void tick_nohz_stop_idle(int cpu, ktime_t now)
+>  {
+>  	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+> +	ktime_t delta;
+>  
+> -	update_ts_time_stats(cpu, ts, now, NULL);
+> +	/* Updates the per cpu time idle statistics counters */
+> +	delta = ktime_sub(now, ts->idle_entrytime);
+> +	if (nr_iowait_cpu(cpu) > 0)
+> +		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
+> +	else
+> +		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+> +	ts->idle_entrytime = now;
+>  	ts->idle_active = 0;
+
+With or without this change, why we update ->idle_entrytime in this case?
+Looks harmless, but a bit confusing.
+
+While this doesn't really matter, we could probably even kill ->idle_active
+and use !!ts->idle_entrytime instead.
+
+> @@ -473,17 +458,14 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
+
+And I think that we should kill this last_update_time argument later.
+
+Oleg.
+
