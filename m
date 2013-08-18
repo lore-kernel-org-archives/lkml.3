@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757041Ab3HRUqd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:46:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43622 "EHLO
+	id S1757089Ab3HRUqx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:46:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43620 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756270Ab3HRUex (ORCPT
+	with ESMTP id S1756159Ab3HRUew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:34:53 -0400
+	Sun, 18 Aug 2013 16:34:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Isaacson <adi@hexapodia.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 14/45] mac80211: ignore HT primary channel while connected
-Date: Sun, 18 Aug 2013 13:36:03 -0700
-Message-Id: <20130818203621.979620925@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 13/45] iwl4965: reset firmware after rfkill off
+Date: Sun, 18 Aug 2013 13:36:02 -0700
+Message-Id: <20130818203621.910970906@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -27,125 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 5cdaed1e878d723d56d04ae0be1738124acf9f46 upstream.
+commit 788f7a56fce1bcb2067b62b851a086fca48a0056 upstream.
 
-While we're connected, the AP shouldn't change the primary channel
-in the HT information. We checked this, and dropped the connection
-if it did change it.
+Using rfkill switch can make firmware unstable, what cause various
+Microcode errors and kernel warnings. Reseting firmware just after
+rfkill off (radio on) helped with that.
 
-Unfortunately, this is causing problems on some APs, e.g. on the
-Netgear WRT610NL: the beacons seem to always contain a bad channel
-and if we made a connection using a probe response (correct data)
-we drop the connection immediately and can basically not connect
-properly at all.
+Resolve:
+https://bugzilla.redhat.com/show_bug.cgi?id=977053
 
-Work around this by ignoring the HT primary channel information in
-beacons if we're already connected.
-
-Also print out more verbose messages in the other situations to
-help diagnose similar bugs quicker in the future.
-
-Acked-by: Andy Isaacson <adi@hexapodia.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-and-tested-by: Justin Pearce <whitefox@guardianfox.net>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mlme.c |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ drivers/net/wireless/iwlegacy/4965-mac.c |   10 +++++-----
+ drivers/net/wireless/iwlegacy/common.c   |    1 +
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -237,8 +237,9 @@ ieee80211_determine_chantype(struct ieee
- 			     struct ieee80211_channel *channel,
- 			     const struct ieee80211_ht_operation *ht_oper,
- 			     const struct ieee80211_vht_operation *vht_oper,
--			     struct cfg80211_chan_def *chandef, bool verbose)
-+			     struct cfg80211_chan_def *chandef, bool tracking)
- {
-+	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
- 	struct cfg80211_chan_def vht_chandef;
- 	u32 ht_cfreq, ret;
- 
-@@ -257,7 +258,7 @@ ieee80211_determine_chantype(struct ieee
- 	ht_cfreq = ieee80211_channel_to_frequency(ht_oper->primary_chan,
- 						  channel->band);
- 	/* check that channel matches the right operating channel */
--	if (channel->center_freq != ht_cfreq) {
-+	if (!tracking && channel->center_freq != ht_cfreq) {
- 		/*
- 		 * It's possible that some APs are confused here;
- 		 * Netgear WNDR3700 sometimes reports 4 higher than
-@@ -265,11 +266,10 @@ ieee80211_determine_chantype(struct ieee
- 		 * since we look at probe response/beacon data here
- 		 * it should be OK.
+--- a/drivers/net/wireless/iwlegacy/4965-mac.c
++++ b/drivers/net/wireless/iwlegacy/4965-mac.c
+@@ -4442,12 +4442,12 @@ il4965_irq_tasklet(struct il_priv *il)
+ 		 * is killed. Hence update the killswitch state here. The
+ 		 * rfkill handler will care about restarting if needed.
  		 */
--		if (verbose)
--			sdata_info(sdata,
--				   "Wrong control channel: center-freq: %d ht-cfreq: %d ht->primary_chan: %d band: %d - Disabling HT\n",
--				   channel->center_freq, ht_cfreq,
--				   ht_oper->primary_chan, channel->band);
-+		sdata_info(sdata,
-+			   "Wrong control channel: center-freq: %d ht-cfreq: %d ht->primary_chan: %d band: %d - Disabling HT\n",
-+			   channel->center_freq, ht_cfreq,
-+			   ht_oper->primary_chan, channel->band);
- 		ret = IEEE80211_STA_DISABLE_HT | IEEE80211_STA_DISABLE_VHT;
- 		goto out;
- 	}
-@@ -323,7 +323,7 @@ ieee80211_determine_chantype(struct ieee
- 				channel->band);
- 		break;
- 	default:
--		if (verbose)
-+		if (!(ifmgd->flags & IEEE80211_STA_DISABLE_VHT))
- 			sdata_info(sdata,
- 				   "AP VHT operation IE has invalid channel width (%d), disable VHT\n",
- 				   vht_oper->chan_width);
-@@ -332,7 +332,7 @@ ieee80211_determine_chantype(struct ieee
- 	}
+-		if (!test_bit(S_ALIVE, &il->status)) {
+-			if (hw_rf_kill)
+-				set_bit(S_RFKILL, &il->status);
+-			else
+-				clear_bit(S_RFKILL, &il->status);
++		if (hw_rf_kill) {
++			set_bit(S_RFKILL, &il->status);
++		} else {
++			clear_bit(S_RFKILL, &il->status);
+ 			wiphy_rfkill_set_hw_state(il->hw->wiphy, hw_rf_kill);
++			il_force_reset(il, true);
+ 		}
  
- 	if (!cfg80211_chandef_valid(&vht_chandef)) {
--		if (verbose)
-+		if (!(ifmgd->flags & IEEE80211_STA_DISABLE_VHT))
- 			sdata_info(sdata,
- 				   "AP VHT information is invalid, disable VHT\n");
- 		ret = IEEE80211_STA_DISABLE_VHT;
-@@ -345,7 +345,7 @@ ieee80211_determine_chantype(struct ieee
- 	}
+ 		handled |= CSR_INT_BIT_RF_KILL;
+--- a/drivers/net/wireless/iwlegacy/common.c
++++ b/drivers/net/wireless/iwlegacy/common.c
+@@ -4660,6 +4660,7 @@ il_force_reset(struct il_priv *il, bool
  
- 	if (!cfg80211_chandef_compatible(chandef, &vht_chandef)) {
--		if (verbose)
-+		if (!(ifmgd->flags & IEEE80211_STA_DISABLE_VHT))
- 			sdata_info(sdata,
- 				   "AP VHT information doesn't match HT, disable VHT\n");
- 		ret = IEEE80211_STA_DISABLE_VHT;
-@@ -372,7 +372,7 @@ out:
- 		ret |= chandef_downgrade(chandef);
- 	}
+ 	return 0;
+ }
++EXPORT_SYMBOL(il_force_reset);
  
--	if (chandef->width != vht_chandef.width && verbose)
-+	if (chandef->width != vht_chandef.width && !tracking)
- 		sdata_info(sdata,
- 			   "capabilities/regulatory prevented using AP HT/VHT configuration, downgraded\n");
- 
-@@ -412,7 +412,7 @@ static int ieee80211_config_bw(struct ie
- 
- 	/* calculate new channel (type) based on HT/VHT operation IEs */
- 	flags = ieee80211_determine_chantype(sdata, sband, chan, ht_oper,
--					     vht_oper, &chandef, false);
-+					     vht_oper, &chandef, true);
- 
- 	/*
- 	 * Downgrade the new channel if we associated with restricted
-@@ -3906,7 +3906,7 @@ static int ieee80211_prep_channel(struct
- 	ifmgd->flags |= ieee80211_determine_chantype(sdata, sband,
- 						     cbss->channel,
- 						     ht_oper, vht_oper,
--						     &chandef, true);
-+						     &chandef, false);
- 
- 	sdata->needed_rx_chains = min(ieee80211_ht_vht_rx_chains(sdata, cbss),
- 				      local->rx_chains);
+ int
+ il_mac_change_interface(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 
 
