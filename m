@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab3HRUfW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:35:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43768 "EHLO
+	id S1756670Ab3HRUgp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:36:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43778 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756568Ab3HRUfS (ORCPT
+	with ESMTP id S1756579Ab3HRUfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:35:18 -0400
+	Sun, 18 Aug 2013 16:35:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jianpeng Ma <majianpeng@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 08/45] elevator: Fix a race in elevator switching
-Date: Sun, 18 Aug 2013 13:35:57 -0700
-Message-Id: <20130818203621.572412448@linuxfoundation.org>
+        Thorsten Glaser <tg@debian.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 42/45] m68k/atari: ARAnyM - Fix NatFeat module support
+Date: Sun, 18 Aug 2013 13:36:31 -0700
+Message-Id: <20130818203623.917344097@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -27,243 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianpeng Ma <majianpeng@gmail.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit d50235b7bc3ee0a0427984d763ea7534149531b4 upstream.
+commit e8184e10f89736a23ea6eea8e24cd524c5c513d2 upstream.
 
-There's a race between elevator switching and normal io operation.
-    Because the allocation of struct elevator_queue and struct elevator_data
-    don't in a atomic operation.So there are have chance to use NULL
-    ->elevator_data.
-    For example:
-        Thread A:                               Thread B
-        blk_queu_bio                            elevator_switch
-        spin_lock_irq(q->queue_block)           elevator_alloc
-        elv_merge                               elevator_init_fn
+As pointed out by Andreas Schwab, pointers passed to ARAnyM NatFeat calls
+should be physical addresses, not virtual addresses.
 
-    Because call elevator_alloc, it can't hold queue_lock and the
-    ->elevator_data is NULL.So at the same time, threadA call elv_merge and
-    nedd some info of elevator_data.So the crash happened.
+Fortunately on Atari, physical and virtual kernel addresses are the same,
+as long as normal kernel memory is concerned, so this usually worked fine
+without conversion.
 
-    Move the elevator_alloc into func elevator_init_fn, it make the
-    operations in a atomic operation.
+But for modules, pointers to literal strings are located in vmalloc()ed
+memory. Depending on the version of ARAnyM, this causes the nf_get_id()
+call to just fail, or worse, crash ARAnyM itself with e.g.
 
-    Using the follow method can easy reproduce this bug
-    1:dd if=/dev/sdb of=/dev/null
-    2:while true;do echo noop > scheduler;echo deadline > scheduler;done
+    Gotcha! Illegal memory access. Atari PC = $968c
 
-    The test method also use this method.
+This is a big issue for distro kernels, who want to have all drivers as
+loadable modules in an initrd.
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Add a wrapper for nf_get_id() that copies the literal to the stack to
+work around this issue.
+
+Reported-by: Thorsten Glaser <tg@debian.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/cfq-iosched.c      |   17 ++++++++++++++---
- block/deadline-iosched.c |   16 +++++++++++++---
- block/elevator.c         |   25 +++++--------------------
- block/noop-iosched.c     |   17 ++++++++++++++---
- include/linux/elevator.h |    6 +++++-
- 5 files changed, 51 insertions(+), 30 deletions(-)
+ arch/m68k/emu/natfeat.c |   23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -4347,18 +4347,28 @@ static void cfq_exit_queue(struct elevat
- 	kfree(cfqd);
- }
+--- a/arch/m68k/emu/natfeat.c
++++ b/arch/m68k/emu/natfeat.c
+@@ -18,9 +18,11 @@
+ #include <asm/machdep.h>
+ #include <asm/natfeat.h>
  
--static int cfq_init_queue(struct request_queue *q)
-+static int cfq_init_queue(struct request_queue *q, struct elevator_type *e)
- {
- 	struct cfq_data *cfqd;
- 	struct blkcg_gq *blkg __maybe_unused;
- 	int i, ret;
-+	struct elevator_queue *eq;
++extern long nf_get_id2(const char *feature_name);
 +
-+	eq = elevator_alloc(q, e);
-+	if (!eq)
-+		return -ENOMEM;
+ asm("\n"
+-"	.global nf_get_id,nf_call\n"
+-"nf_get_id:\n"
++"	.global nf_get_id2,nf_call\n"
++"nf_get_id2:\n"
+ "	.short	0x7300\n"
+ "	rts\n"
+ "nf_call:\n"
+@@ -29,12 +31,25 @@ asm("\n"
+ "1:	moveq.l	#0,%d0\n"
+ "	rts\n"
+ "	.section __ex_table,\"a\"\n"
+-"	.long	nf_get_id,1b\n"
++"	.long	nf_get_id2,1b\n"
+ "	.long	nf_call,1b\n"
+ "	.previous");
+-EXPORT_SYMBOL_GPL(nf_get_id);
+ EXPORT_SYMBOL_GPL(nf_call);
  
- 	cfqd = kmalloc_node(sizeof(*cfqd), GFP_KERNEL | __GFP_ZERO, q->node);
--	if (!cfqd)
-+	if (!cfqd) {
-+		kobject_put(&eq->kobj);
- 		return -ENOMEM;
-+	}
-+	eq->elevator_data = cfqd;
- 
- 	cfqd->queue = q;
--	q->elevator->elevator_data = cfqd;
-+	spin_lock_irq(q->queue_lock);
-+	q->elevator = eq;
-+	spin_unlock_irq(q->queue_lock);
- 
- 	/* Init root service tree */
- 	cfqd->grp_service_tree = CFQ_RB_ROOT;
-@@ -4433,6 +4443,7 @@ static int cfq_init_queue(struct request
- 
- out_free:
- 	kfree(cfqd);
-+	kobject_put(&eq->kobj);
- 	return ret;
- }
- 
---- a/block/deadline-iosched.c
-+++ b/block/deadline-iosched.c
-@@ -337,13 +337,21 @@ static void deadline_exit_queue(struct e
- /*
-  * initialize elevator private data (deadline_data).
-  */
--static int deadline_init_queue(struct request_queue *q)
-+static int deadline_init_queue(struct request_queue *q, struct elevator_type *e)
- {
- 	struct deadline_data *dd;
-+	struct elevator_queue *eq;
++long nf_get_id(const char *feature_name)
++{
++	/* feature_name may be in vmalloc()ed memory, so make a copy */
++	char name_copy[32];
++	size_t n;
 +
-+	eq = elevator_alloc(q, e);
-+	if (!eq)
-+		return -ENOMEM;
- 
- 	dd = kmalloc_node(sizeof(*dd), GFP_KERNEL | __GFP_ZERO, q->node);
--	if (!dd)
-+	if (!dd) {
-+		kobject_put(&eq->kobj);
- 		return -ENOMEM;
-+	}
-+	eq->elevator_data = dd;
- 
- 	INIT_LIST_HEAD(&dd->fifo_list[READ]);
- 	INIT_LIST_HEAD(&dd->fifo_list[WRITE]);
-@@ -355,7 +363,9 @@ static int deadline_init_queue(struct re
- 	dd->front_merges = 1;
- 	dd->fifo_batch = fifo_batch;
- 
--	q->elevator->elevator_data = dd;
-+	spin_lock_irq(q->queue_lock);
-+	q->elevator = eq;
-+	spin_unlock_irq(q->queue_lock);
- 	return 0;
- }
- 
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -150,7 +150,7 @@ void __init load_default_elevator_module
- 
- static struct kobj_type elv_ktype;
- 
--static struct elevator_queue *elevator_alloc(struct request_queue *q,
-+struct elevator_queue *elevator_alloc(struct request_queue *q,
- 				  struct elevator_type *e)
- {
- 	struct elevator_queue *eq;
-@@ -170,6 +170,7 @@ err:
- 	elevator_put(e);
- 	return NULL;
- }
-+EXPORT_SYMBOL(elevator_alloc);
- 
- static void elevator_release(struct kobject *kobj)
- {
-@@ -221,16 +222,7 @@ int elevator_init(struct request_queue *
- 		}
- 	}
- 
--	q->elevator = elevator_alloc(q, e);
--	if (!q->elevator)
--		return -ENOMEM;
--
--	err = e->ops.elevator_init_fn(q);
--	if (err) {
--		kobject_put(&q->elevator->kobj);
--		return err;
--	}
--
-+	err = e->ops.elevator_init_fn(q, e);
- 	return 0;
- }
- EXPORT_SYMBOL(elevator_init);
-@@ -935,17 +927,10 @@ static int elevator_switch(struct reques
- 	spin_unlock_irq(q->queue_lock);
- 
- 	/* allocate, init and register new elevator */
--	err = -ENOMEM;
--	q->elevator = elevator_alloc(q, new_e);
--	if (!q->elevator)
-+	err = new_e->ops.elevator_init_fn(q, new_e);
-+	if (err)
- 		goto fail_init;
- 
--	err = new_e->ops.elevator_init_fn(q);
--	if (err) {
--		kobject_put(&q->elevator->kobj);
--		goto fail_init;
--	}
--
- 	if (registered) {
- 		err = elv_register_queue(q);
- 		if (err)
---- a/block/noop-iosched.c
-+++ b/block/noop-iosched.c
-@@ -59,16 +59,27 @@ noop_latter_request(struct request_queue
- 	return list_entry(rq->queuelist.next, struct request, queuelist);
- }
- 
--static int noop_init_queue(struct request_queue *q)
-+static int noop_init_queue(struct request_queue *q, struct elevator_type *e)
- {
- 	struct noop_data *nd;
-+	struct elevator_queue *eq;
++	n = strlcpy(name_copy, feature_name, sizeof(name_copy));
++	if (n >= sizeof(name_copy))
++		return 0;
 +
-+	eq = elevator_alloc(q, e);
-+	if (!eq)
-+		return -ENOMEM;
- 
- 	nd = kmalloc_node(sizeof(*nd), GFP_KERNEL, q->node);
--	if (!nd)
-+	if (!nd) {
-+		kobject_put(&eq->kobj);
- 		return -ENOMEM;
-+	}
-+	eq->elevator_data = nd;
- 
- 	INIT_LIST_HEAD(&nd->queue);
--	q->elevator->elevator_data = nd;
++	return nf_get_id2(name_copy);
++}
++EXPORT_SYMBOL_GPL(nf_get_id);
 +
-+	spin_lock_irq(q->queue_lock);
-+	q->elevator = eq;
-+	spin_unlock_irq(q->queue_lock);
- 	return 0;
- }
- 
---- a/include/linux/elevator.h
-+++ b/include/linux/elevator.h
-@@ -7,6 +7,7 @@
- #ifdef CONFIG_BLOCK
- 
- struct io_cq;
-+struct elevator_type;
- 
- typedef int (elevator_merge_fn) (struct request_queue *, struct request **,
- 				 struct bio *);
-@@ -35,7 +36,8 @@ typedef void (elevator_put_req_fn) (stru
- typedef void (elevator_activate_req_fn) (struct request_queue *, struct request *);
- typedef void (elevator_deactivate_req_fn) (struct request_queue *, struct request *);
- 
--typedef int (elevator_init_fn) (struct request_queue *);
-+typedef int (elevator_init_fn) (struct request_queue *,
-+				struct elevator_type *e);
- typedef void (elevator_exit_fn) (struct elevator_queue *);
- 
- struct elevator_ops
-@@ -155,6 +157,8 @@ extern int elevator_init(struct request_
- extern void elevator_exit(struct elevator_queue *);
- extern int elevator_change(struct request_queue *, const char *);
- extern bool elv_rq_merge_ok(struct request *, struct bio *);
-+extern struct elevator_queue *elevator_alloc(struct request_queue *,
-+					struct elevator_type *);
- 
- /*
-  * Helper functions.
+ void nfprint(const char *fmt, ...)
+ {
+ 	static char buf[256];
 
 
