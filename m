@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab3HRUm0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:42:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43703 "EHLO
+	id S1756653Ab3HRUmm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:42:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab3HRUfH (ORCPT
+	with ESMTP id S1756422Ab3HRUfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Aug 2013 16:35:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        kbuild test robot <fengguang.wu@intel.com>,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 32/45] USB: mos7840: fix big-endian probe
-Date: Sun, 18 Aug 2013 13:36:21 -0700
-Message-Id: <20130818203623.224566690@linuxfoundation.org>
+Subject: [ 31/45] USB: ti_usb_3410_5052: fix big-endian firmware handling
+Date: Sun, 18 Aug 2013 13:36:20 -0700
+Message-Id: <20130818203623.156900862@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -29,30 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit d551ec9b690f3de65b0091a2e767f1382adc792d upstream.
+commit e877dd2f2581628b7119df707d4cf03d940cff49 upstream.
 
-Fix bug in device-type detection on big-endian machines originally
-introduced by commit 0eafe4de ("USB: serial: mos7840: add support for
-MCS7810 devices") which always matched on little-endian product ids.
+Fix endianess bugs in firmware handling introduced by commits cb7a7c6a
+("ti_usb_3410_5052: add Multi-Tech modem support") and 05a3d905
+("ti_usb_3410_5052: support alternate firmware") which made the driver
+use the wrong firmware for certain devices on big-endian machines.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/ti_usb_3410_5052.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -2208,7 +2208,7 @@ static int mos7810_check(struct usb_seri
- static int mos7840_probe(struct usb_serial *serial,
- 				const struct usb_device_id *id)
- {
--	u16 product = serial->dev->descriptor.idProduct;
-+	u16 product = le16_to_cpu(serial->dev->descriptor.idProduct);
- 	u8 *buf;
- 	int device_type;
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -1536,14 +1536,15 @@ static int ti_download_firmware(struct t
+ 	char buf[32];
  
+ 	/* try ID specific firmware first, then try generic firmware */
+-	sprintf(buf, "ti_usb-v%04x-p%04x.fw", dev->descriptor.idVendor,
+-	    dev->descriptor.idProduct);
++	sprintf(buf, "ti_usb-v%04x-p%04x.fw",
++			le16_to_cpu(dev->descriptor.idVendor),
++			le16_to_cpu(dev->descriptor.idProduct));
+ 	status = request_firmware(&fw_p, buf, &dev->dev);
+ 
+ 	if (status != 0) {
+ 		buf[0] = '\0';
+-		if (dev->descriptor.idVendor == MTS_VENDOR_ID) {
+-			switch (dev->descriptor.idProduct) {
++		if (le16_to_cpu(dev->descriptor.idVendor) == MTS_VENDOR_ID) {
++			switch (le16_to_cpu(dev->descriptor.idProduct)) {
+ 			case MTS_CDMA_PRODUCT_ID:
+ 				strcpy(buf, "mts_cdma.fw");
+ 				break;
 
 
