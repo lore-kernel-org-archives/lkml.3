@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab3HRUf0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:35:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43784 "EHLO
+	id S1756660Ab3HRUg2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:36:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43781 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756568Ab3HRUfW (ORCPT
+	with ESMTP id S1756585Ab3HRUfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Aug 2013 16:35:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sage Weil <sage@inktank.com>, Jan Kara <jack@suse.cz>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 44/45] jbd2: Fix use after free after error in jbd2_journal_dirty_metadata()
-Date: Sun, 18 Aug 2013 13:36:33 -0700
-Message-Id: <20130818203624.052579870@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
+Subject: [ 41/45] m68k: Truncate base in do_div()
+Date: Sun, 18 Aug 2013 13:36:30 -0700
+Message-Id: <20130818203623.850246787@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -27,47 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-commit 91aa11fae1cf8c2fd67be0609692ea9741cdcc43 upstream.
+commit ea077b1b96e073eac5c3c5590529e964767fc5f7 upstream.
 
-When jbd2_journal_dirty_metadata() returns error,
-__ext4_handle_dirty_metadata() stops the handle. However callers of this
-function do not count with that fact and still happily used now freed
-handle. This use after free can result in various issues but very likely
-we oops soon.
+Explicitly truncate the second operand of do_div() to 32 bits to guard
+against bogus code calling it with a 64-bit divisor.
 
-The motivation of adding __ext4_journal_stop() into
-__ext4_handle_dirty_metadata() in commit 9ea7a0df seems to be only to
-improve error reporting. So replace __ext4_journal_stop() with
-ext4_journal_abort_handle() which was there before that commit and add
-WARN_ON_ONCE() to dump stack to provide useful information.
+[Thorsten]
 
-Reported-by: Sage Weil <sage@inktank.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+After upgrading from 3.2 to 3.10, mounting a btrfs volume fails with:
 
+btrfs: setting nodatacow, compression disabled
+btrfs: enabling auto recovery
+btrfs: disk space caching is enabled
 ---
- fs/ext4/ext4_jbd2.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/m68k/include/asm/div64.h |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/fs/ext4/ext4_jbd2.c
-+++ b/fs/ext4/ext4_jbd2.c
-@@ -219,10 +219,10 @@ int __ext4_handle_dirty_metadata(const c
- 	set_buffer_prio(bh);
- 	if (ext4_handle_valid(handle)) {
- 		err = jbd2_journal_dirty_metadata(handle, bh);
--		if (err) {
--			/* Errors can only happen if there is a bug */
--			handle->h_err = err;
--			__ext4_journal_stop(where, line, handle);
-+		/* Errors can only happen if there is a bug */
-+		if (WARN_ON_ONCE(err)) {
-+			ext4_journal_abort_handle(where, line, __func__, bh,
-+						  handle, err);
- 		}
- 	} else {
- 		if (inode)
+--- a/arch/m68k/include/asm/div64.h
++++ b/arch/m68k/include/asm/div64.h
+@@ -15,16 +15,17 @@
+ 		unsigned long long n64;				\
+ 	} __n;							\
+ 	unsigned long __rem, __upper;				\
++	unsigned long __base = (base);				\
+ 								\
+ 	__n.n64 = (n);						\
+ 	if ((__upper = __n.n32[0])) {				\
+ 		asm ("divul.l %2,%1:%0"				\
+-			: "=d" (__n.n32[0]), "=d" (__upper)	\
+-			: "d" (base), "0" (__n.n32[0]));	\
++		     : "=d" (__n.n32[0]), "=d" (__upper)	\
++		     : "d" (__base), "0" (__n.n32[0]));		\
+ 	}							\
+ 	asm ("divu.l %2,%1:%0"					\
+-		: "=d" (__n.n32[1]), "=d" (__rem)		\
+-		: "d" (base), "1" (__upper), "0" (__n.n32[1]));	\
++	     : "=d" (__n.n32[1]), "=d" (__rem)			\
++	     : "d" (__base), "1" (__upper), "0" (__n.n32[1]));	\
+ 	(n) = __n.n64;						\
+ 	__rem;							\
+ })
 
 
