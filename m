@@ -1,87 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab3HRRKj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 13:10:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10372 "EHLO mx1.redhat.com"
+	id S1754507Ab3HRR5n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 13:57:43 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:36823 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753544Ab3HRRKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 13:10:38 -0400
-Date: Sun, 18 Aug 2013 19:04:08 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Stratos Karafotis <stratosk@semaphore.gr>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 1/4] nohz: Only update sleeptime stats locally
-Message-ID: <20130818170408.GA22417@redhat.com>
-References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-2-git-send-email-fweisbec@gmail.com>
+	id S1754322Ab3HRR5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Aug 2013 13:57:41 -0400
+Date: Sun, 18 Aug 2013 10:57:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <bitbucket@online.de>, Peter Anvin <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] per-cpu preempt_count
+Message-ID: <20130818175702.GK29406@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130812115113.GE27162@twins.programming.kicks-ass.net>
+ <CA+55aFznj9WqGa_Qa0B4=5iTio2br54uJG7xkm6otN2sG2P=8w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376667753-29014-2-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+55aFznj9WqGa_Qa0B4=5iTio2br54uJG7xkm6otN2sG2P=8w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081817-7182-0000-0000-000008209214
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for double post. forgot to cc cpufreq maintainers.
+On Mon, Aug 12, 2013 at 10:35:48AM -0700, Linus Torvalds wrote:
+> On Mon, Aug 12, 2013 at 4:51 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> > The below boots to wanting to mount a root filesystem with
+> > CONFIG_PREEMPT=y using kvm -smp 4.
+> 
+> But doesn't work in general? Or you just never tested?
+> 
+> I think that "thread_info->preempt_count" variable would need to be
+> renamed to "saved_preempt_count" or similar to make sure we catch any
+> users. But the patch certainly looks simple otherwise.
+> 
+> I'm pretty sure I had a discussion about this with Paul McKenney some
+> time ago (because the RCU readlock is the most noticeable user of the
+> preempt count - the others tend to be hidden inside the out-of-line
+> spinlock functions etc), and I thought he had tried this and had some
+> problems. Maybe we've fixed things since, or maybe he missed some
+> case..
 
-On 08/16, Frederic Weisbecker wrote:
->
-> To fix this, lets only update the sleeptime stats locally when the CPU
-> exits from idle.
+I was doing something a bit different -- trying to put preemptible RCU's
+nesting counter into a per-CPU variable.  I considered putting this
+counter into thread_info, but got flummoxed by the save/restore code.
+If Peter's approach works out, I will look into a similar approach for
+RCU's nesting counter.
 
-I am in no position to ack the changes in this area, but I like this
-change very much. Because, as a code reader, I was totally confused by
+For whatever it is worth, with the current Kconfigs, RCU only invokes
+preempt_enable() and preempt_disable() when CONFIG_PREEMPT=n, in which
+case these two functions are nops.  So RCU never exercises the
+conditional function call in preempt_enable().
 
-	if (last_update_time)
-		update_ts_time_stats()
+However, preemptible RCU has a situation similar to preempt_disable()
+and preempt_enable(): simple increment and (not so simple) decrement in
+the common case, and rare conditional function call from rcu_read_unlock()
+that is invoked only if the read-side critical section was preempted or
+ran for a long time.
 
-code and it looks "obviously wrong".
+							Thanx, Paul
 
-I added more cc's. It seems to me that 9366d840 "cpufreq: governors:
-Calculate iowait time only when necessary" doesn't realize what
-
-	-       u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
-	+       u64 idle_time = get_cpu_idle_time_us(cpu, io_busy ? wall : NULL);
-
-actually means. OTOH, get_cpu_iowait_time_us() was called with
-last_update_time != NULL even before this patch...
-
-In short. This looks like the clear fix to me, but I do not understand
-this code enough, and I think that cpufreq should know about this change.
-
->  static void tick_nohz_stop_idle(int cpu, ktime_t now)
->  {
->  	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
-> +	ktime_t delta;
->  
-> -	update_ts_time_stats(cpu, ts, now, NULL);
-> +	/* Updates the per cpu time idle statistics counters */
-> +	delta = ktime_sub(now, ts->idle_entrytime);
-> +	if (nr_iowait_cpu(cpu) > 0)
-> +		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
-> +	else
-> +		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
-> +	ts->idle_entrytime = now;
->  	ts->idle_active = 0;
-
-With or without this change, why we update ->idle_entrytime in this case?
-Looks harmless, but a bit confusing.
-
-While this doesn't really matter, we could probably even kill ->idle_active
-and use !!ts->idle_entrytime instead.
-
-> @@ -473,17 +458,14 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
-
-And I think that we should kill this last_update_time argument later.
-
-Oleg.
+> But if the patch really is this simple, then we should just do it. Of
+> course, we should double-check that the percpu preempt count is in a
+> cacheline that is already accessed (preferably already dirtied) by the
+> context switching code.  And I think this should be an
+> architecture-specific thing, because using a percpu variable might be
+> good on some architectures but not others. So I get the feeling that
+> it should be in the x86 __switch_to(), rather than in the generic
+> code. I think it would fit very well with the per-cpu "old_rsp" and
+> "current_task" updates that we already do.
+> 
+> > Adding TIF_NEED_RESCHED into the preempt count would allow a single test
+> > in preempt_check_resched() instead of still needing the TI. Removing
+> > PREEMPT_ACTIVE from preempt count should allow us to get rid of
+> > ti::preempt_count altogether.
+> >
+> > The only problem with TIF_NEED_RESCHED is that its cross-cpu which would
+> > make the entire thing atomic which would suck donkey balls so maybe we
+> > need two separate per-cpu variables?
+> 
+> Agreed. Making it atomic would suck, and cancel all advantages of the
+> better code generation to access it. Good point.
+> 
+> And yeah, it could be two variables in the same cacheline or something.
+> 
+>                  Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
