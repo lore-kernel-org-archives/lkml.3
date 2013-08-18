@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790Ab3HRUef (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:34:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43583 "EHLO
+	id S1756320Ab3HRUez (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:34:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43626 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756128Ab3HRUdc (ORCPT
+	with ESMTP id S1756284Ab3HRUex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:33:32 -0400
+	Sun, 18 Aug 2013 16:34:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>, Takashi Iwai <tiwai@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 07/34] sound: Fix make allmodconfig on MIPS correctly
-Date: Sun, 18 Aug 2013 13:34:20 -0700
-Message-Id: <20130818203300.191517255@linuxfoundation.org>
+        Chris Wright <chrisw@sous-sol.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 15/45] mac80211: fix infinite loop in ieee80211_determine_chantype
+Date: Sun, 18 Aug 2013 13:36:04 -0700
+Message-Id: <20130818203622.078014637@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
-In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
-References: <20130818203259.653403173@linuxfoundation.org>
+In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
+References: <20130818203620.996166594@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Chris Wright <chrisw@sous-sol.org>
 
-commit a62ee234a572b4c98fe98cf5fb18e4e8b0f6e43d upstream.
+commit b56e4b857c5210e848bfb80e074e5756a36cd523 upstream.
 
-Commit d4702b189c ("sound: Fix make allmodconfig on MIPS") added a
-(negative) dependency on ISA_DMA_SUPPORT_BROKEN. Since that Kconfig
-symbol doesn't exist, this dependency will always evaluate to true.
-Apparently GENERIC_ISA_DMA_SUPPORT_BROKEN was meant to be used here.
+Commit "3d9646d mac80211: fix channel selection bug" introduced a possible
+infinite loop by moving the out target above the chandef_downgrade
+while loop.  When we downgrade to NL80211_CHAN_WIDTH_20_NOHT, we jump
+back up to re-run the while loop...indefinitely.  Replace goto with
+break and carry on.  This may not be sufficient to connect to the AP,
+but will at least keep the cpu from livelocking.  Thanks to Derek Atkins
+as an extra pair of debugging eyes.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Cc: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/oss/Kconfig |    2 +-
+ net/mac80211/mlme.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/oss/Kconfig
-+++ b/sound/oss/Kconfig
-@@ -250,7 +250,7 @@ config MSND_FIFOSIZE
- menuconfig SOUND_OSS
- 	tristate "OSS sound modules"
- 	depends on ISA_DMA_API && VIRT_TO_BUS
--	depends on !ISA_DMA_SUPPORT_BROKEN
-+	depends on !GENERIC_ISA_DMA_SUPPORT_BROKEN
- 	help
- 	  OSS is the Open Sound System suite of sound card drivers.  They make
- 	  sound programming easier since they provide a common API.  Say Y or
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -366,7 +366,7 @@ out:
+ 		if (WARN_ON(chandef->width == NL80211_CHAN_WIDTH_20_NOHT)) {
+ 			ret = IEEE80211_STA_DISABLE_HT |
+ 			      IEEE80211_STA_DISABLE_VHT;
+-			goto out;
++			break;
+ 		}
+ 
+ 		ret |= chandef_downgrade(chandef);
 
 
