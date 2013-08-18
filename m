@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab3HRV5b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 17:57:31 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:53831 "EHLO
+	id S1755713Ab3HRV6f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 17:58:35 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:53860 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754727Ab3HRV53 (ORCPT
+	with ESMTP id S1754812Ab3HRV6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 17:57:29 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-18-52114347d1df
+	Sun, 18 Aug 2013 17:58:32 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-90-521143876ff2
 From: Kukjin Kim <kgene@kernel.org>
 To: "'amit daniel kachhap'" <amit.daniel@samsung.com>,
         "'Viresh Kumar'" <viresh.kumar@linaro.org>
-Cc: "'Rafael J. Wysocki'" <rjw@sisk.pl>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'LAK'" <linux-arm-kernel@lists.infradead.org>
-References: <cover.1376619363.git.viresh.kumar@linaro.org>
- <14993d27bdc6a91eced0af5eb96bdb5ca6546cbf.1376619363.git.viresh.kumar@linaro.org>
- <CADGdYn6TKURuO8jxL=tjvSLbmpUoUwoa08MZhsBAiEF91FM-cA@mail.gmail.com>
-In-reply-to: <CADGdYn6TKURuO8jxL=tjvSLbmpUoUwoa08MZhsBAiEF91FM-cA@mail.gmail.com>
-Subject: RE: [PATCH 13/34] cpufreq: exynos5440: set CPUFREQ_NO_NOTIFICATION flag
-Date: Mon, 19 Aug 2013 06:57:27 +0900
-Message-id: <15ca01ce9c5d$ed957650$c8c062f0$@org>
+Cc: "'Rafael J. Wysocki'" <rjw@sisk.pl>,
+        "'linaro-kernel'" <linaro-kernel@lists.linaro.org>, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <cover.1376486713.git.viresh.kumar@linaro.org>
+ <b3ef5357898c06aaccb2fcbaee4ef91a3d0fd7bb.1376486713.git.viresh.kumar@linaro.org>
+ <CADGdYn5nPCOb=mqoJPXzbZzgnbfrhFX6+nsUO5h+PTc-M=2NFA@mail.gmail.com>
+In-reply-to: <CADGdYn5nPCOb=mqoJPXzbZzgnbfrhFX6+nsUO5h+PTc-M=2NFA@mail.gmail.com>
+Subject: RE: [PATCH 13/37] cpufreq: exynos: don't initialize part of policy
+ that is set by core too
+Date: Mon, 19 Aug 2013 06:58:31 +0900
+Message-id: <15fc01ce9c5e$13e53390$3baf9ab0$@org>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6cAUGcPxgOJy6QSA2z08fYBJRE1AAXJKtg
+Thread-index: Ac6cAL1KahLfOWKpRpW/bc1Ir4J2uwAXTwDg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t8zfV13Z8Eggx0nJC0aroZYPG36wW7x
-	/tAzZotNj6+xWlzeNYfN4nPvEUaLKYe/sFj0L+xlstj41cOB0+POtT1sHpuX1Hvc/veY2aNv
-	yypGj0eLWxg9Pm+SC2CL4rJJSc3JLEst0rdL4MrYtWUaW8F7/orbkz+yNjBO5Oli5OSQEDCR
-	ODHpNCOELSZx4d56NhBbSGAZo8SHaWEwNcu3zGLtYuQCii9ilPj46zgbhPOXUWL+iwtA3Rwc
-	bALKEo1N+iANwgJaEgu3NLGA2CIC8RL397xmArGZBe4xSjRfTYHovcoo8aDlHitIglMgWOLU
-	rhdMEM0BEh8uXQabySKgKtHzgQfE5BUwlJhyVRekgldAUOLH5HssECO1JNbvPA41Xl5i85q3
-	zCDlEgLqEo/+6kJcYCTx49wbZogSEYl9L94xglwgIdDJIXFkwyx2kASLgIDEt8mHWCB6ZSU2
-	HWCGeF1S4uCKGywTGCVnIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0veT8
-	3E2MkEifuIPx/gHrQ4zJQOsnMkuJJucDE0VeSbyhsZmRhamJqbGRuaUZacJK4rzqLdaBQgLp
-	iSWp2ampBalF8UWlOanFhxiZODilGhiLHv57t190WufbHRFL79U907DnbItmPLNMY6Pm+fmZ
-	hSkTj0/J63m5KV7qo3df0No5nxy/z7osfKtxeo5S64bDd1isLj53KO9aF8/uvSvy4zLjJ7U8
-	IV5f2xP0JSQWe1eJlnU8MFHum1VoHl245eYK5it3u+UF8rLXX/S7n7aD/arMjeTFQU+VWIoz
-	Eg21mIuKEwF7xkX2CgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKKsWRmVeSWpSXmKPExsVy+t9jAV13Z8EggykrRSwaroZYPG36wW7x
-	/tAzZotNj6+xWlzeNYfN4nPvEUaLKYe/sFj0L+xlstj41cOB0+POtT1sHpuX1Hvc/veY2aNv
-	yypGj0eLWxg9Pm+SC2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvM
-	TbVVcvEJ0HXLzAG6SUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYsWvL
-	NLaC9/wVtyd/ZG1gnMjTxcjJISFgIrF8yyxWCFtM4sK99WxdjFwcQgKLGCU+/joO5fxllJj/
-	4gJjFyMHB5uAskRjkz5Ig7CAlsTCLU0sILaIQLzE/T2vmUBsZoF7jBLNV1Mgeq8ySjxouQe2
-	gVMgWOLUrhdMEM0BEh8uXQabySKgKtHzgQfE5BUwlJhyVRekgldAUOLH5HssECO1JNbvPA41
-	Xl5i85q3zCDlEgLqEo/+6kJcYCTx49wbZogSEYl9L94xTmAUnoVk0iwkk2YhmTQLScsCRpZV
-	jKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMGJ5JnUDsaVDRaHGAU4GJV4eDe85Q8SYk0sK67M
-	PcQowcGsJMLLoiYYJMSbklhZlVqUH19UmpNafIgxGejNicxSosn5wCSXVxJvaGxiZmRpZGZh
-	ZGJuTpqwkjjvgVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MCjZ6n+R2el+ZMD/+3yOzJ+UeH0vu
-	nb2f8eUA/7xLDX9fJ2i1TXa5WPRpufhxyXaPw9sV9s1U3rApkNGtQnUq+xNrBXfVgpZDcm8/
-	nF/XMbspNW9SI/fRNbzroznMVYxOiC4+MjtavdRu0ZNo6x+vTykLsYuaHfN+sqSibMfX/c4y
-	avs0Zi7dq8RSnJFoqMVcVJwIANQvknhoAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t8zfd12Z8Egg31LtCwaroZYPG36wW7x
+	/tAzZovLu+awWXzuPcJoMeXwFxaL/oW9TBYbv3o4cHjcubaHzeP2v8fMHn1bVjF6PFrcwujx
+	eZNcAGsUl01Kak5mWWqRvl0CV8bT2U9ZC07xV8x6e4qxgXElTxcjJ4eEgIlEz6RlbBC2mMSF
+	e+uBbC4OIYFljBJvt6xngylacX0NC4gtJLCIUWL6XGeIor+MEm8WdLB3MXJwsAkoSzQ26YPU
+	CAtoSSzc0gRWLyIQL3F/z2smkHpmgUOMEv9arkMNusooMfmeK0gvp0CwxJ8F7hC9qRK9uy6D
+	7WURUJVY19jFDmLzChhKTOxexgphC0r8mHwPbAwz0K71O48zQdjyEpvXvGUGGSkhoC7x6K8u
+	xAlGEjdb+6FKRCT2vXjHCHKOhMBfdokZW/+xQuwSkPg2+RALRK+sxKYDzBCvS0ocXHGDZQKj
+	5Cwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iRES2RN2MN47YH2I
+	MRlo/URmKdHkfGBiyCuJNzQ2M7IwNTE1NjK3NCNNWEmcV73FOlBIID2xJDU7NbUgtSi+qDQn
+	tfgQIxMHp1QDY8H6vc8YtG/WrmXIXB+VrMJbebUyLPjC6fj8UIub17Pf1664cWjzpaz7fCKf
+	Xyl5b3Cs269t+uqY+C3PwOZtW3SlzBWLLc5OCkoUXr49ZB1vld/TibPrbxlGMZs+XVgevf6O
+	06Zsk1k73p3Z+sr18ScF0aQnol8mPN8156v5I4EtjZtri9/fdlJiKc5INNRiLipOBABU5ebr
+	AgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDKsWRmVeSWpSXmKPExsVy+t9jAd12Z8EggwcbVC0aroZYPG36wW7x
+	/tAzZovLu+awWXzuPcJoMeXwFxaL/oW9TBYbv3o4cHjcubaHzeP2v8fMHn1bVjF6PFrcwujx
+	eZNcAGtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+Arltm
+	DtApSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCOsaMp7Ofshac4q+Y9fYU
+	YwPjSp4uRk4OCQETiRXX17BA2GISF+6tZwOxhQQWMUpMn+vcxcgFZP9llHizoIO9i5GDg01A
+	WaKxSR+kRlhAS2LhliawXhGBeIn7e14zgdQzCxxilPjXcp0FYtBVRonJ91xBejkFgiX+LHCH
+	6E2V6N11GWwXi4CqxLrGLnYQm1fAUGJi9zJWCFtQ4sfke2BjmIF2rd95nAnClpfYvOYtM8hI
+	CQF1iUd/dSFOMJK42doPVSIise/FO8YJjMKzkEyahWTSLCSTZiFpWcDIsopRNLUguaA4KT3X
+	SK84Mbe4NC9dLzk/dxMjOG08k97BuKrB4hCjAAejEg/vhrf8QUKsiWXFlblAf3MwK4nwsqgJ
+	BgnxpiRWVqUW5ccXleakFh9iTAZ6dCKzlGhyPjCl5ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DV
+	OlBIID2xJDU7NbUgtQhmCxMHp1QDo4HlrV97JCzTV5xjyJ7z6DdL7b2aHoH4r9H7v1ZuU/i9
+	Luu455Uz3ya0uL6Yv9P0sciyhmNzLzA9Mro36eCxt29qvL+dX5p52Pp823eeB0+MXyY9inWv
+	ib70/UPgxXuGrp/fz3rJeKePZ5esBuOuDUfm+3A+2t106n1j1OOPv9z4lVr/NUTsvOOjxFKc
+	kWioxVxUnAgA/ISFqF8DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -64,29 +65,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 amit daniel kachhap wrote:
 > 
-> On Fri, Aug 16, 2013 at 7:55 AM, Viresh Kumar <viresh.kumar@linaro.org>
+> On Wed, Aug 14, 2013 at 7:02 PM, Viresh Kumar <viresh.kumar@linaro.org>
 > wrote:
-> > Most of the drivers do following in their ->target_index() routines:
+> > Many common initializations of struct policy are moved to core now and
+> hence
+> > this driver doesn't need to do it. This patch removes such code.
 > >
-> >         struct cpufreq_freqs freqs;
-> >         freqs.old = old freq...
-> >         freqs.new = new freq...
-> >
-> >         cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
-> >
-> >         /* Change rate here */
-> >
-> >         cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
-> >
-> > This is replicated over all cpufreq drivers today and there doesn't
-> exists a
-> > good enough reason why this shouldn't be moved to cpufreq core instead.
-> >
-> > Earlier patches have added support in cpufreq core to do cpufreq
-> notification on
-> > frequency change, but this drivers needs to do this notification itself
-> and so
-> > it sets its CPUFREQ_NO_NOTIFICATION flag.
+> > Most recent of those changes is to call ->get() in the core after
+> calling
+> > ->init().
 > >
 > > Cc: Kukjin Kim <kgene.kim@samsung.com>
 
@@ -96,30 +83,46 @@ Thanks,
 Kukjin
 
 > > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> The code change looks fine,
+> This consolidation work looks fine,
 > Acked-By: Amit Daniel Kachhap <amit.daniel@samsung.com>
 > 
-> Thanks
-> Amit Daniel
+> Thanks,
+> Amit
 > > ---
-> >  drivers/cpufreq/exynos5440-cpufreq.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >  drivers/cpufreq/exynos-cpufreq.c     | 2 --
+> >  drivers/cpufreq/exynos5440-cpufreq.c | 1 -
+> >  2 files changed, 3 deletions(-)
+> >
+> > diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-
+> cpufreq.c
+> > index 79b869b..b1db082 100644
+> > --- a/drivers/cpufreq/exynos-cpufreq.c
+> > +++ b/drivers/cpufreq/exynos-cpufreq.c
+> > @@ -226,8 +226,6 @@ static struct notifier_block exynos_cpufreq_nb = {
+> >
+> >  static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
+> >  {
+> > -       policy->cur = policy->min = policy->max =
+exynos_getspeed(policy-
+> >cpu);
+> > -
+> >         /* set the transition latency value */
+> >         policy->cpuinfo.transition_latency = 100000;
 > >
 > > diff --git a/drivers/cpufreq/exynos5440-cpufreq.c
 > b/drivers/cpufreq/exynos5440-cpufreq.c
-> > index 91a64d6..8fb6183 100644
+> > index 9a5ed485..91a64d6 100644
 > > --- a/drivers/cpufreq/exynos5440-cpufreq.c
 > > +++ b/drivers/cpufreq/exynos5440-cpufreq.c
-> > @@ -323,7 +323,7 @@ static int exynos_cpufreq_cpu_init(struct
+> > @@ -316,7 +316,6 @@ static int exynos_cpufreq_cpu_init(struct
 > cpufreq_policy *policy)
-> >  }
+> >                 return ret;
+> >         }
 > >
-> >  static struct cpufreq_driver exynos_driver = {
-> > -       .flags          = CPUFREQ_STICKY,
-> > +       .flags          = CPUFREQ_STICKY | CPUFREQ_NO_NOTIFICATION,
-> >         .verify         = cpufreq_generic_frequency_table_verify,
-> >         .target_index   = exynos_target,
-> >         .get            = exynos_getspeed,
+> > -       policy->cur = dvfs_info->cur_frequency;
+> >         policy->cpuinfo.transition_latency = dvfs_info->latency;
+> >         cpumask_setall(policy->cpus);
+> >
 > > --
 > > 1.7.12.rc2.18.g61b472e
 
