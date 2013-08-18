@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab3HRUny (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:43:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43672 "EHLO
+	id S1756900Ab3HRUoS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:44:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43668 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756375Ab3HRUfB (ORCPT
+	with ESMTP id S1756361Ab3HRUfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:35:01 -0400
+	Sun, 18 Aug 2013 16:35:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Torsten Schenk <torsten.schenk@zoho.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 24/45] ALSA: 6fire: make buffers DMA-able (pcm)
-Date: Sun, 18 Aug 2013 13:36:13 -0700
-Message-Id: <20130818203622.683817255@linuxfoundation.org>
+        Maksim Boyko <maksim.a.boyko@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 23/45] ALSA: usb-audio: Fix invalid volume resolution for Logitech HD Webcam C525
+Date: Sun, 18 Aug 2013 13:36:12 -0700
+Message-Id: <20130818203622.616225812@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -26,108 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Torsten Schenk <torsten.schenk@zoho.com>
+From: "Maksim A. Boyko" <maksboyko@yandex.ru>
 
-commit 5ece263f1d93fba8d992e67e3ab8a71acf674db9 upstream.
+commit 140d37de62ffe8405282a1d6498f3b4099006384 upstream.
 
-Patch makes pcm buffers DMA-able by allocating each one separately.
+Add the volume control quirk for avoiding the kernel warning
+for the Logitech HD Webcam C525
+as in the similar commit 36691e1be6ec551eef4a5225f126a281f8c051c2
+for the Logitech HD Webcam C310.
 
-Signed-off-by: Torsten Schenk <torsten.schenk@zoho.com>
+Reported-by: Maksim Boyko <maksim.a.boyko@gmail.com>
+Tested-by: Maksim Boyko <maksim.a.boyko@gmail.com>
+Signed-off-by: Maksim Boyko <maksim.a.boyko@gmail.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/6fire/pcm.c |   41 ++++++++++++++++++++++++++++++++++++++++-
- sound/usb/6fire/pcm.h |    2 +-
- 2 files changed, 41 insertions(+), 2 deletions(-)
+ sound/usb/mixer.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/usb/6fire/pcm.c
-+++ b/sound/usb/6fire/pcm.c
-@@ -580,6 +580,33 @@ static void usb6fire_pcm_init_urb(struct
- 	urb->instance.number_of_packets = PCM_N_PACKETS_PER_URB;
- }
- 
-+static int usb6fire_pcm_buffers_init(struct pcm_runtime *rt)
-+{
-+	int i;
-+
-+	for (i = 0; i < PCM_N_URBS; i++) {
-+		rt->out_urbs[i].buffer = kzalloc(PCM_N_PACKETS_PER_URB
-+				* PCM_MAX_PACKET_SIZE, GFP_KERNEL);
-+		if (!rt->out_urbs[i].buffer)
-+			return -ENOMEM;
-+		rt->in_urbs[i].buffer = kzalloc(PCM_N_PACKETS_PER_URB
-+				* PCM_MAX_PACKET_SIZE, GFP_KERNEL);
-+		if (!rt->in_urbs[i].buffer)
-+			return -ENOMEM;
-+	}
-+	return 0;
-+}
-+
-+static void usb6fire_pcm_buffers_destroy(struct pcm_runtime *rt)
-+{
-+	int i;
-+
-+	for (i = 0; i < PCM_N_URBS; i++) {
-+		kfree(rt->out_urbs[i].buffer);
-+		kfree(rt->in_urbs[i].buffer);
-+	}
-+}
-+
- int usb6fire_pcm_init(struct sfire_chip *chip)
- {
- 	int i;
-@@ -591,6 +618,13 @@ int usb6fire_pcm_init(struct sfire_chip
- 	if (!rt)
- 		return -ENOMEM;
- 
-+	ret = usb6fire_pcm_buffers_init(rt);
-+	if (ret) {
-+		usb6fire_pcm_buffers_destroy(rt);
-+		kfree(rt);
-+		return ret;
-+	}
-+
- 	rt->chip = chip;
- 	rt->stream_state = STREAM_DISABLED;
- 	rt->rate = ARRAY_SIZE(rates);
-@@ -612,6 +646,7 @@ int usb6fire_pcm_init(struct sfire_chip
- 
- 	ret = snd_pcm_new(chip->card, "DMX6FireUSB", 0, 1, 1, &pcm);
- 	if (ret < 0) {
-+		usb6fire_pcm_buffers_destroy(rt);
- 		kfree(rt);
- 		snd_printk(KERN_ERR PREFIX "cannot create pcm instance.\n");
- 		return ret;
-@@ -627,6 +662,7 @@ int usb6fire_pcm_init(struct sfire_chip
- 			snd_dma_continuous_data(GFP_KERNEL),
- 			MAX_BUFSIZE, MAX_BUFSIZE);
- 	if (ret) {
-+		usb6fire_pcm_buffers_destroy(rt);
- 		kfree(rt);
- 		snd_printk(KERN_ERR PREFIX
- 				"error preallocating pcm buffers.\n");
-@@ -671,6 +707,9 @@ void usb6fire_pcm_abort(struct sfire_chi
- 
- void usb6fire_pcm_destroy(struct sfire_chip *chip)
- {
--	kfree(chip->pcm);
-+	struct pcm_runtime *rt = chip->pcm;
-+
-+	usb6fire_pcm_buffers_destroy(rt);
-+	kfree(rt);
- 	chip->pcm = NULL;
- }
---- a/sound/usb/6fire/pcm.h
-+++ b/sound/usb/6fire/pcm.h
-@@ -32,7 +32,7 @@ struct pcm_urb {
- 	struct urb instance;
- 	struct usb_iso_packet_descriptor packets[PCM_N_PACKETS_PER_URB];
- 	/* END DO NOT SEPARATE */
--	u8 buffer[PCM_N_PACKETS_PER_URB * PCM_MAX_PACKET_SIZE];
-+	u8 *buffer;
- 
- 	struct pcm_urb *peer;
- };
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -888,6 +888,7 @@ static void volume_control_quirks(struct
+ 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
+ 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
+ 	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
++	case USB_ID(0x046d, 0x0826): /* HD Webcam c525 */
+ 	case USB_ID(0x046d, 0x0991):
+ 	/* Most audio usb devices lie about volume resolution.
+ 	 * Most Logitech webcams have res = 384.
 
 
