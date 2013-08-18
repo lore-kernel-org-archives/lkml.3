@@ -1,82 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab3HRVLb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 17:11:31 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:60486 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754696Ab3HRVL3 (ORCPT
+	id S1755632Ab3HRVMu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 17:12:50 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:45102 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754639Ab3HRVMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 17:11:29 -0400
-Message-ID: <521154A9.3000505@gmail.com>
-Date: Mon, 19 Aug 2013 01:11:37 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Sun, 18 Aug 2013 17:12:48 -0400
 MIME-Version: 1.0
+In-Reply-To: <201307110112.57398.arnd@arndb.de>
+References: <Pine.LNX.4.44L0.1307101724430.1215-100000@iolanthe.rowland.org>
+	<201307110112.57398.arnd@arndb.de>
+Date: Sun, 18 Aug 2013 23:12:47 +0200
+X-Google-Sender-Auth: nrKJmI68Akptwuxkq8gCcZZYuaY
+Message-ID: <CAMuHMdVXeWaggY5FPKrr2fBBnKLq3Rqw9WF99N+AX5sFwBOnog@mail.gmail.com>
+Subject: Re: [PATCH] usb: USB host support should depend on HAS_DMA
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Arnd Bergmann <arnd@arndb.de>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC v1 4/5] ARM: mvebu: add Armada 1500 and Sony NSZ-GS7 device
- tree files
-References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376682098-10580-5-git-send-email-sebastian.hesselbarth@gmail.com> <201308172128.35245.arnd@arndb.de>
-In-Reply-To: <201308172128.35245.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2013 09:28 PM, Arnd Bergmann wrote:
-> On Friday 16 August 2013, Sebastian Hesselbarth wrote:
->> +               cpu@0 {
->> +                       compatible = "marvell,sheeva-v7";
->> +                       device_type = "cpu";
->> +                       next-level-cache = <&l2>;
->> +                       reg = <0>;
->> +               };
-> ...
->> +               l2: l2-cache-controller@1ac0000 {
->> +                       compatible = "marvell,aurora-outer-cache";
->> +                       reg = <0x1ac0000 0x1000>;
->> +                       cache-level = <2>;
->> +               };
->> +
->> +               gic: interrupt-controller@1ad0000 {
->> +                       compatible = "arm,cortex-a9-gic";
->> +                       reg = <0x1ad1000 0x1000
->> +                              0x1ad0100 0x0100>;
->> +                       interrupt-controller;
->> +                       #interrupt-cells = <3>;
->> +               };
->> +
->> +               local-timer@1ad0600 {
->> +                       compatible = "arm,cortex-a9-twd-timer";
->> +                       reg = <0x1ad0600 0x20>;
->> +                       interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
->> +                       clocks = <&cpu0clk>;
->> +               };
+On Thu, Jul 11, 2013 at 1:12 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 10 July 2013, Alan Stern wrote:
+>> This isn't right.  There are USB host controllers that use PIO, not
+>> DMA.  The HAS_DMA dependency should go with the controller driver, not
+>> the USB core.
+>>
+>> On the other hand, the USB core does call various routines like
+>> dma_unmap_single.  It ought to be possible to compile these calls even
+>> when DMA isn't enabled.  That is, they should be defined as do-nothing
+>> stubs.
 >
-> This seems like a strange combination. I would have expected either PJ4+Aurora+apbtimer
-> or A9+pl310+localtimer, based on what I found in the chromecast kernel source.
-> Do you have more information here about what is used on the two variants?
+> The asm-generic/dma-mapping-broken.h file intentionally causes link
+> errors, but that could be changed.
+>
+> The better approach in my mind would be to replace code like
+>
+>
+>         if (hcd->self.uses_dma)
+>
+> with
+>
+>         if (IS_ENABLED(CONFIG_HAS_DMA) && hcd->self.uses_dma) {
+>
+> which will reliably cause that reference to be omitted from object code,
+> but not stop giving link errors for drivers that actually require
+> DMA.
 
-I have no clue, what combination it really is. Unfortunately,
-Marvell didn't release any open datasheets, of course.
+This can be done for drivers/usb/core/hcd.c.
 
-I can only look at GPL'd Asus Cube kernel, I used for getting an idea
-of what was required for initial support and reg offsets, irqs and
-friends. They bring up twd as localtimer. Also, grep'ing the Cube
-kernel sources in mach-mv88de3100 gives hits for CONFIG_PJ4 (note the
-missing B), l2x0, smp_twd, apb_timer.
+But I'm a bit puzzled by drivers/usb/core/buffer.c. E.g.
 
-No hits for pl310, A9.
+void *hcd_buffer_alloc(...)
+{
+        ....
+        /* some USB hosts just use PIO */
+        if (!bus->controller->dma_mask &&
+            !(hcd->driver->flags & HCD_LOCAL_MEM)) {
+                *dma = ~(dma_addr_t) 0;
+                return kmalloc(size, mem_flags);
+        }
 
-Sebastian
+        for (i = 0; i < HCD_BUFFER_POOLS; i++) {
+                if (size <= pool_max[i])
+                        return dma_pool_alloc(hcd->pool[i], mem_flags, dma);
+        }
+        return dma_alloc_coherent(hcd->self.controller, size, dma, mem_flags);
+}
 
+which is called from usb_hcd_map_urb_for_dma():
+
+                if (hcd->self.uses_dma) {
+                        ....
+                } else if (hcd->driver->flags & HCD_LOCAL_MEM) {
+                        ret = hcd_alloc_coherent(
+                                        urb->dev->bus, mem_flags,
+                                        &urb->setup_dma,
+                                        (void **)&urb->setup_packet,
+                                        sizeof(struct usb_ctrlrequest),
+                                        DMA_TO_DEVICE);
+                        ...
+                }
+
+So if DMA is not used (!hcd->self.uses_dma, i.e. bus->controller->dma_mask
+is zero), and HCD_LOCAL_MEM is set, we still end up calling dma_pool_alloc()?
+
+(Naively, I'm not so familiar with the USB code) I'd expect it to use
+kmalloc() instead?
+
+So I would change it to
+
+        if (!IS_ENABLED(CONFIG_HAS_DMA) ||
+            (!bus->controller->dma_mask &&
+             !(hcd->driver->flags & HCD_LOCAL_MEM))) {
+                *dma = ~(dma_addr_t) 0;
+                return kmalloc(size, mem_flags);
+        }
+
+Thanks for your clarification!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
