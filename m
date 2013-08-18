@@ -1,163 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053Ab3HRC0Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 22:26:24 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33014 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753726Ab3HRCZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 22:25:28 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 3/5] rcu: Sort rcutorture module parameters
-Date: Sat, 17 Aug 2013 19:25:15 -0700
-Message-Id: <1376792717-3755-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1376792717-3755-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130818022453.GA3475@linux.vnet.ibm.com>
- <1376792717-3755-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081802-0320-0000-0000-000000B66630
+	id S1755083Ab3HRCnq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 22:43:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53613 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754517Ab3HRCnj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 22:43:39 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mark Greer <mgreer@animalcreek.com>, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH v2 04/14] crypto: omap-aes: Simplify DMA usage by using direct SGs
+Date: Sat, 17 Aug 2013 21:42:25 -0500
+Message-ID: <1376793755-30478-5-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1376793755-30478-1-git-send-email-joelf@ti.com>
+References: <1376793755-30478-1-git-send-email-joelf@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In early version of this driver, assumptions were made such as DMA layer
+requires contiguous buffers etc. Due to this, new buffers were allocated,
+mapped and used for DMA. These assumptions are no longer true and DMAEngine
+scatter-gather DMA doesn't have such requirements. We simply the DMA operations
+by directly using the scatter-gather buffers provided by the crypto layer
+instead of creating our own.
 
-There are getting to be too many module parameters to permit the current
-semi-random order, so this patch orders them.
+Lot of logic that handled DMA'ing only X number of bytes of the total, or as
+much as fitted into a 3rd party buffer is removed and is no longer required.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Also, good performance improvement of atleast ~20% seen with encrypting a
+buffer size of 8K (1800 ops/sec vs 1400 ops/sec).  Improvement will be higher
+for much larger blocks though such benchmarking is left as an exercise for the
+reader.  Also DMA usage is much more simplified and coherent with rest of the
+code.
+
+Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- kernel/rcutorture.c | 68 ++++++++++++++++++++++++++---------------------------
- 1 file changed, 34 insertions(+), 34 deletions(-)
+ drivers/crypto/omap-aes.c |  147 ++++++++-------------------------------------
+ 1 file changed, 25 insertions(+), 122 deletions(-)
 
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index be38d4e..be50ebe 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -52,81 +52,81 @@
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Paul E. McKenney <paulmck@us.ibm.com> and Josh Triplett <josh@freedesktop.org>");
+diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
+index e369e6e..64dd5c1 100644
+--- a/drivers/crypto/omap-aes.c
++++ b/drivers/crypto/omap-aes.c
+@@ -480,22 +480,14 @@ static int sg_copy(struct scatterlist **sg, size_t *offset, void *buf,
+ }
  
--static int nreaders = -1;	/* # reader threads, defaults to 2*ncpus */
--static int nfakewriters = 4;	/* # fake writer threads */
--static int stat_interval = 60;	/* Interval between stats, in seconds. */
--				/*  Zero means "only at end of test". */
--static bool verbose;		/* Print more debug info. */
--static bool test_no_idle_hz = true;
--				/* Test RCU support for tickless idle CPUs. */
--static int shuffle_interval = 3; /* Interval between shuffles (in sec)*/
--static int stutter = 5;		/* Start/stop testing interval (in sec) */
--static int irqreader = 1;	/* RCU readers from irq (timers). */
- static int fqs_duration;	/* Duration of bursts (us), 0 to disable. */
- static int fqs_holdoff;		/* Hold time within burst (us). */
- static int fqs_stutter = 3;	/* Wait time between bursts (s). */
- static bool gp_exp;		/* Use expedited GP wait primitives. */
- static bool gp_normal;		/* Use normal GP wait primitives. */
-+static int irqreader = 1;	/* RCU readers from irq (timers). */
- static int n_barrier_cbs;	/* Number of callbacks to test RCU barriers. */
-+static int nfakewriters = 4;	/* # fake writer threads */
-+static int nreaders = -1;	/* # reader threads, defaults to 2*ncpus */
- static int object_debug;	/* Test object-debug double call_rcu()?. */
--static int onoff_interval;	/* Wait time between CPU hotplugs, 0=disable. */
- static int onoff_holdoff;	/* Seconds after boot before CPU hotplugs. */
-+static int onoff_interval;	/* Wait time between CPU hotplugs, 0=disable. */
-+static int shuffle_interval = 3; /* Interval between shuffles (in sec)*/
- static int shutdown_secs;	/* Shutdown time (s).  <=0 for no shutdown. */
- static int stall_cpu;		/* CPU-stall duration (s).  0 for no stall. */
- static int stall_cpu_holdoff = 10; /* Time to wait until stall (s).  */
-+static int stat_interval = 60;	/* Interval between stats, in seconds. */
-+				/*  Zero means "only at end of test". */
-+static int stutter = 5;		/* Start/stop testing interval (in sec) */
- static int test_boost = 1;	/* Test RCU prio boost: 0=no, 1=maybe, 2=yes. */
--static int test_boost_interval = 7; /* Interval between boost tests, seconds. */
- static int test_boost_duration = 4; /* Duration of each boost test, seconds. */
-+static int test_boost_interval = 7; /* Interval between boost tests, seconds. */
-+static bool test_no_idle_hz = true;
-+				/* Test RCU support for tickless idle CPUs. */
- static char *torture_type = "rcu"; /* What RCU implementation to torture. */
-+static bool verbose;		/* Print more debug info. */
+ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+-		struct scatterlist *in_sg, struct scatterlist *out_sg)
++		struct scatterlist *in_sg, struct scatterlist *out_sg,
++		int in_sg_len, int out_sg_len)
+ {
+ 	struct omap_aes_ctx *ctx = crypto_tfm_ctx(tfm);
+ 	struct omap_aes_dev *dd = ctx->dd;
+ 	struct dma_async_tx_descriptor *tx_in, *tx_out;
+ 	struct dma_slave_config cfg;
+-	dma_addr_t dma_addr_in = sg_dma_address(in_sg);
+-	int ret, length = sg_dma_len(in_sg);
+-
+-	pr_debug("len: %d\n", length);
+-
+-	dd->dma_size = length;
+-
+-	if (!(dd->flags & FLAGS_FAST))
+-		dma_sync_single_for_device(dd->dev, dma_addr_in, length,
+-					   DMA_TO_DEVICE);
++	int ret;
  
--module_param(nreaders, int, 0444);
--MODULE_PARM_DESC(nreaders, "Number of RCU reader threads");
--module_param(nfakewriters, int, 0444);
--MODULE_PARM_DESC(nfakewriters, "Number of RCU fake writer threads");
--module_param(stat_interval, int, 0644);
--MODULE_PARM_DESC(stat_interval, "Number of seconds between stats printk()s");
--module_param(verbose, bool, 0444);
--MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
--module_param(test_no_idle_hz, bool, 0444);
--MODULE_PARM_DESC(test_no_idle_hz, "Test support for tickless idle CPUs");
--module_param(shuffle_interval, int, 0444);
--MODULE_PARM_DESC(shuffle_interval, "Number of seconds between shuffles");
--module_param(stutter, int, 0444);
--MODULE_PARM_DESC(stutter, "Number of seconds to run/halt test");
--module_param(irqreader, int, 0444);
--MODULE_PARM_DESC(irqreader, "Allow RCU readers from irq handlers");
- module_param(fqs_duration, int, 0444);
- MODULE_PARM_DESC(fqs_duration, "Duration of fqs bursts (us)");
- module_param(fqs_holdoff, int, 0444);
- MODULE_PARM_DESC(fqs_holdoff, "Holdoff time within fqs bursts (us)");
- module_param(fqs_stutter, int, 0444);
- MODULE_PARM_DESC(fqs_stutter, "Wait time between fqs bursts (s)");
--module_param(gp_normal, bool, 0444);
--MODULE_PARM_DESC(gp_normal, "Use normal (non-expedited) GP wait primitives");
- module_param(gp_exp, bool, 0444);
- MODULE_PARM_DESC(gp_exp, "Use expedited GP wait primitives");
-+module_param(gp_normal, bool, 0444);
-+MODULE_PARM_DESC(gp_normal, "Use normal (non-expedited) GP wait primitives");
-+module_param(irqreader, int, 0444);
-+MODULE_PARM_DESC(irqreader, "Allow RCU readers from irq handlers");
- module_param(n_barrier_cbs, int, 0444);
- MODULE_PARM_DESC(n_barrier_cbs, "# of callbacks/kthreads for barrier testing");
-+module_param(nfakewriters, int, 0444);
-+MODULE_PARM_DESC(nfakewriters, "Number of RCU fake writer threads");
-+module_param(nreaders, int, 0444);
-+MODULE_PARM_DESC(nreaders, "Number of RCU reader threads");
- module_param(object_debug, int, 0444);
- MODULE_PARM_DESC(object_debug, "Enable debug-object double call_rcu() testing");
--module_param(onoff_interval, int, 0444);
--MODULE_PARM_DESC(onoff_interval, "Time between CPU hotplugs (s), 0=disable");
- module_param(onoff_holdoff, int, 0444);
- MODULE_PARM_DESC(onoff_holdoff, "Time after boot before CPU hotplugs (s)");
-+module_param(onoff_interval, int, 0444);
-+MODULE_PARM_DESC(onoff_interval, "Time between CPU hotplugs (s), 0=disable");
-+module_param(shuffle_interval, int, 0444);
-+MODULE_PARM_DESC(shuffle_interval, "Number of seconds between shuffles");
- module_param(shutdown_secs, int, 0444);
- MODULE_PARM_DESC(shutdown_secs, "Shutdown time (s), zero to disable.");
- module_param(stall_cpu, int, 0444);
- MODULE_PARM_DESC(stall_cpu, "Stall duration (s), zero to disable.");
- module_param(stall_cpu_holdoff, int, 0444);
- MODULE_PARM_DESC(stall_cpu_holdoff, "Time to wait before starting stall (s).");
-+module_param(stat_interval, int, 0644);
-+MODULE_PARM_DESC(stat_interval, "Number of seconds between stats printk()s");
-+module_param(stutter, int, 0444);
-+MODULE_PARM_DESC(stutter, "Number of seconds to run/halt test");
- module_param(test_boost, int, 0444);
- MODULE_PARM_DESC(test_boost, "Test RCU prio boost: 0=no, 1=maybe, 2=yes.");
--module_param(test_boost_interval, int, 0444);
--MODULE_PARM_DESC(test_boost_interval, "Interval between boost tests, seconds.");
- module_param(test_boost_duration, int, 0444);
- MODULE_PARM_DESC(test_boost_duration, "Duration of each boost test, seconds.");
-+module_param(test_boost_interval, int, 0444);
-+MODULE_PARM_DESC(test_boost_interval, "Interval between boost tests, seconds.");
-+module_param(test_no_idle_hz, bool, 0444);
-+MODULE_PARM_DESC(test_no_idle_hz, "Test support for tickless idle CPUs");
- module_param(torture_type, charp, 0444);
- MODULE_PARM_DESC(torture_type, "Type of RCU to torture (rcu, rcu_bh, srcu)");
-+module_param(verbose, bool, 0444);
-+MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
+ 	memset(&cfg, 0, sizeof(cfg));
  
- #define TORTURE_FLAG "-torture:"
- #define PRINTK_STRING(s) \
+@@ -514,7 +506,7 @@ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+ 		return ret;
+ 	}
+ 
+-	tx_in = dmaengine_prep_slave_sg(dd->dma_lch_in, in_sg, 1,
++	tx_in = dmaengine_prep_slave_sg(dd->dma_lch_in, in_sg, in_sg_len,
+ 					DMA_MEM_TO_DEV,
+ 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+ 	if (!tx_in) {
+@@ -533,7 +525,7 @@ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+ 		return ret;
+ 	}
+ 
+-	tx_out = dmaengine_prep_slave_sg(dd->dma_lch_out, out_sg, 1,
++	tx_out = dmaengine_prep_slave_sg(dd->dma_lch_out, out_sg, out_sg_len,
+ 					DMA_DEV_TO_MEM,
+ 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+ 	if (!tx_out) {
+@@ -551,7 +543,7 @@ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+ 	dma_async_issue_pending(dd->dma_lch_out);
+ 
+ 	/* start DMA */
+-	dd->pdata->trigger(dd, length);
++	dd->pdata->trigger(dd, dd->total);
+ 
+ 	return 0;
+ }
+@@ -560,93 +552,28 @@ static int omap_aes_crypt_dma_start(struct omap_aes_dev *dd)
+ {
+ 	struct crypto_tfm *tfm = crypto_ablkcipher_tfm(
+ 					crypto_ablkcipher_reqtfm(dd->req));
+-	int err, fast = 0, in, out;
+-	size_t count;
+-	dma_addr_t addr_in, addr_out;
+-	struct scatterlist *in_sg, *out_sg;
+-	int len32;
++	int err;
+ 
+ 	pr_debug("total: %d\n", dd->total);
+ 
+-	if (sg_is_last(dd->in_sg) && sg_is_last(dd->out_sg)) {
+-		/* check for alignment */
+-		in = IS_ALIGNED((u32)dd->in_sg->offset, sizeof(u32));
+-		out = IS_ALIGNED((u32)dd->out_sg->offset, sizeof(u32));
+-
+-		fast = in && out;
++	err = dma_map_sg(dd->dev, dd->in_sg, dd->in_sg_len, DMA_TO_DEVICE);
++	if (!err) {
++		dev_err(dd->dev, "dma_map_sg() error\n");
++		return -EINVAL;
+ 	}
+ 
+-	if (fast)  {
+-		count = min(dd->total, sg_dma_len(dd->in_sg));
+-		count = min(count, sg_dma_len(dd->out_sg));
+-
+-		if (count != dd->total) {
+-			pr_err("request length != buffer length\n");
+-			return -EINVAL;
+-		}
+-
+-		pr_debug("fast\n");
+-
+-		err = dma_map_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+-		if (!err) {
+-			dev_err(dd->dev, "dma_map_sg() error\n");
+-			return -EINVAL;
+-		}
+-
+-		err = dma_map_sg(dd->dev, dd->out_sg, 1, DMA_FROM_DEVICE);
+-		if (!err) {
+-			dev_err(dd->dev, "dma_map_sg() error\n");
+-			dma_unmap_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+-			return -EINVAL;
+-		}
+-
+-		addr_in = sg_dma_address(dd->in_sg);
+-		addr_out = sg_dma_address(dd->out_sg);
+-
+-		in_sg = dd->in_sg;
+-		out_sg = dd->out_sg;
+-
+-		dd->flags |= FLAGS_FAST;
+-
+-	} else {
+-		/* use cache buffers */
+-		count = sg_copy(&dd->in_sg, &dd->in_offset, dd->buf_in,
+-				 dd->buflen, dd->total, 0);
+-
+-		len32 = DIV_ROUND_UP(count, DMA_MIN) * DMA_MIN;
+-
+-		/*
+-		 * The data going into the AES module has been copied
+-		 * to a local buffer and the data coming out will go
+-		 * into a local buffer so set up local SG entries for
+-		 * both.
+-		 */
+-		sg_init_table(&dd->in_sgl, 1);
+-		dd->in_sgl.offset = dd->in_offset;
+-		sg_dma_len(&dd->in_sgl) = len32;
+-		sg_dma_address(&dd->in_sgl) = dd->dma_addr_in;
+-
+-		sg_init_table(&dd->out_sgl, 1);
+-		dd->out_sgl.offset = dd->out_offset;
+-		sg_dma_len(&dd->out_sgl) = len32;
+-		sg_dma_address(&dd->out_sgl) = dd->dma_addr_out;
+-
+-		in_sg = &dd->in_sgl;
+-		out_sg = &dd->out_sgl;
+-
+-		addr_in = dd->dma_addr_in;
+-		addr_out = dd->dma_addr_out;
+-
+-		dd->flags &= ~FLAGS_FAST;
+-
++	err = dma_map_sg(dd->dev, dd->out_sg, dd->out_sg_len, DMA_FROM_DEVICE);
++	if (!err) {
++		dev_err(dd->dev, "dma_map_sg() error\n");
++		return -EINVAL;
+ 	}
+ 
+-	dd->total -= count;
+-
+-	err = omap_aes_crypt_dma(tfm, in_sg, out_sg);
++	err = omap_aes_crypt_dma(tfm, dd->in_sg, dd->out_sg, dd->in_sg_len,
++				 dd->out_sg_len);
+ 	if (err) {
+-		dma_unmap_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+-		dma_unmap_sg(dd->dev, dd->out_sg, 1, DMA_TO_DEVICE);
++		dma_unmap_sg(dd->dev, dd->in_sg, dd->in_sg_len, DMA_TO_DEVICE);
++		dma_unmap_sg(dd->dev, dd->out_sg, dd->out_sg_len,
++			     DMA_FROM_DEVICE);
+ 	}
+ 
+ 	return err;
+@@ -667,7 +594,6 @@ static void omap_aes_finish_req(struct omap_aes_dev *dd, int err)
+ static int omap_aes_crypt_dma_stop(struct omap_aes_dev *dd)
+ {
+ 	int err = 0;
+-	size_t count;
+ 
+ 	pr_debug("total: %d\n", dd->total);
+ 
+@@ -676,21 +602,8 @@ static int omap_aes_crypt_dma_stop(struct omap_aes_dev *dd)
+ 	dmaengine_terminate_all(dd->dma_lch_in);
+ 	dmaengine_terminate_all(dd->dma_lch_out);
+ 
+-	if (dd->flags & FLAGS_FAST) {
+-		dma_unmap_sg(dd->dev, dd->out_sg, 1, DMA_FROM_DEVICE);
+-		dma_unmap_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+-	} else {
+-		dma_sync_single_for_device(dd->dev, dd->dma_addr_out,
+-					   dd->dma_size, DMA_FROM_DEVICE);
+-
+-		/* copy data */
+-		count = sg_copy(&dd->out_sg, &dd->out_offset, dd->buf_out,
+-				 dd->buflen, dd->dma_size, 1);
+-		if (count != dd->dma_size) {
+-			err = -EINVAL;
+-			pr_err("not all data converted: %u\n", count);
+-		}
+-	}
++	dma_unmap_sg(dd->dev, dd->in_sg, dd->in_sg_len, DMA_TO_DEVICE);
++	dma_unmap_sg(dd->dev, dd->out_sg, dd->out_sg_len, DMA_FROM_DEVICE);
+ 
+ 	return err;
+ }
+@@ -760,21 +673,11 @@ static int omap_aes_handle_queue(struct omap_aes_dev *dd,
+ static void omap_aes_done_task(unsigned long data)
+ {
+ 	struct omap_aes_dev *dd = (struct omap_aes_dev *)data;
+-	int err;
+-
+-	pr_debug("enter\n");
+ 
+-	err = omap_aes_crypt_dma_stop(dd);
+-
+-	err = dd->err ? : err;
+-
+-	if (dd->total && !err) {
+-		err = omap_aes_crypt_dma_start(dd);
+-		if (!err)
+-			return; /* DMA started. Not fininishing. */
+-	}
++	pr_debug("enter done_task\n");
+ 
+-	omap_aes_finish_req(dd, err);
++	omap_aes_crypt_dma_stop(dd);
++	omap_aes_finish_req(dd, 0);
+ 	omap_aes_handle_queue(dd, NULL);
+ 
+ 	pr_debug("exit\n");
 -- 
-1.8.1.5
+1.7.9.5
 
