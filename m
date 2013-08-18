@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab3HRUxm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:53:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43483 "EHLO
+	id S1756198Ab3HRUx7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:53:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43478 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989Ab3HRUdQ (ORCPT
+	with ESMTP id S1755982Ab3HRUdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:33:16 -0400
+	Sun, 18 Aug 2013 16:33:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Lyakas <alex.bolshoy@gmail.com>, NeilBrown <neilb@suse.de>,
-        Jack Wang <jinpu.wang@profitbricks.com>
-Subject: [ 18/34] md/raid1,raid10: use freeze_array in place of raise_barrier in various places.
-Date: Sun, 18 Aug 2013 13:34:31 -0700
-Message-Id: <20130818203300.933588263@linuxfoundation.org>
+        Matt Turner <mattst88@gmail.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Thorsten Kranzkowski <dl8bcu@dl8bcu.de>,
+        Will Deacon <will.deacon@arm.com>, Michael Cree <mcree@orcon.net.nz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 17/34] alpha: makefile: dont enforce small data model for kernel builds
+Date: Sun, 18 Aug 2013 13:34:30 -0700
+Message-Id: <20130818203300.865235362@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -27,179 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Will Deacon <will.deacon@arm.com>
 
-commit e2d59925221cd562e07fee38ec8839f7209ae603 upstream.
+commit cd8d2331756751b6aeb855a3c9cb0a92fbd9c725 upstream.
 
-Various places in raid1 and raid10 are calling raise_barrier when they
-really should call freeze_array.
-The former is only intended to be called from "make_request".
-The later has extra checks for 'nr_queued' and makes a call to
-flush_pending_writes(), so it is safe to call it from within the
-management thread.
+Due to all of the goodness being packed into today's kernels, the
+resulting image isn't as slim as it once was.
 
-Using raise_barrier will sometimes deadlock.  Using freeze_array
-should not.
+In light of this, don't pass -msmall-data to gcc, which otherwise results
+in link failures due to impossible relocations when compiling anything but
+the most trivial configurations.
 
-As 'freeze_array' currently expects one request to be pending (in
-handle_read_error - the only previous caller), we need to pass
-it the number of pending requests (extra) to ignore.
-
-The deadlock was made particularly noticeable by commits
-050b66152f87c7 (raid10) and 6b740b8d79252f13 (raid1) which
-appeared in 3.4, so the fix is appropriate for any -stable
-kernel since then.
-
-This patch probably won't apply directly to some early kernels and
-will need to be applied by hand.
-
-Cc: stable@vger.kernel.org
-Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-[adjust context to make it can be apply on top of 3.4 ]
-Signed-off-by: Jack Wang <jinpu.wang@profitbricks.com>
+Reviewed-by: Matt Turner <mattst88@gmail.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Tested-by: Thorsten Kranzkowski <dl8bcu@dl8bcu.de>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c  |   22 +++++++++++-----------
- drivers/md/raid10.c |   14 +++++++-------
- 2 files changed, 18 insertions(+), 18 deletions(-)
+ arch/alpha/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -812,17 +812,17 @@ static void allow_barrier(struct r1conf
- 	wake_up(&conf->wait_barrier);
- }
+--- a/arch/alpha/Makefile
++++ b/arch/alpha/Makefile
+@@ -12,7 +12,7 @@ NM := $(NM) -B
  
--static void freeze_array(struct r1conf *conf)
-+static void freeze_array(struct r1conf *conf, int extra)
- {
- 	/* stop syncio and normal IO and wait for everything to
- 	 * go quite.
- 	 * We increment barrier and nr_waiting, and then
--	 * wait until nr_pending match nr_queued+1
-+	 * wait until nr_pending match nr_queued+extra
- 	 * This is called in the context of one normal IO request
- 	 * that has failed. Thus any sync request that might be pending
- 	 * will be blocked by nr_pending, and we need to wait for
- 	 * pending IO requests to complete or be queued for re-try.
--	 * Thus the number queued (nr_queued) plus this request (1)
-+	 * Thus the number queued (nr_queued) plus this request (extra)
- 	 * must match the number of pending IOs (nr_pending) before
- 	 * we continue.
- 	 */
-@@ -830,7 +830,7 @@ static void freeze_array(struct r1conf *
- 	conf->barrier++;
- 	conf->nr_waiting++;
- 	wait_event_lock_irq(conf->wait_barrier,
--			    conf->nr_pending == conf->nr_queued+1,
-+			    conf->nr_pending == conf->nr_queued+extra,
- 			    conf->resync_lock,
- 			    flush_pending_writes(conf));
- 	spin_unlock_irq(&conf->resync_lock);
-@@ -1432,8 +1432,8 @@ static int raid1_add_disk(struct mddev *
- 		 * we wait for all outstanding requests to complete.
- 		 */
- 		synchronize_sched();
--		raise_barrier(conf);
--		lower_barrier(conf);
-+		freeze_array(conf, 0);
-+		unfreeze_array(conf);
- 		clear_bit(Unmerged, &rdev->flags);
- 	}
- 	md_integrity_add_rdev(rdev, mddev);
-@@ -1481,11 +1481,11 @@ static int raid1_remove_disk(struct mdde
- 			 */
- 			struct md_rdev *repl =
- 				conf->mirrors[conf->raid_disks + number].rdev;
--			raise_barrier(conf);
-+			freeze_array(conf, 0);
- 			clear_bit(Replacement, &repl->flags);
- 			p->rdev = repl;
- 			conf->mirrors[conf->raid_disks + number].rdev = NULL;
--			lower_barrier(conf);
-+			unfreeze_array(conf);
- 			clear_bit(WantReplacement, &rdev->flags);
- 		} else
- 			clear_bit(WantReplacement, &rdev->flags);
-@@ -2100,7 +2100,7 @@ static void handle_read_error(struct r1c
- 	 * frozen
- 	 */
- 	if (mddev->ro == 0) {
--		freeze_array(conf);
-+		freeze_array(conf, 1);
- 		fix_read_error(conf, r1_bio->read_disk,
- 			       r1_bio->sector, r1_bio->sectors);
- 		unfreeze_array(conf);
-@@ -2855,7 +2855,7 @@ static int raid1_reshape(struct mddev *m
- 		return -ENOMEM;
- 	}
+ LDFLAGS_vmlinux	:= -static -N #-relax
+ CHECKFLAGS	+= -D__alpha__ -m64
+-cflags-y	:= -pipe -mno-fp-regs -ffixed-8 -msmall-data
++cflags-y	:= -pipe -mno-fp-regs -ffixed-8
+ cflags-y	+= $(call cc-option, -fno-jump-tables)
  
--	raise_barrier(conf);
-+	freeze_array(conf, 0);
- 
- 	/* ok, everything is stopped */
- 	oldpool = conf->r1bio_pool;
-@@ -2887,7 +2887,7 @@ static int raid1_reshape(struct mddev *m
- 	mddev->delta_disks = 0;
- 
- 	conf->last_used = 0; /* just make sure it is in-range */
--	lower_barrier(conf);
-+	unfreeze_array(conf);
- 
- 	set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
- 	md_wakeup_thread(mddev->thread);
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -952,17 +952,17 @@ static void allow_barrier(struct r10conf
- 	wake_up(&conf->wait_barrier);
- }
- 
--static void freeze_array(struct r10conf *conf)
-+static void freeze_array(struct r10conf *conf, int extra)
- {
- 	/* stop syncio and normal IO and wait for everything to
- 	 * go quiet.
- 	 * We increment barrier and nr_waiting, and then
--	 * wait until nr_pending match nr_queued+1
-+	 * wait until nr_pending match nr_queued+extra
- 	 * This is called in the context of one normal IO request
- 	 * that has failed. Thus any sync request that might be pending
- 	 * will be blocked by nr_pending, and we need to wait for
- 	 * pending IO requests to complete or be queued for re-try.
--	 * Thus the number queued (nr_queued) plus this request (1)
-+	 * Thus the number queued (nr_queued) plus this request (extra)
- 	 * must match the number of pending IOs (nr_pending) before
- 	 * we continue.
- 	 */
-@@ -970,7 +970,7 @@ static void freeze_array(struct r10conf
- 	conf->barrier++;
- 	conf->nr_waiting++;
- 	wait_event_lock_irq(conf->wait_barrier,
--			    conf->nr_pending == conf->nr_queued+1,
-+			    conf->nr_pending == conf->nr_queued+extra,
- 			    conf->resync_lock,
- 			    flush_pending_writes(conf));
- 
-@@ -1619,8 +1619,8 @@ static int raid10_add_disk(struct mddev
- 		 * we wait for all outstanding requests to complete.
- 		 */
- 		synchronize_sched();
--		raise_barrier(conf, 0);
--		lower_barrier(conf);
-+		freeze_array(conf, 0);
-+		unfreeze_array(conf);
- 		clear_bit(Unmerged, &rdev->flags);
- 	}
- 	md_integrity_add_rdev(rdev, mddev);
-@@ -2410,7 +2410,7 @@ static void handle_read_error(struct mdd
- 	r10_bio->devs[slot].bio = NULL;
- 
- 	if (mddev->ro == 0) {
--		freeze_array(conf);
-+		freeze_array(conf, 1);
- 		fix_read_error(conf, mddev, r10_bio);
- 		unfreeze_array(conf);
- 	} else
+ cpuflags-$(CONFIG_ALPHA_EV4)		:= -mcpu=ev4
 
 
