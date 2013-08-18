@@ -1,78 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab3HRUIN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:08:13 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:51382 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab3HRUIK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:08:10 -0400
-Message-ID: <521129A0.9050404@samsung.com>
-Date: Mon, 19 Aug 2013 05:08:00 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	id S1754915Ab3HRURN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:17:13 -0400
+Received: from fieldses.org ([174.143.236.118]:34735 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753613Ab3HRURM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Aug 2013 16:17:12 -0400
+Date: Sun, 18 Aug 2013 16:17:06 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+Message-ID: <20130818201706.GB6726@fieldses.org>
+References: <20130815011101.GA3572@thunk.org>
+ <20130815021028.GM6023@dastard>
+ <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
+ <20130815060149.GP6023@dastard>
+ <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
+ <20130815071141.GQ6023@dastard>
+ <CALCETrWyKSMDkgSbg20iWBRfHk0-oU+6A3X9xAEMg3vO=G_gDg@mail.gmail.com>
+ <20130815213725.GT6023@dastard>
+ <20130816220204.GC21539@fieldses.org>
+ <CALCETrWRjHcAaKcOrB3R54ZtCSNpv-ohDSzViDsP0JOOEhoOzg@mail.gmail.com>
 MIME-Version: 1.0
-To: Dongjin Kim <tobetter@gmail.com>
-CC: unlisted-recipients:"; Jingoo Han" <jg1.han@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	unlisted-recipients:;Jingoo Han <jg1.han@samsung.com>
-					     ^-missing end of address
-Subject: Re: [PATCH RESEND] ARM: dts: Add USB host node for Exynos4
-References: <1375726159-20486-1-git-send-email-tobetter@gmail.com>
-In-Reply-To: <1375726159-20486-1-git-send-email-tobetter@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWRjHcAaKcOrB3R54ZtCSNpv-ohDSzViDsP0JOOEhoOzg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/13 03:09, Dongjin Kim wrote:
-> This patch adds EHCI and OHCI host device nodes for Exynos4.
->
-> CC: Jingoo Han<jg1.han@samsung.com>
-> Signed-off-by: Dongjin Kim<tobetter@gmail.com>
-> ---
->   arch/arm/boot/dts/exynos4.dtsi |   18 ++++++++++++++++++
->   1 file changed, 18 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
-> index 3f94fe8..cbe5219 100644
-> --- a/arch/arm/boot/dts/exynos4.dtsi
-> +++ b/arch/arm/boot/dts/exynos4.dtsi
-> @@ -155,6 +155,24 @@
->   		status = "disabled";
->   	};
->
-> +	ehci@12580000 {
-> +		compatible = "samsung,exynos4210-ehci";
-> +		reg =<0x12580000 0x100>;
-> +		interrupts =<0 70 0>;
-> +		clocks =<&clock 304>;
-> +		clock-names = "usbhost";
-> +		status = "disabled";
-> +	};
-> +
-> +	ohci@12590000 {
-> +		compatible = "samsung,exynos4210-ohci";
-> +		reg =<0x12590000 0x100>;
-> +		interrupts =<0 70 0>;
-> +		clocks =<&clock 304>;
-> +		clock-names = "usbhost";
-> +		status = "disabled";
-> +	};
-> +
->   	mfc: codec@13400000 {
->   		compatible = "samsung,mfc-v5";
->   		reg =<0x13400000 0x10000>;
+On Fri, Aug 16, 2013 at 04:18:33PM -0700, Andy Lutomirski wrote:
+> On Fri, Aug 16, 2013 at 3:02 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> > On Fri, Aug 16, 2013 at 07:37:25AM +1000, Dave Chinner wrote:
+> >> On Thu, Aug 15, 2013 at 08:17:18AM -0700, Andy Lutomirski wrote:
+> >> > On Thu, Aug 15, 2013 at 12:11 AM, Dave Chinner <david@fromorbit.com> wrote:
+> >> > > On Wed, Aug 14, 2013 at 11:14:37PM -0700, Andy Lutomirski wrote:
+> >> > >> On Wed, Aug 14, 2013 at 11:01 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >> > >> > On Wed, Aug 14, 2013 at 09:32:13PM -0700, Andy Lutomirski wrote:
+> >> > >> >> On Wed, Aug 14, 2013 at 7:10 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >> > >> >> > On Wed, Aug 14, 2013 at 09:11:01PM -0400, Theodore Ts'o wrote:
+> >> > >> >> >> On Wed, Aug 14, 2013 at 04:38:12PM -0700, Andy Lutomirski wrote:
+> >> > >> >> >> > > It would be better to write zeros to it, so we aren't measuring the
+> >> > >> >> >> > > cost of the unwritten->written conversion.
+> >> > >> >> >> >
+> >> > >> >> >> > At the risk of beating a dead horse, how hard would it be to defer
+> >> > >> >> >> > this part until writeback?
+> >> > >> >> >>
+> >> > >> >> >> Part of the work has to be done at write time because we need to
+> >> > >> >> >> update allocation statistics (i.e., so that we don't have ENOSPC
+> >> > >> >> >> problems).  The unwritten->written conversion does happen at writeback
+> >> > >> >> >> (as does the actual block allocation if we are doing delayed
+> >> > >> >> >> allocation).
+> >> > >> >> >>
+> >> > >> >> >> The point is that if the goal is to measure page fault scalability, we
+> >> > >> >> >> shouldn't have this other stuff happening as the same time as the page
+> >> > >> >> >> fault workload.
+> >> > >> >> >
+> >> > >> >> > Sure, but the real problem is not the block mapping or allocation
+> >> > >> >> > path - even if the test is changed to take that out of the picture,
+> >> > >> >> > we still have timestamp updates being done on every single page
+> >> > >> >> > fault. ext4, XFS and btrfs all do transactional timestamp updates
+> >> > >> >> > and have nanosecond granularity, so every page fault is resulting in
+> >> > >> >> > a transaction to update the timestamp of the file being modified.
+> >> > >> >>
+> >> > >> >> I have (unmergeable) patches to fix this:
+> >> > >> >>
+> >> > >> >> http://comments.gmane.org/gmane.linux.kernel.mm/92476
+> >> > >> >
+> >> > >> > The big problem with this approach is that not doing the
+> >> > >> > timestamp update on page faults is going to break the inode change
+> >> > >> > version counting because for ext4, btrfs and XFS it takes a
+> >> > >> > transaction to bump that counter. NFS needs to know the moment a
+> >> > >> > file is changed in memory, not when it is written to disk. Also, NFS
+> >> > >> > requires the change to the counter to be persistent over server
+> >> > >> > failures, so it needs to be changed as part of a transaction....
+> >> > >>
+> >> > >> I've been running a kernel that has the file_update_time call
+> >> > >> commented out for over a year now, and the only problem I've seen is
+> >> > >> that the timestamp doesn't get updated :)
+> >> > >>
+> >> >
+> >> > [...]
+> >> >
+> >> > > If a filesystem is providing an i_version value, then NFS uses it to
+> >> > > determine whether client side caches are still consistent with the
+> >> > > server state. If the filesystem does not provide an i_version, then
+> >> > > NFS falls back to checking c/mtime for changes. If files on the
+> >> > > server are being modified without either the tiemstamps or i_version
+> >> > > changing, then it's likely that there will be problems with client
+> >> > > side cache consistency....
+> >> >
+> >> > I didn't think of that at all.
+> >> >
+> >> > If userspace does:
+> >> >
+> >> > ptr = mmap(...);
+> >> > ptr[0] = 1;
+> >> > sleep(1);
+> >> > ptr[0] = 2;
+> >> > sleep(1);
+> >> > munmap();
+> >> >
+> >> > Then current kernels will mark the inode changed on (only) the ptr[0]
+> >> > = 1 line.  My patches will instead mark the inode changed when munmap
+> >> > is called (or after ptr[0] = 2 if writepages gets called for any
+> >> > reason).
+> >> >
+> >> > I'm not sure which is better.  POSIX actually requires my behavior
+> >> > (which is most irrelevant).
+> >>
+> >> Not by my reading of it. Posix states that c/mtime needs to be
+> >> updated between the first access and the next msync() call. We
+> >> update mtime on the first access, and so therefore we conform to the
+> >> posix requirement....
+> >>
+> >> > My behavior also means that, if an NFS
+> >> > client reads and caches the file between the two writes, then it will
+> >> > eventually find out that the data is stale.
+> >>
+> >> "eventually" is very different behaviour to the current behaviour.
+> >>
+> >> My understanding is that NFS v4 delegations require the underlying
+> >> filesystem to bump the version count on *any* modification made to
+> >> the file so that delegations can be recalled appropriately.
+> >
+> > Delegations at least shouldn't be an issue here: they're recalled on the
+> > open.
+> 
+> Can you translate that into clueless-non-NFS-expert? :)
 
-Applied, thanks.
+An NFS "delegation" is roughly the same thing as what's called a "lease"
+by the linux vfs or an "OpLock" in SMB.  It's a lock that is recalled
+from the holder on certain conflicting operations.  (Basically a way to
+tell a client "you're the only one using this file, feel free to cache
+it until I tell you otherwise".)
 
-- Kukjin
+Delegations are recalled on conflicting opens, so by the time you get to
+IO there shouldn't be any.  I don't think they're really relevant to
+this discussion.
+
+--b.
+
+> 
+> Anyway, I'm sending patches in a sec.  Dave (Hansen), want to test?  I
+> played with will-it-scale a bit, but I don't really know what I'm
+> doing.
+> 
+> --Andy
