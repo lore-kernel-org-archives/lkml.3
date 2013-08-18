@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab3HRUhg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:37:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43773 "EHLO
+	id S1756717Ab3HRUhx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:37:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43761 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861Ab3HRUfT (ORCPT
+	with ESMTP id S1756553Ab3HRUfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:35:19 -0400
+	Sun, 18 Aug 2013 16:35:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 09/45] ARM: KVM: perform save/restore of PAR
-Date: Sun, 18 Aug 2013 13:35:58 -0700
-Message-Id: <20130818203621.640341160@linuxfoundation.org>
+        Max Hailperin <max@gustavus.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 07/45] sched: Ensure update_cfs_shares() is called for parents of continuously-running tasks
+Date: Sun, 18 Aug 2013 13:35:56 -0700
+Message-Id: <20130818203621.504406997@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -28,148 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Zyngier <marc.zyngier@arm.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 6a077e4ab9cbfbf279fb955bae05b03781c97013 upstream.
+commit bf0bd948d1682e3996adc093b43021ed391983e6 upstream.
 
-Not saving PAR is an unfortunate oversight. If the guest performs
-an AT* operation and gets scheduled out before reading the result
-of the translation from PAR, it could become corrupted by another
-guest or the host.
+We typically update a task_group's shares within the dequeue/enqueue
+path.  However, continuously running tasks sharing a CPU are not
+subject to these updates as they are only put/picked.  Unfortunately,
+when we reverted f269ae046 (in 17bc14b7), we lost the augmenting
+periodic update that was supposed to account for this; resulting in a
+potential loss of fairness.
 
-Saving this register is made slightly more complicated as KVM also
-uses it on the permission fault handling path, leading to an ugly
-"stash and restore" sequence. Fortunately, this is already a slow
-path so we don't really care. Also, Linux doesn't do any AT*
-operation, so Linux guests are not impacted by this bug.
+To fix this, re-introduce the explicit update in
+update_cfs_rq_blocked_load() [called via entity_tick()].
 
-  [ Slightly tweaked to use an even register as first operand to ldrd
-    and strd operations in interrupts_head.S - Christoffer ]
-
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Reported-by: Max Hailperin <max@gustavus.edu>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Reviewed-by: Paul Turner <pjt@google.com>
+Link: http://lkml.kernel.org/n/tip-9545m3apw5d93ubyrotrj31y@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/kvm_asm.h |   22 ++++++++++++----------
- arch/arm/kvm/coproc.c          |    4 ++++
- arch/arm/kvm/interrupts.S      |   12 +++++++++++-
- arch/arm/kvm/interrupts_head.S |   10 ++++++++--
- 4 files changed, 35 insertions(+), 13 deletions(-)
+ kernel/sched/fair.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/include/asm/kvm_asm.h
-+++ b/arch/arm/include/asm/kvm_asm.h
-@@ -37,16 +37,18 @@
- #define c5_AIFSR	15	/* Auxilary Instrunction Fault Status R */
- #define c6_DFAR		16	/* Data Fault Address Register */
- #define c6_IFAR		17	/* Instruction Fault Address Register */
--#define c9_L2CTLR	18	/* Cortex A15 L2 Control Register */
--#define c10_PRRR	19	/* Primary Region Remap Register */
--#define c10_NMRR	20	/* Normal Memory Remap Register */
--#define c12_VBAR	21	/* Vector Base Address Register */
--#define c13_CID		22	/* Context ID Register */
--#define c13_TID_URW	23	/* Thread ID, User R/W */
--#define c13_TID_URO	24	/* Thread ID, User R/O */
--#define c13_TID_PRIV	25	/* Thread ID, Privileged */
--#define c14_CNTKCTL	26	/* Timer Control Register (PL1) */
--#define NR_CP15_REGS	27	/* Number of regs (incl. invalid) */
-+#define c7_PAR		18	/* Physical Address Register */
-+#define c7_PAR_high	19	/* PAR top 32 bits */
-+#define c9_L2CTLR	20	/* Cortex A15 L2 Control Register */
-+#define c10_PRRR	21	/* Primary Region Remap Register */
-+#define c10_NMRR	22	/* Normal Memory Remap Register */
-+#define c12_VBAR	23	/* Vector Base Address Register */
-+#define c13_CID		24	/* Context ID Register */
-+#define c13_TID_URW	25	/* Thread ID, User R/W */
-+#define c13_TID_URO	26	/* Thread ID, User R/O */
-+#define c13_TID_PRIV	27	/* Thread ID, Privileged */
-+#define c14_CNTKCTL	28	/* Timer Control Register (PL1) */
-+#define NR_CP15_REGS	29	/* Number of regs (incl. invalid) */
- 
- #define ARM_EXCEPTION_RESET	  0
- #define ARM_EXCEPTION_UNDEFINED   1
---- a/arch/arm/kvm/coproc.c
-+++ b/arch/arm/kvm/coproc.c
-@@ -180,6 +180,10 @@ static const struct coproc_reg cp15_regs
- 			NULL, reset_unknown, c6_DFAR },
- 	{ CRn( 6), CRm( 0), Op1( 0), Op2( 2), is32,
- 			NULL, reset_unknown, c6_IFAR },
-+
-+	/* PAR swapped by interrupt.S */
-+	{ CRn( 7), Op1( 0), is64, NULL, reset_unknown64, c7_PAR },
-+
- 	/*
- 	 * DC{C,I,CI}SW operations:
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1984,6 +1984,7 @@ entity_tick(struct cfs_rq *cfs_rq, struc
  	 */
---- a/arch/arm/kvm/interrupts.S
-+++ b/arch/arm/kvm/interrupts.S
-@@ -414,6 +414,10 @@ guest_trap:
- 	mrcne	p15, 4, r2, c6, c0, 4	@ HPFAR
- 	bne	3f
+ 	update_entity_load_avg(curr, 1);
+ 	update_cfs_rq_blocked_load(cfs_rq, 1);
++	update_cfs_shares(cfs_rq);
  
-+	/* Preserve PAR */
-+	mrrc	p15, 0, r0, r1, c7	@ PAR
-+	push	{r0, r1}
-+
- 	/* Resolve IPA using the xFAR */
- 	mcr	p15, 0, r2, c7, c8, 0	@ ATS1CPR
- 	isb
-@@ -424,13 +428,19 @@ guest_trap:
- 	lsl	r2, r2, #4
- 	orr	r2, r2, r1, lsl #24
- 
-+	/* Restore PAR */
-+	pop	{r0, r1}
-+	mcrr	p15, 0, r0, r1, c7	@ PAR
-+
- 3:	load_vcpu			@ Load VCPU pointer to r0
- 	str	r2, [r0, #VCPU_HPFAR]
- 
- 1:	mov	r1, #ARM_EXCEPTION_HVC
- 	b	__kvm_vcpu_return
- 
--4:	pop	{r0, r1, r2}		@ Failed translation, return to guest
-+4:	pop	{r0, r1}		@ Failed translation, return to guest
-+	mcrr	p15, 0, r0, r1, c7	@ PAR
-+	pop	{r0, r1, r2}
- 	eret
- 
- /*
---- a/arch/arm/kvm/interrupts_head.S
-+++ b/arch/arm/kvm/interrupts_head.S
-@@ -302,11 +302,14 @@ vcpu	.req	r0		@ vcpu pointer always in r
- 	.endif
- 
- 	mrc	p15, 0, r2, c14, c1, 0	@ CNTKCTL
-+	mrrc	p15, 0, r4, r5, c7	@ PAR
- 
- 	.if \store_to_vcpu == 0
--	push	{r2}
-+	push	{r2,r4-r5}
- 	.else
- 	str	r2, [vcpu, #CP15_OFFSET(c14_CNTKCTL)]
-+	add	r12, vcpu, #CP15_OFFSET(c7_PAR)
-+	strd	r4, r5, [r12]
- 	.endif
- .endm
- 
-@@ -319,12 +322,15 @@ vcpu	.req	r0		@ vcpu pointer always in r
-  */
- .macro write_cp15_state read_from_vcpu
- 	.if \read_from_vcpu == 0
--	pop	{r2}
-+	pop	{r2,r4-r5}
- 	.else
- 	ldr	r2, [vcpu, #CP15_OFFSET(c14_CNTKCTL)]
-+	add	r12, vcpu, #CP15_OFFSET(c7_PAR)
-+	ldrd	r4, r5, [r12]
- 	.endif
- 
- 	mcr	p15, 0, r2, c14, c1, 0	@ CNTKCTL
-+	mcrr	p15, 0, r4, r5, c7	@ PAR
- 
- 	.if \read_from_vcpu == 0
- 	pop	{r2-r12}
+ #ifdef CONFIG_SCHED_HRTICK
+ 	/*
 
 
