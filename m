@@ -1,142 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab3HRKCw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 06:02:52 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38283 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015Ab3HRKCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 06:02:50 -0400
-Date: Sun, 18 Aug 2013 12:02:47 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Joe Perches <joe@perches.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Youquan Song <youquan.song@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Youquan Song <youquan.song@intel.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
-Message-ID: <20130818100247.GB26728@pd.tnic>
-References: <CAE9FiQWbVDRpLUCUTF=Jpmm-nn6kgBYFW25PPTEiPK-R-mX0jA@mail.gmail.com>
- <20130729170514.GB30371@linux-youquan.bj.intel.com>
- <20130814184040.GA6726@linux-youquan.bj.intel.com>
- <20130814111105.GA13772@gmail.com>
- <20130817134454.GA16835@linux-youquan.bj.intel.com>
- <20130817074256.GA18772@gmail.com>
- <20130817082419.GA10005@pd.tnic>
- <1376730231.1954.7.camel@joe-AO722>
- <20130817154447.GB10005@pd.tnic>
- <1376756803.2027.7.camel@joe-AO722>
+	id S1755400Ab3HRKDJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 06:03:09 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:48816 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755307Ab3HRKDH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Aug 2013 06:03:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1376756803.2027.7.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <d71c900c5af2378da4e4024150d9f22f4a97e9db.1376116345.git.viresh.kumar@linaro.org>
+References: <cover.1376116344.git.viresh.kumar@linaro.org>
+	<d71c900c5af2378da4e4024150d9f22f4a97e9db.1376116345.git.viresh.kumar@linaro.org>
+Date: Sun, 18 Aug 2013 15:33:05 +0530
+X-Google-Sender-Auth: kbTzWDyB5ikU0clU5NxtT2Nf-Cg
+Message-ID: <CADGdYn5xkUN8bO19Hbf2S-WcCNUe_TFOONkqyxNUF8QRAnnVzA@mail.gmail.com>
+Subject: Re: [PATCH 19/44] cpufreq: exynos: Use generic cpufreq routines
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linaro-kernel@lists.linaro.org,
+        "patches@linaro.org" <patches@linaro.org>, cpufreq@vger.kernel.org,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 17, 2013 at 09:26:43AM -0700, Joe Perches wrote:
-> > ... unless there's a way to detect new submissions and scream only
-> > for those. I.e., look at lines starting with "+" which don't have
-> > corresponding "-" lines.
-> 
-> No, that's not the right way to do that.
-> That bit's relatively easy because checkpatch only looks
-> at files when there's a specific command line -f flag.
-> So just check the existence of the -f command line flag
-> (!$file) and for an added comment that starts "/* foo" without
-> a comment termination */ after it on the same line.
+On Sat, Aug 10, 2013 at 12:14 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> Most of the CPUFreq drivers do similar things in .exit() and .verify() routines
+> and .attr. So its better if we have generic routines for them which can be used
+> by cpufreq drivers then.
+>
+> This patch uses these generic routines for this driver.
+>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+The consolidation code looks fine,
+Acked-By: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
-Right, your way is simpler.
-
-> > This would need a bit of experimenting and is not trivial though, maybe
-> > Algorithm::Diff could even help there.
-> > 
-> > Sounds like a mini-project for a perl dude :-)
-> 
-> I'm not one of those...
-> 
-> This might work though
-> 
->  scripts/checkpatch.pl | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 9ba4fc4..abe820a 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2119,6 +2119,15 @@ sub process {
->  			}
->  		}
->  
-> +		if (!$file &&
-> +		    $realfile !~ m@^(drivers/net/|net/)@ &&
-> +		    $rawline =~ /^\+/ &&	#Added line
-> +		    $rawline !~ m@/\*.*\*/@ &&	#whole comments
-> +		    $rawline =~ m@/\*+.+@) {	#unterminated comment
-> +			WARN("COMMENT_STYLE",
-> +			     "block comments use an empty /* line\n" . $herecurr);
-> +		}
-> +
->  		if ($realfile =~ m@^(drivers/net/|net/)@ &&
->  		    $prevrawline =~ /^\+[ \t]*\/\*[ \t]*$/ &&
->  		    $rawline =~ /^\+[ \t]*\*/) {
-
-Almost. It needs to look only on *.[ch] files because otherwise it fires on that
-	very same diff to checkpatch.pl too:
-
-$ git diff | ./scripts/checkpatch.pl -
-
-...
-
-WARNING: block comments use an empty /* line
-#15: FILE: scripts/checkpatch.pl:2059:
-+                            "block comments use an empty /* line\n" . $herecurr);
-
-
-Also, we need to catch this obvious case:
-
-        /*
-         * This is a wrong comment. */
-
-
-IOW, something like a modified version of yours below. It doesn't catch
-every wrong comment form out there but it should be a start.
-
---
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 2ee9eb750560..111b6615d74d 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2050,6 +2050,16 @@ sub process {
- 			}
- 		}
- 
-+		if (!$file &&
-+		    $realfile !~ m@^(drivers/net/|net/)@ &&
-+		    $rawline =~ /^\+/ &&		# Added line
-+		    $rawline !~ m@/\*.*\*/@ &&		# whole comments
-+		    ($rawline =~ m@/\*+.+@ ||		# unterminated opening
-+		     $rawline =~ m@\s*\*+.+\*+/@)) {	# unterminated closing
-+			WARN("COMMENT_STYLE",
-+			     "Multi-line comments use an empty /* opening and */ closing line\n" . $herecurr);
-+		}
-+
- 		if ($realfile =~ m@^(drivers/net/|net/)@ &&
- 		    $prevrawline =~ /^\+[ \t]*\/\*[ \t]*$/ &&
- 		    $rawline =~ /^\+[ \t]*\*/) {
-
---
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Amit Daniel
+> ---
+>  drivers/cpufreq/exynos-cpufreq.c     | 23 +++--------------------
+>  drivers/cpufreq/exynos5440-cpufreq.c | 15 ++-------------
+>  2 files changed, 5 insertions(+), 33 deletions(-)
+>
+> diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+> index 71c4926..7663a96 100644
+> --- a/drivers/cpufreq/exynos-cpufreq.c
+> +++ b/drivers/cpufreq/exynos-cpufreq.c
+> @@ -31,12 +31,6 @@ static unsigned int locking_frequency;
+>  static bool frequency_locked;
+>  static DEFINE_MUTEX(cpufreq_lock);
+>
+> -static int exynos_verify_speed(struct cpufreq_policy *policy)
+> -{
+> -       return cpufreq_frequency_table_verify(policy,
+> -                                             exynos_info->freq_table);
+> -}
+> -
+>  static unsigned int exynos_getspeed(unsigned int cpu)
+>  {
+>         return clk_get_rate(exynos_info->cpu_clk) / 1000;
+> @@ -257,26 +251,15 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
+>         return cpufreq_table_validate_and_show(policy, exynos_info->freq_table);
+>  }
+>
+> -static int exynos_cpufreq_cpu_exit(struct cpufreq_policy *policy)
+> -{
+> -       cpufreq_frequency_table_put_attr(policy->cpu);
+> -       return 0;
+> -}
+> -
+> -static struct freq_attr *exynos_cpufreq_attr[] = {
+> -       &cpufreq_freq_attr_scaling_available_freqs,
+> -       NULL,
+> -};
+> -
+>  static struct cpufreq_driver exynos_driver = {
+>         .flags          = CPUFREQ_STICKY,
+> -       .verify         = exynos_verify_speed,
+> +       .verify         = cpufreq_generic_frequency_table_verify,
+>         .target         = exynos_target,
+>         .get            = exynos_getspeed,
+>         .init           = exynos_cpufreq_cpu_init,
+> -       .exit           = exynos_cpufreq_cpu_exit,
+> +       .exit           = cpufreq_generic_exit,
+>         .name           = "exynos_cpufreq",
+> -       .attr           = exynos_cpufreq_attr,
+> +       .attr           = cpufreq_generic_attr,
+>  #ifdef CONFIG_PM
+>         .suspend        = exynos_cpufreq_suspend,
+>         .resume         = exynos_cpufreq_resume,
+> diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
+> index b9dfc91..f139b3b 100644
+> --- a/drivers/cpufreq/exynos5440-cpufreq.c
+> +++ b/drivers/cpufreq/exynos5440-cpufreq.c
+> @@ -209,12 +209,6 @@ static void exynos_enable_dvfs(void)
+>                                 dvfs_info->base + XMU_DVFS_CTRL);
+>  }
+>
+> -static int exynos_verify_speed(struct cpufreq_policy *policy)
+> -{
+> -       return cpufreq_frequency_table_verify(policy,
+> -                                             dvfs_info->freq_table);
+> -}
+> -
+>  static unsigned int exynos_getspeed(unsigned int cpu)
+>  {
+>         return dvfs_info->cur_frequency;
+> @@ -336,18 +330,13 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
+>         return 0;
+>  }
+>
+> -static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
+> -{
+> -       cpufreq_frequency_table_put_attr(policy->cpu);
+> -}
+> -
+>  static struct cpufreq_driver exynos_driver = {
+>         .flags          = CPUFREQ_STICKY,
+> -       .verify         = exynos_verify_speed,
+> +       .verify         = cpufreq_generic_frequency_table_verify,
+>         .target         = exynos_target,
+>         .get            = exynos_getspeed,
+>         .init           = exynos_cpufreq_cpu_init,
+> -       .exit           = exynos_cpufreq_cpu_exit,
+> +       .exit           = cpufreq_generic_exit,
+>         .name           = CPUFREQ_NAME,
+>  };
+>
+> --
+> 1.7.12.rc2.18.g61b472e
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
