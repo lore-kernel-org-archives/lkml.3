@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab3HRUk4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:40:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43723 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756489Ab3HRUfL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756488Ab3HRUfL (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 18 Aug 2013 16:35:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43698 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756340Ab3HRUfG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Aug 2013 16:35:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>, Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 37/45] PM / QoS: Fix workqueue deadlock when using pm_qos_update_request_timeout()
-Date: Sun, 18 Aug 2013 13:36:26 -0700
-Message-Id: <20130818203623.570687116@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>
+Subject: [ 30/45] usb: add two quirky touchscreen
+Date: Sun, 18 Aug 2013 13:36:19 -0700
+Message-Id: <20130818203623.089430559@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -27,69 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 40fea92ffb5fa0ef26d10ae0fe5688bc8e61c791 upstream.
+commit 304ab4ab079a8ed03ce39f1d274964a532db036b upstream.
 
-pm_qos_update_request_timeout() updates a qos and then schedules
-a delayed work item to bring the qos back down to the default
-after the timeout. When the work item runs, pm_qos_work_fn() will
-call pm_qos_update_request() and deadlock because it tries to
-cancel itself via cancel_delayed_work_sync(). Future callers of
-that qos will also hang waiting to cancel the work that is
-canceling itself. Let's extract the little bit of code that does
-the real work of pm_qos_update_request() and call it from the
-work function so that we don't deadlock.
+These devices tend to become unresponsive after S3
 
-Before ed1ac6e (PM: don't use [delayed_]work_pending()) this didn't
-happen because the work function wouldn't try to cancel itself.
-
-[backport to 3.10 - gregkh]
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/power/qos.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/usb/core/quirks.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/kernel/power/qos.c
-+++ b/kernel/power/qos.c
-@@ -293,6 +293,15 @@ int pm_qos_request_active(struct pm_qos_
- }
- EXPORT_SYMBOL_GPL(pm_qos_request_active);
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -78,6 +78,12 @@ static const struct usb_device_id usb_qu
+ 	{ USB_DEVICE(0x04d8, 0x000c), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
  
-+static void __pm_qos_update_request(struct pm_qos_request *req,
-+			   s32 new_value)
-+{
-+	if (new_value != req->node.prio)
-+		pm_qos_update_target(
-+			pm_qos_array[req->pm_qos_class]->constraints,
-+			&req->node, PM_QOS_UPDATE_REQ, new_value);
-+}
++	/* CarrolTouch 4000U */
++	{ USB_DEVICE(0x04e7, 0x0009), .driver_info = USB_QUIRK_RESET_RESUME },
 +
- /**
-  * pm_qos_work_fn - the timeout handler of pm_qos_update_request_timeout
-  * @work: work struct for the delayed work (timeout)
-@@ -305,7 +314,7 @@ static void pm_qos_work_fn(struct work_s
- 						  struct pm_qos_request,
- 						  work);
- 
--	pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
-+	__pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
- }
- 
- /**
-@@ -365,6 +374,8 @@ void pm_qos_update_request(struct pm_qos
- 		pm_qos_update_target(
- 			pm_qos_array[req->pm_qos_class]->constraints,
- 			&req->node, PM_QOS_UPDATE_REQ, new_value);
++	/* CarrolTouch 4500U */
++	{ USB_DEVICE(0x04e7, 0x0030), .driver_info = USB_QUIRK_RESET_RESUME },
 +
-+	__pm_qos_update_request(req, new_value);
- }
- EXPORT_SYMBOL_GPL(pm_qos_update_request);
- 
+ 	/* Samsung Android phone modem - ID conflict with SPH-I500 */
+ 	{ USB_DEVICE(0x04e8, 0x6601), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
 
 
