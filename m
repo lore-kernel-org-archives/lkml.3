@@ -1,129 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab3HRIij (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 04:38:39 -0400
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:34524 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753576Ab3HRIih (ORCPT
+	id S1754710Ab3HRIlR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 04:41:17 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:62127 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab3HRIlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 04:38:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130816132326.GC2909@localhost.localdomain>
-References: <1376360992-1508-1-git-send-email-acourbot@nvidia.com>
- <1376360992-1508-2-git-send-email-acourbot@nvidia.com> <20130815115227.GC2562@localhost.localdomain>
- <520D500C.5070901@wwwdotorg.org> <20130816132326.GC2909@localhost.localdomain>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Sun, 18 Aug 2013 17:38:16 +0900
-Message-ID: <CAAVeFuK612z6sYYBQNrbV=x3_Uy91qqusW4G+=yNVg4tMbV2Kg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/5] ARM: add basic Trusted Foundations support
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Joseph Lo <josephl@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 18 Aug 2013 04:41:15 -0400
+From: Bob Liu <lliubbo@gmail.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, eternaleye@gmail.com, minchan@kernel.org,
+        mgorman@suse.de, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        axboe@kernel.dk, sjenning@linux.vnet.ibm.com, ngupta@vflare.org,
+        semenzato@google.com, penberg@iki.fi, sonnyrao@google.com,
+        smbarber@google.com, konrad.wilk@oracle.com, riel@redhat.com,
+        kmpark@infradead.org, Bob Liu <bob.liu@oracle.com>
+Subject: [PATCH 0/4] mm: merge zram into zswap
+Date: Sun, 18 Aug 2013 16:40:45 +0800
+Message-Id: <1376815249-6611-1-git-send-email-bob.liu@oracle.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 10:23 PM, Dave Martin <Dave.Martin@arm.com> wrote:
-> On Thu, Aug 15, 2013 at 04:02:52PM -0600, Stephen Warren wrote:
->> On 08/15/2013 05:52 AM, Dave Martin wrote:
->> > On Tue, Aug 13, 2013 at 11:29:48AM +0900, Alexandre Courbot wrote:
->> >> Trusted Foundations is a TrustZone-based secure monitor for ARM that
->> >> can be invoked  using a consistent smc-based API on all supported
->> >> platforms. This patch adds initial basic support for Trusted
->> >> Foundations using the ARM firmware API. Current features are limited
->> >> to the ability to boot secondary processors.
->>
->> >> diff --git a/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
->>
->> >> +Required properties:
->> >> +- compatible : "tl,trusted-foundations"
->> >> +- version : Must contain the version number string of the Trusted Foundation
->> >> +  firmware.
->> >
->> > Are you sure there is no low-level way to probe vendor and version info?
->> > If there is, then the DT should describe nothing except the fact that
->> > the probe interface exists.
->> >
->> > I also worry that two integrations on different SoCs might have the
->> > same version number, yet still be different due to vendor-specific
->> > features and options.
->>
->> I would expect HW-specific compatible values also to be present in a DT.
->> For example, perhaps:
->>
->> compatible = "tl,trusted-foundations-nvidia-shield",
->> "tl,trusted-foundations";
->>
->> (nvidia vendor, shield board/implementation)
->>
->> This would allow matching on the specific value
->> "tl,trusted-foundations-nvidia-shield" in the future if some quirking
->> was needed, but if this wasn't needed, drivers could just bind to the
->> generic "tl,trusted-foundations".
->
-> That seems reasonable *unless* there is a reliable way to obtain
-> a vendor ID from the SMC ABI directly, in which case we should just
-> use that.
->
-> One could debate whether the extra compatible string should have
-> "nvidia," or "tl," but the fact that "nvidia" is in the name at all
-> pretty much narrows it down.
->
->>
->> >> +- version : Must contain the version number string of the Trusted Foundation
->> >> +  firmware.
->> >
->> > Are you sure there is no low-level way to probe vendor and version info?
->> > If there is, then the DT should describe nothing except the fact that
->> > the probe interface exists.
->> >
->> > I also worry that two integrations on different SoCs might have the
->> > same version number, yet still be different due to vendor-specific
->> > features and options.
->>
->> Talking of the version - if we do need to represent this in the DT, how
->> about 2 separate cells for major/minor version rather than encoding it
->> into a string? Then, no parsing would be required.
->
-> I think the key thing here is to match whatever TF's native notion of
-> version is.
->
-> If it's truly a string with specific comparison rules, we should leave it
-> a string and write code to examine it.  If it's a simple <major minor>
-> pair, then putting it in the DT in this form makes sense.
+Both zswap and zram are used to compress anon pages in memory so as to reduce
+swap io operation. The main different is that zswap uses zbud as its allocator
+while zram uses zsmalloc. The other different is zram will create a block
+device, the user need to mkswp and swapon it.
 
-TF's native version is this major/minor pair, and indeed it should be
-sensible and harmless to turn it into a pair of cells.
+Minchan has areadly try to promote zram/zsmalloc into drivers/block/, but it may
+cause increase maintenance headaches. Since the purpose of zswap and zram are
+the same, this patch series try to merge them together as Mel suggested.
+Dropped zram from staging and extended zswap with the same feature as zram.
 
-Then there are other components that can be added to build a more
-precise "version string". You can have a look at this file to see how
-this is done:
+zswap todo:
+Improve the writeback of zswap pool pages!
 
-http://nv-tegra.nvidia.com/gitweb/?p=linux-2.6.git;a=blob;f=security/tf_driver/s_version.h;h=d75c5f35d32d597b664c9533b1c5a52696e81b49;hb=rel-roth-ota-1
+Bob Liu (4):
+  drivers: staging: drop zram and zsmalloc
+  mm: promote zsmalloc to mm/
+  mm: zswap: add supporting for zsmalloc
+  mm: zswap: create a pseudo device /dev/zram0
 
-The version string I used to far is the S_VERSION_MAIN macro, since it
-is the only one that seems to be platform-independant.
-S_VERSION_PLATFORM and S_VERSION_OS can be used to indentify if
-Android is used and which version. Then all these strings (plus a few
-others) are concatenated to build S_VERSION_STRING which is the
-ultimate version, but also considerably more complicated to handle.
+ drivers/staging/Kconfig                  |    4 -
+ drivers/staging/Makefile                 |    2 -
+ drivers/staging/zram/Kconfig             |   25 -
+ drivers/staging/zram/Makefile            |    3 -
+ drivers/staging/zram/zram.txt            |   77 ---
+ drivers/staging/zram/zram_drv.c          |  925 --------------------------
+ drivers/staging/zram/zram_drv.h          |  115 ----
+ drivers/staging/zsmalloc/Kconfig         |   10 -
+ drivers/staging/zsmalloc/Makefile        |    3 -
+ drivers/staging/zsmalloc/zsmalloc-main.c | 1063 -----------------------------
+ drivers/staging/zsmalloc/zsmalloc.h      |   43 --
+ include/linux/zsmalloc.h                 |   44 ++
+ mm/Kconfig                               |   51 +-
+ mm/Makefile                              |    1 +
+ mm/zsmalloc.c                            | 1068 ++++++++++++++++++++++++++++++
+ mm/zswap.c                               |  269 +++++++-
+ 16 files changed, 1418 insertions(+), 2285 deletions(-)
+ delete mode 100644 drivers/staging/zram/Kconfig
+ delete mode 100644 drivers/staging/zram/Makefile
+ delete mode 100644 drivers/staging/zram/zram.txt
+ delete mode 100644 drivers/staging/zram/zram_drv.c
+ delete mode 100644 drivers/staging/zram/zram_drv.h
+ delete mode 100644 drivers/staging/zsmalloc/Kconfig
+ delete mode 100644 drivers/staging/zsmalloc/Makefile
+ delete mode 100644 drivers/staging/zsmalloc/zsmalloc-main.c
+ delete mode 100644 drivers/staging/zsmalloc/zsmalloc.h
+ create mode 100644 include/linux/zsmalloc.h
+ create mode 100644 mm/zsmalloc.c
 
-At the current level of support, I don't think it makes sense to look
-further than S_VERSION_MAIN for the moment. If we switch it to a pair
-of integer cells as Stephen suggested, nothing prevents us to extend
-the bindings with other properties (for instance version-platform and
-version-os) if they become necessary. But at the moment I don't think
-it makes sense to overthink versions beyond the main version number,
-especially if it can be extended safely if needed in the future.
+-- 
+1.7.10.4
 
-Thanks,
-Alex.
