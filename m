@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab3HRQnB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 12:43:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45740 "EHLO mx1.redhat.com"
+	id S1754178Ab3HRQzv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 12:55:51 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50868 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449Ab3HRQnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 12:43:00 -0400
-Date: Sun, 18 Aug 2013 18:36:39 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-Message-ID: <20130818163639.GA20393@redhat.com>
-References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-3-git-send-email-fweisbec@gmail.com> <20130816160201.GA31682@redhat.com> <20130816162056.GE24210@somewhere> <20130816162654.GA453@redhat.com> <20130816164626.GH24210@somewhere> <20130816164922.GA1573@redhat.com> <20130816171208.GJ24210@somewhere>
+	id S1753602Ab3HRQzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Aug 2013 12:55:49 -0400
+Message-ID: <5210FC71.3010600@ti.com>
+Date: Sun, 18 Aug 2013 22:25:13 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130816171208.GJ24210@somewhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        <netdev@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 1/2] ARM: davinci: da850: add DT node for ethernet
+References: <1376662262-21795-1-git-send-email-prabhakar.csengg@gmail.com> <1376662262-21795-2-git-send-email-prabhakar.csengg@gmail.com> <520E7377.1080808@cogentembedded.com>
+In-Reply-To: <520E7377.1080808@cogentembedded.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16, Frederic Weisbecker wrote:
->
-> On Fri, Aug 16, 2013 at 06:49:22PM +0200, Oleg Nesterov wrote:
-> >
-> > Personally I am fine either way.
->
-> Me too.
->
-> So my proposition is that we can keep the existing patches as they fix other distinct races
+On 8/17/2013 12:16 AM, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 08/16/2013 06:11 PM, Lad, Prabhakar wrote:
+> 
+>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+> 
+>> Add ethernet device tree node information and pinmux for mii to da850 by
+>> providing interrupt details and local mac address.
+> 
+>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> ---
+>>   arch/arm/boot/dts/da850-evm.dts |    5 +++++
+>>   arch/arm/boot/dts/da850.dtsi    |   30 ++++++++++++++++++++++++++++++
+>>   2 files changed, 35 insertions(+)
+> 
+>> diff --git a/arch/arm/boot/dts/da850-evm.dts
+>> b/arch/arm/boot/dts/da850-evm.dts
+>> index 1f8cfdd..44f3fbc 100644
+>> --- a/arch/arm/boot/dts/da850-evm.dts
+>> +++ b/arch/arm/boot/dts/da850-evm.dts
+>> @@ -96,6 +96,11 @@
+>>               pinctrl-0 = <&mdio_pins>;
+>>               bus_freq = <2200000>;
+>>           };
+>> +        ethernet: emac@1e20000 {
+> 
+>    Why label the node in the board file too?
 
-perhaps... but it would be nice to fix the "goes backward" problem.
+May be not required, but all other entries in da850-evm.dts have labels
+too. Other .dts files like am335x-bone.dts use labels too (even though
+they are never used in references). So I am inclined to let this be like
+this and if needed have all the labels removed through a separate patch
+- at least we remain consistent within the file that way.
 
-This "race" is not theoretical, at least for get_cpu_iowait_time_us().
-nr_iowait_cpu() can change from !0 to 0 very easily.
+Prabhakar,
 
-And just in case, note that get_cpu_idle_time_us() has the same problem
-too, because it can also change from 0 to !0 although this case is much
-less likely.
+Please mind the new e-mail address of the devicetree list.
 
-However, right now I do not see a simple solution. It seems that, if
-get_cpu_idle_time_us() does ktime_add(ts->idle_sleeptime) it should
-actually update ts->idle_sleeptime/entrytime to avoid these races
-(the same for ->idle_sleeptime), but then we need the locking.
-
-> (and we add fixes on what peterz just reported)
-
-Do you mean his comments about 4/4 or I missed something else?
-
-> Ah and I'll wait for
-> your review first.
-
-If only I could understand this code ;) It looks really simple and
-I hope I can understand what it does. But not why. I simply can't
-understand why idle/iowait are "mutually exclusive".
-
-And if we do this,  then perhaps io_schedule() should do
-"if (atomic_dec(&rq->nr_iowait)) update_iowait_sleeptime()" but
-this means the locking again.
-
-> Then if all goes well on the pull request we describe him the nr_iowait race and we let him
-> choose what to do with that nr_iowait migration race:
-
-OK, agreed.
-
-> Or may be Peter could tell us as well. Peter, do you have a preference?
-
-Yes, it would be nice to know what Peter thinks ;)
-
-Oleg.
-
+Thanks,
+Sekhar
