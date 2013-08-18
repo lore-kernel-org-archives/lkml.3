@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab3HRUap (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:30:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43386 "EHLO
+	id S1755906Ab3HRUbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:31:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43384 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab3HRU2r (ORCPT
+	with ESMTP id S1755334Ab3HRU2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Aug 2013 16:28:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 06/12] USB: mos7720: fix broken control requests
-Date: Sun, 18 Aug 2013 13:30:15 -0700
-Message-Id: <20130818202951.180661317@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>
+Subject: [ 05/12] usb: add two quirky touchscreen
+Date: Sun, 18 Aug 2013 13:30:14 -0700
+Message-Id: <20130818202951.030863341@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818202949.875887601@linuxfoundation.org>
 References: <20130818202949.875887601@linuxfoundation.org>
@@ -26,74 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit ef6c8c1d733e244f0499035be0dabe1f4ed98c6f upstream.
+commit 304ab4ab079a8ed03ce39f1d274964a532db036b upstream.
 
-The parallel-port code of the drivers used a stack allocated
-control-request buffer for asynchronous (and possibly deferred) control
-requests. This not only violates the no-DMA-from-stack requirement but
-could also lead to corrupt control requests being submitted.
+These devices tend to become unresponsive after S3
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7720.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ drivers/usb/core/quirks.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/serial/mos7720.c
-+++ b/drivers/usb/serial/mos7720.c
-@@ -97,6 +97,7 @@ struct urbtracker {
- 	struct list_head        urblist_entry;
- 	struct kref             ref_count;
- 	struct urb              *urb;
-+	struct usb_ctrlrequest	*setup;
- };
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -100,6 +100,12 @@ static const struct usb_device_id usb_qu
+ 	{ USB_DEVICE(0x04d8, 0x000c), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
  
- enum mos7715_pp_modes {
-@@ -279,6 +280,7 @@ static void destroy_urbtracker(struct kr
- 	struct mos7715_parport *mos_parport = urbtrack->mos_parport;
- 	dbg("%s called", __func__);
- 	usb_free_urb(urbtrack->urb);
-+	kfree(urbtrack->setup);
- 	kfree(urbtrack);
- 	kref_put(&mos_parport->ref_count, destroy_mos_parport);
- }
-@@ -363,7 +365,6 @@ static int write_parport_reg_nonblock(st
- 	struct urbtracker *urbtrack;
- 	int ret_val;
- 	unsigned long flags;
--	struct usb_ctrlrequest setup;
- 	struct usb_serial *serial = mos_parport->serial;
- 	struct usb_device *usbdev = serial->dev;
- 	dbg("%s called", __func__);
-@@ -382,14 +383,20 @@ static int write_parport_reg_nonblock(st
- 		kfree(urbtrack);
- 		return -ENOMEM;
- 	}
--	setup.bRequestType = (__u8)0x40;
--	setup.bRequest = (__u8)0x0e;
--	setup.wValue = get_reg_value(reg, dummy);
--	setup.wIndex = get_reg_index(reg);
--	setup.wLength = 0;
-+	urbtrack->setup = kmalloc(sizeof(*urbtrack->setup), GFP_KERNEL);
-+	if (!urbtrack->setup) {
-+		usb_free_urb(urbtrack->urb);
-+		kfree(urbtrack);
-+		return -ENOMEM;
-+	}
-+	urbtrack->setup->bRequestType = (__u8)0x40;
-+	urbtrack->setup->bRequest = (__u8)0x0e;
-+	urbtrack->setup->wValue = get_reg_value(reg, dummy);
-+	urbtrack->setup->wIndex = get_reg_index(reg);
-+	urbtrack->setup->wLength = 0;
- 	usb_fill_control_urb(urbtrack->urb, usbdev,
- 			     usb_sndctrlpipe(usbdev, 0),
--			     (unsigned char *)&setup,
-+			     (unsigned char *)urbtrack->setup,
- 			     NULL, 0, async_complete, urbtrack);
- 	kref_init(&urbtrack->ref_count);
- 	INIT_LIST_HEAD(&urbtrack->urblist_entry);
++	/* CarrolTouch 4000U */
++	{ USB_DEVICE(0x04e7, 0x0009), .driver_info = USB_QUIRK_RESET_RESUME },
++
++	/* CarrolTouch 4500U */
++	{ USB_DEVICE(0x04e7, 0x0030), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Samsung Android phone modem - ID conflict with SPH-I500 */
+ 	{ USB_DEVICE(0x04e8, 0x6601), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
 
 
