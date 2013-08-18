@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab3HRUx7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:53:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43478 "EHLO
+	id S1756381Ab3HRUyW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:54:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43471 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755982Ab3HRUdP (ORCPT
+	with ESMTP id S1755641Ab3HRUdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Aug 2013 16:33:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matt Turner <mattst88@gmail.com>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Thorsten Kranzkowski <dl8bcu@dl8bcu.de>,
-        Will Deacon <will.deacon@arm.com>, Michael Cree <mcree@orcon.net.nz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [ 17/34] alpha: makefile: dont enforce small data model for kernel builds
-Date: Sun, 18 Aug 2013 13:34:30 -0700
-Message-Id: <20130818203300.865235362@linuxfoundation.org>
+Subject: [ 16/34] powerpc/numa: Avoid stupid uninitialized warning from gcc
+Date: Sun, 18 Aug 2013 13:34:29 -0700
+Message-Id: <20130818203300.798270113@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203259.653403173@linuxfoundation.org>
 References: <20130818203259.653403173@linuxfoundation.org>
@@ -31,41 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit cd8d2331756751b6aeb855a3c9cb0a92fbd9c725 upstream.
+commit aa709f3bc92c6daaf177cd7e3446da2ef64426c6 upstream.
 
-Due to all of the goodness being packed into today's kernels, the
-resulting image isn't as slim as it once was.
+Newer gcc are being a bit blind here (it's pretty obvious we don't
+reach the code path using the array if we haven't initialized the
+pointer) but none of that is performance critical so let's just
+silence it.
 
-In light of this, don't pass -msmall-data to gcc, which otherwise results
-in link failures due to impossible relocations when compiling anything but
-the most trivial configurations.
-
-Reviewed-by: Matt Turner <mattst88@gmail.com>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Tested-by: Thorsten Kranzkowski <dl8bcu@dl8bcu.de>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/alpha/Makefile |    2 +-
+ arch/powerpc/mm/numa.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/alpha/Makefile
-+++ b/arch/alpha/Makefile
-@@ -12,7 +12,7 @@ NM := $(NM) -B
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -639,7 +639,7 @@ static void __init parse_drconf_memory(s
+ 	unsigned int n, rc, ranges, is_kexec_kdump = 0;
+ 	unsigned long lmb_size, base, size, sz;
+ 	int nid;
+-	struct assoc_arrays aa;
++	struct assoc_arrays aa = { .arrays = NULL };
  
- LDFLAGS_vmlinux	:= -static -N #-relax
- CHECKFLAGS	+= -D__alpha__ -m64
--cflags-y	:= -pipe -mno-fp-regs -ffixed-8 -msmall-data
-+cflags-y	:= -pipe -mno-fp-regs -ffixed-8
- cflags-y	+= $(call cc-option, -fno-jump-tables)
- 
- cpuflags-$(CONFIG_ALPHA_EV4)		:= -mcpu=ev4
+ 	n = of_get_drconf_memory(memory, &dm);
+ 	if (!n)
 
 
