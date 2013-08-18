@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab3HRCnj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Aug 2013 22:43:39 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52860 "EHLO comal.ext.ti.com"
+	id S1755597Ab3HRCrO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Aug 2013 22:47:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33939 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753812Ab3HRCng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Aug 2013 22:43:36 -0400
+	id S1754360Ab3HRCni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Aug 2013 22:43:38 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>,
@@ -17,9 +17,9 @@ CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v2 14/14] crypto: omap-aes: Kconfig: Add build support for AM437x
-Date: Sat, 17 Aug 2013 21:42:35 -0500
-Message-ID: <1376793755-30478-15-git-send-email-joelf@ti.com>
+Subject: [PATCH v2 03/14] crypto: omap-aes: Populate number of SG elements
+Date: Sat, 17 Aug 2013 21:42:24 -0500
+Message-ID: <1376793755-30478-4-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1376793755-30478-1-git-send-email-joelf@ti.com>
 References: <1376793755-30478-1-git-send-email-joelf@ti.com>
@@ -29,28 +29,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For AM437x SoC, ARCH_OMAP2 and ARCH_OMAP3 is not enabled in the defconfig. We
-follow same thing as SHA driver, and add depends on ARCH_OMAP2PLUS so that the
-config is selectable for AES driver on AM437x SoC builds.
+Crypto layer only passes nbytes but number of SG elements is needed for mapping
+or unmapping SGs at one time using dma_map* API and also needed to pass in for
+dmaengine prep function.
+
+We call function added to scatterwalk for this purpose in omap_aes_handle_queue
+to populate the values which are used later.
 
 Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- drivers/crypto/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/crypto/omap-aes.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
-index dffb855..e289afa 100644
---- a/drivers/crypto/Kconfig
-+++ b/drivers/crypto/Kconfig
-@@ -252,7 +252,7 @@ config CRYPTO_DEV_OMAP_SHAM
+diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
+index 26b802b..e369e6e 100644
+--- a/drivers/crypto/omap-aes.c
++++ b/drivers/crypto/omap-aes.c
+@@ -164,6 +164,8 @@ struct omap_aes_dev {
+ 	void			*buf_out;
+ 	int			dma_out;
+ 	struct dma_chan		*dma_lch_out;
++	int			in_sg_len;
++	int			out_sg_len;
+ 	dma_addr_t		dma_addr_out;
  
- config CRYPTO_DEV_OMAP_AES
- 	tristate "Support for OMAP AES hw engine"
--	depends on ARCH_OMAP2 || ARCH_OMAP3
-+	depends on ARCH_OMAP2 || ARCH_OMAP3 || ARCH_OMAP2PLUS
- 	select CRYPTO_AES
- 	select CRYPTO_BLKCIPHER2
- 	help
+ 	const struct omap_aes_pdata	*pdata;
+@@ -731,6 +733,10 @@ static int omap_aes_handle_queue(struct omap_aes_dev *dd,
+ 	dd->out_offset = 0;
+ 	dd->out_sg = req->dst;
+ 
++	dd->in_sg_len = scatterwalk_bytes_sglen(dd->in_sg, dd->total);
++	dd->out_sg_len = scatterwalk_bytes_sglen(dd->out_sg, dd->total);
++	BUG_ON(dd->in_sg_len < 0 || dd->out_sg_len < 0);
++
+ 	rctx = ablkcipher_request_ctx(req);
+ 	ctx = crypto_ablkcipher_ctx(crypto_ablkcipher_reqtfm(req));
+ 	rctx->mode &= FLAGS_MODE_MASK;
 -- 
 1.7.9.5
 
