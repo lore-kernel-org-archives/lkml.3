@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010Ab3HRUqM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 16:46:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43629 "EHLO
+	id S1757041Ab3HRUqd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 16:46:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43622 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756290Ab3HRUey (ORCPT
+	with ESMTP id S1756270Ab3HRUex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 16:34:54 -0400
+	Sun, 18 Aug 2013 16:34:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wright <chrisw@sous-sol.org>,
+        Andy Isaacson <adi@hexapodia.org>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [ 16/45] mac80211: continue using disabled channels while connected
-Date: Sun, 18 Aug 2013 13:36:05 -0700
-Message-Id: <20130818203622.145334675@linuxfoundation.org>
+Subject: [ 14/45] mac80211: ignore HT primary channel while connected
+Date: Sun, 18 Aug 2013 13:36:03 -0700
+Message-Id: <20130818203621.979620925@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130818203620.996166594@linuxfoundation.org>
 References: <20130818203620.996166594@linuxfoundation.org>
@@ -29,45 +29,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Berg <johannes.berg@intel.com>
 
-commit ddfe49b42d8ad4bfdf92d63d4a74f162660d878d upstream.
+commit 5cdaed1e878d723d56d04ae0be1738124acf9f46 upstream.
 
-In case the AP has different regulatory information than we do,
-it can happen that we connect to an AP based on e.g. the world
-roaming regulatory data, and then update our database with the
-AP's country information disables the channel the AP is using.
-If this happens on an HT AP, the bandwidth tracking code will
-hit the WARN_ON() and disconnect. Since that's not very useful,
-ignore the channel-disable flag in bandwidth tracking.
+While we're connected, the AP shouldn't change the primary channel
+in the HT information. We checked this, and dropped the connection
+if it did change it.
 
-Reported-by: Chris Wright <chrisw@sous-sol.org>
-Tested-by: Chris Wright <chrisw@sous-sol.org>
+Unfortunately, this is causing problems on some APs, e.g. on the
+Netgear WRT610NL: the beacons seem to always contain a bad channel
+and if we made a connection using a probe response (correct data)
+we drop the connection immediately and can basically not connect
+properly at all.
+
+Work around this by ignoring the HT primary channel information in
+beacons if we're already connected.
+
+Also print out more verbose messages in the other situations to
+help diagnose similar bugs quicker in the future.
+
+Acked-by: Andy Isaacson <adi@hexapodia.org>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mlme.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ net/mac80211/mlme.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
 --- a/net/mac80211/mlme.c
 +++ b/net/mac80211/mlme.c
-@@ -361,8 +361,17 @@ out:
- 	if (ret & IEEE80211_STA_DISABLE_VHT)
- 		vht_chandef = *chandef;
+@@ -237,8 +237,9 @@ ieee80211_determine_chantype(struct ieee
+ 			     struct ieee80211_channel *channel,
+ 			     const struct ieee80211_ht_operation *ht_oper,
+ 			     const struct ieee80211_vht_operation *vht_oper,
+-			     struct cfg80211_chan_def *chandef, bool verbose)
++			     struct cfg80211_chan_def *chandef, bool tracking)
+ {
++	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+ 	struct cfg80211_chan_def vht_chandef;
+ 	u32 ht_cfreq, ret;
  
-+	/*
-+	 * Ignore the DISABLED flag when we're already connected and only
-+	 * tracking the APs beacon for bandwidth changes - otherwise we
-+	 * might get disconnected here if we connect to an AP, update our
-+	 * regulatory information based on the AP's country IE and the
-+	 * information we have is wrong/outdated and disables the channel
-+	 * that we're actually using for the connection to the AP.
-+	 */
- 	while (!cfg80211_chandef_usable(sdata->local->hw.wiphy, chandef,
--					IEEE80211_CHAN_DISABLED)) {
-+					tracking ? 0 :
-+						   IEEE80211_CHAN_DISABLED)) {
- 		if (WARN_ON(chandef->width == NL80211_CHAN_WIDTH_20_NOHT)) {
- 			ret = IEEE80211_STA_DISABLE_HT |
- 			      IEEE80211_STA_DISABLE_VHT;
+@@ -257,7 +258,7 @@ ieee80211_determine_chantype(struct ieee
+ 	ht_cfreq = ieee80211_channel_to_frequency(ht_oper->primary_chan,
+ 						  channel->band);
+ 	/* check that channel matches the right operating channel */
+-	if (channel->center_freq != ht_cfreq) {
++	if (!tracking && channel->center_freq != ht_cfreq) {
+ 		/*
+ 		 * It's possible that some APs are confused here;
+ 		 * Netgear WNDR3700 sometimes reports 4 higher than
+@@ -265,11 +266,10 @@ ieee80211_determine_chantype(struct ieee
+ 		 * since we look at probe response/beacon data here
+ 		 * it should be OK.
+ 		 */
+-		if (verbose)
+-			sdata_info(sdata,
+-				   "Wrong control channel: center-freq: %d ht-cfreq: %d ht->primary_chan: %d band: %d - Disabling HT\n",
+-				   channel->center_freq, ht_cfreq,
+-				   ht_oper->primary_chan, channel->band);
++		sdata_info(sdata,
++			   "Wrong control channel: center-freq: %d ht-cfreq: %d ht->primary_chan: %d band: %d - Disabling HT\n",
++			   channel->center_freq, ht_cfreq,
++			   ht_oper->primary_chan, channel->band);
+ 		ret = IEEE80211_STA_DISABLE_HT | IEEE80211_STA_DISABLE_VHT;
+ 		goto out;
+ 	}
+@@ -323,7 +323,7 @@ ieee80211_determine_chantype(struct ieee
+ 				channel->band);
+ 		break;
+ 	default:
+-		if (verbose)
++		if (!(ifmgd->flags & IEEE80211_STA_DISABLE_VHT))
+ 			sdata_info(sdata,
+ 				   "AP VHT operation IE has invalid channel width (%d), disable VHT\n",
+ 				   vht_oper->chan_width);
+@@ -332,7 +332,7 @@ ieee80211_determine_chantype(struct ieee
+ 	}
+ 
+ 	if (!cfg80211_chandef_valid(&vht_chandef)) {
+-		if (verbose)
++		if (!(ifmgd->flags & IEEE80211_STA_DISABLE_VHT))
+ 			sdata_info(sdata,
+ 				   "AP VHT information is invalid, disable VHT\n");
+ 		ret = IEEE80211_STA_DISABLE_VHT;
+@@ -345,7 +345,7 @@ ieee80211_determine_chantype(struct ieee
+ 	}
+ 
+ 	if (!cfg80211_chandef_compatible(chandef, &vht_chandef)) {
+-		if (verbose)
++		if (!(ifmgd->flags & IEEE80211_STA_DISABLE_VHT))
+ 			sdata_info(sdata,
+ 				   "AP VHT information doesn't match HT, disable VHT\n");
+ 		ret = IEEE80211_STA_DISABLE_VHT;
+@@ -372,7 +372,7 @@ out:
+ 		ret |= chandef_downgrade(chandef);
+ 	}
+ 
+-	if (chandef->width != vht_chandef.width && verbose)
++	if (chandef->width != vht_chandef.width && !tracking)
+ 		sdata_info(sdata,
+ 			   "capabilities/regulatory prevented using AP HT/VHT configuration, downgraded\n");
+ 
+@@ -412,7 +412,7 @@ static int ieee80211_config_bw(struct ie
+ 
+ 	/* calculate new channel (type) based on HT/VHT operation IEs */
+ 	flags = ieee80211_determine_chantype(sdata, sband, chan, ht_oper,
+-					     vht_oper, &chandef, false);
++					     vht_oper, &chandef, true);
+ 
+ 	/*
+ 	 * Downgrade the new channel if we associated with restricted
+@@ -3906,7 +3906,7 @@ static int ieee80211_prep_channel(struct
+ 	ifmgd->flags |= ieee80211_determine_chantype(sdata, sband,
+ 						     cbss->channel,
+ 						     ht_oper, vht_oper,
+-						     &chandef, true);
++						     &chandef, false);
+ 
+ 	sdata->needed_rx_chains = min(ieee80211_ht_vht_rx_chains(sdata, cbss),
+ 				      local->rx_chains);
 
 
