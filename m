@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751109Ab3HSRei (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 13:34:38 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:41892 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab3HSReg (ORCPT
+	id S1751152Ab3HSRgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 13:36:43 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:61142 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab3HSRgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 13:34:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
-References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
-Date: Mon, 19 Aug 2013 10:34:35 -0700
-X-Google-Sender-Auth: EDspcch_kbDk7imlI9O2R89lXEQ
-Message-ID: <CAGXu5jKX0vFSaVT+nqUjR7K-p0dCo3Uw=6y17ShuEDkRoOJA8g@mail.gmail.com>
-Subject: Re: [PATCH 0/10] Add additional security checks when module loading
- is restricted
-From: Kees Cook <keescook@chromium.org>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 Aug 2013 13:36:42 -0400
+From: Shawn Nematbakhsh <shawnn@chromium.org>
+To: linux-usb@vger.kernel.org
+Cc: sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, jwerner@chromium.org,
+        shawnn@chromium.org, stern@rowland.harvard.edu
+Subject: [PATCH v2] usb: xhci: Disable runtime PM suspend for quirky controllers
+Date: Mon, 19 Aug 2013 10:36:13 -0700
+Message-Id: <1376933773-4343-1-git-send-email-shawnn@chromium.org>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 10:26 AM, Matthew Garrett
-<matthew.garrett@nebula.com> wrote:
-> We have two in-kernel mechanisms for restricting module loading - disabling
-> it entirely, or limiting it to the loading of modules signed with a trusted
-> key. These can both be configured in such a way that even root is unable to
-> relax the restrictions.
->
-> However, right now, there's several other straightforward ways for root to
-> modify running kernel code. At the most basic level these allow root to
-> reset the configuration such that modules can be loaded again, rendering
-> the existing restrictions useless.
->
-> This patchset adds additional restrictions to various kernel entry points
-> that would otherwise make it straightforward for root to disable enforcement
-> of module loading restrictions. It also provides a patch that allows the
-> kernel to be configured such that module signing will be automatically
-> enabled when the system is booting via UEFI Secure Boot, allowing a stronger
-> guarantee of kernel integrity.
+If a USB controller with XHCI_RESET_ON_RESUME goes to runtime suspend,
+a reset will be performed upon runtime resume. Any previously suspended
+devices attached to the controller will be re-enumerated at this time.
+This will cause problems, for example, if an open system call on the
+device triggered the resume (the open call will fail).
 
-I like this approach of attaching it to the module loading logic.
-Given the LSM hook for loading modules, I think I'd like to add a hook
-for the secure_modules() check so that an LSM can respond "secure" as
-well, if it doing module loading mediation (for example, in the case
-of Chrome OS's modules-only-from-rootfs). I'll work up a patch...
+Note that this change is only relevant when persist_enabled is not set
+for USB devices.
 
--Kees
+Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
+---
+Changes since v1:
+- Only disable runtime suspend when devices are connected.
+- Skip this change if CONFIG_USB_DEFAULT_PERSIST is enabled.
+---
 
+Change-Id: I964e5bdfec09d03fac8656aaf566bc48d34ef0f9
+---
+ drivers/usb/host/xhci.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 9478caa..8adbab2 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -3581,10 +3581,21 @@ void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+ 	struct xhci_virt_device *virt_dev;
++	struct device *dev = hcd->self.controller;
+ 	unsigned long flags;
+ 	u32 state;
+ 	int i, ret;
+ 
++#ifndef CONFIG_USB_DEFAULT_PERSIST
++	/*
++	 * We called pm_runtime_get_noresume when the device was attached.
++	 * Decrement the counter here to allow controller to runtime suspend
++	 * if no devices remain.
++	 */
++	if (xhci->quirks & XHCI_RESET_ON_RESUME)
++		pm_runtime_put_noidle(dev);
++#endif
++
+ 	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);
+ 	/* If the host is halted due to driver unload, we still need to free the
+ 	 * device.
+@@ -3656,6 +3667,7 @@ static int xhci_reserve_host_control_ep_resources(struct xhci_hcd *xhci)
+ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ {
+ 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
++	struct device *dev = hcd->self.controller;
+ 	unsigned long flags;
+ 	int timeleft;
+ 	int ret;
+@@ -3708,6 +3720,16 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ 		goto disable_slot;
+ 	}
+ 	udev->slot_id = xhci->slot_id;
++
++#ifndef CONFIG_USB_DEFAULT_PERSIST
++	/*
++	 * If resetting upon resume, we can't put the controller into runtime
++	 * suspend if there is a device attached.
++	 */
++	if (xhci->quirks & XHCI_RESET_ON_RESUME)
++		pm_runtime_get_noresume(dev);
++#endif
++
+ 	/* Is this a LS or FS device under a HS hub? */
+ 	/* Hub or peripherial? */
+ 	return 1;
 -- 
-Kees Cook
-Chrome OS Security
+1.7.12.4
+
