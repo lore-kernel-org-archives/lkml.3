@@ -1,184 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378Ab3HSJnk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 05:43:40 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:23178 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751354Ab3HSJni (ORCPT
+	id S1751264Ab3HSJmU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 05:42:20 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:32784 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab3HSJmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 05:43:38 -0400
-X-IronPort-AV: E=Sophos;i="4.89,912,1367964000"; 
-   d="scan'208";a="29723676"
-Message-ID: <5211E8C7.20407@inria.fr>
-Date: Mon, 19 Aug 2013 11:43:35 +0200
-From: Brice Goglin <Brice.Goglin@inria.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	Mon, 19 Aug 2013 05:42:17 -0400
+X-AuditID: 85900ec0-d272ab9000001514-40-5211e876bd9d
+Subject: [RFC PATCH 05/11] [CLEANUP] trace-cmd: Split out the connect
+ waiting loop from do_listen()
+To: Steven Rostedt <rostedt@goodmis.org>
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Date: Mon, 19 Aug 2013 18:46:32 +0900
+Message-ID: <20130819094632.26597.59570.stgit@yunodevel>
+In-Reply-To: <20130819094620.26597.79499.stgit@yunodevel>
+References: <20130819094620.26597.79499.stgit@yunodevel>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Dan Williams <djbw@fb.com>
-CC: Vinod Koul <vinod.koul@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: dmaengine: make dma_channel_rebalance() NUMA aware
-References: <51F8F14C.8060507@inria.fr> <CAA9_cmcvssPaatgHe8jCaDTfWe4X2GkWVorvMRxaX7tz2s131w@mail.gmail.com> <5211DD5C.1080306@inria.fr> <CAA9_cme13jSvWyBHZb7maRHzzDyw7t6EmwyWZxvrCnQY1BKrTw@mail.gmail.com>
-In-Reply-To: <CAA9_cme13jSvWyBHZb7maRHzzDyw7t6EmwyWZxvrCnQY1BKrTw@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 19/08/2013 11:36, Dan Williams a écrit :
->> +               for_each_online_cpu(cpu)
->> +                       per_cpu_ptr(channel_table[cap], cpu)->chan
->> +                        = min_chan(cap, cpu);
-> ...this line-wrap strikes me weird.  I think we can afford a few extra
-> lines and do:
->
-> for_each_online_cpu(cpu) {
->   chan = min_chan(cap, cpu);
->   per_cpu_ptr(channel_table[cap], cpu)->chan = chan;
-> }
+Split out the connect waiting loop from do_listen() for avoiding duplicate codes
+between listen mode and virt-server mode.
 
-Right, here's a new one.
-Brice
-
-
-dmaengine: make dma_channel_rebalance() NUMA aware
-
-dma_channel_rebalance() currently distributes channels by processor ID.
-These IDs often change with the BIOS, and the order isn't related to
-the DMA channel list (related to PCI bus ids).
-* On my SuperMicro dual E5 machine, first socket has processor IDs [0-7]
-  (and [16-23] for hyperthreads), second socket has [8-15]+[24-31]
-  => channels are properly allocated to local CPUs.
-* On Dells R720 with same processors, first socket has even processor IDs,
-  second socket has odd numbers
-  => half the processors get channels on the remote socket, causing
-     cross-NUMA traffic and lower DMA performance.
-
-Change nth_chan() to return the channel with min table_count and in the
-NUMA node of the given CPU, if any. If none, the (non-local) channel with
-min table_count is returned. nth_chan() is therefore renamed into min_chan()
-since we don't iterate until the nth channel anymore. In practice, the
-behavior is the same because first channels are taken first and are then
-ignored because they got an additional reference.
-
-The new code has a slightly higher complexity since we always scan the
-entire list of channels for finding the minimal table_count (instead
-of stopping after N chans), and because we check whether the CPU is in the
-DMA device locality mask. Overall we still have time complexity =
-number of chans x number of processors. This rebalance is rarely used,
-so this won't hurt.
-
-On the above SuperMicro machine, channels are still allocated the same.
-On the Dells, there are no locality issue anymore (MEMCPY channel X goes
-to processor X and to its hyperthread sibling).
-
-Signed-off-by: Brice Goglin <Brice.Goglin@inria.fr>
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 ---
- drivers/dma/dmaengine.c |   64 +++++++++++++++++++++++++++---------------------
- 1 file changed, 37 insertions(+), 27 deletions(-)
+ trace-listen.c |   45 ++++++++++++++++++++++++++-------------------
+ 1 file changed, 26 insertions(+), 19 deletions(-)
 
-Index: linux-3.11-rc3/drivers/dma/dmaengine.c
-===================================================================
---- linux-3.11-rc3.orig/drivers/dma/dmaengine.c	2013-08-19 10:56:27.375013873 +0200
-+++ linux-3.11-rc3/drivers/dma/dmaengine.c	2013-08-19 11:41:43.782440861 +0200
-@@ -376,20 +376,30 @@ void dma_issue_pending_all(void)
- EXPORT_SYMBOL(dma_issue_pending_all);
- 
- /**
-- * nth_chan - returns the nth channel of the given capability
-+ * dma_chan_is_local - returns true if the channel is in the same numa-node as the cpu
-+ */
-+static bool dma_chan_is_local(struct dma_chan *chan, int cpu)
-+{
-+	int node = dev_to_node(chan->device->dev);
-+	return node == -1 || cpumask_test_cpu(cpu, cpumask_of_node(node));
-+}
-+
-+/**
-+ * min_chan - returns the channel with min count and in the same numa-node as the cpu
-  * @cap: capability to match
-- * @n: nth channel desired
-+ * @cpu: cpu index which the channel should be close to
-  *
-- * Defaults to returning the channel with the desired capability and the
-- * lowest reference count when 'n' cannot be satisfied.  Must be called
-- * under dma_list_mutex.
-+ * If some channels are close to the given cpu, the one with the lowest
-+ * reference count is returned. Otherwise, cpu is ignored and only the
-+ * reference count is taken into account.
-+ * Must be called under dma_list_mutex.
-  */
--static struct dma_chan *nth_chan(enum dma_transaction_type cap, int n)
-+static struct dma_chan *min_chan(enum dma_transaction_type cap, int cpu)
- {
- 	struct dma_device *device;
- 	struct dma_chan *chan;
--	struct dma_chan *ret = NULL;
- 	struct dma_chan *min = NULL;
-+	struct dma_chan *localmin = NULL;
- 
- 	list_for_each_entry(device, &dma_device_list, global_node) {
- 		if (!dma_has_cap(cap, device->cap_mask) ||
-@@ -398,27 +408,22 @@ static struct dma_chan *nth_chan(enum dm
- 		list_for_each_entry(chan, &device->channels, device_node) {
- 			if (!chan->client_count)
- 				continue;
--			if (!min)
--				min = chan;
--			else if (chan->table_count < min->table_count)
-+			if (!min || chan->table_count < min->table_count)
- 				min = chan;
- 
--			if (n-- == 0) {
--				ret = chan;
--				break; /* done */
--			}
-+			if (dma_chan_is_local(chan, cpu))
-+				if (!localmin ||
-+				    chan->table_count < localmin->table_count)
-+					localmin = chan;
- 		}
--		if (ret)
--			break; /* done */
- 	}
- 
--	if (!ret)
--		ret = min;
-+	chan = localmin ? localmin : min;
- 
--	if (ret)
--		ret->table_count++;
-+	if (chan)
-+		chan->table_count++;
- 
--	return ret;
-+	return chan;
+diff --git a/trace-listen.c b/trace-listen.c
+index 6c1bcac..c741fa4 100644
+--- a/trace-listen.c
++++ b/trace-listen.c
+@@ -580,14 +580,35 @@ static void clean_up(int sig)
+ 	} while (ret > 0);
  }
  
- /**
-@@ -435,7 +440,6 @@ static void dma_channel_rebalance(void)
- 	struct dma_device *device;
- 	int cpu;
- 	int cap;
--	int n;
++static void do_accept_loop(int sfd)
++{
++	struct sockaddr_storage peer_addr;
++	socklen_t peer_addr_len;
++	int cfd, pid;
++
++	peer_addr_len = sizeof(peer_addr);
++
++	do {
++		cfd = accept(sfd, (struct sockaddr *)&peer_addr,
++			     &peer_addr_len);
++		printf("connected!\n");
++		if (cfd < 0 && errno == EINTR)
++			continue;
++		if (cfd < 0)
++			pdie("connecting");
++
++		pid = do_connection(cfd, &peer_addr, peer_addr_len);
++		if (pid > 0)
++			add_process(pid);
++
++	} while (!done);
++}
++
+ static void do_listen(char *port)
+ {
+ 	struct addrinfo hints;
+ 	struct addrinfo *result, *rp;
+-	int sfd, s, cfd;
+-	struct sockaddr_storage peer_addr;
+-	socklen_t peer_addr_len;
+-	int pid;
++	int sfd, s;
  
- 	/* undo the last distribution */
- 	for_each_dma_cap_mask(cap, dma_cap_mask_all)
-@@ -454,14 +458,9 @@ static void dma_channel_rebalance(void)
- 		return;
+ 	if (!debug)
+ 		signal_setup(SIGCHLD, clean_up);
+@@ -621,21 +642,7 @@ static void do_listen(char *port)
+ 	if (listen(sfd, backlog) < 0)
+ 		pdie("listen");
  
- 	/* redistribute available channels */
--	n = 0;
- 	for_each_dma_cap_mask(cap, dma_cap_mask_all)
- 		for_each_online_cpu(cpu) {
--			if (num_possible_cpus() > 1)
--				chan = nth_chan(cap, n++);
--			else
--				chan = nth_chan(cap, -1);
+-	peer_addr_len = sizeof(peer_addr);
 -
-+			chan = min_chan(cap, cpu);
- 			per_cpu_ptr(channel_table[cap], cpu)->chan = chan;
- 		}
+-	do {
+-		cfd = accept(sfd, (struct sockaddr *)&peer_addr, &peer_addr_len);
+-		printf("connected!\n");
+-		if (cfd < 0 && errno == EINTR)
+-			continue;
+-		if (cfd < 0)
+-			pdie("connecting");
+-
+-		pid = do_connection(cfd, &peer_addr, peer_addr_len);
+-		if (pid > 0)
+-			add_process(pid);
+-
+-	} while (!done);
++	do_accept_loop(sfd);
+ 
+ 	kill_clients();
  }
 
