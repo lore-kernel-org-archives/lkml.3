@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203Ab3HSQUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 12:20:20 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:64738 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab3HSQUR (ORCPT
+	id S1751309Ab3HSQVS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 12:21:18 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36131 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab3HSQVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 12:20:17 -0400
+	Mon, 19 Aug 2013 12:21:16 -0400
+Message-ID: <521245F0.3090905@wwwdotorg.org>
+Date: Mon, 19 Aug 2013 10:21:04 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1376928619-3775-5-git-send-email-matthew.garrett@nebula.com>
-References: <1376928619-3775-1-git-send-email-matthew.garrett@nebula.com>
-	<1376928619-3775-5-git-send-email-matthew.garrett@nebula.com>
-Date: Mon, 19 Aug 2013 09:20:17 -0700
-X-Google-Sender-Auth: sPT5muUgmVOrSaVDrihDxWByHiM
-Message-ID: <CAGXu5jJtvVx76ZZrk+s4KwopT-ocZcMbwWNM1ELxH4crm=QGLw@mail.gmail.com>
-Subject: Re: [PATCH 05/10] asus-wmi: Restrict debugfs interface when module
- loading is restricted
-From: Kees Cook <keescook@chromium.org>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: balbi@ti.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, ian.campbell@citrix.com, rob@landley.net,
+        gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] usb: dwc3: msm: Add device tree binding information
+References: <1376485183-2664-1-git-send-email-iivanov@mm-sol.com>  <1376485183-2664-2-git-send-email-iivanov@mm-sol.com>  <520EAB3B.9030607@wwwdotorg.org> <1376915267.26268.16.camel@iivanov-dev.int.mm-sol.com>
+In-Reply-To: <1376915267.26268.16.camel@iivanov-dev.int.mm-sol.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 9:10 AM, Matthew Garrett
-<matthew.garrett@nebula.com> wrote:
-> We have no way of validating what all of the Asus WMI methods do on a
-> given machine, and there's a risk that some will allow hardware state to
-> be manipulated in such a way that arbitrary code can be executed in the
-> kernel, circumventing module loading restrictions. Prevent that if any of
-> these features are enabled.
->
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->  drivers/platform/x86/asus-wmi.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
->
-> diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-> index 19c313b..8105530 100644
-> --- a/drivers/platform/x86/asus-wmi.c
-> +++ b/drivers/platform/x86/asus-wmi.c
-> @@ -1618,6 +1618,9 @@ static int show_dsts(struct seq_file *m, void *data)
->         int err;
->         u32 retval = -1;
->
-> +       if (secure_modules())
-> +               return -EPERM;
-> +
->         err = asus_wmi_get_devstate(asus, asus->debug.dev_id, &retval);
->
->         if (err < 0)
-> @@ -1634,6 +1637,9 @@ static int show_devs(struct seq_file *m, void *data)
->         int err;
->         u32 retval = -1;
->
-> +       if (!capable(CAP_COMPROMISE_KERNEL))
+On 08/19/2013 06:27 AM, Ivan T. Ivanov wrote:
+> 
+> Hi, 
+> 
+> On Fri, 2013-08-16 at 16:44 -0600, Stephen Warren wrote: 
+>> On 08/14/2013 06:59 AM, Ivan T. Ivanov wrote:
+>>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+>>>
+>>> MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
+>>> (SNPS) and HS, SS PHY's control and configuration registers.
+>>>
+>>> It could operate in device mode (SS, HS, FS) and host
+>>> mode (SS, HS, FS, LS).
+>>
+>>> diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+>>
+>>> +- clock-names :
+>> ...
+>>> +	"sleep_a_clk" : Sleep clock, used when USB3 core goes into low
+>> ...
+>>> +	"ref_clk" : Reference clock - used in host mode.
+>> ...
+>>> +	"core_clk" : Master/Core clock, have to be >= 125 MHz for SS
+>> ...
+>>> +	"iface_clk" : System bus AXI clock
+>>> +	"sleep_clk" : Sleep clock, used when USB3 core goes into low
+>> ...
+>>> +	"utmi_clk" : Generated by HS-PHY. Used to clock the low power
+>>
+>> I think it makes sense to remove "_clk" from all those names, unless the
+>> HW documentation really talks about a clock named e.g. iface_clk yet
+>> some other clock names in the documentation don't have the "_clk"
+>> suffix, e.g. the "xo I didn't quote.
+> 
+> From limited information that I have, I could not say how clock inputs 
+> are named from the controller perspective, but I agree that "_clk"
+> suffix looks redundant. 
+> 
+> Side question: if for example label in controller says "UTMI", should I
+> also use capital letters for the resource or this could be "utmi"?
 
-Looks like this and the next chunk weren't changed to the
-secure_modules() API...
-
--Kees
-
-> +               return -EPERM;
-> +
->         err = asus_wmi_set_devstate(asus->debug.dev_id, asus->debug.ctrl_param,
->                                     &retval);
->
-> @@ -1658,6 +1664,9 @@ static int show_call(struct seq_file *m, void *data)
->         union acpi_object *obj;
->         acpi_status status;
->
-> +       if (!capable(CAP_COMPROMISE_KERNEL))
-> +               return -EPERM;
-> +
->         status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID,
->                                      1, asus->debug.method_id,
->                                      &input, &output);
-> --
-> 1.8.3.1
->
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+All the clock-names entries I've seen so far have been lower-case, but I
+suppose there's no hard-and-fast rule that they couldn't be
+upper-/mixed-case if that best matched the HW documentation.
