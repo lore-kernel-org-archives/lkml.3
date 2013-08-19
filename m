@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751129Ab3HSGzk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 02:55:40 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:21759 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab3HSGzi (ORCPT
+	id S1751051Ab3HSG6Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 02:58:24 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47306 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838Ab3HSG6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 02:55:38 -0400
-Date: Mon, 19 Aug 2013 09:52:00 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: rucsoftsec <rucsoftsec@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Iker Pedrosa <ikerpedrosam@gmail.com>,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [PATCH] Staging: rtl8192e: rtllib_rx: checking NULL value
- afterdoing dev_alloc_skb
-Message-ID: <20130819064644.GO4713@mwanda>
-References: <1375959404-3276-1-git-send-email-ikerpedrosam@gmail.com>
- <20130809123813.GK5502@mwanda>
- <20130816134403.ca4ee9e841a178c1c6dd87e8@gmail.com>
- <201308190915108848173@gmail.com>
+	Mon, 19 Aug 2013 02:58:22 -0400
+Date: Mon, 19 Aug 2013 08:58:17 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Andi Kleen <andi@firstfloor.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: linux-next: build warning after merge of the tip tree
+Message-ID: <20130819065817.GB23742@gmail.com>
+References: <20130819142633.82fb06bfa3bc0276fb09cbea@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201308190915108848173@gmail.com>
+In-Reply-To: <20130819142633.82fb06bfa3bc0276fb09cbea@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 09:15:15AM +0800, rucsoftsec wrote:
-> I have read that file. But the trouble is that I was not sure
-> whether it is a bug or not. So I report it to BugZilla, and wait
-> for further confirmation.
-> Thank you all the same!
+
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+
+> Hi all,
 > 
+> After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
+> produced this warning:
+> 
+> arch/x86/kernel/paravirt.c:66:0: warning: "DEF_NATIVE" redefined [enabled by default]
+>  #define DEF_NATIVE(ops, name, code)     \
+>  ^
+> In file included from arch/x86/include/asm/ptrace.h:65:0,
+>                  from arch/x86/include/asm/alternative.h:8,
+>                  from arch/x86/include/asm/bitops.h:16,
+>                  from include/linux/bitops.h:22,
+>                  from include/linux/kernel.h:10,
+>                  from include/linux/cache.h:4,
+>                  from include/linux/time.h:4,
+>                  from include/linux/stat.h:18,
+>                  from include/linux/module.h:10,
+>                  from arch/x86/kernel/paravirt.c:22:
+> arch/x86/include/asm/paravirt_types.h:391:0: note: this is the location of the previous definition
+>  #define DEF_NATIVE(ops, name, code)      \
+>  ^
+> 
+> Introduced by commit 9a55fdbe941e ("x86, asmlinkage, paravirt: Add
+> __visible/asmlinkage to xen paravirt ops").  The 2 definitions used to be
+> identical ... maybe there should be only one.
 
-If you send it to kernel-janitors we will be happy to review it.
-It will be faster than bugzilla.
+Andi, please send a fix for this build warning, against 
+tip:x86/asmlinkage.
 
-regards,
-dan carpenter
+Thanks,
+
+	Ingo
 
