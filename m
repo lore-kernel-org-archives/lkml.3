@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab3HSLZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 07:25:59 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54876 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751235Ab3HSLZ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 07:25:58 -0400
-Date: Mon, 19 Aug 2013 13:23:34 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3 4/9] pinctrl: sunxi: Add Allwinner A20 pins set
-Message-ID: <20130819112334.GK3173@lukather>
-References: <1375610330-18185-1-git-send-email-maxime.ripard@free-electrons.com>
- <1375610330-18185-5-git-send-email-maxime.ripard@free-electrons.com>
- <20130812083319.GN2911@lukather>
+	id S1751463Ab3HSL0b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 07:26:31 -0400
+Received: from [94.18.233.162] ([94.18.233.162]:2638 "EHLO mail.secomea.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751235Ab3HSL03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 07:26:29 -0400
+X-Greylist: delayed 519 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Aug 2013 07:26:29 EDT
+Message-ID: <5211FED3.4090102@secomea.dk>
+Date: Mon, 19 Aug 2013 13:17:39 +0200
+From: =?ISO-8859-1?Q?Svenning_S=F8rensen?= <sss@secomea.dk>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5dNcufZ4prhark0F"
-Content-Disposition: inline
-In-Reply-To: <20130812083319.GN2911@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Felipe Balbi <balbi@ti.com>, kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] usb: musb: dsps: simplify platform_get_resource_byname/devm_ioremap_resource
+References: <1376902316-18520-1-git-send-email-Julia.Lawall@lip6.fr> <1376902316-18520-5-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1376902316-18520-5-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 19-08-2013 10:51, Julia Lawall wrote:
+> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+> index 4ffbaac..f2f9710 100644
+> --- a/drivers/usb/musb/musb_dsps.c
+> +++ b/drivers/usb/musb/musb_dsps.c
+> @@ -357,9 +357,6 @@ static int dsps_musb_init(struct musb *musb)
+>   	u32 rev, val;
+>   
+>   	r = platform_get_resource_byname(parent, IORESOURCE_MEM, "control");
+> -	if (!r)
+> -		return -EINVAL;
+> -
+>   	reg_base = devm_ioremap_resource(dev, r);
+>   	if (!musb->ctrl_base)
+>   		return -EINVAL;
+Not really related to Julia's patch, apart from making it more obvious 
+that there's a bug here.
+I believe it is reg_base that needs to be checked, right?
 
---5dNcufZ4prhark0F
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Aug 12, 2013 at 10:33:19AM +0200, Maxime Ripard wrote:
-> Hi Linus,
->=20
-> On Sun, Aug 04, 2013 at 11:58:45AM +0200, Maxime Ripard wrote:
-> > The Allwinner A20 is pin-compatible with the older A10, so the two pin
-> > set are quite similar. However, since the A20 has new features, we can't
-> > just use the A10 pin set as is, and we need to define our own for the
-> > A20.
->=20
-> I'd like this to get merged in 3.12, do you have any comments on this
-> patch?
->=20
-> It's mostly just another round of pin sets additions for yet another
-> SoC, like we already had a few times.
->=20
-> Hopefully, it will be the end of it, unless if Allwinner release a new
-> SoC.
->=20
-> The only missing feature now is the gpio irq support for the A31 that
-> had a slightly different interrupts handling. Anyway, this support will
-> likely be in 3.13.
-
-Ping again :)
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---5dNcufZ4prhark0F
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSEgA2AAoJEBx+YmzsjxAg1u0QALDXWUEavhpIv3A6JZY5N23W
-PZPx2xKcGCOoybJ8MXBLd8At/j2M9waUXg1IiZKeZxqvVyosVHmROBnH/nDhsVyC
-yP3jcf1sOqnehsgR1q0Cc4zm1grF+BS7Lb/c1RTOo4U46yvRLEiMFe8+81SD4Jhb
-JXeoX9TGcA1/ZmOhqT2R/64gI4bXQVuvs9QPywYDwOwhhmj8IJGyBFhvx+wD8yMU
-8OYfUUdoUm2nskAHrF4EWfwhF4mOMxDBAWubNtf3n74ZdCYte+M5cMBZIAohnA1R
-2QuhS235q/c8u1tys8EA+fLNKXBXmiZqDb8i3+PVGsviupVk0PUhE8fgp1pM11eL
-aR7Mmmox968eUBvum85S1iyct4LOAhq2vzCnvGEFvkhKlfXMm/pGDqubIeP2M5za
-Hc6kC92LqOQWWrZm12Q4MRBbOYnqeEcwaIu9pWJFZZC/zjW29HSCIRY1YU+tx0+6
-eRCRh6z4IkLX8Tuzs0rVXbGE5t6MoFTvws7wjG0vswRsfeEbPfeFs9g5gXqHub/+
-SAqKhLguWkGGUmZXbneY2G45o0N9/KkIgDNDYu5/tsgOA1NWR/XvwfKMBBWSQkgg
-gEtbN7ydiYjApGh4Zt5ruENCFM3Xm36liej8nSTiT2gHcFTYiYVdxthg52QDua+x
-FR3hRbjRtrJTHBMAX1lN
-=Lrl0
------END PGP SIGNATURE-----
-
---5dNcufZ4prhark0F--
+Svenning
