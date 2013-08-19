@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751030Ab3HSRMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 13:12:42 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50496 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab3HSRMk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 13:12:40 -0400
-Date: Mon, 19 Aug 2013 19:12:38 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Cc: jic23@cam.ac.uk, dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, Russ.Dill@ti.com
-Subject: Re: [PATCH 4/4] iio: ti_am335x_adc: Add continuous sampling and
- trigger support
-Message-ID: <20130819171238.GA31610@linutronix.de>
-References: <1376424303-22740-1-git-send-email-zubair.lutfullah@gmail.com>
- <1376424303-22740-5-git-send-email-zubair.lutfullah@gmail.com>
+	id S1751119Ab3HSRPn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 13:15:43 -0400
+Received: from mail-bn1lp0155.outbound.protection.outlook.com ([207.46.163.155]:57138
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751080Ab3HSRPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 13:15:41 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Kees Cook <keescook@chromium.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [PATCH 05/10] asus-wmi: Restrict debugfs interface when module
+ loading is restricted
+Thread-Topic: [PATCH 05/10] asus-wmi: Restrict debugfs interface when module
+ loading is restricted
+Thread-Index: AQHOnPa6Tah/7plIa0O2SRc9QXB0Upmctg6AgAAPbIA=
+Date: Mon, 19 Aug 2013 17:15:37 +0000
+Message-ID: <1376932529.5987.0.camel@x230>
+References: <1376928619-3775-1-git-send-email-matthew.garrett@nebula.com>
+	 <1376928619-3775-5-git-send-email-matthew.garrett@nebula.com>
+	 <CAGXu5jJtvVx76ZZrk+s4KwopT-ocZcMbwWNM1ELxH4crm=QGLw@mail.gmail.com>
+In-Reply-To: <CAGXu5jJtvVx76ZZrk+s4KwopT-ocZcMbwWNM1ELxH4crm=QGLw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
+x-forefront-prvs: 09435FCA72
+x-forefront-antispam-report: SFV:NSPM;SFS:(199002)(189002)(24454002)(377424004)(51856001)(74366001)(59766001)(77982001)(65816001)(558084003)(80022001)(19580405001)(19580395003)(76796001)(83072001)(33646001)(81816001)(81686001)(83322001)(76786001)(33716001)(46102001)(63696002)(47976001)(50986001)(49866001)(47736001)(79102001)(4396001)(81542001)(74876001)(69226001)(53806001)(54316002)(56776001)(80976001)(54356001)(77096001)(74706001)(56816003)(47446002)(74662001)(76482001)(74502001)(81342001)(31966008)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB222;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <695EF098D7BCA54F88E1810AE7500603@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1376424303-22740-5-git-send-email-zubair.lutfullah@gmail.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7JHFnJN006394
 
-* Zubair Lutfullah | 2013-08-13 21:05:03 [+0100]:
+On Mon, 2013-08-19 at 09:20 -0700, Kees Cook wrote:
 
->diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
->index 3ceac3e..0d7e313 100644
->--- a/drivers/iio/adc/ti_am335x_adc.c
->+++ b/drivers/iio/adc/ti_am335x_adc.c
-â€¦
->+static irqreturn_t tiadc_irq(int irq, void *private)
->+{
-â€¦
->+		wake_up_interruptible(&adc_dev->wq_data_avail);
-â€¦
->+}
-â€¦
->+static irqreturn_t tiadc_trigger_h(int irq, void *p)
->+{
-â€¦
->+	schedule_work(&adc_dev->poll_work);
-â€¦
->+}
-â€¦
->+static void tiadc_adc_work(struct work_struct *work_s)
->+{
-â€¦
->+		wait_event_interruptible(adc_dev->wq_data_avail,
->+					(adc_dev->data_avail == 1));
-â€¦
->+}
+> Looks like this and the next chunk weren't changed to the
+> secure_modules() API...
 
-This is not very nice. The problem is that you might sleep in a
-workqueue and so the other jobs will wait until you are done. I'm think
-it is better if you create your own worker here instead using the
-system's.
-I'm looking into DMA support for this so once your code is working it
-should be possible to switch to DMA instead reading byte wise from the
-fifo.
-How did you test the whole thing? Do you have a test program which
-selects a few sources and reads them in continuous mode?
+Bother. Yeah, looks like my test config had this left out.
 
-Sebastian
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
