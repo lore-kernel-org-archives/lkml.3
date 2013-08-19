@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab3HSQQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 12:16:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55277 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301Ab3HSQO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 12:14:59 -0400
-Date: Mon, 19 Aug 2013 18:09:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] task_work: documentation
-Message-ID: <20130819160914.GA18942@redhat.com>
-References: <20130819160845.GA18930@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130819160845.GA18930@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751560Ab3HSQQj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 12:16:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36049 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab3HSQN0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 12:13:26 -0400
+Message-Id: <20130819160425.527872672@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 19 Aug 2013 18:01:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Lei Wen <leiwen@marvell.com>,
+        Rik van Riel <riel@surriel.com>, Joonsoo Kim <js1304@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 07/10] sched, fair: Optimize find_busiest_queue()
+References: <20130819160058.539049611@infradead.org>
+Content-Disposition: inline; filename=peterz-more-bfg-cleanups-3.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes, just comments.
+Use for_each_cpu_and() and thereby avoid computing the capacity for
+CPUs we know we're not interested in.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- kernel/task_work.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 36 insertions(+), 0 deletions(-)
+ kernel/sched/fair.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/kernel/task_work.c b/kernel/task_work.c
-index 6ee0985..8727032 100644
---- a/kernel/task_work.c
-+++ b/kernel/task_work.c
-@@ -4,6 +4,23 @@
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4977,7 +4977,7 @@ static struct rq *find_busiest_queue(str
+ 	unsigned long busiest_load = 0, busiest_power = SCHED_POWER_SCALE;
+ 	int i;
  
- static struct callback_head work_exited; /* all we need is ->next == NULL */
+-	for_each_cpu(i, sched_group_cpus(group)) {
++	for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
+ 		unsigned long power = power_of(i);
+ 		unsigned long capacity = DIV_ROUND_CLOSEST(power,
+ 							   SCHED_POWER_SCALE);
+@@ -4986,9 +4986,6 @@ static struct rq *find_busiest_queue(str
+ 		if (!capacity)
+ 			capacity = fix_small_capacity(env->sd, group);
  
-+/**
-+ * task_work_add - ask the @task to execute @work->func()
-+ * @task: the task which should run the callback
-+ * @work: the callback to run
-+ * @notify: send the notification if true
-+ *
-+ * Queue @work for task_work_run() below and notify the @task if @notify.
-+ * Fails if the @task is exiting/exited and thus it can't process this @work.
-+ * Otherwise @work->func() will be called when the @task returns from kernel
-+ * mode or exits.
-+ *
-+ * This is like the signal handler which runs in kernel mode, but it doesn't
-+ * try to wake up the @task.
-+ *
-+ * RETURNS:
-+ * 0 if succeeds or -ESRCH.
-+ */
- int
- task_work_add(struct task_struct *task, struct callback_head *work, bool notify)
- {
-@@ -21,6 +38,17 @@ task_work_add(struct task_struct *task, struct callback_head *work, bool notify)
- 	return 0;
- }
+-		if (!cpumask_test_cpu(i, env->cpus))
+-			continue;
+-
+ 		rq = cpu_rq(i);
+ 		wl = weighted_cpuload(i);
  
-+/**
-+ * task_work_cancel - cancel a pending work added by task_work_add()
-+ * @task: the task which should execute the work
-+ * @func: identifies the work to remove
-+ *
-+ * Find the last queued pending work with ->func == @func and remove
-+ * it from queue.
-+ *
-+ * RETURNS:
-+ * The found work or NULL if not found.
-+ */
- struct callback_head *
- task_work_cancel(struct task_struct *task, task_work_func_t func)
- {
-@@ -46,6 +74,14 @@ task_work_cancel(struct task_struct *task, task_work_func_t func)
- 	return work;
- }
- 
-+/**
-+ * task_work_run - execute the works added by task_work_add()
-+ *
-+ * Flush the pending works. Should be used by the core kernel code.
-+ * Called before the task returns to the user-mode or stops, or when
-+ * it exits. In the latter case task_work_add() can no longer add the
-+ * new work after task_work_run() returns.
-+ */
- void task_work_run(void)
- {
- 	struct task_struct *task = current;
--- 
-1.5.5.1
 
 
