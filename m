@@ -1,111 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751098Ab3HSJIz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 05:08:55 -0400
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:52723 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab3HSJIy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 05:08:54 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "noamc@ezchip.com" <noamc@ezchip.com>,
-        Anton Kolesov <Anton.Kolesov@synopsys.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARC: gdbserver breakage in Big-Endian configuration
- #1
-Thread-Topic: [PATCH 1/2] ARC: gdbserver breakage in Big-Endian
- configuration #1
-Thread-Index: AQHOlD6fLQ6ePSLyhkCzpBPskZqXrA==
-Date: Mon, 19 Aug 2013 09:08:49 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307513FD98@IN01WEMBXA.internal.synopsys.com>
-References: <1375969958-16454-1-git-send-email-vgupta@synopsys.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.15.84.232]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751130Ab3HSJKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 05:10:55 -0400
+Received: from mx01-sz.bfs.de ([194.94.69.67]:35928 "EHLO mx01-sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751068Ab3HSJKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 05:10:54 -0400
+Message-ID: <5211E111.4060406@bfs.de>
+Date: Mon, 19 Aug 2013 11:10:41 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Liam Girdwood <lgirdwood@gmail.com>, kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] regulator: ti-abb: simplify platform_get_resource_byname/devm_ioremap_resource
+References: <1376902316-18520-1-git-send-email-Julia.Lawall@lip6.fr> <1376902316-18520-6-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1376902316-18520-6-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-I'd posted these patches for stable backport. Do I need to do anything more to get them included.
-
-https://patchwork.kernel.org/patch/2841153/  [1/2] ARC: gdbserver breakage in Big-Endian configuration #1<https://patchwork.kernel.org/patch/2841153/>]
-https://patchwork.kernel.org/patch/2841158/  [2/2] ARC: gdbserver breakage in Big-Endian configuration #2<https://patchwork.kernel.org/patch/2841158/>
-
-Thx,
--Vineet
 
 
-On 08/08/2013 07:23 PM, Vineet Gupta wrote:
-
-Exception handling keeps additional state (whether exception was Trap
-and if it was due to a breakpoint) in pt_regs->event, a bitfield member
-
-        unsigned long orig_r8:16, event:16;
-
-A bitfield esentially has an "offset" and a "length". What I wasn't
-aware of was that, bitfields in a union loose the "offset" attribute
-and all of them are laid out at offset 0.
-
-This obviously means that both @event and @orig_r8 will be incorrectly
-referenced to at same "0" offset by "C" generated code which is
-certainly wrong, not because both members are accessed, but because asm
-code updates it at different address.
-
-In Little Endian config, @event is at offset 0 and @orig_r8 (not
-actively used at all) clashing with it is OK. However in Big Endian
-config,
-
-        ST 0xNNNN_EEEE, [addr]
-
-writes 0xEEEE to @event (offset 2 in memory) while "C" code references
-it from 0.
-
-Needless to say, this causes ptrace machinery to not detect the breakpoint
-scenario (and incorrect stop_pc returned to gdbserver).
-
------->8---------------
-Thi issue is already fixed in mainline 3.11 kernel as part of commit:
-502a0c775c7f0a "ARC: pt_regs update #5"
-
-However that patch has lot more changes than I would like backporting,
-hence this seperate change.
------->8---------------
-
-Reported-by: Noam Camus <noamc@ezchip.com><mailto:noamc@ezchip.com>
-Cc: <stable@vger.kernel.org><mailto:stable@vger.kernel.org> # [3.9 and 3.10 only]
-Tested-by: Anton Kolesov <akolesov@synopsys.com><mailto:akolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com><mailto:vgupta@synopsys.com>
----
- arch/arc/include/asm/ptrace.h | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
-index 6179de7..2046a89 100644
---- a/arch/arc/include/asm/ptrace.h
-+++ b/arch/arc/include/asm/ptrace.h
-@@ -52,12 +52,14 @@ struct pt_regs {
-
-        /*to distinguish bet excp, syscall, irq */
-        union {
-+               struct {
- #ifdef CONFIG_CPU_BIG_ENDIAN
-                /* so that assembly code is same for LE/BE */
-                unsigned long orig_r8:16, event:16;
- #else
-                unsigned long event:16, orig_r8:16;
- #endif
-+               };
-                long orig_r8_word;
-        };
- };
+Am 19.08.2013 10:51, schrieb Julia Lawall:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Remove unneeded error handling on the result of a call to
+> platform_get_resource_byname when the value is passed to devm_ioremap_resource.
+> 
+> A simplified version of the semantic patch that makes this change is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression pdev,res,e,e1;
+> expression ret != 0;
+> identifier l;
+> @@
+> 
+>   res = platform_get_resource_byname(...);
+> - if (res == NULL) { ... \(goto l;\|return ret;\) }
+>   e = devm_ioremap_resource(e1, res);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  drivers/regulator/ti-abb-regulator.c |   10 ----------
+>  1 file changed, 10 deletions(-)
+> 
+> diff --git a/drivers/regulator/ti-abb-regulator.c b/drivers/regulator/ti-abb-regulator.c
+> index 3753ed0..d8e3e12 100644
+> --- a/drivers/regulator/ti-abb-regulator.c
+> +++ b/drivers/regulator/ti-abb-regulator.c
+> @@ -717,11 +717,6 @@ static int ti_abb_probe(struct platform_device *pdev)
+>  	/* Map ABB resources */
+>  	pname = "base-address";
+>  	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
+> -	if (!res) {
+> -		dev_err(dev, "Missing '%s' IO resource\n", pname);
+> -		ret = -ENODEV;
+> -		goto err;
+> -	}
+>  	abb->base = devm_ioremap_resource(dev, res);
+>  	if (IS_ERR(abb->base)) {
+>  		ret = PTR_ERR(abb->base);
 
 
+is pname used by anything else ? (also below)
+
+re,
+ wh
+
+> @@ -770,11 +765,6 @@ static int ti_abb_probe(struct platform_device *pdev)
+>  
+>  	pname = "ldo-address";
+>  	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
+> -	if (!res) {
+> -		dev_dbg(dev, "Missing '%s' IO resource\n", pname);
+> -		ret = -ENODEV;
+> -		goto skip_opt;
+> -	}
+>  	abb->ldo_base = devm_ioremap_resource(dev, res);
+>  	if (IS_ERR(abb->ldo_base)) {
+>  		ret = PTR_ERR(abb->ldo_base);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
