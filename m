@@ -1,56 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293Ab3HSLJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 07:09:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32988 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751189Ab3HSLJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 07:09:38 -0400
-Date: Mon, 19 Aug 2013 12:09:17 +0100
-From: "Richard W.M. Jones" <rjones@redhat.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Richard Weinberger <richard@nod.at>, Al Viro <viro@zeniv.linux.org.uk>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [uml-devel] [PATCH] um: ubd: Add REQ_FLUSH suppport
-Message-ID: <20130819110917.GD5918@redhat.com>
-References: <1376777374-17521-1-git-send-email-richard@nod.at>
- <20130819091839.GX5918@redhat.com>
- <CAMuHMdXgGPFx6OwHdc73bY6Cb1jYHbjpEqq6e+YC9RuvJYRxDw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdXgGPFx6OwHdc73bY6Cb1jYHbjpEqq6e+YC9RuvJYRxDw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1751327Ab3HSLKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 07:10:30 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:40475 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab3HSLK2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 07:10:28 -0400
+From: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+To: jic23@cam.ac.uk, gg@slimlogic.co.uk, balajitk@ti.com
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] iio: adc: twl6030-gpadc: Use devm_* API family
+Date: Mon, 19 Aug 2013 14:09:40 +0300
+Message-Id: <1376910580-7545-1-git-send-email-oleksandr.kozaruk@ti.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 12:13:14PM +0200, Geert Uytterhoeven wrote:
-> Hi Richard,
-> 
-> On Mon, Aug 19, 2013 at 11:18 AM, Richard W.M. Jones <rjones@redhat.com> wrote:
-> > On Sun, Aug 18, 2013 at 12:09:34AM +0200, Richard Weinberger wrote:
-> >> UML's block device driver does not support write barriers,
-> >> to support this this patch adds REQ_FLUSH suppport.
-> >> Every time the block layer sends a REQ_FLUSH we fsync() now
-> >> our backing file to guarantee data consistency.
-> >
-> > This fixes the sync problem I saw before.  So:
-> 
-> What's the impact on your performance figures?
+Using devm_iio_device_alloc and devm_request_threaded_irq makes
+code simpler.
 
-It just moves the sync into the main process, thus making the
-"write-no-upload" test time *increase* to what we expected (the same
-as KVM).
+Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+---
+ drivers/iio/adc/twl6030-gpadc.c | 36 ++++++++++--------------------------
+ 1 file changed, 10 insertions(+), 26 deletions(-)
 
-This doesn't address the main performance issue, which appears to lie
-in the serial port emulation.
-
-Rich.
-
+diff --git a/drivers/iio/adc/twl6030-gpadc.c b/drivers/iio/adc/twl6030-gpadc.c
+index a80a049..a558516 100644
+--- a/drivers/iio/adc/twl6030-gpadc.c
++++ b/drivers/iio/adc/twl6030-gpadc.c
+@@ -893,11 +893,9 @@ static int twl6030_gpadc_probe(struct platform_device *pdev)
+ 
+ 	pdata = match->data;
+ 
+-	indio_dev = iio_device_alloc(sizeof(*gpadc));
+-	if (!indio_dev) {
+-		dev_err(dev, "failed allocating iio device\n");
+-		ret = -ENOMEM;
+-	}
++	indio_dev = devm_iio_device_alloc(dev, sizeof(*gpadc));
++	if (!indio_dev)
++		return -ENOMEM;
+ 
+ 	gpadc = iio_priv(indio_dev);
+ 
+@@ -905,7 +903,7 @@ static int twl6030_gpadc_probe(struct platform_device *pdev)
+ 					sizeof(*gpadc->twl6030_cal_tbl) *
+ 					pdata->nchannels, GFP_KERNEL);
+ 	if (!gpadc->twl6030_cal_tbl)
+-		goto err_free_device;
++		return -ENOMEM;
+ 
+ 	gpadc->dev = dev;
+ 	gpadc->pdata = pdata;
+@@ -917,33 +915,30 @@ static int twl6030_gpadc_probe(struct platform_device *pdev)
+ 	ret = pdata->calibrate(gpadc);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to read calibration registers\n");
+-		goto err_free_device;
++		return ret;
+ 	}
+ 
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
+ 		dev_err(&pdev->dev, "failed to get irq\n");
+-		goto err_free_device;
++		return irq;
+ 	}
+ 
+-	ret = request_threaded_irq(irq, NULL, twl6030_gpadc_irq_handler,
++	ret = devm_request_threaded_irq(dev, irq, NULL,
++				twl6030_gpadc_irq_handler,
+ 				IRQF_ONESHOT, "twl6030_gpadc", indio_dev);
+-	if (ret) {
+-		dev_dbg(&pdev->dev, "could not request irq\n");
+-		goto err_free_device;
+-	}
+ 
+ 	ret = twl6030_gpadc_enable_irq(TWL6030_GPADC_RT_SW1_EOC_MASK);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to enable GPADC interrupt\n");
+-		goto err_free_irq;
++		return ret;
+ 	}
+ 
+ 	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, TWL6030_GPADCS,
+ 					TWL6030_REG_TOGGLE1);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to enable GPADC module\n");
+-		goto err_free_irq;
++		return ret;
+ 	}
+ 
+ 	indio_dev->name = DRIVER_NAME;
+@@ -954,15 +949,6 @@ static int twl6030_gpadc_probe(struct platform_device *pdev)
+ 	indio_dev->num_channels = pdata->nchannels;
+ 
+ 	ret = iio_device_register(indio_dev);
+-	if (ret)
+-		goto err_free_irq;
+-
+-	return ret;
+-
+-err_free_irq:
+-	free_irq(irq, indio_dev);
+-err_free_device:
+-	iio_device_free(indio_dev);
+ 
+ 	return ret;
+ }
+@@ -972,9 +958,7 @@ static int twl6030_gpadc_remove(struct platform_device *pdev)
+ 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+ 
+ 	twl6030_gpadc_disable_irq(TWL6030_GPADC_RT_SW1_EOC_MASK);
+-	free_irq(platform_get_irq(pdev, 0), indio_dev);
+ 	iio_device_unregister(indio_dev);
+-	iio_device_free(indio_dev);
+ 
+ 	return 0;
+ }
 -- 
-Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
-virt-df lists disk usage of guests without needing to install any
-software inside the virtual machine.  Supports Linux and Windows.
-http://people.redhat.com/~rjones/virt-df/
+1.8.1.2
+
