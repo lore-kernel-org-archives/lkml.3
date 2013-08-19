@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751201Ab3HSUZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 16:25:13 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:60014 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab3HSUZL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 16:25:11 -0400
+	id S1751246Ab3HSU0v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 16:26:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49757 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751078Ab3HSU0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 16:26:50 -0400
+Message-ID: <52127F85.4040403@suse.cz>
+Date: Mon, 19 Aug 2013 22:26:45 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CA+i8gKKzt3Uf7Bt88=AFyKbdHuqaTqy96nCHTtO=t+4+dhQ0Pw@mail.gmail.com>
-References: <CA+i8gKKzt3Uf7Bt88=AFyKbdHuqaTqy96nCHTtO=t+4+dhQ0Pw@mail.gmail.com>
-Date: Mon, 19 Aug 2013 13:25:10 -0700
-X-Google-Sender-Auth: p2drkHXUV0g1EZqjs51N5X5EHog
-Message-ID: <CA+55aFzH7DH0d+DXgQ6T3Us6job8OvVmCJXMp2z3xit86d0ZrA@mail.gmail.com>
-Subject: Re: commit 94fc5d9: chromium-sandbox core dumped
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Emmanuel Benisty <benisty.e@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: "lkml@tigusoft.pl" <lkml@tigusoft.pl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: howto make define seen in all files?
+References: <201308180556.45833.lkml@tigusoft.pl>
+In-Reply-To: <201308180556.45833.lkml@tigusoft.pl>
+X-Enigmail-Version: 1.6a1pre
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 11:48 AM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
->
-> The following commit breaks chromium on my machine ("proc:
-> return on proc_readdir error")
->
-> Chromium breaks with:
->
-> [269:269:0819/203839:FATAL:zygote_host_impl_linux.cc(195)] Check
-> failed: pid_0. Did not find zygote process (using sandbox binary
-> /usr/lib/chromium/chromium-sandbox)
-> Aborted (core dumped)
+Dne 18.8.2013 05:56, lkml@tigusoft.pl napsal(a):
+> Hi, I want to provide a general defined macro like __MY__TIME__ (for 
+> determinictic build) and that symbol should be seen as #define or -D... to gcc 
+> in all files;
+> 
+> Value of __MY_TIME__ is determined once, at start of build.
+> 
+> I was using file scripts/mkcompile_h as in the attached .diff patch, worked in 
+> 3.2.48 but in 3.2.50 files do not see the value _MY_BUILD__TIME__
 
-Hmm. I think that Richard's patch is correct, but looking at all this,
-it looks like the return value of proc_readdir() is broken.
+Just drop the remaining occurrences of __TIME__ and __DATA__, it's not
+worth the hassle to define new macros.
 
-The comment above proc_readdir_de() says
+Michal
 
- * This returns non-zero if at EOF, so that the /proc
- * root directory can use this and check if it should
- * continue with the <pid> entries..
-
-which is exactly what it should do. But the *code* does no such thing,
-and instead always returns 0, breaking Richards patch.
-
-I suspect that last "return 0" at the end should be "return 1". Does
-that fix things for you? Untested.
-
-Al? It looks to me like commit f0c3b5093add ("[readdir] convert
-procfs") messed up when it changed proc_readdir_de() to not have all
-those "goto out" things any more...
-
-               Linus
