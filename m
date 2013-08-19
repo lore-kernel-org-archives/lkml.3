@@ -1,192 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256Ab3HSLTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 07:19:25 -0400
-Received: from demumfd002.nsn-inter.net ([93.183.12.31]:10290 "EHLO
-	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab3HSLTY (ORCPT
+	id S1751472Ab3HSLVL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 07:21:11 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:50168
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751371Ab3HSLVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 07:19:24 -0400
-Message-ID: <5211FEE9.5000300@nsn.com>
-Date: Mon, 19 Aug 2013 13:18:01 +0200
-From: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Ionut Nicu <ioan.nicu.ext@nsn.com>, linux-kernel@vger.kernel.org
-CC: Mark Brown <broonie@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: Fwd: Re: [PATCH 1/3] regmap: flat: use the cache_present bitmap
-References: <52052401.7030707@nsn.com> <5211D68C.1070608@nsn.com>
-In-Reply-To: <5211D68C.1070608@nsn.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 5635
-X-purgate-ID: 151667::1376911084-0000471E-EF42983A/0-0/0-0
+	Mon, 19 Aug 2013 07:21:03 -0400
+X-IronPort-AV: E=Sophos;i="4.89,913,1367964000"; 
+   d="scan'208";a="24233031"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: netdev@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/7] bcm63xx_enet: replace devm_request_and_ioremap by devm_ioremap_resource
+Date: Mon, 19 Aug 2013 13:20:39 +0200
+Message-Id: <1376911241-27720-6-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-On 08/19/2013 10:25 AM, Ionut Nicu wrote:
-> -------- Original Message --------
-> Subject: Re: [PATCH 1/3] regmap: flat: use the cache_present bitmap
-> Date: Fri, 09 Aug 2013 19:16:49 +0200
-> From: Ionut Nicu <ioan.nicu.ext@nsn.com>
-> To: ext Mark Brown <broonie@kernel.org>
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,  linux-kernel@vger.kernel.org
-> 
-> On 09.08.2013 13:44, ext Mark Brown wrote:
->> On Fri, Aug 09, 2013 at 12:09:11PM +0200, Ionut Nicu wrote:
->>> As opposed to the other regmap cache implementations,
->>> regcache_flat didn't use the cache_present bitmap for
->>> figuring out whether a register was cached or not, nor
->>> did it mark a register as present in the cache when
->>> regcache_flat_write() was called.
->>
->>> This caused incorrect behaviour, such as returning
->>> value 0 for non-volatile registers without first reading
->>> their value from the device and storing it in the cache.
->>
->> The goal with the flat cache is to do as little work as possible for
->> things like memory mapped devices where the cache operations are
->> actually noticable in comparison with the I/O costs.  I would therefore
->> exapect that anything using the flat cache would want to ensure that the
->> cache is fully populated at init time, reading back from the device if
->> nothing else (by setting num_reg_defaults_raw but not providing values),
->> rather than do additional operations in the data path.
->>
-> 
-> Ok, I get your point. I've tried using this approach, but the thing is
-> that I have a device which supports only single rw operations. The
-> regcache_hw_init() function calls regmap_raw_read which in turn calls
-> _regmap_raw_read() when cache_bypass is enabled. But _regmap_raw_read()
-> doesn't take the use_single_rw flag into account and tries to read
-> num_reg_defaults_raw registers in a single bus transfer. Unfortunately
-> this doesn't work with my device. 
-> 
-> I thought about changing regcache_hw_init() to check for this flag in
-> the same way regmap_bulk_read() does, but I think this is pretty ugly.
-> 
-> What do you think about moving the check to use_single_rw inside
-> _regmap_raw_read(), right where the bus accesses are done?
-> 
-> Something like in the following patch:
+Use devm_ioremap_resource instead of devm_request_and_ioremap.
 
-Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+This was done using the semantic patch
+scripts/coccinelle/api/devm_ioremap_resource.cocci
 
-> 
-> diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-> index 42b45ac..de7f353 100644
-> --- a/drivers/base/regmap/regmap.c
-> +++ b/drivers/base/regmap/regmap.c
-> @@ -1486,14 +1486,16 @@ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
->  {
->  	struct regmap_range_node *range;
->  	u8 *u8 = map->work_buf;
-> -	int ret;
-> +	size_t val_bytes = map->format.val_bytes;
-> +	size_t reg_size = map->format.reg_bytes + map->format.pad_bytes;
-> +	int ret, i;
->  
->  	WARN_ON(!map->bus);
->  
->  	range = _regmap_range_lookup(map, reg);
->  	if (range) {
->  		ret = _regmap_select_page(map, &reg, range,
-> -					  val_len / map->format.val_bytes);
-> +					  val_len / val_bytes);
->  		if (ret != 0)
->  			return ret;
->  	}
-> @@ -1508,15 +1510,41 @@ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
->  	 */
->  	u8[0] |= map->read_flag_mask;
->  
-> -	trace_regmap_hw_read_start(map->dev, reg,
-> -				   val_len / map->format.val_bytes);
-> +	/*
-> +	 * Some devices does not support bulk read, for
-> +	 * them we have a series of single read operations.
-> +	 */
-> +	if (map->use_single_rw) {
-> +		for (i = 0; i < val_len; i++) {
-> +			trace_regmap_hw_read_start(map->dev,
-> +					reg + (i * map->reg_stride), 1);
-> +
-> +			map->format.format_reg(map->work_buf,
-> +					reg + (i *  map->reg_stride),
-> +					map->reg_shift);
-> +			u8[0] |= map->read_flag_mask;
-> +
-> +			ret = map->bus->read(map->bus_context,
-> +					map->work_buf,
-> +					reg_size,
-> +					val + (i * val_bytes),
-> +					val_bytes);
-> +			if (ret != 0)
-> +				return ret;
->  
-> -	ret = map->bus->read(map->bus_context, map->work_buf,
-> -			     map->format.reg_bytes + map->format.pad_bytes,
-> -			     val, val_len);
-> +			trace_regmap_hw_read_done(map->dev,
-> +					reg + (i * map->reg_stride), 1);
-> +		}
-> +	} else {
-> +		trace_regmap_hw_read_start(map->dev, reg, val_len / val_bytes);
->  
-> -	trace_regmap_hw_read_done(map->dev, reg,
-> -				  val_len / map->format.val_bytes);
-> +		ret = map->bus->read(map->bus_context, map->work_buf,
-> +				reg_size, val, val_len);
-> +		if (ret != 0)
-> +			return ret;
-> +
-> +		trace_regmap_hw_read_done(map->dev, reg, val_len / val_bytes);
-> +	}
->  
->  	return ret;
->  }
-> @@ -1702,25 +1730,9 @@ int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
->  		return -EINVAL;
->  
->  	if (vol || map->cache_type == REGCACHE_NONE) {
-> -		/*
-> -		 * Some devices does not support bulk read, for
-> -		 * them we have a series of single read operations.
-> -		 */
-> -		if (map->use_single_rw) {
-> -			for (i = 0; i < val_count; i++) {
-> -				ret = regmap_raw_read(map,
-> -						reg + (i * map->reg_stride),
-> -						val + (i * val_bytes),
-> -						val_bytes);
-> -				if (ret != 0)
-> -					return ret;
-> -			}
-> -		} else {
-> -			ret = regmap_raw_read(map, reg, val,
-> -					      val_bytes * val_count);
-> -			if (ret != 0)
-> -				return ret;
-> -		}
-> +		ret = regmap_raw_read(map, reg, val, val_bytes * val_count);
-> +		if (ret != 0)
-> +			return ret;
->  
->  		for (i = 0; i < val_count * val_bytes; i += val_bytes)
->  			map->format.parse_inplace(val + i);
-> 
-> 
-> 
-> 
-> 
+The relevant call to platform_get_resource was manually moved down to the
+call to devm_ioremap_resource.
 
--- 
-Best regards,
-Alexander Sverdlin.
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/net/ethernet/broadcom/bcm63xx_enet.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/broadcom/bcm63xx_enet.c b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
+index b1bcd4b..89ff09e 100644
+--- a/drivers/net/ethernet/broadcom/bcm63xx_enet.c
++++ b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
+@@ -1747,11 +1747,10 @@ static int bcm_enet_probe(struct platform_device *pdev)
+ 	if (!bcm_enet_shared_base[0])
+ 		return -ENODEV;
+ 
+-	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	res_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	res_irq_rx = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+ 	res_irq_tx = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
+-	if (!res_mem || !res_irq || !res_irq_rx || !res_irq_tx)
++	if (!res_irq || !res_irq_rx || !res_irq_tx)
+ 		return -ENODEV;
+ 
+ 	ret = 0;
+@@ -1767,9 +1766,10 @@ static int bcm_enet_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto out;
+ 
+-	priv->base = devm_request_and_ioremap(&pdev->dev, res_mem);
+-	if (priv->base == NULL) {
+-		ret = -ENOMEM;
++	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	priv->base = devm_ioremap_resource(&pdev->dev, res_mem);
++	if (IS_ERR(priv->base)) {
++		ret = PTR_ERR(priv->base);
+ 		goto out;
+ 	}
+ 
+
