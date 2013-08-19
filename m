@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab3HSCHv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 22:07:51 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:51287 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab3HSCHu (ORCPT
+	id S1753459Ab3HSCR4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 22:17:56 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25466 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab3HSCRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 22:07:50 -0400
-Message-ID: <1376878066.10251.4.camel@phoenix>
-Subject: [PATCH 2/2] pinctrl: core: Add proper mutex lock in
- pinctrl_request_gpio
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Patrice Chotard <patrice.chotard@st.com>, linux-kernel@vger.kernel.org
-Date: Mon, 19 Aug 2013 10:07:46 +0800
-In-Reply-To: <1376877989.10251.2.camel@phoenix>
-References: <1376877989.10251.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Sun, 18 Aug 2013 22:17:54 -0400
+Message-ID: <52118042.30101@oracle.com>
+Date: Mon, 19 Aug 2013 10:17:38 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Weijie Yang <weijie.yang.kh@gmail.com>
+CC: sjenning@linux.vnet.ibm.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, dan.magenheimer@oracle.com
+Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
+References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
+In-Reply-To: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one is missed in commit 42fed7ba "pinctrl: move subsystem mutex to
-pinctrl_dev struct".
+Hi Weijie,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pinctrl/core.c | 4 ++++
- 1 file changed, 4 insertions(+)
+On 08/19/2013 12:14 AM, Weijie Yang wrote:
+> I found a few bugs in zswap when I review Linux-3.11-rc5, and I have
+> also some questions about it, described as following:
+> 
+> BUG:
+> 1. A race condition when reclaim a page
+> when a handle alloced from zbud, zbud considers this handle is used
+> validly by upper(zswap) and can be a candidate for reclaim.
+> But zswap has to initialize it such as setting swapentry and addding
+> it to rbtree. so there is a race condition, such as:
+> thread 0: obtain handle x from zbud_alloc
+> thread 1: zbud_reclaim_page is called
+> thread 1: callback zswap_writeback_entry to reclaim handle x
+> thread 1: get swpentry from handle x (it is random value now)
+> thread 1: bad thing may happen
+> thread 0: initialize handle x with swapentry
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 53c40d9..92f86ab 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -562,11 +562,15 @@ int pinctrl_request_gpio(unsigned gpio)
- 		return ret;
- 	}
- 
-+	mutex_lock(&pctldev->mutex);
-+
- 	/* Convert to the pin controllers number space */
- 	pin = gpio_to_pin(range, gpio);
- 
- 	ret = pinmux_request_gpio(pctldev, range, pin, gpio);
- 
-+	mutex_unlock(&pctldev->mutex);
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(pinctrl_request_gpio);
+Yes, this may happen potentially but in rare case.
+Because we have a LRU list for page frames, after Thread 0 called
+zbud_alloc the corresponding page will be add to the head of LRU
+list,While zbud_reclaim_page(Thread 1 called) is started from the tail
+of LRU list.
+
+> Of course, this situation almost never happen, it is a "theoretical
+> race condition" issue.
+> 
+> 2. Pollute swapcache data by add a pre-invalided swap page
+> when a swap_entry is invalidated, it will be reused by other anon
+> page. At the same time, zswap is reclaiming old page, pollute
+> swapcache of new page as a result, because old page and new page use
+> the same swap_entry, such as:
+> thread 1: zswap reclaim entry x
+> thread 0: zswap_frontswap_invalidate_page entry x
+> thread 0: entry x reused by other anon page
+> thread 1: add old data to swapcache of entry x
+
+I didn't get your idea here, why thread1 will add old data to entry x?
+
+> thread 0: swapcache of entry x is polluted
+> Of course, this situation almost never happen, it is another
+> "theoretical race condition" issue.
+> 
+> 3. Frontswap uses frontswap_map bitmap to track page in "backend"
+> implementation, when zswap reclaim a
+> page, the corresponding bitmap record is not cleared.
+>
+
+That's true, but I don't think it's a big problem.
+Only waste little time to search rbtree during zswap_frontswap_load().
+
+> 4. zswap_tree is not freed when swapoff, and it got re-kzalloc in
+> swapon, memory leak occurs.
+
+Nice catch! I think it should be freed in zswap_frontswap_invalidate_area().
+
+> 
+> questions:
+> 1. How about SetPageReclaim befor __swap_writepage, so that move it to
+> the tail of the inactive list?
+
+It will be added to inactive now.
+
+> 2. zswap uses GFP_KERNEL flag to alloc things in store and reclaim
+> function, does this lead to these function called recursively?
+
+Yes, that's a potential problem.
+
+> 3. for reclaiming one zbud page which contains two buddies, zswap
+> needs to alloc two pages. Does this reclaim cost-efficient?
+> 
+
+Yes, that's a problem too. And that's why we use zbud as the default
+allocator instead of zsmalloc.
+I think improving the write back path of zswap is the next important
+step for zswap.
+
 -- 
-1.8.1.2
-
-
-
+Regards,
+-Bob
