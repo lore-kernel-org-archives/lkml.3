@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297Ab3HSTqL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 15:46:11 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:51037 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab3HSTqJ (ORCPT
+	id S1751271Ab3HSTtY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 15:49:24 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41272 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab3HSTtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 15:46:09 -0400
-Date: Mon, 19 Aug 2013 21:46:04 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-media@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH RESEND] i2c: move of helpers into the core
-Message-ID: <20130819194603.GC4961@mithrandir>
-References: <1376918361-7014-1-git-send-email-wsa@the-dreams.de>
- <1376935183-11218-1-git-send-email-wsa@the-dreams.de>
+	Mon, 19 Aug 2013 15:49:22 -0400
+Message-ID: <521276BE.4090208@wwwdotorg.org>
+Date: Mon, 19 Aug 2013 13:49:18 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TYecfFk8j8mZq+dy"
-Content-Disposition: inline
-In-Reply-To: <1376935183-11218-1-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 2/4] driver core: Allow early registration of devices
+References: <1376685563-1053-1-git-send-email-treding@nvidia.com> <20130816215530.GA14464@mithrandir> <CACxGe6uhiKY7a0+aViEamwKbE2tJicVc8CMZChBUaf+KYTs5rw@mail.gmail.com> <3558931.NyoikKT8ha@flatron>
+In-Reply-To: <3558931.NyoikKT8ha@flatron>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/17/2013 04:26 AM, Tomasz Figa wrote:
+...
+> Please correct me if I'm wrong, but to get to initcalls you need a timer. 
+> However a timer driver might need interrupts (to tick) and clocks (to get 
+> the frequency).
+> 
+> At least this is what happens on the platforms I work with. They don't 
+> need any special early registration method, though. We just special case 
+> those drivers, as Thierry pointed, so they don't use device based APIs.
+> 
+> However if we consider a more complex setup, let's say that the timer 
+> driver needs to access some special registers, which are shared with other 
+> drivers as well (again not a completely exotic case, as I already met this 
+> when working with timer and PWM drivers for older Samsung platforms and 
+> had to hack things a bit). One would suggest using regmap here, but it is 
+> a device based API.
 
---TYecfFk8j8mZq+dy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+To take this even further, I'm not sure there's a particular reason why
+the timer has to have an internal clock source driven from the same chip
+clock input as the CPU itself. What if there's a separate clock input,
+whose source chip has an enable input, which is connected to a GPIO,
+which is driven by an I2C-based GPIO expander? Admittedly that's a
+pretty crazy HW design, but I doubt it's much other than an accident
+that it doesn't exist in practice, given the probable lack of feedback
+cycle from Linux SW internals to all board designers.
 
-On Mon, Aug 19, 2013 at 07:59:40PM +0200, Wolfram Sang wrote:
-[...]
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-[...]
-> +#if IS_ENABLED(CONFIG_OF)
-> +static void of_i2c_register_devices(struct i2c_adapter *adap)
-> +{
-[...]
-> +}
-[...]
-> +#endif /* CONFIG_OF */
-
-Isn't this missing the dummy implementation for !OF.
-
->  static int i2c_do_add_adapter(struct i2c_driver *driver,
->  			      struct i2c_adapter *adap)
->  {
-> @@ -1058,6 +1160,8 @@ static int i2c_register_adapter(struct i2c_adapter =
-*adap)
-> =20
->  exit_recovery:
->  	/* create pre-declared device nodes */
-> +	of_i2c_register_devices(adap);
-
-Alternatively you could remove the of_i2c_register_devices() from the
-"#ifdef CONFIG_OF" block so that it will always be compiled. You could
-turn the above into
-
-	if (IS_ENABLED(CONFIG_OF))
-		of_i2c_register_devices(adap);
-
-and let the compiler throw the static function away if it sees that the
-condition is always false.
-
-Thierry
-
---TYecfFk8j8mZq+dy
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSEnX7AAoJEN0jrNd/PrOhtxEP/2Ulur33dk711CAHb3j6OaCw
-JZ633M09rA84w4ngGfFM/2IfZFUBeqoyQ7wDnrtW7N89A+COpTqCAOpqo1LQ4WdU
-aehQXm1JyGXPiKb9hvgNXfL9Xz5U1VALvivFJs4kroXVIUlceGmoBZ/ywXYp8SH3
-0C9ClEkxCyvzaIBVmuwDVYZrr42pQduXnbTa/AwwIDlYcUfhELm8a3vfxteP3d9d
-pjrqsxmhTgGHoVp2EvGKXacaf2ISiwMe/FUK1dSrbRf69TU9KTVnUh8eIPlBCJ8s
-bjolz/LfRakgSmQpnzru+3apNnpkPOqApQhWd15E2o2ZUM0XRQx1ratt+meZEbbZ
-GWZj4jPeXWSDWkxtQwFgtPlltyMzJ11AvMxpgs93hjNmdDsjH5uPbrC5Cvz2S2MC
-UB5QOBMRb+DcdQhb72cg4GSiSv08loIFwRQb3lPuDQe2CzbcinHvTUANlzQXKmnF
-R8ZZ2UL1akR3zULh7CmzvQzNHplLOuS4T/J1gu9V7EhOJs2I7xWcoHqCVsqhfIk7
-MGSyYf7te7elOJKNomD/v22ojmbcmPapAf1yn1GBr74mk2t8SdH/QszRMem27oh5
-iL1yw/CIktcr6/EhOlQjIePBum4yQNAxnbtfbFc9ZBkLpR9YsDOw/CE7gEDQargW
-H56h2el3+6kiSlao+UmT
-=ukb7
------END PGP SIGNATURE-----
-
---TYecfFk8j8mZq+dy--
+It seems like the best solution here is to make the generic case fully
+capable. Perhaps initcalls shouldn't depend on a timer at all, or should
+be split into sets that require certain services, and those services can
+appear dynamically, and when they do, the relevant initcalls that were
+held off by lack of a certain feature all get triggered.
