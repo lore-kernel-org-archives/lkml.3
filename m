@@ -1,89 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab3HSCl6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 22:41:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40941 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab3HSCl4 (ORCPT
+	id S1753592Ab3HSCt2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 22:49:28 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:44702 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab3HSCt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 22:41:56 -0400
-Date: Mon, 19 Aug 2013 12:41:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Luciano Coelho <luciano.coelho@intel.com>
-Subject: linux-next: manual merge of the wireless-next tree with the
- wireless tree
-Message-Id: <20130819124146.cd0d6bcf86f013ea6a4e9ecb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__19_Aug_2013_12_41_46_+1000_hK+R6uSl0TN3qa0M"
+	Sun, 18 Aug 2013 22:49:27 -0400
+X-Originating-IP: 50.43.39.152
+Date: Sun, 18 Aug 2013 19:49:14 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 6/9] nohz_full: Add full-system idle states
+ and variables
+Message-ID: <20130819024914.GA11491@leaf>
+References: <20130818014918.GA27827@linux.vnet.ibm.com>
+ <1376790584-28120-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1376790584-28120-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130818030920.GI28923@leaf>
+ <20130819013924.GA29406@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130819013924.GA29406@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__19_Aug_2013_12_41_46_+1000_hK+R6uSl0TN3qa0M
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Aug 18, 2013 at 06:39:25PM -0700, Paul E. McKenney wrote:
+> On Sat, Aug 17, 2013 at 08:09:21PM -0700, Josh Triplett wrote:
+> > On Sat, Aug 17, 2013 at 06:49:41PM -0700, Paul E. McKenney wrote:
+> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > This commit adds control variables and states for full-system idle.
+> > > The system will progress through the states in numerical order when
+> > > the system is fully idle (other than the timekeeping CPU), and reset
+> > > down to the initial state if any non-timekeeping CPU goes non-idle.
+> > > The current state is kept in full_sysidle_state.
+> > > 
+> > > A RCU_SYSIDLE_SMALL macro is defined, and systems with this number
+> > > of CPUs or fewer move through the states more aggressively.  The idea
+> > > is that the resulting memory contention is less of a problem on small
+> > > systems.  Architectures can adjust this value (which defaults to 8)
+> > > using CONFIG_ARCH_RCU_SYSIDLE_SMALL.
+> > > 
+> > > One flavor of RCU will be in charge of driving the state machine,
+> > > defined by rcu_sysidle_state.  This should be the busiest flavor of RCU.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > 
+> > One issue (and one question) below; with the issue addressed,
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > 
+> > >  kernel/rcutree_plugin.h | 28 ++++++++++++++++++++++++++++
+> > >  1 file changed, 28 insertions(+)
+> > > 
+> > > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> > > index eab81da..64a05b9f 100644
+> > > --- a/kernel/rcutree_plugin.h
+> > > +++ b/kernel/rcutree_plugin.h
+> > > @@ -2378,6 +2378,34 @@ static void rcu_kick_nohz_cpu(int cpu)
+> > >  #ifdef CONFIG_NO_HZ_FULL_SYSIDLE
+> > >  
+> > >  /*
+> > > + * Handle small systems specially, accelerating their transition into
+> > > + * full idle state.  Allow arches to override this code's idea of
+> > > + * what constitutes a "small" system.
+> > > + */
+> > > +#ifdef CONFIG_ARCH_RCU_SYSIDLE_SMALL
+> > 
+> > I don't see any Kconfig creating this new config option.
+> > 
+> > Also, why not simply define this config option unconditionally, with a
+> > default of 8, and then use its value directly?
+> 
+> Good point, removing this and adding a Kconfig option in the
+> "nohz_full: Add full-system-idle state machine" commit, with a
+> default value of 8.  Architecture maintainers who want something
+> different can then set that up in their defconfig files.
 
-Hi John,
+Sounds good.
 
-Today's linux-next merge of the wireless-next tree got a conflict in driver=
-s/net/wireless/iwlwifi/pcie/trans.c between commit eabc4ac5d760 ("iwlwifi: =
-pcie: disable L1 Active after pci_enable_device") from the wireless tree an=
-d commit 6965a3540a4b ("iwlwifi: pcie: don't swallow error codes in iwl_tra=
-ns_pcie_alloc()") from the wireless-next tree.
+> > > +static int __maybe_unused full_sysidle_state; /* Current system-idle state. */
+> > > +#define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
+> > > +#define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
+> > > +#define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
+> > > +#define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
+> > > +#define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
+> > 
+> > Perhaps there's a kernel style rule I'm not thinking of that makes it
+> > verboten, but: why not use an enum for a state variable like this?
+> 
+> I didn't trust enum interactions with xchg and cmpxchg, so opted for "int"
+> instead.  That said, enum is much more portable than when I last looked
+> at it.  Admittedly, the last time I looked at it was in the early 1980s...
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+That would make sense if this was an atomic_t, but it's an int; unless I
+missed something, you don't currently use xchg or cmpxchg on it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/wireless/iwlwifi/pcie/trans.c
-index 8c6c405,bad95d2..0000000
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@@ -1400,11 -1401,6 +1401,10 @@@ struct iwl_trans *iwl_trans_pcie_alloc(
-  	spin_lock_init(&trans_pcie->reg_lock);
-  	init_waitqueue_head(&trans_pcie->ucode_write_waitq);
- =20
-- 	if (pci_enable_device(pdev)) {
-- 		err =3D -ENODEV;
-++	err =3D pci_enable_device(pdev);
-++	if (err)
- +		goto out_no_pci;
-- 	}
- +
-  	if (!cfg->base_params->pcie_l1_allowed) {
-  		/*
-  		 * W/A - seems to solve weird behavior. We need to remove this
-
---Signature=_Mon__19_Aug_2013_12_41_46_+1000_hK+R6uSl0TN3qa0M
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSEYXuAAoJEECxmPOUX5FEJcIQAKQ65TWdebN3fABucOe4tVVH
-lGyOvPbyMdtGE81B2egDLUwE82ZLIzEk+r11/leO5QC05PQ4O7p1jhcUey1U0Sml
-kBz9w5mdTSSiuCKqjSwHeJqNekCXZswUaNv21DLWiKdn5km5incXyrzzUHpEZVYw
-VFVzVINjOiBPF9AgeLKXaCGInumrTo+Qt9vqV/AFGtQmKFxecms7SazoKacqkA/d
-fD2V6KiK8tzvumPG9ocCqBmvmq1UXEumMVCkkqhxzu5nXYeay0VyKb4+rj2phzkJ
-g1IO8vb8wuoi965/OdlkC9N4i+n18wjo17khacHTnvS1bawsYBN9kYPaEbcpX5t0
-y2dEwdRI759iqjAYuOpggbA84IWCm7HblZnnLnlvTmZ+fa4vKTQVVKcHU/iRPjFB
-wG42y6HwszrrMFy+5oAx45Vtfe2H6ww1KwGclmpT6o/e3FoNvwnSjdEGXFCSBA9O
-jv8yYxWBH8fB5MXPAmR2lS+0Q59EY/wNBOs23jecxVi7gUvlYKaYJu64wkbxgICW
-p0b8KYzuxz+MVBqFe+JP7l92YO26EBMibbpspFqwU5+pI/ZKHW9WTHpIHNDwCd/N
-54xwXyNKGQUGB8IVe0P5Ty6pEL7jt4YFoht/8z3XgIKWqWpBcCuQGfl/k34iPC5G
-5l80CSaYWe5eRP+iFbpB
-=hsOm
------END PGP SIGNATURE-----
-
---Signature=_Mon__19_Aug_2013_12_41_46_+1000_hK+R6uSl0TN3qa0M--
+- Josh Triplett
