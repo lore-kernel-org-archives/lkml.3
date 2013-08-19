@@ -1,104 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751162Ab3HSSOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 14:14:34 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:40954 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750864Ab3HSSOd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 14:14:33 -0400
-X-Greylist: delayed 519 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Aug 2013 14:14:32 EDT
-Message-ID: <52125E79.8070009@semaphore.gr>
-Date: Mon, 19 Aug 2013 21:05:45 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1751182Ab3HSSPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 14:15:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17779 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906Ab3HSSP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 14:15:29 -0400
+Date: Mon, 19 Aug 2013 14:15:25 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Frank Mayhar <fmayhar@google.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: dm: Make MIN_IOS, et al, tunable via sysctl.
+Message-ID: <20130819181524.GA28765@redhat.com>
+References: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
+ <20130819140016.GB27167@redhat.com>
+ <1376934845.24869.43.camel@bobble.lax.corp.google.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 1/4] nohz: Only update sleeptime stats locally
-References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-2-git-send-email-fweisbec@gmail.com> <20130818170408.GA22417@redhat.com>
-In-Reply-To: <20130818170408.GA22417@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376934845.24869.43.camel@bobble.lax.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2013 08:04 PM, Oleg Nesterov wrote:
-> Sorry for double post. forgot to cc cpufreq maintainers.
+On Mon, Aug 19 2013 at  1:54pm -0400,
+Frank Mayhar <fmayhar@google.com> wrote:
+
+> On Mon, 2013-08-19 at 10:00 -0400, Mike Snitzer wrote:
+> > Performance isn't the concern.  The concern is: does DM allow for
+> > forward progress if the system's memory is completely exhausted?
+> > 
+> > This is why request-based has such an extensive reserve, because it
+> > needs to account for cloning the largest possible request that comes in
+> > (with multiple bios).
 > 
-> On 08/16, Frederic Weisbecker wrote:
->>
->> To fix this, lets only update the sleeptime stats locally when the CPU
->> exits from idle.
+> Thanks for the response.  In our particular case, I/O will be file
+> system based and over a network, which makes it pretty easy for us to be
+> sure that large I/Os never happen.  That notwithstanding, however, as
+> you said it just seems reasonable to make these values configurable.
 > 
-> I am in no position to ack the changes in this area, but I like this
-> change very much. Because, as a code reader, I was totally confused by
-> 
-> 	if (last_update_time)
-> 		update_ts_time_stats()
-> 
-> code and it looks "obviously wrong".
-> 
-> I added more cc's. It seems to me that 9366d840 "cpufreq: governors:
-> Calculate iowait time only when necessary" doesn't realize what
-> 
-> 	-       u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
-> 	+       u64 idle_time = get_cpu_idle_time_us(cpu, io_busy ? wall : NULL);
-> 
-> actually means. OTOH, get_cpu_iowait_time_us() was called with
-> last_update_time != NULL even before this patch...
+> I'm also looking at making some similar constants in dm-verity and
+> dm-bufio configurable in the same way and for similar reasons.
 
-To be honest, I am unfamiliar with tick-sched code.
-With patch 9366d840, I was trying to avoid duplicate calls to
-get_cpu_iowait_time_us function. I just saw that the original
-code was calling update_ts_time_stats within get_cpu_idle_time_us
-and get_cpu_iowait_time_us and I thought that I should keep calling
-these functions with non NULL parameter to update the time stats.
+OK, would be helpful if you were to split each patch out, e.g. separate
+patches for DM core, verity, bufio, etc.  Reserve the background context
+to the 0th patch header (or DM core patch).  With more precise patch
+headers that document the new tunable that is exposed by each patch.
 
-In fact the original patch submission was without this:
--       u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
-+       u64 idle_time = get_cpu_idle_time_us(cpu, io_busy ? wall : NULL);
-and the idle time calculation was wrong (ondemand couldn't increase to max freq)
+It would also be nice to see these tunables get documented in the
+appropriate Documentation/device-mapper/ file too.
 
-
-For your convenience the call paths before and after this patch:
-
-Before patch
-
-get_cpu_idle_time(j, &cur_wall_time);
-	u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
-	idle_time += get_cpu_iowait_time_us(cpu, wall);
-		update_ts_time_stats(cpu, ts, now, last_update_time);
-... 
-get_cpu_iowait_time_us(j, &cur_wall_time);
-	update_ts_time_stats(cpu, ts, now, last_update_time);
-
-
-After patch (io_busy = 1)
-
-cur_idle_time = get_cpu_idle_time(j, &cur_wall_time, io_busy);
-	u64 idle_time = get_cpu_idle_time_us(cpu, io_busy ? wall : NULL);
-		update_ts_time_stats(cpu, ts, now, last_update_time);
-
-
-After patch (io_busy = 0)
-
-cur_idle_time = get_cpu_idle_time(j, &cur_wall_time, io_busy);
-	u64 idle_time = get_cpu_idle_time_us(cpu, io_busy ? wall : NULL);
-
-	idle_time += get_cpu_iowait_time_us(cpu, wall);
-		update_ts_time_stats(cpu, ts, now, last_update_time);
-
-
-Regards,
-Stratos
+Thanks for working on this.  I'll have time to review/assist these
+changes in the near term.
