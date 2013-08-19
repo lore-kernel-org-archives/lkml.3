@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751047Ab3HSGuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 02:50:00 -0400
-Received: from mga14.intel.com ([143.182.124.37]:44005 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864Ab3HSGt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 02:49:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,911,1367996400"; 
-   d="scan'208";a="348204654"
-Date: Mon, 19 Aug 2013 11:36:20 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Felipe Balbi <balbi@ti.com>, Randy Dunlap <rdunlap@infradead.org>,
-        Roger Quadros <rogerq@ti.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        USB list <linux-usb@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Dan Williams <djbw@fb.com>
-Subject: Re: [PATCH] dma: cpp41: make it compile with CONFIG_BUG=n
-Message-ID: <20130819060620.GV32147@intel.com>
-References: <20130815165829.6a401f104ee2a98dd48bcb58@canb.auug.org.au>
- <520D0AD7.6050002@infradead.org>
- <520E0304.5050906@ti.com>
- <20130816154055.GB3570@breakpoint.cc>
+	id S1751073Ab3HSGuo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 02:50:44 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:57374 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab3HSGum (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 02:50:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130816154055.GB3570@breakpoint.cc>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Google-Sender-Delegation: getarunks@gmail.com
+In-Reply-To: <20130812144943.a09d6251bc20f8c3d0a6e8d8@linux-foundation.org>
+References: <CAKZGPANjwYxoAtO068UN1iMuMZPtkbjACz8C3yHjZMr5BkM63A@mail.gmail.com>
+	<20130812144943.a09d6251bc20f8c3d0a6e8d8@linux-foundation.org>
+Date: Mon, 19 Aug 2013 12:20:41 +0530
+X-Google-Sender-Auth: 5l6RuWndpvxw1ErfOfu_1DLNAHs
+Message-ID: <CAKZGPAPkxBMiJZrHyUKgUSZ3O5D5jxqFg6yEr-PYza-7cKx8ag@mail.gmail.com>
+Subject: Re: Seq File: Return error if d_path fails
+From: Arun KS <arunks.linux@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: viro@zeniv.linux.org.uk, Matthew Wilcox <matthew@wil.cx>,
+        Bruce Fields <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, vinayak menon <vinayakm.list@gmail.com>,
+        Nagachandra P <nagachandra@gmail.com>, Vikram MP <mp.vikram@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 05:40:55PM +0200, Sebastian Andrzej Siewior wrote:
-> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> 
-> Before Randy figures out that this does not compile with CONFIG_BUG=n
-> here is a fix for it.
-> 
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Acked-by: Vinod Koul <vinod.koul@intel.com>
+Hi Andrew,
 
-~Vinod
-> ---
->  drivers/dma/cppi41.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
-> index 5dcebca..e696178 100644
-> --- a/drivers/dma/cppi41.c
-> +++ b/drivers/dma/cppi41.c
-> @@ -579,7 +579,7 @@ static int cppi41_tear_down_chan(struct cppi41_channel *c)
->  				WARN_ON(!c->is_tx && !(pd0 & TD_DESC_IS_RX));
->  				WARN_ON((pd0 & 0x1f) != c->port_num);
->  			} else {
-> -				__WARN();
-> +				WARN_ON_ONCE(1);
->  			}
->  			c->td_seen = 1;
->  		}
-> -- 
-> 1.8.4.rc2
-> 
+On Tue, Aug 13, 2013 at 3:19 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Thu, 8 Aug 2013 19:03:31 +0530 Arun KS <arunks.linux@gmail.com> wrote:
+>
+>> >From 2558382c8a030f7261e47977ac62412cd78e6d38 Mon Sep 17 00:00:00 2001
+>> From: Arun KS <arun.ks@broadcom.com>
+>> Date: Thu, 8 Aug 2013 18:23:04 +0530
+>> Subject: Seq File: Return error if d_path fails
+>>
+>> Return error if d_path fails in seq_path funciton. If we do not return
+>> from here,
+>> seq_commit sets seq_file state as overflow. And this continues in a
+>> loop utill we
+>> increase the size of seq buf beyond KMALLOC_MAX_SIZE.
+>>
+>> ...
+>>
+>> --- a/fs/seq_file.c
+>> +++ b/fs/seq_file.c
+>> @@ -471,7 +471,8 @@ int seq_path(struct seq_file *m, const struct path
+>> *path, const char *esc)
+>>                         char *end = mangle_path(buf, p, esc);
+>>                         if (end)
+>>                                 res = end - buf;
+>> -               }
+>> +               } else
+>> +                       return PTR_ERR(p);
+>>         }
+>>         seq_commit(m, res);
+>
+> hm, does that really fix the bug?  Isn't the core problem the word "or":
+>
+> /**
+>  * seq_commit - commit data to the buffer
+>  * @m: the seq_file handle
+>  * @num: the number of bytes to commit
+>  *
+>  * Commit @num bytes of data written to a buffer previously acquired
+>  * by seq_buf_get.  To signal an error condition, or that the data
+>                                                   ^^
+>  * didn't fit in the available space, pass a negative @num value.
+>  */
+>
+> seq_path()/seq_commit() is treating a d_path() failure as an overflow
+> condition, but it isn't.
+>
+I ll send a new patch.
 
--- 
+Thanks,
+Arun
