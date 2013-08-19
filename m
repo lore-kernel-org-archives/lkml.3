@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159Ab3HSJOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 05:14:20 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:33933 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958Ab3HSJOT (ORCPT
+	id S1751175Ab3HSJOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 05:14:36 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56941 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab3HSJOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 05:14:19 -0400
+	Mon, 19 Aug 2013 05:14:34 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <5211E1C3.7090009@jp.fujitsu.com>
+Date: Mon, 19 Aug 2013 18:13:39 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130815102620.GN24092@twins.programming.kicks-ass.net>
-References: <1376394957-31691-1-git-send-email-eranian@google.com>
-	<1376394957-31691-2-git-send-email-eranian@google.com>
-	<20130815102620.GN24092@twins.programming.kicks-ass.net>
-Date: Mon, 19 Aug 2013 11:14:18 +0200
-Message-ID: <CABPqkBRSgcu_vFNoSuoKN43rx5hmUrdVT86J73zve20egprH-g@mail.gmail.com>
-Subject: Re: [PATCH v1 1/2] perf: add attr->mmap2 attribute to an event
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        David Ahern <dsahern@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Jingbai Ma <jingbai.ma@hp.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Mitchell, Lisa (MCLinux in Fort Collins)" <lisa.mitchell@hp.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, bhelgaas@google.com,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [Help Test] kdump, x86, acpi: Reproduce CPU0 SMI corruption issue
+ after unsetting BSP flag
+References: <5200BFB3.2050202@jp.fujitsu.com> <520A10A3.5080303@hp.com> <520B4A22.2030800@hp.com> <87ob90839p.fsf@xmission.com> <5211831B.6090704@jp.fujitsu.com> <a2ff8170-41ad-42f6-9015-850dbe14983d@email.android.com>
+In-Reply-To: <a2ff8170-41ad-42f6-9015-850dbe14983d@email.android.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 12:26 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Aug 13, 2013 at 01:55:56PM +0200, Stephane Eranian wrote:
+(2013/08/19 11:59), Eric W. Biederman wrote:
 >
->> @@ -638,6 +639,25 @@ enum perf_event_type {
->>        */
->>       PERF_RECORD_SAMPLE                      = 9,
+>
+>
 >>
->> +     /*
->> +      * The MMAP2 records are an augmented version of MMAP, they add
->> +      * maj, min, ino numbers to be used to uniquely identify each mapping
->> +      *
->> +      * struct {
->> +      *      struct perf_event_header        header;
->> +      *
->> +      *      u32                             pid, tid;
->> +      *      u64                             addr;
->> +      *      u64                             len;
->> +      *      u64                             pgoff;
->> +      *      u32                             maj;
->> +      *      u32                             min;
->> +      *      u64                             ino;
->> +      *      char                            filename[];
+>> Sorry Eric, I'm not clear to what you mean by ``short one core''...
+>> Which are you suggesting? Disabling BSP if crash happens on AP is
+>> reasonable?
+>> Or restricting cpus to a single one only just as the current kdump
+>> configuration is reasonable?
 >
-> Did you forget the sample_id stuff?
+> I am suggesting we start every cpu except the BSP from the AP we started on.
 >
->                 struct sample_id                sample_id;
+> N-1 cpus seems like a good tradeoff between performance and reliability for those who need it.
 >
-Ok, will add that and the i_generation field.
+> Eric
+>
+
+Thanks. I'm now clear.
+
+Well, I'll post a version 2 patch after upgrading it for current upstream kernel.
+But it would be next week or later.
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
+
