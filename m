@@ -1,156 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751097Ab3HSGuv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 02:50:51 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:28237 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab3HSGur (ORCPT
+	id S1751080Ab3HSGzH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 02:55:07 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:38865 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab3HSGzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 02:50:47 -0400
-X-AuditID: cbfee61b-b7efe6d000007b11-66-5211c045e5fc
-Date: Mon, 19 Aug 2013 08:50:37 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        "R, Durgadoss" <durgadoss.r@intel.com>
-Subject: Re: [PATCH v7 0/7] cpufreq:boost: CPU Boost mode support
-Message-id: <20130819085037.11e95c06@amdc308.digital.local>
-In-reply-to: <CAKohponN=JE4KiCL7pVXJvcf__qfC+Fb59ZjBAX5_WK49eCELw@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1376388505-30233-1-git-send-email-l.majewski@samsung.com>
- <CAKohponN=JE4KiCL7pVXJvcf__qfC+Fb59ZjBAX5_WK49eCELw@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t9jAV3XA4JBBnP3mllsnLGe1eJp0w92
-	i3mfZS36fl5htliz/yeTRefZJ8wWvQuuslm8ecRtcXnXHDaLz71HGC1uN65gs+hf2Mtk8eRh
-	H5vFxq8eDnwei/e8ZPK4c20Pm8e6aW+ZPfq2rGL0eLS4hdHj+I3tTB6fN8kFsEdx2aSk5mSW
-	pRbp2yVwZdz6NoGt4JZMxa9VZQ2M+8W6GDk5JARMJBq+32eEsMUkLtxbz9bFyMUhJLCIUaLl
-	RhsLhNPOJLHycDdQhoODRUBV4vVjM5AGNgE9ic93nzKBhEUEtCRe3kwFKWcW2Mkisez9LbCh
-	wgKOEt339zOD2LwC1hLn5hxhArE5BYIl9nw9yQ4x/ySjxL+uu2wgCX4BSYn2fz+YIS6ykzj3
-	aQM7RLOgxI/J91hAbGagZZu3NbFC2PISm9e8ZZ7AKDgLSdksJGWzkJQtYGRexSiaWpBcUJyU
-	nmukV5yYW1yal66XnJ+7iREcUc+kdzCuarA4xCjAwajEw2vhJhgkxJpYVlyZe4hRgoNZSYSX
-	RQ0oxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgTFRO6im
-	8lKB2Q5Hhlqzskd3/zzKMLvZON9qc+N/i/bdLpa3dJ6t2Mvf8XBD1l0OwUeLXmd0WjEzXbn9
-	YVL6Lb3yWHb9gkMhV3sWJJ3mrve/MFd9T9WKqby8JtPUr+5e8e5zvrPhh2VVIWL+v2x2Nfod
-	2bOMbc/GZKYJu849m77UIvbL2q+T9S4rsRRnJBpqMRcVJwIADpnWf6QCAAA=
+	Mon, 19 Aug 2013 02:55:05 -0400
+MIME-Version: 1.0
+X-Google-Sender-Delegation: getarunks@gmail.com
+Date: Mon, 19 Aug 2013 12:25:04 +0530
+X-Google-Sender-Auth: LGT3N01yi3lb0a_SVoFt8CsxQxI
+Message-ID: <CAKZGPANS-NVTy7p69xcrgK3ggUHAtLi2ad8UgwsYdeEHbj3gMw@mail.gmail.com>
+Subject: [PATCH] SeqFile: Fix overflow condition
+From: Arun KS <arunks.linux@gmail.com>
+To: viro@zeniv.linux.org.uk, Andrew Morton <akpm@linux-foundation.org>
+Cc: Matthew Wilcox <matthew@wil.cx>, Bruce Fields <bfields@fieldses.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        vinayak menon <vinayakm.list@gmail.com>,
+        Nagachandra P <nagachandra@gmail.com>, Vikram MP <mp.vikram@gmail.com>
+Content-Type: multipart/mixed; boundary=089e013d061683119f04e4476bad
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Aug 2013 12:08:26 +0530 Viresh Kumar viresh.kumar@linaro.org
-wrote,
-> On 13 August 2013 15:38, Lukasz Majewski <l.majewski@samsung.com>
-> wrote:
-> > This patch series introduces support for CPU overclocking technique
-> > called Boost.
-> >
-> > It is a follow up of a LAB governor proposal. Boost is a LAB
-> > component:
-> > http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
-> >
-> > Boost unifies hardware based solution (e.g. Intel Nehalem) with
-> > software oriented one (like the one done at Exynos).
-> > For this reason cpufreq/freq_table code has been reorganized to
-> > include common code.
-> >
-> > Important design decisions:
-> > - Boost related code is compiled-in unconditionally to cpufreq core
-> > and disabled by default. The cpufreq_driver is responsibile for
-> > setting boost_supported flag and providing set_boost callback(if HW
-> > support is needed). For software managed boost, special Kconfig
-> > flag - CONFIG_CPU_FREQ_BOOST_SW has been defined. It will be
-> > selected only when a target platform has thermal framework properly
-> > configured.
-> >
-> > - struct cpufreq_driver has been extended with boost related fields:
-> >         -- boost_supported - when driver supports boosting
-> >         -- boost_enabled - boost state
-> >         -- set_boost - callback to function, which is necessary to
-> >            enable/disable boost
-> >
-> > - Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost) is
-> > visible _only_ when cpufreq driver supports Boost.
-> >
-> > - No special spin_lock for Boost was created. The one from cpufreq
-> > core was reused.
-> >
-> > - The Boost code doesn't rely on any policy. When boost state is
-> > changed, then the policy list is iterated and proper adjustements
-> > are done.
-> >
-> > - To improve safety level, the thermal framework is also extended
-> > to disable software boosting, when thermal trip point is reached.
-> > Then it starts monitoring target temperature to evaluate if boost
-> > can be enabled again. This emulates behaviour similar to HW managed
-> > boost (like x86)
-> >
-> > Tested at HW:
-> >        Exynos 4412 3.11-rc4 Linux
-> >        Intel Core i7-3770 3.11-rc4 Linux
-> >
-> > Above patches were posted on top of linux_pm/linux-next with
-> > following patches applied:
-> >
-> > cpufreq: exynos5440: Fix to skip when new frequency same as current
-> > cpufreq: fix EXYNOS drivers selection
-> >
-> > Lukasz Majewski (7):
-> >   cpufreq: Add boost frequency support in core
-> >   cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with
-> > common boost solution
-> >   thermal:boost: Automatic enable/disable of BOOST feature
-> >   cpufreq:boost:Kconfig: Provide support for software managed BOOST
-> >   cpufreq:exynos:Extend Exynos cpufreq driver to support boost
-> >     framework
-> >   Documentation:cpufreq:boost: Update BOOST documentation
-> >   cpufreq:exynos4x12: Change L0 driver data to CPUFREQ_BOOST_FREQ
-> 
-> Hi Lukasz,
-> 
+--089e013d061683119f04e4476bad
+Content-Type: text/plain; charset=ISO-8859-1
 
-Hi Viresh,
+>From 23986a85b9efe7bc3ffc0887b8d17cdf2fbab4f2 Mon Sep 17 00:00:00 2001
+From: Arun KS <arun.ks@broadcom.com>
+Date: Mon, 19 Aug 2013 12:06:33 +0530
+Subject: SeqFile: Fix overflow condition
 
-> I haven't found time yet to go through this series.. 
+seq_path()/seq_commit() is treating a d_path() failure as an overflow
+condition, but it isn't.
 
-I've just started wondering if I had send those patches correctly :-).
+Signed-off-by: Arun KS <arun.ks@broadcom.com>
+---
+ fs/seq_file.c            |  6 +++---
+ include/linux/seq_file.h | 11 ++++++-----
+ 2 files changed, 9 insertions(+), 8 deletions(-)
 
-> I want to do a
-> deep/careful review this time as these are almost the final patches.
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 3135c25..6a33f9c 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -463,7 +463,7 @@ int seq_path(struct seq_file *m, const struct path
+*path, const char *esc)
+ {
+  char *buf;
+  size_t size = seq_get_buf(m, &buf);
+- int res = -1;
++ int res = -ENOBUFS;
 
-Ok.
+  if (size) {
+  char *p = d_path(path, buf, size);
+@@ -487,7 +487,7 @@ int seq_path_root(struct seq_file *m, const struct
+path *path,
+ {
+  char *buf;
+  size_t size = seq_get_buf(m, &buf);
+- int res = -ENAMETOOLONG;
++ int res = -ENOBUFS;
 
-> 
-> Will try to get over them by the end of this week..
+  if (size) {
+  char *p;
+@@ -516,7 +516,7 @@ int seq_dentry(struct seq_file *m, struct dentry
+*dentry, const char *esc)
+ {
+  char *buf;
+  size_t size = seq_get_buf(m, &buf);
+- int res = -1;
++ int res = -ENOBUFS;
 
-Ok, I understand.
-
-> 
-> --
-> viresh
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
-
+  if (size) {
+  char *p = dentry_path(dentry, buf, size);
+diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
+index 4e32edc..7bfb540 100644
+--- a/include/linux/seq_file.h
++++ b/include/linux/seq_file.h
+@@ -66,16 +66,17 @@ static inline size_t seq_get_buf(struct seq_file
+*m, char **bufp)
+  * @num: the number of bytes to commit
+  *
+  * Commit @num bytes of data written to a buffer previously acquired
+- * by seq_buf_get.  To signal an error condition, or that the data
+- * didn't fit in the available space, pass a negative @num value.
++ * by seq_buf_get.  To signal an overflow condition(data didn't fit
++ * in the available space), pass -ENOBUFS and for other errors pass a
++ * negative @num value.
+  */
+ static inline void seq_commit(struct seq_file *m, int num)
+ {
+- if (num < 0) {
+- m->count = m->size;
+- } else {
++ if (num >= 0) {
+  BUG_ON(m->count + num > m->size);
+  m->count += num;
++ } else if (num == -ENOBUFS)
++ m->count = m->size;
+  }
+ }
 
 -- 
-Best regards,
+1.8.2
 
-Lukasz Majewski
+--089e013d061683119f04e4476bad
+Content-Type: application/octet-stream; 
+	name="0001-SeqFile-Fix-overflow-condition.patch"
+Content-Disposition: attachment; 
+	filename="0001-SeqFile-Fix-overflow-condition.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hkjbtkli0
 
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+RnJvbSAyMzk4NmE4NWI5ZWZlN2JjM2ZmYzA4ODdiOGQxN2NkZjJmYmFiNGYyIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBcnVuIEtTIDxhcnVuLmtzQGJyb2FkY29tLmNvbT4KRGF0ZTog
+TW9uLCAxOSBBdWcgMjAxMyAxMjowNjozMyArMDUzMApTdWJqZWN0OiBTZXFGaWxlOiBGaXggb3Zl
+cmZsb3cgY29uZGl0aW9uCgpzZXFfcGF0aCgpL3NlcV9jb21taXQoKSBpcyB0cmVhdGluZyBhIGRf
+cGF0aCgpIGZhaWx1cmUgYXMgYW4gb3ZlcmZsb3cKY29uZGl0aW9uLCBidXQgaXQgaXNuJ3QuCgpT
+aWduZWQtb2ZmLWJ5OiBBcnVuIEtTIDxhcnVuLmtzQGJyb2FkY29tLmNvbT4KLS0tCiBmcy9zZXFf
+ZmlsZS5jICAgICAgICAgICAgfCAgNiArKystLS0KIGluY2x1ZGUvbGludXgvc2VxX2ZpbGUuaCB8
+IDExICsrKysrKy0tLS0tCiAyIGZpbGVzIGNoYW5nZWQsIDkgaW5zZXJ0aW9ucygrKSwgOCBkZWxl
+dGlvbnMoLSkKCmRpZmYgLS1naXQgYS9mcy9zZXFfZmlsZS5jIGIvZnMvc2VxX2ZpbGUuYwppbmRl
+eCAzMTM1YzI1Li42YTMzZjljIDEwMDY0NAotLS0gYS9mcy9zZXFfZmlsZS5jCisrKyBiL2ZzL3Nl
+cV9maWxlLmMKQEAgLTQ2Myw3ICs0NjMsNyBAQCBpbnQgc2VxX3BhdGgoc3RydWN0IHNlcV9maWxl
+ICptLCBjb25zdCBzdHJ1Y3QgcGF0aCAqcGF0aCwgY29uc3QgY2hhciAqZXNjKQogewogCWNoYXIg
+KmJ1ZjsKIAlzaXplX3Qgc2l6ZSA9IHNlcV9nZXRfYnVmKG0sICZidWYpOwotCWludCByZXMgPSAt
+MTsKKwlpbnQgcmVzID0gLUVOT0JVRlM7CiAKIAlpZiAoc2l6ZSkgewogCQljaGFyICpwID0gZF9w
+YXRoKHBhdGgsIGJ1Ziwgc2l6ZSk7CkBAIC00ODcsNyArNDg3LDcgQEAgaW50IHNlcV9wYXRoX3Jv
+b3Qoc3RydWN0IHNlcV9maWxlICptLCBjb25zdCBzdHJ1Y3QgcGF0aCAqcGF0aCwKIHsKIAljaGFy
+ICpidWY7CiAJc2l6ZV90IHNpemUgPSBzZXFfZ2V0X2J1ZihtLCAmYnVmKTsKLQlpbnQgcmVzID0g
+LUVOQU1FVE9PTE9ORzsKKwlpbnQgcmVzID0gLUVOT0JVRlM7CiAKIAlpZiAoc2l6ZSkgewogCQlj
+aGFyICpwOwpAQCAtNTE2LDcgKzUxNiw3IEBAIGludCBzZXFfZGVudHJ5KHN0cnVjdCBzZXFfZmls
+ZSAqbSwgc3RydWN0IGRlbnRyeSAqZGVudHJ5LCBjb25zdCBjaGFyICplc2MpCiB7CiAJY2hhciAq
+YnVmOwogCXNpemVfdCBzaXplID0gc2VxX2dldF9idWYobSwgJmJ1Zik7Ci0JaW50IHJlcyA9IC0x
+OworCWludCByZXMgPSAtRU5PQlVGUzsKIAogCWlmIChzaXplKSB7CiAJCWNoYXIgKnAgPSBkZW50
+cnlfcGF0aChkZW50cnksIGJ1Ziwgc2l6ZSk7CmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L3Nl
+cV9maWxlLmggYi9pbmNsdWRlL2xpbnV4L3NlcV9maWxlLmgKaW5kZXggNGUzMmVkYy4uN2JmYjU0
+MCAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9zZXFfZmlsZS5oCisrKyBiL2luY2x1ZGUvbGlu
+dXgvc2VxX2ZpbGUuaApAQCAtNjYsMTYgKzY2LDE3IEBAIHN0YXRpYyBpbmxpbmUgc2l6ZV90IHNl
+cV9nZXRfYnVmKHN0cnVjdCBzZXFfZmlsZSAqbSwgY2hhciAqKmJ1ZnApCiAgKiBAbnVtOiB0aGUg
+bnVtYmVyIG9mIGJ5dGVzIHRvIGNvbW1pdAogICoKICAqIENvbW1pdCBAbnVtIGJ5dGVzIG9mIGRh
+dGEgd3JpdHRlbiB0byBhIGJ1ZmZlciBwcmV2aW91c2x5IGFjcXVpcmVkCi0gKiBieSBzZXFfYnVm
+X2dldC4gIFRvIHNpZ25hbCBhbiBlcnJvciBjb25kaXRpb24sIG9yIHRoYXQgdGhlIGRhdGEKLSAq
+IGRpZG4ndCBmaXQgaW4gdGhlIGF2YWlsYWJsZSBzcGFjZSwgcGFzcyBhIG5lZ2F0aXZlIEBudW0g
+dmFsdWUuCisgKiBieSBzZXFfYnVmX2dldC4gIFRvIHNpZ25hbCBhbiBvdmVyZmxvdyBjb25kaXRp
+b24oZGF0YSBkaWRuJ3QgZml0CisgKiBpbiB0aGUgYXZhaWxhYmxlIHNwYWNlKSwgcGFzcyAtRU5P
+QlVGUyBhbmQgZm9yIG90aGVyIGVycm9ycyBwYXNzIGEKKyAqIG5lZ2F0aXZlIEBudW0gdmFsdWUu
+CiAgKi8KIHN0YXRpYyBpbmxpbmUgdm9pZCBzZXFfY29tbWl0KHN0cnVjdCBzZXFfZmlsZSAqbSwg
+aW50IG51bSkKIHsKLQlpZiAobnVtIDwgMCkgewotCQltLT5jb3VudCA9IG0tPnNpemU7Ci0JfSBl
+bHNlIHsKKwlpZiAobnVtID49IDApIHsKIAkJQlVHX09OKG0tPmNvdW50ICsgbnVtID4gbS0+c2l6
+ZSk7CiAJCW0tPmNvdW50ICs9IG51bTsKKwl9IGVsc2UgaWYgKG51bSA9PSAtRU5PQlVGUykKKwkJ
+bS0+Y291bnQgPSBtLT5zaXplOwogCX0KIH0KIAotLSAKMS44LjIKCg==
+--089e013d061683119f04e4476bad--
