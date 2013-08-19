@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751112Ab3HSIsj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 04:48:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32786 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958Ab3HSIsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 04:48:37 -0400
-Message-ID: <5211DBB4.6090508@ti.com>
-Date: Mon, 19 Aug 2013 14:17:48 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751134Ab3HSItF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 04:49:05 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:53258 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007Ab3HSItD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 04:49:03 -0400
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>, <cw00.choi@samsung.com>,
-        <bcousson@baylibre.com>
-CC: <tony@atomide.com>, <myungjoo.ham@samsung.com>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
-        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <balbi@ti.com>
-Subject: Re: [PATCH v2] extcon: palmas: Modified the compatible type to *ti,palmas-usb-vid*
-References: <1376648448-27447-1-git-send-email-kishon@ti.com> <520EA5D6.3040409@wwwdotorg.org> <5211A7B3.4040906@ti.com>
-In-Reply-To: <5211A7B3.4040906@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1376901429.403.150.camel@smile>
+References: <1376900724-9636-1-git-send-email-linus.walleij@linaro.org>
+	<1376901429.403.150.camel@smile>
+Date: Mon, 19 Aug 2013 01:49:01 -0700
+X-Google-Sender-Auth: _lTuIq2Qp5fJWkP1cqMMm89qtn4
+Message-ID: <CAA9_cmfKhdQMk7uaczOH9o8kXJQ1WNtkNSvL61pWVRrBaC6gCQ@mail.gmail.com>
+Subject: Re: [PATCH v2] dmaengine: make dmatest less noisy
+From: Dan Williams <djbw@fb.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 August 2013 10:35 AM, Kishon Vijay Abraham I wrote:
-> Hi,
-> 
-> On Saturday 17 August 2013 03:51 AM, Stephen Warren wrote:
->> On 08/16/2013 04:20 AM, Kishon Vijay Abraham I wrote:
->>> The Palmas device contains only a USB VID detector, so modified the
->>> compatible type to *ti,palmas-usb-vid*.
+On Mon, Aug 19, 2013 at 1:37 AM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> On Mon, 2013-08-19 at 10:25 +0200, Linus Walleij wrote:
+>> Commit 95019c8c5 "dmatest: gather test results in the linked list"
+>> started to warning whenever we add results to a test thread.
+>> A warning for something completely normal? This is just cluttering
+>> my terminal. Move to debug prints.
 >>
->>> diff --git a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
+>> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+>
+>> --- a/drivers/dma/dmatest.c
+>> +++ b/drivers/dma/dmatest.c
+>
+>> @@ -406,7 +406,7 @@ static int thread_result_add(struct dmatest_info *info,
+>>       list_add_tail(&tr->node, &r->results);
+>>       mutex_unlock(&info->results_lock);
 >>
->>>  PALMAS USB COMPARATOR
->>>  Required Properties:
->>> - - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb"
->>> + - compatible : Should be "ti,palmas-usb-vid".
->>
->> Has the old value been published in a release kernel? If so, it makes
-> 
-> No. This was merged only in 3.11-rc1. So I think we should take this version?
-> Chanwoo can you take this patch?
+>> -     pr_warn("%s\n", thread_result_get(r->name, tr));
+>> +     pr_debug("%s\n", thread_result_get(r->name, tr));
+>
+> This is the idea behind original DMATEST module logic.
+> As far as I understand we would like to have them as warnings in case
+> when driver is compiled in and tests are run from the beginning.
+>
+> Though, I sent a correction patch that moves "No error" messages to
+> debug level which, I think, makes sense. I don't know why Dan still keep
+> silent on my last message in the discussion [1].
+>
 
-Ah.. the old values will be part of 3.11 kernel. So should we retain the old
-values?
+Applying them now, and yes I agree with your patch to take this back
+to the original implementation of not squawking on success.
 
--Kishon
+> [1] http://www.spinics.net/lists/kernel/msg1581822.html
+>
+>
+> --
+> Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Intel Finland Oy
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
