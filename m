@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750802Ab3HSEUb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 00:20:31 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:51538 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab3HSEUZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 00:20:25 -0400
-Message-ID: <52119C6B.1090009@linux.vnet.ibm.com>
-Date: Mon, 19 Aug 2013 09:47:47 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1750818Ab3HSEVW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 00:21:22 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:58887 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764Ab3HSEVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 00:21:19 -0400
+Date: Mon, 19 Aug 2013 05:21:17 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+cc: linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1308190519490.15659@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 5/6] sched, fair: Make group power more consitent
-References: <20130816101221.028189677@chello.nl> <20130816101545.290832815@infradead.org>
-In-Reply-To: <20130816101545.290832815@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081904-0260-0000-0000-0000037C5434
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1232310002-1376886077=:15659"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On 08/16/2013 03:42 PM, Peter Zijlstra wrote:
+--29444707-1232310002-1376886077=:15659
+Content-Type: TEXT/PLAIN; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 
-I have a few comments and clarification to seek.
 
-1. How are you ensuring from this patch that sgs->group_power does not
-change over the course of load balancing?
+Hi Linus,
 
-    The only path to update_group_power() where sg->sgp->power gets
-updated, is from update_sg_lb_stats(). You are updating sgs->group_power
-in update_sg_lb_stats(). Any change to group->sgp->power will get
-reflected in sgs->group_power as well right?
+bit late with these, was under the weather for a a few days, nothing 
+too crazy, some radeon regression fixes, one intel regression fix, and 
+one fix to avoid a warn with i915 when used with dma-buf.
 
-2. This point is aside from your patch. In the current implementation,
-each time the cpu power gets updated in update_cpu_power(), should not
-the power of the sched_groups comprising of that cpu also get updated?
-Why wait till the load balancing is done at the sched_domain level of
-that group, to update its group power?
+Dave.
 
-Regards
-Preeti U Murthy
+The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
 
+  Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 3387ed83943daf6cb1bb4195ae369067b9cd80ce:
+
+  Merge tag 'drm-intel-fixes-2013-08-15' of git://people.freedesktop.org/~danvet/drm-intel (2013-08-19 13:49:20 +1000)
+
+----------------------------------------------------------------
+
+Alex Deucher (1):
+      drm/radeon/r7xx: fix copy paste typo in golden register setup
+
+Chris Wilson (1):
+      drm/i915: Don't deref pipe->cpu_transcoder in the hangcheck code
+
+Christian König (1):
+      drm/radeon: fix UVD message buffer validation
+
+Daniel Vetter (1):
+      drm/i915: unpin backing storage in dmabuf_unmap
+
+Dave Airlie (2):
+      Merge branch 'drm-fixes-3.11' of git://people.freedesktop.org/~agd5f/linux
+      Merge tag 'drm-intel-fixes-2013-08-15' of git://people.freedesktop.org/~danvet/drm-intel
+
+Rafa³ Mi³ecki (1):
+      drm/radeon: fix WREG32_OR macro setting bits in a register
+
+ drivers/gpu/drm/i915/i915_gem_dmabuf.c |  8 ++++
+ drivers/gpu/drm/i915/intel_display.c   | 86 ++++++++++++++++++++++------------
+ drivers/gpu/drm/radeon/radeon.h        |  2 +-
+ drivers/gpu/drm/radeon/radeon_uvd.c    |  8 ++++
+ drivers/gpu/drm/radeon/rv770.c         | 12 ++---
+ 5 files changed, 80 insertions(+), 36 deletions(-)
+--29444707-1232310002-1376886077=:15659--
