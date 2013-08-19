@@ -1,123 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676Ab3HSVmB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 17:42:01 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:39495 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab3HSVmA (ORCPT
+	id S1751696Ab3HSVnA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 17:43:00 -0400
+Received: from smtp103.biz.mail.bf1.yahoo.com ([98.139.221.62]:35561 "HELO
+	smtp103.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751479Ab3HSVm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 17:42:00 -0400
-Date: Mon, 19 Aug 2013 23:41:56 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/4] driver core: Allow early registration of devices
-Message-ID: <20130819214155.GB9885@mithrandir>
-References: <1376685563-1053-1-git-send-email-treding@nvidia.com>
- <1376685563-1053-3-git-send-email-treding@nvidia.com>
- <20130816210637.GC2198@kroah.com>
- <20130816215530.GA14464@mithrandir>
- <20130816220807.GA6848@kroah.com>
- <20130817111747.GB1536@mithrandir>
- <5212757F.2080107@wwwdotorg.org>
- <20130819201042.GB5191@mithrandir>
- <521285D1.2050500@wwwdotorg.org>
+	Mon, 19 Aug 2013 17:42:58 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: NMginqIVM1kYoD0yzrYvm8WGH.tlYXEJNIh0_GilezgJmNz
+ m0TpIV29zkx_xm1QFXYzxsLzn1psHPsuPNuemVT0ynAqrDhPSOjXm67qoKr6
+ 0pp8CusvB6gBjiq7lX9sK9AnFy9.Xy9x87eHW8RehWMN2gmIBMwbqgrn8GcZ
+ NQRl9DwlcTJs18PXXKy4vFbZihR6UX1PoaMV56UEOvAO5_Y4qm81aOJJg5D5
+ Wn20CbUJ9QfMybzlrgXRiR7YnzAFa27rfK3ehURP04X6I9ZyzOPLn7ITtwmE
+ rF9sMOj6f76a9CRJi0FgFt3NZxxYpKsXoqNY743ZcTzzyE1Cxe.IRTIHiWua
+ EirgDhbsgXxtU_7gb1awKvJDy8Q1_U1uOBuU9bBXqVnwYTS_9NQ8xpqea0zw
+ Cth3xY7jNXFKV.E5sqMA22AbKygtrHqyQ_HdqxnVkbxXWiYD9ZIIm2GVx8pE
+ cpMsi9OGKaEjvyjGrC3AtoByh90jcsE5TMah0gbfhlyN4f2vYVMq7nSGe3mc
+ ewkayMPwdcbcAWEm_xs9DdieQXAgzlJFgPYu_tDNh
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with )
+        by smtp103.biz.mail.bf1.yahoo.com with SMTP; 19 Aug 2013 14:42:57 -0700 PDT
+Message-ID: <5212915F.20905@schaufler-ca.com>
+Date: Mon, 19 Aug 2013 14:42:55 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qcHopEYAB45HaUaB"
-Content-Disposition: inline
-In-Reply-To: <521285D1.2050500@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>
+CC: amwang@redhat.com, netdev@vger.kernel.org, james.l.morris@oracle.com,
+        sds@tycho.nsa.gov, eparis@parisplace.org, pmoore@redhat.com,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [Patch net-next v3 9/9] selinux: use generic union inet_addr
+References: <1376907278-26377-1-git-send-email-amwang@redhat.com> <1376907278-26377-10-git-send-email-amwang@redhat.com> <52127336.3080209@schaufler-ca.com> <20130819.125026.636442915180863272.davem@davemloft.net>
+In-Reply-To: <20130819.125026.636442915180863272.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8/19/2013 12:50 PM, David Miller wrote:
+> It's so that you can pass a generic ipv4/ipv6 address blob into
+> things like printf formatting, and since there is an address family
+> member present, it knows what's in there and therefore one printf
+> format specifier can handle both ipv4 and ipv6 addresses.
 
---qcHopEYAB45HaUaB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The patch message needs to say that, then.
 
-On Mon, Aug 19, 2013 at 02:53:37PM -0600, Stephen Warren wrote:
-> On 08/19/2013 02:10 PM, Thierry Reding wrote:
-> > On Mon, Aug 19, 2013 at 01:43:59PM -0600, Stephen Warren wrote:
-> >> On 08/17/2013 05:17 AM, Thierry Reding wrote: ...
-> >>> Well, the most obvious cases where early initialization is
-> >>> needed are interrupt controllers and clocks.
-> >>=20
-> >> ... and IOMMUs, which apparently need to initialize before any
-> >> devices whose transactions are routed through the IOMMU, in order
-> >> to set themselves up as the IOMMU for the relevant devices.
-> >>=20
-> >> It's possible that the CPU-visible bus structure isn't a strict=20
-> >> inverse/reverse of the device-visible bus-structure. A device may
-> >> have CPU-visible registers on one bus segment, but inject master=20
-> >> transactions onto an unrelated bus segment. So it may not be as
-> >> simple as making a bus driver for the bus segment affected by the
-> >> IOMMU, and having that driver trigger instantiation of all its
-> >> children.
-> >=20
-> > Well, perhaps that can be handled via deferred probing? The only
-> > thing preventing that right now is that drivers aren't actively
-> > aware of the IOMMUs existence. If we can make it a requirement that
-> > each driver needing the services of an IOMMU actively requests that
-> > service, then deferred probing should be able to deal with it.
->=20
-> I believe the hope was to specifically avoid drivers knowing about the
-> presence of an IOMMU. Drivers would simply use standard dma
-> alloc/map/unmap APIs, and those APIs would internally set up any IOMMU
-> HW is present and necessary.
->=20
-> Having e.g. a DT property that says "this is your IOMMU" which drivers
-> had to explicitly handle parsing, and/or requiring drivers to make
-> some call during probe to say "bind to an IOMMU" (unless that API can
-> simply be called in all cases including when there actually is no
-> IOMMU) would be a bit annoying.
+> Like you, I think these changes a complete waste of time too, I'm just
+> relaying what I was told.
 
-Yes, I don't think drivers should have to do that manually either. In my
-opinion it falls in the same category as setting up the default pinmux
-state, which is now handled by the core as well.
+Well, they certainly don't appear to add any value on their own.
+I also generally oppose doing clever things with data structures.
+I recently got bitten by the "obvious" relationships between
+sockaddr, sockaddr_in and sockaddr_in6, and I've been doing this
+stuff since before ioctl was invented.
 
-> > That doesn't necessarily mean that drivers need to be doing it
-> > manually. It strikes me as the kind of thing that could easily be
-> > done by the core. In fact I've been thinking of doing something
-> > similar to resolve devicetree IRQ references at probe time, rather
-> > than at device creation time to remove the need for interrupt chips
-> > to register early.
->=20
-> If we can make this automatic and hidden yet still use deferred
-> probing, then that'd likely be just fine.
-
-I plan to investigate how this could be done for the IRQ reference
-resolution and if that can be done it should be possible to do it for
-IOMMUs as well.
-
-Thierry
-
---qcHopEYAB45HaUaB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSEpEjAAoJEN0jrNd/PrOh2HgQALj4MrnOZ+h0MSsrBhD+bOpg
-cHN6h93Qx2smB7rcGfkg2LZBaUf5sFOqjaRfFeNmqKqk02QlPUrreGRqEKxWEnD0
-0ISB8z5yZ8jQPid40Ou6MtdGsssXAUZALl0ObBUu1CU/R63tBnbPsDBaEsXkfjft
-K5nQgmveTPB4xahgkZbKkc4xNa5jYIzOCUVYwQ+DHGs3SdIrDN97bx0kPRpH5lyQ
-jke14j8Mzktts/mDerDgVRbCef7Hhf/fioSsiRAvaIBAcvn0RhgV2nJcYAVIZGLc
-M+5JLFqMVs2Af/zwfkImfCnHpeSXqbDmXT4sYYTvSZ8uU0h8mUiZn/Sn6prnat7w
-C2YzsCavM+bCGPsawC4VAKZSBRMoAtuY4B2QRencoqyeQv7Pn69voA728fqDpgPd
-pAIcBeeHqwp0u6Sv+Pb2TnkaQYPRxRvv7Lftag4xsKdxoZX1qr5wBtWw7AO6/0s/
-texVhpSS78BujK4aJ/f2t7CTEaK61MERsWHjsO03zcCt68+PzB3TKz9wB9tp98NP
-D+tVw0F/Ovy5En2Eyir7MDPBAzmvku8b0BtzB8ydfXuoP4QEsu5ZtxCOptmml2Ad
-AFH6O+OqmJB5DCEx1xOdFXmPMjCLJH7ihnG8H0CSWkHmVhZ6ZBWmJ4hOs3QylAeM
-dHrPkxKqBgUmjtK8JSP4
-=E1TI
------END PGP SIGNATURE-----
-
---qcHopEYAB45HaUaB--
