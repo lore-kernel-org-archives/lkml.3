@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751016Ab3HSGs3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 02:48:29 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750862Ab3HSGs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 02:48:27 -0400
-From: Richard Weinberger <richard@nod.at>
-To: dedekind1@gmail.com
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] UBI: Fix PEB leak in wear_leveling_worker()
-Date: Mon, 19 Aug 2013 08:48:12 +0200
-Message-Id: <1376894892-31519-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.1.4
+	id S1751047Ab3HSGuA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 02:50:00 -0400
+Received: from mga14.intel.com ([143.182.124.37]:44005 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750864Ab3HSGt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 02:49:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,911,1367996400"; 
+   d="scan'208";a="348204654"
+Date: Mon, 19 Aug 2013 11:36:20 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Felipe Balbi <balbi@ti.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Roger Quadros <rogerq@ti.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        USB list <linux-usb@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Dan Williams <djbw@fb.com>
+Subject: Re: [PATCH] dma: cpp41: make it compile with CONFIG_BUG=n
+Message-ID: <20130819060620.GV32147@intel.com>
+References: <20130815165829.6a401f104ee2a98dd48bcb58@canb.auug.org.au>
+ <520D0AD7.6050002@infradead.org>
+ <520E0304.5050906@ti.com>
+ <20130816154055.GB3570@breakpoint.cc>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130816154055.GB3570@breakpoint.cc>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_peb_for_wl() removes the PEB from the free list.
-If the WL subsystem detects that no wear leveling is needed
-it cancels the operation and drops the gained PEB.
-In this case we have to put the PEB back into the free list.
+On Fri, Aug 16, 2013 at 05:40:55PM +0200, Sebastian Andrzej Siewior wrote:
+> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> 
+> Before Randy figures out that this does not compile with CONFIG_BUG=n
+> here is a fix for it.
+> 
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
 
-This issue was introduced with commit ed4b7021c
-(UBI: remove PEB from free tree in get_peb_for_wl()).
+~Vinod
+> ---
+>  drivers/dma/cppi41.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
+> index 5dcebca..e696178 100644
+> --- a/drivers/dma/cppi41.c
+> +++ b/drivers/dma/cppi41.c
+> @@ -579,7 +579,7 @@ static int cppi41_tear_down_chan(struct cppi41_channel *c)
+>  				WARN_ON(!c->is_tx && !(pd0 & TD_DESC_IS_RX));
+>  				WARN_ON((pd0 & 0x1f) != c->port_num);
+>  			} else {
+> -				__WARN();
+> +				WARN_ON_ONCE(1);
+>  			}
+>  			c->td_seen = 1;
+>  		}
+> -- 
+> 1.8.4.rc2
+> 
 
-Cc: <stable@vger.kernel.org> # 3.7.x
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/wl.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index 5df49d3..c95bfb1 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -1069,6 +1069,9 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
- 		if (!(e2->ec - e1->ec >= UBI_WL_THRESHOLD)) {
- 			dbg_wl("no WL needed: min used EC %d, max free EC %d",
- 			       e1->ec, e2->ec);
-+
-+			/* Give the unused PEB back */
-+			wl_tree_add(e2, &ubi->free);
- 			goto out_cancel;
- 		}
- 		self_check_in_wl_tree(ubi, e1, &ubi->used);
 -- 
-1.8.1.4
-
