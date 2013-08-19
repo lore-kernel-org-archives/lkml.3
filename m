@@ -1,86 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750798Ab3HSEOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 00:14:25 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:49274 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab3HSEOW (ORCPT
+	id S1750779Ab3HSETv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 00:19:51 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:49208 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab3HSETo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 00:14:22 -0400
-Date: Sun, 18 Aug 2013 21:14:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
+	Mon, 19 Aug 2013 00:19:44 -0400
+X-Originating-IP: 50.43.39.152
+Date: Sun, 18 Aug 2013 21:19:25 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         dipankar@in.ibm.com, akpm@linux-foundation.org,
         mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, John Stultz <john.stultz@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Kevin Easton <kevin@guarana.org>
-Subject: Re: [PATCH tip/core/rcu 11/11] jiffies: Avoid undefined behavior
- from signed overflow
-Message-ID: <20130819041413.GH29406@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130818013735.GA27234@linux.vnet.ibm.com>
- <1376789876-27594-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1376789876-27594-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130818032350.GO28923@leaf>
- <20130819004120.GU29406@linux.vnet.ibm.com>
- <20130819012032.GA10695@leaf>
+        sbw@mit.edu, Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Rik van Riel <riel@surriel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH tip/core/rcu 1/5] rcu: Add duplicate-callback tests to
+ rcutorture
+Message-ID: <20130819041925.GA12202@leaf>
+References: <20130818022453.GA3475@linux.vnet.ibm.com>
+ <1376792717-3755-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130818025420.GC28923@leaf>
+ <20130819035528.GD29406@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130819012032.GA10695@leaf>
+In-Reply-To: <20130819035528.GD29406@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081904-2398-0000-0000-0000019DB390
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 18, 2013 at 06:20:32PM -0700, Josh Triplett wrote:
-> On Sun, Aug 18, 2013 at 05:41:20PM -0700, Paul E. McKenney wrote:
-> > On Sat, Aug 17, 2013 at 08:23:51PM -0700, Josh Triplett wrote:
-> > > On Sat, Aug 17, 2013 at 06:37:56PM -0700, Paul E. McKenney wrote:
-> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > According to the C standard 3.4.3p3, overflow of a signed integer results
-> > > > in undefined behavior.  This commit therefore changes the definitions
-> > > > of time_after(), time_after_eq(), time_after64(), and time_after_eq64()
-> > > > to avoid this undefined behavior.  The trick is that the subtraction
-> > > > is done using unsigned arithmetic, which according to 6.2.5p9 cannot
-> > > > overflow because it is defined as modulo arithmetic.  This has the added
-> > > > (though admittedly quite small) benefit of shortening two lines of code
-> > > > by four characters each.
-> > > > 
-> > > > Note that the C standard considers the cast from unsigned to
-> > > > signed to be implementation-defined, see 6.3.1.3p3.  However, on a
-> > > > two-complement system, an implementation that defines anything other
-> > > > than a reinterpretation of the bits is free come to me, and I will be
+On Sun, Aug 18, 2013 at 08:55:28PM -0700, Paul E. McKenney wrote:
+> On Sat, Aug 17, 2013 at 07:54:20PM -0700, Josh Triplett wrote:
+> > On Sat, Aug 17, 2013 at 07:25:13PM -0700, Paul E. McKenney wrote:
+> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > > > 
-> > > s/free come/free to come/
+> > > This commit adds a object_debug option to rcutorture to allow the
+> > > debug-object-based checks for duplicate call_rcu() invocations to
+> > > be deterministically tested.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > > Cc: Sedat Dilek <sedat.dilek@gmail.com>
+> > > Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> > > Cc: Rik van Riel <riel@surriel.com>
+> > > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > > Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
 > > 
-> > Good catch, fixed!
-> 
-> Just realized when looking at this again that there's another typo:
-> "two-complement" should be "two's-complement".
-
-OK, fixed that as well.  ;-)
-
-Thank you for all the reviews and comments!
-
- 							Thanx, Paul
-
-> > > > happy to act as a witness for its being committed to an insane asylum.
-> > > 
-> > > With the typo above fixed:
-> > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > > 
+> > Two comments below; with those fixed,
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 > > 
+> > > ---
+> > > @@ -100,6 +101,8 @@ module_param(fqs_stutter, int, 0444);
+> > >  MODULE_PARM_DESC(fqs_stutter, "Wait time between fqs bursts (s)");
+> > >  module_param(n_barrier_cbs, int, 0444);
+> > >  MODULE_PARM_DESC(n_barrier_cbs, "# of callbacks/kthreads for barrier testing");
+> > > +module_param(object_debug, int, 0444);
+> > > +MODULE_PARM_DESC(object_debug, "Enable debug-object double call_rcu() testing");
+> > 
+> > modules-next has a change to ignore and warn about
+> > unknown module parameters.  Thus, I'd suggest wrapping the ifdef around
+> > this module parameter, so it doesn't exist at all without
+> > CONFIG_DEBUG_OBJECTS_RCU_HEAD.
+> > 
+> > Alternatively, consider providing the test unconditionally, and just
+> > printing a big warning message saying that it's going to cause
+> > corruption in the !CONFIG_DEBUG_OBJECTS_RCU_HEAD case.
 > 
+> I currently do something like the above.  The module parameter
+> is defined unconditionally, but the actual tests are under #ifdef
+> CONFIG_DEBUG_OBJECTS_RCU_HEAD.  If you specify object_debug for a
+> !CONFIG_DEBUG_OBJECTS_RCU_HEAD kernel, the pr_alert() below happens,
+> and the test is omitted, thus avoiding the list corruption.
+> 
+> Seem reasonable?
 
+That's exactly the bit I was commenting on.  I'm saying that you should
+either make the test unconditional (perhaps with a warning saying it's
+about to cause list corruption), or you should compile out the module
+parameter as well and then you don't need the pr_alert (since current
+kernels will emit a warning when you pass a non-existent module
+parameter).
+
+Personally, I'd go with the latter.
+
+- Josh Triplett
