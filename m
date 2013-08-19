@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750822Ab3HSEoS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 00:44:18 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:37677 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab3HSEoQ (ORCPT
+	id S1750846Ab3HSEoY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 00:44:24 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:46258 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab3HSEoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 00:44:16 -0400
-Message-ID: <5211A273.1080903@linux.vnet.ibm.com>
-Date: Mon, 19 Aug 2013 10:13:31 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 19 Aug 2013 00:44:21 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-51-5211a2a42b72
+Date: Mon, 19 Aug 2013 13:44:44 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Mitch Harder <mitch.harder@sabayonlinux.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchand@redhat.com>, devel@driverdev.osuosl.org
+Subject: Re: BUG: scheduling while atomic 3.10.7 in ZRAM Swap
+Message-ID: <20130819044444.GD26832@bbox>
+References: <CAKcLGm8EMruO5e8yw+nArTjyCGSvLB5pjnGZYvz0xdF9M99iwQ@mail.gmail.com>
+ <52119B4E.4060409@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-pm@vger.kernel.org, daniel.lezcano@linaro.org, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org, dongsheng.wang@freescale.com,
-        srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH V2 5/6] cpuidle/powerpc: Backend-powerpc idle driver for
- powernv and pseries.
-References: <20130731025840.19448.24468.stgit@deepthi> <20130731025934.19448.16658.stgit@deepthi> <1375830520.5600.23.camel@snotra.buserror.net> <1375831851.12557.74.camel@pasglop> <1375832471.5600.41.camel@snotra.buserror.net>
-In-Reply-To: <1375832471.5600.41.camel@snotra.buserror.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081904-4790-0000-0000-000009DB8AFA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52119B4E.4060409@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 05:11 AM, Scott Wood wrote:
-> On Wed, 2013-08-07 at 09:30 +1000, Benjamin Herrenschmidt wrote:
->> On Tue, 2013-08-06 at 18:08 -0500, Scott Wood wrote:
->>> Here's another example.  get_lppaca() will only build on book3s -- and
->>> yet we get requests for e500 code to use this file.
->>
->> Indeed, Besides there is already accessors afaik for lppaca that compile
->> to nothing on E (and if not they would be trivial to add).
-> 
-> I don't see such an accessor, but if there were, what would happen when
-> the caller goes on to dereference that nothing?
-> 
-> There is an accessor for shared_proc specifically (in the spinlock code)
-> -- not that it would be much help on booke to just compile away that
-> check and always select one of the pseries state tables over the other.
-> 
-> -Scott
+Hello,
 
-Thanks a lot Scott and Ben for the review.
-I have addressed the issues in V3 of this patch series which I have just
-posted out.
+On Mon, Aug 19, 2013 at 12:13:02PM +0800, Michael wang wrote:
+> Hi, Mitch
+> 
+> On 08/17/2013 10:01 PM, Mitch Harder wrote:
+> > I'm encountering a BUG while using a ZRAM Swap device.
+> > 
+> > The call trace seems to involve the changes recently added to 3.10.6
+> > by the patch:
+> > zram: use zram->lock to protect zram_free_page() in swap free notify path
+> > 
+> > The hardware is a x86 single CPU AMD Athlon XP system with 1GB RAM.
+> > 
+> > I'm implementing a 352MB ZRAM swap device, and also have 1GB swap
+> > space on the hard disk.
+> 
+> IMHO, it was caused by that swap_entry_free() was invoked with page
+> spin-locked, thus zram_slot_free_notify() should not use rw-lock which
+> may goto sleep.
+> 
+> CC folks related.
 
-Regards,
-Deepthi
+Thanks for Ccing me, Michael,
 
+Mitch, It's known problem and it should be fixed by [1] in recent linux-next.
+
+[1] a0c516cbfc, zram: don't grab mutex in zram_slot_free_noity
+
+Thanks for the report!
 
 > 
-> 
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
-> 
-
+> Regards,
+> Michael Wang
+-- 
+Kind regards,
+Minchan Kim
