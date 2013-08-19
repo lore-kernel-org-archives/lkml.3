@@ -1,65 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159Ab3HSQhO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 12:37:14 -0400
-Received: from etezian.org ([198.101.225.253]:41454 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073Ab3HSQhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 12:37:11 -0400
-From: Andi Shyti <andi@etezian.org>
-To: josh.h.morris@us.ibm.com, pjk1939@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, andi@etezian.org
-Subject: [PATCH v2 1/1] rsxx: core: fix memory leak
-Date: Mon, 19 Aug 2013 18:36:36 +0200
-Message-Id: <1376930196-21785-2-git-send-email-andi@etezian.org>
-X-Mailer: git-send-email 1.8.4.rc2
-In-Reply-To: <1376930196-21785-1-git-send-email-andi@etezian.org>
-References: <1376907631-13725-1-git-send-email-andi@etezian.org>
- <1376930196-21785-1-git-send-email-andi@etezian.org>
+	id S1750904Ab3HSQo7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 12:44:59 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46268 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab3HSQo5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 12:44:57 -0400
+Message-ID: <52124B85.8080808@wwwdotorg.org>
+Date: Mon, 19 Aug 2013 10:44:53 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Bill Huang <bilhuang@nvidia.com>
+CC: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        ian.campbell@citrix.com, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ARM: tegra: configure power off for Dalmore
+References: <1376894028-30060-1-git-send-email-bilhuang@nvidia.com>
+In-Reply-To: <1376894028-30060-1-git-send-email-bilhuang@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free 'buf' before returning.
+On 08/19/2013 12:33 AM, Bill Huang wrote:
+> Add DT property to tell the regulator to register pm_power_off to make
+> "shutdown" work.
 
-the 'rsxx_cram_write()' function returns twice without freeing
-the allocated buffer 'buf' causing a possible memory leak.
-
-This issue has been reported by scan.coverity.com
-
-Signed-off-by: Andi Shyti <andi@etezian.org>
----
- drivers/block/rsxx/core.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/block/rsxx/core.c b/drivers/block/rsxx/core.c
-index 6e85e21..fa3740b 100644
---- a/drivers/block/rsxx/core.c
-+++ b/drivers/block/rsxx/core.c
-@@ -224,19 +224,20 @@ static ssize_t rsxx_cram_write(struct file *fp, const char __user *ubuf,
- 
- 	st = copy_from_user(buf, ubuf, cnt);
- 	if (st)
--		return st;
-+		goto exit;
- 
- 	info->f_pos = (u32)*ppos + info->offset;
- 
- 	st = rsxx_creg_write(card, CREG_ADD_CRAM + info->f_pos, cnt, buf, 1);
- 	if (st)
--		return st;
-+		goto exit;
- 
- 	info->offset += cnt;
- 
-+exit:
- 	kfree(buf);
- 
--	return cnt;
-+	return st ? st : cnt;
- }
- 
- static int rsxx_cram_open(struct inode *inode, struct file *file)
--- 
-1.8.4.rc2
-
+Thanks. I've forwarded this to arm-soc for hopeful inclusion in 3.12,
+since it was just a little late to get into the main set of pull
+requests I sent.
