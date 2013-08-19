@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751226Ab3HSK5e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 06:57:34 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:50419 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab3HSK5c (ORCPT
+	id S1751258Ab3HSK6w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 06:58:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56994 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab3HSK6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 06:57:32 -0400
-Date: Mon, 19 Aug 2013 12:57:27 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	Mon, 19 Aug 2013 06:58:51 -0400
+Date: Mon, 19 Aug 2013 12:58:17 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v3 0/3] qrwlock: Introducing a queue read/write lock
- implementation
-Message-ID: <20130819105727.GA32308@gmail.com>
-References: <1375315259-29392-1-git-send-email-Waiman.Long@hp.com>
- <520A811A.7080907@hp.com>
- <20130814102041.GG10849@gmail.com>
- <520BA109.1000501@hp.com>
- <20130814155751.GA17821@gmail.com>
- <520EAC07.5050106@hp.com>
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20130819105817.GD24092@twins.programming.kicks-ass.net>
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com>
+ <1376667753-29014-3-git-send-email-fweisbec@gmail.com>
+ <20130816160201.GA31682@redhat.com>
+ <20130816162056.GE24210@somewhere>
+ <20130816162654.GA453@redhat.com>
+ <20130816164626.GH24210@somewhere>
+ <20130816164922.GA1573@redhat.com>
+ <20130816171208.GJ24210@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <520EAC07.5050106@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130816171208.GJ24210@somewhere>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 16, 2013 at 07:12:09PM +0200, Frederic Weisbecker wrote:
+> Or may be Peter could tell us as well. Peter, do you have a preference?
 
-* Waiman Long <waiman.long@hp.com> wrote:
+Still trying to wrap my head around it, but conceptually
+get_cpu_iowait_time_us() doesn't make any kind of sense. iowait isn't
+per cpu since effectively tasks that aren't running aren't assigned a
+cpu (as Oleg already pointed out).
 
-> >Could be a CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE=1 
-> >kernel?
-> >
-> >Thanks,
-> >
-> >	Ingo
-> 
-> My test system was a RHEL6.4 system. The 3.10 kernel 
-> config file was based on the original RHEL6.4 config 
-> file. So yes, the CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE 
-> parameter was set.
+The fact that cpufreq 'needs' this just means that cpufreq is broken --
+but I think I've said as much previously; cpufreq needs to stop living
+in the partitioned-mp era and get dragged (kicking and screaming) into
+the smp era.
 
-Ok, good, so that's an expected panic.
-
-Thanks,
-
-	Ingo
+I'm also not entirely clear on the 'desired' semantics here. Do we count
+iowait time as idle or not?
