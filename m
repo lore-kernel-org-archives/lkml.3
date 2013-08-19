@@ -1,148 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750836Ab3HSFrV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 01:47:21 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53223 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab3HSFrT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 01:47:19 -0400
-X-AuditID: 9c930179-b7c0bae0000040ac-7e-5211b165994e
-Date: Mon, 19 Aug 2013 14:47:42 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Weijie Yang <weijie.yang.kh@gmail.com>, sjenning@linux.vnet.ibm.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        dan.magenheimer@oracle.com
-Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
-Message-ID: <20130819054742.GA28062@bbox>
-References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
- <52118042.30101@oracle.com>
+	id S1750855Ab3HSFyU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 01:54:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30596 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810Ab3HSFyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 01:54:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,910,1367996400"; 
+   d="scan'208";a="382900638"
+Date: Mon, 19 Aug 2013 10:41:04 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
+Subject: Re: [PATCH] dmaengine: make dmatest less noisy
+Message-ID: <20130819051103.GS32147@intel.com>
+References: <1376736160-26827-1-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52118042.30101@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1376736160-26827-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 10:17:38AM +0800, Bob Liu wrote:
-> Hi Weijie,
+On Sat, Aug 17, 2013 at 12:42:40PM +0200, Linus Walleij wrote:
+> Commit 95019c8c5 "dmatest: gather test results in the linked list"
+> started to warning whenever we add results to a test thread.
+> A warning for something completely normal? This is just cluttering
+> my terminal. Get rid of this.
 > 
-> On 08/19/2013 12:14 AM, Weijie Yang wrote:
-> > I found a few bugs in zswap when I review Linux-3.11-rc5, and I have
-> > also some questions about it, described as following:
-> > 
-> > BUG:
-> > 1. A race condition when reclaim a page
-> > when a handle alloced from zbud, zbud considers this handle is used
-> > validly by upper(zswap) and can be a candidate for reclaim.
-> > But zswap has to initialize it such as setting swapentry and addding
-> > it to rbtree. so there is a race condition, such as:
-> > thread 0: obtain handle x from zbud_alloc
-> > thread 1: zbud_reclaim_page is called
-> > thread 1: callback zswap_writeback_entry to reclaim handle x
-> > thread 1: get swpentry from handle x (it is random value now)
-> > thread 1: bad thing may happen
-> > thread 0: initialize handle x with swapentry
+> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/dma/dmatest.c | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
+> index e88ded2..6bb51e2 100644
+> --- a/drivers/dma/dmatest.c
+> +++ b/drivers/dma/dmatest.c
+> @@ -406,7 +406,6 @@ static int thread_result_add(struct dmatest_info *info,
+>  	list_add_tail(&tr->node, &r->results);
+>  	mutex_unlock(&info->results_lock);
+>  
+> -	pr_warn("%s\n", thread_result_get(r->name, tr));
+perhaps move to debug?
 
-Nice catch!
-
-> 
-> Yes, this may happen potentially but in rare case.
-> Because we have a LRU list for page frames, after Thread 0 called
-> zbud_alloc the corresponding page will be add to the head of LRU
-> list,While zbud_reclaim_page(Thread 1 called) is started from the tail
-> of LRU list.
-> 
-> > Of course, this situation almost never happen, it is a "theoretical
-> > race condition" issue.
-
-But it's doable and we should prevent that although you feel it's rare
-because system could go hang. When I look at the code, Why should zbud
-have LRU logic instead of zswap? If I missed some history, sorry about that.
-But at least to me, zbud is just allocator so it should have a role
-to handle alloc/free object and how client of the allocator uses objects
-depends on the upper layer so zbud should handle LRU. If so, we wouldn't
-encounter this problem, either.
-
-> > 
-> > 2. Pollute swapcache data by add a pre-invalided swap page
-> > when a swap_entry is invalidated, it will be reused by other anon
-> > page. At the same time, zswap is reclaiming old page, pollute
-> > swapcache of new page as a result, because old page and new page use
-> > the same swap_entry, such as:
-> > thread 1: zswap reclaim entry x
-> > thread 0: zswap_frontswap_invalidate_page entry x
-> > thread 0: entry x reused by other anon page
-> > thread 1: add old data to swapcache of entry x
-> 
-> I didn't get your idea here, why thread1 will add old data to entry x?
-> 
-> > thread 0: swapcache of entry x is polluted
-> > Of course, this situation almost never happen, it is another
-> > "theoretical race condition" issue.
-
-Don't swapcache_prepare close the race?
-
-> > 
-> > 3. Frontswap uses frontswap_map bitmap to track page in "backend"
-> > implementation, when zswap reclaim a
-> > page, the corresponding bitmap record is not cleared.
-> >
-> 
-> That's true, but I don't think it's a big problem.
-> Only waste little time to search rbtree during zswap_frontswap_load().
-> 
-> > 4. zswap_tree is not freed when swapoff, and it got re-kzalloc in
-> > swapon, memory leak occurs.
-> 
-> Nice catch! I think it should be freed in zswap_frontswap_invalidate_area().
-> 
-> > 
-> > questions:
-> > 1. How about SetPageReclaim befor __swap_writepage, so that move it to
-> > the tail of the inactive list?
-
-It's a good idea to avoid unnecessary page scanning.
-
-> 
-> It will be added to inactive now.
-> 
-> > 2. zswap uses GFP_KERNEL flag to alloc things in store and reclaim
-> > function, does this lead to these function called recursively?
-> 
-> Yes, that's a potential problem.
-
-It should use GFP_NOIO.
-
-> 
-> > 3. for reclaiming one zbud page which contains two buddies, zswap
-> > needs to alloc two pages. Does this reclaim cost-efficient?
-
-It would be better to evict zpage which is a compressed sequence of
-PAGE_SIZE bytes rather than decompresesed PAGE_SIZE bytes a page when
-we are about to reclaim the page but it's hard part from frontswap API.
-
-> > 
-> 
-> Yes, that's a problem too. And that's why we use zbud as the default
-> allocator instead of zsmalloc.
-> I think improving the write back path of zswap is the next important
-> step for zswap.
-> 
+>  	return 0;
+>  }
+>  
 > -- 
-> Regards,
-> -Bob
+> 1.8.1.4
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Kind regards,
-Minchan Kim
