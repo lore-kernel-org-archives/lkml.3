@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750850Ab3HSIA1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 04:00:27 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:50182 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734Ab3HSIAZ (ORCPT
+	id S1750902Ab3HSIEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 04:04:13 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61530 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab3HSIEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 04:00:25 -0400
-Message-ID: <1376899214.14734.6.camel@jlt4.sipsolutions.net>
-Subject: Re: 3.11-rc6 genetlink locking fix offends lockdep
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Otcheretianski, Andrei" <andrei.otcheretianski@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Pravin B Shelar <pshelar@nicira.com>, Thomas Graf <tgraf@suug.ch>
-Date: Mon, 19 Aug 2013 10:00:14 +0200
-In-Reply-To: <alpine.LNX.2.00.1308182143370.906@eggly.anvils>
-References: <alpine.LNX.2.00.1308182143370.906@eggly.anvils>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
+	Mon, 19 Aug 2013 04:04:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [RFC v1 0/5] ARM: Initial support for Marvell Armada 1500
+Date: Mon, 19 Aug 2013 10:03:39 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com> <201308172132.59402.arnd@arndb.de> <521156EF.3090201@gmail.com>
+In-Reply-To: <521156EF.3090201@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201308191003.39528.arnd@arndb.de>
+X-Provags-ID: V02:K0:bHsy+il8jvzMsiV61BTT0zw5gHw08GMA+WQ9yXNuSRY
+ Z3AwBmcVWJB23aE46FV+yAHoOsZ80Xekkt5ds7l8bUSBgN/GvT
+ dTdkDi5odtdb9jeuZXwoI/Q/TsX/DoxaECjAywlE6XTe2ci3Te
+ FopK6by0fatOjfjywxcJSt8YWq22n93u2TI4R3Gm5f/ugdQIqf
+ uGliz5CESzC91EOB3TMfb0S/6bgNiJvRl7Z54dSuX0CgTqAvr9
+ NOWayIsFm2av279ElnIwC3njukvJuVUQi+WaQvJKDCwWJ10uw+
+ IO6SyUwC45/KOqVC3LAW/m0TA4rdUKVxBet2+Y6bVme4/aHBVZ
+ VPTBGa41A0OqHeeThLLk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 19 August 2013, Sebastian Hesselbarth wrote:
+> We either put it into mach-mvebu and pretend to consolidate Marvell SoCs
+> in there. Pro would be that it is close to other Armadas there, con is
+> that Armada is codename for virtually any Marvell SoC lately.
+> 
+> If we want a new mach- directory, I'd suggest either mach-berlin which
+> looks like some nickname for 88de3xxx SoCs or simply boring
+> mach-88de3xxx.
 
-> 3.11-rc6's commit 58ad436fcf49 ("genetlink: fix family dump race")
-> gives me the lockdep trace below at startup.
+As I said, either way is fine with me. If you use a new directory, I'd
+suggest using the same mach-mv88de3100 name that Marvell uses, to give
+them a "hint" about this when updating their own sources to a newer
+version. They might get the idea and actually start using your code ;-)
 
-Hmm. Yes, I see now how this happens, not sure why I didn't run into it.
-
-The problem is that genl_family_rcv_msg() is called with the genl_lock
-held, and then calls netlink_dump_start() with it held, creating a
-genl_lock->cb_mutex dependency, but obviously the dump continuation is
-the other way around.
-
-We could use the semaphore instead, I believe, but I don't really
-understand the mutex vs. semaphore well enough to be sure that's
-correct.
-
-johannes
-
-
-diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
-index f85f8a2..6cfa646 100644
---- a/net/netlink/genetlink.c
-+++ b/net/netlink/genetlink.c
-@@ -792,7 +792,7 @@ static int ctrl_dumpfamily(struct sk_buff *skb, struct netlink_callback *cb)
- 	bool need_locking = chains_to_skip || fams_to_skip;
- 
- 	if (need_locking)
--		genl_lock();
-+		down_read(&cb_lock);
- 
- 	for (i = chains_to_skip; i < GENL_FAM_TAB_SIZE; i++) {
- 		n = 0;
-@@ -815,7 +815,7 @@ errout:
- 	cb->args[1] = n;
- 
- 	if (need_locking)
--		genl_unlock();
-+		up_read(&cb_lock);
- 
- 	return skb->len;
- }
-
-
+	Arnd
