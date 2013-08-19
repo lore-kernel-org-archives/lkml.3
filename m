@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab3HSCut (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 22:50:49 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60082 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753722Ab3HSCur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 22:50:47 -0400
-Message-ID: <1376880644.2027.35.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] drivers: block :swim3: fixed the errors on coding
- style
-From: Joe Perches <joe@perches.com>
-To: Thiagarajan Thangavel <write2thiagu@gmail.com>
-Cc: grant.likely@linaro.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Date: Sun, 18 Aug 2013 19:50:44 -0700
-In-Reply-To: <1376854740-17580-1-git-send-email-write2thiagu@gmail.com>
-References: <1376854740-17580-1-git-send-email-write2thiagu@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1750718Ab3HSDIS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 23:08:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49610 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab3HSDIS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Aug 2013 23:08:18 -0400
+Message-ID: <52118C17.7060706@infradead.org>
+Date: Sun, 18 Aug 2013 20:08:07 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH resend] kernel: fix new kernel-doc warning in wait.c
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-19 at 01:09 +0530, Thiagarajan Thangavel wrote:
-> Fixed the coding style errors
-[]
-> diff --git a/drivers/block/swim3.c b/drivers/block/swim3.c
-[]
-> @@ -783,7 +783,7 @@ static irqreturn_t swim3_interrupt(int irq, void *dev_id)
->  				act(fs);
->  			} else {
->  				swim3_err("Error %sing block %ld (err=%x)\n",
-> -				       rq_data_dir(req) == WRITE ? "writ" : "read",
-> +				rq_data_dir(req) == WRITE ? "writ" : "read",
+From: Randy Dunlap <rdunlap@infradead.org>
 
-This looks worse to me.
+Fix new kernel-doc warnings in kernel/wait.c:
 
-My preference would be to align the arguments to the open
-parenthesis and to use full words instead:
+Warning(kernel/wait.c:374): No description found for parameter 'p'
+Warning(kernel/wait.c:374): Excess function parameter 'word' description in 'wake_up_atomic_t'
+Warning(kernel/wait.c:374): Excess function parameter 'bit' description in 'wake_up_atomic_t'
 
-				swim3_err("Error %s block %ld (err=%x)\n",
-					  rq_data_dir(req) == WRITE ? "writing" : "reading",
-					  (long)blk_rq_pos(req), err);
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: David Howells <dhowells@redhat.com>
+---
+ kernel/wait.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> @@ -894,7 +894,18 @@ static int fd_eject(struct floppy_state *fs)
-[]
-> -static struct floppy_struct floppy_type = { 2880, 18, 2, 80, 0, 0x1B, 0x00, 0xCF, 0x6C, NULL };	/*  7 1.44MB 3.5"   */
-> +static struct floppy_struct floppy_type = {
-> +	2880,
-> +	18,
-> +	2,
-> +	80,
-> +	0,
-> +	0x1B,
-> +	0x00,
-> +	0xCF,
-> +	0x6C,
-> +	NULL
-> +};	/*  7 1.44MB 3.5"   */
-
-These changes are unattractive to me.
-I don't find much wrong with the original though
-I would probably have written it as:
-
-static struct floppy_struct floppy_type = {	/* 7 1.44MB 3.5" */
-	2880, 18, 2, 80, 0, 0x1B, 0x00, 0xCF, 0x6C, NULL
-};
-
-
+--- lnx-311-rc6.orig/kernel/wait.c
++++ lnx-311-rc6/kernel/wait.c
+@@ -363,8 +363,7 @@ EXPORT_SYMBOL(out_of_line_wait_on_atomic
+ 
+ /**
+  * wake_up_atomic_t - Wake up a waiter on a atomic_t
+- * @word: The word being waited on, a kernel virtual address
+- * @bit: The bit of the word being waited on
++ * @p: The atomic_t being waited on, a kernel virtual address
+  *
+  * Wake up anyone waiting for the atomic_t to go to zero.
+  *
