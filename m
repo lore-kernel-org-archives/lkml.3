@@ -1,153 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751248Ab3HSUBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 16:01:53 -0400
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:11922 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab3HSUBI (ORCPT
+	id S1751271Ab3HSUDF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 16:03:05 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:61496 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab3HSUDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 16:01:08 -0400
-From: Linn Crosetto <linn@hp.com>
-To: matt.fleming@intel.com, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, yinghai@kernel.org,
-        penberg@kernel.org, jacob.shin@amd.com, linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Linn Crosetto <linn@hp.com>
-Subject: [RFC PATCH 4/4] x86: Fix EFI boot stub for large memory maps
-Date: Mon, 19 Aug 2013 14:00:19 -0600
-Message-Id: <1376942419-5684-5-git-send-email-linn@hp.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1376942419-5684-1-git-send-email-linn@hp.com>
-References: <1376942419-5684-1-git-send-email-linn@hp.com>
+	Mon, 19 Aug 2013 16:03:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <1376937682.2657.15.camel@ul30vt.home>
+References: <20130814200845.21923.64284.stgit@bling.home> <CAErSpo4zfuaaBSDci4jOu_9RgUfLQNPvKhro1OEh=8AMvAFWYw@mail.gmail.com>
+ <1376521578.13642.65.camel@ul30vt.home> <1376937682.2657.15.camel@ul30vt.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 19 Aug 2013 14:02:41 -0600
+Message-ID: <CAErSpo50ve+ZMqcX=13hKvrB75LyWmUddC-qyX7Esfr=P5StcA@mail.gmail.com>
+Subject: Re: [PATCH] vfio-pci: PCI hot reset interface
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for EFI memory maps larger than 128 entries when
-booted using the EFI boot stub.
+On Mon, Aug 19, 2013 at 12:41 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Wed, 2013-08-14 at 17:06 -0600, Alex Williamson wrote:
+>> On Wed, 2013-08-14 at 16:42 -0600, Bjorn Helgaas wrote:
+>> > On Wed, Aug 14, 2013 at 2:10 PM, Alex Williamson
+>> > <alex.williamson@redhat.com> wrote:
 
-The e820 map in struct boot_params can only hold 128 entries, but the
-memory map provided by EFI may be larger. If the map contained more than
-128 entries, exit_boot() would write beyond the e820_map array in
-boot_params and the system would eventually halt in the BUG_ON check in
-sanitize_e820_map().
+>> > > +static int vfio_pci_for_each_slot_or_bus(struct pci_dev *pdev,
+>> > > +                                        int (*fn)(struct pci_dev *,
+>> > > +                                                  void *data), void *data,
+>> > > +                                        bool slot)
+>> > > +{
+>> > > +       struct pci_dev *tmp;
+>> > > +       int ret = 0;
+>> > > +
+>> > > +       list_for_each_entry(tmp, &pdev->bus->devices, bus_list) {
+>> > > +               if (slot && tmp->slot != pdev->slot)
+>> > > +                       continue;
+>> > > +
+>> > > +               ret = fn(tmp, data);
+>> > > +               if (ret)
+>> > > +                       break;
+>> > > +
+>> > > +               if (tmp->subordinate) {
+>> > > +                       ret = vfio_pci_for_each_slot_or_bus(tmp, fn,
+>> > > +                                                           data, false);
+>> > > +                       if (ret)
+>> > > +                               break;
+>> > > +               }
+>> > > +       }
+>> > > +
+>> > > +       return ret;
+>> > > +}
+>> >
+>> > vfio_pci_for_each_slot_or_bus() isn't really vfio-specific, is it?
+>>
+>> It's not, I originally has callbacks split out as PCI patches but I was
+>> able to simplify some things in the code by customizing it to my usage,
+>> so I left it here.
+>>
+>> > I mean, traversing the PCI hierarchy doesn't require vfio knowledge.  I
+>> > think this loop (walking the bus->devices list) skips devices on
+>> > "virtual buses" that may be added for SR-IOV.  I'm not sure that
+>> > pci_walk_bus() handles that correctly either, but at least if you used
+>> > that, we could fix the problem in one place.
+>>
+>> I didn't know about pci_walk_bus(), I'll look into switching to it.
+>
+> It looks like pci_walk_bus() is a poor replacement for when dealing with
+> slots.  There might be multiple slots on a bus or a mix of slots and
+> non-slots, so for each device pci_walk_bus() finds on a subordinate bus
+> I'd need to walk up the tree to find the parent bridge on the original
+> bus to figure out if it's in the same slot.
 
-In the case we come in through efi_main(), the EFI memory map is used.
-Instead of populating e820_map in boot_params, create the e820 from the
-EFI memory map in setup_arch() via a memory_setup hook.
+Do you really care about that scenario?  PCIe only supports a single
+slot per bus, as far as I know.
 
-The EFI memory map may also be added in efi_init() if the command line
-parameter "add_efi_memmap" is specified. This is left intact to allow
-the command line parameter to remain effective.
+> Should we have a pci_walk_slot() function?
 
-Signed-off-by: Linn Crosetto <linn@hp.com>
----
- arch/x86/boot/compressed/eboot.c | 64 ++--------------------------------------
- arch/x86/kernel/setup.c          |  3 ++
- 2 files changed, 6 insertions(+), 61 deletions(-)
+I guess.  And supply the pci_slot rather than the pci_dev?  I'm a
+little bit worried because the idea of a "slot" is not well-defined in
+the spec, and we have sort of an ad hoc method of discovering and
+managing them, e.g., acpiphp and pciehp might discover the same slot.
+But I guess that's no reason to bury generic code in vfio.
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index b7388a4..66b8d3d 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -973,6 +973,9 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
- 	if (status != EFI_SUCCESS)
- 		goto fail2;
- 
-+	/* Use EFI memory map */
-+	boot_params->e820_entries = 0;
-+
- 	return boot_params;
- fail2:
- 	if (options_size)
-@@ -986,8 +989,6 @@ static efi_status_t exit_boot(struct boot_params *boot_params,
- 			      void *handle)
- {
- 	struct efi_info *efi = &boot_params->efi_info;
--	struct e820entry *e820_map = &boot_params->e820_map[0];
--	struct e820entry *prev = NULL;
- 	unsigned long size, key, desc_size, _size;
- 	efi_memory_desc_t *mem_map;
- 	efi_status_t status;
-@@ -1049,65 +1050,6 @@ get_map:
- 	/* Historic? */
- 	boot_params->alt_mem_k = 32 * 1024;
- 
--	/*
--	 * Convert the EFI memory map to E820.
--	 */
--	nr_entries = 0;
--	for (i = 0; i < size / desc_size; i++) {
--		efi_memory_desc_t *d;
--		unsigned int e820_type = 0;
--		unsigned long m = (unsigned long)mem_map;
--
--		d = (efi_memory_desc_t *)(m + (i * desc_size));
--		switch (d->type) {
--		case EFI_RESERVED_TYPE:
--		case EFI_RUNTIME_SERVICES_CODE:
--		case EFI_RUNTIME_SERVICES_DATA:
--		case EFI_MEMORY_MAPPED_IO:
--		case EFI_MEMORY_MAPPED_IO_PORT_SPACE:
--		case EFI_PAL_CODE:
--			e820_type = E820_RESERVED;
--			break;
--
--		case EFI_UNUSABLE_MEMORY:
--			e820_type = E820_UNUSABLE;
--			break;
--
--		case EFI_ACPI_RECLAIM_MEMORY:
--			e820_type = E820_ACPI;
--			break;
--
--		case EFI_LOADER_CODE:
--		case EFI_LOADER_DATA:
--		case EFI_BOOT_SERVICES_CODE:
--		case EFI_BOOT_SERVICES_DATA:
--		case EFI_CONVENTIONAL_MEMORY:
--			e820_type = E820_RAM;
--			break;
--
--		case EFI_ACPI_MEMORY_NVS:
--			e820_type = E820_NVS;
--			break;
--
--		default:
--			continue;
--		}
--
--		/* Merge adjacent mappings */
--		if (prev && prev->type == e820_type &&
--		    (prev->addr + prev->size) == d->phys_addr)
--			prev->size += d->num_pages << 12;
--		else {
--			e820_map->addr = d->phys_addr;
--			e820_map->size = d->num_pages << 12;
--			e820_map->type = e820_type;
--			prev = e820_map++;
--			nr_entries++;
--		}
--	}
--
--	boot_params->e820_entries = nr_entries;
--
- 	return EFI_SUCCESS;
- 
- free_mem_map:
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f8ec578..9682c8c 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -920,6 +920,9 @@ void __init setup_arch(char **cmdline_p)
- 
- 	if (efi_enabled(EFI_BOOT))
- 		efi_memblock_x86_reserve_range();
-+
-+	if (efi_memmap_needed())
-+		x86_init.resources.memory_setup = efi_memory_setup;
- #endif
- 
- 	x86_init.oem.arch_setup();
--- 
-1.7.11.3
-
+Bjorn
