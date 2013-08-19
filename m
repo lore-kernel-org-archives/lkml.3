@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408Ab3HSVfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 17:35:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24484 "EHLO
+	id S1751463Ab3HSVfw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 17:35:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11781 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab3HSVfq (ORCPT
+	with ESMTP id S1751082Ab3HSVfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Aug 2013 17:35:46 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=iKlYmpTFJ6IA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_-yd4YAFh8UA:10 a=0G-pJu9H_6PBYHEStYQA:9 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=qUrI4cMtjmkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=oifTI6OnsvIA:10 a=ILSa-1RNdHgTr9NWcJsA:9 a=jeBq3FmKZ4MA:10 a=4Pbv9GT4fHZTLoe-:21 a=YiBtv6JzsuFFH36t:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130819213324.405942342@goodmis.org>
+Message-Id: <20130819213545.295619792@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 19 Aug 2013 17:33:24 -0400
+Date: Mon, 19 Aug 2013 17:33:27 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -21,19 +21,188 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
         Clark Williams <clark.williams@gmail.com>
-Subject: [PATCH RT 0/3] hwlat-detector: Have it actually find hardware latency
+Subject: [PATCH RT 3/3] hwlat-detector: Use thread instead of stop machine
+References: <20130819213324.405942342@goodmis.org>
+Content-Disposition: inline; filename=hwlat-thread.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thi patch series fixes up hwlat-detector to check the entire path
-of time for a latency being hit, instead of the quick check between
-two time stamps.
+There's no reason to use stop machine to search for hardware latency.
+Simply disabling interrupts while running the loop will do enough to
+check if something comes in that wasn't disabled by interrupts being
+off, which is exactly what stop machine does.
 
-It also uses the trace_local_clock() if available, which is much lighter
-weight than ktime_get() which might produce false positives. As
-the trace clock is used to detect irq latencies, it's suitable for
-hardware latency.
+Instead of using stop machine, just have the thread disable interrupts
+while it checks for hardware latency.
 
-Finally, stop machine is removed and the test is run by a single thread.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+
+Index: linux-rt.git/drivers/misc/hwlat_detector.c
+===================================================================
+--- linux-rt.git.orig/drivers/misc/hwlat_detector.c
++++ linux-rt.git/drivers/misc/hwlat_detector.c
+@@ -41,7 +41,6 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/ring_buffer.h>
+-#include <linux/stop_machine.h>
+ #include <linux/time.h>
+ #include <linux/hrtimer.h>
+ #include <linux/kthread.h>
+@@ -107,7 +106,6 @@ struct data;					/* Global state */
+ /* Sampling functions */
+ static int __buffer_add_sample(struct sample *sample);
+ static struct sample *buffer_get_sample(struct sample *sample);
+-static int get_sample(void *unused);
+ 
+ /* Threading and state */
+ static int kthread_fn(void *unused);
+@@ -149,7 +147,7 @@ struct sample {
+ 	unsigned long   lost;
+ };
+ 
+-/* keep the global state somewhere. Mostly used under stop_machine. */
++/* keep the global state somewhere. */
+ static struct data {
+ 
+ 	struct mutex lock;		/* protect changes */
+@@ -172,7 +170,7 @@ static struct data {
+  * @sample: The new latency sample value
+  *
+  * This receives a new latency sample and records it in a global ring buffer.
+- * No additional locking is used in this case - suited for stop_machine use.
++ * No additional locking is used in this case.
+  */
+ static int __buffer_add_sample(struct sample *sample)
+ {
+@@ -229,18 +227,17 @@ static struct sample *buffer_get_sample(
+ #endif
+ /**
+  * get_sample - sample the CPU TSC and look for likely hardware latencies
+- * @unused: This is not used but is a part of the stop_machine API
+  *
+  * Used to repeatedly capture the CPU TSC (or similar), looking for potential
+- * hardware-induced latency. Called under stop_machine, with data.lock held.
++ * hardware-induced latency. Called with interrupts disabled and with data.lock held.
+  */
+-static int get_sample(void *unused)
++static int get_sample(void)
+ {
+ 	time_type start, t1, t2, last_t2;
+ 	s64 diff, total = 0;
+ 	u64 sample = 0;
+ 	u64 outer_sample = 0;
+-	int ret = 1;
++	int ret = -1;
+ 
+ 	init_time(last_t2, 0);
+ 	start = time_get(); /* start timestamp */
+@@ -279,10 +276,14 @@ static int get_sample(void *unused)
+ 
+ 	} while (total <= data.sample_width);
+ 
++	ret = 0;
++
+ 	/* If we exceed the threshold value, we have found a hardware latency */
+ 	if (sample > data.threshold || outer_sample > data.threshold) {
+ 		struct sample s;
+ 
++		ret = 1;
++
+ 		data.count++;
+ 		s.seqnum = data.count;
+ 		s.duration = sample;
+@@ -295,7 +296,6 @@ static int get_sample(void *unused)
+ 			data.max_sample = sample;
+ 	}
+ 
+-	ret = 0;
+ out:
+ 	return ret;
+ }
+@@ -305,32 +305,30 @@ out:
+  * @unused: A required part of the kthread API.
+  *
+  * Used to periodically sample the CPU TSC via a call to get_sample. We
+- * use stop_machine, whith does (intentionally) introduce latency since we
++ * disable interrupts, which does (intentionally) introduce latency since we
+  * need to ensure nothing else might be running (and thus pre-empting).
+  * Obviously this should never be used in production environments.
+  *
+- * stop_machine will schedule us typically only on CPU0 which is fine for
+- * almost every real-world hardware latency situation - but we might later
+- * generalize this if we find there are any actualy systems with alternate
+- * SMI delivery or other non CPU0 hardware latencies.
++ * Currently this runs on which ever CPU it was scheduled on, but most
++ * real-worald hardware latency situations occur across several CPUs,
++ * but we might later generalize this if we find there are any actualy
++ * systems with alternate SMI delivery or other hardware latencies.
+  */
+ static int kthread_fn(void *unused)
+ {
+-	int err = 0;
+-	u64 interval = 0;
++	int ret;
++	u64 interval;
+ 
+ 	while (!kthread_should_stop()) {
+ 
+ 		mutex_lock(&data.lock);
+ 
+-		err = stop_machine(get_sample, unused, 0);
+-		if (err) {
+-			/* Houston, we have a problem */
+-			mutex_unlock(&data.lock);
+-			goto err_out;
+-		}
++		local_irq_disable();
++		ret = get_sample();
++		local_irq_enable();
+ 
+-		wake_up(&data.wq); /* wake up reader(s) */
++		if (ret > 0)
++			wake_up(&data.wq); /* wake up reader(s) */
+ 
+ 		interval = data.sample_window - data.sample_width;
+ 		do_div(interval, USEC_PER_MSEC); /* modifies interval value */
+@@ -338,15 +336,10 @@ static int kthread_fn(void *unused)
+ 		mutex_unlock(&data.lock);
+ 
+ 		if (msleep_interruptible(interval))
+-			goto out;
++			break;
+ 	}
+-		goto out;
+-err_out:
+-	printk(KERN_ERR BANNER "could not call stop_machine, disabling\n");
+-	enabled = 0;
+-out:
+-	return err;
+ 
++	return 0;
+ }
+ 
+ /**
+@@ -442,8 +435,7 @@ out:
+  * This function provides a generic read implementation for the global state
+  * "data" structure debugfs filesystem entries. It would be nice to use
+  * simple_attr_read directly, but we need to make sure that the data.lock
+- * spinlock is held during the actual read (even though we likely won't ever
+- * actually race here as the updater runs under a stop_machine context).
++ * is held during the actual read.
+  */
+ static ssize_t simple_data_read(struct file *filp, char __user *ubuf,
+ 				size_t cnt, loff_t *ppos, const u64 *entry)
+@@ -478,8 +470,7 @@ static ssize_t simple_data_read(struct f
+  * This function provides a generic write implementation for the global state
+  * "data" structure debugfs filesystem entries. It would be nice to use
+  * simple_attr_write directly, but we need to make sure that the data.lock
+- * spinlock is held during the actual write (even though we likely won't ever
+- * actually race here as the updater runs under a stop_machine context).
++ * is held during the actual write.
+  */
+ static ssize_t simple_data_write(struct file *filp, const char __user *ubuf,
+ 				 size_t cnt, loff_t *ppos, u64 *entry)
 
