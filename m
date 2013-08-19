@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750925Ab3HSUtI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 16:49:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25853 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750996Ab3HSUtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 16:49:06 -0400
-Date: Mon, 19 Aug 2013 16:48:57 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH] vfs: allow umount to handle mountpoints without
- revalidating them
-Message-ID: <20130819164857.3d6876e4@tlielax.poochiereds.net>
-In-Reply-To: <20130819133503.1a793ecbfa99c1b0814bbb57@linux-foundation.org>
-References: <1374834205-4406-1-git-send-email-jlayton@redhat.com>
-	<20130819133503.1a793ecbfa99c1b0814bbb57@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751422Ab3HSUtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 16:49:32 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:53952 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab3HSUt2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 16:49:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130819201224.GC5191@mithrandir>
+References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1376911241-27720-2-git-send-email-Julia.Lawall@lip6.fr> <20130819120249.GA5740@ulmo>
+ <CAErSpo5oOnfhi+aRi-Z3kCwS1VpYSO6FX5O_MOZmWNLcfhhA9w@mail.gmail.com> <20130819201224.GC5191@mithrandir>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 19 Aug 2013 14:49:07 -0600
+Message-ID: <CAErSpo6U9i16gdaYGpWqgLaFteXpy1erCUw55SqkHLcbypP=vA@mail.gmail.com>
+Subject: Re: [PATCH 1/7] PCI: tegra: replace devm_request_and_ioremap by devm_ioremap_resource
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Aug 2013 13:35:03 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Mon, Aug 19, 2013 at 2:12 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Mon, Aug 19, 2013 at 02:04:24PM -0600, Bjorn Helgaas wrote:
+>> On Mon, Aug 19, 2013 at 6:02 AM, Thierry Reding
+>> <thierry.reding@gmail.com> wrote:
+>>
+>> > Bjorn, how do you want to handle patches to the Tegra PCIe driver in the
+>> > future? Do you want me to prepare a branch and pull from that or would
+>> > you rather just take simple patches?
+>>
+>> I'm in the habit of applying patches from email, so that's easy for
+>> me.  But a branch would be OK, too.
+>
+> Patches work for me too. Is this cleanup patch something that you'd be
+> comfortable with applying after 3.12-rc1 or would you rather defer it to
+> 3.13?
 
-> On Fri, 26 Jul 2013 06:23:25 -0400 Jeff Layton <jlayton@redhat.com> wrote:
-> 
-> > Christopher reported a regression where he was unable to unmount a NFS
-> > filesystem where the root had gone stale. The problem is that
-> > d_revalidate handles the root of the filesystem differently from other
-> > dentries, but d_weak_revalidate does not. We could simply fix this by
-> > making d_weak_revalidate return success on IS_ROOT dentries, but there
-> > are cases where we do want to revalidate the root of the fs.
-> > 
-> > A umount is really a special case. We generally aren't interested in
-> > anything but the dentry and vfsmount that's attached at that point. If
-> > the inode turns out to be stale we just don't care since the intent is
-> > to stop using it anyway.
-> > 
-> > Try to handle this situation better by treating umount as a special
-> > case in the lookup code. Have it resolve the parent using normal
-> > means, and then do a lookup of the final dentry without revalidating
-> > it. In most cases, the final lookup will come out of the dcache, but
-> > the case where there's a trailing symlink or !LAST_NORM entry on the
-> > end complicates things a bit.
-> > 
-> 
-> In which kernel version did the regression occur?  The patch *applies*
-> to 3.8 and perhaps earlier, but we don't know which kernel versions
-> actually need it.
+I'm not really sure how we should manage drivers/pci/host/*.  Those
+files are mostly arch code, and I'm not sure it's useful for me to be
+in the middle of managing them.
 
-v3.9 introduced the regression that I'm aware of (in commit
-ecf3d1f1aa), but there have been problems with unmounting of stale
-mountpoints for longer than that.
+I assume Stephen or somebody has a tree with the pci-tegra.c stuff
+that's in -next right now; it seems like it'd be simplest to just add
+this patch there and merge in during the v3.12 merge window.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Bjorn
