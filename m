@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab3HSUeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 16:34:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49935 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751144Ab3HSUeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 16:34:07 -0400
-Date: Mon, 19 Aug 2013 22:34:03 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Joe Perches <joe@perches.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors <kernel-janitors@vger.kernel.org>
-Subject: Re: rfc: trivial patches and slow deaths?
-In-Reply-To: <1376944033.2016.13.camel@joe-AO722>
-Message-ID: <alpine.LNX.2.00.1308192229360.21654@pobox.suse.cz>
-References: <1376944033.2016.13.camel@joe-AO722>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751349Ab3HSUfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 16:35:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54070 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab3HSUfE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 16:35:04 -0400
+Date: Mon, 19 Aug 2013 13:35:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH] vfs: allow umount to handle mountpoints without
+ revalidating them
+Message-Id: <20130819133503.1a793ecbfa99c1b0814bbb57@linux-foundation.org>
+In-Reply-To: <1374834205-4406-1-git-send-email-jlayton@redhat.com>
+References: <1374834205-4406-1-git-send-email-jlayton@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Aug 2013, Joe Perches wrote:
+On Fri, 26 Jul 2013 06:23:25 -0400 Jeff Layton <jlayton@redhat.com> wrote:
 
-> Patches submitted to the trivial address
-> trivial@kernel.org seem to go nowhere slowly.
+> Christopher reported a regression where he was unable to unmount a NFS
+> filesystem where the root had gone stale. The problem is that
+> d_revalidate handles the root of the filesystem differently from other
+> dentries, but d_weak_revalidate does not. We could simply fix this by
+> making d_weak_revalidate return success on IS_ROOT dentries, but there
+> are cases where we do want to revalidate the root of the fs.
 > 
-> Jiri, do you have any actual plans to try to
-> pick up these patches, notify the submitters
-> that the patches have been accepted or rejected,
-> and forward them on when appropriate?
+> A umount is really a special case. We generally aren't interested in
+> anything but the dentry and vfsmount that's attached at that point. If
+> the inode turns out to be stale we just don't care since the intent is
+> to stop using it anyway.
 > 
-> Otherwise, the patches sit for _months_ without
-> any action.  That's simply too long.
+> Try to handle this situation better by treating umount as a special
+> case in the lookup code. Have it resolve the parent using normal
+> means, and then do a lookup of the final dentry without revalidating
+> it. In most cases, the final lookup will come out of the dcache, but
+> the case where there's a trailing symlink or !LAST_NORM entry on the
+> end complicates things a bit.
 > 
-> Should another mechanism or pathway be created
-> instead?
 
-Joe,
-
-I disagree. Please look at what is happening in trivial.git over longer 
-period of time.
-
-The patches I am holding off are larger series which are submitted both to 
-trivial@ and maintainers as well. With such pathces, it's not clear who is 
-taking (which parts of) what, hence I hold them off for long time, and get 
-back to it eventually later.
-
-It's time consuming, as I have to check linux-next for those patches, 
-hence it's delayed.
-
-One-shot single trivial patches are picked up reasonably fast (i.e. are 
-very rarely delayed for one Linus' release).
-
-But yes, I agree, you are usually sending cross-tree large patchsets, and 
-therefore you are often affected by what you describe.
-
-Perhaps if you send to trivial@ only those patches which haven't been 
-picked up by maintainers already, that'd lead to much faster application 
-of those, if that's what you are about.
-
--- 
-Jiri Kosina
-SUSE Labs
+In which kernel version did the regression occur?  The patch *applies*
+to 3.8 and perhaps earlier, but we don't know which kernel versions
+actually need it.
