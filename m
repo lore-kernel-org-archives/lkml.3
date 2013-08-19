@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751140Ab3HSG7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 02:59:39 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:36797 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab3HSG7i (ORCPT
+	id S1751077Ab3HSHAu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 03:00:50 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:52771 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750939Ab3HSHAs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 02:59:38 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-Subject: Re: [PATCH] nouveau: fix reclocking on nv40
-Date: Mon, 19 Aug 2013 08:59:32 +0200
-User-Agent: KMail/1.13.7 (Linux/3.11.0-rc5+synaptics-generic; KDE/4.11.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        David Airlie <airlied@linux.ie>, Martin Peres <martin.peres@labri.fr>
-References: <520DFD9F.1070006@labri.fr> <1376657827-8105-1-git-send-email-pali.rohar@gmail.com>
-In-Reply-To: <1376657827-8105-1-git-send-email-pali.rohar@gmail.com>
+	Mon, 19 Aug 2013 03:00:48 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1501245.0Vcxz5UO9T";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308190859.32696@pali>
+Importance: Normal
+X-Priority: 3 (Normal)
+In-Reply-To: <20130818205713.GA32563@kroah.com>
+References: <20130818205713.GA32563@kroah.com>,
+	<OF4D0C0FB6.A839872C-ONC1257BCB.004FDEBA-C1257BCB.004FDEBC@transmode.se>
+Subject: Re: High load which eventually leads to lockup
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <OF825BE505.E28A86C5-ONC1257BCC.002685F1-C1257BCC.002685F2@transmode.se>
+Date: Mon, 19 Aug 2013 09:00:46 +0200
+X-Mailer: Lotus Domino Web Server Release 8.5.3FP1 March 07, 2012
+X-MIMETrack: Serialize by Notes Server on mail1/Transmode(Release 8.5.3FP1|March 07, 2012) at
+ 19/08/2013 09:00:46,
+	Serialize complete at 19/08/2013 09:00:46,
+	Serialize by Router on mail1/Transmode(Release 8.5.3FP1|March 07, 2012) at
+ 19/08/2013 09:00:46
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1501245.0Vcxz5UO9T
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Friday 16 August 2013 14:57:07 Pali Roh=C3=A1r wrote:
-> In commit 77145f1cbdf8d28b46ff8070ca749bad821e0774 was
-> introduced error which cause that reclocking on nv40 not
-> working anymore. There is missing assigment of return value
-> from pll_calc to ret.
->=20
-> Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> Signed-off-by: Martin Peres <martin.peres@labri.fr>
-> ---
->  drivers/gpu/drm/nouveau/nv40_pm.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/gpu/drm/nouveau/nv40_pm.c
-> b/drivers/gpu/drm/nouveau/nv40_pm.c index 3af5bcd..625f80d
-> 100644
-> --- a/drivers/gpu/drm/nouveau/nv40_pm.c
-> +++ b/drivers/gpu/drm/nouveau/nv40_pm.c
-> @@ -131,7 +131,7 @@ nv40_calc_pll(struct drm_device *dev, u32
-> reg, struct nvbios_pll *pll, if (clk < pll->vco1.max_freq)
->  		pll->vco2.max_freq =3D 0;
->=20
-> -	pclk->pll_calc(pclk, pll, clk, &coef);
-> +	ret =3D pclk->pll_calc(pclk, pll, clk, &coef);
->  	if (ret =3D=3D 0)
->  		return -ERANGE;
+-----Greg KH <gregkh@linuxfoundation.org> wrote: -----
+> 
+> On Sun, Aug 18, 2013 at 04:32:23PM +0200, Joakim Tjernlund wrote: > The last week I have had 4
+> lockups which required power on/off. > Before getting there I noticed that the machine was
+> getting slow. >  > top reported high load(5-10) but there was no process consuming CPU except >
+> for migration/0 which were spicing 100% on and off.  > Ping times went up with a factor of 40
+> too. >  > Eventually I got a few entries in the kernel log: > Aug 16 12:40:51 gentoo-jocke
+> kernel: Modules linked in: nfnetlink_log nfnetlink bluetooth rfkill sg isofs ipt_MASQUERADE
+> iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack
+> ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp ip6table_filter ip6_tables iptable_filter
+> ip_tables ebtables x_tables autofs4 nfsd dm_crypt vboxnetadp(O) vboxnetflt(O) vboxdrv(O) usbhid
+> dm_mod kvm_intel kvm snd_hda_codec_hdmi aesni_intel ablk_helper cryptd xts lrw gf128mul
+> snd_hda_codec_realtek ehci_pci ehci_hcd usbcore snd_hda_intel snd_hda_codec snd_hwdep snd_pcm
+> snd_page_alloc snd_timer snd microcode usb_common radeon e1000e ttm firmware_class ptp pps_core
+> pcspkr > Aug 16 12:40:51 gentoo-jocke kernel: CPU 0  > Aug 16 12:40:51 gentoo-jocke kernel: Pid:
+> 2421, comm: X Tainted: G           O 3.9.11 #1 Hewlett-Packard HP Compaq 8200 Elite CMT PC/1494
+> The virtual box drivers are a huge mess.  Seriously, I really don't even know how the things are
+> able to work at all (virtual table pointers from userspace through to the kernel?)  I spent a
+> bunch of time to try to clean them up and get them into mergable state, but without the ability
+> to also fix up the userspace side, that ended up being a dead-end.  Can you duplicate the problem
+> without these modules loaded?  I'd blame them for any problems you might ever have, given how
+> crazy they are.  thanks,  greg k-h 
 
-Hello, it is possible to include this patch in 3.11?
-Or it is too late now and need to wait for 3.12?
+ok you don't trust them even if I haven't used VirtualBox between failures?
+Anyhow, I will unload them, lets hope for the best :)
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1501245.0Vcxz5UO9T
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlIRwlQACgkQi/DJPQPkQ1JndQCdGV95aZJT6e19Y3EZiYwyahOq
-dokAoMLE15APJkClcfAD/n9Q/gtEH3EM
-=zA4y
------END PGP SIGNATURE-----
-
---nextPart1501245.0Vcxz5UO9T--
+ Jocke
