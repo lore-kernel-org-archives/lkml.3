@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273Ab3HSKNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 06:13:31 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:63777
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751231Ab3HSKNQ (ORCPT
+	id S1751298Ab3HSKNj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 06:13:39 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:56322 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab3HSKNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 06:13:16 -0400
-X-IronPort-AV: E=Sophos;i="4.89,912,1367964000"; 
-   d="scan'208";a="24228362"
-Date: Mon, 19 Aug 2013 12:12:55 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: walter harms <wharms@bfs.de>
-cc: Liam Girdwood <lgirdwood@gmail.com>, kernel-janitors@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] regulator: ti-abb: simplify
- platform_get_resource_byname/devm_ioremap_resource
-In-Reply-To: <5211E111.4060406@bfs.de>
-Message-ID: <alpine.DEB.2.02.1308191210300.2313@hadrien>
-References: <1376902316-18520-1-git-send-email-Julia.Lawall@lip6.fr> <1376902316-18520-6-git-send-email-Julia.Lawall@lip6.fr> <5211E111.4060406@bfs.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 19 Aug 2013 06:13:36 -0400
+From: ujhelyi.m@gmail.com
+To: davem@davemloft.net, mugunthanvnm@ti.com, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Matus Ujhelyi <ujhelyi.m@gmail.com>
+Subject: [PATCH] net: cpsw: Add support for wake-on-lan for cpsw
+Date: Mon, 19 Aug 2013 12:13:11 +0200
+Message-Id: <1376907191-25491-1-git-send-email-ujhelyi.m@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Aug 2013, walter harms wrote:
+From: Matus Ujhelyi <ujhelyi.m@gmail.com>
 
->
->
-> Am 19.08.2013 10:51, schrieb Julia Lawall:
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > Remove unneeded error handling on the result of a call to
-> > platform_get_resource_byname when the value is passed to devm_ioremap_resource.
-> >
-> > A simplified version of the semantic patch that makes this change is as
-> > follows: (http://coccinelle.lip6.fr/)
-> >
-> > // <smpl>
-> > @@
-> > expression pdev,res,e,e1;
-> > expression ret != 0;
-> > identifier l;
-> > @@
-> >
-> >   res = platform_get_resource_byname(...);
-> > - if (res == NULL) { ... \(goto l;\|return ret;\) }
-> >   e = devm_ioremap_resource(e1, res);
-> > // </smpl>
-> >
-> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > ---
-> >  drivers/regulator/ti-abb-regulator.c |   10 ----------
-> >  1 file changed, 10 deletions(-)
-> >
-> > diff --git a/drivers/regulator/ti-abb-regulator.c b/drivers/regulator/ti-abb-regulator.c
-> > index 3753ed0..d8e3e12 100644
-> > --- a/drivers/regulator/ti-abb-regulator.c
-> > +++ b/drivers/regulator/ti-abb-regulator.c
-> > @@ -717,11 +717,6 @@ static int ti_abb_probe(struct platform_device *pdev)
-> >  	/* Map ABB resources */
-> >  	pname = "base-address";
-> >  	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
-> > -	if (!res) {
-> > -		dev_err(dev, "Missing '%s' IO resource\n", pname);
-> > -		ret = -ENODEV;
-> > -		goto err;
-> > -	}
-> >  	abb->base = devm_ioremap_resource(dev, res);
-> >  	if (IS_ERR(abb->base)) {
-> >  		ret = PTR_ERR(abb->base);
->
->
-> is pname used by anything else ? (also below)
+Signed-off-by: Matus Ujhelyi <ujhelyi.m@gmail.com>
+---
+ drivers/net/ethernet/ti/cpsw.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-I'm not sure to understand the sense of the question.  My patch does
-remove a use of pname, but there is another one on the line above, in the
-call to platform_get_resource_byname.  Perhaps the definition of pname
-could be inlined at this use, but it is a common pattern throughout the
-function.
+diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+index 22a7a43..f59302e 100644
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -1416,6 +1416,29 @@ static int cpsw_set_settings(struct net_device *ndev, struct ethtool_cmd *ecmd)
+ 		return -EOPNOTSUPP;
+ }
+ 
++static void
++cpsw_get_wol(struct net_device *ndev, struct ethtool_wolinfo *wol)
++{
++	struct cpsw_priv *priv = netdev_priv(ndev);
++	int slave_no = cpsw_slave_index(priv);
++	wol->supported = 0;
++	wol->wolopts = 0;
++	if (priv->slaves[slave_no].phy)
++		phy_ethtool_get_wol(priv->slaves[slave_no].phy, wol);
++
++}
++
++static int
++cpsw_set_wol(struct net_device *ndev, struct ethtool_wolinfo *wol)
++{
++	struct cpsw_priv *priv = netdev_priv(ndev);
++	int slave_no = cpsw_slave_index(priv);
++	if (priv->slaves[slave_no].phy)
++		return phy_ethtool_set_wol(priv->slaves[slave_no].phy, wol);
++	else
++		return -EOPNOTSUPP;
++}
++
+ static const struct ethtool_ops cpsw_ethtool_ops = {
+ 	.get_drvinfo	= cpsw_get_drvinfo,
+ 	.get_msglevel	= cpsw_get_msglevel,
+@@ -1426,6 +1449,8 @@ static const struct ethtool_ops cpsw_ethtool_ops = {
+ 	.set_settings	= cpsw_set_settings,
+ 	.get_coalesce	= cpsw_get_coalesce,
+ 	.set_coalesce	= cpsw_set_coalesce,
++	.get_wol        = cpsw_get_wol,
++	.set_wol        = cpsw_set_wol,
+ };
+ 
+ static void cpsw_slave_init(struct cpsw_slave *slave, struct cpsw_priv *priv,
+-- 
+1.7.9.5
 
-julia
