@@ -1,100 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751223Ab3HSSLE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 14:11:04 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:64688 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab3HSSLC (ORCPT
+	id S1751162Ab3HSSOe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 14:14:34 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:40954 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750864Ab3HSSOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 14:11:02 -0400
+	Mon, 19 Aug 2013 14:14:33 -0400
+X-Greylist: delayed 519 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Aug 2013 14:14:32 EDT
+Message-ID: <52125E79.8070009@semaphore.gr>
+Date: Mon, 19 Aug 2013 21:05:45 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130819172524.GA22268@redhat.com>
-References: <20130819172524.GA22268@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 19 Aug 2013 11:10:41 -0700
-Message-ID: <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com>
-Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: Brad Spengler <spender@grsecurity.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Colin Walters <walters@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 1/4] nohz: Only update sleeptime stats locally
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-2-git-send-email-fweisbec@gmail.com> <20130818170408.GA22417@redhat.com>
+In-Reply-To: <20130818170408.GA22417@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 10:25 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Hello.
->
-> Colin reports that vfork() doesn't work after unshare(PIDNS). The
-> reason is trivial, copy_process() does:
->
->         /*
->          * If the new process will be in a different pid namespace
->          * don't allow the creation of threads.
->          */
->         if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
->             (task_active_pid_ns(current) != current->nsproxy->pid_ns))
->                 return ERR_PTR(-EINVAL);
->
-> and CLONE_VM obviously nacks vfork(). So perhaps we can relax
-> this check to CLONE_THREAD? Or should we really nack CLONE_VM
-> by security reasons?
->
-> OTOH. Perhaps we should also deny CLONE_PARENT in this case?
->
-> In short. So far I am thinking about the patch below but I got
-> lost and totally confused. Will try to think more tomorrow, but
-> I would like to see the fix from someone who still understands
-> this all.
->
-> Oleg.
+On 08/18/2013 08:04 PM, Oleg Nesterov wrote:
+> Sorry for double post. forgot to cc cpufreq maintainers.
+> 
+> On 08/16, Frederic Weisbecker wrote:
+>>
+>> To fix this, lets only update the sleeptime stats locally when the CPU
+>> exits from idle.
+> 
+> I am in no position to ack the changes in this area, but I like this
+> change very much. Because, as a code reader, I was totally confused by
+> 
+> 	if (last_update_time)
+> 		update_ts_time_stats()
+> 
+> code and it looks "obviously wrong".
+> 
+> I added more cc's. It seems to me that 9366d840 "cpufreq: governors:
+> Calculate iowait time only when necessary" doesn't realize what
+> 
+> 	-       u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
+> 	+       u64 idle_time = get_cpu_idle_time_us(cpu, io_busy ? wall : NULL);
+> 
+> actually means. OTOH, get_cpu_iowait_time_us() was called with
+> last_update_time != NULL even before this patch...
 
-By way of (partial) explanation:
+To be honest, I am unfamiliar with tick-sched code.
+With patch 9366d840, I was trying to avoid duplicate calls to
+get_cpu_iowait_time_us function. I just saw that the original
+code was calling update_ts_time_stats within get_cpu_idle_time_us
+and get_cpu_iowait_time_us and I thought that I should keep calling
+these functions with non NULL parameter to update the time stats.
 
-http://marc.info/?l=linux-kernel&m=135545831607095
-
-(tl;dr: I think that CLONE_VM is irrelevant here, but there may be
-other issues lurking around.)
-
---Andy
-
->
-> --- x/kernel/fork.c     2013-08-14 18:34:06.000000000 +0200
-> +++ x/kernel/fork.c     2013-08-19 19:03:43.848823039 +0200
-> @@ -1172,14 +1172,6 @@ static struct task_struct *copy_process(
->                                 current->signal->flags & SIGNAL_UNKILLABLE)
->                 return ERR_PTR(-EINVAL);
->
-> -       /*
-> -        * If the new process will be in a different pid namespace
-> -        * don't allow the creation of threads.
-> -        */
-> -       if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
-> -           (task_active_pid_ns(current) != current->nsproxy->pid_ns))
-> -               return ERR_PTR(-EINVAL);
-> -
->         retval = security_task_create(clone_flags);
->         if (retval)
->                 goto fork_out;
-> @@ -1578,8 +1570,9 @@ long do_fork(unsigned long clone_flags,
->          * Do some preliminary argument and permissions checking before we
->          * actually start allocating stuff
->          */
-> -       if (clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) {
-> -               if (clone_flags & (CLONE_THREAD|CLONE_PARENT))
-> +       if ((clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) ||
-> +           (task_active_pid_ns(current) != current->nsproxy->pid_ns)) {
-> +               if (clone_flags & (CLONE_THREAD | CLONE_PARENT | CLONE_NEWPID))
->                         return -EINVAL;
->         }
->
->
+In fact the original patch submission was without this:
+-       u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
++       u64 idle_time = get_cpu_idle_time_us(cpu, io_busy ? wall : NULL);
+and the idle time calculation was wrong (ondemand couldn't increase to max freq)
 
 
+For your convenience the call paths before and after this patch:
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Before patch
+
+get_cpu_idle_time(j, &cur_wall_time);
+	u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
+	idle_time += get_cpu_iowait_time_us(cpu, wall);
+		update_ts_time_stats(cpu, ts, now, last_update_time);
+... 
+get_cpu_iowait_time_us(j, &cur_wall_time);
+	update_ts_time_stats(cpu, ts, now, last_update_time);
+
+
+After patch (io_busy = 1)
+
+cur_idle_time = get_cpu_idle_time(j, &cur_wall_time, io_busy);
+	u64 idle_time = get_cpu_idle_time_us(cpu, io_busy ? wall : NULL);
+		update_ts_time_stats(cpu, ts, now, last_update_time);
+
+
+After patch (io_busy = 0)
+
+cur_idle_time = get_cpu_idle_time(j, &cur_wall_time, io_busy);
+	u64 idle_time = get_cpu_idle_time_us(cpu, io_busy ? wall : NULL);
+
+	idle_time += get_cpu_iowait_time_us(cpu, wall);
+		update_ts_time_stats(cpu, ts, now, last_update_time);
+
+
+Regards,
+Stratos
