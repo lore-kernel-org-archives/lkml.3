@@ -1,434 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750737Ab3HSDQi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 23:16:38 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:26305 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701Ab3HSDQh (ORCPT
+	id S1750746Ab3HSDSM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 23:18:12 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:58174 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab3HSDSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 23:16:37 -0400
-From: Bo Shen <voice.shen@atmel.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: plagnioj@jcrosoft.com, nicolas.ferre@atmel.com, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, Bo Shen <voice.shen@atmel.com>
-Subject: [RFC PATCH] pwm: atmel-pwm: add pwm controller driver
-Date: Mon, 19 Aug 2013 11:11:06 +0800
-Message-Id: <1376881866-14214-1-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 18 Aug 2013 23:18:11 -0400
+X-AuditID: 9c93017e-b7c76ae000003897-ab-52118e715e9c
+Date: Mon, 19 Aug 2013 12:18:33 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v6 0/5] zram/zsmalloc promotion
+Message-ID: <20130819031833.GA26832@bbox>
+References: <1376459736-7384-1-git-send-email-minchan@kernel.org>
+ <20130814174050.GN2296@suse.de>
+ <20130814185820.GA2753@gmail.com>
+ <20130815171250.GA2296@suse.de>
+ <20130816042641.GA2893@gmail.com>
+ <20130816083347.GD2296@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130816083347.GD2296@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add atmel pwm controller driver based on PWM framework
+Hello Mel,
 
-this is basic function implementation of pwm controller
-it can work with pwm based led and backlight
+On Fri, Aug 16, 2013 at 09:33:47AM +0100, Mel Gorman wrote:
+> On Fri, Aug 16, 2013 at 01:26:41PM +0900, Minchan Kim wrote:
+> > > > > <SNIP>
+> > > > > If it's used for something like tmpfs then it becomes much worse. Normal
+> > > > > tmpfs without swap can lockup if tmpfs is allowed to fill memory. In a
+> > > > > sane configuration, lockups will be avoided and deleting a tmpfs file is
+> > > > > guaranteed to free memory. When zram is used to back tmpfs, there is no
+> > > > > guarantee that any memory is freed due to fragmentation of the compressed
+> > > > > pages. The only way to recover the memory may be to kill applications
+> > > > > holding tmpfs files open and then delete them which is fairly drastic
+> > > > > action in a normal server environment.
+> > > > 
+> > > > Indeed.
+> > > > Actually, I had a plan to support zsmalloc compaction. The zsmalloc exposes
+> > > > handle instead of pure pointer so it could migrate some zpages to somewhere
+> > > > to pack in. Then, it could help above problem and OOM storm problem.
+> > > > Anyway, it's a totally new feature and requires many changes and experiement.
+> > > > Although we don't have such feature, zram is still good for many people.
+> > > > 
+> > > 
+> > > And is zsmalloc was pluggable for zswap then it would also benefit.
+> > 
+> > But zswap isn't pseudo block device so it couldn't be used for block device.
+> 
+> It would not be impossible to write one. Taking a quick look it might even
+> be doable by just providing a zbud_ops that does not have an evict handler
+> and make sure the errors are handled correctly. i.e. does the following
+> patch mean that zswap never writes back and instead just compresses pages
+> in memory?
+> 
+> diff --git a/mm/zswap.c b/mm/zswap.c
+> index deda2b6..99e41c8 100644
+> --- a/mm/zswap.c
+> +++ b/mm/zswap.c
+> @@ -819,7 +819,6 @@ static void zswap_frontswap_invalidate_area(unsigned type)
+>  }
+>  
+>  static struct zbud_ops zswap_zbud_ops = {
+> -	.evict = zswap_writeback_entry
+>  };
+>  
+>  static void zswap_frontswap_init(unsigned type)
+> 
+> If so, it should be doable to link that up in a sane way so it can be
+> configured at runtime.
+> 
+> Did you ever even try something like this?
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Never. Because I didn't have such requirement for zram.
 
----
-This patch is based on Linux v3.11 rc6
-Tested on sama5d31ek and at91sam9m10g45ek board
----
- .../devicetree/bindings/pwm/atmel-pwm.txt          |   19 ++
- drivers/pwm/Kconfig                                |    9 +
- drivers/pwm/Makefile                               |    1 +
- drivers/pwm/pwm-atmel.c                            |  327 ++++++++++++++++++++
- 4 files changed, 356 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pwm/atmel-pwm.txt
- create mode 100644 drivers/pwm/pwm-atmel.c
+> 
+> > Let say one usecase for using zram-blk.
+> > 
+> > 1) Many embedded system don't have swap so although tmpfs can support swapout
+> > it's pointless still so such systems should have sane configuration to limit
+> > memory space so it's not only zram problem.
+> > 
+> 
+> If zswap was backed by a pseudo device that failed all writes or an an
+> ops with no evict handler then it would be functionally similar.
+> 
+> > 2) Many embedded system don't have enough memory. Let's assume short-lived
+> > file growing up until half of system memory once in a while. We don't want
+> > to write it on flash by wear-leveing issue and very slowness so we want to use
+> > in-memory but if we uses tmpfs, it should evict half of working set to cover
+> > them when the size reach peak. zram would be better choice.
+> > 
+> 
+> Then back it by a pseudo device that fails all writes so it does not have
+> to write to disk.
 
-diff --git a/Documentation/devicetree/bindings/pwm/atmel-pwm.txt b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
-new file mode 100644
-index 0000000..127fcdb
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
-@@ -0,0 +1,19 @@
-+Atmel PWM controller
-+
-+Required properties:
-+  - compatible: should be one of:
-+    - "atmel,at91sam9rl-pwm"
-+    - "atmel,sama5-pwm"
-+  - reg: physical base address and length of the controller's registers
-+  - #pwm-cells: Should be 3.
-+    - The first cell specifies the per-chip index of the PWM to use
-+    - The second cell is the period in nanoseconds
-+    - The third cell is used to encode the polarity of PWM output
-+
-+Example:
-+
-+	pwm0: pwm@f8034000 {
-+		compatible = "atmel,at91sam9rl-pwm";
-+		reg = <0xf8034000 0x400>;
-+		#pwm-cells = <3>;
-+	};
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 75840b5..54237b9 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -41,6 +41,15 @@ config PWM_AB8500
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-ab8500.
- 
-+config PWM_ATMEL
-+	tristate "Atmel PWM support"
-+	depends on ARCH_AT91
-+	help
-+	  Generic PWM framework driver for Atmel SoC.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-atmel.
-+
- config PWM_ATMEL_TCB
- 	tristate "Atmel TC Block PWM support"
- 	depends on ATMEL_TCLIB && OF
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 77a8c18..5b193f8 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -1,6 +1,7 @@
- obj-$(CONFIG_PWM)		+= core.o
- obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
- obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
-+obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
- obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
- obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
- obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
-diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-new file mode 100644
-index 0000000..b83d68e
---- /dev/null
-+++ b/drivers/pwm/pwm-atmel.c
-@@ -0,0 +1,327 @@
-+/*
-+ * Driver for Atmel Pulse Width Modulation Controller
-+ *
-+ * Copyright (C) 2013 Atmel Semiconductor Technology Ltd.
-+ *		 Bo Shen <voice.shen@atmel.com>
-+ *
-+ * GPL v2 or later
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/slab.h>
-+
-+#define PWM_MR		0x00
-+#define PWM_ENA		0x04
-+#define PWM_DIS		0x08
-+#define PWM_SR		0x0C
-+
-+#define PWM_CMR		0x00
-+
-+/* The following register for PWM v1 */
-+#define PWMv1_CDTY	0x04
-+#define PWMv1_CPRD	0x08
-+#define PWMv1_CUPD	0x10
-+
-+/* The following register for PWM v2 */
-+#define PWMv2_CDTY	0x04
-+#define PWMv2_CDTYUPD	0x08
-+#define PWMv2_CPRD	0x0C
-+#define PWMv2_CPRDUPD	0x10
-+
-+#define PWM_NUM		4
-+
-+struct atmel_pwm_chip {
-+	struct pwm_chip chip;
-+	struct clk *clk;
-+	void __iomem *base;
-+
-+	void (*config)(struct atmel_pwm_chip *chip, struct pwm_device *pwm,
-+			unsigned int dty, unsigned int prd);
-+};
-+
-+#define to_atmel_pwm_chip(chip) container_of(chip, struct atmel_pwm_chip, chip)
-+
-+static inline u32 atmel_pwm_readl(struct atmel_pwm_chip *chip, int offset)
-+{
-+	return readl(chip->base + offset);
-+}
-+
-+static inline void atmel_pwm_writel(struct atmel_pwm_chip *chip, int offset,
-+		u32 val)
-+{
-+	writel(val, chip->base + offset);
-+}
-+
-+static inline u32 atmel_pwm_ch_readl(struct atmel_pwm_chip *chip, int ch,
-+		int offset)
-+{
-+	return readl(chip->base + 0x200 + ch * 0x20 + offset);
-+}
-+
-+static inline void atmel_pwm_ch_writel(struct atmel_pwm_chip *chip, int ch,
-+		int offset, u32 val)
-+{
-+	writel(val, chip->base + 0x200 + ch * 0x20 + offset);
-+}
-+
-+static int atmel_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+		int duty_ns, int period_ns)
-+{
-+	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-+	unsigned long long val, prd, dty;
-+	unsigned long long div, clk_rate;
-+	int ret, pres = 0;
-+
-+	clk_rate = clk_get_rate(atmel_pwm->clk);
-+
-+	while (1) {
-+		div = 1000000000;
-+		div *= 1 << pres;
-+		val = clk_rate * period_ns;
-+		prd = div_u64(val, div);
-+		val = clk_rate * duty_ns;
-+		dty = div_u64(val, div);
-+
-+		if (prd < 0x0001 || dty < 0x0)
-+			return -EINVAL;
-+
-+		if (prd > 0xffff || dty > 0xffff) {
-+			if (++pres > 0x10)
-+				return -EINVAL;
-+			continue;
-+		}
-+
-+		break;
-+	}
-+
-+	/* Enable clock */
-+	ret = clk_prepare_enable(atmel_pwm->clk);
-+	if (ret) {
-+		pr_err("failed to enable pwm clock\n");
-+		return ret;
-+	}
-+
-+	atmel_pwm->config(atmel_pwm, pwm, dty, prd);
-+
-+	/* Check whether need to disable clock */
-+	val = atmel_pwm_readl(atmel_pwm, PWM_SR);
-+	if ((val & 0xf) == 0)
-+		clk_disable_unprepare(atmel_pwm->clk);
-+
-+	return 0;
-+}
-+
-+static void atmel_pwm_config_v1(struct atmel_pwm_chip *atmel_pwm,
-+		struct pwm_device *pwm, unsigned int dty, unsigned int prd)
-+{
-+	unsigned int val;
-+
-+	/*
-+	 * if the pwm channel is enabled, using update register to update
-+	 * related register value, or else write it directly
-+	 */
-+	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-+		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CUPD, dty);
-+
-+		val = atmel_pwm_ch_readl(atmel_pwm, pwm->hwpwm, PWM_CMR);
-+		val &= ~(1 << 10);
-+		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
-+	} else {
-+		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CDTY, dty);
-+		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CPRD, prd);
-+	}
-+}
-+
-+static void atmel_pwm_config_v2(struct atmel_pwm_chip *atmel_pwm,
-+		struct pwm_device *pwm, unsigned int dty, unsigned int prd)
-+{
-+	/*
-+	 * if the pwm channel is enabled, using update register to update
-+	 * related register value, or else write it directly
-+	 */
-+	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-+		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CDTYUPD, dty);
-+		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CPRDUPD, prd);
-+	} else {
-+		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CDTY, dty);
-+		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CPRD, prd);
-+	}
-+}
-+
-+static int atmel_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-+		enum pwm_polarity polarity)
-+{
-+	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-+	u32 val = 0;
-+	int ret;
-+
-+	/* Enable clock */
-+	ret = clk_prepare_enable(atmel_pwm->clk);
-+	if (ret) {
-+		pr_err("failed to enable pwm clock\n");
-+		return ret;
-+	}
-+
-+	if (polarity == PWM_POLARITY_NORMAL)
-+		val &= ~(1 << 9);
-+	else
-+		val |= 1 << 9;
-+
-+	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
-+
-+	/* Disable clock */
-+	clk_disable_unprepare(atmel_pwm->clk);
-+
-+	return 0;
-+}
-+
-+static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-+
-+	clk_prepare_enable(atmel_pwm->clk);
-+
-+	atmel_pwm_writel(atmel_pwm, PWM_ENA, 1 << pwm->hwpwm);
-+
-+	return 0;
-+}
-+
-+static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-+	u32 val;
-+
-+	atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
-+
-+	/* Disable clock */
-+	val = atmel_pwm_readl(atmel_pwm, PWM_SR);
-+	if ((val & 0xf) == 0)
-+		clk_disable_unprepare(atmel_pwm->clk);
-+}
-+
-+static const struct pwm_ops atmel_pwm_ops = {
-+	.config = atmel_pwm_config,
-+	.set_polarity = atmel_pwm_set_polarity,
-+	.enable = atmel_pwm_enable,
-+	.disable = atmel_pwm_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+struct atmel_pwm_data {
-+	void (*config)(struct atmel_pwm_chip *chip, struct pwm_device *pwm,
-+			unsigned int dty, unsigned int prd);
-+};
-+
-+static struct atmel_pwm_data atmel_pwm_data_v1 = {
-+	.config = atmel_pwm_config_v1,
-+};
-+
-+static struct atmel_pwm_data atmel_pwm_data_v2 = {
-+	.config = atmel_pwm_config_v2,
-+};
-+
-+static const struct of_device_id atmel_pwm_dt_ids[] = {
-+	{
-+		.compatible = "atmel,at91sam9rl-pwm",
-+		.data = &atmel_pwm_data_v1,
-+	}, {
-+		.compatible = "atmel,sama5-pwm",
-+		.data = &atmel_pwm_data_v2,
-+	}, {
-+		/* sentinel */
-+	},
-+};
-+MODULE_DEVICE_TABLE(of, atmel_pwm_dt_ids);
-+
-+static int atmel_pwm_probe(struct platform_device *pdev)
-+{
-+	const struct of_device_id *of_id =
-+		of_match_device(atmel_pwm_dt_ids, &pdev->dev);
-+	const struct atmel_pwm_data *data;
-+	struct atmel_pwm_chip *atmel_pwm;
-+	struct resource *res;
-+	struct pinctrl *pinctrl;
-+	int ret;
-+
-+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-+	if (IS_ERR(pinctrl)) {
-+		dev_err(&pdev->dev, "failed get pinctrl\n");
-+		return PTR_ERR(pinctrl);
-+	}
-+
-+	atmel_pwm = devm_kzalloc(&pdev->dev, sizeof(*atmel_pwm), GFP_KERNEL);
-+	if (!atmel_pwm) {
-+		dev_err(&pdev->dev, "out of memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "no memory resource defined\n");
-+		return -ENODEV;
-+	}
-+
-+	atmel_pwm->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(atmel_pwm->base)) {
-+		dev_err(&pdev->dev, "ioremap failed\n");
-+		return PTR_ERR(atmel_pwm->base);
-+	}
-+
-+	atmel_pwm->clk = devm_clk_get(&pdev->dev, "pwm_clk");
-+	if (IS_ERR(atmel_pwm->clk)) {
-+		dev_err(&pdev->dev, "clk get failed\n");
-+		return PTR_ERR(atmel_pwm->clk);
-+	}
-+
-+	atmel_pwm->chip.dev = &pdev->dev;
-+	atmel_pwm->chip.ops = &atmel_pwm_ops;
-+	atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
-+	atmel_pwm->chip.of_pwm_n_cells = 3;
-+	atmel_pwm->chip.base = -1;
-+	atmel_pwm->chip.npwm = PWM_NUM;
-+
-+	data = of_id->data;
-+	atmel_pwm->config = data->config;
-+
-+	ret = pwmchip_add(&atmel_pwm->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to add pwm chip %d\n", ret);
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, atmel_pwm);
-+
-+	dev_info(&pdev->dev, "successfully register pwm\n");
-+
-+	return 0;
-+}
-+
-+static int atmel_pwm_remove(struct platform_device *pdev)
-+{
-+	struct atmel_pwm_chip *atmel_pwm = platform_get_drvdata(pdev);
-+
-+	return pwmchip_remove(&atmel_pwm->chip);
-+}
-+
-+static struct platform_driver atmel_pwm_driver = {
-+	.driver = {
-+		.name = "atmel-pwm",
-+		.of_match_table = of_match_ptr(atmel_pwm_dt_ids),
-+	},
-+	.probe = atmel_pwm_probe,
-+	.remove = atmel_pwm_remove,
-+};
-+module_platform_driver(atmel_pwm_driver);
-+
-+MODULE_ALIAS("platform:atmel-pwm");
-+MODULE_AUTHOR("Bo Shen <voice.shen@atmel.com>");
-+MODULE_DESCRIPTION("Atmel PWM driver");
-+MODULE_LICENSE("GPL v2");
+You mean "make pseudo block device and register make_request_fn
+and prevent writeback". Bah, yes, it's doable but what is it different with below?
+
+1) move zbud into zram
+2) implement frontswap API in zram
+3) implement writebazk in zram
+
+The zram has been for a long time in staging to be promoted and have been
+maintained/deployed. Of course, I have asked the promotion several times
+for above a year.
+
+Why can't zram include zswap functions if you really want to merge them?
+Is there any problem?
+
+> 
+> > > 
+> > > > > These are the sort of reason why I feel that zram has limited cases where
+> > > > > it is safe to use and zswap has a wider range of applications. At least
+> > > > > I would be very unhappy to try supporting zram in the field for normal
+> > > > > servers. zswap should be able to replace the functionality of zram+swap
+> > > > > by backing zswap with a pseudo block device that rejects all writes. I
+> > > > 
+> > > > One of difference between zswap and zram is asynchronous I/O support.
+> > > 
+> > > As zram is not writing to disk, how compelling is asynchronous IO? If
+> > > zswap was backed by the pseudo device is there a measurable bottleneck?
+> > 
+> > Compression. It was really bottlneck point. I had an internal patch which
+> > can make zram use various compressor, not only LZO.
+> > The better good compressor was, the more bottlenck compressor was.
+> > 
+> 
+> There are two issues there. One that different compression algorithms
+> should be optional with tradeoffs on speed vs compression ratio. There is
+> no reason why that couldn't be hacked into zswap.
+> 
+> The second is that only one page can be compressed at a time. That would
+> require further work to allow the frontswap API to asynchronously compress
+> pages. It would be a lot more heavy lifting but it is not impossible.
+
+You're saying zswap can do everything to replace zram and I can say that zram
+also can do everything to replace zswap, too and I'd like to say zram would be
+better than zswap about writeback.
+
+Current zswap writeback has a few issues.
+
+First of all, why should writeback happen zswap layer as I said earlier?
+What if someone try to configue swap layer hierachy with fast and slow devices
+among in-memory, SSD, eMMC, harddisk, network storage?
+In this case, priority-based round-robin method of swap layer isn't good model
+for caching hierachy. It would be better to handle it in swap layer generally.
+It's not an only zswap specific problem. If we solve it in swap layer,
+zram would be enough. 
+
+Another disadvntage is that zswap is decompressing a page right before writeback.
+and write one-by-one page. But zram can implement writing out it with zpage unit,
+batching, sequentially if it has indirect layer to handle V2P layer which could
+translate virtual swapoff to physical swapoff because physical swapoff could be
+allocated right before write happening. In addtion to that, V2P layer can support
+zpage compaction for mitigating the fragementation problem of zsmalloc.
+
+> 
+> > > However, I believe that the promotion will lead to zram and zswap diverging
+> > > further from each other, both implementing similar functionality and
+> > > ultimately cause greater maintenance headaches. There is a path that makes
+> > > zswap a functional replacement for zram and I've seen no good reason why
+> > > that path was not taken. Zram cannot be a functional replacment for zswap
+> > > as there is no obvious sane way writeback could be implemented. Continuing
+> > 
+> > Then, do you think current zswap's writeback is sane way?
+> 
+> No, it's clunky as hell and the layering between zswap and zbud is twisty
+> (e.g. zswap store -> zbud reclaim -> zswap writeback wtf?). I believe it used
+> to be a lot worse but was ironed out a bit in preparation for merging. As
+> bad as it is, general workloads cannot just consume unreclaimable pages with
+> compressed data and writeback should be optionally handled at the very least.
+> 
+> How zswap currently implements it could be a whole lot better. It's silly
+> that it is the allocator the directly performs synchronous writeback
+> one page at a time because that will means the world stalls when zswap
+> fills. On larger machines that is just going to be brick wall and considering
+> that zswap was intended for virtualisation it is particularly hilarious.
+> I think I brought up its stalling behaviour during review when it was being
+> merged. It would have been preferable if writeback could be initiated in
+> batches and then waited on at the very least. It's worse that it uses
+> _swap_writepage directly instead of going through a writepage ops. It
+> would have been better if zbud pages existed on the LRU and written back
+> with an address space ops and properly handled asynchonous writeback.
+> 
+> Zswap could be massively improved, there is no denying that. I've seen no
+> follow-up patches since which is a bit worrying but I'm not losing sleep
+> over it.
+> 
+> Zram does not even try to do anything like this and from your description
+> of the embedded use case there is no intention of ever trying.
+
+Yes. Because there was no such requirement for zram but it could be doable
+and even better as I said. And another reason I didn't try is zswap had a plan
+to support writeback and We(I, Seth, Dan) didn't thought zswap will replace zram.
+That's why I helped zswap merging.
+
+Okay, you might disagree all points I said above and insist on that zswap
+must include zram functionality and discard zram.
+If everybody really want to unify zram and zswap, I can do it but I think
+it should be based on zram. As I said, zram can support frontswap and
+writeback via borrowing all code from zswap/zbud so that zram doesn't break
+anything and it's more flexible.
+
+1) zram-blk
+2) zram-swap with block device, which can be enhanced for writeback batch,
+   sequential without decompressing.
+3) zswap with frontswap.
+4) If VM start to consider multiple swap-cache hierachy, we can remove 3.
+
+Why do you want to replace old-stable/has-many-users/well-maintained feature
+with new-fresh thing? It is never reasonable to me.
+
+> 
+> > I didn't raise an issue because I didn't want to be a blocker when zswap was
+> > promoted. Actually, I didn't like that way because I thought swap-writeback
+> > feature should be implemented by VM itself rather than some hooked driver
+> > internal logic.
+> 
+> You could also have brought it up any time since or pushed for it to be
+> implemented with the view to making zswap functionally equivalent to
+> zram.
+
+Then, Are you okay if I resend zram promotion patches with adding frontswap
+stuff to replace zswap? I don't want it but if everybody want, I will do.
+
+> 
+> > VM alreay has a lot information so it would handle multipe
+> > heterogenous swap more efficenlty like cache hierachy without LRU inversing.
+> > It could solve current zswap LRU inversing problem generally and help others
+> > who want to configure multiple swap system as well as zram.
+> > 
+> > > to diverge will ultimately bite someone in the ass.
+> > 
+> > Mel, current zram situation is following as.
+> > 
+> > 1) There are a lot users in the world.
+> > 2) So, many valuable contributions have been in there.
+> > 2) The new feature development of zram had stalled because Greg asserted
+> >    he doesn't accept new feature until promote will be done and recently,
+> >    he said he will remove zram in staging if anybody doesn't try to promote
+> > 3) You are saying zram shouldn't be promote. IOW, zram should go away.
+> > 
+> > Right? Then, What should we zram developers do?
+> 
+> I've already explained, more than once going at least as far back as
+> April, how I thought zswap could be made functionally identical to zram
+> and improved.
+> 
+> > What's next step for zram which is really perfect for embedded system?
+> > We should really lose a chance to enhance zram although fresh zswap
+> > couldn't replace old zram?
+> > 
+> > Mel, please consider embedded world although they are very little voice
+> > in this core subsystem.
+> > 
+> 
+> I already said I recognise it has a large number of users in the field
+> and users count a lot more than me complaining. If it gets promoted then
+> I expect it will be on those grounds.
+> 
+> My position is that I think it's a bad idea because it is clear there is no
+> plan or intention of ever brining zram and zswap together. Instead we are
+> to have two features providing similar functionality with zram diverging
+> further from zswap.  Ultimately I believe this will increase maintenance
+> headaches. It'll get even more entertaining if/when someone ever tries
+> to reimplement zcache although since Dan left I do not believe anyone is
+> planning to try. I will not be acking this series but there many be enough
+> developers that are actually willing to maintain a duel zram/zswap mess
+> to make it happen anyway.
+
+Okay, My position is following as.
+
+1) I'd like to stick compressed block device because writeback should be
+   hanled in VM layer rather than zswap layer to solve common problem
+   in general.
+
+2) If you disagree with that and want to unify zswap and zram,
+   I'd like to based on zram so that zram can implement frontswap API and
+   writeback through borrowing from zswap. Because zram has long
+   history/stable/many contributors/many users compared to zswap.
+   If 1) works sometime in future, we can remove zswap internal writeback totally.
+   If 1) don't work, we can enhance writeback more efficiently like I mentioned
+   without frontswap.
+   I admit it should be done before zswap is merged but as I already said
+   at that time, we(I, Seth, Dan) never thought zswap could replace zram
+   totally. But I think it's not too late.
+
+3) I admit zswap can implement pusedo block device through borrowing many code
+   from zram so that it can support zram without breaking. But it might lose
+   our git history which is one of valuable from getting staging.
+
+Andrew, please put your opinion and decision.
+
 -- 
-1.7.9.5
-
+Kind regards,
+Minchan Kim
