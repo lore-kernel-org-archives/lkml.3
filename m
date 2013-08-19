@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750759Ab3HSDS6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 23:18:58 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:41435 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3HSDS4 (ORCPT
+	id S1750770Ab3HSDVY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 23:21:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46326 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab3HSDVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 23:18:56 -0400
+	Sun, 18 Aug 2013 23:21:23 -0400
+Date: Sun, 18 Aug 2013 20:23:09 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: rucsoftsec <rucsoftsec@gmail.com>
+Cc: Iker Pedrosa <ikerpedrosam@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Re: [PATCH] Staging: rtl8192e: rtllib_rx: checking NULL value
+ afterdoing dev_alloc_skb
+Message-ID: <20130819032309.GA21419@kroah.com>
+References: <1375959404-3276-1-git-send-email-ikerpedrosam@gmail.com>
+ <20130809123813.GK5502@mwanda>
+ <20130816134403.ca4ee9e841a178c1c6dd87e8@gmail.com>
+ <201308190915108848173@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130819115401.1f3ce4c2479645d72fb5cb00@canb.auug.org.au>
-References: <20130819115401.1f3ce4c2479645d72fb5cb00@canb.auug.org.au>
-Date: Sun, 18 Aug 2013 20:18:55 -0700
-Message-ID: <CANQSiW2n1qo0YyR_jEYkNkDaDAukH6EEqNYA0nBxO1Sv7aUTAg@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the libata tree
-From: Terry Suereth <terry.suereth@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201308190915108848173@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per my original patch, "0x3x26" in code should be "0x3726" (as in the
-unpatched version).  I refer to "x26" in comments as a forward-looking
-assumption, but AFAIK only 3726 and 3826 exist at this time.
+On Mon, Aug 19, 2013 at 09:15:15AM +0800, rucsoftsec wrote:
+> I have read that file. But the trouble is that I was not sure whether it is a
+> bug or not. So I report it to BugZilla, and wait for further confirmation.
 
-terry.suereth@gmail.com
+Don't worry about bugzilla, please send us a patch through email so we
+can accept it.  We can't take anything from bugzilla.
 
+thanks,
 
-On Sun, Aug 18, 2013 at 6:54 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Tejun,
->
-> After merging the libata tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->
-> drivers/ata/libata-pmp.c: In function 'sata_pmp_quirks':
-> drivers/ata/libata-pmp.c:386:36: error: invalid suffix "x26" on integer constant
->   if (vendor == 0x1095 && (devid == 0x3x26 || devid == 0x3826)) {
->                                     ^
->
-> Caused by commit f1a313ad86b9 ("libata: apply behavioral quirks to sil3826 PMP").
->
-> I have used the libata tree from next-20130816 for today.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+greg k-h
