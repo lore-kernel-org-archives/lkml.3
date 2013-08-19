@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750883Ab3HSGTJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 02:19:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:45509 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab3HSGTH (ORCPT
+	id S1750891Ab3HSGYi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 02:24:38 -0400
+Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:4862 "EHLO
+	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816Ab3HSGYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 02:19:07 -0400
-Message-ID: <5211B8C2.1010702@oracle.com>
-Date: Mon, 19 Aug 2013 14:18:42 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Vaughan Cao <vaughan.cao@oracle.com>, jeremy@goop.org,
-        xen-devel@lists.xensource.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, mingo@redhat.com,
-        hpa@zytor.com, tglx@linutronix.de
-Subject: Re: [Xen-devel] [PATCH] xen: initialize xen panic handler for PVHVM
-References: <1376640656-32381-1-git-send-email-vaughan.cao@oracle.com> <20130816124327.GC10190@konrad-lan.dumpdata.com>
-In-Reply-To: <20130816124327.GC10190@konrad-lan.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 19 Aug 2013 02:24:36 -0400
+From: Maarten ter Huurne <maarten@treewalker.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maarten ter Huurne <maarten@treewalker.org>
+Subject: [PATCH] USB: musb: Avoid null pointer dereference in debug logging
+Date: Mon, 19 Aug 2013 08:24:08 +0200
+Message-Id: <1376893448-27740-1-git-send-email-maarten@treewalker.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <52114574.3060701@cogentembedded.com>
+References: <52114574.3060701@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/13 20:43, Konrad Rzeszutek Wilk wrote:
-> Could you tell me what has been happening without this patch?
+Since commit 511f3c53 (usb: gadget: udc-core: fix a regression during
+gadget driver unbinding) usb_gadget_remove_driver will pass NULL for
+the driver argument.
 
-Without this patch, Xen would not get pvhvm crash event, any config for
-on_crash in guest configure file will not be triggered.
+Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
+---
+ drivers/usb/musb/musb_gadget.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks,
-Joe
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index ba70923..82e5386 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1935,7 +1935,8 @@ static int musb_gadget_stop(struct usb_gadget *g,
+ 	stop_activity(musb, driver);
+ 	otg_set_peripheral(musb->xceiv->otg, NULL);
+ 
+-	dev_dbg(musb->controller, "unregistering driver %s\n", driver->function);
++	dev_dbg(musb->controller, "unregistering driver %s\n",
++				  driver ? driver->function : "(removed)");
+ 
+ 	musb->is_active = 0;
+ 	musb->gadget_driver = NULL;
+-- 
+1.8.1.4
 
