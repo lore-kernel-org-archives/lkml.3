@@ -1,61 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751077Ab3HSHAu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 03:00:50 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:52771 "EHLO gw1.transmode.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939Ab3HSHAs convert rfc822-to-8bit (ORCPT
+	id S1751061Ab3HSHGQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 03:06:16 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56128 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab3HSHGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 03:00:48 -0400
-MIME-Version: 1.0
-Importance: Normal
-X-Priority: 3 (Normal)
-In-Reply-To: <20130818205713.GA32563@kroah.com>
-References: <20130818205713.GA32563@kroah.com>,
-	<OF4D0C0FB6.A839872C-ONC1257BCB.004FDEBA-C1257BCB.004FDEBC@transmode.se>
-Subject: Re: High load which eventually leads to lockup
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <OF825BE505.E28A86C5-ONC1257BCC.002685F1-C1257BCC.002685F2@transmode.se>
-Date: Mon, 19 Aug 2013 09:00:46 +0200
-X-Mailer: Lotus Domino Web Server Release 8.5.3FP1 March 07, 2012
-X-MIMETrack: Serialize by Notes Server on mail1/Transmode(Release 8.5.3FP1|March 07, 2012) at
- 19/08/2013 09:00:46,
-	Serialize complete at 19/08/2013 09:00:46,
-	Serialize by Router on mail1/Transmode(Release 8.5.3FP1|March 07, 2012) at
- 19/08/2013 09:00:46
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Aug 2013 03:06:14 -0400
+Date: Mon, 19 Aug 2013 17:06:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: linux-next: manual merge of the akpm-current tree with the ext4
+ tree
+Message-Id: <20130819170602.121c9247810db4836472d849@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__19_Aug_2013_17_06_02_+1000_9n+2TRZ55uGpfi9Z"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__19_Aug_2013_17_06_02_+1000_9n+2TRZ55uGpfi9Z
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
------Greg KH <gregkh@linuxfoundation.org> wrote: -----
-> 
-> On Sun, Aug 18, 2013 at 04:32:23PM +0200, Joakim Tjernlund wrote: > The last week I have had 4
-> lockups which required power on/off. > Before getting there I noticed that the machine was
-> getting slow. >  > top reported high load(5-10) but there was no process consuming CPU except >
-> for migration/0 which were spicing 100% on and off.  > Ping times went up with a factor of 40
-> too. >  > Eventually I got a few entries in the kernel log: > Aug 16 12:40:51 gentoo-jocke
-> kernel: Modules linked in: nfnetlink_log nfnetlink bluetooth rfkill sg isofs ipt_MASQUERADE
-> iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack
-> ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp ip6table_filter ip6_tables iptable_filter
-> ip_tables ebtables x_tables autofs4 nfsd dm_crypt vboxnetadp(O) vboxnetflt(O) vboxdrv(O) usbhid
-> dm_mod kvm_intel kvm snd_hda_codec_hdmi aesni_intel ablk_helper cryptd xts lrw gf128mul
-> snd_hda_codec_realtek ehci_pci ehci_hcd usbcore snd_hda_intel snd_hda_codec snd_hwdep snd_pcm
-> snd_page_alloc snd_timer snd microcode usb_common radeon e1000e ttm firmware_class ptp pps_core
-> pcspkr > Aug 16 12:40:51 gentoo-jocke kernel: CPU 0  > Aug 16 12:40:51 gentoo-jocke kernel: Pid:
-> 2421, comm: X Tainted: G           O 3.9.11 #1 Hewlett-Packard HP Compaq 8200 Elite CMT PC/1494
-> The virtual box drivers are a huge mess.  Seriously, I really don't even know how the things are
-> able to work at all (virtual table pointers from userspace through to the kernel?)  I spent a
-> bunch of time to try to clean them up and get them into mergable state, but without the ability
-> to also fix up the userspace side, that ended up being a dead-end.  Can you duplicate the problem
-> without these modules loaded?  I'd blame them for any problems you might ever have, given how
-> crazy they are.  thanks,  greg k-h 
+Hi Andrew,
 
-ok you don't trust them even if I haven't used VirtualBox between failures?
-Anyhow, I will unload them, lets hope for the best :)
+Today's linux-next merge of the akpm-current tree got a conflict in
+fs/ext4/inode.c between commit 4958dee0e70f ("ext4: simplify truncation
+code in ext4_setattr()") from the ext4 tree and commit fb6854ec9753
+("truncate: drop 'oldsize' truncate_pagecache() parameter") from the
+akpm-current tree.
 
- Jocke
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/ext4/inode.c
+index fc4051e,9257d79..0000000
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@@ -4598,9 -4523,7 +4598,8 @@@ int ext4_setattr(struct dentry *dentry
+  		ext4_journal_stop(handle);
+  	}
+ =20
+ -	if (attr->ia_valid & ATTR_SIZE) {
+ +	if (attr->ia_valid & ATTR_SIZE && attr->ia_size !=3D inode->i_size) {
+ +		handle_t *handle;
+- 		loff_t oldsize =3D inode->i_size;
+ =20
+  		if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
+  			struct ext4_sb_info *sbi =3D EXT4_SB(inode->i_sb);
+@@@ -4608,69 -4531,71 +4607,69 @@@
+  			if (attr->ia_size > sbi->s_bitmap_maxbytes)
+  				return -EFBIG;
+  		}
+ -	}
+ -
+ -	if (S_ISREG(inode->i_mode) &&
+ -	    attr->ia_valid & ATTR_SIZE &&
+ -	    (attr->ia_size < inode->i_size)) {
+ -		handle_t *handle;
+ -
+ -		handle =3D ext4_journal_start(inode, EXT4_HT_INODE, 3);
+ -		if (IS_ERR(handle)) {
+ -			error =3D PTR_ERR(handle);
+ -			goto err_out;
+ -		}
+ -		if (ext4_handle_valid(handle)) {
+ -			error =3D ext4_orphan_add(handle, inode);
+ -			orphan =3D 1;
+ -		}
+ -		EXT4_I(inode)->i_disksize =3D attr->ia_size;
+ -		rc =3D ext4_mark_inode_dirty(handle, inode);
+ -		if (!error)
+ -			error =3D rc;
+ -		ext4_journal_stop(handle);
+ -
+ -		if (ext4_should_order_data(inode)) {
+ -			error =3D ext4_begin_ordered_truncate(inode,
+ +		if (S_ISREG(inode->i_mode) &&
+ +		    (attr->ia_size < inode->i_size)) {
+ +			if (ext4_should_order_data(inode)) {
+ +				error =3D ext4_begin_ordered_truncate(inode,
+  							    attr->ia_size);
+ -			if (error) {
+ -				/* Do as much error cleanup as possible */
+ -				handle =3D ext4_journal_start(inode,
+ -							    EXT4_HT_INODE, 3);
+ -				if (IS_ERR(handle)) {
+ -					ext4_orphan_del(NULL, inode);
+ +				if (error)
+  					goto err_out;
+ -				}
+ -				ext4_orphan_del(handle, inode);
+ -				orphan =3D 0;
+ -				ext4_journal_stop(handle);
+ +			}
+ +			handle =3D ext4_journal_start(inode, EXT4_HT_INODE, 3);
+ +			if (IS_ERR(handle)) {
+ +				error =3D PTR_ERR(handle);
+  				goto err_out;
+  			}
+ -		}
+ -	}
+ -
+ -	if (attr->ia_valid & ATTR_SIZE) {
+ -		if (attr->ia_size !=3D inode->i_size) {
+ -			i_size_write(inode, attr->ia_size);
+ -			/*
+ -			 * Blocks are going to be removed from the inode. Wait
+ -			 * for dio in flight.  Temporarily disable
+ -			 * dioread_nolock to prevent livelock.
+ -			 */
+ -			if (orphan) {
+ -				if (!ext4_should_journal_data(inode)) {
+ -					ext4_inode_block_unlocked_dio(inode);
+ -					inode_dio_wait(inode);
+ -					ext4_inode_resume_unlocked_dio(inode);
+ -				} else
+ -					ext4_wait_for_tail_page_commit(inode);
+ +			if (ext4_handle_valid(handle)) {
+ +				error =3D ext4_orphan_add(handle, inode);
+ +				orphan =3D 1;
+  			}
+ +			down_write(&EXT4_I(inode)->i_data_sem);
+ +			EXT4_I(inode)->i_disksize =3D attr->ia_size;
+ +			rc =3D ext4_mark_inode_dirty(handle, inode);
+ +			if (!error)
+ +				error =3D rc;
+  			/*
+ -			 * Truncate pagecache after we've waited for commit
+ -			 * in data=3Djournal mode to make pages freeable.
+ +			 * We have to update i_size under i_data_sem together
+ +			 * with i_disksize to avoid races with writeback code
+ +			 * running ext4_wb_update_i_disksize().
+  			 */
+ -			truncate_pagecache(inode, inode->i_size);
+ +			if (!error)
+ +				i_size_write(inode, attr->ia_size);
+ +			up_write(&EXT4_I(inode)->i_data_sem);
+ +			ext4_journal_stop(handle);
+ +			if (error) {
+ +				ext4_orphan_del(NULL, inode);
+ +				goto err_out;
+ +			}
+ +		} else
+ +			i_size_write(inode, attr->ia_size);
+ +
+ +		/*
+ +		 * Blocks are going to be removed from the inode. Wait
+ +		 * for dio in flight.  Temporarily disable
+ +		 * dioread_nolock to prevent livelock.
+ +		 */
+ +		if (orphan) {
+ +			if (!ext4_should_journal_data(inode)) {
+ +				ext4_inode_block_unlocked_dio(inode);
+ +				inode_dio_wait(inode);
+ +				ext4_inode_resume_unlocked_dio(inode);
+ +			} else
+ +				ext4_wait_for_tail_page_commit(inode);
+  		}
+ -		ext4_truncate(inode);
+ +		/*
+ +		 * Truncate pagecache after we've waited for commit
+ +		 * in data=3Djournal mode to make pages freeable.
+ +		 */
+- 		truncate_pagecache(inode, oldsize, inode->i_size);
+++		truncate_pagecache(inode, inode->i_size);
+  	}
+ +	/*
+ +	 * We want to call ext4_truncate() even if attr->ia_size =3D=3D
+ +	 * inode->i_size for cases like truncation of fallocated space
+ +	 */
+ +	if (attr->ia_valid & ATTR_SIZE)
+ +		ext4_truncate(inode);
+ =20
+  	if (!rc) {
+  		setattr_copy(inode, attr);
+
+--Signature=_Mon__19_Aug_2013_17_06_02_+1000_9n+2TRZ55uGpfi9Z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSEcPeAAoJEECxmPOUX5FESAMP/RsKgGbzt/ljw37Uc91iI0/F
+gc2ZGJb5g2n2Jf+Kk9T4QIpR/tvusPkEqv6zMDLRwPtk62hxVqM4nSHj70EoCuPZ
+rwBu+XHdj0N+V3ER8lCKs2BkYFkrQEJH1wJRnkW2RlnKzc/W0D8SXdHDf+vro0fu
+pNlmcqfozPrQlwjFbVkCLVpzj1zI/AHjA7qp/uQDwcUCOAiAXNZdf1LSB1/MC+Sa
+wGKPzKCvlG+non5x1v49es92U7fqIgJS/5MvqvlL7g/9kul0aNqgAwetr+brmEvR
+DY75bofcNpLU/p8EjXPySoe3LDcALBHCmR1mieCD+TAdyqVTu9UFFJ+zhG7SaRLi
+mzkNes/JTPG0kMgFBXrzpF1RCqaXBdnh9AuBHyMib6Uy8BlrsPhRwiRxyJPzRb/s
+yOj+R+XphptB/0L4c7LWmubs+B5yUuE4aObSghnp4xhUkRAn+KNRKIaUqiTMBDbI
+7E+ImhXoCcja2UzEYcOjI1ARDaZQYYDZPn8GW2Tz3kcsnSbrEQURypwWMwFQkvxH
+Wi7w6inzJsC2O5JRj+8U9XnClAoPNkSornE72yOYvIVRBJJxgXT+MGioZxXWknER
+eEdyGj9vC2ENjJM/VavvZDFhET2aYFkWgrn6lRyWu0paEDvGgVM78cIrEYgfczlN
++5D2S0au0EPmcEW5q4vH
+=Vbt4
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__19_Aug_2013_17_06_02_+1000_9n+2TRZ55uGpfi9Z--
