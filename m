@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751051Ab3HSG6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 02:58:24 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47306 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab3HSG6W (ORCPT
+	id S1751140Ab3HSG7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 02:59:39 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:36797 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab3HSG7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 02:58:22 -0400
-Date: Mon, 19 Aug 2013 08:58:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Andi Kleen <andi@firstfloor.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: linux-next: build warning after merge of the tip tree
-Message-ID: <20130819065817.GB23742@gmail.com>
-References: <20130819142633.82fb06bfa3bc0276fb09cbea@canb.auug.org.au>
+	Mon, 19 Aug 2013 02:59:38 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Ben Skeggs <bskeggs@redhat.com>
+Subject: Re: [PATCH] nouveau: fix reclocking on nv40
+Date: Mon, 19 Aug 2013 08:59:32 +0200
+User-Agent: KMail/1.13.7 (Linux/3.11.0-rc5+synaptics-generic; KDE/4.11.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        David Airlie <airlied@linux.ie>, Martin Peres <martin.peres@labri.fr>
+References: <520DFD9F.1070006@labri.fr> <1376657827-8105-1-git-send-email-pali.rohar@gmail.com>
+In-Reply-To: <1376657827-8105-1-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130819142633.82fb06bfa3bc0276fb09cbea@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart1501245.0Vcxz5UO9T";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308190859.32696@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--nextPart1501245.0Vcxz5UO9T
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Friday 16 August 2013 14:57:07 Pali Roh=C3=A1r wrote:
+> In commit 77145f1cbdf8d28b46ff8070ca749bad821e0774 was
+> introduced error which cause that reclocking on nv40 not
+> working anymore. There is missing assigment of return value
+> from pll_calc to ret.
+>=20
+> Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> Signed-off-by: Martin Peres <martin.peres@labri.fr>
+> ---
+>  drivers/gpu/drm/nouveau/nv40_pm.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/gpu/drm/nouveau/nv40_pm.c
+> b/drivers/gpu/drm/nouveau/nv40_pm.c index 3af5bcd..625f80d
+> 100644
+> --- a/drivers/gpu/drm/nouveau/nv40_pm.c
+> +++ b/drivers/gpu/drm/nouveau/nv40_pm.c
+> @@ -131,7 +131,7 @@ nv40_calc_pll(struct drm_device *dev, u32
+> reg, struct nvbios_pll *pll, if (clk < pll->vco1.max_freq)
+>  		pll->vco2.max_freq =3D 0;
+>=20
+> -	pclk->pll_calc(pclk, pll, clk, &coef);
+> +	ret =3D pclk->pll_calc(pclk, pll, clk, &coef);
+>  	if (ret =3D=3D 0)
+>  		return -ERANGE;
 
-> Hi all,
-> 
-> After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-> produced this warning:
-> 
-> arch/x86/kernel/paravirt.c:66:0: warning: "DEF_NATIVE" redefined [enabled by default]
->  #define DEF_NATIVE(ops, name, code)     \
->  ^
-> In file included from arch/x86/include/asm/ptrace.h:65:0,
->                  from arch/x86/include/asm/alternative.h:8,
->                  from arch/x86/include/asm/bitops.h:16,
->                  from include/linux/bitops.h:22,
->                  from include/linux/kernel.h:10,
->                  from include/linux/cache.h:4,
->                  from include/linux/time.h:4,
->                  from include/linux/stat.h:18,
->                  from include/linux/module.h:10,
->                  from arch/x86/kernel/paravirt.c:22:
-> arch/x86/include/asm/paravirt_types.h:391:0: note: this is the location of the previous definition
->  #define DEF_NATIVE(ops, name, code)      \
->  ^
-> 
-> Introduced by commit 9a55fdbe941e ("x86, asmlinkage, paravirt: Add
-> __visible/asmlinkage to xen paravirt ops").  The 2 definitions used to be
-> identical ... maybe there should be only one.
+Hello, it is possible to include this patch in 3.11?
+Or it is too late now and need to wait for 3.12?
 
-Andi, please send a fix for this build warning, against 
-tip:x86/asmlinkage.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Thanks,
+--nextPart1501245.0Vcxz5UO9T
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-	Ingo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iEYEABECAAYFAlIRwlQACgkQi/DJPQPkQ1JndQCdGV95aZJT6e19Y3EZiYwyahOq
+dokAoMLE15APJkClcfAD/n9Q/gtEH3EM
+=zA4y
+-----END PGP SIGNATURE-----
+
+--nextPart1501245.0Vcxz5UO9T--
