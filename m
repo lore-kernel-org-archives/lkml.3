@@ -1,83 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750821Ab3HSF2M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 01:28:12 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:17381 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab3HSF2K (ORCPT
+	id S1750853Ab3HSF3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 01:29:04 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40049 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab3HSF3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 01:28:10 -0400
-X-AuditID: cbfee68e-b7f276d000002279-7d-5211ace88d2f
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, Wan ZongShun <mcuos.com@gmail.com>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] rtc: rtc-nuc900: use NULL instead of 0
-Date: Mon, 19 Aug 2013 14:28:08 +0900
-Message-id: <017d01ce9c9c$e347fc60$a9d7f520$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6cnNqRWN/RT+iRQ3OZ9z7w/Olk0Q==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsVy+t8zA90XawSDDJa0K1osuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF0+l1Fvs7Oxgd2Dx2zrrL7rFn4kk2jxMzfrN49G1Zxegxfd5PJo/Pm+QC
-	2KK4bFJSczLLUov07RK4Mq5u62Yt+Mpa8aL9A1sD42eWLkZODgkBE4mnn3azQthiEhfurWfr
-	YuTiEBJYxihxefJ0Zpii+V+WsEAkFjFKtPfNZYdwfjFKLPp/DKyKTUBN4suXw0AJDg4RAX2J
-	thYNkBpmgY2MEn0774OtExYwlzh88B8TiM0ioCpxffZUsHpeAUuJnat0QMK8AoISPybfAytn
-	FtCSWL/zOBOELS+xec1bqIMUJHacfc0IYosI6ElMf7SADaJGRGLfi3eMIHslBC6xSyxesxlq
-	l4DEt8mHWEB2SQjISmw6ADVHUuLgihssExjFZiFZPQvJ6llIVs9CsmIBI8sqRtHUguSC4qT0
-	IiO94sTc4tK8dL3k/NxNjJBo7NvBePOA9SHGZKD1E5mlRJPzgdGcVxJvaGxmZGFqYmpsZG5p
-	RpqwkjivWot1oJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQZG2SnHp1XuVOTbNPuViVZr75tt
-	rT2+JfNC+UJWWnX/4D4m/3Fh9revvzSUuGQ0uz1Wn2aSFui9WPHhddzWmN1SXdsmOstdOnq4
-	/oq1T3PMRLeagyeYW4oXTHqblhyT4FPqX77vppH00pIWoawCvUnqyt/XZ3g/ad8nyCsRfeB0
-	qmDfxpvHlBSUWIozEg21mIuKEwFQ+UzG3AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAd0XawSDDG58kLFYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaLp9PrLPZ3djA6sHnsnHWX3WPPxJNsHidm/Gbx6NuyitFj+ryfTB6fN8kF
-	sEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAJ2h
-	pFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8y4uq2bteAra8WL9g9sDYyf
-	WboYOTkkBEwk5n9ZAmWLSVy4t56ti5GLQ0hgEaNEe99cdgjnF6PEov/HmEGq2ATUJL58OQyU
-	4OAQEdCXaGvRAKlhFtjIKNG38z7YJGEBc4nDB/8xgdgsAqoS12dPBavnFbCU2LlKByTMKyAo
-	8WPyPbByZgEtifU7jzNB2PISm9e8ZYY4SEFix9nXjCC2iICexPRHC9ggakQk9r14xziBUWAW
-	klGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx/oz6R2MqxosDjEK
-	cDAq8fBauAkGCbEmlhVX5h5ilOBgVhLhZVEDCvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+
-	MA3llcQbGpuYGVkamVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVANjr4TSp/s/
-	w1aZ1BovjS4TNvS7n268WDtvF8fhhr87nu376vDwwY2Y83ketqlblgRMqP60r9vYeLbEHgvn
-	EId35vlT7l08L7E3I7U7/9AyK2vWpV7Bs59KLBMM1/8eeOCBhXS79q+n++xmPOCTvnAxTWrr
-	kqvh6zkiGv7W9x5SzEs8udrCJCpGiaU4I9FQi7moOBEAB+BMtDkDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 19 Aug 2013 01:29:00 -0400
+Message-ID: <5211ACE9.3040302@ti.com>
+Date: Mon, 19 Aug 2013 10:58:09 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>, <linux-fbdev@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
+        <s.nawrocki@samsung.com>, <kgene.kim@samsung.com>,
+        <swarren@nvidia.com>, <jg1.han@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>, <grant.likely@linaro.org>,
+        <linux-media@vger.kernel.org>, <george.cherian@ti.com>,
+        <arnd@arndb.de>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <balajitk@ti.com>,
+        Greg KH <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kyungmin.park@samsung.com>,
+        <akpm@linux-foundation.org>
+Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
+References: <20130720220006.GA7977@kroah.com> <520A2100.6000709@ti.com> <520AB0F0.8010106@gmail.com> <2128883.KpgODjXPJQ@flatron> <520B9C9E.8010002@ti.com>
+In-Reply-To: <520B9C9E.8010002@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-check_rtc_access_enable() returns pointer, thus NULL should be
-used instead of 0 in order to fix the following sparse warning:
+Felipe,
 
-drivers/rtc/rtc-nuc900.c:102:16: warning: Using plain integer as NULL pointer
+ping..
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/rtc/rtc-nuc900.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/rtc/rtc-nuc900.c b/drivers/rtc/rtc-nuc900.c
-index 22861c5..248653c 100644
---- a/drivers/rtc/rtc-nuc900.c
-+++ b/drivers/rtc/rtc-nuc900.c
-@@ -99,7 +99,7 @@ static int *check_rtc_access_enable(struct nuc900_rtc *nuc900_rtc)
- 	if (!timeout)
- 		return ERR_PTR(-EPERM);
- 
--	return 0;
-+	return NULL;
- }
- 
- static int nuc900_rtc_bcd2bin(unsigned int timereg,
--- 
-1.7.10.4
-
+On Wednesday 14 August 2013 08:35 PM, Kishon Vijay Abraham I wrote:
+> Hi,
+> 
+> On Wednesday 14 August 2013 04:34 AM, Tomasz Figa wrote:
+>> On Wednesday 14 of August 2013 00:19:28 Sylwester Nawrocki wrote:
+>>> W dniu 2013-08-13 14:05, Kishon Vijay Abraham I pisze:
+>>>> On Tuesday 13 August 2013 05:07 PM, Tomasz Figa wrote:
+>>>>> On Tuesday 13 of August 2013 16:14:44 Kishon Vijay Abraham I wrote:
+>>>>>> On Wednesday 31 July 2013 11:45 AM, Felipe Balbi wrote:
+>>>>>>> On Wed, Jul 31, 2013 at 11:14:32AM +0530, Kishon Vijay Abraham I 
+>> wrote:
+>>>>>>>>>>>>> IMHO we need a lookup method for PHYs, just like for clocks,
+>>>>>>>>>>>>> regulators, PWMs or even i2c busses because there are complex
+>>>>>>>>>>>>> cases
+>>>>>>>>>>>>> when passing just a name using platform data will not work. I
+>>>>>>>>>>>>> would
+>>>>>>>>>>>>> second what Stephen said [1] and define a structure doing
+>>>>>>>>>>>>> things
+>>>>>>>>>>>>> in a
+>>>>>>>>>>>>> DT-like way.
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> Example;
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> [platform code]
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> static const struct phy_lookup my_phy_lookup[] = {
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> 	PHY_LOOKUP("s3c-hsotg.0", "otg", "samsung-usbphy.1",
+>>>>>>>>>>>>> 	"phy.2"),
+>>>>>>>>>>>>
+>>>>>>>>>>>> The only problem here is that if *PLATFORM_DEVID_AUTO* is used
+>>>>>>>>>>>> while
+>>>>>>>>>>>> creating the device, the ids in the device name would change
+>>>>>>>>>>>> and
+>>>>>>>>>>>> PHY_LOOKUP wont be useful.
+>>>>>>>>>>>
+>>>>>>>>>>> I don't think this is a problem. All the existing lookup
+>>>>>>>>>>> methods
+>>>>>>>>>>> already
+>>>>>>>>>>> use ID to identify devices (see regulators, clkdev, PWMs, i2c,
+>>>>>>>>>>> ...). You
+>>>>>>>>>>> can simply add a requirement that the ID must be assigned
+>>>>>>>>>>> manually,
+>>>>>>>>>>> without using PLATFORM_DEVID_AUTO to use PHY lookup.
+>>>>>>>>>>
+>>>>>>>>>> And I'm saying that this idea, of using a specific name and id,
+>>>>>>>>>> is
+>>>>>>>>>> frought with fragility and will break in the future in various
+>>>>>>>>>> ways
+>>>>>>>>>> when
+>>>>>>>>>> devices get added to systems, making these strings constantly
+>>>>>>>>>> have
+>>>>>>>>>> to be
+>>>>>>>>>> kept up to date with different board configurations.
+>>>>>>>>>>
+>>>>>>>>>> People, NEVER, hardcode something like an id.  The fact that
+>>>>>>>>>> this
+>>>>>>>>>> happens today with the clock code, doesn't make it right, it
+>>>>>>>>>> makes
+>>>>>>>>>> the
+>>>>>>>>>> clock code wrong.  Others have already said that this is wrong
+>>>>>>>>>> there
+>>>>>>>>>> as
+>>>>>>>>>> well, as systems change and dynamic ids get used more and more.
+>>>>>>>>>>
+>>>>>>>>>> Let's not repeat the same mistakes of the past just because we
+>>>>>>>>>> refuse to
+>>>>>>>>>> learn from them...
+>>>>>>>>>>
+>>>>>>>>>> So again, the "find a phy by a string" functions should be
+>>>>>>>>>> removed,
+>>>>>>>>>> the
+>>>>>>>>>> device id should be automatically created by the phy core just
+>>>>>>>>>> to
+>>>>>>>>>> make
+>>>>>>>>>> things unique in sysfs, and no driver code should _ever_ be
+>>>>>>>>>> reliant
+>>>>>>>>>> on
+>>>>>>>>>> the number that is being created, and the pointer to the phy
+>>>>>>>>>> structure
+>>>>>>>>>> should be used everywhere instead.
+>>>>>>>>>>
+>>>>>>>>>> With those types of changes, I will consider merging this
+>>>>>>>>>> subsystem,
+>>>>>>>>>> but
+>>>>>>>>>> without them, sorry, I will not.
+>>>>>>>>>
+>>>>>>>>> I'll agree with Greg here, the very fact that we see people
+>>>>>>>>> trying to
+>>>>>>>>> add a requirement of *NOT* using PLATFORM_DEVID_AUTO already
+>>>>>>>>> points
+>>>>>>>>> to a big problem in the framework.
+>>>>>>>>>
+>>>>>>>>> The fact is that if we don't allow PLATFORM_DEVID_AUTO we will
+>>>>>>>>> end up
+>>>>>>>>> adding similar infrastructure to the driver themselves to make
+>>>>>>>>> sure
+>>>>>>>>> we
+>>>>>>>>> don't end up with duplicate names in sysfs in case we have
+>>>>>>>>> multiple
+>>>>>>>>> instances of the same IP in the SoC (or several of the same PCIe
+>>>>>>>>> card).
+>>>>>>>>> I really don't want to go back to that.
+>>>>>>>>
+>>>>>>>> If we are using PLATFORM_DEVID_AUTO, then I dont see any way we
+>>>>>>>> can
+>>>>>>>> give the correct binding information to the PHY framework. I think
+>>>>>>>> we
+>>>>>>>> can drop having this non-dt support in PHY framework? I see only
+>>>>>>>> one
+>>>>>>>> platform (OMAP3) going to be needing this non-dt support and we
+>>>>>>>> can
+>>>>>>>> use the USB PHY library for it.>
+>>>>>>>
+>>>>>>> you shouldn't drop support for non-DT platform, in any case we
+>>>>>>> lived
+>>>>>>> without DT (and still do) for years. Gotta find a better way ;-)
+>>>>>>
+>>>>>> hmm..
+>>>>>>
+>>>>>> how about passing the device names of PHY in platform data of the
+>>>>>> controller? It should be deterministic as the PHY framework assigns
+>>>>>> its
+>>>>>> own id and we *don't* want to add any requirement that the ID must
+>>>>>> be
+>>>>>> assigned manually without using PLATFORM_DEVID_AUTO. We can get rid
+>>>>>> of
+>>>>>> *phy_init_data* in the v10 patch series.
+>>>
+>>> OK, so the PHY device name would have a fixed part, passed as
+>>> platform data of the controller and a variable part appended
+>>> by the PHY core, depending on the number of registered PHYs ?
+>>>
+>>> Then same PHY names would be passed as the PHY provider driver's
+>>> platform data ?
+>>>
+>>> Then if there are 2 instances of the above (same names in platform
+>>> data) how would be determined which PHY controller is linked to
+>>> which PHY supplier ?
+>>>
+>>> I guess you want each device instance to have different PHY device
+>>> names already in platform data ? That might work. We probably will
+>>> be focused mostly on DT anyway. It seem without DT we are trying
+>>> to find some layer that would allow us to couple relevant devices
+>>> and overcome driver core inconvenience that it provides to means
+>>> to identify specific devices in advance. :) Your proposal sounds
+>>> reasonable, however I might be missing some details or corner cases.
+>>>
+>>>>> What about slightly altering the concept of v9 to pass a pointer to
+>>>>> struct device instead of device name inside phy_init_data?
+>>>
+>>> As Felipe said, we don't want to pass pointers in platform_data
+>>> to/from random subsystems. We pass data, passing pointers would
+>>> be a total mess IMHO.
+>>
+>> Well, this is a total mess anyway... I don't really get the point of using 
+>> PLATFORM_DEVID_AUTO. The only thing that comes to my mind is that you can 
+>> use it if you don't care about the ID and so it can be assigned 
+>> automatically.
+>>
+>> However my understanding of the device ID is that it was supposed to 
+>> provide a way to identify multiple instances of identical devices in a 
+>> reliable way, to solve problems like the one we are trying to solve 
+>> here...
+>>
+>> So maybe let's stop solving an already solved problem and just state that 
+>> you need to explicitly assign device ID to use this framework?
+> 
+> Felipe,
+> Can we have it the way I had in my v10 patch series till we find a better way?
+> I think this *non-dt* stuff shouldn't be blocking as most of the users are dt only?
+> 
+> Thanks
+> Kishon
+> 
 
