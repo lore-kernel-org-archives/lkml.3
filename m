@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab3HSWou (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 18:44:50 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42570 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab3HSWos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 18:44:48 -0400
-Message-ID: <1376952280.25016.87.camel@pasglop>
-Subject: Re: [PATCH] vfio-pci: PCI hot reset interface
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Date: Tue, 20 Aug 2013 08:44:40 +1000
-In-Reply-To: <1376943632.2657.25.camel@ul30vt.home>
-References: <20130814200845.21923.64284.stgit@bling.home>
-	 <CAErSpo4zfuaaBSDci4jOu_9RgUfLQNPvKhro1OEh=8AMvAFWYw@mail.gmail.com>
-	 <1376521578.13642.65.camel@ul30vt.home>
-	 <1376937682.2657.15.camel@ul30vt.home>
-	 <CAErSpo50ve+ZMqcX=13hKvrB75LyWmUddC-qyX7Esfr=P5StcA@mail.gmail.com>
-	 <1376943632.2657.25.camel@ul30vt.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751610Ab3HSWqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 18:46:04 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:33221 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab3HSWqC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 18:46:02 -0400
+From: Peter Wu <lekensteyn@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH] writeback: fix NULL dereference when device is gone
+Date: Tue, 20 Aug 2013 00:45:53 +0200
+Message-ID: <5177367.3UXkd1Z6lS@al>
+User-Agent: KMail/4.11 (Linux/3.11.0-rc6-git-dirty+; KDE/4.11.0; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1308172104070.7744-100000@netrider.rowland.org>
+References: <Pine.LNX.4.44L0.1308172104070.7744-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-19 at 14:20 -0600, Alex Williamson wrote:
-> I try to handle the slot as opaque, only caring that the slot pointer
-> matches, so I think our implementation is ok... so long as we only get
-> one driver claiming to manage a slot, but that's not a vfio problem ;)
-> Thanks,
+From: Peter Wu <lekensteyn@gmail.com>
 
-By why bother with slots ? Why do you even think about slots in that
-context ? slots are a badly defined thing in our current PCI stack,
-pretty much intricated with hotplug. I don't see why the reset semantics
-would be tied to slots at all.
+This solves a BUG followed by a lockup in the following case:
 
-The only case where it *might* make some sense (and even then ...) is if
-you want to start exposing slot power control and PERST but that would
-imply a pile of platform specific gunk anyway.
+1. Connect device and look in dmesg for the address:
 
-Ben.
+    [   40.034520] usb 6-2: Product: My Passport 0748
 
+2. Write something:
 
+    dd if=/dev/zero of=/dev/sdd bs=1M
+
+3. Remove device:
+
+    echo 1 > /sys/bus/usb/devices/6-2/remove
+
+4. Machine locks up (because the work queue got stuck?).
+
+Signed-off-by: Peter Wu <lekensteyn@gmail.com>
+---
+ fs/fs-writeback.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 68851ff..6e38a8b 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -1007,7 +1007,8 @@ void bdi_writeback_workfn(struct work_struct *work)
+ 	struct backing_dev_info *bdi = wb->bdi;
+ 	long pages_written;
+ 
+-	set_worker_desc("flush-%s", dev_name(bdi->dev));
++	if (bdi->dev)
++		set_worker_desc("flush-%s", dev_name(bdi->dev));
+ 	current->flags |= PF_SWAPWRITE;
+ 
+ 	if (likely(!current_is_workqueue_rescuer() ||
+-- 
+1.8.3.4
