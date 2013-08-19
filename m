@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393Ab3HSJoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 05:44:12 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36506 "EHLO
+	id S1751408Ab3HSJoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 05:44:32 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:36499 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab3HSJmS (ORCPT
+	with ESMTP id S1751231Ab3HSJmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 05:42:18 -0400
-X-AuditID: 85900ec0-d1328b9000001514-42-5211e8791c40
-Subject: [RFC PATCH 06/11] [CLEANUP] trace-cmd: Split out the communication
- with client from process_client()
+	Mon, 19 Aug 2013 05:42:14 -0400
+X-AuditID: 85900ec0-cff26b9000001514-3f-5211e874e7c4
+Subject: [RFC PATCH 04/11] [CLEANUP] trace-cmd: Split out the communication
+ with listener from setup_network()
 To: Steven Rostedt <rostedt@goodmis.org>
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Date: Mon, 19 Aug 2013 18:46:34 +0900
-Message-ID: <20130819094634.26597.60441.stgit@yunodevel>
+Date: Mon, 19 Aug 2013 18:46:30 +0900
+Message-ID: <20130819094630.26597.86145.stgit@yunodevel>
 In-Reply-To: <20130819094620.26597.79499.stgit@yunodevel>
 References: <20130819094620.26597.79499.stgit@yunodevel>
 User-Agent: StGit/0.16
@@ -28,293 +28,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split out the communication with client from process_client() for avoiding
+Split out the communication with listener from the setup_network() for avoiding
 duplicate codes between listen mode and virt-server mode.
 
 Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 ---
- trace-listen.c |  163 ++++++++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 116 insertions(+), 47 deletions(-)
+ trace-record.c |  119 +++++++++++++++++++++++++++++---------------------------
+ 1 file changed, 62 insertions(+), 57 deletions(-)
 
-diff --git a/trace-listen.c b/trace-listen.c
-index c741fa4..f29dd35 100644
---- a/trace-listen.c
-+++ b/trace-listen.c
-@@ -283,22 +283,12 @@ static int open_udp(const char *node, const char *port, int *pid,
- 	return num_port;
+diff --git a/trace-record.c b/trace-record.c
+index ac9f70a..6a096bd 100644
+--- a/trace-record.c
++++ b/trace-record.c
+@@ -1607,59 +1607,13 @@ static int create_recorder(struct buffer_instance *instance, int cpu, int extrac
+ 	exit(0);
  }
  
--static void process_client(const char *node, const char *port, int fd)
-+static int communicate_with_client(int fd, int *cpus, int *pagesize)
+-static void setup_network(void)
++static void communicate_with_listener(int fd)
  {
--	char **temp_files;
+-	struct tracecmd_output *handle;
+-	struct addrinfo hints;
+-	struct addrinfo *result, *rp;
+-	int sfd, s;
+-	ssize_t n;
  	char buf[BUFSIZ];
- 	char *option;
--	int *port_array;
--	int *pid_array;
--	int pagesize;
--	int start_port;
--	int udp_port;
- 	int options;
- 	int size;
--	int cpus;
+-	char *server;
+-	char *port;
+-	char *p;
 -	int cpu;
--	int pid;
--	int ofd;
- 	int n, s, t, i;
- 
- 	/* Let the client know what we are */
-@@ -308,31 +298,31 @@ static void process_client(const char *node, const char *port, int fd)
- 	n = read_string(fd, buf, BUFSIZ);
- 	if (n == BUFSIZ)
- 		/** ERROR **/
--		return;
-+		return -1;
- 
--	cpus = atoi(buf);
-+	*cpus = atoi(buf);
- 
--	plog("cpus=%d\n", cpus);
--	if (cpus < 0)
--		return;
-+	plog("cpus=%d\n", *cpus);
-+	if (*cpus < 0)
-+		return -1;
- 
- 	/* next read the page size */
- 	n = read_string(fd, buf, BUFSIZ);
- 	if (n == BUFSIZ)
- 		/** ERROR **/
--		return;
-+		return -1;
- 
--	pagesize = atoi(buf);
-+	*pagesize = atoi(buf);
- 
--	plog("pagesize=%d\n", pagesize);
--	if (pagesize <= 0)
--		return;
-+	plog("pagesize=%d\n", *pagesize);
-+	if (*pagesize <= 0)
-+		return -1;
- 
- 	/* Now the number of options */
- 	n = read_string(fd, buf, BUFSIZ);
- 	if (n == BUFSIZ)
- 		/** ERROR **/
--		return;
-+		return -1;
- 
- 	options = atoi(buf);
- 
-@@ -341,18 +331,18 @@ static void process_client(const char *node, const char *port, int fd)
- 		n = read_string(fd, buf, BUFSIZ);
- 		if (n == BUFSIZ)
- 			/** ERROR **/
--			return;
-+			return -1;
- 		size = atoi(buf);
- 		/* prevent a client from killing us */
- 		if (size > MAX_OPTION_SIZE)
--			return;
-+			return -1;
- 		option = malloc_or_die(size);
- 		do {
- 			t = size;
- 			s = 0;
- 			s = read(fd, option+s, t);
- 			if (s <= 0)
--				return;
-+				return -1;
- 			t -= s;
- 			s = size - t;
- 		} while (t);
-@@ -361,18 +351,53 @@ static void process_client(const char *node, const char *port, int fd)
- 		free(option);
- 		/* do we understand this option? */
- 		if (!s)
--			return;
-+			return -1;
- 	}
- 
- 	if (use_tcp)
- 		plog("Using TCP for live connection\n");
- 
--	/* Create the client file */
-+	return 0;
-+}
-+
-+static int create_client_file(const char *node, const char *port)
-+{
-+	char buf[BUFSIZ];
-+	int ofd;
-+
- 	snprintf(buf, BUFSIZ, "%s.%s:%s.dat", output_file, node, port);
- 
- 	ofd = open(buf, O_RDWR | O_CREAT | O_TRUNC, 0644);
- 	if (ofd < 0)
- 		pdie("Can not create file %s", buf);
-+	return ofd;
-+}
-+
-+static void destroy_all_readers(int cpus, int *pid_array, const char *node,
-+				const char *port)
-+{
-+	int cpu;
-+
-+	for (cpu = 0; cpu < cpus; cpu++) {
-+		if (pid_array[cpu] > 0) {
-+			kill(pid_array[cpu], SIGKILL);
-+			waitpid(pid_array[cpu], NULL, 0);
-+			delete_temp_file(node, port, cpu);
-+			pid_array[cpu] = 0;
-+		}
-+	}
-+}
-+
-+static int *create_all_readers(int cpus, const char *node, const char *port,
-+			       int pagesize, int fd)
-+{
-+	char buf[BUFSIZ];
-+	int *port_array;
-+	int *pid_array;
-+	int start_port;
-+	int udp_port;
-+	int cpu;
-+	int pid;
- 
- 	port_array = malloc_or_die(sizeof(int) * cpus);
- 	pid_array = malloc_or_die(sizeof(int) * cpus);
-@@ -382,13 +407,17 @@ static void process_client(const char *node, const char *port, int fd)
- 
- 	/* Now create a UDP port for each CPU */
- 	for (cpu = 0; cpu < cpus; cpu++) {
--		udp_port = open_udp(node, port, &pid, cpu, pagesize, start_port);
-+		udp_port = open_udp(node, port, &pid, cpu,
-+				    pagesize, start_port);
- 		if (udp_port < 0)
- 			goto out_free;
- 		port_array[cpu] = udp_port;
- 		pid_array[cpu] = pid;
--		/* due to some bugging finding ports, force search after last port */
--		start_port = udp_port+1;
-+		/*
-+		 * due to some bugging finding ports,
-+		 * force search after last port
-+		 */
-+		start_port = udp_port + 1;
- 	}
- 
- 	/* send the client a comma deliminated set of port numbers */
-@@ -400,9 +429,20 @@ static void process_client(const char *node, const char *port, int fd)
- 	/* end with null terminator */
- 	write(fd, "\0", 1);
- 
--	/* Now we are ready to start reading data from the client */
-+	return pid_array;
-+
-+ out_free:
-+	destroy_all_readers(cpus, pid_array, node, port);
-+	return NULL;
-+}
-+
-+static void collect_metadata_from_client(int ifd, int ofd)
-+{
-+	char buf[BUFSIZ];
-+	int n, s, t;
-+
- 	do {
--		n = read(fd, buf, BUFSIZ);
-+		n = read(ifd, buf, BUFSIZ);
- 		if (n < 0) {
- 			if (errno == EINTR)
- 				continue;
-@@ -411,7 +451,7 @@ static void process_client(const char *node, const char *port, int fd)
- 		t = n;
- 		s = 0;
- 		do {
--			s = write(ofd, buf+s, t);
-+			s = write(ofd, buf + s, t);
- 			if (s < 0) {
- 				if (errno == EINTR)
- 					break;
-@@ -421,18 +461,23 @@ static void process_client(const char *node, const char *port, int fd)
- 			s = n - t;
- 		} while (t);
- 	} while (n > 0 && !done);
-+}
- 
--	/* wait a little to let our readers finish reading */
--	sleep(1);
-+static void stop_all_readers(int cpus, int *pid_array)
-+{
-+	int cpu;
- 
--	/* stop our readers */
- 	for (cpu = 0; cpu < cpus; cpu++) {
- 		if (pid_array[cpu] > 0)
- 			kill(pid_array[cpu], SIGUSR1);
- 	}
-+}
- 
--	/* wait a little to have the readers clean up */
--	sleep(1);
-+static void put_together_file(int cpus, int ofd, const char *node,
-+			      const char *port)
-+{
-+	char **temp_files;
-+	int cpu;
- 
- 	/* Now put together the file */
- 	temp_files = malloc_or_die(sizeof(*temp_files) * cpus);
-@@ -441,16 +486,40 @@ static void process_client(const char *node, const char *port, int fd)
- 		temp_files[cpu] = get_temp_file(node, port, cpu);
- 
- 	tracecmd_attach_cpu_data_fd(ofd, cpus, temp_files);
-+	free(temp_files);
-+}
- 
-- out_free:
--	for (cpu = 0; cpu < cpus; cpu++) {
--		if (pid_array[cpu] > 0) {
--			kill(pid_array[cpu], SIGKILL);
--			waitpid(pid_array[cpu], NULL, 0);
--			delete_temp_file(node, port, cpu);
--			pid_array[cpu] = 0;
--		}
+-	int i;
+-
+-	if (!strchr(host, ':')) {
+-		server = strdup("localhost");
+-		if (!server)
+-			die("alloctating server");
+-		port = host;
+-		host = server;
+-	} else {
+-		host = strdup(host);
+-		if (!host)
+-			die("alloctating server");
+-		server = strtok_r(host, ":", &p);
+-		port = strtok_r(NULL, ":", &p);
 -	}
-+static void process_client(const char *node, const char *port, int fd)
-+{
-+	int *pid_array;
-+	int pagesize;
-+	int cpus;
-+	int ofd;
-+
-+	if (communicate_with_client(fd, &cpus, &pagesize) < 0)
-+		return;
-+
-+	ofd = create_client_file(node, port);
-+
-+	pid_array = create_all_readers(cpus, node, port, pagesize, fd);
-+	if (!pid_array)
-+		return;
-+
-+	/* Now we are ready to start reading data from the client */
-+	collect_metadata_from_client(fd, ofd);
-+
-+	/* wait a little to let our readers finish reading */
-+	sleep(1);
-+
-+	/* stop our readers */
-+	stop_all_readers(cpus, pid_array);
-+
-+	/* wait a little to have the readers clean up */
-+	sleep(1);
-+
-+	put_together_file(cpus, ofd, node, port);
-+
-+	destroy_all_readers(cpus, pid_array, node, port);
- }
+-
+-	memset(&hints, 0, sizeof(hints));
+-	hints.ai_family = AF_UNSPEC;
+-	hints.ai_socktype = SOCK_STREAM;
+-
+-	s = getaddrinfo(server, port, &hints, &result);
+-	if (s != 0)
+-		die("getaddrinfo: %s", gai_strerror(s));
+-
+-	for (rp = result; rp != NULL; rp = rp->ai_next) {
+-		sfd = socket(rp->ai_family, rp->ai_socktype,
+-			     rp->ai_protocol);
+-		if (sfd == -1)
+-			continue;
+-
+-		if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
+-			break;
+-		close(sfd);
+-	}
+-
+-	if (!rp)
+-		die("Can not connect to %s:%s", server, port);
+-
+-	freeaddrinfo(result);
++	ssize_t n;
++	int cpu, i;
  
- static int do_fork(int cfd)
+-	n = read(sfd, buf, 8);
++	n = read(fd, buf, 8);
+ 
+ 	/* Make sure the server is the tracecmd server */
+ 	if (memcmp(buf, "tracecmd", 8) != 0)
+@@ -1670,13 +1624,13 @@ static void setup_network(void)
+ 	sprintf(buf, "%d", cpu_count);
+ 
+ 	/* include \0 */
+-	write(sfd, buf, strlen(buf)+1);
++	write(fd, buf, strlen(buf)+1);
+ 
+ 	/* write the pagesize (in ASCII) */
+ 	sprintf(buf, "%d", page_size);
+ 
+ 	/* include \0 */
+-	write(sfd, buf, strlen(buf)+1);
++	write(fd, buf, strlen(buf)+1);
+ 
+ 	/*
+ 	 * If we are using IPV4 and our page size is greater than
+@@ -1691,14 +1645,14 @@ static void setup_network(void)
+ 
+ 	if (use_tcp) {
+ 		/* Send one option */
+-		write(sfd, "1", 2);
++		write(fd, "1", 2);
+ 		/* Size 4 */
+-		write(sfd, "4", 2);
++		write(fd, "4", 2);
+ 		/* use TCP */
+-		write(sfd, "TCP", 4);
++		write(fd, "TCP", 4);
+ 	} else
+ 		/* No options */
+-		write(sfd, "0", 2);
++		write(fd, "0", 2);
+ 
+ 	client_ports = malloc_or_die(sizeof(int) * cpu_count);
+ 
+@@ -1708,7 +1662,7 @@ static void setup_network(void)
+ 	 */
+ 	for (cpu = 0; cpu < cpu_count; cpu++) {
+ 		for (i = 0; i < BUFSIZ; i++) {
+-			n = read(sfd, buf+i, 1);
++			n = read(fd, buf+i, 1);
+ 			if (n != 1)
+ 				die("Error, reading server ports");
+ 			if (!buf[i] || buf[i] == ',')
+@@ -1719,6 +1673,57 @@ static void setup_network(void)
+ 		buf[i] = 0;
+ 		client_ports[cpu] = atoi(buf);
+ 	}
++}
++
++static void setup_network(void)
++{
++	struct tracecmd_output *handle;
++	struct addrinfo hints;
++	struct addrinfo *result, *rp;
++	int sfd, s;
++	char *server;
++	char *port;
++	char *p;
++
++	if (!strchr(host, ':')) {
++		server = strdup("localhost");
++		if (!server)
++			die("alloctating server");
++		port = host;
++		host = server;
++	} else {
++		host = strdup(host);
++		if (!host)
++			die("alloctating server");
++		server = strtok_r(host, ":", &p);
++		port = strtok_r(NULL, ":", &p);
++	}
++
++	memset(&hints, 0, sizeof(hints));
++	hints.ai_family = AF_UNSPEC;
++	hints.ai_socktype = SOCK_STREAM;
++
++	s = getaddrinfo(server, port, &hints, &result);
++	if (s != 0)
++		die("getaddrinfo: %s", gai_strerror(s));
++
++	for (rp = result; rp != NULL; rp = rp->ai_next) {
++		sfd = socket(rp->ai_family, rp->ai_socktype,
++			     rp->ai_protocol);
++		if (sfd == -1)
++			continue;
++
++		if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
++			break;
++		close(sfd);
++	}
++
++	if (!rp)
++		die("Can not connect to %s:%s", server, port);
++
++	freeaddrinfo(result);
++
++	communicate_with_listener(sfd);
+ 
+ 	/* Now create the handle through this socket */
+ 	handle = tracecmd_create_init_fd_glob(sfd, listed_events);
 
