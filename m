@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192Ab3HSToG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 15:44:06 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54700 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab3HSToE (ORCPT
+	id S1751248Ab3HSTox (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 15:44:53 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:59025 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab3HSTow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 15:44:04 -0400
-Message-ID: <5212757F.2080107@wwwdotorg.org>
-Date: Mon, 19 Aug 2013 13:43:59 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/4] driver core: Allow early registration of devices
-References: <1376685563-1053-1-git-send-email-treding@nvidia.com> <1376685563-1053-3-git-send-email-treding@nvidia.com> <20130816210637.GC2198@kroah.com> <20130816215530.GA14464@mithrandir> <20130816220807.GA6848@kroah.com> <20130817111747.GB1536@mithrandir>
-In-Reply-To: <20130817111747.GB1536@mithrandir>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 Aug 2013 15:44:52 -0400
+Date: Mon, 19 Aug 2013 12:50:26 -0700 (PDT)
+Message-Id: <20130819.125026.636442915180863272.davem@davemloft.net>
+To: casey@schaufler-ca.com
+Cc: amwang@redhat.com, netdev@vger.kernel.org, james.l.morris@oracle.com,
+        sds@tycho.nsa.gov, eparis@parisplace.org, pmoore@redhat.com,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [Patch net-next v3 9/9] selinux: use generic union inet_addr
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <52127336.3080209@schaufler-ca.com>
+References: <1376907278-26377-1-git-send-email-amwang@redhat.com>
+	<1376907278-26377-10-git-send-email-amwang@redhat.com>
+	<52127336.3080209@schaufler-ca.com>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 19 Aug 2013 12:44:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2013 05:17 AM, Thierry Reding wrote:
-...
-> Well, the most obvious cases where early initialization is needed
-> are interrupt controllers and clocks.
 
-... and IOMMUs, which apparently need to initialize before any devices
-whose transactions are routed through the IOMMU, in order to set
-themselves up as the IOMMU for the relevant devices.
+It's so that you can pass a generic ipv4/ipv6 address blob into
+things like printf formatting, and since there is an address family
+member present, it knows what's in there and therefore one printf
+format specifier can handle both ipv4 and ipv6 addresses.
 
-It's possible that the CPU-visible bus structure isn't a strict
-inverse/reverse of the device-visible bus-structure. A device may have
-CPU-visible registers on one bus segment, but inject master
-transactions onto an unrelated bus segment. So it may not be as simple
-as making a bus driver for the bus segment affected by the IOMMU, and
-having that driver trigger instantiation of all its children.
+Like you, I think these changes a complete waste of time too, I'm just
+relaying what I was told.
