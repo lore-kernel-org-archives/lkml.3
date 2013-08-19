@@ -1,131 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754Ab3HSXas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 19:30:48 -0400
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:8017
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751165Ab3HSXar convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 19:30:47 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zzbb2dI98dI9371Ic89bh1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h906i1155h192ch)
-Date: Mon, 19 Aug 2013 16:30:36 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>, <srinivas.kandagatla@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: Enable arm_global_timer for Zynq brakes boot
-References: <5204FA5D.3060908@linaro.org>
- <20130809172757.GD14845@codeaurora.org>
- <c1e112a3-cfed-4e53-951e-b1a9208d7dc8@TX2EHSMHS038.ehs.local>
- <52090B43.9090000@codeaurora.org>
- <d36fc2db-1189-4c6a-9bc4-0ac2e29eaa1b@AM1EHSMHS009.ehs.local>
- <5209120D.1010701@linaro.org>
- <9b07d8a3-b650-4147-b952-9bcfc1172c51@VA3EHSMHS025.ehs.local>
- <5209152F.5020307@linaro.org>
- <86b18b0d-08e1-4899-86ea-ed22d3d36dee@DB8EHSMHS028.ehs.local>
- <5212A394.5020109@codeaurora.org>
+	id S1751783Ab3HSXbl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 19:31:41 -0400
+Received: from peace.netnation.com ([204.174.223.2]:41014 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab3HSXbk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 19:31:40 -0400
+Date: Mon, 19 Aug 2013 16:31:38 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: Chris Mason <chris.mason@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Lameter <cl@gentwo.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [3.10] Oopses in kmem_cache_allocate() via prepare_creds()
+Message-ID: <20130819233138.GE23608@hostway.ca>
+References: <20130706000949.GD16853@hostway.ca>
+ <CAOJsxLGA+Aha8JcPsWyNd3BLQ6L0g7iznN0o2fG5yL5Xw0s8Lg@mail.gmail.com>
+ <20130819201717.GA23608@hostway.ca>
+ <0000014098447577-0d3e3f6b-f97b-4c73-946d-d70b697ce194-000000@email.amazonses.com>
+ <CA+55aFxiYzxLDUnr+9BGQ+fsfmb1T8_zW4fOOC=SQ4rVzwbv4A@mail.gmail.com>
+ <20130819212441.17880.16729@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5212A394.5020109@codeaurora.org>
+In-Reply-To: <20130819212441.17880.16729@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <140fc91a-cc81-418e-8a5e-413bbf47834e@CO1EHSMHS025.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Mon, Aug 19, 2013 at 05:24:41PM -0400, Chris Mason wrote:
 
-On Mon, Aug 19, 2013 at 04:00:36PM -0700, Stephen Boyd wrote:
-> On 08/16/13 10:28, Sören Brinkmann wrote:
-> > On Mon, Aug 12, 2013 at 07:02:39PM +0200, Daniel Lezcano wrote:
-> >> On 08/12/2013 06:53 PM, Sören Brinkmann wrote:
-> >>> It's actually present. I have a clean 3.11-rc3 and the only changes are
-> >>> my patch to enable the GT and Stephen's fix.
-> >>> The cpuidle stats show both idle states being used.
-> >> Ah, right. The tick_broadcast_mask is not set because the arm global
-> >> timer has not the CLOCK_EVT_FEAT_C3STOP feature flag set.
-> > Just to check in. Do you want any additional testing done? Or can I
-> > expect Stephens fix to get merged, so Zynq can use the GT?
-> >
+> Quoting Linus Torvalds (2013-08-19 17:16:36)
+> > On Mon, Aug 19, 2013 at 1:29 PM, Christoph Lameter <cl@gentwo.org> wrote:
+> > > On Mon, 19 Aug 2013, Simon Kirby wrote:
+> > >
+> > >>    [... ]  The
+> > >> alloc/free traces are always the same -- always alloc_pipe_info and
+> > >> free_pipe_info. This is seen on 3.10 and (now) 3.11-rc4:
+> > >>
+> > >> Object ffff880090f19e78: 6b 6b 6b 6b 6c 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkklkkkkkkkkkkk
+> > >
+> > > This looks like an increment after free in the second 32 bit value of the
+> > > structure. First 32 bit value's poison is unchanged.
+> > 
+> > Ugh. If that is "struct pipe_inode_info" and I read it right, that's
+> > the "wait_lock" spinlock that is part of the mutex.
+> > 
+> > Doing a "spin_lock()" could indeed cause an increment operation. But
+> > it still sounds like a very odd case. And even for some wild pointer
+> > I'd then expect the spin_unlock to also happen, and to then increment
+> > the next byte (or word) too. More importantly, for a mutex, I'd expect
+> > the *other* fields to be corrupted too (the "waiter" field etc). That
+> > is, unless we're still spinning waiting for the mutex, but with that
+> > value we shouldn't, as far as I can see.
+> > 
 > 
-> I was curious, can you use just the first hunk of the patch that applied
-> to tick-broadcast.c to fix the problem? I think the answer is yes.
+> Simon, is this box doing btrfs send/receive?  If so, it's probably where
+> this pipe is coming from.
 
-Yes, that seems to be enough.
+No, not for some time (a few kernel versions ago).
 
-# cat /proc/interrupts 
-           CPU0       CPU1       
- 27:         14          1       GIC  27  gt
- 29:        664        759       GIC  29  twd
- 43:        725          0       GIC  43  ttc_clockevent
- 82:        214          0       GIC  82  xuartps
-IPI0:          0          0  CPU wakeup interrupts
-IPI1:          0         58  Timer broadcast interrupts
-IPI2:       1224       1120  Rescheduling interrupts
-IPI3:          0          0  Function call interrupts
-IPI4:         44         50  Single function call interrupts
-IPI5:          0          0  CPU stop interrupts
-Err:          0
+> Linus' CONFIG_DEBUG_PAGE_ALLOC suggestions are going to be the fastest
+> way to find it, I can give you a patch if it'll help.
 
-Timer list:
-Tick Device: mode:     1
-Broadcast device
-Clock Event Device: ttc_clockevent
- max_delta_ns:   1207932479
- min_delta_ns:   18432
- mult:           233015
- shift:          32
- mode:           3
- next_event:     60080000000 nsecs
- set_next_event: ttc_set_next_event
- set_mode:       ttc_set_mode
- event_handler:  tick_handle_oneshot_broadcast
- retries:        0
+I presume it's just:
 
-tick_broadcast_mask: 00000003
-tick_broadcast_oneshot_mask: 00000000
+diff --git a/fs/pipe.c b/fs/pipe.c
+index d2c45e1..30d5b8d 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -780,7 +780,7 @@ struct pipe_inode_info *alloc_pipe_info(void)
+ {
+ 	struct pipe_inode_info *pipe;
+ 
+-	pipe = kzalloc(sizeof(struct pipe_inode_info), GFP_KERNEL);
++	pipe = (void *)get_zeroed_page(GFP_KERNEL);
+ 	if (pipe) {
+ 		pipe->bufs = kzalloc(sizeof(struct pipe_buffer) * PIPE_DEF_BUFFERS, GFP_KERNEL);
+ 		if (pipe->bufs) {
+@@ -790,7 +790,7 @@ struct pipe_inode_info *alloc_pipe_info(void)
+ 			mutex_init(&pipe->mutex);
+ 			return pipe;
+ 		}
+-		kfree(pipe);
++		free_page((unsigned long)pipe);
+ 	}
+ 
+ 	return NULL;
+@@ -808,7 +808,7 @@ void free_pipe_info(struct pipe_inode_info *pipe)
+ 	if (pipe->tmp_page)
+ 		__free_page(pipe->tmp_page);
+ 	kfree(pipe->bufs);
+-	kfree(pipe);
++	free_page((unsigned long)pipe);
+ }
+ 
+ static struct vfsmount *pipe_mnt __read_mostly;
 
-Tick Device: mode:     1
-Per CPU device: 0
-Clock Event Device: local_timer
- max_delta_ns:   12884902005
- min_delta_ns:   1000
- mult:           715827876
- shift:          31
- mode:           3
- next_event:     59075238755 nsecs
- set_next_event: twd_set_next_event
- set_mode:       twd_set_mode
- event_handler:  hrtimer_interrupt
- retries:        0
+...and CONFIG_DEBUG_PAGEALLOC enabled.
 
-Tick Device: mode:     1
-Per CPU device: 1
-Clock Event Device: local_timer
- max_delta_ns:   12884902005
- min_delta_ns:   1000
- mult:           715827876
- shift:          31
- mode:           3
- next_event:     59080000000 nsecs
- set_next_event: twd_set_next_event
- set_mode:       twd_set_mode
- event_handler:  hrtimer_interrupt
- retries:        0
+> It would be nice if you could trigger this on plain 3.11-rcX instead of
+> btrfs-next.
 
+On 3.10 it was with some btrfs-next pulled in, but the 3.11-rc4 traces
+were from 3.11-rc4 with just some of our local patches:
 
-	Sören
+> git diff --stat v3.11-rc4..master
+ firmware/Makefile                         |    4 +-
+ firmware/bnx2/bnx2-mips-06-6.2.3.fw.ihex  | 5804 ++++++++++++++++++++++
+ firmware/bnx2/bnx2-mips-09-6.2.1b.fw.ihex | 6496 +++++++++++++++++++++++++
+ kernel/acct.c                             |   21 +-
+ net/sunrpc/auth.c                         |    2 +-
+ net/sunrpc/clnt.c                         |   10 +
+ net/sunrpc/xprt.c                         |    8 +-
+ 7 files changed, 12335 insertions(+), 10 deletions(-)
 
+None of them look relevant, but I'm building vanilla -rc4 with
+CONFIG_DEBUG_PAGEALLOC and the patch above.
 
+Simon-
