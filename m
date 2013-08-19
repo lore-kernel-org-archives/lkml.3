@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475Ab3HSLWU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 07:22:20 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54817 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751260Ab3HSLWS (ORCPT
+	id S1751375Ab3HSLVD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 07:21:03 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:1124 "EHLO
+	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751289Ab3HSLVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 07:22:18 -0400
-Date: Mon, 19 Aug 2013 13:22:06 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3 07/10] pinctrl: sunxi: Add Allwinner A31 pins set
-Message-ID: <20130819112206.GI3173@lukather>
-References: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
- <1375609657-15434-8-git-send-email-maxime.ripard@free-electrons.com>
- <20130812081916.GL2911@lukather>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vs0rQTeTompTJjtd"
-Content-Disposition: inline
-In-Reply-To: <20130812081916.GL2911@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 Aug 2013 07:21:00 -0400
+X-IronPort-AV: E=Sophos;i="4.89,913,1367964000"; 
+   d="scan'208";a="24233027"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/7] PCI: tegra: replace devm_request_and_ioremap by devm_ioremap_resource
+Date: Mon, 19 Aug 2013 13:20:35 +0200
+Message-Id: <1376911241-27720-2-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
---vs0rQTeTompTJjtd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Use devm_ioremap_resource instead of devm_request_and_ioremap.
 
-On Mon, Aug 12, 2013 at 10:19:16AM +0200, Maxime Ripard wrote:
-> Hi Linus,
->=20
-> On Sun, Aug 04, 2013 at 11:47:34AM +0200, Maxime Ripard wrote:
-> > The Allwinner A31 SoC uses the same IP than the one found in the
-> > A10/A13, with only different pins. Add the pins and the associated
-> > functions found in the A31.
->=20
-> I'd like this to be in 3.12 if it's okay for you. Do you have any
-> comments on it?
+This was done using the semantic patch
+scripts/coccinelle/api/devm_ioremap_resource.cocci
 
-Ping?
+Error-handling code was manually removed from the associated calls to
+platform_get_resource.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
---vs0rQTeTompTJjtd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+---
+The first block of modified code is followed by a call to
+devm_request_mem_region for pcie->cs with no associated ioremap.  Should
+ioremap be used in this case as well?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ drivers/pci/host/pci-tegra.c |   29 +++++++++--------------------
+ 1 file changed, 9 insertions(+), 20 deletions(-)
 
-iQIcBAEBAgAGBQJSEf/eAAoJEBx+YmzsjxAgANkP/2JtozQEThFt5yhd1u46sh2A
-ta7T3/gmUNnJoFUt0O8CIksyA18ebW3UJ5zrkleXjUK6sVSbPSmNxDRDMaMuNmuN
-bwuPdJpZUijn+L8iG6iR2f794u8GtZX4YHXWEUHcjlPKe68dPZLrii85MolTvdG0
-R//9aABmetuSxCp0/XAeLpXKemBoAzB8nRG0G8hCmzZTpFxthAb/2v3785sFDtuX
-phapzsc7gOfTtrum1LzkfjspRSlB4WCyPPoP1URHy8g0tJXgfoTUM3krAi6LNtk3
-LjyWaqjljx50yIQGB9O2o0AYbMPxPswSh89w8GoiNQcH/RvVkpBdrka/0+LDDLU4
-8JdnYdsV4XEo5B8LkkQLm9DGk11xey2q6ymjWeEq8CaJt30xIgoCK7JPj66OHXek
-zAR/6YhH6/nLDArCn8UdKNdjjvbQoyfHLrlAaY1DCvXyVEvcxGQbFD43CXht8MLX
-pvaoX/19MN6yxaG/iHuC9m9UzANUJEE+y/vmD+O9HmFtNzBpoiwyKKlHLQ2U4SpL
-UkgJsBZ10tFcv6KhtQ8GEff7bLOo/655Ktt0RVOO7RgH0RnYb/fMLaAnJmbg8NqM
-UIYPZtAg6985yiSGCz0dZNrrRUtPp+kPEEb4pMFPLh5ACMJv3X2ngf/hfcNcyoUt
-DrM3nmfqQ9Wjt54KS2IR
-=lm8o
------END PGP SIGNATURE-----
+diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
+index 7356741..db2ddc5 100644
+--- a/drivers/pci/host/pci-tegra.c
++++ b/drivers/pci/host/pci-tegra.c
+@@ -1031,28 +1031,17 @@ static int tegra_pcie_get_resources(struct tegra_pcie *pcie)
+ 		return err;
+ 	}
+ 
+-	/* request and remap controller registers */
+ 	pads = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pads");
+-	if (!pads) {
+-		err = -EADDRNOTAVAIL;
++	pcie->pads = devm_ioremap_resource(&pdev->dev, pads);
++	if (IS_ERR(pcie->pads)) {
++		err = PTR_ERR(pcie->pads);
+ 		goto poweroff;
+ 	}
+ 
+ 	afi = platform_get_resource_byname(pdev, IORESOURCE_MEM, "afi");
+-	if (!afi) {
+-		err = -EADDRNOTAVAIL;
+-		goto poweroff;
+-	}
+-
+-	pcie->pads = devm_request_and_ioremap(&pdev->dev, pads);
+-	if (!pcie->pads) {
+-		err = -EADDRNOTAVAIL;
+-		goto poweroff;
+-	}
+-
+-	pcie->afi = devm_request_and_ioremap(&pdev->dev, afi);
+-	if (!pcie->afi) {
+-		err = -EADDRNOTAVAIL;
++	pcie->afi = devm_ioremap_resource(&pdev->dev, afi);
++	if (IS_ERR(pcie->afi)) {
++		err = PTR_ERR(pcie->afi);
+ 		goto poweroff;
+ 	}
+ 
+@@ -1492,9 +1481,9 @@ static int tegra_pcie_parse_dt(struct tegra_pcie *pcie)
+ 		rp->lanes = value;
+ 		rp->pcie = pcie;
+ 
+-		rp->base = devm_request_and_ioremap(pcie->dev, &rp->regs);
+-		if (!rp->base)
+-			return -EADDRNOTAVAIL;
++		rp->base = devm_ioremap_resource(pcie->dev, &rp->regs);
++		if (IS_ERR(rp->base))
++			return PTR_ERR(rp->base);
+ 
+ 		list_add_tail(&rp->list, &pcie->ports);
+ 	}
 
---vs0rQTeTompTJjtd--
