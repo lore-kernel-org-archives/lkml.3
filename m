@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358Ab3HSLpm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 07:45:42 -0400
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:33233 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab3HSLpk (ORCPT
+	id S1751447Ab3HSLrq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 07:47:46 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:8765 "EHLO
+	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751286Ab3HSLro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 07:45:40 -0400
+	Mon, 19 Aug 2013 07:47:44 -0400
+X-IronPort-AV: E=Sophos;i="4.89,913,1367964000"; 
+   d="scan'208";a="24235116"
+Date: Mon, 19 Aug 2013 13:47:23 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: =?ISO-8859-15?Q?Svenning_S=F8rensen?= <sss@secomea.dk>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, Felipe Balbi <balbi@ti.com>,
+        kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/6 v2] usb: musb: dsps: simplify
+ platform_get_resource_byname/devm_ioremap_resource
+In-Reply-To: <5211FED3.4090102@secomea.dk>
+Message-ID: <alpine.DEB.2.02.1308191346390.2313@hadrien>
+References: <1376902316-18520-1-git-send-email-Julia.Lawall@lip6.fr> <1376902316-18520-5-git-send-email-Julia.Lawall@lip6.fr> <5211FED3.4090102@secomea.dk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAKohponkLac2GzZ5-PRoTzdx8EhuCWT-eafRtYhkJ6cN_WrXSA@mail.gmail.com>
-References: <cover.1375809311.git.viresh.kumar@linaro.org>
-	<e54ce908bb964d643a2bbb945ed4a8dcb3ea00bf.1375809311.git.viresh.kumar@linaro.org>
-	<1582060.zfvsylJcxu@vostro.rjw.lan>
-	<CAKohponkLac2GzZ5-PRoTzdx8EhuCWT-eafRtYhkJ6cN_WrXSA@mail.gmail.com>
-Date: Mon, 19 Aug 2013 17:15:39 +0530
-Message-ID: <CAP245DXKpDBetXHY_C0hSu0UHbeiFkhQ3r7V_3HOjQ+RkuabsQ@mail.gmail.com>
-Subject: Re: [PATCH V2 07/11] cpufreq: Use cpufreq_policy_list for iterating
- over policies
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Patch Tracking <patches@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Andy Whitcroft <apw@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1786006515-1376912843=:2313"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 4:57 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Testing anything on my thinkpad (with ubuntu) is a pain.. it takes
-> more than an hour to compile/test a single image... I currently follow
-> below steps for doing that, don't know if something much
-> simpler/faster is available :)
->
-> https://wiki.ubuntu.com/KernelTeam/GitKernelBuild
->
-> Whole day I was able to boot test only 4-5 kernel builds.
-> Its too slow :(
+--8323329-1786006515-1376912843=:2313
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
-Why do you create .deb packages to test development kernels? It _is_ slow.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Instead I'd just add a new grub menu entry to /boot/grub/grub.cfg and
-point it to /boot/MyzImage. After a 'make install; make
-modules_install' just link /boot/MyzImage to the installed kernel in
-/boot. And then generate a new initramfs using 'update-initramfs -c -k
-<ver>'
+Remove unneeded error handling on the result of a call to
+platform_get_resource_byname when the value is passed to
+devm_ioremap_resource.
+
+A simplified version of the semantic patch that makes this change is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression pdev,res,e,e1;
+expression ret != 0;
+identifier l;
+@@
+
+  res = platform_get_resource_byname(...);
+- if (res == NULL) { ... \(goto l;\|return ret;\) }
+  e = devm_ioremap_resource(e1, res);
+// </smpl>
+
+This patch also adjusts the error-handling code on the call to
+devm_ioremap_resource to check the right value, noticed by Svenning Sørensen.
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+v2: Fixed the bug on the test of the result of devm_ioremap_resource
+
+ drivers/usb/musb/musb_dsps.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+index 4ffbaac..e60be6f 100644
+--- a/drivers/usb/musb/musb_dsps.c
++++ b/drivers/usb/musb/musb_dsps.c
+@@ -357,12 +357,9 @@ static int dsps_musb_init(struct musb *musb)
+ 	u32 rev, val;
+
+ 	r = platform_get_resource_byname(parent, IORESOURCE_MEM, "control");
+-	if (!r)
+-		return -EINVAL;
+-
+ 	reg_base = devm_ioremap_resource(dev, r);
+-	if (!musb->ctrl_base)
+-		return -EINVAL;
++        if (IS_ERR(reg_base))
++		return PTR_ERR(reg_base);
+ 	musb->ctrl_base = reg_base;
+
+ 	/* NOP driver needs change if supporting dual instance */
+--8323329-1786006515-1376912843=:2313--
