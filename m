@@ -1,124 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569Ab3HSMZY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 08:25:24 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:56609 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751328Ab3HSMZX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 08:25:23 -0400
-Message-ID: <52120EAE.5060906@hurleysoftware.com>
-Date: Mon, 19 Aug 2013 08:25:18 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Maximiliano Curia <maxy@debian.org>
-CC: Margarita Manterola <margamanterola@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Large pastes into readline enabled programs causes breakage from
- v2.6.31 onwards
-References: <CAP+fKSpvJqeh8JCHisByDBsGWPOWOcDN4qeVYJOn1tgg8HR0eg@mail.gmail.com> <51F1B015.50804@hurleysoftware.com> <20130730124117.41DC55E4006@freak.gnuservers.com.ar> <51F7E4ED.4050409@hurleysoftware.com> <20130808175839.GB21618@gnuservers.com.ar>
-In-Reply-To: <20130808175839.GB21618@gnuservers.com.ar>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1751566Ab3HSM3F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 08:29:05 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:52322 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751328Ab3HSM3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 08:29:03 -0400
+Message-ID: <1376915267.26268.16.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v3 1/3] usb: dwc3: msm: Add device tree binding
+ information
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: balbi@ti.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, ian.campbell@citrix.com, rob@landley.net,
+        gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Date: Mon, 19 Aug 2013 15:27:47 +0300
+In-Reply-To: <520EAB3B.9030607@wwwdotorg.org>
+References: <1376485183-2664-1-git-send-email-iivanov@mm-sol.com>
+	 <1376485183-2664-2-git-send-email-iivanov@mm-sol.com>
+	 <520EAB3B.9030607@wwwdotorg.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 01:58 PM, Maximiliano Curia wrote:
-> Hi,
->
->> n_tty_set_room() in drivers/tty/n_tty.c (3.10 mainline)
->
->>  From n_tty_set_room():
->
->> 	/*
->> 	 * If we are doing input canonicalization, and there are no
->> 	 * pending newlines, let characters through without limit, so
->> 	 * that erase characters will be handled.  Other excess
->> 	 * characters will be beeped.
->> 	 */
->> 	if (left <= 0)
->> 		left = ldata->icanon && !ldata->canon_data;
->> 	old_left = tty->receive_room;
->> 	tty->receive_room = left;
->
-> I took a long look at this code and thought about how it could be made to work
-> for readline's case and also for the canonical readers.  I came up with this
-> simple patch:
->
-> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-> index 4bf0fc0..2ba7f4e 100644
-> --- a/drivers/tty/n_tty.c
-> +++ b/drivers/tty/n_tty.c
-> @@ -149,7 +149,8 @@ static int set_room(struct tty_struct *tty)
->           * characters will be beeped.
->           */
->          if (left <= 0)
-> -               left = ldata->icanon && !ldata->canon_data;
-> +               if (waitqueue_active(&tty->read_wait))
-> +                       left = ldata->icanon && !ldata->canon_data;
->          old_left = tty->receive_room;
->          tty->receive_room = left;
->
-> This is of course just an idea, but I tested this and it worked correctly for
-> the cases I was testing.
->
-> The effect of this patch is that when there is a canonical reader waiting for
-> input, it maintains the previous behavior, but when there's no reader (like
-> when readline is changing modes), it blocks and doesn't lose any characters.
 
-Apologies for taking so long to reply.
+Hi, 
 
-My primary concern is canonical readers not become stuck with a full
-read buffer, even with bogus input data (IOW, that an error condition will
-not prevent a reader from making forward progress). I believe that won't
-happen with this change, but what I really need in this case is a detailed
-analysis from you of why that won't happen. That analysis should be in
-the patch changelog. (Feel free to send me private mail if you need help
-preparing a patch.)
+On Fri, 2013-08-16 at 16:44 -0600, Stephen Warren wrote: 
+> On 08/14/2013 06:59 AM, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
+> > MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
+> > (SNPS) and HS, SS PHY's control and configuration registers.
+> > 
+> > It could operate in device mode (SS, HS, FS) and host
+> > mode (SS, HS, FS, LS).
+> 
+> > diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+> 
+> > +- clock-names :
+> ...
+> > +	"sleep_a_clk" : Sleep clock, used when USB3 core goes into low
+> ...
+> > +	"ref_clk" : Reference clock - used in host mode.
+> ...
+> > +	"core_clk" : Master/Core clock, have to be >= 125 MHz for SS
+> ...
+> > +	"iface_clk" : System bus AXI clock
+> > +	"sleep_clk" : Sleep clock, used when USB3 core goes into low
+> ...
+> > +	"utmi_clk" : Generated by HS-PHY. Used to clock the low power
+> 
+> I think it makes sense to remove "_clk" from all those names, unless the
+> HW documentation really talks about a clock named e.g. iface_clk yet
+> some other clock names in the documentation don't have the "_clk"
+> suffix, e.g. the "xo I didn't quote.
 
-And the patch above has a bug that allows a negative 'left' to be
-assigned to tty->receive_room which will be interpreted as a very large
-positive value.
+>From limited information that I have, I could not say how clock inputs 
+are named from the controller perspective, but I agree that "_clk"
+suffix looks redundant. 
 
-This approach still has several drawbacks.
+Side question: if for example label in controller says "UTMI", should I
+also use capital letters for the resource or this could be "utmi"?
 
-1) Since additional state is reset when the termios is changed by
-readline(), the canonical line buffer state will be bogus.
-This renders the termios change by readline() pointless; the
-caller will not be able to retrieve expected input properly.
+> 
+> > +Sub nodes:
+> > +==========
+> 
+> That section title is the same style as all the other section title, so
+> it's no obvious that this is a sub-node for the controller wrapper.
+> Instead, I would suggest something more like:
+> 
+> Required child nodes:
+> 
+> > +- Sub node for "DWC3 USB3 controller".
+> 
+> Then you can drop that since it's obvious.
+> 
+> > +  This sub node is required property for device node. The properties
+> > +  of this subnode are specified in dwc3.txt.
+> 
+> That doesn't really say much. How about.
+> 
+> ----------
+> A child node must exist to represent the core DWC3 IP block. The name of
+> the node is not important. The content of the node is defined in dwc3.txt.
+> ----------
 
-2) Since the input data is interpreted with the current termios when
-data is received, any embedded control characters will not be
-interpreted properly; again, the caller will not be able to retrieve
-expected input properly.
-
-> Another approach would be to recalculate the size of canon_data when the mode
-> is changed, but this would probably be much more invasive, and awfully less
-> efficient since it would imply going through the buffer.
-
-This approach is not possible prior to linux-next since the input worker
-thread and the reader thread are not locked out of access to the read buffer
-while changing the termios.
-
-And while rescanning the read buffer is possible in linux-next (eg, to
-compute the read_flags bitmap indicating the position of NLs), this doesn't
-address embedded control characters not being reinterpreted. And completely
-reinterpreting the read buffer makes interpreting when receiving pointless.
-
-> What do you think? Is the proposed solution, or something along those lines,
-> acceptable?
-
-I'm wondering if this problem might be best addressed on the paste side
-instead of the read side. Although this wouldn't be a magic bullet, it
-would be easier to control when more paste data is added.
+Thanks, I will use your suggestion.
 
 Regards,
-Peter Hurley
+Ivan
+
 
 
