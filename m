@@ -1,109 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294Ab3HSTfa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 15:35:30 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57896 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab3HSTf2 (ORCPT
+	id S1751313Ab3HSTfl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 15:35:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53556 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab3HSTfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 15:35:28 -0400
-Message-ID: <5212737A.1030904@wwwdotorg.org>
-Date: Mon, 19 Aug 2013 13:35:22 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 19 Aug 2013 15:35:39 -0400
+Date: Mon, 19 Aug 2013 12:35:38 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org, shuahkhan@gmail.com
+Subject: Re: [ 00/34] 3.4.59-stable review
+Message-ID: <20130819193538.GB24897@kroah.com>
+References: <20130818203259.653403173@linuxfoundation.org>
+ <52125DA9.3090601@samsung.com>
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Lars Poeschel <poeschel@lemonage.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
-        mark.rutland@arm.com, ian.campbell@citrix.com, galak@codeaurora.org,
-        pawel.moll@arm.com
-Subject: Re: [PATCH v2] RFC: interrupt consistency check for OF GPIO IRQs
-References: <1376387195-27469-1-git-send-email-larsi@wh2.tu-dresden.de> <1955836.AOXICuVgjP@flatron> <CACRpkdZqtn80rkpGokpjwoeEWTx+f_ug1zqOHBA1SeSz9Oj7mA@mail.gmail.com> <9241298.URG9CVQFmF@flatron>
-In-Reply-To: <9241298.URG9CVQFmF@flatron>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52125DA9.3090601@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2013 03:59 AM, Tomasz Figa wrote:
-> [Ccing DT maintainers, as they may have some ideas as well]
+On Mon, Aug 19, 2013 at 12:02:17PM -0600, Shuah Khan wrote:
+> On 08/18/2013 02:34 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.4.59 release.
+> >There are 34 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Note, there are a number of "build fixes" in this round, in the quest to
+> >get all arches building properly to be able to track future regressions
+> >easier.  Many thanks to Guenter Roeck and Geert Uytterhoeven for their
+> >work in doing this.
+> >
+> >Responses should be made by Tue Aug 20 20:32:48 UTC 2013.
+> >Anything received after that time might be too late.
+> >
+> >The whole patch series can be found in one patch at:
+> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.59-rc1.gz
+> >and the diffstat can be found below.
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
 > 
-> On Saturday 17 of August 2013 02:16:11 Linus Walleij wrote:
->> On Thu, Aug 15, 2013 at 11:53 AM, Tomasz Figa <tomasz.figa@gmail.com>  wrote:
-...
+> Greg,
+> 
+> This release is not looking good on one of test systems. Bluetooth
+> is not recognized and wireless doesn't work. I am going to start
+> bisect and giving you a head-up. The following new dmesg -l crit
+> regression messages:
 
->>> This is the biggest problem of this patch. It assumes that there is
->>> only a single and shared GPIO/interrupt specification scheme, which
->>> might not be true.
->>>
->>> First of all, almost all interrupt bindings have an extra,
->>> semi-generic
->>> flags field as last cell in the specifier. Now there can be more than
->>> one> 
->>> cell used to index GPIOs and interrupts, for example:
->>>         interrupts = <1 3 8>
->>>
->>> which could mean: bank 1, pin 3, low level triggered.
->>
->> You are right, but:
->> Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
->> Specifies how to handle the one-celled and two-celled versions.
->>
->> And nothing else is specified. So it's not overly complex.
-> 
-> The documentation states that:
-> 
-> 	It is the responsibility of the interrupt controller's binding to 
-> 	define the length and format of the interrupt specifier.
-> 
-> Then two _example_ formats follow, preceded by following statement:
-> 
-> 	The following two variants are commonly used:
-> 
-> I already know a variant which uses three (Exynos combiner) and four 
-> (S3C24xx interrupt controller) cells. They are not pin controllers, but 
-> you can't stop anyone from adopting similar or even more complex 
-> specifiers formats for their hardware, especially when it matches more 
-> closely the interrupt/pin layout used in their hardware.
+That's odd, given that there are no bluetooth changes in this release.
 
-Yes, the binding doc interrupts.txt mentioned above does not specify
-*the* one-/two-cell format, but *a* common/possible one- and two-cell
-format. There's no strict reason that all interrupt controllers have to
-use those exact formats. The only way to parse interrupt specifiers is
-to ask the driver for the the interrupt controller code to parse the
-property.
-
-The same goes for GPIOs.
-
->> But we have to read out the #interrupt-cells specifier from the
->> controller I guess, but since we the gcn pointer we can do this
->> easily. (I'll fix...)
->>
->>> I think you may need to reuse a lot of the code that normally parses
->>> the interrupts property, i.e. the irq_of_parse_and_map() path, which
->>> will then give you the hwirq index inside your irq chip, which may
->>> (or may not) be the same as the GPIO offset inside your GPIO chip.
->>
->> We don't need to map it, and that's the hard part of that code.
->> We just need to add some code to check the number of
->> cells.
+> CPU2: Package power limit notification (total events = 1)
+> CPU3: Package power limit notification (total events = 1)
+> CPU0: Package power limit notification (total events = 1)
+> CPU1: Package power limit notification (total events = 1)
 > 
-> Not really. Only the interrupt controller's driver (or rather its .xlate() 
-> callback) knows how to map all the cells into hwirq index. So we must at 
-> least get the irq domain associated with the node and call its .xlate() 
-> callback with requested count of cells.
+> and the following traces in dmesg:
+> [  124.802169] init: udevtrigger post-stop process (353) terminated
+> with status 1
+> [  243.439212] INFO: task crda:723 blocked for more than 120 seconds.
 
-Yes.
+What is "crda"?
+
+Any luck with bisection?  It should go fast as the majority of patches
+here are non-x86.
+
+thanks,
+
+greg k-h
