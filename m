@@ -1,87 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751116Ab3HSPwK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 11:52:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47961 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091Ab3HSPwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 11:52:07 -0400
-Date: Mon, 19 Aug 2013 17:52:02 +0200
-From: Anton Arapov <anton@redhat.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [ATTEND] oops.kernel.org prospect
-Message-ID: <20130819155202.GF19070@bandura.laptop>
-References: <20130819085405.GA22328@bandura.laptop>
- <20130819145505.GB15178@kroah.com>
- <20130819151643.GC19070@bandura.laptop>
- <20130819153939.GA23875@thunk.org>
+	id S1750969Ab3HSP4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 11:56:52 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59458 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab3HSP4u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 11:56:50 -0400
+Message-ID: <5212403E.9070304@wwwdotorg.org>
+Date: Mon, 19 Aug 2013 09:56:46 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130819153939.GA23875@thunk.org>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: Alexandre Courbot <acourbot@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Dave Martin <Dave.Martin@arm.com>,
+        Joseph Lo <josephl@nvidia.com>, Jassi Brar <jassisinghbrar@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/5] ARM: add basic Trusted Foundations support
+References: <1376360992-1508-1-git-send-email-acourbot@nvidia.com> <1376360992-1508-2-git-send-email-acourbot@nvidia.com> <520BF835.5080309@wwwdotorg.org> <CAAVeFuJ9tgXRf+QZRK5K8O2X=mKxUZtFgTsB06r4huQrDwZx2A@mail.gmail.com>
+In-Reply-To: <CAAVeFuJ9tgXRf+QZRK5K8O2X=mKxUZtFgTsB06r4huQrDwZx2A@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 11:39:39AM -0400, Theodore Ts'o wrote:
-> On Mon, Aug 19, 2013 at 05:16:43PM +0200, Anton Arapov wrote:
-> > > Why not just do that through email?  You'll reach a much wider group of
-> > > people than the tiny 80 developers at the conference.
-> > 
-> > Ouch! Someone to take it as replacement of email - the least I wanted. It will
-> > go email-way in either case.
-> > 
-> > These tiny 80 may give the most valuable feedback on the topic. And often
-> > it is the most difficult to get attention of them, especially via email.
-> > In case it fits the conference, it could dilute the heavy topics.
+On 08/18/2013 02:37 AM, Alexandre Courbot wrote:
+> On Thu, Aug 15, 2013 at 6:35 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 08/12/2013 08:29 PM, Alexandre Courbot wrote:
+>>> Trusted Foundations is a TrustZone-based secure monitor for ARM that
+>>> can be invoked  using a consistent smc-based API on all supported
+>>> platforms. This patch adds initial basic support for Trusted
+>>> Foundations using the ARM firmware API. Current features are limited
+>>> to the ability to boot secondary processors.
+>>
+>>> diff --git a/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+>>
+>>> +Trusted Foundations
+>>> +
+>>> +Boards that use the Trusted Foundations secure monitor can signal its
+>>> +presence by declaring a node compatible with "tl,trusted-foundations"
+>>> +(the name and location of the node does not matter).
+>>> +
+>>> +Required properties:
+>>> +- compatible : "tl,trusted-foundations"
+>>
+>>> +- version : Must contain the version number string of the Trusted Foundation
+>>> +     firmware.
+>>
+>> Can the version be queried at run-time from the firmware itself?
 > 
-> Usyually the best thing to do is to start the discussion on the
-> mailing list (and we can do that on ksummit-2013-discuss, but this is
-> always why it's sometimes useful to cc lkml on topic proposals, so we
-> can jump start the discussion), and see if it's controversial or not.
+> I'm afraid there is not, unfortunately. :/
+> 
+>> If not, I wonder if we shouldn't instead encode the version number into
+>> the compatible value.
+> 
+> Why? This would make the node harder to find and would also complicate
+> the case where a given firmware handler can support a given range of
+> versions (which is what I expect will happen).
 
-Oh well,... I didn't have a time for this right now, nor project is
-not exactly in the state I'm willing to show (mostly webui) 
+I guess that would be painful. There are probably a lot more valid
+version numbers for a SW firmware interface than there are for a HW IP
+block interface, so it makes less sense to encoded the version into the
+compatible value, at least in cases where the interface is "similar
+enough"; we can add some kind of basic version number into the
+compatible values for radically different interfaces if they appear in
+the future.
 
-// CC'd: lkml (please don't complain on styles yet, focus on functionality)
+>>> diff --git a/arch/arm/firmware/Kconfig b/arch/arm/firmware/Kconfig
+>>
+>>> +config ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
+>>> +     bool
+>>
+>> Shouldn't that be "config ARCH_SUPPORTS_FIRMWARE", since presumably in
+>> the future there will be more entries in the menu, and hence we want the
+>> menu to appear if any of those entries are useful?
+> 
+> The things is that because you support one firmware does not mean you
+> will support then all. Only some set of architectures will support
+> firmware X, and another set (maybe not inclusive) will support
+> firmware Y. We do not want to allow selecting firmware Y if the kernel
+> does not support any of the architectures that may make use of it.
+> 
+>>> +
+>>> +menu "Firmware options"
+>>> +     depends on ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
+>>
+>> Or perhaps that comment is more appropriate for that "depends".
+> 
+> Here the idea is to not show the "Firmware options" menu if the kernel
+> does not include support for any architecture that uses them. As more
+> firmwares get added, the depends line should expand into something
+> like "depends on ARCH_SUPPORTS_FIRMWARE_X || ARCH_SUPPORTS_FIRMWARE_Y
+> || ...
+> 
+> Maybe there's a better way to express this?
 
-> I suspect the biggest issue is one of "who will bell the cat".  As in,
-> if no one creates a new oops.kernel.org, and if we can't get the
-> community distributions to be willing to set up their systems to
-> automatically submit oops reports to the server, it's going to be
-> somewhat pointless to have the discussion at the kernel summit.
+Is there a need for a menu at all? I suppose it might group things
+nicely. If so, how about:
 
-It is created and distributions are willing to submit oopses
-automatically. Debian, Fedora, Ubuntu are already sending reports.
+config ARCH_SUPPORTS_FIRMWARE
+	bool
 
-The above is exactly what I would be able to share on conference with
-more details.
+config ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
+	bool
+	select ARCH_SUPPORTS_FIRMWARE
 
-> Note that main value of oops.kernel.org is the fact that we find out
-> which bugs are most likely hitting "real users", as opposed to the
-> very valuable testing done by developers on the linux-next and -rc
-> kernels.  It's main drawback is that for privacy reasons, we don't get
-> much more information than the stack trace.  So if it's just
-> linux-next testers and developers using oops.kernel.org, who are the
-> people who are more likely able to submit a detailed bug report, the
-> oops.kernel.org server probably won't add much value.  In fact, if the
-> testers depend on the sending of an anonymous stack trace, and don't
-> send us more detailed reproduction information, the existence of
-> oops.kernel.org could actually make things worse.
+config ARCH_SUPPORTS_SOME_OTHER_FW
+	bool
+	select ARCH_SUPPORTS_FIRMWARE
 
-And the above here is one of the feedbacks I am willing to see. As well as
-ideas how to overcome it.
+menu "Firmware options"
+	depends on ARCH_SUPPORTS_FIRMWARE
 
-> This means, realistically, it needs someone from Fedora or Open SuSE
-> or Debian or Ubuntu being willing to sponsor the uploading of
-> information to oops.kernel.org by default.
-...up and running, now...
-
-hth,
---
-Anton
+That's probably slightly easier to read than a huge "depends" statement
+in the menu stanza, and ARCH_SUPPORTS_FIRMWARE might be a useful to
+build in support for any core firmware utility code.
