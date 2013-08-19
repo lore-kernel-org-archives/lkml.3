@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab3HSBjg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 21:39:36 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:35731 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab3HSBje (ORCPT
+	id S1753613Ab3HSBj5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 21:39:57 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:58223 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab3HSBj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 21:39:34 -0400
-Date: Sun, 18 Aug 2013 18:39:25 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/9] nohz_full: Add full-system idle states
- and variables
-Message-ID: <20130819013924.GA29406@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130818014918.GA27827@linux.vnet.ibm.com>
- <1376790584-28120-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1376790584-28120-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130818030920.GI28923@leaf>
+	Sun, 18 Aug 2013 21:39:56 -0400
+Message-ID: <52117765.7010205@ozlabs.ru>
+Date: Mon, 19 Aug 2013 11:39:49 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130818030920.GI28923@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081901-1542-0000-0000-0000009FA985
+To: Wei Yang <weiyang@linux.vnet.ibm.com>
+CC: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        benh@au1.ibm.com, paulus@au1.ibm.com
+Subject: Re: [PATCH 2/2] powerpc/iommu: check dev->iommu_group before remove
+ a device from iommu_group
+References: <1376647687-20550-1-git-send-email-weiyang@linux.vnet.ibm.com> <1376647687-20550-3-git-send-email-weiyang@linux.vnet.ibm.com> <520DFBC8.4040509@ozlabs.ru> <20130819012945.GA8342@weiyang.vnet.ibm.com>
+In-Reply-To: <20130819012945.GA8342@weiyang.vnet.ibm.com>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 17, 2013 at 08:09:21PM -0700, Josh Triplett wrote:
-> On Sat, Aug 17, 2013 at 06:49:41PM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > This commit adds control variables and states for full-system idle.
-> > The system will progress through the states in numerical order when
-> > the system is fully idle (other than the timekeeping CPU), and reset
-> > down to the initial state if any non-timekeeping CPU goes non-idle.
-> > The current state is kept in full_sysidle_state.
-> > 
-> > A RCU_SYSIDLE_SMALL macro is defined, and systems with this number
-> > of CPUs or fewer move through the states more aggressively.  The idea
-> > is that the resulting memory contention is less of a problem on small
-> > systems.  Architectures can adjust this value (which defaults to 8)
-> > using CONFIG_ARCH_RCU_SYSIDLE_SMALL.
-> > 
-> > One flavor of RCU will be in charge of driving the state machine,
-> > defined by rcu_sysidle_state.  This should be the busiest flavor of RCU.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
+On 08/19/2013 11:29 AM, Wei Yang wrote:
+> On Fri, Aug 16, 2013 at 08:15:36PM +1000, Alexey Kardashevskiy wrote:
+>> On 08/16/2013 08:08 PM, Wei Yang wrote:
+>>> ---
+>>>  arch/powerpc/kernel/iommu.c |    3 ++-
+>>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+>>> index b20ff17..5abf7c3 100644
+>>> --- a/arch/powerpc/kernel/iommu.c
+>>> +++ b/arch/powerpc/kernel/iommu.c
+>>> @@ -1149,7 +1149,8 @@ static int iommu_bus_notifier(struct notifier_block *nb,
+>>>  	case BUS_NOTIFY_ADD_DEVICE:
+>>>  		return iommu_add_device(dev);
+>>>  	case BUS_NOTIFY_DEL_DEVICE:
+>>> -		iommu_del_device(dev);
+>>> +		if (dev->iommu_group)
+>>> +			iommu_del_device(dev);
+>>>  		return 0;
+>>>  	default:
+>>>  		return 0;
+>>>
+>>
+>> This one seems redundant, no?
 > 
-> One issue (and one question) below; with the issue addressed,
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> Sorry for the late.
 > 
-> >  kernel/rcutree_plugin.h | 28 ++++++++++++++++++++++++++++
-> >  1 file changed, 28 insertions(+)
-> > 
-> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > index eab81da..64a05b9f 100644
-> > --- a/kernel/rcutree_plugin.h
-> > +++ b/kernel/rcutree_plugin.h
-> > @@ -2378,6 +2378,34 @@ static void rcu_kick_nohz_cpu(int cpu)
-> >  #ifdef CONFIG_NO_HZ_FULL_SYSIDLE
-> >  
-> >  /*
-> > + * Handle small systems specially, accelerating their transition into
-> > + * full idle state.  Allow arches to override this code's idea of
-> > + * what constitutes a "small" system.
-> > + */
-> > +#ifdef CONFIG_ARCH_RCU_SYSIDLE_SMALL
+> Yes, these two patches have the same purpose to guard the system, while in two
+> different places.  One is in powernv platform, the other is in the generic iommu 
+> driver.
 > 
-> I don't see any Kconfig creating this new config option.
+> The one in powernv platform is used to correct the original logic.
 > 
-> Also, why not simply define this config option unconditionally, with a
-> default of 8, and then use its value directly?
+> The one in generic iommu driver is to keep system safe in case other platform to
+> call iommu_group_remove_device() without the check.
 
-Good point, removing this and adding a Kconfig option in the
-"nohz_full: Add full-system-idle state machine" commit, with a
-default value of 8.  Architecture maintainers who want something
-different can then set that up in their defconfig files.
 
-> > +static int __maybe_unused full_sysidle_state; /* Current system-idle state. */
-> > +#define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
-> > +#define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
-> > +#define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
-> > +#define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
-> > +#define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
-> 
-> Perhaps there's a kernel style rule I'm not thinking of that makes it
-> verboten, but: why not use an enum for a state variable like this?
+But I am moving bus notifier to powernv code (posted a patch last week,
+otherwise Freescale's IOMMU conflicted) so this won't be the case.
 
-I didn't trust enum interactions with xchg and cmpxchg, so opted for "int"
-instead.  That said, enum is much more portable than when I last looked
-at it.  Admittedly, the last time I looked at it was in the early 1980s...
 
-							Thanx, Paul
 
+-- 
+Alexey
