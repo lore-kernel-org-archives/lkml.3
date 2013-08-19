@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751082Ab3HSQZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 12:25:04 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33144 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab3HSQZB (ORCPT
+	id S1751047Ab3HSQa0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 12:30:26 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:42405 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab3HSQaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 12:25:01 -0400
-Message-ID: <521246D8.9040506@wwwdotorg.org>
-Date: Mon, 19 Aug 2013 10:24:56 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 19 Aug 2013 12:30:24 -0400
+Message-ID: <5212481D.6040207@codeaurora.org>
+Date: Mon, 19 Aug 2013 09:30:21 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>
-Subject: Re: [PATCH 1/2] include: dt-binding: input: create a DT header defining
- key codes.
-References: <1375798370-2231-1-git-send-email-ldewangan@nvidia.com> <52014E50.6030508@wwwdotorg.org> <5203D138.4030107@nvidia.com> <20130808171331.GA6960@core.coreip.homeip.net> <5203D487.5020507@wwwdotorg.org> <20130812171504.GA31418@core.coreip.homeip.net> <52092299.4080104@wwwdotorg.org> <52123152.9070408@nvidia.com>
-In-Reply-To: <52123152.9070408@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>, balbi@ti.com,
+        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        ian.campbell@citrix.com, rob@landley.net, gregkh@linuxfoundation.org,
+        grant.likely@linaro.org, idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] usb: dwc3: msm: Add device tree binding information
+References: <1376485183-2664-1-git-send-email-iivanov@mm-sol.com>  <1376485183-2664-2-git-send-email-iivanov@mm-sol.com>  <520EAB3B.9030607@wwwdotorg.org> <1376915267.26268.16.camel@iivanov-dev.int.mm-sol.com>
+In-Reply-To: <1376915267.26268.16.camel@iivanov-dev.int.mm-sol.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2013 08:53 AM, Laxman Dewangan wrote:
-> On Monday 12 August 2013 11:29 PM, Stephen Warren wrote:
->> On 08/12/2013 11:15 AM, Dmitry Torokhov wrote:
->>>>
->>>> Device tree files can only include headers in include/dt-bindings.
->>>> Eventually/soon, all the DT files and the headers in the dt-bindings/
->>>> directory will be split out into a separate git tree, which does not
->>>> have access to include/uapi, or indeed any other Linux kernel header
->>>> files.
->>> OK, that makes it easier for me - please merge through whatever tree
->>> that owns include/dt-bindings.
->> Are there any objections to my taking both patches through the Tegra
->> tree? Patch 2/2 depends on 1/2 and is Tegra-specific. This should work
->> out fine unless anyone else wants to use the new header this kernel
->> cycle; if they do, this should go into a topic branch in the DT tree
->> that I can pull into the Tegra tree.
-> 
-> Hi Stephen,
-> Just wanted to check if you are taking this on Tegra tree. I want to
-> post some more cleanups on other dts file  to use dt-binding include for
-> key code otherwise I will defer for next kernel version.
+On 08/19/13 05:27, Ivan T. Ivanov wrote:
+> Hi, 
+>
+> On Fri, 2013-08-16 at 16:44 -0600, Stephen Warren wrote: 
+>> On 08/14/2013 06:59 AM, Ivan T. Ivanov wrote:
+>>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+>>>
+>>> MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
+>>> (SNPS) and HS, SS PHY's control and configuration registers.
+>>>
+>>> It could operate in device mode (SS, HS, FS) and host
+>>> mode (SS, HS, FS, LS).
+>>> diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+>>> +- clock-names :
+>> ...
+>>> +	"sleep_a_clk" : Sleep clock, used when USB3 core goes into low
+>> ...
+>>> +	"ref_clk" : Reference clock - used in host mode.
+>> ...
+>>> +	"core_clk" : Master/Core clock, have to be >= 125 MHz for SS
+>> ...
+>>> +	"iface_clk" : System bus AXI clock
+>>> +	"sleep_clk" : Sleep clock, used when USB3 core goes into low
+>> ...
+>>> +	"utmi_clk" : Generated by HS-PHY. Used to clock the low power
+>> I think it makes sense to remove "_clk" from all those names, unless the
+>> HW documentation really talks about a clock named e.g. iface_clk yet
+>> some other clock names in the documentation don't have the "_clk"
+>> suffix, e.g. the "xo I didn't quote.
+> From limited information that I have, I could not say how clock inputs 
+> are named from the controller perspective, but I agree that "_clk"
+> suffix looks redundant. 
 
-At this time, I assume this will go through the DT repo/branch. Rob?
+In downstream trees we've tried to standardize the names on core_clk,
+iface_clk, bus_clk, etc. Historically the hardware designers have used
+the names from the clock controller instead of coming up with standard
+names of their own when they put the clock inputs in their data sheets
+(if they do at all).
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
