@@ -1,154 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751113Ab3HSQ6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 12:58:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37311 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab3HSQ6l (ORCPT
+	id S1751109Ab3HSQ76 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 12:59:58 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56526 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750867Ab3HSQ75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 12:58:41 -0400
-Message-ID: <52124EB3.6000103@infradead.org>
-Date: Mon, 19 Aug 2013 09:58:27 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 19 Aug 2013 12:59:57 -0400
+Date: Mon, 19 Aug 2013 13:59:56 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lior Amsalem <alior@marvell.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 1/3] ARM: Introduce atomic MMIO clear/set
+Message-ID: <20130819165955.GA20522@localhost>
+References: <1376138582-7550-1-git-send-email-ezequiel.garcia@free-electrons.com>
+ <1376138582-7550-2-git-send-email-ezequiel.garcia@free-electrons.com>
+ <20130812182942.GA28695@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [trivial]treewide: Fix typo in printk
-References: <1376885430-9606-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1376885430-9606-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130812182942.GA28695@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/13 21:10, Masanari Iida wrote:
-> Correct spelling typo in printk.
+On Mon, Aug 12, 2013 at 07:29:42PM +0100, Will Deacon wrote:
+> On Sat, Aug 10, 2013 at 01:43:00PM +0100, Ezequiel Garcia wrote:
+> > Some SoC have MMIO regions that are shared across orthogonal
+> > subsystems. This commit implements a possible solution for the
+> > thread-safe access of such regions through a spinlock-protected API
+> > with clear-set semantics.
+> > 
+> > Concurrent access is protected with a single spinlock for the
+> > entire MMIO address space. While this protects shared-registers,
+> > it also serializes access to unrelated/unshared registers.
+> > 
+> > Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 > 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-Thanks.
-
-> ---
->  drivers/gpu/drm/exynos/exynos_drm_fimc.c | 2 +-
->  drivers/gpu/drm/exynos/exynos_drm_gsc.c  | 4 ++--
->  drivers/infiniband/ulp/isert/Kconfig     | 2 +-
->  drivers/media/i2c/Kconfig                | 2 +-
->  drivers/media/i2c/adv7183.c              | 2 +-
->  drivers/media/i2c/s5c73m3/s5c73m3-core.c | 4 ++--
->  drivers/media/v4l2-core/v4l2-ctrls.c     | 2 +-
->  7 files changed, 9 insertions(+), 9 deletions(-)
+> [...]
 > 
-> diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimc.c b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
-> index 6e047bd..8926d68 100644
-> --- a/drivers/gpu/drm/exynos/exynos_drm_fimc.c
-> +++ b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
-> @@ -343,7 +343,7 @@ static bool fimc_check_ovf(struct fimc_context *ctx)
->  
->  		fimc_write(cfg, EXYNOS_CIWDOFST);
->  
-> -		dev_err(ippdrv->dev, "occured overflow at %d, status 0x%x.\n",
-> +		dev_err(ippdrv->dev, "occurred overflow at %d, status 0x%x.\n",
->  			ctx->id, status);
->  		return true;
->  	}
-> diff --git a/drivers/gpu/drm/exynos/exynos_drm_gsc.c b/drivers/gpu/drm/exynos/exynos_drm_gsc.c
-> index 90b8a1a..7751a43 100644
-> --- a/drivers/gpu/drm/exynos/exynos_drm_gsc.c
-> +++ b/drivers/gpu/drm/exynos/exynos_drm_gsc.c
-> @@ -1300,13 +1300,13 @@ static irqreturn_t gsc_irq_handler(int irq, void *dev_id)
->  
->  	status = gsc_read(GSC_IRQ);
->  	if (status & GSC_IRQ_STATUS_OR_IRQ) {
-> -		dev_err(ippdrv->dev, "occured overflow at %d, status 0x%x.\n",
-> +		dev_err(ippdrv->dev, "occurred overflow at %d, status 0x%x.\n",
->  			ctx->id, status);
->  		return IRQ_NONE;
->  	}
->  
->  	if (status & GSC_IRQ_STATUS_OR_FRM_DONE) {
-> -		dev_dbg(ippdrv->dev, "occured frame done at %d, status 0x%x.\n",
-> +		dev_dbg(ippdrv->dev, "occurred frame done at %d, status 0x%x.\n",
->  			ctx->id, status);
->  
->  		buf_id[EXYNOS_DRM_OPS_SRC] = gsc_get_src_buf_index(ctx);
-> diff --git a/drivers/infiniband/ulp/isert/Kconfig b/drivers/infiniband/ulp/isert/Kconfig
-> index ce3fd32..5afcfa6 100644
-> --- a/drivers/infiniband/ulp/isert/Kconfig
-> +++ b/drivers/infiniband/ulp/isert/Kconfig
-> @@ -1,5 +1,5 @@
->  config INFINIBAND_ISERT
-> -	tristate "iSCSI Extentions for RDMA (iSER) target support"
-> +	tristate "iSCSI Extensions for RDMA (iSER) target support"
->  	depends on INET && INFINIBAND_ADDR_TRANS && TARGET_CORE && ISCSI_TARGET
->  	---help---
->  	Support for iSCSI Extentions for RDMA (iSER) Target on Infiniband fabrics.
-> diff --git a/drivers/media/i2c/Kconfig b/drivers/media/i2c/Kconfig
-> index b2cd8ca..70c4671 100644
-> --- a/drivers/media/i2c/Kconfig
-> +++ b/drivers/media/i2c/Kconfig
-> @@ -623,7 +623,7 @@ config VIDEO_UPD64083
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called upd64083.
->  
-> -comment "Miscelaneous helper chips"
-> +comment "Miscellaneous helper chips"
->  
->  config VIDEO_THS7303
->  	tristate "THS7303/53 Video Amplifier"
-> diff --git a/drivers/media/i2c/adv7183.c b/drivers/media/i2c/adv7183.c
-> index 6f738d8..d45e0e3 100644
-> --- a/drivers/media/i2c/adv7183.c
-> +++ b/drivers/media/i2c/adv7183.c
-> @@ -178,7 +178,7 @@ static int adv7183_log_status(struct v4l2_subdev *sd)
->  			adv7183_read(sd, ADV7183_VS_FIELD_CTRL_1),
->  			adv7183_read(sd, ADV7183_VS_FIELD_CTRL_2),
->  			adv7183_read(sd, ADV7183_VS_FIELD_CTRL_3));
-> -	v4l2_info(sd, "adv7183: Hsync positon control 1 2 and 3 = 0x%02x 0x%02x 0x%02x\n",
-> +	v4l2_info(sd, "adv7183: Hsync position control 1 2 and 3 = 0x%02x 0x%02x 0x%02x\n",
->  			adv7183_read(sd, ADV7183_HS_POS_CTRL_1),
->  			adv7183_read(sd, ADV7183_HS_POS_CTRL_2),
->  			adv7183_read(sd, ADV7183_HS_POS_CTRL_3));
-> diff --git a/drivers/media/i2c/s5c73m3/s5c73m3-core.c b/drivers/media/i2c/s5c73m3/s5c73m3-core.c
-> index 825ea86..d153440 100644
-> --- a/drivers/media/i2c/s5c73m3/s5c73m3-core.c
-> +++ b/drivers/media/i2c/s5c73m3/s5c73m3-core.c
-> @@ -1455,7 +1455,7 @@ static int s5c73m3_oif_registered(struct v4l2_subdev *sd)
->  	mutex_unlock(&state->lock);
->  
->  	v4l2_dbg(1, s5c73m3_dbg, sd, "%s: Booting %s (%d)\n",
-> -		 __func__, ret ? "failed" : "succeded", ret);
-> +		 __func__, ret ? "failed" : "succeeded", ret);
->  
->  	return ret;
->  }
-> @@ -1646,7 +1646,7 @@ static int s5c73m3_probe(struct i2c_client *client,
->  	if (ret < 0)
->  		goto out_err;
->  
-> -	v4l2_info(sd, "%s: completed succesfully\n", __func__);
-> +	v4l2_info(sd, "%s: completed successfully\n", __func__);
->  	return 0;
->  
->  out_err:
-> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-> index fccd08b..1765182 100644
-> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
-> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-> @@ -420,7 +420,7 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
->  		"Advanced Simple",
->  		"Core",
->  		"Simple Scalable",
-> -		"Advanced Coding Efficency",
-> +		"Advanced Coding Efficiency",
->  		NULL,
->  	};
->  
+> > +void atomic_io_clear_set(void __iomem *reg, u32 clear, u32 set)
+> > +{
+> > +	spin_lock(&__io_lock);
+> > +	writel((readl(reg) & ~clear) | set, reg);
+> > +	spin_unlock(&__io_lock);
+> > +}
+> 
+> I appreciate that you've lifted this code from a previous driver, but this
+> doesn't really make any sense to me. The spin_unlock operation is
+> essentially a store to normal, cacheable memory, whilst the writel is an
+> __iowmb followed by a store to device memory.
+> 
+> This means that you don't have ordering guarantees between the two accesses
+> outside of the CPU, potentially giving you:
+> 
+> 	spin_lock(&__io_lock);
+> 	spin_unlock(&__io_lock);
+> 	writel((readl(reg) & ~clear) | set, reg);
+> 
+> which is probably not what you want.
+> 
+> I suggest adding an iowmb after the writel if you really need this ordering
+> to be enforced (but this may have a significant performance impact,
+> depending on your SoC).
 > 
 
+I don't want to argue with you, given I have zero knowledge about this
+ordering issue. However let me ask you a question.
 
+In arch/arm/include/asm/spinlock.h I'm seeing this comment:
+
+""ARMv6 ticket-based spin-locking.
+A memory barrier is required after we get a lock, and before we
+release it, because V6 CPUs are assumed to have weakly ordered
+memory.""
+
+and also:
+
+static inline void arch_spin_unlock(arch_spinlock_t *lock)
+{
+	smp_mb();
+	lock->tickets.owner++;
+	dsb_sev();
+}
+
+So, knowing this atomic API should work for every ARMv{N}, and not being very
+sure what the call to dsb_sev() does. Would you care to explain how the above
+is *not* enough to guarantee a memory barrier before the spin unlocking?
+
+Thanks!
 -- 
-~Randy
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
