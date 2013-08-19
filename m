@@ -1,113 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab3HSJm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 05:42:26 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36517 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283Ab3HSJmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751282Ab3HSJmW (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 19 Aug 2013 05:42:22 -0400
-X-AuditID: 85900ec0-d3b2cb9000001514-43-5211e87b2f86
-Subject: [RFC PATCH 07/11] [CLEANUP] trace-cmd: Split out binding a port and
- fork reader from open_udp()
-To: Steven Rostedt <rostedt@goodmis.org>
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Date: Mon, 19 Aug 2013 18:46:37 +0900
-Message-ID: <20130819094637.26597.35505.stgit@yunodevel>
-In-Reply-To: <20130819094620.26597.79499.stgit@yunodevel>
-References: <20130819094620.26597.79499.stgit@yunodevel>
-User-Agent: StGit/0.16
+Received: from mga14.intel.com ([143.182.124.37]:33701 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196Ab3HSJmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 05:42:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,912,1367996400"; 
+   d="scan'208";a="283762628"
+Date: Mon, 19 Aug 2013 14:28:57 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>
+Subject: Re: [PATCH 04/27] drivers/dma: don't check resource with
+ devm_ioremap_resource
+Message-ID: <20130819085857.GY32147@intel.com>
+References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
+ <1374602524-3398-5-git-send-email-wsa@the-dreams.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374602524-3398-5-git-send-email-wsa@the-dreams.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split out binding a port and fork reader from open_udp() for avoiding duplicate
-codes between listen mode and virt-server mode.
+On Tue, Jul 23, 2013 at 08:01:37PM +0200, Wolfram Sang wrote:
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
+> 
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Sorry looks like I missed this and instead applied a similar patch from Julia
+last week. I should have taken this instead. My bad...
 
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
----
- trace-listen.c |   34 ++++++++++++++++++++++++++--------
- 1 file changed, 26 insertions(+), 8 deletions(-)
+~Vinod
+> ---
+> Please apply via the subsystem-tree.
+> 
+>  drivers/dma/mmp_pdma.c |    3 ---
+>  drivers/dma/mmp_tdma.c |    3 ---
+>  2 files changed, 6 deletions(-)
+> 
+> diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
+> index c26699f..7eba967 100644
+> --- a/drivers/dma/mmp_pdma.c
+> +++ b/drivers/dma/mmp_pdma.c
+> @@ -778,9 +778,6 @@ static int mmp_pdma_probe(struct platform_device *op)
+>  	pdev->dev = &op->dev;
+>  
+>  	iores = platform_get_resource(op, IORESOURCE_MEM, 0);
+> -	if (!iores)
+> -		return -EINVAL;
+> -
+>  	pdev->base = devm_ioremap_resource(pdev->dev, iores);
+>  	if (IS_ERR(pdev->base))
+>  		return PTR_ERR(pdev->base);
+> diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
+> index 9b93665..1f1885a 100644
+> --- a/drivers/dma/mmp_tdma.c
+> +++ b/drivers/dma/mmp_tdma.c
+> @@ -549,9 +549,6 @@ static int mmp_tdma_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!iores)
+> -		return -EINVAL;
+> -
+>  	tdev->base = devm_ioremap_resource(&pdev->dev, iores);
+>  	if (IS_ERR(tdev->base))
+>  		return PTR_ERR(tdev->base);
+> -- 
+> 1.7.10.4
+> 
 
-diff --git a/trace-listen.c b/trace-listen.c
-index f29dd35..bf9ef9d 100644
---- a/trace-listen.c
-+++ b/trace-listen.c
-@@ -228,13 +228,12 @@ static void process_udp_child(int sfd, const char *host, const char *port,
- #define START_PORT_SEARCH 1500
- #define MAX_PORT_SEARCH 6000
- 
--static int open_udp(const char *node, const char *port, int *pid,
--		    int cpu, int pagesize, int start_port)
-+static int udp_bind_a_port(int start_port, int *sfd)
- {
- 	struct addrinfo hints;
- 	struct addrinfo *result, *rp;
--	int sfd, s;
- 	char buf[BUFSIZ];
-+	int s;
- 	int num_port = start_port;
- 
-  again:
-@@ -250,15 +249,15 @@ static int open_udp(const char *node, const char *port, int *pid,
- 		pdie("getaddrinfo: error opening udp socket");
- 
- 	for (rp = result; rp != NULL; rp = rp->ai_next) {
--		sfd = socket(rp->ai_family, rp->ai_socktype,
--			     rp->ai_protocol);
--		if (sfd < 0)
-+		*sfd = socket(rp->ai_family, rp->ai_socktype,
-+			      rp->ai_protocol);
-+		if (*sfd < 0)
- 			continue;
- 
--		if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
-+		if (bind(*sfd, rp->ai_addr, rp->ai_addrlen) == 0)
- 			break;
- 
--		close(sfd);
-+		close(*sfd);
- 	}
- 
- 	if (rp == NULL) {
-@@ -270,6 +269,12 @@ static int open_udp(const char *node, const char *port, int *pid,
- 
- 	freeaddrinfo(result);
- 
-+	return num_port;
-+}
-+
-+static void fork_udp_reader(int sfd, const char *node, const char *port,
-+			    int *pid, int cpu, int pagesize)
-+{
- 	*pid = fork();
- 
- 	if (*pid < 0)
-@@ -279,6 +284,19 @@ static int open_udp(const char *node, const char *port, int *pid,
- 		process_udp_child(sfd, node, port, cpu, pagesize);
- 
- 	close(sfd);
-+}
-+
-+static int open_udp(const char *node, const char *port, int *pid,
-+		    int cpu, int pagesize, int start_port)
-+{
-+	int sfd;
-+	int num_port;
-+
-+	num_port = udp_bind_a_port(start_port, &sfd);
-+	if (num_port < 0)
-+		return num_port;
-+
-+	fork_udp_reader(sfd, node, port, pid, cpu, pagesize);
- 
- 	return num_port;
- }
-
+-- 
