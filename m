@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406Ab3HSLVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 07:21:07 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:1124 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751377Ab3HSLVE (ORCPT
+	id S1751475Ab3HSLWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 07:22:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54817 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751260Ab3HSLWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 07:21:04 -0400
-X-IronPort-AV: E=Sophos;i="4.89,913,1367964000"; 
-   d="scan'208";a="24233033"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: kernel-janitors@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7] mmc: mvsdio: replace devm_request_and_ioremap by devm_ioremap_resource
-Date: Mon, 19 Aug 2013 13:20:41 +0200
-Message-Id: <1376911241-27720-8-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr>
+	Mon, 19 Aug 2013 07:22:18 -0400
+Date: Mon, 19 Aug 2013 13:22:06 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv3 07/10] pinctrl: sunxi: Add Allwinner A31 pins set
+Message-ID: <20130819112206.GI3173@lukather>
+References: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1375609657-15434-8-git-send-email-maxime.ripard@free-electrons.com>
+ <20130812081916.GL2911@lukather>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vs0rQTeTompTJjtd"
+Content-Disposition: inline
+In-Reply-To: <20130812081916.GL2911@lukather>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Use devm_ioremap_resource instead of devm_request_and_ioremap.
+--vs0rQTeTompTJjtd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This was done using the semantic patch
-scripts/coccinelle/api/devm_ioremap_resource.cocci
+On Mon, Aug 12, 2013 at 10:19:16AM +0200, Maxime Ripard wrote:
+> Hi Linus,
+>=20
+> On Sun, Aug 04, 2013 at 11:47:34AM +0200, Maxime Ripard wrote:
+> > The Allwinner A31 SoC uses the same IP than the one found in the
+> > A10/A13, with only different pins. Add the pins and the associated
+> > functions found in the A31.
+>=20
+> I'd like this to be in 3.12 if it's okay for you. Do you have any
+> comments on it?
 
-The relevant call to platform_get_resource was manually moved down to the
-call to devm_ioremap_resource.
+Ping?
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
----
- drivers/mmc/host/mvsdio.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+--vs0rQTeTompTJjtd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
-index 4ddd83f..2ac7d3a 100644
---- a/drivers/mmc/host/mvsdio.c
-+++ b/drivers/mmc/host/mvsdio.c
-@@ -687,9 +687,8 @@ static int __init mvsd_probe(struct platform_device *pdev)
- 	int ret, irq;
- 	struct pinctrl *pinctrl;
- 
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	irq = platform_get_irq(pdev, 0);
--	if (!r || irq < 0)
-+	if (irq < 0)
- 		return -ENXIO;
- 
- 	mmc = mmc_alloc_host(sizeof(struct mvsd_host), &pdev->dev);
-@@ -774,9 +773,10 @@ static int __init mvsd_probe(struct platform_device *pdev)
- 
- 	spin_lock_init(&host->lock);
- 
--	host->base = devm_request_and_ioremap(&pdev->dev, r);
--	if (!host->base) {
--		ret = -ENOMEM;
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	host->base = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(host->base)) {
-+		ret = PTR_ERR(host->base);
- 		goto out;
- 	}
- 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJSEf/eAAoJEBx+YmzsjxAgANkP/2JtozQEThFt5yhd1u46sh2A
+ta7T3/gmUNnJoFUt0O8CIksyA18ebW3UJ5zrkleXjUK6sVSbPSmNxDRDMaMuNmuN
+bwuPdJpZUijn+L8iG6iR2f794u8GtZX4YHXWEUHcjlPKe68dPZLrii85MolTvdG0
+R//9aABmetuSxCp0/XAeLpXKemBoAzB8nRG0G8hCmzZTpFxthAb/2v3785sFDtuX
+phapzsc7gOfTtrum1LzkfjspRSlB4WCyPPoP1URHy8g0tJXgfoTUM3krAi6LNtk3
+LjyWaqjljx50yIQGB9O2o0AYbMPxPswSh89w8GoiNQcH/RvVkpBdrka/0+LDDLU4
+8JdnYdsV4XEo5B8LkkQLm9DGk11xey2q6ymjWeEq8CaJt30xIgoCK7JPj66OHXek
+zAR/6YhH6/nLDArCn8UdKNdjjvbQoyfHLrlAaY1DCvXyVEvcxGQbFD43CXht8MLX
+pvaoX/19MN6yxaG/iHuC9m9UzANUJEE+y/vmD+O9HmFtNzBpoiwyKKlHLQ2U4SpL
+UkgJsBZ10tFcv6KhtQ8GEff7bLOo/655Ktt0RVOO7RgH0RnYb/fMLaAnJmbg8NqM
+UIYPZtAg6985yiSGCz0dZNrrRUtPp+kPEEb4pMFPLh5ACMJv3X2ngf/hfcNcyoUt
+DrM3nmfqQ9Wjt54KS2IR
+=lm8o
+-----END PGP SIGNATURE-----
+
+--vs0rQTeTompTJjtd--
