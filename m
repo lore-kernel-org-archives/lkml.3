@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056Ab3HSRyL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 13:54:11 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:33865 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab3HSRyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 13:54:09 -0400
-Message-ID: <1376934845.24869.43.camel@bobble.lax.corp.google.com>
-Subject: Re: [dm-devel] dm: Make MIN_IOS, et al, tunable via sysctl.
-From: Frank Mayhar <fmayhar@google.com>
-To: device-mapper development <dm-devel@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 19 Aug 2013 10:54:05 -0700
-In-Reply-To: <20130819140016.GB27167@redhat.com>
-References: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
-	 <20130819140016.GB27167@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751171Ab3HSR5L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 13:57:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45154 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750961Ab3HSR5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 13:57:10 -0400
+Date: Mon, 19 Aug 2013 19:51:24 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Brad Spengler <spender@grsecurity.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Colin Walters <walters@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
+Message-ID: <20130819175124.GA23167@redhat.com>
+References: <20130819172524.GA22268@redhat.com> <CA+55aFzTr7zm2uyZOxMA8wP3FoKPtk__kgGBqf7peMW2Ov8KJA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzTr7zm2uyZOxMA8wP3FoKPtk__kgGBqf7peMW2Ov8KJA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-19 at 10:00 -0400, Mike Snitzer wrote:
-> Performance isn't the concern.  The concern is: does DM allow for
-> forward progress if the system's memory is completely exhausted?
-> 
-> This is why request-based has such an extensive reserve, because it
-> needs to account for cloning the largest possible request that comes in
-> (with multiple bios).
+On 08/19, Linus Torvalds wrote:
+>
+> So I think your patch is correct, although I'm not sure why you move
+> the test.
 
-Thanks for the response.  In our particular case, I/O will be file
-system based and over a network, which makes it pretty easy for us to be
-sure that large I/Os never happen.  That notwithstanding, however, as
-you said it just seems reasonable to make these values configurable.
+I didn't really, we have 2 tests, in do_fork() and copy_process().
+I think it would be better to do the similar checks in one place.
 
-I'm also looking at making some similar constants in dm-verity and
-dm-bufio configurable in the same way and for similar reasons.
--- 
-Frank Mayhar
-310-460-4042
+This is off-topic and needs a separate change anyway, but perhaps
+we should add the new helper which checks clone_flags. copy_process()
+is huge.
+
+> The new test you have look complicated as hell, so I think
+> you're actually making things worse by making them unreadable.
+
+Oh I agree. I'll wait for the comments on intent, then try to
+cleanup it somehow. Unless a better fix comes.
+
+Oleg.
 
