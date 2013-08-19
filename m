@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab3HSXfk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 19:35:40 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42613 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab3HSXfi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 19:35:38 -0400
-Date: Mon, 19 Aug 2013 16:35:29 -0700
-From: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] acpi_i2c: set MODULE_LICENSE, MODULE_AUTHOR, and
- MODULE_DESCRIPTION
-Message-ID: <20130819233528.GA4587@cantor.us.oracle.com>
-Reply-To: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-References: <1376702795-25912-1-git-send-email-jerry.snitselaar@oracle.com>
- <20130819061614.GG4898@intel.com>
- <2870377.GVGv4QBgQK@vostro.rjw.lan>
+	id S1751668Ab3HSXgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 19:36:08 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2207 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751165Ab3HSXgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 19:36:05 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <5212ABE0.8030601@broadcom.com>
+Date: Mon, 19 Aug 2013 16:36:00 -0700
+From: "Christian Daudt" <csd@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2870377.GVGv4QBgQK@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>
+cc: "Chris Ball" <cjb@laptop.org>, "Shawn Guo" <shawn.guo@linaro.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "arm@kernel.org" <arm@kernel.org>
+Subject: Re: [PATCH] mmc: change mmc_gpio_get_cd to call non-sleep gpio
+References: <1375994855-12472-1-git-send-email-csd@broadcom.com>
+ <Pine.LNX.4.64.1308082258260.29611@axis700.grange>
+ <52040962.6040003@broadcom.com>
+In-Reply-To: <52040962.6040003@broadcom.com>
+X-WSS-ID: 7E0C75E31R082173367-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue Aug 20 13, Rafael J. Wysocki wrote:
-> On Monday, August 19, 2013 09:16:14 AM Mika Westerberg wrote:
-> > On Fri, Aug 16, 2013 at 06:26:35PM -0700, Jerry Snitselaar wrote:
-> > > Without MODULE_LICENSE set, I get the following with modprobe:
-> > > 
-> > > acpi_i2c: module license 'unspecified' taints kernel.
-> > > acpi_i2c: Unknown symbol i2c_new_device (err 0)
-> > > acpi_i2c: Unknown symbol acpi_dev_get_resources (err 0)
-> > > acpi_i2c: Unknown symbol acpi_dev_resource_interrupt (err 0)
-> > > acpi_i2c: Unknown symbol acpi_dev_free_resource_list (err 0)
-> > > 
-> > > Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-> > 
-> > Looks good to me.
-> > 
-> > Acked-by: Mika Westerbeg <mika.westerberg@linux.intel.com>
-> 
-> Well, OK, but do we need to be able to build that as a module?
-> 
-> Maybe it should just be yes or no?
-> 
-> Rafael
-> 
+On 13-08-08 02:10 PM, Christian Daudt wrote:
+> On 13-08-08 02:06 PM, Guennadi Liakhovetski wrote:
+>> On Thu, 8 Aug 2013, Christian Daudt wrote:
+>>
+>>> Given that mmc_gpio_get_cd can be called in softirq
+>>> context (by sdhci_tasklet_card -> sdhci_card_event ->
+>>> sdhci_do_get_cd -> mmc_gpio_get_cd ), it is necessary
+>>> for it to use gpio_get_value instead of
+>>> gpio_get_value_cansleep
+>>> Note that at present sdhci_card_event gets called both
+>>> from mmc_gpio_cd_irqt and sdhci_tasklet_card, and from
+>>> both it gets called immediately while the actual cd
+>>> processing is debounced to 200ms later. I think that
+>>> the better solution might be to move the sdhci_card_event
+>>> callback into mmc_rescan and remove it from its 2
+>>> present locations. That way the cd related callbacks
+>>> are aligned with the actual cd detection code. I can
+>>> submit a follow-up patch with these mods if that sounds
+>>> like a better way to solve this.
+>>>
+>>> Signed-off-by: Christian Daudt <csd@broadcom.com>
+>> I don't think this is a right approach. It will Oops if the card-detect
+>> GPIO is provided by, e.g. an I2C GPIO controller. Instead the driver
+>> should be fixed to only call this function from a sleeping context.
+> I don't think that card-detect would ever be tied to i2c but I might 
+> be wrong on that one... If there's agreement that moving 
+> sdhci_card_event into just being called from mmc_rescan is the better 
+> way to solve this, then I'll drop this patch and replace it with one 
+> that does just that.
+>
+>  Thanks,
+>    csd
+>
+[adding arm@kernel.org for more input]
+Guennadi,
+  While I can't see card-detect coming in through i2c gpio controller, I 
+think that moving this out of the sleeping context (and into mmc_rescan) 
+is probably the better solution anyways. So I'll drop this patch and 
+send another one with that change instead.
 
-Perhaps have depends on I2C=y and be a bool instead of tristate?
+
+  Thanks,
+    csd
+
+
