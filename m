@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751080Ab3HSRqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 13:46:37 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:50180 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab3HSRqf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 13:46:35 -0400
+	id S1751194Ab3HSRrR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 13:47:17 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:36072 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906Ab3HSRrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 13:47:16 -0400
+Date: Mon, 19 Aug 2013 12:46:34 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, eternaleye@gmail.com,
+        minchan@kernel.org, mgorman@suse.de, gregkh@linuxfoundation.org,
+        akpm@linux-foundation.org, axboe@kernel.dk, ngupta@vflare.org,
+        semenzato@google.com, penberg@iki.fi, sonnyrao@google.com,
+        smbarber@google.com, konrad.wilk@oracle.com, riel@redhat.com,
+        kmpark@infradead.org, Bob Liu <bob.liu@oracle.com>
+Subject: Re: [PATCH 4/4] mm: zswap: create a pseudo device /dev/zram0
+Message-ID: <20130819174634.GB5703@variantweb.net>
+References: <1376815249-6611-1-git-send-email-bob.liu@oracle.com>
+ <1376815249-6611-5-git-send-email-bob.liu@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20130819172524.GA22268@redhat.com>
-References: <20130819172524.GA22268@redhat.com>
-Date: Mon, 19 Aug 2013 10:46:34 -0700
-X-Google-Sender-Auth: T2FTa8K15FvQvHWv-rfMVEu1kek
-Message-ID: <CA+55aFzTr7zm2uyZOxMA8wP3FoKPtk__kgGBqf7peMW2Ov8KJA@mail.gmail.com>
-Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Brad Spengler <spender@grsecurity.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Colin Walters <walters@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376815249-6611-5-git-send-email-bob.liu@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081917-5806-0000-0000-000022797274
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 10:25 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> Colin reports that vfork() doesn't work after unshare(PIDNS). The
-> reason is trivial, copy_process() does:
->
->         /*
->          * If the new process will be in a different pid namespace
->          * don't allow the creation of threads.
->          */
->         if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
->             (task_active_pid_ns(current) != current->nsproxy->pid_ns))
->                 return ERR_PTR(-EINVAL);
->
-> and CLONE_VM obviously nacks vfork(). So perhaps we can relax
-> this check to CLONE_THREAD? Or should we really nack CLONE_VM
-> by security reasons?
->
-> OTOH. Perhaps we should also deny CLONE_PARENT in this case?
+On Sun, Aug 18, 2013 at 04:40:49PM +0800, Bob Liu wrote:
+> This is used to replace previous zram.
+> zram users can enable this feature, then a pseudo device will be created
+> automaticlly after kernel boot.
+> Just using "mkswp /dev/zram0; swapon /dev/zram0" to use it as a swap disk.
+> 
+> The size of this pseudeo is controlled by zswap boot parameter
+> zswap.max_pool_percent.
+> disksize = (totalram_pages * zswap.max_pool_percent/100)*PAGE_SIZE.
 
-I agree that we should probably deny CLONE_PARENT, which makes more
-sense paired with CLONE_NEWPID. I think we should also disallow
-CLONE_THREAD, which is the thread goup.
+This /dev/zram0 will behave nothing like the block device that zram
+creates.  It only allows reads/writes to the first PAGE_SIZE area of the
+device, for mkswap to work, and then doesn't do anything for all other
+accesses.
 
-And I *think* we can drop CLONE_VM. I suspect that snuck in as a
-(misguided) attempt at CLONE_THREAD, as implied by the comment.
+I guess if you disabled zswap writeback, then... it would somewhat be
+the same thing.  We do need to disable zswap writeback in this case so
+that zswap does decompressed a ton of pages into the swapcache for
+writebacks that will just fail.  Since zsmalloc does not yet support the
+reclaim functionality, zswap writeback is implicitly disabled.
 
-In fact, if you go look at the history of that CLONE_VM test, it came from
+But this is really weird conceptually since zswap is a caching layer
+that uses frontswap.  If a frontswap store fails, it will try to send
+the page to the zram0 device which will fail the write.  Then the page
+will be... put back on the active or inactive list?
 
-    unshare(CLONE_NEWPID)
-    clone(CLONE_THREAD|CLONE_SIGHAND|CLONE_VM)
+Also, using the max_pool_percent in calculating the psuedo-device size
+isn't right.  Right now, the code makes the device the max size of the
+_compressed_ pool, but the underlying swap device size is in
+_uncompressed_ pages. So you'll never be able to fill zswap sizing the
+device like this, unless every page is highly incompressible to the
+point that each compressed page effectively uses a memory pool page, in
+which case, the user shouldn't be using memory compression.
 
-and the commit message talks about not setting pid_ns->child_reaper.
-Which is very much about the PID, not about the shared VM space.
+This also means that this hasn't been tested in the zswap pool-is-full
+case since there is no way, in this code, to hit that case.
 
-So I think your patch is correct, although I'm not sure why you move
-the test. The new test you have look complicated as hell, so I think
-you're actually making things worse by making them unreadable.
+In the zbud case the expected compression is 2:1 so you could just
+multiply the compressed pool size by 2 and get a good psuedo-device
+size.  With zsmalloc the expected compression is harder to determine
+since it can achieve very high effective compression ratios on highly
+compressible pages.
 
-                  Linus
+Seth
+
