@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751130Ab3HSRmc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 13:42:32 -0400
-Received: from titanium.nobletdesign.com ([64.34.172.148]:60579 "EHLO
-	titanium.nobletdesign.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab3HSRmb (ORCPT
+	id S1751080Ab3HSRqh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 13:46:37 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:50180 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab3HSRqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 13:42:31 -0400
-Message-ID: <52125904.1040200@gnat.ca>
-Date: Mon, 19 Aug 2013 11:42:28 -0600
-From: "Nathanael D. Noblet" <nathanael@gnat.ca>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 19 Aug 2013 13:46:35 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: [ 28/45] ALSA: hda - Add a fixup for Gateway LT27
-References: <20130818203620.996166594@linuxfoundation.org> <20130818203622.954537901@linuxfoundation.org>
-In-Reply-To: <20130818203622.954537901@linuxfoundation.org>
-Content-Type: multipart/mixed;
- boundary="------------040404070003060207060305"
+In-Reply-To: <20130819172524.GA22268@redhat.com>
+References: <20130819172524.GA22268@redhat.com>
+Date: Mon, 19 Aug 2013 10:46:34 -0700
+X-Google-Sender-Auth: T2FTa8K15FvQvHWv-rfMVEu1kek
+Message-ID: <CA+55aFzTr7zm2uyZOxMA8wP3FoKPtk__kgGBqf7peMW2Ov8KJA@mail.gmail.com>
+Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Brad Spengler <spender@grsecurity.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Colin Walters <walters@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040404070003060207060305
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Mon, Aug 19, 2013 at 10:25 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> Colin reports that vfork() doesn't work after unshare(PIDNS). The
+> reason is trivial, copy_process() does:
+>
+>         /*
+>          * If the new process will be in a different pid namespace
+>          * don't allow the creation of threads.
+>          */
+>         if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
+>             (task_active_pid_ns(current) != current->nsproxy->pid_ns))
+>                 return ERR_PTR(-EINVAL);
+>
+> and CLONE_VM obviously nacks vfork(). So perhaps we can relax
+> this check to CLONE_THREAD? Or should we really nack CLONE_VM
+> by security reasons?
+>
+> OTOH. Perhaps we should also deny CLONE_PARENT in this case?
 
-No objection, other than that I submitted a revision to that patch... 
-Added an additional piece of hardware. The full patch should be include 
-two lines.
+I agree that we should probably deny CLONE_PARENT, which makes more
+sense paired with CLONE_NEWPID. I think we should also disallow
+CLONE_THREAD, which is the thread goup.
 
+And I *think* we can drop CLONE_VM. I suspect that snuck in as a
+(misguided) attempt at CLONE_THREAD, as implied by the comment.
 
+In fact, if you go look at the history of that CLONE_VM test, it came from
 
-On 08/18/2013 02:36 PM, Greg Kroah-Hartman wrote:
-> 3.10-stable review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> From: Takashi Iwai <tiwai@suse.de>
->
-> commit 1801928e0f99d94c55e33c584c5eb2ff5e246ee6 upstream.
->
-> Gateway LT27 needs a fixup for the inverted digital mic.
->
-> Reported-by: "Nathanael D. Noblet" <nathanael@gnat.ca>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> ---
->   sound/pci/hda/patch_realtek.c |    1 +
->   1 file changed, 1 insertion(+)
->
-> --- a/sound/pci/hda/patch_realtek.c
-> +++ b/sound/pci/hda/patch_realtek.c
-> @@ -4210,6 +4210,7 @@ static const struct snd_pci_quirk alc662
->   	SND_PCI_QUIRK(0x1025, 0x0308, "Acer Aspire 8942G", ALC662_FIXUP_ASPIRE),
->   	SND_PCI_QUIRK(0x1025, 0x031c, "Gateway NV79", ALC662_FIXUP_SKU_IGNORE),
->   	SND_PCI_QUIRK(0x1025, 0x0349, "eMachines eM250", ALC662_FIXUP_INV_DMIC),
-> +	SND_PCI_QUIRK(0x1025, 0x034a, "Gateway LT27", ALC662_FIXUP_INV_DMIC),
->   	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
->   	SND_PCI_QUIRK(0x1028, 0x05d8, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
->   	SND_PCI_QUIRK(0x1028, 0x05db, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
->
->
->
+    unshare(CLONE_NEWPID)
+    clone(CLONE_THREAD|CLONE_SIGHAND|CLONE_VM)
 
+and the commit message talks about not setting pid_ns->child_reaper.
+Which is very much about the PID, not about the shared VM space.
 
--- 
-Nathanael d. Noblet
-t 403.875.4613
+So I think your patch is correct, although I'm not sure why you move
+the test. The new test you have look complicated as hell, so I think
+you're actually making things worse by making them unreadable.
 
---------------040404070003060207060305
-Content-Type: text/x-patch;
- name="alsa-realtek-inverted-mic.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="alsa-realtek-inverted-mic.patch"
-
---- a/sound/pci/hda/patch_realtek.c	2013-08-15 13:17:49.804492932 -0600
-+++ b/sound/pci/hda/patch_realtek.c	2013-08-15 15:17:46.390273328 -0600
-@@ -4208,6 +4208,8 @@
- 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Ideapad Y550", ALC662_FIXUP_IDEAPAD),
- 	SND_PCI_QUIRK(0x19da, 0xa130, "Zotac Z68", ALC662_FIXUP_ZOTAC_Z68),
- 	SND_PCI_QUIRK(0x1b35, 0x2206, "CZC P10T", ALC662_FIXUP_CZC_P10T),
-+	SND_PCI_QUIRK(0x1025, 0x034a, "Gateway LT27", ALC662_FIXUP_INV_DMIC),
-+	SND_PCI_QUIRK(0x1025, 0x022f, "Acer Aspire One", ALC662_FIXUP_INV_DMIC),
- 
- #if 0
- 	/* Below is a quirk table taken from the old code.
-
---------------040404070003060207060305--
+                  Linus
