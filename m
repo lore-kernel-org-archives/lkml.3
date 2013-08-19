@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751183Ab3HSPHf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 11:07:35 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47098 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab3HSPHe (ORCPT
+	id S1750938Ab3HSPJf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 11:09:35 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:50179 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750796Ab3HSPJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 11:07:34 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Mark Brown <broonie@linaro.org>
-Date: Mon, 19 Aug 2013 16:07:26 +0100
-Message-Id: <1376924846-17063-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.4.rc3
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] pinctrl: palmas: Fix device name in Kconfig text
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 19 Aug 2013 11:09:33 -0400
+Date: Mon, 19 Aug 2013 11:09:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: USB host support should depend on HAS_DMA
+In-Reply-To: <CAMuHMdVXeWaggY5FPKrr2fBBnKLq3Rqw9WF99N+AX5sFwBOnog@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1308191106040.3616-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On Sun, 18 Aug 2013, Geert Uytterhoeven wrote:
 
-The device family is called Palmas so there should be a 's' on the end of
-the name.
+> On Thu, Jul 11, 2013 at 1:12 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Wednesday 10 July 2013, Alan Stern wrote:
+> >> This isn't right.  There are USB host controllers that use PIO, not
+> >> DMA.  The HAS_DMA dependency should go with the controller driver, not
+> >> the USB core.
+> >>
+> >> On the other hand, the USB core does call various routines like
+> >> dma_unmap_single.  It ought to be possible to compile these calls even
+> >> when DMA isn't enabled.  That is, they should be defined as do-nothing
+> >> stubs.
+> >
+> > The asm-generic/dma-mapping-broken.h file intentionally causes link
+> > errors, but that could be changed.
+> >
+> > The better approach in my mind would be to replace code like
+> >
+> >
+> >         if (hcd->self.uses_dma)
+> >
+> > with
+> >
+> >         if (IS_ENABLED(CONFIG_HAS_DMA) && hcd->self.uses_dma) {
+> >
+> > which will reliably cause that reference to be omitted from object code,
+> > but not stop giving link errors for drivers that actually require
+> > DMA.
+> 
+> This can be done for drivers/usb/core/hcd.c.
+> 
+> But I'm a bit puzzled by drivers/usb/core/buffer.c. E.g.
+> 
+> void *hcd_buffer_alloc(...)
+> {
+>         ....
+>         /* some USB hosts just use PIO */
+>         if (!bus->controller->dma_mask &&
+>             !(hcd->driver->flags & HCD_LOCAL_MEM)) {
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/pinctrl/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I don't remember the full story.  You should check with the person who
+added the HCD_LOCAL_MEM flag originally.
 
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index 8542cd4..bdb1a87 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -262,7 +262,7 @@ config PINCTRL_EXYNOS5440
- 	select PINCONF
- 
- config PINCTRL_PALMAS
--	bool "Pinctrl driver for the PALMA Series MFD devices"
-+	bool "Pinctrl driver for the PALMAS Series MFD devices"
- 	depends on OF && MFD_PALMAS
- 	select GENERIC_PINCONF
- 	help
--- 
-1.8.4.rc3
+> So if DMA is not used (!hcd->self.uses_dma, i.e. bus->controller->dma_mask
+> is zero), and HCD_LOCAL_MEM is set, we still end up calling dma_pool_alloc()?
+> 
+> (Naively, I'm not so familiar with the USB code) I'd expect it to use
+> kmalloc() instead?
+
+Maybe what happens in this case is that some sort of hook causes the 
+allocation to be made from a special memory-mapped region on board the 
+controller.
+
+Alan Stern
 
