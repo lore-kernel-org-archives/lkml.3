@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751083Ab3HSPv7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 11:51:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5638 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab3HSPv5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 11:51:57 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=FhRC9Vwtdx4A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=mmEQHNNGUxcA:10 a=VnNF1IyMAAAA:8 a=tEj9Vwj6nBLB2YuANe0A:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 19 Aug 2013 11:51:55 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Clark Williams <clark.williams@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH RT 2/3] swait: Add memory barrier before checking list
- empty
-Message-ID: <20130819115155.41f909fe@gandalf.local.home>
-In-Reply-To: <20130819153618.983248997@goodmis.org>
-References: <20130819153530.409041534@goodmis.org>
-	<20130819153618.983248997@goodmis.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751116Ab3HSPwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 11:52:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47961 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091Ab3HSPwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 11:52:07 -0400
+Date: Mon, 19 Aug 2013 17:52:02 +0200
+From: Anton Arapov <anton@redhat.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [ATTEND] oops.kernel.org prospect
+Message-ID: <20130819155202.GF19070@bandura.laptop>
+References: <20130819085405.GA22328@bandura.laptop>
+ <20130819145505.GB15178@kroah.com>
+ <20130819151643.GC19070@bandura.laptop>
+ <20130819153939.GA23875@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130819153939.GA23875@thunk.org>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Aug 2013 11:35:32 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Mon, Aug 19, 2013 at 11:39:39AM -0400, Theodore Ts'o wrote:
+> On Mon, Aug 19, 2013 at 05:16:43PM +0200, Anton Arapov wrote:
+> > > Why not just do that through email?  You'll reach a much wider group of
+> > > people than the tiny 80 developers at the conference.
+> > 
+> > Ouch! Someone to take it as replacement of email - the least I wanted. It will
+> > go email-way in either case.
+> > 
+> > These tiny 80 may give the most valuable feedback on the topic. And often
+> > it is the most difficult to get attention of them, especially via email.
+> > In case it fits the conference, it could dilute the heavy topics.
+> 
+> Usyually the best thing to do is to start the discussion on the
+> mailing list (and we can do that on ksummit-2013-discuss, but this is
+> always why it's sometimes useful to cc lkml on topic proposals, so we
+> can jump start the discussion), and see if it's controversial or not.
 
-> From: Steven Rostedt <rostedt@goodmis.org>
-> 
-> There's a race condition with swait wakeups and adding to the list. The
-> __swait_wake() does a check for swait_head_has_waiters(), and if it is
-> empty it will exit without doing any wake ups. The problem is that the
-> check does not include any memory barriers before it makes a decision
-> to wake up or not.
-> 
-> 	CPU0				CPU1
-> 	----				----
-> 
->   condition = 1
-> 
->   load h->list (is empty)
-> 				    raw_spin_lock(hlist->lock)
-> 				    hlist_add();
-> 				    __set_current_state();
-> 				    raw_spin_unlock(hlist->lock)
->   swait_wake()
->    swait_head_has_waiters()
->    (sees h->list as empty and returns)
-> 
+Oh well,... I didn't have a time for this right now, nor project is
+not exactly in the state I'm willing to show (mostly webui) 
 
-BTW, the race still exists if you move the raw_spin_unlock(hlist->lock)
-above to here. That is:
+// CC'd: lkml (please don't complain on styles yet, focus on functionality)
 
-   swait_wake()
-    swait_head_has_waiters()
-     (sees h->list as empty and returns)
+> I suspect the biggest issue is one of "who will bell the cat".  As in,
+> if no one creates a new oops.kernel.org, and if we can't get the
+> community distributions to be willing to set up their systems to
+> automatically submit oops reports to the server, it's going to be
+> somewhat pointless to have the discussion at the kernel summit.
 
-				    raw_spin_unlock(hlist->lock)
+It is created and distributions are willing to submit oopses
+automatically. Debian, Fedora, Ubuntu are already sending reports.
 
+The above is exactly what I would be able to share on conference with
+more details.
 
-Maybe this will help to understand it more.
+> Note that main value of oops.kernel.org is the fact that we find out
+> which bugs are most likely hitting "real users", as opposed to the
+> very valuable testing done by developers on the linux-next and -rc
+> kernels.  It's main drawback is that for privacy reasons, we don't get
+> much more information than the stack trace.  So if it's just
+> linux-next testers and developers using oops.kernel.org, who are the
+> people who are more likely able to submit a detailed bug report, the
+> oops.kernel.org server probably won't add much value.  In fact, if the
+> testers depend on the sending of an anonymous stack trace, and don't
+> send us more detailed reproduction information, the existence of
+> oops.kernel.org could actually make things worse.
 
--- Steve
+And the above here is one of the feedbacks I am willing to see. As well as
+ideas how to overcome it.
 
-> 				    check_condition (sees condition = 0)
-> 
->    store condition = 1
-> 
-> 				    schedule()
-> 
-> Now the task on CPU1 has just missed its wakeup. By adding a memory
-> barrier before the list empty check, we fix the problem of miss seeing
-> the list not empty as well as pushing out the condition for the other
-> task to see.
-> 
-> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> This means, realistically, it needs someone from Fedora or Open SuSE
+> or Debian or Ubuntu being willing to sponsor the uploading of
+> information to oops.kernel.org by default.
+...up and running, now...
+
+hth,
+--
+Anton
