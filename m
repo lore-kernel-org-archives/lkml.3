@@ -1,78 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751282Ab3HSJmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 05:42:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:33701 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751196Ab3HSJmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 05:42:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,912,1367996400"; 
-   d="scan'208";a="283762628"
-Date: Mon, 19 Aug 2013 14:28:57 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>
-Subject: Re: [PATCH 04/27] drivers/dma: don't check resource with
- devm_ioremap_resource
-Message-ID: <20130819085857.GY32147@intel.com>
-References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
- <1374602524-3398-5-git-send-email-wsa@the-dreams.de>
+	id S1751322Ab3HSJmc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 05:42:32 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:32816 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab3HSJm1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 05:42:27 -0400
+X-AuditID: 85900ec0-cff26b9000001514-45-5211e8807c20
+Subject: [RFC PATCH 09/11] trace-cmd: Use poll(2) to wait for a message
+To: Steven Rostedt <rostedt@goodmis.org>
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Date: Mon, 19 Aug 2013 18:46:42 +0900
+Message-ID: <20130819094642.26597.91454.stgit@yunodevel>
+In-Reply-To: <20130819094620.26597.79499.stgit@yunodevel>
+References: <20130819094620.26597.79499.stgit@yunodevel>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374602524-3398-5-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 08:01:37PM +0200, Wolfram Sang wrote:
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
-> 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Sorry looks like I missed this and instead applied a similar patch from Julia
-last week. I should have taken this instead. My bad...
+Use poll(2) to wait for a message. If a client/server cannot send a message for
+any reasons, the current server/client will wait in a blocking read operation.
+So, we use poll(2) for avoiding remaining in a blocking state.
 
-~Vinod
-> ---
-> Please apply via the subsystem-tree.
-> 
->  drivers/dma/mmp_pdma.c |    3 ---
->  drivers/dma/mmp_tdma.c |    3 ---
->  2 files changed, 6 deletions(-)
-> 
-> diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
-> index c26699f..7eba967 100644
-> --- a/drivers/dma/mmp_pdma.c
-> +++ b/drivers/dma/mmp_pdma.c
-> @@ -778,9 +778,6 @@ static int mmp_pdma_probe(struct platform_device *op)
->  	pdev->dev = &op->dev;
->  
->  	iores = platform_get_resource(op, IORESOURCE_MEM, 0);
-> -	if (!iores)
-> -		return -EINVAL;
-> -
->  	pdev->base = devm_ioremap_resource(pdev->dev, iores);
->  	if (IS_ERR(pdev->base))
->  		return PTR_ERR(pdev->base);
-> diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
-> index 9b93665..1f1885a 100644
-> --- a/drivers/dma/mmp_tdma.c
-> +++ b/drivers/dma/mmp_tdma.c
-> @@ -549,9 +549,6 @@ static int mmp_tdma_probe(struct platform_device *pdev)
->  	}
->  
->  	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!iores)
-> -		return -EINVAL;
-> -
->  	tdev->base = devm_ioremap_resource(&pdev->dev, iores);
->  	if (IS_ERR(tdev->base))
->  		return PTR_ERR(tdev->base);
-> -- 
-> 1.7.10.4
-> 
+This modification avoids to try to connect to an old-version client. An
+old-version network server will send a message "tracecmd" first, and an
+old-version client will start to send cpu number, pagesize, and option.
+By introducing trace-msg, the new client sends a message "MSG_TCONNECT" first,
+so the start point of the connection is different. If the old client tries
+to connect to the new network server, the server should make the connection
+close. A server applied this patch will die when the predetermined time will
+have elapsed.
 
--- 
+Note that if a new client tries to connect to an old server, the new client
+will automatically die. This is because the new client which received the
+inappropriate message "tracecmd" will die.
+
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+---
+ trace-msg.c |   50 ++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 42 insertions(+), 8 deletions(-)
+
+diff --git a/trace-msg.c b/trace-msg.c
+index 777ea1f..36117cd 100644
+--- a/trace-msg.c
++++ b/trace-msg.c
+@@ -435,6 +435,27 @@ error:
+ 	return -ENOMSG;
+ }
+ 
++#define MSG_WAIT_MSEC	5000
++
++/*
++ * A return value of 0 indicates time-out
++ */
++static int tracecmd_msg_recv_wait(int fd, char *buf, struct tracecmd_msg **msg)
++{
++	struct pollfd pfd;
++	int ret;
++
++	pfd.fd = fd;
++	pfd.events = POLLIN;
++	ret = poll(&pfd, 1, MSG_WAIT_MSEC);
++	if (ret < 0) {
++		return -errno;
++	} else if (ret == 0)
++		return -ETIMEDOUT;
++
++	return tracecmd_msg_recv(fd, buf);
++}
++
+ static void *tracecmd_msg_buf_access(struct tracecmd_msg *msg, int offset)
+ {
+ 	return (void *)msg + offset;
+@@ -448,9 +469,12 @@ static int tracecmd_msg_wait_for_msg(int fd, struct tracecmd_msg **msg)
+ 	u32 cmd;
+ 	int ret;
+ 
+-	ret = tracecmd_msg_recv(fd, msg_tmp);
+-	if (ret < 0)
++	ret = tracecmd_msg_recv_wait(fd, msg_tmp, msg);
++	if (ret < 0) {
++		if (ret == -ETIMEDOUT)
++			warning("Connection timed out\n");
+ 		return ret;
++	}
+ 
+ 	*msg = (struct tracecmd_msg *)msg_tmp;
+ 	cmd = ntohl((*msg)->cmd);
+@@ -549,9 +573,13 @@ int tracecmd_msg_set_connection(int fd)
+ 	int ret;
+ 
+ 	/* wait for connection msg by a client first */
+-	ret = tracecmd_msg_recv(fd, buf);
++	ret = tracecmd_msg_recv_wait(fd, buf, &msg);
+ 	if (ret < 0) {
+-		warning("Disconnect");
++		if (ret == -ETIMEDOUT)
++			/* network connection will be started soon */
++			warning("No connection message");
++		else
++			warning("Disconnect");
+ 		return ret;
+ 	}
+ 
+@@ -586,9 +614,12 @@ int tracecmd_msg_initial_setting(int fd, int *cpus, int *pagesize)
+ 	u32 size = 0;
+ 	u32 cmd;
+ 
+-	ret = tracecmd_msg_recv(fd, buf);
+-	if (ret < 0)
++	ret = tracecmd_msg_recv_wait(fd, buf, &msg);
++	if (ret < 0) {
++		if (ret == -ETIMEDOUT)
++			warning("Connection timed out\n");
+ 		return ret;
++	}
+ 
+ 	msg = (struct tracecmd_msg *)buf;
+ 	cmd = ntohl(msg->cmd);
+@@ -724,9 +755,12 @@ int tracecmd_msg_collect_metadata(int ifd, int ofd)
+ 	int ret;
+ 
+ 	do {
+-		ret = tracecmd_msg_recv(ifd, buf);
++		ret = tracecmd_msg_recv_wait(ifd, buf, &msg);
+ 		if (ret < 0) {
+-			warning("reading client");
++			if (ret == -ETIMEDOUT)
++				warning("Connection timed out\n");
++			else
++				warning("reading client");
+ 			return ret;
+ 		}
+ 
+
