@@ -1,77 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750903Ab3HSOKp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 10:10:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58313 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735Ab3HSOKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 10:10:44 -0400
-Date: Mon, 19 Aug 2013 10:00:16 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Frank Mayhar <fmayhar@google.com>
-Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: dm: Make MIN_IOS, et al, tunable via sysctl.
-Message-ID: <20130819140016.GB27167@redhat.com>
-References: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750993Ab3HSOLK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 10:11:10 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:58707 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab3HSOLJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 10:11:09 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: rob@landley.net, linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Cc: rdunlap@infradead.org, trivial@kernel.org,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] doc: Fix typo "is is" in Documentations
+Date: Mon, 19 Aug 2013 23:10:46 +0900
+Message-Id: <1376921446-24653-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.4.rc3.2.g2c2b664
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16 2013 at  6:55pm -0400,
-Frank Mayhar <fmayhar@google.com> wrote:
+Fix double words "is is" in Documentations.
 
-> The device mapper and some of its modules allocate memory pools at
-> various points when setting up a device.  In some cases, these pools are
-> fairly large, for example the multipath module allocates a 256-entry
-> pool and the dm itself allocates three of that size.  In a
-> memory-constrained environment where we're creating a lot of these
-> devices, the memory use can quickly become significant.  Unfortunately,
-> there's currently no way to change the size of the pools other than by
-> changing a constant and rebuilding the kernel.
-> 
-> This patch fixes that by changing the hardcoded MIN_IOS (and certain
-> other) #defines in dm-crypt, dm-io, dm-mpath, dm-snap and dm itself to
-> sysctl-modifiable values.  This lets us change the size of these pools
-> on the fly, we can reduce the size of the pools and reduce memory
-> pressure.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ Documentation/DocBook/media/v4l/vidioc-g-parm.xml | 4 ++--
+ Documentation/fmc/carrier.txt                     | 2 +-
+ Documentation/hwmon/submitting-patches            | 2 +-
+ Documentation/mtd/nand_ecc.txt                    | 2 +-
+ Documentation/sound/alsa/README.maya44            | 2 +-
+ 5 files changed, 6 insertions(+), 6 deletions(-)
 
-These memory reserves are a long-standing issue with DM (made worse when
-request-based mpath was introduced).  Two years ago, I assembled a patch
-series that took one approach to trying to fix it:
-http://people.redhat.com/msnitzer/patches/upstream/dm-rq-based-mempool-sharing/series.html
+diff --git a/Documentation/DocBook/media/v4l/vidioc-g-parm.xml b/Documentation/DocBook/media/v4l/vidioc-g-parm.xml
+index 9058224..f4e28e7 100644
+--- a/Documentation/DocBook/media/v4l/vidioc-g-parm.xml
++++ b/Documentation/DocBook/media/v4l/vidioc-g-parm.xml
+@@ -132,7 +132,7 @@ devices.</para>
+ 	  <row>
+ 	    <entry>&v4l2-fract;</entry>
+ 	    <entry><structfield>timeperframe</structfield></entry>
+-	    <entry><para>This is is the desired period between
++	    <entry><para>This is the desired period between
+ successive frames captured by the driver, in seconds. The
+ field is intended to skip frames on the driver side, saving I/O
+ bandwidth.</para><para>Applications store here the desired frame
+@@ -193,7 +193,7 @@ applications must set the array to zero.</entry>
+ 	  <row>
+ 	    <entry>&v4l2-fract;</entry>
+ 	    <entry><structfield>timeperframe</structfield></entry>
+-	    <entry>This is is the desired period between
++	    <entry>This is the desired period between
+ successive frames output by the driver, in seconds.</entry>
+ 	  </row>
+ 	  <row>
+diff --git a/Documentation/fmc/carrier.txt b/Documentation/fmc/carrier.txt
+index 173f6d6..5e4f1dd 100644
+--- a/Documentation/fmc/carrier.txt
++++ b/Documentation/fmc/carrier.txt
+@@ -213,7 +213,7 @@ The individual methods perform the following tasks:
+      methods: for example the SPEC driver may define that its carrier
+      I2C memory is seen at offset 1M and the internal SPI flash is seen
+      at offset 16M.  This multiplexing of several flash memories in the
+-     same address space is is carrier-specific and should only be used
++     same address space is carrier-specific and should only be used
+      by a driver that has verified the `carrier_name' field.
+ 
+ 
+diff --git a/Documentation/hwmon/submitting-patches b/Documentation/hwmon/submitting-patches
+index 4628646..3d1bac3 100644
+--- a/Documentation/hwmon/submitting-patches
++++ b/Documentation/hwmon/submitting-patches
+@@ -1,7 +1,7 @@
+ 	How to Get Your Patch Accepted Into the Hwmon Subsystem
+ 	-------------------------------------------------------
+ 
+-This text is is a collection of suggestions for people writing patches or
++This text is a collection of suggestions for people writing patches or
+ drivers for the hwmon subsystem. Following these suggestions will greatly
+ increase the chances of your change being accepted.
+ 
+diff --git a/Documentation/mtd/nand_ecc.txt b/Documentation/mtd/nand_ecc.txt
+index 990efd7..e129b24 100644
+--- a/Documentation/mtd/nand_ecc.txt
++++ b/Documentation/mtd/nand_ecc.txt
+@@ -543,7 +543,7 @@ THe code within the for loop was changed to:
+     }
+ 
+ As you can see tmppar is used to accumulate the parity within a for
+-iteration. In the last 3 statements is is added to par and, if needed,
++iteration. In the last 3 statements is added to par and, if needed,
+ to rp12 and rp14.
+ 
+ While making the changes I also found that I could exploit that tmppar
+diff --git a/Documentation/sound/alsa/README.maya44 b/Documentation/sound/alsa/README.maya44
+index 0e41576..67b2ea1 100644
+--- a/Documentation/sound/alsa/README.maya44
++++ b/Documentation/sound/alsa/README.maya44
+@@ -120,7 +120,7 @@ Mic Phantom+48V: switch for +48V phantom power for electrostatic microphones on
+     Make sure this is not turned on while any other source is connected to input 1/2.
+     It might damage the source and/or the maya44 card.
+ 
+-Mic/Line input: if switch is is on, input jack 1/2 is microphone input (mono), otherwise line input (stereo).
++Mic/Line input: if switch is on, input jack 1/2 is microphone input (mono), otherwise line input (stereo).
+ 
+ Bypass: analogue bypass from ADC input to output for channel 1+2. Same as "Monitor" in the windows driver.
+ Bypass 1: same for channel 3+4.
+-- 
+1.8.4.rc3.2.g2c2b664
 
-But in the end I wasn't convinced sharing the memory reserve would allow
-for 100s of mpath devices to make forward progress if memory is
-depleted.
-
-All said, I think adding the ability to control the size of the memory
-reserves is reasonable.  It allows for informed admins to establish
-lower reserves (based on the awareness that rq-based mpath doesn't need
-to support really large IOs, etc) without compromising the ability to
-make forward progress.
-
-But, as mentioned in my porevious mail, I'd like to see this implemnted
-in terms of module_param_named().
-
-> We tested performance of dm-mpath with smaller MIN_IOS sizes for both dm
-> and dm-mpath, from a value of 32 all the way down to zero.
-
-Bio-based can safely be reduced, as this older (uncommitted) patch did:
-http://people.redhat.com/msnitzer/patches/upstream/dm-rq-based-mempool-sharing/0000-dm-lower-bio-based-reservation.patch
-
-> Bearing in mind that the underlying devices were network-based, we saw
-> essentially no performance degradation; if there was any, it was down
-> in the noise.  One might wonder why these sizes are the way they are;
-> I investigated and they've been unchanged since at least 2006.
-
-Performance isn't the concern.  The concern is: does DM allow for
-forward progress if the system's memory is completely exhausted?
-
-This is why request-based has such an extensive reserve, because it
-needs to account for cloning the largest possible request that comes in
-(with multiple bios).
