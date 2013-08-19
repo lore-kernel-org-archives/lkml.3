@@ -1,64 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751271Ab3HSTtY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 15:49:24 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41272 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab3HSTtW (ORCPT
+	id S1751181Ab3HST6p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 15:58:45 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:46759 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab3HST6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 15:49:22 -0400
-Message-ID: <521276BE.4090208@wwwdotorg.org>
-Date: Mon, 19 Aug 2013 13:49:18 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 19 Aug 2013 15:58:44 -0400
+Date: Mon, 19 Aug 2013 23:58:36 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] mm: Track vma changes with VM_SOFTDIRTY bit
+Message-ID: <20130819195836.GO23919@moon>
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 2/4] driver core: Allow early registration of devices
-References: <1376685563-1053-1-git-send-email-treding@nvidia.com> <20130816215530.GA14464@mithrandir> <CACxGe6uhiKY7a0+aViEamwKbE2tJicVc8CMZChBUaf+KYTs5rw@mail.gmail.com> <3558931.NyoikKT8ha@flatron>
-In-Reply-To: <3558931.NyoikKT8ha@flatron>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2013 04:26 AM, Tomasz Figa wrote:
-...
-> Please correct me if I'm wrong, but to get to initcalls you need a timer. 
-> However a timer driver might need interrupts (to tick) and clocks (to get 
-> the frequency).
-> 
-> At least this is what happens on the platforms I work with. They don't 
-> need any special early registration method, though. We just special case 
-> those drivers, as Thierry pointed, so they don't use device based APIs.
-> 
-> However if we consider a more complex setup, let's say that the timer 
-> driver needs to access some special registers, which are shared with other 
-> drivers as well (again not a completely exotic case, as I already met this 
-> when working with timer and PWM drivers for older Samsung platforms and 
-> had to hack things a bit). One would suggest using regmap here, but it is 
-> a device based API.
+Pavel reported that in case if vma area get unmapped and
+then mapped (or expanded) in-place, the soft dirty tracker
+won't be able to recognize this situation since it works on
+pte level and ptes are get zapped on unmap, loosing soft
+dirty bit of course.
 
-To take this even further, I'm not sure there's a particular reason why
-the timer has to have an internal clock source driven from the same chip
-clock input as the CPU itself. What if there's a separate clock input,
-whose source chip has an enable input, which is connected to a GPIO,
-which is driven by an I2C-based GPIO expander? Admittedly that's a
-pretty crazy HW design, but I doubt it's much other than an accident
-that it doesn't exist in practice, given the probable lack of feedback
-cycle from Linux SW internals to all board designers.
+So to resolve this situation we need to track actions
+on vma level, there VM_SOFTDIRTY flag comes in. When
+new vma area created (or old expanded) we set this bit,
+and keep it here until application calls for clearing
+soft dirty bit.
 
-It seems like the best solution here is to make the generic case fully
-capable. Perhaps initcalls shouldn't depend on a timer at all, or should
-be split into sets that require certain services, and those services can
-appear dynamically, and when they do, the relevant initcalls that were
-held off by lack of a certain feature all get triggered.
+Thus when user space application track memory changes
+now it can detect if vma area is renewed.
+
+Reported-by: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/exec.c          |    2 +-
+ fs/proc/task_mmu.c |   46 ++++++++++++++++++++++++++++++++++++----------
+ include/linux/mm.h |    6 ++++++
+ mm/mmap.c          |   12 +++++++++++-
+ 4 files changed, 54 insertions(+), 12 deletions(-)
+
+Index: linux-2.6.git/fs/exec.c
+===================================================================
+--- linux-2.6.git.orig/fs/exec.c
++++ linux-2.6.git/fs/exec.c
+@@ -266,7 +266,7 @@ static int __bprm_mm_init(struct linux_b
+ 	BUILD_BUG_ON(VM_STACK_FLAGS & VM_STACK_INCOMPLETE_SETUP);
+ 	vma->vm_end = STACK_TOP_MAX;
+ 	vma->vm_start = vma->vm_end - PAGE_SIZE;
+-	vma->vm_flags = VM_STACK_FLAGS | VM_STACK_INCOMPLETE_SETUP;
++	vma->vm_flags = VM_SOFTDIRTY | VM_STACK_FLAGS | VM_STACK_INCOMPLETE_SETUP;
+ 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
+ 	INIT_LIST_HEAD(&vma->anon_vma_chain);
+ 
+Index: linux-2.6.git/fs/proc/task_mmu.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/task_mmu.c
++++ linux-2.6.git/fs/proc/task_mmu.c
+@@ -740,6 +740,9 @@ static inline void clear_soft_dirty(stru
+ 		ptent = pte_file_clear_soft_dirty(ptent);
+ 	}
+ 
++	if (vma->vm_flags & VM_SOFTDIRTY)
++		vma->vm_flags &= ~VM_SOFTDIRTY;
++
+ 	set_pte_at(vma->vm_mm, addr, pte, ptent);
+ #endif
+ }
+@@ -949,13 +952,15 @@ static void pte_to_pagemap_entry(pagemap
+ 		if (is_migration_entry(entry))
+ 			page = migration_entry_to_page(entry);
+ 	} else {
+-		*pme = make_pme(PM_NOT_PRESENT(pm->v2));
++		if (vma->vm_flags & VM_SOFTDIRTY)
++			flags2 |= __PM_SOFT_DIRTY;
++		*pme = make_pme(PM_NOT_PRESENT(pm->v2) | PM_STATUS2(pm->v2, flags2));
+ 		return;
+ 	}
+ 
+ 	if (page && !PageAnon(page))
+ 		flags |= PM_FILE;
+-	if (pte_soft_dirty(pte))
++	if ((vma->vm_flags & VM_SOFTDIRTY) || pte_soft_dirty(pte))
+ 		flags2 |= __PM_SOFT_DIRTY;
+ 
+ 	*pme = make_pme(PM_PFRAME(frame) | PM_STATUS2(pm->v2, flags2) | flags);
+@@ -974,7 +979,7 @@ static void thp_pmd_to_pagemap_entry(pag
+ 		*pme = make_pme(PM_PFRAME(pmd_pfn(pmd) + offset)
+ 				| PM_STATUS2(pm->v2, pmd_flags2) | PM_PRESENT);
+ 	else
+-		*pme = make_pme(PM_NOT_PRESENT(pm->v2));
++		*pme = make_pme(PM_NOT_PRESENT(pm->v2) | PM_STATUS2(pm->v2, pmd_flags2));
+ }
+ #else
+ static inline void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme, struct pagemapread *pm,
+@@ -997,7 +1002,11 @@ static int pagemap_pte_range(pmd_t *pmd,
+ 	if (vma && pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		int pmd_flags2;
+ 
+-		pmd_flags2 = (pmd_soft_dirty(*pmd) ? __PM_SOFT_DIRTY : 0);
++		if ((vma->vm_flags & VM_SOFTDIRTY) || pmd_soft_dirty(*pmd))
++			pmd_flags2 = __PM_SOFT_DIRTY;
++		else
++			pmd_flags2 = 0;
++
+ 		for (; addr != end; addr += PAGE_SIZE) {
+ 			unsigned long offset;
+ 
+@@ -1015,12 +1024,17 @@ static int pagemap_pte_range(pmd_t *pmd,
+ 	if (pmd_trans_unstable(pmd))
+ 		return 0;
+ 	for (; addr != end; addr += PAGE_SIZE) {
++		int flags2;
+ 
+ 		/* check to see if we've left 'vma' behind
+ 		 * and need a new, higher one */
+ 		if (vma && (addr >= vma->vm_end)) {
+ 			vma = find_vma(walk->mm, addr);
+-			pme = make_pme(PM_NOT_PRESENT(pm->v2));
++			if (vma && (vma->vm_flags & VM_SOFTDIRTY))
++				flags2 = __PM_SOFT_DIRTY;
++			else
++				flags2 = 0;
++			pme = make_pme(PM_NOT_PRESENT(pm->v2) | PM_STATUS2(pm->v2, flags2));
+ 		}
+ 
+ 		/* check that 'vma' actually covers this address,
+@@ -1044,13 +1058,15 @@ static int pagemap_pte_range(pmd_t *pmd,
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
+ static void huge_pte_to_pagemap_entry(pagemap_entry_t *pme, struct pagemapread *pm,
+-					pte_t pte, int offset)
++					pte_t pte, int offset, int flags2)
+ {
+ 	if (pte_present(pte))
+-		*pme = make_pme(PM_PFRAME(pte_pfn(pte) + offset)
+-				| PM_STATUS2(pm->v2, 0) | PM_PRESENT);
++		*pme = make_pme(PM_PFRAME(pte_pfn(pte) + offset)	|
++				PM_STATUS2(pm->v2, flags2)		|
++				PM_PRESENT);
+ 	else
+-		*pme = make_pme(PM_NOT_PRESENT(pm->v2));
++		*pme = make_pme(PM_NOT_PRESENT(pm->v2)			|
++				PM_STATUS2(pm->v2, flags2));
+ }
+ 
+ /* This function walks within one hugetlb entry in the single call */
+@@ -1059,12 +1075,22 @@ static int pagemap_hugetlb_range(pte_t *
+ 				 struct mm_walk *walk)
+ {
+ 	struct pagemapread *pm = walk->private;
++	struct vm_area_struct *vma;
+ 	int err = 0;
++	int flags2;
+ 	pagemap_entry_t pme;
+ 
++	vma = find_vma(walk->mm, addr);
++	WARN_ON_ONCE(!vma);
++
++	if (vma && (vma->vm_flags & VM_SOFTDIRTY))
++		flags2 = __PM_SOFT_DIRTY;
++	else
++		flags2 = 0;
++
+ 	for (; addr != end; addr += PAGE_SIZE) {
+ 		int offset = (addr & ~hmask) >> PAGE_SHIFT;
+-		huge_pte_to_pagemap_entry(&pme, pm, *pte, offset);
++		huge_pte_to_pagemap_entry(&pme, pm, *pte, offset, flags2);
+ 		err = add_to_pagemap(addr, &pme, pm);
+ 		if (err)
+ 			return err;
+Index: linux-2.6.git/include/linux/mm.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/mm.h
++++ linux-2.6.git/include/linux/mm.h
+@@ -115,6 +115,12 @@ extern unsigned int kobjsize(const void
+ #define VM_ARCH_1	0x01000000	/* Architecture-specific flag */
+ #define VM_DONTDUMP	0x04000000	/* Do not include in the core dump */
+ 
++#ifdef CONFIG_MEM_SOFT_DIRTY
++# define VM_SOFTDIRTY	0x08000000	/* Not soft dirty clean area */
++#else
++# define VM_SOFTDIRTY	0
++#endif
++
+ #define VM_MIXEDMAP	0x10000000	/* Can contain "struct page" and pure PFN pages */
+ #define VM_HUGEPAGE	0x20000000	/* MADV_HUGEPAGE marked this vma */
+ #define VM_NOHUGEPAGE	0x40000000	/* MADV_NOHUGEPAGE marked this vma */
+Index: linux-2.6.git/mm/mmap.c
+===================================================================
+--- linux-2.6.git.orig/mm/mmap.c
++++ linux-2.6.git/mm/mmap.c
+@@ -1616,6 +1616,15 @@ out:
+ 	if (file)
+ 		uprobe_mmap(vma);
+ 
++	/*
++	 * New (or expanded) vma always get soft dirty status.
++	 * Otherwise user-space soft-dirty page tracker won't
++	 * be able to distinguish situation when vma area unmapped,
++	 * then new mapped in-place (which must be aimed as
++	 * a completely new data area).
++	 */
++	vma->vm_flags |= VM_SOFTDIRTY;
++
+ 	return addr;
+ 
+ unmap_and_free_vma:
+@@ -2663,6 +2672,7 @@ out:
+ 	mm->total_vm += len >> PAGE_SHIFT;
+ 	if (flags & VM_LOCKED)
+ 		mm->locked_vm += (len >> PAGE_SHIFT);
++	vma->vm_flags |= VM_SOFTDIRTY;
+ 	return addr;
+ }
+ 
+@@ -2930,7 +2940,7 @@ int install_special_mapping(struct mm_st
+ 	vma->vm_start = addr;
+ 	vma->vm_end = addr + len;
+ 
+-	vma->vm_flags = vm_flags | mm->def_flags | VM_DONTEXPAND;
++	vma->vm_flags = vm_flags | mm->def_flags | VM_DONTEXPAND | VM_SOFTDIRTY;
+ 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
+ 
+ 	vma->vm_ops = &special_mapping_vmops;
