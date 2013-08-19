@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750846Ab3HSEoY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 00:44:24 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:46258 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab3HSEoV (ORCPT
+	id S1750828Ab3HSEt0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 00:49:26 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:51995 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab3HSEtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 00:44:21 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-51-5211a2a42b72
-Date: Mon, 19 Aug 2013 13:44:44 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Mitch Harder <mitch.harder@sabayonlinux.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>, devel@driverdev.osuosl.org
-Subject: Re: BUG: scheduling while atomic 3.10.7 in ZRAM Swap
-Message-ID: <20130819044444.GD26832@bbox>
-References: <CAKcLGm8EMruO5e8yw+nArTjyCGSvLB5pjnGZYvz0xdF9M99iwQ@mail.gmail.com>
- <52119B4E.4060409@linux.vnet.ibm.com>
+	Mon, 19 Aug 2013 00:49:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52119B4E.4060409@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <20130815075509.GB19280@elgon.mountain>
+References: <20130815075509.GB19280@elgon.mountain>
+Date: Mon, 19 Aug 2013 13:49:21 +0900
+X-Google-Sender-Auth: sqwbD9lm4WQEeOrB4MgfriOC620
+Message-ID: <CAJ0PZbTNGDW2buntJUD2Sk4Yd_gB_YQceCvRjWOAEvbMaatrrw@mail.gmail.com>
+Subject: Re: [patch] PM / devfreq: create_freezable_workqueue() doesn't return
+ an ERR_PTR
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Aug 15, 2013 at 4:55 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+>
+> The create_freezable_workqueue() function returns a NULL on error and
+> not an ERR_PTR.
+>
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-On Mon, Aug 19, 2013 at 12:13:02PM +0800, Michael wang wrote:
-> Hi, Mitch
-> 
-> On 08/17/2013 10:01 PM, Mitch Harder wrote:
-> > I'm encountering a BUG while using a ZRAM Swap device.
-> > 
-> > The call trace seems to involve the changes recently added to 3.10.6
-> > by the patch:
-> > zram: use zram->lock to protect zram_free_page() in swap free notify path
-> > 
-> > The hardware is a x86 single CPU AMD Athlon XP system with 1GB RAM.
-> > 
-> > I'm implementing a 352MB ZRAM swap device, and also have 1GB swap
-> > space on the hard disk.
-> 
-> IMHO, it was caused by that swap_entry_free() was invoked with page
-> spin-locked, thus zram_slot_free_notify() should not use rw-lock which
-> may goto sleep.
-> 
-> CC folks related.
+Thanks. I'll apply this.
 
-Thanks for Ccing me, Michael,
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-Mitch, It's known problem and it should be fixed by [1] in recent linux-next.
+>
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index e94e619..5088523 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -983,10 +983,10 @@ static int __init devfreq_init(void)
+>         }
+>
+>         devfreq_wq = create_freezable_workqueue("devfreq_wq");
+> -       if (IS_ERR(devfreq_wq)) {
+> +       if (!devfreq_wq) {
+>                 class_destroy(devfreq_class);
+>                 pr_err("%s: couldn't create workqueue\n", __FILE__);
+> -               return PTR_ERR(devfreq_wq);
+> +               return -ENOMEM;
+>         }
+>         devfreq_class->dev_attrs = devfreq_attrs;
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-[1] a0c516cbfc, zram: don't grab mutex in zram_slot_free_noity
 
-Thanks for the report!
 
-> 
-> Regards,
-> Michael Wang
--- 
-Kind regards,
-Minchan Kim
+
+--
+MyungJoo Ham, Ph.D.
+System S/W Lab, S/W Center, Samsung Electronics
