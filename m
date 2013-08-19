@@ -1,128 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab3HSXSv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 19:18:51 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50389 "EHLO hydra.sisk.pl"
+	id S1751626Ab3HSXSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 19:18:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2084 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751215Ab3HSXSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751336Ab3HSXSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Aug 2013 19:18:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        "R, Durgadoss" <durgadoss.r@intel.com>
-Subject: Re: [PATCH v7 0/7] cpufreq:boost: CPU Boost mode support
-Date: Tue, 20 Aug 2013 01:29:20 +0200
-Message-ID: <2325996.izOUC9kIz1@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130819085037.11e95c06@amdc308.digital.local>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com> <CAKohponN=JE4KiCL7pVXJvcf__qfC+Fb59ZjBAX5_WK49eCELw@mail.gmail.com> <20130819085037.11e95c06@amdc308.digital.local>
+Date: Mon, 19 Aug 2013 19:18:36 -0400
+From: Dave Jones <davej@redhat.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: unused swap offset / bad page map.
+Message-ID: <20130819231836.GD14369@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130807055157.GA32278@redhat.com>
+ <CAJd=RBCJv7=Qj6dPW2Ha=nq6JctnK3r7wYCAZTm=REVOZUNowg@mail.gmail.com>
+ <20130807153030.GA25515@redhat.com>
+ <CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 19, 2013 08:50:37 AM Lukasz Majewski wrote:
-> On Mon, 19 Aug 2013 12:08:26 +0530 Viresh Kumar viresh.kumar@linaro.org
-> wrote,
-> > On 13 August 2013 15:38, Lukasz Majewski <l.majewski@samsung.com>
-> > wrote:
-> > > This patch series introduces support for CPU overclocking technique
-> > > called Boost.
-> > >
-> > > It is a follow up of a LAB governor proposal. Boost is a LAB
-> > > component:
-> > > http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
-> > >
-> > > Boost unifies hardware based solution (e.g. Intel Nehalem) with
-> > > software oriented one (like the one done at Exynos).
-> > > For this reason cpufreq/freq_table code has been reorganized to
-> > > include common code.
-> > >
-> > > Important design decisions:
-> > > - Boost related code is compiled-in unconditionally to cpufreq core
-> > > and disabled by default. The cpufreq_driver is responsibile for
-> > > setting boost_supported flag and providing set_boost callback(if HW
-> > > support is needed). For software managed boost, special Kconfig
-> > > flag - CONFIG_CPU_FREQ_BOOST_SW has been defined. It will be
-> > > selected only when a target platform has thermal framework properly
-> > > configured.
-> > >
-> > > - struct cpufreq_driver has been extended with boost related fields:
-> > >         -- boost_supported - when driver supports boosting
-> > >         -- boost_enabled - boost state
-> > >         -- set_boost - callback to function, which is necessary to
-> > >            enable/disable boost
-> > >
-> > > - Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost) is
-> > > visible _only_ when cpufreq driver supports Boost.
-> > >
-> > > - No special spin_lock for Boost was created. The one from cpufreq
-> > > core was reused.
-> > >
-> > > - The Boost code doesn't rely on any policy. When boost state is
-> > > changed, then the policy list is iterated and proper adjustements
-> > > are done.
-> > >
-> > > - To improve safety level, the thermal framework is also extended
-> > > to disable software boosting, when thermal trip point is reached.
-> > > Then it starts monitoring target temperature to evaluate if boost
-> > > can be enabled again. This emulates behaviour similar to HW managed
-> > > boost (like x86)
-> > >
-> > > Tested at HW:
-> > >        Exynos 4412 3.11-rc4 Linux
-> > >        Intel Core i7-3770 3.11-rc4 Linux
-> > >
-> > > Above patches were posted on top of linux_pm/linux-next with
-> > > following patches applied:
-> > >
-> > > cpufreq: exynos5440: Fix to skip when new frequency same as current
-> > > cpufreq: fix EXYNOS drivers selection
-> > >
-> > > Lukasz Majewski (7):
-> > >   cpufreq: Add boost frequency support in core
-> > >   cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with
-> > > common boost solution
-> > >   thermal:boost: Automatic enable/disable of BOOST feature
-> > >   cpufreq:boost:Kconfig: Provide support for software managed BOOST
-> > >   cpufreq:exynos:Extend Exynos cpufreq driver to support boost
-> > >     framework
-> > >   Documentation:cpufreq:boost: Update BOOST documentation
-> > >   cpufreq:exynos4x12: Change L0 driver data to CPUFREQ_BOOST_FREQ
-> > 
-> > Hi Lukasz,
-> > 
-> 
-> Hi Viresh,
-> 
-> > I haven't found time yet to go through this series.. 
-> 
-> I've just started wondering if I had send those patches correctly :-).
-> 
-> > I want to do a
-> > deep/careful review this time as these are almost the final patches.
-> 
-> Ok.
-> 
-> > 
-> > Will try to get over them by the end of this week..
-> 
-> Ok, I understand.
+On Thu, Aug 08, 2013 at 11:20:28PM +0800, Hillf Danton wrote:
+ > On Wed, Aug 7, 2013 at 11:30 PM, Dave Jones <davej@redhat.com> wrote:
+ > > printk didn't trigger.
+ > >
+ > Is a corrupted page table entry encountered, according to the
+ > comment of swap_duplicate()?
+ > 
+ > 
+ > --- a/mm/swapfile.c	Wed Aug  7 17:27:22 2013
+ > +++ b/mm/swapfile.c	Thu Aug  8 23:12:30 2013
+ > @@ -770,6 +770,7 @@ int free_swap_and_cache(swp_entry_t entr
+ >  		unlock_page(page);
+ >  		page_cache_release(page);
+ >  	}
+ > +	return 1;
+ >  	return p != NULL;
+ >  }
+ > 
+ > --
 
-Do I assume correctly that this stuff has been tested on ACPI-compatible x86
-with acpi-cpufreq and everything has worked correctly there?
+[sorry for delay, been travelling]
 
-Rafael
+With this applied, I no longer see the 'bad page' warning, but 
+I do still get a bunch of messages like..
 
+[  340.342436] swap_free: Unused swap offset entry 00003bb4
+[  340.952980] swap_free: Unused swap offset entry 0000298d
+[  340.953016] swap_free: Unused swap offset entry 00002996
+[  340.953048] swap_free: Unused swap offset entry 0000299d
+
+
+btw, anyone have thoughts on a patch something like below ?
+It's really annoying to debug stuff like this and have to walk
+over to the machine and reboot it by hand after it wedges during swapoff.
+
+	Dave
+
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 6cf2e60..bbb1192 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1587,6 +1587,10 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
++	/* If we have hit memory corruption, we could hang during swapoff, so don't even try. */
++	if (test_taint(TAINT_BAD_PAGE))
++		return -EINVAL;
++
+ 	BUG_ON(!current->mm);
+ 
+ 	pathname = getname(specialfile);
