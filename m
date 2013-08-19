@@ -1,109 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713Ab3HSMB4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 08:01:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57640 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697Ab3HSMBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 08:01:55 -0400
-Date: Mon, 19 Aug 2013 14:01:51 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Tony Lu <zlu@tilera.com>
-Cc: linux-kernel@vger.kernel.org, cmetcalf@tilera.com
-Subject: Re: [PATCH v2] tile: support ASLR fully
-In-Reply-To: <201308131529.r7DFTCkL028814@farm-0021.internal.tilera.com>
-Message-ID: <alpine.LNX.2.00.1308191401230.21654@pobox.suse.cz>
-References: <alpine.LNX.2.00.1308101849350.32627@pobox.suse.cz> <201308131529.r7DFTCkL028814@farm-0021.internal.tilera.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751737Ab3HSMCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 08:02:38 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:54116 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab3HSMCg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 08:02:36 -0400
+Date: Mon, 19 Aug 2013 13:02:30 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] max77693: added device tree support
+Message-ID: <20130819120230.GB21520@lee--X1>
+References: <20130819104409.GA21520@lee--X1>
+ <1376912426-14747-1-git-send-email-a.hajda@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1376912426-14747-1-git-send-email-a.hajda@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Aug 2013, Tony Lu wrote:
-
-> With this change, tile Linux now supports address-space layout
-> randomization for shared objects, stack, heap and vdso.
+> max77693 mfd main device uses only wakeup field
+> from max77693_platform_data. This field is mapped
+> to wakeup-source common property in device tree.
 > 
-> Signed-off-by: Tony Lu <zlu@tilera.com>
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>
 > ---
-> v2: implement Jiri Kosina's suggestion to copy the math in
-> mmap_rnd() for x86.
+>  Documentation/devicetree/bindings/mfd/max77693.txt |  2 +
+>  drivers/mfd/max77693.c                             | 50 ++++++++++++++++------
+>  2 files changed, 39 insertions(+), 13 deletions(-)
 
-Feel free to add:
+Well, I know this patch has been sat on the MLs for some time now, so
+anyone who wanted to have a say have has plenty of opportunity and the
+patch looks good to me now, so:
 
-	Acked-by: Jiri Kosina <jkosina@suse.cz>
-
-Thanks.
-
->  arch/tile/include/asm/elf.h |  4 ++++
->  arch/tile/mm/mmap.c         | 24 ++++++++++++++++++++++--
->  2 files changed, 26 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
-> index 31d854f..e1da88e 100644
-> --- a/arch/tile/include/asm/elf.h
-> +++ b/arch/tile/include/asm/elf.h
-> @@ -137,6 +137,10 @@ do { \
->  	NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_BASE); \
->  } while (0)
->  
-> +struct mm_struct;
-> +extern unsigned long arch_randomize_brk(struct mm_struct *mm);
-> +#define arch_randomize_brk arch_randomize_brk
-> +
->  #ifdef CONFIG_COMPAT
->  
->  #define COMPAT_ELF_PLATFORM "tilegx-m32"
-> diff --git a/arch/tile/mm/mmap.c b/arch/tile/mm/mmap.c
-> index d67d91e..4b99344 100644
-> --- a/arch/tile/mm/mmap.c
-> +++ b/arch/tile/mm/mmap.c
-> @@ -58,16 +58,36 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
->  #else
->  	int is_32bit = 0;
->  #endif
-> +	unsigned long random_factor = 0UL;
-> +
-> +	/*
-> +	 *  8 bits of randomness in 32bit mmaps, 24 address space bits
-> +	 * 12 bits of randomness in 64bit mmaps, 28 address space bits
-> +	 */
-> +	if (current->flags & PF_RANDOMIZE) {
-> +		if (is_32bit)
-> +			random_factor = get_random_int() % (1<<8);
-> +		else
-> +			random_factor = get_random_int() % (1<<12);
-> +		
-> +		random_factor <<= PAGE_SHIFT;
-> +	}
->  
->  	/*
->  	 * Use standard layout if the expected stack growth is unlimited
->  	 * or we are running native 64 bits.
->  	 */
-> -	if (!is_32bit || rlimit(RLIMIT_STACK) == RLIM_INFINITY) {
-> -		mm->mmap_base = TASK_UNMAPPED_BASE;
-> +	if (rlimit(RLIMIT_STACK) == RLIM_INFINITY) {
-> +		mm->mmap_base = TASK_UNMAPPED_BASE + random_factor;
->  		mm->get_unmapped_area = arch_get_unmapped_area;
->  	} else {
->  		mm->mmap_base = mmap_base(mm);
->  		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
->  	}
->  }
-> +
-> +unsigned long arch_randomize_brk(struct mm_struct *mm)
-> +{
-> +	unsigned long range_end = mm->brk + 0x02000000;
-> +	return randomize_range(mm->brk, range_end, 0) ? : mm->brk;
-> +}
-> -- 
-> 1.8.3.1
-> 
+Applied, thanks.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
