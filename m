@@ -1,47 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463Ab3HSL0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 07:26:31 -0400
-Received: from [94.18.233.162] ([94.18.233.162]:2638 "EHLO mail.secomea.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235Ab3HSL03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 07:26:29 -0400
-X-Greylist: delayed 519 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Aug 2013 07:26:29 EDT
-Message-ID: <5211FED3.4090102@secomea.dk>
-Date: Mon, 19 Aug 2013 13:17:39 +0200
-From: =?ISO-8859-1?Q?Svenning_S=F8rensen?= <sss@secomea.dk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751430Ab3HSL1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 07:27:22 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:48026 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab3HSL1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 07:27:20 -0400
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Felipe Balbi <balbi@ti.com>, kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] usb: musb: dsps: simplify platform_get_resource_byname/devm_ioremap_resource
-References: <1376902316-18520-1-git-send-email-Julia.Lawall@lip6.fr> <1376902316-18520-5-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1376902316-18520-5-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1582060.zfvsylJcxu@vostro.rjw.lan>
+References: <cover.1375809311.git.viresh.kumar@linaro.org>
+	<e54ce908bb964d643a2bbb945ed4a8dcb3ea00bf.1375809311.git.viresh.kumar@linaro.org>
+	<1582060.zfvsylJcxu@vostro.rjw.lan>
+Date: Mon, 19 Aug 2013 16:57:19 +0530
+Message-ID: <CAKohponkLac2GzZ5-PRoTzdx8EhuCWT-eafRtYhkJ6cN_WrXSA@mail.gmail.com>
+Subject: Re: [PATCH V2 07/11] cpufreq: Use cpufreq_policy_list for iterating
+ over policies
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19-08-2013 10:51, Julia Lawall wrote:
-> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-> index 4ffbaac..f2f9710 100644
-> --- a/drivers/usb/musb/musb_dsps.c
-> +++ b/drivers/usb/musb/musb_dsps.c
-> @@ -357,9 +357,6 @@ static int dsps_musb_init(struct musb *musb)
->   	u32 rev, val;
->   
->   	r = platform_get_resource_byname(parent, IORESOURCE_MEM, "control");
-> -	if (!r)
-> -		return -EINVAL;
-> -
->   	reg_base = devm_ioremap_resource(dev, r);
->   	if (!musb->ctrl_base)
->   		return -EINVAL;
-Not really related to Julia's patch, apart from making it more obvious 
-that there's a bug here.
-I believe it is reg_base that needs to be checked, right?
+On 18 August 2013 19:36, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 
-Svenning
+> I noticed that the current linux-next branch of linux-pm.git caused the
+> BUG_ON() in lock_policy_rwsem_##mode() to trigger when user space tried to
+> access cpufreq sysfs attributes before system suspend and after system
+> resume.
+
+Hmm...
+
+> I tried to debug that and it turned out that this patch caused resume
+> to block indefinitely on one of my test machines and after reverting it the
+> BUG_ON() stopped triggering, so I've just reverted it in my tree (it is not an
+> important change).
+>
+> I don't have the time to figure out why this change breaks things
+
+It wasn't my patch actually.. It only made it visible that's it :)
+The problem is:
+- On suspend all CPUs are removed and so governors are
+stopped.
+- On resume, handle_update() is called for the boot cpu and
+cpu_add_dev for all others.
+
+handle_update() doesn't start governor but only plays with
+CPUFREQ_GOV_LIMITS.. when we start adding other
+CPUs and call: cpufreq_add_policy_cpu() which fails in
+following call:
+
+__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+
+and so cpufreq_policy_cpu never gets initialized to
+policy->cpu and stays at -1, and hence the crash.
+
+So, there are few problems with core at this point:
+- I don't understand how does the work done in
+cpufreq_add_dev() gets done for boot cpu during
+resume ? And so how does Srivatsa's "frozen" solution
+really works (I haven't had time to investigate, its not
+that I couldn't understand it :) )..
+
+- We need to start governor boot cpu in handle_update()
+and things would be solved...
+
+> and I would
+> appreciate it if you tested stuff like suspend/resume on an x86 laptop or
+> similar with your patches applied before posting them for merging.
+
+suspend/resume is broken on my ARM board and that's why
+didn't test it..
+
+Testing anything on my thinkpad (with ubuntu) is a pain.. it takes
+more than an hour to compile/test a single image... I currently follow
+below steps for doing that, don't know if something much
+simpler/faster is available :)
+
+https://wiki.ubuntu.com/KernelTeam/GitKernelBuild
+
+Whole day I was able to boot test only 4-5 kernel builds.
+Its too slow :(
