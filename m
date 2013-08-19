@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265Ab3HSLBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 07:01:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:3441 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114Ab3HSLBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 07:01:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,912,1367996400"; 
-   d="scan'208";a="383020254"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] HID: i2c-hid: use correct type for ACPI _DSM parameter
-Date: Mon, 19 Aug 2013 14:01:17 +0300
-Message-Id: <1376910077-24433-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc2
+	id S1751297Ab3HSLDD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 07:03:03 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:30413 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab3HSLDB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 07:03:01 -0400
+Message-ID: <5211FAB3.7080400@huawei.com>
+Date: Mon, 19 Aug 2013 19:00:03 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Otcheretianski, Andrei" <andrei.otcheretianski@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Pravin B Shelar <pshelar@nicira.com>, Thomas Graf <tgraf@suug.ch>
+Subject: Re: 3.11-rc6 genetlink locking fix offends lockdep
+References: <alpine.LNX.2.00.1308182143370.906@eggly.anvils> <1376899214.14734.6.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1376899214.14734.6.camel@jlt4.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.199]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI 5.0 specification requires the fourth parameter to the _DSM (Device
-Specific Method) to be of type package instead of integer. Failing to do
-that we get following warning on the console:
+On 2013/8/19 16:00, Johannes Berg wrote:
+> 
+>> 3.11-rc6's commit 58ad436fcf49 ("genetlink: fix family dump race")
+>> gives me the lockdep trace below at startup.
+> 
+> Hmm. Yes, I see now how this happens, not sure why I didn't run into it.
+> 
+> The problem is that genl_family_rcv_msg() is called with the genl_lock
+> held, and then calls netlink_dump_start() with it held, creating a
+> genl_lock->cb_mutex dependency, but obviously the dump continuation is
+> the other way around.
+> 
+> We could use the semaphore instead, I believe, but I don't really
+> understand the mutex vs. semaphore well enough to be sure that's
+> correct.
+> 
+> johannes
+> 
+it is useless, the logic need to modify or otherwise it will still call lockdep trace.
+maybe i could send a patch for it, if you wish.
 
-  ACPI Warning: \_SB_.PCI0.I2C1.TPL0._DSM: Argument #4 type mismatch - Found [Integer],
-                ACPI requires [Package] (20130517/nsarguments-95)
+> 
+> diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
+> index f85f8a2..6cfa646 100644
+> --- a/net/netlink/genetlink.c
+> +++ b/net/netlink/genetlink.c
+> @@ -792,7 +792,7 @@ static int ctrl_dumpfamily(struct sk_buff *skb, struct netlink_callback *cb)
+>  	bool need_locking = chains_to_skip || fams_to_skip;
+>  
+>  	if (need_locking)
+> -		genl_lock();
+> +		down_read(&cb_lock);
+>  
+>  	for (i = chains_to_skip; i < GENL_FAM_TAB_SIZE; i++) {
+>  		n = 0;
+> @@ -815,7 +815,7 @@ errout:
+>  	cb->args[1] = n;
+>  
+>  	if (need_locking)
+> -		genl_unlock();
+> +		up_read(&cb_lock);
+>  
+>  	return skb->len;
+>  }
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> .
+> 
 
-Fix this by passing an empty package to the _DSM method. The HID over I2C
-specification doesn't require any specific values to be passed with this
-parameter.
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/hid/i2c-hid/i2c-hid.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index 879b0ed..d2e0eea 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -897,8 +897,9 @@ static int i2c_hid_acpi_pdata(struct i2c_client *client,
- 	params[1].integer.value = 1;
- 	params[2].type = ACPI_TYPE_INTEGER;
- 	params[2].integer.value = 1; /* HID function */
--	params[3].type = ACPI_TYPE_INTEGER;
--	params[3].integer.value = 0;
-+	params[3].type = ACPI_TYPE_PACKAGE;
-+	params[3].package.count = 0;
-+	params[3].package.elements = NULL;
- 
- 	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_DSM", &input, &buf))) {
- 		dev_err(&client->dev, "device _DSM execution failed\n");
--- 
-1.8.4.rc2
 
