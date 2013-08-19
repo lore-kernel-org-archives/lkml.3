@@ -1,41 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444Ab3HSWXl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 18:23:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54832 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab3HSWXj (ORCPT
+	id S1751456Ab3HSW1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 18:27:13 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:62575 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201Ab3HSW1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 18:23:39 -0400
-Date: Mon, 19 Aug 2013 15:23:38 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
-Cc: Jan Dumon <j.dumon@option.com>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix stack corruption on some architectures
-Message-ID: <20130819222338.GA3041@kroah.com>
-References: <1376944647.5082.12.camel@chimera>
+	Mon, 19 Aug 2013 18:27:11 -0400
+Date: Mon, 19 Aug 2013 15:27:18 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Stefan Priebe <s.priebe@profihost.ag>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-bcache@vger.kernel.org
+Subject: Re: bcache: Fix a writeback performance regression
+Message-ID: <20130819222718.GA32104@kmo-pixel>
+References: <20130814225904.GA6427@kmo-pixel>
+ <520C788A.1060208@profihost.ag>
+ <520DFAB4.1050402@profihost.ag>
+ <52114614.4070509@profihost.ag>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376944647.5082.12.camel@chimera>
+In-Reply-To: <52114614.4070509@profihost.ag>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 01:37:27PM -0700, Daniel Gimpelevich wrote:
-> There is no need to get an interface specification if we know it's the
-> wrong one; trivial change. The big thing, though, was explained in the
-> #mipslinux IRC channel: 
-> [Mon 2013-08-19 12:28:21 PM PDT] <headless> guys, are you sure it's not "DMA off stack" case?
-> [Mon 2013-08-19 12:28:35 PM PDT] <headless> it's a known stack corruptor on non-coherent arches
-> [Mon 2013-08-19 12:31:48 PM PDT] <DonkeyHotei> headless: for usb/ehci?
-> [Mon 2013-08-19 12:34:11 PM PDT] <DonkeyHotei> headless: explain
-> [Mon 2013-08-19 12:35:38 PM PDT] <headless> usb_control_msg() (or other such func) should not use buffer on stack. DMA from/to stack is prohibited
-> [Mon 2013-08-19 12:35:58 PM PDT] <headless> and EHCI uses DMA on control xfers (as well as all the others)
+On Mon, Aug 19, 2013 at 12:09:24AM +0200, Stefan Priebe wrote:
 > 
-> Signed-off-by: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
+> Vanilla 3.10.7 + bcache: Fix a writeback performance regression
+> 
+> http://pastebin.com/raw.php?i=LXZk4cMH
+
+Whoops, at first I thought this was the same bug as one I'd already been
+chasing down that had been a harmless bug - turns out I didn't look
+closely enough at the backtrace.
+
+What happened is background writeback is deadlocking, because for some
+reason the workqueue it's running out of is a singlethreaded workqueue,
+so as soon as it decides to queue enough writeback bios that it has to
+sleep on that semaphore (which often won't happen due to the PD
+controller based ratelimiting) - boom, deadlock.
+
+Here's the fixup patch I just tested and am applying:
 
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>From 0af68de350e05e43fd093b36dcb0fe8aa838fabf Mon Sep 17 00:00:00 2001
+From: Kent Overstreet <kmo@daterainc.com>
+Date: Mon, 19 Aug 2013 15:26:22 -0700
+Subject: [PATCH] bcache: Fix a writeback deadlock
+
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index f88c62e..27ac519 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -351,7 +351,7 @@ static void write_dirty(struct closure *cl)
+ 
+ 	closure_bio_submit(&io->bio, cl, &io->dc->disk);
+ 
+-	continue_at(cl, write_dirty_finish, dirty_wq);
++	continue_at(cl, write_dirty_finish, system_wq);
+ }
+ 
+ static void read_dirty_endio(struct bio *bio, int error)
+@@ -371,7 +371,7 @@ static void read_dirty_submit(struct closure *cl)
+ 
+ 	closure_bio_submit(&io->bio, cl, &io->dc->disk);
+ 
+-	continue_at(cl, write_dirty, dirty_wq);
++	continue_at(cl, write_dirty, system_wq);
+ }
+ 
+ static void read_dirty(struct closure *cl)
+@@ -512,7 +512,7 @@ void bch_writeback_exit(void)
+ 
+ int __init bch_writeback_init(void)
+ {
+-	dirty_wq = create_singlethread_workqueue("bcache_writeback");
++	dirty_wq = create_workqueue("bcache_writeback");
+ 	if (!dirty_wq)
+ 		return -ENOMEM;
+ 
