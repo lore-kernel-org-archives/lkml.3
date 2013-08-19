@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab3HRXwJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 19:52:09 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:32889 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754952Ab3HRXwH (ORCPT
+	id S1755778Ab3HSANp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 20:13:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41587 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755377Ab3HSANo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 19:52:07 -0400
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH-v2 0/4] iscsi-target: Add support for login multi-plexing support
-Date: Sun, 18 Aug 2013 23:36:21 +0000
-Message-Id: <1376868985-23190-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.7.2.5
+	Sun, 18 Aug 2013 20:13:44 -0400
+Date: Mon, 19 Aug 2013 10:13:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Alasdair G Kergon <agk@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: please fetch new git-based DM 'for-next' branch [was: Re: [git
+ pull] device-mapper changes for 3.11]
+Message-Id: <20130819101333.b26958e499a24fa8cd1fe487@canb.auug.org.au>
+In-Reply-To: <20130816211810.GA8668@redhat.com>
+References: <20130711013448.GD32399@agk-dp.fab.redhat.com>
+	<20130711162040.8a82cb97a6c647c4f61f919b@canb.auug.org.au>
+	<20130711135522.GN8530@agk-dp.fab.redhat.com>
+	<20130712110303.06095e7b41c49c35bcd61fab@canb.auug.org.au>
+	<20130816211810.GA8668@redhat.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__19_Aug_2013_10_13_33_+1000_HRu6oe/JLbRpWEAi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+--Signature=_Mon__19_Aug_2013_10_13_33_+1000_HRu6oe/JLbRpWEAi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi folks,
+Hi Mike, Alasdair,
 
-This -v2 series for v3.12-rc1 adds support for login multi-plexing,
-that allows subsequent login request/request PDUs beyond the initial 
-exchange to be pushed off to workqueue process context, so that other
-incoming login requests can be serviced in parallel.
+On Fri, 16 Aug 2013 17:18:10 -0400 Mike Snitzer <snitzer@redhat.com> wrote:
+>
+> To access all future DM changes for linux-next, please switch from
+> Alasdair's quilt tree to using the 'for-next' branch of the DM git repo:
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git
 
-This addresses a long-standing issue with login latency with many (100's)
-of parallel login requests to the same network portal being shared
-across many (100's) of TargetName+TargetPortalGroup endpoints.
+Done.  You are both listed as contacts for problems with that tree.
 
-Note that login negotiation to the same TargetName+TargetPortalGroup
-endpoint is still sychronized in order to enforce session reinstatement
-state machines.
+Thanks.
 
-The changes for v2 include:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-  - Fix iscsit_transport reference leak during NP thread reset
-  - Remove duplicate call to iscsi_post_login_handler() in
-    __iscsi_target_login_thread()
-  - Drop unused iscsi_np->np_login_tpg
-  - Add login_timer in iscsi_target_do_login_rx() to avoid
-    possible endless sleep with MSG_WAITALL for traditional
-    iscsi-target in certain network configurations.
-  - Convert lprintk() -> pr_debug()
-  - Remove forward declarations of iscsi_target_set_sock_callbacks(),
-    iscsi_target_restore_sock_callbacks() and iscsi_target_sk_data_ready()
-  - Make iscsi_target_set_sock_callbacks + iscsi_target_restore_sock_callbacks()
-    static (Fengguang)
-  - Make iscsi_target_do_login_rx() safe for iser-target w/o conn->sock
-  - Updates to iser-target for login negotiation multi-plexing support
+--Signature=_Mon__19_Aug_2013_10_13_33_+1000_HRu6oe/JLbRpWEAi
+Content-Type: application/pgp-signature
 
-The main remaining FIXME is to keep track of connections that are pushed
-out to workqueue process context for explicit network portal shutdown
-purposes.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Thanks!
+iQIcBAEBCAAGBQJSEWMwAAoJEECxmPOUX5FEyjgP/2LXSNWXP6I8EjMqzLKRY751
+I5MtvCTJPOmNvvgevdocFeeJP/aS/UrhVkjIBZ3H0Aco57O/yhy5SKOLAecaNKhJ
+odERZCHufsVAZ9kD7hPUyk1EbE8otrZJIbrikrBHDAnnBAaQAPlyDIV+W2pb6X61
+WeMwtOLkQxbIZaKjdOoIWyzqNGZcFFpLdJS0FtzEkWEXcOIwZpt7njgYu/nZ1VNI
+6TRWO2bNsegG4ntjn2RpFweiDAKj/TCiGFAR7WSDARY30qgjPqIu+PZodBmX/Y13
+IQuq8g5CtRpei1i/DX+krbsgqcTZ5NUbXDVZQDTLC18ZiC78fp8bDGaNXEcolNIk
+OnZfn0tz0QxsEYLyaECzmjF0YAR/rgMRMtryBhG9N78knKq/MkX/wknIIBdHT5tZ
+lsM5I3yWu4KlwQE8KEp4IKSlFoygCgrAUooZ+7lGCufKsjDq9to0prkKGWnfhPNv
+Ug9bEd1h+wfozq0x+n50bk4M1h2ikZqNoNKvwrbesUxF9Dfz3bXXbgAVBmZEt3wg
+vpEaSAFsHWmdaRhfpPSMiqP1F+WpD7Q6EowyNliU4oXZRPeGhsenpAH7IXDSLYWy
+C37IGTW5Z4gKKQuiLYU7TRiiiOEmvzrNQSkVOG8KdOFkL6KBGd5+lUjzg9ModHo5
+UKdmIDAjeILLe02nD8rb
+=ZNaX
+-----END PGP SIGNATURE-----
 
---nab
-
-Nicholas Bellinger (4):
-  iscsi-target: Fix iscsit_transport reference leak during NP thread
-    reset
-  iscsi-target: Prepare login code for multi-plexing support
-  iscsi-target: Add login negotiation multi-plexing support
-  iser-target: Updates for login negotiation multi-plexing support
-
- drivers/infiniband/ulp/isert/ib_isert.c   |   17 +++-
- drivers/target/iscsi/iscsi_target.c       |   53 ++++----
- drivers/target/iscsi/iscsi_target.h       |    6 +-
- drivers/target/iscsi/iscsi_target_core.h  |   12 ++-
- drivers/target/iscsi/iscsi_target_login.c |  171 +++++++++++++----------
- drivers/target/iscsi/iscsi_target_login.h |    3 +
- drivers/target/iscsi/iscsi_target_nego.c  |  209 +++++++++++++++++++++++++++-
- drivers/target/iscsi/iscsi_target_tpg.c   |   23 +++-
- drivers/target/iscsi/iscsi_target_tpg.h   |    4 +-
- 9 files changed, 378 insertions(+), 120 deletions(-)
-
--- 
-1.7.2.5
-
+--Signature=_Mon__19_Aug_2013_10_13_33_+1000_HRu6oe/JLbRpWEAi--
