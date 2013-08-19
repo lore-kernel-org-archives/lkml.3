@@ -1,43 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439Ab3HSXt2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 19:49:28 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:36987 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab3HSXt1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 19:49:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAB9dFduWPr0n8c7ckZr=2AQ-h4sy4U9YYzTRw335Xaimc4tk-A@mail.gmail.com>
-References: <1376929831-18214-1-git-send-email-richard.genoud@gmail.com>
-	<CAB9dFduWPr0n8c7ckZr=2AQ-h4sy4U9YYzTRw335Xaimc4tk-A@mail.gmail.com>
-Date: Mon, 19 Aug 2013 16:49:26 -0700
-X-Google-Sender-Auth: jSR8sO7w9htjt-Et4ntLkBIFJOE
-Message-ID: <CA+55aFwqQBdYUU2MfccDpzc2S+oiP23QKdbPnfJsnVw1TR_H+Q@mail.gmail.com>
-Subject: Re: [PATCH] proc: return on proc_readdir error
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Marc Dionne <marc.c.dionne@gmail.com>
-Cc: Richard Genoud <richard.genoud@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751631Ab3HSXwU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 19:52:20 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59458 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751580Ab3HSXwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 19:52:18 -0400
+Message-ID: <1376956328.25016.105.camel@pasglop>
+Subject: Re: [PATCH] vfio-pci: PCI hot reset interface
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Date: Tue, 20 Aug 2013 09:52:08 +1000
+In-Reply-To: <1376953177.2657.33.camel@ul30vt.home>
+References: <20130814200845.21923.64284.stgit@bling.home>
+	 <CAErSpo4zfuaaBSDci4jOu_9RgUfLQNPvKhro1OEh=8AMvAFWYw@mail.gmail.com>
+	 <1376521578.13642.65.camel@ul30vt.home>
+	 <1376937682.2657.15.camel@ul30vt.home>
+	 <CAErSpo50ve+ZMqcX=13hKvrB75LyWmUddC-qyX7Esfr=P5StcA@mail.gmail.com>
+	 <1376952167.25016.85.camel@pasglop> <1376953177.2657.33.camel@ul30vt.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 1:33 PM, Marc Dionne <marc.c.dionne@gmail.com> wrote:
->
-> By my reading that commit (f0c3b5093add) also made proc_readdir always
-> return 0, so with this patch the effect I see is that no pid entries
-> are listed under /proc, breaking ps for instance.  I don't see how
-> even the previous version of proc_readdir could return a negative
-> value; looks like 1 and 0 were the only possible return values.
+On Mon, 2013-08-19 at 16:59 -0600, Alex Williamson wrote:
+> On Tue, 2013-08-20 at 08:42 +1000, Benjamin Herrenschmidt wrote:
+> > On Mon, 2013-08-19 at 14:02 -0600, Bjorn Helgaas wrote:
+> > > I guess.  And supply the pci_slot rather than the pci_dev?  I'm a
+> > > little bit worried because the idea of a "slot" is not well-defined in
+> > > the spec, and we have sort of an ad hoc method of discovering and
+> > > managing them, e.g., acpiphp and pciehp might discover the same slot.
+> > > But I guess that's no reason to bury generic code in vfio.
+> > 
+> > And I don't have pci_slot's at all yet on powerpc "powernv" (the host
+> > platform for KVM) since at this stage we don't support physical hotplug
+> > on the target machines...
+> > 
+> > Alex, why specifically looking for "slots" here ? I don't quite
+> > understand. It makes sense to be able to reset individual devices
+> > whether they are on the otherboard, behind extension chassis or directly
+> > on slots...
+> 
+> a) resetting a slot may have a smaller footprint than resetting a bus,
 
-Yes, see the other thread. The "return 1" case had gotten lost. I
-think current git should get everything right, but please do test. I
-did some testing of my own with a random little getdents test-program
-(just checking that it got the same results with different (small)
-buffer sizes), but it was by no means exhaustive.
+*May* ... at least on PCIe there is no difference. I suppose PCI pre-E
+slots might have individual reset controls.... though the way to get
+them is fairly platform specific.
 
-              Linus
+> b) hotplug controllers sometimes need to be involved in a bus reset.
+> For b) I have a specific example where my Lenovo S20 workstation has an
+> onboard tg3 NIC attached to a root port supporting pciehp (go figure
+> since the tg3 is soldered onto the motherboard) and doing a secondary
+> bus reset at the root port triggers a presence detection change and
+> therefore tries to do a surprise removal.  By doing a "slot" reset, I
+> have the hotplug controller code manage the bus reset by disabling
+> presence detection around the bus reset.  If you don't have slots and
+> you don't need anything special around a secondary bus reset, you're
+> fine.  It's just an opportunity to provide a hook for the hotplug
+> controller to participate.  Thanks,
+
+Yuck, junk HW again ... oh well, I suppose that's never going to end...
+
+As long as the code works without the slots I'm fine :-) As I mentioned,
+we might have to do a whole different infrastructure for EEH anyway
+(which sucks but we have little choice in the matter).
+
+Cheers,
+Ben.
+
+> Alex
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
