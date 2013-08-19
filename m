@@ -1,92 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab3HSMDK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 08:03:10 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:41991 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab3HSMDH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 08:03:07 -0400
-Date: Mon, 19 Aug 2013 14:02:50 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] PCI: tegra: replace devm_request_and_ioremap by
- devm_ioremap_resource
-Message-ID: <20130819120249.GA5740@ulmo>
-References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr>
- <1376911241-27720-2-git-send-email-Julia.Lawall@lip6.fr>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/04w6evG8XlLl3ft"
-Content-Disposition: inline
-In-Reply-To: <1376911241-27720-2-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751414Ab3HSMH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 08:07:59 -0400
+Received: from mga14.intel.com ([143.182.124.37]:25372 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751234Ab3HSMH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 08:07:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,913,1367996400"; 
+   d="scan'208";a="383046541"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Shinya Kuribayashi <skuribay@pobox.com>, linux-i2c@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 1/2] i2c-designware: make HCNT/LCNT values configurable
+Date: Mon, 19 Aug 2013 15:07:53 +0300
+Message-Id: <1376914074-31103-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The DesignWare I2C controller has high count (HCNT) and low count (LCNT)
+registers for each of the I2C speed modes (standard and fast). These
+registers are programmed based on the input clock speed in the driver.
 
---/04w6evG8XlLl3ft
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The current code calculates these values based on the input clock speed and
+tries hard to meet the I2C bus timing requirements. This could result
+non-optimal values with regarding to the bus speed. For example on Intel
+BayTrail we get bus speed of 315.41kHz which is ~20% slower than we would
+expect (400kHz) in fast mode (even though the timing requirements are met).
 
-On Mon, Aug 19, 2013 at 01:20:35PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> Use devm_ioremap_resource instead of devm_request_and_ioremap.
->=20
-> This was done using the semantic patch
-> scripts/coccinelle/api/devm_ioremap_resource.cocci
->=20
-> Error-handling code was manually removed from the associated calls to
-> platform_get_resource.
->=20
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> ---
-> The first block of modified code is followed by a call to
-> devm_request_mem_region for pcie->cs with no associated ioremap.  Should
-> ioremap be used in this case as well?
+This patch makes it possible for the platform code to pass more optimal
+HCNT/LCNT values to the core driver if they are known beforehand. If these
+are not set we use the calculated and more conservative values.
 
-No. The pcie->cs resource is 256 MiB so it's challenging to map it at
-once. Furthermore it requires a non-linear mapping so we do it on
-demand.
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+Changes to the previous version:
+ * Updated changelog
+ * Reduce indentation as suggested by Shinya Kuribayashi
 
->  drivers/pci/host/pci-tegra.c |   29 +++++++++--------------------
->  1 file changed, 9 insertions(+), 20 deletions(-)
+ drivers/i2c/busses/i2c-designware-core.c | 11 +++++++++++
+ drivers/i2c/busses/i2c-designware-core.h | 12 ++++++++++++
+ 2 files changed, 23 insertions(+)
 
-Tested-by: Thierry Reding <treding@nvidia.com>
-Acked-by: Thierry Reding <treding@nvidia.com>
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index ad46616..c73eaea 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -317,6 +317,12 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
+ 				47,	/* tLOW = 4.7 us */
+ 				3,	/* tf = 0.3 us */
+ 				0);	/* No offset */
++
++	/* Allow platforms to specify the ideal HCNT and LCNT values */
++	if (dev->ss_hcnt && dev->ss_lcnt) {
++		hcnt = dev->ss_hcnt;
++		lcnt = dev->ss_lcnt;
++	}
+ 	dw_writel(dev, hcnt, DW_IC_SS_SCL_HCNT);
+ 	dw_writel(dev, lcnt, DW_IC_SS_SCL_LCNT);
+ 	dev_dbg(dev->dev, "Standard-mode HCNT:LCNT = %d:%d\n", hcnt, lcnt);
+@@ -331,6 +337,11 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
+ 				13,	/* tLOW = 1.3 us */
+ 				3,	/* tf = 0.3 us */
+ 				0);	/* No offset */
++
++	if (dev->fs_hcnt && dev->fs_lcnt) {
++		hcnt = dev->fs_hcnt;
++		lcnt = dev->fs_lcnt;
++	}
+ 	dw_writel(dev, hcnt, DW_IC_FS_SCL_HCNT);
+ 	dw_writel(dev, lcnt, DW_IC_FS_SCL_LCNT);
+ 	dev_dbg(dev->dev, "Fast-mode HCNT:LCNT = %d:%d\n", hcnt, lcnt);
+diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
+index 912aa22..e8a7565 100644
+--- a/drivers/i2c/busses/i2c-designware-core.h
++++ b/drivers/i2c/busses/i2c-designware-core.h
+@@ -61,6 +61,14 @@
+  * @tx_fifo_depth: depth of the hardware tx fifo
+  * @rx_fifo_depth: depth of the hardware rx fifo
+  * @rx_outstanding: current master-rx elements in tx fifo
++ * @ss_hcnt: standard speed HCNT value
++ * @ss_lcnt: standard speed LCNT value
++ * @fs_hcnt: fast speed HCNT value
++ * @fs_lcnt: fast speed LCNT value
++ *
++ * HCNT and LCNT parameters can be used if the platform knows more accurate
++ * values than the one computed based only on the input clock frequency.
++ * Leave them to be %0 if not used.
+  */
+ struct dw_i2c_dev {
+ 	struct device		*dev;
+@@ -91,6 +99,10 @@ struct dw_i2c_dev {
+ 	unsigned int		rx_fifo_depth;
+ 	int			rx_outstanding;
+ 	u32			sda_hold_time;
++	u16			ss_hcnt;
++	u16			ss_lcnt;
++	u16			fs_hcnt;
++	u16			fs_lcnt;
+ };
+ 
+ #define ACCESS_SWAP		0x00000001
+-- 
+1.8.4.rc2
 
-Bjorn, how do you want to handle patches to the Tegra PCIe driver in the
-future? Do you want me to prepare a branch and pull from that or would
-you rather just take simple patches?
-
-Thierry
-
---/04w6evG8XlLl3ft
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSEglpAAoJEN0jrNd/PrOhOTcQAKuObLu6NluZG2adbr82G6Wi
-xzDJrTTVkyWS5CFDmhnRa7EutpxJODMBQhlZ6/gto1ii81rCMIHZLpzrpUV6e3BY
-YDMwwfIyjYaf/Nq1c5YA7sQSpIkw+FTRudoHSdwQub0gJr5hWXS6aI3MCsRT6gKp
-eiMA6cjYBsYs7czGXpdj6mwOTWv8qO4oey+gpdYhSMonzHg7v86W2JQ+jbnDqzXe
-1xmNFF89rnujJ2Uh/aAccRD25fO5B/d5H1d5VSKemO2Pmh4Gs1Ge1U5NN8slPE0w
-5Y8IYJg3lIT4KF1pxLtncvwJfb2y1/o7L19yCodrrfQShMh3BUm/+W4WENl7Y+TS
-NxP7CAgDM1+8Amrmqau3mbdCIPKMyhL+UOYOmTSlh4aQQSKn313rRlECYYX9cXdK
-1pzP1hRs2IQruFxVJwt98oqV//CTAvnzMfl0b/eKXY/8ojP789e3uVNu6m37iuNv
-y7SD9GCaL9QSkD9n7CHQKOcrc14nBszCk7jIEa8vurmqGvEZrEL8uuo3UbkyZ5rC
-BRS1B02i6RHBrZ7AVC4fErtS8nR0lqav4AG6n2azs0eWeRA6dvIi/p6vrS/zjkEN
-itII9CF3kUxuaKeT9Qi/eVCq2FyLM4ZfOhce6xSyCGQq4r3ade4bSKg2L8ktBEcl
-WxOPwJFYhAbderurSJDL
-=N18C
------END PGP SIGNATURE-----
-
---/04w6evG8XlLl3ft--
