@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750827Ab3HSOXS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 10:23:18 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49231 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab3HSOXQ (ORCPT
+	id S1750904Ab3HSOY6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 10:24:58 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:43585 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab3HSOY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 10:23:16 -0400
-Message-ID: <52122A3D.8040305@linutronix.de>
-Date: Mon, 19 Aug 2013 16:22:53 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	Mon, 19 Aug 2013 10:24:56 -0400
 MIME-Version: 1.0
-To: Joel A Fernandes <joelagnel@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v12 10/11] ARM: dts: add AM33XX EDMA support
-References: <1371762407-24544-1-git-send-email-joelagnel@ti.com> <1371762407-24544-11-git-send-email-joelagnel@ti.com>
-In-Reply-To: <1371762407-24544-11-git-send-email-joelagnel@ti.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+In-Reply-To: <1374138144-17278-1-git-send-email-zheng.z.yan@intel.com>
+References: <1374138144-17278-1-git-send-email-zheng.z.yan@intel.com>
+Date: Mon, 19 Aug 2013 16:24:56 +0200
+Message-ID: <CABPqkBRjJDOcFWOvZw6CTokrLbg5X=p8KCxZYQ47yRGYbdY_Pg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf, x86: use INTEL_UEVENT_EXTRA_REG to define MSR_OFFCORE_RSP_X
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2013 11:06 PM, Joel A Fernandes wrote:
-> From: Matt Porter <mdp@ti.com>
-> 
-> Adds AM33XX EDMA support to the am33xx.dtsi as documented in
-> Documentation/devicetree/bindings/dma/ti-edma.txt
-> 
-> Joel: Drop DT entries that are non-hardware-description for now as discussed in [1]
-> 
-> [1] https://patchwork.kernel.org/patch/2226761/
-> 
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
+On Thu, Jul 18, 2013 at 11:02 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>
+> Silvermont (22nm Atom) has two offcore response configuration MSRs,
+> unlike other Intel CPU, its event code for MSR_OFFCORE_RSP_1 is 0x02b7.
+> To avoid complicating intel_fixup_er(), use INTEL_UEVENT_EXTRA_REG to
+> define MSR_OFFCORE_RSP_X. So intel_fixup_er() can find the event code
+> for OFFCORE_RSP_N by x86_pmu.extra_regs[N].event.
+>
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 
-I've been browsing my lkml folders and I haven't seen any later version
-of this patch. It seems that other patches from this series have been
-applied. I don't see this patch in linux-next as of Friday. Any reason
-why this has not been applied yet?
+Works for me on IVB and NHM.
 
-Sebastian
+Reviewed-by: Stephane Eranian <eranian@google.com>
+
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel.c | 22 +++++++++++++---------
+>  1 file changed, 13 insertions(+), 9 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index fbc9210..d312edf 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -81,7 +81,8 @@ static struct event_constraint intel_nehalem_event_constraints[] __read_mostly =
+>
+>  static struct extra_reg intel_nehalem_extra_regs[] __read_mostly =
+>  {
+> -       INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+> +       /* must define OFFCORE_RSP_X first, see intel_fixup_er() */
+> +       INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+>         INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x100b),
+>         EVENT_EXTRA_END
+>  };
+> @@ -143,8 +144,9 @@ static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
+>
+>  static struct extra_reg intel_westmere_extra_regs[] __read_mostly =
+>  {
+> -       INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+> -       INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0xffff, RSP_1),
+> +       /* must define OFFCORE_RSP_X first, see intel_fixup_er() */
+> +       INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+> +       INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0xffff, RSP_1),
+>         INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x100b),
+>         EVENT_EXTRA_END
+>  };
+> @@ -163,15 +165,17 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
+>  };
+>
+>  static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
+> -       INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
+> -       INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3f807f8fffull, RSP_1),
+> +       /* must define OFFCORE_RSP_X first, see intel_fixup_er() */
+> +       INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
+> +       INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0x3f807f8fffull, RSP_1),
+>         INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x01cd),
+>         EVENT_EXTRA_END
+>  };
+>
+>  static struct extra_reg intel_snbep_extra_regs[] __read_mostly = {
+> -       INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
+> -       INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
+> +       /* must define OFFCORE_RSP_X first, see intel_fixup_er() */
+> +       INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
+> +       INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
+>         INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x01cd),
+>         EVENT_EXTRA_END
+>  };
+> @@ -1301,11 +1305,11 @@ static void intel_fixup_er(struct perf_event *event, int idx)
+>
+>         if (idx == EXTRA_REG_RSP_0) {
+>                 event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+> -               event->hw.config |= 0x01b7;
+> +               event->hw.config |= x86_pmu.extra_regs[EXTRA_REG_RSP_0].event;
+>                 event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
+>         } else if (idx == EXTRA_REG_RSP_1) {
+>                 event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+> -               event->hw.config |= 0x01bb;
+> +               event->hw.config |= x86_pmu.extra_regs[EXTRA_REG_RSP_1].event;
+>                 event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
+>         }
+>  }
+> --
+> 1.8.1.4
+>
