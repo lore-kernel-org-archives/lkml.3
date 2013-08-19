@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378Ab3HSUro (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 16:47:44 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:35205 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab3HSUrm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 16:47:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <e7fc4e2f-4cda-4eef-8d37-bb87773f58e8@email.android.com>
-References: <1376942419-5684-1-git-send-email-linn@hp.com>
-	<e7fc4e2f-4cda-4eef-8d37-bb87773f58e8@email.android.com>
-Date: Mon, 19 Aug 2013 13:47:41 -0700
-X-Google-Sender-Auth: OU-u4BCI-WB4MzVEm3S9hj5bE2g
-Message-ID: <CAE9FiQWRp+AMeTnC3MPSWi4as6qaoFiZEsAfjr3+75YT9XMPcQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/4] EFI boot stub memory map fix
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linn Crosetto <linn@hp.com>, Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        linux-efi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1750925Ab3HSUtI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 16:49:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25853 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750996Ab3HSUtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 16:49:06 -0400
+Date: Mon, 19 Aug 2013 16:48:57 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH] vfs: allow umount to handle mountpoints without
+ revalidating them
+Message-ID: <20130819164857.3d6876e4@tlielax.poochiereds.net>
+In-Reply-To: <20130819133503.1a793ecbfa99c1b0814bbb57@linux-foundation.org>
+References: <1374834205-4406-1-git-send-email-jlayton@redhat.com>
+	<20130819133503.1a793ecbfa99c1b0814bbb57@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 1:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> I would strongly disagree that option 2 is the cleaner solution.
+On Mon, 19 Aug 2013 13:35:03 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Agreed.
+> On Fri, 26 Jul 2013 06:23:25 -0400 Jeff Layton <jlayton@redhat.com> wrote:
+> 
+> > Christopher reported a regression where he was unable to unmount a NFS
+> > filesystem where the root had gone stale. The problem is that
+> > d_revalidate handles the root of the filesystem differently from other
+> > dentries, but d_weak_revalidate does not. We could simply fix this by
+> > making d_weak_revalidate return success on IS_ROOT dentries, but there
+> > are cases where we do want to revalidate the root of the fs.
+> > 
+> > A umount is really a special case. We generally aren't interested in
+> > anything but the dentry and vfsmount that's attached at that point. If
+> > the inode turns out to be stale we just don't care since the intent is
+> > to stop using it anyway.
+> > 
+> > Try to handle this situation better by treating umount as a special
+> > case in the lookup code. Have it resolve the parent using normal
+> > means, and then do a lookup of the final dentry without revalidating
+> > it. In most cases, the final lookup will come out of the dcache, but
+> > the case where there's a trailing symlink or !LAST_NORM entry on the
+> > end complicates things a bit.
+> > 
+> 
+> In which kernel version did the regression occur?  The patch *applies*
+> to 3.8 and perhaps earlier, but we don't know which kernel versions
+> actually need it.
 
->
-> Linn Crosetto <linn@hp.com> wrote:
->>I realize the EFI stub for ARM patches are in flight,
->>
->>https://lkml.org/lkml/2013/8/9/554
->>
->>and overlap with some of the files but I wanted to send these out for
->>comment.
->>
->>This series fixes a problem with EFI memory maps larger than 128
->>entries when
->>booting using the EFI boot stub, which results in overflowing the
->>e820_map in
->>boot_params and an eventual halt when checking the map size in
->>sanitize_e820_map().
->>
->>The fix implemented is to add the EFI memory map from setup_arch() via
->>a
->>memory_setup hook.
->>
->>Two options were considered:
->>
->> 1. Use the SETUP_E820_EXT setup_data type to add the extra entries.
->>
->>2. Create a memory_setup function to be enabled when the EFI memory map
->>is
->>    needed.
->>
->>Option 2 appeared to be the cleaner solution, reducing duplication with
->>existing code, given a reasonable mechanism for determining when to
->>replace the default memory_setup function.
+v3.9 introduced the regression that I'm aware of (in commit
+ecf3d1f1aa), but there have been problems with unmounting of stale
+mountpoints for longer than that.
 
-If boot_loader could create setup_data with SETUP_E820_EXT,
-efi_stub should go that path too.
-We should not add another path.
-
-Thanks
-
-Yinghai
+-- 
+Jeff Layton <jlayton@redhat.com>
