@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751274Ab3HSR0j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 13:26:39 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51150 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab3HSR0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751239Ab3HSR0Z (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 19 Aug 2013 13:26:25 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:51139 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab3HSR0X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 13:26:23 -0400
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, jwboyer@redhat.com, keescook@chromium.org,
         Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH V2 09/10] x86: Restrict MSR access when module loading is restricted
-Date: Mon, 19 Aug 2013 13:26:10 -0400
-Message-Id: <1376933171-9854-10-git-send-email-matthew.garrett@nebula.com>
+Subject: [PATCH V2 06/10] Restrict /dev/mem and /dev/kmem when module loading is restricted
+Date: Mon, 19 Aug 2013 13:26:07 -0400
+Message-Id: <1376933171-9854-7-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
 References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
@@ -25,41 +25,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Writing to MSRs should not be allowed if module loading is restricted,
-since it could lead to execution of arbitrary code in kernel mode. Based
-on a patch by Kees Cook.
+Allowing users to write to address space makes it possible for the kernel
+to be subverted, avoiding module loading restrictions. Prevent this when
+any restrictions have been imposed on loading modules.
 
-Cc: Kees Cook <keescook@chromium.org>
 Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- arch/x86/kernel/msr.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/char/mem.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
-index 88458fa..d08f7e3 100644
---- a/arch/x86/kernel/msr.c
-+++ b/arch/x86/kernel/msr.c
-@@ -103,6 +103,9 @@ static ssize_t msr_write(struct file *file, const char __user *buf,
- 	int err = 0;
- 	ssize_t bytes = 0;
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 1af8664..61406c8 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -159,6 +159,9 @@ static ssize_t write_mem(struct file *file, const char __user *buf,
+ 	unsigned long copied;
+ 	void *ptr;
  
 +	if (secure_modules())
 +		return -EPERM;
 +
- 	if (count % 8)
- 		return -EINVAL;	/* Invalid chunk size */
+ 	if (!valid_phys_addr_range(p, count))
+ 		return -EFAULT;
  
-@@ -150,6 +153,10 @@ static long msr_ioctl(struct file *file, unsigned int ioc, unsigned long arg)
- 			err = -EBADF;
- 			break;
- 		}
-+		if (secure_modules()) {
-+			err = -EPERM;
-+			break;
-+		}
- 		if (copy_from_user(&regs, uregs, sizeof regs)) {
- 			err = -EFAULT;
- 			break;
+@@ -497,6 +500,9 @@ static ssize_t write_kmem(struct file *file, const char __user *buf,
+ 	char *kbuf; /* k-addr because vwrite() takes vmlist_lock rwlock */
+ 	int err = 0;
+ 
++	if (secure_modules())
++		return -EPERM;
++
+ 	if (p < (unsigned long) high_memory) {
+ 		unsigned long to_write = min_t(unsigned long, count,
+ 					       (unsigned long)high_memory - p);
 -- 
 1.8.3.1
 
