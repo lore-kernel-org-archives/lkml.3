@@ -1,228 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751164Ab3HSPSM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 11:18:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53557 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127Ab3HSPSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 11:18:06 -0400
-From: Jerome Marchand <jmarchan@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] mm: add overcommit_kbytes sysctl variable
-Date: Mon, 19 Aug 2013 17:17:58 +0200
-Message-Id: <1376925478-15506-2-git-send-email-jmarchan@redhat.com>
-In-Reply-To: <1376925478-15506-1-git-send-email-jmarchan@redhat.com>
-References: <1376925478-15506-1-git-send-email-jmarchan@redhat.com>
+	id S1750939Ab3HSPU2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 11:20:28 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:53035 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab3HSPU1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 11:20:27 -0400
+Message-ID: <521237A9.8010109@linux.vnet.ibm.com>
+Date: Mon, 19 Aug 2013 10:20:09 -0500
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: mingo@redhat.com, hpa@linux.intel.com, tglx@linutronix.de,
+        gregkh@linuxfoundation.org, benh@kernel.crashing.org,
+        fenghua.yu@intel.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        rjw@sisk.pl, isimatu.yasuaki@jp.fujitsu.com,
+        srivatsa.bhat@linux.vnet.ibm.com, bp@suse.de,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 4/4] hotplug, powerpc, x86: Remove cpu_hotplug_driver_lock()
+References: <1376768819-28975-1-git-send-email-toshi.kani@hp.com> <1376768819-28975-5-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1376768819-28975-5-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081915-5564-0000-0000-00000954F6FF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some applications that run on HPC clusters are designed around the
-availability of RAM and the overcommit ratio is fine tuned to get the
-maximum usage of memory without swapping. With growing memory, the
-1%-of-all-RAM grain provided by overcommit_ratio has become too coarse
-for these workload (on a 2TB machine it represents no less than
-20GB).
+On 08/17/2013 02:46 PM, Toshi Kani wrote:
+> cpu_hotplug_driver_lock() serializes CPU online/offline operations
+> when ARCH_CPU_PROBE_RELEASE is set.  This lock interface is no longer
+> necessary with the following reason:
+> 
+>  - lock_device_hotplug() now protects CPU online/offline operations,
+>    including the probe & release interfaces enabled by
+>    ARCH_CPU_PROBE_RELEASE.  The use of cpu_hotplug_driver_lock() is
+>    redundant.
+>  - cpu_hotplug_driver_lock() is only valid when ARCH_CPU_PROBE_RELEASE
+>    is defined, which is misleading and is only enabled on powerpc.
+> 
+> This patch removes the cpu_hotplug_driver_lock() interface.  As
+> a result, ARCH_CPU_PROBE_RELEASE only enables / disables the cpu
+> probe & release interface as intended.  There is no functional change
+> in this patch.
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 
-This patch adds the new overcommit_kbytes sysctl variable that allow a
-much finer grain.
+Reviewed-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
 
-Signed-of-by: Jerome Marchand <jmarchan@redhat.com>
----
- Documentation/sysctl/vm.txt            |   12 ++++++++++++
- Documentation/vm/overcommit-accounting |    7 ++++---
- include/linux/mm.h                     |    5 +++++
- include/linux/mman.h                   |   13 +++++++++++--
- kernel/sysctl.c                        |   10 +++++++++-
- mm/mmap.c                              |   25 +++++++++++++++++++++++++
- mm/nommu.c                             |    1 +
- 7 files changed, 67 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 36ecc26..a23aea1 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -47,6 +47,7 @@ Currently, these files are in /proc/sys/vm:
- - numa_zonelist_order
- - oom_dump_tasks
- - oom_kill_allocating_task
-+- overcommit_kbytes
- - overcommit_memory
- - overcommit_ratio
- - page-cluster
-@@ -561,6 +562,17 @@ The default value is 0.
- 
- ==============================================================
- 
-+overcommit_kbytes:
-+
-+When overcommit_memory is set to 2, the committed address space is not
-+permitted to exceed swap plus this amount of physical RAM. See below.
-+
-+Note: overcommit_kbytes is the counterpart of overcommit_ratio. Only one
-+of them may be specified at a time. Setting one disable the other (which
-+then appears as 0 when read).
-+
-+==============================================================
-+
- overcommit_memory:
- 
- This value contains a flag that enables memory overcommitment.
-diff --git a/Documentation/vm/overcommit-accounting b/Documentation/vm/overcommit-accounting
-index 8eaa2fc..cbfaaa6 100644
---- a/Documentation/vm/overcommit-accounting
-+++ b/Documentation/vm/overcommit-accounting
-@@ -14,8 +14,8 @@ The Linux kernel supports the following overcommit handling modes
- 
- 2	-	Don't overcommit. The total address space commit
- 		for the system is not permitted to exceed swap + a
--		configurable percentage (default is 50) of physical RAM.
--		Depending on the percentage you use, in most situations
-+		configurable amount (default is 50%) of physical RAM.
-+		Depending on the amount you use, in most situations
- 		this means a process will not be killed while accessing
- 		pages but will receive errors on memory allocation as
- 		appropriate.
-@@ -26,7 +26,8 @@ The Linux kernel supports the following overcommit handling modes
- 
- The overcommit policy is set via the sysctl `vm.overcommit_memory'.
- 
--The overcommit percentage is set via `vm.overcommit_ratio'.
-+The overcommit amount can be set via `vm.overcommit_ratio' (percentage)
-+or `vm.overcommit_kbytes' (absolute value).
- 
- The current overcommit limit and amount committed are viewable in
- /proc/meminfo as CommitLimit and Committed_AS respectively.
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f022460..15f2b0c 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -53,6 +53,11 @@ extern int sysctl_legacy_va_layout;
- extern unsigned long sysctl_user_reserve_kbytes;
- extern unsigned long sysctl_admin_reserve_kbytes;
- 
-+extern int overcommit_ratio_handler(struct ctl_table *, int, void __user *,
-+				    size_t *, loff_t *);
-+extern int overcommit_kbytes_handler(struct ctl_table *, int, void __user *,
-+				    size_t *, loff_t *);
-+
- #define nth_page(page,n) pfn_to_page(page_to_pfn((page)) + (n))
- 
- /* to align the pointer to the (next) page boundary */
-diff --git a/include/linux/mman.h b/include/linux/mman.h
-index d622d34..debd0f9 100644
---- a/include/linux/mman.h
-+++ b/include/linux/mman.h
-@@ -12,6 +12,7 @@
- 
- extern int sysctl_overcommit_memory;
- extern int sysctl_overcommit_ratio;
-+extern unsigned long sysctl_overcommit_kbytes;
- extern struct percpu_counter vm_committed_as;
- 
- #ifdef CONFIG_SMP
-@@ -96,7 +97,15 @@ calc_vm_flag_bits(unsigned long flags)
-  */
- static inline unsigned long vm_commit_limit()
- {
--	return ((totalram_pages - hugetlb_total_pages())
--		* sysctl_overcommit_ratio / 100) + total_swap_pages;
-+	unsigned long allowed;
-+
-+	if (sysctl_overcommit_kbytes)
-+		allowed = sysctl_overcommit_kbytes >> (PAGE_SHIFT - 10);
-+	else
-+		allowed = ((totalram_pages - hugetlb_total_pages())
-+			   * sysctl_overcommit_ratio / 100);
-+	allowed += total_swap_pages;
-+
-+	return allowed;
- }
- #endif /* _LINUX_MMAN_H */
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 07f6fc4..e1968a4 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -97,6 +97,7 @@
- /* External variables not in a header file. */
- extern int sysctl_overcommit_memory;
- extern int sysctl_overcommit_ratio;
-+extern unsigned long sysctl_overcommit_kbytes;
- extern int max_threads;
- extern int suid_dumpable;
- #ifdef CONFIG_COREDUMP
-@@ -1119,7 +1120,14 @@ static struct ctl_table vm_table[] = {
- 		.data		= &sysctl_overcommit_ratio,
- 		.maxlen		= sizeof(sysctl_overcommit_ratio),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= overcommit_ratio_handler,
-+	},
-+	{
-+		.procname	= "overcommit_kbytes",
-+		.data		= &sysctl_overcommit_kbytes,
-+		.maxlen		= sizeof(sysctl_overcommit_kbytes),
-+		.mode		= 0644,
-+		.proc_handler	= overcommit_kbytes_handler,
- 	},
- 	{
- 		.procname	= "page-cluster", 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 06c98f8..c4a09a5 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -86,6 +86,7 @@ EXPORT_SYMBOL(vm_get_page_prot);
- 
- int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
- int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
-+unsigned long sysctl_overcommit_kbytes __read_mostly = 0;
- int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
- unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
- unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
-@@ -95,6 +96,30 @@ unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
-  */
- struct percpu_counter vm_committed_as ____cacheline_aligned_in_smp;
- 
-+int overcommit_ratio_handler(struct ctl_table *table, int write,
-+			     void __user *buffer, size_t *lenp,
-+			     loff_t *ppos)
-+{
-+	int ret;
-+
-+	ret = proc_dointvec(table, write, buffer, lenp, ppos);
-+	if (ret == 0 && write)
-+		sysctl_overcommit_kbytes = 0;
-+	return ret;
-+}
-+
-+int overcommit_kbytes_handler(struct ctl_table *table, int write,
-+			     void __user *buffer, size_t *lenp,
-+			     loff_t *ppos)
-+{
-+	int ret;
-+
-+	ret = proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
-+	if (ret == 0 && write)
-+		sysctl_overcommit_ratio = 0;
-+	return ret;
-+}
-+
- /*
-  * The global memory commitment made in the system can be a metric
-  * that can be used to drive ballooning decisions when Linux is hosted
-diff --git a/mm/nommu.c b/mm/nommu.c
-index d8a957b..3c4216a 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -60,6 +60,7 @@ unsigned long highest_memmap_pfn;
- struct percpu_counter vm_committed_as;
- int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
- int sysctl_overcommit_ratio = 50; /* default is 50% */
-+unsigned long sysctl_overcommit_kbytes __read_mostly = 0;
- int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
- int sysctl_nr_trim_pages = CONFIG_NOMMU_INITIAL_TRIM_EXCESS;
- unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
--- 
-1.7.7.6
+> ---
+> Performed build test only on powerpc.
+> ---
+>  arch/powerpc/kernel/smp.c              |   12 ----------
+>  arch/powerpc/platforms/pseries/dlpar.c |   40 ++++++++++++--------------------
+>  arch/x86/kernel/topology.c             |    2 --
+>  drivers/base/cpu.c                     |   10 +-------
+>  include/linux/cpu.h                    |   13 ----------
+>  5 files changed, 16 insertions(+), 61 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+> index 38b0ba6..1667269 100644
+> --- a/arch/powerpc/kernel/smp.c
+> +++ b/arch/powerpc/kernel/smp.c
+> @@ -763,18 +763,6 @@ void __cpu_die(unsigned int cpu)
+>  		smp_ops->cpu_die(cpu);
+>  }
+>  
+> -static DEFINE_MUTEX(powerpc_cpu_hotplug_driver_mutex);
+> -
+> -void cpu_hotplug_driver_lock()
+> -{
+> -	mutex_lock(&powerpc_cpu_hotplug_driver_mutex);
+> -}
+> -
+> -void cpu_hotplug_driver_unlock()
+> -{
+> -	mutex_unlock(&powerpc_cpu_hotplug_driver_mutex);
+> -}
+> -
+>  void cpu_die(void)
+>  {
+>  	if (ppc_md.cpu_die)
+> diff --git a/arch/powerpc/platforms/pseries/dlpar.c b/arch/powerpc/platforms/pseries/dlpar.c
+> index a1a7b9a..e39325d 100644
+> --- a/arch/powerpc/platforms/pseries/dlpar.c
+> +++ b/arch/powerpc/platforms/pseries/dlpar.c
+> @@ -387,18 +387,13 @@ static ssize_t dlpar_cpu_probe(const char *buf, size_t count)
+>  	char *cpu_name;
+>  	int rc;
+>  
+> -	cpu_hotplug_driver_lock();
+>  	rc = strict_strtoul(buf, 0, &drc_index);
+> -	if (rc) {
+> -		rc = -EINVAL;
+> -		goto out;
+> -	}
+> +	if (rc)
+> +		return -EINVAL;
+>  
+>  	dn = dlpar_configure_connector(drc_index);
+> -	if (!dn) {
+> -		rc = -EINVAL;
+> -		goto out;
+> -	}
+> +	if (!dn)
+> +		return -EINVAL;
+>  
+>  	/* configure-connector reports cpus as living in the base
+>  	 * directory of the device tree.  CPUs actually live in the
+> @@ -407,8 +402,7 @@ static ssize_t dlpar_cpu_probe(const char *buf, size_t count)
+>  	cpu_name = kasprintf(GFP_KERNEL, "/cpus%s", dn->full_name);
+>  	if (!cpu_name) {
+>  		dlpar_free_cc_nodes(dn);
+> -		rc = -ENOMEM;
+> -		goto out;
+> +		return -ENOMEM;
+>  	}
+>  
+>  	kfree(dn->full_name);
+> @@ -417,22 +411,21 @@ static ssize_t dlpar_cpu_probe(const char *buf, size_t count)
+>  	rc = dlpar_acquire_drc(drc_index);
+>  	if (rc) {
+>  		dlpar_free_cc_nodes(dn);
+> -		rc = -EINVAL;
+> -		goto out;
+> +		return -EINVAL;
+>  	}
+>  
+>  	rc = dlpar_attach_node(dn);
+>  	if (rc) {
+>  		dlpar_release_drc(drc_index);
+>  		dlpar_free_cc_nodes(dn);
+> -		goto out;
+> +		return rc;
+>  	}
+>  
+>  	rc = dlpar_online_cpu(dn);
+> -out:
+> -	cpu_hotplug_driver_unlock();
+> +	if (rc)
+> +		return rc;
+>  
+> -	return rc ? rc : count;
+> +	return count;
+>  }
+>  
+>  static int dlpar_offline_cpu(struct device_node *dn)
+> @@ -505,30 +498,27 @@ static ssize_t dlpar_cpu_release(const char *buf, size_t count)
+>  		return -EINVAL;
+>  	}
+>  
+> -	cpu_hotplug_driver_lock();
+>  	rc = dlpar_offline_cpu(dn);
+>  	if (rc) {
+>  		of_node_put(dn);
+> -		rc = -EINVAL;
+> -		goto out;
+> +		return -EINVAL;
+>  	}
+>  
+>  	rc = dlpar_release_drc(*drc_index);
+>  	if (rc) {
+>  		of_node_put(dn);
+> -		goto out;
+> +		return rc;
+>  	}
+>  
+>  	rc = dlpar_detach_node(dn);
+>  	if (rc) {
+>  		dlpar_acquire_drc(*drc_index);
+> -		goto out;
+> +		return rc;
+>  	}
+>  
+>  	of_node_put(dn);
+> -out:
+> -	cpu_hotplug_driver_unlock();
+> -	return rc ? rc : count;
+> +
+> +	return count;
+>  }
+>  
+>  static int __init pseries_dlpar_init(void)
+> diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
+> index a3f35eb..649b010 100644
+> --- a/arch/x86/kernel/topology.c
+> +++ b/arch/x86/kernel/topology.c
+> @@ -66,7 +66,6 @@ int __ref _debug_hotplug_cpu(int cpu, int action)
+>  		return -EINVAL;
+>  
+>  	lock_device_hotplug();
+> -	cpu_hotplug_driver_lock();
+>  
+>  	switch (action) {
+>  	case 0:
+> @@ -91,7 +90,6 @@ int __ref _debug_hotplug_cpu(int cpu, int action)
+>  		ret = -EINVAL;
+>  	}
+>  
+> -	cpu_hotplug_driver_unlock();
+>  	unlock_device_hotplug();
+>  
+>  	return ret;
+> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+> index 4cc6928..b4ebd7b 100644
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -45,8 +45,6 @@ static int __ref cpu_subsys_online(struct device *dev)
+>  	int from_nid, to_nid;
+>  	int ret;
+>  
+> -	cpu_hotplug_driver_lock();
+> -
+>  	from_nid = cpu_to_node(cpuid);
+>  	ret = cpu_up(cpuid);
+>  	/*
+> @@ -57,18 +55,12 @@ static int __ref cpu_subsys_online(struct device *dev)
+>  	if (from_nid != to_nid)
+>  		change_cpu_under_node(cpu, from_nid, to_nid);
+>  
+> -	cpu_hotplug_driver_unlock();
+>  	return ret;
+>  }
+>  
+>  static int cpu_subsys_offline(struct device *dev)
+>  {
+> -	int ret;
+> -
+> -	cpu_hotplug_driver_lock();
+> -	ret = cpu_down(dev->id);
+> -	cpu_hotplug_driver_unlock();
+> -	return ret;
+> +	return cpu_down(dev->id);
+>  }
+>  
+>  void unregister_cpu(struct cpu *cpu)
+> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+> index ab0eade..e847ef8 100644
+> --- a/include/linux/cpu.h
+> +++ b/include/linux/cpu.h
+> @@ -182,19 +182,6 @@ extern void cpu_hotplug_enable(void);
+>  void clear_tasks_mm_cpumask(int cpu);
+>  int cpu_down(unsigned int cpu);
+>  
+> -#ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
+> -extern void cpu_hotplug_driver_lock(void);
+> -extern void cpu_hotplug_driver_unlock(void);
+> -#else
+> -static inline void cpu_hotplug_driver_lock(void)
+> -{
+> -}
+> -
+> -static inline void cpu_hotplug_driver_unlock(void)
+> -{
+> -}
+> -#endif
+> -
+>  #else		/* CONFIG_HOTPLUG_CPU */
+>  
+>  #define get_online_cpus()	do { } while (0)
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
 
