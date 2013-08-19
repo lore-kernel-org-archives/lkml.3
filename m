@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800Ab3HSXbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 19:31:53 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:62450 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab3HSXbu (ORCPT
+	id S1751577Ab3HSXfk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 19:35:40 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42613 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab3HSXfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 19:31:50 -0400
+	Mon, 19 Aug 2013 19:35:38 -0400
+Date: Mon, 19 Aug 2013 16:35:29 -0700
+From: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] acpi_i2c: set MODULE_LICENSE, MODULE_AUTHOR, and
+ MODULE_DESCRIPTION
+Message-ID: <20130819233528.GA4587@cantor.us.oracle.com>
+Reply-To: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+References: <1376702795-25912-1-git-send-email-jerry.snitselaar@oracle.com>
+ <20130819061614.GG4898@intel.com>
+ <2870377.GVGv4QBgQK@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1308191621130.30740@nftneq.ynat.uz>
-References: <520BED7A.4000903@intel.com> <20130814230648.GD22316@thunk.org>
- <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
- <20130815011101.GA3572@thunk.org> <20130815021028.GM6023@dastard>
- <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
- <20130815060149.GP6023@dastard> <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
- <20130815071141.GQ6023@dastard> <20130815074531.GA2147@quack.suse.cz>
- <20130815212826.GS6023@dastard> <alpine.DEB.2.02.1308191621130.30740@nftneq.ynat.uz>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 19 Aug 2013 16:31:30 -0700
-Message-ID: <CALCETrVagghw-6bTsRCAt1rdENjpqALOKkg42c154Zs77Jh7Hw@mail.gmail.com>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-To: David Lang <david@lang.hm>
-Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dave Hansen <dave.hansen@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2870377.GVGv4QBgQK@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 4:23 PM, David Lang <david@lang.hm> wrote:
-> On Fri, 16 Aug 2013, Dave Chinner wrote:
->
->> The problem with "not exported, don't update" is that files can be
->> modified on server startup (e.g. after a crash) or in short
->> maintenance periods when the NFS service is down. When the server is
->> started back up, the change number needs to indicate the file has
->> been modified so that clients reconnecting to the server see the
->> change.
->>
->> IOWs, even if the NFS server is not up or the filesystem not
->> exported we still need to update change counts whenever a file
->> changes if we are going to tell the NFS server that we keep them...
->
->
-> This sounds like you need something more like relctime rather than noctime,
-> something that updates the time in ram, but doesn't insist on flushing it to
-> disk immediatly, updating when convienient or when the file is closed.
->
-> David Lang
+On Tue Aug 20 13, Rafael J. Wysocki wrote:
+> On Monday, August 19, 2013 09:16:14 AM Mika Westerberg wrote:
+> > On Fri, Aug 16, 2013 at 06:26:35PM -0700, Jerry Snitselaar wrote:
+> > > Without MODULE_LICENSE set, I get the following with modprobe:
+> > > 
+> > > acpi_i2c: module license 'unspecified' taints kernel.
+> > > acpi_i2c: Unknown symbol i2c_new_device (err 0)
+> > > acpi_i2c: Unknown symbol acpi_dev_get_resources (err 0)
+> > > acpi_i2c: Unknown symbol acpi_dev_resource_interrupt (err 0)
+> > > acpi_i2c: Unknown symbol acpi_dev_free_resource_list (err 0)
+> > > 
+> > > Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+> > 
+> > Looks good to me.
+> > 
+> > Acked-by: Mika Westerbeg <mika.westerberg@linux.intel.com>
+> 
+> Well, OK, but do we need to be able to build that as a module?
+> 
+> Maybe it should just be yes or no?
+> 
+> Rafael
+> 
 
-I guess my patches could be extended to do this.  In their current
-form, when a pte dirty bit is transferred to a page (via page_mkclean
-or unmap), the address_space is marked as needed a cmtime update.  I
-could add a mode in which even the normal write syscall path sets that
-bit instead of immediately updating the timestamp.  This could be a
-nice speedup to non-mmap writers.
-
-To avoid breaking things, things like fsync would need to force a
-cmtime flush -- I doubt it would be okay for write; fsync; write;
-fsync to leave the timestamp matching the first write.
-
-I'd rather get comments on the current form of my patches and maybe
-get them merged before looking at even more far-reaching extensions,
-though.
-
---Andy
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Perhaps have depends on I2C=y and be a bool instead of tristate?
