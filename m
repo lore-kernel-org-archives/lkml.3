@@ -1,139 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750773Ab3HSD7Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 23:59:24 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44582 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725Ab3HSD7X (ORCPT
+	id S1750763Ab3HSEEA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 00:04:00 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:45406 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab3HSED6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 23:59:23 -0400
-Message-ID: <521197B5.8030409@oracle.com>
-Date: Mon, 19 Aug 2013 11:57:41 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 19 Aug 2013 00:03:58 -0400
+Date: Sun, 18 Aug 2013 21:03:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 3/5] rcu: Sort rcutorture module parameters
+Message-ID: <20130819040350.GE29406@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130818022453.GA3475@linux.vnet.ibm.com>
+ <1376792717-3755-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1376792717-3755-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130818025740.GD28923@leaf>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Mel Gorman <mgorman@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v6 0/5] zram/zsmalloc promotion
-References: <1376459736-7384-1-git-send-email-minchan@kernel.org> <20130814174050.GN2296@suse.de> <20130814185820.GA2753@gmail.com> <20130815171250.GA2296@suse.de> <20130816042641.GA2893@gmail.com> <20130816083347.GD2296@suse.de> <20130819031833.GA26832@bbox>
-In-Reply-To: <20130819031833.GA26832@bbox>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130818025740.GD28923@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081904-5518-0000-0000-0000114D693E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+On Sat, Aug 17, 2013 at 07:57:40PM -0700, Josh Triplett wrote:
+> On Sat, Aug 17, 2013 at 07:25:15PM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > There are getting to be too many module parameters to permit the current
+> > semi-random order, so this patch orders them.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> As long as you're reordering them anyway, how about grouping each of the
+> variables together with the corresponding module parameter macros, and
+> then dropping the comments that duplicate the module parameter
+> documentation?
+> 
+> With that change:
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-On 08/19/2013 11:18 AM, Minchan Kim wrote:
-> Hello Mel,
-> 
-> On Fri, Aug 16, 2013 at 09:33:47AM +0100, Mel Gorman wrote:
->> On Fri, Aug 16, 2013 at 01:26:41PM +0900, Minchan Kim wrote:
->>>>>> <SNIP>
->>>>>> If it's used for something like tmpfs then it becomes much worse. Normal
->>>>>> tmpfs without swap can lockup if tmpfs is allowed to fill memory. In a
->>>>>> sane configuration, lockups will be avoided and deleting a tmpfs file is
->>>>>> guaranteed to free memory. When zram is used to back tmpfs, there is no
->>>>>> guarantee that any memory is freed due to fragmentation of the compressed
->>>>>> pages. The only way to recover the memory may be to kill applications
->>>>>> holding tmpfs files open and then delete them which is fairly drastic
->>>>>> action in a normal server environment.
->>>>>
->>>>> Indeed.
->>>>> Actually, I had a plan to support zsmalloc compaction. The zsmalloc exposes
->>>>> handle instead of pure pointer so it could migrate some zpages to somewhere
->>>>> to pack in. Then, it could help above problem and OOM storm problem.
->>>>> Anyway, it's a totally new feature and requires many changes and experiement.
->>>>> Although we don't have such feature, zram is still good for many people.
->>>>>
->>>>
->>>> And is zsmalloc was pluggable for zswap then it would also benefit.
->>>
->>> But zswap isn't pseudo block device so it couldn't be used for block device.
->>
->> It would not be impossible to write one. Taking a quick look it might even
->> be doable by just providing a zbud_ops that does not have an evict handler
->> and make sure the errors are handled correctly. i.e. does the following
->> patch mean that zswap never writes back and instead just compresses pages
->> in memory?
->>
->> diff --git a/mm/zswap.c b/mm/zswap.c
->> index deda2b6..99e41c8 100644
->> --- a/mm/zswap.c
->> +++ b/mm/zswap.c
->> @@ -819,7 +819,6 @@ static void zswap_frontswap_invalidate_area(unsigned type)
->>  }
->>  
->>  static struct zbud_ops zswap_zbud_ops = {
->> -	.evict = zswap_writeback_entry
->>  };
->>  
->>  static void zswap_frontswap_init(unsigned type)
->>
->> If so, it should be doable to link that up in a sane way so it can be
->> configured at runtime.
->>
->> Did you ever even try something like this?
-> 
-> Never. Because I didn't have such requirement for zram.
-> 
->>
->>> Let say one usecase for using zram-blk.
->>>
->>> 1) Many embedded system don't have swap so although tmpfs can support swapout
->>> it's pointless still so such systems should have sane configuration to limit
->>> memory space so it's not only zram problem.
->>>
->>
->> If zswap was backed by a pseudo device that failed all writes or an an
->> ops with no evict handler then it would be functionally similar.
->>
->>> 2) Many embedded system don't have enough memory. Let's assume short-lived
->>> file growing up until half of system memory once in a while. We don't want
->>> to write it on flash by wear-leveing issue and very slowness so we want to use
->>> in-memory but if we uses tmpfs, it should evict half of working set to cover
->>> them when the size reach peak. zram would be better choice.
->>>
->>
->> Then back it by a pseudo device that fails all writes so it does not have
->> to write to disk.
-> 
-> You mean "make pseudo block device and register make_request_fn
-> and prevent writeback". Bah, yes, it's doable but what is it different with below?
-> 
-> 1) move zbud into zram
-> 2) implement frontswap API in zram
-> 3) implement writebazk in zram
-> 
-> The zram has been for a long time in staging to be promoted and have been
-> maintained/deployed. Of course, I have asked the promotion several times
-> for above a year.
-> 
-> Why can't zram include zswap functions if you really want to merge them?
-> Is there any problem?
+Good point, done!
 
-I think merging zram into zswap or merging zswap into zram are the same
-thing. It's no difference.
-Both way will result in a solution finally with zram block device,
-frontswap API etc.
+							Thanx, Paul
 
-The difference is just the name and the merging patch title, I think
-it's unimportant.
-
-I've implemented a series [PATCH 0/4] mm: merge zram into zswap, I can
-change the tile to "merge zswap into zram" if you want and rename zswap
-to something like zhybrid.
-
--- 
-Regards,
--Bob
