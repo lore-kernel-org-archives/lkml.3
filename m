@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751258Ab3HSK6w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 06:58:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56994 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab3HSK6v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 06:58:51 -0400
-Date: Mon, 19 Aug 2013 12:58:17 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-Message-ID: <20130819105817.GD24092@twins.programming.kicks-ass.net>
-References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com>
- <1376667753-29014-3-git-send-email-fweisbec@gmail.com>
- <20130816160201.GA31682@redhat.com>
- <20130816162056.GE24210@somewhere>
- <20130816162654.GA453@redhat.com>
- <20130816164626.GH24210@somewhere>
- <20130816164922.GA1573@redhat.com>
- <20130816171208.GJ24210@somewhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130816171208.GJ24210@somewhere>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1751265Ab3HSLBU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 07:01:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3441 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114Ab3HSLBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 07:01:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,912,1367996400"; 
+   d="scan'208";a="383020254"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] HID: i2c-hid: use correct type for ACPI _DSM parameter
+Date: Mon, 19 Aug 2013 14:01:17 +0300
+Message-Id: <1376910077-24433-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 07:12:09PM +0200, Frederic Weisbecker wrote:
-> Or may be Peter could tell us as well. Peter, do you have a preference?
+ACPI 5.0 specification requires the fourth parameter to the _DSM (Device
+Specific Method) to be of type package instead of integer. Failing to do
+that we get following warning on the console:
 
-Still trying to wrap my head around it, but conceptually
-get_cpu_iowait_time_us() doesn't make any kind of sense. iowait isn't
-per cpu since effectively tasks that aren't running aren't assigned a
-cpu (as Oleg already pointed out).
+  ACPI Warning: \_SB_.PCI0.I2C1.TPL0._DSM: Argument #4 type mismatch - Found [Integer],
+                ACPI requires [Package] (20130517/nsarguments-95)
 
-The fact that cpufreq 'needs' this just means that cpufreq is broken --
-but I think I've said as much previously; cpufreq needs to stop living
-in the partitioned-mp era and get dragged (kicking and screaming) into
-the smp era.
+Fix this by passing an empty package to the _DSM method. The HID over I2C
+specification doesn't require any specific values to be passed with this
+parameter.
 
-I'm also not entirely clear on the 'desired' semantics here. Do we count
-iowait time as idle or not?
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/hid/i2c-hid/i2c-hid.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index 879b0ed..d2e0eea 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -897,8 +897,9 @@ static int i2c_hid_acpi_pdata(struct i2c_client *client,
+ 	params[1].integer.value = 1;
+ 	params[2].type = ACPI_TYPE_INTEGER;
+ 	params[2].integer.value = 1; /* HID function */
+-	params[3].type = ACPI_TYPE_INTEGER;
+-	params[3].integer.value = 0;
++	params[3].type = ACPI_TYPE_PACKAGE;
++	params[3].package.count = 0;
++	params[3].package.elements = NULL;
+ 
+ 	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_DSM", &input, &buf))) {
+ 		dev_err(&client->dev, "device _DSM execution failed\n");
+-- 
+1.8.4.rc2
+
