@@ -1,114 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab3HSCFs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 22:05:48 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:64602 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab3HSCFq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 22:05:46 -0400
-Message-ID: <52117D64.1010709@huawei.com>
-Date: Mon, 19 Aug 2013 10:05:24 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1753682Ab3HSCFz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 22:05:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:13806 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753229Ab3HSCFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Aug 2013 22:05:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,909,1367996400"; 
+   d="scan'208";a="382838198"
+Date: Mon, 19 Aug 2013 10:05:47 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Miao Xie <miaox@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tao Ma <tm@tao.ma>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: readahead: make context readahead more conservative
+Message-ID: <20130819020547.GA11775@localhost>
+References: <20130808085418.GA23970@localhost>
+ <52117BED.7000909@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2] cgroup: change cgroup_from_id() to css_from_id()
-References: <520DCF2C.1020903@huawei.com> <20130816170659.GM2505@htj.dyndns.org>
-In-Reply-To: <20130816170659.GM2505@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52117BED.7000909@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we want cgroup core to always provide the css to use to the
-subsystems, so change this API to css_from_id().
+On Mon, Aug 19, 2013 at 09:59:09AM +0800, Miao Xie wrote:
+> Hi, everyone
+> 
+> On Thu, 8 Aug 2013 16:54:18 +0800, Fengguang Wu wrote:
+> > This helps performance on moderately dense random reads on SSD.
+> > 
+> > Transaction-Per-Second numbers provided by Taobao:
+> > 
+> > 		QPS	case
+> > 		-------------------------------------------------------
+> > 		7536	disable context readahead totally
+> > w/ patch:	7129	slower size rampup and start RA on the 3rd read
+> > 		6717	slower size rampup
+> > w/o patch:	5581	unmodified context readahead
+> > 
+> > Before, readahead will be started whenever reading page N+1 when it
+> > happen to read N recently. After patch, we'll only start readahead
+> > when *three* random reads happen to access pages N, N+1, N+2. The
+> > probability of this happening is extremely low for pure random reads,
+> > unless they are very dense, which actually deserves some readahead.
+> > 
+> > Also start with a smaller readahead window. The impact to interleaved
+> > sequential reads should be small, because for a long run stream, the
+> > the small readahead window rampup phase is negletable.
+> > 
+> > The context readahead actually benefits clustered random reads on HDD
+> > whose seek cost is pretty high. However as SSD is increasingly used
+> > for random read workloads it's better for the context readahead to
+> > concentrate on interleaved sequential reads.
+> > 
+> > Another SSD rand read test from Miao
+> > 
+> >         # file size:        2GB
+> >         # read IO amount: 625MB
+> >         sysbench --test=fileio          \
+> >                 --max-requests=10000    \
+> >                 --num-threads=1         \
+> >                 --file-num=1            \
+> >                 --file-block-size=64K   \
+> >                 --file-test-mode=rndrd  \
+> >                 --file-fsync-freq=0     \
+> >                 --file-fsync-end=off    run
+> > 
+> > shows the performance of btrfs grows up from 69MB/s to 121MB/s,
+> > ext4 from 104MB/s to 121MB/s.
+> 
+> I did the same test on the hard disk recently,
+> for btrfs, there is ~5% regression(10.65MB/s -> 10.09MB/s),
+> for ext4, the performance grows up a bit.(9.98MB/s -> 10.04MB/s).
+> (I run the test for 4 times, and the above result is the average of the test.)
+> 
+> Any comment?
 
-Uninline css_from_id(), because it's getting bigger and cgroup_css()
-has been unexported.
+Thanks for the tests! Minor regressions on the HDD cases are expected.
 
-While at it, remove the #ifdef, and shuffle the order of the args.
+Since random read workloads are migrating to SSD as it becomes cheaper
+and larger, it seems a good tradeoff to optimize for random read
+performance on SSD.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
-
-v2: change the order of the args.
-
----
- include/linux/cgroup.h | 20 ++------------------
- kernel/cgroup.c        | 22 ++++++++++++++++++++++
- 2 files changed, 24 insertions(+), 18 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 11a6419..3aac34d 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -742,27 +742,11 @@ static inline struct cgroup *task_cgroup(struct task_struct *task,
- 	return task_css(task, subsys_id)->cgroup;
- }
- 
--/**
-- * cgroup_from_id - lookup cgroup by id
-- * @ss: cgroup subsys to be looked into
-- * @id: the cgroup id
-- *
-- * Returns the cgroup if there's valid one with @id, otherwise returns NULL.
-- * Should be called under rcu_read_lock().
-- */
--static inline struct cgroup *cgroup_from_id(struct cgroup_subsys *ss, int id)
--{
--#ifdef CONFIG_PROVE_RCU
--	rcu_lockdep_assert(rcu_read_lock_held() ||
--			   lockdep_is_held(&cgroup_mutex),
--			   "cgroup_from_id() needs proper protection");
--#endif
--	return idr_find(&ss->root->cgroup_idr, id);
--}
--
- struct cgroup_subsys_state *css_next_child(struct cgroup_subsys_state *pos,
- 					   struct cgroup_subsys_state *parent);
- 
-+struct cgroup_subsys_state *css_from_id(int id, struct cgroup_subsys *ss);
-+
- /**
-  * css_for_each_child - iterate through children of a css
-  * @pos: the css * to use as the loop cursor
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 99785d6..07740d3 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -5710,6 +5710,28 @@ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id)
- 	return css ? css : ERR_PTR(-ENOENT);
- }
- 
-+/**
-+ * css_from_id - lookup css by id
-+ * @id: the cgroup id
-+ * @ss: cgroup subsys to be looked into
-+ *
-+ * Returns the css if there's valid one with @id, otherwise returns NULL.
-+ * Should be called under rcu_read_lock().
-+ */
-+struct cgroup_subsys_state *css_from_id(int id, struct cgroup_subsys *ss)
-+{
-+	struct cgroup *cgrp;
-+
-+	rcu_lockdep_assert(rcu_read_lock_held() ||
-+			   lockdep_is_held(&cgroup_mutex),
-+			   "css_from_id() needs proper protection");
-+
-+	cgrp = idr_find(&ss->root->cgroup_idr, id);
-+	if (cgrp)
-+		return cgroup_css(cgrp, ss->subsys_id);
-+	return NULL;
-+}
-+
- #ifdef CONFIG_CGROUP_DEBUG
- static struct cgroup_subsys_state *
- debug_css_alloc(struct cgroup_subsys_state *parent_css)
--- 
-1.8.0.2
+Thanks,
+Fengguang
