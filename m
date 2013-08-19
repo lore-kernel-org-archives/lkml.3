@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab3HSX3q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 19:29:46 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50415 "EHLO hydra.sisk.pl"
+	id S1751655Ab3HSXaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 19:30:10 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:3895 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165Ab3HSX3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 19:29:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        akpm@linux-foundation.org, liwanp@linux.vnet.ibm.com, tj@kernel.org,
-        zhangyanfei@cn.fujitsu.com, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Preparation for arranging hotplug memory in ZONE_MOVABLE.
-Date: Tue, 20 Aug 2013 01:40:16 +0200
-Message-ID: <15319045.yHqauUVrf3@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1376473028-29380-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1376473028-29380-1-git-send-email-tangchen@cn.fujitsu.com>
+	id S1751436Ab3HSXaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 19:30:08 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <5212AA78.9040101@broadcom.com>
+Date: Mon, 19 Aug 2013 16:30:00 -0700
+From: "Christian Daudt" <csd@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "Christian Daudt" <csd@broadcom.com>
+cc: "Chris Ball" <cjb@laptop.org>, "Matt Porter" <matt.porter@linaro.org>,
+        "Markus Mayer" <markus.mayer@linaro.org>,
+        "Arnd Bergmann" <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        csd_b@daudt.org
+Subject: Re: [PATCH] ARM: mmc: fix NONREMOVABLE test in sdhci-bcm-kona
+References: <1375901981-1495-1-git-send-email-csd@broadcom.com>
+In-Reply-To: <1375901981-1495-1-git-send-email-csd@broadcom.com>
+X-WSS-ID: 7E0C76881R082171354-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 14, 2013 05:37:05 PM Tang Chen wrote:
-> These three trivial patches are from patch-set "Arrange hotpluggable memory as ZONE_MOVABLE."
-> And they have been acked and reviewed by many people.
-> 
-> Hope they can be merged first. And the rest patches are coming soon.
-> 
-> 
-> Tang Chen (3):
->   acpi: Print Hot-Pluggable Field in SRAT.
->   earlycpio.c: Fix the confusing comment of find_cpio_data().
->   acpi: Kill macro INVALID_TABLE().
-> 
->  arch/x86/mm/srat.c |   11 +++++++----
->  drivers/acpi/osl.c |   36 ++++++++++++++++++++----------------
->  lib/earlycpio.c    |   27 ++++++++++++++-------------
->  3 files changed, 41 insertions(+), 33 deletions(-)
+On 13-08-07 11:59 AM, Christian Daudt wrote:
+> sdhci-bcm-kona driver is incorrectly doing "|" to bit-test
+> NONREMOVABLE. Switch to "&"
+>
+> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+> Signed-off-by: Christian Daudt <csd@broadcom.com>
+>
+> diff --git a/drivers/mmc/host/sdhci-bcm-kona.c b/drivers/mmc/host/sdhci-bcm-kona.c
+> index 87175f9..9ffac0b 100644
+> --- a/drivers/mmc/host/sdhci-bcm-kona.c
+> +++ b/drivers/mmc/host/sdhci-bcm-kona.c
+> @@ -263,7 +263,7 @@ static int __init sdhci_bcm_kona_probe(struct platform_device *pdev)
+>   		(mmc_gpio_get_cd(host->mmc) != -ENOSYS) ? 'Y' : 'N',
+>   		(mmc_gpio_get_ro(host->mmc) != -ENOSYS) ? 'Y' : 'N');
+>   
+> -	if (host->mmc->caps | MMC_CAP_NONREMOVABLE)
+> +	if (host->mmc->caps & MMC_CAP_NONREMOVABLE)
+>   		host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+>   
+>   	dev_dbg(dev, "is_8bit=%c\n",
+> @@ -282,7 +282,7 @@ static int __init sdhci_bcm_kona_probe(struct platform_device *pdev)
+>   	}
+>   
+>   	/* if device is eMMC, emulate card insert right here */
+> -	if (host->mmc->caps | MMC_CAP_NONREMOVABLE) {
+> +	if (host->mmc->caps & MMC_CAP_NONREMOVABLE) {
+>   		ret = sdhci_bcm_kona_sd_card_emulate(host, 1);
+>   		if (ret) {
+>   			dev_err(dev,
+applied to bcm/for-3.12/soc
 
-I've queued up this series for 3.12.
+  thanks,
+    csd
 
-Thanks,
-Rafael
 
