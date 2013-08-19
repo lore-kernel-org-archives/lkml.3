@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab3HSR00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 13:26:26 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51134 "EHLO
+	id S1751274Ab3HSR0j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 13:26:39 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:51150 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab3HSR0W (ORCPT
+	with ESMTP id S1751237Ab3HSR0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 13:26:22 -0400
+	Mon, 19 Aug 2013 13:26:25 -0400
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, jwboyer@redhat.com, keescook@chromium.org,
         Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH V2 05/10] asus-wmi: Restrict debugfs interface when module loading is restricted
-Date: Mon, 19 Aug 2013 13:26:06 -0400
-Message-Id: <1376933171-9854-6-git-send-email-matthew.garrett@nebula.com>
+Subject: [PATCH V2 09/10] x86: Restrict MSR access when module loading is restricted
+Date: Mon, 19 Aug 2013 13:26:10 -0400
+Message-Id: <1376933171-9854-10-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
 References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
@@ -25,51 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have no way of validating what all of the Asus WMI methods do on a
-given machine, and there's a risk that some will allow hardware state to
-be manipulated in such a way that arbitrary code can be executed in the
-kernel, circumventing module loading restrictions. Prevent that if any of
-these features are enabled.
+Writing to MSRs should not be allowed if module loading is restricted,
+since it could lead to execution of arbitrary code in kernel mode. Based
+on a patch by Kees Cook.
 
+Cc: Kees Cook <keescook@chromium.org>
 Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- drivers/platform/x86/asus-wmi.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/kernel/msr.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-index 19c313b..db18ef66 100644
---- a/drivers/platform/x86/asus-wmi.c
-+++ b/drivers/platform/x86/asus-wmi.c
-@@ -1618,6 +1618,9 @@ static int show_dsts(struct seq_file *m, void *data)
- 	int err;
- 	u32 retval = -1;
+diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
+index 88458fa..d08f7e3 100644
+--- a/arch/x86/kernel/msr.c
++++ b/arch/x86/kernel/msr.c
+@@ -103,6 +103,9 @@ static ssize_t msr_write(struct file *file, const char __user *buf,
+ 	int err = 0;
+ 	ssize_t bytes = 0;
  
 +	if (secure_modules())
 +		return -EPERM;
 +
- 	err = asus_wmi_get_devstate(asus, asus->debug.dev_id, &retval);
+ 	if (count % 8)
+ 		return -EINVAL;	/* Invalid chunk size */
  
- 	if (err < 0)
-@@ -1634,6 +1637,9 @@ static int show_devs(struct seq_file *m, void *data)
- 	int err;
- 	u32 retval = -1;
- 
-+	if (secure_modules())
-+		return -EPERM;
-+
- 	err = asus_wmi_set_devstate(asus->debug.dev_id, asus->debug.ctrl_param,
- 				    &retval);
- 
-@@ -1658,6 +1664,9 @@ static int show_call(struct seq_file *m, void *data)
- 	union acpi_object *obj;
- 	acpi_status status;
- 
-+	if (secure_modules())
-+		return -EPERM;
-+
- 	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID,
- 				     1, asus->debug.method_id,
- 				     &input, &output);
+@@ -150,6 +153,10 @@ static long msr_ioctl(struct file *file, unsigned int ioc, unsigned long arg)
+ 			err = -EBADF;
+ 			break;
+ 		}
++		if (secure_modules()) {
++			err = -EPERM;
++			break;
++		}
+ 		if (copy_from_user(&regs, uregs, sizeof regs)) {
+ 			err = -EFAULT;
+ 			break;
 -- 
 1.8.3.1
 
