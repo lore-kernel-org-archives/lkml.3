@@ -1,176 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab3HSB6p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 21:58:45 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37450 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224Ab3HSB6o (ORCPT
+	id S1752986Ab3HSCFs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 22:05:48 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:64602 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab3HSCFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 21:58:44 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <52117B9A.4050202@jp.fujitsu.com>
-Date: Mon, 19 Aug 2013 10:57:46 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sun, 18 Aug 2013 22:05:46 -0400
+Message-ID: <52117D64.1010709@huawei.com>
+Date: Mon, 19 Aug 2013 10:05:24 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Jingbai Ma <jingbai.ma@hp.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Mitchell, Lisa (MCLinux in Fort Collins)" <lisa.mitchell@hp.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, bhelgaas@google.com,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [Help Test] kdump, x86, acpi: Reproduce CPU0 SMI corruption issue
- after unsetting BSP flag
-References: <5200BFB3.2050202@jp.fujitsu.com> <520A10A3.5080303@hp.com> <520B4A22.2030800@hp.com>
-In-Reply-To: <520B4A22.2030800@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v2] cgroup: change cgroup_from_id() to css_from_id()
+References: <520DCF2C.1020903@huawei.com> <20130816170659.GM2505@htj.dyndns.org>
+In-Reply-To: <20130816170659.GM2505@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/14 18:13), Jingbai Ma wrote:
-> On 08/13/2013 06:55 PM, Jingbai Ma wrote:
->> On 08/06/2013 05:19 PM, HATAYAMA Daisuke wrote:
->>> Hello,
->>>
->>> I've addressing kdump restriction that there's only one cpu available
->>> on the kdump 2nd kernel. Now I need to check if the following CPU0 SMI
->>> corruption issue fixed in the following commit can again be reproduced
->>> by unsetting BSP flag of the boot cpu:
->>>
->>> commit 74b5820808215f65b70b05a099d6d3c969b82689
->>> Author: Bjorn Helgaas<bjorn.helgaas@hp.com>
->>> Date:   Wed Jul 29 15:54:25 2009 -0600
->>>
->>>        ACPI: bind workqueues to CPU 0 to avoid SMI corruption
->>>
->>>        On some machines, a software-initiated SMI causes corruption unless the
->>>        SMI runs on CPU 0.  An SMI can be initiated by any AML, but typically it's
->>>        done in GPE-related methods that are run via workqueues, so we can avoid
->>>        the known corruption cases by binding the workqueues to CPU 0.
->>>
->>>        References:
->>>            http://bugzilla.kernel.org/show_bug.cgi?id=13751
->>>            https://bugs.launchpad.net/bugs/157171
->>>            https://bugs.launchpad.net/bugs/157691
->>>
->>>        Signed-off-by: Bjorn Helgaas<bjorn.helgaas@hp.com>
->>>        Signed-off-by: Len Brown<len.brown@intel.com>
->>>
->>> The reason is that in the current situation, I have two ideas to deal
->>> with the avove kdump restriction:
->>>
->>>      1) Disable BSP at the 2nd kernel, posted at:
->>>        [PATCH v1 0/2] x86, apic: Disable BSP if boot cpu is AP
->>>        https://lkml.org/lkml/2012/10/16/15
->>>
->>>      2) Unset BSP flag at the 1st kernel, suggested by Eric Biederman
->>>         during the discussion of the idea 1).
->>>
->>> On the idea 1), BSP is disabled on the kdump 2nd kernel. My conclusion
->>> is that we have no method to reset BSP, i.e. recover BPS's healthy
->>> state, while we can recover AP by means of INIT as described in MP
->>> specification.
->>>
->>> The idea 2) is simpler. We unset BSP flag of the boot cpu at 1st
->>> kernel. The behaviour when receiving INIT depends on whether or not
->>> BSP flag is set or not on its MSR; we can set and unset BSP flag of
->>> MSR freely at runtime. (I don't mean we should).
->>>
->>> So, next thing I should do is to evalute risk of the idea 2). In fact,
->>> during the discussion of the idea 1), HPA pointed out that some kind
->>> of firmware affects if BSP flag is unset. Also, maybe from the same
->>> reason, recently introduced cpu0 hot-plugging feature by Fenghua Yu
->>> doesn't appear to unset BSP flag.
->>>
->>> The biggest problem next is that I don't have any machines reported in
->>> the bugzilla articles; this issue inherently depends on firmware.
->>>
->>> So, could anyone help testing the idea 2) above if you have which of
->>> the following machines? (or other ones that can lead to the same bug)
->>>
->>> - HP Compaq 6910p
->>> - HP Compaq 6710b
->>> - HP Compaq 6710s
->>> - HP Compaq 6510b
->>> - HP Compaq 2510p
->>>
->>> I prepared a small programs for this test. See the attached file.
->>> The steps to try to reproduce the bug is as follows:
->>>
->>>      1. $ tar xf bsp_flag_modules.tar.gz; cd bsp_flag_modules
->>>      2. $ make # to build these programs
->>>      3. $ insmod unsetbspflag.ko # to unset BSP flag of the boot cpu
->>>      4. $ insmod getcpuinfo.ko # to confirm if BSP flag of the boot cpu has
->>>                                # been unset.
->>>         $ dmesg | tail
->>>      5. Close the lid of the machine.
->>>      6. Wait some minutes if necessary.
->>>      7. Open the lid and you can see oops on the screen if bug has
->>>        successfully been reproduced.
->>>
->>
->> I couldn't find any model list above, but found one HP EliteBook 6930p.
->> I tested this machine with kernel 2.6.30 first. After resuming from
->> suspend, system hang.
->>
->> Then, I tested with kernel 3.11.0-rc5, it worked well, could resume from
->> suspend without any problem.
->>
->> Next, I tested your program to clear BSP flag, I found the
->> unsetbspflag.ko didn't work everytime, sometimes I have to execute
->> insmod/rmmod several times to clear the BSP flag. (I used your
->> getcpuinfo.ko to check the BSP flag)
->>
->> cpu: 0 bios_apic: 0 apic: 0 AP
->> cpu: 1 bios_apic: 1 apic: 1 AP
->>
->> I suspended it, and them resumed it. This machine resumed from suspend
->> successfully, but the BSP flag has been set back:
->>
->> cpu: 0 bios_apic: 0 apic: 0 BSP
->> cpu: 1 bios_apic: 1 apic: 1 AP
->>
->> That's all my observation. Hope it's helpful.
->>
->
-> I found a side effect of unsetting BSP flag.
-> It affected system rebooting, once the BSP flags been removed, and issue
-> reboot command, system will hang after message:
-> Restarting system.
-> And have to do a hardware reset to recover it.
->
-> I have reproduced this problem on the following systems:
-> HP EliteBook 6930p
-> HP Compaq DC7700
-> HP ProLiant DL980 (4 sockets, 40 cores)
->
+Now we want cgroup core to always provide the css to use to the
+subsystems, so change this API to css_from_id().
 
-# Sorry for the delayed response. I was in vacation last week.
+Uninline css_from_id(), because it's getting bigger and cgroup_css()
+has been unexported.
 
-Thanks for your help, Ma. This result is enough to indicate risk of unsetting
-BSP flag in the 1st kernel.
+While at it, remove the #ifdef, and shuffle the order of the args.
 
-BTW, I have question that does normal kdump work well if crash happens on some
-AP? I wonder the same issue could happen on the 2nd kernel.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
 
-> I have an idea: To avoid such kind of issue, we can unset BSP flag in
-> the first kernel during crash processing, and restore it in the second
-> kernel in the APs initializing.
->
+v2: change the order of the args.
 
-As Eric has already suggested, we cannot rely on kdump crash path. There are
-certainly several codes that try to disable/reset a variety of CPU features
-in the kdump crash path. However, they are just best effort. On worst
-catastrophic case, even the reset codes can be broken. It was the same reason
-why the first patch of mine that switches CPUes to BSP if crash happens on AP
-was nacked.
+---
+ include/linux/cgroup.h | 20 ++------------------
+ kernel/cgroup.c        | 22 ++++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 18 deletions(-)
 
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 11a6419..3aac34d 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -742,27 +742,11 @@ static inline struct cgroup *task_cgroup(struct task_struct *task,
+ 	return task_css(task, subsys_id)->cgroup;
+ }
+ 
+-/**
+- * cgroup_from_id - lookup cgroup by id
+- * @ss: cgroup subsys to be looked into
+- * @id: the cgroup id
+- *
+- * Returns the cgroup if there's valid one with @id, otherwise returns NULL.
+- * Should be called under rcu_read_lock().
+- */
+-static inline struct cgroup *cgroup_from_id(struct cgroup_subsys *ss, int id)
+-{
+-#ifdef CONFIG_PROVE_RCU
+-	rcu_lockdep_assert(rcu_read_lock_held() ||
+-			   lockdep_is_held(&cgroup_mutex),
+-			   "cgroup_from_id() needs proper protection");
+-#endif
+-	return idr_find(&ss->root->cgroup_idr, id);
+-}
+-
+ struct cgroup_subsys_state *css_next_child(struct cgroup_subsys_state *pos,
+ 					   struct cgroup_subsys_state *parent);
+ 
++struct cgroup_subsys_state *css_from_id(int id, struct cgroup_subsys *ss);
++
+ /**
+  * css_for_each_child - iterate through children of a css
+  * @pos: the css * to use as the loop cursor
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 99785d6..07740d3 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -5710,6 +5710,28 @@ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id)
+ 	return css ? css : ERR_PTR(-ENOENT);
+ }
+ 
++/**
++ * css_from_id - lookup css by id
++ * @id: the cgroup id
++ * @ss: cgroup subsys to be looked into
++ *
++ * Returns the css if there's valid one with @id, otherwise returns NULL.
++ * Should be called under rcu_read_lock().
++ */
++struct cgroup_subsys_state *css_from_id(int id, struct cgroup_subsys *ss)
++{
++	struct cgroup *cgrp;
++
++	rcu_lockdep_assert(rcu_read_lock_held() ||
++			   lockdep_is_held(&cgroup_mutex),
++			   "css_from_id() needs proper protection");
++
++	cgrp = idr_find(&ss->root->cgroup_idr, id);
++	if (cgrp)
++		return cgroup_css(cgrp, ss->subsys_id);
++	return NULL;
++}
++
+ #ifdef CONFIG_CGROUP_DEBUG
+ static struct cgroup_subsys_state *
+ debug_css_alloc(struct cgroup_subsys_state *parent_css)
 -- 
-Thanks.
-HATAYAMA, Daisuke
-
+1.8.0.2
