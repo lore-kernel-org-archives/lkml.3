@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751276Ab3HSUdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 16:33:09 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:33788 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab3HSUdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 16:33:08 -0400
+	id S1751326Ab3HSUeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 16:34:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49935 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751144Ab3HSUeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 16:34:07 -0400
+Date: Mon, 19 Aug 2013 22:34:03 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors <kernel-janitors@vger.kernel.org>
+Subject: Re: rfc: trivial patches and slow deaths?
+In-Reply-To: <1376944033.2016.13.camel@joe-AO722>
+Message-ID: <alpine.LNX.2.00.1308192229360.21654@pobox.suse.cz>
+References: <1376944033.2016.13.camel@joe-AO722>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1376929831-18214-1-git-send-email-richard.genoud@gmail.com>
-References: <1376929831-18214-1-git-send-email-richard.genoud@gmail.com>
-Date: Mon, 19 Aug 2013 16:33:07 -0400
-Message-ID: <CAB9dFduWPr0n8c7ckZr=2AQ-h4sy4U9YYzTRw335Xaimc4tk-A@mail.gmail.com>
-Subject: Re: [PATCH] proc: return on proc_readdir error
-From: Marc Dionne <marc.c.dionne@gmail.com>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 12:30 PM, Richard Genoud
-<richard.genoud@gmail.com> wrote:
->
-> commit f0c3b5093addc8bfe9fe3a5b01acb7ec7969eafa
-> "[readdir] convert procfs" introduced a bug on the listing of the proc
-> file-system.
-> The return value of proc_readdir() isn't tested anymore in the
-> proc_root_readdir function.
->
-> This lead to an "interesting" behaviour when we are using the getdents()
-> system call with a buffer too small:
-> Instead of failing, it returns the first entries of /proc (enough to
-> fill the given buffer), plus the PID directories.
->
-> This is not triggered on glibc (as getdents is called with a 32KB
-> buffer), but on uclibc, the buffer size is only 1KB, thus some proc
-> entries are missing.
-> (described more in details here: https://lkml.org/lkml/2013/8/12/288 )
->
-> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-> ---
-> [added Linus Torvalds and Andrew Morton in CC since Al Viro seems to be
-> on holidays and it's starting to getting late in the -rc cycles]
->
->  fs/proc/root.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/fs/proc/root.c b/fs/proc/root.c
-> index 229e366..e0a790d 100644
-> --- a/fs/proc/root.c
-> +++ b/fs/proc/root.c
-> @@ -205,7 +205,9 @@ static struct dentry *proc_root_lookup(struct inode * dir, struct dentry * dentr
->  static int proc_root_readdir(struct file *file, struct dir_context *ctx)
->  {
->         if (ctx->pos < FIRST_PROCESS_ENTRY) {
-> -               proc_readdir(file, ctx);
-> +               int error = proc_readdir(file, ctx);
-> +               if (unlikely(error <= 0))
-> +                       return error;
->                 ctx->pos = FIRST_PROCESS_ENTRY;
->         }
+On Mon, 19 Aug 2013, Joe Perches wrote:
 
-By my reading that commit (f0c3b5093add) also made proc_readdir always
-return 0, so with this patch the effect I see is that no pid entries
-are listed under /proc, breaking ps for instance.  I don't see how
-even the previous version of proc_readdir could return a negative
-value; looks like 1 and 0 were the only possible return values.
+> Patches submitted to the trivial address
+> trivial@kernel.org seem to go nowhere slowly.
+> 
+> Jiri, do you have any actual plans to try to
+> pick up these patches, notify the submitters
+> that the patches have been accepted or rejected,
+> and forward them on when appropriate?
+> 
+> Otherwise, the patches sit for _months_ without
+> any action.  That's simply too long.
+> 
+> Should another mechanism or pathway be created
+> instead?
 
-Marc
+Joe,
+
+I disagree. Please look at what is happening in trivial.git over longer 
+period of time.
+
+The patches I am holding off are larger series which are submitted both to 
+trivial@ and maintainers as well. With such pathces, it's not clear who is 
+taking (which parts of) what, hence I hold them off for long time, and get 
+back to it eventually later.
+
+It's time consuming, as I have to check linux-next for those patches, 
+hence it's delayed.
+
+One-shot single trivial patches are picked up reasonably fast (i.e. are 
+very rarely delayed for one Linus' release).
+
+But yes, I agree, you are usually sending cross-tree large patchsets, and 
+therefore you are often affected by what you describe.
+
+Perhaps if you send to trivial@ only those patches which haven't been 
+picked up by maintainers already, that'd lead to much faster application 
+of those, if that's what you are about.
+
+-- 
+Jiri Kosina
+SUSE Labs
