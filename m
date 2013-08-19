@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330Ab3HSKO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 06:14:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55878 "EHLO mx1.redhat.com"
+	id S1751366Ab3HSKPc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 06:15:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34723 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab3HSKO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 06:14:57 -0400
+	id S1751344Ab3HSKP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 06:15:28 -0400
 From: Cong Wang <amwang@redhat.com>
 To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org, Cong Wang <amwang@redhat.com>
-Subject: [Patch net-next v3 2/9] net: rename '%pIS' to '%pIA' for union inet_addr
-Date: Mon, 19 Aug 2013 18:14:31 +0800
-Message-Id: <1376907278-26377-3-git-send-email-amwang@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Steve French <sfrench@samba.org>,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
+        Cong Wang <amwang@redhat.com>
+Subject: [Patch net-next v3 7/9] fs: use generic union inet_addr and helper functions
+Date: Mon, 19 Aug 2013 18:14:36 +0800
+Message-Id: <1376907278-26377-8-git-send-email-amwang@redhat.com>
 In-Reply-To: <1376907278-26377-1-git-send-email-amwang@redhat.com>
 References: <1376907278-26377-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,278 +26,505 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cong Wang <amwang@redhat.com>
 
-The "%pIS" specifier is for struct Sockaddr, since now we have union
-inet_addr, rename it to '%pIA' so that it can accept union inet_addr*.
-But struct sockaddr * can still safely passed to
-'%pIA', since it is a union of it.
+nfs and cifs define some helper functions for sockaddr,
+they can use the generic functions for union inet_addr/struct sockaddr
+too.
 
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Cc: Joe Perches <joe@perches.com>
+Since some dlm code needs to compare ->sin_port, introduce a
+generic function inet_addr_equal_strict() for it.
+
+Cc: Steve French <sfrench@samba.org>
+Cc: Christine Caulfield <ccaulfie@redhat.com>
+Cc: David Teigland <teigland@redhat.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-cifs@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
+Cc: cluster-devel@redhat.com
+Cc: linux-nfs@vger.kernel.org
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- Documentation/printk-formats.txt |   20 ++++++++++----------
- drivers/net/netconsole.c         |   10 ++--------
- lib/vsprintf.c                   |   29 +++++++++++++----------------
- net/core/netpoll.c               |   10 ++--------
- net/sctp/associola.c             |    6 +++---
- net/sctp/protocol.c              |    6 +++---
- net/sctp/sm_sideeffect.c         |    2 +-
- net/sctp/socket.c                |    4 ++--
- 8 files changed, 36 insertions(+), 51 deletions(-)
+ fs/cifs/connect.c          |   54 +++++---------------
+ fs/dlm/lowcomms.c          |   24 ++-------
+ fs/nfs/client.c            |  113 +-------------------------------------------
+ fs/nfs/nfs4client.c        |    2 +-
+ fs/nfs/nfs4filelayoutdev.c |   37 ++-------------
+ fs/nfs/super.c             |   31 +-----------
+ include/net/inet_addr.h    |    8 +++
+ net/core/utils.c           |   23 +++++++++
+ 8 files changed, 60 insertions(+), 232 deletions(-)
 
-diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-index 3e8cb73..3521cc9 100644
---- a/Documentation/printk-formats.txt
-+++ b/Documentation/printk-formats.txt
-@@ -123,15 +123,15 @@ IPv6 addresses:
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index d67c550..081cb6c 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -40,6 +40,7 @@
+ #include <linux/module.h>
+ #include <keys/user-type.h>
+ #include <net/ipv6.h>
++#include <net/inet_addr.h>
+ #include <linux/parser.h>
  
- IPv4/IPv6 addresses (generic, with port, flowinfo, scope):
- 
--	%pIS	1.2.3.4		or 0001:0002:0003:0004:0005:0006:0007:0008
--	%piS	001.002.003.004	or 00010002000300040005000600070008
--	%pISc	1.2.3.4		or 1:2:3:4:5:6:7:8
--	%pISpc	1.2.3.4:12345	or [1:2:3:4:5:6:7:8]:12345
--	%p[Ii]S[pfschnbl]
-+	%pIA	1.2.3.4		or 0001:0002:0003:0004:0005:0006:0007:0008
-+	%piA	001.002.003.004	or 00010002000300040005000600070008
-+	%pIAc	1.2.3.4		or 1:2:3:4:5:6:7:8
-+	%pIApc	1.2.3.4:12345	or [1:2:3:4:5:6:7:8]:12345
-+	%p[Ii]A[pfschnbl]
- 
- 	For printing an IP address without the need to distinguish whether it's
--	of type AF_INET or AF_INET6, a pointer to a valid 'struct sockaddr',
--	specified through 'IS' or 'iS', can be passed to this format specifier.
-+	of type AF_INET or AF_INET6, a pointer to a valid 'union inet_addr',
-+	specified through 'IA' or 'iA', can be passed to this format specifier.
- 
- 	The additional 'p', 'f', and 's' specifiers are used to specify port
- 	(IPv4, IPv6), flowinfo (IPv6) and scope (IPv6). Ports have a ':' prefix,
-@@ -149,9 +149,9 @@ IPv4/IPv6 addresses (generic, with port, flowinfo, scope):
- 
- 	Further examples:
- 
--	%pISfc		1.2.3.4		or [1:2:3:4:5:6:7:8]/123456789
--	%pISsc		1.2.3.4		or [1:2:3:4:5:6:7:8]%1234567890
--	%pISpfc		1.2.3.4:12345	or [1:2:3:4:5:6:7:8]:12345/123456789
-+	%pIAfc		1.2.3.4		or [1:2:3:4:5:6:7:8]/123456789
-+	%pIAsc		1.2.3.4		or [1:2:3:4:5:6:7:8]%1234567890
-+	%pIApfc		1.2.3.4:12345	or [1:2:3:4:5:6:7:8]:12345/123456789
- 
- UUID/GUID addresses:
- 
-diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index e4eac0c..28234f8 100644
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -270,18 +270,12 @@ static ssize_t show_remote_port(struct netconsole_target *nt, char *buf)
- 
- static ssize_t show_local_ip(struct netconsole_target *nt, char *buf)
+ #include "cifspdu.h"
+@@ -1900,17 +1901,9 @@ srcip_matches(struct sockaddr *srcaddr, struct sockaddr *rhs)
  {
--	if (nt->np.ipv6)
--		return snprintf(buf, PAGE_SIZE, "%pI6c\n", &nt->np.local_ip.sin6.sin6_addr);
--	else
--		return snprintf(buf, PAGE_SIZE, "%pI4\n", &nt->np.local_ip.sin.sin_addr.s_addr);
-+	return snprintf(buf, PAGE_SIZE, "%pIA\n", &nt->np.local_ip);
+ 	switch (srcaddr->sa_family) {
+ 	case AF_UNSPEC:
+-		return (rhs->sa_family == AF_UNSPEC);
+-	case AF_INET: {
+-		struct sockaddr_in *saddr4 = (struct sockaddr_in *)srcaddr;
+-		struct sockaddr_in *vaddr4 = (struct sockaddr_in *)rhs;
+-		return (saddr4->sin_addr.s_addr == vaddr4->sin_addr.s_addr);
+-	}
+-	case AF_INET6: {
+-		struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)srcaddr;
+-		struct sockaddr_in6 *vaddr6 = (struct sockaddr_in6 *)rhs;
+-		return ipv6_addr_equal(&saddr6->sin6_addr, &vaddr6->sin6_addr);
+-	}
++	case AF_INET:
++	case AF_INET6:
++		return sockaddr_equal(srcaddr, rhs);
+ 	default:
+ 		WARN_ON(1);
+ 		return false; /* don't expect to be here */
+@@ -1925,16 +1918,13 @@ srcip_matches(struct sockaddr *srcaddr, struct sockaddr *rhs)
+ static bool
+ match_port(struct TCP_Server_Info *server, struct sockaddr *addr)
+ {
+-	__be16 port, *sport;
++	unsigned short port, sport;
+ 
+ 	switch (addr->sa_family) {
+ 	case AF_INET:
+-		sport = &((struct sockaddr_in *) &server->dstaddr)->sin_port;
+-		port = ((struct sockaddr_in *) addr)->sin_port;
+-		break;
+ 	case AF_INET6:
+-		sport = &((struct sockaddr_in6 *) &server->dstaddr)->sin6_port;
+-		port = ((struct sockaddr_in6 *) addr)->sin6_port;
++		sport = sockaddr_get_port((struct sockaddr *)&server->dstaddr);
++		port = sockaddr_get_port(addr);
+ 		break;
+ 	default:
+ 		WARN_ON(1);
+@@ -1942,14 +1932,14 @@ match_port(struct TCP_Server_Info *server, struct sockaddr *addr)
+ 	}
+ 
+ 	if (!port) {
+-		port = htons(CIFS_PORT);
+-		if (port == *sport)
++		port = CIFS_PORT;
++		if (port == sport)
+ 			return true;
+ 
+-		port = htons(RFC1001_PORT);
++		port = RFC1001_PORT;
+ 	}
+ 
+-	return port == *sport;
++	return port == sport;
  }
  
- static ssize_t show_remote_ip(struct netconsole_target *nt, char *buf)
+ static bool
+@@ -1957,27 +1947,11 @@ match_address(struct TCP_Server_Info *server, struct sockaddr *addr,
+ 	      struct sockaddr *srcaddr)
  {
--	if (nt->np.ipv6)
--		return snprintf(buf, PAGE_SIZE, "%pI6c\n", &nt->np.remote_ip.sin6.sin6_addr);
--	else
--		return snprintf(buf, PAGE_SIZE, "%pI4\n", &nt->np.remote_ip.sin.sin_addr.s_addr);
-+	return snprintf(buf, PAGE_SIZE, "%pIA\n", &nt->np.remote_ip);
- }
- 
- static ssize_t show_local_mac(struct netconsole_target *nt, char *buf)
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 739a363..49618d0 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -27,6 +27,7 @@
- #include <linux/uaccess.h>
- #include <linux/ioport.h>
- #include <net/addrconf.h>
+ 	switch (addr->sa_family) {
+-	case AF_INET: {
+-		struct sockaddr_in *addr4 = (struct sockaddr_in *)addr;
+-		struct sockaddr_in *srv_addr4 =
+-					(struct sockaddr_in *)&server->dstaddr;
+-
+-		if (addr4->sin_addr.s_addr != srv_addr4->sin_addr.s_addr)
+-			return false;
+-		break;
+-	}
+-	case AF_INET6: {
+-		struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)addr;
+-		struct sockaddr_in6 *srv_addr6 =
+-					(struct sockaddr_in6 *)&server->dstaddr;
+-
+-		if (!ipv6_addr_equal(&addr6->sin6_addr,
+-				     &srv_addr6->sin6_addr))
+-			return false;
+-		if (addr6->sin6_scope_id != srv_addr6->sin6_scope_id)
++	case AF_INET:
++	case AF_INET6:
++		if (!sockaddr_equal(addr, (struct sockaddr *)&server->dstaddr))
+ 			return false;
+ 		break;
+-	}
+ 	default:
+ 		WARN_ON(1);
+ 		return false; /* don't expect to be here */
+diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
+index d90909e..c051237 100644
+--- a/fs/dlm/lowcomms.c
++++ b/fs/dlm/lowcomms.c
+@@ -54,6 +54,7 @@
+ #include <linux/slab.h>
+ #include <net/sctp/sctp.h>
+ #include <net/ipv6.h>
 +#include <net/inet_addr.h>
  
- #include <asm/page.h>		/* for PAGE_SIZE */
- #include <asm/sections.h>	/* for dereference_function_descriptor() */
-@@ -1104,14 +1105,14 @@ int kptr_restrict __read_mostly;
-  * - 'I' [46] for IPv4/IPv6 addresses printed in the usual way
-  *       IPv4 uses dot-separated decimal without leading 0's (1.2.3.4)
-  *       IPv6 uses colon separated network-order 16 bit hex with leading 0's
-- *       [S][pfs]
-- *       Generic IPv4/IPv6 address (struct sockaddr *) that falls back to
-+ *       [A][pfs]
-+ *       Generic IPv4/IPv6 address (union inet_addr *) that falls back to
-  *       [4] or [6] and is able to print port [p], flowinfo [f], scope [s]
-  * - 'i' [46] for 'raw' IPv4/IPv6 addresses
-  *       IPv6 omits the colons (01020304...0f)
-  *       IPv4 uses dot-separated decimal with leading 0's (010.123.045.006)
-- *       [S][pfs]
-- *       Generic IPv4/IPv6 address (struct sockaddr *) that falls back to
-+ *       [A][pfs]
-+ *       Generic IPv4/IPv6 address (union inet_addr *) that falls back to
-  *       [4] or [6] and is able to print port [p], flowinfo [f], scope [s]
-  * - '[Ii][4S][hnbl]' IPv4 addresses in host, network, big or little endian order
-  * - 'I[6S]c' for IPv6 addresses printed as specified by
-@@ -1196,18 +1197,14 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 			return ip6_addr_string(buf, end, ptr, spec, fmt);
- 		case '4':
- 			return ip4_addr_string(buf, end, ptr, spec, fmt);
--		case 'S': {
--			const union {
--				struct sockaddr		raw;
--				struct sockaddr_in	v4;
--				struct sockaddr_in6	v6;
--			} *sa = ptr;
--
--			switch (sa->raw.sa_family) {
-+		case 'A': {
-+			const union inet_addr *sa = ptr;
-+
-+			switch (sa->sa.sa_family) {
- 			case AF_INET:
--				return ip4_addr_string_sa(buf, end, &sa->v4, spec, fmt);
-+				return ip4_addr_string_sa(buf, end, &sa->sin, spec, fmt);
- 			case AF_INET6:
--				return ip6_addr_string_sa(buf, end, &sa->v6, spec, fmt);
-+				return ip6_addr_string_sa(buf, end, &sa->sin6, spec, fmt);
- 			default:
- 				return string(buf, end, "(invalid address)", spec);
- 			}}
-@@ -1488,8 +1485,8 @@ qualifier:
-  * %pI6 print an IPv6 address with colons
-  * %pi6 print an IPv6 address without colons
-  * %pI6c print an IPv6 address as specified by RFC 5952
-- * %pIS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
-- * %piS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
-+ * %pIA depending on sa_family of 'union inet_addr *' print IPv4/IPv6 address
-+ * %piA depending on sa_family of 'union inet_addr *' print IPv4/IPv6 address
-  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
-  *   case.
-  * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index dd38553..9a45c54 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -900,16 +900,10 @@ out:
- void netpoll_print_options(struct netpoll *np)
+ #include "dlm_internal.h"
+ #include "lowcomms.h"
+@@ -286,28 +287,13 @@ static struct dlm_node_addr *find_node_addr(int nodeid)
+ static int addr_compare(struct sockaddr_storage *x, struct sockaddr_storage *y)
  {
- 	np_info(np, "local port %d\n", np->local_port);
--	if (np->ipv6)
--		np_info(np, "local IPv6 address %pI6c\n", &np->local_ip.sin6.sin6_addr);
--	else
--		np_info(np, "local IPv4 address %pI4\n", &np->local_ip.sin.sin_addr.s_addr);
-+	np_info(np, "local IP address %pIA\n", &np->local_ip);
- 	np_info(np, "interface '%s'\n", np->dev_name);
- 	np_info(np, "remote port %d\n", np->remote_port);
--	if (np->ipv6)
--		np_info(np, "remote IPv6 address %pI6c\n", &np->remote_ip.sin6.sin6_addr);
--	else
--		np_info(np, "remote IPv4 address %pI4\n", &np->remote_ip.sin.sin_addr.s_addr);
-+	np_info(np, "remote IP address %pIA\n", &np->remote_ip);
- 	np_info(np, "remote ethernet address %pM\n", np->remote_mac);
- }
- EXPORT_SYMBOL(netpoll_print_options);
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index cef5099..a514612 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -534,7 +534,7 @@ void sctp_assoc_rm_peer(struct sctp_association *asoc,
- 	struct list_head	*pos;
- 	struct sctp_transport	*transport;
- 
--	pr_debug("%s: association:%p addr:%pISpc\n",
-+	pr_debug("%s: association:%p addr:%pIApc\n",
- 		 __func__, asoc, &peer->ipaddr.sa);
- 
- 	/* If we are to remove the current retran_path, update it
-@@ -631,7 +631,7 @@ struct sctp_transport *sctp_assoc_add_peer(struct sctp_association *asoc,
- 	/* AF_INET and AF_INET6 share common port field. */
- 	port = ntohs(addr->v4.sin_port);
- 
--	pr_debug("%s: association:%p addr:%pISpc state:%d\n", __func__,
-+	pr_debug("%s: association:%p addr:%pIApc state:%d\n", __func__,
- 		 asoc, &addr->sa, peer_state);
- 
- 	/* Set the port if it has not been set yet.  */
-@@ -1341,7 +1341,7 @@ void sctp_assoc_update_retran_path(struct sctp_association *asoc)
- 	else
- 		t = asoc->peer.retran_path;
- 
--	pr_debug("%s: association:%p addr:%pISpc\n", __func__, asoc,
-+	pr_debug("%s: association:%p addr:%pIApc\n", __func__, asoc,
- 		 &t->ipaddr.sa);
+ 	switch (x->ss_family) {
+-	case AF_INET: {
+-		struct sockaddr_in *sinx = (struct sockaddr_in *)x;
+-		struct sockaddr_in *siny = (struct sockaddr_in *)y;
+-		if (sinx->sin_addr.s_addr != siny->sin_addr.s_addr)
+-			return 0;
+-		if (sinx->sin_port != siny->sin_port)
+-			return 0;
+-		break;
+-	}
+-	case AF_INET6: {
+-		struct sockaddr_in6 *sinx = (struct sockaddr_in6 *)x;
+-		struct sockaddr_in6 *siny = (struct sockaddr_in6 *)y;
+-		if (!ipv6_addr_equal(&sinx->sin6_addr, &siny->sin6_addr))
+-			return 0;
+-		if (sinx->sin6_port != siny->sin6_port)
+-			return 0;
+-		break;
+-	}
++	case AF_INET:
++	case AF_INET6:
++		return inet_addr_equal_strict((union inet_addr *)x,
++					      (union inet_addr *)y);
+ 	default:
+ 		return 0;
+ 	}
+-	return 1;
  }
  
-diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
-index 5e17092..0680be7 100644
---- a/net/sctp/protocol.c
-+++ b/net/sctp/protocol.c
-@@ -598,7 +598,7 @@ static void sctp_addr_wq_timeout_handler(unsigned long arg)
- 	spin_lock_bh(&net->sctp.addr_wq_lock);
+ static int nodeid_to_addr(int nodeid, struct sockaddr_storage *sas_out,
+diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+index 340b1ef..708dc96 100644
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -38,6 +38,7 @@
+ #include <linux/slab.h>
+ #include <linux/idr.h>
+ #include <net/ipv6.h>
++#include <net/inet_addr.h>
+ #include <linux/nfs_xdr.h>
+ #include <linux/sunrpc/bc_xprt.h>
+ #include <linux/nsproxy.h>
+@@ -283,116 +284,6 @@ void nfs_put_client(struct nfs_client *clp)
+ }
+ EXPORT_SYMBOL_GPL(nfs_put_client);
  
- 	list_for_each_entry_safe(addrw, temp, &net->sctp.addr_waitq, list) {
--		pr_debug("%s: the first ent in wq:%p is addr:%pISc for cmd:%d at "
-+		pr_debug("%s: the first ent in wq:%p is addr:%pIAc for cmd:%d at "
- 			 "entry:%p\n", __func__, &net->sctp.addr_waitq, &addrw->a.sa,
- 			 addrw->state, addrw);
+-#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+-/*
+- * Test if two ip6 socket addresses refer to the same socket by
+- * comparing relevant fields. The padding bytes specifically, are not
+- * compared. sin6_flowinfo is not compared because it only affects QoS
+- * and sin6_scope_id is only compared if the address is "link local"
+- * because "link local" addresses need only be unique to a specific
+- * link. Conversely, ordinary unicast addresses might have different
+- * sin6_scope_id.
+- *
+- * The caller should ensure both socket addresses are AF_INET6.
+- */
+-static int nfs_sockaddr_match_ipaddr6(const struct sockaddr *sa1,
+-				      const struct sockaddr *sa2)
+-{
+-	const struct sockaddr_in6 *sin1 = (const struct sockaddr_in6 *)sa1;
+-	const struct sockaddr_in6 *sin2 = (const struct sockaddr_in6 *)sa2;
+-
+-	if (!ipv6_addr_equal(&sin1->sin6_addr, &sin2->sin6_addr))
+-		return 0;
+-	else if (ipv6_addr_type(&sin1->sin6_addr) & IPV6_ADDR_LINKLOCAL)
+-		return sin1->sin6_scope_id == sin2->sin6_scope_id;
+-
+-	return 1;
+-}
+-#else	/* !defined(CONFIG_IPV6) && !defined(CONFIG_IPV6_MODULE) */
+-static int nfs_sockaddr_match_ipaddr6(const struct sockaddr *sa1,
+-				      const struct sockaddr *sa2)
+-{
+-	return 0;
+-}
+-#endif
+-
+-/*
+- * Test if two ip4 socket addresses refer to the same socket, by
+- * comparing relevant fields. The padding bytes specifically, are
+- * not compared.
+- *
+- * The caller should ensure both socket addresses are AF_INET.
+- */
+-static int nfs_sockaddr_match_ipaddr4(const struct sockaddr *sa1,
+-				      const struct sockaddr *sa2)
+-{
+-	const struct sockaddr_in *sin1 = (const struct sockaddr_in *)sa1;
+-	const struct sockaddr_in *sin2 = (const struct sockaddr_in *)sa2;
+-
+-	return sin1->sin_addr.s_addr == sin2->sin_addr.s_addr;
+-}
+-
+-static int nfs_sockaddr_cmp_ip6(const struct sockaddr *sa1,
+-				const struct sockaddr *sa2)
+-{
+-	const struct sockaddr_in6 *sin1 = (const struct sockaddr_in6 *)sa1;
+-	const struct sockaddr_in6 *sin2 = (const struct sockaddr_in6 *)sa2;
+-
+-	return nfs_sockaddr_match_ipaddr6(sa1, sa2) &&
+-		(sin1->sin6_port == sin2->sin6_port);
+-}
+-
+-static int nfs_sockaddr_cmp_ip4(const struct sockaddr *sa1,
+-				const struct sockaddr *sa2)
+-{
+-	const struct sockaddr_in *sin1 = (const struct sockaddr_in *)sa1;
+-	const struct sockaddr_in *sin2 = (const struct sockaddr_in *)sa2;
+-
+-	return nfs_sockaddr_match_ipaddr4(sa1, sa2) &&
+-		(sin1->sin_port == sin2->sin_port);
+-}
+-
+-#if defined(CONFIG_NFS_V4_1)
+-/*
+- * Test if two socket addresses represent the same actual socket,
+- * by comparing (only) relevant fields, excluding the port number.
+- */
+-int nfs_sockaddr_match_ipaddr(const struct sockaddr *sa1,
+-			      const struct sockaddr *sa2)
+-{
+-	if (sa1->sa_family != sa2->sa_family)
+-		return 0;
+-
+-	switch (sa1->sa_family) {
+-	case AF_INET:
+-		return nfs_sockaddr_match_ipaddr4(sa1, sa2);
+-	case AF_INET6:
+-		return nfs_sockaddr_match_ipaddr6(sa1, sa2);
+-	}
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(nfs_sockaddr_match_ipaddr);
+-#endif /* CONFIG_NFS_V4_1 */
+-
+-/*
+- * Test if two socket addresses represent the same actual socket,
+- * by comparing (only) relevant fields, including the port number.
+- */
+-static int nfs_sockaddr_cmp(const struct sockaddr *sa1,
+-			    const struct sockaddr *sa2)
+-{
+-	if (sa1->sa_family != sa2->sa_family)
+-		return 0;
+-
+-	switch (sa1->sa_family) {
+-	case AF_INET:
+-		return nfs_sockaddr_cmp_ip4(sa1, sa2);
+-	case AF_INET6:
+-		return nfs_sockaddr_cmp_ip6(sa1, sa2);
+-	}
+-	return 0;
+-}
+-
+ /*
+  * Find an nfs_client on the list that matches the initialisation data
+  * that is supplied.
+@@ -419,7 +310,7 @@ static struct nfs_client *nfs_match_client(const struct nfs_client_initdata *dat
+ 		if (clp->cl_minorversion != data->minorversion)
+ 			continue;
+ 		/* Match the full socket address */
+-		if (!nfs_sockaddr_cmp(sap, clap))
++		if (!sockaddr_equal_strict(sap, clap))
+ 			continue;
  
-@@ -703,7 +703,7 @@ void sctp_addr_wq_mgmt(struct net *net, struct sctp_sockaddr_entry *addr, int cm
- 	addrw = sctp_addr_wq_lookup(net, addr);
- 	if (addrw) {
- 		if (addrw->state != cmd) {
--			pr_debug("%s: offsets existing entry for %d, addr:%pISc "
-+			pr_debug("%s: offsets existing entry for %d, addr:%pIAc "
- 				 "in wq:%p\n", __func__, addrw->state, &addrw->a.sa,
- 				 &net->sctp.addr_waitq);
+ 		atomic_inc(&clp->cl_count);
+diff --git a/fs/nfs/nfs4client.c b/fs/nfs/nfs4client.c
+index 90dce91..383b97a 100644
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -552,7 +552,7 @@ static bool nfs4_cb_match_client(const struct sockaddr *addr,
+ 		return false;
  
-@@ -723,7 +723,7 @@ void sctp_addr_wq_mgmt(struct net *net, struct sctp_sockaddr_entry *addr, int cm
- 	addrw->state = cmd;
- 	list_add_tail(&addrw->list, &net->sctp.addr_waitq);
+ 	/* Match only the IP address, not the port number */
+-	if (!nfs_sockaddr_match_ipaddr(addr, clap))
++	if (!sockaddr_equal(addr, clap))
+ 		return false;
  
--	pr_debug("%s: add new entry for cmd:%d, addr:%pISc in wq:%p\n",
-+	pr_debug("%s: add new entry for cmd:%d, addr:%pIAc in wq:%p\n",
- 		 __func__, addrw->state, &addrw->a.sa, &net->sctp.addr_waitq);
+ 	return true;
+diff --git a/fs/nfs/nfs4filelayoutdev.c b/fs/nfs/nfs4filelayoutdev.c
+index 95604f6..955494cb 100644
+--- a/fs/nfs/nfs4filelayoutdev.c
++++ b/fs/nfs/nfs4filelayoutdev.c
+@@ -32,6 +32,7 @@
+ #include <linux/vmalloc.h>
+ #include <linux/module.h>
+ #include <linux/sunrpc/addr.h>
++#include <net/inet_addr.h>
  
- 	if (!timer_pending(&net->sctp.addr_wq_timer)) {
-diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
-index 666c668..638c63c 100644
---- a/net/sctp/sm_sideeffect.c
-+++ b/net/sctp/sm_sideeffect.c
-@@ -514,7 +514,7 @@ static void sctp_do_8_2_transport_strike(sctp_cmd_seq_t *commands,
+ #include "internal.h"
+ #include "nfs4session.h"
+@@ -74,44 +75,14 @@ print_ds(struct nfs4_pnfs_ds *ds)
+ static bool
+ same_sockaddr(struct sockaddr *addr1, struct sockaddr *addr2)
+ {
+-	struct sockaddr_in *a, *b;
+-	struct sockaddr_in6 *a6, *b6;
+-
+-	if (addr1->sa_family != addr2->sa_family)
+-		return false;
+-
+-	switch (addr1->sa_family) {
+-	case AF_INET:
+-		a = (struct sockaddr_in *)addr1;
+-		b = (struct sockaddr_in *)addr2;
+-
+-		if (a->sin_addr.s_addr == b->sin_addr.s_addr &&
+-		    a->sin_port == b->sin_port)
+-			return true;
+-		break;
+-
+-	case AF_INET6:
+-		a6 = (struct sockaddr_in6 *)addr1;
+-		b6 = (struct sockaddr_in6 *)addr2;
+-
+-		/* LINKLOCAL addresses must have matching scope_id */
+-		if (ipv6_addr_scope(&a6->sin6_addr) ==
+-		    IPV6_ADDR_SCOPE_LINKLOCAL &&
+-		    a6->sin6_scope_id != b6->sin6_scope_id)
+-			return false;
+-
+-		if (ipv6_addr_equal(&a6->sin6_addr, &b6->sin6_addr) &&
+-		    a6->sin6_port == b6->sin6_port)
+-			return true;
+-		break;
+-
+-	default:
++	if (addr1->sa_family != AF_INET && addr1->sa_family != AF_INET6) {
+ 		dprintk("%s: unhandled address family: %u\n",
+ 			__func__, addr1->sa_family);
+ 		return false;
+ 	}
  
- 	if (transport->state != SCTP_INACTIVE &&
- 	    (transport->error_count > transport->pathmaxrxt)) {
--		pr_debug("%s: association:%p transport addr:%pISpc failed\n",
-+		pr_debug("%s: association:%p transport addr:%pIApc failed\n",
- 			 __func__, asoc, &transport->ipaddr.sa);
+-	return false;
++	return inet_addr_equal_strict((union inet_addr *)addr1,
++				      (union inet_addr *)addr2);
+ }
  
- 		sctp_assoc_control_transport(asoc, transport,
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index d5d5882..dba117a 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -343,7 +343,7 @@ static int sctp_do_bind(struct sock *sk, union sctp_addr *addr, int len)
+ static bool
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index ac7c359..0744abb 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -49,6 +49,7 @@
+ #include <linux/in6.h>
+ #include <linux/slab.h>
+ #include <net/ipv6.h>
++#include <net/inet_addr.h>
+ #include <linux/netdevice.h>
+ #include <linux/nfs_xdr.h>
+ #include <linux/magic.h>
+@@ -2335,34 +2336,8 @@ static int nfs_compare_super_address(struct nfs_server *server1,
  
- 	snum = ntohs(addr->v4.sin_port);
+ 	sap1 = (struct sockaddr *)&server1->nfs_client->cl_addr;
+ 	sap2 = (struct sockaddr *)&server2->nfs_client->cl_addr;
+-
+-	if (sap1->sa_family != sap2->sa_family)
+-		return 0;
+-
+-	switch (sap1->sa_family) {
+-	case AF_INET: {
+-		struct sockaddr_in *sin1 = (struct sockaddr_in *)sap1;
+-		struct sockaddr_in *sin2 = (struct sockaddr_in *)sap2;
+-		if (sin1->sin_addr.s_addr != sin2->sin_addr.s_addr)
+-			return 0;
+-		if (sin1->sin_port != sin2->sin_port)
+-			return 0;
+-		break;
+-	}
+-	case AF_INET6: {
+-		struct sockaddr_in6 *sin1 = (struct sockaddr_in6 *)sap1;
+-		struct sockaddr_in6 *sin2 = (struct sockaddr_in6 *)sap2;
+-		if (!ipv6_addr_equal(&sin1->sin6_addr, &sin2->sin6_addr))
+-			return 0;
+-		if (sin1->sin6_port != sin2->sin6_port)
+-			return 0;
+-		break;
+-	}
+-	default:
+-		return 0;
+-	}
+-
+-	return 1;
++	return inet_addr_equal_strict((union inet_addr *)sap1,
++				      (union inet_addr *)sap2);
+ }
  
--	pr_debug("%s: sk:%p, new addr:%pISc, port:%d, new port:%d, len:%d\n",
-+	pr_debug("%s: sk:%p, new addr:%pIAc, port:%d, new port:%d, len:%d\n",
- 		 __func__, sk, &addr->sa, bp->port, snum, len);
+ static int nfs_compare_super(struct super_block *sb, void *data)
+diff --git a/include/net/inet_addr.h b/include/net/inet_addr.h
+index 44179c8..f317f0f 100644
+--- a/include/net/inet_addr.h
++++ b/include/net/inet_addr.h
+@@ -122,6 +122,7 @@ void inet_addr_set_port(union inet_addr *sap,
+ }
  
- 	/* PF specific bind() address verification. */
-@@ -797,7 +797,7 @@ static int sctp_send_asconf_del_ip(struct sock		*sk,
- 				asoc->asconf_addr_del_pending->v6.sin6_addr = sin6->sin6_addr;
- 			}
+ bool inet_addr_equal(const union inet_addr *a, const union inet_addr *b);
++bool inet_addr_equal_strict(const union inet_addr *a, const union inet_addr *b);
+ int simple_inet_pton(const char *str, union inet_addr *addr);
  
--			pr_debug("%s: keep the last address asoc:%p %pISc at %p\n",
-+			pr_debug("%s: keep the last address asoc:%p %pIAc at %p\n",
- 				 __func__, asoc, &asoc->asconf_addr_del_pending->sa,
- 				 asoc->asconf_addr_del_pending);
+ static inline bool sockaddr_equal(const struct sockaddr *sap1,
+@@ -131,6 +132,13 @@ static inline bool sockaddr_equal(const struct sockaddr *sap1,
+ 			       (const union inet_addr *)sap2);
+ }
  
++static inline int sockaddr_equal_strict(const struct sockaddr *sa1,
++					const struct sockaddr *sa2)
++{
++	return inet_addr_equal_strict((union inet_addr *)sa1,
++				      (union inet_addr *)sa2);
++}
++
+ static inline bool sockaddr_copy(struct sockaddr *dst,
+ 				 const struct sockaddr *src)
+ {
+diff --git a/net/core/utils.c b/net/core/utils.c
+index 837bb18..489bc8d 100644
+--- a/net/core/utils.c
++++ b/net/core/utils.c
+@@ -380,6 +380,8 @@ bool inet_addr_equal(const union inet_addr *a, const union inet_addr *b)
+ {
+ 	if (a->sa.sa_family != b->sa.sa_family)
+ 		return false;
++	if (a->sa.sa_family == AF_UNSPEC)
++		return true;
+ 	else if (a->sa.sa_family == AF_INET6) {
+ 		if (!ipv6_addr_equal(&a->sin6.sin6_addr, &b->sin6.sin6_addr))
+ 			return false;
+@@ -399,3 +401,24 @@ bool inet_addr_equal(const union inet_addr *a, const union inet_addr *b)
+ }
+ #endif
+ EXPORT_SYMBOL(inet_addr_equal);
++
++/*
++ * Unlike inet_addr_equal(), this function compares ->sin_port too.
++ */
++bool inet_addr_equal_strict(const union inet_addr *a, const union inet_addr *b)
++{
++	if (inet_addr_equal(a, b)) {
++		switch (a->sa.sa_family) {
++#if IS_ENABLED(CONFIG_IPV6)
++		case AF_INET6:
++			return a->sin6.sin6_port == b->sin6.sin6_port;
++#endif
++		case AF_INET:
++			return a->sin.sin_port == b->sin.sin_port;
++		default:
++			return true;
++		}
++	} else
++		return false;
++}
++EXPORT_SYMBOL(inet_addr_equal_strict);
 -- 
 1.7.7.6
 
