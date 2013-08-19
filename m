@@ -1,56 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751182Ab3HSSPa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 14:15:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906Ab3HSSP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 14:15:29 -0400
-Date: Mon, 19 Aug 2013 14:15:25 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Frank Mayhar <fmayhar@google.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: dm: Make MIN_IOS, et al, tunable via sysctl.
-Message-ID: <20130819181524.GA28765@redhat.com>
-References: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
- <20130819140016.GB27167@redhat.com>
- <1376934845.24869.43.camel@bobble.lax.corp.google.com>
+	id S1751230Ab3HSSPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 14:15:36 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:53024 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938Ab3HSSPd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 14:15:33 -0400
+Message-ID: <52126ED5.3040702@kernel.org>
+Date: Mon, 19 Aug 2013 20:15:33 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376934845.24869.43.camel@bobble.lax.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+CC: jic23@cam.ac.uk, gg@slimlogic.co.uk, balajitk@ti.com,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: adc: twl6030-gpadc: Use devm_* API family
+References: <1376910580-7545-1-git-send-email-oleksandr.kozaruk@ti.com>
+In-Reply-To: <1376910580-7545-1-git-send-email-oleksandr.kozaruk@ti.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19 2013 at  1:54pm -0400,
-Frank Mayhar <fmayhar@google.com> wrote:
-
-> On Mon, 2013-08-19 at 10:00 -0400, Mike Snitzer wrote:
-> > Performance isn't the concern.  The concern is: does DM allow for
-> > forward progress if the system's memory is completely exhausted?
-> > 
-> > This is why request-based has such an extensive reserve, because it
-> > needs to account for cloning the largest possible request that comes in
-> > (with multiple bios).
+On 08/19/13 12:09, Oleksandr Kozaruk wrote:
+> Using devm_iio_device_alloc and devm_request_threaded_irq makes
+> code simpler.
 > 
-> Thanks for the response.  In our particular case, I/O will be file
-> system based and over a network, which makes it pretty easy for us to be
-> sure that large I/Os never happen.  That notwithstanding, however, as
-> you said it just seems reasonable to make these values configurable.
+> Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+Applied to the togreg branch of iio.git
+
+Thanks,
+
+Jonathan
+> ---
+>  drivers/iio/adc/twl6030-gpadc.c | 36 ++++++++++--------------------------
+>  1 file changed, 10 insertions(+), 26 deletions(-)
 > 
-> I'm also looking at making some similar constants in dm-verity and
-> dm-bufio configurable in the same way and for similar reasons.
-
-OK, would be helpful if you were to split each patch out, e.g. separate
-patches for DM core, verity, bufio, etc.  Reserve the background context
-to the 0th patch header (or DM core patch).  With more precise patch
-headers that document the new tunable that is exposed by each patch.
-
-It would also be nice to see these tunables get documented in the
-appropriate Documentation/device-mapper/ file too.
-
-Thanks for working on this.  I'll have time to review/assist these
-changes in the near term.
+> diff --git a/drivers/iio/adc/twl6030-gpadc.c b/drivers/iio/adc/twl6030-gpadc.c
+> index a80a049..a558516 100644
+> --- a/drivers/iio/adc/twl6030-gpadc.c
+> +++ b/drivers/iio/adc/twl6030-gpadc.c
+> @@ -893,11 +893,9 @@ static int twl6030_gpadc_probe(struct platform_device *pdev)
+>  
+>  	pdata = match->data;
+>  
+> -	indio_dev = iio_device_alloc(sizeof(*gpadc));
+> -	if (!indio_dev) {
+> -		dev_err(dev, "failed allocating iio device\n");
+> -		ret = -ENOMEM;
+> -	}
+> +	indio_dev = devm_iio_device_alloc(dev, sizeof(*gpadc));
+> +	if (!indio_dev)
+> +		return -ENOMEM;
+>  
+>  	gpadc = iio_priv(indio_dev);
+>  
+> @@ -905,7 +903,7 @@ static int twl6030_gpadc_probe(struct platform_device *pdev)
+>  					sizeof(*gpadc->twl6030_cal_tbl) *
+>  					pdata->nchannels, GFP_KERNEL);
+>  	if (!gpadc->twl6030_cal_tbl)
+> -		goto err_free_device;
+> +		return -ENOMEM;
+>  
+>  	gpadc->dev = dev;
+>  	gpadc->pdata = pdata;
+> @@ -917,33 +915,30 @@ static int twl6030_gpadc_probe(struct platform_device *pdev)
+>  	ret = pdata->calibrate(gpadc);
+>  	if (ret < 0) {
+>  		dev_err(&pdev->dev, "failed to read calibration registers\n");
+> -		goto err_free_device;
+> +		return ret;
+>  	}
+>  
+>  	irq = platform_get_irq(pdev, 0);
+>  	if (irq < 0) {
+>  		dev_err(&pdev->dev, "failed to get irq\n");
+> -		goto err_free_device;
+> +		return irq;
+>  	}
+>  
+> -	ret = request_threaded_irq(irq, NULL, twl6030_gpadc_irq_handler,
+> +	ret = devm_request_threaded_irq(dev, irq, NULL,
+> +				twl6030_gpadc_irq_handler,
+>  				IRQF_ONESHOT, "twl6030_gpadc", indio_dev);
+> -	if (ret) {
+> -		dev_dbg(&pdev->dev, "could not request irq\n");
+> -		goto err_free_device;
+> -	}
+>  
+>  	ret = twl6030_gpadc_enable_irq(TWL6030_GPADC_RT_SW1_EOC_MASK);
+>  	if (ret < 0) {
+>  		dev_err(&pdev->dev, "failed to enable GPADC interrupt\n");
+> -		goto err_free_irq;
+> +		return ret;
+>  	}
+>  
+>  	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, TWL6030_GPADCS,
+>  					TWL6030_REG_TOGGLE1);
+>  	if (ret < 0) {
+>  		dev_err(&pdev->dev, "failed to enable GPADC module\n");
+> -		goto err_free_irq;
+> +		return ret;
+>  	}
+>  
+>  	indio_dev->name = DRIVER_NAME;
+> @@ -954,15 +949,6 @@ static int twl6030_gpadc_probe(struct platform_device *pdev)
+>  	indio_dev->num_channels = pdata->nchannels;
+>  
+>  	ret = iio_device_register(indio_dev);
+> -	if (ret)
+> -		goto err_free_irq;
+> -
+> -	return ret;
+> -
+> -err_free_irq:
+> -	free_irq(irq, indio_dev);
+> -err_free_device:
+> -	iio_device_free(indio_dev);
+>  
+>  	return ret;
+>  }
+> @@ -972,9 +958,7 @@ static int twl6030_gpadc_remove(struct platform_device *pdev)
+>  	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+>  
+>  	twl6030_gpadc_disable_irq(TWL6030_GPADC_RT_SW1_EOC_MASK);
+> -	free_irq(platform_get_irq(pdev, 0), indio_dev);
+>  	iio_device_unregister(indio_dev);
+> -	iio_device_free(indio_dev);
+>  
+>  	return 0;
+>  }
+> 
