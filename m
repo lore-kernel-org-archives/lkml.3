@@ -1,138 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750890Ab3HSFb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 01:31:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:4231 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750792Ab3HSFbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 01:31:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,910,1367996400"; 
-   d="scan'208";a="364684723"
-Date: Mon, 19 Aug 2013 10:18:12 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: kgene.kim@samsung.com, Dan Williams <djbw@fb.com>,
-        linus.walleij@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] dmaengine: add driver for Samsung s3c24xx SoCs
-Message-ID: <20130819044811.GR32147@intel.com>
-References: <201308141359.13872.heiko@sntech.de>
- <201308141400.25681.heiko@sntech.de>
+	id S1750836Ab3HSFrV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 01:47:21 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53223 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab3HSFrT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 01:47:19 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-7e-5211b165994e
+Date: Mon, 19 Aug 2013 14:47:42 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Bob Liu <bob.liu@oracle.com>
+Cc: Weijie Yang <weijie.yang.kh@gmail.com>, sjenning@linux.vnet.ibm.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        dan.magenheimer@oracle.com
+Subject: Re: [BUG REPORT] ZSWAP: theoretical race condition issues
+Message-ID: <20130819054742.GA28062@bbox>
+References: <CAL1ERfOiT7QV4UUoKi8+gwbHc9an4rUWriufpOJOUdnTYHHEAw@mail.gmail.com>
+ <52118042.30101@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201308141400.25681.heiko@sntech.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52118042.30101@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 02:00:25PM +0200, Heiko Stübner wrote:
-> This adds a new driver to support the s3c24xx dma using the dmaengine
-> and makes the old one in mach-s3c24xx obsolete in the long run.
+On Mon, Aug 19, 2013 at 10:17:38AM +0800, Bob Liu wrote:
+> Hi Weijie,
 > 
-> Conceptually the s3c24xx-dma feels like a distant relative of the pl08x
-> with numerous virtual channels being mapped to a lot less physical ones.
-> The driver therefore borrows a lot from the amba-pl08x driver in this
-> regard. Functionality-wise the driver gains a memcpy ability in addition
-> to the slave_sg one.
-If that is the case why cant we have this driver supported from pl08x driver? If
-the delta is only mapping then can that be seprated or both mapping hanlded?
-Maybe you and Linus have already though about that?
+> On 08/19/2013 12:14 AM, Weijie Yang wrote:
+> > I found a few bugs in zswap when I review Linux-3.11-rc5, and I have
+> > also some questions about it, described as following:
+> > 
+> > BUG:
+> > 1. A race condition when reclaim a page
+> > when a handle alloced from zbud, zbud considers this handle is used
+> > validly by upper(zswap) and can be a candidate for reclaim.
+> > But zswap has to initialize it such as setting swapentry and addding
+> > it to rbtree. so there is a race condition, such as:
+> > thread 0: obtain handle x from zbud_alloc
+> > thread 1: zbud_reclaim_page is called
+> > thread 1: callback zswap_writeback_entry to reclaim handle x
+> > thread 1: get swpentry from handle x (it is random value now)
+> > thread 1: bad thing may happen
+> > thread 0: initialize handle x with swapentry
 
-> The driver supports both the method for requesting the peripheral used
-> by SoCs before the S3C2443 and the different method for S3C2443 and later.
+Nice catch!
+
 > 
-> On earlier SoCs the hardware channels usable for specific peripherals is
-> constrainted while on later SoCs all channels can be used for any peripheral.
+> Yes, this may happen potentially but in rare case.
+> Because we have a LRU list for page frames, after Thread 0 called
+> zbud_alloc the corresponding page will be add to the head of LRU
+> list,While zbud_reclaim_page(Thread 1 called) is started from the tail
+> of LRU list.
 > 
-> Tested on a s3c2416-based board, memcpy using the dmatest module and
-> slave_sg partially using the spi-s3c64xx driver.
+> > Of course, this situation almost never happen, it is a "theoretical
+> > race condition" issue.
+
+But it's doable and we should prevent that although you feel it's rare
+because system could go hang. When I look at the code, Why should zbud
+have LRU logic instead of zswap? If I missed some history, sorry about that.
+But at least to me, zbud is just allocator so it should have a role
+to handle alloc/free object and how client of the allocator uses objects
+depends on the upper layer so zbud should handle LRU. If so, we wouldn't
+encounter this problem, either.
+
+> > 
+> > 2. Pollute swapcache data by add a pre-invalided swap page
+> > when a swap_entry is invalidated, it will be reused by other anon
+> > page. At the same time, zswap is reclaiming old page, pollute
+> > swapcache of new page as a result, because old page and new page use
+> > the same swap_entry, such as:
+> > thread 1: zswap reclaim entry x
+> > thread 0: zswap_frontswap_invalidate_page entry x
+> > thread 0: entry x reused by other anon page
+> > thread 1: add old data to swapcache of entry x
 > 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> I didn't get your idea here, why thread1 will add old data to entry x?
+> 
+> > thread 0: swapcache of entry x is polluted
+> > Of course, this situation almost never happen, it is another
+> > "theoretical race condition" issue.
 
-> +#define DISRC			(0x00)
-> +#define DISRCC			(0x04)
-> +#define DISRCC_INC_INCREMENT	(0 << 0)
-> +#define DISRCC_INC_FIXED	(1 << 0)
-> +#define DISRCC_LOC_AHB		(0 << 1)
-> +#define DISRCC_LOC_APB		(1 << 1)
-> +
-> +#define DIDST			(0x08)
-> +#define DIDSTC			(0x0C)
-> +#define DIDSTC_INC_INCREMENT	(0 << 0)
-> +#define DIDSTC_INC_FIXED	(1 << 0)
-> +#define DIDSTC_LOC_AHB		(0 << 1)
-> +#define DIDSTC_LOC_APB		(1 << 1)
-> +#define DIDSTC_INT_TC0		(0 << 2)
-> +#define DIDSTC_INT_RELOAD	(1 << 2)
-> +
-> +#define DCON			(0x10)
-> +
-> +#define DCON_TC_MASK		0xfffff
-> +#define DCON_DSZ_BYTE		(0 << 20)
-> +#define DCON_DSZ_HALFWORD	(1 << 20)
-> +#define DCON_DSZ_WORD		(2 << 20)
-> +#define DCON_DSZ_MASK		(3 << 20)
-> +#define DCON_DSZ_SHIFT		20
-> +#define DCON_AUTORELOAD		(0 << 22)
-> +#define DCON_NORELOAD		(1 << 22)
-> +#define DCON_HWTRIG		(1 << 23)
-> +#define DCON_HWSRC_SHIFT	24
-> +#define DCON_SERV_SINGLE	(0 << 27)
-> +#define DCON_SERV_WHOLE		(1 << 27)
-> +#define DCON_TSZ_UNIT		(0 << 28)
-> +#define DCON_TSZ_BURST4		(1 << 28)
-> +#define DCON_INT		(1 << 29)
-> +#define DCON_SYNC_PCLK		(0 << 30)
-> +#define DCON_SYNC_HCLK		(1 << 30)
-> +#define DCON_DEMAND		(0 << 31)
-> +#define DCON_HANDSHAKE		(1 << 31)
-> +
-> +#define DSTAT			(0x14)
-> +#define DSTAT_STAT_BUSY		(1 << 20)
-> +#define DSTAT_CURRTC_MASK	0xfffff
-> +
-> +#define DMASKTRIG		(0x20)
-> +#define DMASKTRIG_STOP		(1 << 2)
-> +#define DMASKTRIG_ON		(1 << 1)
-> +#define DMASKTRIG_SWTRIG	(1 << 0)
-> +
-> +#define DMAREQSEL		(0x24)
-> +#define DMAREQSEL_HW		(1 << 0)
-This is proper namespacing...
+Don't swapcache_prepare close the race?
 
-> +static int s3c24xx_dma_set_runtime_config(struct s3c24xx_dma_chan *s3cchan,
-> +				  struct dma_slave_config *config)
-> +{
-> +	if (!s3cchan->slave)
-> +		return -EINVAL;
-> +
-> +	/* Reject definitely invalid configurations */
-> +	if (config->src_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES ||
-> +	    config->dst_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES)
-> +		return -EINVAL;
-> +
-> +	s3cchan->cfg = *config;
-you are takinga  ref to client pointer without a clue on when that would be
-freed. I dont think its a good idea!
+> > 
+> > 3. Frontswap uses frontswap_map bitmap to track page in "backend"
+> > implementation, when zswap reclaim a
+> > page, the corresponding bitmap record is not cleared.
+> >
+> 
+> That's true, but I don't think it's a big problem.
+> Only waste little time to search rbtree during zswap_frontswap_load().
+> 
+> > 4. zswap_tree is not freed when swapoff, and it got re-kzalloc in
+> > swapon, memory leak occurs.
+> 
+> Nice catch! I think it should be freed in zswap_frontswap_invalidate_area().
+> 
+> > 
+> > questions:
+> > 1. How about SetPageReclaim befor __swap_writepage, so that move it to
+> > the tail of the inactive list?
 
-> +static irqreturn_t s3c24xx_dma_irq(int irq, void *data)
-> +{
-> +	struct s3c24xx_dma_phy *phy = data;
-> +	struct s3c24xx_dma_chan *s3cchan = phy->serving;
-> +	struct s3c24xx_txd *txd;
-> +
-> +	dev_dbg(&phy->host->pdev->dev, "interrupt on channel %d\n", phy->id);
-> +
-> +	if (!s3cchan) {
-> +		dev_err(&phy->host->pdev->dev, "interrupt on unused channel %d\n",
-> +			phy->id);
-> +		return IRQ_NONE;
-hmmm, these channles belong to you. So if one of them is behvaing badly, then
-not handling the interrupt will make things worse...
+It's a good idea to avoid unnecessary page scanning.
 
-~Vinod
+> 
+> It will be added to inactive now.
+> 
+> > 2. zswap uses GFP_KERNEL flag to alloc things in store and reclaim
+> > function, does this lead to these function called recursively?
+> 
+> Yes, that's a potential problem.
+
+It should use GFP_NOIO.
+
+> 
+> > 3. for reclaiming one zbud page which contains two buddies, zswap
+> > needs to alloc two pages. Does this reclaim cost-efficient?
+
+It would be better to evict zpage which is a compressed sequence of
+PAGE_SIZE bytes rather than decompresesed PAGE_SIZE bytes a page when
+we are about to reclaim the page but it's hard part from frontswap API.
+
+> > 
+> 
+> Yes, that's a problem too. And that's why we use zbud as the default
+> allocator instead of zsmalloc.
+> I think improving the write back path of zswap is the next important
+> step for zswap.
+> 
+> -- 
+> Regards,
+> -Bob
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
