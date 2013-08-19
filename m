@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751197Ab3HSQL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 12:11:28 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:50004 "EHLO
+	id S1751244Ab3HSQLN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 12:11:13 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:49976 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab3HSQLO (ORCPT
+	with ESMTP id S1751104Ab3HSQLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 12:11:14 -0400
+	Mon, 19 Aug 2013 12:11:08 -0400
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, jwboyer@redhat.com, keescook@chromium.org,
         Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH 10/10] Add option to automatically enforce module signatures when in Secure Boot mode
-Date: Mon, 19 Aug 2013 12:10:19 -0400
-Message-Id: <1376928619-3775-10-git-send-email-matthew.garrett@nebula.com>
+Subject: [PATCH 02/10] PCI: Lock down BAR access when module security is enabled
+Date: Mon, 19 Aug 2013 12:10:11 -0400
+Message-Id: <1376928619-3775-2-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1376928619-3775-1-git-send-email-matthew.garrett@nebula.com>
 References: <1376928619-3775-1-git-send-email-matthew.garrett@nebula.com>
@@ -25,173 +25,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UEFI Secure Boot provides a mechanism for ensuring that the firmware will
-only load signed bootloaders and kernels. Certain use cases may also
-require that all kernel modules also be signed. Add a configuration option
-that enforces this automatically when enabled.
+Any hardware that can potentially generate DMA has to be locked down from
+userspace in order to avoid it being possible for an attacker to modify
+kernel code, allowing them to circumvent disabled module loading or module
+signing. Default to paranoid - in future we can potentially relax this for
+sufficiently IOMMU-isolated devices.
 
 Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- Documentation/x86/zero-page.txt       |  2 ++
- arch/x86/Kconfig                      | 10 ++++++++++
- arch/x86/boot/compressed/eboot.c      | 33 +++++++++++++++++++++++++++++++++
- arch/x86/include/uapi/asm/bootparam.h |  3 ++-
- arch/x86/kernel/setup.c               |  6 ++++++
- include/linux/module.h                |  6 ++++++
- kernel/module.c                       |  7 +++++++
- 7 files changed, 66 insertions(+), 1 deletion(-)
+ drivers/pci/pci-sysfs.c | 10 ++++++++++
+ drivers/pci/proc.c      |  8 +++++++-
+ drivers/pci/syscall.c   |  3 ++-
+ 3 files changed, 19 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/x86/zero-page.txt b/Documentation/x86/zero-page.txt
-index 199f453..ec38acf 100644
---- a/Documentation/x86/zero-page.txt
-+++ b/Documentation/x86/zero-page.txt
-@@ -30,6 +30,8 @@ Offset	Proto	Name		Meaning
- 1E9/001	ALL	eddbuf_entries	Number of entries in eddbuf (below)
- 1EA/001	ALL	edd_mbr_sig_buf_entries	Number of entries in edd_mbr_sig_buffer
- 				(below)
-+1EB/001	ALL     kbd_status      Numlock is enabled
-+1EC/001	ALL     secure_boot	Secure boot is enabled in the firmware
- 1EF/001	ALL	sentinel	Used to detect broken bootloaders
- 290/040	ALL	edd_mbr_sig_buffer EDD MBR signatures
- 2D0/A00	ALL	e820_map	E820 memory map table
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b32ebf9..6a6c19b 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1581,6 +1581,16 @@ config EFI_STUB
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index c0dbe1f..cd4e35f 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -29,6 +29,7 @@
+ #include <linux/slab.h>
+ #include <linux/vgaarb.h>
+ #include <linux/pm_runtime.h>
++#include <linux/module.h>
+ #include "pci.h"
  
- 	  See Documentation/x86/efi-stub.txt for more information.
+ static int sysfs_initialized;	/* = 0 */
+@@ -624,6 +625,9 @@ pci_write_config(struct file* filp, struct kobject *kobj,
+ 	loff_t init_off = off;
+ 	u8 *data = (u8*) buf;
  
-+config EFI_SECURE_BOOT_SIG_ENFORCE
-+        def_bool n
-+	prompt "Force module signing when UEFI Secure Boot is enabled"
-+	---help---
-+	  UEFI Secure Boot provides a mechanism for ensuring that the
-+	  firmware will only load signed bootloaders and kernels. Certain
-+	  use cases may also require that all kernel modules also be signed.
-+	  Say Y here to automatically enable module signature enforcement
-+	  when a system boots with UEFI Secure Boot enabled.
++	if (secure_modules())
++		return -EPERM;
 +
- config SECCOMP
- 	def_bool y
- 	prompt "Enable seccomp to safely compute untrusted bytecode"
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index b7388a4..145294d 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -861,6 +861,37 @@ fail:
- 	return status;
+ 	if (off > dev->cfg_size)
+ 		return 0;
+ 	if (off + count > dev->cfg_size) {
+@@ -930,6 +934,9 @@ pci_mmap_resource(struct kobject *kobj, struct bin_attribute *attr,
+ 	resource_size_t start, end;
+ 	int i;
+ 
++	if (secure_modules())
++		return -EPERM;
++
+ 	for (i = 0; i < PCI_ROM_RESOURCE; i++)
+ 		if (res == &pdev->resource[i])
+ 			break;
+@@ -1037,6 +1044,9 @@ pci_write_resource_io(struct file *filp, struct kobject *kobj,
+ 		      struct bin_attribute *attr, char *buf,
+ 		      loff_t off, size_t count)
+ {
++	if (secure_modules())
++		return -EPERM;
++
+ 	return pci_resource_io(filp, kobj, attr, buf, off, count, true);
  }
  
-+static int get_secure_boot(efi_system_table_t *_table)
-+{
-+	u8 sb, setup;
-+	unsigned long datasize = sizeof(sb);
-+	efi_guid_t var_guid = EFI_GLOBAL_VARIABLE_GUID;
-+	efi_status_t status;
-+
-+	status = efi_call_phys5(sys_table->runtime->get_variable,
-+				L"SecureBoot", &var_guid, NULL, &datasize, &sb);
-+
-+	if (status != EFI_SUCCESS)
-+		return 0;
-+
-+	if (sb == 0)
-+		return 0;
-+
-+
-+	status = efi_call_phys5(sys_table->runtime->get_variable,
-+				L"SetupMode", &var_guid, NULL, &datasize,
-+				&setup);
-+
-+	if (status != EFI_SUCCESS)
-+		return 0;
-+
-+	if (setup == 1)
-+		return 0;
-+
-+	return 1;
-+}
-+
-+
- /*
-  * Because the x86 boot code expects to be passed a boot_params we
-  * need to create one ourselves (usually the bootloader would create
-@@ -1169,6 +1200,8 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
- 	if (sys_table->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE)
- 		goto fail;
+diff --git a/drivers/pci/proc.c b/drivers/pci/proc.c
+index cdc7836..e3d498b 100644
+--- a/drivers/pci/proc.c
++++ b/drivers/pci/proc.c
+@@ -117,6 +117,9 @@ proc_bus_pci_write(struct file *file, const char __user *buf, size_t nbytes, lof
+ 	int size = dev->cfg_size;
+ 	int cnt;
  
-+	boot_params->secure_boot = get_secure_boot(sys_table);
++	if (secure_modules())
++		return -EPERM;
 +
- 	setup_graphics(boot_params);
+ 	if (pos >= size)
+ 		return 0;
+ 	if (nbytes >= size)
+@@ -196,6 +199,9 @@ static long proc_bus_pci_ioctl(struct file *file, unsigned int cmd,
+ #endif /* HAVE_PCI_MMAP */
+ 	int ret = 0;
  
- 	setup_efi_pci(boot_params);
-diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
-index c15ddaf..d35da96 100644
---- a/arch/x86/include/uapi/asm/bootparam.h
-+++ b/arch/x86/include/uapi/asm/bootparam.h
-@@ -131,7 +131,8 @@ struct boot_params {
- 	__u8  eddbuf_entries;				/* 0x1e9 */
- 	__u8  edd_mbr_sig_buf_entries;			/* 0x1ea */
- 	__u8  kbd_status;				/* 0x1eb */
--	__u8  _pad5[3];					/* 0x1ec */
-+	__u8  secure_boot;				/* 0x1ec */
-+	__u8  _pad5[2];					/* 0x1ec */
- 	/*
- 	 * The sentinel is set to a nonzero value (0xff) in header.S.
- 	 *
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f8ec578..deeb7bc 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1129,6 +1129,12 @@ void __init setup_arch(char **cmdline_p)
- 
- 	io_delay_init();
- 
-+#ifdef CONFIG_EFI_SECURE_BOOT_SIG_ENFORCE
-+	if (boot_params.secure_boot) {
-+		enforce_signed_modules();
-+	}
-+#endif
++	if (secure_modules())
++		return -EPERM;
 +
- 	/*
- 	 * Parse the ACPI tables for possible boot-time SMP configuration.
- 	 */
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 0c266b2..5a6374a 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -184,6 +184,12 @@ const struct exception_table_entry *search_exception_tables(unsigned long add);
+ 	switch (cmd) {
+ 	case PCIIOC_CONTROLLER:
+ 		ret = pci_domain_nr(dev->bus);
+@@ -234,7 +240,7 @@ static int proc_bus_pci_mmap(struct file *file, struct vm_area_struct *vma)
+ 	struct pci_filp_private *fpriv = file->private_data;
+ 	int i, ret;
  
- struct notifier_block;
+-	if (!capable(CAP_SYS_RAWIO))
++	if (!capable(CAP_SYS_RAWIO) || secure_modules())
+ 		return -EPERM;
  
-+#ifdef CONFIG_MODULE_SIG
-+extern void enforce_signed_modules(void);
-+#else
-+static inline void enforce_signed_modules(void) {};
-+#endif
-+
- #ifdef CONFIG_MODULES
+ 	/* Make sure the caller is mapping a real resource for this device */
+diff --git a/drivers/pci/syscall.c b/drivers/pci/syscall.c
+index e1c1ec5..bffbf71 100644
+--- a/drivers/pci/syscall.c
++++ b/drivers/pci/syscall.c
+@@ -10,6 +10,7 @@
+ #include <linux/errno.h>
+ #include <linux/pci.h>
+ #include <linux/syscalls.h>
++#include <linux/module.h>
+ #include <asm/uaccess.h>
+ #include "pci.h"
  
- extern int modules_disabled; /* for sysctl */
-diff --git a/kernel/module.c b/kernel/module.c
-index 801021e..0ec29c0 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3853,6 +3853,13 @@ void module_layout(struct module *mod,
- EXPORT_SYMBOL(module_layout);
- #endif
+@@ -92,7 +93,7 @@ SYSCALL_DEFINE5(pciconfig_write, unsigned long, bus, unsigned long, dfn,
+ 	u32 dword;
+ 	int err = 0;
  
-+#ifdef CONFIG_MODULE_SIG
-+void enforce_signed_modules(void)
-+{
-+	sig_enforce = true;
-+}
-+#endif
-+
- bool secure_modules(void)
- {
- #ifdef CONFIG_MODULE_SIG
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!capable(CAP_SYS_ADMIN) || secure_modules())
+ 		return -EPERM;
+ 
+ 	dev = pci_get_bus_and_slot(bus, dfn);
 -- 
 1.8.3.1
 
