@@ -1,155 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256Ab3HSSCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 14:02:30 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:47832 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012Ab3HSSC1 (ORCPT
+	id S1751264Ab3HSSEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 14:04:40 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:61336 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938Ab3HSSEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 14:02:27 -0400
-X-AuditID: cbfec37d-b7f036d000004805-06-52125db178a3
-Message-id: <52125DA9.3090601@samsung.com>
-Date: Mon, 19 Aug 2013 12:02:17 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
+	Mon, 19 Aug 2013 14:04:37 -0400
+X-AuditID: cbfec7f4-b7f5f6d000000ff6-27-52125e3389aa
+Message-id: <52125E31.6090207@samsung.com>
+Date: Mon, 19 Aug 2013 20:04:33 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>, shuahkhan@gmail.com
-Subject: Re: [ 00/34] 3.4.59-stable review
-References: <20130818203259.653403173@linuxfoundation.org>
-In-reply-to: <20130818203259.653403173@linuxfoundation.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        jiada_wang@mentor.com, broonie@kernel.org, vapier@gentoo.org,
+        ralf@linux-mips.org, lethal@linux-sh.org, kyungmin.park@samsung.com,
+        shawn.guo@linaro.org, sebastian.hesselbarth@gmail.com,
+        LW@KARO-electronics.de, t.figa@samsung.com, g.liakhovetski@gmx.de,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH RFC 2/2] clk: implement clk_unregister
+References: <1375804317-10576-1-git-send-email-s.nawrocki@samsung.com>
+ <1375804317-10576-3-git-send-email-s.nawrocki@samsung.com>
+ <20130816214841.4443.10515@quantum>
+In-reply-to: <20130816214841.4443.10515@quantum>
+Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9hX92NsUJBBvs2W1jMWb+GzaJ58Xo2
-	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
-	pG+XwJWx6ZNywQ2titcHf7A2ME5R6WLk5JAQMJHYPXcbG4QtJnHh3nogm4tDSGAZo0TLg6ks
-	EE4vk8S58/fAqoQENjFKnF/EAWLzCmhJHJnxjxnEZhFQldh65BsriM0moC7x+fUOdoh6OYmm
-	JauBajg4RAUiJI4u14RoFZT4MfkeC4gtImAs0X92FjvILmaBdYwSq989AZspDDT/659XUHut
-	JO5fegfWwClgLXH0/Wew+cxA9spJ2xghbHmJzWveMkPUK0v8uXyKCWSvhICixPbVVhMYRWYh
-	WT0LSfcsJN0LGJlXMYqVFicXFCelp1aY6BUn5haX5qXrJefnbmKExEvtDsb7X20OMQpwMCrx
-	8BooCAUJsSaWFVfmHmKU4GBWEuH9yg4U4k1JrKxKLcqPLyrNSS0+xMjEwSnVwCglbOGfIWSq
-	w/ZOoicjQPf9p7q7sQVaogKz5uu0Lm21Zen0WJUzc4OCyYQD/8/dXb+Le42clGui/Ldtyx5e
-	etYm883lnPWT5fv7mCaZil2oTJdepM0TdbhM4oJt7hKLV3FfVk3+uaerY++x+EPfdl/Litko
-	5CYnYft939N3Vvfj7vxZcWHxF1klluKMREMt5qLiRACc2gLGdQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsVy+t/xK7rGcUJBBvd/s1hMffiEzeL9xnlM
+	Fj1/Ki3ONr1ht+icuITdYv/bn6wWmx5fY7W4vGsOm8WEqZPYLeb8mcJscfsyr8WBJ8vZLJ5O
+	uMhmcWmPisX7n44WT9ctYbZYP+M1i8XChi/sFjcn/GB2EPZoae5h81g53dvj8vc3zB47Z91l
+	9/jwMc5jdsdMVo/50x8xe2xa1cnmcefaHjaPoyvXMnmcfn+I1WPzknqP3V+bGD36tqxi9Pi8
+	SS6AP4rLJiU1J7MstUjfLoEro2/pI/aCL9oVl/9lNTD2KXQxcnJICJhITNi8nR3CFpO4cG89
+	WxcjF4eQwFJGib2757BAOJ8YJSZ9/AVWxSugJfFqZzeYzSKgKrHtXycriM0mYCjRe7SPEcQW
+	FQiQWLzkHFS9oMSPyfdYQGwRoN5tB1rBNjALvGCWuPD2OzNIQljASmLF+XXsENtWMkr09i0H
+	6+YUMJB48vMnWBGzgLrEpHmLoGx5ic1r3jJPYBSYhWTJLCRls5CULWBkXsUomlqaXFCclJ5r
+	qFecmFtcmpeul5yfu4kRErdfdjAuPmZ1iFGAg1GJh9dAQShIiDWxrLgy9xCjBAezkgjvV3ag
+	EG9KYmVValF+fFFpTmrxIUYmDk6pBsa5NhKnch6siFkYn1uRb8r2T6+7USPM1mLulaBAVlGf
+	zEUmPAI83E/PB0Q1PUq896mis2GygrrW7+URFUfTfbWu3r9wdzEPVwxnDzPb14vLfR2FXkw8
+	zJGmW3+Ua8q8lVnJFoEbuV9vNTVRe/v+/zLh46kZ770+LrFyWic0eV7M0nn7zobdC1JiKc5I
+	NNRiLipOBADwVE71uQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2013 02:34 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.59 release.
-> There are 34 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Note, there are a number of "build fixes" in this round, in the quest to
-> get all arches building properly to be able to track future regressions
-> easier.  Many thanks to Guenter Roeck and Geert Uytterhoeven for their
-> work in doing this.
->
-> Responses should be made by Tue Aug 20 20:32:48 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.59-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On 08/16/2013 11:48 PM, Mike Turquette wrote:
+> Quoting Sylwester Nawrocki (2013-08-06 08:51:57)
+>> +/*
+>> + * Empty clk_ops for unregistered clocks. These are used temporarily
+>> + * after clk_unregister() was called on a clock and until last clock
+>> + * consumer calls clk_put() and the struct clk object is freed.
+>> + */
+>> +static int clk_dummy_prepare_enable(struct clk_hw *hw)
+>> +{
+>> +       return -ENXIO;
+>> +}
+>> +
+>> +static void clk_dummy_disable_unprepare(struct clk_hw *hw)
+>> +{
+>> +       WARN_ON(1);
+>> +}
+>> +
+>> +static int clk_dummy_set_rate(struct clk_hw *hw, unsigned long rate,
+>> +                                       unsigned long parent_rate)
+>> +{
+>> +       return -ENXIO;
+>> +}
+>> +
+>> +static int clk_dummy_set_parent(struct clk_hw *hw, u8 index)
+>> +{
+>> +       return -ENXIO;
+>> +}
+>> +
+>> +static const struct clk_ops clk_dummy_ops = {
+>> +       .enable         = clk_dummy_prepare_enable,
+>> +       .disable        = clk_dummy_disable_unprepare,
+>> +       .prepare        = clk_dummy_prepare_enable,
+>> +       .unprepare      = clk_dummy_disable_unprepare,
+>> +       .set_rate       = clk_dummy_set_rate,
+>> +       .set_parent     = clk_dummy_set_parent,
+>> +};
+> 
+> Don't use "clk_dummy_*" here. The use of dummy often implies that
+> operations will return success in the absence of actual hardware but
+> these return an error, and rightly so. So maybe rename the functions and
+> clk_ops instance to something like "clk_nodev_*" or "clk_missing_*"?
 
-Greg,
+Hmm, this is more about a driver being removed rather than the device.
+Then perhaps we could make it __clk_nodrv_* or clk_nodrv_* ?
 
-This release is not looking good on one of test systems. Bluetooth is 
-not recognized and wireless doesn't work. I am going to start bisect and 
-giving you a head-up. The following new dmesg -l crit regression messages:
+>>  /**
+>>   * clk_unregister - unregister a currently registered clock
+>>   * @clk: clock to unregister
+>> - *
+>> - * Currently unimplemented.
+>>   */
+>> -void clk_unregister(struct clk *clk) {}
+>> +void clk_unregister(struct clk *clk)
+>> +{
+>> +       unsigned long flags;
+>> +
+>> +       clk_prepare_lock();
+>> +
+>> +       if (!clk || IS_ERR(clk)) {
+>> +               pr_err("%s: invalid clock: %p\n", __func__, clk);
+>> +               goto out;
+>> +       }
+>> +
+>> +       if (clk->ops == &clk_dummy_ops) {
+>> +               pr_err("%s: unregistered clock: %s\n", __func__, clk->name);
+>> +               goto out;
+>> +       }
+>> +       /*
+>> +        * Assign dummy clock ops for consumers that might still hold
+>> +        * a reference to this clock.
+>> +        */
+>> +       flags = clk_enable_lock();
+>> +       clk->ops = &clk_dummy_ops;
+>> +       clk_enable_unlock(flags);
+>> +
+>> +       if (!hlist_empty(&clk->children)) {
+>> +               struct clk *child;
+>> +
+>> +               /* Reparent all children to the orphan list. */
+>> +               hlist_for_each_entry(child, &clk->children, child_node)
+>> +                       clk_set_parent(child, NULL);
+>> +       }
+> 
+> This looks pretty good. A remaining problem is re-loading the clock
+> provider module will have string name conflicts with the old
+> unregistered clocks (but not yet released) clocks during calls to
+> __clk_lookup.
 
-CPU2: Package power limit notification (total events = 1)
-CPU3: Package power limit notification (total events = 1)
-CPU0: Package power limit notification (total events = 1)
-CPU1: Package power limit notification (total events = 1)
+But the clock is being dropped from the clock tree immediately in this
+function. After the hlist_del_init() call below the clock is not present
+on any clocks list. Upon clock release only the memory allocated for
+the clock is freed.
 
-and the following traces in dmesg:
-[  124.802169] init: udevtrigger post-stop process (353) terminated with 
-status 1
-[  243.439212] INFO: task crda:723 blocked for more than 120 seconds.
-[  243.439220] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" 
-disables this message.
-[  243.439227] crda            D ffff88041f253940     0   723    362 
-0x00000004
-[  243.439237]  ffff8803fbde59d8 0000000000000082 ffff880404a4dbc0 
-ffff8803fbde5fd8
-[  243.439248]  ffff8803fbde5fd8 ffff8803fbde5fd8 ffff8803eca2c4d0 
-ffff880404a4dbc0
-[  243.439257]  ffff880404a4dbc0 ffffffff81caa2a0 ffff880404a4dbc0 
-ffffffff81caa2a4
-[  243.439266] Call Trace:
-[  243.439283]  [<ffffffff816681f9>] schedule+0x29/0x70
-[  243.439292]  [<ffffffff816684be>] schedule_preempt_disabled+0xe/0x10
-[  243.439301]  [<ffffffff81666fa7>] __mutex_lock_slowpath+0xd7/0x150
-[  243.439312]  [<ffffffff8158498e>] ? genl_rcv_msg+0x16e/0x2d0
-[  243.439321]  [<ffffffff81666a7a>] mutex_lock+0x2a/0x50
-[  243.439328]  [<ffffffff815847d5>] genl_lock+0x15/0x20
-[  243.439335]  [<ffffffff815855fc>] ctrl_dumpfamily+0x12c/0x140
-[  243.439343]  [<ffffffff81581c53>] netlink_dump+0x73/0x1e0
-[  243.439350]  [<ffffffff815821d8>] netlink_recvmsg+0x338/0x430
-[  243.439358]  [<ffffffff8154555d>] sock_recvmsg+0xfd/0x130
-[  243.439371]  [<ffffffff81172a93>] ? __mem_cgroup_commit_charge+0xb3/0x2f0
-[  243.439382]  [<ffffffff8114a78d>] ? page_add_new_anon_rmap+0xcd/0xf0
-[  243.439389]  [<ffffffff8154692a>] ? move_addr_to_kernel+0x5a/0xc0
-[  243.439399]  [<ffffffff815521a6>] ? verify_iovec+0x56/0xd0
-[  243.439406]  [<ffffffff81545073>] ___sys_recvmsg+0x143/0x2d0
-[  243.439414]  [<ffffffff81141349>] ? handle_mm_fault+0x259/0x320
-[  243.439424]  [<ffffffff8154420c>] ? move_addr_to_user+0xbc/0xe0
-[  243.439431]  [<ffffffff8154715c>] ? sys_getsockname+0xdc/0xf0
-[  243.439437]  [<ffffffff81547ae9>] __sys_recvmsg+0x49/0x90
-[  243.439444]  [<ffffffff81547b42>] sys_recvmsg+0x12/0x30
-[  243.439455]  [<ffffffff816712e9>] system_call_fastpath+0x16/0x1b
-[  243.439463] INFO: task NetworkManager:879 blocked for more than 120 
-seconds.
-[  243.439468] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" 
-disables this message.
-[  243.439473] NetworkManager  D ffff88041f293940     0   879      1 
-0x00000000
-[  243.439481]  ffff8804065c1a08 0000000000000082 ffff8803ecbedbc0 
-ffff8804065c1fd8
-[  243.439490]  ffff8804065c1fd8 ffff8804065c1fd8 ffff880408d796f0 
-ffff8803ecbedbc0
-[  243.439498]  ffff8804065c1ab8 ffffffff81caa2a0 ffff8803ecbedbc0 
-ffffffff81caa2a4
-[  243.439506] Call Trace:
-[  243.439514]  [<ffffffff816681f9>] schedule+0x29/0x70
-[  243.439522]  [<ffffffff816684be>] schedule_preempt_disabled+0xe/0x10
-[  243.439530]  [<ffffffff81666fa7>] __mutex_lock_slowpath+0xd7/0x150
-[  243.439539]  [<ffffffff81666a7a>] mutex_lock+0x2a/0x50
-[  243.439546]  [<ffffffff815847d5>] genl_lock+0x15/0x20
-[  243.439553]  [<ffffffff815847f6>] genl_rcv+0x16/0x40
-[  243.439560]  [<ffffffff81583d1d>] netlink_unicast+0x19d/0x1f0
-[  243.439567]  [<ffffffff8158404a>] netlink_sendmsg+0x2da/0x390
-[  243.439574]  [<ffffffff815456e8>] sock_sendmsg+0xf8/0x130
-[  243.439582]  [<ffffffff8154692a>] ? move_addr_to_kernel+0x5a/0xc0
-[  243.439590]  [<ffffffff815521a6>] ? verify_iovec+0x56/0xd0
-[  243.439597]  [<ffffffff81545b9e>] ___sys_sendmsg+0x41e/0x430
-[  243.439607]  [<ffffffff8107e733>] ? __wake_up+0x53/0x70
-[  243.439614]  [<ffffffff81582b43>] ? netlink_table_ungrab+0x33/0x40
-[  243.439623]  [<ffffffff8154420c>] ? move_addr_to_user+0xbc/0xe0
-[  243.439629]  [<ffffffff81547115>] ? sys_getsockname+0x95/0xf0
-[  243.439636]  [<ffffffff81547869>] __sys_sendmsg+0x49/0x90
-[  243.439643]  [<ffffffff815478c2>] sys_sendmsg+0x12/0x30
-[  243.439651]  [<ffffffff816712e9>] system_call_fastpath+0x16/0x1b
-[  363.295849] INFO: task crda:723 blocked for more than 120 seconds.
-[  363.295858] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" 
-disables this message.
+> The best solution would be to refactor clk.c to not use string name
+> lookups but that is probably too big of an issue for the purpose of this
+> series (but it will happen some day).
+> 
+> A short term solution would be to poison the clock's string name here.
+> Reallocate the clk->name string with some poison data so that name
+> conflicts don't occur. What do you think?
 
+This shouldn't be necessary, for the reason described above. I've tested
+multiple registrations when a clock was being referenced by a consumer
+driver and it worked well.
 
--- Shuah
+I'm still a bit unsure about the kref reference counting, but I'd would
+assume it is good to have. It prevents the kernel to crash in some
+situations. Many other subsystems/drivers crash miserably when a driver
+gets unbound using the sysfs "unbind" attribute. However, if it is assumed
+that user space needs to keep track of respective resource references
+and should know what it does when unbinding drivers, then we could probably
+do without the kref. I'm seriously sceptical though about letting user
+space to crash the kernel in fairly simple steps, it just doesn't sound
+right.
 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+> Regards,
+> Mike
+> 
+>> +
+>> +       clk_debug_unregister(clk);
+>> +
+>> +       hlist_del_init(&clk->child_node);
+>> +
+>> +       if (clk->prepare_count)
+>> +               pr_warn("%s: unregistering prepared clock: %s\n",
+>> +                                       __func__, clk->name);
+>> +
+>> +       kref_put(&clk->ref, __clk_release);
+>> +out:
+>> +       clk_prepare_unlock();
+>> +}
+>>  EXPORT_SYMBOL_GPL(clk_unregister);
+>>
+>>  static void devm_clk_release(struct device *dev, void *res)
+>> @@ -1861,6 +1973,7 @@ int __clk_get(struct clk *clk)
+>>         if (!try_module_get(clk->owner))
+>>                 return 0;
+>>
+>> +       kref_get(&clk->ref);
+>>         return 1;
+>>  }
+>>  EXPORT_SYMBOL(__clk_get);
+>> @@ -1870,6 +1983,10 @@ void __clk_put(struct clk *clk)
+>>         if (!clk || IS_ERR(clk))
+>>                 return;
+>>
+>> +       clk_prepare_lock();
+>> +       kref_put(&clk->ref, __clk_release);
+>> +       clk_prepare_unlock();
+>> +
+>>         module_put(clk->owner);
+>>  }
+>>  EXPORT_SYMBOL(__clk_put);
+
+--
+Regards,
+Sylwester
