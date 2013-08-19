@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750955Ab3HSN5c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 09:57:32 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47727 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab3HSN5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 09:57:30 -0400
-Date: Mon, 19 Aug 2013 08:57:02 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Hein Tibosch <hein_tibosch@yahoo.es>, <balbi@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-omap: always send stop after nack
-Message-ID: <20130819135702.GC26587@radagast>
-Reply-To: <balbi@ti.com>
-References: <51E50217.1000507@yahoo.es>
- <20130716090300.GG8880@arwen.pp.htv.fi>
- <51E5137B.7000302@yahoo.es>
- <20130716094212.GL8880@arwen.pp.htv.fi>
- <51E527F7.4080007@ti.com>
- <20130716112746.GN8880@arwen.pp.htv.fi>
- <51E537A4.40300@ti.com>
- <20130716130058.GD15036@arwen.pp.htv.fi>
- <51E57211.2040001@yahoo.es>
- <20130819121123.GA4540@katana>
+	id S1750951Ab3HSOAq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 10:00:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51265 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723Ab3HSOAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 10:00:45 -0400
+Date: Mon, 19 Aug 2013 07:02:32 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: High load which eventually leads to lockup
+Message-ID: <20130819140232.GB13123@kroah.com>
+References: <20130818205713.GA32563@kroah.com>
+ <OF4D0C0FB6.A839872C-ONC1257BCB.004FDEBA-C1257BCB.004FDEBC@transmode.se>
+ <OF825BE505.E28A86C5-ONC1257BCC.002685F1-C1257BCC.002685F2@transmode.se>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="w7PDEPdKQumQfZlR"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130819121123.GA4540@katana>
+In-Reply-To: <OF825BE505.E28A86C5-ONC1257BCC.002685F1-C1257BCC.002685F2@transmode.se>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---w7PDEPdKQumQfZlR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Aug 19, 2013 at 09:00:46AM +0200, Joakim Tjernlund wrote:
+> 
+> -----Greg KH <gregkh@linuxfoundation.org> wrote: -----
+> > 
+> > On Sun, Aug 18, 2013 at 04:32:23PM +0200, Joakim Tjernlund wrote: > The last week I have had 4
+> > lockups which required power on/off. > Before getting there I noticed that the machine was
+> > getting slow. >  > top reported high load(5-10) but there was no process consuming CPU except >
+> > for migration/0 which were spicing 100% on and off.  > Ping times went up with a factor of 40
+> > too. >  > Eventually I got a few entries in the kernel log: > Aug 16 12:40:51 gentoo-jocke
+> > kernel: Modules linked in: nfnetlink_log nfnetlink bluetooth rfkill sg isofs ipt_MASQUERADE
+> > iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack
+> > ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp ip6table_filter ip6_tables iptable_filter
+> > ip_tables ebtables x_tables autofs4 nfsd dm_crypt vboxnetadp(O) vboxnetflt(O) vboxdrv(O) usbhid
+> > dm_mod kvm_intel kvm snd_hda_codec_hdmi aesni_intel ablk_helper cryptd xts lrw gf128mul
+> > snd_hda_codec_realtek ehci_pci ehci_hcd usbcore snd_hda_intel snd_hda_codec snd_hwdep snd_pcm
+> > snd_page_alloc snd_timer snd microcode usb_common radeon e1000e ttm firmware_class ptp pps_core
+> > pcspkr > Aug 16 12:40:51 gentoo-jocke kernel: CPU 0  > Aug 16 12:40:51 gentoo-jocke kernel: Pid:
+> > 2421, comm: X Tainted: G           O 3.9.11 #1 Hewlett-Packard HP Compaq 8200 Elite CMT PC/1494
+> > The virtual box drivers are a huge mess.  Seriously, I really don't even know how the things are
+> > able to work at all (virtual table pointers from userspace through to the kernel?)  I spent a
+> > bunch of time to try to clean them up and get them into mergable state, but without the ability
+> > to also fix up the userspace side, that ended up being a dead-end.  Can you duplicate the problem
+> > without these modules loaded?  I'd blame them for any problems you might ever have, given how
+> > crazy they are.  thanks,  greg k-h 
+> 
+> ok you don't trust them even if I haven't used VirtualBox between failures?
 
-On Mon, Aug 19, 2013 at 02:11:23PM +0200, Wolfram Sang wrote:
-> Hi,
->=20
-> > > Which means your original patch starts to make a lot more sense. I
-> > > wonder is this is really what we should be doing though - breaking out
-> > > of the loop, I mean.
->=20
-> Yup, that is fine. I applied the old patch with Acks from Hein and
-> Felipe to -next. Thanks!
->=20
-> > It looks like TI's i2c-davinci will have the same problem as i2c-omap,
-> > and will need the same change.
->=20
-> Somebody up for this?
+They are using C++ within the kernel, and passing C++ objects from user
+to kernelspace.  Do you trust that?  :)
 
-I would suggest deleting i2c-davinci and making sure it can use
-i2c-omap. It's the same IP anyway. Just an older version which was used
-back in OMAP1 times.
-
---=20
-balbi
-
---w7PDEPdKQumQfZlR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSEiQuAAoJEIaOsuA1yqREM4wQAIUuk/k+6QpJVhcEMMBlgeNl
-dKSyNUXSuqIxp+/jmTYGnoxYA1OQ0cyZjJTl8PltLzG4wszIlkaCJsN5h+zXQBwT
-x0k2vCWJL28fL81H0HGnU7gOoXeCjpQa+Ixkh/nFMVN9ieflXLa3OZyuSJAjiIfB
-boeRPmfJpzQywFsi4r5r8ZF0WeesQEHHSE9978NxiI/fY9Ly1Q8QbbhAPDMkBolB
-xb4pX4vxPkuhmqRpwsB8eVqVblZw+udMZUcz5miSKXYO982pVhutPlqBBz+LxIHd
-amp3T0fDDb3Cqu6vKzd+7kPF+RJQAvJyDmiuHIoo7W+zzEDpD7LBHf681CAvQnfB
-+YwWTa6oOmlfK74+90mFDnJHnn6Sw6ThumUmNiZn5Xdy4IM4OKDxOjifhaaetAU7
-uZFMA5Gv4LBJlyX/x4SC2KqLCeXXMXUrvPBEdP5XPhz5W8v3jDXDJq6EcQ3WgDhH
-yyFxTgAFbkPx2g65yLPhNgHoFTksRxWKUvkBmmaA6sYBfmQK28NZrIS5/UKNGLpr
-eVUnhiVZiAl8if12zgkXOvsa7CnaPCkRq3LZsNNbOC+qXBkq5JgzMck8r5KJEr71
-Z7cOxGoTGbjLYtQZcYoo621R3F3481fkSNntJfr7ktv5X2gm2ZKbqpmpuW3UlD9l
-bwVQ3OA7aqMpn7tWRBEb
-=eJUg
------END PGP SIGNATURE-----
-
---w7PDEPdKQumQfZlR--
+greg k-h
