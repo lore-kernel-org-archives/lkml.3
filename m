@@ -1,63 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530Ab3HSMWz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 08:22:55 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:63660 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751336Ab3HSMWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 08:22:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=sasl; b=PMov2z
-	/qk8gAm/n+X/I0XlscKcZEVTMpcv+jkh92z0XOBoGzq6QX380wFF5aTCdpasHqiY
-	7AaQWm2Mo1dpJFskcx+Ck1OmqU4B2rvNpgtg6zKhDNlZjHV6vgEZqMHIOVF93ejk
-	HM+RioqeVENv1gkaQ0eFZEpMxObhxBewpX/0U=
-Message-ID: <52120E16.8010503@pobox.com>
-Date: Mon, 19 Aug 2013 21:22:46 +0900
-From: Shinya Kuribayashi <skuribay@pobox.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751569Ab3HSMZY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 08:25:24 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:56609 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751328Ab3HSMZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 08:25:23 -0400
+Message-ID: <52120EAE.5060906@hurleysoftware.com>
+Date: Mon, 19 Aug 2013 08:25:18 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: mika.westerberg@linux.intel.com
-CC: christian.ruppert@abilis.com, linux-i2c@vger.kernel.org, wsa@the-dreams.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] i2c-designware: make *CNT values configurable
-References: <20130711101330.GP4898@intel.com> <51DFB6C1.4040001@pobox.com> <20130712085140.GY4898@intel.com> <51E0E76B.1040304@pobox.com> <20130716111616.GA25835@ab42.lan> <51E6ACBE.7000509@pobox.com> <20130722131706.GA24081@ab42.lan> <51EFE550.1000507@pobox.com> <20130805093126.GE20936@ab42.lan> <520D8B30.9000602@pobox.com> <20130819113604.GN4898@intel.com>
-In-Reply-To: <20130819113604.GN4898@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Maximiliano Curia <maxy@debian.org>
+CC: Margarita Manterola <margamanterola@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Large pastes into readline enabled programs causes breakage from
+ v2.6.31 onwards
+References: <CAP+fKSpvJqeh8JCHisByDBsGWPOWOcDN4qeVYJOn1tgg8HR0eg@mail.gmail.com> <51F1B015.50804@hurleysoftware.com> <20130730124117.41DC55E4006@freak.gnuservers.com.ar> <51F7E4ED.4050409@hurleysoftware.com> <20130808175839.GB21618@gnuservers.com.ar>
+In-Reply-To: <20130808175839.GB21618@gnuservers.com.ar>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: 1044EF86-08CA-11E3-9320-CA9B8506CD1E-47602734!b-pb-sasl-quonix.pobox.com
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 8/19/13 8:36 PM, Mika Westerberg wrote:
-> On Fri, Aug 16, 2013 at 11:15:12AM +0900, Shinya Kuribayashi wrote:
->>> Actually, the I2C specification clearly defines f_SCL;max (and thus
->>> implies t_SCL;min), both in the tables and the timing diagrams. Why can
->>> we ignore this constraint while having to meet all the others?
->>
->> If we meet t_r, t_f, t_HIGH, t_LOW (and t_HIGH in this DW case),
->> f_SCL;max will be met by itself.  And again, all I2C master and
->> slave devices in the bus don't care about f_SCL; what they do care
->> are t_f, t_r, t_HIGH, t_LOW, and so on.  That's why I'm saying
->> f_SCL is pointless and has no value for HCNT/LCNT calculations.
+On 08/08/2013 01:58 PM, Maximiliano Curia wrote:
+> Hi,
 >
-> One thing that comes to mind regarding the bus speed is that even if we
-> have all the minimal timing requirements met we still prefer resulting bus
-> speeds closer to 400kHz than 315.41kHz for the reasons that we get more
-> data transferred that way, no?
+>> n_tty_set_room() in drivers/tty/n_tty.c (3.10 mainline)
+>
+>>  From n_tty_set_room():
+>
+>> 	/*
+>> 	 * If we are doing input canonicalization, and there are no
+>> 	 * pending newlines, let characters through without limit, so
+>> 	 * that erase characters will be handled.  Other excess
+>> 	 * characters will be beeped.
+>> 	 */
+>> 	if (left <= 0)
+>> 		left = ldata->icanon && !ldata->canon_data;
+>> 	old_left = tty->receive_room;
+>> 	tty->receive_room = left;
+>
+> I took a long look at this code and thought about how it could be made to work
+> for readline's case and also for the canonical readers.  I came up with this
+> simple patch:
+>
+> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> index 4bf0fc0..2ba7f4e 100644
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
+> @@ -149,7 +149,8 @@ static int set_room(struct tty_struct *tty)
+>           * characters will be beeped.
+>           */
+>          if (left <= 0)
+> -               left = ldata->icanon && !ldata->canon_data;
+> +               if (waitqueue_active(&tty->read_wait))
+> +                       left = ldata->icanon && !ldata->canon_data;
+>          old_left = tty->receive_room;
+>          tty->receive_room = left;
+>
+> This is of course just an idea, but I tested this and it worked correctly for
+> the cases I was testing.
+>
+> The effect of this patch is that when there is a canonical reader waiting for
+> input, it maintains the previous behavior, but when there's no reader (like
+> when readline is changing modes), it blocks and doesn't lose any characters.
 
-That depends I2C slave devices in the bus in your target systems.
-As long as your slave devices can detect START/STOP conditions and
-recognize SDA/SCL transitions properly, that should be Ok (you can
-use HCNT/LCNT settings for 400 kHz without having all the minimal
-timing requirements met).
+Apologies for taking so long to reply.
 
-My comments above was a reply to Christian's snippet code and how to
-treat f_SCL;mas constraints, and unrelated to your case in question.
-I'm for having a way to override HCNT/LCNT values as said before, and
-that should nicely work for you.
+My primary concern is canonical readers not become stuck with a full
+read buffer, even with bogus input data (IOW, that an error condition will
+not prevent a reader from making forward progress). I believe that won't
+happen with this change, but what I really need in this case is a detailed
+analysis from you of why that won't happen. That analysis should be in
+the patch changelog. (Feel free to send me private mail if you need help
+preparing a patch.)
 
-   Shinya
+And the patch above has a bug that allows a negative 'left' to be
+assigned to tty->receive_room which will be interpreted as a very large
+positive value.
+
+This approach still has several drawbacks.
+
+1) Since additional state is reset when the termios is changed by
+readline(), the canonical line buffer state will be bogus.
+This renders the termios change by readline() pointless; the
+caller will not be able to retrieve expected input properly.
+
+2) Since the input data is interpreted with the current termios when
+data is received, any embedded control characters will not be
+interpreted properly; again, the caller will not be able to retrieve
+expected input properly.
+
+> Another approach would be to recalculate the size of canon_data when the mode
+> is changed, but this would probably be much more invasive, and awfully less
+> efficient since it would imply going through the buffer.
+
+This approach is not possible prior to linux-next since the input worker
+thread and the reader thread are not locked out of access to the read buffer
+while changing the termios.
+
+And while rescanning the read buffer is possible in linux-next (eg, to
+compute the read_flags bitmap indicating the position of NLs), this doesn't
+address embedded control characters not being reinterpreted. And completely
+reinterpreting the read buffer makes interpreting when receiving pointless.
+
+> What do you think? Is the proposed solution, or something along those lines,
+> acceptable?
+
+I'm wondering if this problem might be best addressed on the paste side
+instead of the read side. Although this wouldn't be a magic bullet, it
+would be easier to control when more paste data is added.
+
+Regards,
+Peter Hurley
+
+
