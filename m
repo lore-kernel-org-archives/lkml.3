@@ -1,103 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751065Ab3HSIms (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 04:42:48 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56357 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab3HSImr (ORCPT
+	id S1751023Ab3HSIrN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 04:47:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52902 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab3HSIrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 04:42:47 -0400
-Date: Mon, 19 Aug 2013 10:42:26 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: linux-mtd@lists.infradead.org, Marek Vasut <marex@denx.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH 2/4] mtd: m25p80: make CONFIG_M25PXX_USE_FAST_READ safe
- to enable
-Message-ID: <20130819084226.GB31036@pengutronix.de>
-References: <1376302946-11534-1-git-send-email-s.hauer@pengutronix.de>
- <1376302946-11534-3-git-send-email-s.hauer@pengutronix.de>
- <20130817201702.GD11210@norris.computersforpeace.net>
+	Mon, 19 Aug 2013 04:47:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [RFC v1 4/5] ARM: mvebu: add Armada 1500 and Sony NSZ-GS7 device tree files
+Date: Mon, 19 Aug 2013 10:46:13 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com> <201308172128.35245.arnd@arndb.de> <521154A9.3000505@gmail.com>
+In-Reply-To: <521154A9.3000505@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130817201702.GD11210@norris.computersforpeace.net>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:36:03 up 19 days, 17:40, 41 users,  load average: 0.02, 0.08,
- 0.16
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308191046.13504.arnd@arndb.de>
+X-Provags-ID: V02:K0:J/5AFx85C3obYhAfF64Y9HctRENVfUQC3c31bgVe58R
+ RH+qRNbELXkdPLh2neDG3T4H2fSxRyJQPEINYcOHtMZ7OGEeCV
+ 6nswDNMjRyCZ78EfFE3ALcyBUsmyLshN0ufwSqur0uwmsZ4rIy
+ CdrvfbupG4EMDZSp30ZTlVzwCcitVPMvl5cdrTdk/pOc/Yo4vW
+ V/3yFmoxC2C1+gDhOJ6DkOqKdkBFPClP8MGh2Lmlt7Gk7VS4uc
+ BopyCUnzP9jZF3j7lnD0kQzK1dbrx8qlEKxt0kG7dxr9BSU8kX
+ QddQzvfalhzssOS/4OaTnE12XkTkI6p1BrACQ+Eta2XN93E52b
+ y616/XYPegl99Pf1qcoE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 17, 2013 at 01:17:02PM -0700, Brian Norris wrote:
-> On Mon, Aug 12, 2013 at 12:22:24PM +0200, Sascha Hauer wrote:
-> > This patch adds a flag to struct flash_info indicating that
-> > fast_read is not supported. This now gives the following logic
-> > when determing whether to enable fastread:
-> > 
-> > 1) enable fast_read if device node contains m25p,fast-read
-> > 2) enable fast_read unconditionally if forced in Kconfig
-> > 3) Disable fast_read if the chip does not support it
-> 
-> This logic is either unclear or incorrect.
-> 
-> > This makes enabling CONFIG_M25PXX_USE_FAST_READ a safe option
-> > since we no longer enable the fast_read option unconditionally.
-> 
-> This statement seems to contradict 2 above, depending on the reading
-> (how can 2 enable "unconditionally", yet CONFIG_..._FAST_READ "no longer
-> enable[s] ... unconditionally"?).
-> 
-> The problem I have with this description is that it is assuming that
-> 1, 2, and 3 are applied sequentially, so that later items in the
-> sequence have higher precedence. So it's describing code ordering, not
-> really logic. And statement 3 weakens the "unconditionally" of 2.
-> 
-> And to avoid simply complaining, I propose an alternative explanation:
-> 
->   If the flash chip does not support fast_read, then disable it.
->   Otherwise:
->   1) enable fast_read if device node contains m25p,fast-read
->   2) enable fast_read if forced in Kconfig
-> 
-> If we correct this description, then:
-> 
->   Acked-by: Brian Norris <computersforpeace@gmail.com>
-> 
-> I can edit the patch and push the whole thing if this is acceptable.
+On Monday 19 August 2013, Sebastian Hesselbarth wrote:
+> On 08/17/2013 09:28 PM, Arnd Bergmann wrote:
+> > On Friday 16 August 2013, Sebastian Hesselbarth wrote:
 
-Yes, that would be great. Your explanation sounds better than mine.
-
+> > This seems like a strange combination. I would have expected either PJ4+Aurora+apbtimer
+> > or A9+pl310+localtimer, based on what I found in the chromecast kernel source.
+> > Do you have more information here about what is used on the two variants?
 > 
-> One related question (not required for this series): do we even need
-> Kconfig M25PXX_USE_FAST_READ any more? Are there any SPI controllers
-> that can't use FAST_READ? Or perhaps if they have a slow clock, it's
-> preferable to use normal read?
+> I have no clue, what combination it really is. Unfortunately,
+> Marvell didn't release any open datasheets, of course.
 > 
-> If there are no restrictions from the controller side, I think this
-> NO_FR flag gives enough information to determine everything at runtime,
-> not compile-time.
+> I can only look at GPL'd Asus Cube kernel, I used for getting an idea
+> of what was required for initial support and reg offsets, irqs and
+> friends. They bring up twd as localtimer. Also, grep'ing the Cube
+> kernel sources in mach-mv88de3100 gives hits for CONFIG_PJ4 (note the
+> missing B), l2x0, smp_twd, apb_timer.
+> 
+> No hits for pl310, A9.
 
-This M25PXX_USE_FAST_READ is a no-go for multiplatform Kernels and
-should be removed. I have no idea though how we can do this without
-risking regressions since we have no idea who intentionally disabled
-this option. Maybe we just have to find out by removing it and waiting
-for people to complain^B^B^Bsend patches.
+I found this snippet in Kconfig for the Chromecast:
 
-Sascha
+config ARCH_MV88DE3100_BG2
+        bool "BG2 family"
+        help
+          Support for Marvell BG2 processors, based on the Marvell
+          PJ4B CPU and the Marvell TAUROS3 L2 cache controller, or
+          the ARM CortexA9 CPU and the ARM PL310 L2 cache controller
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+config ARCH_MV88DE3100_BG3
+        bool "BG3 family"
+        help
+          Support for Marvell BG3 processors, based on the ARM
+          CortexA9MP CPU and the ARM PL310 L2 cache controller
+
+
+A9 will always work when CPU_V7 is set, it doesn't have a Kconfig option.
+When CPU_PJ4 is set, it will work on both. Regarding the other options,
+this is what I found from the defconfigs in chromecast:
+
+$ git grep LOCAL_TIMER arch/arm/configs/*mv88*
+arch/arm/configs/mv88de3100_ax_android_defconfig:CONFIG_LOCAL_TIMERS=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2:CONFIG_LOCAL_TIMERS=y
+arch/arm/configs/mv88de3100_ax_emmc_android_defconfig:CONFIG_LOCAL_TIMERS=y
+arch/arm/configs/mv88de3100_ax_linux_defconfig:CONFIG_LOCAL_TIMERS=y
+
+$ git grep CONFIG_SMP= arch/arm/configs/*mv88*
+arch/arm/configs/mv88de3100_ax_android_defconfig:CONFIG_SMP=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2:CONFIG_SMP=y
+arch/arm/configs/mv88de3100_ax_emmc_android_defconfig:CONFIG_SMP=y
+arch/arm/configs/mv88de3100_ax_linux_defconfig:CONFIG_SMP=y
+
+$ git grep CPU_PJ4 arch/arm/configs/*mv88*
+arch/arm/configs/eureka_mv88de31xx_defconfig:CONFIG_CPU_PJ4=y
+arch/arm/configs/mv88de3100_ax_android_defconfig:CONFIG_CPU_PJ4=y
+arch/arm/configs/mv88de3100_ax_bg2a0_rdkdmp_dongle_defconfig:CONFIG_CPU_PJ4=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2:CONFIG_CPU_PJ4=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2cd_dmp:CONFIG_CPU_PJ4=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2cd_dmp_nol2:CONFIG_CPU_PJ4=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2cd_dngle_256:CONFIG_CPU_PJ4=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2cd_dngle_nol2:CONFIG_CPU_PJ4=y
+arch/arm/configs/mv88de3100_ax_emmc_android_defconfig:CONFIG_CPU_PJ4=y
+arch/arm/configs/mv88de3100_ax_linux_defconfig:CONFIG_CPU_PJ4=y
+
+$ git grep CACHE_TAUROS3= arch/arm/configs/*mv88*
+arch/arm/configs/eureka_mv88de31xx_defconfig:CONFIG_CACHE_TAUROS3=y
+arch/arm/configs/mv88de3100_ax_android_defconfig:CONFIG_CACHE_TAUROS3=y
+arch/arm/configs/mv88de3100_ax_bg2a0_rdkdmp_dongle_defconfig:CONFIG_CACHE_TAUROS3=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2:CONFIG_CACHE_TAUROS3=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2cd_dmp:CONFIG_CACHE_TAUROS3=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2cd_dngle_256:CONFIG_CACHE_TAUROS3=y
+arch/arm/configs/mv88de3100_ax_emmc_android_defconfig:CONFIG_CACHE_TAUROS3=y
+arch/arm/configs/mv88de3100_ax_linux_defconfig:CONFIG_CACHE_TAUROS3=y
+
+$ git grep CACHE_PL310 arch/arm/configs/*mv88*
+arch/arm/configs/eureka_mv88de30xx_defconfig:CONFIG_CACHE_PL310=y
+
+$ git grep L2X arch/arm/configs/*mv88*
+arch/arm/configs/eureka_mv88de30xx_defconfig:CONFIG_CACHE_L2X0=y
+
+$ git grep MV88DE3100_BG....= arch/arm/configs/*mv88*
+arch/arm/configs/eureka_mv88de30xx_defconfig:CONFIG_MV88DE3100_BG2_CD=y
+arch/arm/configs/eureka_mv88de31xx_defconfig:CONFIG_MV88DE3100_BG2_A0=y
+arch/arm/configs/mv88de3100_ax_android_defconfig:CONFIG_MV88DE3100_BG2_A0=y
+arch/arm/configs/mv88de3100_ax_bg2a0_rdkdmp_dongle_defconfig:CONFIG_MV88DE3100_BG2_A0=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2:CONFIG_MV88DE3100_BG2_A0=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2cd_dmp:CONFIG_MV88DE3100_BG2_A0=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2cd_dmp_nol2:CONFIG_MV88DE3100_BG2_A0=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2cd_dngle_256:CONFIG_MV88DE3100_BG2_A0=y
+arch/arm/configs/mv88de3100_ax_defconfig.bg2cd_dngle_nol2:CONFIG_MV88DE3100_BG2_A0=y
+arch/arm/configs/mv88de3100_ax_emmc_android_defconfig:CONFIG_MV88DE3100_BG2_A0=y
+arch/arm/configs/mv88de3100_ax_linux_defconfig:CONFIG_MV88DE3100_BG2_A0=y
+
+Evidently, the only defconfig that is for Cortex-A9 is eureka_mv88de30xx_defconfig,
+which is used on the Chromecast and has version MV88DE3100_BG2_CD (presumably
+renamed to product number de3005). LOCAL_TIMER is used exactly on those that have
+SMP support here, which makes sense.
+
+	Arnd
