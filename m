@@ -1,37 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab3HSXFp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 19:05:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55303 "EHLO
+	id S1751529Ab3HSXKp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 19:10:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55398 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab3HSXFo (ORCPT
+	with ESMTP id S1750816Ab3HSXKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 19:05:44 -0400
-Date: Mon, 19 Aug 2013 16:05:42 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Arun KS <arunks.linux@gmail.com>
-Cc: viro@zeniv.linux.org.uk, Matthew Wilcox <matthew@wil.cx>,
-        Bruce Fields <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, vinayak menon <vinayakm.list@gmail.com>,
-        Nagachandra P <nagachandra@gmail.com>, Vikram MP <mp.vikram@gmail.com>
-Subject: Re: [PATCH] SeqFile: Fix overflow condition
-Message-Id: <20130819160542.38e4a91b568c0a15f1068e09@linux-foundation.org>
-In-Reply-To: <CAKZGPAOwpEcxxZJUbmUVL1J+enXGhFbbvyZ7L3uWDkPbwKnbyQ@mail.gmail.com>
-References: <CAKZGPAOwpEcxxZJUbmUVL1J+enXGhFbbvyZ7L3uWDkPbwKnbyQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Aug 2013 19:10:43 -0400
+Date: Mon, 19 Aug 2013 16:10:42 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org, shuahkhan@gmail.com
+Subject: Re: [ 00/12] 3.0.92-stable review
+Message-ID: <20130819231042.GA5685@kroah.com>
+References: <20130818202949.875887601@linuxfoundation.org>
+ <5212A202.3070708@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5212A202.3070708@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Aug 2013 17:02:37 +0530 Arun KS <arunks.linux@gmail.com> wrote:
+On Mon, Aug 19, 2013 at 04:53:54PM -0600, Shuah Khan wrote:
+> On 08/18/2013 02:30 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.0.92 release.
+> >There are 12 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Tue Aug 20 20:29:24 UTC 2013.
+> >Anything received after that time might be too late.
+> >
+> >The whole patch series can be found in one patch at:
+> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.92-rc1.gz
+> >and the diffstat can be found below.
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
+> 
+> 3.0.92-rc1 applied cleanly to 3.0.91.
+> 
+> Compiled and booted on the following systems:
+> 
+> Samsung Series 9 900X4C Intel Corei5
+> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+> 
+> dmesgs look good. No regressions compared to the previous dmesgs for
+> this release. dmesg emerg, crit, alert, err are clean. No
+> regressions in warn.
 
-> seq_path()/seq_commit() is treating a d_path() failure as an overflow
-> condition, but it isn't.
+Thanks for letting me know.
 
-This is too brief.  When fixing a bug please always describe the
-user-visible effects of the bug.  And unless it's utterly obvious,
-provide a description of how you set about fixing that bug.
-
+greg k-h
