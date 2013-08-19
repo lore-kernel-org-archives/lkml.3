@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab3HSXUN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 19:20:13 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50401 "EHLO hydra.sisk.pl"
+	id S1751683Ab3HSXXr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 19:23:47 -0400
+Received: from mail.lang.hm ([64.81.33.126]:34142 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816Ab3HSXUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 19:20:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Jerry Snitselaar <jerry.snitselaar@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] acpi_i2c: set MODULE_LICENSE, MODULE_AUTHOR, and MODULE_DESCRIPTION
-Date: Tue, 20 Aug 2013 01:30:45 +0200
-Message-ID: <2870377.GVGv4QBgQK@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130819061614.GG4898@intel.com>
-References: <1376702795-25912-1-git-send-email-jerry.snitselaar@oracle.com> <20130819061614.GG4898@intel.com>
+	id S1751404Ab3HSXXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 19:23:45 -0400
+Date: Mon, 19 Aug 2013 16:23:23 -0700 (PDT)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Dave Chinner <david@fromorbit.com>
+cc: Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
+        "Theodore Ts'o" <tytso@mit.edu>, Dave Hansen <dave.hansen@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+In-Reply-To: <20130815212826.GS6023@dastard>
+Message-ID: <alpine.DEB.2.02.1308191621130.30740@nftneq.ynat.uz>
+References: <520BED7A.4000903@intel.com> <20130814230648.GD22316@thunk.org> <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com> <20130815011101.GA3572@thunk.org> <20130815021028.GM6023@dastard> <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
+ <20130815060149.GP6023@dastard> <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com> <20130815071141.GQ6023@dastard> <20130815074531.GA2147@quack.suse.cz> <20130815212826.GS6023@dastard>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 19, 2013 09:16:14 AM Mika Westerberg wrote:
-> On Fri, Aug 16, 2013 at 06:26:35PM -0700, Jerry Snitselaar wrote:
-> > Without MODULE_LICENSE set, I get the following with modprobe:
-> > 
-> > acpi_i2c: module license 'unspecified' taints kernel.
-> > acpi_i2c: Unknown symbol i2c_new_device (err 0)
-> > acpi_i2c: Unknown symbol acpi_dev_get_resources (err 0)
-> > acpi_i2c: Unknown symbol acpi_dev_resource_interrupt (err 0)
-> > acpi_i2c: Unknown symbol acpi_dev_free_resource_list (err 0)
-> > 
-> > Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-> 
-> Looks good to me.
-> 
-> Acked-by: Mika Westerbeg <mika.westerberg@linux.intel.com>
+On Fri, 16 Aug 2013, Dave Chinner wrote:
 
-Well, OK, but do we need to be able to build that as a module?
+> The problem with "not exported, don't update" is that files can be
+> modified on server startup (e.g. after a crash) or in short
+> maintenance periods when the NFS service is down. When the server is
+> started back up, the change number needs to indicate the file has
+> been modified so that clients reconnecting to the server see the
+> change.
+>
+> IOWs, even if the NFS server is not up or the filesystem not
+> exported we still need to update change counts whenever a file
+> changes if we are going to tell the NFS server that we keep them...
 
-Maybe it should just be yes or no?
+This sounds like you need something more like relctime rather than noctime, 
+something that updates the time in ram, but doesn't insist on flushing it to 
+disk immediatly, updating when convienient or when the file is closed.
 
-Rafael
-
+David Lang
