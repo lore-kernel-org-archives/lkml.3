@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750734Ab3HSD2v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 23:28:51 -0400
-Received: from guitar.tcltek.co.il ([192.115.133.116]:40326 "EHLO
-	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3HSD2u (ORCPT
+	id S1750754Ab3HSD3E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 23:29:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46347 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab3HSD3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 23:28:50 -0400
-Date: Mon, 19 Aug 2013 06:28:46 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: add the generic sched_clock under
- timekeeping
-Message-ID: <20130819032846.GH3922@tarshish>
-References: <a38977cc6608170b69b21b8a5ee985685c7e8a0d.1374055149.git.baruch@tkos.co.il>
- <51E6E91C.1090700@linaro.org>
- <20130717191222.GW6950@tarshish>
- <51E6EEA8.7040504@linaro.org>
+	Sun, 18 Aug 2013 23:29:01 -0400
+Date: Sun, 18 Aug 2013 20:30:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/45] 3.10.8-stable review
+Message-ID: <20130819033048.GB21419@kroah.com>
+References: <20130818203620.996166594@linuxfoundation.org>
+ <52117836.4090609@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51E6EEA8.7040504@linaro.org>
+In-Reply-To: <52117836.4090609@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
-
-On Wed, Jul 17, 2013 at 12:21:12PM -0700, John Stultz wrote:
-> On 07/17/2013 12:12 PM, Baruch Siach wrote:
-> >On Wed, Jul 17, 2013 at 11:57:32AM -0700, John Stultz wrote:
-> >>On 07/17/2013 03:05 AM, Baruch Siach wrote:
-> >>>Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-> >>>---
-> >>>  MAINTAINERS | 2 ++
-> >>>  1 file changed, 2 insertions(+)
-> >>>
-> >>>diff --git a/MAINTAINERS b/MAINTAINERS
-> >>>index bf61e04..bd9616a 100644
-> >>>--- a/MAINTAINERS
-> >>>+++ b/MAINTAINERS
-> >>>@@ -7129,6 +7129,7 @@ M:	Thomas Gleixner <tglx@linutronix.de>
-> >>>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers/core
-> >>>  S:	Supported
-> >>>  F:	include/linux/clocksource.h
-> >>>+F:	include/linux/sched_clock.h
-> >>>  F:	include/linux/time.h
-> >>>  F:	include/linux/timex.h
-> >>>  F:	include/uapi/linux/time.h
-> >>>@@ -7136,6 +7137,7 @@ F:	include/uapi/linux/timex.h
-> >>>  F:	kernel/time/clocksource.c
-> >>>  F:	kernel/time/time*.c
-> >>>  F:	kernel/time/ntp.c
-> >>>+F:	kernel/time/sched_clock.c
-> >>It seems like we could probably simplify this bit to kernel/time/*, no?
-> >This would add jiffies.c and all the tick-* files that are currently covered
-> >by the "HIGH-RESOLUTION TIMERS, CLOCKEVENTS, DYNTICKS" section.
+On Sun, Aug 18, 2013 at 06:43:18PM -0700, Guenter Roeck wrote:
+> On 08/18/2013 01:35 PM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.10.8 release.
+> > There are 45 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Tue Aug 20 20:36:09 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.8-rc1.gz
+> > and the diffstat can be found below.
+> >
 > 
-> Ok, fair enough. My thought was it all goes through Thomas anyway,
-> but for those sections there are different combinations of folks who
-> co-maintain.
+> Cross build results:
+> 	Total builds: 76 Total build errors: 0
+> Previous release:
+> 	Total builds: 69 Total build errors: 0
+> 
+> qemu:
+> 	mips, ppc, x86, x86_64 pass (boot to login prompt)
+> 	arm: fail (known problem, see https://lkml.org/lkml/2013/8/11/41)
+> 
+> More builds, still no failures.
 
-So would you take it for v3.12?
+Thanks for testing all 3 of these releases and letting me know all is
+well.
 
-baruch
-
--- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+greg k-h
