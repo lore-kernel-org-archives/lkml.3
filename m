@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751188Ab3HSR0U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 13:26:20 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51117 "EHLO
+	id S1751343Ab3HSR16 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 13:27:58 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:51126 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab3HSR0S (ORCPT
+	with ESMTP id S1751178Ab3HSR0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 13:26:18 -0400
+	Mon, 19 Aug 2013 13:26:20 -0400
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, jwboyer@redhat.com, keescook@chromium.org
-Subject: [PATCH 0/10] Add additional security checks when module loading is restricted 
-Date: Mon, 19 Aug 2013 13:26:01 -0400
-Message-Id: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
+Cc: linux-efi@vger.kernel.org, jwboyer@redhat.com, keescook@chromium.org,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH V2 03/10] x86: Lock down IO port access when module security is enabled
+Date: Mon, 19 Aug 2013 13:26:04 -0400
+Message-Id: <1376933171-9854-4-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
+References: <1376933171-9854-1-git-send-email-matthew.garrett@nebula.com>
 X-SA-Do-Not-Run: Yes
 X-SA-Exim-Connect-IP: 2001:470:1f07:1371:6267:20ff:fec3:2318
 X-SA-Exim-Mail-From: matthew.garrett@nebula.com
@@ -22,20 +25,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have two in-kernel mechanisms for restricting module loading - disabling
-it entirely, or limiting it to the loading of modules signed with a trusted
-key. These can both be configured in such a way that even root is unable to
-relax the restrictions.
+IO port access would permit users to gain access to PCI configuration
+registers, which in turn (on a lot of hardware) give access to MMIO register
+space. This would potentially permit root to trigger arbitrary DMA, so lock
+it down by default.
 
-However, right now, there's several other straightforward ways for root to
-modify running kernel code. At the most basic level these allow root to
-reset the configuration such that modules can be loaded again, rendering
-the existing restrictions useless.
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+---
+ arch/x86/kernel/ioport.c | 5 +++--
+ drivers/char/mem.c       | 4 ++++
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-This patchset adds additional restrictions to various kernel entry points
-that would otherwise make it straightforward for root to disable enforcement
-of module loading restrictions. It also provides a patch that allows the
-kernel to be configured such that module signing will be automatically
-enabled when the system is booting via UEFI Secure Boot, allowing a stronger
-guarantee of kernel integrity.
+diff --git a/arch/x86/kernel/ioport.c b/arch/x86/kernel/ioport.c
+index 4ddaf66..00b4403 100644
+--- a/arch/x86/kernel/ioport.c
++++ b/arch/x86/kernel/ioport.c
+@@ -15,6 +15,7 @@
+ #include <linux/thread_info.h>
+ #include <linux/syscalls.h>
+ #include <linux/bitmap.h>
++#include <linux/module.h>
+ #include <asm/syscalls.h>
+ 
+ /*
+@@ -28,7 +29,7 @@ asmlinkage long sys_ioperm(unsigned long from, unsigned long num, int turn_on)
+ 
+ 	if ((from + num <= from) || (from + num > IO_BITMAP_BITS))
+ 		return -EINVAL;
+-	if (turn_on && !capable(CAP_SYS_RAWIO))
++	if (turn_on && (!capable(CAP_SYS_RAWIO) || secure_modules()))
+ 		return -EPERM;
+ 
+ 	/*
+@@ -103,7 +104,7 @@ SYSCALL_DEFINE1(iopl, unsigned int, level)
+ 		return -EINVAL;
+ 	/* Trying to gain more privileges? */
+ 	if (level > old) {
+-		if (!capable(CAP_SYS_RAWIO))
++		if (!capable(CAP_SYS_RAWIO) || secure_modules())
+ 			return -EPERM;
+ 	}
+ 	regs->flags = (regs->flags & ~X86_EFLAGS_IOPL) | (level << 12);
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index f895a8c..1af8664 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -28,6 +28,7 @@
+ #include <linux/export.h>
+ #include <linux/io.h>
+ #include <linux/aio.h>
++#include <linux/module.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -563,6 +564,9 @@ static ssize_t write_port(struct file *file, const char __user *buf,
+ 	unsigned long i = *ppos;
+ 	const char __user *tmp = buf;
+ 
++	if (secure_modules())
++		return -EPERM;
++
+ 	if (!access_ok(VERIFY_READ, buf, count))
+ 		return -EFAULT;
+ 	while (count-- > 0 && i < 65536) {
+-- 
+1.8.3.1
 
