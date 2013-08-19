@@ -1,95 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751271Ab3HSUDF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 16:03:05 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:61496 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab3HSUDD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 16:03:03 -0400
+	id S1751366Ab3HSUEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 16:04:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60122 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751117Ab3HSUEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 16:04:12 -0400
+Subject: [PATCH] pci: Add pci_walk_slot() interface
+To: bhelgaas@google.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 19 Aug 2013 14:04:10 -0600
+Message-ID: <20130819195917.9062.43580.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <1376937682.2657.15.camel@ul30vt.home>
-References: <20130814200845.21923.64284.stgit@bling.home> <CAErSpo4zfuaaBSDci4jOu_9RgUfLQNPvKhro1OEh=8AMvAFWYw@mail.gmail.com>
- <1376521578.13642.65.camel@ul30vt.home> <1376937682.2657.15.camel@ul30vt.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 19 Aug 2013 14:02:41 -0600
-Message-ID: <CAErSpo50ve+ZMqcX=13hKvrB75LyWmUddC-qyX7Esfr=P5StcA@mail.gmail.com>
-Subject: Re: [PATCH] vfio-pci: PCI hot reset interface
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 12:41 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> On Wed, 2013-08-14 at 17:06 -0600, Alex Williamson wrote:
->> On Wed, 2013-08-14 at 16:42 -0600, Bjorn Helgaas wrote:
->> > On Wed, Aug 14, 2013 at 2:10 PM, Alex Williamson
->> > <alex.williamson@redhat.com> wrote:
+We have a pci_walk_bus() interface, but it's exceptionally cumbersome
+for the callback function to figure out if the device is relevant if
+the caller is trying to walk all the devices in or below a slot.  Add
+a variant to walk only slot devices.
 
->> > > +static int vfio_pci_for_each_slot_or_bus(struct pci_dev *pdev,
->> > > +                                        int (*fn)(struct pci_dev *,
->> > > +                                                  void *data), void *data,
->> > > +                                        bool slot)
->> > > +{
->> > > +       struct pci_dev *tmp;
->> > > +       int ret = 0;
->> > > +
->> > > +       list_for_each_entry(tmp, &pdev->bus->devices, bus_list) {
->> > > +               if (slot && tmp->slot != pdev->slot)
->> > > +                       continue;
->> > > +
->> > > +               ret = fn(tmp, data);
->> > > +               if (ret)
->> > > +                       break;
->> > > +
->> > > +               if (tmp->subordinate) {
->> > > +                       ret = vfio_pci_for_each_slot_or_bus(tmp, fn,
->> > > +                                                           data, false);
->> > > +                       if (ret)
->> > > +                               break;
->> > > +               }
->> > > +       }
->> > > +
->> > > +       return ret;
->> > > +}
->> >
->> > vfio_pci_for_each_slot_or_bus() isn't really vfio-specific, is it?
->>
->> It's not, I originally has callbacks split out as PCI patches but I was
->> able to simplify some things in the code by customizing it to my usage,
->> so I left it here.
->>
->> > I mean, traversing the PCI hierarchy doesn't require vfio knowledge.  I
->> > think this loop (walking the bus->devices list) skips devices on
->> > "virtual buses" that may be added for SR-IOV.  I'm not sure that
->> > pci_walk_bus() handles that correctly either, but at least if you used
->> > that, we could fix the problem in one place.
->>
->> I didn't know about pci_walk_bus(), I'll look into switching to it.
->
-> It looks like pci_walk_bus() is a poor replacement for when dealing with
-> slots.  There might be multiple slots on a bus or a mix of slots and
-> non-slots, so for each device pci_walk_bus() finds on a subordinate bus
-> I'd need to walk up the tree to find the parent bridge on the original
-> bus to figure out if it's in the same slot.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
 
-Do you really care about that scenario?  PCIe only supports a single
-slot per bus, as far as I know.
+This allows me to use pci_walk_bus() and pci_walk_slot() instead of
+rolling my own for iterating devices for bus/slot reset.  Please
+consider for 3.12 to go with the rest of the bus/slot infrastructure.
 
-> Should we have a pci_walk_slot() function?
+ drivers/pci/bus.c   |   56 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h |    2 ++
+ 2 files changed, 58 insertions(+)
 
-I guess.  And supply the pci_slot rather than the pci_dev?  I'm a
-little bit worried because the idea of a "slot" is not well-defined in
-the spec, and we have sort of an ad hoc method of discovering and
-managing them, e.g., acpiphp and pciehp might discover the same slot.
-But I guess that's no reason to bury generic code in vfio.
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index b1ff02a..316579a 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -283,6 +283,62 @@ void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
+ }
+ EXPORT_SYMBOL_GPL(pci_walk_bus);
+ 
++/** pci_walk_slot - walk devices in/under slot, calling callback.
++ *  @slot     slot whose devices should be walked
++ *  @cb       callback to be called for each device found
++ *  @userdata arbitrary pointer to be passed to callback.
++ *
++ *  Walk the given slot, including any bridged devices
++ *  on buses under this slot.  Call the provided callback
++ *  on each device found.
++ *
++ *  We check the return of @cb each time. If it returns anything
++ *  other than 0, we break out.
++ *
++ */
++void pci_walk_slot(struct pci_slot *slot, int (*cb)(struct pci_dev *, void *),
++		   void *userdata)
++{
++	struct pci_dev *dev;
++	struct pci_bus *bus;
++	struct list_head *next;
++	int retval;
++
++	bus = slot->bus;
++	down_read(&pci_bus_sem);
++	next = slot->bus->devices.next;
++	for (;;) {
++		if (next == &bus->devices) {
++			/* end of this bus, go up or finish */
++			if (bus == slot->bus)
++				break;
++			next = bus->self->bus_list.next;
++			bus = bus->self->bus;
++			continue;
++		}
++		dev = list_entry(next, struct pci_dev, bus_list);
++
++		/* skip anything on the top level bus not in our slot */
++		if (dev->bus == slot->bus && dev->slot != slot) {
++			next = dev->bus_list.next;
++			continue;
++		}
++
++		if (dev->subordinate) {
++			/* this is a pci-pci bridge, do its devices next */
++			next = dev->subordinate->devices.next;
++			bus = dev->subordinate;
++		} else
++			next = dev->bus_list.next;
++
++		retval = cb(dev, userdata);
++		if (retval)
++			break;
++	}
++	up_read(&pci_bus_sem);
++}
++EXPORT_SYMBOL_GPL(pci_walk_slot);
++
+ struct pci_bus *pci_bus_get(struct pci_bus *bus)
+ {
+ 	if (bus)
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index daf40cd..cbb291b 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1087,6 +1087,8 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
+ 
+ void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
+ 		  void *userdata);
++void pci_walk_slot(struct pci_slot *slot, int (*cb)(struct pci_dev *, void *),
++		  void *userdata);
+ int pci_cfg_space_size_ext(struct pci_dev *dev);
+ int pci_cfg_space_size(struct pci_dev *dev);
+ unsigned char pci_bus_max_busnr(struct pci_bus *bus);
 
-Bjorn
