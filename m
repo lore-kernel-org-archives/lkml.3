@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750775Ab3HSDWj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 23:22:39 -0400
-Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:20345
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750708Ab3HSDWi (ORCPT
+	id S1750734Ab3HSD2v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 23:28:51 -0400
+Received: from guitar.tcltek.co.il ([192.115.133.116]:40326 "EHLO
+	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab3HSD2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 23:22:38 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h1155h)
-Date: Mon, 19 Aug 2013 09:24:01 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Felipe Balbi <balbi@ti.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] usb: chipidea: USB_CHIPIDEA should depend on
- HAS_DMA
-Message-ID: <20130819012400.GA2895@shlinux1.ap.freescale.net>
-References: <1376857245-2088-1-git-send-email-geert@linux-m68k.org>
- <1376857245-2088-4-git-send-email-geert@linux-m68k.org>
+	Sun, 18 Aug 2013 23:28:50 -0400
+Date: Mon, 19 Aug 2013 06:28:46 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: add the generic sched_clock under
+ timekeeping
+Message-ID: <20130819032846.GH3922@tarshish>
+References: <a38977cc6608170b69b21b8a5ee985685c7e8a0d.1374055149.git.baruch@tkos.co.il>
+ <51E6E91C.1090700@linaro.org>
+ <20130717191222.GW6950@tarshish>
+ <51E6EEA8.7040504@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376857245-2088-4-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <51E6EEA8.7040504@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 18, 2013 at 10:20:44PM +0200, Geert Uytterhoeven wrote:
-> If NO_DMA=y:
-> 
-> drivers/built-in.o: In function `dma_set_coherent_mask':
-> include/linux/dma-mapping.h:93: undefined reference to `dma_supported'
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  drivers/usb/chipidea/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/chipidea/Kconfig b/drivers/usb/chipidea/Kconfig
-> index d1bd8ef..dbd5232 100644
-> --- a/drivers/usb/chipidea/Kconfig
-> +++ b/drivers/usb/chipidea/Kconfig
-> @@ -1,6 +1,6 @@
->  config USB_CHIPIDEA
->  	tristate "ChipIdea Highspeed Dual Role Controller"
-> -	depends on USB || USB_GADGET
-> +	depends on (USB || USB_GADGET) && HAS_DMA
->  	help
->  	  Say Y here if your system has a dual role high speed USB
->  	  controller based on ChipIdea silicon IP. Currently, only the
+Hi John,
 
-I can't understand why the DMA can't be changed to fix this instead
-of changing every driver?
+On Wed, Jul 17, 2013 at 12:21:12PM -0700, John Stultz wrote:
+> On 07/17/2013 12:12 PM, Baruch Siach wrote:
+> >On Wed, Jul 17, 2013 at 11:57:32AM -0700, John Stultz wrote:
+> >>On 07/17/2013 03:05 AM, Baruch Siach wrote:
+> >>>Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+> >>>---
+> >>>  MAINTAINERS | 2 ++
+> >>>  1 file changed, 2 insertions(+)
+> >>>
+> >>>diff --git a/MAINTAINERS b/MAINTAINERS
+> >>>index bf61e04..bd9616a 100644
+> >>>--- a/MAINTAINERS
+> >>>+++ b/MAINTAINERS
+> >>>@@ -7129,6 +7129,7 @@ M:	Thomas Gleixner <tglx@linutronix.de>
+> >>>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers/core
+> >>>  S:	Supported
+> >>>  F:	include/linux/clocksource.h
+> >>>+F:	include/linux/sched_clock.h
+> >>>  F:	include/linux/time.h
+> >>>  F:	include/linux/timex.h
+> >>>  F:	include/uapi/linux/time.h
+> >>>@@ -7136,6 +7137,7 @@ F:	include/uapi/linux/timex.h
+> >>>  F:	kernel/time/clocksource.c
+> >>>  F:	kernel/time/time*.c
+> >>>  F:	kernel/time/ntp.c
+> >>>+F:	kernel/time/sched_clock.c
+> >>It seems like we could probably simplify this bit to kernel/time/*, no?
+> >This would add jiffies.c and all the tick-* files that are currently covered
+> >by the "HIGH-RESOLUTION TIMERS, CLOCKEVENTS, DYNTICKS" section.
+> 
+> Ok, fair enough. My thought was it all goes through Thomas anyway,
+> but for those sections there are different combinations of folks who
+> co-maintain.
+
+So would you take it for v3.12?
+
+baruch
 
 -- 
-
-Best Regards,
-Peter Chen
-
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
