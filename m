@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369Ab3HSVJD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 17:09:03 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:42379 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab3HSVJA (ORCPT
+	id S1751411Ab3HSVJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 17:09:42 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:43299 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab3HSVJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 17:09:00 -0400
+	Mon, 19 Aug 2013 17:09:40 -0400
+Date: Mon, 19 Aug 2013 15:09:39 -0600
+From: Linn Crosetto <linn@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        linux-efi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/4] EFI boot stub memory map fix
+Message-ID: <20130819210939.GJ14273@oranje.fc.hp.com>
+References: <1376942419-5684-1-git-send-email-linn@hp.com>
+ <e7fc4e2f-4cda-4eef-8d37-bb87773f58e8@email.android.com>
+ <CAE9FiQWRp+AMeTnC3MPSWi4as6qaoFiZEsAfjr3+75YT9XMPcQ@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <20130819205736.GA13964@titan.lakedaemon.net>
-References: <20130819160537.1eeb0a9ebc269def138e016b@canb.auug.org.au>
-	<20130819205736.GA13964@titan.lakedaemon.net>
-Date: Mon, 19 Aug 2013 14:09:00 -0700
-Message-ID: <CAOesGMhRo1X=w=2-pKNz-eXiviWg3aqtVyW=f43RfigTS4dRmg@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the mvebu tree with the arm-soc tree
-From: Olof Johansson <olof@lixom.net>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQWRp+AMeTnC3MPSWi4as6qaoFiZEsAfjr3+75YT9XMPcQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-it's this commit:
+On Mon, Aug 19, 2013 at 01:47:41PM -0700, Yinghai Lu wrote:
+> On Mon, Aug 19, 2013 at 1:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > I would strongly disagree that option 2 is the cleaner solution.
+> 
+> Agreed.
+> 
+> >
+> > Linn Crosetto <linn@hp.com> wrote:
+> >>I realize the EFI stub for ARM patches are in flight,
+> >>
+> >>https://lkml.org/lkml/2013/8/9/554
+> >>
+> >>and overlap with some of the files but I wanted to send these out for
+> >>comment.
+> >>
+> >>This series fixes a problem with EFI memory maps larger than 128
+> >>entries when
+> >>booting using the EFI boot stub, which results in overflowing the
+> >>e820_map in
+> >>boot_params and an eventual halt when checking the map size in
+> >>sanitize_e820_map().
+> >>
+> >>The fix implemented is to add the EFI memory map from setup_arch() via
+> >>a
+> >>memory_setup hook.
+> >>
+> >>Two options were considered:
+> >>
+> >> 1. Use the SETUP_E820_EXT setup_data type to add the extra entries.
+> >>
+> >>2. Create a memory_setup function to be enabled when the EFI memory map
+> >>is
+> >>    needed.
+> >>
+> >>Option 2 appeared to be the cleaner solution, reducing duplication with
+> >>existing code, given a reasonable mechanism for determining when to
+> >>replace the default memory_setup function.
+> 
+> If boot_loader could create setup_data with SETUP_E820_EXT,
+> efi_stub should go that path too.
+> We should not add another path.
 
-commit 89602312c5755c87a5ca6ba8ef6b0fce9d510951
-Merge: a0cec78 f23afe2
-Author:     Jason Cooper <jason@lakedaemon.net>
-AuthorDate: Wed Aug 14 18:55:13 2013 +0000
-Commit:     Jason Cooper <jason@lakedaemon.net>
-CommitDate: Wed Aug 14 18:55:13 2013 +0000
+My consideration was in leveraging do_add_efi_memmap(), which duplicates what is
+done with the map in exit_boot(), and can already be called via the
+"add_efi_memmap" parameter. One complication with SETUP_E820_EXT is in
+determining the size needed, since a call to allocate_pool will change the
+memory map. 
 
-    Merge remote-tracking branch 'arm-soc/for-next' into mvebu/drivers
+I will send another version which uses SETUP_E820_EXT.
 
-
-
-You merged back the for-next branch from arm-soc into your tree. Big no-no.
-
-
-This brings up the subject of subplatform trees and conflicts and
--next. I wonder if we should ask Stephen to put all these trees in a
-category where if they have any substantial conflicts or weirdness
-like this, that he just drops it for the current -next build instead
-of spending effort on them.
-
-That would give us on arm-soc a chance to sort out things and even
-rebase patches if needed without causing a lot of extra work for sfr.
-
-
--Olof
-
-
-On Mon, Aug 19, 2013 at 1:57 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> Hi Stephen,
->
-> On Mon, Aug 19, 2013 at 04:05:37PM +1000, Stephen Rothwell wrote:
->> Today's linux-next merge of the mvebu tree got conflicts in various files
->> between merges and commits in the arm-soc tree and merges in the mvebu
->> tree.
->
-> I'm afraid I'm a bit lost...
->
->> These merges/commits in the mvebu tree appear to be from a previous
->> version of the arm-soc tree that the mvebu tree has been rebased upon.
->> Please don't do that - the arm-soc tree as a whole is not stable.
->
-> I didn't do anything different from the other times I built for-next.
-> Could you give me a specific example when you build linux-next again?
-> I'll certainly try to avoid it in the future, but it'll be easier if I
-> know what 'it' is. ;-)
->
-> I'll not change for-next today, and we'll see how it goes.
->
-> thx,
->
-> Jason.
+Thanks,
+Linn
