@@ -1,110 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750904Ab3HSOY6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 10:24:58 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:43585 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab3HSOY4 (ORCPT
+	id S1751030Ab3HSOZF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 10:25:05 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:36394 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750915Ab3HSOZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 10:24:56 -0400
+	Mon, 19 Aug 2013 10:25:00 -0400
+Message-ID: <52122AB9.8090306@itdev.co.uk>
+Date: Mon, 19 Aug 2013 15:24:57 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1374138144-17278-1-git-send-email-zheng.z.yan@intel.com>
-References: <1374138144-17278-1-git-send-email-zheng.z.yan@intel.com>
-Date: Mon, 19 Aug 2013 16:24:56 +0200
-Message-ID: <CABPqkBRjJDOcFWOvZw6CTokrLbg5X=p8KCxZYQ47yRGYbdY_Pg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf, x86: use INTEL_UEVENT_EXTRA_REG to define MSR_OFFCORE_RSP_X
-From: Stephane Eranian <eranian@google.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: rydberg@euromail.se, Daniel Kurtz <djkurtz@chromium.org>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: Atmel updates to atmel_mxt_ts touch controller driver - v6
+References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk> <20130718194739.GA559@polaris.bitmath.org> <520CFA0D.4090905@itdev.co.uk> <20130815160734.GB12196@core.coreip.homeip.net>
+In-Reply-To: <20130815160734.GB12196@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 11:02 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> From: "Yan, Zheng" <zheng.z.yan@intel.com>
->
-> Silvermont (22nm Atom) has two offcore response configuration MSRs,
-> unlike other Intel CPU, its event code for MSR_OFFCORE_RSP_1 is 0x02b7.
-> To avoid complicating intel_fixup_er(), use INTEL_UEVENT_EXTRA_REG to
-> define MSR_OFFCORE_RSP_X. So intel_fixup_er() can find the event code
-> for OFFCORE_RSP_N by x86_pmu.extra_regs[N].event.
->
-> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Dmitry Torokhov wrote:
+> On Thu, Aug 15, 2013 at 04:55:57PM +0100, Nick Dyer wrote:
+>> rydberg@euromail.se wrote:
+>>> **Do not send more than 15 patches at once to the vger mailing lists!!!***
+>>>
+>>> One reason that should be obvious by now is that your work will be
+>>> attended to much quicker. One may think that it is more efficient to
+>>> send the whole backlog at once, but in fact, the time it takes to get
+>>> a patchset accepted is inversely proportional to the length of the
+>>> patchset. So please, keep it small and simple next time,
+>>
+>> Apologies. I will split this lot up into several smaller series of patches.
+> 
+> Wait, I am in the process of applying it actually...
 
-Works for me on IVB and NHM.
-
-Reviewed-by: Stephane Eranian <eranian@google.com>
-
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c | 22 +++++++++++++---------
->  1 file changed, 13 insertions(+), 9 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index fbc9210..d312edf 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -81,7 +81,8 @@ static struct event_constraint intel_nehalem_event_constraints[] __read_mostly =
->
->  static struct extra_reg intel_nehalem_extra_regs[] __read_mostly =
->  {
-> -       INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
-> +       /* must define OFFCORE_RSP_X first, see intel_fixup_er() */
-> +       INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
->         INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x100b),
->         EVENT_EXTRA_END
->  };
-> @@ -143,8 +144,9 @@ static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
->
->  static struct extra_reg intel_westmere_extra_regs[] __read_mostly =
->  {
-> -       INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
-> -       INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0xffff, RSP_1),
-> +       /* must define OFFCORE_RSP_X first, see intel_fixup_er() */
-> +       INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
-> +       INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0xffff, RSP_1),
->         INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x100b),
->         EVENT_EXTRA_END
->  };
-> @@ -163,15 +165,17 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
->  };
->
->  static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
-> -       INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
-> -       INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3f807f8fffull, RSP_1),
-> +       /* must define OFFCORE_RSP_X first, see intel_fixup_er() */
-> +       INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
-> +       INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0x3f807f8fffull, RSP_1),
->         INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x01cd),
->         EVENT_EXTRA_END
->  };
->
->  static struct extra_reg intel_snbep_extra_regs[] __read_mostly = {
-> -       INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
-> -       INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
-> +       /* must define OFFCORE_RSP_X first, see intel_fixup_er() */
-> +       INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
-> +       INTEL_UEVENT_EXTRA_REG(0x01bb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
->         INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x01cd),
->         EVENT_EXTRA_END
->  };
-> @@ -1301,11 +1305,11 @@ static void intel_fixup_er(struct perf_event *event, int idx)
->
->         if (idx == EXTRA_REG_RSP_0) {
->                 event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
-> -               event->hw.config |= 0x01b7;
-> +               event->hw.config |= x86_pmu.extra_regs[EXTRA_REG_RSP_0].event;
->                 event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
->         } else if (idx == EXTRA_REG_RSP_1) {
->                 event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
-> -               event->hw.config |= 0x01bb;
-> +               event->hw.config |= x86_pmu.extra_regs[EXTRA_REG_RSP_1].event;
->                 event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
->         }
->  }
-> --
-> 1.8.1.4
->
+OK, will hang on for the moment. Let me know if you need anything from me.
