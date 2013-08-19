@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534Ab3HSXiM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 19:38:12 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50431 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751229Ab3HSXiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 19:38:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] acpi_i2c: set MODULE_LICENSE, MODULE_AUTHOR, and MODULE_DESCRIPTION
-Date: Tue, 20 Aug 2013 01:48:44 +0200
-Message-ID: <1838503.PYpZe7GJ51@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130819233528.GA4587@cantor.us.oracle.com>
-References: <1376702795-25912-1-git-send-email-jerry.snitselaar@oracle.com> <2870377.GVGv4QBgQK@vostro.rjw.lan> <20130819233528.GA4587@cantor.us.oracle.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1751505Ab3HSXk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 19:40:57 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:39801 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165Ab3HSXkz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 19:40:55 -0400
+From: Sanil Kumar D <skd.linux@gmail.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sanil Kumar D <skd.linux@gmail.com>
+Subject: [PATCH] drivers:net:ifb: Fixed coding style error:assignment in if statement
+Date: Tue, 20 Aug 2013 05:09:37 +0530
+Message-Id: <1376955577-26518-1-git-send-email-skd.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 19, 2013 04:35:29 PM Jerry Snitselaar wrote:
-> On Tue Aug 20 13, Rafael J. Wysocki wrote:
-> > On Monday, August 19, 2013 09:16:14 AM Mika Westerberg wrote:
-> > > On Fri, Aug 16, 2013 at 06:26:35PM -0700, Jerry Snitselaar wrote:
-> > > > Without MODULE_LICENSE set, I get the following with modprobe:
-> > > > 
-> > > > acpi_i2c: module license 'unspecified' taints kernel.
-> > > > acpi_i2c: Unknown symbol i2c_new_device (err 0)
-> > > > acpi_i2c: Unknown symbol acpi_dev_get_resources (err 0)
-> > > > acpi_i2c: Unknown symbol acpi_dev_resource_interrupt (err 0)
-> > > > acpi_i2c: Unknown symbol acpi_dev_free_resource_list (err 0)
-> > > > 
-> > > > Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-> > > 
-> > > Looks good to me.
-> > > 
-> > > Acked-by: Mika Westerbeg <mika.westerberg@linux.intel.com>
-> > 
-> > Well, OK, but do we need to be able to build that as a module?
-> > 
-> > Maybe it should just be yes or no?
-> > 
-> > Rafael
-> > 
-> 
-> Perhaps have depends on I2C=y and be a bool instead of tristate?
+Fixed coding style error (assignment within if statement at 2 places in drivers/net/ifb.c)
 
-Yes, that's the idea.
+Signed-off-by: Sanil Kumar D <skd.linux@gmail.com>
+---
+ drivers/net/ifb.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ifb.c b/drivers/net/ifb.c
+index a3bed28..f3fa85a 100644
+--- a/drivers/net/ifb.c
++++ b/drivers/net/ifb.c
+@@ -68,7 +68,8 @@ static void ri_tasklet(unsigned long dev)
+ 	struct sk_buff *skb;
+ 
+ 	txq = netdev_get_tx_queue(_dev, 0);
+-	if ((skb = skb_peek(&dp->tq)) == NULL) {
++	skb = skb_peek(&dp->tq);
++	if (skb == NULL) {
+ 		if (__netif_tx_trylock(txq)) {
+ 			skb_queue_splice_tail_init(&dp->rq, &dp->tq);
+ 			__netif_tx_unlock(txq);
+@@ -112,7 +113,8 @@ static void ri_tasklet(unsigned long dev)
+ 	}
+ 
+ 	if (__netif_tx_trylock(txq)) {
+-		if ((skb = skb_peek(&dp->rq)) == NULL) {
++		skb = skb_peek(&dp->rq);
++		if (skb == NULL) {
+ 			dp->tasklet_pending = 0;
+ 			if (netif_queue_stopped(_dev))
+ 				netif_wake_queue(_dev);
+-- 
+1.7.9.5
 
