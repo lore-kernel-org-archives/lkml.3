@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751121Ab3HSKDr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 06:03:47 -0400
-Received: from sauhun.de ([89.238.76.85]:57293 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab3HSKDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 06:03:46 -0400
-Date: Mon, 19 Aug 2013 12:03:44 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>
-Subject: Re: [PATCH 04/27] drivers/dma: don't check resource with
- devm_ioremap_resource
-Message-ID: <20130819100343.GB3091@katana>
-References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
- <1374602524-3398-5-git-send-email-wsa@the-dreams.de>
- <20130819085857.GY32147@intel.com>
+	id S1751237Ab3HSKEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 06:04:36 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:64334 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab3HSKEe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 06:04:34 -0400
+Message-ID: <5211EDAE.1090407@baylibre.com>
+Date: Mon, 19 Aug 2013 12:04:30 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aVD9QWMuhilNxW9f"
-Content-Disposition: inline
-In-Reply-To: <20130819085857.GY32147@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ruslan Bilovol <ruslan.bilovol@ti.com>
+CC: Nishanth Menon <nm@ti.com>, devicetree@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        uri.y@variscite.com, linux-omap <linux-omap@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 0/2] omap4/twl6030: typical connection to omap4 as
+ a separate dtsi file
+References: <1376469348-10797-1-git-send-email-ruslan.bilovol@ti.com> <520B8B45.1010300@baylibre.com> <CAB=otbTUk68CLmgQsEoefMMFTAnZCAMbZa-yiYmn1b3F1X8BiQ@mail.gmail.com> <520E2726.304@baylibre.com> <CAB=otbRLea7V6_4Rhfr=ApNV=+2sQXnY=JW9-vy6V+hbt336wg@mail.gmail.com>
+In-Reply-To: <CAB=otbRLea7V6_4Rhfr=ApNV=+2sQXnY=JW9-vy6V+hbt336wg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ruslan,
 
---aVD9QWMuhilNxW9f
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 19/08/2013 08:14, Ruslan Bilovol wrote:
+> Hi Benoit,
+>
+> On Fri, Aug 16, 2013 at 4:20 PM, Benoit Cousson <bcousson@baylibre.com> wrote:
+>> Hi Ruslan,
+>>
+>> On 16/08/2013 14:04, Ruslan Bilovol wrote:
+>>> Hi Benoit,
+>>>
+>>> On Wed, Aug 14, 2013 at 4:51 PM, Benoit Cousson <bcousson@baylibre.com> wrote:
+>>>> Hi Ruslan,
+>>>>
+>>>> On 14/08/2013 10:35, Ruslan Bilovol wrote:
+>>>>>
+>>>>> Hello,
+>>>>>
+>>>>> There is no functional changes between v1 and v2 - just
+>>>>> added the patch for omap4-var-som - Uri Yosef confirmed
+>>>>> this board have the same connection of OMAP4<->TWL6030 as
+>>>>> SDP4430 board
+>>>>
+>>>>
+>>>> The series looks good to me, but it will be good to have a test for Panda
+>>>> and Variscite boards before merging it.
+>>>
+>>> Okay, so I just verified this patch series on PandaBoard ES2. Should I
+>>> resubmit this series with
+>>> fixed commit message?
+>>
+>> No, that's fine, I already applied it and fixed the subject and the changelog.
+>>
+>> Here it is:
+>>
+>> commit 2e25df1e5a4af906a9b25332719ace000063eb0d
+>> Author: Ruslan Bilovol <ruslan.bilovol@ti.com>
+>> Date:   Wed Aug 14 11:35:47 2013 +0300
+>>
+>>      ARM: dts: twl6030: Move common configuration for OMAP4 boards in a separate dtsi file
+>>
+>>      The OMAP4 SoC family uses specially-designed PMIC (power management IC)
+>>      companion chip for power management needs: TWL6030/TWL6032.
+>>      Therefore there is a typical connection of PMIC to OMAP4 so we can
+>>      move it into separate .dtsi file and do not duplicate over
+>>      board-specific files.
+>>
+>>      Tested on OMAP4 SDP board and compile-tested for Panda board
+>
+> Just for archives: I've successfully tested it on PandaBoard ES2 last
+> week as well.
 
-On Mon, Aug 19, 2013 at 02:28:57PM +0530, Vinod Koul wrote:
-> On Tue, Jul 23, 2013 at 08:01:37PM +0200, Wolfram Sang wrote:
-> > devm_ioremap_resource does sanity checks on the given resource. No need=
- to
-> > duplicate this in the driver.
-> >=20
-> > Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> Sorry looks like I missed this and instead applied a similar patch from J=
-ulia
-> last week. I should have taken this instead. My bad...
+Great, I'll update the changelog before pushing it.
 
-Fine with me, as long as the issue gets fixed :)
+>>      Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
+>>      Signed-off-by: Benoit Cousson <bcousson@baylibre.com>
+>>
+>>
+>> Just let me know if you are OK with the updated version.
+>
+> Yes, this version looks good to me. Thanks for picking it up!
+>
+>>
+>>> However I cannot verify the patch for Variscite board because I do not
+>>> own any such board so
+>>> you can drop that patch. But maybe Uri Yosef can verify it. Uri?
+>>
+>> It seems that Uri cannot test it right now, so I will have to drop that one.
+>
+> Okay, let's wait for Uri's verification.
 
+I'll keep it for 3.13.
 
---aVD9QWMuhilNxW9f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
+Benoit
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSEe1/AAoJEBQN5MwUoCm2me4P/2IyruS9y5PhPQlTaKIqTmCz
-k/CkpgwGfKikJPn6JD4AU8MgAyDx7hahNiBUvvwnmoiBiN7u8ggDN+n9GiTOf7NZ
-CsCxwwPYVoffy71q+C1DvKqmFuhGeIt2o0E1+CDkZmBg8qo6wGWkmWdT5WsPPDeM
-wc6E8Xq8z5jTFm9rj4UD6KFh4IodBt8GIT9Mphf5i1pqYbHIOK0A92DpZx30RJ/h
-/a2sgrJpr7hYOEosmxwEhzZPHkRrdq1X3duW/KIYDNew7vFGRd/j6LsXSTBNpHam
-DIuDkGoifC7GtyqOVsxX6uMAdSvJvP7o+tXUTgC17/M3n40lTLGaTkfKZ8GnzACF
-eSDBV8YxdbTFMt446Xww55ok67BssR1h4UANWJdFnIGMbLCAFvYd+rHlC+LkaNjL
-4G0ceUY2PQerINMfo51bxZtc7DumvfSVB9McbNVR/vJmcmORXbLu7GyyJlIHfPqG
-bELqYWq4pmhvg4UIJG2/WTKZrtBm+YJh6q6iUQZYyKkSA4zNFPJAC/JMP2Nl1pr5
-gR5L3jJclu1jlm+KlpUtZFvW2exEP5Uhy5dLD9PW6hcxyBx5iMjhZJuNpbk50fWd
-bl9+v7vpAoFZvpg2n35WJLVYb1vW0RrMiA93W/xnbeMtQbxev/I7XzihfE98gzsO
-G3qtWY5+mP8Ws95qwqIM
-=7D3g
------END PGP SIGNATURE-----
-
---aVD9QWMuhilNxW9f--
