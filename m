@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751109Ab3HSQ76 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 12:59:58 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56526 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750867Ab3HSQ75 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 12:59:57 -0400
-Date: Mon, 19 Aug 2013 13:59:56 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lior Amsalem <alior@marvell.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 1/3] ARM: Introduce atomic MMIO clear/set
-Message-ID: <20130819165955.GA20522@localhost>
-References: <1376138582-7550-1-git-send-email-ezequiel.garcia@free-electrons.com>
- <1376138582-7550-2-git-send-email-ezequiel.garcia@free-electrons.com>
- <20130812182942.GA28695@mudshark.cambridge.arm.com>
+	id S1751146Ab3HSRAJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 13:00:09 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:54899 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751122Ab3HSRAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 13:00:02 -0400
+Date: Mon, 19 Aug 2013 11:59:48 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, eternaleye@gmail.com,
+        minchan@kernel.org, mgorman@suse.de, gregkh@linuxfoundation.org,
+        akpm@linux-foundation.org, axboe@kernel.dk, ngupta@vflare.org,
+        semenzato@google.com, penberg@iki.fi, sonnyrao@google.com,
+        smbarber@google.com, konrad.wilk@oracle.com, riel@redhat.com,
+        kmpark@infradead.org, Bob Liu <bob.liu@oracle.com>
+Subject: Re: [PATCH 3/4] mm: zswap: add supporting for zsmalloc
+Message-ID: <20130819165948.GA5703@variantweb.net>
+References: <1376815249-6611-1-git-send-email-bob.liu@oracle.com>
+ <1376815249-6611-4-git-send-email-bob.liu@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130812182942.GA28695@mudshark.cambridge.arm.com>
+In-Reply-To: <1376815249-6611-4-git-send-email-bob.liu@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081916-5806-0000-0000-000022794B05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 07:29:42PM +0100, Will Deacon wrote:
-> On Sat, Aug 10, 2013 at 01:43:00PM +0100, Ezequiel Garcia wrote:
-> > Some SoC have MMIO regions that are shared across orthogonal
-> > subsystems. This commit implements a possible solution for the
-> > thread-safe access of such regions through a spinlock-protected API
-> > with clear-set semantics.
-> > 
-> > Concurrent access is protected with a single spinlock for the
-> > entire MMIO address space. While this protects shared-registers,
-> > it also serializes access to unrelated/unshared registers.
-> > 
-> > Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+On Sun, Aug 18, 2013 at 04:40:48PM +0800, Bob Liu wrote:
+> Make zswap can use zsmalloc as its allocater.
+> But note that zsmalloc don't reclaim any zswap pool pages mandatory, if zswap
+> pool gets full, frontswap_store will be refused unless frontswap_get happened
+> and freed some space.
 > 
-> [...]
+> The reason of don't implement reclaiming zsmalloc pages from zswap pool is there
+> is no requiremnet currently.
+> If we want to do mandatory reclaim, we have to write those pages to real backend
+> swap devices. But most of current users of zsmalloc are from embeded world,
+> there is even no real backend swap device.
+> This action is also the same as privous zram!
 > 
-> > +void atomic_io_clear_set(void __iomem *reg, u32 clear, u32 set)
-> > +{
-> > +	spin_lock(&__io_lock);
-> > +	writel((readl(reg) & ~clear) | set, reg);
-> > +	spin_unlock(&__io_lock);
-> > +}
-> 
-> I appreciate that you've lifted this code from a previous driver, but this
-> doesn't really make any sense to me. The spin_unlock operation is
-> essentially a store to normal, cacheable memory, whilst the writel is an
-> __iowmb followed by a store to device memory.
-> 
-> This means that you don't have ordering guarantees between the two accesses
-> outside of the CPU, potentially giving you:
-> 
-> 	spin_lock(&__io_lock);
-> 	spin_unlock(&__io_lock);
-> 	writel((readl(reg) & ~clear) | set, reg);
-> 
-> which is probably not what you want.
-> 
-> I suggest adding an iowmb after the writel if you really need this ordering
-> to be enforced (but this may have a significant performance impact,
-> depending on your SoC).
-> 
+> For several area, zsmalloc has unpredictable performance characteristics when
+> reclaiming a single page, then CONFIG_ZBUD are suggested.
 
-I don't want to argue with you, given I have zero knowledge about this
-ordering issue. However let me ask you a question.
+Looking at this patch on its own, it does show how simple it could be
+for zswap to support zsmalloc.  So thanks!
 
-In arch/arm/include/asm/spinlock.h I'm seeing this comment:
+However, I don't like all the ifdefs scattered everywhere.  I'd like to
+have a ops structure (e.g. struct zswap_alloc_ops) instead and just
+switch ops based on the CONFIG flag.  Or better yet, have it boot-time
+selectable instead of build-time.
 
-""ARMv6 ticket-based spin-locking.
-A memory barrier is required after we get a lock, and before we
-release it, because V6 CPUs are assumed to have weakly ordered
-memory.""
+Seth
 
-and also:
-
-static inline void arch_spin_unlock(arch_spinlock_t *lock)
-{
-	smp_mb();
-	lock->tickets.owner++;
-	dsb_sev();
-}
-
-So, knowing this atomic API should work for every ARMv{N}, and not being very
-sure what the call to dsb_sev() does. Would you care to explain how the above
-is *not* enough to guarantee a memory barrier before the spin unlocking?
-
-Thanks!
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
