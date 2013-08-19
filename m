@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751266Ab3HSS4j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 14:56:39 -0400
-Received: from sauhun.de ([89.238.76.85]:36580 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751099Ab3HSS4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 14:56:35 -0400
-Date: Mon, 19 Aug 2013 20:56:33 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-media@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH RESEND] i2c: move of helpers into the core
-Message-ID: <20130819185633.GA12011@katana>
-References: <1376918361-7014-1-git-send-email-wsa@the-dreams.de>
- <1376935183-11218-1-git-send-email-wsa@the-dreams.de>
- <5212624D.5090708@samsung.com>
+	id S1751301Ab3HSS4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 14:56:52 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:54789 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab3HSS4u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 14:56:50 -0400
+Message-ID: <52126A71.5050306@cogentembedded.com>
+Date: Mon, 19 Aug 2013 22:56:49 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
-Content-Disposition: inline
-In-Reply-To: <5212624D.5090708@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: ujhelyi.m@gmail.com
+CC: davem@davemloft.net, mugunthanvnm@ti.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: cpsw: Add support for wake-on-lan for cpsw
+References: <1376907191-25491-1-git-send-email-ujhelyi.m@gmail.com>
+In-Reply-To: <1376907191-25491-1-git-send-email-ujhelyi.m@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
---9jxsPFA5p3P2qPhR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 08/19/2013 02:13 PM, ujhelyi.m@gmail.com wrote:
 
+> From: Matus Ujhelyi <ujhelyi.m@gmail.com>
 
-> However this patch fails to apply onto either v3.11-rc4 or v3.11-rc6:
+> Signed-off-by: Matus Ujhelyi <ujhelyi.m@gmail.com>
+> ---
+>   drivers/net/ethernet/ti/cpsw.c |   25 +++++++++++++++++++++++++
+>   1 file changed, 25 insertions(+)
 
-Argh, did not drop the MPC patch before rebasing :( So either pick the
-patch "i2c: powermac: fix return path on error" before, pull the branch
-[1], or force me to resend ;)
+> diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+> index 22a7a43..f59302e 100644
+> --- a/drivers/net/ethernet/ti/cpsw.c
+> +++ b/drivers/net/ethernet/ti/cpsw.c
+> @@ -1416,6 +1416,29 @@ static int cpsw_set_settings(struct net_device *ndev, struct ethtool_cmd *ecmd)
+>   		return -EOPNOTSUPP;
+>   }
+>
+> +static void
+> +cpsw_get_wol(struct net_device *ndev, struct ethtool_wolinfo *wol)
+> +{
+> +	struct cpsw_priv *priv = netdev_priv(ndev);
+> +	int slave_no = cpsw_slave_index(priv);
 
-Thanks!
+    Empty line wouldn't hurt here, after declaration.
 
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/core-with-of
+> +	wol->supported = 0;
+> +	wol->wolopts = 0;
+> +	if (priv->slaves[slave_no].phy)
+> +		phy_ethtool_get_wol(priv->slaves[slave_no].phy, wol);
+> +
+> +}
+> +
+> +static int
+> +cpsw_set_wol(struct net_device *ndev, struct ethtool_wolinfo *wol)
+> +{
+> +	struct cpsw_priv *priv = netdev_priv(ndev);
+> +	int slave_no = cpsw_slave_index(priv);
 
---9jxsPFA5p3P2qPhR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+    Here too...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> +	if (priv->slaves[slave_no].phy)
+> +		return phy_ethtool_set_wol(priv->slaves[slave_no].phy, wol);
+> +	else
+> +		return -EOPNOTSUPP;
+> +}
+> +
+>   static const struct ethtool_ops cpsw_ethtool_ops = {
+>   	.get_drvinfo	= cpsw_get_drvinfo,
+>   	.get_msglevel	= cpsw_get_msglevel,
 
-iQIcBAEBAgAGBQJSEmphAAoJEBQN5MwUoCm2oSMQALA/vPFqMuszNie+wpNeFLTx
-ndq9K7tvwvyV6ix/QtfrneDKM17i0G/OljSqOXMuO3YddSvGKIvs956j6te7Tor0
-INyTIzc59ycgiF10Zt6egrZOa4CTwka0IyozuU9tiue9VIIL2u4SnTkS7aEOH7rI
-rSFgyaDAFjvcMLAVrw/nsTcM5GRLVsFwZJklQ4m5m6ntXOs8cVDsEhkFUbMabLEA
-ITNMspH4KtEQr3v5ij+tl6rhUGJzWu8IARf4C7f8Gxas3y8NuADXlXgFjtd5xccR
-6Qgex4Wuv9yOLK9oCiXHrg3J7iXR46po/VM5BEHxT013Wxde8784u8Hv8FaPxC9r
-r1FkkadCnWaJWe0nIq2eFTU6pECwuSBT3Bu5d4kOrhr4S3a9Z+3s4KpmWZEmaNkz
-nN5hBURGFQIdLY7BzGJWiBRLqa7kq97ATfMr9N9Pg7Rpqa9TezMDF2Sm5DP2p0Ha
-fR764qsVds2fPT8+DIEnNiwfgBFJYcXhV0yv5T5pkncE5C6x6RQoK+RmRXMPO8hx
-l3xL9yV9GHVITzzgah/uaCKHCh7dboPYlKoiEqwHb0GxGbaEq3kMqaJ0D99mIss+
-k9sAe3Nfq02mwMN+2pGEZX7Rzs3d4CD84Yi0NC/csPSzkAHuC0qD1qdEw9nGrw4v
-ptWWV5ABSl7wqbZKZ0Rc
-=96ic
------END PGP SIGNATURE-----
+WBR, Sergei
 
---9jxsPFA5p3P2qPhR--
