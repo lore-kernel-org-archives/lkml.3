@@ -1,118 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751497Ab3HSVgg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 17:36:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24484 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab3HSVfr (ORCPT
+	id S1751472Ab3HSViy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 17:38:54 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:59531 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751121Ab3HSVix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 17:35:47 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=PTAMXsjR3mwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5jOM9dmJ99oA:10 a=20KFwNOVAAAA:8 a=O3HAJVgSP7dV9RbNiDoA:9 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130819213545.142146472@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 19 Aug 2013 17:33:26 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Clark Williams <clark.williams@gmail.com>,
-        Steven Rostedt <srostedt@redhat.com>
-Subject: [PATCH RT 2/3] hwlat-detector: Use trace_clock_local if available
-References: <20130819213324.405942342@goodmis.org>
-Content-Disposition: inline; filename=hwlat-use-trace-clock-3.10.patch
+	Mon, 19 Aug 2013 17:38:53 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19qkiKtqWW93WwDueUTjIg91BzoPohyWxk=
+Date: Mon, 19 Aug 2013 17:38:33 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Olof Johansson <olof@lixom.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: linux-next: manual merge of the mvebu tree with the arm-soc
+ tree
+Message-ID: <20130819213833.GB13964@titan.lakedaemon.net>
+References: <20130819160537.1eeb0a9ebc269def138e016b@canb.auug.org.au>
+ <20130819205736.GA13964@titan.lakedaemon.net>
+ <CAOesGMhRo1X=w=2-pKNz-eXiviWg3aqtVyW=f43RfigTS4dRmg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMhRo1X=w=2-pKNz-eXiviWg3aqtVyW=f43RfigTS4dRmg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As ktime_get() calls into the timing code which does a read_seq(), it
-may be affected by other CPUS that touch that lock. To remove this
-dependency, use the trace_clock_local() which is already exported
-for module use. If CONFIG_TRACING is enabled, use that as the clock,
-otherwise use ktime_get().
+On Mon, Aug 19, 2013 at 02:09:00PM -0700, Olof Johansson wrote:
+> it's this commit:
+> 
+> commit 89602312c5755c87a5ca6ba8ef6b0fce9d510951
+> Merge: a0cec78 f23afe2
+> Author:     Jason Cooper <jason@lakedaemon.net>
+> AuthorDate: Wed Aug 14 18:55:13 2013 +0000
+> Commit:     Jason Cooper <jason@lakedaemon.net>
+> CommitDate: Wed Aug 14 18:55:13 2013 +0000
+> 
+>     Merge remote-tracking branch 'arm-soc/for-next' into mvebu/drivers
+> 
 
-Signed-off-by: Steven Rostedt <srostedt@redhat.com>
+grmbl... Yep, that's my mistake.  I usually do a temp branch for
+merge-testing against arm-soc/for-next and building.  Apparently I
+forgot to make the branch first.  My apologies.
 
-Index: linux-rt.git/drivers/misc/hwlat_detector.c
-===================================================================
---- linux-rt.git.orig/drivers/misc/hwlat_detector.c
-+++ linux-rt.git/drivers/misc/hwlat_detector.c
-@@ -51,6 +51,7 @@
- #include <linux/version.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-+#include <linux/trace_clock.h>
- 
- #define BUF_SIZE_DEFAULT	262144UL		/* 8K*(sizeof(entry)) */
- #define BUF_FLAGS		(RB_FL_OVERWRITE)	/* no block on full */
-@@ -211,6 +212,21 @@ static struct sample *buffer_get_sample(
- 	return sample;
- }
- 
-+#ifndef CONFIG_TRACING
-+#define time_type	ktime_t
-+#define time_get()	ktime_get()
-+#define time_to_us(x)	ktime_to_us(x)
-+#define time_sub(a, b)	ktime_sub(a, b)
-+#define init_time(a, b)	(a).tv64 = b
-+#define time_u64(a)	(a).tv64
-+#else
-+#define time_type	u64
-+#define time_get()	trace_clock_local()
-+#define time_to_us(x)	((x) / 1000)
-+#define time_sub(a, b)	((a) - (b))
-+#define init_time(a, b)	a = b
-+#define time_u64(a)	a
-+#endif
- /**
-  * get_sample - sample the CPU TSC and look for likely hardware latencies
-  * @unused: This is not used but is a part of the stop_machine API
-@@ -220,23 +236,23 @@ static struct sample *buffer_get_sample(
-  */
- static int get_sample(void *unused)
- {
--	ktime_t start, t1, t2, last_t2;
-+	time_type start, t1, t2, last_t2;
- 	s64 diff, total = 0;
- 	u64 sample = 0;
- 	u64 outer_sample = 0;
- 	int ret = 1;
- 
--	last_t2.tv64 = 0;
--	start = ktime_get(); /* start timestamp */
-+	init_time(last_t2, 0);
-+	start = time_get(); /* start timestamp */
- 
- 	do {
- 
--		t1 = ktime_get();	/* we'll look for a discontinuity */
--		t2 = ktime_get();
-+		t1 = time_get();	/* we'll look for a discontinuity */
-+		t2 = time_get();
- 
--		if (last_t2.tv64) {
-+		if (time_u64(last_t2)) {
- 			/* Check the delta from the outer loop (t2 to next t1) */
--			diff = ktime_to_us(ktime_sub(t1, last_t2));
-+			diff = time_to_us(time_sub(t1, last_t2));
- 			/* This shouldn't happen */
- 			if (diff < 0) {
- 				printk(KERN_ERR BANNER "time running backwards\n");
-@@ -247,10 +263,10 @@ static int get_sample(void *unused)
- 		}
- 		last_t2 = t2;
- 
--		total = ktime_to_us(ktime_sub(t2, start)); /* sample width */
-+		total = time_to_us(time_sub(t2, start)); /* sample width */
- 
- 		/* This checks the inner loop (t1 to t2) */
--		diff = ktime_to_us(ktime_sub(t2, t1));     /* current diff */
-+		diff = time_to_us(time_sub(t2, t1));     /* current diff */
- 
- 		/* This shouldn't happen */
- 		if (diff < 0) {
+I've fixed up mvebu/drivers, and I'm build testing a rebuilt for-next
+now.
 
+> You merged back the for-next branch from arm-soc into your tree. Big no-no.
+
+Yep, \shame/.
+
+> This brings up the subject of subplatform trees and conflicts and
+> -next. I wonder if we should ask Stephen to put all these trees in a
+> category where if they have any substantial conflicts or weirdness
+> like this, that he just drops it for the current -next build instead
+> of spending effort on them.
+
+Agreed.  A tree hierarchy of sorts.  mvebu and other sub-arch trees
+should definitely be dropped for the day with minimal investigation.
+
+thx,
+
+Jason.
