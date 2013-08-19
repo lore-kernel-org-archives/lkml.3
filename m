@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab3HSCaK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Aug 2013 22:30:10 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44727 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab3HSCaI (ORCPT
+	id S1753338Ab3HSCgF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Aug 2013 22:36:05 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:29260 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab3HSCgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Aug 2013 22:30:08 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <5211831B.6090704@jp.fujitsu.com>
-Date: Mon, 19 Aug 2013 11:29:47 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sun, 18 Aug 2013 22:36:03 -0400
+Message-ID: <5211851E.4010903@oracle.com>
+Date: Mon, 19 Aug 2013 10:38:22 +0800
+From: vaughan <vaughan.cao@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Jingbai Ma <jingbai.ma@hp.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Mitchell, Lisa (MCLinux in Fort Collins)" <lisa.mitchell@hp.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, bhelgaas@google.com,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [Help Test] kdump, x86, acpi: Reproduce CPU0 SMI corruption issue
- after unsetting BSP flag
-References: <5200BFB3.2050202@jp.fujitsu.com> <520A10A3.5080303@hp.com> <520B4A22.2030800@hp.com> <87ob90839p.fsf@xmission.com>
-In-Reply-To: <87ob90839p.fsf@xmission.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: jeremy@goop.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen: initialize xen panic handler for PVHVM
+References: <1376640656-32381-1-git-send-email-vaughan.cao@oracle.com> <20130816124327.GC10190@konrad-lan.dumpdata.com>
+In-Reply-To: <20130816124327.GC10190@konrad-lan.dumpdata.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/15 4:45), Eric W. Biederman wrote:
-> Jingbai Ma <jingbai.ma@hp.com> writes:
+On 08/16/2013 08:43 PM, Konrad Rzeszutek Wilk wrote:
+> On Fri, Aug 16, 2013 at 04:10:56PM +0800, Vaughan Cao wrote:
+>> kernel use callback linked in panic_notifier_list to notice others when panic
+>> happens.
+>> NORET_TYPE void panic(const char * fmt, ...){
+>>     ...
+>>     atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
+>> }
+>> When xen aware this, it will call xen_reboot(SHUTDOWN_crash) to send out an
+>   ^^^^^^^^^^^^^^^^^^^-> "When Xen becomes aware of this"
 >
->> I found a side effect of unsetting BSP flag.
->> It affected system rebooting, once the BSP flags been removed, and issue
->> reboot command, system will hang after message:
->> Restarting system.
->> And have to do a hardware reset to recover it.
->>
->> I have reproduced this problem on the following systems:
->> HP EliteBook 6930p
->> HP Compaq DC7700
->> HP ProLiant DL980 (4 sockets, 40 cores)
->>
->> I have an idea: To avoid such kind of issue, we can unset BSP flag in
->> the first kernel during crash processing, and restore it in the second
->> kernel in the APs initializing.
->
-> The premise was clearing BSP would not be an issue.  If we could
-> reliably count on unsetting the BSP during crash processing we could
-> just switch to the BSP and be done totally avoid this problem.
->
-> Given that there are reald world issues with clearing the BSP flag,
-> I believe the alternate suggestion was to simply never attempt to start
-> the bootstrap processor during processor bring up.
->
-> If as normal we are running on the bootstrap processor everything will
-> work the same, but if we are in the kdump scenario we will be short one
-> core.  Being short one core seems like a reasonable tradeoff between
-> reliability and performance.
->
-> Eric
+>> event with reason code - SHUTDOWN_crash.
+>> xen_panic_handler_init() is defined to register on panic_notifier_list but
+>> we only call it in xen_arch_setup which only be called by pvm, this patch is
+>                                           ^^^^^^^-> "is only"
+>>  necessary for pvhvm.
+> Could you tell me what has been happening without this patch?
+Setting 'on_crash=coredump-restart' in PVHVM guest config file can't
+lead a vmcore to be generate when the guest panics. It can be reproduced
+with 'echo c > /proc/sysrq-trigger'.
+>From the xend.log, we find the reason code gotten by dominfo is not as
+expected:
+  [2013-07-29 08:55:37 19378] INFO (XendDomainInfo:2148) Domain has
+shutdown: name=oakDom1 id=15 reason=reboot.
+While log from a guest who can capture the crash is as below:   
+  [2013-07-29 08:13:42 19378] WARNING (XendDomainInfo:2131) Domain has
+crashed: name=oakDom1 id=14.
 
-Sorry Eric, I'm not clear to what you mean by ``short one core''...
-Which are you suggesting? Disabling BSP if crash happens on AP is reasonable?
-Or restricting cpus to a single one only just as the current kdump
-configuration is reasonable?
-
--- 
-Thanks.
-HATAYAMA, Daisuke
+Thanks,
+Vaughan
+>
+> Thank you.
+>
+>> Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
+>> ---
+>>  arch/x86/xen/enlighten.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+>> index 4aec5ed..53e5726 100644
+>> --- a/arch/x86/xen/enlighten.c
+>> +++ b/arch/x86/xen/enlighten.c
+>> @@ -1713,6 +1713,8 @@ static void __init xen_hvm_guest_init(void)
+>>  
+>>  	xen_hvm_init_shared_info();
+>>  
+>> +	xen_panic_handler_init();
+>> +
+>>  	if (xen_feature(XENFEAT_hvm_callback_vector))
+>>  		xen_have_vector_callback = 1;
+>>  	xen_hvm_smp_init();
+>> -- 
+>> 1.7.11.7
+>>
 
