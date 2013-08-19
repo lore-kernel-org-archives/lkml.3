@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751201Ab3HSS3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 14:29:25 -0400
-Received: from bitmer.com ([213.157.87.50]:42465 "EHLO bitmer.com"
+	id S1751224Ab3HSSjJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 14:39:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5414 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab3HSS3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 14:29:23 -0400
-X-Greylist: delayed 1545 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Aug 2013 14:29:23 EDT
-Message-ID: <52125DB9.7040405@bitmer.com>
-Date: Mon, 19 Aug 2013 21:02:33 +0300
-From: Jarkko Nikula <jarkko.nikula@bitmer.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1751109Ab3HSSjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 14:39:06 -0400
+Date: Mon, 19 Aug 2013 20:33:19 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Brad Spengler <spender@grsecurity.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin Walters <walters@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
+Message-ID: <20130819183319.GA24846@redhat.com>
+References: <20130819172524.GA22268@redhat.com> <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, kernel-janitors@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] ASoC: omap: simplify platform_get_resource_byname/devm_ioremap_resource
-References: <1376902316-18520-1-git-send-email-Julia.Lawall@lip6.fr> <1376902316-18520-2-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1376902316-18520-2-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 08/19, Andy Lutomirski wrote:
+>
+> On Mon, Aug 19, 2013 at 10:25 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > Hello.
+> >
+> > Colin reports that vfork() doesn't work after unshare(PIDNS). The
+> > reason is trivial, copy_process() does:
+> >
+> >         /*
+> >          * If the new process will be in a different pid namespace
+> >          * don't allow the creation of threads.
+> >          */
+> >         if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
+> >             (task_active_pid_ns(current) != current->nsproxy->pid_ns))
+> >                 return ERR_PTR(-EINVAL);
+> >
+> > and CLONE_VM obviously nacks vfork(). So perhaps we can relax
+> > this check to CLONE_THREAD? Or should we really nack CLONE_VM
+> > by security reasons?
+> >
+> > OTOH. Perhaps we should also deny CLONE_PARENT in this case?
+> >
+> > In short. So far I am thinking about the patch below but I got
+> > lost and totally confused. Will try to think more tomorrow, but
+> > I would like to see the fix from someone who still understands
+> > this all.
+> >
+> > Oleg.
+>
+> By way of (partial) explanation:
+>
+> http://marc.info/?l=linux-kernel&m=135545831607095
 
-On 08/19/2013 11:51 AM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Remove unneeded error handling on the result of a call to
-> platform_get_resource_byname when the value is passed to devm_ioremap_resource.
-> 
-> In the case of omap-dmic.c, the error-handling code of
-> devm_ioremap_resource is also corrected to include releasing the clock.
-> 
-> A simplified version of the semantic patch that makes this change is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression pdev,res,e,e1;
-> expression ret != 0;
-> identifier l;
-> @@
-> 
->   res = platform_get_resource_byname(...);
-> - if (res == NULL) { ... \(goto l;\|return ret;\) }
->   e = devm_ioremap_resource(e1, res);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  sound/soc/omap/omap-dmic.c  |    9 +++------
->  sound/soc/omap/omap-mcpdm.c |    3 ---
->  2 files changed, 3 insertions(+), 9 deletions(-)
-> 
-To the patch and catch of missing clock release in omap-dmic.c in case
-of failing devm_ioremap_resource:
+Thanks... too late for me to even try to read this discussion today.
 
-Acked-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
+and I am a bit confused,
+
+> (tl;dr: I think that CLONE_VM is irrelevant here, but there may be
+> other issues lurking around.)
+
+So do you think this change is fine or not (ignoring the fact it needs
+cleanups) ?
+
+Oleg.
+
