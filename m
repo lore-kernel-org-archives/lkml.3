@@ -1,92 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751106Ab3HSOFw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 10:05:52 -0400
-Received: from sauhun.de ([89.238.76.85]:39766 "EHLO pokefinder.org"
+	id S1750903Ab3HSOKp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 10:10:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58313 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781Ab3HSOFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 10:05:50 -0400
-Date: Mon, 19 Aug 2013 16:05:47 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Hein Tibosch <hein_tibosch@yahoo.es>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-omap: always send stop after nack
-Message-ID: <20130819140547.GB4540@katana>
-References: <20130716090300.GG8880@arwen.pp.htv.fi>
- <51E5137B.7000302@yahoo.es>
- <20130716094212.GL8880@arwen.pp.htv.fi>
- <51E527F7.4080007@ti.com>
- <20130716112746.GN8880@arwen.pp.htv.fi>
- <51E537A4.40300@ti.com>
- <20130716130058.GD15036@arwen.pp.htv.fi>
- <51E57211.2040001@yahoo.es>
- <20130819121123.GA4540@katana>
- <20130819135702.GC26587@radagast>
+	id S1750735Ab3HSOKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 10:10:44 -0400
+Date: Mon, 19 Aug 2013 10:00:16 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Frank Mayhar <fmayhar@google.com>
+Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: dm: Make MIN_IOS, et al, tunable via sysctl.
+Message-ID: <20130819140016.GB27167@redhat.com>
+References: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="U+BazGySraz5kW0T"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130819135702.GC26587@radagast>
+In-Reply-To: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 16 2013 at  6:55pm -0400,
+Frank Mayhar <fmayhar@google.com> wrote:
 
---U+BazGySraz5kW0T
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> The device mapper and some of its modules allocate memory pools at
+> various points when setting up a device.  In some cases, these pools are
+> fairly large, for example the multipath module allocates a 256-entry
+> pool and the dm itself allocates three of that size.  In a
+> memory-constrained environment where we're creating a lot of these
+> devices, the memory use can quickly become significant.  Unfortunately,
+> there's currently no way to change the size of the pools other than by
+> changing a constant and rebuilding the kernel.
+> 
+> This patch fixes that by changing the hardcoded MIN_IOS (and certain
+> other) #defines in dm-crypt, dm-io, dm-mpath, dm-snap and dm itself to
+> sysctl-modifiable values.  This lets us change the size of these pools
+> on the fly, we can reduce the size of the pools and reduce memory
+> pressure.
 
-On Mon, Aug 19, 2013 at 08:57:02AM -0500, Felipe Balbi wrote:
-> On Mon, Aug 19, 2013 at 02:11:23PM +0200, Wolfram Sang wrote:
-> > Hi,
-> >=20
-> > > > Which means your original patch starts to make a lot more sense. I
-> > > > wonder is this is really what we should be doing though - breaking =
-out
-> > > > of the loop, I mean.
-> >=20
-> > Yup, that is fine. I applied the old patch with Acks from Hein and
-> > Felipe to -next. Thanks!
-> >=20
-> > > It looks like TI's i2c-davinci will have the same problem as i2c-omap,
-> > > and will need the same change.
-> >=20
-> > Somebody up for this?
->=20
-> I would suggest deleting i2c-davinci and making sure it can use
-> i2c-omap. It's the same IP anyway. Just an older version which was used
-> back in OMAP1 times.
+These memory reserves are a long-standing issue with DM (made worse when
+request-based mpath was introduced).  Two years ago, I assembled a patch
+series that took one approach to trying to fix it:
+http://people.redhat.com/msnitzer/patches/upstream/dm-rq-based-mempool-sharing/series.html
 
-Yay, I'd love such a patch...
+But in the end I wasn't convinced sharing the memory reserve would allow
+for 100s of mpath devices to make forward progress if memory is
+depleted.
 
+All said, I think adding the ability to control the size of the memory
+reserves is reasonable.  It allows for informed admins to establish
+lower reserves (based on the awareness that rq-based mpath doesn't need
+to support really large IOs, etc) without compromising the ability to
+make forward progress.
 
---U+BazGySraz5kW0T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+But, as mentioned in my porevious mail, I'd like to see this implemnted
+in terms of module_param_named().
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> We tested performance of dm-mpath with smaller MIN_IOS sizes for both dm
+> and dm-mpath, from a value of 32 all the way down to zero.
 
-iQIcBAEBAgAGBQJSEiY6AAoJEBQN5MwUoCm2FIgQAI/+tgjOQW6YGI8cZtcarmyi
-DqzdUgjaW0JNywXf+hgcAEkPjpyIcDjONdwWCfu93S0pLjAbZnI/kcHOUt4ealMX
-5Y9SctOOBlIh5Y6sKmxSnlBSH8dyJZLKUAjHiF/IYV9hBRYwEZHgVzRygb3EZquD
-2B9PtjaCbhz4idenzpG95aNrEV2PyWR0vB6p8IeP8OkaskIVIjyWRXcNUldQwKc9
-fRo5AvN6nLpMJ1zgft51C7EU70y8XuYKOCKj7pm2FAtianV0auI5Tmsv1s/nZRgU
-MPoIJEheUbwhjrjnkp+CIG3v8Geb1fw996HLwESEeaXLAXzP/WkpXPN6WUKEHqxc
-VD3g5b5eidpM8zZ+xULLYf+3JpnQ1rKE3yMUHuY2Kxja9y1oCxumuhrLVebd7S5G
-OiUrrvj1Mhf+AH2MfaIq7B/4ITLu/26j6oJWsz2JB2czOf1YcILSE5iH260DOP5Z
-4VqYN/DziTEyjnC1H5+dAXiU9T7egcq8uJWJc/r8Xj0gJbpEa9Ja7dQ7qcE+m3+s
-KXTXmfxkPHe4mHbJzhcgjszc5hOZ209DAxq2NaFLjgDbkY0/qI/UkLkuWDVtGmog
-t/ATURwT//OzA14DlQPrdK6Bz8Aahbr3X8ukEeFGEyy5e87tSZkpmTFUmxvMd5UN
-0J44Oiad6ysTrg6tK6Jv
-=BI5q
------END PGP SIGNATURE-----
+Bio-based can safely be reduced, as this older (uncommitted) patch did:
+http://people.redhat.com/msnitzer/patches/upstream/dm-rq-based-mempool-sharing/0000-dm-lower-bio-based-reservation.patch
 
---U+BazGySraz5kW0T--
+> Bearing in mind that the underlying devices were network-based, we saw
+> essentially no performance degradation; if there was any, it was down
+> in the noise.  One might wonder why these sizes are the way they are;
+> I investigated and they've been unchanged since at least 2006.
+
+Performance isn't the concern.  The concern is: does DM allow for
+forward progress if the system's memory is completely exhausted?
+
+This is why request-based has such an extensive reserve, because it
+needs to account for cloning the largest possible request that comes in
+(with multiple bios).
