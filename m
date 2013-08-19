@@ -1,86 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751091Ab3HSQCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 12:02:15 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44507 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab3HSQCN (ORCPT
+	id S1751228Ab3HSQCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 12:02:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38937 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab3HSQCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 12:02:13 -0400
-Date: Mon, 19 Aug 2013 17:01:30 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
+	Mon, 19 Aug 2013 12:02:34 -0400
+Message-ID: <1376928143.18111.12.camel@fourier>
+Subject: [3.10][3.8][3.5] ARM: Fix FIQ code on VIVT CPUs (was Re: [PATCH
+ 076/133] ARM: update FIQ support for relocation of vectors)
+From: Kamal Mostafa <kamal@canonical.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <20130819160130.GD30073@sirena.org.uk>
-References: <20130816224654.GV30073@sirena.org.uk>
- <Pine.LNX.4.44L0.1308162117240.24059-100000@netrider.rowland.org>
- <CACVXFVPFqHLQRpd0QBzoVapqHtKqrfGvWT0_nhXeFqjQVRsp5Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JGq01gMRpXZxBGpH"
-Content-Disposition: inline
-In-Reply-To: <CACVXFVPFqHLQRpd0QBzoVapqHtKqrfGvWT0_nhXeFqjQVRsp5Q@mail.gmail.com>
-X-Cookie: There is a fly on your nose.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+        Luis Henriques <luis.henriques@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Date: Mon, 19 Aug 2013 09:02:23 -0700
+In-Reply-To: <20130818210952.GI3067@blackmetal.musicnaut.iki.fi>
+References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+	 <1376692475-28413-77-git-send-email-kamal@canonical.com>
+	 <20130818210952.GI3067@blackmetal.musicnaut.iki.fi>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-LgBSyBWTdlaldiV8JWU3"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---JGq01gMRpXZxBGpH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--=-LgBSyBWTdlaldiV8JWU3
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Aug 19, 2013 at 08:17:53PM +0800, Ming Lei wrote:
-> On Sat, Aug 17, 2013 at 9:29 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+Thanks Aaro.  I'll apply "2ba85e7 ARM: Fix FIQ code on VIVT CPUs" to
+3.8-stable.
 
-> > Aong those lines, I would like to point out that the device concept
-> > embodied in the kernel's data structures can be pretty thin.  For
-> > example, it might be little more than a port number or bus address.
+Greg KH and Luis Henriques:  Heads up!  3.10-stable and 3.5-stable also
+need 2ba85e7 but it isn't marked cc: stable.
 
-> Maybe the principle behind drivers/usb/core/usb-acpi.c is helpful
-> for the problem, and DT may refer to ACPI to describe on-board
-> USB devices, and the way to retrieve platform data too.
+ -Kamal
 
-I can't parse this at all well - why would DT want to refer to ACPI, do
-you mean people may wish to look at the code as an example?  As Grant
-noted DT already has some mechanisms for enumerable buses which looking
-at the code appears to be broadly what that's doing.
 
---JGq01gMRpXZxBGpH
+On Mon, 2013-08-19 at 00:09 +0300, Aaro Koskinen wrote:
+> On Fri, Aug 16, 2013 at 03:33:38PM -0700, Kamal Mostafa wrote:
+> > 3.8.13.7 -stable review patch.  If anyone has any objections, please le=
+t me know.
+> >=20
+> > ------------------
+> >=20
+> > From: Russell King <rmk+kernel@arm.linux.org.uk>
+> >=20
+> > commit e39e3f3ebfef03450cf7bfa7a974a8c61f7980c8 upstream.
+> >=20
+> > FIQ should no longer copy the FIQ code into the user visible vector
+> > page.  Instead, it should use the hidden page.  This change makes
+> > that happen.
+>=20
+> FYI, this patch introduced regression (kernel crash) at least on Amstrad
+> E1 board (where FIQ is used for the keyboard). See the following thread:
+> http://marc.info/?t=3D137583169900003&r=3D1&w=3D2
+>=20
+> So any stable kernels where this patch was added should also take:
+>=20
+> 	commit 2ba85e7af4c639d933c9a87a6d7363f2983d5ada
+> 	Author: Russell King <rmk+kernel@arm.linux.org.uk>
+> 	Date:   Thu Aug 8 11:51:21 2013 +0100
+>=20
+> 	ARM: Fix FIQ code on VIVT CPUs
+>=20
+> That patch fixes the regression.
+>=20
+> A.
+>=20
+
+
+--=-LgBSyBWTdlaldiV8JWU3
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSEkFXAAoJELSic+t+oim9ZGUP/2B3dNHHkAtNIXAzK9WcLXv6
-4smmEHzKQtcpuN6xAZdZk3tFFCHg94i2n2yKkmRaCvw+3OxYKdBN2MRQU0tyYVJJ
-oK+/eXn3ODpYdXZouH1cw7WFSxY72jVIZDvEMvvVlKE9RbYE1Q/lpeFpV9BxAZ0s
-8tHYdN7w19hO7cS8/kzT8hULAv902ptrDNsq1ftbMNub2WUKaCZVKBuv52N0/DiE
-14Pi/VKvNRlMIrMyg8eKmVeBkL+h0RBglOZtqWOayBNflIbcF+0IHZZwtIrqIrHl
-4NkOMC0RoDEF+AqTNJ+owdQl+Sve0iu9D+8jr2EVRa0Qbhg4Jt+Lti1ZWzQWQyzM
-i7YjcwZG57n0b/5iMq94pOkNucNkdWTv/BQCSagtMDBL5ob8FH/SpPq/+ADSJjvj
-qoLZYSyAtYOfvDGXxFpqr3HRZLi6bRS4KLTrtzH/+w0ISURA27X04RxZxNd2/9yf
-p/ZVRHE6yjh9NukBAHZXRWsJZ/aOn4eYzXBF+1ACiNjY0p5CfS7+qgY12yZX8Yr7
-x9Ywd3qMOnU4hYL+eB+GWj0mpRVIcYk0I5/JuauaAdDQ5YXvq9ElMeEkDbu+JGmB
-wO9D81uB2ZQ9IPcQ2QtQZ4iGbF8+1wAm9JuMHKnDb6RVAFpScRoeXbwqnQfwZc99
-dKHpHpD8m68OGsHKrr8A
-=apVX
+iQIcBAABCAAGBQJSEkGPAAoJEHqwmdxYrXhZdPIP/iyrpunWkWkl95QCa8ecrxds
+idGJkIweo/I1kL27zF4jaJ59BcIXLfr7tIuudUL236C232D8lfuOHIHSLu0FDU4y
+LMhiNLVeJFBMLs+8gUUaq9+u9dO8kgzVdmZE5faMmYPIMzmeVcgXz1JfiTbJxoL0
+ooYSGjUkVDVVYs2Q0v+pNRDyvXDBrdx8in4TpiOvYypTi6haI4CxKgJHIi36CyLm
+vGDNxDTWOCtZ8CaiFhGWKbZEKu5uJL5RxfdY6SL3JHsHZwQFquzdBH4HXf1n894I
+aDHZ12dslm/4tM47dF6atsxviOwRGSrAiE3Hmr9bHR3EwQv6b29IlYP3JUalyFh7
+Nt51jlc0SJpHNZaIKZyBLdN7hIP2uuw+6JcU7f+xQ0pDI6P7POh1CKmygSmj1ZK+
+7rCF1JcBu+2i+GwRK4fN0El+wlzyTrxhugL9ilT+ivuG/1GhvHFV3lP0nz1CE8Gw
+a08bv3yzQQEa4vE0kgFRQTxZlRTuWj9JRstBkzns6LrDCO7Ut1rIhZL5YLCGdjNY
+6yaNLvyjD4w51rWaygkzZI2ik4m+snxbGCRGwqspStV6jktuRbQCJN/GjiqA8cA3
+GxzrsTYrVtZfhhgeNeJun00firEzW+QtfvbKbisnbujHAoK5a7nIE7Rhwtt1Tc6G
+2XHpNHbCvdZKKzIOpmaT
+=nK8c
 -----END PGP SIGNATURE-----
 
---JGq01gMRpXZxBGpH--
+--=-LgBSyBWTdlaldiV8JWU3--
+
