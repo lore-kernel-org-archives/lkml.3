@@ -1,81 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485Ab3HTO2W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 10:28:22 -0400
-Received: from smtp107.biz.mail.ne1.yahoo.com ([98.138.207.14]:46818 "HELO
-	smtp107.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751193Ab3HTO2S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 10:28:18 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: KNRZra8VM1mglmna5O0Pq5EBNODllFVNX_wabZSfNDwVTzo
- 4_etidb06NU32u07999SfZykT7Pe232kkTvFlgjNJC_ndKoR8BQgq22O4iwu
- sM4a1qquaM4nSdndX5UcS19wfOgd2L9QBVIy2r3fbW7OEQb7DF9pvTFt0Unt
- v4jUXcXgnCIbwouKVq93.VjYGdmCjjomAG4qweL7_ouWDQ_XfJ54mo89qxeJ
- Z9PWwvq2d3ZdhdxNC8L2L3QXaO_fv4gxhwjTw4gwVyXTXfdPEmuZhMRB6Y8C
- rS6zYW55xDIdDoIjnDBm3qzPr2LklGOYWmzhWK4nClEYoBAOlO34vg5yt6gY
- QEMT6kUjcmfPjcyiIapssXoJdipIjOtteiaELvzgB300oCMlucwQhtDRTeQD
- KH69qnEb16aAR8Ldse41dGGVtvnD6crJfRe_UyWvwgQgaVHjVyoPGvRhJH1p
- zSyDImuBCW7sidWEEQdinCWLAwkorZuOoMwzHct6zWmGNlNHCyp0T37UFEoW
- 7TZje_FX1TjI4mGm86U0g8lwKq6TloaNJH3ejSY.R_x5OzIRk6w--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with )
-        by smtp107.biz.mail.ne1.yahoo.com with SMTP; 20 Aug 2013 07:28:17 -0700 PDT
-Message-ID: <52137CFF.70601@schaufler-ca.com>
-Date: Tue, 20 Aug 2013 07:28:15 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751266Ab3HTOav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 10:30:51 -0400
+Received: from sauhun.de ([89.238.76.85]:39952 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750923Ab3HTOat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 10:30:49 -0400
+Date: Tue, 20 Aug 2013 16:30:43 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Jerry Snitselaar <jerry.snitselaar@oracle.com>
+Subject: Re: [PATCH] i2c: move of helpers into the core
+Message-ID: <20130820143043.GA2993@katana>
+References: <1376918361-7014-1-git-send-email-wsa@the-dreams.de>
+ <3792014.HtzPVmLjnf@vostro.rjw.lan>
+ <5212A293.2030903@wwwdotorg.org>
+ <3721030.UJAkTdQrEC@vostro.rjw.lan>
+ <20130820092813.GW4898@intel.com>
 MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        james.l.morris@oracle.com, sds@tycho.nsa.gov, eparis@parisplace.org,
-        pmoore@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [Patch net-next v3 9/9] selinux: use generic union inet_addr
-References: <1376907278-26377-1-git-send-email-amwang@redhat.com>  <1376907278-26377-10-git-send-email-amwang@redhat.com>  <52127336.3080209@schaufler-ca.com>  <20130819.125026.636442915180863272.davem@davemloft.net>  <5212915F.20905@schaufler-ca.com> <1377003677.13412.5.camel@cr0>
-In-Reply-To: <1377003677.13412.5.camel@cr0>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
+Content-Disposition: inline
+In-Reply-To: <20130820092813.GW4898@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/20/2013 6:01 AM, Cong Wang wrote:
-> On Mon, 2013-08-19 at 14:42 -0700, Casey Schaufler wrote:
->> Well, they certainly don't appear to add any value on their own.
->> I also generally oppose doing clever things with data structures. 
-> If you want to implement same thing for 5+ times,
 
-Those 5+ implementations are already there, and already work.
-A 6th implementation to replace known working code is just churn
-unless it provides some additional value. Making the code "better"
-does not itself add value. 
+--envbJBWh7q8WU6mo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->  yes, it has no value
-> for you. Enjoy the following code in current tree:
->
-> union nf_inet_addr;
-> union sctp_addr;
-> union vxlan_addr; (in my VXLAN IPv6 patches, search email archives)
-> struct br_mdb_entry::addr;
-> union inet_addr; (in netpoll.h)
->
-> And may I tell you the last three are all from me? ;-)
+On Tue, Aug 20, 2013 at 12:28:13PM +0300, Mika Westerberg wrote:
+> [Added Jerry as he found out a problem when acpi_i2c is being build as a
+> module, this should solve it as well.]
+>=20
+> On Tue, Aug 20, 2013 at 01:25:27AM +0200, Rafael J. Wysocki wrote:
+> > On Monday, August 19, 2013 04:56:19 PM Stephen Warren wrote:
+> > > On 08/19/2013 05:04 PM, Rafael J. Wysocki wrote:
+> > > > On Monday, August 19, 2013 03:19:18 PM Wolfram Sang wrote:
+> > > >> I2C of helpers used to live in of_i2c.c but experience (from SPI) =
+shows
+> > > >> that it is much cleaner to have this in the core. This also remove=
+s a
+> > > >> circular dependency between the helpers and the core, and so we can
+> > > >> finally register child nodes in the core instead of doing this man=
+ually
+> > > >> in each driver. So, fix the drivers and documentation, too.
+> > > >=20
+> > > > Perhaps we should do the analogous for ACPI then?
+>=20
+> Here is the ACPI version based on the current patch from Wolfram (there is
+> a compile error because of missing dummy implementation of
+> of_i2c_register_devices())
+>=20
+> From: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Subject: [PATCH] i2c: move ACPI helpers into the core
+>=20
+> This follows what has already been done for the DeviceTree helpers. Move
+> the ACPI helpers from drivers/acpi/acpi_i2c.c to the I2C core and update
+> documentation accordingly.
+>=20
+> This also solves a problem reported by Jerry Snitselaar that we can't bui=
+ld
+> the ACPI I2C helpers as a module.
+>=20
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-I do use and enjoy all of these implementations! Thank you
-for the fine implementations. In the end, if you're maintaining
-the code it's your call. I question change that does not have
-an obvious purpose because statistically every 10th change has
-a bug.
+Nice, one thing, though:
 
-Now that I know what the change is for I am fine with it. I
-like seeing reasons up front.
+>  	/* create pre-declared device nodes */
+>  	of_i2c_register_devices(adap);
+> +	acpi_i2c_register_devices(adap);
 
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+I prefer the if (IS_ENABLED()) solution and will use this in my V2 as
+well.
 
+
+--envbJBWh7q8WU6mo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSE32TAAoJEBQN5MwUoCm2EYAP/0dkhCPPhe1WQe8ruo9GZv/M
+ie2yM4x2+IXNurZGc8JnxgtBH9D2I39ZEatRsBFJy6ISOCNqb5okdEMPmbAL37gk
+iOUZH3KUqvlgaADNd/sQHH13xlZzi/0Rjb8695QhMGwSqljZFEoMw8BpvKc5wQtG
+d1n4t56XDPjtYCbc5pStllBQiqKiu69eqjg7QjZVD+ZgUMbjTebuqsRcAxi0JLO7
+Ieb69s4B4OlgYjgal4zyFX2v/JIJkI5f8KKxNr4DA6JzHR1lDKqmxMRlWGDCcr8O
+JukFzU+f3hqfIcDaQcvfjdGflk3/ekroR9F2GPLFvPN4YRUb3SY5O65KoPzvfD4h
+Ovu0GBANclvhwOd7kGvrL3/nON0X9Bb5aFCa5cb1JxzU1XrMNya+OuGZosCAxKs5
+FEBQ67x+4BJgy5ITBnJgu7AC9E+JPMvtehGwPOHdTlkR7fxrC9Pf7ItA+vDaaNbx
+G/HvV51hLhj2iI3rWwu31ijcX0T++IbtgHAL1UVHNuu64wQtrUOeVz7zPsGNf0BG
+cw0ZQDr+QKbWlUeWqd0neMz4+zXFpUJoD+zHhrg8fX32c9dTVjYA/rAnIypk9aoU
+1+9JnGj9y6gu1CNA7YC2vKGCBBCJqk6bFtbwRFuQZSfNkbKl92H5S/kt64QBvi4M
+CxBJ76FB8B0RW9r8kUn7
+=vcrl
+-----END PGP SIGNATURE-----
+
+--envbJBWh7q8WU6mo--
