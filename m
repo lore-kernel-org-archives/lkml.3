@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847Ab3HTQnn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:43:43 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52854 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab3HTQnl (ORCPT
+	id S1751904Ab3HTQnx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:43:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21534 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab3HTQnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:43:41 -0400
-Message-ID: <52139C92.6000203@redhat.com>
-Date: Tue, 20 Aug 2013 18:42:58 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Christian Ehrhardt <lk@c--e.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Fix lapic time counter read for periodic mode
-References: <20121111122528.GC19718@lisa.in-ulm.de> <20121112213237.GA31377@amt.cnet> <20121113075254.GA15071@lisa.in-ulm.de> <20121113204039.GA22112@amt.cnet>
-In-Reply-To: <20121113204039.GA22112@amt.cnet>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 20 Aug 2013 12:43:50 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=RC9oWFIOW3cA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zNXoGfytzK0A:10 a=1XWaLZrsAAAA:8 a=GVDPHzRvCvcZffxGVgMA:9 a=CjuIK1q_8ugA:10 a=UTB_XpHje0EA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Tue, 20 Aug 2013 12:43:48 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        Stefan Lippers-Hollmann <s.L-H@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/34] 3.4.59-stable review
+Message-ID: <20130820124348.349130b2@gandalf.local.home>
+In-Reply-To: <alpine.LNX.2.00.1308200913450.1297@eggly.anvils>
+References: <20130818203259.653403173@linuxfoundation.org>
+	<52125DA9.3090601@samsung.com>
+	<20130819193538.GB24897@kroah.com>
+	<201308192214.54917.s.L-H@gmx.de>
+	<52129AC3.5020402@samsung.com>
+	<20130819223037.GA3838@kroah.com>
+	<1DC40B07CD6EC041A66726C271A73AE61AA6B9CC@IRSMSX102.ger.corp.intel.com>
+	<20130820152401.GA5211@kroah.com>
+	<alpine.LNX.2.00.1308200851190.991@eggly.anvils>
+	<20130820160355.GA9427@kroah.com>
+	<alpine.LNX.2.00.1308200913450.1297@eggly.anvils>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 13/11/2012 21:40, Marcelo Tosatti ha scritto:
-> On Tue, Nov 13, 2012 at 08:52:54AM +0100, Christian Ehrhardt wrote:
->> > 
->> > Hi,
->> > 
->> > thanks for your reply.
->> > 
->> > On Mon, Nov 12, 2012 at 07:32:37PM -0200, Marcelo Tosatti wrote:
->>>> > > > there is a bug in the emulation of the lapic time counter. In particular
->>>> > > > what we are seeing is that the time counter of a periodic lapic timer
->>>> > > > in the guest reads as zero 99% of the time. The patch below fixes that.
->>>> > > > 
->>>> > > > The emulation of the lapic timer is done with the help of a hires
->>>> > > > timer that expires with the same frequency as the lapic counter.
->>>> > > > New expiration times for a periodic timer are calculated incrementally
->>>> > > > based on the last scheduled expiration time. This ensures long term
->>>> > > > accuracy of the emulated timer close to that of the underlying clock.
->>>> > > > 
->>>> > > > The actual value of the lapic time counter is calculated from the
->>>> > > > real time difference between current time and scheduled expiration time
->>>> > > > of the hires timer. If this difference is negative, the hires timer
->>>> > > > expired. For oneshot mode this is correctly translated into a zero value
->>>> > > > for the time counter. However, in periodic mode we must use the negative
->>>> > > > difference unmodified.
->>>> > > > 
->>>> > > >      regards   Christian
->>>> > > > 
->>>> > > > Fix lapic time counter read for periodic mode.
->>> > > 
->>> > > In periodic mode the hrtimer is rearmed once expired, see
->>> > > apic_timer_fn. So _get_remaining should return proper value
->>> > > even if the guest is not able to process timer interrupts. 
->>> > > 
->>> > > Can you describe your specific scenario in more detail?
->> > 
->> > In my specific case, the host is admittedly somewhat special as it
->> > already is a rehosted version of linux, i.e. not running directly on
->> > native hardware. It is still unclear if the host has sufficiently accurate
->> > timer interrupts. This is most likely part of the problems we are seeing.
->> > 
->> > However, AFAICS apic_timer_fn is only called once per jiffy (at least in
->> > some configurations). In particular, it is not called by
->> > hrtimer_get_remaining. Thus depending on the frequency of the LAPIC timer
->> > in the guest there might _several_ iterations that are missed. This can
->> > probably be mitigated by a hires timer interrupts. However, I think
->> > the problem is still there even in that case.
->> > 
->> > Additionally, the behaviour that I want to establish matches that of the
->> > PIT timer (in a not completely obvious way, though).
->> > 
->> > Having said that the proposed patch in my first mail is incomplete, as
->> > the mod_64 does not work correctly for negative values. A fixed version
->> > is below.
->> > 
->> >      regards     Christian
->> > 
->> > Signed-off-by: Christian Ehrhardt <lk@c--e.de>
-> Alright. Please add a comment from the LAPIC documentation describing
-> this behaviour (and a nice changelog). Thanks.
+On Tue, 20 Aug 2013 09:25:05 -0700 (PDT)
+Hugh Dickins <hughd@google.com> wrote:
+
+ 
+> > 
+> > Especially as I just did the releases...
+> 
+> Oh.  Classic case of a patch rushed too quickly into late rc,
+> then too quickly from there to stable.
 > 
 
-Christian, did you ever resubmit the patch?
+I think we should focus more on having a correct fix than a quick fix
+and rush it into mainline. I was criticized for pushing a rather
+complex fix into -rc4, and was told that I should wait to 3.12. The
+thing is, we had various versions of a fix by -rc1, but I wasn't
+satisfied with it. After several rounds we were finally happy with the
+fix and by that time, -rc4 was out. I pushed it regardless, as why
+should I wait to 3.12 and then push it to stable? We all took our time,
+tested the hell out of it (although not as much as it would get going
+mainline), had it in linux-next for several days, knew the bug inside
+and out and then when we were happy, added it to mainline. I didn't
+really care what -rc it was, because it was to go to stable too. Several
+patches are still being queued for 3.10. Oh, which I should push out,
+as I got distracted by my day job ;-)
 
-Paolo
+Maybe it would be good to discuss when things should go into -rc and
+stable at Kernel Summit.
+
+-- Steve
