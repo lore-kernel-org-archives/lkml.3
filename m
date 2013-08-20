@@ -1,100 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab3HTEIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 00:08:13 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:48530 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751903Ab3HTEIK (ORCPT
+	id S1752151Ab3HTEIW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 00:08:22 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:2150 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751903Ab3HTEIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 00:08:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130820033329.GG6023@dastard>
-References: <cover.1376679411.git.luto@amacapital.net> <a27accc2d9460b7ef194a203f305a18dafe926e8.1376679411.git.luto@amacapital.net>
- <20130820022822.GD6023@dastard> <CALCETrVE2G4x9mL0-o1FDQPfc=qZzw10Cx6AgOdhwphSaCmyzw@mail.gmail.com>
- <20130820033329.GG6023@dastard>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 19 Aug 2013 21:07:49 -0700
-Message-ID: <CALCETrVrSiXCt5+2801C+QA6B1jzb0K3VHT6w8sVf_VXrz16Bw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/5] fs: Add inode_update_time_writable
-To: Dave Chinner <david@fromorbit.com>
+	Tue, 20 Aug 2013 00:08:20 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmMHADPrElJ5LJ62/2dsb2JhbABagwWDN7dHhTuBIRd0giQBAQQBJxMcFgoDBQsIAw4KCSUPBSUDIROICgWrOxaQRgeEEgOXY5FWgWGBTSo
+Date: Tue, 20 Aug 2013 14:08:14 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andy Lutomirski <luto@amacapital.net>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
         "Theodore Ts'o" <tytso@mit.edu>,
         Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
         Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
         Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH v3 3/5] mm: Notify filesystems when it's time to apply a
+ deferred cmtime update
+Message-ID: <20130820040814.GH6023@dastard>
+References: <cover.1376679411.git.luto@amacapital.net>
+ <ec267e95fd21891986373c7af1c72b4c8b507332.1376679411.git.luto@amacapital.net>
+ <20130820023615.GE6023@dastard>
+ <CALCETrV-Toj-NGpmWnmoUbCwrMUXOSbjQdYsSVuTiH+2dEgPTQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrV-Toj-NGpmWnmoUbCwrMUXOSbjQdYsSVuTiH+2dEgPTQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 8:33 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Mon, Aug 19, 2013 at 08:20:12PM -0700, Andy Lutomirski wrote:
->> On Mon, Aug 19, 2013 at 7:28 PM, Dave Chinner <david@fromorbit.com> wrote:
->> > On Fri, Aug 16, 2013 at 04:22:09PM -0700, Andy Lutomirski wrote:
->> >> This is like file_update_time, except that it acts on a struct inode *
->> >> instead of a struct file *.
->> >>
->> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> >> ---
->> >>  fs/inode.c         | 72 ++++++++++++++++++++++++++++++++++++++++++------------
->> >>  include/linux/fs.h |  1 +
->> >>  2 files changed, 58 insertions(+), 15 deletions(-)
->> >>
->>
->> [...]
->>
->> >> +
->> >> +int inode_update_time_writable(struct inode *inode)
->> >> +{
->> >> +     struct timespec now;
->> >> +     int sync_it = prepare_update_cmtime(inode, &now);
->> >> +     int ret;
->> >> +
->> >> +     if (!sync_it)
->> >> +             return 0;
->> >> +
->> >> +     /* sb_start_pagefault and update_time can both sleep. */
->> >> +     sb_start_pagefault(inode->i_sb);
->> >> +     ret = update_time(inode, &now, sync_it);
->> >> +     sb_end_pagefault(inode->i_sb);
->> >
->> > This gets called from the writeback path - you can't use
->> > sb_start_pagefault/sb_end_pagefault in that path.
->>
->> The race I'm worried about is:
->>
->>  - mmap
->>  - write to the mapping
->>  - remount ro
->>  - flush_cmtime -> inode_update_time_writable
->
-> sb_start_pagefault() is for filesystem freeze protection, not
-> remount-ro protection. If you freeze the filesystem, then we stop
-> writes and pagefaults by making sb_start_pagefault/sb_start_write
-> block, and then run writeback to clean all the pages.  If writeback
-> then blocks on sb_start_pagefault(), we've got a deadlock.
->
->> This may be impossible, in which case I'm okay, but it's nice to have
->> a sanity check.  I'll see if I can figure out how to do that.
->
-> The process of remount-ro should flush the dirty pages - the inode
-> and page has been marked dirty by page_mkwrite(), after all.
+On Mon, Aug 19, 2013 at 08:28:20PM -0700, Andy Lutomirski wrote:
+> On Mon, Aug 19, 2013 at 7:36 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > On Fri, Aug 16, 2013 at 04:22:10PM -0700, Andy Lutomirski wrote:
+> >> Filesystems that defer cmtime updates should update cmtime when any
+> >> of these events happen after a write via a mapping:
+> >>
+> >>  - The mapping is written back to disk.  This happens from all kinds
+> >>    of places, all of which eventually call ->writepages.
+> >>
+> >>  - munmap is called or the mapping is removed when the process exits
+> >>
+> >>  - msync(MS_ASYNC) is called.  Linux currently does nothing for
+> >>    msync(MS_ASYNC), but POSIX says that cmtime should be updated some
+> >>    time between an mmaped write and the subsequent msync call.
+> >>    MS_SYNC calls ->writepages, but MS_ASYNC needs special handling.
+> >>
+> >> Filesystmes that defer cmtime updates should flush them on munmap or
+> >> exit.  Finding out that this happened through vm_ops is messy, so
+> >> add a new address space op for this.
+> >>
+> >> It's not strictly necessary to call ->flush_cmtime after ->writepages,
+> >> but it simplifies the fs code.  As an optional optimization,
+> >> filesystems can call mapping_test_clear_cmtime themselves in
+> >> ->writepages (as long as they're careful to scan all the pages first
+> >> -- the cmtime bit may not be set when ->writepages is entered).
+> >
+> > .flush_cmtime is effectively a duplicate method.  We already have
+> > .update_time to notify filesystems that they need to update the
+> > timestamp in the inode transactionally.
+> 
+> .update_time is used for the atime update as well, and it relies on
+> the core code to update the in-memory timestamp first.
 
-Hmm.  We can land in here from writeback, in which case the time
-should be updated unconditionally.  We can also land in here from
-msync(MS_ASYNC) or munmap.  munmap at least shouldn't block.
+No, it doesn't. The caller of .update_time provides the timestamp to
+that gets written into the relevant fields of the inode.
 
-The nasty case is if a page is dirtied, then the frozen level is set
-to SB_FREEZE_PAGEFAULT, and then userspace calls munmap or msync
-*before* writepages gets called.  In this case, blocking until the fs
-is unfrozen is probably impolite, and returning without updating the
-time is questionable.
+i.e. this code:
 
-Removing the check entirely may add a new race, though: what if
-.flush_cmtime has called mapping_test_clear_cmtime but hasn't gotten
-to updating the time yet when freezing finishes?  This could be
-prevented by changing generic_flush_cmtime to do __sb_start_write(sb,
-SB_FREEZE_FS, false) and doing nothing if the fs is already frozen.
+	now = current_fs_time(inode->i_sb);
+	if (inode->i_op->update_time)
+		return inode->i_op->update_time(inode, &now, S_CTIME|S_MTIME);
 
---Andy
+will update *only* the ctime and mtime of the inode to have a value
+of @now. That's precisely what you want to do, yes?
+
+Indeed, your .flush_cmtime function effectively does:
+
+	flags = prepare_cmtime(inode, &now)
+		{ *now = current_fs_time()
+		  flags = S_CTIME|S_MTIME;
+		}
+	update_time(inode, now, flags);
+		{
+			inode->i_op->update_time(inode, now, flags)
+			or
+			mark_inode_dirty_sync()
+		}
+
+IOWs, you're adding a filesystem specific method to update a
+timestamp that wraps around a generic method for updating a
+timestamp. i.e.  .flush_cmtime is not necessary - you could just
+call inode_update_time_writable() from generic_writepages() and it
+would simply just work for all filesystems....
+
+> I used that
+> approach in v2, but it was (correctly, I think) pointed out that this
+> was a layering violation and that core code shouldn't be mucking with
+> the timestamps directly during writeback.
+
+If calling a generic method to update the timestamp is a layering
+violation, then why is replacing that with a filesystem specific
+method of updating a timestamp not a layering violation?
+
+> > Indeed:
+> >
+> >> +     /*
+> >> +      * Userspace expects certain system calls to update cmtime if
+> >> +      * a file has been recently written using a shared vma.  In
+> >> +      * cases where cmtime may need to be updated but writepages is
+> >> +      * not called, this is called instead.  (Implementations
+> >> +      * should call mapping_test_clear_cmtime.)
+> >> +      */
+> >> +     void (*flush_cmtime)(struct address_space *);
+> >
+> > You say it can be implemented in the ->writepage(s) method, and all
+> > filesystems provide ->writepage(s) in some form. Therefore I would
+> > have thought it be best to simply require filesystems to check that
+> > mapping flag during those methods and update the inode directly when
+> > that is set?
+> 
+> The problem with only doing it in ->writepages is that calling
+> writepages from munmap and exit would probably hurt performance for no
+> particular gain.  So I need some kind of callback to say "update the
+> time, but don't write data."  The AS_CMTIME bit will still be set when
+> the ptes are removed.
+
+What's the point of updating the timestamp at unmap when it's going
+to be changed again when the writeback occurs?
+
+> I could require ->writepages *and* ->flush_cmtime to handle the time
+> update, but that would complicate non-transactional filesystems.
+> Those filesystems should just flush cmtime at the end of writepages.
+
+do_writepages() is the wrong place to do such updates - we can get
+writeback directly through .writepage, so the time updates need to
+be in .writepage. That first .writepage call will clear the bit on
+the mapping, so it's only done on the first call to .writepage on
+the given mapping.
+
+And some filesystems provide a .writepages method that doesn't call
+.writepage, so those filesystems will need to do the timestamp
+update in those methods.
+
+> > Indeed, the way you've set up the infrastructure, we'll have to
+> > rewrite the cmtime update code to enable writepages to update this
+> > within some other transaction. Perhaps you should just implement it
+> > that way first?
+> 
+> This is already possible although not IMO necessary for correctness.
+> All that ext4 would need to do is to add something like:
+> 
+> if (mapping_test_clear_cmtime(mapping)) {
+>   update times within current transaction
+> }
+
+Where does it get the timestamps from? i.e. the update could call
+prepare_update_cmtime() to do this, yes? And so having a wrapper
+that does
+
+	if (mapping_test_clear_cmtime(mapping))
+		return prepare_update_cmtime(inode);
+	return 0;
+
+would work just fine for them, yes?
+
+> somewhere inside the transaction in writepages.  There would probably
+> be room for some kind of generic helper to do everything in
+> inode_update_time_writable except for the actual mark_inode_dirty
+> part, but this still seems nasty from a locking perspective, and I'd
+> rather leave that optimization to an ext4 developer who wants to do
+> it.
+
+filesystems that implement .update_time don't need to mark the
+struct inode dirty on timestamp updates. Similarly, filesystems that
+use a writepages transaction to do the update don't either....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
