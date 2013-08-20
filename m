@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837Ab3HTUIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 16:08:21 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46412 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab3HTUIT (ORCPT
+	id S1751859Ab3HTUIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 16:08:34 -0400
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:36724 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab3HTUI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 16:08:19 -0400
-Date: Tue, 20 Aug 2013 13:08:18 -0700 (PDT)
-Message-Id: <20130820.130818.1803264305462032520.davem@davemloft.net>
-To: avagin@openvz.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net
-Subject: Re: [PATCH] tcp: set timestamps for restored skb-s
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1376665476-9683-1-git-send-email-avagin@openvz.org>
-References: <1376665476-9683-1-git-send-email-avagin@openvz.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 20 Aug 2013 13:08:18 -0700 (PDT)
+	Tue, 20 Aug 2013 16:08:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130820200035.GA2524@roeck-us.net>
+References: <20130820155735.GA2805@kroah.com>
+	<CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
+	<20130820164343.GA3958@kroah.com>
+	<20130820200035.GA2524@roeck-us.net>
+Date: Tue, 20 Aug 2013 13:08:28 -0700
+X-Google-Sender-Auth: x6MPkAiNf2aTY5aYsdJVymX8QDM
+Message-ID: <CA+55aFwVmDVfrL+Xhkk+AZf5iZdWunQaMeRGLJ0yKeBh9brTQQ@mail.gmail.com>
+Subject: Re: Linux 3.0.92
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrey Vagin <avagin@openvz.org>
-Date: Fri, 16 Aug 2013 19:04:36 +0400
+On Tue, Aug 20, 2013 at 1:00 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>
+> Does this patch have to be reverted in 3.10 as well ? Linus' e-mail seems to
+> suggest it, but Shuah didn't see the problem there.  I ran a quick test with
+> 3.10.8 on an x86 system and did not see a problem either, at least not
+> immediately.
 
-> When the repair mode is turned off, the write queue seqs are
-> updated so that the whole queue is considered to be 'already sent.
-> 
-> The "when" field must be set for such skb. It's used in tcp_rearm_rto
-> for example. If the "when" field isn't set, the retransmit timeout can
-> be calculated incorrectly and a tcp connected can stop for two minutes
-> (TCP_RTO_MAX).
-> 
-> Acked-by: Pavel Emelyanov <xemul@parallels.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Do you run with lockdep?
 
-Applied and queued up for -stable, thanks.
+The patch causes a _possibility_ of a deadlock, but unless you have
+lockdep enabled, you're almost guaranteed to not actually ever see
+that deadlock in practice.
+
+               Linus
