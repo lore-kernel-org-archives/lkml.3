@@ -1,145 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab3HTE4Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 00:56:16 -0400
-Received: from nbd.name ([46.4.11.11]:57103 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751912Ab3HTE4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 00:56:14 -0400
-Message-ID: <5212F6E8.3090107@openwrt.org>
-Date: Tue, 20 Aug 2013 06:56:08 +0200
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752148Ab3HTFFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 01:05:44 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51406 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951Ab3HTFFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 01:05:43 -0400
+X-Originating-IP: 50.43.39.152
+Date: Mon, 19 Aug 2013 22:05:27 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 0/3] v2 Documentation updates for 3.12
+Message-ID: <20130820050527.GA7333@leaf>
+References: <20130820023717.GA29357@linux.vnet.ibm.com>
+ <20130820032411.GC4416@leaf>
+ <20130820042832.GZ29406@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tom Gundersen <teg@jklm.no>
-CC: stable@vger.kernel.org,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [REGRESSION] 3.10.{6,7} crashes on network activity
-References: <CAG-2HqUXQeq=30EpGWmn6tkC=CP1W+=UZCVPTYhhE0WyU_C4nw@mail.gmail.com> <20130820000336.GA15548@kroah.com> <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com> <20130820002822.GA18023@kroah.com>
-In-Reply-To: <20130820002822.GA18023@kroah.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820042832.GZ29406@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-08-20 2:28 AM, Greg Kroah-Hartman wrote:
-> On Tue, Aug 20, 2013 at 08:26:11AM +0800, Tom Gundersen wrote:
->> On Tue, Aug 20, 2013 at 8:03 AM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > On Tue, Aug 20, 2013 at 07:59:47AM +0800, Tom Gundersen wrote:
->> >> Hi guys,
->> >>
->> >> Starting with 3.10.6 (and still present in .7) I get an oops on
->> >> connecting to the network.
->> >>
->> >> The attached picture shows the oops. In case it does not reach the ML,
->> >> the top of the call trace reads:
->> >>
->> >> brcms_c_compute_rtscts_dur
->> >> brcms_c_ampdu_finalize
->> >> ampdu_finalize
->> >> dma_txfast
->> >> brcms_c_txfifo
->> >> brcms_c_sendpkt_mac80211
->> >> brcms_ops_tx
->> >> __ieee80211_tx
->> >>
->> >> I bisected the problem and the first bad commit is
->> >>
->> >> commit ef47a5e4f1aaf1d0e2e6875e34b2c9595897bef6
->> >> Author: Felix Fietkau <nbd@openwrt.org>
->> >> Date:   Fri Jun 28 21:04:35 2013 +0200
->> >>
->> >>     mac80211/minstrel_ht: fix cck rate sampling
->> >>
->> >>     commit 1cd158573951f737fbc878a35cb5eb47bf9af3d5 upstream.
->> >>
->> >> Reverting it on top of .7 fixes the problem.
->> >>
->> >> I had the same (I suppose) problem on mainline some time ago, but I
->> >> have not bisected it, verified that the problem still occurs there, or
->> >> checked if reverting the upstream patch fixes it. I'd be happy to do
->> >> that if it would help though.
->> >>
->> >> Let me know if you need any more information.
->> >
->> > Do you have this same problem with 3.11-rc6 as well?
->> 
->> Yes, I just confirmed. I also confirmed that reverting the mainline
->> commit on top of -rc6 fixes the problem.
+On Mon, Aug 19, 2013 at 09:28:32PM -0700, Paul E. McKenney wrote:
+> On Mon, Aug 19, 2013 at 08:24:11PM -0700, Josh Triplett wrote:
+> > On Mon, Aug 19, 2013 at 07:37:17PM -0700, Paul E. McKenney wrote:
+> > > Hello!
+> > > 
+> > > This series provides a few documentation updates:
+> > > 
+> > > 1.	Update rcu_barrier() documentation to note that it no longer is
+> > > 	guaranteed to wait for a full grace period.  This guarantee was
+> > > 	a victim of energy efficiency.
+> > > 
+> > > 2.	Update RTFP documentation.
+> > > 
+> > > 3.	Fix a control-dependency example in the memory-barriers
+> > > 	documentation.
+> > > 
+> > > Changes from v1 (https://lkml.org/lkml/2013/8/17/94):
+> > > 
+> > > o	Apply Josh Triplett review comments.
+> > 
+> > Consider changing the patch tag for new versions, to "PATCH v2" or
+> > similar; that way, all of the patches have a clearly distinct subject
+> > for the new version.
+> > 
+> > git format-patch will do this for you; just pass "-v 2".
 > 
-> Great, thanks.
-> 
-> Felix and Johannes, any chance we can get this reverted in Linus tree
-> soon, and push that revert back to the 3.10 stable tree as well?
-I'd like to avoid a revert, since that will simply replace one set of
-issues with another. Let's limit the use of the feature that brcmsmac
-can't handle to drivers that are known to work with it. Tom, Please
-test this patch to see if it fixes your issue.
+> Good point, my email client got them confused as well.  My version of git
+> format-patch does not know about "-v 2", but --subject-prefix="PATCH v2"
+> does fine.  I am using git version 1.8.1.5, for whatever it is worth.
 
-- Felix
----
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -1501,6 +1501,7 @@ enum ieee80211_hw_flags {
- 	IEEE80211_HW_SUPPORTS_RC_TABLE			= 1<<24,
- 	IEEE80211_HW_P2P_DEV_ADDR_FOR_INTF		= 1<<25,
- 	IEEE80211_HW_TIMING_BEACON_ONLY			= 1<<26,
-+	IEEE80211_HW_SUPPORTS_HT_CCK_RATES		= 1<<27,
- };
- 
- /**
---- a/net/mac80211/rc80211_minstrel_ht.c
-+++ b/net/mac80211/rc80211_minstrel_ht.c
-@@ -828,6 +828,9 @@ minstrel_ht_update_cck(struct minstrel_p
- 	if (sband->band != IEEE80211_BAND_2GHZ)
- 		return;
- 
-+	if (!(mp->hw->flags & IEEE80211_HW_SUPPORTS_HT_CCK_RATES))
-+		return;
-+
- 	mi->cck_supported = 0;
- 	mi->cck_supported_short = 0;
- 	for (i = 0; i < 4; i++) {
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -807,7 +807,8 @@ void ath9k_set_hw_capab(struct ath_softc
- 		IEEE80211_HW_PS_NULLFUNC_STACK |
- 		IEEE80211_HW_SPECTRUM_MGMT |
- 		IEEE80211_HW_REPORTS_TX_ACK_STATUS |
--		IEEE80211_HW_SUPPORTS_RC_TABLE;
-+		IEEE80211_HW_SUPPORTS_RC_TABLE |
-+		IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
- 
- 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
- 		hw->flags |= IEEE80211_HW_AMPDU_AGGREGATION;
---- a/drivers/net/wireless/ath/carl9170/main.c
-+++ b/drivers/net/wireless/ath/carl9170/main.c
-@@ -1878,7 +1878,8 @@ void *carl9170_alloc(size_t priv_size)
- 		     IEEE80211_HW_PS_NULLFUNC_STACK |
- 		     IEEE80211_HW_NEED_DTIM_BEFORE_ASSOC |
- 		     IEEE80211_HW_SUPPORTS_RC_TABLE |
--		     IEEE80211_HW_SIGNAL_DBM;
-+		     IEEE80211_HW_SIGNAL_DBM |
-+		     IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
- 
- 	if (!modparam_noht) {
- 		/*
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -6327,7 +6327,8 @@ static int rt2800_probe_hw_mode(struct r
- 	    IEEE80211_HW_SUPPORTS_PS |
- 	    IEEE80211_HW_PS_NULLFUNC_STACK |
- 	    IEEE80211_HW_AMPDU_AGGREGATION |
--	    IEEE80211_HW_REPORTS_TX_ACK_STATUS;
-+	    IEEE80211_HW_REPORTS_TX_ACK_STATUS |
-+	    IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
- 
- 	/*
- 	 * Don't set IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING for USB devices
+I have 1.8.4.rc3, which has -v.
 
+- Josh Triplett
