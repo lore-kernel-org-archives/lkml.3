@@ -1,103 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab3HTXH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 19:07:29 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:38749 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249Ab3HTXHZ (ORCPT
+	id S1751871Ab3HTXHj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 19:07:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38673 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab3HTXHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 19:07:25 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-db-5213f6aa41a0
-Message-id: <5213F6AB.80307@samsung.com>
-Date: Wed, 21 Aug 2013 08:07:23 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: George Cherian <george.cherian@ti.com>
-Cc: balbi@ti.com, myungjoo.ham@samsung.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, rob@landley.net, ian.campbell@citrix.com,
-        swarren@wwwdotorg.org, mark.rutland@arm.com, pawel.moll@arm.com,
-        rob.herring@calxeda.com, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, bcousson@baylibre.com
-Subject: Re: [PATCH 1/2] extcon: extcon-dra7xx: Add extcon driver for USB ID
- detection
-References: <1376648029-30659-1-git-send-email-george.cherian@ti.com>
- <1376648029-30659-2-git-send-email-george.cherian@ti.com>
- <5212B740.2000000@samsung.com> <521338B7.7040208@ti.com>
- <52134513.1060304@samsung.com> <52136E1A.8020900@ti.com>
-In-reply-to: <52136E1A.8020900@ti.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42JZI2JSorvqm3CQwc9PGhYH79db3Jn/l9Vi
-	/pFzrBanDi5ntTjwZwejxZveDhaLhW1LWCwu75rDZjF7ST+LxaJlrcwWS69fZLK43biCzWLC
-	9LUsFodXHGCyWPdyOovFq4NtLA4CHmvmrWH0eH+jld1jwecr7B6vJ09g9Hi1eiarx51re9g8
-	+rasYvQ4fmM7k8fnTXIeG+eGBnBFcdmkpOZklqUW6dslcGUsbVjFXPCXt+LWramMDYxnuboY
-	OTgkBEwk5i/w6mLkBDLFJC7cW8/WxcjFISSwlFHi0urXzBAJE4mGs68YIRKLGCW2Nc9lgnBe
-	MUrsmH+XBaSKV0BDomvWOUYQm0VAVeLw0V/sIDabgJbE/hc32EBsUYEwiZXTr0DVC0r8mHwP
-	zBYBqum/1A02lFngC5PErFWz2UHOExaIkLiwQgFi2XdGieczbjCBNHAKqEm0TPkL1swsoCOx
-	v3UaG4QtL7F5zVtmkAYJgR0cEievrmeBuEhA4tvkQywQP8tKbDoA9ZqkxMEVN1gmMIrNQnLT
-	LCRjZyEZu4CReRWjaGpBckFxUnqRsV5xYm5xaV66XnJ+7iZGYAI4/e9Z/w7GuwesDzEmA62c
-	yCwlmpwPTCB5JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmkJ5akZqemFqQWxReV5qQWH2Jk
-	4uCUamAMfX/5yOKXqSKX9xyMsLk/rbLElv/a1VtTv4el7446IHLbNrlG/YkY9/2zxdvPWtco
-	TdkWUHfvruElcdv/XdsK9niICHG9/30hyvj/TMUv5s48ez8xcUt1HHBedqY5KfptR07ZhRNT
-	tB6+0HvIzXnrQN8W8dj1v8IZuvhvTnWX+mP1+PSB6qN7lFiKMxINtZiLihMBtvUlGhYDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIKsWRmVeSWpSXmKPExsVy+t9jAd1V34SDDLafk7c4eL/e4s78v6wW
-	84+cY7U4dXA5q8WBPzsYLd70drBYLGxbwmJxedccNovZS/pZLBYta2W2WHr9IpPF7cYVbBYT
-	pq9lsTi84gCTxbqX01ksXh1sY3EQ8Fgzbw2jx/sbreweCz5fYfd4PXkCo8er1TNZPe5c28Pm
-	0bdlFaPH8RvbmTw+b5Lz2Dg3NIArqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DS
-	wlxJIS8xN9VWycUnQNctMwfoFyWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmgg
-	YQ1jxtKGVcwFf3krbt2aytjAeJari5GTQ0LARKLh7CtGCFtM4sK99WxdjFwcQgKLGCW2Nc9l
-	gnBeMUrsmH+XBaSKV0BDomvWObAOFgFVicNHf7GD2GwCWhL7X9xgA7FFBcIkVk6/AlUvKPFj
-	8j0wWwSopv9SN9hQZoEvTBKzVs0GaubgEBaIkLiwQgFi2XdGieczbjCBNHAKqEm0TPkL1sws
-	oCOxv3UaG4QtL7F5zVvmCYwCs5DsmIWkbBaSsgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLz
-	czcxghPMM+kdjKsaLA4xCnAwKvHwbigUDhJiTSwrrsw9xCjBwawkwrvjK1CINyWxsiq1KD++
-	qDQntfgQYzIwCCYyS4km5wOTX15JvKGxiZmRpZG5oYWRsTlpwkrivAdbrQOFBNITS1KzU1ML
-	UotgtjBxcEo1MG50mhZnf3WSfK/c3zVHHnHHR/+/Lt82a8MGi7idVVG/90VFTHL0uGlcWil+
-	522d4guRR18+ebukpIm8UVnhuGfmVTODooKmGb99drc3CM0VlRK9c1pstcYEjqi3z95ZFczY
-	Ocv2oYjEzH83+ITMHW5sMdS8saU+r5PnQR3nnqsaLp7vOoNitiqxFGckGmoxFxUnAgBwFulX
-	dAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 20 Aug 2013 19:07:37 -0400
+Date: Tue, 20 Aug 2013 16:07:35 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>, Rik van Riel <riel@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH v2 2/4] mm/sparse: introduce alloc_usemap_and_memmap
+Message-Id: <20130820160735.b12fe1b3dd64b4dc146d2fa0@linux-foundation.org>
+In-Reply-To: <1376981696-4312-2-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1376981696-4312-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	<1376981696-4312-2-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> +
->>>>> +    if (dra7xx_usb->irq_gpio) {
->>>>> +        status = devm_request_threaded_irq(dra7xx_usb->dev, irq_num,
->>>>> +                NULL, id_irq_handler, IRQF_SHARED |
->>>>> +                IRQF_ONESHOT | IRQF_TRIGGER_FALLING,
->>>>> +                dev_name(&pdev->dev), (void *) dra7xx_usb);
->>>>> +        if (status)
->>>>> +            dev_err(dra7xx_usb->dev, "failed to request irq #%d\n",
->>>>> +                        irq_num);
->>>> If devm_request_threaded_irq() return fail state, why did not you do add error exception?
->>> If interrupt fails I fallback to polling thread.
->>>>> +        else
->>>>> +            return 0;
->>>> If devm_request_threaded_irq() return success state, why did you directly call 'return'?
->>>> kthread_create operation isn't necessary?
->>> Yes kthread is optional. Some boards doenot have the ID pin hooked onto the GPIO.
->>> In such cases we will run the kthread and poll on the ID pin values.
->>>>> +    }
->>>>> +
->>>>> +    dra7xx_usb->thread_task = kthread_create(id_poll_func, dra7xx_usb,
->>>>> +                         dev_name(&pdev->dev));
->>>> Should you use polling method with kthread? I think it isn't proper method.
->>>> You did get the irq number by using DT helper function and register irq handler
->>>> with devm_request_threaded_irq(). I prefer interrupt method for detection of cable state.
->>> I also prefer interrupt method. If any implementation does not have ID pin connected to GPIOs then still
->>> it could use the driver in polling mode.
->> As I mentioned above, I don't prefer interrupt method for cable detection.
+On Tue, 20 Aug 2013 14:54:54 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+
+> v1 -> v2:
+>  * add comments to describe alloc_usemap_and_memmap 
 > 
-> I hope you meant, you prefer interrupt method for cable detection over polling .
+> After commit 9bdac91424075("sparsemem: Put mem map for one node together."),
+> vmemmap for one node will be allocated together, its logic is similar as
+> memory allocation for pageblock flags. This patch introduce alloc_usemap_and_memmap
+> to extract the same logic of memory alloction for pageblock flags and vmemmap.
+> 
 
-Right, my mistake. I prefer interrupt method.
+9bdac91424075 was written by Yinghai.  He is an excellent reviewer, as
+long as people remember to cc him!
 
-Thanks,
-Chanwoo CHoi
-
-
+> ---
+>  mm/sparse.c | 140 ++++++++++++++++++++++++++++--------------------------------
+>  1 file changed, 66 insertions(+), 74 deletions(-)
+> 
+> diff --git a/mm/sparse.c b/mm/sparse.c
+> index 308d503..d27db9b 100644
+> --- a/mm/sparse.c
+> +++ b/mm/sparse.c
+> @@ -439,6 +439,14 @@ static void __init sparse_early_mem_maps_alloc_node(struct page **map_map,
+>  					 map_count, nodeid);
+>  }
+>  #else
+> +
+> +static void __init sparse_early_mem_maps_alloc_node(struct page **map_map,
+> +				unsigned long pnum_begin,
+> +				unsigned long pnum_end,
+> +				unsigned long map_count, int nodeid)
+> +{
+> +}
+> +
+>  static struct page __init *sparse_early_mem_map_alloc(unsigned long pnum)
+>  {
+>  	struct page *map;
+> @@ -460,6 +468,62 @@ void __attribute__((weak)) __meminit vmemmap_populate_print_last(void)
+>  {
+>  }
+>  
+> +/**
+> + *  alloc_usemap_and_memmap - memory alloction for pageblock flags and vmemmap
+> + *  @map: usemap_map for pageblock flags or mmap_map for vmemmap
+> + *  @use_map: true if memory allocated for pageblock flags, otherwise false
+> + */
+> +static void alloc_usemap_and_memmap(unsigned long **map, bool use_map)
+> +{
+> +	unsigned long pnum;
+> +	unsigned long map_count;
+> +	int nodeid_begin = 0;
+> +	unsigned long pnum_begin = 0;
+> +
+> +	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
+> +		struct mem_section *ms;
+> +
+> +		if (!present_section_nr(pnum))
+> +			continue;
+> +		ms = __nr_to_section(pnum);
+> +		nodeid_begin = sparse_early_nid(ms);
+> +		pnum_begin = pnum;
+> +		break;
+> +	}
+> +	map_count = 1;
+> +	for (pnum = pnum_begin + 1; pnum < NR_MEM_SECTIONS; pnum++) {
+> +		struct mem_section *ms;
+> +		int nodeid;
+> +
+> +		if (!present_section_nr(pnum))
+> +			continue;
+> +		ms = __nr_to_section(pnum);
+> +		nodeid = sparse_early_nid(ms);
+> +		if (nodeid == nodeid_begin) {
+> +			map_count++;
+> +			continue;
+> +		}
+> +		/* ok, we need to take cake of from pnum_begin to pnum - 1*/
+> +		if (use_map)
+> +			sparse_early_usemaps_alloc_node(map, pnum_begin, pnum,
+> +						 map_count, nodeid_begin);
+> +		else
+> +			sparse_early_mem_maps_alloc_node((struct page **)map,
+> +				pnum_begin, pnum, map_count, nodeid_begin);
+> +		/* new start, update count etc*/
+> +		nodeid_begin = nodeid;
+> +		pnum_begin = pnum;
+> +		map_count = 1;
+> +	}
+> +	/* ok, last chunk */
+> +	if (use_map)
+> +		sparse_early_usemaps_alloc_node(map, pnum_begin,
+> +				NR_MEM_SECTIONS, map_count, nodeid_begin);
+> +	else
+> +		sparse_early_mem_maps_alloc_node((struct page **)map,
+> +			pnum_begin, NR_MEM_SECTIONS, map_count, nodeid_begin);
+> +}
+> +
+>  /*
+>   * Allocate the accumulated non-linear sections, allocate a mem_map
+>   * for each and record the physical to section mapping.
+> @@ -471,11 +535,7 @@ void __init sparse_init(void)
+>  	unsigned long *usemap;
+>  	unsigned long **usemap_map;
+>  	int size;
+> -	int nodeid_begin = 0;
+> -	unsigned long pnum_begin = 0;
+> -	unsigned long usemap_count;
+>  #ifdef CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER
+> -	unsigned long map_count;
+>  	int size2;
+>  	struct page **map_map;
+>  #endif
+> @@ -501,82 +561,14 @@ void __init sparse_init(void)
+>  	usemap_map = alloc_bootmem(size);
+>  	if (!usemap_map)
+>  		panic("can not allocate usemap_map\n");
+> -
+> -	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
+> -		struct mem_section *ms;
+> -
+> -		if (!present_section_nr(pnum))
+> -			continue;
+> -		ms = __nr_to_section(pnum);
+> -		nodeid_begin = sparse_early_nid(ms);
+> -		pnum_begin = pnum;
+> -		break;
+> -	}
+> -	usemap_count = 1;
+> -	for (pnum = pnum_begin + 1; pnum < NR_MEM_SECTIONS; pnum++) {
+> -		struct mem_section *ms;
+> -		int nodeid;
+> -
+> -		if (!present_section_nr(pnum))
+> -			continue;
+> -		ms = __nr_to_section(pnum);
+> -		nodeid = sparse_early_nid(ms);
+> -		if (nodeid == nodeid_begin) {
+> -			usemap_count++;
+> -			continue;
+> -		}
+> -		/* ok, we need to take cake of from pnum_begin to pnum - 1*/
+> -		sparse_early_usemaps_alloc_node(usemap_map, pnum_begin, pnum,
+> -						 usemap_count, nodeid_begin);
+> -		/* new start, update count etc*/
+> -		nodeid_begin = nodeid;
+> -		pnum_begin = pnum;
+> -		usemap_count = 1;
+> -	}
+> -	/* ok, last chunk */
+> -	sparse_early_usemaps_alloc_node(usemap_map, pnum_begin, NR_MEM_SECTIONS,
+> -					 usemap_count, nodeid_begin);
+> +	alloc_usemap_and_memmap(usemap_map, true);
+>  
+>  #ifdef CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER
+>  	size2 = sizeof(struct page *) * NR_MEM_SECTIONS;
+>  	map_map = alloc_bootmem(size2);
+>  	if (!map_map)
+>  		panic("can not allocate map_map\n");
+> -
+> -	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
+> -		struct mem_section *ms;
+> -
+> -		if (!present_section_nr(pnum))
+> -			continue;
+> -		ms = __nr_to_section(pnum);
+> -		nodeid_begin = sparse_early_nid(ms);
+> -		pnum_begin = pnum;
+> -		break;
+> -	}
+> -	map_count = 1;
+> -	for (pnum = pnum_begin + 1; pnum < NR_MEM_SECTIONS; pnum++) {
+> -		struct mem_section *ms;
+> -		int nodeid;
+> -
+> -		if (!present_section_nr(pnum))
+> -			continue;
+> -		ms = __nr_to_section(pnum);
+> -		nodeid = sparse_early_nid(ms);
+> -		if (nodeid == nodeid_begin) {
+> -			map_count++;
+> -			continue;
+> -		}
+> -		/* ok, we need to take cake of from pnum_begin to pnum - 1*/
+> -		sparse_early_mem_maps_alloc_node(map_map, pnum_begin, pnum,
+> -						 map_count, nodeid_begin);
+> -		/* new start, update count etc*/
+> -		nodeid_begin = nodeid;
+> -		pnum_begin = pnum;
+> -		map_count = 1;
+> -	}
+> -	/* ok, last chunk */
+> -	sparse_early_mem_maps_alloc_node(map_map, pnum_begin, NR_MEM_SECTIONS,
+> -					 map_count, nodeid_begin);
+> +	alloc_usemap_and_memmap((unsigned long **)map_map, false);
+>  #endif
+>  
+>  	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
+> -- 
+> 1.8.1.2
