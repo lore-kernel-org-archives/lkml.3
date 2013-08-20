@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab3HTCHN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 22:07:13 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:42313 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816Ab3HTCEi (ORCPT
+	id S1752008Ab3HTCHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 22:07:10 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:42322 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751824Ab3HTCEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Aug 2013 22:04:38 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [RFC 08/17] ARM: mvebu: remove custom .init_time hook
-Date: Tue, 20 Aug 2013 04:04:22 +0200
-Message-Id: <1376964271-22715-9-git-send-email-sebastian.hesselbarth@gmail.com>
+        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC 09/17] ARM: mxs: remove custom .init_time hook
+Date: Tue, 20 Aug 2013 04:04:23 +0200
+Message-Id: <1376964271-22715-10-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -28,121 +28,178 @@ remove custom .init_time hooks.
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Notes:
-- coherency, mbus, and cache init are moved to .init_machine hook
-- time-armada-370-xp is converted to clocksource_of_init compatible init
+- clk-imx2[38] are converted to clocksource_of_init compatible init
+  associated with fsl,imx2[38]-clkctrl
 
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/mach-mvebu/armada-370-xp.c      |   11 +----------
- drivers/clocksource/time-armada-370-xp.c |    7 +++----
- include/linux/time-armada-370-xp.h       |   16 ----------------
- 3 files changed, 4 insertions(+), 30 deletions(-)
- delete mode 100644 include/linux/time-armada-370-xp.h
+ arch/arm/mach-mxs/mach-mxs.c |   13 -------------
+ drivers/clk/mxs/clk-imx23.c  |   16 +++++++---------
+ drivers/clk/mxs/clk-imx28.c  |   16 ++++++++--------
+ include/linux/clk/mxs.h      |    2 --
+ 4 files changed, 15 insertions(+), 32 deletions(-)
 
-diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
-index 829b573..139f572 100644
---- a/arch/arm/mach-mvebu/armada-370-xp.c
-+++ b/arch/arm/mach-mvebu/armada-370-xp.c
-@@ -14,11 +14,9 @@
- 
- #include <linux/kernel.h>
- #include <linux/init.h>
+diff --git a/arch/arm/mach-mxs/mach-mxs.c b/arch/arm/mach-mxs/mach-mxs.c
+index 98f6e2a..cc511a4 100644
+--- a/arch/arm/mach-mxs/mach-mxs.c
++++ b/arch/arm/mach-mxs/mach-mxs.c
+@@ -13,8 +13,6 @@
+ #include <linux/clk.h>
+ #include <linux/clk/mxs.h>
+ #include <linux/clkdev.h>
+-#include <linux/clocksource.h>
 -#include <linux/clk-provider.h>
- #include <linux/of_address.h>
- #include <linux/of_platform.h>
- #include <linux/io.h>
--#include <linux/time-armada-370-xp.h>
- #include <linux/dma-mapping.h>
- #include <linux/mbus.h>
- #include <asm/hardware/cache-l2x0.h>
-@@ -34,19 +32,13 @@ static void __init armada_370_xp_map_io(void)
- 	debug_ll_io_init();
+ #include <linux/delay.h>
+ #include <linux/err.h>
+ #include <linux/gpio.h>
+@@ -490,16 +488,6 @@ static void mxs_restart(enum reboot_mode mode, const char *cmd)
+ 	soft_restart(0);
  }
  
--static void __init armada_370_xp_timer_and_clk_init(void)
-+static void __init armada_370_xp_dt_init(void)
- {
+-static void __init mxs_timer_init(void)
+-{
+-	if (of_machine_is_compatible("fsl,imx23"))
+-		mx23_clocks_init();
+-	else
+-		mx28_clocks_init();
 -	of_clk_init(NULL);
--	armada_370_xp_timer_init();
- 	coherency_init();
- 	BUG_ON(mvebu_mbus_dt_init());
- #ifdef CONFIG_CACHE_L2X0
- 	l2x0_of_init(0, ~0UL);
- #endif
+-	clocksource_of_init();
 -}
 -
--static void __init armada_370_xp_dt_init(void)
--{
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
+ static const char *mxs_dt_compat[] __initdata = {
+ 	"fsl,imx28",
+ 	"fsl,imx23",
+@@ -508,7 +496,6 @@ static const char *mxs_dt_compat[] __initdata = {
  
-@@ -59,7 +51,6 @@ DT_MACHINE_START(ARMADA_XP_DT, "Marvell Armada 370/XP (Device Tree)")
- 	.smp		= smp_ops(armada_xp_smp_ops),
- 	.init_machine	= armada_370_xp_dt_init,
- 	.map_io		= armada_370_xp_map_io,
--	.init_time	= armada_370_xp_timer_and_clk_init,
- 	.restart	= mvebu_restart,
- 	.dt_compat	= armada_370_xp_dt_compat,
- MACHINE_END
-diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
-index 847cab6..67904cf 100644
---- a/drivers/clocksource/time-armada-370-xp.c
-+++ b/drivers/clocksource/time-armada-370-xp.c
-@@ -30,7 +30,6 @@
- #include <linux/module.h>
- #include <linux/sched_clock.h>
- #include <linux/percpu.h>
--#include <linux/time-armada-370-xp.h>
- 
- /*
-  * Timer block registers.
-@@ -217,13 +216,11 @@ static struct notifier_block armada_370_xp_timer_cpu_nb = {
- 	.notifier_call = armada_370_xp_timer_cpu_notify,
+ DT_MACHINE_START(MXS, "Freescale MXS (Device Tree)")
+ 	.handle_irq	= icoll_handle_irq,
+-	.init_time	= mxs_timer_init,
+ 	.init_machine	= mxs_machine_init,
+ 	.init_late      = mxs_pm_init,
+ 	.dt_compat	= mxs_dt_compat,
+diff --git a/drivers/clk/mxs/clk-imx23.c b/drivers/clk/mxs/clk-imx23.c
+index c396fe3..7c2794d 100644
+--- a/drivers/clk/mxs/clk-imx23.c
++++ b/drivers/clk/mxs/clk-imx23.c
+@@ -12,6 +12,7 @@
+ #include <linux/clk.h>
+ #include <linux/clk/mxs.h>
+ #include <linux/clkdev.h>
++#include <linux/clk-provider.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
+@@ -100,19 +101,17 @@ static enum imx23_clk clks_init_on[] __initdata = {
+ 	cpu, hbus, xbus, emi, uart,
  };
  
--void __init armada_370_xp_timer_init(void)
-+void __init armada_370_xp_timer_init(struct device_node *np)
+-int __init mx23_clocks_init(void)
++void __init mx23_clocks_init(struct device_node *np)
  {
- 	u32 u;
 -	struct device_node *np;
- 	int res;
+ 	u32 i;
  
--	np = of_find_compatible_node(NULL, NULL, "marvell,armada-370-xp-timer");
- 	timer_base = of_iomap(np, 0);
- 	WARN_ON(!timer_base);
- 	local_base = of_iomap(np, 1);
-@@ -293,3 +290,5 @@ void __init armada_370_xp_timer_init(void)
- 	if (!res)
- 		armada_370_xp_timer_setup(this_cpu_ptr(armada_370_xp_evt));
++	clkctrl = of_iomap(np, 0);
++	WARN_ON(!clkctrl);
++
+ 	np = of_find_compatible_node(NULL, NULL, "fsl,imx23-digctl");
+ 	digctrl = of_iomap(np, 0);
+ 	WARN_ON(!digctrl);
+ 
+-	np = of_find_compatible_node(NULL, NULL, "fsl,imx23-clkctrl");
+-	clkctrl = of_iomap(np, 0);
+-	WARN_ON(!clkctrl);
+-
+ 	clk_misc_init();
+ 
+ 	clks[ref_xtal] = mxs_clk_fixed("ref_xtal", 24000000);
+@@ -162,7 +161,7 @@ int __init mx23_clocks_init(void)
+ 		if (IS_ERR(clks[i])) {
+ 			pr_err("i.MX23 clk %d: register failed with %ld\n",
+ 				i, PTR_ERR(clks[i]));
+-			return PTR_ERR(clks[i]);
++			return;
+ 		}
+ 
+ 	clk_data.clks = clks;
+@@ -171,6 +170,5 @@ int __init mx23_clocks_init(void)
+ 
+ 	for (i = 0; i < ARRAY_SIZE(clks_init_on); i++)
+ 		clk_prepare_enable(clks[clks_init_on[i]]);
+-
+-	return 0;
  }
-+CLOCKSOURCE_OF_DECLARE(armada_370_xp_timer, "marvell,armada-370-xp-timer",
-+		       armada_370_xp_timer_init);
-diff --git a/include/linux/time-armada-370-xp.h b/include/linux/time-armada-370-xp.h
-deleted file mode 100644
-index 6fb0856..0000000
---- a/include/linux/time-armada-370-xp.h
-+++ /dev/null
-@@ -1,16 +0,0 @@
--/*
-- * Marvell Armada 370/XP SoC timer handling.
-- *
-- * Copyright (C) 2012 Marvell
-- *
-- * Lior Amsalem <alior@marvell.com>
-- * Gregory CLEMENT <gregory.clement@free-electrons.com>
-- * Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-- *
-- */
--#ifndef __TIME_ARMADA_370_XPPRCMU_H
--#define __TIME_ARMADA_370_XPPRCMU_H
++CLK_OF_DECLARE(imx23_clkctrl, "fsl,imx23-clkctrl", mx23_clocks_init);
+diff --git a/drivers/clk/mxs/clk-imx28.c b/drivers/clk/mxs/clk-imx28.c
+index 4faf0af..5627fa2 100644
+--- a/drivers/clk/mxs/clk-imx28.c
++++ b/drivers/clk/mxs/clk-imx28.c
+@@ -12,6 +12,7 @@
+ #include <linux/clk.h>
+ #include <linux/clk/mxs.h>
+ #include <linux/clkdev.h>
++#include <linux/clk-provider.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
+@@ -154,19 +155,17 @@ static enum imx28_clk clks_init_on[] __initdata = {
+ 	cpu, hbus, xbus, emi, uart,
+ };
+ 
+-int __init mx28_clocks_init(void)
++void __init mx28_clocks_init(struct device_node *np)
+ {
+-	struct device_node *np;
+ 	u32 i;
+ 
++	clkctrl = of_iomap(np, 0);
++	WARN_ON(!clkctrl);
++
+ 	np = of_find_compatible_node(NULL, NULL, "fsl,imx28-digctl");
+ 	digctrl = of_iomap(np, 0);
+ 	WARN_ON(!digctrl);
+ 
+-	np = of_find_compatible_node(NULL, NULL, "fsl,imx28-clkctrl");
+-	clkctrl = of_iomap(np, 0);
+-	WARN_ON(!clkctrl);
 -
--void armada_370_xp_timer_init(void);
--
--#endif
+ 	clk_misc_init();
+ 
+ 	clks[ref_xtal] = mxs_clk_fixed("ref_xtal", 24000000);
+@@ -239,7 +238,7 @@ int __init mx28_clocks_init(void)
+ 		if (IS_ERR(clks[i])) {
+ 			pr_err("i.MX28 clk %d: register failed with %ld\n",
+ 				i, PTR_ERR(clks[i]));
+-			return PTR_ERR(clks[i]);
++			return;
+ 		}
+ 
+ 	clk_data.clks = clks;
+@@ -251,5 +250,6 @@ int __init mx28_clocks_init(void)
+ 	for (i = 0; i < ARRAY_SIZE(clks_init_on); i++)
+ 		clk_prepare_enable(clks[clks_init_on[i]]);
+ 
+-	return 0;
++	return;
+ }
++CLK_OF_DECLARE(imx28_clkctrl, "fsl,imx28-clkctrl", mx28_clocks_init);
+diff --git a/include/linux/clk/mxs.h b/include/linux/clk/mxs.h
+index 90c30dc..5138a90 100644
+--- a/include/linux/clk/mxs.h
++++ b/include/linux/clk/mxs.h
+@@ -9,8 +9,6 @@
+ #ifndef __LINUX_CLK_MXS_H
+ #define __LINUX_CLK_MXS_H
+ 
+-int mx23_clocks_init(void);
+-int mx28_clocks_init(void);
+ int mxs_saif_clkmux_select(unsigned int clkmux);
+ 
+ #endif
 -- 
 1.7.10.4
 
