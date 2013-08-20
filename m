@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab3HTMTp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 08:19:45 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:51349 "EHLO hydra.sisk.pl"
+	id S1751393Ab3HTMUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 08:20:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9635 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967Ab3HTMTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 08:19:44 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>
-Subject: Re: [RFC PATCH] freezer: allow killing of frozen tasks
-Date: Tue, 20 Aug 2013 14:30:18 +0200
-Message-ID: <37238430.gCktWD5jr4@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130820121819.GA3926@htj.dyndns.org>
-References: <5917186.DMyAa9ofOj@amdc1032> <4596920.E6jI568rc1@vostro.rjw.lan> <20130820121819.GA3926@htj.dyndns.org>
+	id S1750976Ab3HTMUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 08:20:37 -0400
+Message-ID: <52135F04.80700@redhat.com>
+Date: Tue, 20 Aug 2013 14:20:20 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: Re: [PATCH] [media] gspca: fix dev_open() error path
+References: <1375733797-7002-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1375733797-7002-1-git-send-email-khoroshilov@ispras.ru>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 20, 2013 08:18:19 AM Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Aug 20, 2013 at 02:23:32PM +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, August 20, 2013 01:20:03 PM Bartlomiej Zolnierkiewicz wrote:
-> > > Change __refrigerator() to allow SIGKILL signal handling during
-> > > the frozen state (by setting task to a TASK_KILLABLE state instead
-> > > of TASK_UNINTERRUPTIBLE one before entering sleep) and make tasks
-> > > leave __refrigerator() upon receiving such signal.
-> > > 
-> > > These changes allow frozen tasks to be killed immediately without
-> > > the need to thaw them first.
-> > > 
-> > > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > 
-> > Well, it doesn't sound like an entirely bad idea to me, but I'd like to know
-> > what Colin and Tejun (CCed now) think about it.
-> 
-> The problem is that we really don't know where each task is frozen in
-> the kernel so don't know what happens after the task leaves the
-> freezer is safe whether it's dying or not.  We don't have any rules
-> restricting where a freeze point should be and a task may do any
-> operation between freezer and actual exit.
-> 
-> So, I don't think we can simply turn TASK_UNITERRUPTIBLE to
-> TASK_KILLABLE at this point.  We really need to strictly define where
-> a task can freeze before being able to do anything like this.
+Hi,
 
-But we could do that for user space tasks I suppose?
+Thanks for the patch I've added this to my "gspca" tree, and this
+will be included in my next pull-request to Mauro for 3.12
 
-Rafael
+Regards,
 
+Hans
+
+On 08/05/2013 10:16 PM, Alexey Khoroshilov wrote:
+> If v4l2_fh_open() fails in dev_open(), gspca_dev->module left locked.
+> The patch adds module_put(gspca_dev->module) on this path.
+>
+> Found by Linux Driver Verification project (linuxtesting.org).
+>
+> Signed-off-by: Alexey Khoroshilov<khoroshilov@ispras.ru>
+> ---
+>   drivers/media/usb/gspca/gspca.c | 6 +++++-
+>   1 file changed, 5 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/media/usb/gspca/gspca.c b/drivers/media/usb/gspca/gspca.c
+> index b7ae872..048507b 100644
+> --- a/drivers/media/usb/gspca/gspca.c
+> +++ b/drivers/media/usb/gspca/gspca.c
+> @@ -1266,6 +1266,7 @@ static void gspca_release(struct v4l2_device *v4l2_device)
+>   static int dev_open(struct file *file)
+>   {
+>   	struct gspca_dev *gspca_dev = video_drvdata(file);
+> +	int ret;
+>
+>   	PDEBUG(D_STREAM, "[%s] open", current->comm);
+>
+> @@ -1273,7 +1274,10 @@ static int dev_open(struct file *file)
+>   	if (!try_module_get(gspca_dev->module))
+>   		return -ENODEV;
+>
+> -	return v4l2_fh_open(file);
+> +	ret = v4l2_fh_open(file);
+> +	if (ret)
+> +		module_put(gspca_dev->module);
+> +	return ret;
+>   }
+>
+>   static int dev_close(struct file *file)
+> -- 1.8.1.2
+>
