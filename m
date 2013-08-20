@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab3HTF2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 01:28:49 -0400
-Received: from mail-in-08.arcor-online.net ([151.189.21.48]:59315 "EHLO
-	mail-in-08.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751831Ab3HTF2s (ORCPT
+	id S1752207Ab3HTFal (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 01:30:41 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:42861 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab3HTFak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 01:28:48 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-17.arcor-online.net 87F2DCBC4C
-Date: Tue, 20 Aug 2013 07:28:46 +0200 (CEST)
-From: screamingfist@arcor.de
-To: gregkh@linuxfoundation.org, erazor_de@users.sourceforge.net
-Cc: jkosina@suse.cz, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <855534750.937448.1376976526543.JavaMail.ngmail@webmail11.arcor-online.net>
-In-Reply-To: <20130815164024.GB15688@kroah.com>
-References: <20130815164024.GB15688@kroah.com> <1376582626.2452.26.camel@neuromancer.tessier-ashpool>
-Subject: Aw: Re: [PATCH 35/36] hid: roccat: convert class code to use
- bin_attrs in groups
+	Tue, 20 Aug 2013 01:30:40 -0400
+Date: Tue, 20 Aug 2013 09:30:36 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
+        riel@redhat.com, hughd@google.com, xemul@parallels.com,
+        rientjes@google.com, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] mm: mempolicy: the failure processing about
+ mpol_to_str()
+Message-ID: <20130820053036.GB18673@moon>
+References: <5212E8DF.5020209@asianux.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-ngMessageSubType: MessageSubType_MAIL
-X-WebmailclientIP: 138.246.2.45
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5212E8DF.5020209@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Nachricht ----
-Von:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-An:      Stefan Achatz <erazor_de@users.sourceforge.net>
-Datum:   15.08.2013 18:40
-Betreff: Re: [PATCH 35/36] hid: roccat: convert class code to use bin_attrs
- in groups
+On Tue, Aug 20, 2013 at 11:56:15AM +0800, Chen Gang wrote:
+> For the implementation (patch 1/3), need fill buffer as full as
+> possible when buffer space is not enough.
+> 
+> For the caller (patch 2/3, 3/3), need check the return value of
+> mpol_to_str().
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-> On Thu, Aug 15, 2013 at 06:03:46PM +0200, Stefan Achatz wrote:
-> > Hello Greg,
-> > looking through the patch I found the following:
-> > 
-> > 
-> > 
-> > In hid-roccat-kone.c, PROFILE_ATTR macro:
-> > The line
-> >  .private = &profile_numbers[number],
-> > should read
-> >  .private = &profile_numbers[number-1],
-> 
-> Ah, ok, thanks, will fix up.
-> 
-> > Regarding the compiler warning about unused pyra_sysfs_write_settings:
-> > The attribute is indeed readwrite, but the code to write is not standard
-> > code. The read function was created with the PYRA_SYSFS_R macro and the
-> > write function was written manually. Used were both by
-> > PYRA_BIN_ATTRIBUTE_RW.
-> > In this case I would keep the PYRA_SYSFS_* macros standalone so that the
-> > calling code looks like this:
-> > 
-> > PYRA_SYSFS_W(control, CONTROL);
-> > PYRA_SYSFS_RW(info, INFO);
-> > PYRA_SYSFS_RW(profile_settings, PROFILE_SETTINGS);
-> > PYRA_SYSFS_RW(profile_buttons, PROFILE_BUTTONS);
-> > PYRA_SYSFS_R(settings, SETTINGS);
-> > 
-> > PYRA_BIN_ATTRIBUTE_W(control, CONTROL);
-> > PYRA_BIN_ATTRIBUTE_RW(info, INFO);
-> > PYRA_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS);
-> > PYRA_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS);
-> > PYRA_BIN_ATTRIBUTE_RW(settings, SETTINGS);
-> 
-> Hm, I'll look this over again and see if I can make it better.
-> 
-> But why are you using a "non standard" write function?  What is special
-> here about this?
+Won't simple check for mpol_to_str() < 0 be enough? IOW fix all
+callers to check that mpol_to_str exit without errors. As far
+as I see here are only two users. Something like
 
-The module stores the written value, so that events from the device can be
-written to chardev with this extra information.
-I made the mistake to put too many functionality in the early kernel modules
-and I'm not getting fully rid of it now.
+show_numa_map
+	ret = mpol_to_str();
+	if (ret)
+		return ret;
 
-> > Another thing: Why does nobody (besides me) use the get_maintainer.pl
-> > script, so I have to search manually for patches regarding my code?
-> 
-> I did use it:
-> 
-> $ ./scripts/get_maintainer.pl --file drivers/hid/hid-roccat-kone.c 
-> Jiri Kosina <jkosina@suse.cz> (maintainer:HID CORE LAYER)
-> linux-input@vger.kernel.org (open list:HID CORE LAYER)
-> linux-kernel@vger.kernel.org (open list)
-> 
-> You aren't listed there, perhaps a MAINTAINERS entry needs to be added?
+shmem_show_mpol
+	ret = mpol_to_str();
+	if (ret)
+		return ret;
 
-I thought get_maintainer spits out my name when doing my own patches...
-I'll add myself to this list then.
-
-> thanks,
-> 
-> greg k-h
-
-Have a nice day
-Stefan
+sure you'll have to change shmem_show_mpol statement to return int code.
+Won't this be more short and convenient?
