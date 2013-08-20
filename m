@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589Ab3HTQW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:22:59 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:51555 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab3HTQW6 (ORCPT
+	id S1751782Ab3HTQZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:25:29 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:64691 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab3HTQZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:22:58 -0400
-Message-ID: <521397DE.5010306@gmail.com>
-Date: Tue, 20 Aug 2013 10:22:54 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 20 Aug 2013 12:25:27 -0400
+Date: Tue, 20 Aug 2013 09:25:05 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Hugh Dickins <hughd@google.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        Stefan Lippers-Hollmann <s.L-H@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/34] 3.4.59-stable review
+In-Reply-To: <20130820160355.GA9427@kroah.com>
+Message-ID: <alpine.LNX.2.00.1308200913450.1297@eggly.anvils>
+References: <20130818203259.653403173@linuxfoundation.org> <52125DA9.3090601@samsung.com> <20130819193538.GB24897@kroah.com> <201308192214.54917.s.L-H@gmx.de> <52129AC3.5020402@samsung.com> <20130819223037.GA3838@kroah.com>
+ <1DC40B07CD6EC041A66726C271A73AE61AA6B9CC@IRSMSX102.ger.corp.intel.com> <20130820152401.GA5211@kroah.com> <alpine.LNX.2.00.1308200851190.991@eggly.anvils> <20130820160355.GA9427@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf trace: Make command line arguments consistent with
- perf-record
-References: <1377010076-21509-1-git-send-email-dsahern@gmail.com> <20130820145156.GC8488@ghostprotocols.net>
-In-Reply-To: <20130820145156.GC8488@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/20/13 8:51 AM, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Aug 20, 2013 at 08:47:56AM -0600, David Ahern escreveu:
->> Common arguments like thread id, CPU list, mmap pages, etc should be
->> consistent across perf commands.
->
->
->
->> Signed-off-by: David Ahern <dsahern@gmail.com>
->> ---
->>   tools/perf/builtin-trace.c |   12 ++++++------
->
->   tools/perf/Documentation/perf-trace.txt part missing :-)
+On Tue, 20 Aug 2013, Greg Kroah-Hartman wrote:
+> On Tue, Aug 20, 2013 at 08:53:24AM -0700, Hugh Dickins wrote:
+> > On Tue, 20 Aug 2013, Greg Kroah-Hartman wrote:
+> > > On Tue, Aug 20, 2013 at 07:36:00AM +0000, Berg, Johannes wrote:
+> > > > > > [ 26/34] genetlink: fix family dump race
+> > > > > 
+> > > > > Johannes, another strike against this patch :(
+> > > > > 
+> > > > > Any chance on fixing it upstream and me sucking that fix in?
+> > > > 
+> > > > Yeah, I'm trying to get that, but it's not clear to me how to fix it.
+> > > > Where did you apply it? It was going to need some fixes but when the
+> > > > first objection was raised I figured you were going to drop it for now
+> > > > completely? Sorry for the mess :-(
+> > > 
+> > > You're right, I'll drop this for 3.4, it doesn't make sense there.
+> > 
+> > And you'll drop it from 3.0 and 3.10 also, I hope?
+> 
+> It wasn't in 3.0, was it?  Oh crap, it was...
+> 
+> 3.10, I'd rather have the "real" fix that ends up resolving the issue in
+> Linus's tree also, instead of just dropping it.
 
+We would all prefer that, but as yet the real fix is unknown,
+and lockdep shows problems with the real fix (please search your
+mailbox for "3.11-rc6 genetlink locking fix offends lockdep").
 
-grrrr... Added a check in the git pre-commit hook to remind me:
+> 
+> Especially as I just did the releases...
 
-$ git commit -a
-changing command line arguments. Did you update the man page?
+Oh.  Classic case of a patch rushed too quickly into late rc,
+then too quickly from there to stable.
 
-Will resend later today.
-David
+Hugh
