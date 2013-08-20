@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706Ab3HTJch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 05:32:37 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34970 "EHLO
+	id S1751382Ab3HTJaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 05:30:19 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34382 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab3HTJaU (ORCPT
+	with ESMTP id S1750947Ab3HTJaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 05:30:20 -0400
+	Tue, 20 Aug 2013 05:30:12 -0400
 From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
@@ -19,91 +19,148 @@ Cc: Sudeep.KarkadaNagesha@arm.com, Viresh Kumar <viresh.kumar@linaro.org>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>,
         Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [PATCH v4 12/19] cpufreq: cpufreq-cpu0: remove device tree parsing for cpu nodes
-Date: Tue, 20 Aug 2013 10:30:14 +0100
-Message-Id: <1376991021-12160-13-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+Subject: [PATCH v4 03/19] powerpc: refactor of_get_cpu_node to support other architectures
+Date: Tue, 20 Aug 2013 10:30:05 +0100
+Message-Id: <1376991021-12160-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
  <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 20 Aug 2013 09:30:16.0912 (UTC) FILETIME=[E176AD00:01CE9D87]
-X-MC-Unique: 113082010301810801
+X-OriginalArrivalTime: 20 Aug 2013 09:30:09.0318 (UTC) FILETIME=[DCEFEC60:01CE9D87]
+X-MC-Unique: 113082010301016101
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7K9WfqZ012291
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7K9WtiK012295
 
 From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-Now that the cpu device registration initialises the of_node(if available)
-appropriately for all the cpus, parsing here is redundant.
+Currently different drivers requiring to access cpu device node are
+parsing the device tree themselves. Since the ordering in the DT need
+not match the logical cpu ordering, the parsing logic needs to consider
+that. However, this has resulted in lots of code duplication and in some
+cases even incorrect logic.
 
-This patch removes all DT parsing and uses cpu->of_node instead.
+It's better to consolidate them by adding support for getting cpu
+device node for a given logical cpu index in DT core library. However
+logical to physical index mapping can be architecture specific.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+PowerPC has it's own implementation to get the cpu node for a given
+logical index.
+
+This patch refactors the current implementation of of_get_cpu_node.
+This in preparation to move the implementation to DT core library.
+It separates out the logical to physical mapping so that a default
+matching of the physical id to the logical cpu index can be added
+when moved to common code. Architecture specific code can override it.
+
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 ---
- drivers/cpufreq/cpufreq-cpu0.c | 23 ++++-------------------
- 1 file changed, 4 insertions(+), 19 deletions(-)
+ arch/powerpc/kernel/prom.c | 76 ++++++++++++++++++++++++++++------------------
+ 1 file changed, 47 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index ad1fde2..5b05c26 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -174,29 +174,17 @@ static struct cpufreq_driver cpu0_cpufreq_driver = {
+diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+index eb23ac9..f7b8c0b 100644
+--- a/arch/powerpc/kernel/prom.c
++++ b/arch/powerpc/kernel/prom.c
+@@ -865,45 +865,63 @@ static int __init prom_reconfig_setup(void)
+ __initcall(prom_reconfig_setup);
+ #endif
  
- static int cpu0_cpufreq_probe(struct platform_device *pdev)
++bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
++{
++	return (int)phys_id == get_hard_smp_processor_id(cpu);
++}
++
++static bool __of_find_n_match_cpu_property(struct device_node *cpun,
++			const char *prop_name, int cpu, unsigned int *thread)
++{
++	const __be32 *cell;
++	int ac, prop_len, tid;
++	u64 hwid;
++
++	ac = of_n_addr_cells(cpun);
++	cell = of_get_property(cpun, prop_name, &prop_len);
++	if (!cell)
++		return false;
++	prop_len /= sizeof(*cell);
++	for (tid = 0; tid < prop_len; tid++) {
++		hwid = of_read_number(cell, ac);
++		if (arch_match_cpu_phys_id(cpu, hwid)) {
++			if (thread)
++				*thread = tid;
++			return true;
++		}
++		cell += ac;
++	}
++	return false;
++}
++
+ /* Find the device node for a given logical cpu number, also returns the cpu
+  * local thread number (index in ibm,interrupt-server#s) if relevant and
+  * asked for (non NULL)
+  */
+ struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
  {
--	struct device_node *np, *parent;
-+	struct device_node *np;
- 	int ret;
+-	int hardid;
+-	struct device_node *np;
++	struct device_node *cpun, *cpus;
  
--	parent = of_find_node_by_path("/cpus");
--	if (!parent) {
--		pr_err("failed to find OF /cpus\n");
--		return -ENOENT;
--	}
--
--	for_each_child_of_node(parent, np) {
--		if (of_get_property(np, "operating-points", NULL))
--			break;
--	}
-+	cpu_dev = &pdev->dev;
+-	hardid = get_hard_smp_processor_id(cpu);
++	cpus = of_find_node_by_path("/cpus");
++	if (!cpus) {
++		pr_warn("Missing cpus node, bailing out\n");
++		return NULL;
++	}
  
-+	np = of_node_get(cpu_dev->of_node);
- 	if (!np) {
- 		pr_err("failed to find cpu0 node\n");
--		ret = -ENOENT;
--		goto out_put_parent;
-+		return -ENOENT;
+-	for_each_node_by_type(np, "cpu") {
+-		const u32 *intserv;
+-		unsigned int plen, t;
++	for_each_child_of_node(cpus, cpun) {
++		if (of_node_cmp(cpun->type, "cpu"))
++			continue;
+ 
+-		/* Check for ibm,ppc-interrupt-server#s. If it doesn't exist
+-		 * fallback to "reg" property and assume no threads
++		/* Check for non-standard "ibm,ppc-interrupt-server#s" property
++		 * for thread ids on PowerPC. If it doesn't exist fallback to
++		 * standard "reg" property.
+ 		 */
+-		intserv = of_get_property(np, "ibm,ppc-interrupt-server#s",
+-				&plen);
+-		if (intserv == NULL) {
+-			const u32 *reg = of_get_property(np, "reg", NULL);
+-			if (reg == NULL)
+-				continue;
+-			if (*reg == hardid) {
+-				if (thread)
+-					*thread = 0;
+-				return np;
+-			}
+-		} else {
+-			plen /= sizeof(u32);
+-			for (t = 0; t < plen; t++) {
+-				if (hardid == intserv[t]) {
+-					if (thread)
+-						*thread = t;
+-					return np;
+-				}
+-			}
+-		}
++		if (__of_find_n_match_cpu_property(cpun,
++				"ibm,ppc-interrupt-server#s", cpu, thread))
++			return cpun;
++
++		if (__of_find_n_match_cpu_property(cpun, "reg", cpu, thread))
++			return cpun;
  	}
- 
--	cpu_dev = &pdev->dev;
--	cpu_dev->of_node = np;
--
- 	cpu_reg = devm_regulator_get(cpu_dev, "cpu0");
- 	if (IS_ERR(cpu_reg)) {
- 		/*
-@@ -269,15 +257,12 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 	}
- 
- 	of_node_put(np);
--	of_node_put(parent);
- 	return 0;
- 
- out_free_table:
- 	opp_free_cpufreq_table(cpu_dev, &freq_table);
- out_put_node:
- 	of_node_put(np);
--out_put_parent:
--	of_node_put(parent);
- 	return ret;
+ 	return NULL;
  }
- 
 -- 
 1.8.1.2
 
