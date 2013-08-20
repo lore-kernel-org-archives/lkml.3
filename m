@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891Ab3HTHCJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 03:02:09 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:49216 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab3HTHCH (ORCPT
+	id S1751918Ab3HTHC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 03:02:29 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:58803 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab3HTHC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 03:02:07 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-4f-5213146ef328
+	Tue, 20 Aug 2013 03:02:28 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-40-521314833bf8
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>,
         "'Lee Jones'" <lee.jones@linaro.org>
@@ -15,40 +15,40 @@ Cc: linux-kernel@vger.kernel.org, "'David Brown'" <davidb@codeaurora.org>,
         "'Daniel Walker'" <dwalker@fifo99.com>,
         "'Bryan Huntsman'" <bryanh@codeaurora.org>,
         Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 2/3] mfd: pm8921: remove unnecessary platform_set_drvdata()
-Date: Tue, 20 Aug 2013 16:02:05 +0900
-Message-id: <005301ce9d73$2df47b40$89dd71c0$@samsung.com>
+Subject: [PATCH 3/3] mfd: pm8921: use devm_*() functions
+Date: Tue, 20 Aug 2013 16:02:26 +0900
+Message-id: <005401ce9d73$3a52fc40$aef8f4c0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6dcypaXfXokrQESRyQgyJqm5AsmA==
+Thread-index: Ac6dczda6piE1rTiSNOTEiLvediVJQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zI908EeEgg47jvBb/jk1hsni8/B+b
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zfd1mEeEgg9vNLBb/jk1hsni8/B+b
 	xdRlbawWlxdeYrW4//Uoo8XlXXPYLE53szqwe1zu62XyOD15P4vHnWt72DzmnQz06NuyitHj
-	8ya5ALYoLpuU1JzMstQifbsEroyFvTvZCj6zV2zc1MvWwHiErYuRk0NCwETizfwf7BC2mMSF
-	e+uB4lwcQgLLGCXmP/nO2sXIAVY06VIeRHw6o8TRSb1MIHEhgV+MEj0lIL1sAmoSX74cZgcJ
-	iwj4STSsYAcpZxbYyyhxqwWknJNDWMBbYmXrObBdLAKqEvOn7wQbwytgKbF8ri5ImFdAUOLH
-	5HssIDazgJbE+p3HmSBseYnNa94yQ5ypILHj7GtGEFtEQE+i5+UVdogaEYl9L94xguyVELjF
-	LtHxbCMrxC4BiW+TD7FAvCIrsekA1BxJiYMrbrBMYBSbhWT1LCSrZyFZPQvJigWMLKsYRVML
-	kguKk9KLDPWKE3OLS/PS9ZLzczcxQuKxdwfj7QPWhxiTgdZPZJYSTc4HxnNeSbyhsZmRhamJ
-	qbGRuaUZacJK4rxqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhg7uuK1NU6dV30obvkp
-	8N+Mn2WBKmpB6doaP3byKVW1M363r3V0eLi5dnuTvv/Zq4U9dzXPJq8+NeWpM/vV9Y//f7Ly
-	2XDI7nJurkH460ML3B0/GBzRYptwumnrdYUDBa17U3XnXLD5J5zo8C//hm8Do9sb+3vPYzsP
-	nD27V3Z61deXOze/Md2lxFKckWioxVxUnAgAqlVzMd0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jQd08EeEgg2lHOC3+HZvCZPF4+T82
+	8ya5ALYoLpuU1JzMstQifbsEroz1D9ezFvzmqXj7fwlzA+MWri5GDg4JAROJk5/Nuxg5gUwx
+	iQv31rN1MXJxCAksY5S49O04M0TCRKL31jYWiMR0Rom9cz6zQzi/GCWWvnnLBlLFJqAm8eXL
+	YXaQqSICfhINK8BqmAX2MkrcaullAqkRFrCQaD16F6yeRUBV4teWDewgNq+ApcS6v3vZIGxB
+	iR+T77GA2MwCWhLrdx5ngrDlJTaveQt1kYLEjrOvGUFsEQE9icNLv0DViEjse/GOEaLmErvE
+	pN2GELsEJL5NPsQC8bGsxKYDUGMkJQ6uuMEygVFsFpLNs5BsnoVk8ywkGxYwsqxiFE0tSC4o
+	TkovMtErTswtLs1L10vOz93ECInJCTsY7x2wPsSYDLR+IrOUaHI+MKbzSuINjc2MLExNTI2N
+	zC3NSBNWEudVb7EOFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDIdIGhR+GlpGKmbWyVauLy
+	4pYH897qT/Mqm7trytyjEct2VM3YHd5ufObiJcHZ7TfXO+mq7FDylQn7ptf7v0HIbKMLv1ew
+	p13Agh/fnlolhBoL5Abn7co94Lj7wtTvMwyznaa9Uw8MbvW6sDF28YLe1DWMf/08nu0qO8jB
+	pXAyNdnpVPmE5idKLMUZiYZazEXFiQCay8yK3wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsVy+t9jQd0mEeEggzNPbCz+HZvCZPF4+T82
 	i6nL2lgtLi+8xGpx/+tRRovLu+awWZzuZnVg97jc18vkcXryfhaPO9f2sHnMOxno0bdlFaPH
 	501yAWxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6Z
-	OUCnKCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzFvbuZCv4zF6xcVMv
-	WwPjEbYuRg4OCQETiUmX8roYOYFMMYkL99YDhbk4hASmM0ocndTLBFIjJPCLUaKnBKSGTUBN
-	4suXw+wgYREBP4mGFewg5cwCexklbrWAlHNyCAt4S6xsPccOYrMIqErMn74TbAyvgKXE8rm6
-	IGFeAUGJH5PvsYDYzAJaEut3HmeCsOUlNq95ywxxjoLEjrOvGUFsEQE9iZ6XV9ghakQk9r14
-	xziBUWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER/szqR2M
-	KxssDjEKcDAq8fB2KgkFCbEmlhVX5h5ilOBgVhLhdfkPFOJNSaysSi3Kjy8qzUktPsSYDPTo
-	RGYp0eR8YCLKK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1oJBAemJJanZqakFqEcwWJg5OqQZG
-	8YTcDRIrdebb8HZl1RUv4biTtqOdl7V8X8CuWvlrsU91PZ7Py99crcp1T/mcoOiOfpWc+QWq
-	rVOuW83ayNSXZyH35q7a8swnzEtSLXfYaG55eefa5F0WB/PyBV+wh6x4+H/dc0P/zMY7uou2
-	MIYWXJt+MFbp7nl9hWZJ0bOqnscPXpD9rtisxFKckWioxVxUnAgAcNBzpToDAAA=
+	OUCnKCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz1j9cz1rwm6fi7f8l
+	zA2MW7i6GDk5JARMJHpvbWOBsMUkLtxbz9bFyMUhJDCdUWLvnM/sEM4vRomlb96ygVSxCahJ
+	fPlyGCjBwSEi4CfRsAKshllgL6PErZZeJpAaYQELidajd8HqWQRUJX5t2cAOYvMKWEqs+7uX
+	DcIWlPgx+R7YZmYBLYn1O48zQdjyEpvXvGWGuEhBYsfZ14wgtoiAnsThpV+gakQk9r14xziB
+	UWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER/0zqR2MKxss
+	DjEKcDAq8fB2KgkFCbEmlhVX5h5ilOBgVhLhdfkPFOJNSaysSi3Kjy8qzUktPsSYDPTpRGYp
+	0eR8YELKK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1oJBAemJJanZqakFqEcwWJg5OqQbGwFlJ
+	8hPPd75ur5Q0XPcjNtAo2vhak4qyzI489e5pXH4vb+kHsbwULopzlVxcUxap1bhZKV7Gcp1b
+	o+/smkyGVTkBZ1MvLf341SW6MulRuKn+z5+Xp0zxKC+b/DEn5M9y9XQmTeW+OdY6W7s6FfPf
+	f5yeH87MpSlz4UQqs6KVfqz5Feer3UosxRmJhlrMRcWJABq1ACM+AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,36 +56,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver core clears the driver data to NULL after device_release
-or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-(device-core: Ensure drvdata = NULL when no driver is bound).
-Thus, it is not needed to manually clear the device driver data to NULL.
+Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/pm8921-core.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/mfd/pm8921-core.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
-index bd4b37c..9a7c991 100644
+index 9a7c991..a6841f7 100644
 --- a/drivers/mfd/pm8921-core.c
 +++ b/drivers/mfd/pm8921-core.c
-@@ -160,7 +160,6 @@ static int pm8921_probe(struct platform_device *pdev)
+@@ -118,7 +118,7 @@ static int pm8921_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	pmic = kzalloc(sizeof(struct pm8921), GFP_KERNEL);
++	pmic = devm_kzalloc(&pdev->dev, sizeof(struct pm8921), GFP_KERNEL);
+ 	if (!pmic) {
+ 		pr_err("Cannot alloc pm8921 struct\n");
+ 		return -ENOMEM;
+@@ -128,7 +128,7 @@ static int pm8921_probe(struct platform_device *pdev)
+ 	rc = ssbi_read(pdev->dev.parent, REG_HWREV, &val, sizeof(val));
+ 	if (rc) {
+ 		pr_err("Failed to read hw rev reg %d:rc=%d\n", REG_HWREV, rc);
+-		goto err_read_rev;
++		return rc;
+ 	}
+ 	pr_info("PMIC revision 1: %02X\n", val);
+ 	rev = val;
+@@ -138,7 +138,7 @@ static int pm8921_probe(struct platform_device *pdev)
+ 	if (rc) {
+ 		pr_err("Failed to read hw rev 2 reg %d:rc=%d\n",
+ 			REG_HWREV_2, rc);
+-		goto err_read_rev;
++		return rc;
+ 	}
+ 	pr_info("PMIC revision 2: %02X\n", val);
+ 	rev |= val << BITS_PER_BYTE;
+@@ -160,8 +160,6 @@ static int pm8921_probe(struct platform_device *pdev)
  
  err:
  	mfd_remove_devices(pmic->dev);
--	platform_set_drvdata(pdev, NULL);
- err_read_rev:
- 	kfree(pmic);
+-err_read_rev:
+-	kfree(pmic);
  	return rc;
-@@ -180,7 +179,6 @@ static int pm8921_remove(struct platform_device *pdev)
+ }
+ 
+@@ -179,7 +177,6 @@ static int pm8921_remove(struct platform_device *pdev)
  		pm8xxx_irq_exit(pmic->irq_chip);
  		pmic->irq_chip = NULL;
  	}
--	platform_set_drvdata(pdev, NULL);
- 	kfree(pmic);
+-	kfree(pmic);
  
  	return 0;
+ }
 -- 
 1.7.10.4
 
