@@ -1,135 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab3HTIs6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:48:58 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:64195 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab3HTIs4 (ORCPT
+	id S1751486Ab3HTIzK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:55:10 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:18643
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751322Ab3HTIzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:48:56 -0400
-Message-ID: <52132D6C.2080606@gmail.com>
-Date: Tue, 20 Aug 2013 10:48:44 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Tue, 20 Aug 2013 04:55:08 -0400
+X-Greylist: delayed 982 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Aug 2013 04:55:08 EDT
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zzbb2dIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Liu Ying <Ying.Liu@freescale.com>
+To: <kernel@pengutronix.de>
+CC: <gregkh@linuxfoundation.org>, <shawn.guo@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>
+Subject: [PATCH 3/3] staging: drm/imx: ldb: correct the ldb di clock trees
+Date: Tue, 20 Aug 2013 16:38:52 +0800
+Message-ID: <1376987932-5540-4-git-send-email-Ying.Liu@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1376987932-5540-1-git-send-email-Ying.Liu@freescale.com>
+References: <1376987932-5540-1-git-send-email-Ying.Liu@freescale.com>
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 06/17] ARM: imx: remove custom .init_time hook
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376964271-22715-7-git-send-email-sebastian.hesselbarth@gmail.com> <20130820072642.GJ31036@pengutronix.de>
-In-Reply-To: <20130820072642.GJ31036@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 09:26 AM, Sascha Hauer wrote:
-> On Tue, Aug 20, 2013 at 04:04:20AM +0200, Sebastian Hesselbarth wrote:
->> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
->> remove custom .init_time hooks.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> ---
->> Notes:
->> - Although mx5_clocks_common_init() is shared with non-DT, removing
->>    of_clk_init(NULL) should be fine, as it only registers DT clk providers.
->> - For imx6q, printing of silicon revision has been moved from .init_time
->>    to .init_machine hook.
->>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: Sascha Hauer <kernel@pengutronix.de>
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>   arch/arm/mach-imx/clk-imx51-imx53.c |   12 ------------
->>   arch/arm/mach-imx/common.h          |    2 --
->>   arch/arm/mach-imx/imx51-dt.c        |    6 ------
->>   arch/arm/mach-imx/mach-imx53.c      |    6 ------
->>   arch/arm/mach-imx/mach-imx6q.c      |   14 +++-----------
->>   arch/arm/mach-imx/mach-imx6sl.c     |    7 -------
->>   arch/arm/mach-imx/mach-vf610.c      |    9 ---------
->>   7 files changed, 3 insertions(+), 53 deletions(-)
->>
->> diff --git a/arch/arm/mach-imx/clk-imx51-imx53.c b/arch/arm/mach-imx/clk-imx51-imx53.c
->> index 1a56a33..5955a54 100644
->> --- a/arch/arm/mach-imx/clk-imx51-imx53.c
->> +++ b/arch/arm/mach-imx/clk-imx51-imx53.c
->> @@ -131,8 +131,6 @@ static void __init mx5_clocks_common_init(unsigned long rate_ckil,
->>   {
->>   	int i;
->>
->> -	of_clk_init(NULL);
->> -
->>   	clk[dummy] = imx_clk_fixed("dummy", 0);
->>   	clk[ckil] = imx_obtain_fixed_clock("ckil", rate_ckil);
->>   	clk[osc] = imx_obtain_fixed_clock("osc", rate_osc);
->> @@ -569,13 +567,3 @@ int __init mx53_clocks_init(unsigned long rate_ckil, unsigned long rate_osc,
->>
->>   	return 0;
->>   }
->> -
->> -int __init mx51_clocks_init_dt(void)
->> -{
->> -	return mx51_clocks_init(0, 0, 0, 0);
->> -}
->> -
->> -int __init mx53_clocks_init_dt(void)
->> -{
->> -	return mx53_clocks_init(0, 0, 0, 0);
->> -}
->> diff --git a/arch/arm/mach-imx/common.h b/arch/arm/mach-imx/common.h
->> index 4517fd7..0ce8313 100644
->> --- a/arch/arm/mach-imx/common.h
->> +++ b/arch/arm/mach-imx/common.h
->> @@ -68,8 +68,6 @@ extern int mx53_clocks_init(unsigned long ckil, unsigned long osc,
->>   extern int mx25_clocks_init_dt(void);
->>   extern int mx27_clocks_init_dt(void);
->>   extern int mx31_clocks_init_dt(void);
->> -extern int mx51_clocks_init_dt(void);
->> -extern int mx53_clocks_init_dt(void);
->>   extern struct platform_device *mxc_register_gpio(char *name, int id,
->>   	resource_size_t iobase, resource_size_t iosize, int irq, int irq_high);
->>   extern void mxc_set_cpu_type(unsigned int type);
->> diff --git a/arch/arm/mach-imx/imx51-dt.c b/arch/arm/mach-imx/imx51-dt.c
->> index 53e43e5..bece8a6 100644
->> --- a/arch/arm/mach-imx/imx51-dt.c
->> +++ b/arch/arm/mach-imx/imx51-dt.c
->> @@ -34,17 +34,11 @@ static const char *imx51_dt_board_compat[] __initdata = {
->>   	NULL
->>   };
->>
->> -static void __init imx51_timer_init(void)
->> -{
->> -	mx51_clocks_init_dt();
->> -}
->> -
->>   DT_MACHINE_START(IMX51_DT, "Freescale i.MX51 (Device Tree Support)")
->>   	.map_io		= mx51_map_io,
->>   	.init_early	= imx51_init_early,
->>   	.init_irq	= mx51_init_irq,
->>   	.handle_irq	= imx51_handle_irq,
->> -	.init_time	= imx51_timer_init,
->
-> On i.MX5 the init_time hook calls mx5x_clocks_init_dt which calls
-> mx5x_clocks_init which not only calls of_clk_init() but also registers
-> all clocks in the system. You can't remove it.
->
-> I am missing some
->
-> CLK_OF_DECLARE(imx51, "fsl,imx51-ccm", imx51_clocks_init);
-> CLK_OF_DECLARE(imx53, "fsl,imx53-ccm", imx53_clocks_init);
->
-> Somewhere.
+In ldb split mode, the ldb_di[0/1]_ipu_div dividers should
+be configured as clock dividers of 1/3.5, while in others
+ldb modes of 1/7. This patch gets the di[0/1]_div_3_5,
+di[0/1]_div_7 and di[0/1]_div_sel clocks and sets the
+di[0/1]_div_3_5 or di[0/1]_div_7 clocks to be the parents of
+di[0/1]_div_sel clocks according to the ldb mode. The real
+dividers are the two fixed factors bewteen the ldb_di[0/1] and
+the pll clocks, so it's unnecessary to set the frequency for
+the ldb_di[0/1] clocks again after pll clock frequency is set.
+This patch removes the redundant clock frequency setting code
+as well.
 
-Sascha,
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+---
+ drivers/staging/imx-drm/imx-ldb.c |   38 +++++++++++++++++++++++++++++--------
+ 1 file changed, 30 insertions(+), 8 deletions(-)
 
-you are right, I forgot to add the two lines above as replacement for
-the now removed direct call. If the general approach is accepted, I'll
-add them for sure.
+diff --git a/drivers/staging/imx-drm/imx-ldb.c b/drivers/staging/imx-drm/imx-ldb.c
+index 8af7f3b..7c553b8 100644
+--- a/drivers/staging/imx-drm/imx-ldb.c
++++ b/drivers/staging/imx-drm/imx-ldb.c
+@@ -81,6 +81,9 @@ struct imx_ldb {
+ 	struct clk *clk[2]; /* our own clock */
+ 	struct clk *clk_sel[4]; /* parent of display clock */
+ 	struct clk *clk_pll[2]; /* upstream clock we can adjust */
++	struct clk *clk_div_3_5[2]; /* fixed factor of 1/3.5 */
++	struct clk *clk_div_7[2]; /* fixed factor of 1/7 */
++	struct clk *clk_div_sel[2]; /* 1/3.5 or 1/7 */
+ 	u32 ldb_ctrl;
+ 	const struct bus_mux *lvds_mux;
+ };
+@@ -150,6 +153,18 @@ static void imx_ldb_set_clock(struct imx_ldb *ldb, int mux, int chno,
+ {
+ 	int ret;
+ 
++	if (ldb->ldb_ctrl & LDB_SPLIT_MODE_EN) {
++		ret = clk_set_parent(ldb->clk_div_sel[chno], ldb->clk_div_3_5[chno]);
++		if (ret)
++			dev_err(ldb->dev, "unable to set di%d_div_sel parent clock "
++				"to di%d_div_3_5\n", chno, chno);
++	} else {
++		ret = clk_set_parent(ldb->clk_div_sel[chno], ldb->clk_div_7[chno]);
++		if (ret)
++			dev_err(ldb->dev, "unable to set di%d_div_sel parent clock "
++				"to di%d_div_7\n", chno, chno);
++	}
++
+ 	dev_dbg(ldb->dev, "%s: now: %ld want: %ld\n", __func__,
+ 			clk_get_rate(ldb->clk_pll[chno]), serial_clk);
+ 	clk_set_rate(ldb->clk_pll[chno], serial_clk);
+@@ -157,14 +172,6 @@ static void imx_ldb_set_clock(struct imx_ldb *ldb, int mux, int chno,
+ 	dev_dbg(ldb->dev, "%s after: %ld\n", __func__,
+ 			clk_get_rate(ldb->clk_pll[chno]));
+ 
+-	dev_dbg(ldb->dev, "%s: now: %ld want: %ld\n", __func__,
+-			clk_get_rate(ldb->clk[chno]),
+-			(long int)di_clk);
+-	clk_set_rate(ldb->clk[chno], di_clk);
+-
+-	dev_dbg(ldb->dev, "%s after: %ld\n", __func__,
+-			clk_get_rate(ldb->clk[chno]));
+-
+ 	/* set display clock mux to LDB input clock */
+ 	ret = clk_set_parent(ldb->clk_sel[mux], ldb->clk[chno]);
+ 	if (ret) {
+@@ -362,6 +369,21 @@ static int imx_ldb_get_clk(struct imx_ldb *ldb, int chno)
+ 	if (IS_ERR(ldb->clk_pll[chno]))
+ 		return PTR_ERR(ldb->clk_pll[chno]);
+ 
++	sprintf(clkname, "di%d_div_3_5", chno);
++	ldb->clk_div_3_5[chno] = devm_clk_get(ldb->dev, clkname);
++	if (IS_ERR(ldb->clk_div_3_5[chno]))
++		return PTR_ERR(ldb->clk_div_3_5[chno]);
++
++	sprintf(clkname, "di%d_div_7", chno);
++	ldb->clk_div_7[chno] = devm_clk_get(ldb->dev, clkname);
++	if (IS_ERR(ldb->clk_div_7[chno]))
++		return PTR_ERR(ldb->clk_div_7[chno]);
++
++	sprintf(clkname, "di%d_div_sel", chno);
++	ldb->clk_div_sel[chno] = devm_clk_get(ldb->dev, clkname);
++	if (IS_ERR(ldb->clk_div_sel[chno]))
++		return PTR_ERR(ldb->clk_div_sel[chno]);
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
 
-Do imx51/imx53 still boot with CLK_OF_DECLARE added?
-
-Sebastian
 
