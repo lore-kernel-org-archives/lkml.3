@@ -1,130 +1,445 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574Ab3HTPzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 11:55:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34574 "EHLO
+	id S1751749Ab3HTP4B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 11:56:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab3HTPzp (ORCPT
+	with ESMTP id S1751602Ab3HTPz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 11:55:45 -0400
-Date: Tue, 20 Aug 2013 08:57:35 -0700
+	Tue, 20 Aug 2013 11:55:59 -0400
+Date: Tue, 20 Aug 2013 08:57:49 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.0.92
-Message-ID: <20130820155735.GA2805@kroah.com>
+Subject: Re: Linux 3.0.92
+Message-ID: <20130820155749.GB2805@kroah.com>
+References: <20130820155735.GA2805@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130820155735.GA2805@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-I'm announcing the release of the 3.0.92 kernel.
-
-All users of the 3.0 kernel series must upgrade.
-
-The updated 3.0.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                   |    2 +-
- arch/arm/include/asm/hardware/cache-l2x0.h |    9 +++++++--
- arch/arm/mm/cache-l2x0.c                   |   21 +++++++++++++++++++++
- arch/cris/kernel/vmlinux.lds.S             |    1 +
- arch/m68k/emu/natfeat.c                    |   23 +++++++++++++++++++----
- arch/m68k/include/asm/div64.h              |    9 +++++----
- arch/powerpc/Makefile                      |    2 +-
- arch/sparc/lib/Makefile                    |    2 +-
- arch/sparc/lib/ucmpdi2.c                   |   19 +++++++++++++++++++
- drivers/usb/core/quirks.c                  |    6 ++++++
- drivers/usb/serial/mos7720.c               |   21 ++++++++++++++-------
- include/linux/hugetlb.h                    |   16 ++++++++++++++++
- kernel/futex.c                             |    3 ++-
- mm/hugetlb.c                               |   17 +++++++++++++++++
- mm/nommu.c                                 |   10 ++++++++++
- net/key/af_key.c                           |    1 +
- net/netlink/genetlink.c                    |    7 +++++++
- 17 files changed, 148 insertions(+), 21 deletions(-)
-
-Andreas Schwab (1):
-      m68k: Truncate base in do_div()
-
-Anton Blanchard (1):
-      powerpc: Use -mtraceback=no
-
-David S. Miller (1):
-      sparc32: Add ucmpdi2.o to obj-y instead of lib-y.
-
-Geert Uytterhoeven (1):
-      m68k/atari: ARAnyM - Fix NatFeat module support
-
-Greg Kroah-Hartman (1):
-      Linux 3.0.92
-
-Jesper Nilsson (1):
-      CRIS: Add _sdata to vmlinux.lds.S
-
-Johan Hovold (1):
-      USB: mos7720: fix broken control requests
-
-Johannes Berg (1):
-      genetlink: fix family dump race
-
-Linus Torvalds (1):
-      vm: add no-mmu vm_iomap_memory() stub
-
-Linus Walleij (1):
-      ARM: 7080/1: l2x0: make sure I&D are not locked down on init
-
-Nicolas Dichtel (1):
-      af_key: initialize satype in key_notify_policy_flush()
-
-Oliver Neukum (1):
-      usb: add two quirky touchscreen
-
-Sam Ravnborg (1):
-      sparc32: add ucmpdi2
-
-Zhang Yi (1):
-      futex: Take hugepages into account when generating futex_key
-
-
---sdtB3X0nJg68CQEu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSE5HvAAoJEDjbvchgkmk+SsUQAJhsqu37FMUExNcFx3J+1qqk
-ACu5veHr9wft7Qhb0V615C1kUfeMwiV1vSMlgEIApJjVfB7KGFQFZwSu28P7UPkd
-WAYqrquqI7LDoCwHyE14viNwfydCekZ7ToAgUBTIYyMZLRm2MaAe9JpEy6Zixrhz
-YZf1kuraAXETBzIQIXyaz3Lh0rxNT6d3AFxd8KHcTsbyABcGCp2ZqvahLfgzohiR
-0ry9KBtgONyu0N/n5UxkMYsJOQ1wduJUpXXoUf9bHFB0iJhqXKPuSiXmWagEp74/
-K3/Vs1u9fibYgwkdNfMAoIGxBPgA3uNiY80J0olgoRFtYu8IpvptMpuuefkgONA3
-BcYfVgStEqgK/qGvfSdCkJo9A/j4m91XB8+K240ZropWzByhNi5S8NE4ywUnzUFD
-+dVhnB/uOcDelPvu0rl6P8zwtHzYI9oSj5gmw/5g03QHzAMXY06BHhd708n6jCZC
-exWBMZk8yxTdqojcAxRLYCea44udG5DlSKMFEutNzvbillKyp9S0ooa0zJWWQezv
-U9kX2OiZWqNO/wSXZLHYK2VWIFESWsgZ/ty31mKN0W5J3Xx/F2jDIu/Xavtvdmec
-LGv+mWnaWOjmmV4+gkdf3qDMi9HFyZqkwhLjv4Ov7blwOc90qKeOWZQIXcbVgBoy
-pMmPaOXwHDgEOmhZkI64
-=BlOC
------END PGP SIGNATURE-----
-
---sdtB3X0nJg68CQEu--
+diff --git a/Makefile b/Makefile
+index ab2f30a..a846aa8 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 0
+-SUBLEVEL = 91
++SUBLEVEL = 92
+ EXTRAVERSION =
+ NAME = Sneaky Weasel
+ 
+diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h b/arch/arm/include/asm/hardware/cache-l2x0.h
+index bfa706f..99a6ed7 100644
+--- a/arch/arm/include/asm/hardware/cache-l2x0.h
++++ b/arch/arm/include/asm/hardware/cache-l2x0.h
+@@ -45,8 +45,13 @@
+ #define L2X0_CLEAN_INV_LINE_PA		0x7F0
+ #define L2X0_CLEAN_INV_LINE_IDX		0x7F8
+ #define L2X0_CLEAN_INV_WAY		0x7FC
+-#define L2X0_LOCKDOWN_WAY_D		0x900
+-#define L2X0_LOCKDOWN_WAY_I		0x904
++/*
++ * The lockdown registers repeat 8 times for L310, the L210 has only one
++ * D and one I lockdown register at 0x0900 and 0x0904.
++ */
++#define L2X0_LOCKDOWN_WAY_D_BASE	0x900
++#define L2X0_LOCKDOWN_WAY_I_BASE	0x904
++#define L2X0_LOCKDOWN_STRIDE		0x08
+ #define L2X0_TEST_OPERATION		0xF00
+ #define L2X0_LINE_DATA			0xF10
+ #define L2X0_LINE_TAG			0xF30
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index 44c0867..9ecfdb5 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -277,6 +277,25 @@ static void l2x0_disable(void)
+ 	spin_unlock_irqrestore(&l2x0_lock, flags);
+ }
+ 
++static void __init l2x0_unlock(__u32 cache_id)
++{
++	int lockregs;
++	int i;
++
++	if (cache_id == L2X0_CACHE_ID_PART_L310)
++		lockregs = 8;
++	else
++		/* L210 and unknown types */
++		lockregs = 1;
++
++	for (i = 0; i < lockregs; i++) {
++		writel_relaxed(0x0, l2x0_base + L2X0_LOCKDOWN_WAY_D_BASE +
++			       i * L2X0_LOCKDOWN_STRIDE);
++		writel_relaxed(0x0, l2x0_base + L2X0_LOCKDOWN_WAY_I_BASE +
++			       i * L2X0_LOCKDOWN_STRIDE);
++	}
++}
++
+ void __init l2x0_init(void __iomem *base, __u32 aux_val, __u32 aux_mask)
+ {
+ 	__u32 aux;
+@@ -328,6 +347,8 @@ void __init l2x0_init(void __iomem *base, __u32 aux_val, __u32 aux_mask)
+ 	 * accessing the below registers will fault.
+ 	 */
+ 	if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & 1)) {
++		/* Make sure that I&D is not locked down when starting */
++		l2x0_unlock(cache_id);
+ 
+ 		/* l2x0 controller is disabled */
+ 		writel_relaxed(aux, l2x0_base + L2X0_AUX_CTRL);
+diff --git a/arch/cris/kernel/vmlinux.lds.S b/arch/cris/kernel/vmlinux.lds.S
+index a6990cb..a68b983 100644
+--- a/arch/cris/kernel/vmlinux.lds.S
++++ b/arch/cris/kernel/vmlinux.lds.S
+@@ -52,6 +52,7 @@ SECTIONS
+ 
+ 	EXCEPTION_TABLE(4)
+ 
++	_sdata = .;
+ 	RODATA
+ 
+ 	. = ALIGN (4);
+diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
+index 2291a7d..fa277ae 100644
+--- a/arch/m68k/emu/natfeat.c
++++ b/arch/m68k/emu/natfeat.c
+@@ -18,9 +18,11 @@
+ #include <asm/machdep.h>
+ #include <asm/natfeat.h>
+ 
++extern long nf_get_id2(const char *feature_name);
++
+ asm("\n"
+-"	.global nf_get_id,nf_call\n"
+-"nf_get_id:\n"
++"	.global nf_get_id2,nf_call\n"
++"nf_get_id2:\n"
+ "	.short	0x7300\n"
+ "	rts\n"
+ "nf_call:\n"
+@@ -29,12 +31,25 @@ asm("\n"
+ "1:	moveq.l	#0,%d0\n"
+ "	rts\n"
+ "	.section __ex_table,\"a\"\n"
+-"	.long	nf_get_id,1b\n"
++"	.long	nf_get_id2,1b\n"
+ "	.long	nf_call,1b\n"
+ "	.previous");
+-EXPORT_SYMBOL_GPL(nf_get_id);
+ EXPORT_SYMBOL_GPL(nf_call);
+ 
++long nf_get_id(const char *feature_name)
++{
++	/* feature_name may be in vmalloc()ed memory, so make a copy */
++	char name_copy[32];
++	size_t n;
++
++	n = strlcpy(name_copy, feature_name, sizeof(name_copy));
++	if (n >= sizeof(name_copy))
++		return 0;
++
++	return nf_get_id2(name_copy);
++}
++EXPORT_SYMBOL_GPL(nf_get_id);
++
+ void nfprint(const char *fmt, ...)
+ {
+ 	static char buf[256];
+diff --git a/arch/m68k/include/asm/div64.h b/arch/m68k/include/asm/div64.h
+index edb6614..7558032 100644
+--- a/arch/m68k/include/asm/div64.h
++++ b/arch/m68k/include/asm/div64.h
+@@ -13,16 +13,17 @@
+ 		unsigned long long n64;				\
+ 	} __n;							\
+ 	unsigned long __rem, __upper;				\
++	unsigned long __base = (base);				\
+ 								\
+ 	__n.n64 = (n);						\
+ 	if ((__upper = __n.n32[0])) {				\
+ 		asm ("divul.l %2,%1:%0"				\
+-			: "=d" (__n.n32[0]), "=d" (__upper)	\
+-			: "d" (base), "0" (__n.n32[0]));	\
++		     : "=d" (__n.n32[0]), "=d" (__upper)	\
++		     : "d" (__base), "0" (__n.n32[0]));		\
+ 	}							\
+ 	asm ("divu.l %2,%1:%0"					\
+-		: "=d" (__n.n32[1]), "=d" (__rem)		\
+-		: "d" (base), "1" (__upper), "0" (__n.n32[1]));	\
++	     : "=d" (__n.n32[1]), "=d" (__rem)			\
++	     : "d" (__base), "1" (__upper), "0" (__n.n32[1]));	\
+ 	(n) = __n.n64;						\
+ 	__rem;							\
+ })
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index b7212b6..f1b5251 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -67,7 +67,7 @@ LDFLAGS_vmlinux-yy := -Bstatic
+ LDFLAGS_vmlinux-$(CONFIG_PPC64)$(CONFIG_RELOCATABLE) := -pie
+ LDFLAGS_vmlinux	:= $(LDFLAGS_vmlinux-yy)
+ 
+-CFLAGS-$(CONFIG_PPC64)	:= -mminimal-toc -mtraceback=none  -mcall-aixdesc
++CFLAGS-$(CONFIG_PPC64)	:= -mminimal-toc -mtraceback=no -mcall-aixdesc
+ CFLAGS-$(CONFIG_PPC32)	:= -ffixed-r2 -mmultiple
+ KBUILD_CPPFLAGS	+= -Iarch/$(ARCH)
+ KBUILD_AFLAGS	+= -Iarch/$(ARCH)
+diff --git a/arch/sparc/lib/Makefile b/arch/sparc/lib/Makefile
+index a3fc437..4961516 100644
+--- a/arch/sparc/lib/Makefile
++++ b/arch/sparc/lib/Makefile
+@@ -40,7 +40,7 @@ lib-$(CONFIG_SPARC64) += copy_in_user.o user_fixup.o memmove.o
+ lib-$(CONFIG_SPARC64) += mcount.o ipcsum.o xor.o hweight.o ffs.o
+ 
+ obj-y                 += iomap.o
+-obj-$(CONFIG_SPARC32) += atomic32.o
++obj-$(CONFIG_SPARC32) += atomic32.o ucmpdi2.o
+ obj-y                 += ksyms.o
+ obj-$(CONFIG_SPARC64) += PeeCeeI.o
+ obj-y                 += usercopy.o
+diff --git a/arch/sparc/lib/ucmpdi2.c b/arch/sparc/lib/ucmpdi2.c
+new file mode 100644
+index 0000000..1e06ed5
+--- /dev/null
++++ b/arch/sparc/lib/ucmpdi2.c
+@@ -0,0 +1,19 @@
++#include <linux/module.h>
++#include "libgcc.h"
++
++word_type __ucmpdi2(unsigned long long a, unsigned long long b)
++{
++	const DWunion au = {.ll = a};
++	const DWunion bu = {.ll = b};
++
++	if ((unsigned int) au.s.high < (unsigned int) bu.s.high)
++		return 0;
++	else if ((unsigned int) au.s.high > (unsigned int) bu.s.high)
++		return 2;
++	if ((unsigned int) au.s.low < (unsigned int) bu.s.low)
++		return 0;
++	else if ((unsigned int) au.s.low > (unsigned int) bu.s.low)
++		return 2;
++	return 1;
++}
++EXPORT_SYMBOL(__ucmpdi2);
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index f88ad63..8659cd9 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -100,6 +100,12 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	{ USB_DEVICE(0x04d8, 0x000c), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
+ 
++	/* CarrolTouch 4000U */
++	{ USB_DEVICE(0x04e7, 0x0009), .driver_info = USB_QUIRK_RESET_RESUME },
++
++	/* CarrolTouch 4500U */
++	{ USB_DEVICE(0x04e7, 0x0030), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Samsung Android phone modem - ID conflict with SPH-I500 */
+ 	{ USB_DEVICE(0x04e8, 0x6601), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
+diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
+index 703d1fa..267dff9 100644
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -97,6 +97,7 @@ struct urbtracker {
+ 	struct list_head        urblist_entry;
+ 	struct kref             ref_count;
+ 	struct urb              *urb;
++	struct usb_ctrlrequest	*setup;
+ };
+ 
+ enum mos7715_pp_modes {
+@@ -279,6 +280,7 @@ static void destroy_urbtracker(struct kref *kref)
+ 	struct mos7715_parport *mos_parport = urbtrack->mos_parport;
+ 	dbg("%s called", __func__);
+ 	usb_free_urb(urbtrack->urb);
++	kfree(urbtrack->setup);
+ 	kfree(urbtrack);
+ 	kref_put(&mos_parport->ref_count, destroy_mos_parport);
+ }
+@@ -363,7 +365,6 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
+ 	struct urbtracker *urbtrack;
+ 	int ret_val;
+ 	unsigned long flags;
+-	struct usb_ctrlrequest setup;
+ 	struct usb_serial *serial = mos_parport->serial;
+ 	struct usb_device *usbdev = serial->dev;
+ 	dbg("%s called", __func__);
+@@ -382,14 +383,20 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
+ 		kfree(urbtrack);
+ 		return -ENOMEM;
+ 	}
+-	setup.bRequestType = (__u8)0x40;
+-	setup.bRequest = (__u8)0x0e;
+-	setup.wValue = get_reg_value(reg, dummy);
+-	setup.wIndex = get_reg_index(reg);
+-	setup.wLength = 0;
++	urbtrack->setup = kmalloc(sizeof(*urbtrack->setup), GFP_KERNEL);
++	if (!urbtrack->setup) {
++		usb_free_urb(urbtrack->urb);
++		kfree(urbtrack);
++		return -ENOMEM;
++	}
++	urbtrack->setup->bRequestType = (__u8)0x40;
++	urbtrack->setup->bRequest = (__u8)0x0e;
++	urbtrack->setup->wValue = get_reg_value(reg, dummy);
++	urbtrack->setup->wIndex = get_reg_index(reg);
++	urbtrack->setup->wLength = 0;
+ 	usb_fill_control_urb(urbtrack->urb, usbdev,
+ 			     usb_sndctrlpipe(usbdev, 0),
+-			     (unsigned char *)&setup,
++			     (unsigned char *)urbtrack->setup,
+ 			     NULL, 0, async_complete, urbtrack);
+ 	kref_init(&urbtrack->ref_count);
+ 	INIT_LIST_HEAD(&urbtrack->urblist_entry);
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 59225ef..db70f1b 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -313,6 +313,17 @@ static inline unsigned hstate_index_to_shift(unsigned index)
+ 	return hstates[index].order + PAGE_SHIFT;
+ }
+ 
++pgoff_t __basepage_index(struct page *page);
++
++/* Return page->index in PAGE_SIZE units */
++static inline pgoff_t basepage_index(struct page *page)
++{
++	if (!PageCompound(page))
++		return page->index;
++
++	return __basepage_index(page);
++}
++
+ #else
+ struct hstate {};
+ #define alloc_huge_page_node(h, nid) NULL
+@@ -331,6 +342,11 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
+ 	return 1;
+ }
+ #define hstate_index_to_shift(index) 0
++
++static inline pgoff_t basepage_index(struct page *page)
++{
++	return page->index;
++}
+ #endif
+ 
+ #endif /* _LINUX_HUGETLB_H */
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 91691e9..5c305c0 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -60,6 +60,7 @@
+ #include <linux/pid.h>
+ #include <linux/nsproxy.h>
+ #include <linux/ptrace.h>
++#include <linux/hugetlb.h>
+ 
+ #include <asm/futex.h>
+ 
+@@ -363,7 +364,7 @@ again:
+ 	} else {
+ 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
+ 		key->shared.inode = page_head->mapping->host;
+-		key->shared.pgoff = page_head->index;
++		key->shared.pgoff = basepage_index(page);
+ 	}
+ 
+ 	get_futex_key_refs(key);
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index a3498eb..6fdad25 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -602,6 +602,23 @@ int PageHuge(struct page *page)
+ 
+ EXPORT_SYMBOL_GPL(PageHuge);
+ 
++pgoff_t __basepage_index(struct page *page)
++{
++	struct page *page_head = compound_head(page);
++	pgoff_t index = page_index(page_head);
++	unsigned long compound_idx;
++
++	if (!PageHuge(page_head))
++		return page_index(page);
++
++	if (compound_order(page_head) >= MAX_ORDER)
++		compound_idx = page_to_pfn(page) - page_to_pfn(page_head);
++	else
++		compound_idx = page - page_head;
++
++	return (index << compound_order(page_head)) + compound_idx;
++}
++
+ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+ {
+ 	struct page *page;
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 1692fef..9242924 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1826,6 +1826,16 @@ int remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
+ }
+ EXPORT_SYMBOL(remap_pfn_range);
+ 
++int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
++{
++	unsigned long pfn = start >> PAGE_SHIFT;
++	unsigned long vm_len = vma->vm_end - vma->vm_start;
++
++	pfn += vma->vm_pgoff;
++	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
++}
++EXPORT_SYMBOL(vm_iomap_memory);
++
+ int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
+ 			unsigned long pgoff)
+ {
+diff --git a/net/key/af_key.c b/net/key/af_key.c
+index d040880..020a602 100644
+--- a/net/key/af_key.c
++++ b/net/key/af_key.c
+@@ -2687,6 +2687,7 @@ static int key_notify_policy_flush(const struct km_event *c)
+ 	hdr->sadb_msg_pid = c->pid;
+ 	hdr->sadb_msg_version = PF_KEY_V2;
+ 	hdr->sadb_msg_errno = (uint8_t) 0;
++	hdr->sadb_msg_satype = SADB_SATYPE_UNSPEC;
+ 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
+ 	hdr->sadb_msg_reserved = 0;
+ 	pfkey_broadcast(skb_out, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
+diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
+index 874f8ff..409dd40 100644
+--- a/net/netlink/genetlink.c
++++ b/net/netlink/genetlink.c
+@@ -700,6 +700,10 @@ static int ctrl_dumpfamily(struct sk_buff *skb, struct netlink_callback *cb)
+ 	struct net *net = sock_net(skb->sk);
+ 	int chains_to_skip = cb->args[0];
+ 	int fams_to_skip = cb->args[1];
++	bool need_locking = chains_to_skip || fams_to_skip;
++
++	if (need_locking)
++		genl_lock();
+ 
+ 	for (i = chains_to_skip; i < GENL_FAM_TAB_SIZE; i++) {
+ 		n = 0;
+@@ -721,6 +725,9 @@ errout:
+ 	cb->args[0] = i;
+ 	cb->args[1] = n;
+ 
++	if (need_locking)
++		genl_unlock();
++
+ 	return skb->len;
+ }
+ 
