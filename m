@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab3HTQQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:16:57 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:57321 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3HTQQz (ORCPT
+	id S1751855Ab3HTQRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:17:19 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:37071 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab3HTQRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:16:55 -0400
-Subject: [PATCH v3 trivial 4/7] Docs: Kconfig: `devlopers' -> `developers'
-Date: Tue, 20 Aug 2013 16:05:19 -0000
+	Tue, 20 Aug 2013 12:17:17 -0400
+Subject: [PATCH v3 trivial 5/7] DRM: comment: `halve' -> `half'
+Date: Tue, 20 Aug 2013 16:05:22 -0000
 From: Michael Witten <mfwitten@gmail.com>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: Rob Landley <rob@landley.net>, Randy Dunlap <rdunlap@infradead.org>,
         David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
-Message-ID: <f56c06463b6d42f9bb8642c89bafb32b-mfwitten@gmail.com>
+Message-ID: <ccc8dbd1e55946f5ad1ddaa36256f58b-mfwitten@gmail.com>
 In-Reply-To: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com>
 References: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Date: Wed, 14 Aug 2013 09:59:45 +0000
+Date: Thu, 15 Sep 2011 21:07:26 +0000
 
 Signed-off-by: Michael Witten <mfwitten@gmail.com>
 ---
- fs/btrfs/Kconfig | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/drm_irq.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/btrfs/Kconfig b/fs/btrfs/Kconfig
-index 2b3b832..e374bf9 100644
---- a/fs/btrfs/Kconfig
-+++ b/fs/btrfs/Kconfig
-@@ -59,7 +59,8 @@ config BTRFS_FS_RUN_SANITY_TESTS
- 	help
- 	  This will run some basic sanity tests on the free space cache
- 	  code to make sure it is acting as it should.  These are mostly
--	  regression tests and are only really interesting to btrfs devlopers.
-+	  regression tests and are only really interesting to btrfs
-+	  developers.
+diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+index f92da0a..062dc22 100644
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -497,8 +497,8 @@ void drm_calc_timestamping_constants(struct drm_crtc *crtc)
+ 	/* Dot clock in Hz: */
+ 	dotclock = (u64) crtc->hwmode.clock * 1000;
  
- 	  If unsure, say N.
- 
+-	/* Fields of interlaced scanout modes are only halve a frame duration.
++	/* Fields of interlaced scanout modes are only half a frame duration.
+-	 * Double the dotclock to get halve the frame-/line-/pixelduration.
++	 * Double the dotclock to get half the frame-/line-/pixelduration.
+ 	 */
+ 	if (crtc->hwmode.flags & DRM_MODE_FLAG_INTERLACE)
+ 		dotclock *= 2;
 -- 
 1.7.11.2.252.gc4a64c8
 
