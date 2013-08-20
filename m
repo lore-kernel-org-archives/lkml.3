@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab3HTNiH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 09:38:07 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64201 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751001Ab3HTNiE (ORCPT
+	id S1751410Ab3HTNkX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 09:40:23 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:34660 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab3HTNkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 09:38:04 -0400
-Date: Tue, 20 Aug 2013 14:37:33 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm64: add screen_info for console support
-Message-ID: <20130820133733.GF26129@mudshark.cambridge.arm.com>
-References: <1376842970.11104.11.camel@t520.redhat.com>
+	Tue, 20 Aug 2013 09:40:21 -0400
+Date: Tue, 20 Aug 2013 06:39:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Rob Landley <rob@landley.net>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 0/3] Documentation updates for 3.12
+Message-ID: <20130820133950.GA29406@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130818012522.GA27015@linux.vnet.ibm.com>
+ <1376982570.2737.62@driftwood>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376842970.11104.11.camel@t520.redhat.com>
+In-Reply-To: <1376982570.2737.62@driftwood>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082013-7606-0000-0000-00000E78808A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Sun, Aug 18, 2013 at 05:22:50PM +0100, Mark Salter wrote:
-> The arm64 port doesn't provide a screen_info struct for console support
-> which leads to a build failure with some configurations:
+On Tue, Aug 20, 2013 at 02:09:30AM -0500, Rob Landley wrote:
+> On 08/17/2013 08:25:22 PM, Paul E. McKenney wrote:
+> >Hello!
+> >
+> >This series provides a few documentation updates:
+> >
+> >1.	Update rcu_barrier() documentation to note that it no longer is
+> >	guaranteed to wait for a full grace period.  This guarantee was
+> >	a victim of energy efficiency.
+> >
+> >2.	Update RTFP documentation.
+> >
+> >3.	Fix a control-dependency example in the memory-barriers
+> >	documentation.
 > 
->   drivers/video/console/vgacon.c:820: undefined reference to `screen_info'
-> 
-> This patch adds an empty declaration of screen_info to fix the build
-> problem. Some additional runtime code is needed to actually make it
-> useful.
-> 
-> Signed-off-by: Mark Salter <msalter@redhat.com>
-> ---
->  arch/arm64/kernel/setup.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-> index add6ea6..eb9f93a 100644
-> --- a/arch/arm64/kernel/setup.c
-> +++ b/arch/arm64/kernel/setup.c
-> @@ -64,6 +64,10 @@ static const char *cpu_name;
->  static const char *machine_name;
->  phys_addr_t __fdt_pointer __initdata;
->  
-> +#if defined(CONFIG_VGA_CONSOLE) || defined(CONFIG_DUMMY_CONSOLE)                                               
-> +struct screen_info screen_info;                                                                                
-> +#endif                                                                                                         
+> Acked-by: Rob Landley <rob@landley.net>
 
-You may be able to do something similar to the proposal for PARPORT here and
-factor out the lengthy "depends on" clause for VGA_CONSOLE instead of adding
-the dummy info.
+Glad you like it!
 
-Unfortunately, I can't make any promise of further bonus points :)
+> (I'm just happy you don't have gratuitous quizzes mixed through it...)
 
-Will
+That comes later.  ;-)
+
+There actually is a method to the quick-quiz madness, but perhaps
+something for another time.
+
+							Thanx, Paul
+
