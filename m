@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab3HTUxm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 16:53:42 -0400
-Received: from mout.gmx.net ([212.227.17.21]:52968 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751348Ab3HTUxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 16:53:41 -0400
-From: dl9pf@gmx.de
-To: dl9pf@gmx.de
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [TRIVIAL] Remove braces to fix build for clang. No functional change otherwise.
-Date: Tue, 20 Aug 2013 22:52:06 +0200
-Message-Id: <1377031926-18436-1-git-send-email-dl9pf@gmx.de>
-X-Mailer: git-send-email 1.8.1.4
+	id S1751478Ab3HTU5T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 16:57:19 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41749 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab3HTU5S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 16:57:18 -0400
+Date: Tue, 20 Aug 2013 21:57:13 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux@roeck-us.net, hpa@zytor.com, linus.walleij@linaro.org,
+        rjw@sisk.pl
+Subject: Re: ACPI vs Device Tree - moving forward
+Message-ID: <20130820205712.GA22850@srcf.ucam.org>
+References: <20130820192650.GA19470@srcf.ucam.org>
+ <1377031863.1758.10.camel@dvhart-mobl4.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:cfI2LXmqH8u3xbtDBItGQfHHpm47bRa8t/Tf0wEfuNrmbS7Cgxr
- AJQkZgzTZMPwGx4V3MtiqUSPqqPoXNp+PEePQ7YDqAzXI4ap14Og6ViMZ2vGJR6MMJF+SPD
- y/022lEImxCbV2dQERO9F2QbBf6vqF+JDIyRcPR7fRXcAf7XYuGLpNyoAda9PwoK6z9Qhch
- ZddO6yFK9zxFwqtsYmepg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377031863.1758.10.camel@dvhart-mobl4.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+On Tue, Aug 20, 2013 at 01:51:03PM -0700, Darren Hart wrote:
 
-Author:  PaX Team <pageexec at freemail.hu>
-ML-Post: http://lists.cs.uiuc.edu/pipermail/llvm-commits/Week-of-Mon-20120507/142707.html
-URL:     http://llvm.linuxfoundation.org
+> It seems to me that the only way to end up in a situation where the data
+> is reused by other OSes, is to go through a standards body. What about
+> attempting to standardize the _DSM method? I suppose the challenge then
+> is how do we standardize arbitrary data (which, of course, is an
+> oxymoron)...
 
-Merge:   Jan-Simon Möller <dl9pf at gmx.de>
+Right. We could certainly spec the DT bindings that currently exist, but 
+the obvious pushback is that large chunks of it *are* already in ACPI - 
+a _PS0 method (which is ACPI for "Power up the device") that toggles a 
+GPIO pin, and then provides a different GPIO pin in the DT data, which 
+would we believe?
 
-Description:
-  Clang chokes on the notation "inl (%dx)" but works for "inl %dx"; GNU as accepts both forms.
+> The interesting thing about this to me is that many of these devices are
+> added after-the-fact (as add-on boards, for example). With the
+> MinnowBoard we are looking to provide this configuration data in an
+> EEPROM. Would it make sense for the device manufacturer (rather than the
+> base-board manufacturer) to define the key-value pairs for their
+> hardware?
 
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Yes, hardware information that's on add-in boards should probably be 
+provided by the add-in board if it carries a ROM. This is trivial on 
+UEFI systems - you just need a UEFI driver for the board that can 
+construct an appropriate SSDT. It's more of a problem for non-UEFI ACPI 
+systems.
 
-CC: Arnd Bergmann <arnd@arndb.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org
----
- drivers/misc/vmw_balloon.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Sadly, I will not be in New Orleans and am unlikely to receive a Kernel
+> Summit invite, but I am planning be in Edinburgh and would like the
+> opportunity to participate in this discussion.
 
-diff --git a/drivers/misc/vmw_balloon.c b/drivers/misc/vmw_balloon.c
-index cb56e27..2421835 100644
---- a/drivers/misc/vmw_balloon.c
-+++ b/drivers/misc/vmw_balloon.c
-@@ -133,7 +133,7 @@ MODULE_LICENSE("GPL");
- #define VMWARE_BALLOON_CMD(cmd, data, result)		\
- ({							\
- 	unsigned long __stat, __dummy1, __dummy2;	\
--	__asm__ __volatile__ ("inl (%%dx)" :		\
-+	__asm__ __volatile__ ("inl %%dx" :		\
- 		"=a"(__stat),				\
- 		"=c"(__dummy1),				\
- 		"=d"(__dummy2),				\
+I'm not planning on being at kernel summit this year, so I think we'll 
+try to arrange something around that time but outside the event.
+
 -- 
-1.8.1.4
-
+Matthew Garrett | mjg59@srcf.ucam.org
