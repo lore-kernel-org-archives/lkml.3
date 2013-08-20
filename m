@@ -1,160 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab3HTTfP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 15:35:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40690 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab3HTTfN (ORCPT
+	id S1751852Ab3HTTgq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 15:36:46 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:56235 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab3HTTgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 15:35:13 -0400
-Date: Tue, 20 Aug 2013 15:35:07 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen/hvc: If we use xen_raw_printk let it
- also work on HVM guests.
-Message-ID: <20130820193507.GI12037@phenom.dumpdata.com>
-References: <1376060133-6382-1-git-send-email-konrad.wilk@oracle.com>
- <1376425904.9273.25.camel@hastur.hellion.org.uk>
- <20130813205332.GA10243@phenom.dumpdata.com>
- <1376427570.9273.39.camel@hastur.hellion.org.uk>
- <1376432405.9273.54.camel@hastur.hellion.org.uk>
- <20130814001050.GA10492@phenom.dumpdata.com>
- <1376464556.9273.75.camel@hastur.hellion.org.uk>
- <20130814124647.GD10764@phenom.dumpdata.com>
- <1376577638.9273.188.camel@hastur.hellion.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376577638.9273.188.camel@hastur.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 20 Aug 2013 15:36:44 -0400
+Message-ID: <1377027386.13829.29.camel@jlt4.sipsolutions.net>
+Subject: Re: Linux 3.0.92
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net,
+        Jiri Slaby <jslaby@suse.cz>, Ding Tianhong <dingtianhong@huawei.com>,
+        netdev@vger.kernel.org, Pravin B Shelar <pshelar@nicira.com>,
+        Thomas Graf <tgraf@suug.ch>, sergey.senozhatsky@gmail.com
+Date: Tue, 20 Aug 2013 21:36:26 +0200
+In-Reply-To: <20130820164343.GA3958@kroah.com>
+References: <20130820155735.GA2805@kroah.com>
+	 <CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
+	 <20130820164343.GA3958@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 03:40:38PM +0100, Ian Campbell wrote:
-> On Wed, 2013-08-14 at 08:46 -0400, Konrad Rzeszutek Wilk wrote:
-> > On Wed, Aug 14, 2013 at 08:15:56AM +0100, Ian Campbell wrote:
-> > > On Tue, 2013-08-13 at 20:10 -0400, Konrad Rzeszutek Wilk wrote:
-> > > > On Tue, Aug 13, 2013 at 11:20:05PM +0100, Ian Campbell wrote:
-> > > > > On Tue, 2013-08-13 at 21:59 +0100, Ian Campbell wrote:
-> > > > > 
-> > > > > > > What it should be is:
-> > > > > > > > >  
-> > > > > > > > >  void xen_raw_console_write(const char *str)
-> > > > > > > > >  {
-> > > > > > > > > -	dom0_write_console(0, str, strlen(str));
-> > > > > > > > > +	if (!xen_domain())
-> > > > > > > > > +		return;
-> > > > > > > > > +
-> > > > > > > > > +	if (xen_pv_domain())
-> > > > > > >             xen_domain()
-> > > > > > > 
-> > > > > > > > > +		dom0_write_console(0, str, strlen(str));
-> > > > > > > > > +	else if (xen_hvm_domain() || xen_cpuid_base()) {
-> > > > > > >      
-> > > > > > > 	else if (xen_cpuid_base()) {
-> > > > > > > 
-> > > > > > > > > +		/* The hyperpage has not been setup yet. */
-> > > > > > > > > +		int i, len = strlen(str);
-> > > > > > > > > +		for (i = 0; i < len; i++)
-> > > > > > > > > +			 outb(str[i], 0xe9);
-> > > > > > > > > +	}
-> > > > > > > > >  }
-> > > > > > > 
-> > > > > > > And then that should adhere to what I wrote up.
-> > > > > > 
-> > > > > > I think it does too.
-> > > > > 
-> > > > > Except as Daniel notes in <520A7145.5010306@tycho.nsa.gov> for unrelated
-> > > > > reasons:
-> > > > > 
-> > > > > >         HVM guests can still use the PV output - they just need to use the console
-> > > > > >         write hypercall instead of the HVM I/O port. I would think that PVH guests
-> > > > > >         would default to using the hypercall as it is more efficient (it takes a
-> > > > > >         string rather than one character per write).
-> > > > > >         
-> > > > > >         Actually, checking... the console_io hypercall would need to be added to
-> > > > > >         the hvm_hypercall{32,64}_table for an HVM guest to be able to use it; they
-> > > > > >         currently must use the I/O port. I didn't check the PVH patches.
-> > > > > 
-> > > > > Or did you actually try this code and it worked?
-> > > > 
-> > > > The one I typed up above - no. The one I had sent - yes.
-> > > > 
-> > > > But with that above mentioned comment from Daniel I think it is still
-> > > > worth trying to do dom0_write_console and if the hypercall returns -ENOSYS 
-> > > > then fall back on 0xe9.
-> > > > 
-> > > > And lastly send an patch to make hypercall_io work under HVM.
-> > > 
-> > > So you didn't try under PVHVM? That's what I was asking when I asked if
-> > > you tried it, since that is the point of this patch.
-> > 
-> > Not the one I typed up above. Just the one I sent.
+[too many email threads, so + a few folks]
+
+> > This one turns out to be buggy, see thread called "3.11-rc6 genetlink
+> > locking fix offends lockdep".
 > 
-> And did it work? ecause if the console_io hypercall isn't wired up in
-> the hypervisor I can't see how it can have done...
+> Yeah, I messed up in keeping it here, I'll go revert it and push out a
+> new 3.0 release.
+
+Sorry everyone, I thought I tested that code but clearly I didn't test
+it well enough. I can easily reproduce the issues now so not sure why I
+didn't see it before.
+
+> I thought that there was a fix already for this...  Ah, no, that was for
+> another reported regression in an older 3.10-stable release, my bad.
 > 
-> Oh the original patch would buggily never have tried to use console_io,
-> and you probably didn't notice the lack of output after the hypercall
-> page was setup.
-<nods>
+> Johannes, what do you want to do here?  Just revert it in Linus's tree
+> for now, given the late -rc cycle?
 
-This is a patch below that works for me and also it work with hypervisors
-that don't have console_io wired in. 
+I think that'd be the best course of action for now. I just tried a few
+other approaches but I can't come up with a dead-lock free way to
+actually add locking here, short of providing some way for dump to
+actually always have locking from "outside" (netlink code).
 
-Pls treat it as RFC
+I think the better way would be to convert it to just use RCU. This
+isn't very efficient, but then again we don't unregister generic netlink
+families all the time. Below patch works without lockdep complaining,
+but that's obvious since it can't check RCU ... I'm not sure I want to
+do this so close to a release?
 
->From 5b5faae0038d48aa0169bab8c78d1b47c4f1ac64 Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 16 Aug 2013 15:32:07 -0400
-Subject: [PATCH] xen/hvc: Print out to the serial console and pv console
- irregardless if it is dom0, PV or HVM.
+johannes
 
-*TODO*: BLA BLA BLA
+>From 5b4790a1188c40422e99b4fc8840e4860d57f0d0 Mon Sep 17 00:00:00 2001
+From: Johannes Berg <johannes.berg@intel.com>
+Date: Tue, 20 Aug 2013 21:31:48 +0200
+Subject: [PATCH] genetlink: convert family dump code to use RCU
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+In my previous commit 58ad436fcf49810aa006016107f494c9ac9013db
+("genetlink: fix family dump race") I attempted to solve an
+issue in generic netlink that could lead to crashes, but it
+turns out that this introduced a possibility for deadlock. As
+I haven't found a way to actually add locking without causing
+that, convert the family, family ops/mcast group lists all to
+use RCU, so the family dump code can simply use RCU protection
+instead of locking.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 ---
- drivers/tty/hvc/hvc_xen.c |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
+ net/netlink/genetlink.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-index 682210d..e47c6ae 100644
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -40,6 +40,7 @@
- #include <xen/hvc-console.h>
- #include <xen/xenbus.h>
+diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
+index f85f8a2..ceeaee4 100644
+--- a/net/netlink/genetlink.c
++++ b/net/netlink/genetlink.c
+@@ -246,7 +246,7 @@ static void __genl_unregister_mc_group(struct genl_family *family,
+ 	netlink_table_ungrab();
  
-+#include <asm/xen/hypervisor.h>
- #include "hvc_console.h"
+ 	clear_bit(grp->id, mc_groups);
+-	list_del(&grp->list);
++	list_del_rcu(&grp->list);
+ 	genl_ctrl_event(CTRL_CMD_DELMCAST_GRP, grp);
+ 	grp->id = 0;
+ 	grp->family = NULL;
+@@ -272,6 +272,7 @@ void genl_unregister_mc_group(struct genl_family *family,
+ 	genl_lock_all();
+ 	__genl_unregister_mc_group(family, grp);
+ 	genl_unlock_all();
++	synchronize_rcu();
+ }
+ EXPORT_SYMBOL(genl_unregister_mc_group);
  
- #define HVC_COOKIE   0x58656e /* "Xen" in hex */
-@@ -641,7 +642,19 @@ struct console xenboot_console = {
+@@ -281,6 +282,7 @@ static void genl_unregister_mc_groups(struct genl_family *family)
  
- void xen_raw_console_write(const char *str)
- {
--	dom0_write_console(0, str, strlen(str));
-+	ssize_t len = strlen(str);
-+	int rc = 0;
-+
-+	if (xen_domain()) {
-+		rc = dom0_write_console(0, str, len);
-+		if (rc != len && xen_hvm_domain()) /* -ENOSYS */
-+			goto outb_print;
-+	} else if (xen_cpuid_base()) {
-+		int i;
-+outb_print:
-+		for (i = 0; i < len; i++)
-+			outb(str[i], 0xe9);
-+	}
+ 	list_for_each_entry_safe(grp, tmp, &family->mcast_groups, list)
+ 		__genl_unregister_mc_group(family, grp);
++	synchronize_rcu();
  }
  
- void xen_raw_printk(const char *fmt, ...)
+ /**
+@@ -351,9 +353,10 @@ int genl_unregister_ops(struct genl_family *family, struct genl_ops *ops)
+ 	genl_lock_all();
+ 	list_for_each_entry(rc, &family->ops_list, ops_list) {
+ 		if (rc == ops) {
+-			list_del(&ops->ops_list);
++			list_del_rcu(&ops->ops_list);
+ 			genl_unlock_all();
+ 			genl_ctrl_event(CTRL_CMD_DELOPS, ops);
++			synchronize_rcu();
+ 			return 0;
+ 		}
+ 	}
+@@ -418,7 +421,7 @@ int genl_register_family(struct genl_family *family)
+ 	} else
+ 		family->attrbuf = NULL;
+ 
+-	list_add_tail(&family->family_list, genl_family_chain(family->id));
++	list_add_tail_rcu(&family->family_list, genl_family_chain(family->id));
+ 	genl_unlock_all();
+ 
+ 	genl_ctrl_event(CTRL_CMD_NEWFAMILY, family);
+@@ -498,7 +501,8 @@ int genl_unregister_family(struct genl_family *family)
+ 		if (family->id != rc->id || strcmp(rc->name, family->name))
+ 			continue;
+ 
+-		list_del(&rc->family_list);
++		list_del_rcu(&rc->family_list);
++		synchronize_rcu();
+ 		INIT_LIST_HEAD(&family->ops_list);
+ 		genl_unlock_all();
+ 
+@@ -692,7 +696,7 @@ static int ctrl_fill_info(struct genl_family *family, u32 portid, u32 seq,
+ 		if (nla_ops == NULL)
+ 			goto nla_put_failure;
+ 
+-		list_for_each_entry(ops, &family->ops_list, ops_list) {
++		list_for_each_entry_rcu(ops, &family->ops_list, ops_list) {
+ 			struct nlattr *nest;
+ 
+ 			nest = nla_nest_start(skb, idx++);
+@@ -718,7 +722,7 @@ static int ctrl_fill_info(struct genl_family *family, u32 portid, u32 seq,
+ 		if (nla_grps == NULL)
+ 			goto nla_put_failure;
+ 
+-		list_for_each_entry(grp, &family->mcast_groups, list) {
++		list_for_each_entry_rcu(grp, &family->mcast_groups, list) {
+ 			struct nlattr *nest;
+ 
+ 			nest = nla_nest_start(skb, idx++);
+@@ -789,14 +793,11 @@ static int ctrl_dumpfamily(struct sk_buff *skb, struct netlink_callback *cb)
+ 	struct net *net = sock_net(skb->sk);
+ 	int chains_to_skip = cb->args[0];
+ 	int fams_to_skip = cb->args[1];
+-	bool need_locking = chains_to_skip || fams_to_skip;
+-
+-	if (need_locking)
+-		genl_lock();
+ 
++	rcu_read_lock();
+ 	for (i = chains_to_skip; i < GENL_FAM_TAB_SIZE; i++) {
+ 		n = 0;
+-		list_for_each_entry(rt, genl_family_chain(i), family_list) {
++		list_for_each_entry_rcu(rt, genl_family_chain(i), family_list) {
+ 			if (!rt->netnsok && !net_eq(net, &init_net))
+ 				continue;
+ 			if (++n < fams_to_skip)
+@@ -811,12 +812,11 @@ static int ctrl_dumpfamily(struct sk_buff *skb, struct netlink_callback *cb)
+ 	}
+ 
+ errout:
++	rcu_read_unlock();
++
+ 	cb->args[0] = i;
+ 	cb->args[1] = n;
+ 
+-	if (need_locking)
+-		genl_unlock();
+-
+ 	return skb->len;
+ }
+ 
 -- 
-1.7.7.6
+1.8.4.rc2
 
-> Ian.
-> 
+
+
