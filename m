@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab3HTXMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 19:12:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38714 "EHLO
+	id S1751980Ab3HTXMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 19:12:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab3HTXMI (ORCPT
+	with ESMTP id S1751960Ab3HTXMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 19:12:08 -0400
-Date: Tue, 20 Aug 2013 16:12:07 -0700
+	Tue, 20 Aug 2013 19:12:33 -0400
+Date: Tue, 20 Aug 2013 16:12:32 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Willy Tarreau <w@1wt.eu>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         stable <stable@vger.kernel.org>, lwn@lwn.net,
@@ -18,20 +18,22 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Borislav Petkov <bp@alien8.de>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: Proposed stable release changes
-Message-ID: <20130820231207.GA703@kroah.com>
+Message-ID: <20130820231232.GB703@kroah.com>
 References: <20130820224032.GA20491@kroah.com>
- <1377039840.32763.11.camel@haakon3.risingtidesystems.com>
+ <20130820225815.GD16424@1wt.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377039840.32763.11.camel@haakon3.risingtidesystems.com>
+In-Reply-To: <20130820225815.GD16424@1wt.eu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 04:04:00PM -0700, Nicholas A. Bellinger wrote:
-> On Tue, 2013-08-20 at 15:40 -0700, Greg KH wrote:
+On Wed, Aug 21, 2013 at 12:58:15AM +0200, Willy Tarreau wrote:
+> Hi Greg,
+> 
+> On Tue, Aug 20, 2013 at 03:40:32PM -0700, Greg KH wrote:
 > > Hi all,
 > > 
 > > Given that I had to just revert a patch in the recent stable releases
@@ -51,24 +53,14 @@ On Tue, Aug 20, 2013 at 04:04:00PM -0700, Nicholas A. Bellinger wrote:
 > > 
 > > Given that we have -rc releases every week, except for the initial -rc1
 > > release, I don't think this will really cause any major delays.
-> > 
-> > Also, now that we are about to head into my busy "travel season", odds
-> > are, I'll be at least a week behind anyway, so this would probably start
-> > happening without an "official" change.  It's been a boring summer, I've
-> > been able to keep up with the stable stuff really easily, causing
-> > problems like this :)
-> > 
-> > Objections?  Comments?
 > 
-> Sounds like a reasonable tradeoff, as long as the 'please include this
-> to stable ASAP' latency for critical fixes does not end up being too
-> large..
+> In the last discussion you initiated on the subject, I proposed something
+> even more conservative which was the same as above except instead of
+> "wait for a -rc", it was "wait for rc1 after a full release containing
+> the patch", unless one of the conditions you proposed, or another one
+> which would be a tag "urgent" or something like this in the patch.
 
-Given the current number of those that I get are relativly small, it
-shouldn't be that big of a deal.
-
-All this really means is that I get a week vacation now, and then I'll
-pick back up with stable releases :)
+Waiting 3 months is too long, in my opinion, sorry.
 
 thanks,
 
