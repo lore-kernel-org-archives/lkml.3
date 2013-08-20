@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628Ab3HTBCN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 21:02:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15249 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab3HTBCK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 21:02:10 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=F0my4ousGMIA:10 a=3wfm---skdX-aecXHHkA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 19 Aug 2013 21:02:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Kent Overstreet <kmo@daterainc.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.10.6-rt3
-Message-ID: <20130819210208.426e01b3@gandalf.local.home>
-In-Reply-To: <20130819202903.692097ea@gandalf.local.home>
-References: <20130812163413.GI23040@linutronix.de>
-	<520D212F.7030400@localhost>
-	<20130815152210.5ed93696@gandalf.local.home>
-	<520DCE5F.1040402@linutronix.de>
-	<521254A0.6050603@localhost>
-	<20130819202903.692097ea@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751436Ab3HTBJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 21:09:22 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16754 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751262Ab3HTBJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 21:09:20 -0400
+X-IronPort-AV: E=Sophos;i="4.89,915,1367942400"; 
+   d="scan'208";a="8245585"
+Message-ID: <5212C16E.2040105@cn.fujitsu.com>
+Date: Tue, 20 Aug 2013 09:07:58 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        akpm@linux-foundation.org, liwanp@linux.vnet.ibm.com, tj@kernel.org,
+        zhangyanfei@cn.fujitsu.com, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Preparation for arranging hotplug memory in ZONE_MOVABLE.
+References: <1376473028-29380-1-git-send-email-tangchen@cn.fujitsu.com> <15319045.yHqauUVrf3@vostro.rjw.lan>
+In-Reply-To: <15319045.yHqauUVrf3@vostro.rjw.lan>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/20 09:07:32,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/20 09:07:35,
+	Serialize complete at 2013/08/20 09:07:35
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Aug 2013 20:29:03 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On 08/20/2013 07:40 AM, Rafael J. Wysocki wrote:
+> On Wednesday, August 14, 2013 05:37:05 PM Tang Chen wrote:
+>> These three trivial patches are from patch-set "Arrange hotpluggable memory as ZONE_MOVABLE."
+>> And they have been acked and reviewed by many people.
+>>
+>> Hope they can be merged first. And the rest patches are coming soon.
+>>
+>>
+>> Tang Chen (3):
+>>    acpi: Print Hot-Pluggable Field in SRAT.
+>>    earlycpio.c: Fix the confusing comment of find_cpio_data().
+>>    acpi: Kill macro INVALID_TABLE().
+>>
+>>   arch/x86/mm/srat.c |   11 +++++++----
+>>   drivers/acpi/osl.c |   36 ++++++++++++++++++++----------------
+>>   lib/earlycpio.c    |   27 ++++++++++++++-------------
+>>   3 files changed, 41 insertions(+), 33 deletions(-)
+>
+> I've queued up this series for 3.12.
 
-> On Mon, 19 Aug 2013 10:23:44 -0700
-> Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU> wrote:
-> 
-> 
-> > > The problem is that bcache is using new semaphore functions which it
-> > > just introduced which rt does not know about. The comment above their
-> > > definition says that it is wrong to use them and completion is the
-> > > right way to do it.
-> > > So my question is, why don't we use completion but this nasty hack?
-> 
-> I think I'm going to send them an email about that.
-> 
+Hi Rafael,
 
-Looking at it more, I can now see why they did what they did.
+Thanks a lot. :)
 
-Grumble, we may need to bring back the old "compat" rwsem, or whatever
-we called it, and just use that instead. And say that this code will
-have no real time boosting.
-
--- Steve
