@@ -1,97 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619Ab3HTB4o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 21:56:44 -0400
-Received: from mail.windriver.com ([147.11.1.11]:62700 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab3HTB4m (ORCPT
+	id S1751723Ab3HTCE0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 22:04:26 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41213 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab3HTCEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 21:56:42 -0400
-Message-ID: <5212CCCA.4090907@windriver.com>
-Date: Tue, 20 Aug 2013 09:56:26 +0800
-From: Fan Du <fan.du@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Mon, 19 Aug 2013 22:04:24 -0400
+Message-ID: <5212CE61.2090600@oracle.com>
+Date: Tue, 20 Aug 2013 10:03:13 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Steffen Klassert <steffen.klassert@secunet.com>,
-        David Miller <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set
- was called
-References: <1375866296-15079-1-git-send-email-fan.du@windriver.com> <1375866296-15079-2-git-send-email-fan.du@windriver.com> <52021177.6020306@redhat.com> <520213F2.5090401@windriver.com> <520214C6.6000307@redhat.com> <520B4552.2000607@windriver.com> <alpine.DEB.2.02.1308181102230.4089@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1308181102230.4089@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [128.224.162.195]
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Bob Liu <lliubbo@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, eternaleye@gmail.com, minchan@kernel.org,
+        mgorman@suse.de, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        axboe@kernel.dk, ngupta@vflare.org, semenzato@google.com,
+        penberg@iki.fi, sonnyrao@google.com, smbarber@google.com,
+        konrad.wilk@oracle.com, riel@redhat.com, kmpark@infradead.org
+Subject: Re: [PATCH 4/4] mm: zswap: create a pseudo device /dev/zram0
+References: <1376815249-6611-1-git-send-email-bob.liu@oracle.com> <1376815249-6611-5-git-send-email-bob.liu@oracle.com> <20130819174634.GB5703@variantweb.net>
+In-Reply-To: <20130819174634.GB5703@variantweb.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-
-On 2013年08月18日 17:05, Thomas Gleixner wrote:
-> On Wed, 14 Aug 2013, Fan Du wrote:
->
->>  From e3929d4fdfad5b40fd8cad0e217597670d1aef54 Mon Sep 17 00:00:00 2001
->> From: Fan Du<fan.du@windriver.com>
->> Date: Wed, 14 Aug 2013 16:39:23 +0800
->> Subject: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set was
->> called
+On 08/20/2013 01:46 AM, Seth Jennings wrote:
+> On Sun, Aug 18, 2013 at 04:40:49PM +0800, Bob Liu wrote:
+>> This is used to replace previous zram.
+>> zram users can enable this feature, then a pseudo device will be created
+>> automaticlly after kernel boot.
+>> Just using "mkswp /dev/zram0; swapon /dev/zram0" to use it as a swap disk.
 >>
->> When clock_was_set is called in case of system wall time change
->> or host resume from suspend state, use this notifier for places
->> where interested in this action, e.g Ipsec SA lifetime management.
->
-> Sigh. These notifiers have been proposed in the past and we always
-> rejected them. Why do you need this? There should be nothing except
-> the core timekeeping code which needs to know about clock_was_set.
->
-> Can you please explain what kind of users you have in mind and WHY
-> they need to know about it.
+>> The size of this pseudeo is controlled by zswap boot parameter
+>> zswap.max_pool_percent.
+>> disksize = (totalram_pages * zswap.max_pool_percent/100)*PAGE_SIZE.
+> 
+> This /dev/zram0 will behave nothing like the block device that zram
+> creates.  It only allows reads/writes to the first PAGE_SIZE area of the
+> device, for mkswap to work, and then doesn't do anything for all other
+> accesses.
 
-Hi, Thomas
+Yes, all the other data should be stored in zswap pool and don't need to
+go through block layer.
 
+> 
+> I guess if you disabled zswap writeback, then... it would somewhat be
+> the same thing.  We do need to disable zswap writeback in this case so
+> that zswap does decompressed a ton of pages into the swapcache for
+> writebacks that will just fail.  Since zsmalloc does not yet support the
+> reclaim functionality, zswap writeback is implicitly disabled.
+> 
 
-Thanks for your patience. Please let me take a few seconds try to
-explain this.
+Yes, ZSWAP_PSEUDO_BLKDEV depends on zsmalloc and if using zsmalloc as
+the allocator then the writeback is disabled(not implemented and no
+requirement).
 
-Current xfrm layers has *one* hrtimer to guard Ipsec keys timeout,
-The timeout could be measured in either of below two ways:
+> But this is really weird conceptually since zswap is a caching layer
+> that uses frontswap.  If a frontswap store fails, it will try to send
+> the page to the zram0 device which will fail the write.  Then the page
 
-  (1) The timer is started once the keys is created, but this
-      key is not necessary actually used right now. In detail,
-      record the get_seconds() when this key is created.
+That's a problem. We should disable sending the page to zram0 if
+frontswap store fails. Return fail just like the swap device is full.
 
-  (2) Starting the timer when this key is actually used, e.g when
-      an IP packet need to be encrypted. In details, recored the
-      get_seconds() when this key is first used.
+> will be... put back on the active or inactive list?
+> 
+> Also, using the max_pool_percent in calculating the psuedo-device size
+> isn't right.  Right now, the code makes the device the max size of the
+> _compressed_ pool, but the underlying swap device size is in
+> _uncompressed_ pages. So you'll never be able to fill zswap sizing the
+> device like this, unless every page is highly incompressible to the
+> point that each compressed page effectively uses a memory pool page, in
+> which case, the user shouldn't be using memory compression.
+> 
+> This also means that this hasn't been tested in the zswap pool-is-full
+> case since there is no way, in this code, to hit that case.
 
-So in the hrtimer handler, the code get current get_seconds, and
-check against with what saved in (1)or(2), and notify the timeout
-up to user land.
+Yes, but in my understanding there is no need to trigger this path. It's
+the same with zram. Eg. create /dev/zram0 with disksize(eg. 100M), then
+mm-core will store ~100M uncompressed pages to /dev/zram0 at most. But
+the real memory spent for storing those pages are depended on the
+compression ratio. It's rare that zram will need 100M real memory.
 
-So the pitfall is using one hrtimer for two timeout events,
-most importantly using get_seconds to check timeout, once system
-clock is changed by user intentionally, the key timeout could
-misbehave wildly.
+> 
+> In the zbud case the expected compression is 2:1 so you could just
+> multiply the compressed pool size by 2 and get a good psuedo-device
+> size.  With zsmalloc the expected compression is harder to determine
+> since it can achieve very high effective compression ratios on highly
+> compressible pages.
+> 
 
-A refractor has been proposed to get rid of depending on system wall
-clock by cleaning up the hrtimer handler. Unfortunately David frowned
-on it in (3), and suggest once system clock is changed, adjust the
-timeout of the key.
-
-
-(3): http://www.spinics.net/lists/netdev/msg245169.html
-
-
-> Thanks,
->
-> 	tglx
->
+Some users can know the compression ratio of their workloads even using
+zsmalloc.
 
 -- 
-浮沉随浪只记今朝笑
-
---fan
+Regards,
+-Bob
