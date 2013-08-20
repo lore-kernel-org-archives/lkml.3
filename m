@@ -1,302 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab3HTU7Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 16:59:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37492 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab3HTU7W (ORCPT
+	id S1752133Ab3HTU77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 16:59:59 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:58354 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751575Ab3HTU7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 16:59:22 -0400
-Date: Tue, 20 Aug 2013 13:59:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        Vlastimil Babka <vbabka@suse.cz>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 8/9] mm: thrash detection-based file cache sizing
-Message-Id: <20130820135920.b8b7ea0eb2471dfa0034b175@linux-foundation.org>
-In-Reply-To: <1376767883-4411-9-git-send-email-hannes@cmpxchg.org>
-References: <1376767883-4411-1-git-send-email-hannes@cmpxchg.org>
-	<1376767883-4411-9-git-send-email-hannes@cmpxchg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Tue, 20 Aug 2013 16:59:55 -0400
+X-Greylist: delayed 1726 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Aug 2013 16:59:54 EDT
+Date: Tue, 20 Aug 2013 22:31:03 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Ian Lartey <ian@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        swarren@wwwdotorg.org, grant.likely@secretlab.ca,
+        broonie@opensource.wolfsonmicro.com, rob.herring@calxeda.com,
+        rob@landley.net, mturquette@linaro.org, linus.walleij@linaro.org,
+        cooloney@gmail.com, sfr@canb.auug.org.au, rpurdie@rpsys.net,
+        akpm@linux-foundation.org, sameo@linux.intel.com, lgirdwood@gmail.com,
+        gg@slimlogic.co.uk, j-keerthy@ti.com, ldewangan@nvidia.com,
+        t-kristo@ti.com
+Subject: Re: [PATCH v10 04/12] watchdog: add Palmas Watchdog support
+Message-ID: <20130820203103.GA20762@spo001.leaseweb.com>
+References: <1363964122-19201-1-git-send-email-ian@slimlogic.co.uk> <1363964122-19201-5-git-send-email-ian@slimlogic.co.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363964122-19201-5-git-send-email-ian@slimlogic.co.uk>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 Aug 2013 15:31:22 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+Hi Ian,
 
-> The VM maintains cached filesystem pages on two types of lists.  One
-> list holds the pages recently faulted into the cache, the other list
-> holds pages that have been referenced repeatedly on that first list.
-> The idea is to prefer reclaiming young pages over those that have
-> shown to benefit from caching in the past.  We call the recently used
-> list "inactive list" and the frequently used list "active list".
-> 
-> The tricky part of this model is finding the right balance between
-> them.  A big inactive list may not leave enough room for the active
-> list to protect all the frequently used pages.  A big active list may
-> not leave enough room for the inactive list for a new set of
-> frequently used pages, "working set", to establish itself because the
-> young pages get pushed out of memory before having a chance to get
-> promoted.
-> 
-> Historically, every reclaim scan of the inactive list also took a
-> smaller number of pages from the tail of the active list and moved
-> them to the head of the inactive list.  This model gave established
-> working sets more gracetime in the face of temporary use once streams,
-> but was not satisfactory when use once streaming persisted over longer
-> periods of time and the established working set was temporarily
-> suspended, like a nightly backup evicting all the interactive user
-> program data.
-> 
-> Subsequently, the rules were changed to only age active pages when
-> they exceeded the amount of inactive pages, i.e. leave the working set
-> alone as long as the other half of memory is easy to reclaim use once
-> pages.  This works well until working set transitions exceed the size
-> of half of memory and the average access distance between the pages of
-> the new working set is bigger than the inactive list.  The VM will
-> mistake the thrashing new working set for use once streaming, while
-> the unused old working set pages are stuck on the active list.
-> 
-> This patch solves this problem by maintaining a history of recently
-> evicted file pages, which in turn allows the VM to tell used-once page
-> streams from thrashing file cache.
-> 
-> To accomplish this, a per-zone counter is increased every time a page
-> is evicted and a snapshot of that counter is stored as shadow entry in
-> the page's now empty page cache radix tree slot.  Upon refault of that
-> page, the difference between the current value of that counter and the
-> shadow entry value is called the refault distance.  It tells how many
-> pages have been evicted from the zone since that page's eviction,
-> which is how many page slots at most are missing from the zone's
-> inactive list for this page to get accessed twice while in memory.  If
-> the number of missing slots is less than or equal to the number of
-> active pages, increasing the inactive list at the cost of the active
-> list would give this thrashing set a chance to establish itself:
-> 
-> eviction counter = 4
->                         evicted      inactive           active
->  Page cache data:       [ a b c d ]  [ e f g h i j k ]  [ l m n ]
->   Shadow entries:         0 1 2 3
-> Refault distance:         4 3 2 1
-> 
-> When c is faulted back into memory, it is noted that at most two more
-> page slots on the inactive list could have prevented the refault (it
-> could be less if c is used out of order).  Thus, the active list needs
-> to be challenged as it is possible that c is used more frequently than
-> l, m, n.  However, there is no access frequency information available
-> on active pages so the pages have to be put in direct competition with
-> each other before deciding which one to keep.  Thus, 1) pages can not
-> be directly reclaimed from the tail of the active list and b)
-> refaulting pages can not be directly activated.  Instead, active pages
-> are moved from the tail of the active list to the head of the inactive
-> list and placed directly next to the refaulting pages.  This way, they
-> both have the same time on the inactive list to prove which page is
-> actually used more frequently without incurring unnecessary major
-> faults or diluting the active page set in case the previously active
-> page is in fact the more frequently used one.
-> 
-> Also, since the refault of c could have been due to a spurious access,
-> only one active page per qualifying refault is challenged.  This will
-> keep the impact of outliers low but still detect if bigger groups of
-> pages are refaulting.
-> 
-> ...
->
-> +/*
-> + *		Double CLOCK lists
-> + *
-> + * Per zone, two clock lists are maintained for file pages: the
-> + * inactive and the active list.  Freshly faulted pages start out at
-> + * the head of the inactive list and page reclaim scans pages from the
-> + * tail.  Pages that are accessed multiple times on the inactive list
-> + * are promoted to the active list, to protect them from reclaim,
-> + * whereas active pages are demoted to the inactive list when the
-> + * inactive list requires more space to detect repeatedly accessed
-> + * pages in the current workload and prevent them from thrashing:
-> + *
-> + *   fault -----------------------+
-> + *                                |
-> + *              +-------------+   |            +-------------+
-> + *   reclaim <- | inactive    | <-+-- demotion | active      | <--+
-> + *              +-------------+                +-------------+    |
-> + *                       |                                        |
-> + *                       +----------- promotion ------------------+
-> + *
-> + *
-> + *		Access frequency and refault distance
-> + *
-> + * A workload is thrashing when the distances between the first and
-> + * second access of pages that are frequently used is bigger than the
-> + * current inactive clock list size, as the pages get reclaimed before
-> + * the second access would have promoted them instead:
-> + *
-> + *    Access #: 1 2 3 4 5 6 7 8 9
-> + *     Page ID: x y b c d e f x y
-> + *                  | inactive  |
-> + *
-> + * To prevent this workload from thrashing, a bigger inactive list is
-> + * required.  And the only way the inactive list can grow on a full
-> + * zone is by taking away space from the corresponding active list.
-> + *
-> + *      +-inactive--+-active------+
-> + *  x y | b c d e f | G H I J K L |
-> + *      +-----------+-------------+
-> + *
-> + * Not every refault should lead to growing the inactive list at the
-> + * cost of the active list, however: if the access distances are
-> + * bigger than available memory overall, there is little point in
-> + * challenging the protected pages on the active list, as those
-> + * refaulting pages will not fit completely into memory.
-> + *
-> + * It is prohibitively expensive to track the access frequency of
-> + * in-core pages, but it is possible to track their refault distance,
-> + * which is the number of page slots shrunk from the inactive list
-> + * between a page's eviction and subsequent refault.  This indicates
-> + * how many page slots are missing on the inactive list in order to
-> + * prevent future thrashing of that page.  Thus, instead of comparing
-> + * access frequency to total available memory, one can compare the
-> + * refault distance to the inactive list's potential for growth: the
-> + * size of the active list.
-> + *
-> + *
-> + *		Rebalancing the lists
-> + *
-> + * Shrinking the active list has to be done carefully because the
-> + * pages on it may have vastly different access frequencies compared
-> + * to the pages on the inactive list.  Thus, pages are not reclaimed
-> + * directly from the tail of the active list, but instead moved to the
-> + * head of the inactive list.  This way, they are competing directly
-> + * with the pages that challenged their protected status.  If they are
-> + * unused, they will eventually be reclaimed, but if they are indeed
-> + * used more frequently than the challenging inactive pages, they will
-> + * be reactivated.  This allows the existing protected set to be
-> + * challenged without incurring major faults in case of a mistake.
-> + */
-
-The consequences of a 32-bit wraparound of the refault distance still
-concern me.  It's a rare occurrence and it is difficult to determine
-what will happen.  An explicit design-level description here would be
-useful.
-
-> +static void *pack_shadow(unsigned long time, struct zone *zone)
+> +static int palmas_wdt_set_timeout(struct watchdog_device *wdt, unsigned timeout)
 > +{
-> +	time = (time << NODES_SHIFT) | zone_to_nid(zone);
-> +	time = (time << ZONES_SHIFT) | zone_idx(zone);
-> +	time = (time << RADIX_TREE_EXCEPTIONAL_SHIFT);
+> +	struct palmas_wdt *driver_data = watchdog_get_drvdata(wdt);
 > +
-> +	return (void *)(time | RADIX_TREE_EXCEPTIONAL_ENTRY);
-> +}
-
-"time" is normally in jiffies ;)
-
-Some description of the underlying units of workingset_time would be
-helpful.
-
-> 
-> ...
->
-> +/**
-> + * workingset_eviction - note the eviction of a page from memory
-> + * @mapping: address space the page was backing
-> + * @page: the page being evicted
-> + *
-> + * Returns a shadow entry to be stored in @mapping->page_tree in place
-> + * of the evicted @page so that a later refault can be detected.  Or
-> + * %NULL when the eviction should not be remembered.
-> + */
-
-Describe the locking requirements here.  It's part of the interface. 
-And it's the part the compiler can't check, so extra care is needed.
-
-> +void *workingset_eviction(struct address_space *mapping, struct page *page)
-> +{
-> +	struct zone *zone = page_zone(page);
-> +	unsigned long time;
-> +
-> +	time = atomic_long_inc_return(&zone->workingset_time);
-> +
-> +	/*
-> +	 * Don't store shadows in an inode that is being reclaimed.
-> +	 * This is not just an optizimation, inode reclaim needs to
-> +	 * empty out the radix tree or the nodes are lost, so don't
-> +	 * plant shadows behind its back.
-> +	 */
-> +	if (mapping_exiting(mapping))
-> +		return NULL;
-> +
-> +	return pack_shadow(time, zone);
-> +}
-> +
-> +/**
-> + * workingset_refault - note the refault of a previously evicted page
-> + * @shadow: shadow entry of the evicted page
-> + *
-> + * Calculates and evaluates the refault distance of the previously
-> + * evicted page in the context of the zone it was allocated in.
-> + *
-> + * This primes page reclaim to rebalance the zone's file lists if
-> + * necessary, so it must be called before a page frame for the
-> + * refaulting page is allocated.
-> + */
-> +void workingset_refault(void *shadow)
-> +{
-> +	unsigned long refault_distance;
-
-Is the "refault distance" described somewhere?  What relationship (if
-any) does it have with workingset_time?
-
-> +	struct zone *zone;
-> +
-> +	unpack_shadow(shadow, &zone, &refault_distance);
-> +
-> +	inc_zone_state(zone, WORKINGSET_REFAULT);
-> +
-> +	/*
-> +	 * Protected pages should be challenged when the refault
-> +	 * distance indicates that thrashing could be stopped by
-> +	 * increasing the inactive list at the cost of the active
-> +	 * list.
-> +	 */
-> +	if (refault_distance <= zone_page_state(zone, NR_ACTIVE_FILE)) {
-> +		inc_zone_state(zone, WORKINGSET_STALE);
-> +		zone->shrink_active++;
+> +	if (timeout < 1 || timeout > 128) {
+> +		dev_warn(driver_data->dev,
+> +			"Timeout can only be in the range [1-128] seconds");
+> +		return -EINVAL;
 > +	}
-> +}
-> +EXPORT_SYMBOL(workingset_refault);
-> +
-> +/**
-> + * workingset_activation - note a page activation
-> + * @page: page that is being activated
-> + */
-> +void workingset_activation(struct page *page)
-> +{
-> +	struct zone *zone = page_zone(page);
-> +
-> +	/*
-> +	 * The lists are rebalanced when the inactive list is observed
-> +	 * to be too small for activations.  An activation means that
-> +	 * the inactive list is now big enough again for at least one
-> +	 * page, so back off further deactivation.
-> +	 */
-> +	atomic_long_inc(&zone->workingset_time);
-> +	if (zone->shrink_active > 0)
-> +		zone->shrink_active--;
+> +	driver_data->timer_margin = fls(timeout) - 1;
+> +	return 0;
 > +}
 
-Strange mixture of exports and non-exports.  I assume you went with
-"enough to make it build".
+The core can test this also with the .min_timeout and .max_timeout fields of the watchdog_device.
+
+> +
+> +static const struct watchdog_info palmas_wdt_info = {
+> +	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
+> +	.identity = "Palmas Watchdog",
+> +	.firmware_version = 0,
+> +};
+> +
+> +static const struct watchdog_ops palmas_wdt_ops = {
+> +	.owner = THIS_MODULE,
+> +	.start = palmas_wdt_enable,
+> +	.stop = palmas_wdt_disable,
+> +	.ping = palmas_wdt_enable,
+
+Since .ping is the same as .start you don't need to add .ping .
+
+> +	.set_timeout = palmas_wdt_set_timeout,
+> +};
+> +
+> +static int palmas_wdt_probe(struct platform_device *pdev)
+> +{
+> +	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
+> +	struct palmas_wdt *driver_data;
+> +	struct watchdog_device *palmas_wdt;
+> +	int ret = 0;
+> +
+> +	driver_data = devm_kzalloc(&pdev->dev, sizeof(*driver_data),
+> +				   GFP_KERNEL);
+> +	if (!driver_data) {
+> +		dev_err(&pdev->dev, "Unable to alloacate watchdog device\n");
+> +		ret = -ENOMEM;
+> +		goto err;
+> +	}
+> +
+> +	driver_data->palmas = palmas;
+> +
+> +	palmas_wdt = &driver_data->wdt;
+> +
+> +	palmas_wdt->info = &palmas_wdt_info;
+> +	palmas_wdt->ops = &palmas_wdt_ops;
+> +	watchdog_set_nowayout(palmas_wdt, nowayout);
+> +	watchdog_set_drvdata(palmas_wdt, driver_data);
+
+
+I think you want a watchdog_init_timeout(struct watchdog_device *wdd, unsigned int timeout_parm, struct device *dev); here.
+And also make sure that the watchdog isn't running.
+
+> +
+> +	ret = watchdog_register_device(&driver_data->wdt);
+> +	if (ret) {
+> +		platform_set_drvdata(pdev, NULL);
+> +		goto err;
+> +	}
+> +
+> +	dev_set_drvdata(&pdev->dev, driver_data);
+> +
+> +	return 0;
+> +err:
+> +	return ret;
+> +}
+> +
+> +static int palmas_wdt_remove(struct platform_device *pdev)
+> +{
+> +	struct palmas_wdt *driver_data = dev_get_drvdata(&pdev->dev);
+> +
+> +	watchdog_unregister_device(&driver_data->wdt);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct of_device_id of_palmas_match_tbl[] = {
+> +	{ .compatible = "ti,palmas-wdt", },
+> +	{ .compatible = "ti,twl6035-wdt", },
+> +	{ .compatible = "ti,twl6036-wdt", },
+> +	{ .compatible = "ti,twl6037-wdt", },
+> +	{ .compatible = "ti,tps65913-wdt", },
+> +	{ .compatible = "ti,tps65914-wdt", },
+> +	{ .compatible = "ti,tps80036-wdt", },
+> +	{ /* end */ }
+> +};
+> +
+> +static struct platform_driver palmas_wdt_driver = {
+> +	.probe = palmas_wdt_probe,
+> +	.remove = palmas_wdt_remove,
+> +	.driver = {
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = of_palmas_match_tbl,
+> +		.name = "palmas-wdt",
+> +	},
+> +};
+> +
+> +module_platform_driver(palmas_wdt_driver);
+> +
+> +MODULE_AUTHOR("Graeme Gregory <gg@slimlogic.co.uk>");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:palmas-wdt");
+> +MODULE_DEVICE_TABLE(of, of_palmas_match_tbl);
+> -- 
+> 1.7.0.4
+> 
+
+If you can add the devicetree bindings Documentation and the Kconfig patch together with the revised version of this patch into a single patch then we can complete the review.
+
+Kind regards,
+Wim.
 
