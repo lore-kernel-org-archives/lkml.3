@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802Ab3HTTOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 15:14:15 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:40063 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab3HTTOM (ORCPT
+	id S1751517Ab3HTTQO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 15:16:14 -0400
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:57905 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab3HTTQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 15:14:12 -0400
+	Tue, 20 Aug 2013 15:16:13 -0400
+Date: Tue, 20 Aug 2013 21:16:11 +0200
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Daniel J Blueman <daniel@numascale-asia.com>
+Subject: Re: [PATCH 1/2] usb: fix cleanup after failure in hub_configure()
+Message-ID: <20130820191611.GA32209@shrek.podlesie.net>
+References: <20130820184236.GA782@shrek.podlesie.net>
+ <Pine.LNX.4.44L0.1308201457380.892-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20130820190529.GA24512@redhat.com>
-References: <20130819172524.GA22268@redhat.com> <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com>
- <20130819183319.GA24846@redhat.com> <CALCETrWrpNszRGCRRMLgiOopcSdDShB3Mck6gRPco=dAZeX3pQ@mail.gmail.com>
- <20130819184355.GA25362@redhat.com> <CALCETrU4gTfzcpeEo-X7o-yZefKiw9BVNKdcN4fThUeiuZtOOg@mail.gmail.com>
- <20130820185043.GA24040@redhat.com> <CALCETrUjohT2D=jtVQ9mnbeUr2oJ9VoN812PtQhaB2ZZ89isNA@mail.gmail.com>
- <20130820190529.GA24512@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 20 Aug 2013 12:13:50 -0700
-Message-ID: <CALCETrVC15BjcRMk2tc-SRT3tUr24057Zxt5ARQ-2Eq7RhjO2w@mail.gmail.com>
-Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Brad Spengler <spender@grsecurity.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Colin Walters <walters@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1308201457380.892-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 12:05 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 08/20, Andy Lutomirski wrote:
->>
->> On Tue, Aug 20, 2013 at 11:50 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> >
->> >> Currently (with or without your patch), vfork() followed by
->> >> unshare(CLONE_NEWUSER) or unshare(CLONE_NEWPID) will unshare the VM.
->> >
->> > Could you spell please?
->> >
->> > We never unshare the VM. CLONE_VM in sys_unshare() paths just means
->> > "fail unless ->mm is not shared".
->> >
->>
->> Argh.  In that case this is probably buggy,
->
-> I don't think so. Just we can't really unshare ->mm or implement
-> unshare(CLONE_THREAD). We simply pretend it works if there is nothing
-> to unshare.
->
->> sys_unshare will see CLONE_NEWPID or CLONE_NEWUSER and set
->> CLONE_THREAD.  Then it will see CLONE_THREAD and set CLONE_VM.
->
-> This matches copy_process() to some degree... but looks confusing,
-> I agree.
+On Tue, Aug 20, 2013 at 02:59:18PM -0400, Alan Stern wrote:
+> On Tue, 20 Aug 2013, Krzysztof Mazur wrote:
+> 
+> > > Why bother with a separate jump label?  Just set maxchild to 0 whenever 
+> > > a failure occurs.
+> > > 
+> > 
+> > Initially I had just straightforward "dev->maxchild = 0;" after fail,
+> > but I changed that to simplify the second patch and be able to
+> > use goto fail:
+> > 
+> > 	ret = usb_hub_create_port_device(hub, i + 1);
+> > 	if (ret < 0) {
+> > 		dev_err(hub->intfdev,
+> > 			"couldn't create port%d device.\n", i + 1);
+> > 		hdev->maxchild = i;
+> > 		goto fail;
+> > 	}
+> > 
+> > and avoid "return ret" here or something like
+> > 
+> > 	if (hdev->maxchild == hub->descriptor->bNbrPorts)
+> > 		hdev->maxchild = 0;
+> > 
+> > in the fail path.
+> 
+> The second patch can either clean up the port devices by hand, or else 
+> jump to a new label after the line that sets maxchild to 0.
+> Alan Stern
 
-Huh?  Doesn't this mean that unshare(CLONE_NEWPID); vfork() will work
-with your patches, but vfork(); unshare(CLONE_NEWPID) will fail?  (I
-admit I haven't tested it.)
+I think that new label is better, it's equivalent to previous version
+except for ugly rename of original fail label.
 
---Andy
+Thanks,
+Krzysiek
+-- >8 --
+Subject: [PATCH 2/2 v2] usb: fail on usb_hub_create_port_device() errors
+
+Ignoring usb_hub_create_port_device() errors cause later NULL pointer
+deference when uninitialized hub->ports[i] entries are dereferenced
+after port memory allocation error.
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+---
+ drivers/usb/core/hub.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index affed11..292ffa8 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1557,10 +1557,15 @@ static int hub_configure(struct usb_hub *hub,
+ 	if (hub->has_indicators && blinkenlights)
+ 		hub->indicator [0] = INDICATOR_CYCLE;
+ 
+-	for (i = 0; i < hdev->maxchild; i++)
+-		if (usb_hub_create_port_device(hub, i + 1) < 0)
++	for (i = 0; i < hdev->maxchild; i++) {
++		ret = usb_hub_create_port_device(hub, i + 1);
++		if (ret < 0) {
+ 			dev_err(hub->intfdev,
+ 				"couldn't create port%d device.\n", i + 1);
++			hdev->maxchild = i;
++			goto fail_keep_maxchild;
++		}
++	}
+ 
+ 	usb_hub_adjust_deviceremovable(hdev, hub->descriptor);
+ 
+@@ -1569,6 +1574,7 @@ static int hub_configure(struct usb_hub *hub,
+ 
+ fail:
+ 	hdev->maxchild = 0;
++fail_keep_maxchild:
+ 	dev_err (hub_dev, "config failed, %s (err %d)\n",
+ 			message, ret);
+ 	/* hub_disconnect() frees urb and descriptor */
+-- 
+1.8.4.rc1.409.gbd48715
+
