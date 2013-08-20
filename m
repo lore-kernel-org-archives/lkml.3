@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab3HTQxm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:53:42 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37198 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab3HTQxk (ORCPT
+	id S1751511Ab3HTQ54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:57:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35248 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab3HTQ5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:53:40 -0400
-Message-ID: <52139F0F.6090507@wwwdotorg.org>
-Date: Tue, 20 Aug 2013 10:53:35 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 20 Aug 2013 12:57:54 -0400
+Message-ID: <5213A002.7020408@infradead.org>
+Date: Tue, 20 Aug 2013 09:57:38 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: balbi@ti.com, myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, grant.likely@linaro.org, rob@landley.net,
-        ian.campbell@citrix.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        rob.herring@calxeda.com, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, bcousson@baylibre.com
-Subject: Re: [PATCH 1/2] extcon: extcon-dra7xx: Add extcon driver for USB
- ID detection
-References: <1376648029-30659-1-git-send-email-george.cherian@ti.com> <1376648029-30659-2-git-send-email-george.cherian@ti.com> <52127284.6030506@wwwdotorg.org> <521312CC.8060003@ti.com>
-In-Reply-To: <521312CC.8060003@ti.com>
-X-Enigmail-Version: 1.4.6
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH -mm] docs: Document soft dirty behaviour for freshly created
+ memory regions
+References: <20130820153132.GK18673@moon>
+In-Reply-To: <20130820153132.GK18673@moon>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 12:55 AM, George Cherian wrote:
-> Hi Stephen,
+On 08/20/13 08:31, Cyrill Gorcunov wrote:
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Matt Mackall <mpm@selenic.com>
+> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  Documentation/vm/soft-dirty.txt |    7 +++++++
+>  1 file changed, 7 insertions(+)
 > 
-> Thanks for your review.
-> 
-> On 8/20/2013 1:01 AM, Stephen Warren wrote:
-> 
->> On 08/16/2013 04:13 AM, George Cherian wrote:
->>> Adding extcon driver for USB ID detection to dynamically
->>> configure USB Host/Peripheral mode.
->>> diff --git
->>> a/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
->>> b/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
->>> +EXTCON FOR DRA7xx
->>> +
->>> +Required Properties:
->> Please at lest explain what a DRA7xxx is, and the purpose of the HW
->> module this binding describes.
-> 
-> DRA7xx is the SoC name and the USB VID  detection is implemented via gpio's
-> Basically it does only ID detection via GPIO and there is no VBUS
-> detection in h/w.
+> Index: linux-2.6.git/Documentation/vm/soft-dirty.txt
+> ===================================================================
+> --- linux-2.6.git.orig/Documentation/vm/soft-dirty.txt
+> +++ linux-2.6.git/Documentation/vm/soft-dirty.txt
+> @@ -28,6 +28,13 @@ This is so, since the pages are still ma
+>  the kernel does is finds this fact out and puts both writable and soft-dirty
+>  bits on the PTE.
+>  
+> +  While in most cases tracking memory changes by #PF-s is more than enough
+                                                                       enough,
 
-If there's no SoC-specific HW, then the binding has nothing to do with
-the SoC; it's entirely generic.
+> +there is still a scenario when we can loose soft dirty bit -- a task does
+                                         lose soft dirty bits -- a task
 
-I think instead, you need to define a generic "gpio-usb-vid" binding
-instead.
+> +unmap previously mapped memory region and then maps new one exactly at the
 
-Otherwise, ever SoC that doesn't have explicit USB VID detection HW is
-going to re-invent the exact same binding, with pointless differences,
-rather than using a single generic binding.
+   unmaps a previously mapped memory region and then maps a new one at exactly the
 
->>> + - compatible : Should be "ti,dra7xx-usb"
->>
->> If this is a USB VID detector rather than a full USB host controller,
->> then "usb" in the binding is a bit over-reaching. Perhaps "-usb-vid" or
->> "-usb-vid-detector" would be more accurate.
-> 
-> This will be renamed to dra7xx-extcon.
+> +same place. When unmap called the kernel internally clears PTEs values
 
-So no, that rename doesn't sound correct.
+               When unmap is called, the kernel internally clears PTE values
 
->>> + - gpios : phandle to ID pin and interrupt gpio.
->>
->> Why does the interrupt line need to be included in a list of GPIOs?
-> 
-> ID pins are connected to pcf8575, and the pcf8575's interrupt line is
-> inturn connected to
-> gpio bank6 pin 11, we use this gpio interrupt to detect the ID pin change.
+> +including soft dirty bit. To notify user space application about such
+                        bits.
 
-In that case, the PCF8575 node needs to be a GPIO controller and an IRQ
-controller, as does the driver for the PCF8575. This binding should have
-a single entry in the gpios property, and the driver can call
-gpio_to_irq() on that so it knows which IRQ to request.
+> +memory region renewal the kernel always mark new memory regions (and
+                                           marks
+
+> +expanded regions) as soft dirtified.
+
+or:                  as soft dirty.
+
+>  
+>    This feature is actively used by the checkpoint-restore project. You
+>  can find more details about it on http://criu.org
+> --
+
+
+-- 
+~Randy
