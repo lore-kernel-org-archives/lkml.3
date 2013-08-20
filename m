@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606Ab3HTOG4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 10:06:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27945 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab3HTOGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 10:06:55 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=F0my4ousGMIA:10 a=rtmEYS8grzxXBPKPYe4A:9 a=CjuIK1q_8ugA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 20 Aug 2013 10:06:51 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
-        Kent Overstreet <kmo@daterainc.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.10.6-rt3
-Message-ID: <20130820100651.32e1b79c@gandalf.local.home>
-In-Reply-To: <52131747.4010105@linutronix.de>
-References: <20130812163413.GI23040@linutronix.de>
-	<520D212F.7030400@localhost>
-	<20130815152210.5ed93696@gandalf.local.home>
-	<520DCE5F.1040402@linutronix.de>
-	<521254A0.6050603@localhost>
-	<20130819202903.692097ea@gandalf.local.home>
-	<20130819210208.426e01b3@gandalf.local.home>
-	<52131747.4010105@linutronix.de>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751389Ab3HTOK2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 10:10:28 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:57157 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750907Ab3HTOK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 10:10:26 -0400
+Message-ID: <1377007751.26268.27.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v4 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
+ for DWC3 core
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: balbi@ti.com
+Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
+        gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Paul Zimmerman <paul.zimmerman@synopsys.com>
+Date: Tue, 20 Aug 2013 17:09:11 +0300
+In-Reply-To: <20130820133712.GC26587@radagast>
+References: <1376992565-22292-1-git-send-email-iivanov@mm-sol.com>
+	 <1376992565-22292-3-git-send-email-iivanov@mm-sol.com>
+	 <20130820122907.GU26587@radagast>
+	 <1377005543.26268.22.camel@iivanov-dev.int.mm-sol.com>
+	 <20130820133712.GC26587@radagast>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Aug 2013 09:14:15 +0200
-Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+Hi,
 
-> On 08/20/2013 03:02 AM, Steven Rostedt wrote:
-> > Looking at it more, I can now see why they did what they did.
+On Tue, 2013-08-20 at 08:37 -0500, Felipe Balbi wrote: 
+> Hi,
 > 
-> He is the only user in the whole kernel. It is somehow hard to believe
-> that it can't be solved differently.
+> On Tue, Aug 20, 2013 at 04:32:23PM +0300, Ivan T. Ivanov wrote:
+> > > On Tue, Aug 20, 2013 at 12:56:04PM +0300, Ivan T. Ivanov wrote:
+> > > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > > > 
+> > > > These drivers handles control and configuration of the HS
+> > > > and SS USB PHY transceivers. They are part of the driver
+> > > > which manage Synopsys DesignWare USB3 controller stack
+> > > > inside Qualcomm SoC's.
+> > > > 
+> > > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > > > ---
+> > > >  drivers/usb/phy/Kconfig           |   11 ++
+> > > >  drivers/usb/phy/Makefile          |    2 +
+> > > >  drivers/usb/phy/phy-msm-dwc3-hs.c |  327 ++++++++++++++++++++++++++++++++
+> > > >  drivers/usb/phy/phy-msm-dwc3-ss.c |  374 +++++++++++++++++++++++++++++++++++++
+> > > 
+> > > please rename these PHY drivers, they have nothing to do with DWC3. PHYs
+> > > don't care about the USB controller.
+> > 
+> > I think they are SNPS DesignWare PHY's, additionally
+> > wrapped with Qualcomm logic. I could substitute "dwc3"
+> > with just "dw", which will be more correct.
 > 
+> alright, thank you. Let's add Paul to the loop since he might have very
+> good insight in the synopsys PHYs.
+> 
+> mental note: if any other platform shows up with Synopsys PHY, ask them
+> to use this driver instead :-)
 
-Perhaps. But if I understand the code, this is what they have.
+I really doubt that this will bi possible. Control of the PHY's is
+not directly trough ULPI, UTMI or PIPE3 interfaces, but trough
+QSCRATCH registers, which of course is highly Qualcomm specific.
 
-When a request is sent out, the writes must wait till it is complete
-before it can do anything, thus the writers wait. When the request
-finishes (by a different thread), it releases the reader, then the
-writers can continue.
+Regards,
+Ivan
 
-The problem is that the task that sends the request does not wait for
-it to finish. But until the request does finish, all writers must wait.
-To complicate the matter, it appears that more than one request can be
-in transition at a time. That is, its not just a single request the a
-writer must wait for, it could be many.
 
-The only way I can think of at the moment to fix this without
-non-owner, is to set up a wait queue, and a ref count. Basically have
-this:
-
-writer:
-
-  again:
-	down_write(lock);
-	if (refcount) {
-		up_write(lock);
-		wait_event(wq, !refcount);
-		goto again;
-	}
-
-reader:
-	down_read(lock);
-	refcount++;
-	request();
-	up_read(lock);
-
-completion:
-
-	down_read(lock);
-	refcount--;
-	up_read_(lock);
-
-The refcount would need to be an atomic, but I think this would work.
-
-Maybe I'll submit it to get rid of the one user of non_owner().
-
--- Steve
