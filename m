@@ -1,156 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456Ab3HTHt1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 03:49:27 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:35633 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295Ab3HTHt0 (ORCPT
+	id S1751511Ab3HTHvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 03:51:13 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:36115 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295Ab3HTHvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 03:49:26 -0400
-X-Spam-Score: -101.0
-Message-ID: <52131F48.1030002@asianux.com>
-Date: Tue, 20 Aug 2013 15:48:24 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 20 Aug 2013 03:51:12 -0400
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
-        riel@redhat.com, hughd@google.com, xemul@parallels.com,
-        rientjes@google.com, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] mm: mempolicy: the failure processing about mpol_to_str()
-References: <5212E8DF.5020209@asianux.com> <20130820053036.GB18673@moon> <52130194.4030903@asianux.com> <20130820064730.GD18673@moon>
-In-Reply-To: <20130820064730.GD18673@moon>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130820072143.GJ27005@ZenIV.linux.org.uk>
+References: <20130706000949.GD16853@hostway.ca>
+	<CAOJsxLGA+Aha8JcPsWyNd3BLQ6L0g7iznN0o2fG5yL5Xw0s8Lg@mail.gmail.com>
+	<20130819201717.GA23608@hostway.ca>
+	<0000014098447577-0d3e3f6b-f97b-4c73-946d-d70b697ce194-000000@email.amazonses.com>
+	<CA+55aFxiYzxLDUnr+9BGQ+fsfmb1T8_zW4fOOC=SQ4rVzwbv4A@mail.gmail.com>
+	<20130820040648.GG27005@ZenIV.linux.org.uk>
+	<CAEcaRjip29P8TdMHF8zJ3zzsQj7o_B9chEz7Q6xH0Bqtw3A-jg@mail.gmail.com>
+	<20130820072143.GJ27005@ZenIV.linux.org.uk>
+Date: Tue, 20 Aug 2013 00:51:11 -0700
+Message-ID: <CAEcaRjg7GJhEbQoduup6xQKea4Pn4+SOgv8GbbJUeU=xR74dVQ@mail.gmail.com>
+Subject: Re: [3.10] Oopses in kmem_cache_allocate() via prepare_creds()
+From: Ian Applegate <ia@cloudflare.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Lameter <cl@gentwo.org>, Simon Kirby <sim@hostway.ca>,
+        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 02:47 PM, Cyrill Gorcunov wrote:
-> On Tue, Aug 20, 2013 at 01:41:40PM +0800, Chen Gang wrote:
->>
->>> sure you'll have to change shmem_show_mpol statement to return int code.
->>> Won't this be more short and convenient?
->>>
->>>
->>
->> Hmm... if return -ENOSPC, in common processing, it still need continue
->> (but need let outside know about the string truncation).
->>
->> So I still suggest to give more check for it.
-> 
-> I still don't like adding additional code like
-> 
-> +	ret = mpol_to_str(buffer, sizeof(buffer), mpol);
-> +	if (ret < 0)
-> +               switch (ret) {
-> +               case -ENOSPC:
-> +                       printk(KERN_WARNING
-> +                               "in %s: string is truncated in mpol_to_str().\n",
-> +                               __func__);
-> +               default:
-> +                       printk(KERN_ERR
-> +                               "in %s: call mpol_to_str() fail, errcode: %d. buffer: %p, size: %zu, pol: %p\n",
-> +                               __func__, ret, buffer, sizeof(buffer), mpol);
-> +                       return;
-> +               }
-> 
-> this code is pretty neat for debugging purpose I think but in most case (if
-> only I've not missed something obvious) it simply won't be the case.
+Unfortunately no boxen with CONFIG_DEBUG_MUTEXES among them. I can
+enable on a few and should have some results within the day. These
+mainly serve (quite a bit of) HTTP/S cache traffic.
+
+On Tue, Aug 20, 2013 at 12:21 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Tue, Aug 20, 2013 at 12:17:52AM -0700, Ian Applegate wrote:
+>> We are also seeing this or a similar issue. On a fairly widespread
+>> deployment of 3.10.1 & 3.10.6 this occurred fairly consistently on the
+>> order of 36 days (combined MTBF.)
 >
-
-For mpol_to_str(), it is for printing string, I suggest to fill buffer
-as full as possible like another printing string functions, -ENOSPC is
-not critical error, callers may can bear it, and still want to continue.
-
-For 2 callers, I still suggest to process '-ENOSPC' and continue, it is
-really not a critical error, they can continue.
-
-For the 'default' error processing:
-
-  I still suggest to 'printk' in shmem_show_mpol(), because when failure occurs, it has no return value to mark the failure to upper caller.
-  Hmm... but for show_numa_map(), may remove the 'printk', only return the error code is OK. :-)
-
-
-Thanks.
-
-> Won't somthing like below do the same but with smaller code change?
-> Note I've not even compiled it but it shows the idea.
-> ---
->  fs/proc/task_mmu.c |    4 +++-
->  mm/shmem.c         |   17 +++++++++--------
->  2 files changed, 12 insertions(+), 9 deletions(-)
-> 
-> Index: linux-2.6.git/fs/proc/task_mmu.c
-> ===================================================================
-> --- linux-2.6.git.orig/fs/proc/task_mmu.c
-> +++ linux-2.6.git/fs/proc/task_mmu.c
-> @@ -1402,8 +1402,10 @@ static int show_numa_map(struct seq_file
->  	walk.mm = mm;
->  
->  	pol = get_vma_policy(task, vma, vma->vm_start);
-> -	mpol_to_str(buffer, sizeof(buffer), pol);
-> +	n = mpol_to_str(buffer, sizeof(buffer), pol);
->  	mpol_cond_put(pol);
-> +	if (n < 0)
-> +		return n;
->  
->  	seq_printf(m, "%08lx %s", vma->vm_start, buffer);
->  
-> Index: linux-2.6.git/mm/shmem.c
-> ===================================================================
-> --- linux-2.6.git.orig/mm/shmem.c
-> +++ linux-2.6.git/mm/shmem.c
-> @@ -883,16 +883,20 @@ redirty:
->  
->  #ifdef CONFIG_NUMA
->  #ifdef CONFIG_TMPFS
-> -static void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
-> +static int shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
->  {
->  	char buffer[64];
-> +	int ret;
->  
->  	if (!mpol || mpol->mode == MPOL_DEFAULT)
-> -		return;		/* show nothing */
-> +		return 0;	/* show nothing */
->  
-> -	mpol_to_str(buffer, sizeof(buffer), mpol);
-> +	ret = mpol_to_str(buffer, sizeof(buffer), mpol);
-> +	if (ret < 0)
-> +		return ret;
->  
->  	seq_printf(seq, ",mpol=%s", buffer);
-> +	return 0;
->  }
->  
->  static struct mempolicy *shmem_get_sbmpol(struct shmem_sb_info *sbinfo)
-> @@ -951,9 +955,7 @@ static struct page *shmem_alloc_page(gfp
->  }
->  #else /* !CONFIG_NUMA */
->  #ifdef CONFIG_TMPFS
-> -static inline void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
-> -{
-> -}
-> +static inline int shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol) { return 0; }
->  #endif /* CONFIG_TMPFS */
->  
->  static inline struct page *shmem_swapin(swp_entry_t swap, gfp_t gfp,
-> @@ -2577,8 +2579,7 @@ static int shmem_show_options(struct seq
->  	if (!gid_eq(sbinfo->gid, GLOBAL_ROOT_GID))
->  		seq_printf(seq, ",gid=%u",
->  				from_kgid_munged(&init_user_ns, sbinfo->gid));
-> -	shmem_show_mpol(seq, sbinfo->mpol);
-> -	return 0;
-> +	return shmem_show_mpol(seq, sbinfo->mpol);
->  }
->  #endif /* CONFIG_TMPFS */
->  
-> 
-> 
-
-
--- 
-Chen Gang
+> Do you have any boxen with CONFIG_DEBUG_MUTEXES among those?  What
+> kind of setup do you have on those, BTW?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
