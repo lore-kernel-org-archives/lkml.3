@@ -1,109 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab3HTCgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 22:36:44 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:5397 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751401Ab3HTCgn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 22:36:43 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmMHAOfVElJ5LJ62/2dsb2JhbABagwWDN7dHhTuBJBd0giQBAQUnExwjEAgDDgoJJQ8FJQMhE4gPqzIWkEYHgxt3A5djkVaBYYFNKg
-Date: Tue, 20 Aug 2013 12:36:15 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH v3 3/5] mm: Notify filesystems when it's time to apply a
- deferred cmtime update
-Message-ID: <20130820023615.GE6023@dastard>
-References: <cover.1376679411.git.luto@amacapital.net>
- <ec267e95fd21891986373c7af1c72b4c8b507332.1376679411.git.luto@amacapital.net>
+	id S1751929Ab3HTCh1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 22:37:27 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:42216 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751401Ab3HTChZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 22:37:25 -0400
+Date: Mon, 19 Aug 2013 19:37:17 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/3] v2 Documentation updates for 3.12
+Message-ID: <20130820023717.GA29357@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ec267e95fd21891986373c7af1c72b4c8b507332.1376679411.git.luto@amacapital.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082002-5806-0000-0000-0000227AC918
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 04:22:10PM -0700, Andy Lutomirski wrote:
-> Filesystems that defer cmtime updates should update cmtime when any
-> of these events happen after a write via a mapping:
-> 
->  - The mapping is written back to disk.  This happens from all kinds
->    of places, all of which eventually call ->writepages.
-> 
->  - munmap is called or the mapping is removed when the process exits
-> 
->  - msync(MS_ASYNC) is called.  Linux currently does nothing for
->    msync(MS_ASYNC), but POSIX says that cmtime should be updated some
->    time between an mmaped write and the subsequent msync call.
->    MS_SYNC calls ->writepages, but MS_ASYNC needs special handling.
-> 
-> Filesystmes that defer cmtime updates should flush them on munmap or
-> exit.  Finding out that this happened through vm_ops is messy, so
-> add a new address space op for this.
-> 
-> It's not strictly necessary to call ->flush_cmtime after ->writepages,
-> but it simplifies the fs code.  As an optional optimization,
-> filesystems can call mapping_test_clear_cmtime themselves in
-> ->writepages (as long as they're careful to scan all the pages first
-> -- the cmtime bit may not be set when ->writepages is entered).
+Hello!
 
-.flush_cmtime is effectively a duplicate method.  We already have
-.update_time to notify filesystems that they need to update the
-timestamp in the inode transactionally.
+This series provides a few documentation updates:
 
-Indeed:
+1.	Update rcu_barrier() documentation to note that it no longer is
+	guaranteed to wait for a full grace period.  This guarantee was
+	a victim of energy efficiency.
 
-> +	/*
-> +	 * Userspace expects certain system calls to update cmtime if
-> +	 * a file has been recently written using a shared vma.  In
-> +	 * cases where cmtime may need to be updated but writepages is
-> +	 * not called, this is called instead.  (Implementations
-> +	 * should call mapping_test_clear_cmtime.)
-> +	 */
-> +	void (*flush_cmtime)(struct address_space *);
+2.	Update RTFP documentation.
 
-You say it can be implemented in the ->writepage(s) method, and all
-filesystems provide ->writepage(s) in some form. Therefore I would
-have thought it be best to simply require filesystems to check that
-mapping flag during those methods and update the inode directly when
-that is set?
+3.	Fix a control-dependency example in the memory-barriers
+	documentation.
 
-Indeed, the way you've set up the infrastructure, we'll have to
-rewrite the cmtime update code to enable writepages to update this
-within some other transaction. Perhaps you should just implement it
-that way first?
+Changes from v1 (https://lkml.org/lkml/2013/8/17/94):
 
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1928,6 +1928,18 @@ int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
->  		ret = mapping->a_ops->writepages(mapping, wbc);
->  	else
->  		ret = generic_writepages(mapping, wbc);
-> +
-> +	/*
-> +	 * ->writepages will call clear_page_dirty_for_io, which may, in turn,
-> +	 * mark the mapping for deferred cmtime update.  As an optimization,
-> +	 * a filesystem can flush the update at the end of ->writepages
-> +	 * (possibly avoiding a journal transaction, for example), but,
-> +	 * for simplicity, let filesystems skip that part and just implement
-> +	 * ->flush_cmtime.
-> +	 */
-> +	if (mapping->a_ops->flush_cmtime)
-> +		mapping->a_ops->flush_cmtime(mapping);
+o	Apply Josh Triplett review comments.
 
-And that's where you cannot call sb_pagefault_start/end....
+							Thanx, Paul
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+ b/Documentation/RCU/RTFP.txt        |  858 +++++++++++++++++++++++-------------
+ b/Documentation/RCU/rcubarrier.txt  |   12 
+ b/Documentation/memory-barriers.txt |   10 
+ 3 files changed, 567 insertions(+), 313 deletions(-)
+
