@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab3HTGlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 02:41:05 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:57907 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab3HTGlD (ORCPT
+	id S1752374Ab3HTGmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 02:42:15 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:61569 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab3HTGmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 02:41:03 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 5/5] cpufreq: Use cpufreq_policy_list for iterating over policies
-Date: Tue, 20 Aug 2013 12:08:26 +0530
-Message-Id: <41cb4f97aed084ff3f851c820f23283a02a02d42.1376979090.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1376979090.git.viresh.kumar@linaro.org>
-References: <cover.1376979090.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1376979090.git.viresh.kumar@linaro.org>
-References: <cover.1376979090.git.viresh.kumar@linaro.org>
+	Tue, 20 Aug 2013 02:42:13 -0400
+Date: Tue, 20 Aug 2013 08:42:09 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: linux-next: build warning after merge of the tip tree
+Message-ID: <20130820064209.GB9518@gmail.com>
+References: <20130819142633.82fb06bfa3bc0276fb09cbea@canb.auug.org.au>
+ <20130819065817.GB23742@gmail.com>
+ <20130820005234.GX19750@two.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820005234.GX19750@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To iterate over all policies we currently iterate over all CPUs and
-then get the policy for each of them.  Let's use the newly created
-cpufreq_policy_list for this purpose.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 0586bd2..81ceea6 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -961,8 +961,8 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 	struct cpufreq_policy *policy;
- 	unsigned long flags;
- #ifdef CONFIG_HOTPLUG_CPU
-+	struct cpufreq_policy *tpolicy;
- 	struct cpufreq_governor *gov;
--	int sibling;
- #endif
- 
- 	if (cpu_is_offline(cpu))
-@@ -985,11 +985,10 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- #ifdef CONFIG_HOTPLUG_CPU
- 	/* Check if this cpu was hot-unplugged earlier and has siblings */
- 	read_lock_irqsave(&cpufreq_driver_lock, flags);
--	for_each_online_cpu(sibling) {
--		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
--		if (cp && cpumask_test_cpu(cpu, cp->related_cpus)) {
-+	list_for_each_entry(tpolicy, &cpufreq_policy_list, policy_list) {
-+		if (cpumask_test_cpu(cpu, tpolicy->related_cpus)) {
- 			read_unlock_irqrestore(&cpufreq_driver_lock, flags);
--			ret = cpufreq_add_policy_cpu(cp, cpu, dev, frozen);
-+			ret = cpufreq_add_policy_cpu(tpolicy, cpu, dev, frozen);
- 			up_read(&cpufreq_rwsem);
- 			return ret;
- 		}
--- 
-1.7.12.rc2.18.g61b472e
+> > > Introduced by commit 9a55fdbe941e ("x86, asmlinkage, paravirt: Add
+> > > __visible/asmlinkage to xen paravirt ops").  The 2 definitions used to be
+> > > identical ... maybe there should be only one.
+> > 
+> > Andi, please send a fix for this build warning, against 
+> > tip:x86/asmlinkage.
+> 
+> I resent the patch. Thanks for the headsup.
 
+I suspect hpa missed it because the patch was opaque and 
+non-descriptive: the title talks about a 'warning' that is 
+supposedly fixed but the changelog does not explain what 
+warning it is and why the change matters.
+
+Please use the customary changelog style we use in the 
+kernel:
+
+  " Current code does (A), this has a problem when (B).
+    We can improve this doing (C), because (D)."
+
+I've seen this pattern of deficient changelogs a dozen 
+times in your patches this year alone ...
+
+Thanks,
+
+        Ingo
