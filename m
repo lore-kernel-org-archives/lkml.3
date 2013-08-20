@@ -1,105 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408Ab3HTIAY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:00:24 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22623 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab3HTIAX (ORCPT
+	id S1751489Ab3HTIBN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:01:13 -0400
+Received: from mail-ph.de-nserver.de ([85.158.179.214]:35417 "EHLO
+	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab3HTIBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:00:23 -0400
-Date: Tue, 20 Aug 2013 01:00:08 -0700
-From: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] acpi_i2c: set MODULE_LICENSE, MODULE_AUTHOR, and
- MODULE_DESCRIPTION
-Message-ID: <20130820080008.GE4587@cantor.us.oracle.com>
-Reply-To: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-References: <1376702795-25912-1-git-send-email-jerry.snitselaar@oracle.com>
- <2870377.GVGv4QBgQK@vostro.rjw.lan>
- <20130819233528.GA4587@cantor.us.oracle.com>
- <1838503.PYpZe7GJ51@vostro.rjw.lan>
- <20130820033403.GD4587@cantor.us.oracle.com>
- <20130820072820.GT4898@intel.com>
+	Tue, 20 Aug 2013 04:01:11 -0400
+X-Fcrdns: No
+Message-ID: <52132243.8050803@profihost.ag>
+Date: Tue, 20 Aug 2013 10:01:07 +0200
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130820072820.GT4898@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Kent Overstreet <kmo@daterainc.com>
+CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-bcache@vger.kernel.org
+Subject: Re: bcache: Fix a writeback performance regression
+References: <20130814225904.GA6427@kmo-pixel> <520C788A.1060208@profihost.ag> <520DFAB4.1050402@profihost.ag> <52114614.4070509@profihost.ag> <20130819222718.GA32104@kmo-pixel>
+In-Reply-To: <20130819222718.GA32104@kmo-pixel>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue Aug 20 13, Mika Westerberg wrote:
-> On Mon, Aug 19, 2013 at 08:34:03PM -0700, Jerry Snitselaar wrote:
-> > On Tue Aug 20 13, Rafael J. Wysocki wrote:
-> > > On Monday, August 19, 2013 04:35:29 PM Jerry Snitselaar wrote:
-> > > > On Tue Aug 20 13, Rafael J. Wysocki wrote:
-> > > > > On Monday, August 19, 2013 09:16:14 AM Mika Westerberg wrote:
-> > > > > > On Fri, Aug 16, 2013 at 06:26:35PM -0700, Jerry Snitselaar wrote:
-> > > > > > > Without MODULE_LICENSE set, I get the following with modprobe:
-> > > > > > > 
-> > > > > > > acpi_i2c: module license 'unspecified' taints kernel.
-> > > > > > > acpi_i2c: Unknown symbol i2c_new_device (err 0)
-> > > > > > > acpi_i2c: Unknown symbol acpi_dev_get_resources (err 0)
-> > > > > > > acpi_i2c: Unknown symbol acpi_dev_resource_interrupt (err 0)
-> > > > > > > acpi_i2c: Unknown symbol acpi_dev_free_resource_list (err 0)
-> > > > > > > 
-> > > > > > > Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-> > > > > > 
-> > > > > > Looks good to me.
-> > > > > > 
-> > > > > > Acked-by: Mika Westerbeg <mika.westerberg@linux.intel.com>
-> > > > > 
-> > > > > Well, OK, but do we need to be able to build that as a module?
-> > > > > 
-> > > > > Maybe it should just be yes or no?
-> > > > > 
-> > > > > Rafael
-> > > > > 
-> > > > 
-> > > > Perhaps have depends on I2C=y and be a bool instead of tristate?
-> > > 
-> > > Yes, that's the idea.
-> > > 
-> > Does this look okay Mika?
-> > 
-> > [PATCH] acpi_i2c: do not build as loadable module
-> > 
-> > Change from tristate to bool, and depend on I2C=y
+Am 20.08.2013 00:27, schrieb Kent Overstreet:
+> On Mon, Aug 19, 2013 at 12:09:24AM +0200, Stefan Priebe wrote:
+>>
+>> Vanilla 3.10.7 + bcache: Fix a writeback performance regression
+>>
+>> http://pastebin.com/raw.php?i=LXZk4cMH
 > 
-> I'm not sure about this. Does the below mean that we can't build the ACPI
-> I2C enumeration at all if I2C core is compiled as module?
-
-Yes, that was what Rafael was suggesting. If the ability to compile as
-a module if I2C is a module is needed, then we need the 1st patch.
-
-Jerry
-
+> Whoops, at first I thought this was the same bug as one I'd already been
+> chasing down that had been a harmless bug - turns out I didn't look
+> closely enough at the backtrace.
 > 
-> > 
-> > Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-> > ---
-> >  drivers/acpi/Kconfig | 5 +++--
-> >  1 file changed, 3 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> > index 100bd72..183a309 100644
-> > --- a/drivers/acpi/Kconfig
-> > +++ b/drivers/acpi/Kconfig
-> > @@ -181,8 +181,9 @@ config ACPI_DOCK
-> >           drive bays such as the IBM Ultrabay and the Dell Module Bay.
-> >  
-> >  config ACPI_I2C
-> > -       def_tristate I2C
-> > -       depends on I2C
-> > +       bool "I2C"
-> > +       depends on I2C=y
-> > +       default n
-> >         help
-> >           ACPI I2C enumeration support.
-> >  
-> > -- 
-> > 1.8.4.rc3.2.g2c2b664
+> What happened is background writeback is deadlocking, because for some
+> reason the workqueue it's running out of is a singlethreaded workqueue,
+> so as soon as it decides to queue enough writeback bios that it has to
+> sleep on that semaphore (which often won't happen due to the PD
+> controller based ratelimiting) - boom, deadlock.
+> 
+> Here's the fixup patch I just tested and am applying:
+
+thanks, this works fine. The only issue i still have, is that the
+dirty_date value starts at 0 and goes to a negative value after reboot.
+
+Greets,
+Stefan
