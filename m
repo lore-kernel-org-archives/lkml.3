@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab3HTU2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 16:28:32 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43288 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab3HTU2a (ORCPT
+	id S1751495Ab3HTUdD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 16:33:03 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42121 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab3HTUdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 16:28:30 -0400
-Message-ID: <5213D16C.40304@wwwdotorg.org>
-Date: Tue, 20 Aug 2013 14:28:28 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 20 Aug 2013 16:33:01 -0400
+Date: Tue, 20 Aug 2013 21:30:34 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
+        jiada_wang@mentor.com, robherring2@gmail.com, grant.likely@linaro.org,
+        broonie@kernel.org, vapier@gentoo.org, ralf@linux-mips.org,
+        kyungmin.park@samsung.com, shawn.guo@linaro.org,
+        sebastian.hesselbarth@gmail.com, LW@KARO-electronics.de,
+        t.figa@samsung.com, g.liakhovetski@gmx.de,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] clk: add common __clk_get(), __clk_put()
+	implementations
+Message-ID: <20130820203034.GC17845@n2100.arm.linux.org.uk>
+References: <1377020063-30213-1-git-send-email-s.nawrocki@samsung.com> <1377020063-30213-2-git-send-email-s.nawrocki@samsung.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 2/2] pinctrl: tegra: use pinctrl-utils APIs for mapping
-References: <1377000758-3795-1-git-send-email-ldewangan@nvidia.com> <1377000758-3795-2-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1377000758-3795-2-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377020063-30213-2-git-send-email-s.nawrocki@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 06:12 AM, Laxman Dewangan wrote:
-> Pin control utility functions provides the function for creating
-> map lists.
-> 
-> In place of implementing APIs locally in Tegra pin control driver
-> for creating map lists, use the utility functions. This reduces
-> the code size and avoid duplication.
+On Tue, Aug 20, 2013 at 07:34:20PM +0200, Sylwester Nawrocki wrote:
+> +int __clk_get(struct clk *clk)
+> +{
+> +	if (WARN_ON((!clk)))
+> +		return 0;
 
-This patch looks fine, so assuming the issue in patch 1/2 is fixed, this
-patch,
-Acked-by: Stephen Warren <swarren@nvidia.com>
+This changes the behaviour of clk_get()
 
-One thought though:
+> +
+> +	if (!try_module_get(clk->owner))
+> +		return 0;
 
-> diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-tegra.c
+If you want this to be safe against NULL pointers, just do this:
 
->  static const struct cfg_param {
->  	const char *property;
->  	enum tegra_pinconf_param param;
-> @@ -212,12 +112,13 @@ static const struct cfg_param {
->  	{"nvidia,drive-type",		TEGRA_PINCONF_PARAM_DRIVE_TYPE},
->  };
+	if (clk && !try_module_get(clk->owner))
+		return 0;
 
-If you add a new field to that struct that's a function pointer, which
-parses the content of the property and gives back an unsigned log or
-struct pinctrl_map, you could probably make most of
-tegra_pinctrl_dt_subnode_to_map() be generic too...
+> +
+> +	return 1;
+> +}
+> +EXPORT_SYMBOL(__clk_get);
+> +
+> +void __clk_put(struct clk *clk)
+> +{
+> +	if (!clk || IS_ERR(clk))
+> +		return;
+> +
+> +	module_put(clk->owner);
 
-But, that's certainly something for a separate patch if you want.
+Calling clk_put() with an error-pointer should be a Bad Thing and something
+that shouldn't be encouraged, so trapping it is probably unwise.  So, just
+do here:
+
+	if (clk)
+		module_put(clk->owner);
+
+If we do have some callers of this with ERR pointers, then we could add:
+
+	if (WARN_ON_ONCE(IS_ERR(clk)))
+		return;
+
+and remove it after a full kernel cycle or so.
