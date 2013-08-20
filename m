@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562Ab3HTVSf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:18:35 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:44967 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab3HTVSe convert rfc822-to-8bit (ORCPT
+	id S1751374Ab3HTVUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:20:07 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41393 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab3HTVUE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:18:34 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 20 Aug 2013 17:20:04 -0400
+Date: Tue, 20 Aug 2013 16:20:02 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v3 trivial 0/7] Miscellaneous Trivialities
+To: Michael Witten <mfwitten@gmail.com>
+Cc: Jiri Kosina <trivial@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
+References: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com>
+In-Reply-To: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com> (from
+	mfwitten@gmail.com on Tue Aug 20 11:02:42 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1377033602.2737.81@driftwood>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
-To: Fabio Estevam <festevam@gmail.com>, Liu Ying <Ying.Liu@freescale.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <CAOMZO5Afjp-zPzUaNE63L7Y2LjZbSrLupAJ_jFnf1Gg1+hx0Nw@mail.gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1376987932-5540-1-git-send-email-Ying.Liu@freescale.com>
- <1376987932-5540-2-git-send-email-Ying.Liu@freescale.com>
- <CAOMZO5Afjp-zPzUaNE63L7Y2LjZbSrLupAJ_jFnf1Gg1+hx0Nw@mail.gmail.com>
-Message-ID: <20130820211827.4443.97943@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH 1/3] ARM: imx6q: refactor some ldb related clocks
-Date: Tue, 20 Aug 2013 14:18:27 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Fabio Estevam (2013-08-20 08:40:52)
-> On Tue, Aug 20, 2013 at 5:38 AM, Liu Ying <Ying.Liu@freescale.com> wrote:
+On 08/20/2013 11:02:42 AM, Michael Witten wrote:
+> I've been sitting on some trivial patches for a while, and I'd just
+> like to get them out of the way.
 > 
-> > diff --git a/Documentation/devicetree/bindings/clock/imx6q-clock.txt b/Documentation/devicetree/bindings/clock/imx6q-clock.txt
-> > index 5a90a72..90e923e 100644
-> > --- a/Documentation/devicetree/bindings/clock/imx6q-clock.txt
-> > +++ b/Documentation/devicetree/bindings/clock/imx6q-clock.txt
-> > @@ -89,8 +89,6 @@ clocks and IDs.
-> >         gpu3d_shader            74
-> >         ipu1_podf               75
-> >         ipu2_podf               76
-> > -       ldb_di0_podf            77
-> > -       ldb_di1_podf            78
-> >         ipu1_di0_pre            79
-> >         ipu1_di1_pre            80
-> >         ipu2_di0_pre            81
+> Here is the series:
 > 
-> This causes a 'hole' in the clock numbering scheme: 74, 75, 76, 79, 80, etc
+>   [1] Docs: Kconfig: For readability, offset modifiers with commas
+>   [2] Docs: Kconfig: Use consistent whitespace indentation
+>   [3] Docs: Kconfig: Clean up the radiotap documentation
 
-How does this fit in with the idea of having a stable binding/ABI? Seems
-like changing this would be a bad idea for devices in the field that
-have older DTBs.
+Not a single worthwhile change in any of those three.
 
-Regards,
-Mike
+Excuse me:
 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Not a single, worthwhile change, in any of those three.
+
+>   [4] Docs: Kconfig: `devlopers' -> `developers'
+
+Sure, a typo, why not.
+
+Rob
