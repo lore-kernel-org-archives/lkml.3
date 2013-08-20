@@ -1,216 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751285Ab3HTSix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 14:38:53 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:58999 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab3HTSiw (ORCPT
+	id S1751336Ab3HTSkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 14:40:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36398 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab3HTSkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 14:38:52 -0400
-Date: Tue, 20 Aug 2013 11:38:43 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Rik van Riel <riel@surriel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH tip/core/rcu 1/5] rcu: Add duplicate-callback tests to
- rcutorture
-Message-ID: <20130820183843.GK29406@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130818022453.GA3475@linux.vnet.ibm.com>
- <1376967074-32530-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <52133EBF.3020605@cn.fujitsu.com>
+	Tue, 20 Aug 2013 14:40:52 -0400
+Date: Tue, 20 Aug 2013 11:40:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.93
+Message-ID: <20130820184050.GA25943@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nFreZHaLTZJo0R7j"
 Content-Disposition: inline
-In-Reply-To: <52133EBF.3020605@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082018-5518-0000-0000-000011593387
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 06:02:39PM +0800, Lai Jiangshan wrote:
-> On 08/20/2013 10:51 AM, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > This commit adds a object_debug option to rcutorture to allow the
-> > debug-object-based checks for duplicate call_rcu() invocations to
-> > be deterministically tested.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Cc: Sedat Dilek <sedat.dilek@gmail.com>
-> > Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> > Cc: Rik van Riel <riel@surriel.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-> > [ paulmck: Banish mid-function ifdef, more or less per Josh Triplett. ]
-> > ---
-> >  kernel/rcutorture.c | 45 +++++++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 45 insertions(+)
-> > 
-> > diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-> > index 3d936f0f..f5cf2bb 100644
-> > --- a/kernel/rcutorture.c
-> > +++ b/kernel/rcutorture.c
-> > @@ -66,6 +66,7 @@ static int fqs_duration;	/* Duration of bursts (us), 0 to disable. */
-> >  static int fqs_holdoff;		/* Hold time within burst (us). */
-> >  static int fqs_stutter = 3;	/* Wait time between bursts (s). */
-> >  static int n_barrier_cbs;	/* Number of callbacks to test RCU barriers. */
-> > +static int object_debug;	/* Test object-debug double call_rcu()?. */
-> >  static int onoff_interval;	/* Wait time between CPU hotplugs, 0=disable. */
-> >  static int onoff_holdoff;	/* Seconds after boot before CPU hotplugs. */
-> >  static int shutdown_secs;	/* Shutdown time (s).  <=0 for no shutdown. */
-> > @@ -100,6 +101,8 @@ module_param(fqs_stutter, int, 0444);
-> >  MODULE_PARM_DESC(fqs_stutter, "Wait time between fqs bursts (s)");
-> >  module_param(n_barrier_cbs, int, 0444);
-> >  MODULE_PARM_DESC(n_barrier_cbs, "# of callbacks/kthreads for barrier testing");
-> > +module_param(object_debug, int, 0444);
-> > +MODULE_PARM_DESC(object_debug, "Enable debug-object double call_rcu() testing");
-> >  module_param(onoff_interval, int, 0444);
-> >  MODULE_PARM_DESC(onoff_interval, "Time between CPU hotplugs (s), 0=disable");
-> >  module_param(onoff_holdoff, int, 0444);
-> > @@ -1934,6 +1937,46 @@ rcu_torture_cleanup(void)
-> >  		rcu_torture_print_module_parms(cur_ops, "End of test: SUCCESS");
-> >  }
-> >  
-> > +#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-> > +static void rcu_torture_leak_cb(struct rcu_head *rhp)
-> > +{
-> > +}
-> > +
-> > +static void rcu_torture_err_cb(struct rcu_head *rhp)
-> > +{
-> > +	/* This -might- happen due to race conditions, but is unlikely. */
-> > +	pr_alert("rcutorture: duplicated callback was invoked.\n");
-> > +}
-> > +#endif /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-> > +
-> > +/*
-> > + * Verify that double-free causes debug-objects to complain, but only
-> > + * if CONFIG_DEBUG_OBJECTS_RCU_HEAD=y.  Otherwise, say that the test
-> > + * cannot be carried out.
-> > + */
-> > +static void rcu_test_debug_objects(void)
-> > +{
-> > +#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-> > +	struct rcu_head rh1;
-> > +	struct rcu_head rh2;
-> > +
-> > +	init_rcu_head_on_stack(&rh1);
-> > +	init_rcu_head_on_stack(&rh2);
-> > +	pr_alert("rcutorture: WARN: Duplicate call_rcu() test starting.\n");
-> > +	local_irq_disable(); /* Make it hard to finish grace period. */
-> 
-> you can use rcu_read_lock() directly.
 
-I could do that as well, but it doesn't do everything that local_irq_disable()
-does.
+--nFreZHaLTZJo0R7j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Right, which means that my comment is bad.  Fixing both, thank you!
+I'm announcing the release of the 3.0.93 kernel.
 
-> > +	call_rcu(&rh1, rcu_torture_leak_cb); /* start grace period. */
+This reverts one problem patch in the 3.0.92 kernel.  If you don't use
+networking, you should be fine, no need to upgrade from 3.0.92 :)
 
-And the one above cannot start a grace period due to irqs being enabled.
-Which is -almost- always OK, but...
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
 
-> > +	call_rcu(&rh2, rcu_torture_err_cb);
+thanks,
 
-And this one should invoke rcu_torture_leak_cb instead of
-rcu_torture_err_cb().  Just results in a confusing error message, but...
+greg k-h
 
-OK, a few more fixes, then!
+------------
 
-> > +	call_rcu(&rh2, rcu_torture_err_cb); /* duplicate callback. */
-> > +	local_irq_enable();
-> > +	rcu_barrier();
-> > +	pr_alert("rcutorture: WARN: Duplicate call_rcu() test complete.\n");
-> > +	destroy_rcu_head_on_stack(&rh1);
-> > +	destroy_rcu_head_on_stack(&rh2);
-> > +#else /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-> > +	pr_alert("rcutorture: !CONFIG_DEBUG_OBJECTS_RCU_HEAD, not testing duplicate call_rcu()\n");
-> > +#endif /* #else #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-> > +}
+ Makefile                |    2 +-
+ net/netlink/genetlink.c |    7 -------
+ 2 files changed, 1 insertion(+), 8 deletions(-)
 
-The result is as follows.  Better?
+Greg Kroah-Hartman (2):
+      Revert "genetlink: fix family dump race"
+      Linux 3.0.93
 
-							Thanx, Paul
+I'm announcing the release of the 3.0.92 kernel.
 
-#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-static void rcu_torture_leak_cb(struct rcu_head *rhp)
-{
-}
+All users of the 3.0 kernel series must upgrade.
 
-static void rcu_torture_err_cb(struct rcu_head *rhp)
-{
-	/*
-	 * This -might- happen due to race conditions, but is unlikely.
-	 * The scenario that leads to this happening is that the
-	 * first of the pair of duplicate callbacks is queued,
-	 * someone else starts a grace period that includes that
-	 * callback, then the second of the pair must wait for the
-	 * next grace period.  Unlikely, but can happen.  If it
-	 * does happen, the debug-objects subsystem won't have splatted.
-	 */
-	pr_alert("rcutorture: duplicated callback was invoked.\n");
-}
-#endif /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
 
-/*
- * Verify that double-free causes debug-objects to complain, but only
- * if CONFIG_DEBUG_OBJECTS_RCU_HEAD=y.  Otherwise, say that the test
- * cannot be carried out.
- */
-static void rcu_test_debug_objects(void)
-{
-#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-	struct rcu_head rh1;
-	struct rcu_head rh2;
+thanks,
 
-	init_rcu_head_on_stack(&rh1);
-	init_rcu_head_on_stack(&rh2);
-	pr_alert("rcutorture: WARN: Duplicate call_rcu() test starting.\n");
-	preempt_disable(); /* Prevent preemption from interrupting test. */
-	rcu_read_lock(); /* Make it impossible to finish a grace period. */
-	call_rcu(&rh1, rcu_torture_leak_cb); /* Start grace period. */
-	local_irq_disable(); /* Make it harder to start a new grace period. */
-	call_rcu(&rh2, rcu_torture_leak_cb);
-	call_rcu(&rh2, rcu_torture_err_cb); /* Duplicate callback. */
-	local_irq_enable();
-	rcu_read_unlock();
-	preempt_enable();
-	rcu_barrier();
-	pr_alert("rcutorture: WARN: Duplicate call_rcu() test complete.\n");
-	destroy_rcu_head_on_stack(&rh1);
-	destroy_rcu_head_on_stack(&rh2);
-#else /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-	pr_alert("rcutorture: !CONFIG_DEBUG_OBJECTS_RCU_HEAD, not testing duplicate call_rcu()\n");
-#endif /* #else #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-}
+greg k-h
 
-> > +
-> >  static int __init
-> >  rcu_torture_init(void)
-> >  {
-> > @@ -2163,6 +2206,8 @@ rcu_torture_init(void)
-> >  		firsterr = retval;
-> >  		goto unwind;
-> >  	}
-> > +	if (object_debug)
-> > +		rcu_test_debug_objects();
-> >  	rcutorture_record_test_transition();
-> >  	mutex_unlock(&fullstop_mutex);
-> >  	return 0;
-> 
+------------
 
+ Makefile                                   |    2 +-
+ arch/arm/include/asm/hardware/cache-l2x0.h |    9 +++++++--
+ arch/arm/mm/cache-l2x0.c                   |   21 +++++++++++++++++++++
+ arch/cris/kernel/vmlinux.lds.S             |    1 +
+ arch/m68k/emu/natfeat.c                    |   23 +++++++++++++++++++----
+ arch/m68k/include/asm/div64.h              |    9 +++++----
+ arch/powerpc/Makefile                      |    2 +-
+ arch/sparc/lib/Makefile                    |    2 +-
+ arch/sparc/lib/ucmpdi2.c                   |   19 +++++++++++++++++++
+ drivers/usb/core/quirks.c                  |    6 ++++++
+ drivers/usb/serial/mos7720.c               |   21 ++++++++++++++-------
+ include/linux/hugetlb.h                    |   16 ++++++++++++++++
+ kernel/futex.c                             |    3 ++-
+ mm/hugetlb.c                               |   17 +++++++++++++++++
+ mm/nommu.c                                 |   10 ++++++++++
+ net/key/af_key.c                           |    1 +
+ net/netlink/genetlink.c                    |    7 +++++++
+ 17 files changed, 148 insertions(+), 21 deletions(-)
+
+Andreas Schwab (1):
+      m68k: Truncate base in do_div()
+
+Anton Blanchard (1):
+      powerpc: Use -mtraceback=no
+
+David S. Miller (1):
+      sparc32: Add ucmpdi2.o to obj-y instead of lib-y.
+
+Geert Uytterhoeven (1):
+      m68k/atari: ARAnyM - Fix NatFeat module support
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.92
+
+Jesper Nilsson (1):
+      CRIS: Add _sdata to vmlinux.lds.S
+
+Johan Hovold (1):
+      USB: mos7720: fix broken control requests
+
+Johannes Berg (1):
+      genetlink: fix family dump race
+
+Linus Torvalds (1):
+      vm: add no-mmu vm_iomap_memory() stub
+
+Linus Walleij (1):
+      ARM: 7080/1: l2x0: make sure I&D are not locked down on init
+
+Nicolas Dichtel (1):
+      af_key: initialize satype in key_notify_policy_flush()
+
+Oliver Neukum (1):
+      usb: add two quirky touchscreen
+
+Sam Ravnborg (1):
+      sparc32: add ucmpdi2
+
+Zhang Yi (1):
+      futex: Take hugepages into account when generating futex_key
+
+
+--nFreZHaLTZJo0R7j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSE7gyAAoJEDjbvchgkmk+EK0QAMnBq3HCtnwbnfAsKTTQxWm4
+fVwNPWilIUytzFRzqaBBpnshyXTa2CmEWhOeHmUf+CnWYP4mf92MNEuhkptNjQc5
++ZECp2mH22dc7yFrKwiV2M4k/vlHNyfS2Pejj2510Vn5nf159iJqqC16xuEJ0NeA
+WIeeQE9jKxkBBAOosacH1xgKxLoMGMxZEzlhkcKH6v05RlSANMgjYGU7cgY0m033
+LnnqS2uffqRSntKB0AU1zLLf0v1kRykrXLUn46U4vH5q0+UKloxbU0QejsEBJPEE
+u7TCOsOg1bfPsu1wwN2OdrnArPIZ18BcAu+VNGXl3W7GkyBBRarhSkEo3uBYeUZR
+RDOaCT7OG60NFOuL2MiPFyH9favT0Pm0HUxBYXNEhCUdBFKUVs0stvAiavZtKOdj
+QncpZjJOl/2woGFQ7IXn7Cmo9CrFssXs3mWFTLwlIy5Otfi59DFanGs6Owrdf4vf
+XtsyiVtoynIyyI0J++u5GE3MOD3EHSVz3P19jdISftIL2/bd1wLi6i0BsFS+jtGA
+dzNdjW+uhpSe1aCqe2KYJ2GfJi8vwaWTV8FFaMYW8ZWrYnWKUOxZoqgRpFDi6Rqs
+7cHT5pqK5PoAiFs4R2VSb/OEavDGiQaZ02J8MB5SWQjtkuZ6zKyXP9neC2FAF8Uh
+g3Z324Sm2HqoDP3vU3/m
+=ovK1
+-----END PGP SIGNATURE-----
+
+--nFreZHaLTZJo0R7j--
