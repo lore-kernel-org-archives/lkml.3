@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589Ab3HTWea (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 18:34:30 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:42443 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab3HTWe3 (ORCPT
+	id S1751716Ab3HTWkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 18:40:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38460 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab3HTWkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 18:34:29 -0400
-Subject: Re: [PATCH v3 trivial 0/7] Miscellaneous Trivialities
-Date: Tue, 20 Aug 2013 22:27:53 -0000
-From: Michael Witten <mfwitten@gmail.com>
-To: Rob Landley <rob@landley.net>
-Cc: Jiri Kosina <trivial@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
-Message-ID: <6a1db75a9ce0483b94e4c6b2989e547b-mfwitten@gmail.com>
-In-Reply-To: <1377033602.2737.81@driftwood>
-References: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com>
-            <1377033602.2737.81@driftwood>
+	Tue, 20 Aug 2013 18:40:33 -0400
+Date: Tue, 20 Aug 2013 15:40:32 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net
+Cc: Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Proposed stable release changes
+Message-ID: <20130820224032.GA20491@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Aug 2013 16:20:02 -0500, Rob Landley wrote:
-> On 08/20/2013 11:02:42 AM, Michael Witten wrote:
->> I've been sitting on some trivial patches for a while, and I'd just
->> like to get them out of the way.
->>
->> Here is the series:
->>
->>   [1] Docs: Kconfig: For readability, offset modifiers with commas
->>   [2] Docs: Kconfig: Use consistent whitespace indentation
->>   [3] Docs: Kconfig: Clean up the radiotap documentation
->
-> Not a single worthwhile change in any of those three.
->
-> Excuse me:
->
-> Not a single, worthwhile change, in any of those three.
+Hi all,
 
-Actually, your second attempt doesn't use commas properly.
+Given that I had to just revert a patch in the recent stable releases
+that didn't get enough time to "bake" in Linus's tree (or in -next), I
+figured it was worth discussing some possible changes with how "fast" I
+pick up patches for stable releases.
 
-In any case, this is *trivial*, miscellaneous work. I do not pretend
-to be making a major contribution; this is why I sent these patches `To:'
+So, how about this proposal:
 
-  Jiri Kosina <TRIVIAL@kernel.org>
+- I will wait for a -rc to come out with the patch in it before putting
+  it into a stable release, unless:
+	- the maintainer ACKs it, or sends it directly (like DaveM does
+	  for networking patches)
+	- I have seen enough discussion about a patch to show that it
+	  really does fix something / is good / doesn't cause problems.
+	- obviously safe, i.e. "add a device id" type thing.
 
-Other people are included as some kind of courtesy, and also so that
-any change that is actually non-trivial might be caught (as with the
-`hotplug' patch).
+Given that we have -rc releases every week, except for the initial -rc1
+release, I don't think this will really cause any major delays.
 
->>   [4] Docs: Kconfig: `devlopers' -> `developers'
->
-> Sure, a typo, why not.
+Also, now that we are about to head into my busy "travel season", odds
+are, I'll be at least a week behind anyway, so this would probably start
+happening without an "official" change.  It's been a boring summer, I've
+been able to keep up with the stable stuff really easily, causing
+problems like this :)
 
-When does a series of *trivial* changes become worthwhile? What's wrong
-with making refinements when it costs nothing? Must one always hide
-trivial alterations inside something more substantial?
+Objections?  Comments?
 
-All right. I get it; you personally don't give a damn. I certainly
-don't hold that against you. However, there *are* people who *do*
-care about such refinements, and a nasty, condescending email
-isn't going to alter our behavior.
+thanks,
 
-Sincerely,
-Michael Witten
+greg k-h
