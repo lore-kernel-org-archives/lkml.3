@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608Ab3HTAaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 20:30:13 -0400
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:49839 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab3HTAaL (ORCPT
+	id S1751582Ab3HTAfJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 20:35:09 -0400
+Received: from smtp1.Stanford.EDU ([171.67.219.81]:35548 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751243Ab3HTAfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 20:30:11 -0400
+	Mon, 19 Aug 2013 20:35:07 -0400
+Message-ID: <5212B9A8.9050900@ccrma.stanford.edu>
+Date: Mon, 19 Aug 2013 17:34:48 -0700
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwqQBdYUU2MfccDpzc2S+oiP23QKdbPnfJsnVw1TR_H+Q@mail.gmail.com>
-References: <1376929831-18214-1-git-send-email-richard.genoud@gmail.com>
-	<CAB9dFduWPr0n8c7ckZr=2AQ-h4sy4U9YYzTRw335Xaimc4tk-A@mail.gmail.com>
-	<CA+55aFwqQBdYUU2MfccDpzc2S+oiP23QKdbPnfJsnVw1TR_H+Q@mail.gmail.com>
-Date: Mon, 19 Aug 2013 20:30:10 -0400
-Message-ID: <CAB9dFdvnvk=yg3WWf1gqaFYZ8gm9vnnM7b+-a=bjDBRstBQeuA@mail.gmail.com>
-Subject: Re: [PATCH] proc: return on proc_readdir error
-From: Marc Dionne <marc.c.dionne@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Richard Genoud <richard.genoud@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Kent Overstreet <kmo@daterainc.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.6-rt3
+References: <20130812163413.GI23040@linutronix.de> <520D212F.7030400@localhost> <20130815152210.5ed93696@gandalf.local.home> <520DCE5F.1040402@linutronix.de> <521254A0.6050603@localhost> <20130819202903.692097ea@gandalf.local.home>
+In-Reply-To: <20130819202903.692097ea@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 7:49 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Aug 19, 2013 at 1:33 PM, Marc Dionne <marc.c.dionne@gmail.com> wrote:
+On 08/19/2013 05:29 PM, Steven Rostedt wrote:
+> On Mon, 19 Aug 2013 10:23:44 -0700
+> Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU> wrote:
+>
+>
+>>> The problem is that bcache is using new semaphore functions which it
+>>> just introduced which rt does not know about. The comment above their
+>>> definition says that it is wrong to use them and completion is the
+>>> right way to do it.
+>>> So my question is, why don't we use completion but this nasty hack?
+>
+> I think I'm going to send them an email about that.
+>
 >>
->> By my reading that commit (f0c3b5093add) also made proc_readdir always
->> return 0, so with this patch the effect I see is that no pid entries
->> are listed under /proc, breaking ps for instance.  I don't see how
->> even the previous version of proc_readdir could return a negative
->> value; looks like 1 and 0 were the only possible return values.
+>> In the meanwhile, any hope of a patch to be able to compile and test
+>> with my current configuration?
 >
-> Yes, see the other thread. The "return 1" case had gotten lost. I
-> think current git should get everything right, but please do test. I
-> did some testing of my own with a random little getdents test-program
-> (just checking that it got the same results with different (small)
-> buffer sizes), but it was by no means exhaustive.
->
->               Linus
+> Can you boot without enabling CONFIG_BCACHE?
 
-It does fix the symptoms I was seeing, thanks.  "ps" now has output
-and the pid entries are now visible again under /proc.
+I'm pretty sure I'll be able to do that. No real need in my personal 
+case AFAICT.
 
-Marc
+I'll try that next - it is just that I try very hard to keep the 
+configuration of my rt kernels as close as possible to the defaults that 
+Fedora uses (they get distributed as part of Planet CCRMA and there is 
+no telling what usage cases they will hit - it would be confusing to 
+have something that works on Fedora kernels and does not on equivalent 
+RT patched kernels).
+
+Thanks for the heads up!,
+-- Fernando
