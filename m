@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772Ab3HTRL7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 13:11:59 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38927 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab3HTRL6 (ORCPT
+	id S1751588Ab3HTROd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 13:14:33 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:39769 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab3HTROc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 13:11:58 -0400
-Date: Tue, 20 Aug 2013 18:11:48 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Richard Yao <ryao@gentoo.org>
-Cc: chanho.min@lge.com, Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Why are BSD-licensed LZ4 symbols GPL exported?
-Message-ID: <20130820171148.GA17832@srcf.ucam.org>
-References: <520D8C4C.7000704@gentoo.org>
+	Tue, 20 Aug 2013 13:14:32 -0400
+Message-ID: <5213A40C.6060509@arm.com>
+Date: Tue, 20 Aug 2013 18:14:52 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520D8C4C.7000704@gentoo.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Catalin Marinas <Catalin.Marinas@arm.com>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v3 0/6] ARM/ARM64 architected timer updates
+References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+In-Reply-To: <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 20 Aug 2013 17:14:28.0140 (UTC) FILETIME=[BA16CEC0:01CE9DC8]
+X-MC-Unique: 113082018142900201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 10:19:56PM -0400, Richard Yao wrote:
-> Why are the LZ4 symbols being GPL-exported when the LZ4 code is
-> BSD-licensed and no substantial changes appear to have been made when it
-> was merged?
+On 13/08/13 18:29, Sudeep KarkadaNagesha wrote:
+> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> 
+> This patch series adds support to configure the rate and enable the
+> event stream for architected timer. The event streams can be used to
+> impose a timeout on a WFE, to safeguard against any programming error
+> in case an expected event is not generated or even to implement
+> wfe-based timeouts for userspace locking implementations.
+> 
+> Since the timer control register is reset to zero on warm boot, CPU
+> PM notifier is added to re-initialize it.
+> 
+> Changes v2->v3:
+> 1. Moved ARM and ARM64 changes into separate patches
+> 2. Added native hwcaps definations(ARM/ARM64) and compat-specific
+>    definitions(ARM64) to the users for the event stream feature. 
+> 
+Hi Catalin,
 
-EXPORT_SYMBOL_GPL is intended an indication that using a symbol is 
-likely to result in you producing a derived work of the kernel, and the 
-kernel as a whole is under the GPL. It has nothing to do with additional 
-licenses that individual pieces of code may be available under.
+Can you review this version of the series ?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Regards,
+Sudeep
+
+
