@@ -1,481 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722Ab3HTIdG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:33:06 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:1676 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab3HTIdB (ORCPT
+	id S1751749Ab3HTIeB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:34:01 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:5666 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751362Ab3HTId7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:33:01 -0400
-Message-ID: <521329D0.1090104@atmel.com>
-Date: Tue, 20 Aug 2013 10:33:20 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 20 Aug 2013 04:33:59 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de096h8275bh8275dh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h1155h)
+Message-ID: <521329EA.3050900@freescale.com>
+Date: Tue, 20 Aug 2013 16:33:46 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Bo Shen <voice.shen@atmel.com>, <linux-pwm@vger.kernel.org>
-CC: Thierry Reding <thierry.reding@gmail.com>, <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [RFC PATCH] pwm: atmel-pwm: add pwm controller driver
-References: <1376881866-14214-1-git-send-email-voice.shen@atmel.com>
-In-Reply-To: <1376881866-14214-1-git-send-email-voice.shen@atmel.com>
+To: Vinod Koul <vinod.koul@intel.com>
+CC: <djbw@fb.com>, <leoli@freescale.com>, <scottwood@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 0/3] DMA: Freescale: Add support for 8-channel DMA
+ engine
+References: <1375094944-3343-1-git-send-email-hongbo.zhang@freescale.com> <20130729105901.GI29095@intel.com>
+In-Reply-To: <20130729105901.GI29095@intel.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/08/2013 05:11, Bo Shen :
-> add atmel pwm controller driver based on PWM framework
+On 07/29/2013 06:59 PM, Vinod Koul wrote:
+> On Mon, Jul 29, 2013 at 06:49:01PM +0800, hongbo.zhang@freescale.com wrote:
+>> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+>>
+>> Hi Vinod, Dan, Scott and Leo, please have a look at these V7 patches.
+> The dma relates changes look okay to me.
 >
-> this is basic function implementation of pwm controller
-> it can work with pwm based led and backlight
+> I need someone to review and ACK the DT bindings.
 >
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
->
-> ---
-> This patch is based on Linux v3.11 rc6
-> Tested on sama5d31ek and at91sam9m10g45ek board
-> ---
->   .../devicetree/bindings/pwm/atmel-pwm.txt          |   19 ++
->   drivers/pwm/Kconfig                                |    9 +
->   drivers/pwm/Makefile                               |    1 +
->   drivers/pwm/pwm-atmel.c                            |  327 ++++++++++++++++++++
->   4 files changed, 356 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/pwm/atmel-pwm.txt
->   create mode 100644 drivers/pwm/pwm-atmel.c
->
-> diff --git a/Documentation/devicetree/bindings/pwm/atmel-pwm.txt b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
-> new file mode 100644
-> index 0000000..127fcdb
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
-> @@ -0,0 +1,19 @@
-> +Atmel PWM controller
-> +
-> +Required properties:
-> +  - compatible: should be one of:
-> +    - "atmel,at91sam9rl-pwm"
-> +    - "atmel,sama5-pwm"
-
-No, the compatibility string should be: "atmel,sama5d3-pwm"
-
-> +  - reg: physical base address and length of the controller's registers
-> +  - #pwm-cells: Should be 3.
-> +    - The first cell specifies the per-chip index of the PWM to use
-> +    - The second cell is the period in nanoseconds
-> +    - The third cell is used to encode the polarity of PWM output
-> +
-> +Example:
-> +
-> +	pwm0: pwm@f8034000 {
-> +		compatible = "atmel,at91sam9rl-pwm";
-> +		reg = <0xf8034000 0x400>;
-> +		#pwm-cells = <3>;
-> +	};
-
-Can you add an example of consumer: it would make the example much more 
-understandable.
-
-> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> index 75840b5..54237b9 100644
-> --- a/drivers/pwm/Kconfig
-> +++ b/drivers/pwm/Kconfig
-> @@ -41,6 +41,15 @@ config PWM_AB8500
->   	  To compile this driver as a module, choose M here: the module
->   	  will be called pwm-ab8500.
->
-> +config PWM_ATMEL
-> +	tristate "Atmel PWM support"
-> +	depends on ARCH_AT91
-> +	help
-> +	  Generic PWM framework driver for Atmel SoC.
-> +
-> +	  To compile this driver as a module, choose M here: the module
-> +	  will be called pwm-atmel.
-> +
->   config PWM_ATMEL_TCB
->   	tristate "Atmel TC Block PWM support"
->   	depends on ATMEL_TCLIB && OF
-> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-> index 77a8c18..5b193f8 100644
-> --- a/drivers/pwm/Makefile
-> +++ b/drivers/pwm/Makefile
-> @@ -1,6 +1,7 @@
->   obj-$(CONFIG_PWM)		+= core.o
->   obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
->   obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
-> +obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
->   obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
->   obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
->   obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
-> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-> new file mode 100644
-> index 0000000..b83d68e
-> --- /dev/null
-> +++ b/drivers/pwm/pwm-atmel.c
-> @@ -0,0 +1,327 @@
-> +/*
-> + * Driver for Atmel Pulse Width Modulation Controller
-> + *
-> + * Copyright (C) 2013 Atmel Semiconductor Technology Ltd.
-
-use "Atmel Corporation" in copyright.
-
-> + *		 Bo Shen <voice.shen@atmel.com>
-> + *
-> + * GPL v2 or later
-> + */
-
-A general remark also pointed out by Thierry: please use more defined 
-constants in your code: it makes the code more readable and avoid this 
-black magic feeling when we read it.
+> ~Vinod
+Vinod,
+Are you using this tree?
+http://git.infradead.org/users/vkoul/slave-dma.git
+Did you merge these patches?
+Thanks.
+>> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
+>> adds support this DMA engine.
+>>
+>> V6->V7 changes:
+>> - only remove unnecessary "CHIP-dma" explanations in [1/3]
+>>
+>> V5->V6 changes:
+>> - minor updates of descriptions in binding document and Kconfig
+>> - remove [4/4], that should be another patch in future
+>>
+>> V4->V5 changes:
+>> - update description in the dt binding document, to make it more resonable
+>> - add new patch [4/4] to eliminate a compiling warning which already exists
+>>    for a long time
+>>
+>> V3->V4 changes:
+>> - introduce new patch [1/3] to revise the legacy dma binding document
+>> - and then add new paragraph to describe new dt node binding in [2/3]
+>> - rebase to latest kernel v3.11-rc1
+>>
+>> V2->V3 changes:
+>> - edit Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+>> - edit text string in Kconfig and the driver files, using "elo series" to
+>>    mention all the current "elo*"
+>>
+>> V1->V2 changes:
+>> - removed the codes handling the register dgsr1, since it isn't used currently
+>> - renamed the DMA DT compatible to "fsl,elo3-dma"
+>> - renamed the new dts files to "elo3-dma-<n>.dtsi"
+>>
+>> Hongbo Zhang (3):
+>>    DMA: Freescale: revise device tree binding document
+>>    DMA: Freescale: Add new 8-channel DMA engine device tree nodes
+>>    DMA: Freescale: update driver to support 8-channel DMA engine
+>>
+>>   .../devicetree/bindings/powerpc/fsl/dma.txt        |  114 +++++++++++++++-----
+>>   arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+>>   arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   81 ++++++++++++++
+>>   arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   81 ++++++++++++++
+>>   arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+>>   drivers/dma/Kconfig                                |    9 +-
+>>   drivers/dma/fsldma.c                               |    9 +-
+>>   drivers/dma/fsldma.h                               |    2 +-
+>>   8 files changed, 264 insertions(+), 40 deletions(-)
+>>   create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+>>   create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+>>
+>> -- 
+>> 1.7.9.5
+>>
+>>
+>>
 
 
-> +#include <linux/clk.h>
-> +#include <linux/err.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> +#include <linux/pinctrl/consumer.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/pwm.h>
-> +#include <linux/slab.h>
-> +
-> +#define PWM_MR		0x00
-> +#define PWM_ENA		0x04
-> +#define PWM_DIS		0x08
-> +#define PWM_SR		0x0C
-> +
-> +#define PWM_CMR		0x00
-> +
-> +/* The following register for PWM v1 */
-> +#define PWMv1_CDTY	0x04
-> +#define PWMv1_CPRD	0x08
-> +#define PWMv1_CUPD	0x10
-> +
-> +/* The following register for PWM v2 */
-> +#define PWMv2_CDTY	0x04
-> +#define PWMv2_CDTYUPD	0x08
-> +#define PWMv2_CPRD	0x0C
-> +#define PWMv2_CPRDUPD	0x10
-> +
-> +#define PWM_NUM		4
-> +
-> +struct atmel_pwm_chip {
-> +	struct pwm_chip chip;
-> +	struct clk *clk;
-> +	void __iomem *base;
-> +
-> +	void (*config)(struct atmel_pwm_chip *chip, struct pwm_device *pwm,
-> +			unsigned int dty, unsigned int prd);
-> +};
-> +
-> +#define to_atmel_pwm_chip(chip) container_of(chip, struct atmel_pwm_chip, chip)
-> +
-> +static inline u32 atmel_pwm_readl(struct atmel_pwm_chip *chip, int offset)
-> +{
-> +	return readl(chip->base + offset);
-> +}
-> +
-> +static inline void atmel_pwm_writel(struct atmel_pwm_chip *chip, int offset,
-> +		u32 val)
-> +{
-> +	writel(val, chip->base + offset);
-> +}
-> +
-> +static inline u32 atmel_pwm_ch_readl(struct atmel_pwm_chip *chip, int ch,
-> +		int offset)
-> +{
-> +	return readl(chip->base + 0x200 + ch * 0x20 + offset);
 
-Maybe a constant for this 0x200 value...
-
-> +}
-> +
-> +static inline void atmel_pwm_ch_writel(struct atmel_pwm_chip *chip, int ch,
-> +		int offset, u32 val)
-> +{
-> +	writel(val, chip->base + 0x200 + ch * 0x20 + offset);
-> +}
-> +
-> +static int atmel_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-> +		int duty_ns, int period_ns)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-> +	unsigned long long val, prd, dty;
-> +	unsigned long long div, clk_rate;
-> +	int ret, pres = 0;
-> +
-> +	clk_rate = clk_get_rate(atmel_pwm->clk);
-> +
-> +	while (1) {
-
-Why not use a proper loop condition here instead of a frightening
-while (true) loop? Is it really making the code less readable?
-
-> +		div = 1000000000;
-
-use a constant or at least a comment for this initialization.
-
-> +		div *= 1 << pres;
-> +		val = clk_rate * period_ns;
-> +		prd = div_u64(val, div);
-> +		val = clk_rate * duty_ns;
-> +		dty = div_u64(val, div);
-> +
-> +		if (prd < 0x0001 || dty < 0x0)
-> +			return -EINVAL;
-> +
-> +		if (prd > 0xffff || dty > 0xffff) {
-
-Yes, here define those constants please.
-
-> +			if (++pres > 0x10)
-> +				return -EINVAL;
-> +			continue;
-> +		}
-> +
-> +		break;
-> +	}
-> +
-> +	/* Enable clock */
-> +	ret = clk_prepare_enable(atmel_pwm->clk);
-> +	if (ret) {
-> +		pr_err("failed to enable pwm clock\n");
-> +		return ret;
-> +	}
-> +
-> +	atmel_pwm->config(atmel_pwm, pwm, dty, prd);
-> +
-> +	/* Check whether need to disable clock */
-> +	val = atmel_pwm_readl(atmel_pwm, PWM_SR);
-> +	if ((val & 0xf) == 0)
-
-Ditto.
-
-> +		clk_disable_unprepare(atmel_pwm->clk);
-> +
-> +	return 0;
-> +}
-> +
-> +static void atmel_pwm_config_v1(struct atmel_pwm_chip *atmel_pwm,
-> +		struct pwm_device *pwm, unsigned int dty, unsigned int prd)
-> +{
-> +	unsigned int val;
-> +
-> +	/*
-> +	 * if the pwm channel is enabled, using update register to update
-> +	 * related register value, or else write it directly
-> +	 */
-> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CUPD, dty);
-> +
-> +		val = atmel_pwm_ch_readl(atmel_pwm, pwm->hwpwm, PWM_CMR);
-> +		val &= ~(1 << 10);
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
-> +	} else {
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CDTY, dty);
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CPRD, prd);
-> +	}
-> +}
-> +
-> +static void atmel_pwm_config_v2(struct atmel_pwm_chip *atmel_pwm,
-> +		struct pwm_device *pwm, unsigned int dty, unsigned int prd)
-> +{
-> +	/*
-> +	 * if the pwm channel is enabled, using update register to update
-> +	 * related register value, or else write it directly
-> +	 */
-> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CDTYUPD, dty);
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CPRDUPD, prd);
-> +	} else {
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CDTY, dty);
-> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CPRD, prd);
-> +	}
-> +}
-> +
-> +static int atmel_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-> +		enum pwm_polarity polarity)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-> +	u32 val = 0;
-> +	int ret;
-> +
-> +	/* Enable clock */
-> +	ret = clk_prepare_enable(atmel_pwm->clk);
-> +	if (ret) {
-> +		pr_err("failed to enable pwm clock\n");
-> +		return ret;
-> +	}
-> +
-> +	if (polarity == PWM_POLARITY_NORMAL)
-> +		val &= ~(1 << 9);
-> +	else
-> +		val |= 1 << 9;
-
-Ditto.
-
-> +
-> +	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
-> +
-> +	/* Disable clock */
-> +	clk_disable_unprepare(atmel_pwm->clk);
-> +
-> +	return 0;
-> +}
-> +
-> +static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-> +
-> +	clk_prepare_enable(atmel_pwm->clk);
-> +
-> +	atmel_pwm_writel(atmel_pwm, PWM_ENA, 1 << pwm->hwpwm);
-> +
-> +	return 0;
-> +}
-> +
-> +static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
-> +	u32 val;
-> +
-> +	atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
-> +
-> +	/* Disable clock */
-> +	val = atmel_pwm_readl(atmel_pwm, PWM_SR);
-> +	if ((val & 0xf) == 0)
-> +		clk_disable_unprepare(atmel_pwm->clk);
-> +}
-> +
-> +static const struct pwm_ops atmel_pwm_ops = {
-> +	.config = atmel_pwm_config,
-> +	.set_polarity = atmel_pwm_set_polarity,
-> +	.enable = atmel_pwm_enable,
-> +	.disable = atmel_pwm_disable,
-> +	.owner = THIS_MODULE,
-> +};
-> +
-> +struct atmel_pwm_data {
-> +	void (*config)(struct atmel_pwm_chip *chip, struct pwm_device *pwm,
-> +			unsigned int dty, unsigned int prd);
-> +};
-> +
-> +static struct atmel_pwm_data atmel_pwm_data_v1 = {
-> +	.config = atmel_pwm_config_v1,
-> +};
-> +
-> +static struct atmel_pwm_data atmel_pwm_data_v2 = {
-> +	.config = atmel_pwm_config_v2,
-> +};
-> +
-> +static const struct of_device_id atmel_pwm_dt_ids[] = {
-> +	{
-> +		.compatible = "atmel,at91sam9rl-pwm",
-> +		.data = &atmel_pwm_data_v1,
-> +	}, {
-> +		.compatible = "atmel,sama5-pwm",
-> +		.data = &atmel_pwm_data_v2,
-> +	}, {
-> +		/* sentinel */
-> +	},
-> +};
-> +MODULE_DEVICE_TABLE(of, atmel_pwm_dt_ids);
-> +
-> +static int atmel_pwm_probe(struct platform_device *pdev)
-> +{
-> +	const struct of_device_id *of_id =
-> +		of_match_device(atmel_pwm_dt_ids, &pdev->dev);
-> +	const struct atmel_pwm_data *data;
-> +	struct atmel_pwm_chip *atmel_pwm;
-> +	struct resource *res;
-> +	struct pinctrl *pinctrl;
-> +	int ret;
-> +
-> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-> +	if (IS_ERR(pinctrl)) {
-> +		dev_err(&pdev->dev, "failed get pinctrl\n");
-> +		return PTR_ERR(pinctrl);
-> +	}
-
-As said by Thierry: already done in core driver code.
-
-> +
-> +	atmel_pwm = devm_kzalloc(&pdev->dev, sizeof(*atmel_pwm), GFP_KERNEL);
-> +	if (!atmel_pwm) {
-> +		dev_err(&pdev->dev, "out of memory\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!res) {
-> +		dev_err(&pdev->dev, "no memory resource defined\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	atmel_pwm->base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(atmel_pwm->base)) {
-> +		dev_err(&pdev->dev, "ioremap failed\n");
-> +		return PTR_ERR(atmel_pwm->base);
-> +	}
-> +
-> +	atmel_pwm->clk = devm_clk_get(&pdev->dev, "pwm_clk");
-> +	if (IS_ERR(atmel_pwm->clk)) {
-> +		dev_err(&pdev->dev, "clk get failed\n");
-> +		return PTR_ERR(atmel_pwm->clk);
-> +	}
-> +
-> +	atmel_pwm->chip.dev = &pdev->dev;
-> +	atmel_pwm->chip.ops = &atmel_pwm_ops;
-> +	atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
-> +	atmel_pwm->chip.of_pwm_n_cells = 3;
-> +	atmel_pwm->chip.base = -1;
-> +	atmel_pwm->chip.npwm = PWM_NUM;
-> +
-> +	data = of_id->data;
-> +	atmel_pwm->config = data->config;
-> +
-> +	ret = pwmchip_add(&atmel_pwm->chip);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "failed to add pwm chip %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, atmel_pwm);
-> +
-> +	dev_info(&pdev->dev, "successfully register pwm\n");
-> +
-> +	return 0;
-> +}
-> +
-> +static int atmel_pwm_remove(struct platform_device *pdev)
-> +{
-> +	struct atmel_pwm_chip *atmel_pwm = platform_get_drvdata(pdev);
-> +
-> +	return pwmchip_remove(&atmel_pwm->chip);
-> +}
-> +
-> +static struct platform_driver atmel_pwm_driver = {
-> +	.driver = {
-> +		.name = "atmel-pwm",
-> +		.of_match_table = of_match_ptr(atmel_pwm_dt_ids),
-> +	},
-> +	.probe = atmel_pwm_probe,
-> +	.remove = atmel_pwm_remove,
-> +};
-> +module_platform_driver(atmel_pwm_driver);
-> +
-> +MODULE_ALIAS("platform:atmel-pwm");
-> +MODULE_AUTHOR("Bo Shen <voice.shen@atmel.com>");
-> +MODULE_DESCRIPTION("Atmel PWM driver");
-> +MODULE_LICENSE("GPL v2");
->
-
-
--- 
-Nicolas Ferre
