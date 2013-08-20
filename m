@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837Ab3HTA2U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 20:28:20 -0400
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:4251
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751385Ab3HTA2D (ORCPT
+	id S1751854Ab3HTA20 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 20:28:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56106 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385Ab3HTA2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 20:28:03 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 12
-X-BigFish: VPS12(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz70kd2iz1de098h177df4h17326ah1de096h8275eh8275bh1de097h3284oa1495iz2dh839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h1155h)
-X-WSS-ID: 0MRSZYG-02-3RW-02
-X-M-MSG: 
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <dougthompson@xmission.com>, <bp@alien8.de>, <bhelgaas@google.com>,
-        <jbeulich@suse.com>, <linux-kernel@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-pci@vger.kernel.org>
-CC: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Subject: [PATCH 1/1] AMD64_EDAC: Fix incorrect wrap arounds due to left shift beyond 32 bits.
-Date: Mon, 19 Aug 2013 19:27:52 -0500
-Message-ID: <1376958472-2150-2-git-send-email-Aravind.Gopalakrishnan@amd.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1376958472-2150-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-References: <1376958472-2150-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+	Mon, 19 Aug 2013 20:28:24 -0400
+Date: Mon, 19 Aug 2013 17:28:22 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Tom Gundersen <teg@jklm.no>
+Cc: stable@vger.kernel.org,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Felix Fietkau <nbd@openwrt.org>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: [REGRESSION] 3.10.{6,7} crashes on network activity
+Message-ID: <20130820002822.GA18023@kroah.com>
+References: <CAG-2HqUXQeq=30EpGWmn6tkC=CP1W+=UZCVPTYhhE0WyU_C4nw@mail.gmail.com>
+ <20130820000336.GA15548@kroah.com>
+ <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Link to the bug report:
-http://marc.info/?l=linux-edac&m=137692201732220&w=2
+On Tue, Aug 20, 2013 at 08:26:11AM +0800, Tom Gundersen wrote:
+> On Tue, Aug 20, 2013 at 8:03 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Tue, Aug 20, 2013 at 07:59:47AM +0800, Tom Gundersen wrote:
+> >> Hi guys,
+> >>
+> >> Starting with 3.10.6 (and still present in .7) I get an oops on
+> >> connecting to the network.
+> >>
+> >> The attached picture shows the oops. In case it does not reach the ML,
+> >> the top of the call trace reads:
+> >>
+> >> brcms_c_compute_rtscts_dur
+> >> brcms_c_ampdu_finalize
+> >> ampdu_finalize
+> >> dma_txfast
+> >> brcms_c_txfifo
+> >> brcms_c_sendpkt_mac80211
+> >> brcms_ops_tx
+> >> __ieee80211_tx
+> >>
+> >> I bisected the problem and the first bad commit is
+> >>
+> >> commit ef47a5e4f1aaf1d0e2e6875e34b2c9595897bef6
+> >> Author: Felix Fietkau <nbd@openwrt.org>
+> >> Date:   Fri Jun 28 21:04:35 2013 +0200
+> >>
+> >>     mac80211/minstrel_ht: fix cck rate sampling
+> >>
+> >>     commit 1cd158573951f737fbc878a35cb5eb47bf9af3d5 upstream.
+> >>
+> >> Reverting it on top of .7 fixes the problem.
+> >>
+> >> I had the same (I suppose) problem on mainline some time ago, but I
+> >> have not bisected it, verified that the problem still occurs there, or
+> >> checked if reverting the upstream patch fixes it. I'd be happy to do
+> >> that if it would help though.
+> >>
+> >> Let me know if you need any more information.
+> >
+> > Do you have this same problem with 3.11-rc6 as well?
+> 
+> Yes, I just confirmed. I also confirmed that reverting the mainline
+> commit on top of -rc6 fixes the problem.
 
-dct_base and dct_limit obtain 32 bit register values when they read their
-respective pci config space registers. A left shift beyond 32 bits will
-cause them to wrap around. Similar case for chan_addr as can be seen from
-the bug report. In the patch, we rectify this by casting chan_addr to u64
-and by comparing dct_base and dct_limit against (sys_addr >> 27)
+Great, thanks.
 
-Tested on F15h, M30h with ECC turned on and works fine.
+Felix and Johannes, any chance we can get this reverted in Linus tree
+soon, and push that revert back to the 3.10 stable tree as well?
 
-Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+thanks,
 
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index b86228c..eb4793e 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -1558,11 +1558,12 @@ static int f15_m30h_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
- 	}
- 
- 	/* Verify sys_addr is within DCT Range. */
--	dct_base = (dct_sel_baseaddr(pvt) << 27);
--	dct_limit = (((dct_cont_limit_reg >> 11) & 0x1FFF) << 27) | 0x7FFFFFF;
-+	dct_base = dct_sel_baseaddr(pvt);
-+	dct_limit = (dct_cont_limit_reg >> 11) & 0x1FFF;
- 
- 	if (!(dct_cont_base_reg & BIT(0)) &&
--	    !(dct_base <= sys_addr && dct_limit >= sys_addr))
-+	    !(dct_base <= (sys_addr >> 27) &&
-+	      dct_limit >= (sys_addr >> 27)))
- 		return -EINVAL;
- 
- 	/* Verify number of dct's that participate in channel interleaving. */
-@@ -1614,7 +1615,7 @@ static int f15_m30h_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
- 		amd64_read_pci_cfg(pvt->F1,
- 				   DRAM_CONT_HIGH_OFF + (int) channel * 4,
- 				   &tmp);
--		chan_addr +=  ((tmp >> 11) & 0xfff) << 27;
-+		chan_addr +=  (u64) ((tmp >> 11) & 0xfff) << 27;
- 	}
- 
- 	f15h_select_dct(pvt, channel);
--- 
-1.7.10.4
-
-
+greg k-h
