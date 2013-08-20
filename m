@@ -1,187 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab3HTPq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 11:46:56 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:60108 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab3HTPqy (ORCPT
+	id S1751653Ab3HTPsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 11:48:15 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:48570 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab3HTPsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 11:46:54 -0400
+	Tue, 20 Aug 2013 11:48:14 -0400
+Date: Tue, 20 Aug 2013 08:48:11 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Dave Hansen <dave@sr71.net>
+Cc: Dave Jones <davej@redhat.com>, Anton Arapov <anton@redhat.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] oops.kernel.org prospect
+Message-ID: <20130820154811.GC12618@roeck-us.net>
+References: <20130819085405.GA22328@bandura.laptop>
+ <20130819145505.GB15178@kroah.com>
+ <20130819151643.GC19070@bandura.laptop>
+ <20130819153939.GA23875@thunk.org>
+ <20130819155202.GF19070@bandura.laptop>
+ <20130819212512.GA7918@redhat.com>
+ <52138924.1040905@sr71.net>
 MIME-Version: 1.0
-In-Reply-To: <20130820153400.GA7980@localhost>
-References: <20130820153400.GA7980@localhost>
-Date: Tue, 20 Aug 2013 21:16:53 +0530
-Message-ID: <CAKohpokbjctiUCHBw1cK0WC9DOnX7NQPkfgHpgUtpvD5K2GsXw@mail.gmail.com>
-Subject: Re: [cpufreq] swapper/1 is trying to release lock cpufreq_rwsem at cpufreq_add_dev()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001a11c2e2be4ec5c104e462f7df
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52138924.1040905@sr71.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c2e2be4ec5c104e462f7df
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, Aug 20, 2013 at 08:20:04AM -0700, Dave Hansen wrote:
+> On 08/19/2013 02:25 PM, Dave Jones wrote:
+> > * This bug last seen: 2013-08-17
+> >   Also useful here would be something like:
+> >   Seen on: 3.2-rc2, 3.10-rc10  (You can probably just list earliest/latest rather than
+> >    every single kernel it's been seen on, unless you want a 'show all' button)
+> 
+> Once you have the "seen on" stuff sorted out, it would also be really
+> nice to be able to easily select bugs only seen on "versions after 3.8",
+> just so we can filter out some of the older stuff.  The kernel version
+> in the filter is useful, but would be much more so if we had ranges,
+> even if it was just "newer than $foo".
+> 
+A per subsystem filter would be nice to have too.
 
-On 20 August 2013 21:04, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> Greetings,
->
-> I got the below dmesg and the first bad commit is
->
-> commit 6eed9404ab3c4baea54ce4c7e862e69df1d39f38
-> Author: Viresh Kumar <viresh.kumar@linaro.org>
-> Date:   Tue Aug 6 22:53:11 2013 +0530
->
->     cpufreq: Use rwsem for protecting critical sections
->
->     Critical sections of the cpufreq core are protected with the help of
->     the driver module owner's refcount, which isn't the correct approach,
->     because it causes rmmod to return an error when some routine has
->     updated that refcount.
->
->     Let's use rwsem for this purpose instead.  Only
->     cpufreq_unregister_driver() will use write sem
->     and everybody else will use read sem.
->
->     [rjw: Subject & changelog]
->     Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-
-Somebody reported similar stuff with a fix but sent it to wrong
-mailing list. Can you
-try attached patch?
-
---001a11c2e2be4ec5c104e462f7df
-Content-Type: text/plain; charset=US-ASCII; 
-	name="cpufreq: fix bad unlock balance on !CONFIG_SMP.txt"
-Content-Disposition: attachment; 
-	filename="cpufreq: fix bad unlock balance on !CONFIG_SMP.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hklacm3m3
-
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgCkRlbGl2ZXJlZC1UbzogdmlyZXNoLmt1bWFyQGxp
-bmFyby5vcmcNClJlY2VpdmVkOiBieSAxMC4xODIuMjguMTY4IHdpdGggU01UUCBpZCBjOGNzcDE2
-MzgyM29iaDsNCiAgICAgICAgTW9uLCAxOSBBdWcgMjAxMyAyMjoxMTo1OSAtMDcwMCAoUERUKQ0K
-WC1SZWNlaXZlZDogYnkgMTAuNjYuMTIzLjUgd2l0aCBTTVRQIGlkIGx3NW1yMTUwOTE1NXBhYi44
-My4xMzc2OTc1NTE5MTcxOw0KICAgICAgICBNb24sIDE5IEF1ZyAyMDEzIDIyOjExOjU5IC0wNzAw
-IChQRFQpDQpSZXR1cm4tUGF0aDogPHpob25nQGxpbnV4LnZuZXQuaWJtLmNvbT4NClJlY2VpdmVk
-OiBmcm9tIGUyOHNtdHAwNy5pbi5pYm0uY29tIChlMjhzbXRwMDcuaW4uaWJtLmNvbS4gWzEyMi4y
-NDguMTYyLjddKQ0KICAgICAgICBieSBteC5nb29nbGUuY29tIHdpdGggRVNNVFBTIGlkIHNsNHNp
-MTAxMzIwN3BhYy4zMjkuMTk2OS4xMi4zMS4xNi4wMC4wMA0KICAgICAgICAodmVyc2lvbj1UTFN2
-MSBjaXBoZXI9UkM0LVNIQSBiaXRzPTEyOC8xMjgpOw0KICAgICAgICBNb24sIDE5IEF1ZyAyMDEz
-IDIyOjExOjU5IC0wNzAwIChQRFQpDQpSZWNlaXZlZC1TUEY6IHBhc3MgKGdvb2dsZS5jb206IGRv
-bWFpbiBvZiB6aG9uZ0BsaW51eC52bmV0LmlibS5jb20gZGVzaWduYXRlcyAxMjIuMjQ4LjE2Mi43
-IGFzIHBlcm1pdHRlZCBzZW5kZXIpIGNsaWVudC1pcD0xMjIuMjQ4LjE2Mi43Ow0KQXV0aGVudGlj
-YXRpb24tUmVzdWx0czogbXguZ29vZ2xlLmNvbTsNCiAgICAgICBzcGY9cGFzcyAoZ29vZ2xlLmNv
-bTogZG9tYWluIG9mIHpob25nQGxpbnV4LnZuZXQuaWJtLmNvbSBkZXNpZ25hdGVzIDEyMi4yNDgu
-MTYyLjcgYXMgcGVybWl0dGVkIHNlbmRlcikgc210cC5tYWlsPXpob25nQGxpbnV4LnZuZXQuaWJt
-LmNvbQ0KUmVjZWl2ZWQ6IGZyb20gL3Nwb29sL2xvY2FsDQoJYnkgZTI4c210cDA3LmluLmlibS5j
-b20gd2l0aCBJQk0gRVNNVFAgU01UUCBHYXRld2F5OiBBdXRob3JpemVkIFVzZSBPbmx5ISBWaW9s
-YXRvcnMgd2lsbCBiZSBwcm9zZWN1dGVkDQoJZm9yIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4g
-ZnJvbSA8emhvbmdAbGludXgudm5ldC5pYm0uY29tPjsNCglUdWUsIDIwIEF1ZyAyMDEzIDEwOjMy
-OjU3ICswNTMwDQpSZWNlaXZlZDogZnJvbSBkMjhkbHAwMS5pbi5pYm0uY29tICg5LjE4NC4yMjAu
-MTI2KQ0KCWJ5IGUyOHNtdHAwNy5pbi5pYm0uY29tICgxOTIuMTY4LjEuMTM3KSB3aXRoIElCTSBF
-U01UUCBTTVRQIEdhdGV3YXk6IEF1dGhvcml6ZWQgVXNlIE9ubHkhIFZpb2xhdG9ycyB3aWxsIGJl
-IHByb3NlY3V0ZWQ7DQoJVHVlLCAyMCBBdWcgMjAxMyAxMDozMjo1NiArMDUzMA0KUmVjZWl2ZWQ6
-IGZyb20gZDI4cmVsYXkwMS5pbi5pYm0uY29tIChkMjhyZWxheTAxLmluLmlibS5jb20gWzkuMTg0
-LjIyMC41OF0pDQoJYnkgZDI4ZGxwMDEuaW4uaWJtLmNvbSAoUG9zdGZpeCkgd2l0aCBFU01UUCBp
-ZCBEODMyMUUwMDRGDQoJZm9yIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz47IFR1ZSwgMjAgQXVn
-IDIwMTMgMTA6NDI6MjEgKzA1MzAgKElTVCkNClJlY2VpdmVkOiBmcm9tIGQyOGF2MDQuaW4uaWJt
-LmNvbSAoZDI4YXYwNC5pbi5pYm0uY29tIFs5LjE4NC4yMjAuNjZdKQ0KCWJ5IGQyOHJlbGF5MDEu
-aW4uaWJtLmNvbSAoOC4xMy44LzguMTMuOC9OQ08gdjEwLjApIHdpdGggRVNNVFAgaWQgcjdLNURN
-a04yNzI2MzEzNg0KCWZvciA8dmlyZXNoLmt1bWFyQGxpbmFyby5vcmc+OyBUdWUsIDIwIEF1ZyAy
-MDEzIDEwOjQzOjIyICswNTMwDQpSZWNlaXZlZDogZnJvbSBkMjhhdjA0LmluLmlibS5jb20gKGxv
-Y2FsaG9zdCBbMTI3LjAuMC4xXSkNCglieSBkMjhhdjA0LmluLmlibS5jb20gKDguMTQuNC84LjE0
-LjQvTkNPIHYxMC4wIEFWb3V0KSB3aXRoIEVTTVRQIGlkIHI3SzVCcmw5MDE5OTYyDQoJZm9yIDx2
-aXJlc2gua3VtYXJAbGluYXJvLm9yZz47IFR1ZSwgMjAgQXVnIDIwMTMgMTA6NDE6NTMgKzA1MzAN
-ClJlY2VpdmVkOiBmcm9tIFs5LjEyMy4yMTAuNTFdICh0aGlua3BhZC10NTQyMS5jbi5pYm0uY29t
-IFs5LjEyMy4yMTAuNTFdKQ0KCWJ5IGQyOGF2MDQuaW4uaWJtLmNvbSAoOC4xNC40LzguMTQuNC9O
-Q08gdjEwLjAgQVZpbikgd2l0aCBFU01UUCBpZCByN0s1QnBzazAxOTgzMA0KCSh2ZXJzaW9uPVRM
-U3YxL1NTTHYzIGNpcGhlcj1ESEUtUlNBLUNBTUVMTElBMjU2LVNIQSBiaXRzPTI1NiB2ZXJpZnk9
-Tk8pOw0KCVR1ZSwgMjAgQXVnIDIwMTMgMTA6NDE6NTIgKzA1MzANCk1lc3NhZ2UtSUQ6IDwxMzc2
-OTc1NTEwLjM3ODguOS5jYW1lbEBUaGlua1BhZC1UNTQyMT4NClN1YmplY3Q6IFtSRkMgUEFUQ0gg
-bmV4dF1jcHVmcmVxOiAgZml4IGJhZCB1bmxvY2sgYmFsYW5jZSBvbiAhQ09ORklHX1NNUA0KRnJv
-bTogTGkgWmhvbmcgPHpob25nQGxpbnV4LnZuZXQuaWJtLmNvbT4NClRvOiBsaW51eC1uZXh0IGxp
-c3QgPGxpbnV4LW5leHRAdmdlci5rZXJuZWwub3JnPg0KQ2M6IHZpcmVzaC5rdW1hckBsaW5hcm8u
-b3JnLCByYWZhZWwuai53eXNvY2tpQGludGVsLmNvbQ0KRGF0ZTogVHVlLCAyMCBBdWcgMjAxMyAx
-MzoxMTo1MCArMDgwMA0KQ29udGVudC1UeXBlOiB0ZXh0L3BsYWluOyBjaGFyc2V0PSJVVEYtOCIN
-ClgtTWFpbGVyOiBFdm9sdXRpb24gMy4yLjMtMHVidW50dTYgDQpDb250ZW50LVRyYW5zZmVyLUVu
-Y29kaW5nOiA3Yml0DQpNaW1lLVZlcnNpb246IDEuMA0KWC1UTS1BUy1NTUw6IE5vDQpYLUNvbnRl
-bnQtU2Nhbm5lZDogRmlkZWxpcyBYUFMgTUFJTEVSDQp4LWNiaWQ6IDEzMDgyMDA1LTg4NzgtMDAw
-MC0wMDAwLTAwMDAwODc2REIxRA0KDQpUaGlzIHBhdGNoIHRyaWVzIHRvIGZpeCBsb2NrZGVwIGNv
-bXBsYWludCBhdHRhY2hlZCBiZWxvdy4NCg0KSXQgc2VlbXMgdGhhdCB3ZSBzaG91bGQgYWx3YXlz
-IHJlYWQgYWNxdWlyZSB0aGUgY3B1ZnJlcV9yd3NlbSwgd2hldGhlcg0KQ09ORklHX1NNUCBpcyBl
-bmFibGVkIG9yIG5vdC4gQW5kIENPTkZJR19IT1RQTFVHX0NQVSBkZXBlbmRzIG9uDQpDT05GSUdf
-U01QLCBzbyBpdCBzZWVtcyB3ZSBkb24ndCBuZWVkIENPTkZJR19TTVAgZm9yIHRoZSBjb2RlIGVu
-YWJsZWQgYnkNCkNPTkZJR19IT1RQTFVHX0NQVS4NCg0KWyAgICAwLjUwNDE5MV0gPT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PQ0KWyAgICAwLjUwNDYyN10gWyBCVUc6IGJhZCB1
-bmxvY2sgYmFsYW5jZSBkZXRlY3RlZCEgXQ0KWyAgICAwLjUwNDYyN10gMy4xMS4wLXJjNi1uZXh0
-LTIwMTMwODE5ICMxIE5vdCB0YWludGVkDQpbICAgIDAuNTA0NjI3XSAtLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tDQpbICAgIDAuNTA0NjI3XSBzd2FwcGVyLzEgaXMgdHJ5aW5n
-IHRvIHJlbGVhc2UgbG9jayAoY3B1ZnJlcV9yd3NlbSkgYXQ6DQpbICAgIDAuNTA0NjI3XSBbPGZm
-ZmZmZmZmODEzZDkyN2E+XSBjcHVmcmVxX2FkZF9kZXYrMHgxM2EvMHgzZTANClsgICAgMC41MDQ2
-MjddIGJ1dCB0aGVyZSBhcmUgbm8gbW9yZSBsb2NrcyB0byByZWxlYXNlIQ0KWyAgICAwLjUwNDYy
-N10gDQpbICAgIDAuNTA0NjI3XSBvdGhlciBpbmZvIHRoYXQgbWlnaHQgaGVscCB1cyBkZWJ1ZyB0
-aGlzOg0KWyAgICAwLjUwNDYyN10gMSBsb2NrIGhlbGQgYnkgc3dhcHBlci8xOg0KWyAgICAwLjUw
-NDYyN10gICMwOiAgKHN1YnN5cyBtdXRleCM0KXsrLisuKy59LCBhdDogWzxmZmZmZmZmZjgxMzRh
-N2JmPl0gc3Vic3lzX2ludGVyZmFjZV9yZWdpc3RlcisweDRmLzB4ZTANClsgICAgMC41MDQ2Mjdd
-IA0KWyAgICAwLjUwNDYyN10gc3RhY2sgYmFja3RyYWNlOg0KWyAgICAwLjUwNDYyN10gQ1BVOiAw
-IFBJRDogMSBDb21tOiBzd2FwcGVyIE5vdCB0YWludGVkIDMuMTEuMC1yYzYtbmV4dC0yMDEzMDgx
-OSAjMQ0KWyAgICAwLjUwNDYyN10gSGFyZHdhcmUgbmFtZTogQm9jaHMgQm9jaHMsIEJJT1MgQm9j
-aHMgMDEvMDEvMjAwNw0KWyAgICAwLjUwNDYyN10gIGZmZmZmZmZmODEzZDkyN2EgZmZmZjg4MDA3
-Zjg0N2M5OCBmZmZmZmZmZjgxNGMwNjJiIGZmZmY4ODAwN2Y4NDdjYzgNClsgICAgMC41MDQ2Mjdd
-ICBmZmZmZmZmZjgxMDk4YmNlIGZmZmY4ODAwN2Y4NDdjZjggZmZmZmZmZmY4MWFhZGMzMCBmZmZm
-ZmZmZjgxM2Q5MjdhDQpbICAgIDAuNTA0NjI3XSAgMDAwMDAwMDBmZmZmZmZmZiBmZmZmODgwMDdm
-ODQ3ZDY4IGZmZmZmZmZmODEwOWQwYmUgMDAwMDAwMDAwMDAwMDAwNg0KWyAgICAwLjUwNDYyN10g
-Q2FsbCBUcmFjZToNClsgICAgMC41MDQ2MjddICBbPGZmZmZmZmZmODEzZDkyN2E+XSA/IGNwdWZy
-ZXFfYWRkX2RldisweDEzYS8weDNlMA0KWyAgICAwLjUwNDYyN10gIFs8ZmZmZmZmZmY4MTRjMDYy
-Yj5dIGR1bXBfc3RhY2srMHgxOS8weDFiDQpbICAgIDAuNTA0NjI3XSAgWzxmZmZmZmZmZjgxMDk4
-YmNlPl0gcHJpbnRfdW5sb2NrX2ltYmFsYW5jZV9idWcrMHhmZS8weDExMA0KWyAgICAwLjUwNDYy
-N10gIFs8ZmZmZmZmZmY4MTNkOTI3YT5dID8gY3B1ZnJlcV9hZGRfZGV2KzB4MTNhLzB4M2UwDQpb
-ICAgIDAuNTA0NjI3XSAgWzxmZmZmZmZmZjgxMDlkMGJlPl0gbG9ja19yZWxlYXNlX25vbl9uZXN0
-ZWQrMHgxZWUvMHgzMTANClsgICAgMC41MDQ2MjddICBbPGZmZmZmZmZmODEwOTlkMGU+XSA/IG1h
-cmtfaGVsZF9sb2NrcysweGFlLzB4MTIwDQpbICAgIDAuNTA0NjI3XSAgWzxmZmZmZmZmZjgxMTUx
-MGNiPl0gPyBrZnJlZSsweGNiLzB4MWQwDQpbICAgIDAuNTA0NjI3XSAgWzxmZmZmZmZmZjgxM2Q3
-N2VhPl0gPyBjcHVmcmVxX3BvbGljeV9mcmVlKzB4NGEvMHg2MA0KWyAgICAwLjUwNDYyN10gIFs8
-ZmZmZmZmZmY4MTNkOTI3YT5dID8gY3B1ZnJlcV9hZGRfZGV2KzB4MTNhLzB4M2UwDQpbICAgIDAu
-NTA0NjI3XSAgWzxmZmZmZmZmZjgxMDlkMmE0Pl0gbG9ja19yZWxlYXNlKzB4YzQvMHgyNTANClsg
-ICAgMC41MDQ2MjddICBbPGZmZmZmZmZmODEwNmM5ZjM+XSB1cF9yZWFkKzB4MjMvMHg0MA0KWyAg
-ICAwLjUwNDYyN10gIFs8ZmZmZmZmZmY4MTNkOTI3YT5dIGNwdWZyZXFfYWRkX2RldisweDEzYS8w
-eDNlMA0KWyAgICAwLjUwNDYyN10gIFs8ZmZmZmZmZmY4MTM0YTgwOT5dIHN1YnN5c19pbnRlcmZh
-Y2VfcmVnaXN0ZXIrMHg5OS8weGUwDQpbICAgIDAuNTA0NjI3XSAgWzxmZmZmZmZmZjgxYjE5ZjNi
-Pl0gPyBjcHVmcmVxX2dvdl9kYnNfaW5pdCsweDEyLzB4MTINClsgICAgMC41MDQ2MjddICBbPGZm
-ZmZmZmZmODEzZDdmMGQ+XSBjcHVmcmVxX3JlZ2lzdGVyX2RyaXZlcisweDlkLzB4MWQwDQpbICAg
-IDAuNTA0NjI3XSAgWzxmZmZmZmZmZjgxYjE5ZjNiPl0gPyBjcHVmcmVxX2dvdl9kYnNfaW5pdCsw
-eDEyLzB4MTINClsgICAgMC41MDQ2MjddICBbPGZmZmZmZmZmODFiMWEwMzk+XSBhY3BpX2NwdWZy
-ZXFfaW5pdCsweGZlLzB4MWY4DQpbICAgIDAuNTA0NjI3XSAgWzxmZmZmZmZmZjgxMDAwMmJhPl0g
-ZG9fb25lX2luaXRjYWxsKzB4ZGEvMHgxODANClsgICAgMC41MDQ2MjddICBbPGZmZmZmZmZmODFh
-ZTMwMWU+XSBrZXJuZWxfaW5pdF9mcmVlYWJsZSsweDEyYy8weDFiYg0KWyAgICAwLjUwNDYyN10g
-IFs8ZmZmZmZmZmY4MWFlMjg0MT5dID8gZG9fZWFybHlfcGFyYW0rMHg4Yy8weDhjDQpbICAgIDAu
-NTA0NjI3XSAgWzxmZmZmZmZmZjgxNGI0ZGQwPl0gPyByZXN0X2luaXQrMHgxNDAvMHgxNDANClsg
-ICAgMC41MDQ2MjddICBbPGZmZmZmZmZmODE0YjRkZGU+XSBrZXJuZWxfaW5pdCsweGUvMHhmMA0K
-WyAgICAwLjUwNDYyN10gIFs8ZmZmZmZmZmY4MTRkMDI5YT5dIHJldF9mcm9tX2ZvcmsrMHg3YS8w
-eGIwDQpbICAgIDAuNTA0NjI3XSAgWzxmZmZmZmZmZjgxNGI0ZGQwPl0gPyByZXN0X2luaXQrMHgx
-NDAvMHgxNDANCg0KU2lnbmVkLW9mZi1ieTogTGkgWmhvbmcgPHpob25nQGxpbnV4LnZuZXQuaWJt
-LmNvbT4NCi0tLQ0KIGRyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMgfCAyICstDQogMSBmaWxlIGNo
-YW5nZWQsIDEgaW5zZXJ0aW9uKCspLCAxIGRlbGV0aW9uKC0pDQoNCmRpZmYgLS1naXQgYS9kcml2
-ZXJzL2NwdWZyZXEvY3B1ZnJlcS5jIGIvZHJpdmVycy9jcHVmcmVxL2NwdWZyZXEuYw0KaW5kZXgg
-YzBlZjg0ZC4uODQwODk1NyAxMDA2NDQNCi0tLSBhL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMN
-CisrKyBiL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMNCkBAIC05ODYsNiArOTg2LDcgQEAgc3Rh
-dGljIGludCBfX2NwdWZyZXFfYWRkX2RldihzdHJ1Y3QgZGV2aWNlICpkZXYsIHN0cnVjdCBzdWJz
-eXNfaW50ZXJmYWNlICpzaWYsDQogCQljcHVmcmVxX2NwdV9wdXQocG9saWN5KTsNCiAJCXJldHVy
-biAwOw0KIAl9DQorI2VuZGlmDQogDQogCWlmICghZG93bl9yZWFkX3RyeWxvY2soJmNwdWZyZXFf
-cndzZW0pKQ0KIAkJcmV0dXJuIDA7DQpAQCAtMTAwNCw3ICsxMDA1LDYgQEAgc3RhdGljIGludCBf
-X2NwdWZyZXFfYWRkX2RldihzdHJ1Y3QgZGV2aWNlICpkZXYsIHN0cnVjdCBzdWJzeXNfaW50ZXJm
-YWNlICpzaWYsDQogCX0NCiAJcmVhZF91bmxvY2tfaXJxcmVzdG9yZSgmY3B1ZnJlcV9kcml2ZXJf
-bG9jaywgZmxhZ3MpOw0KICNlbmRpZg0KLSNlbmRpZg0KIA0KIAlpZiAoZnJvemVuKQ0KIAkJLyog
-UmVzdG9yZSB0aGUgc2F2ZWQgcG9saWN5IHdoZW4gZG9pbmcgbGlnaHQtd2VpZ2h0IGluaXQgKi8N
-Cg0KDQo=
---001a11c2e2be4ec5c104e462f7df--
+Guenter
