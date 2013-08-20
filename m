@@ -1,167 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382Ab3HTJaT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 05:30:19 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34382 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab3HTJaM (ORCPT
+	id S1751548Ab3HTJcv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 05:32:51 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:20327 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732Ab3HTJcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 05:30:12 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Sudeep.KarkadaNagesha@arm.com, Viresh Kumar <viresh.kumar@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [PATCH v4 03/19] powerpc: refactor of_get_cpu_node to support other architectures
-Date: Tue, 20 Aug 2013 10:30:05 +0100
-Message-Id: <1376991021-12160-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 20 Aug 2013 09:30:09.0318 (UTC) FILETIME=[DCEFEC60:01CE9D87]
-X-MC-Unique: 113082010301016101
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 20 Aug 2013 05:32:48 -0400
+Message-ID: <1376991166.1753.8.camel@j-VirtualBox>
+Subject: [RFC PATCH v3] sched: Limit idle balance based on max cost per
+ sched domain
+From: Jason Low <jason.low2@hp.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jason Low <jason.low2@hp.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 20 Aug 2013 02:32:46 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7K9WtiK012295
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Hi Peter,
 
-Currently different drivers requiring to access cpu device node are
-parsing the device tree themselves. Since the ordering in the DT need
-not match the logical cpu ordering, the parsing logic needs to consider
-that. However, this has resulted in lots of code duplication and in some
-cases even incorrect logic.
+So this is my sample implementation of the concept of matching the CPU's avg_idle 
+with the maximum time we ever spend in a new idle load balance for each domain.
+This is based on our previous patch which compares avg_idle with sd->avg_cost,
+but I replaced sd->avg_cost with sd->max_cost.
 
-It's better to consolidate them by adding support for getting cpu
-device node for a given logical cpu index in DT core library. However
-logical to physical index mapping can be architecture specific.
+Since we are comparing avg_idle with sd->max_cost, the existing avg_idle would 
+not be accurate since it is limited based on migration_cost, so I increased the 
+max avg_idle to 25*sched_migration_cost. Additionally, I updated avg_idle by 
+calling update_avg() first. Then if the avg_idle exceeds the max, the avg_idle 
+is set to the max. This is to prevent avg_idle from being set to the maximum 
+after 1 long idle.
 
-PowerPC has it's own implementation to get the cpu node for a given
-logical index.
+Since I have found idle balance to be beneficial when it is not failing to move 
+tasks, I was thinking we can also not skip newidle balance (regardless of what 
+avg_idle and max_cost are) if the previous attempt on the rq or domain 
+succeeded in moving tasks. I was also wondering if we should periodically reset
+the max cost. Both would require an extra field to be added to either the
+rq or domain structure though.
 
-This patch refactors the current implementation of of_get_cpu_node.
-This in preparation to move the implementation to DT core library.
-It separates out the logical to physical mapping so that a default
-matching of the physical id to the logical cpu index can be added
-when moved to common code. Architecture specific code can override it.
 
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Signed-off-by: Jason Low <jason.low2@hp.com>
 ---
- arch/powerpc/kernel/prom.c | 76 ++++++++++++++++++++++++++++------------------
- 1 file changed, 47 insertions(+), 29 deletions(-)
+ arch/metag/include/asm/topology.h |    1 +
+ include/linux/sched.h             |    1 +
+ include/linux/topology.h          |    3 +++
+ kernel/sched/core.c               |    9 +++++----
+ kernel/sched/fair.c               |   16 ++++++++++++++++
+ 5 files changed, 26 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-index eb23ac9..f7b8c0b 100644
---- a/arch/powerpc/kernel/prom.c
-+++ b/arch/powerpc/kernel/prom.c
-@@ -865,45 +865,63 @@ static int __init prom_reconfig_setup(void)
- __initcall(prom_reconfig_setup);
+diff --git a/arch/metag/include/asm/topology.h b/arch/metag/include/asm/topology.h
+index 23f5118..be400ad 100644
+--- a/arch/metag/include/asm/topology.h
++++ b/arch/metag/include/asm/topology.h
+@@ -26,6 +26,7 @@
+ 	.last_balance		= jiffies,		\
+ 	.balance_interval	= 1,			\
+ 	.nr_balance_failed	= 0,			\
++	.max_idle_balance_cost	= 0,			\
+ }
+ 
+ #define cpu_to_node(cpu)	((void)(cpu), 0)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d722490..6e89421 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -818,6 +818,7 @@ struct sched_domain {
+ 	unsigned int nr_balance_failed; /* initialise to 0 */
+ 
+ 	u64 last_update;
++	u64 max_idle_balance_cost;
+ 
+ #ifdef CONFIG_SCHEDSTATS
+ 	/* load_balance() stats */
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index d3cf0d6..e3cfe88 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -106,6 +106,7 @@ int arch_update_cpu_topology(void);
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+ 	.smt_gain		= 1178,	/* 15% */			\
++	.max_idle_balance_cost	= 0,					\
+ }
+ #endif
+ #endif /* CONFIG_SCHED_SMT */
+@@ -135,6 +136,7 @@ int arch_update_cpu_topology(void);
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
++	.max_idle_balance_cost	= 0,					\
+ }
+ #endif
+ #endif /* CONFIG_SCHED_MC */
+@@ -166,6 +168,7 @@ int arch_update_cpu_topology(void);
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
++	.max_idle_balance_cost	= 0,					\
+ }
  #endif
  
-+bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
-+{
-+	return (int)phys_id == get_hard_smp_processor_id(cpu);
-+}
-+
-+static bool __of_find_n_match_cpu_property(struct device_node *cpun,
-+			const char *prop_name, int cpu, unsigned int *thread)
-+{
-+	const __be32 *cell;
-+	int ac, prop_len, tid;
-+	u64 hwid;
-+
-+	ac = of_n_addr_cells(cpun);
-+	cell = of_get_property(cpun, prop_name, &prop_len);
-+	if (!cell)
-+		return false;
-+	prop_len /= sizeof(*cell);
-+	for (tid = 0; tid < prop_len; tid++) {
-+		hwid = of_read_number(cell, ac);
-+		if (arch_match_cpu_phys_id(cpu, hwid)) {
-+			if (thread)
-+				*thread = tid;
-+			return true;
-+		}
-+		cell += ac;
-+	}
-+	return false;
-+}
-+
- /* Find the device node for a given logical cpu number, also returns the cpu
-  * local thread number (index in ibm,interrupt-server#s) if relevant and
-  * asked for (non NULL)
-  */
- struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
- {
--	int hardid;
--	struct device_node *np;
-+	struct device_node *cpun, *cpus;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b7c32cb..204e02c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1343,12 +1343,13 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
  
--	hardid = get_hard_smp_processor_id(cpu);
-+	cpus = of_find_node_by_path("/cpus");
-+	if (!cpus) {
-+		pr_warn("Missing cpus node, bailing out\n");
-+		return NULL;
-+	}
+ 	if (rq->idle_stamp) {
+ 		u64 delta = rq_clock(rq) - rq->idle_stamp;
+-		u64 max = 2*sysctl_sched_migration_cost;
++		u64 max = 25*sysctl_sched_migration_cost;
  
--	for_each_node_by_type(np, "cpu") {
--		const u32 *intserv;
--		unsigned int plen, t;
-+	for_each_child_of_node(cpus, cpun) {
-+		if (of_node_cmp(cpun->type, "cpu"))
-+			continue;
- 
--		/* Check for ibm,ppc-interrupt-server#s. If it doesn't exist
--		 * fallback to "reg" property and assume no threads
-+		/* Check for non-standard "ibm,ppc-interrupt-server#s" property
-+		 * for thread ids on PowerPC. If it doesn't exist fallback to
-+		 * standard "reg" property.
- 		 */
--		intserv = of_get_property(np, "ibm,ppc-interrupt-server#s",
--				&plen);
--		if (intserv == NULL) {
--			const u32 *reg = of_get_property(np, "reg", NULL);
--			if (reg == NULL)
--				continue;
--			if (*reg == hardid) {
--				if (thread)
--					*thread = 0;
--				return np;
--			}
--		} else {
--			plen /= sizeof(u32);
--			for (t = 0; t < plen; t++) {
--				if (hardid == intserv[t]) {
--					if (thread)
--						*thread = t;
--					return np;
--				}
--			}
--		}
-+		if (__of_find_n_match_cpu_property(cpun,
-+				"ibm,ppc-interrupt-server#s", cpu, thread))
-+			return cpun;
+-		if (delta > max)
++		update_avg(&rq->avg_idle, delta);
 +
-+		if (__of_find_n_match_cpu_property(cpun, "reg", cpu, thread))
-+			return cpun;
++		if (rq->avg_idle > max)
+ 			rq->avg_idle = max;
+-		else
+-			update_avg(&rq->avg_idle, delta);
++
+ 		rq->idle_stamp = 0;
  	}
- 	return NULL;
- }
+ #endif
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9565645..1b76933 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5277,6 +5277,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 	struct sched_domain *sd;
+ 	int pulled_task = 0;
+ 	unsigned long next_balance = jiffies + HZ;
++	u64 cost = 0;
+ 
+ 	this_rq->idle_stamp = rq_clock(this_rq);
+ 
+@@ -5293,14 +5294,29 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 	for_each_domain(this_cpu, sd) {
+ 		unsigned long interval;
+ 		int balance = 1;
++		u64 this_domain_balance_cost = 0;
++		u64 start_time;
+ 
+ 		if (!(sd->flags & SD_LOAD_BALANCE))
+ 			continue;
+ 
++		if (this_rq->avg_idle < sd->max_idle_balance_cost + cost)
++			break;
++
+ 		if (sd->flags & SD_BALANCE_NEWIDLE) {
++			start_time = sched_clock_cpu(smp_processor_id());
++
+ 			/* If we've pulled tasks over stop searching: */
+ 			pulled_task = load_balance(this_cpu, this_rq,
+ 						   sd, CPU_NEWLY_IDLE, &balance);
++
++			this_domain_balance_cost = sched_clock_cpu(smp_processor_id()) - start_time;
++
++			/* Update the max idle balance cost stats for this sd */
++			if (this_domain_balance_cost > sd->max_idle_balance_cost)
++				sd->max_idle_balance_cost = this_domain_balance_cost;
++
++			cost += this_domain_balance_cost;
+ 		}
+ 
+ 		interval = msecs_to_jiffies(sd->balance_interval);
 -- 
-1.8.1.2
+1.7.1
+
 
 
