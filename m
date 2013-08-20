@@ -1,127 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751289Ab3HTJOT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 05:14:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42709 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750804Ab3HTJOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 05:14:17 -0400
-Date: Tue, 20 Aug 2013 11:14:14 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Balbir Singh <bsingharora@gmail.com>,
-        Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH v5] Soft limit rework
-Message-ID: <20130820091414.GC31552@dhcp22.suse.cz>
-References: <1371557387-22434-1-git-send-email-mhocko@suse.cz>
- <20130819163512.GB712@cmpxchg.org>
+	id S1750918Ab3HTJTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 05:19:54 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:62065 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab3HTJTx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 05:19:53 -0400
+Message-ID: <521334C6.4070605@gmail.com>
+Date: Tue, 20 Aug 2013 11:20:06 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130819163512.GB712@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 06/17] ARM: imx: remove custom .init_time hook
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376964271-22715-7-git-send-email-sebastian.hesselbarth@gmail.com> <20130820072642.GJ31036@pengutronix.de> <52132D6C.2080606@gmail.com> <20130820091000.GK31036@pengutronix.de>
+In-Reply-To: <20130820091000.GK31036@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 19-08-13 12:35:12, Johannes Weiner wrote:
-> On Tue, Jun 18, 2013 at 02:09:39PM +0200, Michal Hocko wrote:
-> > Hi,
-> > 
-> > This is the fifth version of the patchset.
-> > 
-> > Summary of versions:
-> > The first version has been posted here: http://permalink.gmane.org/gmane.linux.kernel.mm/97973
-> > (lkml wasn't CCed at the time so I cannot find it in lwn.net
-> > archives). There were no major objections. 
-> 
-> Except there are.
+On 08/20/2013 11:10 AM, Sascha Hauer wrote:
+> On Tue, Aug 20, 2013 at 10:48:44AM +0200, Sebastian Hesselbarth wrote:
+>> On 08/20/2013 09:26 AM, Sascha Hauer wrote:
+>>> On i.MX5 the init_time hook calls mx5x_clocks_init_dt which calls
+>>> mx5x_clocks_init which not only calls of_clk_init() but also registers
+>>> all clocks in the system. You can't remove it.
+>>>
+>>> I am missing some
+>>>
+>>> CLK_OF_DECLARE(imx51, "fsl,imx51-ccm", imx51_clocks_init);
+>>> CLK_OF_DECLARE(imx53, "fsl,imx53-ccm", imx53_clocks_init);
+>>>
+>>> Somewhere.
+>>
+>> Sascha,
+>>
+>> you are right, I forgot to add the two lines above as replacement for
+>> the now removed direct call. If the general approach is accepted, I'll
+>> add them for sure.
+>>
+>> Do imx51/imx53 still boot with CLK_OF_DECLARE added?
+>
+> I can test this once the whole series arrived here. So far I only have
+> 6/16 and 10/17. I probably need at least 1/17.
 
-Good to know that late... It would have been much more helpful to have
-such a principal feedback few months ago (this work is here since early
-Jun).
- 
-> > My primary test case was a parallel kernel build with 2 groups (make
-> > is running with -j4 with a distribution .config in a separate cgroup
-> > without any hard limit) on a 8 CPU machine booted with 1GB memory.  I
-> > was mostly interested in 2 setups. Default - no soft limit set and - and
-> > 0 soft limit set to both groups.
-> > The first one should tell us whether the rework regresses the default
-> > behavior while the second one should show us improvements in an extreme
-> > case where both workloads are always over the soft limit.
-> 
-> Two kernel builds with 1G of memory means that reclaim is purely
-> trimming the cache every once in a while.  Changes in memory pressure
-> are not measurable up to a certain point, because whether you trim old
-> cache or not does not affect the build jobs.
-> 
-> Also you tested the no-softlimit case and an extreme soft limit case.
-> Where are the common soft limit cases?
+Yeah, I am having troubles with linux-arm-kernel rejecting my mails
+because of a suspicious header. I have no clue, what has changed lately
+with my mails sent by git send-email to make them get stuck.
 
-v5.1 had some more tests. I have added soft limitted stream IO resp. kbuild vs
-unlimitted mem_eater loads. Have you checked those?
+I didn't add all sub-arch maintainers to the whole set, that would
+have been simply too many.
 
-[...]
-> > So to wrap this up. The series is still doing good and improves the soft
-> > limit.
-> 
-> The soft limit tree is a bunch of isolated code that's completely
-> straight-forward.  This is replaced by convoluted memcg iterators,
-> convoluted lruvec shrinkers, spreading even more memcg callbacks with
-> questionable semantics into already complicated generic reclaim code.
+You need patches [1], [2], and 6 for imx which I will send a v2 in
+a second. Ok for you to get them from lkml?
 
-I was trying to keep the convolution into vmscan as small as possible.
-Maybe it can get reduced even more. I will think about it.
+Sebastian
 
-Predicate for memcg iterator has been added to address your concern
-about a potential regression with too many groups. And that looked like
-the least convoluting solution.
+[1] https://lkml.org/lkml/2013/8/19/591
+[2] https://lkml.org/lkml/2013/8/19/592
 
-> This series considerably worsens readability and maintainability of
-> both the generic reclaim code as well as the memcg counterpart of it.
-
-I am really surprised that you are coming with this concerns that late.
-This code has been posted quite some ago, hasn't it? We have even had
-that "calm" discussion with Tejun about predicates and you were silent
-at the time.
-
-> The point of naturalizing the memcg code is to reduce data structures
-> and redundancy and to break open opaque interfaces like "do soft
-> reclaim and report back".  But you didn't actually reduce complexity,
-> you added even more opaque callbacks (should_soft_reclaim?
-> soft_reclaim_eligible?).  You didn't integrate soft limit into generic
-> reclaim code, you just made the soft limit API more complicated.
-
-I can certainly think about simplifications. But it would be nicer if
-you were more specific on the "more complicated" part. The soft reclaim
-is a natural part of the reclaim now. Which I find as an improvement.
-"Do some memcg magic and get back was" a bad idea IMO.
-Hiding the soft limit decisions into the iterators as a searching
-criteria doesn't sound as a totally bad idea to me. Soft limit is an
-additional criteria who to reclaim, isn't it?
-Well, I could have open coded it but that would mean a more code into
-vmscan or getting back to "call some memcg magic and get back to me".
-
-> And, as I mentioned repeatedly in previous submissions, your benchmark
-> numbers don't actually say anything useful about this change.
-
-I would really welcome suggestions for improvements. I have tried "The
-most interesting test case would be how it behaves if some groups are
-over the soft limits while others are not." with v5.1 where I had
-memeater unlimited and kbuild resp. stream IO being limited. 
-
-> I'm against merging this upstream at this point.
-
-Can we at least find some middle ground here? The way how the current
-soft limit is done is a disaster. Ditching the whole series sounds like
-a step back to me.
--- 
-Michal Hocko
-SUSE Labs
