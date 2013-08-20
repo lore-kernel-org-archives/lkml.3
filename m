@@ -1,130 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab3HTCrL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 22:47:11 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:43531 "EHLO
+	id S1752169Ab3HTCrk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 22:47:40 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:43613 "EHLO
 	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909Ab3HTCrJ (ORCPT
+	with ESMTP id S1752032Ab3HTCrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 22:47:09 -0400
-Date: Mon, 19 Aug 2013 19:47:00 -0700
+	Mon, 19 Aug 2013 22:47:32 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: [PATCH tip/core/rcu 0/9] v2 sysidle changes for 3.12
-Message-ID: <20130820024700.GA31075@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 4/9] nohz_full: Add rcu_dyntick data for scalable detection of all-idle state
+Date: Mon, 19 Aug 2013 19:47:16 -0700
+Message-Id: <1376966841-31774-4-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130820024700.GA31075@linux.vnet.ibm.com>
+ <1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082002-1542-0000-0000-000000A7908B
+x-cbid: 13082002-1542-0000-0000-000000A790EA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Whenever there is at least one non-idle CPU, it is necessary to
-periodically update timekeeping information.  Before NO_HZ_FULL, this
-updating was carried out by the scheduling-clock tick, which ran on
-every non-idle CPU.  With the advent of NO_HZ_FULL, it is possible
-to have non-idle CPUs that are not receiving scheduling-clock ticks.
-This possibility is handled by assigning a timekeeping CPU that continues
-taking scheduling-clock ticks.
+This commit adds fields to the rcu_dyntick structure that are used to
+detect idle CPUs.  These new fields differ from the existing ones in
+that the existing ones consider a CPU executing in user mode to be idle,
+where the new ones consider CPUs executing in user mode to be busy.
+The handling of these new fields is otherwise quite similar to that for
+the exiting fields.  This commit also adds the initialization required
+for these fields.
 
-Unfortunately, timekeeping CPU continues taking scheduling-clock
-interrupts even when all other CPUs are completely idle, which is
-not so good for energy efficiency and battery lifetime.  Clearly, it
-would be good to turn off the timekeeping CPU's scheduling-clock tick
-when all CPUs are completely idle.  This is conceptually simple, but
-we also need good performance and scalability on large systems, which
-rules out implementations based on frequently updated global counts of
-non-idle CPUs as well as implementations that frequently scan all CPUs.
-Nevertheless, we need a single global indicator in order to keep the
-overhead of checking acceptably low.
+So, why is usermode execution treated differently, with RCU considering
+it a quiescent state equivalent to idle, while in contrast the new
+full-system idle state detection considers usermode execution to be
+non-idle?
 
-The chosen approach is to enforce hysteresis on the non-idle to
-full-system-idle transition, with the amount of hysteresis increasing
-linearly with the number of CPUs, thus keeping contention acceptably low.
-This approach piggybacks on RCU's existing force-quiescent-state scanning
-of idle CPUs, which has the advantage of avoiding the scan entirely on
-busy systems that have high levels of multiprogramming.  This scan
-takes per-CPU idleness information and feeds it into a state machine
-that applies the level of hysteresis required to arrive at a single
-full-system-idle indicator.
+It turns out that although one of RCU's quiescent states is usermode
+execution, it is not a full-system idle state.  This is because the
+purpose of the full-system idle state is not RCU, but rather determining
+when accurate timekeeping can safely be disabled.  Whenever accurate
+timekeeping is required in a CONFIG_NO_HZ_FULL kernel, at least one
+CPU must keep the scheduling-clock tick going.  If even one CPU is
+executing in user mode, accurate timekeeping is requires, particularly for
+architectures where gettimeofday() and friends do not enter the kernel.
+Only when all CPUs are really and truly idle can accurate timekeeping be
+disabled, allowing all CPUs to turn off the scheduling clock interrupt,
+thus greatly improving energy efficiency.
 
-The individual patches are as follows:
+This naturally raises the question "Why is this code in RCU rather than in
+timekeeping?", and the answer is that RCU has the data and infrastructure
+to efficiently make this determination.
 
-1.	Eliminate unused APIs that were intended for adaptive ticks.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/rcutree.c        |  5 +++++
+ kernel/rcutree.h        |  9 +++++++++
+ kernel/rcutree_plugin.h | 19 +++++++++++++++++++
+ 3 files changed, 33 insertions(+)
 
-2.	Add documentation covering the testing of nohz_full.
-
-3.	Add a CONFIG_NO_HZ_FULL_SYSIDLE Kconfig parameter to enable
-	this feature.  Kernels built with CONFIG_NO_HZ_FULL_SYSIDLE=n
-	act exactly as they do today.
-
-4.	Add new fields to the rcu_dynticks structure that track CPU-idle
-	information.  These fields consider CPUs running usermode to be
-	non-idle, in contrast with the existing fields in that structure.
-
-5.	Track per-CPU idle states.
-
-6.	Add full-system idle states and state variables.
-
-7.	Expand force_qs_rnp(), dyntick_save_progress_counter(), and
-	rcu_implicit_dynticks_qs() APIs to enable passing full-system
-	idle state information.
-
-8.	Add full-system-idle state machine.
-
-9.	Force RCU's grace-period kthreads onto the timekeeping CPU.
-
-Changes since v4 (https://lkml.org/lkml/2013/8/17/108):
-
-o	Move small-system cutoff to Kconfig symbol as suggested
-	by Josh Triplett.
-
-o	Provide names (not just types) for function pointer argument
-	as suggested by Josh Triplett.
-
-Changes since v3 (https://lkml.org/lkml/2013/7/8/441):
-
-o	Updated Kconfig help text as suggested by Frederic.
-
-o	Added a few adaptive-ticks-related fixes (#1 and #2 above).
-
-Changes since v2:
-
-o	Completed removing NMI support (thanks to Frederic for spotting
-	the remaining cruft).
-
-o	Fix a state-machine bug, again spotted by Frederic.  See
-	http://lists-archives.com/linux-kernel/27865835-nohz_full-add-full-system-idle-state-machine.html
-	for the full details of the bug.
-
-o	Updated commit log and comment as suggested by Josh Triplett.
-
-Changes since v1:
-
-o	Removed NMI support because NMI handlers cannot safely read
-	the time anyway (thanks to Thomas Gleixner and Peter Zijlstra).
-
-						Thanx, Paul
-
-
- b/Documentation/timers/NO_HZ.txt |   44 +++-
- b/include/linux/rcupdate.h       |   22 +-
- b/kernel/rcutree.c               |   94 +++-----
- b/kernel/rcutree.h               |   17 +
- b/kernel/rcutree_plugin.h        |  420 ++++++++++++++++++++++++++++++++++++++-
- b/kernel/time/Kconfig            |   50 ++++
- 6 files changed, 575 insertions(+), 72 deletions(-)
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 8807019..4f27b85 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -224,6 +224,10 @@ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+ DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
+ 	.dynticks_nesting = DYNTICK_TASK_EXIT_IDLE,
+ 	.dynticks = ATOMIC_INIT(1),
++#ifdef CONFIG_NO_HZ_FULL_SYSIDLE
++	.dynticks_idle_nesting = DYNTICK_TASK_NEST_VALUE,
++	.dynticks_idle = ATOMIC_INIT(1),
++#endif /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
+ };
+ 
+ static long blimit = 10;	/* Maximum callbacks per rcu_do_batch. */
+@@ -2904,6 +2908,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
+ 	rdp->blimit = blimit;
+ 	init_callback_list(rdp);  /* Re-enable callbacks on this CPU. */
+ 	rdp->dynticks->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
++	rcu_sysidle_init_percpu_data(rdp->dynticks);
+ 	atomic_set(&rdp->dynticks->dynticks,
+ 		   (atomic_read(&rdp->dynticks->dynticks) & ~0x1) + 1);
+ 	raw_spin_unlock(&rnp->lock);		/* irqs remain disabled. */
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index cbdeac6..52d1be1 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -88,6 +88,14 @@ struct rcu_dynticks {
+ 				    /* Process level is worth LLONG_MAX/2. */
+ 	int dynticks_nmi_nesting;   /* Track NMI nesting level. */
+ 	atomic_t dynticks;	    /* Even value for idle, else odd. */
++#ifdef CONFIG_NO_HZ_FULL_SYSIDLE
++	long long dynticks_idle_nesting;
++				    /* irq/process nesting level from idle. */
++	atomic_t dynticks_idle;	    /* Even value for idle, else odd. */
++				    /*  "Idle" excludes userspace execution. */
++	unsigned long dynticks_idle_jiffies;
++				    /* End of last non-NMI non-idle period. */
++#endif /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
+ #ifdef CONFIG_RCU_FAST_NO_HZ
+ 	bool all_lazy;		    /* Are all CPU's CBs lazy? */
+ 	unsigned long nonlazy_posted;
+@@ -545,6 +553,7 @@ static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
+ static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
+ static void rcu_kick_nohz_cpu(int cpu);
+ static bool init_nocb_callback_list(struct rcu_data *rdp);
++static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
+ 
+ #endif /* #ifndef RCU_TREE_NONCORE */
+ 
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index dff86f5..e5baccb 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2373,3 +2373,22 @@ static void rcu_kick_nohz_cpu(int cpu)
+ 		smp_send_reschedule(cpu);
+ #endif /* #ifdef CONFIG_NO_HZ_FULL */
+ }
++
++
++#ifdef CONFIG_NO_HZ_FULL_SYSIDLE
++
++/*
++ * Initialize dynticks sysidle state for CPUs coming online.
++ */
++static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp)
++{
++	rdtp->dynticks_idle_nesting = DYNTICK_TASK_NEST_VALUE;
++}
++
++#else /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
++
++static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp)
++{
++}
++
++#endif /* #else #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
+-- 
+1.8.1.5
 
