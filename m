@@ -1,105 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751313Ab3HTMlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 08:41:49 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:30941 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab3HTMlr (ORCPT
+	id S1751115Ab3HTMpy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 08:45:54 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:35035 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962Ab3HTMpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 08:41:47 -0400
-X-AuditID: cbfec7f5-b7f5f6d00000105f-16-521364093e34
-Message-id: <52136400.7040406@samsung.com>
-Date: Tue, 20 Aug 2013 14:41:36 +0200
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] max77693: added device tree support
-References: <20130819104409.GA21520@lee--X1>
- <1376912426-14747-1-git-send-email-a.hajda@samsung.com>
- <52128BAD.6020903@wwwdotorg.org>
-In-reply-to: <52128BAD.6020903@wwwdotorg.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t/xK7qcKcJBBmevCFvMP3KO1eLAnx2M
-	Fm96O1gsOs8+YbY42/SG3eL+16OMFpd3zWGzWHr9IpPFhOlrWSwOrzjAZLHu5XQg6007q8Xp
-	blaLVwfbWBz4PNbMW8PoseDzFXaP15MnMHq8Wj2T1ePOtT1sHvNOBnr0bVnF6PF5k5zHxrmh
-	AZxRXDYpqTmZZalF+nYJXBm7Vv1hLfgtVHFjynumBsZ1/F2MnBwSAiYS/Tfa2CFsMYkL99az
-	dTFycQgJLGWU+PrnKCNIQkjgE6PEwXdeIDavgJbE7rudYHEWAVWJtTtbWUBsNgFNib+bb7KB
-	2KICERIrlzxghagXlPgx+R5YjQhQ76Rn/xhBFjALzGeR+N+0EWyQsIC1xKUzE1kgNncySlz7
-	/hbI4eDgFNCVmHfLBaSGWUBHYn/rNDYIW15i85q3zBMYBWYh2TELSdksJGULGJlXMYqmliYX
-	FCel5xrpFSfmFpfmpesl5+duYoTE09cdjEuPWR1iFOBgVOLh7VASChJiTSwrrsw9xCjBwawk
-	wvvaUThIiDclsbIqtSg/vqg0J7X4ECMTB6dUA2ONh+QpF04/Z1nJtUr8hyrWFD7nEejOas1t
-	DYub3fjG59oOpbMBLgu/5LexitQec737WM7V8PykNR2V/NujTDoqskVM6/s6Kr7/iQzTmP0w
-	yfdmoLBy8fYzXkfvLPy9cGub9bfMkmlFBpsKfA/ovd7JH+WeIrjWUoVnT/+N95P+GSzn41rn
-	o8RSnJFoqMVcVJwIAJun+TuFAgAA
+	Tue, 20 Aug 2013 08:45:53 -0400
+Date: Tue, 20 Aug 2013 13:45:49 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: torvalds@linux-foundation.org
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] x86 platform driver fixes for 3.11
+Message-ID: <20130820124549.GA12264@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Thanks for the review.
+--zhXaljGHf11kAtnf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 08/19/2013 11:18 PM, Stephen Warren wrote:
-> On 08/19/2013 05:40 AM, Andrzej Hajda wrote:
->> max77693 mfd main device uses only wakeup field
->> from max77693_platform_data. This field is mapped
->> to wakeup-source common property in device tree.
->> diff --git a/Documentation/devicetree/bindings/mfd/max77693.txt b/Documentation/devicetree/bindings/mfd/max77693.txt
->>  Optional properties:
->>  - regulators : The regulators of max77693 have to be instantiated under subnod
->>    named "regulators" using the following format.
->> +- wakeup-source : Indicates if the device can wakeup the system from the sleep
->> +  state.
-> Does the property mean "can" or "should"?
->
-> "Can" implies that the property means something about the HW. What
-> exactly does it mean; perhaps that some specific output pin of the chip
-> has been wired to an input IRQ/GPIO of the SoC or PMIC that (can) wake
-> up the system? If so, which pin, signal, ...? Also, doesn't this also
-> depend on the SoC itself supporting its input IRQ/GPIO as a wakeup
-> source, so isn't some co-ordination required between the SoC and chip,
-> such that this property doesn't mean "can wakeup the system", but simply
-> "a signal is routed to the SoC, so perhaps it can wakeup the system".
->
-> "Should" implies policy, which probably shouldn't be represented in
-> device tree, since DT should describe the HW and not how it should be used.
-After short digging I have realized that "wakeup-source" property is
-already parsed by 
-of_i2c_register_devices core function and it should not be parsed again
-by the driver itself.
-So I suppose the description of it can be removed from max77693 binding.
-Do you agree?
+Hi Linus,
 
-Anyway I will prepare separate patch removing wakeup related code from
-probe and
-related field from max77693 platform_data - i2c_board_info::flag field
-should be used instead.
->
-> Finally, if there was already a binding for max77693.txt, I don't think
-> the patch subject "added device tree support" is entirely accurate; this
-> change to the binding document seems to be more about adding a new
-> feature than adding DT support to the driver...
->
-This patch really adds DT support to max77693 mfd driver :)
+Three trivial fixes - the first reverts a patch that's broken some other=20
+devices (again - I'm trying to figure out a clean way to implement=20
+this), the other two fix minor issues in the sony-laptop driver.
 
-The binding file which is already in kernel currently has no related
-code in the max77693 driver.
-I will add clarification in the commit message.
+The following changes since commit 50e37ccea06ca8846ceb60dbfbe056012c60d71b:
 
-Regards
-Andrzej
+  Merge branch 'for-3.11-fixes' of git://git.kernel.org/pub/scm/linux/kerne=
+l/git/tj/cgroup (2013-08-18 08:51:28 -0700)
+
+are available in the git repository at:
 
 
+  ssh://cavan.codon.org.uk/srv/git/platform-drivers-x86.git linux-next
+
+for you to fetch changes up to 41c8bd1c75ef8e8566eca6b1c7bc273bc282f495:
+
+  Revert "hp-wmi: Enable hotkeys on some systems" (2013-08-18 13:23:31 -040=
+0)
+
+----------------------------------------------------------------
+Daniel Serpell (1):
+      sony-laptop: Fix reporting of gfx_switch_status
+
+Matthew Garrett (1):
+      Revert "hp-wmi: Enable hotkeys on some systems"
+
+Wei Yongjun (1):
+      sony-laptop: return a negative error code in sonypi_compat_init()
+
+ drivers/platform/x86/hp-wmi.c      | 16 ----------------
+ drivers/platform/x86/sony-laptop.c |  8 ++++++--
+ 2 files changed, 6 insertions(+), 18 deletions(-)
+
+--=20
+Matthew Garrett | mjg59@srcf.ucam.org
+
+--zhXaljGHf11kAtnf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlITZP0ACgkQ7Hkv8l1YiTswzACeKoro+UM5O0+9nYzkFdxv3Hyl
+5MIAnR4f2O4x482bIejKucV2M6gHki2a
+=NhIw
+-----END PGP SIGNATURE-----
+
+--zhXaljGHf11kAtnf--
