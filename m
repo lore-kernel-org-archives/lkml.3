@@ -1,29 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751036Ab3HTLNj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 07:13:39 -0400
-Received: from mail1.ams.com ([212.166.112.31]:34243 "EHLO mail1.ams.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976Ab3HTLNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 07:13:38 -0400
-X-IronPort-AV: E=Sophos;i="4.89,919,1367964000"; 
-   d="scan'208";a="4240256"
-From: Florian Lobmaier <florian.lobmaier@ams.com>
-To: linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, sameo@linux.intel.com
-Subject: mfd: as3722: introducing ams AS3722 PMIC driver 
-Date: Tue, 20 Aug 2013 13:13:26 +0200
-Message-Id: <1376997210-32631-1-git-send-email-florian.lobmaier@ams.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1751391Ab3HTLPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 07:15:32 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:60576 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab3HTLPb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 07:15:31 -0400
+Date: Tue, 20 Aug 2013 14:14:26 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: [sched next] overflowed cpu time for kernel threads in /proc/PID/stat
+Message-ID: <20130820111426.GA27828@swordfish.datadirectnet.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for the response regarding the correct formatting of the patches. I will try to fulfill the requirements as expected. Now tried to introduce the as3722 mfd driver in logical steps. Please keep in mind that the driver is already fully written, so the bit-by-bit introduction within the files would be a really hard requirement to fulfill.
+Hello,
+3.11.0-rc6-next-20130820
 
-One question I have still in mind: How do I reply correctly to already sent mails? Which command is recommended in this case?
+at some point an overflowed cpu time is reported in /proc/PID/stat
 
-Thanks in addition to Mark Brown who already commented on the driver itself. I will try to integrate as much of your suggestions as possible.
+cat /proc/10/stat
+10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 0 406 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+cat /proc/10/stat
+10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 0 406 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+cat /proc/10/stat
+10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 0 407 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+cat /proc/10/stat
+10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 0 407 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+cat /proc/10/stat
+10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 1844674407370 477 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+						^^^^^^^^^
+cat /proc/10/stat
+10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 1844674407370 597 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 
-Br,
-Florian
+(seems there are several more -1UL in output)
+
+
+oddly enough, I see this happening only for RCU
+
+ ps aux | grep rcu
+ root         8  0.0  0.0      0     0 ?        S    12:42   0:00  [rcuc/0]
+ root         9  0.0  0.0      0     0 ?        S    12:42   0:00  [rcub/0]
+ root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37  [rcu_preempt]
+ root        11  0.1  0.0      0     0 ?        S    12:42   0:02  [rcuop/0]
+ root        12 62422329  0.0  0     0 ?        S    12:42 21114581:35  [rcuop/1]
+
+	-ss
