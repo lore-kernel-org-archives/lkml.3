@@ -1,103 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749Ab3HTIeB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:34:01 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:5666 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751362Ab3HTId7 (ORCPT
+	id S1751809Ab3HTIex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:34:53 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:51965 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472Ab3HTIeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:33:59 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de096h8275bh8275dh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h1155h)
-Message-ID: <521329EA.3050900@freescale.com>
-Date: Tue, 20 Aug 2013 16:33:46 +0800
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 20 Aug 2013 04:34:50 -0400
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: <djbw@fb.com>, <leoli@freescale.com>, <scottwood@freescale.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 0/3] DMA: Freescale: Add support for 8-channel DMA
- engine
-References: <1375094944-3343-1-git-send-email-hongbo.zhang@freescale.com> <20130729105901.GI29095@intel.com>
-In-Reply-To: <20130729105901.GI29095@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-Originating-IP: [112.198.220.69]
+In-Reply-To: <5212F6E8.3090107@openwrt.org>
+References: <CAG-2HqUXQeq=30EpGWmn6tkC=CP1W+=UZCVPTYhhE0WyU_C4nw@mail.gmail.com>
+ <20130820000336.GA15548@kroah.com> <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com>
+ <20130820002822.GA18023@kroah.com> <5212F6E8.3090107@openwrt.org>
+From: Tom Gundersen <teg@jklm.no>
+Date: Tue, 20 Aug 2013 16:34:28 +0800
+Message-ID: <CAG-2HqVFn9CWnVQ+_=OUWj3nM7UH=_O2s=ckB5FLHeC6MThwwg@mail.gmail.com>
+Subject: Re: [REGRESSION] 3.10.{6,7} crashes on network activity
+To: Felix Fietkau <nbd@openwrt.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 06:59 PM, Vinod Koul wrote:
-> On Mon, Jul 29, 2013 at 06:49:01PM +0800, hongbo.zhang@freescale.com wrote:
->> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+On Tue, Aug 20, 2013 at 12:56 PM, Felix Fietkau <nbd@openwrt.org> wrote:
+> On 2013-08-20 2:28 AM, Greg Kroah-Hartman wrote:
+>> On Tue, Aug 20, 2013 at 08:26:11AM +0800, Tom Gundersen wrote:
+>>> On Tue, Aug 20, 2013 at 8:03 AM, Greg Kroah-Hartman
+>>> <gregkh@linuxfoundation.org> wrote:
+>>> > On Tue, Aug 20, 2013 at 07:59:47AM +0800, Tom Gundersen wrote:
+>>> >> Hi guys,
+>>> >>
+>>> >> Starting with 3.10.6 (and still present in .7) I get an oops on
+>>> >> connecting to the network.
+>>> >>
+>>> >> The attached picture shows the oops. In case it does not reach the ML,
+>>> >> the top of the call trace reads:
+>>> >>
+>>> >> brcms_c_compute_rtscts_dur
+>>> >> brcms_c_ampdu_finalize
+>>> >> ampdu_finalize
+>>> >> dma_txfast
+>>> >> brcms_c_txfifo
+>>> >> brcms_c_sendpkt_mac80211
+>>> >> brcms_ops_tx
+>>> >> __ieee80211_tx
+>>> >>
+>>> >> I bisected the problem and the first bad commit is
+>>> >>
+>>> >> commit ef47a5e4f1aaf1d0e2e6875e34b2c9595897bef6
+>>> >> Author: Felix Fietkau <nbd@openwrt.org>
+>>> >> Date:   Fri Jun 28 21:04:35 2013 +0200
+>>> >>
+>>> >>     mac80211/minstrel_ht: fix cck rate sampling
+>>> >>
+>>> >>     commit 1cd158573951f737fbc878a35cb5eb47bf9af3d5 upstream.
+>>> >>
+>>> >> Reverting it on top of .7 fixes the problem.
+>>> >>
+>>> >> I had the same (I suppose) problem on mainline some time ago, but I
+>>> >> have not bisected it, verified that the problem still occurs there, or
+>>> >> checked if reverting the upstream patch fixes it. I'd be happy to do
+>>> >> that if it would help though.
+>>> >>
+>>> >> Let me know if you need any more information.
+>>> >
+>>> > Do you have this same problem with 3.11-rc6 as well?
+>>>
+>>> Yes, I just confirmed. I also confirmed that reverting the mainline
+>>> commit on top of -rc6 fixes the problem.
 >>
->> Hi Vinod, Dan, Scott and Leo, please have a look at these V7 patches.
-> The dma relates changes look okay to me.
+>> Great, thanks.
+>>
+>> Felix and Johannes, any chance we can get this reverted in Linus tree
+>> soon, and push that revert back to the 3.10 stable tree as well?
+> I'd like to avoid a revert, since that will simply replace one set of
+> issues with another. Let's limit the use of the feature that brcmsmac
+> can't handle to drivers that are known to work with it. Tom, Please
+> test this patch to see if it fixes your issue.
+
+The patch (on top of -rc6) fixes it for me. Thanks.
+
+-t
+
+> ---
+> --- a/include/net/mac80211.h
+> +++ b/include/net/mac80211.h
+> @@ -1501,6 +1501,7 @@ enum ieee80211_hw_flags {
+>         IEEE80211_HW_SUPPORTS_RC_TABLE                  = 1<<24,
+>         IEEE80211_HW_P2P_DEV_ADDR_FOR_INTF              = 1<<25,
+>         IEEE80211_HW_TIMING_BEACON_ONLY                 = 1<<26,
+> +       IEEE80211_HW_SUPPORTS_HT_CCK_RATES              = 1<<27,
+>  };
 >
-> I need someone to review and ACK the DT bindings.
+>  /**
+> --- a/net/mac80211/rc80211_minstrel_ht.c
+> +++ b/net/mac80211/rc80211_minstrel_ht.c
+> @@ -828,6 +828,9 @@ minstrel_ht_update_cck(struct minstrel_p
+>         if (sband->band != IEEE80211_BAND_2GHZ)
+>                 return;
 >
-> ~Vinod
-Vinod,
-Are you using this tree?
-http://git.infradead.org/users/vkoul/slave-dma.git
-Did you merge these patches?
-Thanks.
->> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
->> adds support this DMA engine.
->>
->> V6->V7 changes:
->> - only remove unnecessary "CHIP-dma" explanations in [1/3]
->>
->> V5->V6 changes:
->> - minor updates of descriptions in binding document and Kconfig
->> - remove [4/4], that should be another patch in future
->>
->> V4->V5 changes:
->> - update description in the dt binding document, to make it more resonable
->> - add new patch [4/4] to eliminate a compiling warning which already exists
->>    for a long time
->>
->> V3->V4 changes:
->> - introduce new patch [1/3] to revise the legacy dma binding document
->> - and then add new paragraph to describe new dt node binding in [2/3]
->> - rebase to latest kernel v3.11-rc1
->>
->> V2->V3 changes:
->> - edit Documentation/devicetree/bindings/powerpc/fsl/dma.txt
->> - edit text string in Kconfig and the driver files, using "elo series" to
->>    mention all the current "elo*"
->>
->> V1->V2 changes:
->> - removed the codes handling the register dgsr1, since it isn't used currently
->> - renamed the DMA DT compatible to "fsl,elo3-dma"
->> - renamed the new dts files to "elo3-dma-<n>.dtsi"
->>
->> Hongbo Zhang (3):
->>    DMA: Freescale: revise device tree binding document
->>    DMA: Freescale: Add new 8-channel DMA engine device tree nodes
->>    DMA: Freescale: update driver to support 8-channel DMA engine
->>
->>   .../devicetree/bindings/powerpc/fsl/dma.txt        |  114 +++++++++++++++-----
->>   arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
->>   arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   81 ++++++++++++++
->>   arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   81 ++++++++++++++
->>   arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
->>   drivers/dma/Kconfig                                |    9 +-
->>   drivers/dma/fsldma.c                               |    9 +-
->>   drivers/dma/fsldma.h                               |    2 +-
->>   8 files changed, 264 insertions(+), 40 deletions(-)
->>   create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
->>   create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
->>
->> -- 
->> 1.7.9.5
->>
->>
->>
-
-
-
+> +       if (!(mp->hw->flags & IEEE80211_HW_SUPPORTS_HT_CCK_RATES))
+> +               return;
+> +
+>         mi->cck_supported = 0;
+>         mi->cck_supported_short = 0;
+>         for (i = 0; i < 4; i++) {
+> --- a/drivers/net/wireless/ath/ath9k/init.c
+> +++ b/drivers/net/wireless/ath/ath9k/init.c
+> @@ -807,7 +807,8 @@ void ath9k_set_hw_capab(struct ath_softc
+>                 IEEE80211_HW_PS_NULLFUNC_STACK |
+>                 IEEE80211_HW_SPECTRUM_MGMT |
+>                 IEEE80211_HW_REPORTS_TX_ACK_STATUS |
+> -               IEEE80211_HW_SUPPORTS_RC_TABLE;
+> +               IEEE80211_HW_SUPPORTS_RC_TABLE |
+> +               IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+>
+>         if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
+>                 hw->flags |= IEEE80211_HW_AMPDU_AGGREGATION;
+> --- a/drivers/net/wireless/ath/carl9170/main.c
+> +++ b/drivers/net/wireless/ath/carl9170/main.c
+> @@ -1878,7 +1878,8 @@ void *carl9170_alloc(size_t priv_size)
+>                      IEEE80211_HW_PS_NULLFUNC_STACK |
+>                      IEEE80211_HW_NEED_DTIM_BEFORE_ASSOC |
+>                      IEEE80211_HW_SUPPORTS_RC_TABLE |
+> -                    IEEE80211_HW_SIGNAL_DBM;
+> +                    IEEE80211_HW_SIGNAL_DBM |
+> +                    IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+>
+>         if (!modparam_noht) {
+>                 /*
+> --- a/drivers/net/wireless/rt2x00/rt2800lib.c
+> +++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+> @@ -6327,7 +6327,8 @@ static int rt2800_probe_hw_mode(struct r
+>             IEEE80211_HW_SUPPORTS_PS |
+>             IEEE80211_HW_PS_NULLFUNC_STACK |
+>             IEEE80211_HW_AMPDU_AGGREGATION |
+> -           IEEE80211_HW_REPORTS_TX_ACK_STATUS;
+> +           IEEE80211_HW_REPORTS_TX_ACK_STATUS |
+> +           IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+>
+>         /*
+>          * Don't set IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING for USB devices
+>
