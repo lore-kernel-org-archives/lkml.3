@@ -1,142 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab3HTTjB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 15:39:01 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:33509 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab3HTTi6 (ORCPT
+	id S1751901Ab3HTTjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 15:39:17 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:49266 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878Ab3HTTjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 15:38:58 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] Kconfig: Remove hotplug enable hints in CONFIG_KEXEC help texts
-Date: Tue, 20 Aug 2013 21:38:03 +0200
-Message-Id: <1377027483-17025-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 20 Aug 2013 15:39:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130820192340.GA25441@redhat.com>
+References: <20130819172524.GA22268@redhat.com> <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com>
+ <20130819183319.GA24846@redhat.com> <CALCETrWrpNszRGCRRMLgiOopcSdDShB3Mck6gRPco=dAZeX3pQ@mail.gmail.com>
+ <20130819184355.GA25362@redhat.com> <CALCETrU4gTfzcpeEo-X7o-yZefKiw9BVNKdcN4fThUeiuZtOOg@mail.gmail.com>
+ <20130820185043.GA24040@redhat.com> <CALCETrUjohT2D=jtVQ9mnbeUr2oJ9VoN812PtQhaB2ZZ89isNA@mail.gmail.com>
+ <20130820190529.GA24512@redhat.com> <CALCETrVC15BjcRMk2tc-SRT3tUr24057Zxt5ARQ-2Eq7RhjO2w@mail.gmail.com>
+ <20130820192340.GA25441@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 20 Aug 2013 12:38:53 -0700
+Message-ID: <CALCETrXnf8V+CgHDwEEviBkn0bJ60_H6G6WPmZxkQF85bqj3TQ@mail.gmail.com>
+Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Brad Spengler <spender@grsecurity.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin Walters <walters@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 40b313608ad4ea655addd2ec6cdd106477ae8e15 ("Finally eradicate
-CONFIG_HOTPLUG") removed remaining references to CONFIG_HOTPLUG, but missed
-a few plain English references in the CONFIG_KEXEC help texts.
+On Tue, Aug 20, 2013 at 12:23 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 08/20, Andy Lutomirski wrote:
+>>
+>> On Tue, Aug 20, 2013 at 12:05 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> > On 08/20, Andy Lutomirski wrote:
+>> Huh?  Doesn't this mean that unshare(CLONE_NEWPID); vfork() will work
+>> with your patches,
+>
+> I hope,
+>
+>> but vfork(); unshare(CLONE_NEWPID) will fail?  (I
+>> admit I haven't tested it.)
+>
+> Do you mean that the child does unshare(CLONE_NEWPID) before exec?
+> It should fail with or without this patch.
+>
 
-Remove them, too.
+Exactly. Shouldn't it succeed?
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/arm/Kconfig     |    3 +--
- arch/ia64/Kconfig    |    6 +++---
- arch/mips/Kconfig    |    6 +++---
- arch/powerpc/Kconfig |    6 +++---
- arch/sh/Kconfig      |    6 +++---
- arch/x86/Kconfig     |    6 +++---
- 6 files changed, 16 insertions(+), 17 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 43594d5..cd5c1c9 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -2064,8 +2064,7 @@ config KEXEC
- 
- 	  It is an ongoing process to be certain the hardware in a machine
- 	  is properly shutdown, so do not be surprised if this code does not
--	  initially work for you.  It may help to enable device hotplugging
--	  support.
-+	  initially work for you.
- 
- config ATAGS_PROC
- 	bool "Export atags in procfs"
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 5a768ad..b36370d 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -565,9 +565,9 @@ config KEXEC
- 
- 	  It is an ongoing process to be certain the hardware in a machine
- 	  is properly shutdown, so do not be surprised if this code does not
--	  initially work for you.  It may help to enable device hotplugging
--	  support.  As of this writing the exact hardware interface is
--	  strongly in flux, so no good recommendation can be made.
-+	  initially work for you.  As of this writing the exact hardware
-+	  interface is strongly in flux, so no good recommendation can be
-+	  made.
- 
- config CRASH_DUMP
- 	  bool "kernel crash dumps"
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index e12764c..dccd7ce 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -2305,9 +2305,9 @@ config KEXEC
- 
- 	  It is an ongoing process to be certain the hardware in a machine
- 	  is properly shutdown, so do not be surprised if this code does not
--	  initially work for you.  It may help to enable device hotplugging
--	  support.  As of this writing the exact hardware interface is
--	  strongly in flux, so no good recommendation can be made.
-+	  initially work for you.  As of this writing the exact hardware
-+	  interface is strongly in flux, so no good recommendation can be
-+	  made.
- 
- config CRASH_DUMP
- 	  bool "Kernel crash dumps"
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index dbd9d3c..cc61418 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -369,9 +369,9 @@ config KEXEC
- 
- 	  It is an ongoing process to be certain the hardware in a machine
- 	  is properly shutdown, so do not be surprised if this code does not
--	  initially work for you.  It may help to enable device hotplugging
--	  support.  As of this writing the exact hardware interface is
--	  strongly in flux, so no good recommendation can be made.
-+	  initially work for you.  As of this writing the exact hardware
-+	  interface is strongly in flux, so no good recommendation can be
-+	  made.
- 
- config CRASH_DUMP
- 	bool "Build a kdump crash kernel"
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index 1020dd8..1018ed3 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -643,9 +643,9 @@ config KEXEC
- 
- 	  It is an ongoing process to be certain the hardware in a machine
- 	  is properly shutdown, so do not be surprised if this code does not
--	  initially work for you.  It may help to enable device hotplugging
--	  support.  As of this writing the exact hardware interface is
--	  strongly in flux, so no good recommendation can be made.
-+	  initially work for you.  As of this writing the exact hardware
-+	  interface is strongly in flux, so no good recommendation can be
-+	  made.
- 
- config CRASH_DUMP
- 	bool "kernel crash dumps (EXPERIMENTAL)"
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b32ebf9..6ace5de 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1627,9 +1627,9 @@ config KEXEC
- 
- 	  It is an ongoing process to be certain the hardware in a machine
- 	  is properly shutdown, so do not be surprised if this code does not
--	  initially work for you.  It may help to enable device hotplugging
--	  support.  As of this writing the exact hardware interface is
--	  strongly in flux, so no good recommendation can be made.
-+	  initially work for you.  As of this writing the exact hardware
-+	  interface is strongly in flux, so no good recommendation can be
-+	  made.
- 
- config CRASH_DUMP
- 	bool "kernel crash dumps"
--- 
-1.7.9.5
-
+--Andy
