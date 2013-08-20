@@ -1,180 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab3HTCwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 22:52:23 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:37214 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab3HTCvZ (ORCPT
+	id S1751942Ab3HTCyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 22:54:51 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:41383 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab3HTCyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 22:51:25 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 3/5] rcu: Sort rcutorture module parameters
-Date: Mon, 19 Aug 2013 19:51:12 -0700
-Message-Id: <1376967074-32530-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1376967074-32530-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130818022453.GA3475@linux.vnet.ibm.com>
- <1376967074-32530-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082002-1542-0000-0000-000000A794C4
+	Mon, 19 Aug 2013 22:54:50 -0400
+X-Spam-Score: -101.1
+Message-ID: <5212DA37.1090101@asianux.com>
+Date: Tue, 20 Aug 2013 10:53:43 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Oleg Nesterov <oleg@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        "dhowells@redhat.com" <dhowells@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel: user_namespace: always set the return parameter 'new_cred'
+ when call unshare_userns() successfully.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+When unshare_userns() succeed, recommend to always set the return
+parameter which may be used by caller.
 
-There are getting to be too many module parameters to permit the current
-semi-random order, so this patch orders them.
+The caller has rights to call it with 'new_cred' uninitialized, if
+succeed, the caller can assume the 'new_cred' has been initialized.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- kernel/rcutorture.c | 101 +++++++++++++++++++++++++---------------------------
- 1 file changed, 49 insertions(+), 52 deletions(-)
+ include/linux/user_namespace.h |    1 +
+ kernel/user_namespace.c        |    4 +++-
+ 2 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index 10820b7..949a8f2 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -52,81 +52,78 @@
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Paul E. McKenney <paulmck@us.ibm.com> and Josh Triplett <josh@freedesktop.org>");
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index b6b215f..3159af5 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -75,6 +75,7 @@ static inline int unshare_userns(unsigned long unshare_flags,
+ {
+ 	if (unshare_flags & CLONE_NEWUSER)
+ 		return -EINVAL;
++	*new_cred = NULL;
+ 	return 0;
+ }
  
--static int nreaders = -1;	/* # reader threads, defaults to 2*ncpus */
--static int nfakewriters = 4;	/* # fake writer threads */
--static int stat_interval = 60;	/* Interval between stats, in seconds. */
--				/*  Zero means "only at end of test". */
--static bool verbose;		/* Print more debug info. */
--static bool test_no_idle_hz = true;
--				/* Test RCU support for tickless idle CPUs. */
--static int shuffle_interval = 3; /* Interval between shuffles (in sec)*/
--static int stutter = 5;		/* Start/stop testing interval (in sec) */
--static int irqreader = 1;	/* RCU readers from irq (timers). */
--static int fqs_duration;	/* Duration of bursts (us), 0 to disable. */
--static int fqs_holdoff;		/* Hold time within burst (us). */
--static int fqs_stutter = 3;	/* Wait time between bursts (s). */
--static bool gp_exp;		/* Use expedited GP wait primitives. */
--static bool gp_normal;		/* Use normal GP wait primitives. */
--static int n_barrier_cbs;	/* Number of callbacks to test RCU barriers. */
--static int object_debug;	/* Test object-debug double call_rcu()?. */
--static int onoff_interval;	/* Wait time between CPU hotplugs, 0=disable. */
--static int onoff_holdoff;	/* Seconds after boot before CPU hotplugs. */
--static int shutdown_secs;	/* Shutdown time (s).  <=0 for no shutdown. */
--static int stall_cpu;		/* CPU-stall duration (s).  0 for no stall. */
--static int stall_cpu_holdoff = 10; /* Time to wait until stall (s).  */
--static int test_boost = 1;	/* Test RCU prio boost: 0=no, 1=maybe, 2=yes. */
--static int test_boost_interval = 7; /* Interval between boost tests, seconds. */
--static int test_boost_duration = 4; /* Duration of each boost test, seconds. */
--static char *torture_type = "rcu"; /* What RCU implementation to torture. */
--
--module_param(nreaders, int, 0444);
--MODULE_PARM_DESC(nreaders, "Number of RCU reader threads");
--module_param(nfakewriters, int, 0444);
--MODULE_PARM_DESC(nfakewriters, "Number of RCU fake writer threads");
--module_param(stat_interval, int, 0644);
--MODULE_PARM_DESC(stat_interval, "Number of seconds between stats printk()s");
--module_param(verbose, bool, 0444);
--MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
--module_param(test_no_idle_hz, bool, 0444);
--MODULE_PARM_DESC(test_no_idle_hz, "Test support for tickless idle CPUs");
--module_param(shuffle_interval, int, 0444);
--MODULE_PARM_DESC(shuffle_interval, "Number of seconds between shuffles");
--module_param(stutter, int, 0444);
--MODULE_PARM_DESC(stutter, "Number of seconds to run/halt test");
--module_param(irqreader, int, 0444);
--MODULE_PARM_DESC(irqreader, "Allow RCU readers from irq handlers");
-+static int fqs_duration;
- module_param(fqs_duration, int, 0444);
--MODULE_PARM_DESC(fqs_duration, "Duration of fqs bursts (us)");
-+MODULE_PARM_DESC(fqs_duration, "Duration of fqs bursts (us), 0 to disable");
-+static int fqs_holdoff;
- module_param(fqs_holdoff, int, 0444);
- MODULE_PARM_DESC(fqs_holdoff, "Holdoff time within fqs bursts (us)");
-+static int fqs_stutter = 3;
- module_param(fqs_stutter, int, 0444);
- MODULE_PARM_DESC(fqs_stutter, "Wait time between fqs bursts (s)");
--module_param(gp_normal, bool, 0444);
--MODULE_PARM_DESC(gp_normal, "Use normal (non-expedited) GP wait primitives");
-+static bool gp_exp;
- module_param(gp_exp, bool, 0444);
- MODULE_PARM_DESC(gp_exp, "Use expedited GP wait primitives");
-+static bool gp_normal;
-+module_param(gp_normal, bool, 0444);
-+MODULE_PARM_DESC(gp_normal, "Use normal (non-expedited) GP wait primitives");
-+static int irqreader = 1;
-+module_param(irqreader, int, 0444);
-+MODULE_PARM_DESC(irqreader, "Allow RCU readers from irq handlers");
-+static int n_barrier_cbs;
- module_param(n_barrier_cbs, int, 0444);
- MODULE_PARM_DESC(n_barrier_cbs, "# of callbacks/kthreads for barrier testing");
-+static int nfakewriters = 4;
-+module_param(nfakewriters, int, 0444);
-+MODULE_PARM_DESC(nfakewriters, "Number of RCU fake writer threads");
-+static int nreaders = -1;
-+module_param(nreaders, int, 0444);
-+MODULE_PARM_DESC(nreaders, "Number of RCU reader threads");
-+static int object_debug;
- module_param(object_debug, int, 0444);
- MODULE_PARM_DESC(object_debug, "Enable debug-object double call_rcu() testing");
--module_param(onoff_interval, int, 0444);
--MODULE_PARM_DESC(onoff_interval, "Time between CPU hotplugs (s), 0=disable");
-+static int onoff_holdoff;
- module_param(onoff_holdoff, int, 0444);
- MODULE_PARM_DESC(onoff_holdoff, "Time after boot before CPU hotplugs (s)");
-+static int onoff_interval;
-+module_param(onoff_interval, int, 0444);
-+MODULE_PARM_DESC(onoff_interval, "Time between CPU hotplugs (s), 0=disable");
-+static int shuffle_interval = 3;
-+module_param(shuffle_interval, int, 0444);
-+MODULE_PARM_DESC(shuffle_interval, "Number of seconds between shuffles");
-+static int shutdown_secs;
- module_param(shutdown_secs, int, 0444);
--MODULE_PARM_DESC(shutdown_secs, "Shutdown time (s), zero to disable.");
-+MODULE_PARM_DESC(shutdown_secs, "Shutdown time (s), <= zero to disable.");
-+static int stall_cpu;
- module_param(stall_cpu, int, 0444);
- MODULE_PARM_DESC(stall_cpu, "Stall duration (s), zero to disable.");
-+static int stall_cpu_holdoff = 10;
- module_param(stall_cpu_holdoff, int, 0444);
- MODULE_PARM_DESC(stall_cpu_holdoff, "Time to wait before starting stall (s).");
-+static int stat_interval = 60;
-+module_param(stat_interval, int, 0644);
-+MODULE_PARM_DESC(stat_interval, "Number of seconds between stats printk()s");
-+static int stutter = 5;
-+module_param(stutter, int, 0444);
-+MODULE_PARM_DESC(stutter, "Number of seconds to run/halt test");
-+static int test_boost = 1;
- module_param(test_boost, int, 0444);
- MODULE_PARM_DESC(test_boost, "Test RCU prio boost: 0=no, 1=maybe, 2=yes.");
--module_param(test_boost_interval, int, 0444);
--MODULE_PARM_DESC(test_boost_interval, "Interval between boost tests, seconds.");
-+static int test_boost_duration = 4;
- module_param(test_boost_duration, int, 0444);
- MODULE_PARM_DESC(test_boost_duration, "Duration of each boost test, seconds.");
-+static int test_boost_interval = 7;
-+module_param(test_boost_interval, int, 0444);
-+MODULE_PARM_DESC(test_boost_interval, "Interval between boost tests, seconds.");
-+static bool test_no_idle_hz = true;
-+module_param(test_no_idle_hz, bool, 0444);
-+MODULE_PARM_DESC(test_no_idle_hz, "Test support for tickless idle CPUs");
-+static char *torture_type = "rcu";
- module_param(torture_type, charp, 0444);
--MODULE_PARM_DESC(torture_type, "Type of RCU to torture (rcu, rcu_bh, srcu)");
-+MODULE_PARM_DESC(torture_type, "Type of RCU to torture (rcu, rcu_bh, ...)");
-+static bool verbose;
-+module_param(verbose, bool, 0444);
-+MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 6e50a44..6b90818 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -107,8 +107,10 @@ int unshare_userns(unsigned long unshare_flags, struct cred **new_cred)
+ 	struct cred *cred;
+ 	int err = -ENOMEM;
  
- #define TORTURE_FLAG "-torture:"
- #define PRINTK_STRING(s) \
+-	if (!(unshare_flags & CLONE_NEWUSER))
++	if (!(unshare_flags & CLONE_NEWUSER)) {
++		*new_cred = NULL;
+ 		return 0;
++	}
+ 
+ 	cred = prepare_creds();
+ 	if (cred) {
 -- 
-1.8.1.5
-
+1.7.7.6
