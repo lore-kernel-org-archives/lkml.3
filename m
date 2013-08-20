@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444Ab3HTVwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:52:49 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:43603 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab3HTVws (ORCPT
+	id S1751554Ab3HTVyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:54:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42176 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab3HTVyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:52:48 -0400
-Message-ID: <1377035565.24869.53.camel@bobble.lax.corp.google.com>
-Subject: Re: [dm-devel] dm: Make MIN_IOS, et al, tunable via sysctl.
-From: Frank Mayhar <fmayhar@google.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 20 Aug 2013 14:52:45 -0700
-In-Reply-To: <alpine.LRH.2.02.1308201742350.8826@file01.intranet.prod.int.rdu2.redhat.com>
-References: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
-	 <20130819140016.GB27167@redhat.com>
-	 <1376934845.24869.43.camel@bobble.lax.corp.google.com>
-	 <alpine.LRH.2.02.1308201742350.8826@file01.intranet.prod.int.rdu2.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 20 Aug 2013 17:54:12 -0400
+Date: Tue, 20 Aug 2013 22:52:21 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
+        jiada_wang@mentor.com, robherring2@gmail.com, grant.likely@linaro.org,
+        broonie@kernel.org, vapier@gentoo.org, ralf@linux-mips.org,
+        kyungmin.park@samsung.com, shawn.guo@linaro.org,
+        sebastian.hesselbarth@gmail.com, LW@KARO-electronics.de,
+        t.figa@samsung.com, g.liakhovetski@gmx.de,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] clkdev: Fix race condition in clock lookup from
+	device tree
+Message-ID: <20130820215221.GH17845@n2100.arm.linux.org.uk>
+References: <1377020063-30213-1-git-send-email-s.nawrocki@samsung.com> <1377020063-30213-5-git-send-email-s.nawrocki@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377020063-30213-5-git-send-email-s.nawrocki@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-20 at 17:44 -0400, Mikulas Patocka wrote:
-> On Mon, 19 Aug 2013, Frank Mayhar wrote:
-> > On Mon, 2013-08-19 at 10:00 -0400, Mike Snitzer wrote:
-> > > Performance isn't the concern.  The concern is: does DM allow for
-> > > forward progress if the system's memory is completely exhausted?
-> > > 
-> > > This is why request-based has such an extensive reserve, because it
-> > > needs to account for cloning the largest possible request that comes in
-> > > (with multiple bios).
-> > 
-> > Thanks for the response.  In our particular case, I/O will be file
-> > system based and over a network, which makes it pretty easy for us to be
-> > sure that large I/Os never happen.  That notwithstanding, however, as
-> > you said it just seems reasonable to make these values configurable.
-> > 
-> > I'm also looking at making some similar constants in dm-verity and
-> > dm-bufio configurable in the same way and for similar reasons.
+On Tue, Aug 20, 2013 at 07:34:23PM +0200, Sylwester Nawrocki wrote:
+> There is currently a race condition in the device tree part of clk_get()
+> function, since the pointer returned from of_clk_get_by_name() may become
+> invalid before __clk_get() call. I.e. due to the clock provider driver
+> remove() callback being called in between of_clk_get_by_name() and
+> __clk_get().
 > 
-> Regarding dm-bufio: the user of dm-bufio sets the pool size as an argument 
-> in dm_bufio_client_create. There is no need to make it configurable - if 
-> the user selects too low value, deadlock is possible, if the user selects 
-> too high value, there is no additional advantage.
+> Fix this by doing both the look up and __clk_get() operations with the
+> clock providers list mutex held. This ensures that the clock pointer
+> returned from __of_clk_get_from_provider() call and passed to __clk_get()
+> is valid, as long as the clock supplier module first removes its clock
+> provider instance and then does clk_unregister() on the corresponding
+> clocks.
+> 
+> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Reviewed-by: Mike Turquette <mturquette@linaro.org>
 
-True, but dm-bufio also allocates a a fixed-size 8MB (on a 64-bit
-machine) hash table.  I'm still getting performance data but it appears
-that reducing this, even by a lot, doesn't impact performance
-significantly, at least not with the workload I'm running.  (Which is
-using fio, random and sequential reads of varying buffer sizes.)
+Thanks.
 
-> Regarding dm-verity: the mempool size is 4, there is no need to make it 
-> bigger, there is no advantage from that.
-
-Also true, but there may be an advantage in making it smaller.
--- 
-Frank Mayhar
-310-460-4042
-
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
