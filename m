@@ -1,46 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab3HTGTx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 02:19:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39398 "EHLO comal.ext.ti.com"
+	id S1752364Ab3HTGUy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 02:20:54 -0400
+Received: from mail.eperm.de ([89.247.134.16]:52741 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752316Ab3HTGTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 02:19:51 -0400
-Message-ID: <52130A83.80707@ti.com>
-Date: Tue, 20 Aug 2013 11:49:47 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1751973Ab3HTGUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 02:20:52 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: sandyinchina@gmail.com, Theodore Tso <tytso@mit.edu>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH][RFC] Tests on 200 different CPUs/Arches and OSes with CPU Jitter RNG
+Date: Tue, 20 Aug 2013 08:20:40 +0200
+Message-ID: <114750096.FHpdnNQbA1@tauon>
+User-Agent: KMail/4.10.5 (Linux/3.10.6-200.fc19.x86_64; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <2846522.WmUuVkVV56@tauon>
+References: <2846522.WmUuVkVV56@tauon>
 MIME-Version: 1.0
-To: <ujhelyi.m@gmail.com>
-CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net-next v4] net: cpsw: Add support for wake-on-lan for
- cpsw
-References: <1376978378-26096-1-git-send-email-ujhelyi.m@gmail.com>
-In-Reply-To: <1376978378-26096-1-git-send-email-ujhelyi.m@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 August 2013 11:29 AM, ujhelyi.m@gmail.com wrote:
-> From: Matus Ujhelyi <ujhelyi.m@gmail.com>
->
-> Some phy's can be configured to enable wake on lan (e.g. at803x or marvell 88E1318S).
-> There is no way how to enable wol on CPSW with such connected phys. This patch
-> adds this support. It is provided by calling the phy's related code.
->
-> Tested on board with at8030x connected phy. Wol interrupt line is
-> connected to GPIO0 on am335x.
->
-> Signed-off-by: Matus Ujhelyi <ujhelyi.m@gmail.com>
-> ---
-Looks good to me.
+Am Sonntag, 18. August 2013, 20:05:52 schrieb Stephan Mueller:
 
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+Hi Ted, Sandy,
 
-Also feel free to add my ack in case if you are submitting one more version.
+For FIPS 140-2, there is currently a draft of an Implementation Guidance 
+discussed covering the requirements of seed sources for deterministic 
+random number generators. The standard seed source when having no 
+hardware RNGs is either /dev/urandom or /dev/random. Please note that 
+the current discussion explicitly prohibits the use of /dev/urandom for 
+FIPS 140-2 compliant systems.
 
-Regards
-Mugunthan V N
+In addition, the recommendation of SP800-90B is available in draft form 
+at [1] placing quite severe requirements on seed sources. After 
+assessing the above mentioned IG discussion and in discussions with the 
+German BSI, these governmental folks seem to interpret the concept of 
+entropy as solely information theoretical entropy. They seem to 
+disregard cryptographic strength added by a whitening function. 
+Therefore, my gut feeling is that /dev/urandom is also questioned by 
+SP800-90B -- but I have no proof at this point.
+
+That focus on information theoretical entropy ultimately implies that 
+only /dev/random can be used and /dev/urandom must not be used. 
+Naturally, many people are not happy with that due to the blocking 
+behavior. Especially in a headless environment like server systems, 
+Linux is currently starved of entropy. This is even more a problem with 
+virtualized environments. For example, some time ago we tried to obtain 
+48 bytes out of /dev/random on a PPC system after the entropy pools 
+where completely drained. Well, we got it after some 20 hours as the 
+system was quiet (it may now be a bit better with the interrupt usage in 
+current kernels, but still there will be a noticeable block).
+
+Now, people will scream: those governmental guys sell snake oil and we 
+should still use /dev/urandom. And I have to concur. Yet, I am just 
+delivering the message. With the German BSI, the last discussion showed 
+that they are open to allowing /dev/urandom based on extensive 
+discussions. Yet, you have to make quite a stance to prove that.
+
+>- addition of a patch to integrate the RNG into /dev/random as
+>explained in appendix B.3 of [2], although the long-term goal of the
+>RNG is rather the integration into the kernel crypto API when
+>considering the Linux kernel as outlined in appendix B.1 of [2]
+
+All in all, with the suggested CPU Jitter RNG, all of this would be an 
+issue of the past on systems the init function considers appropriate -- 
+in my tests more than 95% of all systems are accepted. When using my 
+patch on /dev/random, dd shows a throughput of about 6kb/s on my system 
+when pulling out megabytes of data. It will be slower on slower systems, 
+but yet it will not block. Moreover when pulling data for seed which is 
+only a few bytes at a time, the invocation of /dev/random will not show 
+any noticeable delay.
+
+PS: As I mentioned earlier, however, my long term goal would be that 
+callers would disregard /dev/random entirely as it is a central entropy 
+source and therefore the prime spot for attacks to reduce entropy. With 
+the jitter RNG, even unprivileged user space can have its own instance 
+of a seed source.
+
+
+[1] http://csrc.nist.gov/publications/PubsDrafts.html#SP-800-90-B
+
+
+Ciao
+Stephan
+-- 
+| Cui bono? |
+
