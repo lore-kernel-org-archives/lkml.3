@@ -1,125 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab3HTF0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 01:26:09 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:47882 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab3HTF0H (ORCPT
+	id S1752206Ab3HTF0q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 01:26:46 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57373 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab3HTF0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 01:26:07 -0400
+	Tue, 20 Aug 2013 01:26:45 -0400
+Message-ID: <5212FD77.6030808@linux.vnet.ibm.com>
+Date: Tue, 20 Aug 2013 10:54:07 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Date: Mon, 19 Aug 2013 22:26:06 -0700
-Message-ID: <CAHFgRy9p2vMjTm+1KTZKei5i66dvD6FP1xW2XrRxkrHvCHPAvw@mail.gmail.com>
-Subject: 3.11.0-rc6+: INFO: possible circular locking dependency detected
-From: Miles Lane <miles.lane@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH 5/6] sched, fair: Make group power more consitent
+References: <20130816101221.028189677@chello.nl> <20130816101545.290832815@infradead.org> <52119C6B.1090009@linux.vnet.ibm.com> <20130819103031.GC24092@twins.programming.kicks-ass.net>
+In-Reply-To: <20130819103031.GC24092@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082005-1618-0000-0000-0000047B6D0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[   24.990076] [ INFO: possible circular locking dependency detected ]
-[   24.990086] 3.11.0-rc6+ #154 Not tainted
-[   24.990094] -------------------------------------------------------
-[   24.990103] crda/1159 is trying to acquire lock:
-[   24.990111]  (genl_mutex){+.+.+.}, at: [<ffffffff812ff7e6>]
-genl_lock+0x12/0x14
-[   24.990134]
-[   24.990134] but task is already holding lock:
-[   24.990144]  (nlk->cb_mutex){+.+.+.}, at: [<ffffffff812fdab8>]
-netlink_dump+0x1c/0x1da
-[   24.990163]
-[   24.990163] which lock already depends on the new lock.
-[   24.990163]
-[   24.990177]
-[   24.990177] the existing dependency chain (in reverse order) is:
-[   24.990188]
-[   24.990188] -> #1 (nlk->cb_mutex){+.+.+.}:
-[   24.990202]        [<ffffffff8107d863>] lock_acquire+0x8f/0xa7
-[   24.990214]        [<ffffffff813777ab>] mutex_lock_nested+0x72/0x42a
-[   24.990228]        [<ffffffff812fdd26>] __netlink_dump_start+0xb0/0x13b
-[   24.990240]        [<ffffffff81300b44>] genl_family_rcv_msg+0x106/0x24f
-[   24.990253]        [<ffffffff81300cc8>] genl_rcv_msg+0x3b/0x5b
-[   24.990264]        [<ffffffff812ff528>] netlink_rcv_skb+0x44/0x86
-[   24.990276]        [<ffffffff812ff98b>] genl_rcv+0x23/0x32
-[   24.990287]        [<ffffffff812ff033>] netlink_unicast+0xe2/0x166
-[   24.990299]        [<ffffffff812ff3bb>] netlink_sendmsg+0x304/0x34e
-[   24.990311]        [<ffffffff812cb91a>] __sock_sendmsg_nosec+0x25/0x27
-[   24.990324]        [<ffffffff812cdf23>] sock_sendmsg+0x54/0x70
-[   24.990336]        [<ffffffff812ce17b>] ___sys_sendmsg+0x1fe/0x28e
-[   24.990348]        [<ffffffff812cf410>] __sys_sendmsg+0x3d/0x5b
-[   24.990359]        [<ffffffff812cf43b>] SyS_sendmsg+0xd/0x17
-[   24.990370]        [<ffffffff8137fc24>] tracesys+0xdd/0xe2
-[   24.990382]
-[   24.990382] -> #0 (genl_mutex){+.+.+.}:
-[   24.990394]        [<ffffffff8107d4ea>] __lock_acquire+0xb5f/0xe49
-[   24.990406]        [<ffffffff8107d863>] lock_acquire+0x8f/0xa7
-[   24.990417]        [<ffffffff813777ab>] mutex_lock_nested+0x72/0x42a
-[   24.990429]        [<ffffffff812ff7e6>] genl_lock+0x12/0x14
-[   24.990440]        [<ffffffff81300969>] ctrl_dumpfamily+0x42/0x117
-[   24.990452]        [<ffffffff812fdb24>] netlink_dump+0x88/0x1da
-[   24.990463]        [<ffffffff812fe03c>] netlink_recvmsg+0x16f/0x2f4
-[   24.990475]        [<ffffffff812cb945>] __sock_recvmsg_nosec+0x29/0x2b
-[   24.990487]        [<ffffffff812ce26a>] sock_recvmsg+0x5f/0x7d
-[   24.990499]        [<ffffffff812ceae1>] ___sys_recvmsg+0x155/0x21f
-[   24.990510]        [<ffffffff812cf5f4>] __sys_recvmsg+0x3d/0x5b
-[   24.990522]        [<ffffffff812cf61f>] SyS_recvmsg+0xd/0x17
-[   24.990532]        [<ffffffff8137fc24>] tracesys+0xdd/0xe2
-[   24.990544]
-[   24.990544] other info that might help us debug this:
-[   24.990544]
-[   24.990557]  Possible unsafe locking scenario:
-[   24.990557]
-[   24.990567]        CPU0                    CPU1
-[   24.990575]        ----                    ----
-[   24.990582]   lock(nlk->cb_mutex);
-[   24.990591]                                lock(genl_mutex);
-[   24.990602]                                lock(nlk->cb_mutex);
-[   24.990612]   lock(genl_mutex);
-[   24.990620]
-[   24.990620]  *** DEADLOCK ***
-[   24.990620]
-[   24.990633] 1 lock held by crda/1159:
-[   24.990640]  #0:  (nlk->cb_mutex){+.+.+.}, at: [<ffffffff812fdab8>]
-netlink_dump+0x1c/0x1da
-[   24.990660]
-[   24.990660] stack backtrace:
-[   24.990671] CPU: 1 PID: 1159 Comm: crda Not tainted 3.11.0-rc6+ #154
-[   24.990681] Hardware name: ASUSTeK Computer Inc.         UL50VT
-         /UL50VT    , BIOS 217     03/01/2010
-[   24.990695]  0000000000000000 ffff8801338bb920 ffffffff81374ba4
-ffffffff81b842b0
-[   24.990711]  ffff8801338bb960 ffffffff81370581 ffff8801339b4180
-ffff8801339b4180
-[   24.990728]  ffff8801339b47a0 ffff8801339b4778 0000000000000001
-00000000006520ee
-[   24.990744] Call Trace:
-[   24.990754]  [<ffffffff81374ba4>] dump_stack+0x4e/0x82
-[   24.990766]  [<ffffffff81370581>] print_circular_bug+0x1f6/0x204
-[   24.990778]  [<ffffffff8107d4ea>] __lock_acquire+0xb5f/0xe49
-[   24.990791]  [<ffffffff8107b7ea>] ? trace_hardirqs_on+0xd/0xf
-[   24.990803]  [<ffffffff812ff7e6>] ? genl_lock+0x12/0x14
-[   24.990814]  [<ffffffff8107d863>] lock_acquire+0x8f/0xa7
-[   24.990825]  [<ffffffff812ff7e6>] ? genl_lock+0x12/0x14
-[   24.990837]  [<ffffffff813777ab>] mutex_lock_nested+0x72/0x42a
-[   24.990849]  [<ffffffff812ff7e6>] ? genl_lock+0x12/0x14
-[   24.990860]  [<ffffffff812ff7e6>] ? genl_lock+0x12/0x14
-[   24.990873]  [<ffffffff812d594f>] ? __alloc_skb+0x76/0x19c
-[   24.990884]  [<ffffffff812ff7e6>] genl_lock+0x12/0x14
-[   24.990896]  [<ffffffff81300969>] ctrl_dumpfamily+0x42/0x117
-[   24.990907]  [<ffffffff812d597b>] ? __alloc_skb+0xa2/0x19c
-[   24.990919]  [<ffffffff812fdb24>] netlink_dump+0x88/0x1da
-[   24.990931]  [<ffffffff812fe03c>] netlink_recvmsg+0x16f/0x2f4
-[   24.990943]  [<ffffffff812cb945>] __sock_recvmsg_nosec+0x29/0x2b
-[   24.990955]  [<ffffffff812ce26a>] sock_recvmsg+0x5f/0x7d
-[   24.990967]  [<ffffffff8107dc4b>] ? lock_release_non_nested+0x123/0x21d
-[   24.990979]  [<ffffffff8107dc4b>] ? lock_release_non_nested+0x123/0x21d
-[   24.990993]  [<ffffffff812d8c10>] ? verify_iovec+0x58/0xa6
-[   24.991005]  [<ffffffff812ceae1>] ___sys_recvmsg+0x155/0x21f
-[   24.991018]  [<ffffffff81052850>] ? up_read+0x22/0x25
-[   24.991030]  [<ffffffff8137d980>] ? __do_page_fault+0x321/0x3a5
-[   24.991043]  [<ffffffff81110b36>] ? fcheck_files+0x9f/0xe0
-[   24.991055]  [<ffffffff811110e8>] ? fget_light+0x30/0x90
-[   24.991066]  [<ffffffff812cf5f4>] __sys_recvmsg+0x3d/0x5b
-[   24.991077]  [<ffffffff812cf61f>] SyS_recvmsg+0xd/0x17
-[   24.991089]  [<ffffffff8137fc24>] tracesys+0xdd/0xe2
+Hi Peter,
+Thank you for the clarification.
+
+On 08/19/2013 04:00 PM, Peter Zijlstra wrote:
+> On Mon, Aug 19, 2013 at 09:47:47AM +0530, Preeti U Murthy wrote:
+>> Hi Peter,
+>>
+>> On 08/16/2013 03:42 PM, Peter Zijlstra wrote:
+>>
+>> I have a few comments and clarification to seek.
+>>
+>> 1. How are you ensuring from this patch that sgs->group_power does not
+>> change over the course of load balancing?
+> 
+> Well, we only set it the one time when creating the sgs data.
+> 
+>>     The only path to update_group_power() where sg->sgp->power gets
+>> updated, is from update_sg_lb_stats(). You are updating sgs->group_power
+>> in update_sg_lb_stats(). Any change to group->sgp->power will get
+>> reflected in sgs->group_power as well right?
+> 
+> Nope, we set it to whatever value group->sgp->power is at the time of
+> sgs 'creation' and live with that value from then on. We do this after
+> the possible update_group_power() call.
+> 
+> That said, it is very rare to have group->sgp->power change during the
+> load-balance pass, we would have to trigger the time_after case for
+> NEWLY_IDLE and then get a concurrent !NEWLY_IDLE load-balance pass.
+> 
+> This patch takes away that possibility and uses a consistent group power
+> reading for the entire load-balance invocation as well as does away with
+> that double dereference all the time.
+
+Fair enough. I overlooked the fact that "group" can be manipulated by
+multiple load balancing passes whereas "sgs" is created during every
+load balance pass.
+
+> 
+>> 2. This point is aside from your patch. In the current implementation,
+>> each time the cpu power gets updated in update_cpu_power(), should not
+>> the power of the sched_groups comprising of that cpu also get updated?
+>> Why wait till the load balancing is done at the sched_domain level of
+>> that group, to update its group power?
+> 
+> What would be the advantage of doing so? We also take snapshots of
+> cpu/group/domain load, we don't update those either. Having all that
+> dynamically update during the load-balance pass would make it an
+> impossible situation. 
+> 
+> You'd fail to meet progress guarantees that way since you'd never be
+> able to pin-point a 'busiest' group/cpu because by the time you've made
+> any decision you have to go back to make it again because things might
+> have changed again.
+> 
+> So instead what we do is we take a snapshot and live with that state. If
+> the values change so fast that our load-balance pass is invalid by the
+> time we're finished, too bad, better luck next time.
+
+Agree. Thank you for the clarifications.
+
+Regards
+Preeti U Murthy
+> 
+> 
+
