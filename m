@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751733Ab3HTTVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 15:21:44 -0400
-Received: from smtp171.iad.emailsrvr.com ([207.97.245.171]:53184 "EHLO
-	smtp171.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab3HTTVn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 15:21:43 -0400
-X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Aug 2013 15:21:43 EDT
-Message-ID: <5213BF91.3030300@calxeda.com>
-Date: Tue, 20 Aug 2013 14:12:17 -0500
-From: Rob Herring <rob.herring@calxeda.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1751699Ab3HTTZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 15:25:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36047 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751130Ab3HTTZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 15:25:13 -0400
+Date: Tue, 20 Aug 2013 15:25:08 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Alasdair G. Kergon" <agk@redhat.com>
+Subject: Re: [PATCH 1/2] Revert "Revert "math64: New div64_u64_rem helper""
+Message-ID: <20130820192508.GA4799@redhat.com>
+References: <1376078164-23147-1-git-send-email-snitzer@redhat.com>
+ <20130820070045.GA1665@redhat.com>
+ <20130820080910.GA11072@gmail.com>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 05/17] ARM: highbank: remove custom .init_time hook
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376964271-22715-6-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1376964271-22715-6-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820080910.GA11072@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2013 09:04 PM, Sebastian Hesselbarth wrote:
-> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-> remove custom .init_time hooks. Highbank clock provider need a reference
-> to system registers, as a workaround current clk driver maps those
-> independent of arch code now.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Notes:
-> - I suggest to consolidate the four single clock providers into a single
->   provider with one node if possible.
-
-And how do you suggest doing that while maintaining the DT ABI?
+On Tue, Aug 20 2013 at  4:09am -0400,
+Ingo Molnar <mingo@kernel.org> wrote:
 
 > 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/mach-highbank/highbank.c |   23 +++++++----------------
->  drivers/clk/clk-highbank.c        |   10 +++++++---
->  2 files changed, 14 insertions(+), 19 deletions(-)
+> * Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+> 
+> > On Fri, Aug 09, 2013 at 03:56:03PM -0400, Mike Snitzer wrote:
+> > > This reverts commit f3002134158092178be81339ec5a22ff80e6c308.
+> > > 
+> > > div64_u64_rem was removed because there were no other users.
+> > > 
+> > > But Device Mapper's I/O statistics support has a need for
+> > > div64_u64_rem; reintroduce this helper.
+> > 
+> > This slows down div64_u64 operation, especially on 32-bit 
+> > systems.
+> > 
+> > Since dm statistic code is possibly not performance 
+> > critical perhaps you could use something like below 
+> > instead to calculate remainder:
+> > 
+> > res = div64_u64(a, b);
+> > rem = a - b*res;
+> 
+> Or introduce a separately named helper without touching the 
+> existing methods.
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+Thanks for the feedback.
 
+I've pushed "math64: New separate div64_u64_rem helper" to the DM tree's
+'for-next' branch:
+https://git.kernel.org/cgit/linux/kernel/git/device-mapper/linux-dm.git/commit/?h=for-next&id=20e8125736d0e96b64c9b6127241d2a13529180a
 
+Are you OK with me carrying this patch in the DM tree for 3.12
+inclusion?
+
+Mike
