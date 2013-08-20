@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747Ab3HTPxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 11:53:47 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:53412 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab3HTPxp (ORCPT
+	id S1751839Ab3HTPyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 11:54:43 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:42220 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab3HTPym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 11:53:45 -0400
-Date: Tue, 20 Aug 2013 08:53:24 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: "Berg, Johannes" <johannes.berg@intel.com>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Stefan Lippers-Hollmann <s.L-H@gmx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/34] 3.4.59-stable review
-In-Reply-To: <20130820152401.GA5211@kroah.com>
-Message-ID: <alpine.LNX.2.00.1308200851190.991@eggly.anvils>
-References: <20130818203259.653403173@linuxfoundation.org> <52125DA9.3090601@samsung.com> <20130819193538.GB24897@kroah.com> <201308192214.54917.s.L-H@gmx.de> <52129AC3.5020402@samsung.com> <20130819223037.GA3838@kroah.com>
- <1DC40B07CD6EC041A66726C271A73AE61AA6B9CC@IRSMSX102.ger.corp.intel.com> <20130820152401.GA5211@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 20 Aug 2013 11:54:42 -0400
+Date: Tue, 20 Aug 2013 18:53:40 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: [sched next] overflowed cpu time for kernel threads in
+ /proc/PID/stat
+Message-ID: <20130820155340.GC2315@swordfish.minsk.epam.com>
+References: <20130820111426.GA27828@swordfish.datadirectnet.com>
+ <20130820151509.GA17441@somewhere>
+ <20130820153549.GB2315@swordfish.minsk.epam.com>
+ <20130820154257.GD17441@somewhere>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820154257.GD17441@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Aug 2013, Greg Kroah-Hartman wrote:
-> On Tue, Aug 20, 2013 at 07:36:00AM +0000, Berg, Johannes wrote:
-> > > > [ 26/34] genetlink: fix family dump race
+On (08/20/13 17:42), Frederic Weisbecker wrote:
+> On Tue, Aug 20, 2013 at 06:35:50PM +0300, Sergey Senozhatsky wrote:
+> > On (08/20/13 17:15), Frederic Weisbecker wrote:
+> > > On Tue, Aug 20, 2013 at 02:14:26PM +0300, Sergey Senozhatsky wrote:
+> > > Hello,
 > > > 
-> > > Johannes, another strike against this patch :(
+> > > Please upload your config.
 > > > 
-> > > Any chance on fixing it upstream and me sucking that fix in?
+> > > I'm adding Stanislaw in Cc in case it relates to cputime scaling.
+> > >
 > > 
-> > Yeah, I'm trying to get that, but it's not clear to me how to fix it.
-> > Where did you apply it? It was going to need some fixes but when the
-> > first objection was raised I figured you were going to drop it for now
-> > completely? Sorry for the mess :-(
+> > please find attached.
+> > 
+> > 	-ss
 > 
-> You're right, I'll drop this for 3.4, it doesn't make sense there.
+> > #
+> > # CPU/Task time and stats accounting
+> > #
+> > CONFIG_VIRT_CPU_ACCOUNTING=y
+> > CONFIG_VIRT_CPU_ACCOUNTING_GEN=y
+> 
+> So it happens with full dynticks cputime accounting.
 
-And you'll drop it from 3.0 and 3.10 also, I hope?
+yes.
 
-Thanks,
-Hugh
+> How reproducable is this?
+
+compiling something big enough (e.g. kernel) `works' for me.
+
+> Does it always happen?
+
+I'd say yes.
+
+> Does it happen with CONFIG_TICK_CPU_ACCOUNTING as well? (you'll
+> need to deactivate full dynticks.)
+
+will test.
+
+	-ss
+
+> Thanks.
+> 
