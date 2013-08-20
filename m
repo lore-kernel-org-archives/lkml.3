@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466Ab3HTQsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:48:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47285 "EHLO
+	id S1751481Ab3HTQxm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:53:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37198 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab3HTQsO (ORCPT
+	with ESMTP id S1751345Ab3HTQxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:48:14 -0400
-Message-ID: <52139DC9.4040803@wwwdotorg.org>
-Date: Tue, 20 Aug 2013 10:48:09 -0600
+	Tue, 20 Aug 2013 12:53:40 -0400
+Message-ID: <52139F0F.6090507@wwwdotorg.org>
+Date: Tue, 20 Aug 2013 10:53:35 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: broonie@kernel.org, sameo@linux.intel.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, rob@landley.net,
-        lee.jones@linaro.org, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gg@slimlogic.co.uk, kishon@ti.com,
-        j-keerthy@ti.com, ian.campbell@citrix.com
-Subject: Re: [PATCH V3] regulator: palmas: add support for external control
- of rails
-References: <1377004456-26318-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1377004456-26318-1-git-send-email-ldewangan@nvidia.com>
+To: George Cherian <george.cherian@ti.com>
+CC: balbi@ti.com, myungjoo.ham@samsung.com, cw00.choi@samsung.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, grant.likely@linaro.org, rob@landley.net,
+        ian.campbell@citrix.com, mark.rutland@arm.com, pawel.moll@arm.com,
+        rob.herring@calxeda.com, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, bcousson@baylibre.com
+Subject: Re: [PATCH 1/2] extcon: extcon-dra7xx: Add extcon driver for USB
+ ID detection
+References: <1376648029-30659-1-git-send-email-george.cherian@ti.com> <1376648029-30659-2-git-send-email-george.cherian@ti.com> <52127284.6030506@wwwdotorg.org> <521312CC.8060003@ti.com>
+In-Reply-To: <521312CC.8060003@ti.com>
 X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -30,69 +30,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 07:14 AM, Laxman Dewangan wrote:
-> Palmas rails like LDOs, SMPSs, REGENs, SYSENs can be enable and disable
-> by register programming through I2C communication as well as it can be
-> enable/disable with the external control input ENABLE1, ENABLE2 and NSLEEP.
+On 08/20/2013 12:55 AM, George Cherian wrote:
+> Hi Stephen,
 > 
-> Add support for configuring these rails to be controlled by external control
-> inputs. This is require to configure the rail's control register as well as
-> configuration of resource register.
+> Thanks for your review.
 > 
-> Provide the external input names through parameter "roof-floor". Updated the
-> DT binding document to details different value of the roof-floor.
+> On 8/20/2013 1:01 AM, Stephen Warren wrote:
+> 
+>> On 08/16/2013 04:13 AM, George Cherian wrote:
+>>> Adding extcon driver for USB ID detection to dynamically
+>>> configure USB Host/Peripheral mode.
+>>> diff --git
+>>> a/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
+>>> b/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
+>>> +EXTCON FOR DRA7xx
+>>> +
+>>> +Required Properties:
+>> Please at lest explain what a DRA7xxx is, and the purpose of the HW
+>> module this binding describes.
+> 
+> DRA7xx is the SoC name and the USB VID  detection is implemented via gpio's
+> Basically it does only ID detection via GPIO and there is no VBUS
+> detection in h/w.
 
-> diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+If there's no SoC-specific HW, then the binding has nothing to do with
+the SoC; it's entirely generic.
 
-The binding changes look reasonable and backwards-compatible, so they're
-good. Just one nit:
+I think instead, you need to define a generic "gpio-usb-vid" binding
+instead.
 
-(In the example, I assume:)
->  			regulator-always-on;
->  			regulator-boot-on;
->  			ti,warm-reset;
-> -			ti,roof-floor;
-> +			ti,roof-floor = 0x1; /* ENABLE1 control */
+Otherwise, ever SoC that doesn't have explicit USB VID detection HW is
+going to re-invent the exact same binding, with pointless differences,
+rather than using a single generic binding.
 
-You need <> around the value, so better:
+>>> + - compatible : Should be "ti,dra7xx-usb"
+>>
+>> If this is a USB VID detector rather than a full USB host controller,
+>> then "usb" in the binding is a bit over-reaching. Perhaps "-usb-vid" or
+>> "-usb-vid-detector" would be more accurate.
+> 
+> This will be renamed to dra7xx-extcon.
 
-			ti,roof-floor = <0x1>; /* ENABLE1 control */
+So no, that rename doesn't sound correct.
 
-or better:
+>>> + - gpios : phandle to ID pin and interrupt gpio.
+>>
+>> Why does the interrupt line need to be included in a list of GPIOs?
+> 
+> ID pins are connected to pcf8575, and the pcf8575's interrupt line is
+> inturn connected to
+> gpio bank6 pin 11, we use this gpio interrupt to detect the ID pin change.
 
-			ti,roof-floor = <1>; /* ENABLE1 control */
-
-(even better might be a header file that defines names for those
-constants...)
-
-> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-
-> @@ -746,9 +854,24 @@ static void palmas_dt_to_pdata(struct device *dev,
->  			of_property_read_bool(palmas_matches[idx].of_node,
->  					     "ti,warm-reset");
->  
-> -		pdata->reg_init[idx]->roof_floor =
-> -			of_property_read_bool(palmas_matches[idx].of_node,
-> -					      "ti,roof-floor");
-> +		ret = of_property_read_u32(palmas_matches[idx].of_node,
-> +					      "ti,roof-floor", &prop);
-> +		/* EINVAL: Property not found */
-> +		if (ret != -EINVAL) {
-> +			int econtrol;
-> +
-> +			/* use default value, when no value is specified */
-> +			econtrol = PALMAS_EXT_CONTROL_NSLEEP;
-> +			if (!ret) {
-> +				if (prop == 1)
-> +					econtrol = PALMAS_EXT_CONTROL_ENABLE1;
-> +				else if (prop == 2)
-> +					econtrol = PALMAS_EXT_CONTROL_ENABLE2;
-> +				else if (prop == 3)
-> +					econtrol = PALMAS_EXT_CONTROL_NSLEEP;
-
-Should probably at least WARN() here if the value is invalid?
-
-> +			}
-> +			pdata->reg_init[idx]->roof_floor = econtrol;
-> +		}
-
+In that case, the PCF8575 node needs to be a GPIO controller and an IRQ
+controller, as does the driver for the PCF8575. This binding should have
+a single entry in the gpios property, and the driver can call
+gpio_to_irq() on that so it knows which IRQ to request.
