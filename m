@@ -1,116 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751282Ab3HTN1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 09:27:48 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64040 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751049Ab3HTN1r (ORCPT
+	id S1751278Ab3HTNdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 09:33:13 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:55284 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab3HTNdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 09:27:47 -0400
-Date: Tue, 20 Aug 2013 14:27:12 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v3 4/6] ARM64: arch_timer: configure and enable event
- stream
-Message-ID: <20130820132712.GE26129@mudshark.cambridge.arm.com>
-References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376414984-14182-5-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+	Tue, 20 Aug 2013 09:33:12 -0400
+Date: Tue, 20 Aug 2013 09:33:08 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Peter Wu <lekensteyn@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] writeback: fix NULL dereference when device is gone
+Message-ID: <20130820133308.GE3926@htj.dyndns.org>
+References: <Pine.LNX.4.44L0.1308172104070.7744-100000@netrider.rowland.org>
+ <5177367.3UXkd1Z6lS@al>
+ <20130819230240.GA6869@mtj.dyndns.org>
+ <1755678.6GItDDY0bW@al>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376414984-14182-5-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+In-Reply-To: <1755678.6GItDDY0bW@al>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sudeep,
+Hello,
 
-Couple of comments inline...
-
-On Tue, Aug 13, 2013 at 06:29:42PM +0100, Sudeep KarkadaNagesha wrote:
-> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+On Tue, Aug 20, 2013 at 12:13:58PM +0200, Peter Wu wrote:
+...
+> > Hmmm... bdi->dev is cleared after bdi_wb_shutdown() so the work item
+> > should no longer be running.  It seems like something is queueing the
+> > work item after shutdown and the proper fix would be finding out which
+> > and fixing it.  Can you please verify whether adding
+> > WARN_ON(!bdi->dev) in bdi_wakeup_thread_delayed() trigger anything?
 > 
-> This patch configures the event stream frequency and enables it.
-> It also adds the hwcaps as well as compat-specific definitions to
-> the user to detect this event stream feature.
-> 
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> [sudeep: moving ARM/ARM64 changes into separate patches]
-> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> ---
->  arch/arm64/include/asm/arch_timer.h | 12 ++++++++++--
->  arch/arm64/include/asm/hwcap.h      |  4 +++-
->  arch/arm64/include/uapi/asm/hwcap.h |  1 +
->  arch/arm64/kernel/setup.c           |  1 +
->  4 files changed, 15 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-> index 69f5c8e..43f322a 100644
-> --- a/arch/arm64/include/asm/arch_timer.h
-> +++ b/arch/arm64/include/asm/arch_timer.h
-> @@ -106,14 +106,22 @@ static inline void arch_counter_set_user_access(int divider)
->  	/* Disable user access to the timers and the physical counter. */
->  	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
->  			| ARCH_TIMER_USR_VT_ACCESS_EN
-> +			| ARCH_TIMER_EVT_TRIGGER_MASK
->  			| ARCH_TIMER_USR_PCT_ACCESS_EN);
->  
-> -	/* Enable user access to the virtual counter. */
-> -	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
-> +	/* Enable event stream and user access to the virtual counter */
-> +	cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
-> +			| ARCH_TIMER_VIRT_EVT_EN
-> +			| ARCH_TIMER_USR_VCT_ACCESS_EN;
->  
->  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
->  }
->  
-> +static inline void arch_timer_set_hwcap_evtstrm(void)
-> +{
-> +	elf_hwcap |= HWCAP_EVTSTRM;
-> +}
-> +
->  static inline u64 arch_counter_get_cntvct(void)
->  {
->  	u64 cval;
-> diff --git a/arch/arm64/include/asm/hwcap.h b/arch/arm64/include/asm/hwcap.h
-> index 6d4482f..effd8f9 100644
-> --- a/arch/arm64/include/asm/hwcap.h
-> +++ b/arch/arm64/include/asm/hwcap.h
-> @@ -30,6 +30,7 @@
->  #define COMPAT_HWCAP_IDIVA	(1 << 17)
->  #define COMPAT_HWCAP_IDIVT	(1 << 18)
->  #define COMPAT_HWCAP_IDIV	(COMPAT_HWCAP_IDIVA|COMPAT_HWCAP_IDIVT)
-> +#define COMPAT_HWCAP_EVTSTRM	(1 << 21)
+> Initially I did not get any warnings, so I added more. The patch (on top of
+> v3.11-rc6-27-g94fc5d9 plus some unrelated r8169 patches):
+...
+> [  245.978170] WARNING: CPU: 1 PID: 2608 at /home/pc/Linux-src/linux/mm/backing-dev.c:293 bdi_wakeup_thread_delayed+0x5e/0x60()
+> [  245.978189] Modules linked in: kvm_intel kvm dm_crypt binfmt_misc joydev snd_hda_codec_hdmi snd_hda_codec_realtek hid_logitech_dj hid_generic mxm_wmi nls_iso8859_1 snd_hda_intel snd_hda_codec usbhid hid snd_hwdep psmouse usb_storage snd_pcm serio_raw lpc_ich snd_seq_midi snd_seq_midi_event snd_rawmidi snd_seq snd_seq_device snd_timer snd wmi it87 mac_hid hwmon_vid coretemp soundcore snd_page_alloc r8169 eeprom_93cx6 mii pci_stub ahci libahci i915 drm_kms_helper drm video i2c_algo_bit
+> [  245.978191] CPU: 1 PID: 2608 Comm: ata_id Tainted: G        W    3.11.0-rc6-usbdbg-00030-g693d742-dirty #1
+> [  245.978192] Hardware name: Gigabyte Technology Co., Ltd. To be filled by O.E.M./Z68X-UD3H-B3, BIOS U1l 03/08/2013
+> [  245.978194]  0000000000000125 ffff8805d3a4fa98 ffffffff8165986e 00000000000060d0
+> [  245.978196]  0000000000000000 ffff8805d3a4fad8 ffffffff81047acc ffff880602f6beb8
+> [  245.978197]  ffff8805fc024618 ffff880602f6be30 ffffffff81c58f80 ffff880602f6beb8
+> [  245.978198] Call Trace:
+> [  245.978202]  [<ffffffff8165986e>] dump_stack+0x55/0x76
+> [  245.978204]  [<ffffffff81047acc>] warn_slowpath_common+0x8c/0xc0
+> [  245.978206]  [<ffffffff81047b1a>] warn_slowpath_null+0x1a/0x20
+> [  245.978207]  [<ffffffff811424fe>] bdi_wakeup_thread_delayed+0x5e/0x60
+> [  245.978211]  [<ffffffff811bdc71>] bdev_inode_switch_bdi+0xf1/0x160
+> [  245.978212]  [<ffffffff811bedd2>] __blkdev_get+0x372/0x4d0
+> [  245.978216]  [<ffffffff811bf115>] blkdev_get+0x1e5/0x380
+> [  245.978221]  [<ffffffff811bf36f>] blkdev_open+0x5f/0x90
+> [  245.978223]  [<ffffffff81180cd6>] do_dentry_open+0x226/0x2a0
+> [  245.978225]  [<ffffffff81180fa5>] finish_open+0x35/0x50
+> [  245.978227]  [<ffffffff81192d9e>] do_last+0x48e/0x7a0
+> [  245.978229]  [<ffffffff81193174>] path_openat+0xc4/0x4e0
+> [  245.978230]  [<ffffffff81193d83>] do_filp_open+0x43/0xa0
+> [  245.978234]  [<ffffffff81182422>] do_sys_open+0x132/0x220
+> [  245.978236]  [<ffffffff8118252e>] SyS_open+0x1e/0x20
+> [  245.978238]  [<ffffffff8166e802>] system_call_fastpath+0x16/0x1b
 
-Looking at the context, we should also add COMPAT_HWCAP_LPAE as a separate
-patch (not part of this series).
+Hmmm... looks like the udev event handling from hotunplugging ends up
+opening up the device which in turn schedules an already shutdown bdi.
+The root problem here seems that there is no proper synchronization
+around bdi shutdown.  Ideally, a bdi should be marked offline
+preventing further activities and then shut down but we instead shut
+it down first and then clear bdi->dev.  As bdi's lifetime is tied to
+the backing request_queue, it might be okay as unsynchronized access
+to bdi->dev should be safe as long as the bdi struct itself is
+accessible.  Still nasty tho.
 
->  #ifndef __ASSEMBLY__
->  /*
-> @@ -41,7 +42,8 @@
->  				 COMPAT_HWCAP_FAST_MULT|COMPAT_HWCAP_EDSP|\
->  				 COMPAT_HWCAP_TLS|COMPAT_HWCAP_VFP|\
->  				 COMPAT_HWCAP_VFPv3|COMPAT_HWCAP_VFPv4|\
-> -				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV)
-> +				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV|\
-> +				 COMPAT_HWCAP_EVTSTRM)
+Not sure what to do.  The quick fix would be doing the following from
+workfn().
 
-So here you're hardcoding COMPAT_HWCAP_EVTSTRM in the COMPAT_ELF_HWCAP, yet
-we only enable the native one from the arch-timer driver. The question then is
-"Can we rely on the event-stream working for AArch64?". If so, we don't need
-the native hwcap at all. If not, then we need to make the compat hwcap
-dynamic.
+	dev = bdi->dev;
+	if (!dev)		// bdi already shutdown
+		return;
 
-Will
+	use @dev;		// can't use bdi->dev, as it can be cleared anytime
+
+But it's nasty.  A better way to do it would be, from
+bdi_wb_shutdown(), marking the bdi as offline and ensure that
+bdi_wakeup_thread_delayed() sees that, flush the work item and then
+clear bdi->dev.
+
+Thanks.
+
+-- 
+tejun
