@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab3HTQQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:16:33 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54586 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751345Ab3HTQQb (ORCPT
+	id S1751738Ab3HTQQi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:16:38 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:54839 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab3HTQQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:16:31 -0400
-Date: Tue, 20 Aug 2013 17:15:51 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: P J P <ppandit@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: About perf,arm -- oops in validate_event
-Message-ID: <20130820161550.GA21383@arm.com>
-References: <alpine.LFD.2.03.1308201522230.15482@erqung.pbz>
- <CAHkRjk76V-RyJbm4mSNt6DLpLDv_wqcuag5Z_hSTcrcdUi=6jg@mail.gmail.com>
- <alpine.DEB.2.10.1308201039570.14233@vincent-weaver-1.um.maine.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1308201039570.14233@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 20 Aug 2013 12:16:35 -0400
+Subject: [PATCH v3 trivial 3/7] Docs: Kconfig: Clean up the radiotap
+                                               documentation
+Date: Tue, 20 Aug 2013 16:05:17 -0000
+From: Michael Witten <mfwitten@gmail.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Rob Landley <rob@landley.net>, Randy Dunlap <rdunlap@infradead.org>,
+        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
+Message-ID: <44c613c35216473d9741d6308d9873ec-mfwitten@gmail.com>
+In-Reply-To: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com>
+References: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 03:42:56PM +0100, Vince Weaver wrote:
-> On Tue, 20 Aug 2013, Catalin Marinas wrote:
-> 
-> > On 20 August 2013 11:03, P J P <ppandit@redhat.com> wrote:
-> > >  -> https://lkml.org/lkml/2013/8/7/259
-> > >
-> > > I wanted to confirm if this above fix should also go into ARM64 build Or is
-> > > ARM64 platform not vulnerable?
-> > 
-> > It is and I'll push patches to mainline (Will is preparing them).
-> 
-> You'll probably also want the equivalent of 
->     d9f966357b14e356dbd83b8f4a197a287ab4ff83
-> as well since arch/arm64/kernel/perf_event.c
-> has the same overflow in armpmu_map_event that is fixed in the mentioned
-> commit.
+Date: Fri, 8 Apr 2011 14:18:54 +0000
 
-Yes, I'm pushing both.
+In particular:
 
-Thanks.
+  * The word `frame' was missing in `received frame',
+    so it has been added.
 
+  * The `RF' in `a RF' was both superfluous and awkward,
+    so it has been removed.
+
+As for the rest of the changes, well, I just couldn't help myself!
+
+Signed-off-by: Michael Witten <mfwitten@gmail.com>
+---
+ drivers/net/wireless/ipw2x00/Kconfig | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/wireless/ipw2x00/Kconfig b/drivers/net/wireless/ipw2x00/Kconfig
+index 5397cd1..5abf297 100644
+--- a/drivers/net/wireless/ipw2x00/Kconfig
++++ b/drivers/net/wireless/ipw2x00/Kconfig
+@@ -112,13 +112,13 @@ config IPW2200_RADIOTAP
+ 	depends on IPW2200_MONITOR
+ 
+ config IPW2200_PROMISCUOUS
+-	bool "Enable creation of a RF radiotap promiscuous interface"
++	bool "Enable creation of a radiotap promiscuous interface"
+ 	depends on IPW2200_MONITOR
+ 	select IPW2200_RADIOTAP
+ 	---help---
+-	  Enables the creation of a second interface prefixed 'rtap'.
+-	  This second interface will provide every received in radiotap
+-	  format.
++	  Enables the creation of a second interface (the name of which
++	  is prefixed with 'rtap'), which provides every received frame
++	  in radiotap format.
+ 
+ 	  This is useful for performing wireless network analysis while
+ 	  maintaining an active association.
+@@ -129,9 +129,9 @@ config IPW2200_PROMISCUOUS
+ 	    % ifconfig rtap0 up
+ 	    % tethereal -i rtap0
+ 
+-	  If you do not specify 'rtap_iface=1' as a module parameter then
+-	  the rtap interface will not be created and you will need to turn
+-	  it on via sysfs:
++	  If you do not specify 'rtap_iface=1' as a module parameter, then
++	  the rtap interface will not be created automatically, but it can
++	  still be created via sysfs:
+ 
+ 	    % echo 1 > /sys/bus/pci/drivers/ipw2200/*/rtap_iface
+ 
 -- 
-Catalin
+1.7.11.2.252.gc4a64c8
+
