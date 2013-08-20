@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529Ab3HTSxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 14:53:00 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45392 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3HTSw6 (ORCPT
+	id S1751609Ab3HTSxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 14:53:38 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52790 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab3HTSxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 14:52:58 -0400
-Date: Tue, 20 Aug 2013 11:52:57 -0700 (PDT)
-Message-Id: <20130820.115257.405496925912050870.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: gregkh@linuxfoundation.org, hughd@google.com, johannes@sipsolutions.net,
-        bp@alien8.de, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org, lwn@lwn.net, jslaby@suse.cz
-Subject: Re: Linux 3.0.92
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
-References: <20130820155735.GA2805@kroah.com>
-	<CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 20 Aug 2013 14:53:36 -0400
+Message-ID: <5213BB2C.60908@wwwdotorg.org>
+Date: Tue, 20 Aug 2013 12:53:32 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Julia Lawall <julia.lawall@lip6.fr>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        kernel-janitors@vger.kernel.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/7] PCI: tegra: replace devm_request_and_ioremap by devm_ioremap_resource
+References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr> <1376911241-27720-2-git-send-email-Julia.Lawall@lip6.fr> <20130819120249.GA5740@ulmo> <alpine.DEB.2.02.1308191405450.2313@hadrien> <20130819121238.GB5740@ulmo> <alpine.DEB.2.02.1308191414360.2313@hadrien> <20130819193339.GB4961@mithrandir> <alpine.DEB.2.02.1308201112400.2269@hadrien> <CAErSpo4WLt7zbyfkKfvMbXMQGmp0MAS=7AFiomUjtUCfdprDUA@mail.gmail.com>
+In-Reply-To: <CAErSpo4WLt7zbyfkKfvMbXMQGmp0MAS=7AFiomUjtUCfdprDUA@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 20 Aug 2013 11:52:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 20 Aug 2013 09:33:30 -0700
+On 08/20/2013 10:26 AM, Bjorn Helgaas wrote:
+> On Tue, Aug 20, 2013 at 3:13 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
+>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>
+>> Use devm_ioremap_resource instead of devm_request_and_ioremap.
+>>
+>> This was done using the semantic patch
+>> scripts/coccinelle/api/devm_ioremap_resource.cocci
+>>
+>> Error-handling code was manually removed from the associated calls to
+>> platform_get_resource.
+>>
+>> Adjust the comment at the third platform_get_resource_byname to make clear
+>> why ioremap is not done at this point.
+>>
+>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>> Acked-by: Thierry Reding <thierry.reding@gmail.com>
+>> Tested-by: Thierry Reding <thierry.reding@gmail.com>
+> 
+> I'm hoping this goes via arm-soc.  Let me know if you need me to do
+> something.  If you need it:
+> 
+> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-> I really think there should be delay before stable picks up stuff from
-> mainline, unless it's something particularly critical and
-> well-discussed.. Maybe a week or so.
+In that case, Thierry, can you please bounce it to arm@kernel.org to be
+applied on top of wherever Tegra's for-3.12/soc branch was merged.
 
-That's how I typically work, I do all the submissions by hand after
-they've sit in your tree for at least a week.
-
-But in this case, Johanned added an explicit stable CC: to the commit
-message and I failed to remove it, my bad.
+Acked-by: Stephen Warren <swarren@nvidia.com>
