@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751027Ab3HTLUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 07:20:30 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:32817 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909Ab3HTLU2 (ORCPT
+	id S1751320Ab3HTLUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 07:20:36 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:50367 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab3HTLUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 07:20:28 -0400
+	Tue, 20 Aug 2013 07:20:31 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Chris Mason <chris.mason@fusionio.com>
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 00/12] Btrfs: cast cleanups
-Date: Tue, 20 Aug 2013 13:20:06 +0200
-Message-Id: <1376997618-13573-1-git-send-email-geert@linux-m68k.org>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 11/12] Btrfs: Do not truncate sector_t on 32-bit with CONFIG_LBDAF=y
+Date: Tue, 20 Aug 2013 13:20:17 +0200
+Message-Id: <1376997618-13573-12-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1376997618-13573-1-git-send-email-geert@linux-m68k.org>
+References: <1376997618-13573-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Chris,
+sector_t may be either "u64" (always 64 bit) or "unsigned long" (32 or 64
+bit).  Casting it to "unsigned long" will truncate it on 32-bit platforms
+where CONFIG_LBDAF=y.
 
-This is a collection of cast cleanups I created after burning my eyes
-by the btrfs code.
+Cast to "unsigned long long" and format using "ll" instead.
 
-  - [01/12] Btrfs: Remove superfluous casts from u64 to unsigned long long
-  - [02/12] Btrfs: Make BTRFS_DEV_REPLACE_DEVID an unsigned long long constant
-  - [03/12] Btrfs: Format PAGE_SIZE as unsigned long
-  - [04/12] Btrfs: Format mirror_num as int
-  - [05/12] Btrfs: Make btrfs_device_uuid() return unsigned long
-  - [06/12] Btrfs: Make btrfs_device_fsid() return unsigned long
-  - [07/12] Btrfs: Make btrfs_dev_extent_chunk_tree_uuid() return unsigned long
-  - [08/12] Btrfs: Make btrfs_header_fsid() return unsigned long
-  - [09/12] Btrfs: Make btrfs_header_chunk_tree_uuid() return unsigned long
-  - [10/12] Btrfs: PAGE_CACHE_SIZE is already unsigned long
-  - [11/12] Btrfs: Do not truncate sector_t on 32-bit with CONFIG_LBDAF=y
-  - [12/12] Btrfs: Use %z to format size_t
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ fs/btrfs/check-integrity.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-None of them are real bugs, except for "[11/12] Btrfs: Do not truncate
-sector_t on 32-bit with CONFIG_LBDAF=y", which may print truncated values.
+diff --git a/fs/btrfs/check-integrity.c b/fs/btrfs/check-integrity.c
+index 2fe6f31..01f9cc3 100644
+--- a/fs/btrfs/check-integrity.c
++++ b/fs/btrfs/check-integrity.c
+@@ -2949,9 +2949,10 @@ int btrfsic_submit_bh(int rw, struct buffer_head *bh)
+ 		if (dev_state->state->print_mask &
+ 		    BTRFSIC_PRINT_MASK_SUBMIT_BIO_BH)
+ 			printk(KERN_INFO
+-			       "submit_bh(rw=0x%x, blocknr=%lu (bytenr %llu),"
++			       "submit_bh(rw=0x%x, blocknr=%llu (bytenr %llu),"
+ 			       " size=%lu, data=%p, bdev=%p)\n",
+-			       rw, (unsigned long)bh->b_blocknr, dev_bytenr,
++			       rw, (unsigned long long)bh->b_blocknr,
++			       dev_bytenr,
+ 			       (unsigned long)bh->b_size, bh->b_data,
+ 			       bh->b_bdev);
+ 		btrfsic_process_written_block(dev_state, dev_bytenr,
+@@ -3018,9 +3019,10 @@ void btrfsic_submit_bio(int rw, struct bio *bio)
+ 		    BTRFSIC_PRINT_MASK_SUBMIT_BIO_BH)
+ 			printk(KERN_INFO
+ 			       "submit_bio(rw=0x%x, bi_vcnt=%u,"
+-			       " bi_sector=%lu (bytenr %llu), bi_bdev=%p)\n",
+-			       rw, bio->bi_vcnt, (unsigned long)bio->bi_sector,
+-			       dev_bytenr, bio->bi_bdev);
++			       " bi_sector=%llu (bytenr %llu), bi_bdev=%p)\n",
++			       rw, bio->bi_vcnt,
++			       (unsigned long long)bio->bi_sector, dev_bytenr,
++			       bio->bi_bdev);
+ 
+ 		mapped_datav = kmalloc(sizeof(*mapped_datav) * bio->bi_vcnt,
+ 				       GFP_NOFS);
+-- 
+1.7.9.5
 
-This was only compile-tested.
-
- fs/btrfs/backref.c          |   24 ++--
- fs/btrfs/check-integrity.c  |  313 +++++++++++++++----------------------------
- fs/btrfs/compression.c      |    5 +-
- fs/btrfs/ctree.c            |   28 ++--
- fs/btrfs/ctree.h            |   24 ++--
- fs/btrfs/delayed-inode.c    |   10 +-
- fs/btrfs/dev-replace.c      |    4 +-
- fs/btrfs/disk-io.c          |   39 ++----
- fs/btrfs/extent-tree.c      |   47 +++----
- fs/btrfs/extent_io.c        |   48 +++----
- fs/btrfs/file-item.c        |    4 +-
- fs/btrfs/free-space-cache.c |    6 +-
- fs/btrfs/inode.c            |   24 ++--
- fs/btrfs/ioctl.c            |   15 +--
- fs/btrfs/ordered-data.c     |   11 +-
- fs/btrfs/print-tree.c       |   80 ++++-------
- fs/btrfs/qgroup.c           |   10 +-
- fs/btrfs/relocation.c       |    7 +-
- fs/btrfs/root-tree.c        |    3 +-
- fs/btrfs/scrub.c            |   25 ++--
- fs/btrfs/super.c            |   10 +-
- fs/btrfs/transaction.c      |    3 +-
- fs/btrfs/volumes.c          |   40 +++---
- 23 files changed, 279 insertions(+), 501 deletions(-)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
