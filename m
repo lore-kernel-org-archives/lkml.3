@@ -1,170 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab3HTIPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:15:20 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:3777 "EHLO mms2.broadcom.com"
+	id S1751993Ab3HTIPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:15:54 -0400
+Received: from mail.skitlab.ru ([217.65.220.135]:55737 "EHLO mail.skitlab.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751460Ab3HTIPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:15:16 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <52132589.5000306@broadcom.com>
-Date: Tue, 20 Aug 2013 10:15:05 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-Version: 1.0
-To: "Felix Fietkau" <nbd@openwrt.org>
-cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Tom Gundersen" <teg@jklm.no>, stable@vger.kernel.org,
-        "Linux Wireless List" <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Johannes Berg" <johannes@sipsolutions.net>
-Subject: Re: [REGRESSION] 3.10.{6,7} crashes on network activity
-References: <CAG-2HqUXQeq=30EpGWmn6tkC=CP1W+=UZCVPTYhhE0WyU_C4nw@mail.gmail.com>
- <20130820000336.GA15548@kroah.com>
- <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com>
- <20130820002822.GA18023@kroah.com> <5212F6E8.3090107@openwrt.org>
-In-Reply-To: <5212F6E8.3090107@openwrt.org>
-X-WSS-ID: 7E0DFB921R082311170-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751502Ab3HTIPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 04:15:52 -0400
+From: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
+To: linux-omap@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk
+Subject: [RESEND PATCH] ARM: OMAP: TI81XX: add always-on powerdomain for TI81XX
+Date: Tue, 20 Aug 2013 12:15:44 +0400
+Message-Id: <1376986544-26714-1-git-send-email-aida.mynzhasova@skitlab.ru>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 06:56 AM, Felix Fietkau wrote:
-> On 2013-08-20 2:28 AM, Greg Kroah-Hartman wrote:
->> On Tue, Aug 20, 2013 at 08:26:11AM +0800, Tom Gundersen wrote:
->>> On Tue, Aug 20, 2013 at 8:03 AM, Greg Kroah-Hartman
->>> <gregkh@linuxfoundation.org> wrote:
->>>> On Tue, Aug 20, 2013 at 07:59:47AM +0800, Tom Gundersen wrote:
->>>>> Hi guys,
->>>>>
->>>>> Starting with 3.10.6 (and still present in .7) I get an oops on
->>>>> connecting to the network.
->>>>>
->>>>> The attached picture shows the oops. In case it does not reach the ML,
->>>>> the top of the call trace reads:
->>>>>
->>>>> brcms_c_compute_rtscts_dur
->>>>> brcms_c_ampdu_finalize
->>>>> ampdu_finalize
->>>>> dma_txfast
->>>>> brcms_c_txfifo
->>>>> brcms_c_sendpkt_mac80211
->>>>> brcms_ops_tx
->>>>> __ieee80211_tx
->>>>>
->>>>> I bisected the problem and the first bad commit is
->>>>>
->>>>> commit ef47a5e4f1aaf1d0e2e6875e34b2c9595897bef6
->>>>> Author: Felix Fietkau <nbd@openwrt.org>
->>>>> Date:   Fri Jun 28 21:04:35 2013 +0200
->>>>>
->>>>>      mac80211/minstrel_ht: fix cck rate sampling
->>>>>
->>>>>      commit 1cd158573951f737fbc878a35cb5eb47bf9af3d5 upstream.
->>>>>
->>>>> Reverting it on top of .7 fixes the problem.
->>>>>
->>>>> I had the same (I suppose) problem on mainline some time ago, but I
->>>>> have not bisected it, verified that the problem still occurs there, or
->>>>> checked if reverting the upstream patch fixes it. I'd be happy to do
->>>>> that if it would help though.
->>>>>
->>>>> Let me know if you need any more information.
->>>>
->>>> Do you have this same problem with 3.11-rc6 as well?
->>>
->>> Yes, I just confirmed. I also confirmed that reverting the mainline
->>> commit on top of -rc6 fixes the problem.
->>
->> Great, thanks.
->>
->> Felix and Johannes, any chance we can get this reverted in Linus tree
->> soon, and push that revert back to the 3.10 stable tree as well?
-> I'd like to avoid a revert, since that will simply replace one set of
-> issues with another. Let's limit the use of the feature that brcmsmac
-> can't handle to drivers that are known to work with it. Tom, Please
-> test this patch to see if it fixes your issue.
+This patch adds alwon powerdomain support for TI81XX, which is required
+for stable functioning of a big number of TI81XX subsystems.
 
-Hi Felix,
+Signed-off-by: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
+---
+ arch/arm/mach-omap2/powerdomains3xxx_data.c | 8 ++++++++
+ arch/arm/mach-omap2/prcm-common.h           | 1 +
+ 2 files changed, 9 insertions(+)
 
-I have been diving into root causing why brcmsmac can not handle cck 
-fallback rates, because it should. Maybe it is better to flag no cck 
-support and only change brcmsmac.
-
-Regards,
-Arend
-
-> - Felix
-> ---
-> --- a/include/net/mac80211.h
-> +++ b/include/net/mac80211.h
-> @@ -1501,6 +1501,7 @@ enum ieee80211_hw_flags {
->   	IEEE80211_HW_SUPPORTS_RC_TABLE			= 1<<24,
->   	IEEE80211_HW_P2P_DEV_ADDR_FOR_INTF		= 1<<25,
->   	IEEE80211_HW_TIMING_BEACON_ONLY			= 1<<26,
-> +	IEEE80211_HW_SUPPORTS_HT_CCK_RATES		= 1<<27,
->   };
->
->   /**
-> --- a/net/mac80211/rc80211_minstrel_ht.c
-> +++ b/net/mac80211/rc80211_minstrel_ht.c
-> @@ -828,6 +828,9 @@ minstrel_ht_update_cck(struct minstrel_p
->   	if (sband->band != IEEE80211_BAND_2GHZ)
->   		return;
->
-> +	if (!(mp->hw->flags & IEEE80211_HW_SUPPORTS_HT_CCK_RATES))
-> +		return;
-> +
->   	mi->cck_supported = 0;
->   	mi->cck_supported_short = 0;
->   	for (i = 0; i < 4; i++) {
-> --- a/drivers/net/wireless/ath/ath9k/init.c
-> +++ b/drivers/net/wireless/ath/ath9k/init.c
-> @@ -807,7 +807,8 @@ void ath9k_set_hw_capab(struct ath_softc
->   		IEEE80211_HW_PS_NULLFUNC_STACK |
->   		IEEE80211_HW_SPECTRUM_MGMT |
->   		IEEE80211_HW_REPORTS_TX_ACK_STATUS |
-> -		IEEE80211_HW_SUPPORTS_RC_TABLE;
-> +		IEEE80211_HW_SUPPORTS_RC_TABLE |
-> +		IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
->
->   	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
->   		hw->flags |= IEEE80211_HW_AMPDU_AGGREGATION;
-> --- a/drivers/net/wireless/ath/carl9170/main.c
-> +++ b/drivers/net/wireless/ath/carl9170/main.c
-> @@ -1878,7 +1878,8 @@ void *carl9170_alloc(size_t priv_size)
->   		     IEEE80211_HW_PS_NULLFUNC_STACK |
->   		     IEEE80211_HW_NEED_DTIM_BEFORE_ASSOC |
->   		     IEEE80211_HW_SUPPORTS_RC_TABLE |
-> -		     IEEE80211_HW_SIGNAL_DBM;
-> +		     IEEE80211_HW_SIGNAL_DBM |
-> +		     IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
->
->   	if (!modparam_noht) {
->   		/*
-> --- a/drivers/net/wireless/rt2x00/rt2800lib.c
-> +++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-> @@ -6327,7 +6327,8 @@ static int rt2800_probe_hw_mode(struct r
->   	    IEEE80211_HW_SUPPORTS_PS |
->   	    IEEE80211_HW_PS_NULLFUNC_STACK |
->   	    IEEE80211_HW_AMPDU_AGGREGATION |
-> -	    IEEE80211_HW_REPORTS_TX_ACK_STATUS;
-> +	    IEEE80211_HW_REPORTS_TX_ACK_STATUS |
-> +	    IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
->
->   	/*
->   	 * Don't set IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING for USB devices
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
+diff --git a/arch/arm/mach-omap2/powerdomains3xxx_data.c b/arch/arm/mach-omap2/powerdomains3xxx_data.c
+index e2d4bd8..328c103 100644
+--- a/arch/arm/mach-omap2/powerdomains3xxx_data.c
++++ b/arch/arm/mach-omap2/powerdomains3xxx_data.c
+@@ -336,6 +336,13 @@ static struct powerdomain dpll5_pwrdm = {
+ 	.voltdm		  = { .name = "core" },
+ };
+ 
++static struct powerdomain alwon_81xx_pwrdm = {
++	.name		  = "alwon_pwrdm",
++	.prcm_offs	  = TI81XX_PRM_ALWON_MOD,
++	.pwrsts		  = PWRSTS_OFF_ON,
++	.voltdm		  = { .name = "core" },
++};
++
+ static struct powerdomain device_81xx_pwrdm = {
+ 	.name		  = "device_pwrdm",
+ 	.prcm_offs	  = TI81XX_PRM_DEVICE_MOD,
+@@ -442,6 +449,7 @@ static struct powerdomain *powerdomains_am35x[] __initdata = {
+ };
+ 
+ static struct powerdomain *powerdomains_ti81xx[] __initdata = {
++	&alwon_81xx_pwrdm,
+ 	&device_81xx_pwrdm,
+ 	&active_816x_pwrdm,
+ 	&default_816x_pwrdm,
+diff --git a/arch/arm/mach-omap2/prcm-common.h b/arch/arm/mach-omap2/prcm-common.h
+index ff1ac4a..0e841fd 100644
+--- a/arch/arm/mach-omap2/prcm-common.h
++++ b/arch/arm/mach-omap2/prcm-common.h
+@@ -58,6 +58,7 @@
+ #define TI816X_PRM_IVAHD1_MOD			0x0d00
+ #define TI816X_PRM_IVAHD2_MOD			0x0e00
+ #define TI816X_PRM_SGX_MOD				0x0f00
++#define TI81XX_PRM_ALWON_MOD			0x1800
+ 
+ /* 24XX register bits shared between CM & PRM registers */
+ 
+-- 
+1.8.1.2
 
