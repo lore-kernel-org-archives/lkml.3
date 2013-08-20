@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673Ab3HTUTd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 16:19:33 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:43600 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab3HTUTc (ORCPT
+	id S1751818Ab3HTUTz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 16:19:55 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:54320 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab3HTUTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 16:19:32 -0400
-Message-ID: <5213CF58.50703@gmail.com>
-Date: Tue, 20 Aug 2013 22:19:36 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Tue, 20 Aug 2013 16:19:53 -0400
+Date: Tue, 20 Aug 2013 13:19:50 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net
+Subject: Re: Linux 3.0.92
+Message-ID: <20130820201950.GB2524@roeck-us.net>
+References: <20130820155735.GA2805@kroah.com>
+ <CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
+ <20130820164343.GA3958@kroah.com>
+ <20130820200035.GA2524@roeck-us.net>
+ <CA+55aFwVmDVfrL+Xhkk+AZf5iZdWunQaMeRGLJ0yKeBh9brTQQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 02/17] ARM: call clk_of_init from time_init
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376964271-22715-3-git-send-email-sebastian.hesselbarth@gmail.com> <52138F56.6030008@wwwdotorg.org> <5213C7E1.4070401@gmail.com> <5213C90F.9010407@wwwdotorg.org>
-In-Reply-To: <5213C90F.9010407@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwVmDVfrL+Xhkk+AZf5iZdWunQaMeRGLJ0yKeBh9brTQQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 09:52 PM, Stephen Warren wrote:
-> On 08/20/2013 01:47 PM, Sebastian Hesselbarth wrote:
->> On 08/20/2013 05:46 PM, Stephen Warren wrote:
->>> Some SoCs call this function in .init_irq() rather than .init_time().
->>> Perhaps we adjust this patch to do that instead. That way, we can
->>> presumably get rid of patch 1/17 since we can eliminate any duplicate
->>> calls, and adjust patch 14/17 (Tegra board file) to remove its custom
->>> call to of_clock_init(NULL)?
->>
->> Currently as of -next from yesterday, only tegra is requiring clocks
->> that early, while others are fine with them close to timers. I really
->> have no strong opinion on that. That decision should rather be made
->> by those with a far more complete insight of the consequences than I
->> have.
->
-> Perhaps if Tegra is a special-case, it shouldn't rely on the generic
-> init_time() callback, and hence you could still eliminate patch 1/17?
->
+On Tue, Aug 20, 2013 at 01:08:28PM -0700, Linus Torvalds wrote:
+> On Tue, Aug 20, 2013 at 1:00 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> >>
+> > Does this patch have to be reverted in 3.10 as well ? Linus' e-mail seems to
+> > suggest it, but Shuah didn't see the problem there.  I ran a quick test with
+> > 3.10.8 on an x86 system and did not see a problem either, at least not
+> > immediately.
+> 
+> Do you run with lockdep?
+> 
+> The patch causes a _possibility_ of a deadlock, but unless you have
+> lockdep enabled, you're almost guaranteed to not actually ever see
+> that deadlock in practice.
+> 
+I have CONFIG_LOCKDEP_SUPPORT enabled. Guess I need CONFIG_LOCKUP_DETECTOR as
+well. I'll give it a try.
 
-Perhaps Tegra is the common case but other SoC haven't dug deep enough?
-IMHO from a HW point-of-view clocks are really among the essential
-things that need to be running before you can do anything useful.
-
-Just consider boot loaders that run fine without irqs but don't without
-clocks (even if just represented by API). Maybe you are right, and we
-should call of_clk_init(NULL) as early as possible. That would also
-eliminate patch 1/17 as you suggest.
-
-Sebastian
+Guenter
