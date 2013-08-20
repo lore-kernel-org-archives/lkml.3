@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab3HTDFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 23:05:47 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:45190 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3HTDFp (ORCPT
+	id S1751865Ab3HTDIn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 23:08:43 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:17607 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab3HTDIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 23:05:45 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: omar.ramirez@copitl.com, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] staging: tidspbridge: Fix typos in comments
-Date: Tue, 20 Aug 2013 12:05:39 +0900
-Message-Id: <1376967939-9527-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.4.rc3.2.g2c2b664
+	Mon, 19 Aug 2013 23:08:42 -0400
+X-Spam-Score: -101.1
+Message-ID: <5212DD71.7070208@asianux.com>
+Date: Tue, 20 Aug 2013 11:07:29 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, dvhart@linux.intel.com,
+        ccross@android.com, Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel/futex.c: notice the return value after rt_mutex_finish_proxy_lock()
+ fails
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typos in comments.
+rt_mutex_finish_proxy_lock() can return failure code (e.g. -EINTR,
+-ETIMEDOUT).
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Original implementation has already noticed about it, but not check it
+before next work.
+
+Also let coments within 80 columns to pass "./scripts/checkpatch.pl".
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- drivers/staging/tidspbridge/include/dspbridge/cmm.h  | 2 +-
- drivers/staging/tidspbridge/include/dspbridge/proc.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/futex.c |   30 ++++++++++++++++--------------
+ 1 files changed, 16 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/cmm.h b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
-index c66bcf7..2adf9ec 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/cmm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
-@@ -293,7 +293,7 @@ extern int cmm_xlator_free_buf(struct cmm_xlatorobject *xlator,
-  *  ======== cmm_xlator_info ========
-  *  Purpose:
-  *      Set/Get process specific "translator" address info.
-- *      This is used to perform fast virtaul address translation
-+ *      This is used to perform fast virtual address translation
-  *      for shared memory buffers between the GPP and DSP.
-  *  Parameters:
-  *     xlator:     handle to translator.
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/proc.h b/drivers/staging/tidspbridge/include/dspbridge/proc.h
-index 774a3f6..64c2457 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/proc.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/proc.h
-@@ -284,7 +284,7 @@ extern int proc_get_trace(void *hprocessor, u8 * pbuf, u32 max_size);
-  *      user_envp:       An Array of Environment settings(Unicode Strings)
-  *  Returns:
-  *      0:       Success.
-- *      -ENOENT:       The DSP Execuetable was not found.
-+ *      -ENOENT:       The DSP Executable was not found.
-  *      -EFAULT:       Invalid processor handle.
-  *      -EPERM   :       Unable to Load the Processor
-  *  Requires:
+diff --git a/kernel/futex.c b/kernel/futex.c
+index c3a1a55..1a94e7d 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2373,21 +2373,23 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
+ 		debug_rt_mutex_free_waiter(&rt_waiter);
+ 
+-		spin_lock(q.lock_ptr);
+-		/*
+-		 * Fixup the pi_state owner and possibly acquire the lock if we
+-		 * haven't already.
+-		 */
+-		res = fixup_owner(uaddr2, &q, !ret);
+-		/*
+-		 * If fixup_owner() returned an error, proprogate that.  If it
+-		 * acquired the lock, clear -ETIMEDOUT or -EINTR.
+-		 */
+-		if (res)
+-			ret = (res < 0) ? res : 0;
++		if (!ret) {
++			spin_lock(q.lock_ptr);
++			/*
++			 * Fixup the pi_state owner and possibly acquire the
++			 * lock if we haven't already.
++			 */
++			res = fixup_owner(uaddr2, &q, !ret);
++			/*
++			 * If fixup_owner() returned an error, proprogate that.
++			 * If it acquired the lock, clear -ETIMEDOUT or -EINTR.
++			 */
++			if (res)
++				ret = (res < 0) ? res : 0;
+ 
+-		/* Unqueue and drop the lock. */
+-		unqueue_me_pi(&q);
++			/* Unqueue and drop the lock. */
++			unqueue_me_pi(&q);
++		}
+ 	}
+ 
+ 	/*
 -- 
-1.8.4.rc3.2.g2c2b664
-
+1.7.7.6
