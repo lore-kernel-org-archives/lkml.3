@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604Ab3HTQCI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:02:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34688 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab3HTQCF (ORCPT
+	id S1751473Ab3HTQHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:07:51 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:27206 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab3HTQHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:02:05 -0400
-Date: Tue, 20 Aug 2013 09:03:55 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: "Berg, Johannes" <johannes.berg@intel.com>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Stefan Lippers-Hollmann <s.L-H@gmx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/34] 3.4.59-stable review
-Message-ID: <20130820160355.GA9427@kroah.com>
-References: <20130818203259.653403173@linuxfoundation.org>
- <52125DA9.3090601@samsung.com>
- <20130819193538.GB24897@kroah.com>
- <201308192214.54917.s.L-H@gmx.de>
- <52129AC3.5020402@samsung.com>
- <20130819223037.GA3838@kroah.com>
- <1DC40B07CD6EC041A66726C271A73AE61AA6B9CC@IRSMSX102.ger.corp.intel.com>
- <20130820152401.GA5211@kroah.com>
- <alpine.LNX.2.00.1308200851190.991@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1308200851190.991@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Aug 2013 12:07:49 -0400
+Date: Tue, 20 Aug 2013 12:07:02 -0400
+From: Dwight Engen <dwight.engen@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Ben Myers <bpm@sgi.com>, David Chinner <david@fromorbit.com>,
+        xfs@oss.sgi.com, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, <linuxppc-dev@lists.ozlabs.org>,
+        Gao feng <gaofeng@cn.fujitsu.com>, Jeremy Kerr <jk@ozlabs.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        cbe-oss-dev@lists.ozlabs.org
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20130820120702.000b044e@oracle.com>
+In-Reply-To: <20130820172052.1f0d89ddf6a1a40ef70333fd@canb.auug.org.au>
+References: <20130820172052.1f0d89ddf6a1a40ef70333fd@canb.auug.org.au>
+Organization: Oracle Corporation
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 08:53:24AM -0700, Hugh Dickins wrote:
-> On Tue, 20 Aug 2013, Greg Kroah-Hartman wrote:
-> > On Tue, Aug 20, 2013 at 07:36:00AM +0000, Berg, Johannes wrote:
-> > > > > [ 26/34] genetlink: fix family dump race
-> > > > 
-> > > > Johannes, another strike against this patch :(
-> > > > 
-> > > > Any chance on fixing it upstream and me sucking that fix in?
-> > > 
-> > > Yeah, I'm trying to get that, but it's not clear to me how to fix it.
-> > > Where did you apply it? It was going to need some fixes but when the
-> > > first objection was raised I figured you were going to drop it for now
-> > > completely? Sorry for the mess :-(
-> > 
-> > You're right, I'll drop this for 3.4, it doesn't make sense there.
+On Tue, 20 Aug 2013 17:20:52 +1000
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+
+> Hi all,
 > 
-> And you'll drop it from 3.0 and 3.10 also, I hope?
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> arch/powerpc/platforms/cell/spufs/inode.c: In function
+> 'spufs_parse_options':
+> arch/powerpc/platforms/cell/spufs/inode.c:623:16: error: incompatible
+> types when assigning to type 'kuid_t' from type 'int' root->i_uid =
+> option; ^ arch/powerpc/platforms/cell/spufs/inode.c:628:16: error:
+> incompatible types when assigning to type 'kgid_t' from type 'int'
+> root->i_gid = option; ^
+> 
+> Caused by commit d6970d4b726c ("enable building user namespace with
+> xfs") from the xfs tree (that was fun to find :-)).
+> 
+> I have reverted that commit for today.  It could probably be replaced
+> with a patch that just changed XFS_FS to SPU_FS in the
+> UIDGID_CONVERTED config dependency - or someone could fix up SPU_FS.
 
-It wasn't in 3.0, was it?  Oh crap, it was...
+Hi, (already sent this email based on Intel's kbuild robot this
+morning, sorry for the dup to those who already got it). 
 
-3.10, I'd rather have the "real" fix that ends up resolving the issue in
-Linus's tree also, instead of just dropping it.
+Yep this looks to me like SPU_FS should have been in the list of
+stuff that had not been UIDGID_CONVERTED, but reviving
+UIDGID_CONVERTED and adding SPU_FS to it won't work for
+non powerpc arch because SPU_FS = n won't be defined. The following can
+be used to mark it as incompatible with USER_NS:
 
-Especially as I just did the releases...
+diff --git a/arch/powerpc/platforms/cell/Kconfig
+b/arch/powerpc/platforms/cell/Kconfig index 9978f59..fcf8336 100644
+--- a/arch/powerpc/platforms/cell/Kconfig
++++ b/arch/powerpc/platforms/cell/Kconfig
+@@ -61,6 +61,7 @@ config SPU_FS
+        tristate "SPU file system"
+        default m
+        depends on PPC_CELL
++       depends on USER_NS=n
+        select SPU_BASE
+        select MEMORY_HOTPLUG
+        help
 
-thanks,
+Or if the rest of spufs is already okay for user namespace (I have not
+checked it, but this seems to be the only place it is dealing with
+uid/gid), then the following will fix these particular errors
+(cross-compile tested, but I don't have a powerpc to run test on):
 
-greg k-h
+diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
+index f390042..90fb308 100644
+--- a/arch/powerpc/platforms/cell/spufs/inode.c
++++ b/arch/powerpc/platforms/cell/spufs/inode.c
+@@ -620,12 +620,12 @@ spufs_parse_options(struct super_block *sb, char *options, struct inode *root)
+                case Opt_uid:
+                        if (match_int(&args[0], &option))
+                                return 0;
+-                       root->i_uid = option;
++                       root->i_uid = make_kuid(&init_user_ns, option);
+                        break;
+                case Opt_gid:
+                        if (match_int(&args[0], &option))
+                                return 0;
+-                       root->i_gid = option;
++                       root->i_gid = make_kgid(&init_user_ns, option);
+                        break;
+                case Opt_mode:
+                        if (match_octal(&args[0], &option))
