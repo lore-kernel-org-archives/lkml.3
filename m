@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab3HTHOC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 03:14:02 -0400
-Received: from www.xora.org.uk ([80.68.91.202]:57325 "EHLO
-	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab3HTHN5 (ORCPT
+	id S1751807Ab3HTHOZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 03:14:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53542 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681Ab3HTHOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 03:13:57 -0400
-Message-ID: <52131732.2060306@slimlogic.co.uk>
-Date: Tue, 20 Aug 2013 08:13:54 +0100
-From: Graeme Gregory <gg@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Tue, 20 Aug 2013 03:14:22 -0400
+Message-ID: <52131747.4010105@linutronix.de>
+Date: Tue, 20 Aug 2013 09:14:15 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Lee Jones <lee.jones@linaro.org>, Kevin Hilman <khilman@linaro.org>,
-        linux-omap@vger.kernel.org, Ruslan Bilovol <ruslan.bilovol@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] mfd: twl6030-irq: rework and add twl6032 support
-References: <1374758151-12097-1-git-send-email-grygorii.strashko@ti.com> <20130820010154.GB13324@zurbaran>
-In-Reply-To: <20130820010154.GB13324@zurbaran>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        Kent Overstreet <kmo@daterainc.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.6-rt3
+References: <20130812163413.GI23040@linutronix.de> <520D212F.7030400@localhost> <20130815152210.5ed93696@gandalf.local.home> <520DCE5F.1040402@linutronix.de> <521254A0.6050603@localhost> <20130819202903.692097ea@gandalf.local.home> <20130819210208.426e01b3@gandalf.local.home>
+In-Reply-To: <20130819210208.426e01b3@gandalf.local.home>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/08/13 02:01, Samuel Ortiz wrote:
-> Hi Grygorii,
->
-> On Thu, Jul 25, 2013 at 04:15:46PM +0300, Grygorii Strashko wrote:
->> This patch series intorduces twl6030-irq module rework to use Threaded IRQ and
->> linear irq_domain, and adds support for PMIC TWL6032 IRQs.
->>
->> After this patch series TWL6030/6032 IRQs will be supported only for DT boot mode.
->>
->> Changes since v1:
->> - Added new patch "mfd: twl6030-irq: create struct twl6030_irq"
->>    which introduces "struct twl6030_irq" to store all local variables inside it.
->> - Patch "mfd: twl6030-irq: migrate to IRQ threaded handler":
->>    Minor comments applied; fixed twl6030_exit_irq();
->>    The Parent IRQ has been set for each nested IRQ.
->> - Patch "mfd: twl6030-irq: convert to use linear irq_domain":
->>    The irq_find_mapping() is used in twl6030_mmc_card_detect_config()
->>    to get virtual IRQ number.
-> This looks good to me. Kevin, Graeme, any further comments/ACKs ?
->
-> Cheers,
-> Samuel.
->
-Yes, it looked good to me as well.
+On 08/20/2013 03:02 AM, Steven Rostedt wrote:
+> Looking at it more, I can now see why they did what they did.
 
-Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
+He is the only user in the whole kernel. It is somehow hard to believe
+that it can't be solved differently.
 
-G
+> -- Steve
 
+Sebastian
