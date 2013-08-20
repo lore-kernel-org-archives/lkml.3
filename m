@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645Ab3HTAwO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 20:52:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20384 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751162Ab3HTAwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 20:52:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,915,1367996400"; 
-   d="scan'208";a="388769418"
+	id S1751715Ab3HTAwj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 20:52:39 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:56693 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652Ab3HTAwh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 20:52:37 -0400
+Date: Tue, 20 Aug 2013 02:52:34 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] x86, asmlinkage: Fix warning in xen asmlinkage change
-Date: Mon, 19 Aug 2013 17:52:04 -0700
-Message-Id: <1376959924-13790-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: linux-next: build warning after merge of the tip tree
+Message-ID: <20130820005234.GX19750@two.firstfloor.org>
+References: <20130819142633.82fb06bfa3bc0276fb09cbea@canb.auug.org.au>
+ <20130819065817.GB23742@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130819065817.GB23742@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+> > Introduced by commit 9a55fdbe941e ("x86, asmlinkage, paravirt: Add
+> > __visible/asmlinkage to xen paravirt ops").  The 2 definitions used to be
+> > identical ... maybe there should be only one.
+> 
+> Andi, please send a fix for this build warning, against 
+> tip:x86/asmlinkage.
 
-Use __visible for some functions without arguments.
-This avoids having to add regparm(0) to function pointers.
-Since they have no arguments it does not make any difference.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/xen/xen-ops.h | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index d380213..95f8c61 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -105,7 +105,7 @@ static inline void __init xen_init_apic(void)
- /* Declare an asm function, along with symbols needed to make it
-    inlineable */
- #define DECL_ASM(ret, name, ...)		\
--	asmlinkage ret name(__VA_ARGS__);	\
-+	__visible ret name(__VA_ARGS__);	\
- 	extern char name##_end[] __visible;	\
- 	extern char name##_reloc[] __visible
- 
-@@ -115,11 +115,11 @@ DECL_ASM(unsigned long, xen_save_fl_direct, void);
- DECL_ASM(void, xen_restore_fl_direct, unsigned long);
- 
- /* These are not functions, and cannot be called normally */
--asmlinkage void xen_iret(void);
--asmlinkage void xen_sysexit(void);
--asmlinkage void xen_sysret32(void);
--asmlinkage void xen_sysret64(void);
--asmlinkage void xen_adjust_exception_frame(void);
-+__visible void xen_iret(void);
-+__visible void xen_sysexit(void);
-+__visible void xen_sysret32(void);
-+__visible void xen_sysret64(void);
-+__visible void xen_adjust_exception_frame(void);
- 
- extern int xen_panic_handler_init(void);
- 
--- 
-1.8.3.1
-
+I resent the patch. Thanks for the headsup.
+-Andi
