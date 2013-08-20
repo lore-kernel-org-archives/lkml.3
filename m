@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab3HTQnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:43:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34968 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab3HTQno (ORCPT
+	id S1751847Ab3HTQnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:43:43 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:52854 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab3HTQnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:43:44 -0400
-Date: Tue, 20 Aug 2013 09:43:43 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Johannes Berg <johannes@sipsolutions.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, lwn@lwn.net,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.0.92
-Message-ID: <20130820164343.GA3958@kroah.com>
-References: <20130820155735.GA2805@kroah.com>
- <CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
+	Tue, 20 Aug 2013 12:43:41 -0400
+Message-ID: <52139C92.6000203@redhat.com>
+Date: Tue, 20 Aug 2013 18:42:58 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Christian Ehrhardt <lk@c--e.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Fix lapic time counter read for periodic mode
+References: <20121111122528.GC19718@lisa.in-ulm.de> <20121112213237.GA31377@amt.cnet> <20121113075254.GA15071@lisa.in-ulm.de> <20121113204039.GA22112@amt.cnet>
+In-Reply-To: <20121113204039.GA22112@amt.cnet>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 09:33:30AM -0700, Linus Torvalds wrote:
-> On Tue, Aug 20, 2013 at 8:57 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >
-> > Johannes Berg (1):
-> >       genetlink: fix family dump race
+Il 13/11/2012 21:40, Marcelo Tosatti ha scritto:
+> On Tue, Nov 13, 2012 at 08:52:54AM +0100, Christian Ehrhardt wrote:
+>> > 
+>> > Hi,
+>> > 
+>> > thanks for your reply.
+>> > 
+>> > On Mon, Nov 12, 2012 at 07:32:37PM -0200, Marcelo Tosatti wrote:
+>>>> > > > there is a bug in the emulation of the lapic time counter. In particular
+>>>> > > > what we are seeing is that the time counter of a periodic lapic timer
+>>>> > > > in the guest reads as zero 99% of the time. The patch below fixes that.
+>>>> > > > 
+>>>> > > > The emulation of the lapic timer is done with the help of a hires
+>>>> > > > timer that expires with the same frequency as the lapic counter.
+>>>> > > > New expiration times for a periodic timer are calculated incrementally
+>>>> > > > based on the last scheduled expiration time. This ensures long term
+>>>> > > > accuracy of the emulated timer close to that of the underlying clock.
+>>>> > > > 
+>>>> > > > The actual value of the lapic time counter is calculated from the
+>>>> > > > real time difference between current time and scheduled expiration time
+>>>> > > > of the hires timer. If this difference is negative, the hires timer
+>>>> > > > expired. For oneshot mode this is correctly translated into a zero value
+>>>> > > > for the time counter. However, in periodic mode we must use the negative
+>>>> > > > difference unmodified.
+>>>> > > > 
+>>>> > > >      regards   Christian
+>>>> > > > 
+>>>> > > > Fix lapic time counter read for periodic mode.
+>>> > > 
+>>> > > In periodic mode the hrtimer is rearmed once expired, see
+>>> > > apic_timer_fn. So _get_remaining should return proper value
+>>> > > even if the guest is not able to process timer interrupts. 
+>>> > > 
+>>> > > Can you describe your specific scenario in more detail?
+>> > 
+>> > In my specific case, the host is admittedly somewhat special as it
+>> > already is a rehosted version of linux, i.e. not running directly on
+>> > native hardware. It is still unclear if the host has sufficiently accurate
+>> > timer interrupts. This is most likely part of the problems we are seeing.
+>> > 
+>> > However, AFAICS apic_timer_fn is only called once per jiffy (at least in
+>> > some configurations). In particular, it is not called by
+>> > hrtimer_get_remaining. Thus depending on the frequency of the LAPIC timer
+>> > in the guest there might _several_ iterations that are missed. This can
+>> > probably be mitigated by a hires timer interrupts. However, I think
+>> > the problem is still there even in that case.
+>> > 
+>> > Additionally, the behaviour that I want to establish matches that of the
+>> > PIT timer (in a not completely obvious way, though).
+>> > 
+>> > Having said that the proposed patch in my first mail is incomplete, as
+>> > the mod_64 does not work correctly for negative values. A fixed version
+>> > is below.
+>> > 
+>> >      regards     Christian
+>> > 
+>> > Signed-off-by: Christian Ehrhardt <lk@c--e.de>
+> Alright. Please add a comment from the LAPIC documentation describing
+> this behaviour (and a nice changelog). Thanks.
 > 
-> This one turns out to be buggy, see thread called "3.11-rc6 genetlink
-> locking fix offends lockdep".
 
-Yeah, I messed up in keeping it here, I'll go revert it and push out a
-new 3.0 release.
+Christian, did you ever resubmit the patch?
 
-> I really think there should be delay before stable picks up stuff from
-> mainline, unless it's something particularly critical and
-> well-discussed.. Maybe a week or so.
-
-I can do that, it's just hard to tell from my end what is "well
-discussed" all the time.
-
-> Now it's both in 3.0 and 3.10, so the revert (unless we find a better
-> fix - and the first two patches have already failed) will have to go
-> there too.
-
-I thought that there was a fix already for this...  Ah, no, that was for
-another reported regression in an older 3.10-stable release, my bad.
-
-Johannes, what do you want to do here?  Just revert it in Linus's tree
-for now, given the late -rc cycle?
-
-thanks,
-
-greg k-h
+Paolo
