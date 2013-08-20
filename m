@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab3HTUC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 16:02:28 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:64963 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463Ab3HTUC1 convert rfc822-to-8bit (ORCPT
+	id S1751467Ab3HTUGl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 16:06:41 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:35657 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab3HTUGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 16:02:27 -0400
-Date: Tue, 20 Aug 2013 15:02:24 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: rfc: trivial patches and slow deaths?
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors <kernel-janitors@vger.kernel.org>
-References: <1376944033.2016.13.camel@joe-AO722>
-	<alpine.LNX.2.00.1308192229360.21654@pobox.suse.cz>
-	<1376946644.2016.35.camel@joe-AO722>
-	<alpine.LNX.2.00.1308192315000.21654@pobox.suse.cz>
-	<1376947637.2016.39.camel@joe-AO722>
-In-Reply-To: <1376947637.2016.39.camel@joe-AO722> (from joe@perches.com on
-	Mon Aug 19 16:27:17 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1377028944.2737.75@driftwood>
+	Tue, 20 Aug 2013 16:06:39 -0400
+Date: Tue, 20 Aug 2013 13:06:36 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Michael Grzeschik <mgr@pengutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH] mc13xxx-ts: use zero as default value if no pdata was
+ defined
+Message-ID: <20130820200635.GA22769@core.coreip.homeip.net>
+References: <1376396070-24507-1-git-send-email-m.grzeschik@pengutronix.de>
+ <20130820013433.GE13324@zurbaran>
+ <20130820093432.GC26693@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130820093432.GC26693@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2013 04:27:17 PM, Joe Perches wrote:
-> On Mon, 2013-08-19 at 23:22 +0200, Jiri Kosina wrote:
-> > On Mon, 19 Aug 2013, Joe Perches wrote:
-> >
-> > > This is a 7 line patch that corrects logging defects that has had  
-> no
-> > > reply from you for the last month.
-> > >
-> > > https://patchwork.kernel.org/patch/2833648/
-> >
-> > This hasn't missed any Linus' major release, as it has been  
-> submitted post
-> > 3.11 merge, right? (hint, that was Jul 4th).
-> >
-> > If this would miss *next* major Linus' release, I would accept your
-> > complaints. But this is definitely not the case.
+On Tue, Aug 20, 2013 at 11:34:32AM +0200, Michael Grzeschik wrote:
+> On Tue, Aug 20, 2013 at 03:34:33AM +0200, Samuel Ortiz wrote:
+> > Hi Michael,
+> > 
+> > On Tue, Aug 13, 2013 at 02:14:30PM +0200, Michael Grzeschik wrote:
+> > > In case of devicetree, we currently don't have a way to append pdata for
+> > > the touchscreen. The current approach is to bail out in that case.
+> > > This patch makes it possible to probe the touchscreen without pdata
+> > > and use zero as default values for the atox and ato adc conversion.
+> > Would that still make the touchscreen somehow functional ?
 > 
-> You're suggesting this patch, which corrects obvious
-> defects, should miss 3.12 and go into 3.13?
+> Yes, it still works. It just defaults to zero values in no pdata case.
 > 
-> I think that's wrong.
+> > If that's the case, and if Dmitry is fine with the ts part of this
+> > patch, could you please separate the mfd part of this patch into a
+> > separate one ?
+> 
+> Why?
+> 
+> The purpose of this patch is to have both cases working, pdata and no
+> pdata.
 
-Correcting obvious defects, which can't wait a release, is "trivial"  
-now, is it?
+My concern with allowing defaults with missing pdata or device tree data
+is that it makes it easy for the integrator to miss the necessity of the
+parameters and then start piling on driver workarounds. I have seen a
+few examples of this happening, so I'd rather prefer an explicit values
+if possible.
 
-Rob
+Thanks.
+
+-- 
+Dmitry
