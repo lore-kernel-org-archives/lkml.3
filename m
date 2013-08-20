@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509Ab3HTWYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 18:24:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16020 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275Ab3HTWYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 18:24:42 -0400
-Date: Tue, 20 Aug 2013 18:24:39 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Frank Mayhar <fmayhar@google.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: dm: Make MIN_IOS, et al, tunable via sysctl.
-Message-ID: <20130820222439.GA5883@redhat.com>
-References: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
- <alpine.LRH.2.02.1308201712090.8826@file01.intranet.prod.int.rdu2.redhat.com>
- <1377034118.24869.48.camel@bobble.lax.corp.google.com>
- <alpine.LRH.2.02.1308201745130.8826@file01.intranet.prod.int.rdu2.redhat.com>
- <1377035833.24869.57.camel@bobble.lax.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377035833.24869.57.camel@bobble.lax.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751657Ab3HTWY7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 18:24:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38333 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3HTWY6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 18:24:58 -0400
+Date: Tue, 20 Aug 2013 15:24:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Rob Landley <rob@landley.net>, Jiri Kosina <jkosina@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors <kernel-janitors@vger.kernel.org>
+Subject: Re: rfc: trivial patches and slow deaths?
+Message-Id: <20130820152456.c12dd8f543e2735b6952ae13@linux-foundation.org>
+In-Reply-To: <1377036678.2016.88.camel@joe-AO722>
+References: <1376944033.2016.13.camel@joe-AO722>
+	<alpine.LNX.2.00.1308192229360.21654@pobox.suse.cz>
+	<1376946644.2016.35.camel@joe-AO722>
+	<alpine.LNX.2.00.1308192315000.21654@pobox.suse.cz>
+	<1376947637.2016.39.camel@joe-AO722>
+	<1377028944.2737.75@driftwood>
+	<1377029650.2016.72.camel@joe-AO722>
+	<1377035369.2737.85@driftwood>
+	<1377036678.2016.88.camel@joe-AO722>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20 2013 at  5:57pm -0400,
-Frank Mayhar <fmayhar@google.com> wrote:
+On Tue, 20 Aug 2013 15:11:18 -0700 Joe Perches <joe@perches.com> wrote:
 
-> On Tue, 2013-08-20 at 17:47 -0400, Mikulas Patocka wrote:
-> > 
-> > On Tue, 20 Aug 2013, Frank Mayhar wrote:
-> > 
-> > > On Tue, 2013-08-20 at 17:22 -0400, Mikulas Patocka wrote:
-> > > > On Fri, 16 Aug 2013, Frank Mayhar wrote:
-> > > > > The device mapper and some of its modules allocate memory pools at
-> > > > > various points when setting up a device.  In some cases, these pools are
-> > > > > fairly large, for example the multipath module allocates a 256-entry
-> > > > > pool and the dm itself allocates three of that size.  In a
-> > > > > memory-constrained environment where we're creating a lot of these
-> > > > > devices, the memory use can quickly become significant.  Unfortunately,
-> > > > > there's currently no way to change the size of the pools other than by
-> > > > > changing a constant and rebuilding the kernel.
-> > > > I think it would be better to set the values to some low value (1 should 
-> > > > be enough, there is 16 in some places that is already low enough). There 
-> > > > is no need to make it user-configurable, because the user will see no 
-> > > > additional benefit from bigger mempools.
-> > > > 
-> > > > Maybe multipath is the exception - but other dm targets don't really need 
-> > > > big mempools so there is no need to make the size configurable.
-> > > 
-> > > The point is not to make the mempools bigger, the point is to be able to
-> > > make them _smaller_ for memory-constrained environments.  In some cases,
-> > > even 16 can be too big, especially when creating a large number of
-> > > devices.
-> > > 
-> > > In any event, it seems unfortunate to me that these values are
-> > > hard-coded.  One shouldn't have to rebuild the kernel to change them,
-> > > IMHO.
-> > 
-> > So make a patch that changes 16 to 1 if it helps on your system (I'd like 
-> > to ask - what is the configuration where this kind of change helps?). 
-> > There is no need for that to be tunable, anyone can live with mempool size 
-> > being 1.
+> Andrew?  Do you want to handle patches for defects that
+> are both obvious _and_ trivial?
+
+I look at everything!  If I like it and see that Jiri was cc'ed I try
+to remember to cc him on the commit.
+
+> > If it's trivial it's not time critical. If it's time critical it's not  
+> > trivial.
 > 
-> I reiterate:  It seems unfortunate that these values are hard-coded.  It
-> seems to me that a sysadmin should be able to tune them according to his
-> or her needs.  Particularly when the same kernel is being run on many
-> machines that may have different constraints; building a special kernel
-> for each set of constraints doesn't scale.
-> 
-> And as I said, it's a memory-constrained environment.
+> We disagree on the definition of trivial.
+> Trivial can also mean simple and immediately evident.
 
-Mikulas' point is that you cannot reduce the size to smaller than 1.
-And aside from rq-based DM, 1 is sufficient to allow for forward
-progress even when memory is completely consumed.
+I find that I often remove "trivial" from changelogs and titles.  Patches
+which are marked thus are often non-trivial and merit a bit of thought.
 
-A patch that simply changes them to 1 but makes the rq-based DM
-mempool's size configurable should actually be fine.
 
-Mike
+For example, I somewhat disagree that even
+https://patchwork.kernel.org/patch/2833648/ was trivial.  It changes
+the format of kernel logs and might have implications for people who
+are parsing those logs.  Unlikely, but one needs to read each and every
+conversion and decide on the risk factor.
+
+
