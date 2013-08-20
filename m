@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473Ab3HTLWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 07:22:23 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:43629 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab3HTLUb (ORCPT
+	id S1751624Ab3HTLXr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 07:23:47 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:32817 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab3HTLU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 07:20:31 -0400
+	Tue, 20 Aug 2013 07:20:29 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Chris Mason <chris.mason@fusionio.com>
 Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 10/12] Btrfs: PAGE_CACHE_SIZE is already unsigned long
-Date: Tue, 20 Aug 2013 13:20:16 +0200
-Message-Id: <1376997618-13573-11-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 04/12] Btrfs: Format mirror_num as int
+Date: Tue, 20 Aug 2013 13:20:10 +0200
+Message-Id: <1376997618-13573-5-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1376997618-13573-1-git-send-email-geert@linux-m68k.org>
 References: <1376997618-13573-1-git-send-email-geert@linux-m68k.org>
@@ -21,125 +21,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PAGE_CACHE_SIZE == PAGE_SIZE is "unsigned long" everywhere, so there's no
-need to cast it to "unsigned long".
+mirror_num is always "int", hence don't cast it to "unsigned long long" and
+format it as a 64-bit number.
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- fs/btrfs/check-integrity.c |    9 ++++-----
- fs/btrfs/extent_io.c       |   18 +++++++++---------
- 2 files changed, 13 insertions(+), 14 deletions(-)
+ fs/btrfs/scrub.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/btrfs/check-integrity.c b/fs/btrfs/check-integrity.c
-index 4bf75bb..2fe6f31 100644
---- a/fs/btrfs/check-integrity.c
-+++ b/fs/btrfs/check-integrity.c
-@@ -1232,8 +1232,7 @@ static void btrfsic_read_from_block_data(
- 	unsigned long i = (start_offset + offset) >> PAGE_CACHE_SHIFT;
- 
- 	WARN_ON(offset + len > block_ctx->len);
--	offset_in_page = (start_offset + offset) &
--			 ((unsigned long)PAGE_CACHE_SIZE - 1);
-+	offset_in_page = (start_offset + offset) & (PAGE_CACHE_SIZE - 1);
- 
- 	while (len > 0) {
- 		cur = min(len, ((size_t)PAGE_CACHE_SIZE - offset_in_page));
-@@ -3113,19 +3112,19 @@ int btrfsic_mount(struct btrfs_root *root,
- 	if (root->nodesize & ((u64)PAGE_CACHE_SIZE - 1)) {
- 		printk(KERN_INFO
- 		       "btrfsic: cannot handle nodesize %d not being a multiple of PAGE_CACHE_SIZE %ld!\n",
--		       root->nodesize, (unsigned long)PAGE_CACHE_SIZE);
-+		       root->nodesize, PAGE_CACHE_SIZE);
- 		return -1;
+diff --git a/fs/btrfs/scrub.c b/fs/btrfs/scrub.c
+index f2bc6df..838c8a0 100644
+--- a/fs/btrfs/scrub.c
++++ b/fs/btrfs/scrub.c
+@@ -3170,9 +3170,9 @@ static void copy_nocow_pages_worker(struct btrfs_work *work)
+ 					  copy_nocow_pages_for_inode,
+ 					  nocow_ctx);
+ 	if (ret != 0 && ret != -ENOENT) {
+-		pr_warn("iterate_inodes_from_logical() failed: log %llu, phys %llu, len %llu, mir %llu, ret %d\n",
+-			logical, physical_for_dev_replace, len,
+-			(unsigned long long)mirror_num, ret);
++		pr_warn("iterate_inodes_from_logical() failed: log %llu, phys %llu, len %llu, mir %u, ret %d\n",
++			logical, physical_for_dev_replace, len, mirror_num,
++			ret);
+ 		not_written = 1;
+ 		goto out;
  	}
- 	if (root->leafsize & ((u64)PAGE_CACHE_SIZE - 1)) {
- 		printk(KERN_INFO
- 		       "btrfsic: cannot handle leafsize %d not being a multiple of PAGE_CACHE_SIZE %ld!\n",
--		       root->leafsize, (unsigned long)PAGE_CACHE_SIZE);
-+		       root->leafsize, PAGE_CACHE_SIZE);
- 		return -1;
- 	}
- 	if (root->sectorsize & ((u64)PAGE_CACHE_SIZE - 1)) {
- 		printk(KERN_INFO
- 		       "btrfsic: cannot handle sectorsize %d not being a multiple of PAGE_CACHE_SIZE %ld!\n",
--		       root->sectorsize, (unsigned long)PAGE_CACHE_SIZE);
-+		       root->sectorsize, PAGE_CACHE_SIZE);
- 		return -1;
- 	}
- 	state = kzalloc(sizeof(*state), GFP_NOFS);
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index 454edd5..38acc94 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -4763,7 +4763,7 @@ void read_extent_buffer(struct extent_buffer *eb, void *dstv,
- 	WARN_ON(start > eb->len);
- 	WARN_ON(start + len > eb->start + eb->len);
- 
--	offset = (start_offset + start) & ((unsigned long)PAGE_CACHE_SIZE - 1);
-+	offset = (start_offset + start) & (PAGE_CACHE_SIZE - 1);
- 
- 	while (len > 0) {
- 		page = extent_buffer_page(eb, i);
-@@ -4833,7 +4833,7 @@ int memcmp_extent_buffer(struct extent_buffer *eb, const void *ptrv,
- 	WARN_ON(start > eb->len);
- 	WARN_ON(start + len > eb->start + eb->len);
- 
--	offset = (start_offset + start) & ((unsigned long)PAGE_CACHE_SIZE - 1);
-+	offset = (start_offset + start) & (PAGE_CACHE_SIZE - 1);
- 
- 	while (len > 0) {
- 		page = extent_buffer_page(eb, i);
-@@ -4867,7 +4867,7 @@ void write_extent_buffer(struct extent_buffer *eb, const void *srcv,
- 	WARN_ON(start > eb->len);
- 	WARN_ON(start + len > eb->start + eb->len);
- 
--	offset = (start_offset + start) & ((unsigned long)PAGE_CACHE_SIZE - 1);
-+	offset = (start_offset + start) & (PAGE_CACHE_SIZE - 1);
- 
- 	while (len > 0) {
- 		page = extent_buffer_page(eb, i);
-@@ -4897,7 +4897,7 @@ void memset_extent_buffer(struct extent_buffer *eb, char c,
- 	WARN_ON(start > eb->len);
- 	WARN_ON(start + len > eb->start + eb->len);
- 
--	offset = (start_offset + start) & ((unsigned long)PAGE_CACHE_SIZE - 1);
-+	offset = (start_offset + start) & (PAGE_CACHE_SIZE - 1);
- 
- 	while (len > 0) {
- 		page = extent_buffer_page(eb, i);
-@@ -4928,7 +4928,7 @@ void copy_extent_buffer(struct extent_buffer *dst, struct extent_buffer *src,
- 	WARN_ON(src->len != dst_len);
- 
- 	offset = (start_offset + dst_offset) &
--		((unsigned long)PAGE_CACHE_SIZE - 1);
-+		(PAGE_CACHE_SIZE - 1);
- 
- 	while (len > 0) {
- 		page = extent_buffer_page(dst, i);
-@@ -5014,9 +5014,9 @@ void memcpy_extent_buffer(struct extent_buffer *dst, unsigned long dst_offset,
- 
- 	while (len > 0) {
- 		dst_off_in_page = (start_offset + dst_offset) &
--			((unsigned long)PAGE_CACHE_SIZE - 1);
-+			(PAGE_CACHE_SIZE - 1);
- 		src_off_in_page = (start_offset + src_offset) &
--			((unsigned long)PAGE_CACHE_SIZE - 1);
-+			(PAGE_CACHE_SIZE - 1);
- 
- 		dst_i = (start_offset + dst_offset) >> PAGE_CACHE_SHIFT;
- 		src_i = (start_offset + src_offset) >> PAGE_CACHE_SHIFT;
-@@ -5067,9 +5067,9 @@ void memmove_extent_buffer(struct extent_buffer *dst, unsigned long dst_offset,
- 		src_i = (start_offset + src_end) >> PAGE_CACHE_SHIFT;
- 
- 		dst_off_in_page = (start_offset + dst_end) &
--			((unsigned long)PAGE_CACHE_SIZE - 1);
-+			(PAGE_CACHE_SIZE - 1);
- 		src_off_in_page = (start_offset + src_end) &
--			((unsigned long)PAGE_CACHE_SIZE - 1);
-+			(PAGE_CACHE_SIZE - 1);
- 
- 		cur = min_t(unsigned long, len, src_off_in_page + 1);
- 		cur = min(cur, dst_off_in_page + 1);
 -- 
 1.7.9.5
 
