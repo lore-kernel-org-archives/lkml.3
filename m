@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751206Ab3HTJoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 05:44:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:5935 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905Ab3HTJoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 05:44:04 -0400
-X-IronPort-AV: E=Sophos;i="4.89,919,1367942400"; 
-   d="scan'208";a="8250140"
-Message-ID: <52133B51.3020007@cn.fujitsu.com>
-Date: Tue, 20 Aug 2013 17:48:01 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 8/9] rcu: Simplify _rcu_barrier() processing
-References: <20130820024148.GA30283@linux.vnet.ibm.com> <1376966534-30775-1-git-send-email-paulmck@linux.vnet.ibm.com> <1376966534-30775-8-git-send-email-paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1376966534-30775-8-git-send-email-paulmck@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/20 17:41:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/20 17:42:05,
-	Serialize complete at 2013/08/20 17:42:05
+	id S1751306Ab3HTJon (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 05:44:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35489 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab3HTJom (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 05:44:42 -0400
+Message-ID: <1376991823.4000.22.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH 0/3] refactor some ldb related clocks
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Liu Ying <Ying.Liu@freescale.com>
+Cc: kernel@pengutronix.de, gregkh@linuxfoundation.org, shawn.guo@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Date: Tue, 20 Aug 2013 11:43:43 +0200
+In-Reply-To: <1376987932-5540-1-git-send-email-Ying.Liu@freescale.com>
+References: <1376987932-5540-1-git-send-email-Ying.Liu@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 10:42 AM, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> This commit drops an unneeded ACCESS_ONCE() and simplifies an "our work
-> is done" check in _rcu_barrier().  This applies feedback from Linus
-> (https://lkml.org/lkml/2013/7/26/777) that he gave to similar code
-> in an unrelated patch.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> ---
->  kernel/rcutree.c | 15 +++++++++++++--
->  1 file changed, 13 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index c6a064a..612aff1 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -2817,9 +2817,20 @@ static void _rcu_barrier(struct rcu_state *rsp)
->  	 * transition.  The "if" expression below therefore rounds the old
->  	 * value up to the next even number and adds two before comparing.
->  	 */
-> -	snap_done = ACCESS_ONCE(rsp->n_barrier_done);
-> +	snap_done = rsp->n_barrier_done;
->  	_rcu_barrier_trace(rsp, "Check", -1, snap_done);
-> -	if (ULONG_CMP_GE(snap_done, ((snap + 1) & ~0x1) + 2)) {
-> +
-> +	/*
-> +	 * If the value in snap is odd, we needed to wait for the current
-> +	 * rcu_barrier() to complete, then wait for the next one, in other
-> +	 * words, we need the value of snap_done to be three larger than
-> +	 * the value of snap.  On the other hand, if the value in snap is
-> +	 * even, we only had to wait for the next rcu_barrier() to complete,
-> +	 * in other words, we need the value of snap_done to be only two
-> +	 * greater than the value of snap.  The "(snap + 3) & 0x1" computes
+Am Dienstag, den 20.08.2013, 16:38 +0800 schrieb Liu Ying:
+> The ldb_di[0/1]_ipu_div clock dividers in the CSCMR2 register
+> of i.MX53, i.MX6Q and i.MX6DL SoCs can be configured to a 1/3.5
+> drivider or a 1/7 divider. The common clock framework cannot
+> deal with the two dividers directly even with the divider table
+> which only supports integral dividers. So, the idea is to take
+> the 1/3.5 and 1/7 dividers as separate fixed factor dividers and
+> introduce a new multiplexer clock to be derived from the them.
+> Then, the ldb display clock trees can be setup correctly.
+> This series contains the necessary clock driver changes, dts code
+> changes and imx-drm/ldb driver changes to fullfill the task.
 
-"(snap + 3) & 0x1"
-==> "(snap + 3) & ~0x1"
+I don't see how this improves the situation. Does this solve any real
+problem?
 
-> +	 * this for us (thank you, Linus!).
-> +	 */
-> +	if (ULONG_CMP_GE(snap_done, (snap + 3) & ~0x1)) {
->  		_rcu_barrier_trace(rsp, "EarlyExit", -1, snap_done);
->  		smp_mb(); /* caller's subsequent code after above check. */
->  		mutex_unlock(&rsp->barrier_mutex);
+While I admit to having introduced the combination of 1/3.5 fixed
+divider and configurable 1/1,1/2 divder clocks to describe this
+fractional divider for the reasons you state, I think the correct
+solution would be to improve the table divider to support fractional
+values and get rid of the virtual ldb_di<n>_div_3_5 clocks, not
+introduce more virtual clocks.
+
+regards
+Philipp
 
