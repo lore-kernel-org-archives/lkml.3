@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576Ab3HTWxB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 18:53:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18795 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246Ab3HTWxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 18:53:00 -0400
-Date: Tue, 20 Aug 2013 18:52:57 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Mike Snitzer <snitzer@redhat.com>
-cc: Frank Mayhar <fmayhar@google.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: dm: Make MIN_IOS, et al, tunable via sysctl.
-In-Reply-To: <20130820222439.GA5883@redhat.com>
-Message-ID: <alpine.LRH.2.02.1308201852220.22284@file01.intranet.prod.int.rdu2.redhat.com>
-References: <1376070533.26057.244.camel@bobble.lax.corp.google.com> <alpine.LRH.2.02.1308201712090.8826@file01.intranet.prod.int.rdu2.redhat.com> <1377034118.24869.48.camel@bobble.lax.corp.google.com> <alpine.LRH.2.02.1308201745130.8826@file01.intranet.prod.int.rdu2.redhat.com>
- <1377035833.24869.57.camel@bobble.lax.corp.google.com> <20130820222439.GA5883@redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751472Ab3HTW5O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 18:57:14 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:38035 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab3HTW5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 18:57:13 -0400
+Message-ID: <1377039840.32763.11.camel@haakon3.risingtidesystems.com>
+Subject: Re: Proposed stable release changes
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net,
+        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 20 Aug 2013 16:04:00 -0700
+In-Reply-To: <20130820224032.GA20491@kroah.com>
+References: <20130820224032.GA20491@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Tue, 20 Aug 2013, Mike Snitzer wrote:
-
-> Mikulas' point is that you cannot reduce the size to smaller than 1.
-> And aside from rq-based DM, 1 is sufficient to allow for forward
-> progress even when memory is completely consumed.
+On Tue, 2013-08-20 at 15:40 -0700, Greg KH wrote:
+> Hi all,
 > 
-> A patch that simply changes them to 1 but makes the rq-based DM
-> mempool's size configurable should actually be fine.
+> Given that I had to just revert a patch in the recent stable releases
+> that didn't get enough time to "bake" in Linus's tree (or in -next), I
+> figured it was worth discussing some possible changes with how "fast" I
+> pick up patches for stable releases.
+> 
+> So, how about this proposal:
+> 
+> - I will wait for a -rc to come out with the patch in it before putting
+>   it into a stable release, unless:
+> 	- the maintainer ACKs it, or sends it directly (like DaveM does
+> 	  for networking patches)
+> 	- I have seen enough discussion about a patch to show that it
+> 	  really does fix something / is good / doesn't cause problems.
+> 	- obviously safe, i.e. "add a device id" type thing.
+> 
+> Given that we have -rc releases every week, except for the initial -rc1
+> release, I don't think this will really cause any major delays.
+> 
+> Also, now that we are about to head into my busy "travel season", odds
+> are, I'll be at least a week behind anyway, so this would probably start
+> happening without an "official" change.  It's been a boring summer, I've
+> been able to keep up with the stable stuff really easily, causing
+> problems like this :)
+> 
+> Objections?  Comments?
 
-Yes, I think it would be viable.
+Sounds like a reasonable tradeoff, as long as the 'please include this
+to stable ASAP' latency for critical fixes does not end up being too
+large..
 
-Mikulas
+--nab
 
-> Mike
