@@ -1,47 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393Ab3HTNxk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 09:53:40 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:59582 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab3HTNxj (ORCPT
+	id S1751413Ab3HTNyo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 09:54:44 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:52138 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab3HTNym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 09:53:39 -0400
-From: Jens Frederich <jfrederich@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: dsd@laptop.org, jon.nettleton@gmail.com, dilinger@queued.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Jens Frederich <jfrederich@gmail.com>
-Subject: [PATCH] Staging: olpc_dcon: Removed more completed TODO entries
-Date: Tue, 20 Aug 2013 15:53:06 +0200
-Message-Id: <1377006786-8460-1-git-send-email-jfrederich@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 20 Aug 2013 09:54:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <1660632.57toTTMTf1@vostro.rjw.lan>
+References: <cover.1376979090.git.viresh.kumar@linaro.org>
+	<4207583.84U9qMI9uv@vostro.rjw.lan>
+	<CAKohpomCaUvns+45qV-MdcxmRJ9fihdDf--BgH5uxEFqVnFPHQ@mail.gmail.com>
+	<1660632.57toTTMTf1@vostro.rjw.lan>
+Date: Tue, 20 Aug 2013 19:24:41 +0530
+Message-ID: <CAKohpokgrmeopHuKA-amHO2WdwA2xuW05OWBcVKh0+YV_P9LAA@mail.gmail.com>
+Subject: Re: [PATCH 0/5] cpufreq: Fixes for 3.12
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Console event notifier support: No one I've asked knows what this
-all about.
-2. Audit code for unnecessary code: This is done.
-3. Verify sane i2cAPI usage: This is also done.
+On 20 August 2013 19:33, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> OK, queued up for 3.12.  Hopefully, there won't be any fallout from [3/5].
 
-Signed-off-by: Jens Frederich <jfrederich@gmail.com>
+Hopefully :)
 
-diff --git a/drivers/staging/olpc_dcon/TODO b/drivers/staging/olpc_dcon/TODO
-index 8853991..61c2e65 100644
---- a/drivers/staging/olpc_dcon/TODO
-+++ b/drivers/staging/olpc_dcon/TODO
-@@ -2,10 +2,6 @@ TODO:
- 	- see if vx855 gpio API can be made similar enough to cs5535 so we can
- 	  share more code
- 	- allow simultaneous XO-1 and XO-1.5 support
--	- console event notifier support
--	- audit code for unnecessary code; old unsupported prototype
--	  workarounds, ancient variables (noaa?), etc
--	- verify sane i2c API usage, update to new stuff if necessary
- 
- Please send patches to Greg Kroah-Hartman <greg@kroah.com> and
- copy:
--- 
-1.7.9.5
-
+Thanks..
