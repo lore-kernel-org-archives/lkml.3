@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717Ab3HTBXn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 21:23:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46379 "EHLO mga09.intel.com"
+	id S1751744Ab3HTBZo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 21:25:44 -0400
+Received: from mga14.intel.com ([143.182.124.37]:39164 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751326Ab3HTBXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 21:23:42 -0400
+	id S1751355Ab3HTBZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 21:25:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,915,1367996400"; 
-   d="scan'208";a="389843907"
-Subject: [PATCH] LMK: Optimize lowmem_shrink
-From: Leon Ma <xindong.ma@intel.com>
-To: gregkh@linuxfoundation.org, ccross@android.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Aug 2013 09:16:33 +0800
-Message-ID: <1376961393.20932.8.camel@leonma-sh>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="383400460"
+Date: Tue, 20 Aug 2013 03:25:35 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: broonie@kernel.org, swarren@wwwdotorg.org, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, rob@landley.net,
+        lee.jones@linaro.org, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gg@slimlogic.co.uk, kishon@ti.com,
+        j-keerthy@ti.com, ian.campbell@citrix.com
+Subject: Re: [PATCH V2 2/3] mfd: palmas: add support for external control
+ configuration
+Message-ID: <20130820012535.GD13324@zurbaran>
+References: <1376380392-19723-1-git-send-email-ldewangan@nvidia.com>
+ <1376380392-19723-3-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376380392-19723-3-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Leon Ma <xindong.ma@intel.com>
-Date: Mon, 19 Aug 2013 14:22:38 +0800
-Subject: [PATCH] LMK: Optimize lowmem_shrink.
+Hi Laxman,
 
-By comparing with selected_oom_score_adj instead of min_score_adj,
-we may do less calculation.
+On Tue, Aug 13, 2013 at 01:23:11PM +0530, Laxman Dewangan wrote:
+> Some of Palmas resources like clock, SMPSs, LDOs etc can be controlled
+> by external pins ENABLE1, ENABLE2 or NSLEEP.
+> 
+> Add support to configure these resources to externally controlled.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+> Changes from V1:
+> Fix typos: palams ->palmas
+> 
+>  drivers/mfd/palmas.c       |   97 ++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/palmas.h |   49 ++++++++++++++++++++++
+>  2 files changed, 146 insertions(+), 0 deletions(-)
+Applied with Lee's Ack.
 
-Signed-off-by: Leon Ma <xindong.ma@intel.com>
----
- drivers/staging/android/lowmemorykiller.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+Cheers,
+Samuel.
 
-diff --git a/drivers/staging/android/lowmemorykiller.c
-b/drivers/staging/android/lowmemorykiller.c
-index f6c05c9..cb944c5 100644
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -126,7 +126,7 @@ static int lowmem_shrink(struct shrinker *s, struct
-shrink_control *sc)
- 			return 0;
- 		}
- 		oom_score_adj = p->signal->oom_score_adj;
--		if (oom_score_adj < min_score_adj) {
-+		if (oom_score_adj < selected_oom_score_adj) {
- 			task_unlock(p);
- 			continue;
- 		}
-@@ -134,13 +134,9 @@ static int lowmem_shrink(struct shrinker *s, struct
-shrink_control *sc)
- 		task_unlock(p);
- 		if (tasksize <= 0)
- 			continue;
--		if (selected) {
--			if (oom_score_adj < selected_oom_score_adj)
--				continue;
--			if (oom_score_adj == selected_oom_score_adj &&
--			    tasksize <= selected_tasksize)
--				continue;
--		}
-+		if (selected && oom_score_adj == selected_oom_score_adj &&
-+			tasksize <= selected_tasksize)
-+			continue;
- 		selected = p;
- 		selected_tasksize = tasksize;
- 		selected_oom_score_adj = oom_score_adj;
 -- 
-1.7.4.1
-
-
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
