@@ -1,44 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab3HTIZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:25:22 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:49416 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab3HTIZU (ORCPT
+	id S1751591Ab3HTI0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:26:43 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:64557 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab3HTI0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:25:20 -0400
-Date: Tue, 20 Aug 2013 12:25:16 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
-        riel@redhat.com, hughd@google.com, xemul@parallels.com,
-        rientjes@google.com, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] mm: mempolicy: the failure processing about
- mpol_to_str()
-Message-ID: <20130820082516.GE18673@moon>
-References: <5212E8DF.5020209@asianux.com>
- <20130820053036.GB18673@moon>
- <52130194.4030903@asianux.com>
- <20130820064730.GD18673@moon>
- <52131F48.1030002@asianux.com>
- <52132011.60501@asianux.com>
- <52132432.3050308@asianux.com>
+	Tue, 20 Aug 2013 04:26:41 -0400
+Date: Tue, 20 Aug 2013 09:26:36 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH] mfd: mc13xxx: make it possible to use the codec without
+ pdata
+Message-ID: <20130820082636.GH23699@lee--X1>
+References: <1376396148-29801-1-git-send-email-m.grzeschik@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52132432.3050308@asianux.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1376396148-29801-1-git-send-email-m.grzeschik@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 04:09:22PM +0800, Chen Gang wrote:
-> So, for simplify thinking and implementation, use your patch below is OK
-> to me (but I suggest to print error information in the none return value
-> function).
+On Tue, 13 Aug 2013, Michael Grzeschik wrote:
 
-Chen, I'm not going to dive into this area now, too busy with other stuff
-sorry, so if you consider my preliminary draft patch useful -- pick it up,
-modify it, test it and send to lkml then (just CC me).
+> In case of devicetree, we currently don't have a way to append pdata for
+> the codec. This patch makes it possible to probe the codec without pdata
+> for that case.
+> 
+> Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+> ---
+>  drivers/mfd/mc13xxx-core.c | 11 +++++++----
+>  1 file changed, 7 insertions(+), 4 deletions(-)
+
+This patch doesn't apply. What tree is it based on?
+
+> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+> index 278601f..e1b89e6 100644
+> --- a/drivers/mfd/mc13xxx-core.c
+> +++ b/drivers/mfd/mc13xxx-core.c
+> @@ -687,10 +687,6 @@ err_revision:
+>  	if (mc13xxx->flags & MC13XXX_USE_ADC)
+>  		mc13xxx_add_subdevice(mc13xxx, "%s-adc");
+>  
+> -	if (mc13xxx->flags & MC13XXX_USE_CODEC)
+> -		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-codec",
+> -					pdata->codec, sizeof(*pdata->codec));
+> -
+>  	if (mc13xxx->flags & MC13XXX_USE_RTC)
+>  		mc13xxx_add_subdevice(mc13xxx, "%s-rtc");
+>  
+> @@ -705,6 +701,10 @@ err_revision:
+>  		if (mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN)
+>  			mc13xxx_add_subdevice_pdata(mc13xxx, "%s-ts",
+>  					&pdata->touch, sizeof(pdata->touch));
+> +
+> +		if (mc13xxx->flags & MC13XXX_USE_CODEC)
+> +			mc13xxx_add_subdevice_pdata(mc13xxx, "%s-codec",
+> +					pdata->codec, sizeof(*pdata->codec));
+>  	} else {
+>  		mc13xxx_add_subdevice(mc13xxx, "%s-regulator");
+>  		mc13xxx_add_subdevice(mc13xxx, "%s-led");
+> @@ -712,6 +712,9 @@ err_revision:
+>  
+>  		if (mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN)
+>  			mc13xxx_add_subdevice(mc13xxx, "%s-ts");
+> +
+> +		if (mc13xxx->flags & MC13XXX_USE_CODEC)
+> +			mc13xxx_add_subdevice(mc13xxx, "%s-codec");
+>  	}
+>  
+>  	return 0;
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
