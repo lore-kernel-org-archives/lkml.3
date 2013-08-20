@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3HTFwD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 01:52:03 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52934 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873Ab3HTFwA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 01:52:00 -0400
-Date: Tue, 20 Aug 2013 06:51:53 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Arun KS <arunks.linux@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Matthew Wilcox <matthew@wil.cx>,
-        Bruce Fields <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, vinayak menon <vinayakm.list@gmail.com>,
-        Nagachandra P <nagachandra@gmail.com>, Vikram MP <mp.vikram@gmail.com>
-Subject: Re: [PATCH v1] seq_file: Fix overflow condition in seq_commit
-Message-ID: <20130820055153.GH27005@ZenIV.linux.org.uk>
-References: <CAKZGPANQz5-uyf=uSp_0HxBq1_uH053H0XOohpAaWsbeoy7zhw@mail.gmail.com>
+	id S1752161Ab3HTFwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 01:52:19 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41055 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751873Ab3HTFwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 01:52:16 -0400
+Message-ID: <5213040B.8060406@ti.com>
+Date: Tue, 20 Aug 2013 11:22:11 +0530
+From: Mugunthan V N <mugunthanvnm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKZGPANQz5-uyf=uSp_0HxBq1_uH053H0XOohpAaWsbeoy7zhw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <ujhelyi.m@gmail.com>
+CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next v3] net: cpsw: Add support for wake-on-lan for
+ cpsw
+References: <1376977097-25296-1-git-send-email-ujhelyi.m@gmail.com>
+In-Reply-To: <1376977097-25296-1-git-send-email-ujhelyi.m@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 10:55:40AM +0530, Arun KS wrote:
-> >From 932a134abeac597f18c86c513704709ad154994b Mon Sep 17 00:00:00 2001
-> From: Arun KS <arun.ks@broadcom.com>
-> Date: Mon, 19 Aug 2013 12:06:33 +0530
-> Subject: seq_file: Fix overflow condition in seq_commit
-> 
-> seq_path()/seq_commit() is treating a d_path() failure as an overflow
-> condition, but it isn't.
-> 
-> seq_read handles overflow by reallocating more buffer. And this
-> continues in a loop utill we increase the size of seq buf beyond
-> KMALLOC_MAX_SIZE and hence a WARN_ON.
-> 
-> [  363.192565] ------------[ cut here ]------------
-> [  363.199462] WARNING: at mm/slab_common.c:377 kmalloc_slab+0x34/0x9c()
-> [  363.208557] Modules linked in:
-> [  363.212219] CPU: 1 PID: 1742 Comm: Binder_2 Tainted: G        W3.10.0+ #17
-> [  363.222930] [<c00151c4>] (unwind_backtrace+0x0/0x11c)
-> from[<c0011a24>] (show_stack+0x10/0x14)
-> [  363.235229] [<c0011a24>] (show_stack+0x10/0x14) from
-> [<c0059fb0>](warn_slowpath_common+0x4c/0x68)
-> [  363.247253] [<c0059fb0>] (warn_slowpath_common+0x4c/0x68)
-> from[<c0059fe4>] (warn_slowpath_null+0x18/0x1c)
-> [  363.259307] [<c0059fe4>] (warn_slowpath_null+0x18/0x1c)
-> from[<c00fa400>] (kmalloc_slab+0x34/0x9c)
-> [  363.270812] [<c00fa400>] (kmalloc_slab+0x34/0x9c) from
-> [<c010ec20>](__kmalloc+0x14/0x1fc)
-> [  363.281433] [<c010ec20>] (__kmalloc+0x14/0x1fc) from
-> [<c012ef70>](seq_read+0x24c/0x438)
-> [  363.291992] [<c012ef70>] (seq_read+0x24c/0x438) from
-> [<c011389c>](vfs_read+0xac/0x124)
-> [  363.302398] [<c011389c>] (vfs_read+0xac/0x124) from
-> [<c0113a38>](SyS_read+0x3c/0x60)
-> [  363.312591] [<c0113a38>] (SyS_read+0x3c/0x60) from
-> [<c000e180>](ret_fast_syscall+0x0/0x48)
-> [  363.323303] ---[ end trace 46c6467e2db7bcd4 ]---
-> 
-> Pass -ENOBUFS to seq_commit to signal an overflow condition and a
-> negative value for all other errors.
+On Tuesday 20 August 2013 11:08 AM, ujhelyi.m@gmail.com wrote:
+> From: Matus Ujhelyi <ujhelyi.m@gmail.com>
+>
+> Some phy's can be configured to enable wake on lan (e.g. at803x or marvell 88E1318S).
+> There is no way how to enable wol on CPSW with such connected phys. This patch
+> adds this support. It is provided by calling the phy's related code.
+>
+> Tested on board with at8030x connected phy. Wol interrupt line is
+> connected to GPIO0 on am335x.
+>
+> Signed-off-by: Matus Ujhelyi <ujhelyi.m@gmail.com>
+> ---
+>  drivers/net/ethernet/ti/cpsw.c |   24 ++++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+>
+> diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+> index 0fcf212..5d673bf 100644
+> --- a/drivers/net/ethernet/ti/cpsw.c
+> +++ b/drivers/net/ethernet/ti/cpsw.c
+> @@ -1640,6 +1640,28 @@ static int cpsw_set_settings(struct net_device *ndev, struct ethtool_cmd *ecmd)
+>  		return -EOPNOTSUPP;
+>  }
+>  
+> +static void cpsw_get_wol(struct net_device *ndev, struct ethtool_wolinfo *wol)
+> +{
+> +	struct cpsw_priv *priv = netdev_priv(ndev);
+> +	int slave_no = cpsw_slave_index(priv);
+> +	wol->supported = 0;
+> +	wol->wolopts = 0;
 
-Excuse me, _what_ other errors?  Please, explain what errors can
-be returned by d_path/__d_path/dentry_path.  Normally all of those
-return ERR_PTR(-ENAMETOOLONG) if the pathname to be generated would
-not fit into a buffer.  In which case the only sane behaviour is
-to use a bigger buffer.
+Please add a blank line after variable declaration before you start
+updating wol structure as commented by Francois and Sergei.
 
-Could you please post the reproducer for that trace of yours?
-I might be missing something obvious, of course, but AFAICS you
-are just papering over a bug somewhere else.  If you really
-manage to get d_path() with output that wouldn't fit into 128Mb,
-you have a whole lot of unpleasant problems beyond a warning in
-seq_read().  And silent truncation of pathnames that don't happen
-to fit into what's left of the default buffer is simply wrong -
-4095-byte pathnames are perfectly fine.
+Regards
+Mugunthan V N
