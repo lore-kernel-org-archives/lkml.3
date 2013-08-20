@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab3HTGja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 02:39:30 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:58643 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab3HTGj2 (ORCPT
+	id S1752372Ab3HTGjt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 02:39:49 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:60883 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab3HTGjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 02:39:28 -0400
+	Tue, 20 Aug 2013 02:39:46 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 0/5] cpufreq: Fixes for 3.12
-Date: Tue, 20 Aug 2013 12:08:21 +0530
-Message-Id: <cover.1376979090.git.viresh.kumar@linaro.org>
+Subject: [PATCH 1/5] cpufreq: align closing brace '}' of an if block
+Date: Tue, 20 Aug 2013 12:08:22 +0530
+Message-Id: <32c32e6a67ea0a10381dcd214a2d6c1475eb81fb.1376979090.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1376979090.git.viresh.kumar@linaro.org>
+References: <cover.1376979090.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1376979090.git.viresh.kumar@linaro.org>
+References: <cover.1376979090.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Following patch caused this:
 
-You recently did this:
+commit 3de9bdeb28638e164d1f0eb38dd68e3f5d2ac95c
+Author: Viresh Kumar <viresh.kumar@linaro.org>
+Date:   Tue Aug 6 22:53:13 2013 +0530
 
-commit 878f6e074e9a7784a6e351512eace4ccb3542eef
-Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Date:   Sun Aug 18 15:35:59 2013 +0200
+    cpufreq: improve error checking on return values of __cpufreq_governor()
 
-    Revert "cpufreq: Use cpufreq_policy_list for iterating over policies"
-    
-    Revert commit eb60852 (cpufreq: Use cpufreq_policy_list for iterating
-    over policies), because it breaks system suspend/resume on multiple
-    machines.
-    
-    It either causes resume to block indefinitely or causes the BUG_ON()
-    in lock_policy_rwsem_##mode() to trigger on sysfs accesses to cpufreq
-    attributes.
-    
-------x------------x---------------
+Lets fix it.
 
-This patchset gets the reverted patch back along with few supporting patches.
-Cause of the initial problem you observed was this:
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/cpufreq.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-- At suspend all CPUs are removed leaving boot cpu. At this time policies aren't
-  freed and also aren't removed from cpufreq_policy_list. And per-cpu variable
-  cpufreq_cpu_data is marked as NULL.
-- At resume CPUs other than boot cpu called __cpufreq_add_dev(). The tricky
-  change that was introduced by my patch was: We iterate over list of policies
-  instead of CPUs, where we used to get policy structure associated with
-  CPUs using per-cpu variable. Which used to be NULL for first CPU of a policy
-  that turned up. For the first cpu we don't want to call
-  cpufreq_add_policy_cpu() but want __cpufreq_add_add() to continue.
-
-  When we called cpufreq_add_policy_cpu() it tried to stop the governor (which
-  was already stopped) and hence errors leading into unstable state.
-
-This patchset fixes these issues and is tested with suspend-resume over my
-thinkpad with ubuntu. Apart from minor cleanups it removes policy from
-cpufreq_policy_list in case of suspend/resume as well and hence we will never
-call cpufreq_add_policy_cpu() for first cpu of a policy.
-
---
-viresh
-
-Viresh Kumar (5):
-  cpufreq: align closing brace '}' of an if block
-  cpufreq: remove policy from cpufreq_policy_list in system suspend
-  cpufreq: remove unnecessary check in __cpufreq_governor()
-  cpufreq: remove cpufreq_policy_cpu per-cpu variable
-  cpufreq: Use cpufreq_policy_list for iterating over policies
-
- drivers/cpufreq/cpufreq.c | 77 +++++++++++++++--------------------------------
- 1 file changed, 24 insertions(+), 53 deletions(-)
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index c0ef84d..fedc842 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1253,7 +1253,7 @@ static int __cpufreq_remove_dev(struct device *dev,
+ 						__func__);
+ 				return ret;
+ 			}
+-	}
++		}
+ 
+ 		if (!frozen) {
+ 			lock_policy_rwsem_read(cpu);
 -- 
 1.7.12.rc2.18.g61b472e
 
