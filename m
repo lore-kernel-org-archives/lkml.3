@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393Ab3HTQbZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:31:25 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:51441 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab3HTQbY (ORCPT
+	id S1751473Ab3HTQde (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:33:34 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:62611 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab3HTQdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:31:24 -0400
-Subject: Re: [PULL] Miscellaneous trivialities
-Date: Tue, 20 Aug 2013 16:23:54 -0000
-From: Michael Witten <mfwitten@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jiri Kosina <trivial@kernel.org>, Rob Landley <rob@landley.net>,
-        Randy Dunlap <rdunlap@infradead.org>, David Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org
-Message-ID: <13ac963de1a64d98a13fa88911d232bb-mfwitten@gmail.com>
-In-Reply-To: <CAMOZ1BtsmP9BJAudMRyL=W42DnOLt4nFh_tankxxCdKkZngXSw@mail.gmail.com>
-References: <e3119c5240504890b8fd3ce2e38231c1-mfwitten@gmail.com>
-            <f0d1a6bf084b4f45a32b9d156788041f-mfwitten@gmail.com>
-            <alpine.LNX.2.00.1308201250190.21654@pobox.suse.cz>
-            <CAMOZ1BtsmP9BJAudMRyL=W42DnOLt4nFh_tankxxCdKkZngXSw@mail.gmail.com>
+	Tue, 20 Aug 2013 12:33:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130820155735.GA2805@kroah.com>
+References: <20130820155735.GA2805@kroah.com>
+Date: Tue, 20 Aug 2013 09:33:30 -0700
+X-Google-Sender-Auth: JvPqTPLMOfo9va_7_5fStG_RI7U
+Message-ID: <CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
+Subject: Re: Linux 3.0.92
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Greg KH <gregkh@linuxfoundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Borislav Petkov <bp@alien8.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net,
+        Jiri Slaby <jslaby@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Aug 2013 14:24:44 -0000, Michael Witten wrote:
-> On Tue, Aug 20, 2013 at 10:50 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->> On Mon, 19 Aug 2013, Michael Witten wrote:
->>
->>> I've updated the series to make that change instead; the updated
->>> series is here:
->>>
->>>   https://github.com/mfwitten/linux.git trivial/misc/2
->>>
->>> Sorry for the churn.
->>
->> Please send a proper new pull request, or just bounce the series through
->> e-mail.
+On Tue, Aug 20, 2013 at 8:57 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
 >
-> I'll do that presently, but I'm curious to know why that's useful.
+> Johannes Berg (1):
+>       genetlink: fix family dump race
 
-For completeness, here is the new request/series:
+This one turns out to be buggy, see thread called "3.11-rc6 genetlink
+locking fix offends lockdep".
 
-  [PATCH v3 trivial 0/7] Miscellaneous Trivialities
-  Message-ID: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com>
-  http://thread.gmane.org/gmane.linux.kernel/1547748
+I really think there should be delay before stable picks up stuff from
+mainline, unless it's something particularly critical and
+well-discussed.. Maybe a week or so.
+
+Now it's both in 3.0 and 3.10, so the revert (unless we find a better
+fix - and the first two patches have already failed) will have to go
+there too.
+
+                   Linus
