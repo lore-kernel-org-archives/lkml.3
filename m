@@ -1,123 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab3HTGLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 02:11:40 -0400
-Received: from 14.mo6.mail-out.ovh.net ([46.105.56.113]:38639 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751973Ab3HTGLj (ORCPT
+	id S1752177Ab3HTGOZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 02:14:25 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:36785 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab3HTGOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 02:11:39 -0400
+	Tue, 20 Aug 2013 02:14:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Date: Tue, 20 Aug 2013 08:11:37 +0200
-From: <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-X-Ovh-Mailout: 178.32.228.6 (mo6.mail-out.ovh.net)
-Subject: Re: [PATCH 1/8] ARM: at91: move peripheral id definitions to
- dt-bindings include dir
-In-Reply-To: <52124BD5.5060801@atmel.com>
-References: <1375339733-3488-1-git-send-email-b.brezillon@overkiz.com>
- <1375339933-3643-1-git-send-email-b.brezillon@overkiz.com>
- <201308072224.30614.arnd@arndb.de> <520319DE.5090100@overkiz.com>
- <52124BD5.5060801@atmel.com>
-Message-ID: <37721084ba1145097fc0dcbb8d74acb7@localhost>
-User-Agent: RoundCube Webmail/0.4
-X-Ovh-Tracer-Id: 619526424385976428
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrfeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <1369126458-24872-2-git-send-email-manishv.b@ti.com>
+References: <1369126458-24872-1-git-send-email-manishv.b@ti.com> <1369126458-24872-2-git-send-email-manishv.b@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 20 Aug 2013 11:44:01 +0530
+Message-ID: <CA+V-a8u1BEXMHHso80NdP4FX_au2mnUEtzqYyJXg_vA9JvSJbA@mail.gmail.com>
+Subject: Re: [PATCH V3 1/2] tps6507x-ts: Add DT support
+To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+Cc: device-tree <devicetree-discuss@lists.ozlabs.org>,
+        linux-input@vger.kernel.org, LDOC <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Landley <rob@landley.net>, Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Nicolas,
+Hi Manish,
 
-On Mon, 19 Aug 2013 18:46:13 +0200, Nicolas Ferre
-<nicolas.ferre@atmel.com> wrote:
-> On 08/08/2013 06:09, boris brezillon :
->> Hello Arnd,
->>
->> On 07/08/2013 22:24, Arnd Bergmann wrote:
->>> On Thursday 01 August 2013, Boris BREZILLON wrote:
->>>> This patch moves peripheral id definitions from machine specific include
->>>> dir (arch/arm/mach-at91/include/mach/'soc-name'.h) to dt-bindinds include
->>>> dir (include/dt-bindings/at91/'soc-name'/peripherals.h).
->>>>
->>>> These definitions will be used inside dt to define interrupt ids and
->>>> peripheral clk ids.
->>>>
->>>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->>> This seems counterproductive, why would you do that?
->>
->> This was requested by Jean-Christophe Plagniol-Villard (and proposed by
->> Richard Genoud)
->> for the 3rd version of the "ARM: at91: move to common clk framework"
->> patch series (see
->> https://lkml.org/lkml/2013/7/29/361) and thought it was a good idea too
->> (even if I didn't know
->> where to put the macro files as there are no soc specific macro files in
->> dt-bindings include
->> dir).
->>
->> Indeed I found it much easier to detect bugs in dt definition using
->> macros because
->> the macro names and dt node names are the same (it does not protect
->> against errors
->> in the macro definitions).
->>
->> If you think these macro definitions should be dropped, I won't argue
->> against this.
->> But please, have a talk with Jean-Christophe first.
-> 
-> [..]
-> 
->>> There is no sharing of identifiers across SoCs here, you just move the
->>> data around, and changing the .dts files to use the abstract macros would
->>> just end up making them harder to understand, not easier, since you then
->>> have to look up the numbers in another file.
-> 
-> Boris, Jean-Christophe and Richard,
-> 
-> Well, I must say that I do agree with Arnd on this point.
-> 
-> I think that a simple numeric field in a cell has to be represented
-> as a number and even if this simple information is used twice
-> (interrupt number and clock bit position in PMC). The possibility of
-> error is very low compared to the big amount of unneeded definitions
-> added by this solution.
-> 
-> Moreover, I had the hope to completely remove this long list of
-> peripheral definitions for all SoC when we have a full DT kernel (with
-> your patches about common clock framework). So I think it is not
-> interesting to move in this direction and continue to build such a
-> list for future full DT products...
-> 
-> Believe me, I am sorry that I didn't entered the discussion earlier
-> and avoid unnecessary work... Anyway, give me your opinion, but I do
-> think that the simpler is the best.
-> 
+Thanks for the patch.
 
-As discussed with you (on IRC), I am not absolutely convinced we need
-these macro definitions, and given the direction you want to take
-(completely
-remove the peripheral id definitions), i would say we'd rather drop
-this patch.
-It won't bother me at all to rework the "sama5 dt clk" patch series
-(this is the
-only SoC I supported in the 3rd version of the at91 common clk
-transition)
-to remove references to these macros.
+On Tue, May 21, 2013 at 2:24 PM, Vishwanathrao Badarkhe, Manish
+<manishv.b@ti.com> wrote:
+> Add device tree based support for TI's tps6507x touchscreen.
+>
+> Tested on da850-evm.
+>
+> Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+> ---
+> Changes since V2:
+>  - Removed unnecessary code.
+>  - Updated Documentation to provide proper names of
+>    devicetree properties.
+>
+> Changes since V1:
+>  - Updated documentation to specify tps6507x as multifunctional
+>    device.
+>  - return proper error value in absence of platform and DT
+>    data for touchscreen.
+>  - Updated commit message.
+>
+> :100755 100755 8fffa3c... 65ee2cd... M  Documentation/devicetree/bindings/mfd/tps6507x.txt
+> :100644 100644 65e0f9a... 89232ee... M  drivers/input/touchscreen/tps6507x-ts.c
+>  Documentation/devicetree/bindings/mfd/tps6507x.txt |   28 ++++++-
+>  drivers/input/touchscreen/tps6507x-ts.c            |   98 ++++++++++++++------
+>  2 files changed, 95 insertions(+), 31 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/mfd/tps6507x.txt b/Documentation/devicetree/bindings/mfd/tps6507x.txt
+> index 8fffa3c..65ee2cd 100755
+> --- a/Documentation/devicetree/bindings/mfd/tps6507x.txt
+> +++ b/Documentation/devicetree/bindings/mfd/tps6507x.txt
+> @@ -1,4 +1,8 @@
+> -TPS6507x Power Management Integrated Circuit
+> +TPS6507x Multifunctional Device.
+> +
+> +Features provided by TPS6507x:
+> +        1.Power Management Integrated Circuit.
+> +        2.Touch-Screen.
+>
+>  Required properties:
+>  - compatible: "ti,tps6507x"
+> @@ -23,6 +27,12 @@ Required properties:
+>         vindcdc1_2-supply: VDCDC1 and VDCDC2 input.
+>         vindcdc3-supply  : VDCDC3 input.
+>         vldo1_2-supply   : VLDO1 and VLDO2 input.
+> +- tsc: This node specifies touch screen data.
+> +       ti,poll-period : Time at which touch input is getting sampled in ms.
+> +       ti,min-pressure: Minimum pressure value to trigger touch.
+> +       ti,vref        : voltage reference for ADC.
+> +                     0: Reference voltage for ADC is disabled.
+> +                     1: Reference voltage for ADC is enabled.
+>
+>  Regulator Optional properties:
+>  - defdcdc_default: It's property of DCDC2 and DCDC3 regulators.
+> @@ -30,6 +40,14 @@ Regulator Optional properties:
+>                         1: If defdcdc pin of DCDC2/DCDC3 is driven HIGH.
+>    If this property is not defined, it defaults to 0 (not enabled).
+>
+> +Touchscreen Optional properties:
+> +- ti,vendor : Touchscreen vendor id to populate
+> +             in sysclass interface.
+> +- ti,product: Touchscreen product id to populate
+> +             in sysclass interface.
+> +- ti,version: Touchscreen version id to populate
+> +             in sysclass interface.
+> +
+>  Example:
+>
+>         pmu: tps6507x@48 {
+> @@ -88,4 +106,12 @@ Example:
+>                         };
+>                 };
+>
+> +               tsc {
+> +                       ti,poll-period = <30>;
+> +                       ti,min-pressure = <0x30>;
+> +                       ti,vref = <0>;
+> +                       ti,vendor = <0>;
+> +                       ti,product = <65070>;
+> +                       ti,version = <0x100>;
+> +               };
+>         };
+> diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
+> index 65e0f9a..89232ee 100644
+> --- a/drivers/input/touchscreen/tps6507x-ts.c
+> +++ b/drivers/input/touchscreen/tps6507x-ts.c
+> @@ -21,6 +21,8 @@
+>  #include <linux/mfd/tps6507x.h>
+>  #include <linux/input/tps6507x-ts.h>
+>  #include <linux/delay.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+>
+>  #define TSC_DEFAULT_POLL_PERIOD 30 /* ms */
+>  #define TPS_DEFAULT_MIN_PRESSURE 0x30
+> @@ -231,36 +233,76 @@ done:
+>         ret = tps6507x_adc_standby(tsc);
+>  }
+>
+> +static int tsc_init_data(struct tps6507x_dev *tps6507x_dev,
+> +               struct input_dev *input_dev)
+> +{
+> +       struct device_node *node = tps6507x_dev->dev->of_node;
+> +       struct tps6507x_board *tps_board =
+> +               (struct tps6507x_board *)tps6507x_dev->dev->platform_data;
+> +       struct touchscreen_init_data *init_data = NULL;
+> +       int err;
+> +
+> +       if (node)
+> +               node = of_find_node_by_name(node, "tsc");
+> +       if (tps_board)
+> +               init_data = tps_board->tps6507x_ts_init_data;
+> +
+> +       if (node == NULL || init_data == NULL) {
+> +               err = -EINVAL;
+> +               goto error_ret;
+> +       } else if (init_data) {
+> +               tps6507x_dev->ts->poll_period = init_data->poll_period;
+> +               tps6507x_dev->ts->min_pressure = init_data->min_pressure;
+> +               tps6507x_dev->ts->vref = init_data->vref;
+> +               input_dev->id.vendor = init_data->vendor;
+> +               input_dev->id.product = init_data->product;
+> +               input_dev->id.version = init_data->version;
+> +       } else if (node) {
+> +               err = of_property_read_u32(node, "ti,poll-period",
+> +                                       (u32 *)&tps6507x_dev->ts->poll_period);
+> +               if (err < 0)
+> +                       goto error_ret;
+> +
+> +               err = of_property_read_u16(node, "ti,min-pressure",
+> +                                       &tps6507x_dev->ts->min_pressure);
+> +               if (err < 0)
+> +                       goto error_ret;
+> +
+> +               err = of_property_read_u32(node, "ti,vref",
+> +                                       &tps6507x_dev->ts->vref);
+> +               if (err < 0)
+> +                       goto error_ret;
+> +
+> +               err = of_property_read_u16(node, "ti,vendor",
+> +                                       &input_dev->id.vendor);
+> +               if (err < 0)
+> +                       goto error_ret;
+> +
+> +               err = of_property_read_u16(node, "ti,product",
+> +                                       &input_dev->id.product);
+> +               if (err < 0)
+> +                       goto error_ret;
+> +
+> +               err = of_property_read_u16(node, "ti,version",
+> +                                       &input_dev->id.version);
+> +               if (err < 0)
+> +                       goto error_ret;
 
-Best Regards,
-Boris
+All the three above properties as per the documentation  above
+are optional, but the code here makes them required property.
+May be what you can do is if property is not defined make it as
+zero as per documentation.
 
-> Bye,
-
+Regards,
+--Prabhakar Lad
