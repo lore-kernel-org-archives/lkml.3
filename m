@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab3HTCv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 22:51:28 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:35761 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab3HTCv0 (ORCPT
+	id S1752277Ab3HTCv5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 22:51:57 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:59367 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078Ab3HTCvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 22:51:26 -0400
+	Mon, 19 Aug 2013 22:51:25 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,121 +14,422 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Rik van Riel <riel@surriel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH tip/core/rcu 1/5] rcu: Add duplicate-callback tests to rcutorture
-Date: Mon, 19 Aug 2013 19:51:10 -0700
-Message-Id: <1376967074-32530-1-git-send-email-paulmck@linux.vnet.ibm.com>
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/5] rcu: Increase rcutorture test coverage
+Date: Mon, 19 Aug 2013 19:51:11 -0700
+Message-Id: <1376967074-32530-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <20130818022453.GA3475@linux.vnet.ibm.com>
+In-Reply-To: <1376967074-32530-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130818022453.GA3475@linux.vnet.ibm.com>
+ <1376967074-32530-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082002-2398-0000-0000-000001A4784E
+x-cbid: 13082002-5518-0000-0000-0000115392DA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit adds a object_debug option to rcutorture to allow the
-debug-object-based checks for duplicate call_rcu() invocations to
-be deterministically tested.
+Currently, rcutorture has separate torture_types to test synchronous,
+asynchronous, and expedited grace-period primitives.  This has
+two disadvantages: (1) Three times the number of runs to cover the
+combinations and (2) Little testing of concurrent combinations of the
+three options.  This commit therefore adds a pair of module parameters
+that control normal and expedited state, with the default being both
+types, randomly selected, by the fakewriter processes, thus reducing
+source-code size and increasing test coverage.  In addtion, the writer
+task switches between asynchronous-normal and expedited grace-period
+primitives driven by the same pair of module parameters.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Rik van Riel <riel@surriel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-[ paulmck: Banish mid-function ifdef, more or less per Josh Triplett. ]
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/rcutorture.c | 45 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
+ Documentation/RCU/torture.txt |  10 ++
+ kernel/rcutorture.c           | 226 ++++++++++++------------------------------
+ 2 files changed, 73 insertions(+), 163 deletions(-)
 
+diff --git a/Documentation/RCU/torture.txt b/Documentation/RCU/torture.txt
+index d8a5023..dac02a6 100644
+--- a/Documentation/RCU/torture.txt
++++ b/Documentation/RCU/torture.txt
+@@ -42,6 +42,16 @@ fqs_holdoff	Holdoff time (in microseconds) between consecutive calls
+ fqs_stutter	Wait time (in seconds) between consecutive bursts
+ 		of calls to force_quiescent_state().
+ 
++gp_normal	Make the fake writers use normal synchronous grace-period
++		primitives.
++
++gp_exp		Make the fake writers use expedited synchronous grace-period
++		primitives.  If both gp_normal and gp_exp are set, or
++		if neither gp_normal nor gp_exp are set, then randomly
++		choose the primitive so that about 50% are normal and
++		50% expedited.  By default, neither are set, which
++		gives best overall test coverage.
++
+ irqreader	Says to invoke RCU readers from irq level.  This is currently
+ 		done via timers.  Defaults to "1" for variants of RCU that
+ 		permit this.  (Or, more accurately, variants of RCU that do
 diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index 3d936f0f..f5cf2bb 100644
+index f5cf2bb..10820b7 100644
 --- a/kernel/rcutorture.c
 +++ b/kernel/rcutorture.c
-@@ -66,6 +66,7 @@ static int fqs_duration;	/* Duration of bursts (us), 0 to disable. */
+@@ -65,6 +65,8 @@ static int irqreader = 1;	/* RCU readers from irq (timers). */
+ static int fqs_duration;	/* Duration of bursts (us), 0 to disable. */
  static int fqs_holdoff;		/* Hold time within burst (us). */
  static int fqs_stutter = 3;	/* Wait time between bursts (s). */
++static bool gp_exp;		/* Use expedited GP wait primitives. */
++static bool gp_normal;		/* Use normal GP wait primitives. */
  static int n_barrier_cbs;	/* Number of callbacks to test RCU barriers. */
-+static int object_debug;	/* Test object-debug double call_rcu()?. */
+ static int object_debug;	/* Test object-debug double call_rcu()?. */
  static int onoff_interval;	/* Wait time between CPU hotplugs, 0=disable. */
- static int onoff_holdoff;	/* Seconds after boot before CPU hotplugs. */
- static int shutdown_secs;	/* Shutdown time (s).  <=0 for no shutdown. */
-@@ -100,6 +101,8 @@ module_param(fqs_stutter, int, 0444);
+@@ -99,6 +101,10 @@ module_param(fqs_holdoff, int, 0444);
+ MODULE_PARM_DESC(fqs_holdoff, "Holdoff time within fqs bursts (us)");
+ module_param(fqs_stutter, int, 0444);
  MODULE_PARM_DESC(fqs_stutter, "Wait time between fqs bursts (s)");
++module_param(gp_normal, bool, 0444);
++MODULE_PARM_DESC(gp_normal, "Use normal (non-expedited) GP wait primitives");
++module_param(gp_exp, bool, 0444);
++MODULE_PARM_DESC(gp_exp, "Use expedited GP wait primitives");
  module_param(n_barrier_cbs, int, 0444);
  MODULE_PARM_DESC(n_barrier_cbs, "# of callbacks/kthreads for barrier testing");
-+module_param(object_debug, int, 0444);
-+MODULE_PARM_DESC(object_debug, "Enable debug-object double call_rcu() testing");
- module_param(onoff_interval, int, 0444);
- MODULE_PARM_DESC(onoff_interval, "Time between CPU hotplugs (s), 0=disable");
- module_param(onoff_holdoff, int, 0444);
-@@ -1934,6 +1937,46 @@ rcu_torture_cleanup(void)
- 		rcu_torture_print_module_parms(cur_ops, "End of test: SUCCESS");
+ module_param(object_debug, int, 0444);
+@@ -363,6 +369,7 @@ struct rcu_torture_ops {
+ 	int (*completed)(void);
+ 	void (*deferred_free)(struct rcu_torture *p);
+ 	void (*sync)(void);
++	void (*exp_sync)(void);
+ 	void (*call)(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
+ 	void (*cb_barrier)(void);
+ 	void (*fqs)(void);
+@@ -446,81 +453,27 @@ static void rcu_torture_deferred_free(struct rcu_torture *p)
+ 	call_rcu(&p->rtort_rcu, rcu_torture_cb);
  }
  
-+#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-+static void rcu_torture_leak_cb(struct rcu_head *rhp)
-+{
-+}
-+
-+static void rcu_torture_err_cb(struct rcu_head *rhp)
-+{
-+	/* This -might- happen due to race conditions, but is unlikely. */
-+	pr_alert("rcutorture: duplicated callback was invoked.\n");
-+}
-+#endif /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+
-+/*
-+ * Verify that double-free causes debug-objects to complain, but only
-+ * if CONFIG_DEBUG_OBJECTS_RCU_HEAD=y.  Otherwise, say that the test
-+ * cannot be carried out.
-+ */
-+static void rcu_test_debug_objects(void)
-+{
-+#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-+	struct rcu_head rh1;
-+	struct rcu_head rh2;
-+
-+	init_rcu_head_on_stack(&rh1);
-+	init_rcu_head_on_stack(&rh2);
-+	pr_alert("rcutorture: WARN: Duplicate call_rcu() test starting.\n");
-+	local_irq_disable(); /* Make it hard to finish grace period. */
-+	call_rcu(&rh1, rcu_torture_leak_cb); /* start grace period. */
-+	call_rcu(&rh2, rcu_torture_err_cb);
-+	call_rcu(&rh2, rcu_torture_err_cb); /* duplicate callback. */
-+	local_irq_enable();
-+	rcu_barrier();
-+	pr_alert("rcutorture: WARN: Duplicate call_rcu() test complete.\n");
-+	destroy_rcu_head_on_stack(&rh1);
-+	destroy_rcu_head_on_stack(&rh2);
-+#else /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+	pr_alert("rcutorture: !CONFIG_DEBUG_OBJECTS_RCU_HEAD, not testing duplicate call_rcu()\n");
-+#endif /* #else #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+}
-+
- static int __init
- rcu_torture_init(void)
+-static struct rcu_torture_ops rcu_ops = {
+-	.init		= NULL,
+-	.readlock	= rcu_torture_read_lock,
+-	.read_delay	= rcu_read_delay,
+-	.readunlock	= rcu_torture_read_unlock,
+-	.completed	= rcu_torture_completed,
+-	.deferred_free	= rcu_torture_deferred_free,
+-	.sync		= synchronize_rcu,
+-	.call		= call_rcu,
+-	.cb_barrier	= rcu_barrier,
+-	.fqs		= rcu_force_quiescent_state,
+-	.stats		= NULL,
+-	.irq_capable	= 1,
+-	.can_boost	= rcu_can_boost(),
+-	.name		= "rcu"
+-};
+-
+-static void rcu_sync_torture_deferred_free(struct rcu_torture *p)
+-{
+-	int i;
+-	struct rcu_torture *rp;
+-	struct rcu_torture *rp1;
+-
+-	cur_ops->sync();
+-	list_add(&p->rtort_free, &rcu_torture_removed);
+-	list_for_each_entry_safe(rp, rp1, &rcu_torture_removed, rtort_free) {
+-		i = rp->rtort_pipe_count;
+-		if (i > RCU_TORTURE_PIPE_LEN)
+-			i = RCU_TORTURE_PIPE_LEN;
+-		atomic_inc(&rcu_torture_wcount[i]);
+-		if (++rp->rtort_pipe_count >= RCU_TORTURE_PIPE_LEN) {
+-			rp->rtort_mbtest = 0;
+-			list_del(&rp->rtort_free);
+-			rcu_torture_free(rp);
+-		}
+-	}
+-}
+-
+ static void rcu_sync_torture_init(void)
  {
-@@ -2163,6 +2206,8 @@ rcu_torture_init(void)
- 		firsterr = retval;
- 		goto unwind;
- 	}
-+	if (object_debug)
-+		rcu_test_debug_objects();
- 	rcutorture_record_test_transition();
- 	mutex_unlock(&fullstop_mutex);
- 	return 0;
+ 	INIT_LIST_HEAD(&rcu_torture_removed);
+ }
+ 
+-static struct rcu_torture_ops rcu_sync_ops = {
++static struct rcu_torture_ops rcu_ops = {
+ 	.init		= rcu_sync_torture_init,
+ 	.readlock	= rcu_torture_read_lock,
+ 	.read_delay	= rcu_read_delay,
+ 	.readunlock	= rcu_torture_read_unlock,
+ 	.completed	= rcu_torture_completed,
+-	.deferred_free	= rcu_sync_torture_deferred_free,
++	.deferred_free	= rcu_torture_deferred_free,
+ 	.sync		= synchronize_rcu,
+-	.call		= NULL,
+-	.cb_barrier	= NULL,
+-	.fqs		= rcu_force_quiescent_state,
+-	.stats		= NULL,
+-	.irq_capable	= 1,
+-	.can_boost	= rcu_can_boost(),
+-	.name		= "rcu_sync"
+-};
+-
+-static struct rcu_torture_ops rcu_expedited_ops = {
+-	.init		= rcu_sync_torture_init,
+-	.readlock	= rcu_torture_read_lock,
+-	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
+-	.readunlock	= rcu_torture_read_unlock,
+-	.completed	= rcu_no_completed,
+-	.deferred_free	= rcu_sync_torture_deferred_free,
+-	.sync		= synchronize_rcu_expedited,
+-	.call		= NULL,
+-	.cb_barrier	= NULL,
++	.exp_sync	= synchronize_rcu_expedited,
++	.call		= call_rcu,
++	.cb_barrier	= rcu_barrier,
+ 	.fqs		= rcu_force_quiescent_state,
+ 	.stats		= NULL,
+ 	.irq_capable	= 1,
+ 	.can_boost	= rcu_can_boost(),
+-	.name		= "rcu_expedited"
++	.name		= "rcu"
+ };
+ 
+ /*
+@@ -549,13 +502,14 @@ static void rcu_bh_torture_deferred_free(struct rcu_torture *p)
+ }
+ 
+ static struct rcu_torture_ops rcu_bh_ops = {
+-	.init		= NULL,
++	.init		= rcu_sync_torture_init,
+ 	.readlock	= rcu_bh_torture_read_lock,
+ 	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
+ 	.readunlock	= rcu_bh_torture_read_unlock,
+ 	.completed	= rcu_bh_torture_completed,
+ 	.deferred_free	= rcu_bh_torture_deferred_free,
+ 	.sync		= synchronize_rcu_bh,
++	.exp_sync	= synchronize_rcu_bh_expedited,
+ 	.call		= call_rcu_bh,
+ 	.cb_barrier	= rcu_barrier_bh,
+ 	.fqs		= rcu_bh_force_quiescent_state,
+@@ -564,38 +518,6 @@ static struct rcu_torture_ops rcu_bh_ops = {
+ 	.name		= "rcu_bh"
+ };
+ 
+-static struct rcu_torture_ops rcu_bh_sync_ops = {
+-	.init		= rcu_sync_torture_init,
+-	.readlock	= rcu_bh_torture_read_lock,
+-	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
+-	.readunlock	= rcu_bh_torture_read_unlock,
+-	.completed	= rcu_bh_torture_completed,
+-	.deferred_free	= rcu_sync_torture_deferred_free,
+-	.sync		= synchronize_rcu_bh,
+-	.call		= NULL,
+-	.cb_barrier	= NULL,
+-	.fqs		= rcu_bh_force_quiescent_state,
+-	.stats		= NULL,
+-	.irq_capable	= 1,
+-	.name		= "rcu_bh_sync"
+-};
+-
+-static struct rcu_torture_ops rcu_bh_expedited_ops = {
+-	.init		= rcu_sync_torture_init,
+-	.readlock	= rcu_bh_torture_read_lock,
+-	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
+-	.readunlock	= rcu_bh_torture_read_unlock,
+-	.completed	= rcu_bh_torture_completed,
+-	.deferred_free	= rcu_sync_torture_deferred_free,
+-	.sync		= synchronize_rcu_bh_expedited,
+-	.call		= NULL,
+-	.cb_barrier	= NULL,
+-	.fqs		= rcu_bh_force_quiescent_state,
+-	.stats		= NULL,
+-	.irq_capable	= 1,
+-	.name		= "rcu_bh_expedited"
+-};
+-
+ /*
+  * Definitions for srcu torture testing.
+  */
+@@ -670,6 +592,11 @@ static int srcu_torture_stats(char *page)
+ 	return cnt;
+ }
+ 
++static void srcu_torture_synchronize_expedited(void)
++{
++	synchronize_srcu_expedited(&srcu_ctl);
++}
++
+ static struct rcu_torture_ops srcu_ops = {
+ 	.init		= rcu_sync_torture_init,
+ 	.readlock	= srcu_torture_read_lock,
+@@ -678,45 +605,13 @@ static struct rcu_torture_ops srcu_ops = {
+ 	.completed	= srcu_torture_completed,
+ 	.deferred_free	= srcu_torture_deferred_free,
+ 	.sync		= srcu_torture_synchronize,
++	.exp_sync	= srcu_torture_synchronize_expedited,
+ 	.call		= srcu_torture_call,
+ 	.cb_barrier	= srcu_torture_barrier,
+ 	.stats		= srcu_torture_stats,
+ 	.name		= "srcu"
+ };
+ 
+-static struct rcu_torture_ops srcu_sync_ops = {
+-	.init		= rcu_sync_torture_init,
+-	.readlock	= srcu_torture_read_lock,
+-	.read_delay	= srcu_read_delay,
+-	.readunlock	= srcu_torture_read_unlock,
+-	.completed	= srcu_torture_completed,
+-	.deferred_free	= rcu_sync_torture_deferred_free,
+-	.sync		= srcu_torture_synchronize,
+-	.call		= NULL,
+-	.cb_barrier	= NULL,
+-	.stats		= srcu_torture_stats,
+-	.name		= "srcu_sync"
+-};
+-
+-static void srcu_torture_synchronize_expedited(void)
+-{
+-	synchronize_srcu_expedited(&srcu_ctl);
+-}
+-
+-static struct rcu_torture_ops srcu_expedited_ops = {
+-	.init		= rcu_sync_torture_init,
+-	.readlock	= srcu_torture_read_lock,
+-	.read_delay	= srcu_read_delay,
+-	.readunlock	= srcu_torture_read_unlock,
+-	.completed	= srcu_torture_completed,
+-	.deferred_free	= rcu_sync_torture_deferred_free,
+-	.sync		= srcu_torture_synchronize_expedited,
+-	.call		= NULL,
+-	.cb_barrier	= NULL,
+-	.stats		= srcu_torture_stats,
+-	.name		= "srcu_expedited"
+-};
+-
+ /*
+  * Definitions for sched torture testing.
+  */
+@@ -745,6 +640,8 @@ static struct rcu_torture_ops sched_ops = {
+ 	.completed	= rcu_no_completed,
+ 	.deferred_free	= rcu_sched_torture_deferred_free,
+ 	.sync		= synchronize_sched,
++	.exp_sync	= synchronize_sched_expedited,
++	.call		= call_rcu_sched,
+ 	.cb_barrier	= rcu_barrier_sched,
+ 	.fqs		= rcu_sched_force_quiescent_state,
+ 	.stats		= NULL,
+@@ -752,35 +649,6 @@ static struct rcu_torture_ops sched_ops = {
+ 	.name		= "sched"
+ };
+ 
+-static struct rcu_torture_ops sched_sync_ops = {
+-	.init		= rcu_sync_torture_init,
+-	.readlock	= sched_torture_read_lock,
+-	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
+-	.readunlock	= sched_torture_read_unlock,
+-	.completed	= rcu_no_completed,
+-	.deferred_free	= rcu_sync_torture_deferred_free,
+-	.sync		= synchronize_sched,
+-	.cb_barrier	= NULL,
+-	.fqs		= rcu_sched_force_quiescent_state,
+-	.stats		= NULL,
+-	.name		= "sched_sync"
+-};
+-
+-static struct rcu_torture_ops sched_expedited_ops = {
+-	.init		= rcu_sync_torture_init,
+-	.readlock	= sched_torture_read_lock,
+-	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
+-	.readunlock	= sched_torture_read_unlock,
+-	.completed	= rcu_no_completed,
+-	.deferred_free	= rcu_sync_torture_deferred_free,
+-	.sync		= synchronize_sched_expedited,
+-	.cb_barrier	= NULL,
+-	.fqs		= rcu_sched_force_quiescent_state,
+-	.stats		= NULL,
+-	.irq_capable	= 1,
+-	.name		= "sched_expedited"
+-};
+-
+ /*
+  * RCU torture priority-boost testing.  Runs one real-time thread per
+  * CPU for moderate bursts, repeatedly registering RCU callbacks and
+@@ -930,9 +798,11 @@ rcu_torture_fqs(void *arg)
+ static int
+ rcu_torture_writer(void *arg)
+ {
++	bool exp;
+ 	int i;
+ 	long oldbatch = rcu_batches_completed();
+ 	struct rcu_torture *rp;
++	struct rcu_torture *rp1;
+ 	struct rcu_torture *old_rp;
+ 	static DEFINE_RCU_RANDOM(rand);
+ 
+@@ -957,7 +827,31 @@ rcu_torture_writer(void *arg)
+ 				i = RCU_TORTURE_PIPE_LEN;
+ 			atomic_inc(&rcu_torture_wcount[i]);
+ 			old_rp->rtort_pipe_count++;
+-			cur_ops->deferred_free(old_rp);
++			if (gp_normal == gp_exp)
++				exp = !!(rcu_random(&rand) & 0x80);
++			else
++				exp = gp_exp;
++			if (!exp) {
++				cur_ops->deferred_free(old_rp);
++			} else {
++				cur_ops->exp_sync();
++				list_add(&old_rp->rtort_free,
++					 &rcu_torture_removed);
++				list_for_each_entry_safe(rp, rp1,
++							 &rcu_torture_removed,
++							 rtort_free) {
++					i = rp->rtort_pipe_count;
++					if (i > RCU_TORTURE_PIPE_LEN)
++						i = RCU_TORTURE_PIPE_LEN;
++					atomic_inc(&rcu_torture_wcount[i]);
++					if (++rp->rtort_pipe_count >=
++					    RCU_TORTURE_PIPE_LEN) {
++						rp->rtort_mbtest = 0;
++						list_del(&rp->rtort_free);
++						rcu_torture_free(rp);
++					}
++				 }
++			}
+ 		}
+ 		rcutorture_record_progress(++rcu_torture_current_version);
+ 		oldbatch = cur_ops->completed();
+@@ -986,10 +880,18 @@ rcu_torture_fakewriter(void *arg)
+ 		schedule_timeout_uninterruptible(1 + rcu_random(&rand)%10);
+ 		udelay(rcu_random(&rand) & 0x3ff);
+ 		if (cur_ops->cb_barrier != NULL &&
+-		    rcu_random(&rand) % (nfakewriters * 8) == 0)
++		    rcu_random(&rand) % (nfakewriters * 8) == 0) {
+ 			cur_ops->cb_barrier();
+-		else
++		} else if (gp_normal == gp_exp) {
++			if (rcu_random(&rand) & 0x80)
++				cur_ops->sync();
++			else
++				cur_ops->exp_sync();
++		} else if (gp_normal) {
+ 			cur_ops->sync();
++		} else {
++			cur_ops->exp_sync();
++		}
+ 		rcu_stutter_wait("rcu_torture_fakewriter");
+ 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
+ 
+@@ -1984,11 +1886,9 @@ rcu_torture_init(void)
+ 	int cpu;
+ 	int firsterr = 0;
+ 	int retval;
+-	static struct rcu_torture_ops *torture_ops[] =
+-		{ &rcu_ops, &rcu_sync_ops, &rcu_expedited_ops,
+-		  &rcu_bh_ops, &rcu_bh_sync_ops, &rcu_bh_expedited_ops,
+-		  &srcu_ops, &srcu_sync_ops, &srcu_expedited_ops,
+-		  &sched_ops, &sched_sync_ops, &sched_expedited_ops, };
++	static struct rcu_torture_ops *torture_ops[] = {
++		&rcu_ops, &rcu_bh_ops, &srcu_ops, &sched_ops,
++	};
+ 
+ 	mutex_lock(&fullstop_mutex);
+ 
 -- 
 1.8.1.5
 
