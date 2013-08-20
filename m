@@ -1,147 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751315Ab3HTMyH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 08:54:07 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:38120 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab3HTMyF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 08:54:05 -0400
-Message-ID: <521366EA.7080705@monstr.eu>
-Date: Tue, 20 Aug 2013 14:54:02 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1751359Ab3HTM6F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 08:58:05 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43629 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156Ab3HTM6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 08:58:02 -0400
+Message-ID: <521367B4.2020203@ti.com>
+Date: Tue, 20 Aug 2013 18:27:24 +0530
+From: Lokesh Vutla <lokeshvutla@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: James Walmsley <james@fullfat-fs.co.uk>, Chris Ball <cjb@laptop.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org
-Subject: Re: SDHCI - Add QUIRK2_BROKEN_WRITE_PROTEXT - Support Xilinx Zynq
- (Linux 3.9.0)
-References: <BEDA323D25EF6045A68DAB9FD91A0BF14A5E84DB@AMSPRD0411MB426.eurprd04.prod.outlook.com>
-In-Reply-To: <BEDA323D25EF6045A68DAB9FD91A0BF14A5E84DB@AMSPRD0411MB426.eurprd04.prod.outlook.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="BFLC7o6olLGpGQ8su7TkXtE4bEjAuR1PH"
+To: Joel Fernandes <joelf@ti.com>
+CC: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mark Greer <mgreer@animalcreek.com>, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: [PATCH v2 04/14] crypto: omap-aes: Simplify DMA usage by using
+ direct SGs
+References: <1376793755-30478-1-git-send-email-joelf@ti.com> <1376793755-30478-5-git-send-email-joelf@ti.com>
+In-Reply-To: <1376793755-30478-5-git-send-email-joelf@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---BFLC7o6olLGpGQ8su7TkXtE4bEjAuR1PH
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Joel,
 
-Hi James,
-
-isn't it better to implement host->ops->get_ro() function for it?
-It seems me better choice than introducing new quirk option.
-
-Chris: What do you think?
-
-Thanks,
-Michal
-
-
-On 08/16/2013 02:14 PM, James Walmsley wrote:
-> Hi Michal,
->=20
-> I have built a Xilinx Zynq based design which doesn't use the SDHCI Wri=
-te-protect line.
-> However, we use the MIO_0 pin for configuring a multiplexer and consequ=
-ently the
-> SDHCI driver thinks that the card is read-only (RO).
->=20
-> In the patch below I have proposed a new quirk, similar to the QUIRK_BR=
-OKEN_CARD_DETECTION
-> flag, which causes the sdhci driver to assume a card with RW access.
->=20
-> This patch was made against the latest tree from Xilinx (github.com/Xil=
-inx/linux-xlnx), Kernel 3.9.0
-> and I have attached it to the LKML to propose the additional quirk whic=
-h may be useful on other platforms.
->=20
-> Kind regards,
->=20
-> James Walmsley
->=20
+On Sunday 18 August 2013 08:12 AM, Joel Fernandes wrote:
+> In early version of this driver, assumptions were made such as DMA layer
+> requires contiguous buffers etc. Due to this, new buffers were allocated,
+> mapped and used for DMA. These assumptions are no longer true and DMAEngine
+> scatter-gather DMA doesn't have such requirements. We simply the DMA operations
+> by directly using the scatter-gather buffers provided by the crypto layer
+> instead of creating our own.
+> 
+> Lot of logic that handled DMA'ing only X number of bytes of the total, or as
+> much as fitted into a 3rd party buffer is removed and is no longer required.
+> 
+> Also, good performance improvement of atleast ~20% seen with encrypting a
+> buffer size of 8K (1800 ops/sec vs 1400 ops/sec).  Improvement will be higher
+> for much larger blocks though such benchmarking is left as an exercise for the
+> reader.  Also DMA usage is much more simplified and coherent with rest of the
+> code.
+> 
+> Signed-off-by: Joel Fernandes <joelf@ti.com>
 > ---
->  drivers/mmc/host/sdhci-of-xilinxps.c | 4 ++++
->  drivers/mmc/host/sdhci.c             | 4 ++++
->  include/linux/mmc/sdhci.h            | 1 +
->  3 files changed, 9 insertions(+)
->=20
-> diff --git a/drivers/mmc/host/sdhci-of-xilinxps.c b/drivers/mmc/host/sd=
-hci-of-xilinxps.c
-> index f79e0db..5553bc0 100644
-> --- a/drivers/mmc/host/sdhci-of-xilinxps.c
-> +++ b/drivers/mmc/host/sdhci-of-xilinxps.c
-> @@ -211,6 +211,10 @@ static int sdhci_zynq_probe(struct platform_device=
- *pdev)
->  	if (prop =3D=3D NULL || (!(u32) be32_to_cpup(prop)))
->  		host->quirks |=3D SDHCI_QUIRK_BROKEN_CARD_DETECTION;
-> =20
-> +	prop =3D of_get_property(np, "xlnx,has-wp", NULL);
-> +	if (prop =3D=3D NULL || (!(u32) be32_to_cpup(prop)))
-> +		host->quirks2 |=3D SDHCI_QUIRK2_BROKEN_WRITE_PROTECT;
-> +
->  	return 0;
-> =20
->  clk_notif_unreg:
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index 51bbba4..c40365f 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -1609,6 +1609,10 @@ static int sdhci_do_get_ro(struct sdhci_host *ho=
-st)
+>  drivers/crypto/omap-aes.c |  147 ++++++++-------------------------------------
+>  1 file changed, 25 insertions(+), 122 deletions(-)
+> 
+> diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
+> index e369e6e..64dd5c1 100644
+> --- a/drivers/crypto/omap-aes.c
+> +++ b/drivers/crypto/omap-aes.c
+> @@ -480,22 +480,14 @@ static int sg_copy(struct scatterlist **sg, size_t *offset, void *buf,
+>  }
+>  
+>  static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+> -		struct scatterlist *in_sg, struct scatterlist *out_sg)
+> +		struct scatterlist *in_sg, struct scatterlist *out_sg,
+> +		int in_sg_len, int out_sg_len)
 >  {
->  	int i, ro_count;
-> =20
-> +	if(host->quirks2 & SDHCI_QUIRK2_BROKEN_WRITE_PROTECT) {
-> +		return 0;	// Return zero to assume RW.
-> +	}
-> +
->  	if (!(host->quirks & SDHCI_QUIRK_UNSTABLE_RO_DETECT))
->  		return sdhci_check_ro(host);
-> =20
-> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-> index b838ffc..3eccf12 100644
-> --- a/include/linux/mmc/sdhci.h
-> +++ b/include/linux/mmc/sdhci.h
-> @@ -95,6 +95,7 @@ struct sdhci_host {
->  /* The system physically doesn't support 1.8v, even if the host does *=
-/
->  #define SDHCI_QUIRK2_NO_1_8_V				(1<<2)
->  #define SDHCI_QUIRK2_PRESET_VALUE_BROKEN		(1<<3)
-> +#define SDHCI_QUIRK2_BROKEN_WRITE_PROTECT		(1<<4)
-> =20
->  	int irq;		/* Device IRQ */
->  	void __iomem *ioaddr;	/* Mapped address */
->=20
+>  	struct omap_aes_ctx *ctx = crypto_tfm_ctx(tfm);
+>  	struct omap_aes_dev *dd = ctx->dd;
+>  	struct dma_async_tx_descriptor *tx_in, *tx_out;
+>  	struct dma_slave_config cfg;
+> -	dma_addr_t dma_addr_in = sg_dma_address(in_sg);
+> -	int ret, length = sg_dma_len(in_sg);
+> -
+> -	pr_debug("len: %d\n", length);
+> -
+> -	dd->dma_size = length;
+> -
+> -	if (!(dd->flags & FLAGS_FAST))
+> -		dma_sync_single_for_device(dd->dev, dma_addr_in, length,
+> -					   DMA_TO_DEVICE);
+> +	int ret;
+By this change FLAGS_FAST is unsed, it can be cleaned right?
+or Am I missing something?
 
+Thanks and regards,
+Lokesh
+>  
+>  	memset(&cfg, 0, sizeof(cfg));
+>  
+> @@ -514,7 +506,7 @@ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+>  		return ret;
+>  	}
+>  
+> -	tx_in = dmaengine_prep_slave_sg(dd->dma_lch_in, in_sg, 1,
+> +	tx_in = dmaengine_prep_slave_sg(dd->dma_lch_in, in_sg, in_sg_len,
+>  					DMA_MEM_TO_DEV,
+>  					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+>  	if (!tx_in) {
+> @@ -533,7 +525,7 @@ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+>  		return ret;
+>  	}
+>  
+> -	tx_out = dmaengine_prep_slave_sg(dd->dma_lch_out, out_sg, 1,
+> +	tx_out = dmaengine_prep_slave_sg(dd->dma_lch_out, out_sg, out_sg_len,
+>  					DMA_DEV_TO_MEM,
+>  					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+>  	if (!tx_out) {
+> @@ -551,7 +543,7 @@ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+>  	dma_async_issue_pending(dd->dma_lch_out);
+>  
+>  	/* start DMA */
+> -	dd->pdata->trigger(dd, length);
+> +	dd->pdata->trigger(dd, dd->total);
+>  
+>  	return 0;
+>  }
+> @@ -560,93 +552,28 @@ static int omap_aes_crypt_dma_start(struct omap_aes_dev *dd)
+>  {
+>  	struct crypto_tfm *tfm = crypto_ablkcipher_tfm(
+>  					crypto_ablkcipher_reqtfm(dd->req));
+> -	int err, fast = 0, in, out;
+> -	size_t count;
+> -	dma_addr_t addr_in, addr_out;
+> -	struct scatterlist *in_sg, *out_sg;
+> -	int len32;
+> +	int err;
+>  
+>  	pr_debug("total: %d\n", dd->total);
+>  
+> -	if (sg_is_last(dd->in_sg) && sg_is_last(dd->out_sg)) {
+> -		/* check for alignment */
+> -		in = IS_ALIGNED((u32)dd->in_sg->offset, sizeof(u32));
+> -		out = IS_ALIGNED((u32)dd->out_sg->offset, sizeof(u32));
+> -
+> -		fast = in && out;
+> +	err = dma_map_sg(dd->dev, dd->in_sg, dd->in_sg_len, DMA_TO_DEVICE);
+> +	if (!err) {
+> +		dev_err(dd->dev, "dma_map_sg() error\n");
+> +		return -EINVAL;
+>  	}
+>  
+> -	if (fast)  {
+> -		count = min(dd->total, sg_dma_len(dd->in_sg));
+> -		count = min(count, sg_dma_len(dd->out_sg));
+> -
+> -		if (count != dd->total) {
+> -			pr_err("request length != buffer length\n");
+> -			return -EINVAL;
+> -		}
+> -
+> -		pr_debug("fast\n");
+> -
+> -		err = dma_map_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+> -		if (!err) {
+> -			dev_err(dd->dev, "dma_map_sg() error\n");
+> -			return -EINVAL;
+> -		}
+> -
+> -		err = dma_map_sg(dd->dev, dd->out_sg, 1, DMA_FROM_DEVICE);
+> -		if (!err) {
+> -			dev_err(dd->dev, "dma_map_sg() error\n");
+> -			dma_unmap_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+> -			return -EINVAL;
+> -		}
+> -
+> -		addr_in = sg_dma_address(dd->in_sg);
+> -		addr_out = sg_dma_address(dd->out_sg);
+> -
+> -		in_sg = dd->in_sg;
+> -		out_sg = dd->out_sg;
+> -
+> -		dd->flags |= FLAGS_FAST;
+> -
+> -	} else {
+> -		/* use cache buffers */
+> -		count = sg_copy(&dd->in_sg, &dd->in_offset, dd->buf_in,
+> -				 dd->buflen, dd->total, 0);
+> -
+> -		len32 = DIV_ROUND_UP(count, DMA_MIN) * DMA_MIN;
+> -
+> -		/*
+> -		 * The data going into the AES module has been copied
+> -		 * to a local buffer and the data coming out will go
+> -		 * into a local buffer so set up local SG entries for
+> -		 * both.
+> -		 */
+> -		sg_init_table(&dd->in_sgl, 1);
+> -		dd->in_sgl.offset = dd->in_offset;
+> -		sg_dma_len(&dd->in_sgl) = len32;
+> -		sg_dma_address(&dd->in_sgl) = dd->dma_addr_in;
+> -
+> -		sg_init_table(&dd->out_sgl, 1);
+> -		dd->out_sgl.offset = dd->out_offset;
+> -		sg_dma_len(&dd->out_sgl) = len32;
+> -		sg_dma_address(&dd->out_sgl) = dd->dma_addr_out;
+> -
+> -		in_sg = &dd->in_sgl;
+> -		out_sg = &dd->out_sgl;
+> -
+> -		addr_in = dd->dma_addr_in;
+> -		addr_out = dd->dma_addr_out;
+> -
+> -		dd->flags &= ~FLAGS_FAST;
+> -
+> +	err = dma_map_sg(dd->dev, dd->out_sg, dd->out_sg_len, DMA_FROM_DEVICE);
+> +	if (!err) {
+> +		dev_err(dd->dev, "dma_map_sg() error\n");
+> +		return -EINVAL;
+>  	}
+>  
+> -	dd->total -= count;
+> -
+> -	err = omap_aes_crypt_dma(tfm, in_sg, out_sg);
+> +	err = omap_aes_crypt_dma(tfm, dd->in_sg, dd->out_sg, dd->in_sg_len,
+> +				 dd->out_sg_len);
+>  	if (err) {
+> -		dma_unmap_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+> -		dma_unmap_sg(dd->dev, dd->out_sg, 1, DMA_TO_DEVICE);
+> +		dma_unmap_sg(dd->dev, dd->in_sg, dd->in_sg_len, DMA_TO_DEVICE);
+> +		dma_unmap_sg(dd->dev, dd->out_sg, dd->out_sg_len,
+> +			     DMA_FROM_DEVICE);
+>  	}
+>  
+>  	return err;
+> @@ -667,7 +594,6 @@ static void omap_aes_finish_req(struct omap_aes_dev *dd, int err)
+>  static int omap_aes_crypt_dma_stop(struct omap_aes_dev *dd)
+>  {
+>  	int err = 0;
+> -	size_t count;
+>  
+>  	pr_debug("total: %d\n", dd->total);
+>  
+> @@ -676,21 +602,8 @@ static int omap_aes_crypt_dma_stop(struct omap_aes_dev *dd)
+>  	dmaengine_terminate_all(dd->dma_lch_in);
+>  	dmaengine_terminate_all(dd->dma_lch_out);
+>  
+> -	if (dd->flags & FLAGS_FAST) {
+> -		dma_unmap_sg(dd->dev, dd->out_sg, 1, DMA_FROM_DEVICE);
+> -		dma_unmap_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+> -	} else {
+> -		dma_sync_single_for_device(dd->dev, dd->dma_addr_out,
+> -					   dd->dma_size, DMA_FROM_DEVICE);
+> -
+> -		/* copy data */
+> -		count = sg_copy(&dd->out_sg, &dd->out_offset, dd->buf_out,
+> -				 dd->buflen, dd->dma_size, 1);
+> -		if (count != dd->dma_size) {
+> -			err = -EINVAL;
+> -			pr_err("not all data converted: %u\n", count);
+> -		}
+> -	}
+> +	dma_unmap_sg(dd->dev, dd->in_sg, dd->in_sg_len, DMA_TO_DEVICE);
+> +	dma_unmap_sg(dd->dev, dd->out_sg, dd->out_sg_len, DMA_FROM_DEVICE);
+>  
+>  	return err;
+>  }
+> @@ -760,21 +673,11 @@ static int omap_aes_handle_queue(struct omap_aes_dev *dd,
+>  static void omap_aes_done_task(unsigned long data)
+>  {
+>  	struct omap_aes_dev *dd = (struct omap_aes_dev *)data;
+> -	int err;
+> -
+> -	pr_debug("enter\n");
+>  
+> -	err = omap_aes_crypt_dma_stop(dd);
+> -
+> -	err = dd->err ? : err;
+> -
+> -	if (dd->total && !err) {
+> -		err = omap_aes_crypt_dma_start(dd);
+> -		if (!err)
+> -			return; /* DMA started. Not fininishing. */
+> -	}
+> +	pr_debug("enter done_task\n");
+>  
+> -	omap_aes_finish_req(dd, err);
+> +	omap_aes_crypt_dma_stop(dd);
+> +	omap_aes_finish_req(dd, 0);
+>  	omap_aes_handle_queue(dd, NULL);
+>  
+>  	pr_debug("exit\n");
+> 
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---BFLC7o6olLGpGQ8su7TkXtE4bEjAuR1PH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlITZuoACgkQykllyylKDCES0gCeOXltvLEO/yWTCQYUphIjSweX
-SYYAoJEi4G8Kv24NIFSoE4lcvVb1DRhi
-=IoS4
------END PGP SIGNATURE-----
-
---BFLC7o6olLGpGQ8su7TkXtE4bEjAuR1PH--
