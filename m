@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533Ab3HTICx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:02:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751181Ab3HTICu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:02:50 -0400
-Date: Tue, 20 Aug 2013 10:02:43 +0200
-From: Anton Arapov <anton@redhat.com>
-To: Dave Jones <davej@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [ATTEND] oops.kernel.org prospect
-Message-ID: <20130820080243.GB2613@bandura.laptop>
-References: <20130819085405.GA22328@bandura.laptop>
- <20130819145505.GB15178@kroah.com>
- <20130819151643.GC19070@bandura.laptop>
- <20130819153939.GA23875@thunk.org>
- <20130819155202.GF19070@bandura.laptop>
- <20130819212512.GA7918@redhat.com>
+	id S1751663Ab3HTIEC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:04:02 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:43031 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab3HTID5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 04:03:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130819212512.GA7918@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Google-Sender-Delegation: getarunks@gmail.com
+In-Reply-To: <20130820073622.GK27005@ZenIV.linux.org.uk>
+References: <CAKZGPANQz5-uyf=uSp_0HxBq1_uH053H0XOohpAaWsbeoy7zhw@mail.gmail.com>
+	<20130820055153.GH27005@ZenIV.linux.org.uk>
+	<CAKZGPAN3W_FFHcxnatFJNQ9VDt-TL9c2Wyddqvdz98612U4gzQ@mail.gmail.com>
+	<20130820073622.GK27005@ZenIV.linux.org.uk>
+Date: Tue, 20 Aug 2013 13:33:56 +0530
+X-Google-Sender-Auth: BJL5UrKLJ3glF-mT9WLL5LFkJHw
+Message-ID: <CAKZGPAP030XW2C1b9Fkxr=zutQ0KWfpVD=Jk+iWpCoQRjW4A1g@mail.gmail.com>
+Subject: Re: [PATCH v1] seq_file: Fix overflow condition in seq_commit
+From: Arun KS <arunks.linux@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Matthew Wilcox <matthew@wil.cx>,
+        Bruce Fields <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, vinayak menon <vinayakm.list@gmail.com>,
+        Nagachandra P <nagachandra@gmail.com>, Vikram MP <mp.vikram@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 05:25:12PM -0400, Dave Jones wrote:
-> On Mon, Aug 19, 2013 at 05:52:02PM +0200, Anton Arapov wrote:
->  > On Mon, Aug 19, 2013 at 11:39:39AM -0400, Theodore Ts'o wrote:
->  > > On Mon, Aug 19, 2013 at 05:16:43PM +0200, Anton Arapov wrote:
->  > > > > Why not just do that through email?  You'll reach a much wider group of
->  > > > > people than the tiny 80 developers at the conference.
->  > > > 
->  > > > Ouch! Someone to take it as replacement of email - the least I wanted. It will
->  > > > go email-way in either case.
->  > > > 
->  > > > These tiny 80 may give the most valuable feedback on the topic. And often
->  > > > it is the most difficult to get attention of them, especially via email.
->  > > > In case it fits the conference, it could dilute the heavy topics.
->  > > 
->  > > Usyually the best thing to do is to start the discussion on the
->  > > mailing list (and we can do that on ksummit-2013-discuss, but this is
->  > > always why it's sometimes useful to cc lkml on topic proposals, so we
->  > > can jump start the discussion), and see if it's controversial or not.
->  > 
->  > Oh well,... I didn't have a time for this right now, nor project is
->  > not exactly in the state I'm willing to show (mostly webui) 
->  > 
->  > // CC'd: lkml (please don't complain on styles yet, focus on functionality)
-> 
-> I stumbled across this a week or so ago, and had some thoughts back then,
-> but didn't mail them anywhere because I wasn't sure who ran it, and couldn't
-> tell how far along it was.
-> 
-> Quick brain dump
-> 
-> * Visiting it with chromium gets an annoying warning about the https server
-> ...
-[snip]
-> ...
-> 	Dave
+Hi Al Viro,
 
-Thanks, Dave! Will be fixed and improved.
+On Tue, Aug 20, 2013 at 1:06 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Tue, Aug 20, 2013 at 12:51:56PM +0530, Arun KS wrote:
+>
+>> d_path expects the pathname to be less than 64 bytes. If its more than
+>> 64, it returns -ENAMETOOLONG.
+>
+> ?!?!?  d_path() does not expect anything of that sort - it can very
+> well produce names much longer, without ENAMETOOLONG.
+>
+>> char *dynamic_dname(struct dentry *dentry, char *buffer, int buflen,
+>>                         const char *fmt, ...)
+>> {
+>>         va_list args;
+>>         char temp[64];
+>>         int sz;
+>>
+>>         va_start(args, fmt);
+>>         sz = vsnprintf(temp, sizeof(temp), fmt, args) + 1;
+>>         va_end(args);
+>>
+>>         if (sz > sizeof(temp) || sz > buflen)
+>>                 return ERR_PTR(-ENAMETOOLONG);
+>>
+>>         buffer += buflen - sz;
+>>         return memcpy(buffer, temp, sz);
+>> }
+>
+> Aha.  _That_ is a bug, all right - dynamic_dname() is simply not suitable
+> for that kind of uses.  ashmem.c is certainly abusing shmem_file_setup();
+> feeding that kind of mess as dentry name is a Bad Idea(tm).  Anyway,
+> I'd suggest this for a fix:
+>
+>         va_list args;
+>         size_t sz;
+>         va_start(args, fmt);
+>         sz = vsnprintf(NULL, 0, fmt, args) + 1;
+>         va_end(args);
+>         if (sz > buflen)
+>                 return ERR_PTR(-ENAMETOOLONG);
+>         va_start(args, fmt);
+>         buffer += buflen - sz;
+>         vsprintf(buffer, fmt, args);
+>         va_end(args);
+>         return buffer;
+>
+> Either right in dynamic_dname(), or as possibly_fucking_long_dname(),
+> to be used by shmem.c...
 
-Anton.
+This fixes the problem.
+
+Thanks,
+Arun
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
