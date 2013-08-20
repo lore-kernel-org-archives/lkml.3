@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442Ab3HTWCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 18:02:31 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:59983 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145Ab3HTWC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 18:02:29 -0400
-Message-ID: <5213E72F.6070309@interlog.com>
-Date: Tue, 20 Aug 2013 18:01:19 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: Christoph Hellwig <hch@lst.de>,
-        "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Hannes Reinecke <hare@suse.de>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: Re: [PATCH 0/9] target: Add support for COMPARE_AND_WRITE (VAAI)
- emulation
-References: <1377029280-19144-1-git-send-email-nab@daterainc.com>  <20130820212912.GA9483@lst.de> <1377035588.32763.7.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1377035588.32763.7.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1751485Ab3HTWD3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 18:03:29 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:8280 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab3HTWD2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 18:03:28 -0400
+Message-ID: <1377036123.10300.475.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI / PM: Hold acpi_scan_lock over system PM
+ transitions
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Date: Tue, 20 Aug 2013 16:02:03 -0600
+In-Reply-To: <2852781.TfChGuuEkJ@vostro.rjw.lan>
+References: <2852781.TfChGuuEkJ@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-08-20 05:53 PM, Nicholas A. Bellinger wrote:
-> On Tue, 2013-08-20 at 23:29 +0200, Christoph Hellwig wrote:
->> On Tue, Aug 20, 2013 at 08:07:51PM +0000, Nicholas A. Bellinger wrote:
->>>
->>> It's also currently lacking the necessary sychronization between I/O
->>> submission of COMPARE_AND_WRITE verify instance and write instance
->>> user data, which is still being worked on in order to avoid additional
->>> overhead in the main I/O fast path.
->>
->> I don't think merging such a non-conforming implementation makes any sense.
->>
->
-> Yes, I don't intend to merge anything that's not fully functional.
->
-> The idea was to get review going on these pieces first.  I'll be posting
-> an PATCH-v2 to complete the implementation over the next days.
->
->> Also for a complex command like this with all it's race potential I would
->> really like to see some test cases to go along with it.
->>
->
-> Yes, Eric @ PureStorage has a sg_compare_write that I'm using to test
-> this.  It's probably about time that this be included in upstream
-> sg3-utils too..
+On Tue, 2013-08-20 at 01:47 +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Bad things happen if ACPI hotplug events are handled during system
+> PM transitions, especially if devices are removed as a result.
+> To prevent those bad things from happening, acquire acpi_scan_lock
+> when a transition is started and release it when that transition
+> is complete or has been aborted.
+> 
+> This fixes resume lockup on my test-bed Acer Aspire S5 that happens
+> when Thunderbolt devices are disconnected from the machine while
+> suspended.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Changelog for sg3_utils-1.35 [20130117] [svn: r476]
-   - sg_compare_and_write: new utility
-...
+The change looks good to me.
 
-So it has been released for 6 months. Also version 1.36
-has been released since then so you might check more
-often. Does Eric's version have any improvements over the
-version already in sg3_utils? [Apart from a shorter name ...]
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-Doug Gilbert
+Thanks,
+-Toshi
 
 
