@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436Ab3HTBJW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 21:09:22 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16754 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262Ab3HTBJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 21:09:20 -0400
-X-IronPort-AV: E=Sophos;i="4.89,915,1367942400"; 
-   d="scan'208";a="8245585"
-Message-ID: <5212C16E.2040105@cn.fujitsu.com>
-Date: Tue, 20 Aug 2013 09:07:58 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751542Ab3HTBNs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 21:13:48 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:48278 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab3HTBNq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 21:13:46 -0400
+Message-ID: <5212C24F.9050702@oracle.com>
+Date: Tue, 20 Aug 2013 09:11:43 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        akpm@linux-foundation.org, liwanp@linux.vnet.ibm.com, tj@kernel.org,
-        zhangyanfei@cn.fujitsu.com, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Preparation for arranging hotplug memory in ZONE_MOVABLE.
-References: <1376473028-29380-1-git-send-email-tangchen@cn.fujitsu.com> <15319045.yHqauUVrf3@vostro.rjw.lan>
-In-Reply-To: <15319045.yHqauUVrf3@vostro.rjw.lan>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/20 09:07:32,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/20 09:07:35,
-	Serialize complete at 2013/08/20 09:07:35
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Bob Liu <lliubbo@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, eternaleye@gmail.com, minchan@kernel.org,
+        mgorman@suse.de, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        axboe@kernel.dk, ngupta@vflare.org, semenzato@google.com,
+        penberg@iki.fi, sonnyrao@google.com, smbarber@google.com,
+        konrad.wilk@oracle.com, riel@redhat.com, kmpark@infradead.org
+Subject: Re: [PATCH 3/4] mm: zswap: add supporting for zsmalloc
+References: <1376815249-6611-1-git-send-email-bob.liu@oracle.com> <1376815249-6611-4-git-send-email-bob.liu@oracle.com> <20130819165948.GA5703@variantweb.net>
+In-Reply-To: <20130819165948.GA5703@variantweb.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 07:40 AM, Rafael J. Wysocki wrote:
-> On Wednesday, August 14, 2013 05:37:05 PM Tang Chen wrote:
->> These three trivial patches are from patch-set "Arrange hotpluggable memory as ZONE_MOVABLE."
->> And they have been acked and reviewed by many people.
->>
->> Hope they can be merged first. And the rest patches are coming soon.
->>
->>
->> Tang Chen (3):
->>    acpi: Print Hot-Pluggable Field in SRAT.
->>    earlycpio.c: Fix the confusing comment of find_cpio_data().
->>    acpi: Kill macro INVALID_TABLE().
->>
->>   arch/x86/mm/srat.c |   11 +++++++----
->>   drivers/acpi/osl.c |   36 ++++++++++++++++++++----------------
->>   lib/earlycpio.c    |   27 ++++++++++++++-------------
->>   3 files changed, 41 insertions(+), 33 deletions(-)
->
-> I've queued up this series for 3.12.
 
-Hi Rafael,
+On 08/20/2013 12:59 AM, Seth Jennings wrote:
+> On Sun, Aug 18, 2013 at 04:40:48PM +0800, Bob Liu wrote:
+>> Make zswap can use zsmalloc as its allocater.
+>> But note that zsmalloc don't reclaim any zswap pool pages mandatory, if zswap
+>> pool gets full, frontswap_store will be refused unless frontswap_get happened
+>> and freed some space.
+>>
+>> The reason of don't implement reclaiming zsmalloc pages from zswap pool is there
+>> is no requiremnet currently.
+>> If we want to do mandatory reclaim, we have to write those pages to real backend
+>> swap devices. But most of current users of zsmalloc are from embeded world,
+>> there is even no real backend swap device.
+>> This action is also the same as privous zram!
+>>
+>> For several area, zsmalloc has unpredictable performance characteristics when
+>> reclaiming a single page, then CONFIG_ZBUD are suggested.
+> 
+> Looking at this patch on its own, it does show how simple it could be
+> for zswap to support zsmalloc.  So thanks!
+> 
+> However, I don't like all the ifdefs scattered everywhere.  I'd like to
+> have a ops structure (e.g. struct zswap_alloc_ops) instead and just
+> switch ops based on the CONFIG flag.  Or better yet, have it boot-time
+> selectable instead of build-time.
+> 
 
-Thanks a lot. :)
+I don't like the ifdefs neither. But I didn't find a better way to
+replace them since the data structures and API of zbud and zsmalloc are
+different. I can take a try using zswap_alloc_ops.
 
+-- 
+Regards,
+-Bob
