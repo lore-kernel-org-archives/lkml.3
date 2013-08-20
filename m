@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab3HTRPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 13:15:53 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:47097 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab3HTRPw (ORCPT
+	id S1751799Ab3HTRSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 13:18:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28359 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab3HTRSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 13:15:52 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf trace: Make command line arguments consistent with perf-record - v3
-Date: Tue, 20 Aug 2013 11:15:45 -0600
-Message-Id: <1377018945-21940-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Tue, 20 Aug 2013 13:18:16 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Hl3G0_NUOaAA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Zs1hDUIlwvQA:10 a=3nbZYyFuAAAA:8 a=oCcaPWc0AAAA:8 a=8JalM-NcBhEenCMidGEA:9 a=CjuIK1q_8ugA:10 a=EvKJbDF4Ut8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Tue, 20 Aug 2013 13:18:15 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 05/11] [CLEANUP] trace-cmd: Split out the connect
+ waiting loop from do_listen()
+Message-ID: <20130820131815.6555e730@gandalf.local.home>
+In-Reply-To: <20130819094632.26597.59570.stgit@yunodevel>
+References: <20130819094620.26597.79499.stgit@yunodevel>
+	<20130819094632.26597.59570.stgit@yunodevel>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Common arguments like thread id, CPU list, mmap pages, etc should be
-consistent across perf commands.
+On Mon, 19 Aug 2013 18:46:32 +0900
+Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
 
-v3: Updated man page
-v2: rebased to latest core branch
+> Split out the connect waiting loop from do_listen() for avoiding duplicate codes
+> between listen mode and virt-server mode.
+> 
+> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> ---
+>  trace-listen.c |   45 ++++++++++++++++++++++++++-------------------
+>  1 file changed, 26 insertions(+), 19 deletions(-)
+> 
+> diff --git a/trace-listen.c b/trace-listen.c
+> index 6c1bcac..c741fa4 100644
+> --- a/trace-listen.c
+> +++ b/trace-listen.c
+> @@ -580,14 +580,35 @@ static void clean_up(int sig)
+>  	} while (ret > 0);
+>  }
+>  
+> +static void do_accept_loop(int sfd)
+> +{
+> +	struct sockaddr_storage peer_addr;
+> +	socklen_t peer_addr_len;
+> +	int cfd, pid;
+> +
+> +	peer_addr_len = sizeof(peer_addr);
+> +
+> +	do {
+> +		cfd = accept(sfd, (struct sockaddr *)&peer_addr,
+> +			     &peer_addr_len);
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/Documentation/perf-trace.txt |    6 ++++++
- tools/perf/builtin-trace.c              |   12 ++++++------
- 2 files changed, 12 insertions(+), 6 deletions(-)
+I'm also not that strict on the 80 character limit. This is fine, but
+so is one line. If you go over a few characters, it's not the end of
+the world. Like, by joining this line, it's only 81 characters.
 
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index 2794efc..cb3371e 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -23,6 +23,7 @@ analysis phases.
- OPTIONS
- -------
- 
-+-a::
- --all-cpus::
-         System-wide collection from all CPUs.
- 
-@@ -38,18 +39,23 @@ OPTIONS
- --pid=::
- 	Record events on existing process ID (comma separated list).
- 
-+-t::
- --tid=::
-         Record events on existing thread ID (comma separated list).
- 
-+-u::
- --uid=::
-         Record events in threads owned by uid. Name or number.
- 
-+-i::
- --no-inherit::
- 	Child tasks do not inherit counters.
- 
-+-m::
- --mmap-pages=::
- 	Number of mmap data pages. Must be a power of two.
- 
-+-C::
- --cpu::
- Collect samples only on the list of CPUs provided. Multiple CPUs can be provided as a
- comma-separated list with no space: 0,1. Ranges of CPUs are specified with -: 0-2.
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 4235316..9891d8c 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -693,17 +693,17 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
- 	OPT_STRING('p', "pid", &trace.opts.target.pid, "pid",
- 		    "trace events on existing process id"),
--	OPT_STRING(0, "tid", &trace.opts.target.tid, "tid",
-+	OPT_STRING('t', "tid", &trace.opts.target.tid, "tid",
- 		    "trace events on existing thread id"),
--	OPT_BOOLEAN(0, "all-cpus", &trace.opts.target.system_wide,
-+	OPT_BOOLEAN('a', "all-cpus", &trace.opts.target.system_wide,
- 		    "system-wide collection from all CPUs"),
--	OPT_STRING(0, "cpu", &trace.opts.target.cpu_list, "cpu",
-+	OPT_STRING('C', "cpu", &trace.opts.target.cpu_list, "cpu",
- 		    "list of cpus to monitor"),
--	OPT_BOOLEAN(0, "no-inherit", &trace.opts.no_inherit,
-+	OPT_BOOLEAN('i', "no-inherit", &trace.opts.no_inherit,
- 		    "child tasks do not inherit counters"),
--	OPT_UINTEGER(0, "mmap-pages", &trace.opts.mmap_pages,
-+	OPT_UINTEGER('m', "mmap-pages", &trace.opts.mmap_pages,
- 		     "number of mmap data pages"),
--	OPT_STRING(0, "uid", &trace.opts.target.uid_str, "user",
-+	OPT_STRING('u', "uid", &trace.opts.target.uid_str, "user",
- 		   "user to profile"),
- 	OPT_CALLBACK(0, "duration", &trace, "float",
- 		     "show only events with duration > N.M ms",
--- 
-1.7.10.1
+-- Steve
+
+> +		printf("connected!\n");
+> +		if (cfd < 0 && errno == EINTR)
+> +			continue;
+> +		if (cfd < 0)
+> +			pdie("connecting");
+> +
+> +		pid = do_connection(cfd, &peer_addr, peer_addr_len);
+> +		if (pid > 0)
+> +			add_process(pid);
+> +
+> +	} while (!done);
 
