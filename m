@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751306Ab3HTMia (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 08:38:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50363 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981Ab3HTMi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 08:38:29 -0400
-Date: Tue, 20 Aug 2013 08:37:48 -0400
-From: Dave Jones <davej@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Anton Arapov <anton@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [ATTEND] oops.kernel.org prospect
-Message-ID: <20130820123748.GB23101@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Borislav Petkov <bp@alien8.de>, Anton Arapov <anton@redhat.com>,
-	Theodore Ts'o <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
-	ksummit-2013-discuss@lists.linuxfoundation.org,
-	linux-kernel@vger.kernel.org
-References: <20130819085405.GA22328@bandura.laptop>
- <20130819145505.GB15178@kroah.com>
- <20130819151643.GC19070@bandura.laptop>
- <20130819153939.GA23875@thunk.org>
- <20130819155202.GF19070@bandura.laptop>
- <20130819212512.GA7918@redhat.com>
- <20130820080243.GB2613@bandura.laptop>
- <20130820082216.GA13078@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130820082216.GA13078@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751313Ab3HTMlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 08:41:49 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:30941 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab3HTMlr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 08:41:47 -0400
+X-AuditID: cbfec7f5-b7f5f6d00000105f-16-521364093e34
+Message-id: <52136400.7040406@samsung.com>
+Date: Tue, 20 Aug 2013 14:41:36 +0200
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] max77693: added device tree support
+References: <20130819104409.GA21520@lee--X1>
+ <1376912426-14747-1-git-send-email-a.hajda@samsung.com>
+ <52128BAD.6020903@wwwdotorg.org>
+In-reply-to: <52128BAD.6020903@wwwdotorg.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t/xK7qcKcJBBmevCFvMP3KO1eLAnx2M
+	Fm96O1gsOs8+YbY42/SG3eL+16OMFpd3zWGzWHr9IpPFhOlrWSwOrzjAZLHu5XQg6007q8Xp
+	blaLVwfbWBz4PNbMW8PoseDzFXaP15MnMHq8Wj2T1ePOtT1sHvNOBnr0bVnF6PF5k5zHxrmh
+	AZxRXDYpqTmZZalF+nYJXBm7Vv1hLfgtVHFjynumBsZ1/F2MnBwSAiYS/Tfa2CFsMYkL99az
+	dTFycQgJLGWU+PrnKCNIQkjgE6PEwXdeIDavgJbE7rudYHEWAVWJtTtbWUBsNgFNib+bb7KB
+	2KICERIrlzxghagXlPgx+R5YjQhQ76Rn/xhBFjALzGeR+N+0EWyQsIC1xKUzE1kgNncySlz7
+	/hbI4eDgFNCVmHfLBaSGWUBHYn/rNDYIW15i85q3zBMYBWYh2TELSdksJGULGJlXMYqmliYX
+	FCel5xrpFSfmFpfmpesl5+duYoTE09cdjEuPWR1iFOBgVOLh7VASChJiTSwrrsw9xCjBwawk
+	wvvaUThIiDclsbIqtSg/vqg0J7X4ECMTB6dUA2ONh+QpF04/Z1nJtUr8hyrWFD7nEejOas1t
+	DYub3fjG59oOpbMBLgu/5LexitQec737WM7V8PykNR2V/NujTDoqskVM6/s6Kr7/iQzTmP0w
+	yfdmoLBy8fYzXkfvLPy9cGub9bfMkmlFBpsKfA/ovd7JH+WeIrjWUoVnT/+N95P+GSzn41rn
+	o8RSnJFoqMVcVJwIAJun+TuFAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 10:22:16AM +0200, Borislav Petkov wrote:
- > On Tue, Aug 20, 2013 at 10:02:43AM +0200, Anton Arapov wrote:
- > > > * Visiting it with chromium gets an annoying warning about the https server
- > > > ...
- > > [snip]
- > > > ...
- > > > 	Dave
- > > 
- > > Thanks, Dave! Will be fixed and improved.
- > 
- > Yeah, collecting oopses is a good idea, so +1.
- > 
- > However, we probably want to think about what exactly we're going to
- > do with that information. For example, if I want to address an issue,
- > I probably want to know how I can reproduce the oops - maybe something
- > like allowing the reporter to add free text note to the oops.
+Hi,
 
-abrt used to have a free-form entry like this.
-What happened is users have no idea what to type in there, so you end up
-with bugs containing things like "don't know" or worse, some crazy moon
-language you can't even read.
+Thanks for the review.
 
- > And yes, as tytso already said, we are very often going to need more
- > info about a system causing the oops (dmesg, lspci, dmidecode, etc,
- > etc). I'm not sure how we're going to collect that without sacrificing
- > some privacy. Or maybe, we could be able to ask people to open a bug on
- > bugzilla.kernel.org where further debugging can take place...
+On 08/19/2013 11:18 PM, Stephen Warren wrote:
+> On 08/19/2013 05:40 AM, Andrzej Hajda wrote:
+>> max77693 mfd main device uses only wakeup field
+>> from max77693_platform_data. This field is mapped
+>> to wakeup-source common property in device tree.
+>> diff --git a/Documentation/devicetree/bindings/mfd/max77693.txt b/Documentation/devicetree/bindings/mfd/max77693.txt
+>>  Optional properties:
+>>  - regulators : The regulators of max77693 have to be instantiated under subnod
+>>    named "regulators" using the following format.
+>> +- wakeup-source : Indicates if the device can wakeup the system from the sleep
+>> +  state.
+> Does the property mean "can" or "should"?
+>
+> "Can" implies that the property means something about the HW. What
+> exactly does it mean; perhaps that some specific output pin of the chip
+> has been wired to an input IRQ/GPIO of the SoC or PMIC that (can) wake
+> up the system? If so, which pin, signal, ...? Also, doesn't this also
+> depend on the SoC itself supporting its input IRQ/GPIO as a wakeup
+> source, so isn't some co-ordination required between the SoC and chip,
+> such that this property doesn't mean "can wakeup the system", but simply
+> "a signal is routed to the SoC, so perhaps it can wakeup the system".
+>
+> "Should" implies policy, which probably shouldn't be represented in
+> device tree, since DT should describe the HW and not how it should be used.
+After short digging I have realized that "wakeup-source" property is
+already parsed by 
+of_i2c_register_devices core function and it should not be parsed again
+by the driver itself.
+So I suppose the description of it can be removed from max77693 binding.
+Do you agree?
 
-Two things worth noting here, are 1) the original kerneloops also didn't
-collect anything like this, and was still very useful, and 2) for the more
-common issues (which let's face it, are going to be the only things
-people really look at) chances are pretty high that there's going to be
-someone also reporting it on lkml, or in a distro bug tracker.
+Anyway I will prepare separate patch removing wakeup related code from
+probe and
+related field from max77693 platform_data - i2c_board_info::flag field
+should be used instead.
+>
+> Finally, if there was already a binding for max77693.txt, I don't think
+> the patch subject "added device tree support" is entirely accurate; this
+> change to the binding document seems to be more about adding a new
+> feature than adding DT support to the driver...
+>
+This patch really adds DT support to max77693 mfd driver :)
 
-What might be useful however, is collecting things like dmi/lspci/lsusb etc
-and _asking_ the user if they're ok with including them at time of filing.
-We might scare off some of the more paranoid OMGMYSECRETDATAS users, but
-chances are high most people won't care.  This requires the client to have
-a UI though, which aiui, it currently doesn't. Anton?
+The binding file which is already in kernel currently has no related
+code in the max77693 driver.
+I will add clarification in the commit message.
 
-We might also ask if they want to provide an email address for feedback,
-but that leads to a bunch of questions about how we expose that to developers
-without exposing it to spambots.
+Regards
+Andrzej
 
-	Dave
 
