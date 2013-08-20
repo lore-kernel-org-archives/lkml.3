@@ -1,129 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab3HTEqa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 00:46:30 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:47800 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab3HTEq2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 00:46:28 -0400
-X-Spam-Score: -101.1
-Message-ID: <5212F467.8090407@asianux.com>
-Date: Tue, 20 Aug 2013 12:45:27 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752137Ab3HTE4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 00:56:16 -0400
+Received: from nbd.name ([46.4.11.11]:57103 "EHLO nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751912Ab3HTE4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 00:56:14 -0400
+Message-ID: <5212F6E8.3090107@openwrt.org>
+Date: Tue, 20 Aug 2013 06:56:08 +0200
+From: Felix Fietkau <nbd@openwrt.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: dipankar@in.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/rcutree.c: deem to be lazy if there are no callbacks.
-References: <5212E76A.40903@asianux.com> <5212E7BB.4020602@asianux.com> <20130820041832.GY29406@linux.vnet.ibm.com> <5212F3E5.7080700@asianux.com>
-In-Reply-To: <5212F3E5.7080700@asianux.com>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tom Gundersen <teg@jklm.no>
+CC: stable@vger.kernel.org,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: [REGRESSION] 3.10.{6,7} crashes on network activity
+References: <CAG-2HqUXQeq=30EpGWmn6tkC=CP1W+=UZCVPTYhhE0WyU_C4nw@mail.gmail.com> <20130820000336.GA15548@kroah.com> <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com> <20130820002822.GA18023@kroah.com>
+In-Reply-To: <20130820002822.GA18023@kroah.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 12:43 PM, Chen Gang wrote:
-> On 08/20/2013 12:18 PM, Paul E. McKenney wrote:
->> On Tue, Aug 20, 2013 at 11:51:23AM +0800, Chen Gang wrote:
->>>
->>>
->>> If 'hc' is false, 'al' will never be false, either (only need check
->>> "irdp->qlen != rdp->qlen_lazy' when 'rdp->nxtlist' existance).
->>>
->>> Recommend to improve the related code, like the diff below.
->>
->> Are you sure that this represents an improvement?  If so, why?
->>
+On 2013-08-20 2:28 AM, Greg Kroah-Hartman wrote:
+> On Tue, Aug 20, 2013 at 08:26:11AM +0800, Tom Gundersen wrote:
+>> On Tue, Aug 20, 2013 at 8:03 AM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>> > On Tue, Aug 20, 2013 at 07:59:47AM +0800, Tom Gundersen wrote:
+>> >> Hi guys,
+>> >>
+>> >> Starting with 3.10.6 (and still present in .7) I get an oops on
+>> >> connecting to the network.
+>> >>
+>> >> The attached picture shows the oops. In case it does not reach the ML,
+>> >> the top of the call trace reads:
+>> >>
+>> >> brcms_c_compute_rtscts_dur
+>> >> brcms_c_ampdu_finalize
+>> >> ampdu_finalize
+>> >> dma_txfast
+>> >> brcms_c_txfifo
+>> >> brcms_c_sendpkt_mac80211
+>> >> brcms_ops_tx
+>> >> __ieee80211_tx
+>> >>
+>> >> I bisected the problem and the first bad commit is
+>> >>
+>> >> commit ef47a5e4f1aaf1d0e2e6875e34b2c9595897bef6
+>> >> Author: Felix Fietkau <nbd@openwrt.org>
+>> >> Date:   Fri Jun 28 21:04:35 2013 +0200
+>> >>
+>> >>     mac80211/minstrel_ht: fix cck rate sampling
+>> >>
+>> >>     commit 1cd158573951f737fbc878a35cb5eb47bf9af3d5 upstream.
+>> >>
+>> >> Reverting it on top of .7 fixes the problem.
+>> >>
+>> >> I had the same (I suppose) problem on mainline some time ago, but I
+>> >> have not bisected it, verified that the problem still occurs there, or
+>> >> checked if reverting the upstream patch fixes it. I'd be happy to do
+>> >> that if it would help though.
+>> >>
+>> >> Let me know if you need any more information.
+>> >
+>> > Do you have this same problem with 3.11-rc6 as well?
+>> 
+>> Yes, I just confirmed. I also confirmed that reverting the mainline
+>> commit on top of -rc6 fixes the problem.
 > 
-> If 'hc' and 'al' really has relationships, better to let 'C code'
-> express it, that will make the code clearer.
+> Great, thanks.
 > 
->> Or to put it another way, I see a patch that increases the size of the
->> kernel by three lines.  What is the corresponding benefit given common
->> kernel workloads?
->>
-> 
-> For 'al', need not check for each looping, and for 'hc', may save the
-> useless looping (so it can make performance better).
-> 
-> For C code, it really increases 3 lines, but may not for assembly code
-> (excuse me, I am not check it, I think it is not important, although it
-> is easy to give a comparing for binary).
-> 
+> Felix and Johannes, any chance we can get this reverted in Linus tree
+> soon, and push that revert back to the 3.10 stable tree as well?
+I'd like to avoid a revert, since that will simply replace one set of
+issues with another. Let's limit the use of the feature that brcmsmac
+can't handle to drivers that are known to work with it. Tom, Please
+test this patch to see if it fixes your issue.
 
-Oh, sorry, I mean: only for our case, "it is not important".
+- Felix
+---
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -1501,6 +1501,7 @@ enum ieee80211_hw_flags {
+ 	IEEE80211_HW_SUPPORTS_RC_TABLE			= 1<<24,
+ 	IEEE80211_HW_P2P_DEV_ADDR_FOR_INTF		= 1<<25,
+ 	IEEE80211_HW_TIMING_BEACON_ONLY			= 1<<26,
++	IEEE80211_HW_SUPPORTS_HT_CCK_RATES		= 1<<27,
+ };
+ 
+ /**
+--- a/net/mac80211/rc80211_minstrel_ht.c
++++ b/net/mac80211/rc80211_minstrel_ht.c
+@@ -828,6 +828,9 @@ minstrel_ht_update_cck(struct minstrel_p
+ 	if (sband->band != IEEE80211_BAND_2GHZ)
+ 		return;
+ 
++	if (!(mp->hw->flags & IEEE80211_HW_SUPPORTS_HT_CCK_RATES))
++		return;
++
+ 	mi->cck_supported = 0;
+ 	mi->cck_supported_short = 0;
+ 	for (i = 0; i < 4; i++) {
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -807,7 +807,8 @@ void ath9k_set_hw_capab(struct ath_softc
+ 		IEEE80211_HW_PS_NULLFUNC_STACK |
+ 		IEEE80211_HW_SPECTRUM_MGMT |
+ 		IEEE80211_HW_REPORTS_TX_ACK_STATUS |
+-		IEEE80211_HW_SUPPORTS_RC_TABLE;
++		IEEE80211_HW_SUPPORTS_RC_TABLE |
++		IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+ 
+ 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
+ 		hw->flags |= IEEE80211_HW_AMPDU_AGGREGATION;
+--- a/drivers/net/wireless/ath/carl9170/main.c
++++ b/drivers/net/wireless/ath/carl9170/main.c
+@@ -1878,7 +1878,8 @@ void *carl9170_alloc(size_t priv_size)
+ 		     IEEE80211_HW_PS_NULLFUNC_STACK |
+ 		     IEEE80211_HW_NEED_DTIM_BEFORE_ASSOC |
+ 		     IEEE80211_HW_SUPPORTS_RC_TABLE |
+-		     IEEE80211_HW_SIGNAL_DBM;
++		     IEEE80211_HW_SIGNAL_DBM |
++		     IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+ 
+ 	if (!modparam_noht) {
+ 		/*
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -6327,7 +6327,8 @@ static int rt2800_probe_hw_mode(struct r
+ 	    IEEE80211_HW_SUPPORTS_PS |
+ 	    IEEE80211_HW_PS_NULLFUNC_STACK |
+ 	    IEEE80211_HW_AMPDU_AGGREGATION |
+-	    IEEE80211_HW_REPORTS_TX_ACK_STATUS;
++	    IEEE80211_HW_REPORTS_TX_ACK_STATUS |
++	    IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+ 
+ 	/*
+ 	 * Don't set IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING for USB devices
 
-
->> 							Thanx, Paul
->>
->>> ----------------------------------diff begin------------------------------------
->>>
->>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
->>> index 5b53a89..421caf0 100644
->>> --- a/kernel/rcutree.c
->>> +++ b/kernel/rcutree.c
->>> @@ -2719,10 +2719,13 @@ static int rcd'_cpu_has_callbacks(int cpu, bool *all_lazy)
->>>
->>>  	for_each_rcu_flavor(rsp) {
->>>  		rdp = per_cpu_ptr(rsp->rda, cpu);
->>> -		if (rdp->qlen != rdp->qlen_lazy)
->>> -			al = false;
->>> -		if (rdp->nxtlist)
->>> +		if (rdp->nxtlist) {
->>>  			hc = true;
->>> +			if (rdp->qlen != rdp->qlen_lazy) {
->>> +				al = false;
->>> +				break;
->>> +			}
->>> +		}
->>>  	}
->>>  	if (all_lazy)
->>>  		*all_lazy = al;
->>>
->>> ----------------------------------diff end--------------------------------------
->>>
->>>
->>> On 08/20/2013 11:50 AM, Chen Gang wrote:
->>>> According to the comment above rcu_cpu_has_callbacks(): "If there are
->>>> no callbacks, all of them are deemed to be lazy".
->>>>
->>>> So when both 'hc' and 'al' are false, '*all_lazy' should be true, not
->>>> false.
->>>>
->>>>
->>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>>> ---
->>>>  kernel/rcutree.c |    2 +-
->>>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
->>>> index 5b53a89..9ee9565 100644
->>>> --- a/kernel/rcutree.c
->>>> +++ b/kernel/rcutree.c
->>>> @@ -2725,7 +2725,7 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
->>>>  			hc = true;
->>>>  	}
->>>>  	if (all_lazy)
->>>> -		*all_lazy = al;
->>>> +		*all_lazy = !hc ? true : al;
->>>>  	return hc;
->>>>  }
->>>>  
->>>>
->>>
->>>
->>> -- 
->>> Chen Gang
->>>
->>
->>
->>
-> 
-> 
-
-
--- 
-Chen Gang
