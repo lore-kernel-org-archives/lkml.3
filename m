@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921Ab3HTXWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 19:22:07 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:60231 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab3HTXWF (ORCPT
+	id S1751428Ab3HTXgW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 19:36:22 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:52262 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab3HTXgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 19:22:05 -0400
-From: Julius Werner <jwerner@chromium.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Benson Leung <bleung@chromium.org>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support for platform xHCs
-Date: Tue, 20 Aug 2013 16:21:49 -0700
-Message-Id: <1377040909-18428-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 1.8.3
+	Tue, 20 Aug 2013 19:36:21 -0400
+Date: Tue, 20 Aug 2013 16:36:13 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-mtd@lists.infradead.org,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [PATCH v2] m25p80 / fast read
+Message-ID: <20130820233613.GA28382@ld-irv-0074.broadcom.com>
+References: <1376985281-16293-1-git-send-email-s.hauer@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376985281-16293-1-git-send-email-s.hauer@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver methods required for hardware LPM have only been added to the
-PCI version of the XHCI driver, for no apparent reason. They seem to
-work just as well with the platform driver, so let's add them to give
-more devices the chance for additional power savings. Tested on the DWC3
-xHC of an Exynos5420.
+On Tue, Aug 20, 2013 at 09:54:38AM +0200, Sascha Hauer wrote:
+> 
+> Changes since v1:
+> 
+> - rebase on git.infradead.org/l2-mtd.git
+> - improve description for patch 2/3
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/usb/host/xhci-plat.c | 4 ++++
- 1 file changed, 4 insertions(+)
+Thanks for these.
 
-diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index 51e22bf..7f46b5d 100644
---- a/drivers/usb/host/xhci-plat.c
-+++ b/drivers/usb/host/xhci-plat.c
-@@ -80,6 +80,10 @@ static const struct hc_driver xhci_plat_xhci_driver = {
- 	.hub_status_data =	xhci_hub_status_data,
- 	.bus_suspend =		xhci_bus_suspend,
- 	.bus_resume =		xhci_bus_resume,
-+
-+	/* LPM support */
-+	.update_device =	xhci_update_device,
-+	.set_usb2_hw_lpm =	xhci_set_usb2_hardware_lpm,
- };
- 
- static int xhci_plat_probe(struct platform_device *pdev)
--- 
-1.7.12.4
+> Sascha
+> 
+> ----------------------------------------------------------------
+> Markus Niebel (1):
+>       mtd: m25p80: add support for mr25h10
+> 
+> Sascha Hauer (2):
+>       mtd: m25p80: Pass flags through CAT25_INFO macro
+>       mtd: m25p80: make CONFIG_M25PXX_USE_FAST_READ safe to enable
+> 
+>  drivers/mtd/devices/m25p80.c | 20 ++++++++++++--------
+>  1 file changed, 12 insertions(+), 8 deletions(-)
 
+Pushed to l2-mtd.git.
+
+Brian
