@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835Ab3HTT2v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 15:28:51 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:42535 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751611Ab3HTT2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 15:28:49 -0400
-Date: Tue, 20 Aug 2013 14:28:44 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Dwight Engen <dwight.engen@oracle.com>, Jeremy Kerr <jk@ozlabs.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, cbe-oss-dev@lists.ozlabs.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-next@vger.kernel.org, Gao feng <gaofeng@cn.fujitsu.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-ID: <20130820192844.GC5262@sgi.com>
-References: <20130820172052.1f0d89ddf6a1a40ef70333fd@canb.auug.org.au>
- <20130820120702.000b044e@oracle.com>
+	id S1751857Ab3HTT3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 15:29:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47534 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751611Ab3HTT33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 15:29:29 -0400
+Date: Tue, 20 Aug 2013 21:23:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Brad Spengler <spender@grsecurity.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin Walters <walters@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
+Message-ID: <20130820192340.GA25441@redhat.com>
+References: <20130819172524.GA22268@redhat.com> <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com> <20130819183319.GA24846@redhat.com> <CALCETrWrpNszRGCRRMLgiOopcSdDShB3Mck6gRPco=dAZeX3pQ@mail.gmail.com> <20130819184355.GA25362@redhat.com> <CALCETrU4gTfzcpeEo-X7o-yZefKiw9BVNKdcN4fThUeiuZtOOg@mail.gmail.com> <20130820185043.GA24040@redhat.com> <CALCETrUjohT2D=jtVQ9mnbeUr2oJ9VoN812PtQhaB2ZZ89isNA@mail.gmail.com> <20130820190529.GA24512@redhat.com> <CALCETrVC15BjcRMk2tc-SRT3tUr24057Zxt5ARQ-2Eq7RhjO2w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130820120702.000b044e@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CALCETrVC15BjcRMk2tc-SRT3tUr24057Zxt5ARQ-2Eq7RhjO2w@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeremy,
+On 08/20, Andy Lutomirski wrote:
+>
+> On Tue, Aug 20, 2013 at 12:05 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 08/20, Andy Lutomirski wrote:
+> >>
+> >> On Tue, Aug 20, 2013 at 11:50 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> >
+> >> >> Currently (with or without your patch), vfork() followed by
+> >> >> unshare(CLONE_NEWUSER) or unshare(CLONE_NEWPID) will unshare the VM.
+> >> >
+> >> > Could you spell please?
+> >> >
+> >> > We never unshare the VM. CLONE_VM in sys_unshare() paths just means
+> >> > "fail unless ->mm is not shared".
+> >> >
+> >>
+> >> Argh.  In that case this is probably buggy,
+> >
+> > I don't think so. Just we can't really unshare ->mm
 
-Apologies for breaking your build...
+this looks confusing, sorry. Afaics it is possible to implement
+unshare(CLONE_VM), but
 
-On Tue, Aug 20, 2013 at 12:07:02PM -0400, Dwight Engen wrote:
-> On Tue, 20 Aug 2013 17:20:52 +1000
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > After merging the final tree, today's linux-next build (powerpc
-> > allyesconfig) failed like this:
-> > 
-> > arch/powerpc/platforms/cell/spufs/inode.c: In function
-> > 'spufs_parse_options':
-> > arch/powerpc/platforms/cell/spufs/inode.c:623:16: error: incompatible
-> > types when assigning to type 'kuid_t' from type 'int' root->i_uid =
-> > option; ^ arch/powerpc/platforms/cell/spufs/inode.c:628:16: error:
-> > incompatible types when assigning to type 'kgid_t' from type 'int'
-> > root->i_gid = option; ^
-> > 
-> > Caused by commit d6970d4b726c ("enable building user namespace with
-> > xfs") from the xfs tree (that was fun to find :-)).
-> > 
-> > I have reverted that commit for today.  It could probably be replaced
-> > with a patch that just changed XFS_FS to SPU_FS in the
-> > UIDGID_CONVERTED config dependency - or someone could fix up SPU_FS.
-> 
-> Hi, (already sent this email based on Intel's kbuild robot this
-> morning, sorry for the dup to those who already got it). 
-> 
-> Yep this looks to me like SPU_FS should have been in the list of
-> stuff that had not been UIDGID_CONVERTED, but reviving
-> UIDGID_CONVERTED and adding SPU_FS to it won't work for
-> non powerpc arch because SPU_FS = n won't be defined. The following can
-> be used to mark it as incompatible with USER_NS:
-> 
-> diff --git a/arch/powerpc/platforms/cell/Kconfig
-> b/arch/powerpc/platforms/cell/Kconfig index 9978f59..fcf8336 100644
-> --- a/arch/powerpc/platforms/cell/Kconfig
-> +++ b/arch/powerpc/platforms/cell/Kconfig
-> @@ -61,6 +61,7 @@ config SPU_FS
->         tristate "SPU file system"
->         default m
->         depends on PPC_CELL
-> +       depends on USER_NS=n
->         select SPU_BASE
->         select MEMORY_HOTPLUG
->         help
-> 
-> Or if the rest of spufs is already okay for user namespace (I have not
-> checked it, but this seems to be the only place it is dealing with
-> uid/gid), then the following will fix these particular errors
-> (cross-compile tested, but I don't have a powerpc to run test on):
-> 
-> diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
-> index f390042..90fb308 100644
-> --- a/arch/powerpc/platforms/cell/spufs/inode.c
-> +++ b/arch/powerpc/platforms/cell/spufs/inode.c
-> @@ -620,12 +620,12 @@ spufs_parse_options(struct super_block *sb, char *options, struct inode *root)
->                 case Opt_uid:
->                         if (match_int(&args[0], &option))
->                                 return 0;
-> -                       root->i_uid = option;
-> +                       root->i_uid = make_kuid(&init_user_ns, option);
->                         break;
->                 case Opt_gid:
->                         if (match_int(&args[0], &option))
->                                 return 0;
-> -                       root->i_gid = option;
-> +                       root->i_gid = make_kgid(&init_user_ns, option);
->                         break;
->                 case Opt_mode:
->                         if (match_octal(&args[0], &option))
+> or implement
+> > unshare(CLONE_THREAD).
 
-I'd prefer not to break Stephen's tree two days in a row.  We could just revert
-d6970d4b726c in the xfs tree for the time being as Stephen has done, but given
-the choice would prefer the fix.  Do you have a preference between the two
-approaches that Dwight has posted?  The first seems more conservative...
+this is unlikely.
 
-Thanks,
-	Ben
+but this doesn't matter,
+
+> We simply pretend it works if there is nothing
+> > to unshare.
+> >
+> >> sys_unshare will see CLONE_NEWPID or CLONE_NEWUSER and set
+> >> CLONE_THREAD.  Then it will see CLONE_THREAD and set CLONE_VM.
+> >
+> > This matches copy_process() to some degree... but looks confusing,
+> > I agree.
+
+I only mean that copy_process() requires CLONE_VM if CLONE_THREAD.
+But, unlike unshare(), it fails if CLONE_VM is not set.
+
+> Huh?  Doesn't this mean that unshare(CLONE_NEWPID); vfork() will work
+> with your patches,
+
+I hope,
+
+> but vfork(); unshare(CLONE_NEWPID) will fail?  (I
+> admit I haven't tested it.)
+
+Do you mean that the child does unshare(CLONE_NEWPID) before exec?
+It should fail with or without this patch.
+
+Oleg.
+
