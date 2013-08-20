@@ -1,83 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab3HTI0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:26:43 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:64557 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab3HTI0l (ORCPT
+	id S1751636Ab3HTI3Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:29:16 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:54334 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab3HTI3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:26:41 -0400
-Date: Tue, 20 Aug 2013 09:26:36 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH] mfd: mc13xxx: make it possible to use the codec without
- pdata
-Message-ID: <20130820082636.GH23699@lee--X1>
-References: <1376396148-29801-1-git-send-email-m.grzeschik@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1376396148-29801-1-git-send-email-m.grzeschik@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Aug 2013 04:29:14 -0400
+Message-ID: <1376987338.13829.7.camel@jlt4.sipsolutions.net>
+Subject: Re: 3.11-rc6 genetlink locking fix offends lockdep
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Hugh Dickins <hughd@google.com>
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Otcheretianski, Andrei" <andrei.otcheretianski@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Pravin B Shelar <pshelar@nicira.com>, Thomas Graf <tgraf@suug.ch>
+Date: Tue, 20 Aug 2013 10:28:58 +0200
+In-Reply-To: <alpine.LNX.2.00.1308191147350.1505@eggly.anvils> (sfid-20130819_205317_938941_E76DFECF)
+References: <alpine.LNX.2.00.1308182143370.906@eggly.anvils>
+	 <1376899214.14734.6.camel@jlt4.sipsolutions.net>
+	 <5211FAB3.7080400@huawei.com>
+	 <1376911362.14734.11.camel@jlt4.sipsolutions.net>
+	 <alpine.LNX.2.00.1308191147350.1505@eggly.anvils>
+	 (sfid-20130819_205317_938941_E76DFECF)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Aug 2013, Michael Grzeschik wrote:
+On Mon, 2013-08-19 at 11:52 -0700, Hugh Dickins wrote:
 
-> In case of devicetree, we currently don't have a way to append pdata for
-> the codec. This patch makes it possible to probe the codec without pdata
-> for that case.
+> > > > We could use the semaphore instead, I believe, but I don't really
+> > > > understand the mutex vs. semaphore well enough to be sure that's
+> > > > correct.
+
+> > I don't believe so, the semaphore and cb_mutex don't have a dependency
+> > yet, afaict.
 > 
-> Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-> ---
->  drivers/mfd/mc13xxx-core.c | 11 +++++++----
->  1 file changed, 7 insertions(+), 4 deletions(-)
+> The down_read(&cb_lock) patch you suggested gives the lockdep trace below.
 
-This patch doesn't apply. What tree is it based on?
+Clearly I was wrong then, not sure what I missed in the code though.
+>From the lockdep trace it looks like the dependency comes via the
+genl_lock, I didn't consider that.
 
-> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-> index 278601f..e1b89e6 100644
-> --- a/drivers/mfd/mc13xxx-core.c
-> +++ b/drivers/mfd/mc13xxx-core.c
-> @@ -687,10 +687,6 @@ err_revision:
->  	if (mc13xxx->flags & MC13XXX_USE_ADC)
->  		mc13xxx_add_subdevice(mc13xxx, "%s-adc");
->  
-> -	if (mc13xxx->flags & MC13XXX_USE_CODEC)
-> -		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-codec",
-> -					pdata->codec, sizeof(*pdata->codec));
-> -
->  	if (mc13xxx->flags & MC13XXX_USE_RTC)
->  		mc13xxx_add_subdevice(mc13xxx, "%s-rtc");
->  
-> @@ -705,6 +701,10 @@ err_revision:
->  		if (mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN)
->  			mc13xxx_add_subdevice_pdata(mc13xxx, "%s-ts",
->  					&pdata->touch, sizeof(pdata->touch));
-> +
-> +		if (mc13xxx->flags & MC13XXX_USE_CODEC)
-> +			mc13xxx_add_subdevice_pdata(mc13xxx, "%s-codec",
-> +					pdata->codec, sizeof(*pdata->codec));
->  	} else {
->  		mc13xxx_add_subdevice(mc13xxx, "%s-regulator");
->  		mc13xxx_add_subdevice(mc13xxx, "%s-led");
-> @@ -712,6 +712,9 @@ err_revision:
->  
->  		if (mc13xxx->flags & MC13XXX_USE_TOUCHSCREEN)
->  			mc13xxx_add_subdevice(mc13xxx, "%s-ts");
-> +
-> +		if (mc13xxx->flags & MC13XXX_USE_CODEC)
-> +			mc13xxx_add_subdevice(mc13xxx, "%s-codec");
->  	}
->  
->  	return 0;
+David, can you please just revert it for now and tag the revert for
+stable as well, in case Greg already took it somewhere? I think that
+some stable trees may need a different fix anyway since they don't have
+parallel_ops.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+We never saw a problem due to this, and though it's probably fairly easy
+to trigger by hand-rolling the dump loop in userspace, one does need to
+be able to rmmod to crash the kernel with it.
+
+The only way to fix this that I see right now (that doesn't rewrite the
+locking completely) would be to make genetlink use parallel_ops itself,
+thereby removing the genl_lock() in genl_rcv_msg() and breaking all
+those lock chains that lockdep reported. After that, it should be safe
+to use genl_lock() inside all the operations. Something like the patch
+below, perhaps? Completely untested so far.
+
+johannes
+
+
+diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
+index f85f8a2..dea9586 100644
+--- a/net/netlink/genetlink.c
++++ b/net/netlink/genetlink.c
+@@ -665,6 +665,7 @@ static struct genl_family genl_ctrl = {
+ 	.version = 0x2,
+ 	.maxattr = CTRL_ATTR_MAX,
+ 	.netnsok = true,
++	.parallel_ops = true,
+ };
+ 
+ static int ctrl_fill_info(struct genl_family *family, u32 portid, u32 seq,
+@@ -789,10 +790,8 @@ static int ctrl_dumpfamily(struct sk_buff *skb, struct netlink_callback *cb)
+ 	struct net *net = sock_net(skb->sk);
+ 	int chains_to_skip = cb->args[0];
+ 	int fams_to_skip = cb->args[1];
+-	bool need_locking = chains_to_skip || fams_to_skip;
+ 
+-	if (need_locking)
+-		genl_lock();
++	genl_lock();
+ 
+ 	for (i = chains_to_skip; i < GENL_FAM_TAB_SIZE; i++) {
+ 		n = 0;
+@@ -814,8 +813,7 @@ errout:
+ 	cb->args[0] = i;
+ 	cb->args[1] = n;
+ 
+-	if (need_locking)
+-		genl_unlock();
++	genl_unlock();
+ 
+ 	return skb->len;
+ }
+@@ -870,6 +868,8 @@ static int ctrl_getfamily(struct sk_buff *skb, struct genl_info *info)
+ 	struct genl_family *res = NULL;
+ 	int err = -EINVAL;
+ 
++	genl_lock();
++
+ 	if (info->attrs[CTRL_ATTR_FAMILY_ID]) {
+ 		u16 id = nla_get_u16(info->attrs[CTRL_ATTR_FAMILY_ID]);
+ 		res = genl_family_find_byid(id);
+@@ -896,19 +896,25 @@ static int ctrl_getfamily(struct sk_buff *skb, struct genl_info *info)
+ 	}
+ 
+ 	if (res == NULL)
+-		return err;
++		goto out_unlock;
+ 
+ 	if (!res->netnsok && !net_eq(genl_info_net(info), &init_net)) {
+ 		/* family doesn't exist here */
+-		return -ENOENT;
++		err = -ENOENT;
++		goto out_unlock;
+ 	}
+ 
+ 	msg = ctrl_build_family_msg(res, info->snd_portid, info->snd_seq,
+ 				    CTRL_CMD_NEWFAMILY);
+-	if (IS_ERR(msg))
+-		return PTR_ERR(msg);
++	if (IS_ERR(msg)) {
++		err = PTR_ERR(msg);
++		goto out_unlock;
++	}
+ 
+-	return genlmsg_reply(msg, info);
++	err = genlmsg_reply(msg, info);
++out_unlock:
++	genl_unlock();
++	return err;
+ }
+ 
+ static int genl_ctrl_event(int event, void *data)
+
+
