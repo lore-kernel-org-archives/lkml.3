@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab3HTDIn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 23:08:43 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:17607 "EHLO
+	id S1751879Ab3HTDOL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 23:14:11 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:5944 "EHLO
 	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3HTDIm (ORCPT
+	with ESMTP id S1751713Ab3HTDOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 23:08:42 -0400
+	Mon, 19 Aug 2013 23:14:09 -0400
 X-Spam-Score: -101.1
-Message-ID: <5212DD71.7070208@asianux.com>
-Date: Tue, 20 Aug 2013 11:07:29 +0800
+Message-ID: <5212DEC3.9070007@asianux.com>
+Date: Tue, 20 Aug 2013 11:13:07 +0800
 From: Chen Gang <gang.chen@asianux.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, dvhart@linux.intel.com,
-        ccross@android.com, Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel/futex.c: notice the return value after rt_mutex_finish_proxy_lock()
- fails
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel/module.c: use scnprintf() instead of sprintf()
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rt_mutex_finish_proxy_lock() can return failure code (e.g. -EINTR,
--ETIMEDOUT).
+For some strings, they are permitted to be larger than PAGE_SIZE, so
+need use scnprintf() instead of sprintf(), or it will cause issue.
 
-Original implementation has already noticed about it, but not check it
-before next work.
+One case is:
 
-Also let coments within 80 columns to pass "./scripts/checkpatch.pl".
+  if a module version is crazy defined (length more than PAGE_SIZE),
+  'modinfo' command is still OK (print full contents),
+  but for "cat /sys/modules/'modname'/version", will cause issue in kernel.
 
 
 Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- kernel/futex.c |   30 ++++++++++++++++--------------
- 1 files changed, 16 insertions(+), 14 deletions(-)
+ kernel/module.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index c3a1a55..1a94e7d 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2373,21 +2373,23 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
- 		debug_rt_mutex_free_waiter(&rt_waiter);
- 
--		spin_lock(q.lock_ptr);
--		/*
--		 * Fixup the pi_state owner and possibly acquire the lock if we
--		 * haven't already.
--		 */
--		res = fixup_owner(uaddr2, &q, !ret);
--		/*
--		 * If fixup_owner() returned an error, proprogate that.  If it
--		 * acquired the lock, clear -ETIMEDOUT or -EINTR.
--		 */
--		if (res)
--			ret = (res < 0) ? res : 0;
-+		if (!ret) {
-+			spin_lock(q.lock_ptr);
-+			/*
-+			 * Fixup the pi_state owner and possibly acquire the
-+			 * lock if we haven't already.
-+			 */
-+			res = fixup_owner(uaddr2, &q, !ret);
-+			/*
-+			 * If fixup_owner() returned an error, proprogate that.
-+			 * If it acquired the lock, clear -ETIMEDOUT or -EINTR.
-+			 */
-+			if (res)
-+				ret = (res < 0) ? res : 0;
- 
--		/* Unqueue and drop the lock. */
--		unqueue_me_pi(&q);
-+			/* Unqueue and drop the lock. */
-+			unqueue_me_pi(&q);
-+		}
- 	}
- 
- 	/*
+diff --git a/kernel/module.c b/kernel/module.c
+index 2069158..0618e63 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -603,7 +603,7 @@ static void setup_modinfo_##field(struct module *mod, const char *s)  \
+ static ssize_t show_modinfo_##field(struct module_attribute *mattr,   \
+ 			struct module_kobject *mk, char *buffer)      \
+ {                                                                     \
+-	return sprintf(buffer, "%s\n", mk->mod->field);               \
++	return scnprintf(buffer, PAGE_SIZE, "%s\n", mk->mod->field);  \
+ }                                                                     \
+ static int modinfo_##field##_exists(struct module *mod)               \
+ {                                                                     \
 -- 
 1.7.7.6
