@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265Ab3HTMIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 08:08:07 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:58301 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab3HTMIG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 08:08:06 -0400
-Date: Tue, 20 Aug 2013 13:08:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Florian Lobmaier <florian.lobmaier@ams.com>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 4/4] mfd: as3722: introduce regmap support
-Message-ID: <20130820120800.GN23699@lee--X1>
-References: <1376997210-32631-1-git-send-email-florian.lobmaier@ams.com>
- <1376997210-32631-5-git-send-email-florian.lobmaier@ams.com>
+	id S1751097Ab3HTMNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 08:13:05 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51310 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750907Ab3HTMND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 08:13:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>
+Subject: Re: [RFC PATCH] freezer: allow killing of frozen tasks
+Date: Tue, 20 Aug 2013 14:23:32 +0200
+Message-ID: <4596920.E6jI568rc1@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <5917186.DMyAa9ofOj@amdc1032>
+References: <5917186.DMyAa9ofOj@amdc1032>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1376997210-32631-5-git-send-email-florian.lobmaier@ams.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Aug 2013, Florian Lobmaier wrote:
-
+On Tuesday, August 20, 2013 01:20:03 PM Bartlomiej Zolnierkiewicz wrote:
+> Change __refrigerator() to allow SIGKILL signal handling during
+> the frozen state (by setting task to a TASK_KILLABLE state instead
+> of TASK_UNINTERRUPTIBLE one before entering sleep) and make tasks
+> leave __refrigerator() upon receiving such signal.
 > 
-> Signed-off-by: Florian Lobmaier <florian.lobmaier@ams.com>
+> These changes allow frozen tasks to be killed immediately without
+> the need to thaw them first.
+> 
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+
+Well, it doesn't sound like an entirely bad idea to me, but I'd like to know
+what Colin and Tejun (CCed now) think about it.
+
+Thanks,
+Rafael
+
+
 > ---
->  drivers/mfd/as3722-regmap.c |  417 +++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 417 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/mfd/as3722-regmap.c
-
-I'll leave the review of this file to Mark, but it should be added
-either when you start calling the functions, or at least before they
-are used, or else the preceding commits won't build. This would cause
-someone a major headache if their bisect landed in the middle of your
-patches.
-
+>  kernel/freezer.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index b462fa1..0c05a7a 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -57,12 +57,13 @@ bool __refrigerator(bool check_kthr_stop)
+>  	pr_debug("%s entered refrigerator\n", current->comm);
+>  
+>  	for (;;) {
+> -		set_current_state(TASK_UNINTERRUPTIBLE);
+> +		set_current_state(TASK_KILLABLE);
+>  
+>  		spin_lock_irq(&freezer_lock);
+>  		current->flags |= PF_FROZEN;
+>  		if (!freezing(current) ||
+> -		    (check_kthr_stop && kthread_should_stop()))
+> +		    (check_kthr_stop && kthread_should_stop()) ||
+> +		    fatal_signal_pending(current))
+>  			current->flags &= ~PF_FROZEN;
+>  		spin_unlock_irq(&freezer_lock);
+>  
+> 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
