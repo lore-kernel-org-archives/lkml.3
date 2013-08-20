@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab3HTVs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:48:27 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:22910 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751367Ab3HTVsZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:48:25 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnYIAC7jE1J5LJ62/2dsb2JhbABagwW7HIVDgSYXdIIkAQEFJxMcIxAIAw4KCSUPBSUDIROID61pFpA/B4QUA5dkkVeBYYFNKg
-Date: Wed, 21 Aug 2013 07:48:19 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jan Kara <jack@suse.cz>,
+	id S1751898Ab3HTVte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:49:34 -0400
+Received: from gate.crashing.org ([63.228.1.57]:36934 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751211Ab3HTVtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 17:49:32 -0400
+Message-ID: <1377035309.25016.167.camel@pasglop>
+Subject: Re: [PATCH v4 03/19] powerpc: refactor of_get_cpu_node to support
+ other architectures
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH v3 3/5] mm: Notify filesystems when it's time to apply a
- deferred cmtime update
-Message-ID: <20130820214819.GK6023@dastard>
-References: <cover.1376679411.git.luto@amacapital.net>
- <ec267e95fd21891986373c7af1c72b4c8b507332.1376679411.git.luto@amacapital.net>
- <20130820023615.GE6023@dastard>
- <CALCETrV-Toj-NGpmWnmoUbCwrMUXOSbjQdYsSVuTiH+2dEgPTQ@mail.gmail.com>
- <20130820040814.GH6023@dastard>
- <CALCETrWreWBwKdKS2w=fS+MwdaZv1eEsKjYo=P9eeXe7fZS6Jw@mail.gmail.com>
- <20130820160057.GC2862@quack.suse.cz>
- <CALCETrXotDRKV8FtLn3g_9g_yOVceHzKpwXMAH+w7tBZ1P2F7A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXotDRKV8FtLn3g_9g_yOVceHzKpwXMAH+w7tBZ1P2F7A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Date: Wed, 21 Aug 2013 07:48:29 +1000
+In-Reply-To: <52135F86.9020401@arm.com>
+References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+	 <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+	 <1376991021-12160-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+	 <3703987.W8AZjrDbn0@vostro.rjw.lan> <52135F86.9020401@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 09:42:34AM -0700, Andy Lutomirski wrote:
-> On Tue, Aug 20, 2013 at 9:00 AM, Jan Kara <jack@suse.cz> wrote:
-> > On Mon 19-08-13 21:14:44, Andy Lutomirski wrote:
-> >> >> I could require ->writepages *and* ->flush_cmtime to handle the time
-> >> >> update, but that would complicate non-transactional filesystems.
-> >> >> Those filesystems should just flush cmtime at the end of writepages.
-> >> >
-> >> > do_writepages() is the wrong place to do such updates - we can get
-> >> > writeback directly through .writepage, so the time updates need to
-> >> > be in .writepage. That first .writepage call will clear the bit on
-> >> > the mapping, so it's only done on the first call to .writepage on
-> >> > the given mapping.
-> >>
-> >> Last time I checked, all the paths that actually needed the timestamp
-> >> update went through .writepages.  I'll double-check.
-> >   kswapd can call just .writepage to do the writeout so timestamp update
-> > should be handled there as well. Otherwise all pages in a mapping can be
-> > cleaned without timestamp being updated.
+On Tue, 2013-08-20 at 13:22 +0100, Sudeep KarkadaNagesha wrote:
+> Correct, he has reviewed but I am waiting for his ACK before I could
+> sent you pull request. Hopefully I should be able to send pull request
+> tomorrow with his ACK.
 > 
-> OK, I'll fix that.
+> Hi Ben,
 > 
-> >
-> > Which btw made me realize that even your scheme doesn't completely make
-> > sure timestamp is updated after mmap write - if you have pages 0 and 1, you
-> > write to both of them - CMTIME flag gets set. Then fsync_range(fd, 0, 4096)
-> > is called. We write the page 0, writeprotect it, update timestamps. But
-> > page 1 is still writeable so writes to it won't set CMTIME flag, neither
-> > update the timestamp... Not that I think this can be reasonably solved but
-> > it is a food for thought.
-> 
-> This should already work.  AS_CMTIME is set when the pte goes from
-> dirty to clean, not when the pte goes from wp to writable.  So
-> whenever clear_page_dirty_for_io is called on page 1, AS_CMTIME will
-> be set and a subsequent writepages call will update the timestamp.
+> If this is patch is fine, can I have your ACK ?
 
-Oh, I missed that - I thought you were setting AS_CMTIME during
-.page_mkwrite.
-
-Setting it in clear_page_dirty_for_io() is too late for filesystems
-to include it in their existing transactions during .writepage, (at
-least for XFs and ext4) because they do their delayed allocation
-transactions before changing page state....
+I just want to test it (just in case...), will give an Ack then.
 
 Cheers,
+Ben.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+
