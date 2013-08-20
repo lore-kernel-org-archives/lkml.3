@@ -1,94 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128Ab3HTEVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 00:21:21 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52536 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab3HTEVU (ORCPT
+	id S1752034Ab3HTE1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 00:27:31 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:43754 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab3HTE1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 00:21:20 -0400
-X-AuditID: 9c930179-b7c0bae0000040ac-c2-5212eebe5047
-Date: Tue, 20 Aug 2013 13:21:46 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH v6 3/5] zsmalloc: move it under zram
-Message-ID: <20130820042146.GR28062@bbox>
-References: <1376459736-7384-1-git-send-email-minchan@kernel.org>
- <1376459736-7384-4-git-send-email-minchan@kernel.org>
- <20130816220034.GD7265@variantweb.net>
+	Tue, 20 Aug 2013 00:27:30 -0400
+Date: Mon, 19 Aug 2013 21:27:26 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-mtd@lists.infradead.org, Marek Vasut <marex@denx.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [PATCH 4/4] mtd: m25p80: remove unnecessary ifdef
+Message-ID: <20130820042726.GF28421@norris.computersforpeace.net>
+References: <1376302946-11534-1-git-send-email-s.hauer@pengutronix.de>
+ <1376302946-11534-5-git-send-email-s.hauer@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130816220034.GD7265@variantweb.net>
+In-Reply-To: <1376302946-11534-5-git-send-email-s.hauer@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Seth,
-
-On Fri, Aug 16, 2013 at 05:00:34PM -0500, Seth Jennings wrote:
-> On Wed, Aug 14, 2013 at 02:55:34PM +0900, Minchan Kim wrote:
-> > This patch moves zsmalloc under zram directory because there
-> > isn't any other user any more.
-> > 
-> > Before that, description will explain why we have needed custom
-> > allocator.
-> > 
-> > Zsmalloc is a new slab-based memory allocator for storing
-> > compressed pages.  It is designed for low fragmentation and
-> > high allocation success rate on large object, but <= PAGE_SIZE
-> > allocations.
+On Mon, Aug 12, 2013 at 12:22:26PM +0200, Sascha Hauer wrote:
+> of_property_read_bool properly compiles away, no need to ifdef this
+> for non DT builds.
 > 
-> One things zsmalloc will probably have to address before Andrew deems it
-> worthy is the "memmap peekers" issue.  I had to make this change in zbud
-> before Andrew would accept it and this is one of the reasons I have yet
-> to implement zsmalloc support for zswap yet.
-> 
-> Basically, zsmalloc makes the assumption that once the kernel page
-> allocator gives it a page for the pool, zsmalloc can stuff whatever
-> metatdata it wants into the struct page.  The problem comes when some
-> parts of the kernel do not obtain the struct page pointer via the
-> allocator but via walking the memmap.  Those routines will make certain
-> assumption about the state and structure of the data in the struct page,
-> leading to issues.
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-All of memmap peekers should make such asummption based on pageflag
-so if zsmalloc don't need touch flag field, it should be no problem.
+Pushed only this one to l2-mtd.git, since it's independent.
 
-In addition to that, SLUB allocator already have touched it so why not
-for zsmalloc?
-
-> 
-> My solution for zbud was to move the metadata into the pool pages
-> themselves, using the first block of each page for metadata regarding that
-> page.
-> 
-> Andrew might also have something to say about the placement of
-> zsmalloc.c.  IIRC, if it was going to be merged, he wanted it in mm/ if
-> it was going to be messing around in the struct page.
-
-NP.
-
-Thanks for the review, Seth.
-
-> 
-> Seth
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+Thanks,
+Brian
