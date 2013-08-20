@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751247Ab3HTLNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 07:13:44 -0400
-Received: from mail1.ams.com ([212.166.112.31]:53937 "EHLO mail1.ams.com"
+	id S1751351Ab3HTLN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 07:13:59 -0400
+Received: from mail1.ams.com ([212.166.112.31]:48398 "EHLO mail1.ams.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062Ab3HTLNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 07:13:42 -0400
+	id S1750976Ab3HTLNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 07:13:40 -0400
 X-IronPort-AV: E=Sophos;i="4.89,919,1367964000"; 
-   d="scan'208";a="4240259"
+   d="scan'208";a="4240258"
 From: Florian Lobmaier <florian.lobmaier@ams.com>
 To: linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, sameo@linux.intel.com,
         Florian Lobmaier <florian.lobmaier@ams.com>
-Subject: [PATCH 3/4] mfd: as3722: introduce platform and register include files
-Date: Tue, 20 Aug 2013 13:13:29 +0200
-Message-Id: <1376997210-32631-4-git-send-email-florian.lobmaier@ams.com>
+Subject: [PATCH 2/4] mfd: as3722: introduce core driver file
+Date: Tue, 20 Aug 2013 13:13:28 +0200
+Message-Id: <1376997210-32631-3-git-send-email-florian.lobmaier@ams.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1376997210-32631-1-git-send-email-florian.lobmaier@ams.com>
 References: <1376997210-32631-1-git-send-email-florian.lobmaier@ams.com>
@@ -25,22 +25,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Florian Lobmaier <florian.lobmaier@ams.com>
 ---
- include/linux/mfd/as3722-plat.h |  238 +++++++++++++++++++
- include/linux/mfd/as3722-reg.h  |  495 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 733 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/mfd/as3722-plat.h
- create mode 100644 include/linux/mfd/as3722-reg.h
+ drivers/mfd/as3722-core.c |  747 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 747 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/as3722-core.c
 
-diff --git a/include/linux/mfd/as3722-plat.h b/include/linux/mfd/as3722-plat.h
+diff --git a/drivers/mfd/as3722-core.c b/drivers/mfd/as3722-core.c
 new file mode 100644
-index 0000000..0fc3fb7
+index 0000000..ddb39c7
 --- /dev/null
-+++ b/include/linux/mfd/as3722-plat.h
-@@ -0,0 +1,238 @@
++++ b/drivers/mfd/as3722-core.c
+@@ -0,0 +1,747 @@
 +/*
-+ * as3722.h definitions
++ * as3722-core.c - core driver for AS3722 PMICs
 + *
-+ * Copyright (C) 2013 ams
++ * Copyright (C) 2013 ams AG
 + *
 + * Author: Florian Lobmaier <florian.lobmaier@ams.com>
 + *
@@ -60,722 +58,730 @@ index 0000000..0fc3fb7
 + *
 + */
 +
-+#ifndef __LINUX_MFD_AS3722_PLAT_H
-+#define __LINUX_MFD_AS3722_PLAT_H
-+
-+#include <linux/mutex.h>
-+#include <linux/completion.h>
-+#include <linux/platform_device.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
 +#include <linux/interrupt.h>
-+#include <linux/workqueue.h>
-+#include <linux/power_supply.h>
 +#include <linux/irq.h>
-+#include <linux/irqdomain.h>
 +#include <linux/regmap.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/pwm.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/mfd/core.h>
++#include <linux/interrupt.h>
 +#include <linux/mfd/as3722-reg.h>
++#include <linux/mfd/as3722-plat.h>
 +
-+struct as3722_reg_init {
-+	u32 reg;
++enum as3722_ids {
++	AS3722_GPIO_ID,
++	AS3722_REGULATOR_ID,
++	AS3722_RTC_ID,
++	AS3722_WATCHDOG_ID,
++	AS3722_PWM_ID,
++};
++
++static const struct resource as3722_rtc_resource[] = {
++	{
++		.name = "as3722-rtc-alarm",
++		.start = AS3722_IRQ_RTC_ALARM,
++		.end = AS3722_IRQ_RTC_ALARM,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static const struct resource as3722_wdt_resource[] = {
++	{
++		.name = "as3722-watchdog-ping",
++		.start = AS3722_IRQ_WATCHDOG,
++		.end = AS3722_IRQ_WATCHDOG,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct mfd_cell as3722_devs[] = {
++	{
++		.name = "as3722-gpio",
++		.id = AS3722_GPIO_ID,
++	},
++	{
++		.name = "as3722-regulator",
++		.id = AS3722_REGULATOR_ID,
++	},
++	{
++		.name = "as3722-rtc",
++		.num_resources = ARRAY_SIZE(as3722_rtc_resource),
++		.resources = as3722_rtc_resource,
++		.id = AS3722_RTC_ID,
++	},
++	{
++		.name = "as3722-wdt",
++		.num_resources = ARRAY_SIZE(as3722_wdt_resource),
++		.resources = as3722_wdt_resource,
++		.id = AS3722_WATCHDOG_ID,
++	},
++	{
++		.name = "as3722-pwm",
++		.id = AS3722_PWM_ID,
++	},
++};
++
++static const struct regmap_irq as3722_irqs[] = {
++	/* INT1 IRQs */
++	[AS3722_IRQ_LID] = {
++		.mask = AS3722_IRQ_MASK_LID,
++	},
++	[AS3722_IRQ_ACOK] = {
++		.mask = AS3722_IRQ_MASK_ACOK,
++	},
++	[AS3722_IRQ_ENABLE1] = {
++		.mask = AS3722_IRQ_MASK_ENABLE1,
++	},
++	[AS3722_IRQ_SD0] = {
++		.mask = AS3722_IRQ_MASK_SD0,
++	},
++	[AS3722_IRQ_ONKEY_LONG] = {
++		.mask = AS3722_IRQ_MASK_ONKEY_LONG,
++	},
++	[AS3722_IRQ_ONKEY] = {
++		.mask = AS3722_IRQ_MASK_ONKEY,
++	},
++	[AS3722_IRQ_OVTMP] = {
++		.mask = AS3722_IRQ_MASK_OVTMP,
++	},
++	[AS3722_IRQ_LOWBAT] = {
++		.mask = AS3722_IRQ_MASK_LOWBAT,
++	},
++	[AS3722_IRQ_RTC_REP] = {
++		.mask = AS3722_IRQ_MASK_RTC_REP,
++		.reg_offset = 1,
++	},
++	[AS3722_IRQ_RTC_ALARM] = {
++		.mask = AS3722_IRQ_MASK_RTC_ALARM,
++		.reg_offset = 2,
++	},
++	[AS3722_IRQ_WATCHDOG] = {
++		.mask = AS3722_IRQ_MASK_WATCHDOG,
++		.reg_offset = 2,
++	},
++	[AS3722_IRQ_ADC] = {
++		.mask = AS3722_IRQ_MASK_ADC,
++		.reg_offset = 3,
++	},
++	[AS3722_IRQ_GPIO1] = {
++		.mask = AS3722_IRQ_MASK_GPIO1,
++		.reg_offset = 2,
++	},
++	[AS3722_IRQ_GPIO2] = {
++		.mask = AS3722_IRQ_MASK_GPIO2,
++		.reg_offset = 2,
++	},
++	[AS3722_IRQ_GPIO3] = {
++		.mask = AS3722_IRQ_MASK_GPIO3,
++		.reg_offset = 2,
++	},
++	[AS3722_IRQ_GPIO4] = {
++		.mask = AS3722_IRQ_MASK_GPIO4,
++		.reg_offset = 2,
++	},
++	[AS3722_IRQ_GPIO5] = {
++		.mask = AS3722_IRQ_MASK_GPIO5,
++		.reg_offset = 2,
++	},
++	[AS3722_IRQ_TEMP_SD0_SHUTDOWN] = {
++		.mask = AS3722_IRQ_MASK_TEMP_SD0_SHUTDOWN,
++		.reg_offset = 3,
++	},
++	[AS3722_IRQ_TEMP_SD1_SHUTDOWN] = {
++		.mask = AS3722_IRQ_MASK_TEMP_SD1_SHUTDOWN,
++		.reg_offset = 3,
++	},
++	[AS3722_IRQ_TEMP_SD6_SHUTDOWN] = {
++		.mask = AS3722_IRQ_MASK_TEMP_SD6_SHUTDOWN,
++		.reg_offset = 3,
++	},
++	[AS3722_IRQ_TEMP_SD0_ALARM] = {
++		.mask = AS3722_IRQ_MASK_TEMP_SD0_ALARM,
++		.reg_offset = 3,
++	},
++	[AS3722_IRQ_TEMP_SD1_ALARM] = {
++		.mask = AS3722_IRQ_MASK_TEMP_SD1_ALARM,
++		.reg_offset = 3,
++	},
++	[AS3722_IRQ_TEMP_SD6_ALARM] = {
++		.mask = AS3722_IRQ_MASK_TEMP_SD6_ALARM,
++		.reg_offset = 3,
++	},
++};
++
++static struct regmap_irq_chip as3722_irq_chip = {
++	.name = "as3722",
++	.irqs = as3722_irqs,
++	.num_irqs = ARRAY_SIZE(as3722_irqs),
++	.num_regs = 4,
++	.status_base = AS3722_INTERRUPTSTATUS1_REG,
++	.mask_base = AS3722_INTERRUPTMASK1_REG,
++	.wake_base = 1,
++};
++
++static void as3722_reg_init(struct as3722 *as3722,
++		struct as3722_reg_init *reg_data)
++{
++	int ret;
++
++	while (reg_data->reg != AS3722_REG_INIT_TERMINATE) {
++		ret = as3722_reg_write(as3722, reg_data->reg, reg_data->val);
++		if (ret) {
++			dev_err(as3722->dev,
++					"reg setup failed: %d\n", ret);
++			return;
++		}
++		reg_data++;
++	}
++}
++
++int as3722_read_adc(struct as3722 *as3722,
++		enum as3722_adc_channel channel,
++		enum as3722_adc_source source,
++		enum as3722_adc_voltange_range voltage_range)
++{
++	int result = 0;
++	unsigned int try_counter = 0;
 +	u32 val;
-+};
 +
-+extern const struct regmap_config as3722_regmap_config;
++	mutex_lock(&as3722->adc_mutex);
++	/* select source */
++	as3722_set_bits(as3722,
++			AS3722_ADC0_CONTROL_REG + channel,
++			AS3722_ADC_MASK_SOURCE_SELECT,
++			source);
++	/* select voltage range */
++	as3722_set_bits(as3722,
++			AS3722_ADC0_CONTROL_REG + channel,
++			AS3722_ADC_MASK_VOLTAGE_RANGE,
++			voltage_range << AS3722_ADC_SHIFT_VOLTAGE_RANGE);
++	/* start conversion */
++	as3722_set_bits(as3722,
++			AS3722_ADC0_CONTROL_REG + channel,
++			AS3722_ADC_MASK_CONV_START,
++			AS3722_ADC_BIT_CONV_START);
 +
-+struct as3722_rtc {
-+	struct rtc_device *rtc;
-+	int alarm_enabled;      /* used for suspend/resume */
-+};
++	/*
++	 * check if result ready
++	 * as no HW interrupt is available we have to poll
++	 * the status bit. The result is available on the next I2C read
++	 * at 400kHz I2C speed, so no threaded polling required.
++	 */
++	try_counter = 0;
++	do {
++		/* 2*channel for correct channel nr.1 read offset */
++		as3722_reg_read(as3722,
++				AS3722_ADC0_MSB_RESULT_REG + 2*channel,
++				&val);
++		/* check if conversion is ready */
++		if ((val & AS3722_ADC_MASK_CONV_NOTREADY)
++		     != AS3722_ADC_BIT_CONV_NOTREADY
++		   )
++			break;	/* conversion ready */
++		/*
++		 * if not, we try  max. 10 times which ensures
++		 * that it works up to 4MHz I2C speed and that
++		 * we stop if something goes wrong
++		 */
++		try_counter++;
++	} while (try_counter < 10);
 +
-+struct as3722 {
-+	struct device *dev;
-+	struct regmap *regmap;
-+	struct regmap_irq_chip_data *irq_data;
-+	struct regulator_dev *rdevs[AS3722_NUM_REGULATORS];
-+	struct as3722_rtc rtc;
-+	struct pwm_chip as3722_pwm;
++	/* read result, MSB byte already available from last read */
++	result = ((val & AS3722_ADC_MASK_MSB_VAL) << 8);
++	as3722_reg_read(as3722,
++			AS3722_ADC0_LSB_RESULT_REG + 2*channel,
++			&val);
++	result += (val & AS3722_ADC_MASK_LSB_VAL);
 +
-+	struct mutex adc_mutex;
++	mutex_unlock(&as3722->adc_mutex);
 +
-+	int chip_irq;
-+	int reg_stby_counter;
-+};
++	return result;
++}
++EXPORT_SYMBOL_GPL(as3722_read_adc);
 +
-+enum {
-+	AS3722_GPIO_CFG_NO_INVERT = 0,
-+	AS3722_GPIO_CFG_INVERT = 1,
-+};
++static irqreturn_t as3722_onkey_press_irq(int irq, void *irq_data)
++{
++	struct as3722 *as3722 = irq_data;
 +
-+enum {
-+	AS3722_GPIO_CFG_OUTPUT_DISABLED = 0,
-+	AS3722_GPIO_CFG_OUTPUT_ENABLED = 1,
-+};
++	dev_dbg(as3722->dev, "AS3722 ONKEY pressed\n");
++	return IRQ_HANDLED;
++}
 +
-+struct as3722_gpio_config {
-+	int gpio;
-+	int mode;
-+	int invert;
-+	int iosf;
-+	int output_state;
-+};
++static irqreturn_t as3722_onkey_lpress_irq(int irq, void *irq_data)
++{
++	struct as3722 *as3722 = irq_data;
 +
-+enum as3722_off_delay {
-+	AS3722_OFF_DELAY_NONE = 0,
-+	AS3722_OFF_DELAY_8ms = 1,
-+	AS3722_OFF_DELAY_16ms = 2,
-+	AS3722_OFF_DELAY_32ms = 3,
-+};
++	dev_dbg(as3722->dev, "AS3722 ONKEY long pressed\n");
++	return IRQ_HANDLED;
++}
 +
-+enum as3722_bit {
-+	AS3722_BIT_OFF = 0,
-+	AS3722_BIT_ON = 1,
-+};
++static irqreturn_t as3722_temp_sd0_shutdown_irq(int irq, void *irq_data)
++{
++	struct as3722 *as3722 = irq_data;
 +
-+enum as3722_vmask_time {
-+	AS3722_NO_MASKING = 0,
-+	AS3722_VMASK_4us = 1,
-+	AS3722_VMASK_8us = 2,
-+};
++	dev_dbg(as3722->dev, "AS3722 temp SD0 shutdown triggered\n");
++	return IRQ_HANDLED;
++}
 +
-+enum as3722_lv_deb_time {
-+	AS3722_NO_DEBOUNCING = 0,
-+	AS3722_DEB_1us = 1,
-+	AS3722_DEB_4us = 2,
-+	AS3722_DEB_20us = 3,
-+};
++static irqreturn_t as3722_temp_sd1_shutdown_irq(int irq, void *irq_data)
++{
++	struct as3722 *as3722 = irq_data;
 +
-+enum as3722_ovc_alarm {
-+	AS3722_OVC_ALARM_DISABLED = 0,
-+	AS3722_OVC_ALARM_1_6A = 1,
-+	AS3722_OVC_ALARM_1_8A = 2,
-+	AS3722_OVC_ALARM_2_0A = 3,
-+	AS3722_OVC_ALARM_2_2A = 4,
-+	AS3722_OVC_ALARM_2_4A = 5,
-+	AS3722_OVC_ALARM_2_6A = 6,
-+	AS3722_OVC_ALARM_2_8A = 7,
-+};
++	dev_dbg(as3722->dev, "AS3722 temp SD1 shutdown triggered\n");
++	return IRQ_HANDLED;
++}
 +
-+struct as3722_platform_data {
-+	struct regulator_init_data *reg_init[AS3722_NUM_REGULATORS];
++static irqreturn_t as3722_temp_sd6_shutdown_irq(int irq, void *irq_data)
++{
++	struct as3722 *as3722 = irq_data;
 +
-+	/* register initialisation */
-+	struct as3722_reg_init *core_init_data;
-+	int gpio_base;
-+	int irq_base;
-+	int irq_type;
++	dev_dbg(as3722->dev, "AS3722 temp SD6 shutdown triggered\n");
++	return IRQ_HANDLED;
++}
 +
-+	int use_internal_int_pullup;
-+	int use_internal_i2c_pullup;
-+	int enable_clk32out_pin;
++static irqreturn_t as3722_temp_sd0_alarm_irq(int irq, void *irq_data)
++{
++	struct as3722 *as3722 = irq_data;
 +
-+	int num_gpio_cfgs;
-+	struct as3722_gpio_config *gpio_cfgs;
++	dev_dbg(as3722->dev, "AS3722 temp SD0 alarm triggered\n");
++	return IRQ_HANDLED;
++}
 +
-+	/* enable1 pin standby control */
-+	enum as3722_off_delay off_delay;
-+	int enable1_deepsleep;
-+	int enable1_invert;
++static irqreturn_t as3722_temp_sd1_alarm_irq(int irq, void *irq_data)
++{
++	struct as3722 *as3722 = irq_data;
++
++	dev_dbg(as3722->dev, "AS3722 temp SD1 alarm triggered\n");
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t as3722_temp_sd6_alarm_irq(int irq, void *irq_data)
++{
++	struct as3722 *as3722 = irq_data;
++
++	dev_dbg(as3722->dev, "AS3722 temp SD6 alarm triggered\n");
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t as3722_ovtmp_alarm_irq(int irq, void *irq_data)
++{
++	struct as3722 *as3722 = irq_data;
++
++	dev_dbg(as3722->dev, "AS3722 ovtmp alarm triggered\n");
++	return IRQ_HANDLED;
++}
++
++static int as3722_init(struct as3722 *as3722,
++		struct as3722_platform_data *pdata, int irq)
++{
++	u32 reg;
++	int ret;
++	int irq_onkey, irq_onkeylong;
++	int irq_temp_sd0_shutdown, irq_temp_sd1_shutdown, irq_temp_sd6_shutdown;
++	int irq_temp_sd0_alarm, irq_temp_sd1_alarm, irq_temp_sd6_alarm;
++	int irq_ovtmp_alarm;
++
++	/* Check that this is actually a AS3722 */
++	ret = regmap_read(as3722->regmap, AS3722_ADDR_ASIC_ID1, &reg);
++	if (ret != 0) {
++		dev_err(as3722->dev,
++			"Chip ID register read failed\n");
++		return ret;
++	}
++	if (reg != AS3722_DEVICE_ID) {
++		dev_err(as3722->dev,
++			"Device is not an AS3722, ID is 0x%x\n",
++			reg);
++		return -ENODEV;
++	}
++
++	ret = regmap_read(as3722->regmap, AS3722_ADDR_ASIC_ID2, &reg);
++	if (ret != 0) {
++		dev_err(as3722->dev,
++			"ID2 register read failed: %d\n",
++			ret);
++		return ret;
++	}
++	dev_info(as3722->dev, "AS3722 with revision %x found\n", reg);
++
++	/* init adc mutex */
++	mutex_init(&as3722->adc_mutex);
++
++	/* request irqs for onkey and over temperature */
++	if (as3722->irq_data) {
++		irq_onkey = regmap_irq_get_virq(as3722->irq_data,
++						AS3722_IRQ_ONKEY);
++		ret = request_threaded_irq(irq_onkey,
++					   NULL,
++					   as3722_onkey_press_irq,
++					   pdata->irq_type,
++					   "onkey-press",
++					   as3722);
++		if (ret < 0)
++			dev_warn(as3722->dev,
++				 "Failed to request ONKEY IRQ: %d\n",
++				 ret);
++
++		irq_onkeylong = regmap_irq_get_virq(as3722->irq_data,
++						    AS3722_IRQ_ONKEY_LONG);
++		ret = request_threaded_irq(irq_onkeylong,
++					   NULL,
++					   as3722_onkey_lpress_irq,
++					   pdata->irq_type,
++					   "onkey-lpress",
++					   as3722);
++		if (ret < 0)
++			dev_warn(as3722->dev,
++				 "Failed to request ONKEY_LONG IRQ: %d\n",
++				 ret);
++
++		irq_temp_sd0_shutdown =
++			regmap_irq_get_virq(as3722->irq_data,
++					    AS3722_IRQ_TEMP_SD0_SHUTDOWN);
++		ret = request_threaded_irq(irq_temp_sd0_shutdown,
++					   NULL,
++					   as3722_temp_sd0_shutdown_irq,
++					   pdata->irq_type,
++					   "temp sd0 shutdown",
++					   as3722);
++		if (ret < 0)
++			dev_warn(as3722->dev,
++				 "Failed to request temp sd0 shutdown IRQ:"
++				 " %d\n",
++				 ret);
++		irq_temp_sd1_shutdown =
++			regmap_irq_get_virq(as3722->irq_data,
++					    AS3722_IRQ_TEMP_SD1_SHUTDOWN);
++		ret = request_threaded_irq(irq_temp_sd1_shutdown,
++					   NULL,
++					   as3722_temp_sd1_shutdown_irq,
++					   pdata->irq_type,
++					   "temp sd1 shutdown",
++					   as3722);
++		if (ret < 0)
++			dev_warn(as3722->dev,
++				 "Failed to request temp sd1 shutdown IRQ:"
++				 " %d\n",
++				 ret);
++		irq_temp_sd6_shutdown =
++			regmap_irq_get_virq(as3722->irq_data,
++					    AS3722_IRQ_TEMP_SD6_SHUTDOWN);
++		ret = request_threaded_irq(irq_temp_sd6_shutdown,
++					   NULL,
++					   as3722_temp_sd6_shutdown_irq,
++					   pdata->irq_type,
++					   "temp sd6 shutdown",
++					   as3722);
++		if (ret < 0)
++			dev_warn(as3722->dev,
++				 "Failed to request temp sd6 shutdown IRQ:"
++				 " %d\n",
++				 ret);
++		irq_temp_sd0_alarm =
++			regmap_irq_get_virq(as3722->irq_data,
++					    AS3722_IRQ_TEMP_SD0_ALARM);
++		ret = request_threaded_irq(irq_temp_sd0_alarm,
++					   NULL,
++					   as3722_temp_sd0_alarm_irq,
++					   pdata->irq_type,
++					   "temp sd0 alarm",
++					   as3722);
++		if (ret < 0)
++			dev_warn(as3722->dev,
++				 "Failed to request temp sd0 alarm IRQ:"
++				 " %d\n",
++				 ret);
++
++		irq_temp_sd1_alarm =
++			regmap_irq_get_virq(as3722->irq_data,
++					    AS3722_IRQ_TEMP_SD1_ALARM);
++		ret = request_threaded_irq(irq_temp_sd1_alarm,
++					   NULL,
++					   as3722_temp_sd1_alarm_irq,
++					   pdata->irq_type,
++					   "temp sd1 alarm",
++					   as3722);
++		if (ret < 0)
++			dev_warn(as3722->dev,
++				 "Failed to request temp sd1 alarm IRQ:"
++				 " %d\n",
++				 ret);
++		irq_temp_sd6_alarm =
++			regmap_irq_get_virq(as3722->irq_data,
++					    AS3722_IRQ_TEMP_SD6_ALARM);
++		ret = request_threaded_irq(irq_temp_sd6_alarm,
++					   NULL,
++					   as3722_temp_sd6_alarm_irq,
++					   pdata->irq_type,
++					   "temp sd6 alarm",
++					   as3722);
++		if (ret < 0)
++			dev_warn(as3722->dev,
++				 "Failed to request temp sd6 alarm IRQ:"
++				 " %d\n",
++				 ret);
++
++		irq_ovtmp_alarm =
++			regmap_irq_get_virq(as3722->irq_data,
++					    AS3722_IRQ_OVTMP);
++		ret = request_threaded_irq(irq_ovtmp_alarm,
++					   NULL,
++					   as3722_ovtmp_alarm_irq,
++					   pdata->irq_type,
++					   "ovtmp alarm",
++					   as3722);
++		if (ret < 0)
++			dev_warn(as3722->dev,
++				 "Failed to request ovtmp alarm IRQ:"
++				 " %d\n",
++				 ret);
++	}
++
++	/* do some initial platform register setup */
++	if (pdata->core_init_data)
++		as3722_reg_init(as3722, pdata->core_init_data);
++
++	/* initialise stby reg count variable, used in regulator */
++	as3722->reg_stby_counter = 0;
++
++	/* enable pullups if required */
++	if (pdata->use_internal_int_pullup == 1)
++		as3722_set_bits(as3722, AS3722_IOVOLTAGE_REG,
++				AS3722_INT_PULLUP_MASK,
++				AS3722_INT_PULLUP_ON);
++	else
++		as3722_set_bits(as3722, AS3722_IOVOLTAGE_REG,
++				AS3722_INT_PULLUP_MASK,
++				AS3722_INT_PULLUP_OFF);
++
++	if (pdata->use_internal_i2c_pullup)
++		as3722_set_bits(as3722, AS3722_IOVOLTAGE_REG,
++				AS3722_I2C_PULLUP_MASK,
++				AS3722_I2C_PULLUP_ON);
++	else
++		as3722_set_bits(as3722, AS3722_IOVOLTAGE_REG,
++				AS3722_I2C_PULLUP_MASK,
++				AS3722_I2C_PULLUP_OFF);
++
++	/* enable1 pin standby configuration */
++	if (pdata->enable1_deepsleep)
++		as3722_set_bits(as3722, AS3722_CTRL1_REG,
++				AS3722_ENABLE1_DEEPSLEEP_MASK,
++				AS3722_ENABLE1_DEEPSLEEP_ON);
++	else
++		as3722_set_bits(as3722, AS3722_CTRL1_REG,
++				AS3722_ENABLE1_DEEPSLEEP_MASK,
++				AS3722_ENABLE1_DEEPSLEEP_OFF);
++
++	if (pdata->enable1_invert)
++		as3722_set_bits(as3722, AS3722_CTRL1_REG,
++				AS3722_ENABLE1_INVERT_MASK,
++				AS3722_ENABLE1_INVERT_ON);
++	else
++		as3722_set_bits(as3722, AS3722_CTRL1_REG,
++				AS3722_ENABLE1_INVERT_MASK,
++				AS3722_ENABLE1_INVERT_OFF);
++
++	as3722_set_bits(as3722, AS3722_RESETTIMER_REG,
++			AS3722_OFF_DELAY_MASK,
++			pdata->off_delay << AS3722_OFF_DELAY_SHIFT);
 +
 +	/* thermal shutdown control */
-+	enum as3722_bit mask_ovtemp;
++	as3722_set_bits(as3722, AS3722_OVERTEMPERATURE_CONTROL_REG,
++			AS3722_OVTMP_MASK,
++			pdata->mask_ovtemp << AS3722_OVTMP_SHIFT);
 +
-+	/* overcurrent / powergood settings */
-+	enum as3722_vmask_time pg_sd6_vmask_time;
-+	enum as3722_lv_deb_time sd6_lv_deb_time;
-+	enum as3722_lv_deb_time sd1_lv_deb_time;
-+	enum as3722_lv_deb_time sd0_lv_deb_time;
-+	enum as3722_bit pg_vresfall_mask;
-+	enum as3722_bit pg_ovcurr_sd0_mask;
-+	enum as3722_bit pg_pwrgood_sd0_mask;
-+	enum as3722_bit pg_gpio5_mask;
-+	enum as3722_bit pg_gpio4_mask;
-+	enum as3722_bit pg_gpio3_mask;
-+	enum as3722_bit pg_ac_ok_mask;
-+	enum as3722_bit pg_ac_ok_inv;
-+	enum as3722_bit pg_ovcurr_sd6_mask;
-+	enum as3722_bit pg_pwrgood_sd6_mask;
-+	enum as3722_ovc_alarm pg_sd6_ovc_alarm;
-+	enum as3722_vmask_time pg_sd0_vmask_time;
-+	enum as3722_bit oc_pg_inv;
++	/* overcurrent/powergood configuration */
++	reg = (pdata->pg_sd6_vmask_time << AS3722_PG_SD6_VMASK_TIME_SHIFT)
++			& AS3722_PG_SD6_VMASK_TIME_MASK;
++	reg |= (pdata->sd6_lv_deb_time << AS3722_SD6_LV_DEB_SHIFT)
++			& AS3722_SD6_LV_DEB_MASK;
++	reg |= (pdata->sd1_lv_deb_time << AS3722_SD1_LV_DEB_SHIFT)
++			& AS3722_SD1_LV_DEB_MASK;
++	reg |= (pdata->sd0_lv_deb_time << AS3722_SD0_LV_DEB_SHIFT)
++			& AS3722_SD0_LV_DEB_MASK;
++	as3722_reg_write(as3722, AS3722_SD_LV_DEB_REG, reg);
++
++	reg = (pdata->pg_vresfall_mask << 7)
++			& AS3722_PG_VRESFALL_MASK_MASK;
++	reg |= (pdata->pg_ovcurr_sd0_mask << 6)
++			& AS3722_PG_OVCURR_SD0_MASK_MASK;
++	reg |= (pdata->pg_pwrgood_sd0_mask << 5)
++			& AS3722_PG_PWRGOOD_SD0_MASK_MASK;
++	reg |= (pdata->pg_gpio5_mask << 4)
++			& AS3722_PG_GPIO5_MASK_MASK;
++	reg |= (pdata->pg_gpio4_mask << 3)
++			& AS3722_PG_GPIO4_MASK_MASK;
++	reg |= (pdata->pg_gpio3_mask << 2)
++			& AS3722_PG_GPIO3_MASK_MASK;
++	reg |= (pdata->pg_ac_ok_mask << 1)
++			& AS3722_PG_AC_OK_MASK_MASK;
++	reg |= (pdata->pg_ac_ok_inv)
++			& AS3722_PG_AC_OK_INV_MASK;
++	as3722_reg_write(as3722, AS3722_OC_PG_CONTROL_REG, reg);
++
++	reg = (pdata->pg_ovcurr_sd6_mask << 7)
++			& AS3722_PG_OVCURR_SD6_MASK_MASK;
++	reg |= (pdata->pg_pwrgood_sd6_mask << 6)
++			& AS3722_PG_PWRGOOD_SD6_MASK_MASK;
++	reg |= (pdata->pg_sd6_ovc_alarm << 3)
++			& AS3722_PG_SD6_OVC_ALARM_MASK;
++	reg |= (pdata->pg_sd0_vmask_time << 1)
++			& AS3722_PG_SD0_VMASK_TIME_MASK;
++	reg |= (pdata->oc_pg_inv)
++			& AS3722_OC_PG_INV_MASK;
++	as3722_reg_write(as3722, AS3722_OC_PG_CONTROL2_REG, reg);
++
++	/* enable 32kHz clock output if required */
++	if (pdata->enable_clk32out_pin)
++		as3722_set_bits(as3722, AS3722_RTC_CONTROL_REG,
++				AS3722_CLK32OUT_ENABLE_MASK,
++				AS3722_CLK32OUT_ENABLE_ON);
++	else
++		as3722_set_bits(as3722, AS3722_RTC_CONTROL_REG,
++				AS3722_CLK32OUT_ENABLE_MASK,
++				AS3722_CLK32OUT_ENABLE_OFF);
++	return 0;
++}
++
++static int as3722_i2c_probe(struct i2c_client *i2c,
++		const struct i2c_device_id *id)
++{
++	struct as3722 *as3722;
++	struct as3722_platform_data *pdata;
++	int irq_flags;
++	int ret;
++
++	pdata = dev_get_platdata(&i2c->dev);
++	if (!pdata) {
++		dev_err(&i2c->dev, "as3722 requires platform data\n");
++		return -EINVAL;
++	}
++
++	as3722 = devm_kzalloc(&i2c->dev, sizeof(struct as3722), GFP_KERNEL);
++	if (!as3722)
++		return -ENOMEM;
++
++	as3722->dev = &i2c->dev;
++	as3722->chip_irq = i2c->irq;
++	i2c_set_clientdata(i2c, as3722);
++
++	as3722->regmap = devm_regmap_init_i2c(i2c, &as3722_regmap_config);
++	if (IS_ERR(as3722->regmap)) {
++		ret = PTR_ERR(as3722->regmap);
++		dev_err(&i2c->dev, "regmap_init failed with err: %d\n", ret);
++		return ret;
++	}
++
++	irq_flags = pdata->irq_type;
++	irq_flags |= IRQF_ONESHOT;
++	ret = regmap_add_irq_chip(as3722->regmap, as3722->chip_irq,
++			irq_flags, pdata->irq_base, &as3722_irq_chip,
++			&as3722->irq_data);
++	if (ret < 0) {
++		dev_err(as3722->dev,
++			"irq allocation failed for as3722 failed\n");
++		return ret;
++	}
++
++	ret = as3722_init(as3722, pdata, i2c->irq);
++	if (ret < 0)
++		return ret;
++
++	ret = mfd_add_devices(&i2c->dev,
++			      -1,
++			      as3722_devs,
++			      ARRAY_SIZE(as3722_devs),
++			      NULL,
++			      pdata->irq_base,
++			      regmap_irq_get_domain(as3722->irq_data));
++	if (ret) {
++		dev_err(as3722->dev,
++			"add mfd devices failed with err: %d\n",
++			ret);
++		return ret;
++	}
++
++	dev_info(as3722->dev,
++		 "AS3722 core driver initialized successfully\n");
++
++	return 0;
++}
++
++static int as3722_i2c_remove(struct i2c_client *i2c)
++{
++	struct as3722 *as3722 = i2c_get_clientdata(i2c);
++	int irq_onkeylong, irq_onkey;
++	int irq_temp_sd0_shutdown, irq_temp_sd1_shutdown, irq_temp_sd6_shutdown;
++	int irq_temp_sd0_alarm, irq_temp_sd1_alarm, irq_temp_sd6_alarm;
++	int irq_ovtmp_alarm;
++
++	irq_onkeylong = regmap_irq_get_virq(as3722->irq_data,
++					    AS3722_IRQ_ONKEY_LONG);
++	irq_onkey = regmap_irq_get_virq(as3722->irq_data, AS3722_IRQ_ONKEY);
++	irq_temp_sd0_shutdown =
++		regmap_irq_get_virq(as3722->irq_data,
++				    AS3722_IRQ_TEMP_SD0_SHUTDOWN);
++	irq_temp_sd1_shutdown =
++		regmap_irq_get_virq(as3722->irq_data,
++				    AS3722_IRQ_TEMP_SD1_SHUTDOWN);
++	irq_temp_sd6_shutdown =
++		regmap_irq_get_virq(as3722->irq_data,
++				    AS3722_IRQ_TEMP_SD6_SHUTDOWN);
++	irq_temp_sd0_alarm =
++		regmap_irq_get_virq(as3722->irq_data,
++				    AS3722_IRQ_TEMP_SD0_ALARM);
++	irq_temp_sd1_alarm =
++		regmap_irq_get_virq(as3722->irq_data,
++				    AS3722_IRQ_TEMP_SD1_ALARM);
++	irq_temp_sd6_alarm =
++		regmap_irq_get_virq(as3722->irq_data,
++				    AS3722_IRQ_TEMP_SD6_ALARM);
++	irq_ovtmp_alarm =
++		regmap_irq_get_virq(as3722->irq_data,
++				    AS3722_IRQ_OVTMP);
++
++	free_irq(irq_onkeylong, as3722);
++	free_irq(irq_onkey, as3722);
++	free_irq(irq_temp_sd0_shutdown, as3722);
++	free_irq(irq_temp_sd1_shutdown, as3722);
++	free_irq(irq_temp_sd6_shutdown, as3722);
++	free_irq(irq_temp_sd0_alarm, as3722);
++	free_irq(irq_temp_sd1_alarm, as3722);
++	free_irq(irq_temp_sd6_alarm, as3722);
++	free_irq(irq_ovtmp_alarm, as3722);
++	mfd_remove_devices(as3722->dev);
++	regmap_del_irq_chip(as3722->chip_irq, as3722->irq_data);
++
++	return 0;
++}
++
++static const struct i2c_device_id as3722_i2c_id[] = {
++	{ "as3722", 0 },
++	{ }
 +};
 +
-+static inline int as3722_reg_read(struct as3722 *as3722, u32 reg, u32 *dest)
-+{
-+	return regmap_read(as3722->regmap, reg, dest);
-+}
++MODULE_DEVICE_TABLE(i2c, as3722_i2c_id);
 +
-+static inline int as3722_reg_write(struct as3722 *as3722, u32 reg, u32 value)
-+{
-+	return regmap_write(as3722->regmap, reg, value);
-+}
-+
-+static inline int as3722_block_read(struct as3722 *as3722, u32 reg,
-+		int count, u8 *buf)
-+{
-+	return regmap_bulk_read(as3722->regmap, reg, buf, count);
-+}
-+
-+static inline int as3722_block_write(struct as3722 *as3722, u32 reg,
-+		int count, u8 *data)
-+{
-+	return regmap_bulk_write(as3722->regmap, reg, data, count);
-+}
-+
-+static inline int as3722_set_bits(struct as3722 *as3722, u32 reg,
-+		u32 mask, u8 val)
-+{
-+	return regmap_update_bits(as3722->regmap, reg, mask, val);
-+}
-+
-+/* ADC */
-+enum as3722_adc_source {
-+	AS3722_ADC_SD0 = 0,
-+	AS3722_ADC_SD1 = 1,
-+	AS3722_ADC_SD6 = 2,
-+	AS3722_ADC_TEMP_SENSOR = 3,
-+	AS3722_ADC_VSUP = 4,
-+	AS3722_ADC_GPIO1 = 5,
-+	AS3722_ADC_GPIO2 = 6,
-+	AS3722_ADC_GPIO3 = 7,
-+	AS3722_ADC_GPIO4 = 8,
-+	AS3722_ADC_GPIO6 = 9,
-+	AS3722_ADC_GPIO7 = 10,
-+	AS3722_ADC_VBAT = 11,
-+	AS3722_ADC_PWM_CLK2 = 12,
-+	AS3722_ADC_PWM_DAT2 = 13,
-+	AS3722_ADC_TEMP1_SD0 = 16,
-+	AS3722_ADC_TEMP2_SD0 = 17,
-+	AS3722_ADC_TEMP3_SD0 = 18,
-+	AS3722_ADC_TEMP4_SD0 = 19,
-+	AS3722_ADC_TEMP_SD1 = 20,
-+	AS3722_ADC_TEMP1_SD6 = 21,
-+	AS3722_ADC_TEMP2_SD6 = 22,
++static struct i2c_driver as3722_i2c_driver = {
++	.driver = {
++		.name = "as3722",
++		.owner = THIS_MODULE,
++	},
++	.probe = as3722_i2c_probe,
++	.remove = as3722_i2c_remove,
++	.id_table = as3722_i2c_id,
 +};
 +
-+enum as3722_adc_channel {
-+	AS3722_ADC0 = 0,
-+	AS3722_ADC1 = 1,
-+};
++module_i2c_driver(as3722_i2c_driver);
 +
-+enum as3722_adc_voltange_range {
-+	AS3722_ADC_HIGH_VOLTAGE_RANGE = 0,
-+	AS3722_ADC_LOW_VOLTAGE_RANGE = 1,
-+};
-+
-+int as3722_adc_read(struct as3722 *as3722,
-+			enum as3722_adc_channel channel,
-+			enum as3722_adc_source source,
-+			enum as3722_adc_voltange_range voltage_range);
-+
-+#endif
-+
-+
-+
-+
-+
-+
-diff --git a/include/linux/mfd/as3722-reg.h b/include/linux/mfd/as3722-reg.h
-new file mode 100644
-index 0000000..cc77584
---- /dev/null
-+++ b/include/linux/mfd/as3722-reg.h
-@@ -0,0 +1,495 @@
-+/*
-+ * as3722.h definitions
-+ *
-+ * Copyright (C) 2013 ams
-+ *
-+ * Author: Florian Lobmaier <florian.lobmaier@ams.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ *
-+ */
-+
-+#ifndef __LINUX_MFD_AS3722_REG_H
-+#define __LINUX_MFD_AS3722_REG_H
-+
-+#include <linux/mutex.h>
-+#include <linux/platform_device.h>
-+#include <linux/interrupt.h>
-+#include <linux/workqueue.h>
-+#include <linux/power_supply.h>
-+#include <linux/irq.h>
-+#include <linux/regmap.h>
-+#include <linux/regulator/machine.h>
-+
-+#define AS3722_DEVICE_ID		       0x0C
-+#define AS3722_REGISTER_COUNT                  0x92
-+#define AS3722_NUM_REGULATORS                  18
-+#define AS3722_NUM_STEPDOWN_REGULATORS         7
-+#define AS3722_MAX_REG_STBY_COUNT	       10
-+
-+/* defines for register init */
-+#define AS3722_REG_INIT(reg_offset, reg_value)  \
-+{                                              \
-+	.reg     = (reg_offset),                \
-+	.val     = (reg_value),                 \
-+}
-+
-+#define AS3722_REG_INIT_TERMINATE              0xFF
-+
-+/* regulator IDs */
-+#define AS3722_LDO0                            0
-+#define AS3722_LDO1                            1
-+#define AS3722_LDO2                            2
-+#define AS3722_LDO3                            3
-+#define AS3722_LDO4                            4
-+#define AS3722_LDO5                            5
-+#define AS3722_LDO6                            6
-+#define AS3722_LDO7                            7
-+#define AS3722_LDO9                            8
-+#define AS3722_LDO10                           9
-+#define AS3722_LDO11                           10
-+#define AS3722_SD0                             11
-+#define AS3722_SD1                             12
-+#define AS3722_SD2                             13
-+#define AS3722_SD3                             14
-+#define AS3722_SD4                             15
-+#define AS3722_SD5                             16
-+#define AS3722_SD6                             17
-+
-+/* AS3722 ASIC ID */
-+#define AS3722_ADDR_ASIC_ID1                   0x90
-+#define AS3722_ADDR_ASIC_ID2                   0x91
-+
-+/* GPIO IDs */
-+#define AS3722_GPIO0                           0
-+#define AS3722_GPIO1                           1
-+#define AS3722_GPIO2                           2
-+#define AS3722_GPIO3                           3
-+#define AS3722_GPIO4                           4
-+#define AS3722_GPIO5                           5
-+#define AS3722_GPIO6                           6
-+#define AS3722_GPIO7                           7
-+
-+#define AS3722_NUM_GPIO                        8
-+#define AS3722_GPIO_IRQ_BASE                   0
-+
-+/* GPIO modes */
-+#define AS3722_GPIO_MODE_MASK                  0x07
-+#define AS3722_GPIO_MODE_INPUT                 0
-+#define AS3722_GPIO_MODE_OUTPUT_VDDH           1
-+#define AS3722_GPIO_MODE_IO_OPEN_DRAIN         2
-+#define AS3722_GPIO_MODE_ADC_IN                3
-+#define AS3722_GPIO_MODE_INPUT_W_PULLUP        4
-+#define AS3722_GPIO_MODE_INPUT_W_PULLDOWN      5
-+#define AS3722_GPIO_MODE_IO_OPEN_DRAIN_PULLUP  6
-+#define AS3722_GPIO_MODE_OUTPUT_VDDL           7
-+
-+/* Interrupt IDs */
-+#define AS3722_IRQ_MAX_HANDLER                 18
-+#define AS3722_IRQ_LID                         0
-+#define AS3722_IRQ_ACOK                        1
-+#define AS3722_IRQ_ENABLE1		       2
-+#define AS3722_IRQ_OCURR_ACOK                  3
-+#define AS3722_IRQ_ONKEY_LONG                  4
-+#define AS3722_IRQ_ONKEY                       5
-+#define AS3722_IRQ_OVTMP                       6
-+#define AS3722_IRQ_LOWBAT                      7
-+#define AS3722_IRQ_RTC_REP                     8
-+#define AS3722_IRQ_RTC_ALARM                   9
-+#define AS3722_IRQ_SD0                         10
-+#define AS3722_IRQ_WATCHDOG                    11
-+#define AS3722_IRQ_ADC                         12
-+#define AS3722_IRQ_GPIO1                       13
-+#define AS3722_IRQ_GPIO2                       14
-+#define AS3722_IRQ_GPIO3                       15
-+#define AS3722_IRQ_GPIO4                       16
-+#define AS3722_IRQ_GPIO5                       17
-+#define AS3722_IRQ_TEMP_SD0_SHUTDOWN	       18
-+#define AS3722_IRQ_TEMP_SD1_SHUTDOWN	       19
-+#define AS3722_IRQ_TEMP_SD6_SHUTDOWN	       20
-+#define AS3722_IRQ_TEMP_SD0_ALARM	       21
-+#define AS3722_IRQ_TEMP_SD1_ALARM	       22
-+#define AS3722_IRQ_TEMP_SD6_ALARM	       23
-+
-+/* AS3722 registers */
-+#define AS3722_SD0_VOLTAGE_REG                 0x00
-+#define AS3722_SD1_VOLTAGE_REG                 0x01
-+#define AS3722_SD2_VOLTAGE_REG                 0x02
-+#define AS3722_SD3_VOLTAGE_REG                 0x03
-+#define AS3722_SD4_VOLTAGE_REG                 0x04
-+#define AS3722_SD5_VOLTAGE_REG                 0x05
-+#define AS3722_SD6_VOLTAGE_REG                 0x06
-+#define AS3722_GPIO0_CONTROL_REG               0x08
-+#define AS3722_GPIO1_CONTROL_REG               0x09
-+#define AS3722_GPIO2_CONTROL_REG               0x0A
-+#define AS3722_GPIO3_CONTROL_REG               0x0B
-+#define AS3722_GPIO4_CONTROL_REG               0x0C
-+#define AS3722_GPIO5_CONTROL_REG               0x0D
-+#define AS3722_GPIO6_CONTROL_REG               0x0E
-+#define AS3722_GPIO7_CONTROL_REG               0x0F
-+#define AS3722_LDO0_VOLTAGE_REG                0x10
-+#define AS3722_LDO1_VOLTAGE_REG                0x11
-+#define AS3722_LDO2_VOLTAGE_REG                0x12
-+#define AS3722_LDO3_VOLTAGE_REG                0x13
-+#define AS3722_LDO4_VOLTAGE_REG                0x14
-+#define AS3722_LDO5_VOLTAGE_REG                0x15
-+#define AS3722_LDO6_VOLTAGE_REG                0x16
-+#define AS3722_LDO7_VOLTAGE_REG                0x17
-+#define AS3722_LDO9_VOLTAGE_REG                0x19
-+#define AS3722_LDO10_VOLTAGE_REG               0x1A
-+#define AS3722_LDO11_VOLTAGE_REG               0x1B
-+
-+#define AS3722_GPIO_SIGNAL_OUT_REG             0x20
-+#define AS3722_GPIO_SIGNAL_IN_REG              0x21
-+
-+#define AS3722_SD0_CONTROL_REG                 0x29
-+#define AS3722_SD1_CONTROL_REG                 0x2A
-+#define AS3722_SDmph_CONTROL_REG               0x2B
-+#define AS3722_SD23_CONTROL_REG                0x2C
-+#define AS3722_SD4_CONTROL_REG                 0x2D
-+#define AS3722_SD5_CONTROL_REG                 0x2E
-+#define AS3722_SD6_CONTROL_REG                 0x2F
-+
-+#define AS3722_RESETTIMER_REG		       0x34
-+#define AS3722_OVERTEMPERATURE_CONTROL_REG     0x37
-+#define AS3722_WATCHDOG_CONTROL_REG            0x38
-+#define AS3722_REG_STANDBY_MOD1_REG	       0x39
-+#define AS3722_REG_STANDBY_MOD2_REG	       0x3A
-+#define AS3722_REG_STANDBY_MOD3_REG	       0x3B
-+#define AS3722_PWM_CONTROL_L_REG	       0x41
-+#define AS3722_PWM_CONTROL_H_REG	       0x42
-+#define AS3722_WATCHDOG_TIMER_REG              0x46
-+#define AS3722_WATCHDOG_SOFTWARE_SIGNAL_REG    0x48
-+#define AS3722_IOVOLTAGE_REG                   0x49
-+#define AS3722_SD_CONTROL_REG                  0x4D
-+#define AS3722_LDOCONTROL0_REG                 0x4E
-+#define AS3722_LDOCONTROL1_REG                 0x4F
-+
-+#define AS3722_CTRL1_REG                       0x58
-+#define AS3722_CTRL2_REG                       0x59
-+#define AS3722_SD_LV_DEB_REG		       0x5C
-+#define AS3722_OC_PG_CONTROL_REG	       0x5D
-+#define AS3722_OC_PG_CONTROL2_REG	       0x5E
-+#define AS3722_RTC_CONTROL_REG                 0x60
-+#define AS3722_RTC_SECOND_REG                  0x61
-+#define AS3722_RTC_MINUTE_REG                  0x62
-+#define AS3722_RTC_HOUR_REG                    0x63
-+#define AS3722_RTC_DAY_REG                     0x64
-+#define AS3722_RTC_MONTH_REG                   0x65
-+#define AS3722_RTC_YEAR_REG                    0x66
-+#define AS3722_RTC_ALARM_SECOND_REG            0x67
-+#define AS3722_RTC_ALARM_MINUTE_REG            0x68
-+#define AS3722_RTC_ALARM_HOUR_REG              0x69
-+#define AS3722_RTC_ALARM_DAY_REG               0x6A
-+#define AS3722_RTC_ALARM_MONTH_REG             0x6B
-+#define AS3722_RTC_ALARM_YEAR_REG              0x6C
-+
-+#define AS3722_INTERRUPTMASK1_REG              0x74
-+#define AS3722_INTERRUPTMASK2_REG              0x75
-+#define AS3722_INTERRUPTMASK3_REG              0x76
-+#define AS3722_INTERRUPTMASK4_REG              0x77
-+#define AS3722_INTERRUPTSTATUS1_REG            0x78
-+#define AS3722_INTERRUPTSTATUS2_REG            0x79
-+#define AS3722_INTERRUPTSTATUS3_REG            0x7A
-+#define AS3722_INTERRUPTSTATUS4_REG            0x7B
-+#define AS3722_TEMP_STATUS_REG		       0x7D
-+
-+#define AS3722_ADC0_CONTROL_REG                0x80
-+#define AS3722_ADC1_CONTROL_REG                0x81
-+#define AS3722_ADC0_MSB_RESULT_REG             0x82
-+#define AS3722_ADC0_LSB_RESULT_REG             0x83
-+#define AS3722_ADC1_MSB_RESULT_REG             0x84
-+#define AS3722_ADC1_LSB_RESULT_REG             0x85
-+#define AS3722_ADC1_THRESHOLD_HI_MSB_REG       0x86
-+#define AS3722_ADC1_THRESHOLD_HI_LSB_REG       0x87
-+#define AS3722_ADC1_THRESHOLD_LO_MSB_REG       0x88
-+#define AS3722_ADC1_THRESHOLD_LO_LSB_REG       0x89
-+#define AS3722_ADC_CONFIG_REG                  0x8A
-+
-+#define AS3722_REG0_CONTROL_REG		       0xE0
-+#define AS3722_REG1_CONTROL_REG		       0xE1
-+#define AS3722_REG2_CONTROL_REG		       0xE2
-+#define AS3722_REG3_CONTROL_REG		       0xE3
-+#define AS3722_REG4_CONTROL_REG		       0xE4
-+#define AS3722_REG5_CONTROL_REG		       0xE5
-+#define AS3722_REG6_CONTROL_REG		       0xE6
-+#define AS3722_REG7_CONTROL_REG		       0xE7
-+#define AS3722_REG8_CONTROL_REG		       0xE8
-+#define AS3722_REG9_CONTROL_REG		       0xE9
-+#define AS3722_REG0_VOLTAGE_REG		       0xEA
-+#define AS3722_REG1_VOLTAGE_REG		       0xEB
-+#define AS3722_REG2_VOLTAGE_REG		       0xEC
-+#define AS3722_REG3_VOLTAGE_REG		       0xED
-+#define AS3722_REG4_VOLTAGE_REG		       0xEE
-+#define AS3722_REG5_VOLTAGE_REG		       0xEF
-+#define AS3722_REG6_VOLTAGE_REG		       0xF0
-+#define AS3722_REG7_VOLTAGE_REG		       0xF1
-+#define AS3722_REG8_VOLTAGE_REG		       0xF2
-+#define AS3722_REG9_VOLTAGE_REG		       0xF3
-+
-+/* AS3722 register bits and bit masks */
-+#define AS3722_LDO_ILIMIT_MASK                 (1 << 7)
-+#define AS3722_LDO_ILIMIT_BIT                  (1 << 7)
-+#define AS3722_LDO0_VSEL_MASK                  0x1F
-+#define AS3722_LDO0_VSEL_MIN                   0x01
-+#define AS3722_LDO0_VSEL_MAX                   0x12
-+#define AS3722_LDO3_VSEL_MASK                  0x3F
-+#define AS3722_LDO3_VSEL_MIN                   0x01
-+#define AS3722_LDO3_VSEL_MAX                   0x45
-+#define AS3722_LDO_VSEL_MASK                   0x7F
-+#define AS3722_LDO_VSEL_MIN                    0x01
-+#define AS3722_LDO_VSEL_MAX                    0x7F
-+#define AS3722_LDO_VSEL_DNU_MIN                0x25
-+#define AS3722_LDO_VSEL_DNU_MAX                0x3F
-+#define AS3722_LDO_NUM_VOLT                    100
-+
-+#define AS3722_LDO0_ON                         (1 << 0)
-+#define AS3722_LDO0_OFF                        (0 << 0)
-+#define AS3722_LDO0_CTRL_MASK                  (1 << 0)
-+#define AS3722_LDO1_ON                         (1 << 1)
-+#define AS3722_LDO1_OFF                        (0 << 1)
-+#define AS3722_LDO1_CTRL_MASK                  (1 << 1)
-+#define AS3722_LDO2_ON                         (1 << 2)
-+#define AS3722_LDO2_OFF                        (0 << 2)
-+#define AS3722_LDO2_CTRL_MASK                  (1 << 2)
-+#define AS3722_LDO3_ON                         (1 << 3)
-+#define AS3722_LDO3_OFF                        (0 << 3)
-+#define AS3722_LDO3_CTRL_MASK                  (1 << 3)
-+#define AS3722_LDO4_ON                         (1 << 4)
-+#define AS3722_LDO4_OFF                        (0 << 4)
-+#define AS3722_LDO4_CTRL_MASK                  (1 << 4)
-+#define AS3722_LDO5_ON                         (1 << 5)
-+#define AS3722_LDO5_OFF                        (0 << 5)
-+#define AS3722_LDO5_CTRL_MASK                  (1 << 5)
-+#define AS3722_LDO6_ON                         (1 << 6)
-+#define AS3722_LDO6_OFF                        (0 << 6)
-+#define AS3722_LDO6_CTRL_MASK                  (1 << 6)
-+#define AS3722_LDO7_ON                         (1 << 7)
-+#define AS3722_LDO7_OFF                        (0 << 7)
-+#define AS3722_LDO7_CTRL_MASK                  (1 << 7)
-+#define AS3722_LDO9_ON                         (1 << 1)
-+#define AS3722_LDO9_OFF                        (0 << 1)
-+#define AS3722_LDO9_CTRL_MASK                  (1 << 1)
-+#define AS3722_LDO10_ON                        (1 << 2)
-+#define AS3722_LDO10_OFF                       (0 << 2)
-+#define AS3722_LDO10_CTRL_MASK                 (1 << 2)
-+#define AS3722_LDO11_ON                        (1 << 3)
-+#define AS3722_LDO11_OFF                       (0 << 3)
-+#define AS3722_LDO11_CTRL_MASK                 (1 << 3)
-+
-+#define AS3722_SD_VSEL_MASK                    0x7F
-+#define AS3722_SD0_VSEL_MIN                    0x01
-+#define AS3722_SD0_VSEL_MAX                    0x5A
-+#define AS3722_SD2_VSEL_MIN                    0x01
-+#define AS3722_SD2_VSEL_MAX                    0x7F
-+#define AS3722_SD0_ON                          (1 << 0)
-+#define AS3722_SD0_OFF                         (0 << 0)
-+#define AS3722_SD0_CTRL_MASK                   (1 << 0)
-+#define AS3722_SD1_ON                          (1 << 1)
-+#define AS3722_SD1_OFF                         (0 << 1)
-+#define AS3722_SD1_CTRL_MASK                   (1 << 1)
-+#define AS3722_SD2_ON                          (1 << 2)
-+#define AS3722_SD2_OFF                         (0 << 2)
-+#define AS3722_SD2_CTRL_MASK                   (1 << 2)
-+#define AS3722_SD3_ON                          (1 << 3)
-+#define AS3722_SD3_OFF                         (0 << 3)
-+#define AS3722_SD3_CTRL_MASK                   (1 << 3)
-+#define AS3722_SD4_ON                          (1 << 4)
-+#define AS3722_SD4_OFF                         (0 << 4)
-+#define AS3722_SD4_CTRL_MASK                   (1 << 4)
-+#define AS3722_SD5_ON                          (1 << 5)
-+#define AS3722_SD5_OFF                         (0 << 5)
-+#define AS3722_SD5_CTRL_MASK                   (1 << 5)
-+#define AS3722_SD6_ON                          (1 << 6)
-+#define AS3722_SD6_OFF                         (0 << 6)
-+#define AS3722_SD6_CTRL_MASK                   (1 << 6)
-+
-+#define AS3722_SD0_MODE_FAST                   (1 << 4)
-+#define AS3722_SD0_MODE_NORMAL                 (0 << 4)
-+#define AS3722_SD0_MODE_MASK                   (1 << 4)
-+#define AS3722_SD1_MODE_FAST                   (1 << 4)
-+#define AS3722_SD1_MODE_NORMAL                 (0 << 4)
-+#define AS3722_SD1_MODE_MASK                   (1 << 4)
-+#define AS3722_SD2_MODE_FAST                   (1 << 2)
-+#define AS3722_SD2_MODE_NORMAL                 (0 << 2)
-+#define AS3722_SD2_MODE_MASK                   (1 << 2)
-+#define AS3722_SD3_MODE_FAST                   (1 << 6)
-+#define AS3722_SD3_MODE_NORMAL                 (0 << 6)
-+#define AS3722_SD3_MODE_MASK                   (1 << 6)
-+#define AS3722_SD4_MODE_FAST                   (1 << 2)
-+#define AS3722_SD4_MODE_NORMAL                 (0 << 2)
-+#define AS3722_SD4_MODE_MASK                   (1 << 2)
-+#define AS3722_SD5_MODE_FAST                   (1 << 2)
-+#define AS3722_SD5_MODE_NORMAL                 (0 << 2)
-+#define AS3722_SD5_MODE_MASK                   (1 << 2)
-+#define AS3722_SD6_MODE_FAST                   (1 << 4)
-+#define AS3722_SD6_MODE_NORMAL                 (0 << 4)
-+#define AS3722_SD6_MODE_MASK                   (1 << 4)
-+
-+#define AS3722_DELAY_TIME_STBY_MASK	       (1 << 6)
-+#define AS3722_REG_DELAY_STBY_MASK	       (1 << 5)
-+#define AS3722_REG_SELECT_STBY_MASK	       (0x1F)
-+#define AS3722_REG_VOLTAGE_STBY_MASK	       (0xFF)
-+
-+#define AS3722_SD0_LV_DEB_MASK		       (0x03)
-+#define AS3722_SD1_LV_DEB_MASK		       (0x0C)
-+#define AS3722_SD6_LV_DEB_MASK		       (0x30)
-+#define AS3722_PG_SD6_VMASK_TIME_MASK	       (0xC0)
-+#define AS3722_SD0_LV_DEB_SHIFT		       (0)
-+#define AS3722_SD1_LV_DEB_SHIFT		       (2)
-+#define AS3722_SD6_LV_DEB_SHIFT		       (4)
-+#define AS3722_PG_SD6_VMASK_TIME_SHIFT	       (6)
-+
-+#define AS3722_PG_AC_OK_INV_MASK	       (1 << 0)
-+#define AS3722_PG_AC_OK_MASK_MASK	       (1 << 1)
-+#define AS3722_PG_GPIO3_MASK_MASK	       (1 << 2)
-+#define AS3722_PG_GPIO4_MASK_MASK	       (1 << 3)
-+#define AS3722_PG_GPIO5_MASK_MASK	       (1 << 4)
-+#define AS3722_PG_PWRGOOD_SD0_MASK_MASK	       (1 << 5)
-+#define AS3722_PG_OVCURR_SD0_MASK_MASK	       (1 << 6)
-+#define AS3722_PG_VRESFALL_MASK_MASK	       (1 << 7)
-+
-+#define AS3722_OC_PG_INV_MASK		       (1 << 0)
-+#define AS3722_PG_SD0_VMASK_TIME_MASK	       (0x06)
-+#define AS3722_PG_SD6_OVC_ALARM_MASK	       (0x38)
-+#define AS3722_PG_PWRGOOD_SD6_MASK_MASK	       (1 << 6)
-+#define AS3722_PG_OVCURR_SD6_MASK_MASK	       (1 << 7)
-+
-+#define AS3722_IRQ_MASK_LID                    (1 << 0)
-+#define AS3722_IRQ_MASK_ACOK                   (1 << 1)
-+#define AS3722_IRQ_MASK_ENABLE1                (1 << 2)
-+#define AS3722_IRQ_MASK_OCURR_ACOK             (1 << 3)
-+#define AS3722_IRQ_MASK_ONKEY_LONG             (1 << 4)
-+#define AS3722_IRQ_MASK_ONKEY                  (1 << 5)
-+#define AS3722_IRQ_MASK_OVTMP                  (1 << 6)
-+#define AS3722_IRQ_MASK_LOWBAT                 (1 << 7)
-+#define AS3722_IRQ_MASK_SD0                    (1 << 0)
-+#define AS3722_IRQ_MASK_RTC_REP                (1 << 7)
-+#define AS3722_IRQ_MASK_RTC_ALARM              (1 << 0)
-+#define AS3722_IRQ_MASK_WATCHDOG               (1 << 6)
-+#define AS3722_IRQ_MASK_ADC                    (1 << 7)
-+#define AS3722_IRQ_MASK_GPIO1		       (1 << 1)
-+#define AS3722_IRQ_MASK_GPIO2		       (1 << 2)
-+#define AS3722_IRQ_MASK_GPIO3		       (1 << 3)
-+#define AS3722_IRQ_MASK_GPIO4		       (1 << 4)
-+#define AS3722_IRQ_MASK_GPIO5		       (1 << 5)
-+#define AS3722_IRQ_MASK_TEMP_SD0_SHUTDOWN      (1 << 0)
-+#define AS3722_IRQ_MASK_TEMP_SD1_SHUTDOWN      (1 << 1)
-+#define AS3722_IRQ_MASK_TEMP_SD6_SHUTDOWN      (1 << 2)
-+#define AS3722_IRQ_MASK_TEMP_SD0_ALARM	       (1 << 3)
-+#define AS3722_IRQ_MASK_TEMP_SD1_ALARM	       (1 << 4)
-+#define AS3722_IRQ_MASK_TEMP_SD6_ALARM	       (1 << 5)
-+
-+#define AS3722_IRQ_BIT_LID                     (1 << 0)
-+#define AS3722_IRQ_BIT_ACOK                    (1 << 1)
-+#define AS3722_IRQ_BIT_ENABLE1		       (1 << 2)
-+#define AS3722_IRQ_BIT_SD0                     (1 << 3)
-+#define AS3722_IRQ_BIT_ONKEY_LONG              (1 << 4)
-+#define AS3722_IRQ_BIT_ONKEY                   (1 << 5)
-+#define AS3722_IRQ_BIT_OVTMP                   (1 << 6)
-+#define AS3722_IRQ_BIT_LOWBAT                  (1 << 7)
-+#define AS3722_IRQ_BIT_RTC_REP                 (1 << 7)
-+#define AS3722_IRQ_BIT_RTC_ALARM               (1 << 0)
-+#define AS3722_IRQ_BIT_WATCHDOG                (1 << 6)
-+#define AS3722_IRQ_BIT_ADC                     (1 << 7)
-+
-+#define AS3722_OVTMP_MASK		       (1 << 3)
-+#define AS3722_OVTMP_SHIFT		       3
-+
-+/* ADC bit masks */
-+#define AS3722_ADC_MASK_BUF_ON                 (1 << 2)
-+#define AS3722_ADC_BIT_BUF_ON                  (1 << 2)
-+#define AS3722_ADC1_MASK_INT_MODE_ON           (1 << 1)
-+#define AS3722_ADC1_BIT_INT_MODE_ON            (1 << 1)
-+#define AS3722_ADC1_MASK_INTERVAL_TIME         (1 << 0)
-+#define AS3722_ADC1_BIT_INTERVAL_TIME          (1 << 0)
-+
-+#define AS3722_ADC_MASK_MSB_VAL                0x3F
-+#define AS3722_ADC_MASK_LSB_VAL                0x07
-+
-+#define AS3722_ADC_MASK_CONV_START            (1 << 7)
-+#define AS3722_ADC_BIT_CONV_START             (1 << 7)
-+#define AS3722_ADC_MASK_CONV_NOTREADY         (1 << 7)
-+#define AS3722_ADC_BIT_CONV_NOTREADY          (1 << 7)
-+#define AS3722_ADC_MASK_SOURCE_SELECT         0x1F
-+#define AS3722_ADC_MASK_VOLTAGE_RANGE	      (1 << 5)
-+#define AS3722_ADC_SHIFT_VOLTAGE_RANGE	      5
-+
-+#define AS3722_GPIO_INV_MASK                   0x80
-+#define AS3722_GPIO_INV                        0x80
-+#define AS3722_GPIO_IOSF_MASK                  0x78
-+#define AS3722_GPIO_IOSF_NORMAL                0
-+#define AS3722_GPIO_IOSF_INTERRUPT_OUT         (1 << 3)
-+#define AS3722_GPIO_IOSF_VSUP_LOW_OUT          (2 << 3)
-+#define AS3722_GPIO_IOSF_GPIO_INTERRUPT_IN     (3 << 3)
-+#define AS3722_GPIO_IOSF_ISINK_PWM_IN          (4 << 3)
-+#define AS3722_GPIO_IOSF_VOLTAGE_STBY          (5 << 3)
-+#define AS3722_GPIO_IOSF_PWR_GOOD_OUT          (7 << 3)
-+#define AS3722_GPIO_IOSF_Q32K_OUT              (8 << 3)
-+#define AS3722_GPIO_IOSF_WATCHDOG_IN           (9 << 3)
-+#define AS3722_GPIO_IOSF_SOFT_RESET_IN         (11 << 3)
-+#define AS3722_GPIO_IOSF_PWM_OUT               (12 << 3)
-+#define AS3722_GPIO_IOSF_VSUP_LOW_DEB_OUT      (13 << 3)
-+#define AS3722_GPIO_IOSF_SD6_LOW_VOLT_LOW      (14 << 3)
-+
-+#define AS3722_GPIO0_SIGNAL_MASK               (1 << 0)
-+#define AS3722_GPIO1_SIGNAL_MASK               (1 << 1)
-+#define AS3722_GPIO2_SIGNAL_MASK               (1 << 2)
-+#define AS3722_GPIO3_SIGNAL_MASK               (1 << 3)
-+#define AS3722_GPIO4_SIGNAL_MASK               (1 << 4)
-+#define AS3722_GPIO5_SIGNAL_MASK               (1 << 5)
-+#define AS3722_GPIO6_SIGNAL_MASK               (1 << 6)
-+#define AS3722_GPIO7_SIGNAL_MASK               (1 << 7)
-+
-+#define AS3722_INT_PULLUP_MASK                 (1 << 5)
-+#define AS3722_INT_PULLUP_ON                   (1 << 5)
-+#define AS3722_INT_PULLUP_OFF                  (0 << 5)
-+#define AS3722_I2C_PULLUP_MASK                 (1 << 4)
-+#define AS3722_I2C_PULLUP_ON                   (1 << 4)
-+#define AS3722_I2C_PULLUP_OFF                  (0 << 4)
-+
-+#define AS3722_RTC_REP_WAKEUP_EN_MASK          (1 << 0)
-+#define AS3722_RTC_ALARM_WAKEUP_EN_MASK        (1 << 1)
-+#define AS3722_RTC_ON_MASK                     (1 << 2)
-+#define AS3722_RTC_IRQMODE_MASK                (3 << 3)
-+#define AS3722_CLK32OUT_ENABLE_MASK	       (1 << 5)
-+
-+#define AS3722_CLK32OUT_ENABLE_ON	       (1 << 5)
-+#define AS3722_CLK32OUT_ENABLE_OFF	       (0 << 5)
-+
-+#define AS3722_OFF_DELAY_MASK		       (0x18)
-+#define AS3722_OFF_DELAY_SHIFT		       (3)
-+
-+#define AS3722_ENABLE1_INVERT_MASK	       (1 << 4)
-+#define AS3722_ENABLE1_INVERT_ON	       (1 << 4)
-+#define AS3722_ENABLE1_INVERT_OFF	       (0 << 4)
-+#define AS3722_ENABLE1_DEEPSLEEP_MASK	       (1 << 5)
-+#define AS3722_ENABLE1_DEEPSLEEP_ON	       (1 << 5)
-+#define AS3722_ENABLE1_DEEPSLEEP_OFF	       (0 << 5)
-+
-+#define AS3722_PWM_DIV_MASK		       0xC0
-+#define AS3722_PWM_DIV_SHIFT		       (6)
-+#define AS3722_PWM_DIV_DIVIDE_BY_1	       0x00
-+#define AS3722_PWM_DIV_DIVIDE_BY_16	       0x40
-+#define AS3722_PWM_DIV_DIVIDE_BY_256	       0x80
-+#define AS3722_PWM_DIV_DIVIDE_BY_16384	       0xC0
-+
-+#define AS3722_WATCHDOG_TIMER_MAX              127
-+#define AS3722_WATCHDOG_ON_MASK                (1 << 0)
-+#define AS3722_WATCHDOG_ON                     (1 << 0)
-+#define AS3722_WATCHDOG_SW_SIG_MASK            (1 << 0)
-+#define AS3722_WATCHDOG_SW_SIG                 (1 << 0)
-+
-+#endif
++MODULE_DESCRIPTION("I2C, IRQ and ADC support for AS3722 PMICs");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Florian Lobmaier <florian.lobmaier@ams.com>");
 -- 
 1.7.2.5
 
