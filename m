@@ -1,191 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab3HTCoE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 22:44:04 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:52085 "EHLO e7.ny.us.ibm.com"
+	id S1752102Ab3HTCot (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 22:44:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3157 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917Ab3HTCm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 22:42:26 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Rik van Riel <riel@surriel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH tip/core/rcu 2/9] rcu: Simplify debug-objects fixups
-Date: Mon, 19 Aug 2013 19:42:07 -0700
-Message-Id: <1376966534-30775-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1376966534-30775-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130820024148.GA30283@linux.vnet.ibm.com>
- <1376966534-30775-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082002-5806-0000-0000-0000227ACA76
+	id S1751401Ab3HTCos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 22:44:48 -0400
+Message-ID: <5212D818.4090201@redhat.com>
+Date: Tue, 20 Aug 2013 10:44:40 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] vhost_net: poll vhost queue after marking DMA is
+ done
+References: <1376630190-5912-1-git-send-email-jasowang@redhat.com> <1376630190-5912-6-git-send-email-jasowang@redhat.com> <20130816100055.GC21821@redhat.com>
+In-Reply-To: <20130816100055.GC21821@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On 08/16/2013 06:00 PM, Michael S. Tsirkin wrote:
+> On Fri, Aug 16, 2013 at 01:16:29PM +0800, Jason Wang wrote:
+>> We used to poll vhost queue before making DMA is done, this is racy if vhost
+>> thread were waked up before marking DMA is done which can result the signal to
+>> be missed. Fix this by always poll the vhost thread before DMA is done.
+>>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> Indeed, but vhost_net_ubuf_put should be the last thing we do:
+> it can cause the device to go away and we'll get
+> a user after free.
 
-The current debug-objects fixups are complex and heavyweight, and the
-fixups are not complete:  Even with the fixups, RCU's callback lists
-can still be corrupted.  This commit therefore strips the fixups down
-to their minimal form, eliminating two of the three.
-
-It would be even better if (for example) call_rcu() simply leaked
-any problematic callbacks, but for that to happen, the debug-objects
-system would need to inform its caller of suspicious situations.
-This is the subject of a later commit in this series.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Rik van Riel <riel@surriel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- kernel/rcupdate.c | 100 ------------------------------------------------------
- 1 file changed, 100 deletions(-)
-
-diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-index 14994d4..33eb462 100644
---- a/kernel/rcupdate.c
-+++ b/kernel/rcupdate.c
-@@ -212,43 +212,6 @@ static inline void debug_rcu_head_free(struct rcu_head *head)
- }
- 
- /*
-- * fixup_init is called when:
-- * - an active object is initialized
-- */
--static int rcuhead_fixup_init(void *addr, enum debug_obj_state state)
--{
--	struct rcu_head *head = addr;
--
--	switch (state) {
--	case ODEBUG_STATE_ACTIVE:
--		/*
--		 * Ensure that queued callbacks are all executed.
--		 * If we detect that we are nested in a RCU read-side critical
--		 * section, we should simply fail, otherwise we would deadlock.
--		 * In !PREEMPT configurations, there is no way to tell if we are
--		 * in a RCU read-side critical section or not, so we never
--		 * attempt any fixup and just print a warning.
--		 */
--#ifndef CONFIG_PREEMPT
--		WARN_ON_ONCE(1);
--		return 0;
--#endif
--		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
--		    irqs_disabled()) {
--			WARN_ON_ONCE(1);
--			return 0;
--		}
--		rcu_barrier();
--		rcu_barrier_sched();
--		rcu_barrier_bh();
--		debug_object_init(head, &rcuhead_debug_descr);
--		return 1;
--	default:
--		return 0;
--	}
--}
--
--/*
-  * fixup_activate is called when:
-  * - an active object is activated
-  * - an unknown object is activated (might be a statically initialized object)
-@@ -268,69 +231,8 @@ static int rcuhead_fixup_activate(void *addr, enum debug_obj_state state)
- 		debug_object_init(head, &rcuhead_debug_descr);
- 		debug_object_activate(head, &rcuhead_debug_descr);
- 		return 0;
--
--	case ODEBUG_STATE_ACTIVE:
--		/*
--		 * Ensure that queued callbacks are all executed.
--		 * If we detect that we are nested in a RCU read-side critical
--		 * section, we should simply fail, otherwise we would deadlock.
--		 * In !PREEMPT configurations, there is no way to tell if we are
--		 * in a RCU read-side critical section or not, so we never
--		 * attempt any fixup and just print a warning.
--		 */
--#ifndef CONFIG_PREEMPT
--		WARN_ON_ONCE(1);
--		return 0;
--#endif
--		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
--		    irqs_disabled()) {
--			WARN_ON_ONCE(1);
--			return 0;
--		}
--		rcu_barrier();
--		rcu_barrier_sched();
--		rcu_barrier_bh();
--		debug_object_activate(head, &rcuhead_debug_descr);
--		return 1;
- 	default:
--		return 0;
--	}
--}
--
--/*
-- * fixup_free is called when:
-- * - an active object is freed
-- */
--static int rcuhead_fixup_free(void *addr, enum debug_obj_state state)
--{
--	struct rcu_head *head = addr;
--
--	switch (state) {
--	case ODEBUG_STATE_ACTIVE:
--		/*
--		 * Ensure that queued callbacks are all executed.
--		 * If we detect that we are nested in a RCU read-side critical
--		 * section, we should simply fail, otherwise we would deadlock.
--		 * In !PREEMPT configurations, there is no way to tell if we are
--		 * in a RCU read-side critical section or not, so we never
--		 * attempt any fixup and just print a warning.
--		 */
--#ifndef CONFIG_PREEMPT
--		WARN_ON_ONCE(1);
--		return 0;
--#endif
--		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
--		    irqs_disabled()) {
--			WARN_ON_ONCE(1);
--			return 0;
--		}
--		rcu_barrier();
--		rcu_barrier_sched();
--		rcu_barrier_bh();
--		debug_object_free(head, &rcuhead_debug_descr);
- 		return 1;
--	default:
--		return 0;
- 	}
- }
- 
-@@ -369,9 +271,7 @@ EXPORT_SYMBOL_GPL(destroy_rcu_head_on_stack);
- 
- struct debug_obj_descr rcuhead_debug_descr = {
- 	.name = "rcu_head",
--	.fixup_init = rcuhead_fixup_init,
- 	.fixup_activate = rcuhead_fixup_activate,
--	.fixup_free = rcuhead_fixup_free,
- };
- EXPORT_SYMBOL_GPL(rcuhead_debug_descr);
- #endif /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
--- 
-1.8.1.5
+Didn't get this. We didn't use ubuf in vhost_zerocopy_signal_used(),
+looks safe here?
+>
+>> ---
+>>  drivers/vhost/net.c |    9 +++++----
+>>  1 files changed, 5 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+>> index 70cab75..a035a89 100644
+>> --- a/drivers/vhost/net.c
+>> +++ b/drivers/vhost/net.c
+>> @@ -308,6 +308,11 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+>>  	struct vhost_virtqueue *vq = ubufs->vq;
+>>  	int cnt = atomic_read(&ubufs->kref.refcount);
+>>  
+>> +	/* set len to mark this desc buffers done DMA */
+>> +	vq->heads[ubuf->desc].len = success ?
+>> +		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
+>> +	vhost_net_ubuf_put(ubufs);
+>> +
+>>  	/*
+>>  	 * Trigger polling thread if guest stopped submitting new buffers:
+>>  	 * in this case, the refcount after decrement will eventually reach 1
+>> @@ -318,10 +323,6 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+>>  	 */
+>>  	if (cnt <= 2 || !(cnt % 16))
+>>  		vhost_poll_queue(&vq->poll);
+>> -	/* set len to mark this desc buffers done DMA */
+>> -	vq->heads[ubuf->desc].len = success ?
+>> -		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
+>> -	vhost_net_ubuf_put(ubufs);
+>>  }
+>>  
+>>  /* Expects to be always run from workqueue - which acts as
+>> -- 
+>> 1.7.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
