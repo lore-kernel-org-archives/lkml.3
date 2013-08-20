@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab3HTRgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 13:36:21 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:27356 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab3HTRgS (ORCPT
+	id S1751955Ab3HTRfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 13:35:54 -0400
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:35690 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab3HTRfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 13:36:18 -0400
-X-AuditID: cbfee61b-b7efe6d000007b11-f2-5213a908aa32
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
-        robherring2@gmail.com, grant.likely@linaro.org, broonie@kernel.org,
-        vapier@gentoo.org, ralf@linux-mips.org, kyungmin.park@samsung.com,
-        shawn.guo@linaro.org, sebastian.hesselbarth@gmail.com,
-        LW@KARO-electronics.de, t.figa@samsung.com, g.liakhovetski@gmx.de,
-        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH v2 4/4] clkdev: Fix race condition in clock lookup from device
- tree
-Date: Tue, 20 Aug 2013 19:34:23 +0200
-Message-id: <1377020063-30213-5-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1377020063-30213-1-git-send-email-s.nawrocki@samsung.com>
-References: <1377020063-30213-1-git-send-email-s.nawrocki@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t9jQV3OlcJBBrMPsFlMffiEzeL9xnlM
-	Fgf+7GC06PlTaXG26Q27RefEJewWmx5fY7W4vGsOm8WEqZPYLeb8mcJscfsyr8WBJ8vZLJ5O
-	uMhmcWmPisX3b9/YLA6/aWe1eP/T0eLpuiXMFutnvGaxWNjwhd3i5oQfzA6iHi3NPWweK6d7
-	e1z+/obZY+esu+weHz7GeczumMnqMX/6I2aPTas62TzuXNvD5nF05Vomj81L6j12f21i9Ojb
-	sorR4/MmuQC+KC6blNSczLLUIn27BK6MnTflCv7wVfy4cpqpgXE9TxcjJ4eEgInErmuXWSBs
-	MYkL99azdTFycQgJTGeUuLm5gRHC6WCSaOpYywhSxSZgKNF7tA/MFhHQkJjS9ZgdpIhZYDGL
-	xLbNi5i7GDk4hAVCJY60SYPUsAioShw72ssKYvMKuEl07vnOClIiIaAgMWeSDUiYU8BdYsLJ
-	HWAlQkAljybMY53AyLuAkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnCsPJPewbiqweIQ
-	owAHoxIP74ZC4SAh1sSy4srcQ4wSHMxKIrzbMoBCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2
-	WgcKCaQnlqRmp6YWpBbBZJk4OKUaGB1nlBsovNWWU3VpFSqpTU47aHz+iEbGG8/rdmccnp3O
-	5Z7xyeChe1/EpYS3dnMD89rL9bwKFS41Wj4zETzOsfhb23fG7UuurcrpXxDTUtYpwL5zVuHn
-	7yKJsvbdR8/82qZ55NnE5sYf1tqcvGWnYux8D+1jWG06zcY1meuJx49S0yIBdwEnJZbijERD
-	Leai4kQAgiMggZECAAA=
+	Tue, 20 Aug 2013 13:35:52 -0400
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: linux-usb@vger.kernel.org
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Krzysztof Mazur <krzysiek@podlesie.net>
+Subject: [PATCH 1/2] usb: fix cleanup after failure in hub_configure()
+Date: Tue, 20 Aug 2013 19:24:35 +0200
+Message-Id: <1377019476-7701-2-git-send-email-krzysiek@podlesie.net>
+X-Mailer: git-send-email 1.8.4.rc1.409.gbd48715
+In-Reply-To: <1377019476-7701-1-git-send-email-krzysiek@podlesie.net>
+References: <1377019476-7701-1-git-send-email-krzysiek@podlesie.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is currently a race condition in the device tree part of clk_get()
-function, since the pointer returned from of_clk_get_by_name() may become
-invalid before __clk_get() call. I.e. due to the clock provider driver
-remove() callback being called in between of_clk_get_by_name() and
-__clk_get().
+If the hub_configure() fails after setting the hdev->maxchild
+the hub->ports might be NULL or point to uninitialized kzallocated
+memory causing NULL pointer dereference in hub_quiesce() during cleanup.
 
-Fix this by doing both the look up and __clk_get() operations with the
-clock providers list mutex held. This ensures that the clock pointer
-returned from __of_clk_get_from_provider() call and passed to __clk_get()
-is valid, as long as the clock supplier module first removes its clock
-provider instance and then does clk_unregister() on the corresponding
-clocks.
+Now after such error the hdev->maxchild is set to 0 to avoid cleanup
+of uninitialized ports.
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Reviewed-by: Mike Turquette <mturquette@linaro.org>
+Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
 ---
-Changes since v1:
- - include "clk.h".
----
- drivers/clk/clkdev.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/usb/core/hub.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 442a313..48f6721 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -21,6 +21,8 @@
- #include <linux/clkdev.h>
- #include <linux/of.h>
-
-+#include "clk.h"
-+
- static LIST_HEAD(clocks);
- static DEFINE_MUTEX(clocks_mutex);
-
-@@ -39,7 +41,13 @@ struct clk *of_clk_get(struct device_node *np, int index)
- 	if (rc)
- 		return ERR_PTR(rc);
-
--	clk = of_clk_get_from_provider(&clkspec);
-+	of_clk_lock();
-+	clk = __of_clk_get_from_provider(&clkspec);
-+
-+	if (!IS_ERR(clk) && !__clk_get(clk))
-+		clk = ERR_PTR(-ENOENT);
-+
-+	of_clk_unlock();
- 	of_node_put(clkspec.np);
- 	return clk;
- }
-@@ -157,7 +165,7 @@ struct clk *clk_get(struct device *dev, const char *con_id)
-
- 	if (dev) {
- 		clk = of_clk_get_by_name(dev->of_node, con_id);
--		if (!IS_ERR(clk) && __clk_get(clk))
-+		if (!IS_ERR(clk))
- 			return clk;
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 558313d..588c3a3 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1339,7 +1339,7 @@ static int hub_configure(struct usb_hub *hub,
+ 			     GFP_KERNEL);
+ 	if (!hub->ports) {
+ 		ret = -ENOMEM;
+-		goto fail;
++		goto fail_maxchild;
  	}
-
---
-1.7.9.5
+ 
+ 	wHubCharacteristics = le16_to_cpu(hub->descriptor->wHubCharacteristics);
+@@ -1466,7 +1466,7 @@ static int hub_configure(struct usb_hub *hub,
+ 	ret = usb_get_status(hdev, USB_RECIP_DEVICE, 0, &hubstatus);
+ 	if (ret < 2) {
+ 		message = "can't get hub status";
+-		goto fail;
++		goto fail_maxchild;
+ 	}
+ 	le16_to_cpus(&hubstatus);
+ 	hcd = bus_to_hcd(hdev->bus);
+@@ -1512,14 +1512,14 @@ static int hub_configure(struct usb_hub *hub,
+ 				&hub->tt, GFP_KERNEL);
+ 		if (ret < 0) {
+ 			message = "can't update HCD hub info";
+-			goto fail;
++			goto fail_maxchild;
+ 		}
+ 	}
+ 
+ 	ret = hub_hub_status(hub, &hubstatus, &hubchange);
+ 	if (ret < 0) {
+ 		message = "can't get hub status";
+-		goto fail;
++		goto fail_maxchild;
+ 	}
+ 
+ 	/* local power status reports aren't always correct */
+@@ -1547,7 +1547,7 @@ static int hub_configure(struct usb_hub *hub,
+ 	hub->urb = usb_alloc_urb(0, GFP_KERNEL);
+ 	if (!hub->urb) {
+ 		ret = -ENOMEM;
+-		goto fail;
++		goto fail_maxchild;
+ 	}
+ 
+ 	usb_fill_int_urb(hub->urb, hdev, pipe, *hub->buffer, maxp, hub_irq,
+@@ -1567,6 +1567,8 @@ static int hub_configure(struct usb_hub *hub,
+ 	hub_activate(hub, HUB_INIT);
+ 	return 0;
+ 
++fail_maxchild:
++	hdev->maxchild = 0;
+ fail:
+ 	dev_err (hub_dev, "config failed, %s (err %d)\n",
+ 			message, ret);
+-- 
+1.8.4.rc1.409.gbd48715
 
