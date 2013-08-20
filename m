@@ -1,272 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558Ab3HTPGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 11:06:30 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:61883 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab3HTPG0 (ORCPT
+	id S1751368Ab3HTPNO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 11:13:14 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56529 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115Ab3HTPNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 11:06:26 -0400
+	Tue, 20 Aug 2013 11:13:12 -0400
+Message-ID: <52138784.7050703@linaro.org>
+Date: Tue, 20 Aug 2013 17:13:08 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-From: Drunkard Zhang <gongfan193@gmail.com>
-Date: Tue, 20 Aug 2013 23:06:05 +0800
-Message-ID: <CAJiejCQPa7V703RwOeWPpbQMJQvfswRn+pvTKFmNdeU05RU3SQ@mail.gmail.com>
-Subject: ipvsadm: One-packet scheduling with UDP service is unstable
-To: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
-        Julian Anastasov <ja@ssi.bg>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: S??ren Brinkmann <soren.brinkmann@xilinx.com>, srinivas.kandagatla@st.com,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Stuart Menefy <stuart.menefy@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <20130809172757.GD14845@codeaurora.org> <c1e112a3-cfed-4e53-951e-b1a9208d7dc8@TX2EHSMHS038.ehs.local> <52090B43.9090000@codeaurora.org> <d36fc2db-1189-4c6a-9bc4-0ac2e29eaa1b@AM1EHSMHS009.ehs.local> <5209120D.1010701@linaro.org> <9b07d8a3-b650-4147-b952-9bcfc1172c51@VA3EHSMHS025.ehs.local> <5209152F.5020307@linaro.org> <86b18b0d-08e1-4899-86ea-ed22d3d36dee@DB8EHSMHS028.ehs.local> <5212A394.5020109@codeaurora.org> <140fc91a-cc81-418e-8a5e-413bbf47834e@CO1EHSMHS025.ehs.local> <20130820005748.GA23960@codeaurora.org>
+In-Reply-To: <20130820005748.GA23960@codeaurora.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need help here, thank you for replying :-)
+On 08/20/2013 02:57 AM, Stephen Boyd wrote:
+> On 08/19, S??ren Brinkmann wrote:
+>> Hi Stephen,
+>>
+>> On Mon, Aug 19, 2013 at 04:00:36PM -0700, Stephen Boyd wrote:
+>>> On 08/16/13 10:28, S??ren Brinkmann wrote:
+>>>> On Mon, Aug 12, 2013 at 07:02:39PM +0200, Daniel Lezcano wrote:
+>>>>> On 08/12/2013 06:53 PM, S??ren Brinkmann wrote:
+>>>>>> It's actually present. I have a clean 3.11-rc3 and the only changes are
+>>>>>> my patch to enable the GT and Stephen's fix.
+>>>>>> The cpuidle stats show both idle states being used.
+>>>>> Ah, right. The tick_broadcast_mask is not set because the arm global
+>>>>> timer has not the CLOCK_EVT_FEAT_C3STOP feature flag set.
+>>>> Just to check in. Do you want any additional testing done? Or can I
+>>>> expect Stephens fix to get merged, so Zynq can use the GT?
+>>>>
+>>>
+>>> I was curious, can you use just the first hunk of the patch that applied
+>>> to tick-broadcast.c to fix the problem? I think the answer is yes.
+>>
+>> Yes, that seems to be enough.
+>>
+> 
+> Great thank you. I will split the patch into two pieces. That way
+> we can discuss the merit of always using a timer that doesn't
+> suffer from FEAT_C3_STOP over a timer that does.
 
-I'm setting up a syslog cluster based on IPVS, all UDP datagrams sent
-from firewall with fixed source IP and fixed source port, so
-pseudo-random balancing based on client IP and port won't working. And
-it seems that keepalived is not supporting One-packet scheduling
-option, so I did some hacks on it after keepalived started:
+Yes, that sounds a good idea.
 
-1. dump LVS rules with ipvsadm -S -n > rules-vs3;
-2. add --ops option;
-3. restore LVS rules with ipvsadm-restore < rules-vs3;
-4. dump the running LVS rules with ipvsadm -S -n
-
-So, I got two problems here:
-
-1. Dumped rules in step 4 above is not usable anymore, the double-dash
-in --ops lost, so I can't restore rule with this dump anymore. This
-must be a bug.
-
-2. The --ops option is not working sometimes you applied the rules,
-and in most of times the --ops just not working. To make it work, just
-'ipvsadm-restore < rules-vs3' for plenty of times until it's working.
-I haven't find the patterns make it work yet. This is lucky, I can't
-get it work on second host at all.
-
-The "not working" above means the UDP datagrams from one source IP is
-sticked to one realserver, it doesn't distribute to other realservers
-which --ops designed for.
-
-So I wondering if there's some CONFIG_* options that ipvs needs, or
-recent development broke the code?
-
-Here's my hosts, both running updated Gentoo. This is the second host
-that --ops doesn't work at all:
-vs3 ~ # uname -r
-3.10.7-gentoo
-vs3 ~ # lspci |grep net
-01:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5716
-Gigabit Ethernet (rev 20)
-01:00.1 Ethernet controller: Broadcom Corporation NetXtreme II BCM5716
-Gigabit Ethernet (rev 20)
-vs3 ~ # emerge --info ipvsadm keepalived
-Portage 2.1.12.2 (default/linux/amd64/13.0, gcc-4.6.3, glibc-2.15-r3,
-3.10.7-gentoo x86_64)
-=================================================================
-                         System Settings
-=================================================================
-System uname: Linux-3.10.7-gentoo-x86_64-Intel-R-_Xeon-R-_CPU_E5620_@_2.40GHz-with-gentoo-2.2
-KiB Mem:    16423692 total,  15907924 free
-KiB Swap:          0 total,         0 free
-Timestamp of tree: Mon, 19 Aug 2013 21:30:01 +0000
-ld GNU ld (GNU Binutils) 2.23.1
-app-shells/bash:          4.2_p45
-dev-lang/python:          2.7.5, 3.2.5-r1
-dev-util/pkgconfig:       0.28
-sys-apps/baselayout:      2.2
-sys-apps/openrc:          0.11.8
-sys-apps/sandbox:         2.6-r1
-sys-devel/autoconf:       2.69
-sys-devel/automake:       1.12.6
-sys-devel/binutils:       2.23.1
-sys-devel/gcc:            4.6.3
-sys-devel/gcc-config:     1.7.3
-sys-devel/libtool:        2.4-r1
-sys-devel/make:           3.82-r4
-sys-kernel/linux-headers: 3.7 (virtual/os-headers)
-sys-libs/glibc:           2.15-r3
-Repositories: gentoo
-ACCEPT_KEYWORDS="amd64"
-ACCEPT_LICENSE="* -@EULA"
-CBUILD="x86_64-pc-linux-gnu"
-CFLAGS="-march=corei7 -O2 -pipe"
-CHOST="x86_64-pc-linux-gnu"
-CONFIG_PROTECT="/etc /var/bind"
-CONFIG_PROTECT_MASK="/etc/ca-certificates.conf /etc/env.d /etc/gconf
-/etc/gentoo-release /etc/revdep-rebuild /etc/sandbox.d /etc/terminfo"
-CXXFLAGS="-march=corei7 -O2 -pipe"
-DISTDIR="/usr/portage/distfiles"
-FCFLAGS="-O2 -pipe"
-FEATURES="assume-digests binpkg-logs config-protect-if-modified
-distlocks ebuild-locks fixlafiles merge-sync news parallel-fetch
-preserve-libs protect-owned sandbox sfperms strict
-unknown-features-warn unmerge-logs unmerge-orphans userfetch"
-FFLAGS="-O2 -pipe"
-LANG="en_US.utf8"
-LDFLAGS="-Wl,-O1 -Wl,--as-needed"
-MAKEOPTS="-j17"
-PKGDIR="/usr/portage/packages"
-PORTAGE_CONFIGROOT="/"
-PORTAGE_RSYNC_OPTS="--recursive --links --safe-links --perms --times
---compress --force --whole-file --delete --stats --human-readable
---timeout=180 --exclude=/distfiles --exclude=/local
---exclude=/packages"
-PORTAGE_TMPDIR="/var/tmp"
-PORTDIR="/usr/portage"
-PORTDIR_OVERLAY=""
-USE="acl acpi aio amd64 bash-completion berkdb bzip2 cli cracklib
-crypt cxx dri fortran gdbm iconv ipv6 mmap mmx modules mudflap
-multilib ncurses nls nptl openmp pam pcre readline session smp sse
-sse2 ssl ssse3 tcpd threads unicode vim-syntax zlib" ABI_X86="64"
-ALSA_CARDS="ali5451 als4000 atiixp atiixp-modem bt87x ca0106 cmipci
-emu10k1x ens1370 ens1371 es1938 es1968 fm801 hda-intel intel8x0
-intel8x0m maestro3 trident usb-audio via82xx via82xx-modem ymfpci"
-APACHE2_MODULES="authn_core authz_core socache_shmcb unixd actions
-alias auth_basic authn_alias authn_anon authn_dbm authn_default
-authn_file authz_dbm authz_default authz_groupfile authz_host
-authz_owner authz_user autoindex cache cgi cgid dav dav_fs dav_lock
-deflate dir disk_cache env expires ext_filter file_cache filter
-headers include info log_config logio mem_cache mime mime_magic
-negotiation rewrite setenvif speling status unique_id userdir
-usertrack vhost_alias" CALLIGRA_FEATURES="kexi words flow plan sheets
-stage tables krita karbon braindump author" CAMERAS="ptp2"
-COLLECTD_PLUGINS="df interface irq load memory rrdtool swap syslog"
-ELIBC="glibc" GPSD_PROTOCOLS="ashtech aivdm earthmate evermore fv18
-garmin garmintxt gpsclock itrax mtk3301 nmea ntrip navcom oceanserver
-oldstyle oncore rtcm104v2 rtcm104v3 sirf superstar2 timing tsip
-tripmate tnt ubx" INPUT_DEVICES="keyboard mouse evdev" KERNEL="linux"
-LCD_DEVICES="bayrad cfontz cfontz633 glk hd44780 lb216 lcdm001 mtxorb
-ncurses text" LIBREOFFICE_EXTENSIONS="presenter-console
-presenter-minimizer" OFFICE_IMPLEMENTATION="libreoffice"
-PHP_TARGETS="php5-4" PYTHON_SINGLE_TARGET="python2_7"
-PYTHON_TARGETS="python2_7 python3_2" RUBY_TARGETS="ruby19 ruby18"
-USERLAND="GNU" VIDEO_CARDS="fbdev glint intel mach64 mga nouveau nv
-r128 radeon savage sis tdfx trident vesa via vmware dummy v4l"
-XTABLES_ADDONS="quota2 psd pknock lscan length2 ipv4options ipset
-ipp2p iface geoip fuzzy condition tee tarpit sysrq steal rawnat
-logmark ipmark dhcpmac delude chaos account"
-Unset:  CPPFLAGS, CTARGET, EMERGE_DEFAULT_OPTS, INSTALL_MASK, LC_ALL,
-PORTAGE_BUNZIP2_COMMAND, PORTAGE_COMPRESS, PORTAGE_COMPRESS_FLAGS,
-PORTAGE_RSYNC_EXTRA_OPTS, USE_PYTHON
-=================================================================
-                        Package Settings
-=================================================================
-sys-cluster/ipvsadm-1.26-r2 was built with the following:
-USE="(multilib) -static-libs" ABI_X86="64"
-sys-cluster/keepalived-1.2.2-r4 was built with the following:
-USE="ipv6 (multilib) -debug" ABI_X86="64"
+  -- Daniel
 
 
-And this is the host that --ops works occasionally:
-vs4 ~ # uname -r
-3.10.7-gentoo
-vs4 ~ # lspci |grep net
-05:00.0 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit
-Ethernet Controller (Copper) (rev 01)
-05:00.1 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit
-Ethernet Controller (Copper) (rev 01)
-vs4 ~ # emerge --info ipvsadm keepalived
-Portage 2.1.12.2 (default/linux/amd64/13.0, gcc-4.6.3, glibc-2.15-r3,
-3.10.7-gentoo x86_64)
-=================================================================
-                         System Settings
-=================================================================
-System uname: Linux-3.10.7-gentoo-x86_64-Intel-R-_Xeon-R-_CPU_E5405_@_2.00GHz-with-gentoo-2.2
-KiB Mem:     4046544 total,   3192820 free
-KiB Swap:          0 total,         0 free
-Timestamp of tree: Fri, 16 Aug 2013 21:30:01 +0000
-ld GNU ld (GNU Binutils) 2.23.1
-app-shells/bash:          4.2_p45
-dev-lang/python:          2.7.5, 3.2.5-r1
-dev-util/pkgconfig:       0.28
-sys-apps/baselayout:      2.2
-sys-apps/openrc:          0.11.8
-sys-apps/sandbox:         2.6-r1
-sys-devel/autoconf:       2.69
-sys-devel/automake:       1.12.6
-sys-devel/binutils:       2.23.1
-sys-devel/gcc:            4.6.3
-sys-devel/gcc-config:     1.7.3
-sys-devel/libtool:        2.4-r1
-sys-devel/make:           3.82-r4
-sys-kernel/linux-headers: 3.7 (virtual/os-headers)
-sys-libs/glibc:           2.15-r3
-Repositories: gentoo
-ACCEPT_KEYWORDS="amd64"
-ACCEPT_LICENSE="* -@EULA"
-CBUILD="x86_64-pc-linux-gnu"
-CFLAGS="-march=core2 -O2 -pipe"
-CHOST="x86_64-pc-linux-gnu"
-CONFIG_PROTECT="/etc /var/bind"
-CONFIG_PROTECT_MASK="/etc/ca-certificates.conf /etc/env.d /etc/gconf
-/etc/gentoo-release /etc/revdep-rebuild /etc/sandbox.d /etc/terminfo"
-CXXFLAGS="-march=core2 -O2 -pipe"
-DISTDIR="/usr/portage/distfiles"
-FCFLAGS="-O2 -pipe"
-FEATURES="assume-digests binpkg-logs config-protect-if-modified
-distlocks ebuild-locks fixlafiles merge-sync news parallel-fetch
-preserve-libs protect-owned sandbox sfperms strict
-unknown-features-warn unmerge-logs unmerge-orphans userfetch"
-FFLAGS="-O2 -pipe"
-LANG="en_US.utf8"
-LDFLAGS="-Wl,-O1 -Wl,--as-needed"
-MAKEOPTS="-j5"
-PKGDIR="/usr/portage/packages"
-PORTAGE_CONFIGROOT="/"
-PORTAGE_RSYNC_OPTS="--recursive --links --safe-links --perms --times
---compress --force --whole-file --delete --stats --human-readable
---timeout=180 --exclude=/distfiles --exclude=/local
---exclude=/packages"
-PORTAGE_TMPDIR="/var/tmp"
-PORTDIR="/usr/portage"
-PORTDIR_OVERLAY=""
-USE="acl acpi aio amd64 bash-completion berkdb bzip2 cli cracklib
-crypt cxx dri fortran gdbm iconv ipv6 mmap mmx modules mudflap
-multilib ncurses nls nptl openmp pam pcre readline session smp sse
-sse2 ssl ssse3 threads unicode vim-syntax zlib" ABI_X86="64"
-ALSA_CARDS="ali5451 als4000 atiixp atiixp-modem bt87x ca0106 cmipci
-emu10k1x ens1370 ens1371 es1938 es1968 fm801 hda-intel intel8x0
-intel8x0m maestro3 trident usb-audio via82xx via82xx-modem ymfpci"
-APACHE2_MODULES="authn_core authz_core socache_shmcb unixd actions
-alias auth_basic authn_alias authn_anon authn_dbm authn_default
-authn_file authz_dbm authz_default authz_groupfile authz_host
-authz_owner authz_user autoindex cache cgi cgid dav dav_fs dav_lock
-deflate dir disk_cache env expires ext_filter file_cache filter
-headers include info log_config logio mem_cache mime mime_magic
-negotiation rewrite setenvif speling status unique_id userdir
-usertrack vhost_alias" CALLIGRA_FEATURES="kexi words flow plan sheets
-stage tables krita karbon braindump author" CAMERAS="ptp2"
-COLLECTD_PLUGINS="df interface irq load memory rrdtool swap syslog"
-ELIBC="glibc" GPSD_PROTOCOLS="ashtech aivdm earthmate evermore fv18
-garmin garmintxt gpsclock itrax mtk3301 nmea ntrip navcom oceanserver
-oldstyle oncore rtcm104v2 rtcm104v3 sirf superstar2 timing tsip
-tripmate tnt ubx" INPUT_DEVICES="keyboard mouse evdev" KERNEL="linux"
-LCD_DEVICES="bayrad cfontz cfontz633 glk hd44780 lb216 lcdm001 mtxorb
-ncurses text" LIBREOFFICE_EXTENSIONS="presenter-console
-presenter-minimizer" OFFICE_IMPLEMENTATION="libreoffice"
-PHP_TARGETS="php5-4" PYTHON_SINGLE_TARGET="python2_7"
-PYTHON_TARGETS="python2_7 python3_2" RUBY_TARGETS="ruby19 ruby18"
-USERLAND="GNU" VIDEO_CARDS="fbdev glint intel mach64 mga nouveau nv
-r128 radeon savage sis tdfx trident vesa via vmware dummy v4l"
-XTABLES_ADDONS="quota2 psd pknock lscan length2 ipv4options ipset
-ipp2p iface geoip fuzzy condition tee tarpit sysrq steal rawnat
-logmark ipmark dhcpmac delude chaos account"
-Unset:  CPPFLAGS, CTARGET, EMERGE_DEFAULT_OPTS, INSTALL_MASK, LC_ALL,
-PORTAGE_BUNZIP2_COMMAND, PORTAGE_COMPRESS, PORTAGE_COMPRESS_FLAGS,
-PORTAGE_RSYNC_EXTRA_OPTS, USE_PYTHON
-=================================================================
-                        Package Settings
-=================================================================
-sys-cluster/ipvsadm-1.26-r2 was built with the following:
-USE="(multilib) -static-libs" ABI_X86="64"
-sys-cluster/keepalived-1.2.2-r4 was built with the following:
-USE="ipv6 (multilib) -debug" ABI_X86="64"
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Do I need to attach kernel config file?
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
