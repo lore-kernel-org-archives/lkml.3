@@ -1,88 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246Ab3HTMfR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 08:35:17 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:35366 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006Ab3HTMfP (ORCPT
+	id S1751228Ab3HTMhS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 08:37:18 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:46506 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962Ab3HTMhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 08:35:15 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org, rob@landley.net
-Cc: rdunlap@infradead.org, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] doc: devicetree: Fit typos in devicegree/bindings
-Date: Tue, 20 Aug 2013 21:34:56 +0900
-Message-Id: <1377002096-16088-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.4.rc3.2.g2c2b664
+	Tue, 20 Aug 2013 08:37:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <4207583.84U9qMI9uv@vostro.rjw.lan>
+References: <cover.1376979090.git.viresh.kumar@linaro.org>
+	<4207583.84U9qMI9uv@vostro.rjw.lan>
+Date: Tue, 20 Aug 2013 18:07:14 +0530
+Message-ID: <CAKohpomCaUvns+45qV-MdcxmRJ9fihdDf--BgH5uxEFqVnFPHQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] cpufreq: Fixes for 3.12
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typos in Documentations/devicetree/bindings
+On 20 August 2013 18:13, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Well, this looks good, but do we really need it in 3.12?  It doesn't look
+> like 3.12 will be missing these changes a lot?
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>  
+Hmm.. If its too late for 3.12 we can skip them, but first two are bug
+fixes really (though nobody is affected as cpufreq_policy_list isn't used
+yet :) ) and other three are cleanups..
 
----
- Documentation/devicetree/bindings/gpio/mrvl-gpio.txt       | 2 +-
- Documentation/devicetree/bindings/mfd/s2mps11.txt          | 2 +-
- Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt | 2 +-
- Documentation/devicetree/bindings/video/atmel,lcdc.txt     | 4 ++--
- 4 files changed, 5 insertions(+), 5 deletions(-)
+So, if there is any chance that we can queue them up for 3.12, it would
+be good.. but definitely not a must to have stuff. :)
 
-diff --git a/Documentation/devicetree/bindings/gpio/mrvl-gpio.txt b/Documentation/devicetree/bindings/gpio/mrvl-gpio.txt
-index 6641626..99daf57 100644
---- a/Documentation/devicetree/bindings/gpio/mrvl-gpio.txt
-+++ b/Documentation/devicetree/bindings/gpio/mrvl-gpio.txt
-@@ -12,7 +12,7 @@ Required properties:
-   gpio_mux.
- - interrupt-names : Should be the names of irq resources. Each interrupt
-   uses its own interrupt name, so there should be as many interrupt names
--  as referenced interrups.
-+  as referenced interrupts.
- - interrupt-controller : Identifies the node as an interrupt controller.
- - #interrupt-cells: Specifies the number of cells needed to encode an
-   interrupt source.
-diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-index c9332c6..31f952f 100644
---- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
-+++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-@@ -41,7 +41,7 @@ sub-node should be of the format as listed below.
- 
-  regulator-ramp-delay for BUCKs = [6250/12500/25000(default)/50000] uV/us
- 
-- BUCK[2/3/4/6] supports disabling ramp delay on hardware, so explictly
-+ BUCK[2/3/4/6] supports disabling ramp delay on hardware, so explicitly
-  regulator-ramp-delay = <0> can be used for them to disable ramp delay.
-  In absence of regulator-ramp-delay property, default ramp delay will be used.
- 
-diff --git a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-index cdcebea..5486655 100644
---- a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-+++ b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-@@ -16,7 +16,7 @@ Required Properties:
-   each child-node representing a supported slot. There should be atleast one
-   child node representing a card slot. The name of the child node representing
-   the slot is recommended to be slot@n where n is the unique number of the slot
--  connnected to the controller. The following are optional properties which
-+  connected to the controller. The following are optional properties which
-   can be included in the slot child node.
- 
- 	* reg: specifies the physical slot number. The valid values of this
-diff --git a/Documentation/devicetree/bindings/video/atmel,lcdc.txt b/Documentation/devicetree/bindings/video/atmel,lcdc.txt
-index 1ec175e..47981dd 100644
---- a/Documentation/devicetree/bindings/video/atmel,lcdc.txt
-+++ b/Documentation/devicetree/bindings/video/atmel,lcdc.txt
-@@ -39,8 +39,8 @@ Atmel LCDC Display
- -----------------------------------------------------
- Required properties (as per of_videomode_helper):
- 
-- - atmel,dmacon: dma controler configuration
-- - atmel,lcdcon2: lcd controler configuration
-+ - atmel,dmacon: dma controller configuration
-+ - atmel,lcdcon2: lcd controller configuration
-  - atmel,guard-time: lcd guard time (Delay in frame periods)
-  - bits-per-pixel: lcd panel bit-depth.
- 
--- 
-1.8.4.rc3.2.g2c2b664
-
+--
+viresh
