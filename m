@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab3HTG1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 02:27:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58885 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926Ab3HTG1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 02:27:12 -0400
-Date: Mon, 19 Aug 2013 23:29:01 -0700
-From: greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "noamc@ezchip.com" <noamc@ezchip.com>,
-        Anton Kolesov <Anton.Kolesov@synopsys.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARC: gdbserver breakage in Big-Endian configuration
- #1
-Message-ID: <20130820062901.GA3758@kroah.com>
-References: <1375969958-16454-1-git-send-email-vgupta@synopsys.com>
- <C2D7FE5348E1B147BCA15975FBA2307513FD98@IN01WEMBXA.internal.synopsys.com>
- <20130819145734.GA15353@kroah.com>
- <5212FCA8.9040204@synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5212FCA8.9040204@synopsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752335Ab3HTG33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 02:29:29 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:52238 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752139Ab3HTG32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 02:29:28 -0400
+X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "To"
+X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "To"
+Date: Tue, 20 Aug 2013 08:29:23 +0200
+Message-Id: <201308200629.r7K6TNUS010648@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: linux-kernel@vger.kernel.org, stigge@antcom.de
+Subject: [PATCH] MAX7301 GPIO: Reverting "Do not force SPI speed when using OF Platform"
+To: Grant Likely <grant.likely@secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 10:50:40AM +0530, Vineet Gupta wrote:
-> Hi Greg,
-> 
-> On 08/19/2013 08:27 PM, greg Kroah-Hartman wrote:
-> > On Mon, Aug 19, 2013 at 09:08:49AM +0000, Vineet Gupta wrote:
-> >> Hi Greg,
-> >>
-> >> I'd posted these patches for stable backport. Do I need to do anything more to get them included.
-> >>
-> >> https://patchwork.kernel.org/patch/2841153/  [1/2] ARC: gdbserver breakage in Big-Endian configuration #1<https://patchwork.kernel.org/patch/2841153/>]
-> >> https://patchwork.kernel.org/patch/2841158/  [2/2] ARC: gdbserver breakage in Big-Endian configuration #2<https://patchwork.kernel.org/patch/2841158/>
-> > 
-> > I ignored them as I thought you were submitting them for upstream
-> > inclusion.  If they are already in Linus's tree, then take a look at the
-> > file, Documentation/stable_kernel_rules.txt for how to send a patch for
-> > inclusion into a stable release (hint, I need to know the git commit id
-> > that the patch has in Linus's tree, which I didn't see anywhere here.)
-> 
-> 
-> I'm sure I mentioned the commit-id in the patch. Hint, please look at annotation
-> within --->8--- blocks in changelogs.
+This patch reverts commit 047b93a35961f7a6561e6f5dcb040738f822b892 which breaks
+MAX7301 GPIO driver because that commit was dependant on a rejected patch that
+was implementing selection of SPI speed from the Device Tree.
 
-You're right, I missed that, sorry.
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-> The caveat however is we can't apply those exact commits as it is as that warrants
-> more changes to be pulled in. However I'm going by the last stable kernel rule "It
-> or an equivalent fix must already exist in Linus' tree (upstream)."
-> 
-> Anyhow, since both these patches are extracted from same commit, I'll respin a
-> single patch (with a small addition - again part of the same commit) and send it
-> over. OK !
-
-That would be great, thanks.
-
-greg k-h
+--- linux-3.11-rc6/drivers/gpio/gpio-max7301.c	2013-08-17 21:09:17.000000000 +0200
++++ linux/drivers/gpio/gpio-max7301.c	2013-08-18 06:31:52.000000000 +0200
+@@ -56,8 +56,7 @@
+ 	int ret;
+ 
+ 	/* bits_per_word cannot be configured in platform data */
+-	if (spi->dev.platform_data)
+-		spi->bits_per_word = 16;
++	spi->bits_per_word = 16;
+ 	ret = spi_setup(spi);
+ 	if (ret < 0)
+ 		return ret;
