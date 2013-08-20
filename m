@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396Ab3HTPUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 11:20:13 -0400
-Received: from www.sr71.net ([198.145.64.142]:35917 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193Ab3HTPUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 11:20:12 -0400
-Message-ID: <52138924.1040905@sr71.net>
-Date: Tue, 20 Aug 2013 08:20:04 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1751419Ab3HTPWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 11:22:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34233 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111Ab3HTPWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 11:22:11 -0400
+Date: Tue, 20 Aug 2013 08:24:01 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Berg, Johannes" <johannes.berg@intel.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>, Stefan Lippers-Hollmann <s.L-H@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/34] 3.4.59-stable review
+Message-ID: <20130820152401.GA5211@kroah.com>
+References: <20130818203259.653403173@linuxfoundation.org>
+ <52125DA9.3090601@samsung.com>
+ <20130819193538.GB24897@kroah.com>
+ <201308192214.54917.s.L-H@gmx.de>
+ <52129AC3.5020402@samsung.com>
+ <20130819223037.GA3838@kroah.com>
+ <1DC40B07CD6EC041A66726C271A73AE61AA6B9CC@IRSMSX102.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Anton Arapov <anton@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] oops.kernel.org prospect
-References: <20130819085405.GA22328@bandura.laptop> <20130819145505.GB15178@kroah.com> <20130819151643.GC19070@bandura.laptop> <20130819153939.GA23875@thunk.org> <20130819155202.GF19070@bandura.laptop> <20130819212512.GA7918@redhat.com>
-In-Reply-To: <20130819212512.GA7918@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1DC40B07CD6EC041A66726C271A73AE61AA6B9CC@IRSMSX102.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2013 02:25 PM, Dave Jones wrote:
-> * This bug last seen: 2013-08-17
->   Also useful here would be something like:
->   Seen on: 3.2-rc2, 3.10-rc10  (You can probably just list earliest/latest rather than
->    every single kernel it's been seen on, unless you want a 'show all' button)
+On Tue, Aug 20, 2013 at 07:36:00AM +0000, Berg, Johannes wrote:
+> > > [ 26/34] genetlink: fix family dump race
+> > 
+> > Johannes, another strike against this patch :(
+> > 
+> > Any chance on fixing it upstream and me sucking that fix in?
+> 
+> Yeah, I'm trying to get that, but it's not clear to me how to fix it.
+> Where did you apply it? It was going to need some fixes but when the
+> first objection was raised I figured you were going to drop it for now
+> completely? Sorry for the mess :-(
 
-Once you have the "seen on" stuff sorted out, it would also be really
-nice to be able to easily select bugs only seen on "versions after 3.8",
-just so we can filter out some of the older stuff.  The kernel version
-in the filter is useful, but would be much more so if we had ranges,
-even if it was just "newer than $foo".
+You're right, I'll drop this for 3.4, it doesn't make sense there.
 
-When you go to "Show Raw Oops", it usually doesn't show up for me in
-Chrome.  There's a javascript error:
+thanks,
 
-> The page at https://oops.kernel.org/browse-reports/oops-detail/?id=30565# displayed insecure content from http://oops.kernel.org/get-raw.php?id=30565&token=a94733d146ae15f8cec871d4f238956da80d7c5322f6253f9b49d4c5cc8fe8a1.
-
-If I go over and load the page as plain old http, it works fine.  Also,
-when those oopses show up, the font is variable-width.  It would
-probably be a wee bit easier to read if it were displayed in a
-fixed-width font.
-
-This is a much more minor nit, but the source code links (like clicking
-on bad_page from here:
-https://oops.kernel.org/browse-reports/oops-detail/?id=30565#) from the
-traces for the distribution kernels link over to mainline kernel source.
- This means that the line numbers don't _quite_ line up.  It would be
-really cool if it was able to dump you right over to a copy of the
-Debian-specific source in that bug's case.  But, this is a generic
-problem that folks have who work across lots of distros: you don't
-always have the right source in front of you for any given kernel.
-
-Anyway... cool stuff.  I always forget that oops.kernel.org is there,
-but it's always fun to poke around when I run across it. :)
+greg k-h
