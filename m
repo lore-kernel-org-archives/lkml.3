@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542Ab3HTBNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 21:13:48 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48278 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab3HTBNq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 21:13:46 -0400
-Message-ID: <5212C24F.9050702@oracle.com>
-Date: Tue, 20 Aug 2013 09:11:43 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1751503Ab3HTBSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 21:18:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18323 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307Ab3HTBSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 21:18:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,915,1367996400"; 
+   d="scan'208";a="348662227"
+Date: Tue, 20 Aug 2013 03:18:49 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Subject: Re: [PATCH v3 0/6] Add Dialog DA9063 core and regulator drivers
+Message-ID: <20130820011849.GC13324@zurbaran>
+References: <1375117247-6376-1-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Bob Liu <lliubbo@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, eternaleye@gmail.com, minchan@kernel.org,
-        mgorman@suse.de, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        axboe@kernel.dk, ngupta@vflare.org, semenzato@google.com,
-        penberg@iki.fi, sonnyrao@google.com, smbarber@google.com,
-        konrad.wilk@oracle.com, riel@redhat.com, kmpark@infradead.org
-Subject: Re: [PATCH 3/4] mm: zswap: add supporting for zsmalloc
-References: <1376815249-6611-1-git-send-email-bob.liu@oracle.com> <1376815249-6611-4-git-send-email-bob.liu@oracle.com> <20130819165948.GA5703@variantweb.net>
-In-Reply-To: <20130819165948.GA5703@variantweb.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375117247-6376-1-git-send-email-p.zabel@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Philipp,
 
-On 08/20/2013 12:59 AM, Seth Jennings wrote:
-> On Sun, Aug 18, 2013 at 04:40:48PM +0800, Bob Liu wrote:
->> Make zswap can use zsmalloc as its allocater.
->> But note that zsmalloc don't reclaim any zswap pool pages mandatory, if zswap
->> pool gets full, frontswap_store will be refused unless frontswap_get happened
->> and freed some space.
->>
->> The reason of don't implement reclaiming zsmalloc pages from zswap pool is there
->> is no requiremnet currently.
->> If we want to do mandatory reclaim, we have to write those pages to real backend
->> swap devices. But most of current users of zsmalloc are from embeded world,
->> there is even no real backend swap device.
->> This action is also the same as privous zram!
->>
->> For several area, zsmalloc has unpredictable performance characteristics when
->> reclaiming a single page, then CONFIG_ZBUD are suggested.
+On Mon, Jul 29, 2013 at 07:00:41PM +0200, Philipp Zabel wrote:
+> Hi,
 > 
-> Looking at this patch on its own, it does show how simple it could be
-> for zswap to support zsmalloc.  So thanks!
-> 
-> However, I don't like all the ifdefs scattered everywhere.  I'd like to
-> have a ops structure (e.g. struct zswap_alloc_ops) instead and just
-> switch ops based on the CONFIG flag.  Or better yet, have it boot-time
-> selectable instead of build-time.
-> 
+> here is the third round of the DA9063 mfd core and regulator patches, with the
+> following changes since v2:
+>  - Split DA9063 core driver patch into three more digestible parts
+>    (register definitions, core mfd/i2c driver, regmap irqchip support)
+I applied those 3 patches to mfd-next, and dropped patch #6.
 
-I don't like the ifdefs neither. But I didn't find a better way to
-replace them since the data structures and API of zbud and zsmalloc are
-different. I can take a try using zswap_alloc_ops.
+
+>  - Removed 32k clock output from the regulator driver
+>  - Added device tree binding documentation
+I suppose I should carry this one as well. I'll wait a bit more to see
+if we get some more feedback about it.
+
+Cheers,
+Samuel.
 
 -- 
-Regards,
--Bob
+Intel Open Source Technology Centre
+http://oss.intel.com/
