@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab3HTPvv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 11:51:51 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:41201 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751329Ab3HTPvt (ORCPT
+	id S1751747Ab3HTPxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 11:53:47 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:53412 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab3HTPxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 11:51:49 -0400
-Date: Fri, 16 Aug 2013 16:39:47 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Mark Brown <broonie@kernel.org>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-In-Reply-To: <20130816200009.GU30073@sirena.org.uk>
-Message-ID: <Pine.LNX.4.44L0.1308161625520.1532-100000@iolanthe.rowland.org>
+	Tue, 20 Aug 2013 11:53:45 -0400
+Date: Tue, 20 Aug 2013 08:53:24 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: "Berg, Johannes" <johannes.berg@intel.com>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        Stefan Lippers-Hollmann <s.L-H@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/34] 3.4.59-stable review
+In-Reply-To: <20130820152401.GA5211@kroah.com>
+Message-ID: <alpine.LNX.2.00.1308200851190.991@eggly.anvils>
+References: <20130818203259.653403173@linuxfoundation.org> <52125DA9.3090601@samsung.com> <20130819193538.GB24897@kroah.com> <201308192214.54917.s.L-H@gmx.de> <52129AC3.5020402@samsung.com> <20130819223037.GA3838@kroah.com>
+ <1DC40B07CD6EC041A66726C271A73AE61AA6B9CC@IRSMSX102.ger.corp.intel.com> <20130820152401.GA5211@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Aug 2013, Mark Brown wrote:
-
-> On Fri, Aug 16, 2013 at 03:27:58PM -0400, Alan Stern wrote:
-> > On Fri, 16 Aug 2013, Mark Brown wrote:
+On Tue, 20 Aug 2013, Greg Kroah-Hartman wrote:
+> On Tue, Aug 20, 2013 at 07:36:00AM +0000, Berg, Johannes wrote:
+> > > > [ 26/34] genetlink: fix family dump race
+> > > 
+> > > Johannes, another strike against this patch :(
+> > > 
+> > > Any chance on fixing it upstream and me sucking that fix in?
+> > 
+> > Yeah, I'm trying to get that, but it's not clear to me how to fix it.
+> > Where did you apply it? It was going to need some fixes but when the
+> > first objection was raised I figured you were going to drop it for now
+> > completely? Sorry for the mess :-(
 > 
-> > >  or those for getting platform data to a device when it
-> > > does enumerate.
-> 
-> > ?  I can't make any sense out of that comment.  For one thing, why do
-> > you need to send platform data to a device?  (It's obvious that a
-> > _driver_ would need to use platform data; it's not so clear that a
-> > _device_ would.)
-> 
-> The device in this context is a running instance of the driver.
+> You're right, I'll drop this for 3.4, it doesn't make sense there.
 
-It's kind of difficult to understand what you're saying.  Obviously the
-literal meaning is not what you had in mind, because a device can't be
-a driver (or even a running instance of a driver).  Maybe you meant
-that the word "device" above should have been the word "driver".
+And you'll drop it from 3.0 and 3.10 also, I hope?
 
-So you seem to be saying that significant modifications would be needed 
-to get platform information to the driver.  I don't see why.  Lots and 
-lots of drivers use platform information right now.
-
-Besides, you need to get the platform information to the driver in any 
-case, no matter how you decide to solve the chicken-and-egg problem.  
-It shouldn't be a factor in deciding which solution to use.
-
-Alan Stern
-
+Thanks,
+Hugh
