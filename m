@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab3HTFiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 01:38:24 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:37587 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab3HTFiX (ORCPT
+	id S1752066Ab3HTFmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 01:42:47 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:34328 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab3HTFmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 01:38:23 -0400
-From: ujhelyi.m@gmail.com
-To: davem@davemloft.net, mugunthanvnm@ti.com, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Matus Ujhelyi <ujhelyi.m@gmail.com>
-Subject: [PATCH net-next v3] net: cpsw: Add support for wake-on-lan for cpsw
-Date: Tue, 20 Aug 2013 07:38:17 +0200
-Message-Id: <1376977097-25296-1-git-send-email-ujhelyi.m@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 20 Aug 2013 01:42:47 -0400
+X-Spam-Score: -101.1
+Message-ID: <52130194.4030903@asianux.com>
+Date: Tue, 20 Aug 2013 13:41:40 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
+        riel@redhat.com, hughd@google.com, xemul@parallels.com,
+        rientjes@google.com, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] mm: mempolicy: the failure processing about mpol_to_str()
+References: <5212E8DF.5020209@asianux.com> <20130820053036.GB18673@moon>
+In-Reply-To: <20130820053036.GB18673@moon>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matus Ujhelyi <ujhelyi.m@gmail.com>
+On 08/20/2013 01:30 PM, Cyrill Gorcunov wrote:
+> On Tue, Aug 20, 2013 at 11:56:15AM +0800, Chen Gang wrote:
+>> For the implementation (patch 1/3), need fill buffer as full as
+>> possible when buffer space is not enough.
+>>
+>> For the caller (patch 2/3, 3/3), need check the return value of
+>> mpol_to_str().
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> 
+> Won't simple check for mpol_to_str() < 0 be enough? IOW fix all
+> callers to check that mpol_to_str exit without errors. As far
+> as I see here are only two users. Something like
+> 
+> show_numa_map
+> 	ret = mpol_to_str();
+> 	if (ret)
+> 		return ret;
+> 
+> shmem_show_mpol
+> 	ret = mpol_to_str();
+> 	if (ret)
+> 		return ret;
+> 
 
-Some phy's can be configured to enable wake on lan (e.g. at803x or marvell 88E1318S).
-There is no way how to enable wol on CPSW with such connected phys. This patch
-adds this support. It is provided by calling the phy's related code.
+need "if (ret < 0)" instead of.  ;-)
 
-Tested on board with at8030x connected phy. Wol interrupt line is
-connected to GPIO0 on am335x.
+> sure you'll have to change shmem_show_mpol statement to return int code.
+> Won't this be more short and convenient?
+> 
+> 
 
-Signed-off-by: Matus Ujhelyi <ujhelyi.m@gmail.com>
----
- drivers/net/ethernet/ti/cpsw.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+Hmm... if return -ENOSPC, in common processing, it still need continue
+(but need let outside know about the string truncation).
 
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index 0fcf212..5d673bf 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1640,6 +1640,28 @@ static int cpsw_set_settings(struct net_device *ndev, struct ethtool_cmd *ecmd)
- 		return -EOPNOTSUPP;
- }
- 
-+static void cpsw_get_wol(struct net_device *ndev, struct ethtool_wolinfo *wol)
-+{
-+	struct cpsw_priv *priv = netdev_priv(ndev);
-+	int slave_no = cpsw_slave_index(priv);
-+	wol->supported = 0;
-+	wol->wolopts = 0;
-+
-+	if (priv->slaves[slave_no].phy)
-+		phy_ethtool_get_wol(priv->slaves[slave_no].phy, wol);
-+}
-+
-+static int cpsw_set_wol(struct net_device *ndev, struct ethtool_wolinfo *wol)
-+{
-+	struct cpsw_priv *priv = netdev_priv(ndev);
-+	int slave_no = cpsw_slave_index(priv);
-+
-+	if (priv->slaves[slave_no].phy)
-+		return phy_ethtool_set_wol(priv->slaves[slave_no].phy, wol);
-+	else
-+		return -EOPNOTSUPP;
-+}
-+
- static const struct ethtool_ops cpsw_ethtool_ops = {
- 	.get_drvinfo	= cpsw_get_drvinfo,
- 	.get_msglevel	= cpsw_get_msglevel,
-@@ -1653,6 +1675,8 @@ static const struct ethtool_ops cpsw_ethtool_ops = {
- 	.get_sset_count		= cpsw_get_sset_count,
- 	.get_strings		= cpsw_get_strings,
- 	.get_ethtool_stats	= cpsw_get_ethtool_stats,
-+	.get_wol	= cpsw_get_wol,
-+	.set_wol	= cpsw_set_wol,
- };
- 
- static void cpsw_slave_init(struct cpsw_slave *slave, struct cpsw_priv *priv,
+So I still suggest to give more check for it.
+
+
+Thanks.
 -- 
-1.7.9.5
-
+Chen Gang
