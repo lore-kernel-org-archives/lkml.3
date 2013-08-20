@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751459Ab3HTH3U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 03:29:20 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:56656 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab3HTH3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 03:29:19 -0400
+	id S1751365Ab3HTHgJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 03:36:09 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9796 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196Ab3HTHgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 03:36:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,918,1367996400"; 
+   d="scan'208";a="348795561"
+From: "Berg, Johannes" <johannes.berg@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+CC: Stefan Lippers-Hollmann <s.L-H@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: RE: [ 00/34] 3.4.59-stable review
+Thread-Topic: [ 00/34] 3.4.59-stable review
+Thread-Index: AQHOnSvKoRb0OTzpkki8rSvjSssr4pmdtSuQ
+Date: Tue, 20 Aug 2013 07:36:00 +0000
+Message-ID: <1DC40B07CD6EC041A66726C271A73AE61AA6B9CC@IRSMSX102.ger.corp.intel.com>
+References: <20130818203259.653403173@linuxfoundation.org>
+ <52125DA9.3090601@samsung.com> <20130819193538.GB24897@kroah.com>
+ <201308192214.54917.s.L-H@gmx.de> <52129AC3.5020402@samsung.com>
+ <20130819223037.GA3838@kroah.com>
+In-Reply-To: <20130819223037.GA3838@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.182]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxU_n7yNmPKW=b135tf-rZ=pJzndjK6o+=6eshDCa8xAw@mail.gmail.com>
-References: <CA+i8gKKzt3Uf7Bt88=AFyKbdHuqaTqy96nCHTtO=t+4+dhQ0Pw@mail.gmail.com>
-	<CA+55aFzH7DH0d+DXgQ6T3Us6job8OvVmCJXMp2z3xit86d0ZrA@mail.gmail.com>
-	<CA+55aFxU_n7yNmPKW=b135tf-rZ=pJzndjK6o+=6eshDCa8xAw@mail.gmail.com>
-Date: Tue, 20 Aug 2013 09:29:18 +0200
-Message-ID: <CA+i8gKJrnFBP5QKji_-YbKFxE0+SGjGr20=duUBBvdxUz9egZA@mail.gmail.com>
-Subject: Re: commit 94fc5d9: chromium-sandbox core dumped
-From: Emmanuel Benisty <benisty.e@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7K7aFor011348
 
-Hi Linus,
+> > [ 26/34] genetlink: fix family dump race
+> 
+> Johannes, another strike against this patch :(
+> 
+> Any chance on fixing it upstream and me sucking that fix in?
 
-On Tue, Aug 20, 2013 at 1:26 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Aug 19, 2013 at 1:25 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> I suspect that last "return 0" at the end should be "return 1". Does
->> that fix things for you? Untested.
->
-> Ok. Confirmed. I reproduced the bug that Richard Genoud fixed, and
-> also verified that yes, changing that last "return 0" in
-> proc_readdir_de() to "return 1" fixes the bug that Emmanuel reported.
-> Although I just did it with a special test-program using different
-> getdents buffer sizes, so I didn't verify the particular Chromium
-> breakage, but that does look like it's the same issue.
+Yeah, I'm trying to get that, but it's not clear to me how to fix it. Where did you apply it? It was going to need some fixes but when the first objection was raised I figured you were going to drop it for now completely? Sorry for the mess :-(
 
-Just to confirm it does fix the chromium issue as well.
+johannes
+-- 
 
-Thanks.
--- Emmanuel
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Christian Lamprechter, Hannes Schwaderer, Douglas Lusk
+Registergericht: Muenchen HRB 47456
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
