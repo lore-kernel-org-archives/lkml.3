@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383Ab3HTHEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 03:04:45 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:16183 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab3HTHEo (ORCPT
+	id S1751575Ab3HTHFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 03:05:14 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:64164 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab3HTHFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 03:04:44 -0400
-X-AuditID: cbfee68e-b7f276d000002279-89-5213150a94e0
+	Tue, 20 Aug 2013 03:05:12 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-34-52131527914a
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>,
         "'Lee Jones'" <lee.jones@linaro.org>
 Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 2/6] mfd: max8998: use devm_*() functions
-Date: Tue, 20 Aug 2013 16:04:42 +0900
-Message-id: <005601ce9d73$8b55a9d0$a200fd70$@samsung.com>
+Subject: [PATCH 3/6] mfd: menelaus: use devm_*() functions
+Date: Tue, 20 Aug 2013 16:05:11 +0900
+Message-id: <005701ce9d73$9c749910$d55dcb30$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6dc2U89w/mQScDQtCxAwkJbo5izA==
+Thread-index: Ac6dc5mdb0Te18XdSGGCQdCNKOBMqg==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zI10uUeEgg1sn9C0uL7zEanH/61FG
-	i8u75rBZnO5mdWDxuHNtD5vHvJOBHn1bVjF6fN4kF8ASxWWTkpqTWZZapG+XwJXx7E8Xe8FO
-	jopbCxexNjD+ZOti5OSQEDCRWPZgAxOELSZx4d56oDgXh5DAMkaJJU962WGKLu+ZzAKRmM4o
-	Men7cyYI5xejRMPLdlaQKjYBNYkvXw4DdXBwiAj4STSsAGtmFnCS+LllJguILSxgKbFy6X6w
-	bSwCqhILLk8Gu4IXKL5z7hN2CFtQ4sfkeywQvVoS63ceZ4Kw5SU2r3nLDHGQgsSOs68ZIVbp
-	Sbz8IARRIiKx78U7RpDTJARWsUtcf/2YGWKXgMS3yYdYQOolBGQlNh2AGiMpcXDFDZYJjGKz
-	kGyehWTzLCSbZyFZsYCRZRWjaGpBckFxUnqRkV5xYm5xaV66XnJ+7iZGSIT17WC8ecD6EGMy
-	0PqJzFKiyfnACM0riTc0NjOyMDUxNTYytzQjTVhJnFetxTpQSCA9sSQ1OzW1ILUovqg0J7X4
-	ECMTB6dUA+O6/nPZEXdXX37LK8TB+UCw6V3O1euP4zdETq9ezry3TzPvtvCXq/sLIz73nFja
-	JvohvW1+1Jumzv/sD3+9LlON/FCUoFo57bvd8b1HJ2dbKbZrNM054tKgU55ta+hx/d5zsQ6n
-	fyHxQkf6Nmc+uR8lHjrh5tNFWxfsFloVWv4t5qe/vm7/v24lluKMREMt5qLiRABfbHkBxgIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQV0uUeEggyk3tS0uL7zEanH/61FG
-	i8u75rBZnO5mdWDxuHNtD5vHvJOBHn1bVjF6fN4kF8AS1cBok5GamJJapJCal5yfkpmXbqvk
-	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
-	Y4Sub0gQXI+RARpIWMeY8exPF3vBTo6KWwsXsTYw/mTrYuTkkBAwkbi8ZzILhC0mceHeeqA4
-	F4eQwHRGiUnfnzNBOL8YJRpetrOCVLEJqEl8+XKYvYuRg0NEwE+iYQU7SJhZwEni55aZYIOE
-	BSwlVi7dzwRiswioSiy4PBlsGS9QfOfcJ+wQtqDEj8n3WCB6tSTW7zzOBGHLS2xe85YZ4iAF
-	iR1nXzNCrNKTePlBCKJERGLfi3eMExgFZiGZNAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6rqFe
-	cWJucWleul5yfu4mRnD8PpPawbiyweIQowAHoxIPb6eSUJAQa2JZcWXuIUYJDmYlEV6X/0Ah
-	3pTEyqrUovz4otKc1OJDjMlAj05klhJNzgemlrySeENjEzMjSyMzCyMTc3PShJXEeQ+0WgcK
-	CaQnlqRmp6YWpBbBbGHi4JRqYHSSWPZsZ0zZraawO3KJXN9Lrz8+UN3LtnPR9CkCtyPvbPtg
-	sfFxkfjSPTqvlxfMkXvdoGeaMK92WcIBwfhYi5eWEi5iO+Jmzo/aMlnOW+M2P8Mi85PH50xr
-	2XzJ7/JF4SsSGpzL23O2Ts2stylp9nQxCZeeEenZ33e39y7v3t0Gdk6Fp1P5BJRYijMSDbWY
-	i4oTAcN6S0IjAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zfV11UeEgg1cdchaXF15itbj/9Sij
+	xeVdc9gsTnezOrB43Lm2h81j3slAj74tqxg9Pm+SC2CJ4rJJSc3JLEst0rdL4MpYcf8CU8E0
+	gYqpF7czNzA+5uli5OSQEDCROPz4FBOELSZx4d56ti5GLg4hgWWMElufTWGDKZo9bx4LRGI6
+	o8T15nVMEM4vRokL10+AtbMJqEl8+XKYvYuRg0NEwE+iYQU7SJhZwEni55aZLCC2sICVxKeZ
+	E8FsFgFViQntN5lBbF4BS4lvCx4wQdiCEj8m32OB6NWSWL/zOBOELS+xec1bZoiDFCR2nH3N
+	CGKLCOhJrJjzkRWiRkRi34t3jCC3SQhsYpeYuayVDWKZgMS3yYdYQG6TEJCV2HQAao6kxMEV
+	N1gmMIrNQrJ6FpLVs5CsnoVkxQJGllWMoqkFyQXFSelFpnrFibnFpXnpesn5uZsYITE2cQfj
+	/QPWhxiTgdZPZJYSTc4HxmheSbyhsZmRhamJqbGRuaUZacJK4rzqLdaBQgLpiSWp2ampBalF
+	8UWlOanFhxiZODilGhgldQ9Z8Yjaz74uOtHFcmLT5iKRWpkl6muWvWNdEnbVekrS5M2Gi3kU
+	Tyu8Mz4gWH6LrX/5GrG53xh+yoZGBB03vrpt/ZXctz/nt3mprK5exWxk/zXhcWWocrvIm0dM
+	720/+flPdMqxstnwfG/d5xyb/1wHdV/rm3T/X3PxXqOVUYqHd6CYw3MlluKMREMt5qLiRAAS
+	r8mMxwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jQV11UeEgg48NUhaXF15itbj/9Sij
+	xeVdc9gsTnezOrB43Lm2h81j3slAj74tqxg9Pm+SC2CJamC0yUhNTEktUkjNS85PycxLt1Xy
+	Do53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAHaqKRQlphTChQKSCwuVtK3wzQhNMRN1wKm
+	MULXNyQIrsfIAA0krGPMWHH/AlPBNIGKqRe3MzcwPubpYuTkkBAwkZg9bx4LhC0mceHeerYu
+	Ri4OIYHpjBLXm9cxQTi/GCUuXD/BBFLFJqAm8eXLYfYuRg4OEQE/iYYV7CBhZgEniZ9bZoIN
+	Ehawkvg0cyKYzSKgKjGh/SYziM0rYCnxbcEDJghbUOLH5HssEL1aEut3HmeCsOUlNq95ywxx
+	kILEjrOvGUFsEQE9iRVzPrJC1IhI7HvxjnECo8AsJKNmIRk1C8moWUhaFjCyrGIUTS1ILihO
+	Ss811CtOzC0uzUvXS87P3cQIjuBnUjsYVzZYHGIU4GBU4uHtVBIKEmJNLCuuzD3EKMHBrCTC
+	6/IfKMSbklhZlVqUH19UmpNafIgxGejTicxSosn5wOSSVxJvaGxiZmRpZGZhZGJuTpqwkjjv
+	gVbrQCGB9MSS1OzU1ILUIpgtTBycUg2Mp/J+FLMcXWskti/3xutT7isv6Ko+57jHE2HFGv3p
+	5/rmKAdX/o1m03SlGN80ypcG8lk/S1bq71a6/vyk6cbWwtLK7hWNbLfkZt7Sv7CrztiP79MW
+	7q8X55wX9Pmdml93RGpzJIOpzcOI+czP6388dy7VFr5XuzLz0m37PZvto38vOPTEM/ygEktx
+	RqKhFnNRcSIAX4tOWCQDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,37 +57,76 @@ Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/max8998.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/mfd/menelaus.c |   16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-index 45bffb8..fe6332d 100644
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -188,7 +188,8 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
- 	struct max8998_dev *max8998;
- 	int ret = 0;
+diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
+index f24df8c..ad25bfa 100644
+--- a/drivers/mfd/menelaus.c
++++ b/drivers/mfd/menelaus.c
+@@ -1197,7 +1197,7 @@ static int menelaus_probe(struct i2c_client *client,
+ 		return -ENODEV;
+ 	}
  
--	max8998 = kzalloc(sizeof(struct max8998_dev), GFP_KERNEL);
-+	max8998 = devm_kzalloc(&i2c->dev, sizeof(struct max8998_dev),
-+				GFP_KERNEL);
- 	if (max8998 == NULL)
+-	menelaus = kzalloc(sizeof *menelaus, GFP_KERNEL);
++	menelaus = devm_kzalloc(&client->dev, sizeof(*menelaus), GFP_KERNEL);
+ 	if (!menelaus)
  		return -ENOMEM;
  
-@@ -246,7 +247,6 @@ err:
- 	mfd_remove_devices(max8998->dev);
- 	max8998_irq_exit(max8998);
- 	i2c_unregister_device(max8998->rtc);
--	kfree(max8998);
- 	return ret;
+@@ -1210,8 +1210,7 @@ static int menelaus_probe(struct i2c_client *client,
+ 	rev = menelaus_read_reg(MENELAUS_REV);
+ 	if (rev < 0) {
+ 		pr_err(DRIVER_NAME ": device not found");
+-		err = -ENODEV;
+-		goto fail1;
++		return -ENODEV;
+ 	}
+ 
+ 	/* Ack and disable all Menelaus interrupts */
+@@ -1231,7 +1230,7 @@ static int menelaus_probe(struct i2c_client *client,
+ 		if (err) {
+ 			dev_dbg(&client->dev,  "can't get IRQ %d, err %d\n",
+ 					client->irq, err);
+-			goto fail1;
++			return err;
+ 		}
+ 	}
+ 
+@@ -1242,7 +1241,7 @@ static int menelaus_probe(struct i2c_client *client,
+ 
+ 	val = menelaus_read_reg(MENELAUS_VCORE_CTRL1);
+ 	if (val < 0)
+-		goto fail2;
++		goto fail;
+ 	if (val & (1 << 7))
+ 		menelaus->vcore_hw_mode = 1;
+ 	else
+@@ -1251,17 +1250,15 @@ static int menelaus_probe(struct i2c_client *client,
+ 	if (menelaus_pdata != NULL && menelaus_pdata->late_init != NULL) {
+ 		err = menelaus_pdata->late_init(&client->dev);
+ 		if (err < 0)
+-			goto fail2;
++			goto fail;
+ 	}
+ 
+ 	menelaus_rtc_init(menelaus);
+ 
+ 	return 0;
+-fail2:
++fail:
+ 	free_irq(client->irq, menelaus);
+ 	flush_work(&menelaus->work);
+-fail1:
+-	kfree(menelaus);
+ 	return err;
  }
  
-@@ -257,7 +257,6 @@ static int max8998_i2c_remove(struct i2c_client *i2c)
- 	mfd_remove_devices(max8998->dev);
- 	max8998_irq_exit(max8998);
- 	i2c_unregister_device(max8998->rtc);
--	kfree(max8998);
+@@ -1271,7 +1268,6 @@ static int __exit menelaus_remove(struct i2c_client *client)
  
+ 	free_irq(client->irq, menelaus);
+ 	flush_work(&menelaus->work);
+-	kfree(menelaus);
+ 	the_menelaus = NULL;
  	return 0;
  }
 -- 
