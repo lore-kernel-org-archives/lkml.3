@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab3HTRP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 13:15:27 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:49124 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751801Ab3HTRPZ (ORCPT
+	id S1751880Ab3HTRPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 13:15:53 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:47097 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab3HTRPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 13:15:25 -0400
-Date: Tue, 20 Aug 2013 18:14:53 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "msalter@redhat.com" <msalter@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm64: add screen_info for console support
-Message-ID: <20130820171453.GF21383@arm.com>
-References: <1376842970.11104.11.camel@t520.redhat.com>
- <20130820133733.GF26129@mudshark.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130820133733.GF26129@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 20 Aug 2013 13:15:52 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf trace: Make command line arguments consistent with perf-record - v3
+Date: Tue, 20 Aug 2013 11:15:45 -0600
+Message-Id: <1377018945-21940-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 02:37:33PM +0100, Will Deacon wrote:
-> Hi Mark,
-> 
-> On Sun, Aug 18, 2013 at 05:22:50PM +0100, Mark Salter wrote:
-> > The arm64 port doesn't provide a screen_info struct for console support
-> > which leads to a build failure with some configurations:
-> > 
-> >   drivers/video/console/vgacon.c:820: undefined reference to `screen_info'
-> > 
-> > This patch adds an empty declaration of screen_info to fix the build
-> > problem. Some additional runtime code is needed to actually make it
-> > useful.
-> > 
-> > Signed-off-by: Mark Salter <msalter@redhat.com>
-> > ---
-> >  arch/arm64/kernel/setup.c | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> > 
-> > diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-> > index add6ea6..eb9f93a 100644
-> > --- a/arch/arm64/kernel/setup.c
-> > +++ b/arch/arm64/kernel/setup.c
-> > @@ -64,6 +64,10 @@ static const char *cpu_name;
-> >  static const char *machine_name;
-> >  phys_addr_t __fdt_pointer __initdata;
-> >  
-> > +#if defined(CONFIG_VGA_CONSOLE) || defined(CONFIG_DUMMY_CONSOLE)
-> > +struct screen_info screen_info;
-> > +#endif
-> 
-> You may be able to do something similar to the proposal for PARPORT here and
-> factor out the lengthy "depends on" clause for VGA_CONSOLE instead of adding
-> the dummy info.
+Common arguments like thread id, CPU list, mmap pages, etc should be
+consistent across perf commands.
 
-I was wondering about this but do we need screen_info for DUMMY_CONSOLE
-as well?
+v3: Updated man page
+v2: rebased to latest core branch
 
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/Documentation/perf-trace.txt |    6 ++++++
+ tools/perf/builtin-trace.c              |   12 ++++++------
+ 2 files changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
+index 2794efc..cb3371e 100644
+--- a/tools/perf/Documentation/perf-trace.txt
++++ b/tools/perf/Documentation/perf-trace.txt
+@@ -23,6 +23,7 @@ analysis phases.
+ OPTIONS
+ -------
+ 
++-a::
+ --all-cpus::
+         System-wide collection from all CPUs.
+ 
+@@ -38,18 +39,23 @@ OPTIONS
+ --pid=::
+ 	Record events on existing process ID (comma separated list).
+ 
++-t::
+ --tid=::
+         Record events on existing thread ID (comma separated list).
+ 
++-u::
+ --uid=::
+         Record events in threads owned by uid. Name or number.
+ 
++-i::
+ --no-inherit::
+ 	Child tasks do not inherit counters.
+ 
++-m::
+ --mmap-pages=::
+ 	Number of mmap data pages. Must be a power of two.
+ 
++-C::
+ --cpu::
+ Collect samples only on the list of CPUs provided. Multiple CPUs can be provided as a
+ comma-separated list with no space: 0,1. Ranges of CPUs are specified with -: 0-2.
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 4235316..9891d8c 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -693,17 +693,17 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
+ 	OPT_STRING('p', "pid", &trace.opts.target.pid, "pid",
+ 		    "trace events on existing process id"),
+-	OPT_STRING(0, "tid", &trace.opts.target.tid, "tid",
++	OPT_STRING('t', "tid", &trace.opts.target.tid, "tid",
+ 		    "trace events on existing thread id"),
+-	OPT_BOOLEAN(0, "all-cpus", &trace.opts.target.system_wide,
++	OPT_BOOLEAN('a', "all-cpus", &trace.opts.target.system_wide,
+ 		    "system-wide collection from all CPUs"),
+-	OPT_STRING(0, "cpu", &trace.opts.target.cpu_list, "cpu",
++	OPT_STRING('C', "cpu", &trace.opts.target.cpu_list, "cpu",
+ 		    "list of cpus to monitor"),
+-	OPT_BOOLEAN(0, "no-inherit", &trace.opts.no_inherit,
++	OPT_BOOLEAN('i', "no-inherit", &trace.opts.no_inherit,
+ 		    "child tasks do not inherit counters"),
+-	OPT_UINTEGER(0, "mmap-pages", &trace.opts.mmap_pages,
++	OPT_UINTEGER('m', "mmap-pages", &trace.opts.mmap_pages,
+ 		     "number of mmap data pages"),
+-	OPT_STRING(0, "uid", &trace.opts.target.uid_str, "user",
++	OPT_STRING('u', "uid", &trace.opts.target.uid_str, "user",
+ 		   "user to profile"),
+ 	OPT_CALLBACK(0, "duration", &trace, "float",
+ 		     "show only events with duration > N.M ms",
 -- 
-Catalin
+1.7.10.1
+
