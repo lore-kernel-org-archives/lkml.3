@@ -1,200 +1,437 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814Ab3HTIMF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:12:05 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:65288 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab3HTIL7 (ORCPT
+	id S1751748Ab3HTIMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:12:42 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:10437 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427Ab3HTIMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:11:59 -0400
-X-AuditID: cbfee61a-b7f196d000007dfa-d2-521324cc2540
-Date: Tue, 20 Aug 2013 10:11:47 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        "R, Durgadoss" <durgadoss.r@intel.com>
-Subject: Re: [PATCH v7 0/7] cpufreq:boost: CPU Boost mode support
-Message-id: <20130820101147.5a7c2efa@amdc308.digital.local>
-In-reply-to: <2325996.izOUC9kIz1@vostro.rjw.lan>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <CAKohponN=JE4KiCL7pVXJvcf__qfC+Fb59ZjBAX5_WK49eCELw@mail.gmail.com>
- <20130819085037.11e95c06@amdc308.digital.local>
- <2325996.izOUC9kIz1@vostro.rjw.lan>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t9jQd0zKsJBBv1NOhYbZ6xntXja9IPd
-	Yt5nWYu+n1eYLdbs/8lk0Xn2CbNF74KrbBZvHnFbXN41h83ic+8RRovbjSvYLPoX9jJZPHnY
-	x2ax8auHA5/H4j0vmTzuXNvD5rFu2ltmj74tqxg9Hi1uYfQ4fmM7k8fnTXIB7FFcNimpOZll
-	qUX6dglcGTtmzWMp+KldMeN3F3sDY5NSFyMnh4SAicTRmd0sELaYxIV769m6GLk4hASmM0qs
-	+NrECOG0M0mcu7uYCaSKRUBVYuqnG+wgNpuAnsTnu0/B4iJA8S1P/oPFmQX2sUicOq8DYgsL
-	OEp039/PDGLzClhL3JvUD1bDKWAgMfHpUXaIBU8YJQ59vcwIkuAXkJRo//eDGeIkO4lznzaw
-	QzQLSvyYfI8FYoGWxOZtTawQtrzE5jVvmScwCs5CUjYLSdksJGULGJlXMYqmFiQXFCel5xrq
-	FSfmFpfmpesl5+duYgRH1TOpHYwrGywOMQpwMCrx8HYqCQUJsSaWFVfmHmKU4GBWEuF9oSwc
-	JMSbklhZlVqUH19UmpNafIhRmoNFSZz3QKt1oJBAemJJanZqakFqEUyWiYNTqoHRw+VzU90z
-	jbmbLUITDU/OlG/463jhe/2thw/yq6qdX9guKPz/28leRNpQMuLm2jJhc72V2fsvdB1bJ9/K
-	njuLqzVYN3l14jRd+b65DelxXNWFV49ezPNN2bLt9u0ivQk8Ks3+B46my/Evin4UavR4zj//
-	3YLLVeXl/ypIVP98t+HUN9czx/cosRRnJBpqMRcVJwIAX7uyNaYCAAA=
+	Tue, 20 Aug 2013 04:12:39 -0400
+From: Bo Shen <voice.shen@atmel.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: plagnioj@jcrosoft.com, nicolas.ferre@atmel.com, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Bo Shen <voice.shen@atmel.com>
+Subject: [v2 PATCH] PWM: atmel-pwm: add PWM controller driver
+Date: Tue, 20 Aug 2013 16:11:55 +0800
+Message-Id: <1376986316-10874-1-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Aug 2013 01:29:20 +0200 Rafael J. Wysocki rjw@sisk.pl wrote,
-> On Monday, August 19, 2013 08:50:37 AM Lukasz Majewski wrote:
-> > On Mon, 19 Aug 2013 12:08:26 +0530 Viresh Kumar
-> > viresh.kumar@linaro.org wrote,
-> > > On 13 August 2013 15:38, Lukasz Majewski <l.majewski@samsung.com>
-> > > wrote:
-> > > > This patch series introduces support for CPU overclocking
-> > > > technique called Boost.
-> > > >
-> > > > It is a follow up of a LAB governor proposal. Boost is a LAB
-> > > > component:
-> > > > http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
-> > > >
-> > > > Boost unifies hardware based solution (e.g. Intel Nehalem) with
-> > > > software oriented one (like the one done at Exynos).
-> > > > For this reason cpufreq/freq_table code has been reorganized to
-> > > > include common code.
-> > > >
-> > > > Important design decisions:
-> > > > - Boost related code is compiled-in unconditionally to cpufreq
-> > > > core and disabled by default. The cpufreq_driver is
-> > > > responsibile for setting boost_supported flag and providing
-> > > > set_boost callback(if HW support is needed). For software
-> > > > managed boost, special Kconfig flag - CONFIG_CPU_FREQ_BOOST_SW
-> > > > has been defined. It will be selected only when a target
-> > > > platform has thermal framework properly configured.
-> > > >
-> > > > - struct cpufreq_driver has been extended with boost related
-> > > > fields: -- boost_supported - when driver supports boosting
-> > > >         -- boost_enabled - boost state
-> > > >         -- set_boost - callback to function, which is necessary
-> > > > to enable/disable boost
-> > > >
-> > > > - Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost)
-> > > > is visible _only_ when cpufreq driver supports Boost.
-> > > >
-> > > > - No special spin_lock for Boost was created. The one from
-> > > > cpufreq core was reused.
-> > > >
-> > > > - The Boost code doesn't rely on any policy. When boost state is
-> > > > changed, then the policy list is iterated and proper
-> > > > adjustements are done.
-> > > >
-> > > > - To improve safety level, the thermal framework is also
-> > > > extended to disable software boosting, when thermal trip point
-> > > > is reached. Then it starts monitoring target temperature to
-> > > > evaluate if boost can be enabled again. This emulates behaviour
-> > > > similar to HW managed boost (like x86)
-> > > >
-> > > > Tested at HW:
-> > > >        Exynos 4412 3.11-rc4 Linux
-> > > >        Intel Core i7-3770 3.11-rc4 Linux
-> > > >
-> > > > Above patches were posted on top of linux_pm/linux-next with
-> > > > following patches applied:
-> > > >
-> > > > cpufreq: exynos5440: Fix to skip when new frequency same as
-> > > > current cpufreq: fix EXYNOS drivers selection
-> > > >
-> > > > Lukasz Majewski (7):
-> > > >   cpufreq: Add boost frequency support in core
-> > > >   cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with
-> > > > common boost solution
-> > > >   thermal:boost: Automatic enable/disable of BOOST feature
-> > > >   cpufreq:boost:Kconfig: Provide support for software managed
-> > > > BOOST cpufreq:exynos:Extend Exynos cpufreq driver to support
-> > > > boost framework
-> > > >   Documentation:cpufreq:boost: Update BOOST documentation
-> > > >   cpufreq:exynos4x12: Change L0 driver data to
-> > > > CPUFREQ_BOOST_FREQ
-> > > 
-> > > Hi Lukasz,
-> > > 
-> > 
-> > Hi Viresh,
-> > 
-> > > I haven't found time yet to go through this series.. 
-> > 
-> > I've just started wondering if I had send those patches
-> > correctly :-).
-> > 
-> > > I want to do a
-> > > deep/careful review this time as these are almost the final
-> > > patches.
-> > 
-> > Ok.
-> > 
-> > > 
-> > > Will try to get over them by the end of this week..
-> > 
-> > Ok, I understand.
-> 
-> Do I assume correctly that this stuff has been tested on
-> ACPI-compatible x86 with acpi-cpufreq and everything has worked
-> correctly there?
-> 
-> Rafael
-> 
+Add Atmel PWM controller driver based on PWM framework.
 
-Hi Rafael,
+This is the basic function implementation of Atmel PWM controller.
+It can work with PWM based led and backlight.
 
-Following test configuration/test case (x86):
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
 
-- DELL OptiPlex 9010 Intel Core i7-3770
-- Linux repo: [kernel_pm_http/bleeding-edge] [kernel_pm_http/linux-next]
-	SHA1: a238ea5e20be7bea2b1fc951a024ecce770306b5 
-	with v7 applied on top
+---
+This patch is based on the for-next branch on Linux pwm tree
+Test on at91sam9m10g45ek board with pwm led
+Test on sama5d31ek board with pwm backlight
 
-- Linux version: 3.11-rc4 (patches v7) and 3.11-rc1 (v6)
+Changes in v2:
+  - Address the comments from Thierry Reding
 
-- Ubuntu 11.10 (make bzImage + make all when module was needed)
-- config_ubuntu_3_11 (the default one for ubuntu)
-- KConfig:
-	1. Disabled intel_pstate driver
-	2. Enabled ACPI-Prosessor P state driver
-	3. Legacy cpb sysfs knob support for AMD CPUs ON/OFF (which is a
-	part of acpi-cpufreq.c driver).
-	
-- acpi-cpufreq driver was build as a module or was embedded in kernel
-  (tested with modprobe -i / -r => no dmesg error|warning output)
+ .../devicetree/bindings/pwm/atmel-pwm.txt          |   17 +
+ drivers/pwm/Kconfig                                |    9 +
+ drivers/pwm/Makefile                               |    1 +
+ drivers/pwm/pwm-atmel.c                            |  328 ++++++++++++++++++++
+ 4 files changed, 355 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+ create mode 100644 drivers/pwm/pwm-atmel.c
 
-- I was able to read/write (echo 0/1
-  > /sys/devices/system/cpu/cpufreq/boost) => no output at dmesg -
-  system was working stable.
-
-Toolchain: gcc version 4.6.1 (Ubuntu/Linaro 4.6.1-9ubuntu3)
-
-Since I'm mostly working with ARM (exynos4412) and major work was done
-with cpufreq core (and x86 related work was to move common code to
-cpufreq core) tests mostly have been performed on ARM.
-
-Tests on ARM:
-- Stress tests with up to 4 scripts running to enable/disable boost
-  sysfs attribute with random time interval (gzip < /dev/urandom
-  > /dev/null). 
-- Test to overheat the ARM target and look if boost+thermal cools down
-  the device and enables boost again.
-- LAB governor (which was already posted to ML) to boost when power
-  envelope allows it.
-
-
+diff --git a/Documentation/devicetree/bindings/pwm/atmel-pwm.txt b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+new file mode 100644
+index 0000000..f7b04f7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+@@ -0,0 +1,17 @@
++Atmel PWM controller
++
++Required properties:
++  - compatible: should be one of:
++    - "atmel,at91sam9rl-pwm"
++    - "atmel,sama5-pwm"
++  - reg: physical base address and length of the controller's registers
++  - #pwm-cells: Should be 3. See pwm.txt in this directory for a
++    description of the cells format
++
++Example:
++
++	pwm0: pwm@f8034000 {
++		compatible = "atmel,at91sam9rl-pwm";
++		reg = <0xf8034000 0x400>;
++		#pwm-cells = <3>;
++	};
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 75840b5..54237b9 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -41,6 +41,15 @@ config PWM_AB8500
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-ab8500.
+ 
++config PWM_ATMEL
++	tristate "Atmel PWM support"
++	depends on ARCH_AT91
++	help
++	  Generic PWM framework driver for Atmel SoC.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-atmel.
++
+ config PWM_ATMEL_TCB
+ 	tristate "Atmel TC Block PWM support"
+ 	depends on ATMEL_TCLIB && OF
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index 77a8c18..5b193f8 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -1,6 +1,7 @@
+ obj-$(CONFIG_PWM)		+= core.o
+ obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
+ obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
++obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
+ obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
+ obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+ obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
+new file mode 100644
+index 0000000..a9af974
+--- /dev/null
++++ b/drivers/pwm/pwm-atmel.c
+@@ -0,0 +1,328 @@
++/*
++ * Driver for Atmel Pulse Width Modulation Controller
++ *
++ * Copyright (C) 2013 Atmel Semiconductor Technology Ltd.
++ *		 Bo Shen <voice.shen@atmel.com>
++ *
++ * GPL v2
++ */
++
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/platform_device.h>
++#include <linux/pwm.h>
++#include <linux/slab.h>
++
++/* The following is global registers for PWM controller */
++#define PWM_ENA		0x04
++#define PWM_DIS		0x08
++#define PWM_SR		0x0C
++/* bit field in SR */
++#define PWM_SR_ALL_CH_ON	0x0F
++
++/* The following register is PWM channel related registers */
++#define PWM_CMR		0x00
++/* bit field in CMR */
++#define PWM_CMR_CPOL		(1 << 9)
++#define PWM_CMR_UPD_CDTY	(1 << 10)
++
++/* The following registers for PWM v1 */
++#define PWMv1_CDTY	0x04
++#define PWMv1_CPRD	0x08
++#define PWMv1_CUPD	0x10
++
++/* The following registers for PWM v2 */
++#define PWMv2_CDTY	0x04
++#define PWMv2_CDTYUPD	0x08
++#define PWMv2_CPRD	0x0C
++#define PWMv2_CPRDUPD	0x10
++
++struct atmel_pwm_chip {
++	struct pwm_chip chip;
++	struct clk *clk;
++	void __iomem *base;
++
++	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
++		       int dty, int prd);
++};
++
++static inline struct atmel_pwm_chip *to_atmel_pwm_chip(struct pwm_chip *chip)
++{
++	return container_of(chip, struct atmel_pwm_chip, chip);
++}
++
++static inline u32 atmel_pwm_readl(struct atmel_pwm_chip *chip,
++				  unsigned long offset)
++{
++	return readl(chip->base + offset);
++}
++
++static inline void atmel_pwm_writel(struct atmel_pwm_chip *chip,
++				    unsigned long offset, unsigned long val)
++{
++	writel(val, chip->base + offset);
++}
++
++static inline u32 atmel_pwm_ch_readl(struct atmel_pwm_chip *chip,
++				     unsigned int ch, unsigned long offset)
++{
++	return readl(chip->base + 0x200 + ch * 0x20 + offset);
++}
++
++static inline void atmel_pwm_ch_writel(struct atmel_pwm_chip *chip,
++				       unsigned int ch, unsigned long offset,
++				       unsigned long val)
++{
++	writel(val, chip->base + 0x200 + ch * 0x20 + offset);
++}
++
++static int atmel_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
++		int duty_ns, int period_ns)
++{
++	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
++	unsigned long long val, prd, dty, div, clk_rate;
++	int ret, pres = 0;
++
++	clk_rate = clk_get_rate(atmel_pwm->clk);
++
++	while (1) {
++		div = 1000000000;
++		div *= 1 << pres;
++		val = clk_rate * period_ns;
++		prd = div_u64(val, div);
++		val = clk_rate * duty_ns;
++		dty = div_u64(val, div);
++
++		if (prd < 1 || dty < 0)
++			return -EINVAL;
++
++		/*
++		 * Although the period register is 32 bit,
++		 * however the LSB 16 bits is used
++		 */
++		if (prd > 0xffff || dty > 0xffff) {
++			if (++pres > 16)
++				return -EINVAL;
++			continue;
++		}
++
++		break;
++	}
++
++	ret = clk_enable(atmel_pwm->clk);
++	if (ret) {
++		pr_err("failed to enable pwm clock\n");
++		return ret;
++	}
++
++	atmel_pwm->config(chip, pwm, dty, prd);
++
++	/* Check whether need to disable clock */
++	val = atmel_pwm_readl(atmel_pwm, PWM_SR);
++	if ((val & PWM_SR_ALL_CH_ON) == 0)
++		clk_disable(atmel_pwm->clk);
++
++	return 0;
++}
++
++static void atmel_pwm_config_v1(struct pwm_chip *chip, struct pwm_device *pwm,
++				int dty, int prd)
++{
++	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
++	unsigned int val;
++
++	/*
++	 * If the PWM channel is disabled, write value to duty and period
++	 * registers directly.
++	 * If the PWM channel is enabled, only update the duty register
++	 *
++	 * When update duty value, it need to set bit 10 of CMR to 0
++	 */
++	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
++		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CUPD, dty);
++
++		val = atmel_pwm_ch_readl(atmel_pwm, pwm->hwpwm, PWM_CMR);
++		val &= ~PWM_CMR_UPD_CDTY;
++		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
++	} else {
++		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CDTY, dty);
++		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CPRD, prd);
++	}
++}
++
++static void atmel_pwm_config_v2(struct pwm_chip *chip, struct pwm_device *pwm,
++				int dty, int prd)
++{
++	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
++
++	/*
++	 * If the PWM channel is disabled, write value to duty and period
++	 * registers directly.
++	 * If the PWM channel is enabled, using period update register to update
++	 * value to period register, the same operation to duty register
++	 */
++	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
++		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CDTYUPD, dty);
++		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CPRDUPD, prd);
++	} else {
++		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CDTY, dty);
++		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CPRD, prd);
++	}
++}
++
++static int atmel_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
++		enum pwm_polarity polarity)
++{
++	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
++	u32 val = 0;
++	int ret;
++
++	ret = clk_enable(atmel_pwm->clk);
++	if (ret) {
++		pr_err("failed to enable pwm clock\n");
++		return ret;
++	}
++
++	if (polarity == PWM_POLARITY_NORMAL)
++		val &= ~PWM_CMR_CPOL;
++	else
++		val |= PWM_CMR_CPOL;
++
++	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
++
++	clk_disable(atmel_pwm->clk);
++
++	return 0;
++}
++
++static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
++
++	clk_prepare_enable(atmel_pwm->clk);
++
++	atmel_pwm_writel(atmel_pwm, PWM_ENA, 1 << pwm->hwpwm);
++
++	return 0;
++}
++
++static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
++	u32 val;
++
++	atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
++
++	val = atmel_pwm_readl(atmel_pwm, PWM_SR);
++	if ((val & PWM_SR_ALL_CH_ON) == 0)
++		clk_disable(atmel_pwm->clk);
++}
++
++static const struct pwm_ops atmel_pwm_ops = {
++	.config = atmel_pwm_config,
++	.set_polarity = atmel_pwm_set_polarity,
++	.enable = atmel_pwm_enable,
++	.disable = atmel_pwm_disable,
++	.owner = THIS_MODULE,
++};
++
++struct atmel_pwm_data {
++	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
++		       int dty, int prd);
++};
++
++static const struct atmel_pwm_data atmel_pwm_data_v1 = {
++	.config = atmel_pwm_config_v1,
++};
++
++static const struct atmel_pwm_data atmel_pwm_data_v2 = {
++	.config = atmel_pwm_config_v2,
++};
++
++#ifdef CONFIG_OF
++static const struct of_device_id atmel_pwm_dt_ids[] = {
++	{
++		.compatible = "atmel,at91sam9rl-pwm",
++		.data = &atmel_pwm_data_v1,
++	}, {
++		.compatible = "atmel,sama5-pwm",
++		.data = &atmel_pwm_data_v2,
++	}, {
++		/* sentinel */
++	},
++};
++MODULE_DEVICE_TABLE(of, atmel_pwm_dt_ids);
++#endif
++
++static int atmel_pwm_probe(struct platform_device *pdev)
++{
++	const struct of_device_id *of_id =
++		of_match_device(atmel_pwm_dt_ids, &pdev->dev);
++	const struct atmel_pwm_data *data;
++	struct atmel_pwm_chip *atmel_pwm;
++	struct resource *res;
++	int ret;
++
++	atmel_pwm = devm_kzalloc(&pdev->dev, sizeof(*atmel_pwm), GFP_KERNEL);
++	if (!atmel_pwm)
++		return -ENOMEM;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		return -ENODEV;
++
++	atmel_pwm->base = devm_ioremap_resource(&pdev->dev, res);
++
++	atmel_pwm->clk = devm_clk_get(&pdev->dev, NULL);
++	if (IS_ERR(atmel_pwm->clk))
++		return PTR_ERR(atmel_pwm->clk);
++	clk_prepare(atmel_pwm->clk);
++
++	atmel_pwm->chip.dev = &pdev->dev;
++	atmel_pwm->chip.ops = &atmel_pwm_ops;
++	atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
++	atmel_pwm->chip.of_pwm_n_cells = 3;
++	atmel_pwm->chip.base = -1;
++	atmel_pwm->chip.npwm = 4;
++
++	data = of_id->data;
++	atmel_pwm->config = data->config;
++
++	ret = pwmchip_add(&atmel_pwm->chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed to add pwm chip %d\n", ret);
++		return ret;
++	}
++
++	platform_set_drvdata(pdev, atmel_pwm);
++
++	return 0;
++}
++
++static int atmel_pwm_remove(struct platform_device *pdev)
++{
++	struct atmel_pwm_chip *atmel_pwm = platform_get_drvdata(pdev);
++
++	clk_unprepare(atmel_pwm->clk);
++
++	return pwmchip_remove(&atmel_pwm->chip);
++}
++
++static struct platform_driver atmel_pwm_driver = {
++	.driver = {
++		.name = "atmel-pwm",
++		.of_match_table = of_match_ptr(atmel_pwm_dt_ids),
++	},
++	.probe = atmel_pwm_probe,
++	.remove = atmel_pwm_remove,
++};
++module_platform_driver(atmel_pwm_driver);
++
++MODULE_ALIAS("platform:atmel-pwm");
++MODULE_AUTHOR("Bo Shen <voice.shen@atmel.com>");
++MODULE_DESCRIPTION("Atmel PWM driver");
++MODULE_LICENSE("GPL v2");
 -- 
-Best regards,
+1.7.9.5
 
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
