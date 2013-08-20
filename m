@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab3HTXJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 19:09:07 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:60974 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab3HTXJE convert rfc822-to-8bit (ORCPT
+	id S1751933Ab3HTXL0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 19:11:26 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:52190 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab3HTXLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 19:09:04 -0400
+	Tue, 20 Aug 2013 19:11:24 -0400
+Date: Tue, 20 Aug 2013 16:11:17 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net,
+        Hugh Dickins <hughd@google.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Proposed stable release changes
+Message-ID: <20130820231117.GA24702@roeck-us.net>
+References: <20130820224032.GA20491@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5AiRw7HvGQMq-n596ZkHJs_KJNn346yf+jc7yti-xpUw@mail.gmail.com>
-References: <CAErSpo53L3-feEw0qZvBTmRrY+SXpGrGU6oxZg3wVjH1M8JDXg@mail.gmail.com>
- <F6FB0E698C9B3143BDF729DF222866466FD41225@ORSMSX110.amr.corp.intel.com> <CAErSpo5AiRw7HvGQMq-n596ZkHJs_KJNn346yf+jc7yti-xpUw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 20 Aug 2013 17:08:43 -0600
-Message-ID: <CAErSpo4E9LNrfqTq1_WUoAx68_krw23BjSYbPpJPOr=zbq98xA@mail.gmail.com>
-Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type 00
- to PF Nacked" messages
-To: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
-Cc: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Don Dutile <ddutile@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820224032.GA20491@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Don Dutile]
+On Tue, Aug 20, 2013 at 03:40:32PM -0700, Greg KH wrote:
+> Hi all,
+> 
+> Given that I had to just revert a patch in the recent stable releases
+> that didn't get enough time to "bake" in Linus's tree (or in -next), I
+> figured it was worth discussing some possible changes with how "fast" I
+> pick up patches for stable releases.
+> 
+> So, how about this proposal:
+> 
+> - I will wait for a -rc to come out with the patch in it before putting
+>   it into a stable release, unless:
+> 	- the maintainer ACKs it, or sends it directly (like DaveM does
+> 	  for networking patches)
+> 	- I have seen enough discussion about a patch to show that it
+> 	  really does fix something / is good / doesn't cause problems.
+> 	- obviously safe, i.e. "add a device id" type thing.
+> 
+> Given that we have -rc releases every week, except for the initial -rc1
+> release, I don't think this will really cause any major delays.
+> 
+> Also, now that we are about to head into my busy "travel season", odds
+> are, I'll be at least a week behind anyway, so this would probably start
+> happening without an "official" change.  It's been a boring summer, I've
+> been able to keep up with the stable stuff really easily, causing
+> problems like this :)
+> 
+> Objections?  Comments?
+> 
+Makes sense to me.
 
-On Tue, Aug 13, 2013 at 8:23 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Aug 13, 2013 at 3:54 PM, Skidmore, Donald C
-> <donald.c.skidmore@intel.com> wrote:
->
->> We were unable to recreate your failure here locally so I have some additional questions.  First off you mentioned it was failing as far back as v3.9, was it ever working for you?  If so bisecting would be really helpful as I mentioned we have been unable to cause the failure in house.
->
-> I'm not aware of any working version.  I'm exercising in the sysfs
-> SR-IOV configuration, which I think appeared in v3.8 or so.
->
->>  If not could you see if the problem still occurs without the external Magma PCIe expansion chassis, this is of course assuming that you can plug the X540 into your system without it.
->
-> I played with this a little more and found this:
->
-> 1) Magma card in z420, connected to chassis containing X540: fails
-> (original report)
-> 2) X540 in z420, Magma card in z420, connected to empty chassis: fails
-> 3) X540 in z420, Magma card in z420 but no cable to chassis: works
->
-> The only difference I've noticed so far between configs 2 & 3 are
-> different bus numbers and different IRQ assignments:
->
-> Config 2 (failing):
->   pci 0000:0c:00.0: [8086:1528] type 00 class 0x020000
->   pci 0000:0c:00.0: reg 0x10: [mem 0xdac00000-0xdadfffff 64bit pref]
->   ixgbe 0000:0c:00.0: irq 82 for MSI/MSI-X
->   IRQ 79: 79
->   IRQ 80: eth0
->   IRQ 81: snd_hda_intel
->   IRQ: 82-93 eth1-TxRx-0 through eth1-TxRx-11
->   IRQ 94: eth1
->
-> Config 3 (working):
->   pci 0000:04:00.0: [8086:1528] type 00 class 0x020000
->   pci 0000:04:00.0: reg 0x10: [mem 0xdac00000-0xdadfffff 64bit pref]
->   ixgbe 0000:04:00.0: irq 75 for MSI/MSI-X
->   IRQ 72: ahci
->   IRQ 73: eth0
->   IRQ 74: snd_hda_intel
->   IRQ 75-86: eth1-TxRx-0 through eth1-TxRx-11
->   IRQ 87: eth1
->
-> I'll try to narrow this down a little more; I'm just giving you this
-> preliminary info in case it rings any bells for you.
+It would be even better if you could find the time to push -rc releases
+into the stable repository before you accept patches into a stable branch.
+I am now running my test suite on stable/master, so that would give it
+some time to catch new problems before they make their way into a stable
+branch.
 
-Sorry, I haven't gotten anywhere with this yet.  I opened
-https://bugzilla.kernel.org/show_bug.cgi?id=60776 and attached logs
-and lspci info from v3.11-rc6.
-
-Bjorn
+Guenter
