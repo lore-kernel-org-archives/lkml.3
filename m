@@ -1,195 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392Ab3HTNZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 09:25:10 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45132 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994Ab3HTNZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 09:25:07 -0400
-Message-ID: <52136E1A.8020900@ti.com>
-Date: Tue, 20 Aug 2013 18:54:42 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1751426Ab3HTNZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 09:25:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44603 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab3HTNZo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 09:25:44 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [3.10][3.8][3.5] ARM: Fix FIQ code on VIVT CPUs (was Re: [PATCH 076/133] ARM: update FIQ support for relocation of vectors)
+References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+	<1376692475-28413-77-git-send-email-kamal@canonical.com>
+	<20130818210952.GI3067@blackmetal.musicnaut.iki.fi>
+	<1376928143.18111.12.camel@fourier>
+Date: Tue, 20 Aug 2013 14:25:34 +0100
+In-Reply-To: <1376928143.18111.12.camel@fourier> (Kamal Mostafa's message of
+	"Mon, 19 Aug 2013 09:02:23 -0700")
+Message-ID: <87mwoclcj5.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: <balbi@ti.com>, <myungjoo.ham@samsung.com>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <grant.likely@linaro.org>, <rob@landley.net>,
-        <ian.campbell@citrix.com>, <swarren@wwwdotorg.org>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <bcousson@baylibre.com>
-Subject: Re: [PATCH 1/2] extcon: extcon-dra7xx: Add extcon driver for USB
- ID detection
-References: <1376648029-30659-1-git-send-email-george.cherian@ti.com> <1376648029-30659-2-git-send-email-george.cherian@ti.com> <5212B740.2000000@samsung.com> <521338B7.7040208@ti.com> <52134513.1060304@samsung.com>
-In-Reply-To: <52134513.1060304@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/20/2013 3:59 PM, Chanwoo Choi wrote:
-> Hi George,
->
->>>> diff --git a/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt b/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
->>>> new file mode 100644
->>>> index 0000000..37e4c22
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
->>>> @@ -0,0 +1,19 @@
->>>> +EXTCON FOR DRA7xx
->>>> +
->>>> +Required Properties:
->>>> + - compatible : Should be "ti,dra7xx-usb"
->>>> + - gpios : phandle to ID pin and interrupt gpio.
->>>> +
->>>> +Optional Properties:
->>>> +  - interrupt-parent : interrupt controller phandle
->>>> +  - interrupts : interrupt number
->>>> +
->>>> +
->>>> +dra7x_extcon1 {
->>> You used 'dra7xx-usb' device name. Why did you use 'dra7x_extcon1' name?
->>> What is meaning 'dra7x_extcon1'?
->> I will rename it to  dra7xx_extcon.
-> extcon naming means various external connector device. e.g., usb, jack, etc...
-> So, I prefer 'dra7xx_usb' instead of 'dra7xx_extcon'. I have plan to divide
-> extcon device driver according to the kind of device.
+--=-=-=
+Content-Type: text/plain
+Content-Transfer-Encoding: quoted-printable
 
-okay will do it in v2
->
->
->>>> +static int id_poll_func(void *data)
->>>> +{
->>>> +    struct dra7xx_usb *dra7xx_usb = (struct dra7xx_usb *) data;
->>>> +
->>>> +    allow_signal(SIGINT);
->>>> +    allow_signal(SIGTERM);
->>>> +    allow_signal(SIGKILL);
->>>> +    allow_signal(SIGUSR1);
->>>> +
->>>> +    set_freezable();
->>>> +
->>>> +    while (!kthread_should_stop()) {
->>>> +        dra7xx_usb->id_current = gpio_get_value_cansleep
->>>> +                        (dra7xx_usb->id_gpio);
->>>> +        if (dra7xx_usb->id_current == dra7xx_usb->id_prev) {
->>>> +            schedule_timeout_interruptible
->>>> +                        (msecs_to_jiffies(2*1000));
->>>> +            continue;
->>>> +        } else if (dra7xx_usb->id_current == 0) {
->>>> +            extcon_set_cable_state(&dra7xx_usb->edev, "USB", false);
->>>> +            extcon_set_cable_state(&dra7xx_usb->edev,
->>>> +                        "USB-HOST", true);
->>>> +        } else {
->>>> +            extcon_set_cable_state(&dra7xx_usb->edev,
->>>> +                        "USB-HOST", false);
->>>> +            extcon_set_cable_state(&dra7xx_usb->edev, "USB", true);
->>>> +        }
->>> Should dra7xx_usb keep always connected state with either USB or USB-HOST cable?
->>> I don't understand. So please explain detailed operation method of dra7xx_usb device.
->> In dra7xx only ID pin is connected to the SoC gpio. There is no way, currently to detect the VBUS on/off.
->> So I always default to either HOST/DEVICE mode solely depending on the ID pin value.
-> OK.
->
-> But I don't want to use kthread with polling method.
-> I recommend that you use interrupt method for cable detection.
-> All of extcon device driver have only used interrupt method without polling.
+Kamal Mostafa <kamal@canonical.com> writes:
 
-okay will remove the polling thread.
+> Thanks Aaro.  I'll apply "2ba85e7 ARM: Fix FIQ code on VIVT CPUs" to
+> 3.8-stable.
 >
->>>> +        dra7xx_usb->id_prev = dra7xx_usb->id_current;
->>>> +    }
->>>> +
->>>> +    return 0;
->>>> +}
->>>> +
->>>> +static irqreturn_t id_irq_handler(int irq, void *data)
->>>> +{
->>>> +    struct dra7xx_usb *dra7xx_usb = (struct dra7xx_usb *) data;
->>>> +
->>>> +    dra7xx_usb->id_current = gpio_get_value_cansleep(dra7xx_usb->id_gpio);
->>>> +
->>>> +    if (dra7xx_usb->id_current == dra7xx_usb->id_prev) {
->>>> +        return IRQ_NONE;
->>>> +    } else if (dra7xx_usb->id_current == 0) {
-> You should define some constant variable to clarify '0' meaning instead of using '0' directly.
-
-okay
+> Greg KH and Luis Henriques:  Heads up!  3.10-stable and 3.5-stable also
+> need 2ba85e7 but it isn't marked cc: stable.
 >
->>>> +    dra7xx_usb = devm_kzalloc(&pdev->dev, sizeof(*dra7xx_usb), GFP_KERNEL);
->>>> +    if (!dra7xx_usb)
->>>> +        return -ENOMEM;
->>> You have to add error message with dev_err().
->> devm_kzalloc itself should give some message.
-> ok.
->
->
->>>> +    status = extcon_dev_register(&dra7xx_usb->edev, dra7xx_usb->dev);
->>>> +    if (status) {
->>>> +        dev_err(&pdev->dev, "failed to register extcon device\n");
->>>> +        return status;
->>> You should restore previous operation about dra7xx_usb->irq_gpio.
->> okay
->>>> +    }
->>>> +
->>>> +    dra7xx_usb->id_prev = gpio_get_value_cansleep(dra7xx_usb->id_gpio);
->>>> +    if (dra7xx_usb->id_prev) {
-> ditto.
-> You should define some constant variable to clarify 'dra7xx_usb->id_prev' meaning.
-
-okay
->
->>>> +        extcon_set_cable_state(&dra7xx_usb->edev, "USB-HOST", false);
->>>> +        extcon_set_cable_state(&dra7xx_usb->edev, "USB", true);
->>>> +    } else {
->>>> +        extcon_set_cable_state(&dra7xx_usb->edev, "USB", false);
->>>> +        extcon_set_cable_state(&dra7xx_usb->edev, "USB-HOST", true);
->>>> +    }
->>> why did you do keep always connected state?
->> There is no way, currently to detect the VBUS on/off.
->> So I always default to either HOST/DEVICE mode solely depending on the ID pin value.
->>
->>>> +
->>>> +    if (dra7xx_usb->irq_gpio) {
->>>> +        status = devm_request_threaded_irq(dra7xx_usb->dev, irq_num,
->>>> +                NULL, id_irq_handler, IRQF_SHARED |
->>>> +                IRQF_ONESHOT | IRQF_TRIGGER_FALLING,
->>>> +                dev_name(&pdev->dev), (void *) dra7xx_usb);
->>>> +        if (status)
->>>> +            dev_err(dra7xx_usb->dev, "failed to request irq #%d\n",
->>>> +                        irq_num);
->>> If devm_request_threaded_irq() return fail state, why did not you do add error exception?
->> If interrupt fails I fallback to polling thread.
->>>> +        else
->>>> +            return 0;
->>> If devm_request_threaded_irq() return success state, why did you directly call 'return'?
->>> kthread_create operation isn't necessary?
->> Yes kthread is optional. Some boards doenot have the ID pin hooked onto the GPIO.
->> In such cases we will run the kthread and poll on the ID pin values.
->>>> +    }
->>>> +
->>>> +    dra7xx_usb->thread_task = kthread_create(id_poll_func, dra7xx_usb,
->>>> +                         dev_name(&pdev->dev));
->>> Should you use polling method with kthread? I think it isn't proper method.
->>> You did get the irq number by using DT helper function and register irq handler
->>> with devm_request_threaded_irq(). I prefer interrupt method for detection of cable state.
->> I also prefer interrupt method. If any implementation does not have ID pin connected to GPIOs then still
->> it could use the driver in polling mode.
-> As I mentioned above, I don't prefer interrupt method for cable detection.
-
-I hope you meant, you prefer interrupt method for cable detection over 
-polling .
-> Polling method for detection isn't appropriate for extcon device driver.
->
-> Instead, I will consider whether to support polling method or not on extcon core.
->
-> Thanks,
-> Chanwoo Choi
->
+>  -Kamal
 >
 
--- 
--George
+Thanks.  I've also seen your IRC msg.  I'll hold this commit for now.
 
+Btw, not sure if you've seen the discussion around
+
+58ad436 genetlink: fix family dump race
+
+Looks like there's a regression introduced by this commit.  I'm
+holding it as well.
+
+Cheers,
+=2D-=20
+Luis
+
+
+>
+> On Mon, 2013-08-19 at 00:09 +0300, Aaro Koskinen wrote:
+>> On Fri, Aug 16, 2013 at 03:33:38PM -0700, Kamal Mostafa wrote:
+>> > 3.8.13.7 -stable review patch.  If anyone has any objections, please l=
+et me know.
+>> >=20
+>> > ------------------
+>> >=20
+>> > From: Russell King <rmk+kernel@arm.linux.org.uk>
+>> >=20
+>> > commit e39e3f3ebfef03450cf7bfa7a974a8c61f7980c8 upstream.
+>> >=20
+>> > FIQ should no longer copy the FIQ code into the user visible vector
+>> > page.  Instead, it should use the hidden page.  This change makes
+>> > that happen.
+>>=20
+>> FYI, this patch introduced regression (kernel crash) at least on Amstrad
+>> E1 board (where FIQ is used for the keyboard). See the following thread:
+>> http://marc.info/?t=3D137583169900003&r=3D1&w=3D2
+>>=20
+>> So any stable kernels where this patch was added should also take:
+>>=20
+>> 	commit 2ba85e7af4c639d933c9a87a6d7363f2983d5ada
+>> 	Author: Russell King <rmk+kernel@arm.linux.org.uk>
+>> 	Date:   Thu Aug 8 11:51:21 2013 +0100
+>>=20
+>> 	ARM: Fix FIQ code on VIVT CPUs
+>>=20
+>> That patch fixes the regression.
+>>=20
+>> A.
+>>=20
+>
+
+--=-=-=
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSE25OAAoJENt0rrj9ziT8J+UQAKj4bTAdlqq81TCgPz9/F2aG
+tyReRfSRfffX0Bl/PAMIhTVTt5JTyXMjhRf2kZH/8ocmGeUtynBGVCDesscXGbll
+NU/tZyODuh0eeTFdGX51II27pRsbBr+OHLHAc/1kzh2/6HE6Nx6lI1sGAcQW2CMB
+gA+wJPwk4HR16UIk2JRtWZHV/3YNXCOf9O4zey6zfUYQAYI3TId1NGZ3BpCBBqnL
+DQRqlsp9Q+mMHXQA/eF9GKNKcBMXXYVuJGf1m7DPiLzNxUEkZ3Hn5hVK6WGUnRA8
+cxSNBTGmSRDU/O2zQFxf2VGxZs4u30AVVMLCWQtZnfU9195mv+/8iyPJpB5udDMG
+icwklbfNwLE30ve164hpu0CvAckmscJuWSHJ4XdSG57blN+pPzJ5/ihZDBKvYEuu
+i+TV2oon9SJ71fxnzXRR0oCPCLvRqPWk4/O4msxnft2jU+Y9NA2zn9n4lMI/NtBp
+oYtcjYWXEW1o3d1c7+MKl3sRx/mZfpHKgypE466c5MRm+O0NBwpZMHpmau38tVx/
+531dp/3IMnYHAflvSGxO2cp5p4TPHWdo7R4g3CHivR54Isfa3P9Bhq4pqbkpWVZ8
+g+0IMgzLbYnYbNeq0Tft89QFwDiDVyW8NLZmdHBZDw+NT72EJjXu6A9wEg6wXVL3
+UtSsn2RKU6DyWBOTF/vh
+=QNWu
+-----END PGP SIGNATURE-----
+--=-=-=--
