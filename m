@@ -1,67 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab3HTVjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:39:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1299 "EHLO mx1.redhat.com"
+	id S1751613Ab3HTVln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:41:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2613 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273Ab3HTVjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:39:04 -0400
-Date: Tue, 20 Aug 2013 23:38:52 +0200
-From: Anton Arapov <anton@redhat.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Dave Hansen <dave@sr71.net>, Dave Jones <davej@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] oops.kernel.org prospect
-Message-ID: <20130820213852.GD6750@bandura.laptop>
-References: <20130819085405.GA22328@bandura.laptop>
- <20130819145505.GB15178@kroah.com>
- <20130819151643.GC19070@bandura.laptop>
- <20130819153939.GA23875@thunk.org>
- <20130819155202.GF19070@bandura.laptop>
- <20130819212512.GA7918@redhat.com>
- <52138924.1040905@sr71.net>
- <20130820205812.GZ7729@decadent.org.uk>
+	id S1751211Ab3HTVll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 17:41:41 -0400
+Date: Tue, 20 Aug 2013 17:41:39 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: device-mapper development <dm-devel@redhat.com>
+cc: Frank Mayhar <fmayhar@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] dm: Make MIN_IOS, et al, tunable via sysctl.
+In-Reply-To: <20130819140016.GB27167@redhat.com>
+Message-ID: <alpine.LRH.2.02.1308201724110.8826@file01.intranet.prod.int.rdu2.redhat.com>
+References: <1376070533.26057.244.camel@bobble.lax.corp.google.com> <20130819140016.GB27167@redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130820205812.GZ7729@decadent.org.uk>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 09:58:12PM +0100, Ben Hutchings wrote:
-> On Tue, Aug 20, 2013 at 08:20:04AM -0700, Dave Hansen wrote:
-> [...]
-> > This is a much more minor nit, but the source code links (like clicking
-> > on bad_page from here:
-> > https://oops.kernel.org/browse-reports/oops-detail/?id=30565#) from the
-> > traces for the distribution kernels link over to mainline kernel source.
-> >  This means that the line numbers don't _quite_ line up.  It would be
-> > really cool if it was able to dump you right over to a copy of the
-> > Debian-specific source in that bug's case.  But, this is a generic
-> > problem that folks have who work across lots of distros: you don't
-> > always have the right source in front of you for any given kernel.
-> [...]
-> 
-> For Debian kernels this should be quite easy.  The sources are
-> browseable at:
-> 
-> http://sources.debian.net/src/linux/$PACKAGE_VERSION/$FILE#L$LINE
-> 
-> The package version is not the same as the kernel release string,
-> but appears at the end of the same line in oops messages, e.g. for
-> <http://oops.kernel.org/browse-reports/oops-detail/?id=30218> the
-> package version is 3.10.1-1.
-> 
-> This doesn't work for versions older than 3.2, or those with the RT
-> patchset, as sources.debian.net can't show the patched source for
-> these.
 
 
-Thanks, Ben!
+On Mon, 19 Aug 2013, Mike Snitzer wrote:
 
-Anton
+> On Fri, Aug 16 2013 at  6:55pm -0400,
+> Frank Mayhar <fmayhar@google.com> wrote:
+> 
+> > The device mapper and some of its modules allocate memory pools at
+> > various points when setting up a device.  In some cases, these pools are
+> > fairly large, for example the multipath module allocates a 256-entry
+> > pool and the dm itself allocates three of that size.  In a
+> > memory-constrained environment where we're creating a lot of these
+> > devices, the memory use can quickly become significant.  Unfortunately,
+> > there's currently no way to change the size of the pools other than by
+> > changing a constant and rebuilding the kernel.
+> > 
+> > This patch fixes that by changing the hardcoded MIN_IOS (and certain
+> > other) #defines in dm-crypt, dm-io, dm-mpath, dm-snap and dm itself to
+> > sysctl-modifiable values.  This lets us change the size of these pools
+> > on the fly, we can reduce the size of the pools and reduce memory
+> > pressure.
+> 
+> These memory reserves are a long-standing issue with DM (made worse when
+> request-based mpath was introduced).  Two years ago, I assembled a patch
+> series that took one approach to trying to fix it:
+> http://people.redhat.com/msnitzer/patches/upstream/dm-rq-based-mempool-sharing/series.html
+> 
+> But in the end I wasn't convinced sharing the memory reserve would allow
+> for 100s of mpath devices to make forward progress if memory is
+> depleted.
+> 
+> All said, I think adding the ability to control the size of the memory
+> reserves is reasonable.  It allows for informed admins to establish
+> lower reserves (based on the awareness that rq-based mpath doesn't need
+> to support really large IOs, etc) without compromising the ability to
+> make forward progress.
+> 
+> But, as mentioned in my porevious mail, I'd like to see this implemnted
+> in terms of module_param_named().
+> 
+> > We tested performance of dm-mpath with smaller MIN_IOS sizes for both dm
+> > and dm-mpath, from a value of 32 all the way down to zero.
+> 
+> Bio-based can safely be reduced, as this older (uncommitted) patch did:
+> http://people.redhat.com/msnitzer/patches/upstream/dm-rq-based-mempool-sharing/0000-dm-lower-bio-based-reservation.patch
+> 
+> > Bearing in mind that the underlying devices were network-based, we saw
+> > essentially no performance degradation; if there was any, it was down
+> > in the noise.  One might wonder why these sizes are the way they are;
+> > I investigated and they've been unchanged since at least 2006.
+> 
+> Performance isn't the concern.  The concern is: does DM allow for
+> forward progress if the system's memory is completely exhausted?
+
+There is one possible deadlock that was introduced in commit 
+d89d87965dcbe6fe4f96a2a7e8421b3a75f634d1 in 2.6.22-rc1. Unfortunatelly, no 
+one found that bug at that time and now it seems to be hard to revert 
+that.
+
+The problem is this:
+
+* we send bio1 to the device dm-1, device mapper splits it to bio2 and 
+bio3 and sends both of them to the device dm-2. These two bios are added 
+to current->bio_list.
+
+* bio2 is popped off current->bio_list, a mempool entry from device dm-2's 
+mempool is allocated, bio4 is created and sent to the device dm-3. bio4 is 
+added to the end of current->bio_list.
+
+* bio3 is popped off current->bio_list, a mempool entry from device dm-2's 
+mempool is allocated. Suppose that the mempool is exhausted, so we wait 
+until some existing work (bio2) finishes and returns the entry to the 
+mempool.
+
+So: bio3's request routine waits until bio2 finishes and refills the 
+mempool. bio2 is waiting for bio4 to finish. bio4 is in current->bio_list 
+and is waiting until bio3's request routine fininshes. Deadlock.
+
+In practice, it is not so serious because in mempool_alloc there is:
+/*
+ * FIXME: this should be io_schedule().  The timeout is there as a
+ * workaround for some DM problems in 2.6.18.
+ */
+io_schedule_timeout(5*HZ);
+
+- so it waits for 5 seconds and retries. If there is something in the 
+system that is able to free memory, it resumes.
+
+> This is why request-based has such an extensive reserve, because it
+> needs to account for cloning the largest possible request that comes in
+> (with multiple bios).
+
+Mikulas
