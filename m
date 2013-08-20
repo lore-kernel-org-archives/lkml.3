@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab3HTGWe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 02:22:34 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:44287 "EHLO
+	id S1752421Ab3HTGWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 02:22:40 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:44294 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011Ab3HTGWc (ORCPT
+	with ESMTP id S1752383Ab3HTGWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 02:22:32 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r7K6J034020195, This message is accepted by code: ctloc85258
+	Tue, 20 Aug 2013 02:22:36 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r7K6J11i020202, This message is accepted by code: ctloc85258
 From: <wei_wang@realsil.com.cn>
 To: <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
         Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH v3 3/6] mfd:rtsx: Move some actions from rtsx_pci_init_hw to individual extra_init_hw
-Date: Tue, 20 Aug 2013 14:18:53 +0800
-Message-ID: <bc64ce0f3e3593bc947c1717bb1c2f8865c77d43.1376978825.git.wei_wang@realsil.com.cn>
+Subject: [PATCH v3 4/6] mfd:rtsx: Clear hardware PFM mode in rtl8411b
+Date: Tue, 20 Aug 2013 14:18:54 +0800
+Message-ID: <724dbb8c68e1985aa32cf9beea4b334cbd6b6935.1376978825.git.wei_wang@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1376978825.git.wei_wang@realsil.com.cn>
 References: <cover.1376978825.git.wei_wang@realsil.com.cn>
@@ -28,96 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei WANG <wei_wang@realsil.com.cn>
 
-These actions are individual for each reader model, so should be put in
-extra_init_hw instead of rtsx_pci_init_hw.
+Clear hw_pfm_en to disable hardware PFM mode, to fix a bug that in some
+situation registers in 0xFDxx domain can't be accessed.
 
 Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 ---
- drivers/mfd/rts5209.c  |    4 ++++
- drivers/mfd/rts5227.c  |    2 ++
- drivers/mfd/rts5229.c  |    4 ++++
- drivers/mfd/rts5249.c  |    2 ++
- drivers/mfd/rtsx_pcr.c |    4 ----
- 5 files changed, 12 insertions(+), 4 deletions(-)
+ drivers/mfd/rtl8411.c        |    2 ++
+ include/linux/mfd/rtsx_pci.h |    1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/drivers/mfd/rts5209.c b/drivers/mfd/rts5209.c
-index c67935e..03a15f7 100644
---- a/drivers/mfd/rts5209.c
-+++ b/drivers/mfd/rts5209.c
-@@ -70,6 +70,10 @@ static int rts5209_extra_init_hw(struct rtsx_pcr *pcr)
+diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
+index 56cc248..d183fa0 100644
+--- a/drivers/mfd/rtl8411.c
++++ b/drivers/mfd/rtl8411.c
+@@ -114,6 +114,8 @@ static int rtl8411b_extra_init_hw(struct rtsx_pcr *pcr)
+ 			0xFF, pcr->sd30_drive_sel_3v3);
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CD_PAD_CTL,
+ 			CD_DISABLE_MASK | CD_AUTO_DISABLE, CD_ENABLE);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, FUNC_FORCE_CTL,
++			0x06, 0x00);
  
- 	/* Turn off LED */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_GPIO, 0xFF, 0x03);
-+	/* Reset ASPM state to default value */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
-+	/* Force CLKREQ# PIN to drive 0 to request clock */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0x08, 0x08);
- 	/* Configure GPIO as output */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_GPIO_DIR, 0xFF, 0x03);
- 	/* Configure driving */
-diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
-index 42ebf5c..724ce4c5 100644
---- a/drivers/mfd/rts5227.c
-+++ b/drivers/mfd/rts5227.c
-@@ -101,6 +101,8 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
- 
- 	/* Configure GPIO as output */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, GPIO_CTL, 0x02, 0x02);
-+	/* Reset ASPM state to default value */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
- 	/* Switch LDO3318 source from DV33 to card_3v3 */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x00);
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
-diff --git a/drivers/mfd/rts5229.c b/drivers/mfd/rts5229.c
-index a0b695a..e8261d7 100644
---- a/drivers/mfd/rts5229.c
-+++ b/drivers/mfd/rts5229.c
-@@ -67,6 +67,10 @@ static int rts5229_extra_init_hw(struct rtsx_pcr *pcr)
- 
- 	/* Configure GPIO as output */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, GPIO_CTL, 0x02, 0x02);
-+	/* Reset ASPM state to default value */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
-+	/* Force CLKREQ# PIN to drive 0 to request clock */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0x08, 0x08);
- 	/* Switch LDO3318 source from DV33 to card_3v3 */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x00);
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
-diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-index 79ff212..c5e54d7 100644
---- a/drivers/mfd/rts5249.c
-+++ b/drivers/mfd/rts5249.c
-@@ -104,6 +104,8 @@ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
- 
- 	/* Configure GPIO as output */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, GPIO_CTL, 0x02, 0x02);
-+	/* Reset ASPM state to default value */
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
- 	/* Switch LDO3318 source from DV33 to card_3v3 */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x00);
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
-diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 97526f1..ffd393c 100644
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -972,8 +972,6 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, HOST_SLEEP_STATE, 0x03, 0x00);
- 	/* Disable card clock */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_CLK_EN, 0x1E, 0);
--	/* Reset ASPM state to default value */
--	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
- 	/* Reset delink mode */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CHANGE_LINK_STATE, 0x0A, 0);
- 	/* Card driving select */
-@@ -1003,8 +1001,6 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
- 	 *	0: ELBI interrupt flag[31:22] & [7:0] only can be write clear
- 	 */
- 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, NFTS_TX_CTRL, 0x02, 0);
--	/* Force CLKREQ# PIN to drive 0 to request clock */
--	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0x08, 0x08);
- 
- 	err = rtsx_pci_send_cmd(pcr, 100);
- 	if (err < 0)
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index 11ab786..9a16276 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -687,6 +687,7 @@
+ #define PME_FORCE_CTL			0xFE56
+ #define ASPM_FORCE_CTL			0xFE57
+ #define PM_CLK_FORCE_CTL		0xFE58
++#define FUNC_FORCE_CTL			0xFE59
+ #define PERST_GLITCH_WIDTH		0xFE5C
+ #define CHANGE_LINK_STATE		0xFE5B
+ #define RESET_LOAD_REG			0xFE5E
 -- 
 1.7.9.5
 
