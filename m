@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810Ab3HTCnj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 22:43:39 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:39667 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab3HTCm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751992Ab3HTCm1 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 19 Aug 2013 22:42:27 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:39638 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab3HTCmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 22:42:25 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,55 +14,61 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, James Hogan <james.hogan@imgtec.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 7/9] rcu: Select IRQ_WORK from TREE_PREEMPT_RCU
-Date: Mon, 19 Aug 2013 19:42:12 -0700
-Message-Id: <1376966534-30775-7-git-send-email-paulmck@linux.vnet.ibm.com>
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 8/9] rcu: Simplify _rcu_barrier() processing
+Date: Mon, 19 Aug 2013 19:42:13 -0700
+Message-Id: <1376966534-30775-8-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1376966534-30775-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130820024148.GA30283@linux.vnet.ibm.com>
  <1376966534-30775-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082002-2398-0000-0000-000001A46F39
+x-cbid: 13082002-2398-0000-0000-000001A46F2A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Hogan <james.hogan@imgtec.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-TREE_RCU and TREE_PREEMPT_RCU both cause kernel/rcutree.c to be built,
-but only TREE_RCU selects IRQ_WORK, which can result in an undefined
-reference to irq_work_queue for some (random) configs:
+This commit drops an unneeded ACCESS_ONCE() and simplifies an "our work
+is done" check in _rcu_barrier().  This applies feedback from Linus
+(https://lkml.org/lkml/2013/7/26/777) that he gave to similar code
+in an unrelated patch.
 
-kernel/built-in.o In function `rcu_start_gp_advanced':
-kernel/rcutree.c:1564: undefined reference to `irq_work_queue'
-
-Select IRQ_WORK from TREE_PREEMPT_RCU too to fix this.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- init/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/rcutree.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 247084b..c08a549 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -470,6 +470,7 @@ config TREE_RCU
- config TREE_PREEMPT_RCU
- 	bool "Preemptible tree-based hierarchical RCU"
- 	depends on PREEMPT
-+	select IRQ_WORK
- 	help
- 	  This option selects the RCU implementation that is
- 	  designed for very large SMP systems with hundreds or
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index c6a064a..612aff1 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -2817,9 +2817,20 @@ static void _rcu_barrier(struct rcu_state *rsp)
+ 	 * transition.  The "if" expression below therefore rounds the old
+ 	 * value up to the next even number and adds two before comparing.
+ 	 */
+-	snap_done = ACCESS_ONCE(rsp->n_barrier_done);
++	snap_done = rsp->n_barrier_done;
+ 	_rcu_barrier_trace(rsp, "Check", -1, snap_done);
+-	if (ULONG_CMP_GE(snap_done, ((snap + 1) & ~0x1) + 2)) {
++
++	/*
++	 * If the value in snap is odd, we needed to wait for the current
++	 * rcu_barrier() to complete, then wait for the next one, in other
++	 * words, we need the value of snap_done to be three larger than
++	 * the value of snap.  On the other hand, if the value in snap is
++	 * even, we only had to wait for the next rcu_barrier() to complete,
++	 * in other words, we need the value of snap_done to be only two
++	 * greater than the value of snap.  The "(snap + 3) & 0x1" computes
++	 * this for us (thank you, Linus!).
++	 */
++	if (ULONG_CMP_GE(snap_done, (snap + 3) & ~0x1)) {
+ 		_rcu_barrier_trace(rsp, "EarlyExit", -1, snap_done);
+ 		smp_mb(); /* caller's subsequent code after above check. */
+ 		mutex_unlock(&rsp->barrier_mutex);
 -- 
 1.8.1.5
 
