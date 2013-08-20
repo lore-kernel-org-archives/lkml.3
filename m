@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab3HTQ1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:27:07 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:51930 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab3HTQ1F (ORCPT
+	id S1751393Ab3HTQbZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:31:25 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:51441 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab3HTQbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:27:05 -0400
-Date: Tue, 20 Aug 2013 17:26:58 +0100
-From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, jic23@cam.ac.uk,
-        dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, Russ.Dill@ti.com
-Subject: Re: [PATCH 4/4] iio: ti_am335x_adc: Add continuous sampling and
- trigger support
-Message-ID: <20130820162657.GA6776@gmail.com>
-References: <1376424303-22740-1-git-send-email-zubair.lutfullah@gmail.com>
- <1376424303-22740-5-git-send-email-zubair.lutfullah@gmail.com>
- <20130819171238.GA31610@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130819171238.GA31610@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Aug 2013 12:31:24 -0400
+Subject: Re: [PULL] Miscellaneous trivialities
+Date: Tue, 20 Aug 2013 16:23:54 -0000
+From: Michael Witten <mfwitten@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jiri Kosina <trivial@kernel.org>, Rob Landley <rob@landley.net>,
+        Randy Dunlap <rdunlap@infradead.org>, David Airlie <airlied@linux.ie>,
+        linux-kernel@vger.kernel.org
+Message-ID: <13ac963de1a64d98a13fa88911d232bb-mfwitten@gmail.com>
+In-Reply-To: <CAMOZ1BtsmP9BJAudMRyL=W42DnOLt4nFh_tankxxCdKkZngXSw@mail.gmail.com>
+References: <e3119c5240504890b8fd3ce2e38231c1-mfwitten@gmail.com>
+            <f0d1a6bf084b4f45a32b9d156788041f-mfwitten@gmail.com>
+            <alpine.LNX.2.00.1308201250190.21654@pobox.suse.cz>
+            <CAMOZ1BtsmP9BJAudMRyL=W42DnOLt4nFh_tankxxCdKkZngXSw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 07:12:38PM +0200, Sebastian Andrzej Siewior wrote:
-> * Zubair Lutfullah | 2013-08-13 21:05:03 [+0100]:
-> 
-> >diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-> >index 3ceac3e..0d7e313 100644
-> >--- a/drivers/iio/adc/ti_am335x_adc.c
-> >+++ b/drivers/iio/adc/ti_am335x_adc.c
-> …
-> >+static irqreturn_t tiadc_irq(int irq, void *private)
-> >+{
-> …
-> >+		wake_up_interruptible(&adc_dev->wq_data_avail);
-> …
-> >+}
-> …
-> >+static irqreturn_t tiadc_trigger_h(int irq, void *p)
-> >+{
-> …
-> >+	schedule_work(&adc_dev->poll_work);
-> …
-> >+}
-> …
-> >+static void tiadc_adc_work(struct work_struct *work_s)
-> >+{
-> …
-> >+		wait_event_interruptible(adc_dev->wq_data_avail,
-> >+					(adc_dev->data_avail == 1));
-> …
-> >+}
-> 
-> This is not very nice. The problem is that you might sleep in a
-> workqueue and so the other jobs will wait until you are done. I'm think
-This will change to a different style.
+On Tue, 20 Aug 2013 14:24:44 -0000, Michael Witten wrote:
+> On Tue, Aug 20, 2013 at 10:50 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+>> On Mon, 19 Aug 2013, Michael Witten wrote:
+>>
+>>> I've updated the series to make that change instead; the updated
+>>> series is here:
+>>>
+>>>   https://github.com/mfwitten/linux.git trivial/misc/2
+>>>
+>>> Sorry for the churn.
+>>
+>> Please send a proper new pull request, or just bounce the series through
+>> e-mail.
+>
+> I'll do that presently, but I'm curious to know why that's useful.
 
-> I'm looking into DMA support for this so once your code is working it
-> should be possible to switch to DMA instead reading byte wise from the
-> fifo.
-Great.
+For completeness, here is the new request/series:
 
-> How did you test the whole thing? Do you have a test program which
-> selects a few sources and reads them in continuous mode?
-> 
-generic_buffer.c runs for this for sysfs trigger.. 
-However. If you follow the other thread. 
-This is obsolete and trigger style is changing to a driver trigger.
-
-I'll update when I'm done.
-
-Thanks
-ZubairLK
+  [PATCH v3 trivial 0/7] Miscellaneous Trivialities
+  Message-ID: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com>
+  http://thread.gmane.org/gmane.linux.kernel/1547748
