@@ -1,90 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511Ab3HTQ54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:57:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35248 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab3HTQ5y (ORCPT
+	id S1751567Ab3HTRA0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 13:00:26 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50315 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab3HTRAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:57:54 -0400
-Message-ID: <5213A002.7020408@infradead.org>
-Date: Tue, 20 Aug 2013 09:57:38 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 20 Aug 2013 13:00:24 -0400
+Message-ID: <5213A0A7.9010502@codeaurora.org>
+Date: Tue, 20 Aug 2013 10:00:23 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH -mm] docs: Document soft dirty behaviour for freshly created
- memory regions
-References: <20130820153132.GK18673@moon>
-In-Reply-To: <20130820153132.GK18673@moon>
+To: Kumar Gala <galak@codeaurora.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH 2/4] devicetree: serial: Document msm_serial bindings
+References: <1376948397-6882-1-git-send-email-sboyd@codeaurora.org> <1376948397-6882-3-git-send-email-sboyd@codeaurora.org> <543F6671-8317-446A-B14A-147373BCA9B6@codeaurora.org>
+In-Reply-To: <543F6671-8317-446A-B14A-147373BCA9B6@codeaurora.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/13 08:31, Cyrill Gorcunov wrote:
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Matt Mackall <mpm@selenic.com>
-> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  Documentation/vm/soft-dirty.txt |    7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> Index: linux-2.6.git/Documentation/vm/soft-dirty.txt
-> ===================================================================
-> --- linux-2.6.git.orig/Documentation/vm/soft-dirty.txt
-> +++ linux-2.6.git/Documentation/vm/soft-dirty.txt
-> @@ -28,6 +28,13 @@ This is so, since the pages are still ma
->  the kernel does is finds this fact out and puts both writable and soft-dirty
->  bits on the PTE.
->  
-> +  While in most cases tracking memory changes by #PF-s is more than enough
-                                                                       enough,
+On 08/20/13 07:41, Kumar Gala wrote:
+> On Aug 19, 2013, at 4:39 PM, Stephen Boyd wrote:
+>
+>> diff --git a/Documentation/devicetree/bindings/serial/msm_serial.txt b/Documentation/devicetree/bindings/serial/msm_serial.txt
+>> new file mode 100644
+>> index 0000000..a6efac3
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/serial/msm_serial.txt
+>> @@ -0,0 +1,82 @@
+>> +* MSM Serial UART and UARTDM
+>> +
+>> +There are two MSM serial hardware designs. UARTDM is designed for use with a
+>> +dma engine in high-speed use cases and the non-DM design is for lower speed use
+>> +cases. The two designs are mostly compatible from a software perspective except
+>> +the non-DM design can only read and write one character at a time and so the
+>> +register layout differs slightly.
+> I think you split this into two binding spec docs, one for each type of uart.
 
-> +there is still a scenario when we can loose soft dirty bit -- a task does
-                                         lose soft dirty bits -- a task
+Should split into two files? I can do that.
 
-> +unmap previously mapped memory region and then maps new one exactly at the
+>
+>> +
+>> +UART
+>> +----
+>> +Required properties:
+>> +- compatible: Should contain "qcom,msm-uart"
+>> +- reg: Should contain UART register location and length. The first
+> first? is there more than one reg region?
+>
+>> +       register shall specify the main control registers
+>> +- interrupts: Should contain UART interrupt.
+>> +- clocks: Should contain the core clock.
+>> +- clock-names: Should be "core_clk".
+>> +
+>> +Optional properties:
+>> +- dmas: Should contain dma specifiers for transmit and receive
+>> +- dma-names: Should contain "tx" for transmit and "rx" for receive
+> confused, above you say the non-DM doesn't support DMA so, why the optional props?
 
-   unmaps a previously mapped memory region and then maps a new one at exactly the
+Ah sorry, copy pasta.
 
-> +same place. When unmap called the kernel internally clears PTEs values
+>
+>> +
+>> +Example:
+>> +
+>> +A uart device with dma capabilities.
+>> +
+>> +serial@a9c00000 {
+>> +	compatible = "qcom,msm-uart";
+>> +	reg = <0xa9c00000 0x1000>;
+>> +	interrupts = <11>;
+>> +	clocks = <&uart_cxc>;
+>> +	clock-names = "core_clk";
+>> +	dmas = <&dma0 0>, <&dma0 1>;
+>> +	dma-names = "tx", "rx";
+>> +};
+>> +
+>> +UARTDM
+>> +------
+>> +Required properties:
+>> +- compatible: Should contain at least "qcom,msm-uartdm".
+>> +              A more specific property should be specified as follows depending
+>> +	      on the version:
+>> +		"qcom,msm-uartdm-v1.1"
+>> +		"qcom,msm-uartdm-v1.2"
+>> +		"qcom,msm-uartdm-v1.3"
+>> +		"qcom,msm-uartdm-v1.4"
+>> +- reg: Should contain UART register locations and lengths. The first
+>> +       register shall specify the main control registers. An optional second
+>> +       register location shall specify the GSBI control region.
+> Is GSBI region existing tied to particular versions (if so can we say that)
 
-               When unmap is called, the kernel internally clears PTE values
+Not really. GSBI will always be related to v1.3 but not all v1.3
+hardware is part of a GSBI.
 
-> +including soft dirty bit. To notify user space application about such
-                        bits.
+>
+> reg-names?
 
-> +memory region renewal the kernel always mark new memory regions (and
-                                           marks
+Optional should be fine? The driver is already handling this without
+reg-names.
 
-> +expanded regions) as soft dirtified.
+>> +- interrupts: Should contain UART interrupt.
+>> +- clocks: Should contain the core clock and the ahb clock.
+> nit, ahb in caps?
 
-or:                  as soft dirty.
-
->  
->    This feature is actively used by the checkpoint-restore project. You
->  can find more details about it on http://criu.org
-> --
-
+Done.
 
 -- 
-~Randy
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
