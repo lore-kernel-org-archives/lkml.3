@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab3HTVUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:20:07 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:41393 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab3HTVUE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:20:04 -0400
-Date: Tue, 20 Aug 2013 16:20:02 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v3 trivial 0/7] Miscellaneous Trivialities
-To: Michael Witten <mfwitten@gmail.com>
-Cc: Jiri Kosina <trivial@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
-References: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com>
-In-Reply-To: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com> (from
-	mfwitten@gmail.com on Tue Aug 20 11:02:42 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1377033602.2737.81@driftwood>
+	id S1751561Ab3HTVU0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:20:26 -0400
+Received: from mout.gmx.net ([212.227.17.21]:59538 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751112Ab3HTVUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 17:20:23 -0400
+From: dl9pf@gmx.de
+To: dl9pf@gmx.de
+Cc: PaX Team <pageexec@freemail.hu>, Behan Webster <behanw@converseincode.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] [TRIVIAL] Remove braces in drivers/scsi/in2000.h to fix build for clang. No functional change otherwise.
+Date: Tue, 20 Aug 2013 23:19:06 +0200
+Message-Id: <1377033546-19475-1-git-send-email-dl9pf@gmx.de>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:gbOPNE93fVkNEZwuTrVUwFAMFGLtJrnJ5XA8E8GjHduXFCQSRDa
+ zZ+hhxqhVtpPd0DSsiUUjg4f0aRkKTenhydZb2sdTqxAweLYX98zfVmVaFAMUcoTTDw22HJ
+ cnGnU+tgwmph9pxQ8cM1+Pr6msJ774KJKYkRhXZBbI3UtaAvuD9ZlGFaEwbmBMIQW/7YG+y
+ e3GgGeV/nxwPz+xBiB56w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 11:02:42 AM, Michael Witten wrote:
-> I've been sitting on some trivial patches for a while, and I'd just
-> like to get them out of the way.
-> 
-> Here is the series:
-> 
->   [1] Docs: Kconfig: For readability, offset modifiers with commas
->   [2] Docs: Kconfig: Use consistent whitespace indentation
->   [3] Docs: Kconfig: Clean up the radiotap documentation
+From: Jan-Simon Möller <dl9pf@gmx.de>
 
-Not a single worthwhile change in any of those three.
+Author:  PaX Team <pageexec at freemail.hu>
+ML-Post: http://lists.cs.uiuc.edu/pipermail/llvm-commits/Week-of-Mon-20120507/142707.html
+URL:     http://llvm.linuxfoundation.org
 
-Excuse me:
+Merge:   Jan-Simon Möller <dl9pf at gmx.de>
 
-Not a single, worthwhile change, in any of those three.
+Description:
+  Clang chokes on the notation "insw (%%dx)" but works for "insw %%dx" (outsw likewise);
+  GNU as accepts both forms.
 
->   [4] Docs: Kconfig: `devlopers' -> `developers'
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
 
-Sure, a typo, why not.
+CC: Jan-Simon Möller <dl9pf@gmx.de>
+CC: PaX Team <pageexec@freemail.hu>
+CC: Behan Webster <behanw@converseincode.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: linux-scsi@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+---
+ drivers/scsi/in2000.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Rob
+diff --git a/drivers/scsi/in2000.h b/drivers/scsi/in2000.h
+index 5821e1f..cd8d852 100644
+--- a/drivers/scsi/in2000.h
++++ b/drivers/scsi/in2000.h
+@@ -72,7 +72,7 @@ int __dummy_1,__dummy_2; \
+    orl %%ecx, %%ecx       \n \
+    jz 1f                  \n \
+    rep                    \n \
+-   insw (%%dx),%%es:(%%edi) \n \
++   insw %%dx,%%es:(%%edi) \n \
+ 1: "                       \
+    : "=D" (sp) ,"=c" (__dummy_1) ,"=d" (__dummy_2)  /* output */   \
+    : "2" (f), "0" (sp), "1" (i)  /* input */    \
+@@ -87,7 +87,7 @@ int __dummy_1,__dummy_2; \
+    orl %%ecx, %%ecx       \n \
+    jz 1f                  \n \
+    rep                    \n \
+-   outsw %%ds:(%%esi),(%%dx) \n \
++   outsw %%ds:(%%esi),%%dx \n \
+ 1: "                       \
+    : "=S" (sp) ,"=c" (__dummy_1) ,"=d" (__dummy_2)/* output */   \
+    : "2" (f), "0" (sp), "1" (i)  /* input */    \
+-- 
+1.8.1.4
+
