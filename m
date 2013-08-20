@@ -1,367 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab3HTVcC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:32:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37719 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab3HTVb7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:31:59 -0400
-Date: Tue, 20 Aug 2013 14:31:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, kvm-devel <kvm@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Christoph Lameter <cl@gentwo.org>,
+	id S1751643Ab3HTVd2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:33:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52276 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751205Ab3HTVdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 17:33:23 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        John Johansen <john.johansen@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH-v3 1/4] idr: Percpu ida
-Message-Id: <20130820143157.f91bf59d16352989b54e431e@linux-foundation.org>
-In-Reply-To: <1376694549-20609-2-git-send-email-nab@linux-iscsi.org>
-References: <1376694549-20609-1-git-send-email-nab@linux-iscsi.org>
-	<1376694549-20609-2-git-send-email-nab@linux-iscsi.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Kentaro Takeda <takedakn@nttdata.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 02/12] audit: fix netlink portid naming and types
+Date: Tue, 20 Aug 2013 17:31:54 -0400
+Message-Id: <f9afd052f64d78de168f109ee6ce1bf626269128.1377032086.git.rgb@redhat.com>
+In-Reply-To: <cover.1377032086.git.rgb@redhat.com>
+References: <cover.1377032086.git.rgb@redhat.com>
+In-Reply-To: <cover.1377032086.git.rgb@redhat.com>
+References: <cover.1377032086.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Aug 2013 23:09:06 +0000 "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+Normally, netlink ports use the PID of the userspace process as the port ID.
+If the PID is already in use by a port, the kernel will allocate another port
+ID to avoid conflict.  Re-name all references to netlink ports from pid to
+portid to reflect this reality and avoid confusion with actual PIDs.  Ports
+use the __u32 type, so re-type all portids accordingly.
 
-> From: Kent Overstreet <kmo@daterainc.com>
-> 
-> Percpu frontend for allocating ids. With percpu allocation (that works),
-> it's impossible to guarantee it will always be possible to allocate all
-> nr_tags - typically, some will be stuck on a remote percpu freelist
-> where the current job can't get to them.
-> 
-> We do guarantee that it will always be possible to allocate at least
-> (nr_tags / 2) tags - this is done by keeping track of which and how many
-> cpus have tags on their percpu freelists. On allocation failure if
-> enough cpus have tags that there could potentially be (nr_tags / 2) tags
-> stuck on remote percpu freelists, we then pick a remote cpu at random to
-> steal from.
-> 
-> Note that there's no cpu hotplug notifier - we don't care, because
-> steal_tags() will eventually get the down cpu's tags. We _could_ satisfy
-> more allocations if we had a notifier - but we'll still meet our
-> guarantees and it's absolutely not a correctness issue, so I don't think
-> it's worth the extra code.
->
-> ...
->
->  include/linux/idr.h |   53 +++++++++
->  lib/idr.c           |  316 +++++++++++++++++++++++++++++++++++++++++++++++++--
+(This patch is very similar to ebiederman's 5deadd69)
 
-I don't think this should be in idr.[ch] at all.  It has no
-relationship with the existing code.  Apart from duplicating its
-functionality :(
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ include/linux/audit.h |    2 +-
+ kernel/audit.c        |   32 ++++++++++++++++----------------
+ kernel/audit.h        |    8 ++++----
+ kernel/auditfilter.c  |   18 ++++++++++--------
+ 4 files changed, 31 insertions(+), 29 deletions(-)
 
-> 
-> ...
->
-> @@ -243,4 +245,55 @@ static inline int ida_get_new(struct ida *ida, int *p_id)
->  
->  void __init idr_init_cache(void);
->  
-> +/* Percpu IDA/tag allocator */
-> +
-> +struct percpu_ida_cpu;
-> +
-> +struct percpu_ida {
-> +	/*
-> +	 * number of tags available to be allocated, as passed to
-> +	 * percpu_ida_init()
-> +	 */
-> +	unsigned			nr_tags;
-> +
-> +	struct percpu_ida_cpu __percpu	*tag_cpu;
-> +
-> +	/*
-> +	 * Bitmap of cpus that (may) have tags on their percpu freelists:
-> +	 * steal_tags() uses this to decide when to steal tags, and which cpus
-> +	 * to try stealing from.
-> +	 *
-> +	 * It's ok for a freelist to be empty when its bit is set - steal_tags()
-> +	 * will just keep looking - but the bitmap _must_ be set whenever a
-> +	 * percpu freelist does have tags.
-> +	 */
-> +	unsigned long			*cpus_have_tags;
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 729a4d1..a3af0fa 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -462,7 +462,7 @@ extern int		    audit_update_lsm_rules(void);
+ 				/* Private API (for audit.c only) */
+ extern int audit_filter_user(int type);
+ extern int audit_filter_type(int type);
+-extern int  audit_receive_filter(int type, int pid, int seq,
++extern int  audit_receive_filter(int type, __u32 portid, int seq,
+ 				void *data, size_t datasz);
+ extern int audit_enabled;
+ #else /* CONFIG_AUDIT */
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 91e53d0..2476334 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -94,7 +94,7 @@ static int	audit_failure = AUDIT_FAIL_PRINTK;
+  * the portid to use to send netlink messages to that process.
+  */
+ int		audit_pid;
+-static int	audit_nlk_portid;
++static __u32	audit_nlk_portid;
+ 
+ /* If audit_rate_limit is non-zero, limit the rate of sending audit records
+  * to that number per second.  This prevents DoS attacks, but results in
+@@ -165,15 +165,15 @@ struct audit_buffer {
+ };
+ 
+ struct audit_reply {
+-	int pid;
++	__u32 portid;
+ 	struct sk_buff *skb;
+ };
+ 
+-static void audit_set_pid(struct audit_buffer *ab, pid_t pid)
++static void audit_set_portid(struct audit_buffer *ab, __u32 portid)
+ {
+ 	if (ab) {
+ 		struct nlmsghdr *nlh = nlmsg_hdr(ab->skb);
+-		nlh->nlmsg_pid = pid;
++		nlh->nlmsg_pid = portid;
+ 	}
+ }
+ 
+@@ -472,7 +472,7 @@ static int kauditd_thread(void *dummy)
+ int audit_send_list(void *_dest)
+ {
+ 	struct audit_netlink_list *dest = _dest;
+-	int pid = dest->pid;
++	__u32 portid = dest->portid;
+ 	struct sk_buff *skb;
+ 
+ 	/* wait for parent to finish and send an ACK */
+@@ -480,14 +480,14 @@ int audit_send_list(void *_dest)
+ 	mutex_unlock(&audit_cmd_mutex);
+ 
+ 	while ((skb = __skb_dequeue(&dest->q)) != NULL)
+-		netlink_unicast(audit_sock, skb, pid, 0);
++		netlink_unicast(audit_sock, skb, portid, 0);
+ 
+ 	kfree(dest);
+ 
+ 	return 0;
+ }
+ 
+-struct sk_buff *audit_make_reply(int pid, int seq, int type, int done,
++struct sk_buff *audit_make_reply(__u32 portid, int seq, int type, int done,
+ 				 int multi, const void *payload, int size)
+ {
+ 	struct sk_buff	*skb;
+@@ -500,7 +500,7 @@ struct sk_buff *audit_make_reply(int pid, int seq, int type, int done,
+ 	if (!skb)
+ 		return NULL;
+ 
+-	nlh	= nlmsg_put(skb, pid, seq, t, size, flags);
++	nlh	= nlmsg_put(skb, portid, seq, t, size, flags);
+ 	if (!nlh)
+ 		goto out_kfree_skb;
+ 	data = nlmsg_data(nlh);
+@@ -521,13 +521,13 @@ static int audit_send_reply_thread(void *arg)
+ 
+ 	/* Ignore failure. It'll only happen if the sender goes away,
+ 	   because our timeout is set to infinite. */
+-	netlink_unicast(audit_sock, reply->skb, reply->pid, 0);
++	netlink_unicast(audit_sock, reply->skb, reply->portid, 0);
+ 	kfree(reply);
+ 	return 0;
+ }
+ /**
+  * audit_send_reply - send an audit reply message via netlink
+- * @pid: process id to send reply to
++ * @portid: netlink port to which to send reply
+  * @seq: sequence number
+  * @type: audit message type
+  * @done: done (last) flag
+@@ -535,11 +535,11 @@ static int audit_send_reply_thread(void *arg)
+  * @payload: payload data
+  * @size: payload size
+  *
+- * Allocates an skb, builds the netlink message, and sends it to the pid.
++ * Allocates an skb, builds the netlink message, and sends it to the port id.
+  * No failure notifications.
+  */
+-static void audit_send_reply(int pid, int seq, int type, int done, int multi,
+-			     const void *payload, int size)
++static void audit_send_reply(__u32 portid, int seq, int type, int done,
++			     int multi, const void *payload, int size)
+ {
+ 	struct sk_buff *skb;
+ 	struct task_struct *tsk;
+@@ -549,11 +549,11 @@ static void audit_send_reply(int pid, int seq, int type, int done, int multi,
+ 	if (!reply)
+ 		return;
+ 
+-	skb = audit_make_reply(pid, seq, type, done, multi, payload, size);
++	skb = audit_make_reply(portid, seq, type, done, multi, payload, size);
+ 	if (!skb)
+ 		goto out;
+ 
+-	reply->pid = pid;
++	reply->portid = portid;
+ 	reply->skb = skb;
+ 
+ 	tsk = kthread_run(audit_send_reply_thread, reply, "audit_send_reply");
+@@ -727,7 +727,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 					size--;
+ 				audit_log_n_untrustedstring(ab, data, size);
+ 			}
+-			audit_set_pid(ab, NETLINK_CB(skb).portid);
++			audit_set_portid(ab, NETLINK_CB(skb).portid);
+ 			audit_log_end(ab);
+ 		}
+ 		break;
+diff --git a/kernel/audit.h b/kernel/audit.h
+index 123c9b7..36edcf5 100644
+--- a/kernel/audit.h
++++ b/kernel/audit.h
+@@ -237,13 +237,13 @@ extern int audit_uid_comparator(kuid_t left, u32 op, kuid_t right);
+ extern int audit_gid_comparator(kgid_t left, u32 op, kgid_t right);
+ extern int parent_len(const char *path);
+ extern int audit_compare_dname_path(const char *dname, const char *path, int plen);
+-extern struct sk_buff *	    audit_make_reply(int pid, int seq, int type,
+-					     int done, int multi,
+-					     const void *payload, int size);
++extern struct sk_buff *audit_make_reply(__u32 portid, int seq, int type,
++					int done, int multi,
++					const void *payload, int size);
+ extern void		    audit_panic(const char *message);
+ 
+ struct audit_netlink_list {
+-	int pid;
++	__u32 portid;
+ 	struct sk_buff_head q;
+ };
+ 
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index f7aee8b..381d3de 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -971,7 +971,7 @@ out:
+ }
+ 
+ /* List rules using struct audit_rule_data. */
+-static void audit_list_rules(int pid, int seq, struct sk_buff_head *q)
++static void audit_list_rules(__u32 portid, int seq, struct sk_buff_head *q)
+ {
+ 	struct sk_buff *skb;
+ 	struct audit_krule *r;
+@@ -986,14 +986,15 @@ static void audit_list_rules(int pid, int seq, struct sk_buff_head *q)
+ 			data = audit_krule_to_data(r);
+ 			if (unlikely(!data))
+ 				break;
+-			skb = audit_make_reply(pid, seq, AUDIT_LIST_RULES, 0, 1,
+-					 data, sizeof(*data) + data->buflen);
++			skb = audit_make_reply(portid, seq, AUDIT_LIST_RULES,
++					       0, 1, data,
++					       sizeof(*data) + data->buflen);
+ 			if (skb)
+ 				skb_queue_tail(q, skb);
+ 			kfree(data);
+ 		}
+ 	}
+-	skb = audit_make_reply(pid, seq, AUDIT_LIST_RULES, 1, 1, NULL, 0);
++	skb = audit_make_reply(portid, seq, AUDIT_LIST_RULES, 1, 1, NULL, 0);
+ 	if (skb)
+ 		skb_queue_tail(q, skb);
+ }
+@@ -1023,12 +1024,13 @@ static void audit_log_rule_change(char *action, struct audit_krule *rule, int re
+ /**
+  * audit_receive_filter - apply all rules to the specified message type
+  * @type: audit message type
+- * @pid: target pid for netlink audit messages
++ * @portid: target port id for netlink audit messages
+  * @seq: netlink audit message sequence (serial) number
+  * @data: payload data
+  * @datasz: size of payload data
+  */
+-int audit_receive_filter(int type, int pid, int seq, void *data, size_t datasz)
++int audit_receive_filter(int type, __u32 portid, int seq, void *data,
++			 size_t datasz)
+ {
+ 	struct task_struct *tsk;
+ 	struct audit_netlink_list *dest;
+@@ -1046,11 +1048,11 @@ int audit_receive_filter(int type, int pid, int seq, void *data, size_t datasz)
+ 		dest = kmalloc(sizeof(struct audit_netlink_list), GFP_KERNEL);
+ 		if (!dest)
+ 			return -ENOMEM;
+-		dest->pid = pid;
++		dest->portid = portid;
+ 		skb_queue_head_init(&dest->q);
+ 
+ 		mutex_lock(&audit_filter_mutex);
+-		audit_list_rules(pid, seq, &dest->q);
++		audit_list_rules(portid, seq, &dest->q);
+ 		mutex_unlock(&audit_filter_mutex);
+ 
+ 		tsk = kthread_run(audit_send_list, dest, "audit_send_list");
+-- 
+1.7.1
 
-Why not cpumask_t?
-
-> +	struct {
-> +		spinlock_t		lock;
-> +		/*
-> +		 * When we go to steal tags from another cpu (see steal_tags()),
-> +		 * we want to pick a cpu at random. Cycling through them every
-> +		 * time we steal is a bit easier and more or less equivalent:
-> +		 */
-> +		unsigned		cpu_last_stolen;
-> +
-> +		/* For sleeping on allocation failure */
-> +		wait_queue_head_t	wait;
-> +
-> +		/*
-> +		 * Global freelist - it's a stack where nr_free points to the
-> +		 * top
-> +		 */
-> +		unsigned		nr_free;
-> +		unsigned		*freelist;
-> +	} ____cacheline_aligned_in_smp;
-
-Why the ____cacheline_aligned_in_smp?
-
-> +};
-> 
-> ...
->
-> +
-> +/* Percpu IDA */
-> +
-> +/*
-> + * Number of tags we move between the percpu freelist and the global freelist at
-> + * a time
-
-"between a percpu freelist" would be more accurate?
-
-> + */
-> +#define IDA_PCPU_BATCH_MOVE	32U
-> +
-> +/* Max size of percpu freelist, */
-> +#define IDA_PCPU_SIZE		((IDA_PCPU_BATCH_MOVE * 3) / 2)
-> +
-> +struct percpu_ida_cpu {
-> +	spinlock_t			lock;
-> +	unsigned			nr_free;
-> +	unsigned			freelist[];
-> +};
-
-Data structure needs documentation.  There's one of these per cpu.  I
-guess nr_free and freelist are clear enough.  The presence of a lock
-in a percpu data structure is a surprise.  It's for cross-cpu stealing,
-I assume?
-
-> +static inline void move_tags(unsigned *dst, unsigned *dst_nr,
-> +			     unsigned *src, unsigned *src_nr,
-> +			     unsigned nr)
-> +{
-> +	*src_nr -= nr;
-> +	memcpy(dst + *dst_nr, src + *src_nr, sizeof(unsigned) * nr);
-> +	*dst_nr += nr;
-> +}
-> +
-> 
-> ...
->
-> +static inline void alloc_global_tags(struct percpu_ida *pool,
-> +				     struct percpu_ida_cpu *tags)
-> +{
-> +	move_tags(tags->freelist, &tags->nr_free,
-> +		  pool->freelist, &pool->nr_free,
-> +		  min(pool->nr_free, IDA_PCPU_BATCH_MOVE));
-> +}
-
-Document this function?
-
-> +static inline unsigned alloc_local_tag(struct percpu_ida *pool,
-> +				       struct percpu_ida_cpu *tags)
-> +{
-> +	int tag = -ENOSPC;
-> +
-> +	spin_lock(&tags->lock);
-> +	if (tags->nr_free)
-> +		tag = tags->freelist[--tags->nr_free];
-> +	spin_unlock(&tags->lock);
-> +
-> +	return tag;
-> +}
-
-I guess this one's clear enough, if the data structure relationships are
-understood.
-
-> +/**
-> + * percpu_ida_alloc - allocate a tag
-> + * @pool: pool to allocate from
-> + * @gfp: gfp flags
-> + *
-> + * Returns a tag - an integer in the range [0..nr_tags) (passed to
-> + * tag_pool_init()), or otherwise -ENOSPC on allocation failure.
-> + *
-> + * Safe to be called from interrupt context (assuming it isn't passed
-> + * __GFP_WAIT, of course).
-> + *
-> + * Will not fail if passed __GFP_WAIT.
-> + */
-> +int percpu_ida_alloc(struct percpu_ida *pool, gfp_t gfp)
-> +{
-> +	DEFINE_WAIT(wait);
-> +	struct percpu_ida_cpu *tags;
-> +	unsigned long flags;
-> +	int tag;
-> +
-> +	local_irq_save(flags);
-> +	tags = this_cpu_ptr(pool->tag_cpu);
-> +
-> +	/* Fastpath */
-> +	tag = alloc_local_tag(pool, tags);
-> +	if (likely(tag >= 0)) {
-> +		local_irq_restore(flags);
-> +		return tag;
-> +	}
-> +
-> +	while (1) {
-> +		spin_lock(&pool->lock);
-> +
-> +		/*
-> +		 * prepare_to_wait() must come before steal_tags(), in case
-> +		 * percpu_ida_free() on another cpu flips a bit in
-> +		 * cpus_have_tags
-> +		 *
-> +		 * global lock held and irqs disabled, don't need percpu lock
-> +		 */
-> +		prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
-> +
-> +		if (!tags->nr_free)
-> +			alloc_global_tags(pool, tags);
-> +		if (!tags->nr_free)
-> +			steal_tags(pool, tags);
-> +
-> +		if (tags->nr_free) {
-> +			tag = tags->freelist[--tags->nr_free];
-> +			if (tags->nr_free)
-> +				set_bit(smp_processor_id(),
-> +					pool->cpus_have_tags);
-> +		}
-> +
-> +		spin_unlock(&pool->lock);
-> +		local_irq_restore(flags);
-> +
-> +		if (tag >= 0 || !(gfp & __GFP_WAIT))
-> +			break;
-> +
-> +		schedule();
-> +
-> +		local_irq_save(flags);
-> +		tags = this_cpu_ptr(pool->tag_cpu);
-> +	}
-
-What guarantees that this wait will terminate?
-
-> +	finish_wait(&pool->wait, &wait);
-> +	return tag;
-> +}
-> +EXPORT_SYMBOL_GPL(percpu_ida_alloc);
-> +
-> +/**
-> + * percpu_ida_free - free a tag
-> + * @pool: pool @tag was allocated from
-> + * @tag: a tag previously allocated with percpu_ida_alloc()
-> + *
-> + * Safe to be called from interrupt context.
-> + */
-> +void percpu_ida_free(struct percpu_ida *pool, unsigned tag)
-> +{
-> +	struct percpu_ida_cpu *tags;
-> +	unsigned long flags;
-> +	unsigned nr_free;
-> +
-> +	BUG_ON(tag >= pool->nr_tags);
-> +
-> +	local_irq_save(flags);
-> +	tags = this_cpu_ptr(pool->tag_cpu);
-> +
-> +	spin_lock(&tags->lock);
-
-Why do we need this lock, btw?  It's a cpu-local structure and local
-irqs are disabled...
-
-> +	tags->freelist[tags->nr_free++] = tag;
-> +
-> +	nr_free = tags->nr_free;
-> +	spin_unlock(&tags->lock);
-> +
-> +	if (nr_free == 1) {
-> +		set_bit(smp_processor_id(),
-> +			pool->cpus_have_tags);
-> +		wake_up(&pool->wait);
-> +	}
-> +
-> +	if (nr_free == IDA_PCPU_SIZE) {
-> +		spin_lock(&pool->lock);
-> +
-> +		/*
-> +		 * Global lock held and irqs disabled, don't need percpu
-> +		 * lock
-> +		 */
-> +		if (tags->nr_free == IDA_PCPU_SIZE) {
-> +			move_tags(pool->freelist, &pool->nr_free,
-> +				  tags->freelist, &tags->nr_free,
-> +				  IDA_PCPU_BATCH_MOVE);
-> +
-> +			wake_up(&pool->wait);
-> +		}
-> +		spin_unlock(&pool->lock);
-> +	}
-> +
-> +	local_irq_restore(flags);
-> +}
-> +EXPORT_SYMBOL_GPL(percpu_ida_free);
-> 
-> ...
->
-> +int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags)
-> +{
-> +	unsigned i, cpu, order;
-> +
-> +	memset(pool, 0, sizeof(*pool));
-> +
-> +	init_waitqueue_head(&pool->wait);
-> +	spin_lock_init(&pool->lock);
-> +	pool->nr_tags = nr_tags;
-> +
-> +	/* Guard against overflow */
-> +	if (nr_tags > (unsigned) INT_MAX + 1) {
-> +		pr_err("tags.c: nr_tags too large\n");
-
-"tags.c"?
-
-> +		return -EINVAL;
-> +	}
-> +
-> +	order = get_order(nr_tags * sizeof(unsigned));
-> +	pool->freelist = (void *) __get_free_pages(GFP_KERNEL, order);
-> +	if (!pool->freelist)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < nr_tags; i++)
-> +		pool->freelist[i] = i;
-> +
-> +	pool->nr_free = nr_tags;
-> +
-> +	pool->cpus_have_tags = kzalloc(BITS_TO_LONGS(nr_cpu_ids) *
-> +				       sizeof(unsigned long), GFP_KERNEL);
-> +	if (!pool->cpus_have_tags)
-> +		goto err;
-> +
-> +	pool->tag_cpu = __alloc_percpu(sizeof(struct percpu_ida_cpu) +
-> +				       IDA_PCPU_SIZE * sizeof(unsigned),
-> +				       sizeof(unsigned));
-> +	if (!pool->tag_cpu)
-> +		goto err;
-> +
-> +	for_each_possible_cpu(cpu)
-> +		spin_lock_init(&per_cpu_ptr(pool->tag_cpu, cpu)->lock);
-> +
-> +	return 0;
-> +err:
-> +	percpu_ida_destroy(pool);
-> +	return -ENOMEM;
-> +}
-> +EXPORT_SYMBOL_GPL(percpu_ida_init);
