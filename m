@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab3HTVSQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:18:16 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55455 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab3HTVSP (ORCPT
+	id S1751562Ab3HTVSf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:18:35 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:44967 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab3HTVSe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:18:15 -0400
-Date: Tue, 20 Aug 2013 22:18:14 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] vfio-pci: Use fdget() rather than eventfd_fget()
-Message-ID: <20130820211814.GM27005@ZenIV.linux.org.uk>
-References: <20130820191712.9006.4890.stgit@bling.home>
+	Tue, 20 Aug 2013 17:18:34 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130820191712.9006.4890.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Fabio Estevam <festevam@gmail.com>, Liu Ying <Ying.Liu@freescale.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <CAOMZO5Afjp-zPzUaNE63L7Y2LjZbSrLupAJ_jFnf1Gg1+hx0Nw@mail.gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1376987932-5540-1-git-send-email-Ying.Liu@freescale.com>
+ <1376987932-5540-2-git-send-email-Ying.Liu@freescale.com>
+ <CAOMZO5Afjp-zPzUaNE63L7Y2LjZbSrLupAJ_jFnf1Gg1+hx0Nw@mail.gmail.com>
+Message-ID: <20130820211827.4443.97943@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH 1/3] ARM: imx6q: refactor some ldb related clocks
+Date: Tue, 20 Aug 2013 14:18:27 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 01:18:07PM -0600, Alex Williamson wrote:
-> eventfd_fget() tests to see whether the file is an eventfd file, which
-> we then immediately pass to eventfd_ctx_fileget(), which again tests
-> whether the file is an eventfd file.  Simplify slightly by using
-> fdget() so that we only test that we're looking at an eventfd once.
-> fget() could also be used, but fdget() makes use of fget_light() for
-> another slight optimization.
+Quoting Fabio Estevam (2013-08-20 08:40:52)
+> On Tue, Aug 20, 2013 at 5:38 AM, Liu Ying <Ying.Liu@freescale.com> wrote:
+> 
+> > diff --git a/Documentation/devicetree/bindings/clock/imx6q-clock.txt b/Documentation/devicetree/bindings/clock/imx6q-clock.txt
+> > index 5a90a72..90e923e 100644
+> > --- a/Documentation/devicetree/bindings/clock/imx6q-clock.txt
+> > +++ b/Documentation/devicetree/bindings/clock/imx6q-clock.txt
+> > @@ -89,8 +89,6 @@ clocks and IDs.
+> >         gpu3d_shader            74
+> >         ipu1_podf               75
+> >         ipu2_podf               76
+> > -       ldb_di0_podf            77
+> > -       ldb_di1_podf            78
+> >         ipu1_di0_pre            79
+> >         ipu1_di1_pre            80
+> >         ipu2_di0_pre            81
+> 
+> This causes a 'hole' in the clock numbering scheme: 74, 75, 76, 79, 80, etc
 
-Umm...
+How does this fit in with the idea of having a stable binding/ABI? Seems
+like changing this would be a bad idea for devices in the field that
+have older DTBs.
 
-> @@ -210,8 +210,8 @@ fail:
->  	if (ctx && !IS_ERR(ctx))
->  		eventfd_ctx_put(ctx);
->  
-> -	if (file && !IS_ERR(file))
-> -		fput(file);
-> +	if (irqfd.file)
-> +		fdput(irqfd);
->  
->  	kfree(virqfd);
+Regards,
+Mike
 
-IMO it's a bad style; you have three failure exits leading here, and those
-ifs are nothing but "how far did we get before we'd failed".
-
-fail3:
-	eventfd_ctx_put(ctx);
-fail2:
-	fdput(irqfd);
-fail1:
-  	kfree(virqfd);
-
-is much easier to analyse.  It's a very common pattern and IME it's more
-robust than this kind of "flexibility"...
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
