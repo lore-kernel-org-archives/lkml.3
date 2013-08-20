@@ -1,34 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab3HTOBr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 10:01:47 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:51501 "EHLO hydra.sisk.pl"
+	id S1751465Ab3HTODe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 10:03:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:53651 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab3HTOBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 10:01:44 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] cpufreq: Fixes for 3.12
-Date: Tue, 20 Aug 2013 16:12:17 +0200
-Message-ID: <5909881.Ide3jndisd@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpokgrmeopHuKA-amHO2WdwA2xuW05OWBcVKh0+YV_P9LAA@mail.gmail.com>
-References: <cover.1376979090.git.viresh.kumar@linaro.org> <1660632.57toTTMTf1@vostro.rjw.lan> <CAKohpokgrmeopHuKA-amHO2WdwA2xuW05OWBcVKh0+YV_P9LAA@mail.gmail.com>
+	id S1751039Ab3HTODc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 10:03:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,920,1367996400"; 
+   d="scan'208";a="389127227"
+From: "Berg, Johannes" <johannes.berg@intel.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+CC: Patrick McHardy <kaber@trash.net>, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH next] netlink: prevent deadlock in ctrl_dumpfamily()
+Thread-Topic: [PATCH next] netlink: prevent deadlock in ctrl_dumpfamily()
+Thread-Index: AQHOnayPOuYC64fpwUidqxHggbfLn5meIIiQ
+Date: Tue, 20 Aug 2013 14:03:25 +0000
+Message-ID: <1DC40B07CD6EC041A66726C271A73AE61AA6F1BC@IRSMSX102.ger.corp.intel.com>
+References: <20130820135033.GA2315@swordfish.minsk.epam.com>
+In-Reply-To: <20130820135033.GA2315@swordfish.minsk.epam.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.182]
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 20, 2013 07:24:41 PM Viresh Kumar wrote:
-> On 20 August 2013 19:33, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > OK, queued up for 3.12.  Hopefully, there won't be any fallout from [3/5].
+ 
+> +	if (need_locking) {
+> +		/* genl_mutex could be already locked in genl_rcv_msg() */
+> +		rt = genl_family_find_byid(cb->nlh->nlmsg_type);
+> +		need_locking = need_locking && rt->parallel_ops;
+> +	}
 
-Argh, I meant [4/5], typed a wrong number.  Whatever.
+This is equivalent to reverting the patch because parallel_ops will be false for the genl family. :-)
+
+johannes
+-- 
+
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Christian Lamprechter, Hannes Schwaderer, Douglas Lusk
+Registergericht: Muenchen HRB 47456
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
 
