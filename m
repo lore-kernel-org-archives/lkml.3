@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab3HTTjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 15:39:39 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42681 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912Ab3HTTji (ORCPT
+	id S1751498Ab3HTTpe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 15:45:34 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:32923 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab3HTTpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 15:39:38 -0400
-Date: Tue, 20 Aug 2013 15:39:15 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: Vaughan Cao <vaughan.cao@oracle.com>, jeremy@goop.org,
-        xen-devel@lists.xensource.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, mingo@redhat.com,
-        hpa@zytor.com, tglx@linutronix.de
-Subject: Re: [Xen-devel] [PATCH] xen: initialize xen panic handler for PVHVM
-Message-ID: <20130820193915.GJ12037@phenom.dumpdata.com>
-References: <1376640656-32381-1-git-send-email-vaughan.cao@oracle.com>
- <20130816124327.GC10190@konrad-lan.dumpdata.com>
- <5211B8C2.1010702@oracle.com>
+	Tue, 20 Aug 2013 15:45:32 -0400
+Date: Tue, 20 Aug 2013 12:45:27 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Andrey Moiseev <o2g.org.ru@gmail.com>
+Cc: linux-input@vger.kernel.org, arnoques@gmail.com, russianneuromancer@ya.ru,
+        ike.pan@canonical.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 1/1] input: ideapad_slidebar: new input driver
+Message-ID: <20130820194527.GA22595@core.coreip.homeip.net>
+References: <520DCDA5.8090001@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5211B8C2.1010702@oracle.com>
+In-Reply-To: <520DCDA5.8090001@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 02:18:42PM +0800, Joe Jin wrote:
-> On 08/16/13 20:43, Konrad Rzeszutek Wilk wrote:
-> > Could you tell me what has been happening without this patch?
-> 
-> Without this patch, Xen would not get pvhvm crash event, any config for
-> on_crash in guest configure file will not be triggered.
+Hi Andrey,
 
-applied for 3.12
+On Fri, Aug 16, 2013 at 10:58:45AM +0400, Andrey Moiseev wrote:
+> v7: fixed things addressed by Dmitry Torokhov to v7 (quoted message goes below the patch)
 > 
-> Thanks,
-> Joe
-> 
+
+This looks almost perfect, I have just one question:
+
+> +static bool slidebar_i8042_filter(unsigned char data, unsigned char str,
+> +				struct serio *port)
+> +{
+> +	static bool extended = false;
+> +
+> +	/* Scancodes: e03b on move, e0bb on release */
+> +	if (unlikely(data == 0xe0)) {
+> +		extended = true;
+> +		return false;
+> +	} else if (unlikely(extended && (data == 0x3b))) {
+> +		extended = false;
+> +		input_report_key(slidebar_input_dev, BTN_TOUCH, 1);
+> +		input_report_abs(slidebar_input_dev, ABS_X, slidebar_pos_get());
+> +		input_sync(slidebar_input_dev);
+> +		return false;
+> +	} else if (unlikely(extended && (data == 0xbb))) {
+> +		input_report_key(slidebar_input_dev, BTN_TOUCH, 0);
+> +		input_sync(slidebar_input_dev);
+
+Don't you need to reset 'extended" here as well?
+
+-- 
+Dmitry
