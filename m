@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554Ab3HTVyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:54:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42176 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab3HTVyM (ORCPT
+	id S1751723Ab3HTVyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:54:25 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:37853 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3HTVyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:54:12 -0400
-Date: Tue, 20 Aug 2013 22:52:21 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
-        jiada_wang@mentor.com, robherring2@gmail.com, grant.likely@linaro.org,
-        broonie@kernel.org, vapier@gentoo.org, ralf@linux-mips.org,
-        kyungmin.park@samsung.com, shawn.guo@linaro.org,
-        sebastian.hesselbarth@gmail.com, LW@KARO-electronics.de,
-        t.figa@samsung.com, g.liakhovetski@gmx.de,
-        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] clkdev: Fix race condition in clock lookup from
-	device tree
-Message-ID: <20130820215221.GH17845@n2100.arm.linux.org.uk>
-References: <1377020063-30213-1-git-send-email-s.nawrocki@samsung.com> <1377020063-30213-5-git-send-email-s.nawrocki@samsung.com>
+	Tue, 20 Aug 2013 17:54:23 -0400
+Date: Tue, 20 Aug 2013 23:54:19 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Chris Clayton <chris2553@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: Networking problem with 3.11-rc6+
+Message-ID: <20130820215419.GA29560@electric-eye.fr.zoreil.com>
+References: <5213CB17.5050308@googlemail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377020063-30213-5-git-send-email-s.nawrocki@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <5213CB17.5050308@googlemail.com>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 07:34:23PM +0200, Sylwester Nawrocki wrote:
-> There is currently a race condition in the device tree part of clk_get()
-> function, since the pointer returned from of_clk_get_by_name() may become
-> invalid before __clk_get() call. I.e. due to the clock provider driver
-> remove() callback being called in between of_clk_get_by_name() and
-> __clk_get().
+Chris Clayton <chris2553@gmail.com> :
+[...]
+> [    0.207094] acpi PNP0A08:00: ACPI _OSC support notification failed, disabling PCIe ASPM
+> [    0.207155] acpi PNP0A08:00: Unable to request _OSC control (_OSC support mask: 0x08)
+[...]
+> [    5.311191] r8169 0000:07:00.0: can't disable ASPM; OS doesn't have ASPM control
+[...]
+> [   65.181715] [<f8e38000>] rtl8169_interrupt [r8169]
+> [   65.181717] Disabling IRQ #17
 > 
-> Fix this by doing both the look up and __clk_get() operations with the
-> clock providers list mutex held. This ensures that the clock pointer
-> returned from __of_clk_get_from_provider() call and passed to __clk_get()
-> is valid, as long as the clock supplier module first removes its clock
-> provider instance and then does clk_unregister() on the corresponding
-> clocks.
-> 
-> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Reviewed-by: Mike Turquette <mturquette@linaro.org>
+> Let me know if I can provide any additional information, although to
+> be honest, the boot completed and the KDE desktop started up OK, so
+> there may not be much else I can provide unless I find that the
+> problem is repeatable.
 
-Thanks.
+Please don't hesitate if it happens again, even if it can't be reproduced
+on demand.
 
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+-- 
+Ueimor
