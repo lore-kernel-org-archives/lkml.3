@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826Ab3HTBnh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 21:43:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:60049 "EHLO mga14.intel.com"
+	id S1751646Ab3HTBsA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 21:48:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44960 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751662Ab3HTBng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 21:43:36 -0400
+	id S1751332Ab3HTBr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 21:47:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,916,1367996400"; 
-   d="scan'208";a="284108141"
-Date: Tue, 20 Aug 2013 03:43:21 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH] mfd: dbx500: Remove any mention of the BML8580CLK
-Message-ID: <20130820014321.GH13324@zurbaran>
-References: <1376912313-26512-1-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376912313-26512-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+   d="scan'208";a="389853530"
+Subject: [PATCH] Enable dumping running process stack.
+From: Leon Ma <xindong.ma@intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Aug 2013 09:40:48 +0800
+Message-ID: <1376962848.20932.11.camel@leonma-sh>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+From: Leon Ma <xindong.ma@intel.com>
+Date: Fri, 16 Aug 2013 13:11:15 +0800
+Subject: [PATCH] Enable dumping running process stack.
 
-On Mon, Aug 19, 2013 at 12:38:33PM +0100, Lee Jones wrote:
-> The platform which it pertains to is no longer supported and is actually
-> causing some confusion in the new common clock implementation. A recent
-> patch removed its use in the clock driver, let's take out the definitions
-> too.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+Currently, if the process is running, we can not dump the stack via
+/proc/<pid>/stack, because in __save_stack_address() it will return
+immediately if the address is not reliable.
+Sometimes one process would run into dead loop in kernel, it will
+facilitate debugging to have it's stack retrieved via procfs.
 
-Cheers,
-Samuel.
+Signed-off-by: Leon Ma <xindong.ma@intel.com>
+---
+ arch/x86/kernel/dumpstack.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index 1b81839..c892ceb 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -103,7 +103,10 @@ print_context_stack(struct thread_info *tinfo,
+ 				frame = frame->next_frame;
+ 				bp = (unsigned long) frame;
+ 			} else {
+-				ops->address(data, addr, 0);
++				if (tinfo->task->state == TASK_RUNNING)
++					ops->address(data, addr, 1);
++				else
++					ops->address(data, addr, 0);
+ 			}
+ 			print_ftrace_graph_addr(addr, data, ops, tinfo, graph);
+ 		}
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.4.1
+
+
+
