@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426Ab3HTOsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 10:48:23 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18386 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193Ab3HTOsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 10:48:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,921,1367996400"; 
-   d="scan'208";a="389157303"
-Message-ID: <521381A9.4020501@intel.com>
-Date: Tue, 20 Aug 2013 07:48:09 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Libin <huawei.libin@huawei.com>
-CC: Vegard Nossum <vegardno@ifi.uio.no>, Pekka Enberg <penberg@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, guohanjun@huawei.com,
-        zhangdianfang@huawei.com
-Subject: Re: [BUG REPORT]kernel panic with kmemcheck config
-References: <5212D7F2.3020308@huawei.com>
-In-Reply-To: <5212D7F2.3020308@huawei.com>
-Content-Type: text/plain; charset=gb18030
-Content-Transfer-Encoding: 8bit
+	id S1751429Ab3HTOti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 10:49:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39309 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079Ab3HTOtg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 10:49:36 -0400
+Subject: Re: [PATCH v3] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex block
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=utf-8
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1376573746.18617.45.camel@hornet>
+Date: Tue, 20 Aug 2013 09:49:42 -0500
+Cc: "ohad@wizery.com" <ohad@wizery.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Jeffrey Hugo <jhugo@codeaurora.org>,
+        Eric Holmberg <eholmber@codeaurora.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7734F2CE-580D-4D0C-94ED-D0B4ACB19AC8@codeaurora.org>
+References: <1376507361-26907-1-git-send-email-galak@codeaurora.org> <1376573746.18617.45.camel@hornet>
+To: Pawel Moll <pawel.moll@arm.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2013 07:44 PM, Libin wrote:
-> When kmemcheck kernel support configured£¨we encountered random kernel panic
-> (sometimes can be booted) during system boot process in our environment. I
-> have tested the mainline kernel version from v3.0 to v3.11-rc6, they also
-> have this problem. And the memory limit within 4G also tested.
 
-Could you provide a more complete oops?  Doing it properly usually
-requires either a remote console of some kind (netconsole, serial, usb
-debug, etc...).
+On Aug 15, 2013, at 8:35 AM, Pawel Moll wrote:
+
+> On Wed, 2013-08-14 at 20:09 +0100, Kumar Gala wrote:
+>> +Required properties:
+>> +- compatible: should be "qcom,tcsr-mutex"
+>> +- reg: Should contain registers location and length of mutex registers
+>> +- reg-names:
+>> +	"mutex-base"  - string to identify mutex registers
+> 
+> Just out of curiosity, why is reg-names required? Especially if there
+> seem to be only one set of registers?
+> 
+> Pawe≈Ç
+
+At one point I thought there was going to be more than one reg region, I can drop it.  However, I dont see any issue with a binding making it required if it desires.
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
