@@ -1,228 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444Ab3HTGzZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 02:55:25 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:42594 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab3HTGzS (ORCPT
+	id S1751820Ab3HTG44 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 02:56:56 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:51461 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab3HTG4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 02:55:18 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>, Rik van Riel <riel@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2 2/4] mm/sparse: introduce alloc_usemap_and_memmap
-Date: Tue, 20 Aug 2013 14:54:54 +0800
-Message-Id: <1376981696-4312-2-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1376981696-4312-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1376981696-4312-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082006-5816-0000-0000-0000097E8E44
+	Tue, 20 Aug 2013 02:56:54 -0400
+X-AuditID: 85900ec0-d1d29b9000001514-c5-52131333f2aa
+Subject: [PATCH V2] [BUGFIX] crash/ioapic: Prevent crash_kexec() from
+ deadlocking on ioapic_lock
+To: linux-kernel@vger.kernel.org
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Joerg Roedel <joro@8bytes.org>, x86@kernel.org, stable@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Ingo Molnar <mingo@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 20 Aug 2013 16:01:07 +0900
+Message-ID: <20130820070107.28245.83806.stgit@yunodevel>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v1 -> v2:
- * add comments to describe alloc_usemap_and_memmap 
+Prevent crash_kexec() from deadlocking on ioapic_lock. When crash_kexec()
+is executed on a cpu, the cpu will get ioapic_lock in disable_IO_APIC().
+So if the cpu gets NMI while locking ioapic_lock, a deadlock will happen.
+In this patch, ioapic_lock is initialized before disable_IO_APIC().
 
-After commit 9bdac91424075("sparsemem: Put mem map for one node together."),
-vmemmap for one node will be allocated together, its logic is similar as
-memory allocation for pageblock flags. This patch introduce alloc_usemap_and_memmap
-to extract the same logic of memory alloction for pageblock flags and vmemmap.
+To confirm this deadlock, you'll set up as follows:
 
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+1. Add mdelay(1000) after raw_spin_lock_irqsave() in
+   native_ioapic_set_affinity()@arch/x86/kernel/apic/io_apic.c
+
+   Although the deadlock can occur without this modification, it will increase
+  the potential of the deadlock problem.
+
+2. Build and install the kernel
+
+3. Set up the OS which will run panic() and kexec when NMI is injected
+    # echo "kernel.unknown_nmi_panic=1" >> /etc/sysctl.conf
+    # vim /etc/default/grub
+      add "nmi_watchdog=0 crashkernel=256M" in GRUB_CMDLINE_LINUX line
+    # grub2-mkconfig
+
+4. Reboot the OS
+
+5. Run following command for each vcpu on the guest
+    # while true; do echo <CPU num> > /proc/irq/<IO-APIC-edge or IO-APIC-fasteoi>/smp_affinitity; done;
+   By running this command, cpus will get ioapic_lock for setting affinity.
+
+6. Inject NMI (push a dump button or execute 'virsh inject-nmi <domain>' if you
+   use VM)
+   After injecting NMI, panic() is called in an nmi-handler context.
+   Then, kexec will normally run in panic(), but the operation will be stopped
+   by deadlock on ioapic_lock in crash_kexec()->machine_crash_shutdown()->
+   native_machine_crash_shutdown()->disable_IO_APIC()->clear_IO_APIC()->
+   clear_IO_APIC_pin()->ioapic_read_entry().
+
+Changes in V2: Fix typos, change ioapic_lock_init() to ioapic_zap_locks(),
+               and change "#if defined(CONFIG_X86_IO_APIC)" to
+               "#ifdef CONFIG_X86_IO_APIC".
+
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org
 ---
- mm/sparse.c | 140 ++++++++++++++++++++++++++++--------------------------------
- 1 file changed, 66 insertions(+), 74 deletions(-)
+ arch/x86/include/asm/apic.h    |    2 ++
+ arch/x86/kernel/apic/io_apic.c |    5 +++++
+ arch/x86/kernel/crash.c        |    4 +++-
+ 3 files changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/mm/sparse.c b/mm/sparse.c
-index 308d503..d27db9b 100644
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -439,6 +439,14 @@ static void __init sparse_early_mem_maps_alloc_node(struct page **map_map,
- 					 map_count, nodeid);
- }
- #else
-+
-+static void __init sparse_early_mem_maps_alloc_node(struct page **map_map,
-+				unsigned long pnum_begin,
-+				unsigned long pnum_end,
-+				unsigned long map_count, int nodeid)
-+{
-+}
-+
- static struct page __init *sparse_early_mem_map_alloc(unsigned long pnum)
- {
- 	struct page *map;
-@@ -460,6 +468,62 @@ void __attribute__((weak)) __meminit vmemmap_populate_print_last(void)
- {
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index f8119b5..1d2091a 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -715,4 +715,6 @@ static inline void exiting_ack_irq(void)
+ 	ack_APIC_irq();
  }
  
-+/**
-+ *  alloc_usemap_and_memmap - memory alloction for pageblock flags and vmemmap
-+ *  @map: usemap_map for pageblock flags or mmap_map for vmemmap
-+ *  @use_map: true if memory allocated for pageblock flags, otherwise false
-+ */
-+static void alloc_usemap_and_memmap(unsigned long **map, bool use_map)
++extern void ioapic_zap_locks(void);
++
+ #endif /* _ASM_X86_APIC_H */
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 9ed796c..260abc2 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1534,6 +1534,11 @@ void intel_ir_io_apic_print_entries(unsigned int apic,
+ 	}
+ }
+ 
++void ioapic_zap_locks(void)
 +{
-+	unsigned long pnum;
-+	unsigned long map_count;
-+	int nodeid_begin = 0;
-+	unsigned long pnum_begin = 0;
-+
-+	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
-+		struct mem_section *ms;
-+
-+		if (!present_section_nr(pnum))
-+			continue;
-+		ms = __nr_to_section(pnum);
-+		nodeid_begin = sparse_early_nid(ms);
-+		pnum_begin = pnum;
-+		break;
-+	}
-+	map_count = 1;
-+	for (pnum = pnum_begin + 1; pnum < NR_MEM_SECTIONS; pnum++) {
-+		struct mem_section *ms;
-+		int nodeid;
-+
-+		if (!present_section_nr(pnum))
-+			continue;
-+		ms = __nr_to_section(pnum);
-+		nodeid = sparse_early_nid(ms);
-+		if (nodeid == nodeid_begin) {
-+			map_count++;
-+			continue;
-+		}
-+		/* ok, we need to take cake of from pnum_begin to pnum - 1*/
-+		if (use_map)
-+			sparse_early_usemaps_alloc_node(map, pnum_begin, pnum,
-+						 map_count, nodeid_begin);
-+		else
-+			sparse_early_mem_maps_alloc_node((struct page **)map,
-+				pnum_begin, pnum, map_count, nodeid_begin);
-+		/* new start, update count etc*/
-+		nodeid_begin = nodeid;
-+		pnum_begin = pnum;
-+		map_count = 1;
-+	}
-+	/* ok, last chunk */
-+	if (use_map)
-+		sparse_early_usemaps_alloc_node(map, pnum_begin,
-+				NR_MEM_SECTIONS, map_count, nodeid_begin);
-+	else
-+		sparse_early_mem_maps_alloc_node((struct page **)map,
-+			pnum_begin, NR_MEM_SECTIONS, map_count, nodeid_begin);
++	raw_spin_lock_init(&ioapic_lock);
 +}
 +
- /*
-  * Allocate the accumulated non-linear sections, allocate a mem_map
-  * for each and record the physical to section mapping.
-@@ -471,11 +535,7 @@ void __init sparse_init(void)
- 	unsigned long *usemap;
- 	unsigned long **usemap_map;
- 	int size;
--	int nodeid_begin = 0;
--	unsigned long pnum_begin = 0;
--	unsigned long usemap_count;
- #ifdef CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER
--	unsigned long map_count;
- 	int size2;
- 	struct page **map_map;
- #endif
-@@ -501,82 +561,14 @@ void __init sparse_init(void)
- 	usemap_map = alloc_bootmem(size);
- 	if (!usemap_map)
- 		panic("can not allocate usemap_map\n");
--
--	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
--		struct mem_section *ms;
--
--		if (!present_section_nr(pnum))
--			continue;
--		ms = __nr_to_section(pnum);
--		nodeid_begin = sparse_early_nid(ms);
--		pnum_begin = pnum;
--		break;
--	}
--	usemap_count = 1;
--	for (pnum = pnum_begin + 1; pnum < NR_MEM_SECTIONS; pnum++) {
--		struct mem_section *ms;
--		int nodeid;
--
--		if (!present_section_nr(pnum))
--			continue;
--		ms = __nr_to_section(pnum);
--		nodeid = sparse_early_nid(ms);
--		if (nodeid == nodeid_begin) {
--			usemap_count++;
--			continue;
--		}
--		/* ok, we need to take cake of from pnum_begin to pnum - 1*/
--		sparse_early_usemaps_alloc_node(usemap_map, pnum_begin, pnum,
--						 usemap_count, nodeid_begin);
--		/* new start, update count etc*/
--		nodeid_begin = nodeid;
--		pnum_begin = pnum;
--		usemap_count = 1;
--	}
--	/* ok, last chunk */
--	sparse_early_usemaps_alloc_node(usemap_map, pnum_begin, NR_MEM_SECTIONS,
--					 usemap_count, nodeid_begin);
-+	alloc_usemap_and_memmap(usemap_map, true);
+ __apicdebuginit(void) print_IO_APIC(int ioapic_idx)
+ {
+ 	union IO_APIC_reg_00 reg_00;
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index 74467fe..e0e0841 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -128,7 +128,9 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
+ 	cpu_emergency_svm_disable();
  
- #ifdef CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER
- 	size2 = sizeof(struct page *) * NR_MEM_SECTIONS;
- 	map_map = alloc_bootmem(size2);
- 	if (!map_map)
- 		panic("can not allocate map_map\n");
--
--	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
--		struct mem_section *ms;
--
--		if (!present_section_nr(pnum))
--			continue;
--		ms = __nr_to_section(pnum);
--		nodeid_begin = sparse_early_nid(ms);
--		pnum_begin = pnum;
--		break;
--	}
--	map_count = 1;
--	for (pnum = pnum_begin + 1; pnum < NR_MEM_SECTIONS; pnum++) {
--		struct mem_section *ms;
--		int nodeid;
--
--		if (!present_section_nr(pnum))
--			continue;
--		ms = __nr_to_section(pnum);
--		nodeid = sparse_early_nid(ms);
--		if (nodeid == nodeid_begin) {
--			map_count++;
--			continue;
--		}
--		/* ok, we need to take cake of from pnum_begin to pnum - 1*/
--		sparse_early_mem_maps_alloc_node(map_map, pnum_begin, pnum,
--						 map_count, nodeid_begin);
--		/* new start, update count etc*/
--		nodeid_begin = nodeid;
--		pnum_begin = pnum;
--		map_count = 1;
--	}
--	/* ok, last chunk */
--	sparse_early_mem_maps_alloc_node(map_map, pnum_begin, NR_MEM_SECTIONS,
--					 map_count, nodeid_begin);
-+	alloc_usemap_and_memmap((unsigned long **)map_map, false);
+ 	lapic_shutdown();
+-#if defined(CONFIG_X86_IO_APIC)
++#ifdef CONFIG_X86_IO_APIC
++	/* Prevent crash_kexec() from deadlocking on ioapic_lock. */
++	ioapic_zap_locks();
+ 	disable_IO_APIC();
  #endif
- 
- 	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
--- 
-1.8.1.2
+ #ifdef CONFIG_HPET_TIMER
 
