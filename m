@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419Ab3HTHN5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 03:13:57 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:57022 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab3HTHNz (ORCPT
+	id S1751595Ab3HTHOC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 03:14:02 -0400
+Received: from www.xora.org.uk ([80.68.91.202]:57325 "EHLO
+	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab3HTHN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 03:13:55 -0400
-X-Greylist: delayed 77693 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Aug 2013 03:13:55 EDT
-Message-ID: <5213172E.1060905@hitachi.com>
-Date: Tue, 20 Aug 2013 16:13:50 +0900
-From: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 20 Aug 2013 03:13:57 -0400
+Message-ID: <52131732.2060306@slimlogic.co.uk>
+Date: Tue, 20 Aug 2013 08:13:54 +0100
+From: Graeme Gregory <gg@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [RFC PATCH] scsi: Add failfast mode to avoid infinite retry loop
-References: <20130819093925.7867.19221.stgit@ltc223.sdl.hitachi.co.jp> <1376922616.2069.9.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1376922616.2069.9.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Lee Jones <lee.jones@linaro.org>, Kevin Hilman <khilman@linaro.org>,
+        linux-omap@vger.kernel.org, Ruslan Bilovol <ruslan.bilovol@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/5] mfd: twl6030-irq: rework and add twl6032 support
+References: <1374758151-12097-1-git-send-email-grygorii.strashko@ti.com> <20130820010154.GB13324@zurbaran>
+In-Reply-To: <20130820010154.GB13324@zurbaran>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/19 23:30), James Bottomley wrote:
-> On Mon, 2013-08-19 at 18:39 +0900, Eiichi Tsukata wrote:
->> Hello,
->>
->> This patch adds scsi device failfast mode to avoid infinite retry loop.
->>
->> Currently, scsi error handling in scsi_decide_disposition() and
->> scsi_io_completion() unconditionally retries on some errors. This is because
->> retryable errors are thought to be temporary and the scsi device will soon
->> recover from those errors. Normally, such retry policy is appropriate because
->> the device will soon recover from temporary error state.
->> But there is no guarantee that device is able to recover from error state
->> immediately. Some hardware error may prevent device from recovering.
->> Therefore hardware error can results in infinite command retry loop. In fact,
->> CHECK_CONDITION error with the sense-key = UNIT_ATTENTION caused infinite
->> retry loop in our environment. As the comments in kernel source code says,
->> UNIT_ATTENTION means the device must have been a power glitch and expected
->> to immediately recover from the state. But it seems that hardware error
->> caused permanent UNIT_ATTENTION error.
->>
->> To solve the above problem, this patch introduces scsi device "failfast mode".
->> If failfast mode is enabled, retry counts of all scsi commands are limited to
->> scsi->allowed(== SD_MAX_RETRIES == 5). All commands are prohibited to retry
->> infinitely, and immediately fails when the retry count exceeds upper limit.
->> Failfast mode is useful on mission critical systems which are required
->> to keep running flawlessly because they need to failover to the secondary
->> system once they detect failures.
->> On default, failfast mode is disabled because failfast policy is not suitable
->> for most use cases which can accept I/O latency due to device hardware error.
->>
->> To enable failfast mode(default disabled):
->>           # echo 1>  /sys/bus/scsi/devices/X:X:X:X/failfast
->> To disable:
->>           # echo 0>  /sys/bus/scsi/devices/X:X:X:X/failfast
->>
->> Furthermore, I'm planning to make the upper limit count configurable.
->> Currently, I have two plans to implement it:
->> (1) set same upper limit count on all errors.
->> (2) set upper limit count on each error.
->> The first implementation is simple and easy to implement but not flexible.
->> Someone wants to set different upper limit count on each errors depends on the
->> scsi device they use. The second implementation satisfies such requirement
->> but can be too fine-grained and annoying to configure because scsi error
->> codes are so much. The default 5 times retry may too much on some errors but
->> too few on other errors.
->>
->> Which would be the appropriate implementation?
->> Any comments or suggestions are welcome as usual.
+On 20/08/13 02:01, Samuel Ortiz wrote:
+> Hi Grygorii,
 >
-> I'm afraid you'll need to propose another solution.  We have a large
-> selection of commands which, by design, retry until the command exceeds
-> it's timeout.  UA is one of those (as are most of the others you're
-> limiting).  How do you kick this device out of its UA return (because
-> that's the recovery that needs to happen)?
+> On Thu, Jul 25, 2013 at 04:15:46PM +0300, Grygorii Strashko wrote:
+>> This patch series intorduces twl6030-irq module rework to use Threaded IRQ and
+>> linear irq_domain, and adds support for PMIC TWL6032 IRQs.
+>>
+>> After this patch series TWL6030/6032 IRQs will be supported only for DT boot mode.
+>>
+>> Changes since v1:
+>> - Added new patch "mfd: twl6030-irq: create struct twl6030_irq"
+>>    which introduces "struct twl6030_irq" to store all local variables inside it.
+>> - Patch "mfd: twl6030-irq: migrate to IRQ threaded handler":
+>>    Minor comments applied; fixed twl6030_exit_irq();
+>>    The Parent IRQ has been set for each nested IRQ.
+>> - Patch "mfd: twl6030-irq: convert to use linear irq_domain":
+>>    The irq_find_mapping() is used in twl6030_mmc_card_detect_config()
+>>    to get virtual IRQ number.
+> This looks good to me. Kevin, Graeme, any further comments/ACKs ?
 >
-> James
+> Cheers,
+> Samuel.
 >
->
+Yes, it looked good to me as well.
 
-Thanks for reviewing, James.
+Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
 
-Originally, I planned that once the retry count exceeds its limit,
-a monitoring tool stops the server with the scsi prink error message
-as a trigger.
-Current failfast mode implementation is that the command fails when
-retry command exceeds its limit. However, I noticed that only printing error messages
-on retry counts excess without changing retry logic will be enough
-to stop the server and take fail over.  Though there is no guarantee that
-userspace application can work properly on disk failure condition.
-So, now I'm considering that just calling panic() on retry excess is better.
+G
 
-For that reason, I propose the solution that adding "panic_on_error" option to
-sysfs parameter and if panic_on_error mode is enabled the server panics
-immediately once it detects retry excess. Of course, it is disabled on default.
-
-I would appreciate it if you could give me some comments.
-
-Eiichi
