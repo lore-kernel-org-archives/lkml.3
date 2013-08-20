@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab3HTV2o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:28:44 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:48258 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab3HTV2n (ORCPT
+	id S1751510Ab3HTVaB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:30:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37704 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab3HTVaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:28:43 -0400
-Message-ID: <1377034118.24869.48.camel@bobble.lax.corp.google.com>
-Subject: Re: [dm-devel] [PATCH] dm: Make MIN_IOS, et al, tunable via sysctl.
-From: Frank Mayhar <fmayhar@google.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org, Mike Snitzer <msnitzer@redhat.com>
-Date: Tue, 20 Aug 2013 14:28:38 -0700
-In-Reply-To: <alpine.LRH.2.02.1308201712090.8826@file01.intranet.prod.int.rdu2.redhat.com>
-References: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
-	 <alpine.LRH.2.02.1308201712090.8826@file01.intranet.prod.int.rdu2.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Aug 2013 17:30:00 -0400
+Date: Tue, 20 Aug 2013 14:29:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Christoph Lameter <cl@gentwo.org>, Kent Overstreet <kmo@daterainc.com>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] idr: Use this_cpu_ptr() for percpu_ida
+Message-Id: <20130820142956.1194d8c798abf53f884a1fb6@linux-foundation.org>
+In-Reply-To: <1377033546.32763.4.camel@haakon3.risingtidesystems.com>
+References: <1375896905-6074-1-git-send-email-kmo@daterainc.com>
+	<1375896905-6074-5-git-send-email-kmo@daterainc.com>
+	<0000014059ec4c34-1bb53d48-c9ee-4e71-81b8-253026431c5c-000000@email.amazonses.com>
+	<20130807183345.GA11612@kmo-pixel>
+	<000001405a4b39ef-0715410a-5061-41e9-9414-86559f16570d-000000@email.amazonses.com>
+	<20130807195733.GB11612@kmo-pixel>
+	<000001405e5776ba-bcc96088-b5e8-4abe-b98e-2e9d7d9b112b-000000@email.amazonses.com>
+	<1377033546.32763.4.camel@haakon3.risingtidesystems.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-20 at 17:22 -0400, Mikulas Patocka wrote:
-> On Fri, 16 Aug 2013, Frank Mayhar wrote:
-> > The device mapper and some of its modules allocate memory pools at
-> > various points when setting up a device.  In some cases, these pools are
-> > fairly large, for example the multipath module allocates a 256-entry
-> > pool and the dm itself allocates three of that size.  In a
-> > memory-constrained environment where we're creating a lot of these
-> > devices, the memory use can quickly become significant.  Unfortunately,
-> > there's currently no way to change the size of the pools other than by
-> > changing a constant and rebuilding the kernel.
-> I think it would be better to set the values to some low value (1 should 
-> be enough, there is 16 in some places that is already low enough). There 
-> is no need to make it user-configurable, because the user will see no 
-> additional benefit from bigger mempools.
+On Tue, 20 Aug 2013 14:19:06 -0700 "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+
+> On Thu, 2013-08-08 at 14:32 +0000, Christoph Lameter wrote:
+> > On Wed, 7 Aug 2013, Kent Overstreet wrote:
+> > 
+> > > One thing that was bugging me - I was never able to figure out for sure
+> > > if smp_processor_id() returns a number in the range [0, nr_cpu_ids), at
+> > > least I couldn't find where it was documented - could you tell me if
+> > > that's true?
+> > 
+> > I always assumed that it was in the range 0 ... nr_cpu_ids - 1 and that is
+> > the assumption under which the kernel code was written. Things would break
+> > horribly if smp_process_id would return nr_cpu_ids or higher.
+> > 
 > 
-> Maybe multipath is the exception - but other dm targets don't really need 
-> big mempools so there is no need to make the size configurable.
+> Hi guys,
+> 
+> Just a heads up that I've put Kent's standalone percpu-ida patch (with
+> Christoph's recommend changes) into target-pending/for-next here:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/nab/target-pending.git/commit/?h=for-next&id=47bd524a5b3eb6429b058b8b562b45329ab2c9e7
+> 
+> I've got a number of target patches that depend on this code for v3.12,
+> and a delay on this particular piece would be painful to endure..
+> 
+> Sooo, please yell loudly if there is an objection to percpu-ida merge as
+> a completely standalone item, that does not effect any existing ida
+> code.
 
-The point is not to make the mempools bigger, the point is to be able to
-make them _smaller_ for memory-constrained environments.  In some cases,
-even 16 can be too big, especially when creating a large number of
-devices.
-
-In any event, it seems unfortunate to me that these values are
-hard-coded.  One shouldn't have to rebuild the kernel to change them,
-IMHO.
--- 
-Frank Mayhar
-310-460-4042
-
+Was hoping that Tejun had time.  I'll take a look...
