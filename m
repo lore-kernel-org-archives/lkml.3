@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab3HTUYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 16:24:12 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:58618 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab3HTUYH (ORCPT
+	id S1752011Ab3HTUYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 16:24:40 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:63317 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab3HTUYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 16:24:07 -0400
+	Tue, 20 Aug 2013 16:24:11 -0400
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: lkml <linux-kernel@vger.kernel.org>,
@@ -16,10 +16,12 @@ Cc: lkml <linux-kernel@vger.kernel.org>,
         Chris Mason <chris.mason@fusionio.com>,
         James Bottomley <JBottomley@Parallels.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
-        Nicholas Bellinger <nab@daterainc.com>
-Subject: [PATCH 7/9] target: Add transport_reset_sgl_orig() for COMPARE_AND_WRITE
-Date: Tue, 20 Aug 2013 20:07:58 +0000
-Message-Id: <1377029280-19144-8-git-send-email-nab@daterainc.com>
+        Nicholas Bellinger <nab@daterainc.com>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>
+Subject: [PATCH 9/9] tcm_qla2xxx: Add special case for COMPARE_AND_WRITE data_direction
+Date: Tue, 20 Aug 2013 20:08:00 +0000
+Message-Id: <1377029280-19144-10-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1377029280-19144-1-git-send-email-nab@daterainc.com>
 References: <1377029280-19144-1-git-send-email-nab@daterainc.com>
@@ -29,75 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@daterainc.com>
 
-After COMPARE_AND_WRITE completes it's comparision, the WRITE
-payload SGLs head expect to be updated to point from the verify
-instance of user data, to the write instance of user data.
-
-So for this special case, add transport_reset_sgl_orig() usage
-within transport_free_pages() and add se_cmd->t_data_[sg,nents]_orig
-members to save the original assignments.
+Add a special case for COMPARE_AND_WRITE for the reverse data direction
+mapping used for pci_map_sg() + friends.
 
 Cc: Christoph Hellwig <hch@lst.de>
+Cc: Giridhar Malavali <giridhar.malavali@qlogic.com>
+Cc: Chad Dupuis <chad.dupuis@qlogic.com>
 Cc: Hannes Reinecke <hare@suse.de>
 Cc: Martin Petersen <martin.petersen@oracle.com>
 Cc: Chris Mason <chris.mason@fusionio.com>
 Cc: James Bottomley <JBottomley@Parallels.com>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
 ---
- drivers/target/target_core_transport.c |   21 ++++++++++++++++++++-
- include/target/target_core_base.h      |    2 ++
- 2 files changed, 22 insertions(+), 1 deletion(-)
+ drivers/scsi/qla2xxx/tcm_qla2xxx.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 60d1336..bb98684 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1994,10 +1994,29 @@ static inline void transport_free_sgl(struct scatterlist *sgl, int nents)
- 	kfree(sgl);
- }
- 
-+static inline void transport_reset_sgl_orig(struct se_cmd *cmd)
-+{
-+	/*
-+	 * Check for saved t_data_sg that may be used for COMPARE_AND_WRITE
-+	 * emulation, and free + reset pointers if necessary..
-+	 */
-+	if (!cmd->t_data_sg_orig)
-+		return;
-+
-+	kfree(cmd->t_data_sg);
-+	cmd->t_data_sg = cmd->t_data_sg_orig;
-+	cmd->t_data_sg_orig = NULL;
-+	cmd->t_data_nents = cmd->t_data_nents_orig;
-+	cmd->t_data_nents_orig = 0;
-+}
-+
- static inline void transport_free_pages(struct se_cmd *cmd)
+diff --git a/drivers/scsi/qla2xxx/tcm_qla2xxx.c b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
+index 6a93a91..4e20d51 100644
+--- a/drivers/scsi/qla2xxx/tcm_qla2xxx.c
++++ b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
+@@ -508,8 +508,13 @@ static u32 tcm_qla2xxx_sess_get_index(struct se_session *se_sess)
+  */
+ static enum dma_data_direction tcm_qla2xxx_mapping_dir(struct se_cmd *se_cmd)
  {
--	if (cmd->se_cmd_flags & SCF_PASSTHROUGH_SG_TO_MEM_NOALLOC)
-+	if (cmd->se_cmd_flags & SCF_PASSTHROUGH_SG_TO_MEM_NOALLOC) {
-+		transport_reset_sgl_orig(cmd);
- 		return;
+-	if (se_cmd->se_cmd_flags & SCF_BIDI)
+-		return DMA_BIDIRECTIONAL;
++	if (se_cmd->se_cmd_flags & SCF_BIDI) {
++		/*
++		 * Special fall-through case for COMPARE_AND_WRITE
++		 */
++		if (se_cmd->t_task_cdb[0] != COMPARE_AND_WRITE)
++			return DMA_BIDIRECTIONAL;
 +	}
-+	transport_reset_sgl_orig(cmd);
  
- 	transport_free_sgl(cmd->t_data_sg, cmd->t_data_nents);
- 	cmd->t_data_sg = NULL;
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index e1e0843..2f9a438 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -476,7 +476,9 @@ struct se_cmd {
- 	struct work_struct	work;
- 
- 	struct scatterlist	*t_data_sg;
-+	struct scatterlist	*t_data_sg_orig;
- 	unsigned int		t_data_nents;
-+	unsigned int		t_data_nents_orig;
- 	void			*t_data_vmap;
- 	struct scatterlist	*t_bidi_data_sg;
- 	unsigned int		t_bidi_data_nents;
+ 	switch (se_cmd->data_direction) {
+ 	case DMA_TO_DEVICE:
 -- 
 1.7.10.4
 
