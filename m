@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab3HTDUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 23:20:36 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:57415 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab3HTDUc (ORCPT
+	id S1752002Ab3HTDWh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 23:22:37 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:38776 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab3HTDWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 23:20:32 -0400
+	Mon, 19 Aug 2013 23:22:36 -0400
+X-Originating-IP: 50.43.39.152
+Date: Mon, 19 Aug 2013 20:22:22 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 2/3] rcu: Update RTFP documentation
+Message-ID: <20130820032222.GB4416@leaf>
+References: <20130820023717.GA29357@linux.vnet.ibm.com>
+ <1376966267-29949-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1376966267-29949-2-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20130820022822.GD6023@dastard>
-References: <cover.1376679411.git.luto@amacapital.net> <a27accc2d9460b7ef194a203f305a18dafe926e8.1376679411.git.luto@amacapital.net>
- <20130820022822.GD6023@dastard>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 19 Aug 2013 20:20:12 -0700
-Message-ID: <CALCETrVE2G4x9mL0-o1FDQPfc=qZzw10Cx6AgOdhwphSaCmyzw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/5] fs: Add inode_update_time_writable
-To: Dave Chinner <david@fromorbit.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376966267-29949-2-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 7:28 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Fri, Aug 16, 2013 at 04:22:09PM -0700, Andy Lutomirski wrote:
->> This is like file_update_time, except that it acts on a struct inode *
->> instead of a struct file *.
->>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>  fs/inode.c         | 72 ++++++++++++++++++++++++++++++++++++++++++------------
->>  include/linux/fs.h |  1 +
->>  2 files changed, 58 insertions(+), 15 deletions(-)
->>
+On Mon, Aug 19, 2013 at 07:37:46PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> Note that this commit also updates the formatting of serveral of the
+> bibtex entries to conform to that of my .bib files.  I started
+> accumulating entries back in the 1980s, back when bibtex insisted
+> that comma (",") was a separator, not a terminator.  This rule forced
+> commas to the fronts of lines.  25 years later, bibtex allows commas
+> to be terminators, but I am too lazy to rework all my .bib files.
+> Keeping the same format as my .bib files allows my to simply
+> incorporate my RCU.bib file into Documentation/RCU/RTFP.txt, which
+> is much easier than my earlier practice of keeping track of what
+> had changed and adding individual entries.  (I sometimes find relevant
+> papers that were published some years back, for example.)
+> 
+> In addition, this change adds entries for papers published in the
+> last year or so.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-[...]
-
->> +
->> +int inode_update_time_writable(struct inode *inode)
->> +{
->> +     struct timespec now;
->> +     int sync_it = prepare_update_cmtime(inode, &now);
->> +     int ret;
->> +
->> +     if (!sync_it)
->> +             return 0;
->> +
->> +     /* sb_start_pagefault and update_time can both sleep. */
->> +     sb_start_pagefault(inode->i_sb);
->> +     ret = update_time(inode, &now, sync_it);
->> +     sb_end_pagefault(inode->i_sb);
->
-> This gets called from the writeback path - you can't use
-> sb_start_pagefault/sb_end_pagefault in that path.
-
-The race I'm worried about is:
-
- - mmap
- - write to the mapping
- - remount ro
- - flush_cmtime -> inode_update_time_writable
-
-This may be impossible, in which case I'm okay, but it's nice to have
-a sanity check.  I'll see if I can figure out how to do that.
-
---Andy
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
