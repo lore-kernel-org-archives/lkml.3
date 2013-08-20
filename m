@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582Ab3HTAfJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 20:35:09 -0400
-Received: from smtp1.Stanford.EDU ([171.67.219.81]:35548 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751243Ab3HTAfH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 20:35:07 -0400
-Message-ID: <5212B9A8.9050900@ccrma.stanford.edu>
-Date: Mon, 19 Aug 2013 17:34:48 -0700
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751385Ab3HTAp6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 20:45:58 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:1618 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751162Ab3HTAp5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 20:45:57 -0400
+From: Dan Williams <djbw@fb.com>
+To: Jon Mason <jon.mason@intel.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Vinod Koul <vinod.koul@intel.com>, Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [PATCH 09/15] NTB: Use DMA Engine to Transmit and Receive
+Thread-Topic: [PATCH 09/15] NTB: Use DMA Engine to Transmit and Receive
+Thread-Index: AQHOj6bm/GJ0U1JbkEK1G/IDrnMk9JmdGJWAgAAx5ACAAH4dgP//lVuA
+Date: Tue, 20 Aug 2013 00:45:54 +0000
+Message-ID: <CE380608.2597D%djbw@fb.com>
+In-Reply-To: <20130820000734.GD22169@jonmason-lab>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.6.130613
+x-originating-ip: [192.168.16.4]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-ID: <FC701EB07A7F4E41AD7F3DBD4000EA01@fb.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Kent Overstreet <kmo@daterainc.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.10.6-rt3
-References: <20130812163413.GI23040@linutronix.de> <520D212F.7030400@localhost> <20130815152210.5ed93696@gandalf.local.home> <520DCE5F.1040402@linutronix.de> <521254A0.6050603@localhost> <20130819202903.692097ea@gandalf.local.home>
-In-Reply-To: <20130819202903.692097ea@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Spam-Reason: safe
+X-FB-Internal: Safe
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-08-19_07:2013-08-19,2013-08-19,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2013 05:29 PM, Steven Rostedt wrote:
-> On Mon, 19 Aug 2013 10:23:44 -0700
-> Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU> wrote:
->
->
->>> The problem is that bcache is using new semaphore functions which it
->>> just introduced which rt does not know about. The comment above their
->>> definition says that it is wrong to use them and completion is the
->>> right way to do it.
->>> So my question is, why don't we use completion but this nasty hack?
->
-> I think I'm going to send them an email about that.
->
->>
->> In the meanwhile, any hope of a patch to be able to compile and test
->> with my current configuration?
->
-> Can you boot without enabling CONFIG_BCACHE?
 
-I'm pretty sure I'll be able to do that. No real need in my personal 
-case AFAICT.
 
-I'll try that next - it is just that I try very hard to keep the 
-configuration of my rt kernels as close as possible to the defaults that 
-Fedora uses (they get distributed as part of Planet CCRMA and there is 
-no telling what usage cases they will hit - it would be confusing to 
-have something that works on Fedora kernels and does not on equivalent 
-RT patched kernels).
+On 8/19/13 5:07 PM, "Jon Mason" <jon.mason@intel.com> wrote:
 
-Thanks for the heads up!,
--- Fernando
+>> >> Is this for the case where we are bouncing back and forth between
+>> >> sync/async?  Otherwise I do not see how transactions could get out of
+>> >> order given you allocate a channel once per queue.  Is this comment
+>> >> saying that the iowrite32 is somehow a fix, or is this comment a
+>> >> FIXME?
+>> >
+>> >There is a case for a mix, the "copy_bytes" variable above switches to
+>> >CPU for small transfers (which greatly increases throughput on small
+>> >transfers).  The caveat to it is the need to flush the DMA engine to
+>> >prevent out-of-order.  This comment is mainly an reminder of this
+>>issue.
+>> 
+>> So this is going forward with the stall as a known issue?  The next
+>>patch
+>> should just do the sync to prevent the re-ordering, right?
+>
+>There is already a dma_sync_wait in the error path of ntb_async_rx to
+>enforce the ordering.  Do I need to change the comment (or move it) to
+>make it more obvious what is happening?
+
+Yeah, I think it just needs to move to the dma_sync_wait() otherwise it
+seems like it¹s an open issue that needs fixing.
+
+>>>> > +       txd->callback = ntb_rx_copy_callback;
+>> >> > +       txd->callback_param = entry;
+>> >> > +
+>> >> > +       cookie = dmaengine_submit(txd);
+>> >> > +       if (dma_submit_error(cookie))
+>> >> > +               goto err3;
+>> >> > +
+>> >> > +       qp->last_cookie = cookie;
+>> >> > +
+>> >> > +       dma_async_issue_pending(chan);
+>> >> 
+>> >> hmm... can this go in ntb_process_rx() so that the submission is
+>> >> batched?  Cuts down on mmio.
+>> >
+>> >I moved it down to ntb_transport_rx (after the calls to
+>> >ntb_process_rxc), and the performance seems to be roughly the same.
+>> 
+>> Yeah, not expecting it to be noticeable, but conceptually
+>> 
+>> submit
+>> submit
+>> submit
+>> submit
+>> issue
+>> 
+>> 
+>> Is nicer than:
+>> 
+>> submit
+>> issue
+>> submit
+>> issue
+>> 
+>> 
+>
+>I agree, but I liked having all the dma engine awareness
+>compartmentalized in the ntb_async_* and callbacks.
+
+Ok, makes sense.
+
+--
+Dan
+
