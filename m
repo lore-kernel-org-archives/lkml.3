@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab3HTU7I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 16:59:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37451 "EHLO
+	id S1752055Ab3HTU7P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 16:59:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37467 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab3HTU7G (ORCPT
+	with ESMTP id S1751142Ab3HTU7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 16:59:06 -0400
-Date: Tue, 20 Aug 2013 13:59:03 -0700
+	Tue, 20 Aug 2013 16:59:12 -0400
+Date: Tue, 20 Aug 2013 13:59:10 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
@@ -23,11 +23,12 @@ Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
         Vlastimil Babka <vbabka@suse.cz>, linux-mm@kvack.org,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/9] lib: radix-tree: radix_tree_delete_item()
-Message-Id: <20130820135903.22edb28c2f43e0b77bf085eb@linux-foundation.org>
-In-Reply-To: <1376767883-4411-2-git-send-email-hannes@cmpxchg.org>
+Subject: Re: [patch 4/9] mm + fs: prepare for non-page entries in page cache
+ radix trees
+Message-Id: <20130820135910.6e6da048131bc841404906be@linux-foundation.org>
+In-Reply-To: <1376767883-4411-5-git-send-email-hannes@cmpxchg.org>
 References: <1376767883-4411-1-git-send-email-hannes@cmpxchg.org>
-	<1376767883-4411-2-git-send-email-hannes@cmpxchg.org>
+	<1376767883-4411-5-git-send-email-hannes@cmpxchg.org>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -36,34 +37,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 Aug 2013 15:31:15 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Sat, 17 Aug 2013 15:31:18 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-> Provide a function that does not just delete an entry at a given
-> index, but also allows passing in an expected item.  Delete only if
-> that item is still located at the specified index.
+> shmem mappings already contain exceptional entries where swap slot
+> information is remembered.
 > 
-> This is handy when lockless tree traversals want to delete entries as
-> well because they don't have to do an second, locked lookup to verify
-> the slot has not changed under them before deleting the entry.
+> To be able to store eviction information for regular page cache,
+> prepare every site dealing with the radix trees directly to handle
+> entries other than pages.
 > 
+> The common lookup functions will filter out non-page entries and
+> return NULL for page cache holes, just as before.  But provide a raw
+> version of the API which returns non-page entries as well, and switch
+> shmem over to use it.
+> 
+>
 > ...
 >
-> -void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
-> +void *radix_tree_delete_item(struct radix_tree_root *root,
-> +			     unsigned long index, void *item)
+> -/**
+> - * find_get_page - find and get a page reference
+> - * @mapping: the address_space to search
+> - * @offset: the page index
+> - *
+> - * Is there a pagecache struct page at the given (mapping, offset) tuple?
+> - * If yes, increment its refcount and return it; if no, return NULL.
+> - */
+> -struct page *find_get_page(struct address_space *mapping, pgoff_t offset)
+> +struct page *__find_get_page(struct address_space *mapping, pgoff_t offset)
+>  {
+>  	void **pagep;
+>  	struct page *page;
+> @@ -812,24 +828,31 @@ out:
+>  
+>  	return page;
+>  }
+> -EXPORT_SYMBOL(find_get_page);
+> +EXPORT_SYMBOL(__find_get_page);
 
-radix-tree is an exported-to-modules API, so I guess we should do this
-so others don't need to..
+Deleting the interface documentation for a global, exported-to-modules
+function was a bit rude.
 
---- a/lib/radix-tree.c~lib-radix-tree-radix_tree_delete_item-fix
-+++ a/lib/radix-tree.c
-@@ -1393,6 +1393,7 @@ void *radix_tree_delete_item(struct radi
- out:
- 	return slot;
- }
-+EXPORT_SYMBOL(radix_tree_delete_item);
- 
- /**
-  *	radix_tree_delete    -    delete an item from a radix tree
-_
+And it does need documentation, to tell people that it can return the
+non-pages.
 
+Does it have the same handling of non-pages as __find_get_pages()?  It
+had better, given the naming!
+
+>
+> ...
+>
