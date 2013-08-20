@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003Ab3HTVfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:35:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6931 "EHLO mx1.redhat.com"
+	id S1751570Ab3HTVd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:33:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52726 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751622Ab3HTVd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:33:27 -0400
+	id S1751202Ab3HTVdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 17:33:23 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org
@@ -21,81 +21,79 @@ Cc: Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
         Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 04/12] audit: convert PPIDs to the inital PID namespace.
-Date: Tue, 20 Aug 2013 17:31:56 -0400
-Message-Id: <9e4569641ce4948e2f99fe43f69df30a145e04ac.1377032086.git.rgb@redhat.com>
-In-Reply-To: <cover.1377032086.git.rgb@redhat.com>
-References: <cover.1377032086.git.rgb@redhat.com>
-In-Reply-To: <cover.1377032086.git.rgb@redhat.com>
-References: <cover.1377032086.git.rgb@redhat.com>
+Subject: [PATCH 00/12] RFC: steps to make audit pid namespace-safe
+Date: Tue, 20 Aug 2013 17:31:52 -0400
+Message-Id: <cover.1377032086.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sys_getppid() returns the parent pid of the current process in its own pid
-namespace.  Since audit filters are based in the init pid namespace, a process
-could avoid a filter or trigger an unintended one by being in an alternate pid
-namespace or log meaningless information.
+This patchset is a revival of some of Eric Biederman's work to make audit
+pid-namespace-safe.
 
-Switch to task_ppid_nr_init_ns() for PPIDs to anchor all audit filters in the
+In a couple of places, audit was printing PIDs in the task's pid namespace
+rather than relative to the audit daemon's pid namespace, which currently is
 init_pid_ns.
 
-(informed by ebiederman's 6c621b7e)
-Cc: stable@vger.kernel.org
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- kernel/audit.c            |    4 ++--
- kernel/auditsc.c          |    2 +-
- security/apparmor/audit.c |    5 +----
- 3 files changed, 4 insertions(+), 7 deletions(-)
+It also allows processes to log audit user messages in their own pid
+namespaces, which was not previously permitted.  Please see:
+	https://bugzilla.redhat.com/show_bug.cgi?id=947530
+	https://bugs.launchpad.net/ubuntu/+source/vsftpd/+bug/1160372
+	https://bugzilla.novell.com/show_bug.cgi?id=786024
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 2476334..75b0989 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1588,10 +1588,10 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
- 	spin_unlock_irq(&tsk->sighand->siglock);
- 
- 	audit_log_format(ab,
--			 " ppid=%ld pid=%d auid=%u uid=%u gid=%u"
-+			 " ppid=%d pid=%d auid=%u uid=%u gid=%u"
- 			 " euid=%u suid=%u fsuid=%u"
- 			 " egid=%u sgid=%u fsgid=%u ses=%u tty=%s",
--			 sys_getppid(),
-+			 task_ppid_nr_init_ns(tsk),
- 			 tsk->pid,
- 			 from_kuid(&init_user_ns, audit_get_loginuid(tsk)),
- 			 from_kuid(&init_user_ns, cred->uid),
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 8c644c5..74a0748 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -466,7 +466,7 @@ static int audit_filter_rules(struct task_struct *tsk,
- 		case AUDIT_PPID:
- 			if (ctx) {
- 				if (!ctx->ppid)
--					ctx->ppid = sys_getppid();
-+					ctx->ppid = task_ppid_nr_init_ns(current);
- 				result = audit_comparator(ctx->ppid, f->op, f->val);
- 			}
- 			break;
-diff --git a/security/apparmor/audit.c b/security/apparmor/audit.c
-index 031d2d9..497b306 100644
---- a/security/apparmor/audit.c
-+++ b/security/apparmor/audit.c
-@@ -132,10 +132,7 @@ static void audit_pre(struct audit_buffer *ab, void *ca)
- 
- 	if (sa->aad->profile) {
- 		struct aa_profile *profile = sa->aad->profile;
--		pid_t pid;
--		rcu_read_lock();
--		pid = rcu_dereference(tsk->real_parent)->pid;
--		rcu_read_unlock();
-+		pid_t pid = task_ppid_nr_init_ns(tsk);
- 		audit_log_format(ab, " parent=%d", pid);
- 		if (profile->ns != root_ns) {
- 			audit_log_format(ab, " namespace=");
--- 
-1.7.1
+Part of the cleanup here involves deprecating task->pid and task->tgid, which
+are error-prone duplicates of the task->pids structure
+
+The next step which I hope to add to this patchset will be to purge task->pid
+and task->tgid from the rest of the kernel if possible.  Once that is done,
+task_pid_nr_init_ns() and task_tgid_nr_init_ns() that were introduced in patch
+05/12 and used in patches 06/12 and 08/12 could be replaced with task_pid_nr()
+and task_tgid_nr().  Eric B. did take a stab at that, but checking all the
+subtleties will be non-trivial.
+
+Does anyone have any opinions or better yet hard data on cache line misses
+between pid_nr(struct pid*) and pid_nr_ns(struct pid*, &init_pid_ns)?  I'd
+like to see pid_nr() use pid_nr_ns(struct pid*, &init_pid_ns), or
+pid_nr_init_ns() eliminated in favour of the original pid_nr().  pid_nr()
+currently accesses the first level of the pid structure without having to
+dereference the level number.  If there is an actual speed difference, it could
+be worth keeping, otherwise, I'd prefer to simplify that code.
+
+Eric also had a patch to add a printk option to format a struct pid pointer
+which was PID namespace-aware.  I don't see the point, but I'll let him explain
+it.
+
+Discuss.
+
+Eric W. Biederman (5):
+  audit: Kill the unused struct audit_aux_data_capset
+  audit: Simplify and correct audit_log_capset
+
+Richard Guy Briggs (7):
+  audit: fix netlink portid naming and types
+  pid: get ppid pid_t of task in init_pid_ns safely
+  audit: convert PPIDs to the inital PID namespace.
+  pid: get pid_t of task in init_pid_ns correctly
+  audit: store audit_pid as a struct pid pointer
+  audit: anchor all pid references in the initial pid namespace
+  pid: modify task_pid_nr to work without task->pid.
+  pid: modify task_tgid_nr to work without task->tgid.
+  pid: rewrite task helper functions avoiding task->pid and task->tgid
+  pid: mark struct task const in helper functions
+
+ drivers/tty/tty_audit.c              |    3 +-
+ include/linux/audit.h                |    8 ++--
+ include/linux/pid.h                  |    6 +++
+ include/linux/sched.h                |   81 ++++++++++++++++++++++++----------
+ kernel/audit.c                       |   76 +++++++++++++++++++------------
+ kernel/audit.h                       |   12 +++---
+ kernel/auditfilter.c                 |   35 +++++++++++----
+ kernel/auditsc.c                     |   36 ++++++---------
+ kernel/capability.c                  |    2 +-
+ kernel/pid.c                         |    4 +-
+ security/apparmor/audit.c            |    7 +--
+ security/integrity/integrity_audit.c |    2 +-
+ security/lsm_audit.c                 |   11 +++--
+ security/tomoyo/audit.c              |    2 +-
+ 14 files changed, 177 insertions(+), 108 deletions(-)
 
