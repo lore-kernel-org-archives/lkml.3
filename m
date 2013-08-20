@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab3HTTOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 15:14:16 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:39558 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab3HTTOL (ORCPT
+	id S1751802Ab3HTTOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 15:14:15 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:40063 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab3HTTOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 15:14:11 -0400
-Date: Tue, 20 Aug 2013 20:13:39 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: sameo@linux.intel.com, swarren@wwwdotorg.org, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, rob@landley.net,
-        lee.jones@linaro.org, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gg@slimlogic.co.uk, kishon@ti.com,
-        j-keerthy@ti.com, ian.campbell@citrix.com
-Message-ID: <20130820191339.GT30073@sirena.org.uk>
-References: <1377004456-26318-1-git-send-email-ldewangan@nvidia.com>
+	Tue, 20 Aug 2013 15:14:12 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UKUpI6lZ3P7mfoqz"
-Content-Disposition: inline
-In-Reply-To: <1377004456-26318-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: There is a fly on your nose.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V3] regulator: palmas: add support for external control
- of rails
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20130820190529.GA24512@redhat.com>
+References: <20130819172524.GA22268@redhat.com> <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com>
+ <20130819183319.GA24846@redhat.com> <CALCETrWrpNszRGCRRMLgiOopcSdDShB3Mck6gRPco=dAZeX3pQ@mail.gmail.com>
+ <20130819184355.GA25362@redhat.com> <CALCETrU4gTfzcpeEo-X7o-yZefKiw9BVNKdcN4fThUeiuZtOOg@mail.gmail.com>
+ <20130820185043.GA24040@redhat.com> <CALCETrUjohT2D=jtVQ9mnbeUr2oJ9VoN812PtQhaB2ZZ89isNA@mail.gmail.com>
+ <20130820190529.GA24512@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 20 Aug 2013 12:13:50 -0700
+Message-ID: <CALCETrVC15BjcRMk2tc-SRT3tUr24057Zxt5ARQ-2Eq7RhjO2w@mail.gmail.com>
+Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Brad Spengler <spender@grsecurity.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin Walters <walters@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 20, 2013 at 12:05 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 08/20, Andy Lutomirski wrote:
+>>
+>> On Tue, Aug 20, 2013 at 11:50 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >
+>> >> Currently (with or without your patch), vfork() followed by
+>> >> unshare(CLONE_NEWUSER) or unshare(CLONE_NEWPID) will unshare the VM.
+>> >
+>> > Could you spell please?
+>> >
+>> > We never unshare the VM. CLONE_VM in sys_unshare() paths just means
+>> > "fail unless ->mm is not shared".
+>> >
+>>
+>> Argh.  In that case this is probably buggy,
+>
+> I don't think so. Just we can't really unshare ->mm or implement
+> unshare(CLONE_THREAD). We simply pretend it works if there is nothing
+> to unshare.
+>
+>> sys_unshare will see CLONE_NEWPID or CLONE_NEWUSER and set
+>> CLONE_THREAD.  Then it will see CLONE_THREAD and set CLONE_VM.
+>
+> This matches copy_process() to some degree... but looks confusing,
+> I agree.
 
---UKUpI6lZ3P7mfoqz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Huh?  Doesn't this mean that unshare(CLONE_NEWPID); vfork() will work
+with your patches, but vfork(); unshare(CLONE_NEWPID) will fail?  (I
+admit I haven't tested it.)
 
-On Tue, Aug 20, 2013 at 06:44:15PM +0530, Laxman Dewangan wrote:
-
-> +			econtrol = PALMAS_EXT_CONTROL_NSLEEP;
-> +			if (!ret) {
-> +				if (prop == 1)
-> +					econtrol = PALMAS_EXT_CONTROL_ENABLE1;
-> +				else if (prop == 2)
-> +					econtrol = PALMAS_EXT_CONTROL_ENABLE2;
-> +				else if (prop == 3)
-> +					econtrol = PALMAS_EXT_CONTROL_NSLEEP;
-
-Since Stephen identified an issue as well...  this looks like a switch
-statement.   Otherwise this looks fine.
-
---UKUpI6lZ3P7mfoqz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSE7/fAAoJELSic+t+oim9Zp8P/RPggDonvpxfdWC3oLWcesPN
-rBlNSB5f+wqhepuWSB+szOICnNWwZyE6VSdzrjspJ+HOyL0mZLcS8OX3B9g5UZd1
-dN1a2e31DrFsVzc6Pez8tBU5WmdP2I25Hi6HZz7Xw6p55CtKzEjf5wMCDy9Ogw1U
-pymdmheNRQ9wGuh3oKqwzyp7iVo5cqZmpL4TCWC5i2iXDptBhLFWr7XwrqAaNkZt
-FbmA3/5f2doYre0yh+FVcIF0Rf0h4sZkctyDKBKH2xDh9PwCTIPT8JDamvIhJgot
-U5UfjveH22gTFkT02exssgDePbshBXGz7wFGF3I/QXDPTSmVQZiQ+sdYbaIjdwpH
-m9b5KceaigC51QL1BB8EQfTBhzRM1AndMwJdZ4tb9atewk9u1ZOKFej/2cTg4rfE
-Wl5r4JSu9HKz+gahbLsAOG4OSl8jhISvH/Iw3TkX9SkkgmgG7ftO0EviT0GoDRtT
-1/1cfUQANF7198H2clpVZ0LFgAlIfkiJpNITB5TgLXsL/MoSYtv9KIudDftoSvxo
-4NBJfIP6b6RcDvBRK2OcZpK/lMbFjXU+S0kvlY/pR6Kl8oYkyKCPZByyLFqz6nCo
-DgFiAvQHml13JAe1EKMxdNh5jMlvo9ClgxmvFWOrHk1KGjxOdopUuLvTNdAwyblh
-J7eGaMTXYCIl6rCF45tz
-=0Adl
------END PGP SIGNATURE-----
-
---UKUpI6lZ3P7mfoqz--
+--Andy
