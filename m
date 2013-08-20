@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391Ab3HTLPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 07:15:32 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:60576 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab3HTLPb (ORCPT
+	id S1751027Ab3HTLUa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 07:20:30 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:32817 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909Ab3HTLU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 07:15:31 -0400
-Date: Tue, 20 Aug 2013 14:14:26 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: [sched next] overflowed cpu time for kernel threads in /proc/PID/stat
-Message-ID: <20130820111426.GA27828@swordfish.datadirectnet.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Aug 2013 07:20:28 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chris Mason <chris.mason@fusionio.com>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 00/12] Btrfs: cast cleanups
+Date: Tue, 20 Aug 2013 13:20:06 +0200
+Message-Id: <1376997618-13573-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-3.11.0-rc6-next-20130820
+	Hi Chris,
 
-at some point an overflowed cpu time is reported in /proc/PID/stat
+This is a collection of cast cleanups I created after burning my eyes
+by the btrfs code.
 
-cat /proc/10/stat
-10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 0 406 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-cat /proc/10/stat
-10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 0 406 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-cat /proc/10/stat
-10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 0 407 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-cat /proc/10/stat
-10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 0 407 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-cat /proc/10/stat
-10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 1844674407370 477 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-						^^^^^^^^^
-cat /proc/10/stat
-10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 1844674407370 597 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+  - [01/12] Btrfs: Remove superfluous casts from u64 to unsigned long long
+  - [02/12] Btrfs: Make BTRFS_DEV_REPLACE_DEVID an unsigned long long constant
+  - [03/12] Btrfs: Format PAGE_SIZE as unsigned long
+  - [04/12] Btrfs: Format mirror_num as int
+  - [05/12] Btrfs: Make btrfs_device_uuid() return unsigned long
+  - [06/12] Btrfs: Make btrfs_device_fsid() return unsigned long
+  - [07/12] Btrfs: Make btrfs_dev_extent_chunk_tree_uuid() return unsigned long
+  - [08/12] Btrfs: Make btrfs_header_fsid() return unsigned long
+  - [09/12] Btrfs: Make btrfs_header_chunk_tree_uuid() return unsigned long
+  - [10/12] Btrfs: PAGE_CACHE_SIZE is already unsigned long
+  - [11/12] Btrfs: Do not truncate sector_t on 32-bit with CONFIG_LBDAF=y
+  - [12/12] Btrfs: Use %z to format size_t
 
-(seems there are several more -1UL in output)
+None of them are real bugs, except for "[11/12] Btrfs: Do not truncate
+sector_t on 32-bit with CONFIG_LBDAF=y", which may print truncated values.
 
+This was only compile-tested.
 
-oddly enough, I see this happening only for RCU
+ fs/btrfs/backref.c          |   24 ++--
+ fs/btrfs/check-integrity.c  |  313 +++++++++++++++----------------------------
+ fs/btrfs/compression.c      |    5 +-
+ fs/btrfs/ctree.c            |   28 ++--
+ fs/btrfs/ctree.h            |   24 ++--
+ fs/btrfs/delayed-inode.c    |   10 +-
+ fs/btrfs/dev-replace.c      |    4 +-
+ fs/btrfs/disk-io.c          |   39 ++----
+ fs/btrfs/extent-tree.c      |   47 +++----
+ fs/btrfs/extent_io.c        |   48 +++----
+ fs/btrfs/file-item.c        |    4 +-
+ fs/btrfs/free-space-cache.c |    6 +-
+ fs/btrfs/inode.c            |   24 ++--
+ fs/btrfs/ioctl.c            |   15 +--
+ fs/btrfs/ordered-data.c     |   11 +-
+ fs/btrfs/print-tree.c       |   80 ++++-------
+ fs/btrfs/qgroup.c           |   10 +-
+ fs/btrfs/relocation.c       |    7 +-
+ fs/btrfs/root-tree.c        |    3 +-
+ fs/btrfs/scrub.c            |   25 ++--
+ fs/btrfs/super.c            |   10 +-
+ fs/btrfs/transaction.c      |    3 +-
+ fs/btrfs/volumes.c          |   40 +++---
+ 23 files changed, 279 insertions(+), 501 deletions(-)
 
- ps aux | grep rcu
- root         8  0.0  0.0      0     0 ?        S    12:42   0:00  [rcuc/0]
- root         9  0.0  0.0      0     0 ?        S    12:42   0:00  [rcub/0]
- root        10 62422329  0.0  0     0 ?        R    12:42 21114581:37  [rcu_preempt]
- root        11  0.1  0.0      0     0 ?        S    12:42   0:02  [rcuop/0]
- root        12 62422329  0.0  0     0 ?        S    12:42 21114581:35  [rcuop/1]
+Gr{oetje,eeting}s,
 
-	-ss
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
