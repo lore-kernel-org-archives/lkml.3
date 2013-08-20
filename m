@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466Ab3HTGsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 02:48:45 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36369 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab3HTGsn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 02:48:43 -0400
-Date: Mon, 19 Aug 2013 23:48:40 -0700 (PDT)
-Message-Id: <20130819.234840.1640929202046409588.davem@davemloft.net>
-To: casey@schaufler-ca.com
-Cc: amwang@redhat.com, netdev@vger.kernel.org, james.l.morris@oracle.com,
-        sds@tycho.nsa.gov, eparis@parisplace.org, pmoore@redhat.com,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [Patch net-next v3 9/9] selinux: use generic union inet_addr
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <5212915F.20905@schaufler-ca.com>
-References: <52127336.3080209@schaufler-ca.com>
-	<20130819.125026.636442915180863272.davem@davemloft.net>
-	<5212915F.20905@schaufler-ca.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 19 Aug 2013 23:48:43 -0700 (PDT)
+	id S1751252Ab3HTGx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 02:53:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42273 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751116Ab3HTGxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 02:53:25 -0400
+Date: Tue, 20 Aug 2013 08:53:23 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        dougthompson@xmission.com, bhelgaas@google.com, jbeulich@suse.com,
+        linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 0/1] AMD64_EDAC: Fix incorrect wrap arounds due to left
+ shift beyond 32 bits.
+Message-ID: <20130820065322.GB12904@pd.tnic>
+References: <1376958472-2150-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1376958472-2150-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Casey Schaufler <casey@schaufler-ca.com>
-Date: Mon, 19 Aug 2013 14:42:55 -0700
-
-> On 8/19/2013 12:50 PM, David Miller wrote:
->> It's so that you can pass a generic ipv4/ipv6 address blob into
->> things like printf formatting, and since there is an address family
->> member present, it knows what's in there and therefore one printf
->> format specifier can handle both ipv4 and ipv6 addresses.
+On Mon, Aug 19, 2013 at 07:27:51PM -0500, Aravind Gopalakrishnan wrote:
+> Aravind Gopalakrishnan (1):
+>   AMD64_EDAC: Fix incorrect wrap arounds due to left shift beyond 32
+>     bits.
 > 
-> The patch message needs to say that, then.
+>  drivers/edac/amd64_edac.c |    9 +++++----
+>  1 file changed, 5 insertions(+), 4 deletions(-)
 
-Actually, that belongs in the "0/N" posting, the contents of which
-will end up in the merge commit should I apply the series.
+Just a minor thing: when you send one patch only, you don't really need
+the 0/1 email.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
