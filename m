@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab3HTP1i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 11:27:38 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:37451 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221Ab3HTP1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 11:27:36 -0400
-Message-ID: <1377012381.26268.42.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH v4 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
- for DWC3 core
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: balbi@ti.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        rob@landley.net, gregkh@linuxfoundation.org, grant.likely@linaro.org,
-        idos@codeaurora.org, mgautam@codeaurora.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Paul Zimmerman <paul.zimmerman@synopsys.com>
-Date: Tue, 20 Aug 2013 18:26:21 +0300
-In-Reply-To: <8691FDFE-326E-4198-838A-202D9EC988E1@codeaurora.org>
-References: <1376992565-22292-1-git-send-email-iivanov@mm-sol.com>
-	 <1376992565-22292-3-git-send-email-iivanov@mm-sol.com>
-	 <20130820122907.GU26587@radagast>
-	 <1377005543.26268.22.camel@iivanov-dev.int.mm-sol.com>
-	 <20130820133712.GC26587@radagast>
-	 <1377007751.26268.27.camel@iivanov-dev.int.mm-sol.com>
-	 <20130820143319.GG26587@radagast>
-	 <1377010458.26268.30.camel@iivanov-dev.int.mm-sol.com>
-	 <8691FDFE-326E-4198-838A-202D9EC988E1@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751562Ab3HTP3R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 11:29:17 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:43198 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab3HTP3P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 11:29:15 -0400
+Date: Tue, 20 Aug 2013 17:29:12 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20130820152910.GB17441@somewhere>
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com>
+ <1376667753-29014-3-git-send-email-fweisbec@gmail.com>
+ <20130816160201.GA31682@redhat.com>
+ <20130816162056.GE24210@somewhere>
+ <20130816162654.GA453@redhat.com>
+ <20130816164626.GH24210@somewhere>
+ <20130819111026.GE24092@twins.programming.kicks-ass.net>
+ <521313D8.9080500@lab.ntt.co.jp>
+ <20130820084405.GC3258@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130820084405.GC3258@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-20 at 10:01 -0500, Kumar Gala wrote: 
-> On Aug 20, 2013, at 9:54 AM, Ivan T. Ivanov wrote:
+On Tue, Aug 20, 2013 at 10:44:05AM +0200, Peter Zijlstra wrote:
+> On Tue, Aug 20, 2013 at 03:59:36PM +0900, Fernando Luis Vázquez Cao wrote:
+> > That said, if deemed acceptable, option A is the one I would
+> > choose.
 > 
-> > 
-> > Hi, 
-> > 
-> > On Tue, 2013-08-20 at 09:33 -0500, Felipe Balbi wrote: 
-> >> On Tue, Aug 20, 2013 at 05:09:11PM +0300, Ivan T. Ivanov wrote:
-> >>> Hi,
-> >>> 
-> >>> On Tue, 2013-08-20 at 08:37 -0500, Felipe Balbi wrote: 
-> >>>> Hi,
-> >>>> 
-> >>>> On Tue, Aug 20, 2013 at 04:32:23PM +0300, Ivan T. Ivanov wrote:
-> >>>>>> On Tue, Aug 20, 2013 at 12:56:04PM +0300, Ivan T. Ivanov wrote:
-> >>>>>>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> >>>>>>> 
-> >>>>>>> These drivers handles control and configuration of the HS
-> >>>>>>> and SS USB PHY transceivers. They are part of the driver
-> >>>>>>> which manage Synopsys DesignWare USB3 controller stack
-> >>>>>>> inside Qualcomm SoC's.
-> >>>>>>> 
-> >>>>>>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> >>>>>>> ---
-> >>>>>>> drivers/usb/phy/Kconfig           |   11 ++
-> >>>>>>> drivers/usb/phy/Makefile          |    2 +
-> >>>>>>> drivers/usb/phy/phy-msm-dwc3-hs.c |  327 ++++++++++++++++++++++++++++++++
-> >>>>>>> drivers/usb/phy/phy-msm-dwc3-ss.c |  374 +++++++++++++++++++++++++++++++++++++
-> >>>>>> 
-> >>>>>> please rename these PHY drivers, they have nothing to do with DWC3. PHYs
-> >>>>>> don't care about the USB controller.
-> >>>>> 
-> >>>>> I think they are SNPS DesignWare PHY's, additionally
-> >>>>> wrapped with Qualcomm logic. I could substitute "dwc3"
-> >>>>> with just "dw", which will be more correct.
-> >>>> 
-> >>>> alright, thank you. Let's add Paul to the loop since he might have very
-> >>>> good insight in the synopsys PHYs.
-> >>>> 
-> >>>> mental note: if any other platform shows up with Synopsys PHY, ask them
-> >>>> to use this driver instead :-)
-> >>> 
-> >>> I really doubt that this will bi possible. Control of the PHY's is
-> >>> not directly trough ULPI, UTMI or PIPE3 interfaces, but trough
-> >>> QSCRATCH registers, which of course is highly Qualcomm specific.
-> >> 
-> >> isn't it a memory mapped IP ? doesn't synopsys provide their own set of
-> >> registers ?
-> > 
-> > From what I see it is not directly mapped. How QSCRATCH write and
-> > reads transactions are translated to DW IP is unclear to me.
-> 
-> 
-> I think the question is how does SW access them?
+> Right, so I think we can do A without much extra cost mostly because we
+> already have 2 atomics in the io_schedule() path. If we replace those
+> two atomic operations with locks and modify nr_iowait and the other
+> stats under the same lock, and ensure all those variables (including the
+> lock) live in the same cacheline we should have the same cost we have
+> now.
 
-"USB QSCRATCH Hardware registers" don't ask me what is this :-)
-or like Pawel says: "it depends on the SOC" .
-
-Ivan
+I can try that :-)
 
 > 
-> - k
-> 
+> Of course, if we can get away with completely removing all of that
+> (which I think Arjan suggested was a real possibility) then that would
+> be ever so much better still :-)
 
+Would be lovely. But I don't know much about cpufreq, I hope somebody who's
+familiar with that code can handle this. Then once there are no more users
+of get_cpu_iowait_sleep_time() I can simply zap and clean the tick/time related
+code.
 
+Surely the overhead that this mess brings to io_schedule() (and it's going
+to be worth with a seqlock, whether in the same cacheline than nr_iowait or
+not) may be a good motivation to poke at that cpufreq code part.
+
+Thanks.
