@@ -1,95 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab3HTIN1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:13:27 -0400
-Received: from mga14.intel.com ([143.182.124.37]:14795 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317Ab3HTINY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:13:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,918,1367996400"; 
-   d="scan'208";a="348805924"
-Date: Tue, 20 Aug 2013 11:18:52 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] acpi_i2c: set MODULE_LICENSE, MODULE_AUTHOR, and
- MODULE_DESCRIPTION
-Message-ID: <20130820081852.GV4898@intel.com>
-References: <1376702795-25912-1-git-send-email-jerry.snitselaar@oracle.com>
- <2870377.GVGv4QBgQK@vostro.rjw.lan>
- <20130819233528.GA4587@cantor.us.oracle.com>
- <1838503.PYpZe7GJ51@vostro.rjw.lan>
- <20130820033403.GD4587@cantor.us.oracle.com>
- <20130820072820.GT4898@intel.com>
- <20130820080008.GE4587@cantor.us.oracle.com>
- <20130820081442.GU4898@intel.com>
+	id S1751936Ab3HTIOc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:14:32 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:52721 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab3HTIO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 04:14:29 -0400
+Message-ID: <52132523.6040702@gmail.com>
+Date: Tue, 20 Aug 2013 16:13:23 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130820081442.GU4898@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen Gang <gang.chen@asianux.com>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        kosaki.motohiro@jp.fujitsu.com, riel@redhat.com, hughd@google.com,
+        xemul@parallels.com, rientjes@google.com,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] mm: mempolicy: the failure processing about mpol_to_str()
+References: <5212E8DF.5020209@asianux.com> <20130820053036.GB18673@moon> <52130194.4030903@asianux.com> <20130820064730.GD18673@moon> <52131F48.1030002@asianux.com> <52132011.60501@asianux.com> <52132432.3050308@asianux.com>
+In-Reply-To: <52132432.3050308@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 11:14:42AM +0300, Mika Westerberg wrote:
-> On Tue, Aug 20, 2013 at 01:00:08AM -0700, Jerry Snitselaar wrote:
-> > On Tue Aug 20 13, Mika Westerberg wrote:
-> > > On Mon, Aug 19, 2013 at 08:34:03PM -0700, Jerry Snitselaar wrote:
-> > > > On Tue Aug 20 13, Rafael J. Wysocki wrote:
-> > > > > On Monday, August 19, 2013 04:35:29 PM Jerry Snitselaar wrote:
-> > > > > > On Tue Aug 20 13, Rafael J. Wysocki wrote:
-> > > > > > > On Monday, August 19, 2013 09:16:14 AM Mika Westerberg wrote:
-> > > > > > > > On Fri, Aug 16, 2013 at 06:26:35PM -0700, Jerry Snitselaar wrote:
-> > > > > > > > > Without MODULE_LICENSE set, I get the following with modprobe:
-> > > > > > > > > 
-> > > > > > > > > acpi_i2c: module license 'unspecified' taints kernel.
-> > > > > > > > > acpi_i2c: Unknown symbol i2c_new_device (err 0)
-> > > > > > > > > acpi_i2c: Unknown symbol acpi_dev_get_resources (err 0)
-> > > > > > > > > acpi_i2c: Unknown symbol acpi_dev_resource_interrupt (err 0)
-> > > > > > > > > acpi_i2c: Unknown symbol acpi_dev_free_resource_list (err 0)
-> > > > > > > > > 
-> > > > > > > > > Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-> > > > > > > > 
-> > > > > > > > Looks good to me.
-> > > > > > > > 
-> > > > > > > > Acked-by: Mika Westerbeg <mika.westerberg@linux.intel.com>
-> > > > > > > 
-> > > > > > > Well, OK, but do we need to be able to build that as a module?
-> > > > > > > 
-> > > > > > > Maybe it should just be yes or no?
-> > > > > > > 
-> > > > > > > Rafael
-> > > > > > > 
-> > > > > > 
-> > > > > > Perhaps have depends on I2C=y and be a bool instead of tristate?
-> > > > > 
-> > > > > Yes, that's the idea.
-> > > > > 
-> > > > Does this look okay Mika?
-> > > > 
-> > > > [PATCH] acpi_i2c: do not build as loadable module
-> > > > 
-> > > > Change from tristate to bool, and depend on I2C=y
-> > > 
-> > > I'm not sure about this. Does the below mean that we can't build the ACPI
-> > > I2C enumeration at all if I2C core is compiled as module?
-> > 
-> > Yes, that was what Rafael was suggesting. If the ability to compile as
-> > a module if I2C is a module is needed, then we need the 1st patch.
+On 08/20/2013 04:09 PM, Chen Gang wrote:
+> On 08/20/2013 03:51 PM, Chen Gang wrote:
+>> On 08/20/2013 03:48 PM, Chen Gang wrote:
+>>> On 08/20/2013 02:47 PM, Cyrill Gorcunov wrote:
+>>>> On Tue, Aug 20, 2013 at 01:41:40PM +0800, Chen Gang wrote:
+>>>>>
+>>>>>> sure you'll have to change shmem_show_mpol statement to return int code.
+>>>>>> Won't this be more short and convenient?
+>>>>>>
+>>>>>>
+>>>>>
+>>>>> Hmm... if return -ENOSPC, in common processing, it still need continue
+>>>>> (but need let outside know about the string truncation).
+>>>>>
+>>>>> So I still suggest to give more check for it.
+>>>>
+>>>> I still don't like adding additional code like
+>>>>
+>>>> +	ret = mpol_to_str(buffer, sizeof(buffer), mpol);
+>>>> +	if (ret < 0)
+>>>> +               switch (ret) {
+>>>> +               case -ENOSPC:
+>>>> +                       printk(KERN_WARNING
+>>>> +                               "in %s: string is truncated in mpol_to_str().\n",
+>>>> +                               __func__);
+>>
+>> Oh, that need 'break' in my original patch. :-)
+>>
+>>>> +               default:
+>>>> +                       printk(KERN_ERR
+>>>> +                               "in %s: call mpol_to_str() fail, errcode: %d. buffer: %p, size: %zu, pol: %p\n",
+>>>> +                               __func__, ret, buffer, sizeof(buffer), mpol);
+>>>> +                       return;
+>>>> +               }
+>>>>
+>>>> this code is pretty neat for debugging purpose I think but in most case (if
+>>>> only I've not missed something obvious) it simply won't be the case.
+>>>>
+>>>
+>>> For mpol_to_str(), it is for printing string, I suggest to fill buffer
+>>> as full as possible like another printing string functions, -ENOSPC is
+>>> not critical error, callers may can bear it, and still want to continue.
+>>>
+>>> For 2 callers, I still suggest to process '-ENOSPC' and continue, it is
+>>> really not a critical error, they can continue.
+>>>
+>>> For the 'default' error processing:
+>>>
+>>>   I still suggest to 'printk' in shmem_show_mpol(), because when failure occurs, it has no return value to mark the failure to upper caller.
+>>>   Hmm... but for show_numa_map(), may remove the 'printk', only return the error code is OK. :-)
+>>>
+>>>
+>>> Thanks.
+>>>
 > 
-> In that case I would prefer the first patch. Otherwise we lose the ability
-> to enumerate I2C devices from ACPI namespace on some distros (at least
-> Debian builds I2C core as a module).
+> Oh, for '-ENOSPC', it means critical error, it is my fault.
 > 
-> Rafael?
+> So, for simplify thinking and implementation, use your patch below is OK
+> to me (but I suggest to print error information in the none return value
+> function).
+> 
+> :-)
+> 
+>>>> Won't somthing like below do the same but with smaller code change?
+>>>> Note I've not even compiled it but it shows the idea.
+>>>> ---
+>>>>  fs/proc/task_mmu.c |    4 +++-
+>>>>  mm/shmem.c         |   17 +++++++++--------
+>>>>  2 files changed, 12 insertions(+), 9 deletions(-)
+>>>>
+>>>> Index: linux-2.6.git/fs/proc/task_mmu.c
+>>>> ===================================================================
+>>>> --- linux-2.6.git.orig/fs/proc/task_mmu.c
+>>>> +++ linux-2.6.git/fs/proc/task_mmu.c
+>>>> @@ -1402,8 +1402,10 @@ static int show_numa_map(struct seq_file
+>>>>  	walk.mm = mm;
+>>>>  
+>>>>  	pol = get_vma_policy(task, vma, vma->vm_start);
+>>>> -	mpol_to_str(buffer, sizeof(buffer), pol);
+>>>> +	n = mpol_to_str(buffer, sizeof(buffer), pol);
+>>>>  	mpol_cond_put(pol);
+>>>> +	if (n < 0)
+>>>> +		return n;
+>>>>  
+>>>>  	seq_printf(m, "%08lx %s", vma->vm_start, buffer);
+>>>>  
+>>>> Index: linux-2.6.git/mm/shmem.c
+>>>> ===================================================================
+>>>> --- linux-2.6.git.orig/mm/shmem.c
+>>>> +++ linux-2.6.git/mm/shmem.c
+>>>> @@ -883,16 +883,20 @@ redirty:
+>>>>  
+>>>>  #ifdef CONFIG_NUMA
+>>>>  #ifdef CONFIG_TMPFS
+>>>> -static void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+>>>> +static int shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+>>>>  {
+>>>>  	char buffer[64];
+>>>> +	int ret;
+>>>>  
+>>>>  	if (!mpol || mpol->mode == MPOL_DEFAULT)
+>>>> -		return;		/* show nothing */
+>>>> +		return 0;	/* show nothing */
+>>>>  
+>>>> -	mpol_to_str(buffer, sizeof(buffer), mpol);
+>>>> +	ret = mpol_to_str(buffer, sizeof(buffer), mpol);
+>>>> +	if (ret < 0)
+>>>> +		return ret;
+>>>>  
+>>>>  	seq_printf(seq, ",mpol=%s", buffer);
+>>>> +	return 0;
+>>>>  }
+>>>>  
+>>>>  static struct mempolicy *shmem_get_sbmpol(struct shmem_sb_info *sbinfo)
+>>>> @@ -951,9 +955,7 @@ static struct page *shmem_alloc_page(gfp
+>>>>  }
+>>>>  #else /* !CONFIG_NUMA */
+>>>>  #ifdef CONFIG_TMPFS
+>>>> -static inline void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+>>>> -{
+>>>> -}
+>>>> +static inline int shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol) { return 0; }
+>>>>  #endif /* CONFIG_TMPFS */
+>>>>  
+>>>>  static inline struct page *shmem_swapin(swp_entry_t swap, gfp_t gfp,
+>>>> @@ -2577,8 +2579,7 @@ static int shmem_show_options(struct seq
+>>>>  	if (!gid_eq(sbinfo->gid, GLOBAL_ROOT_GID))
+>>>>  		seq_printf(seq, ",gid=%u",
+>>>>  				from_kgid_munged(&init_user_ns, sbinfo->gid));
+>>>> -	shmem_show_mpol(seq, sbinfo->mpol);
+>>>> -	return 0;
+>>>> +	return shmem_show_mpol(seq, sbinfo->mpol);
+>>>>  }
+>>>>  #endif /* CONFIG_TMPFS */
+>>>>  
+>>>>
+>>>>
 
-Actually there's a patch that moves DT I2C helpers to the I2C core here:
+Oh, you have done, sorry.
 
-https://lkml.org/lkml/2013/8/19/349
+>>>
+>>>
+>>
+>>
+> 
+> 
 
-we should probably do the same for the ACPI case. Doing that solves this
-problem as well.
+
+-- 
+Chen Gang
