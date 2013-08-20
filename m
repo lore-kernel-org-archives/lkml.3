@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab3HTFmr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 01:42:47 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:34328 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab3HTFmr (ORCPT
+	id S1752099Ab3HTFwD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 01:52:03 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52934 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab3HTFwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 01:42:47 -0400
-X-Spam-Score: -101.1
-Message-ID: <52130194.4030903@asianux.com>
-Date: Tue, 20 Aug 2013 13:41:40 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 20 Aug 2013 01:52:00 -0400
+Date: Tue, 20 Aug 2013 06:51:53 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Arun KS <arunks.linux@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Matthew Wilcox <matthew@wil.cx>,
+        Bruce Fields <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, vinayak menon <vinayakm.list@gmail.com>,
+        Nagachandra P <nagachandra@gmail.com>, Vikram MP <mp.vikram@gmail.com>
+Subject: Re: [PATCH v1] seq_file: Fix overflow condition in seq_commit
+Message-ID: <20130820055153.GH27005@ZenIV.linux.org.uk>
+References: <CAKZGPANQz5-uyf=uSp_0HxBq1_uH053H0XOohpAaWsbeoy7zhw@mail.gmail.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
-        riel@redhat.com, hughd@google.com, xemul@parallels.com,
-        rientjes@google.com, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] mm: mempolicy: the failure processing about mpol_to_str()
-References: <5212E8DF.5020209@asianux.com> <20130820053036.GB18673@moon>
-In-Reply-To: <20130820053036.GB18673@moon>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKZGPANQz5-uyf=uSp_0HxBq1_uH053H0XOohpAaWsbeoy7zhw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 01:30 PM, Cyrill Gorcunov wrote:
-> On Tue, Aug 20, 2013 at 11:56:15AM +0800, Chen Gang wrote:
->> For the implementation (patch 1/3), need fill buffer as full as
->> possible when buffer space is not enough.
->>
->> For the caller (patch 2/3, 3/3), need check the return value of
->> mpol_to_str().
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+On Tue, Aug 20, 2013 at 10:55:40AM +0530, Arun KS wrote:
+> >From 932a134abeac597f18c86c513704709ad154994b Mon Sep 17 00:00:00 2001
+> From: Arun KS <arun.ks@broadcom.com>
+> Date: Mon, 19 Aug 2013 12:06:33 +0530
+> Subject: seq_file: Fix overflow condition in seq_commit
 > 
-> Won't simple check for mpol_to_str() < 0 be enough? IOW fix all
-> callers to check that mpol_to_str exit without errors. As far
-> as I see here are only two users. Something like
+> seq_path()/seq_commit() is treating a d_path() failure as an overflow
+> condition, but it isn't.
 > 
-> show_numa_map
-> 	ret = mpol_to_str();
-> 	if (ret)
-> 		return ret;
+> seq_read handles overflow by reallocating more buffer. And this
+> continues in a loop utill we increase the size of seq buf beyond
+> KMALLOC_MAX_SIZE and hence a WARN_ON.
 > 
-> shmem_show_mpol
-> 	ret = mpol_to_str();
-> 	if (ret)
-> 		return ret;
+> [  363.192565] ------------[ cut here ]------------
+> [  363.199462] WARNING: at mm/slab_common.c:377 kmalloc_slab+0x34/0x9c()
+> [  363.208557] Modules linked in:
+> [  363.212219] CPU: 1 PID: 1742 Comm: Binder_2 Tainted: G        W3.10.0+ #17
+> [  363.222930] [<c00151c4>] (unwind_backtrace+0x0/0x11c)
+> from[<c0011a24>] (show_stack+0x10/0x14)
+> [  363.235229] [<c0011a24>] (show_stack+0x10/0x14) from
+> [<c0059fb0>](warn_slowpath_common+0x4c/0x68)
+> [  363.247253] [<c0059fb0>] (warn_slowpath_common+0x4c/0x68)
+> from[<c0059fe4>] (warn_slowpath_null+0x18/0x1c)
+> [  363.259307] [<c0059fe4>] (warn_slowpath_null+0x18/0x1c)
+> from[<c00fa400>] (kmalloc_slab+0x34/0x9c)
+> [  363.270812] [<c00fa400>] (kmalloc_slab+0x34/0x9c) from
+> [<c010ec20>](__kmalloc+0x14/0x1fc)
+> [  363.281433] [<c010ec20>] (__kmalloc+0x14/0x1fc) from
+> [<c012ef70>](seq_read+0x24c/0x438)
+> [  363.291992] [<c012ef70>] (seq_read+0x24c/0x438) from
+> [<c011389c>](vfs_read+0xac/0x124)
+> [  363.302398] [<c011389c>] (vfs_read+0xac/0x124) from
+> [<c0113a38>](SyS_read+0x3c/0x60)
+> [  363.312591] [<c0113a38>] (SyS_read+0x3c/0x60) from
+> [<c000e180>](ret_fast_syscall+0x0/0x48)
+> [  363.323303] ---[ end trace 46c6467e2db7bcd4 ]---
 > 
+> Pass -ENOBUFS to seq_commit to signal an overflow condition and a
+> negative value for all other errors.
 
-need "if (ret < 0)" instead of.  ;-)
+Excuse me, _what_ other errors?  Please, explain what errors can
+be returned by d_path/__d_path/dentry_path.  Normally all of those
+return ERR_PTR(-ENAMETOOLONG) if the pathname to be generated would
+not fit into a buffer.  In which case the only sane behaviour is
+to use a bigger buffer.
 
-> sure you'll have to change shmem_show_mpol statement to return int code.
-> Won't this be more short and convenient?
-> 
-> 
-
-Hmm... if return -ENOSPC, in common processing, it still need continue
-(but need let outside know about the string truncation).
-
-So I still suggest to give more check for it.
-
-
-Thanks.
--- 
-Chen Gang
+Could you please post the reproducer for that trace of yours?
+I might be missing something obvious, of course, but AFAICS you
+are just papering over a bug somewhere else.  If you really
+manage to get d_path() with output that wouldn't fit into 128Mb,
+you have a whole lot of unpleasant problems beyond a warning in
+seq_read().  And silent truncation of pathnames that don't happen
+to fit into what's left of the default buffer is simply wrong -
+4095-byte pathnames are perfectly fine.
