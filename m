@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab3HTCri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 22:47:38 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:58337 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab3HTCrb (ORCPT
+	id S1752143Ab3HTCrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 22:47:37 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:43607 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028Ab3HTCrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Aug 2013 22:47:31 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -15,101 +15,113 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 2/9] nohz_full: Add testing information to documentation
-Date: Mon, 19 Aug 2013 19:47:14 -0700
-Message-Id: <1376966841-31774-2-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/9] rcu: Eliminate unused APIs intended for adaptive ticks
+Date: Mon, 19 Aug 2013 19:47:13 -0700
+Message-Id: <1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20130820024700.GA31075@linux.vnet.ibm.com>
 References: <20130820024700.GA31075@linux.vnet.ibm.com>
- <1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082002-5518-0000-0000-000011538F3F
+x-cbid: 13082002-1542-0000-0000-000000A790E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit adds information about testing nohz_full, and also emphasizes
-the fact that you need a multi-CPU system to get any benefit from nohz_full.
+The rcu_user_enter_after_irq() and rcu_user_exit_after_irq()
+functions were intended for use by adaptive ticks, but changes
+in implementation have rendered them unnecessary.  This commit
+therefore removes them.
 
+Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- Documentation/timers/NO_HZ.txt | 44 ++++++++++++++++++++++++++++++++----------
- 1 file changed, 34 insertions(+), 10 deletions(-)
+ include/linux/rcupdate.h |  4 ----
+ kernel/rcutree.c         | 43 -------------------------------------------
+ 2 files changed, 47 deletions(-)
 
-diff --git a/Documentation/timers/NO_HZ.txt b/Documentation/timers/NO_HZ.txt
-index 8869758..cca122f 100644
---- a/Documentation/timers/NO_HZ.txt
-+++ b/Documentation/timers/NO_HZ.txt
-@@ -24,8 +24,8 @@ There are three main ways of managing scheduling-clock interrupts
- 	workloads, you will normally -not- want this option.
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 0c38abb..30bea9c 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -229,13 +229,9 @@ extern void rcu_irq_exit(void);
+ #ifdef CONFIG_RCU_USER_QS
+ extern void rcu_user_enter(void);
+ extern void rcu_user_exit(void);
+-extern void rcu_user_enter_after_irq(void);
+-extern void rcu_user_exit_after_irq(void);
+ #else
+ static inline void rcu_user_enter(void) { }
+ static inline void rcu_user_exit(void) { }
+-static inline void rcu_user_enter_after_irq(void) { }
+-static inline void rcu_user_exit_after_irq(void) { }
+ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+ 					 struct task_struct *next) { }
+ #endif /* CONFIG_RCU_USER_QS */
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 338f1d1..8807019 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -444,27 +444,6 @@ void rcu_user_enter(void)
+ {
+ 	rcu_eqs_enter(1);
+ }
+-
+-/**
+- * rcu_user_enter_after_irq - inform RCU that we are going to resume userspace
+- * after the current irq returns.
+- *
+- * This is similar to rcu_user_enter() but in the context of a non-nesting
+- * irq. After this call, RCU enters into idle mode when the interrupt
+- * returns.
+- */
+-void rcu_user_enter_after_irq(void)
+-{
+-	unsigned long flags;
+-	struct rcu_dynticks *rdtp;
+-
+-	local_irq_save(flags);
+-	rdtp = &__get_cpu_var(rcu_dynticks);
+-	/* Ensure this irq is interrupting a non-idle RCU state.  */
+-	WARN_ON_ONCE(!(rdtp->dynticks_nesting & DYNTICK_TASK_MASK));
+-	rdtp->dynticks_nesting = 1;
+-	local_irq_restore(flags);
+-}
+ #endif /* CONFIG_RCU_USER_QS */
  
- These three cases are described in the following three sections, followed
--by a third section on RCU-specific considerations and a fourth and final
--section listing known issues.
-+by a third section on RCU-specific considerations, a fourth section
-+discussing testing, and a fifth and final section listing known issues.
+ /**
+@@ -581,28 +560,6 @@ void rcu_user_exit(void)
+ {
+ 	rcu_eqs_exit(1);
+ }
+-
+-/**
+- * rcu_user_exit_after_irq - inform RCU that we won't resume to userspace
+- * idle mode after the current non-nesting irq returns.
+- *
+- * This is similar to rcu_user_exit() but in the context of an irq.
+- * This is called when the irq has interrupted a userspace RCU idle mode
+- * context. When the current non-nesting interrupt returns after this call,
+- * the CPU won't restore the RCU idle mode.
+- */
+-void rcu_user_exit_after_irq(void)
+-{
+-	unsigned long flags;
+-	struct rcu_dynticks *rdtp;
+-
+-	local_irq_save(flags);
+-	rdtp = &__get_cpu_var(rcu_dynticks);
+-	/* Ensure we are interrupting an RCU idle mode. */
+-	WARN_ON_ONCE(rdtp->dynticks_nesting & DYNTICK_TASK_NEST_MASK);
+-	rdtp->dynticks_nesting += DYNTICK_TASK_EXIT_IDLE;
+-	local_irq_restore(flags);
+-}
+ #endif /* CONFIG_RCU_USER_QS */
  
- 
- NEVER OMIT SCHEDULING-CLOCK TICKS
-@@ -121,14 +121,15 @@ boot parameter specifies the adaptive-ticks CPUs.  For example,
- "nohz_full=1,6-8" says that CPUs 1, 6, 7, and 8 are to be adaptive-ticks
- CPUs.  Note that you are prohibited from marking all of the CPUs as
- adaptive-tick CPUs:  At least one non-adaptive-tick CPU must remain
--online to handle timekeeping tasks in order to ensure that system calls
--like gettimeofday() returns accurate values on adaptive-tick CPUs.
--(This is not an issue for CONFIG_NO_HZ_IDLE=y because there are no
--running user processes to observe slight drifts in clock rate.)
--Therefore, the boot CPU is prohibited from entering adaptive-ticks
--mode.  Specifying a "nohz_full=" mask that includes the boot CPU will
--result in a boot-time error message, and the boot CPU will be removed
--from the mask.
-+online to handle timekeeping tasks in order to ensure that system
-+calls like gettimeofday() returns accurate values on adaptive-tick CPUs.
-+(This is not an issue for CONFIG_NO_HZ_IDLE=y because there are no running
-+user processes to observe slight drifts in clock rate.)  Therefore, the
-+boot CPU is prohibited from entering adaptive-ticks mode.  Specifying a
-+"nohz_full=" mask that includes the boot CPU will result in a boot-time
-+error message, and the boot CPU will be removed from the mask.  Note that
-+this means that your system must have at least two CPUs in order for
-+CONFIG_NO_HZ_FULL=y to do anything for you.
- 
- Alternatively, the CONFIG_NO_HZ_FULL_ALL=y Kconfig parameter specifies
- that all CPUs other than the boot CPU are adaptive-ticks CPUs.  This
-@@ -232,6 +233,29 @@ scheduler will decide where to run them, which might or might not be
- where you want them to run.
- 
- 
-+TESTING
-+
-+So you enable all the OS-jitter features described in this document,
-+but do not see any change in your workload's behavior.  Is this because
-+your workload isn't affected that much by OS jitter, or is it because
-+something else is in the way?  This section helps answer this question
-+by providing a simple OS-jitter test suite, which is available on branch
-+master of the following git archive:
-+
-+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/dynticks-testing.git
-+
-+Clone this archive and follow the instructions in the README file.
-+This test procedure will produce a trace that will allow you to evaluate
-+whether or not you have succeeded in removing OS jitter from your system.
-+If this trace shows that you have removed OS jitter as much as is
-+possible, then you can conclude that your workload is not all that
-+sensitive to OS jitter.
-+
-+Note: this test requires that your system have at least two CPUs.
-+We do not currently have a good way to remove OS jitter from single-CPU
-+systems.
-+
-+
- KNOWN ISSUES
- 
- o	Dyntick-idle slows transitions to and from idle slightly.
+ /**
 -- 
 1.8.1.5
 
