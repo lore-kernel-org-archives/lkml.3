@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab3HTKBA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 06:01:00 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:41209 "EHLO smtp3-g21.free.fr"
+	id S1751013Ab3HTKDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 06:03:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5289 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944Ab3HTKA7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 06:00:59 -0400
-Date: Tue, 20 Aug 2013 12:01:05 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] of: reduce the number of PROBE_DEFERs
-Message-ID: <20130820120105.55a4c0ce@armhf>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1750804Ab3HTKDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 06:03:12 -0400
+Date: Tue, 20 Aug 2013 15:33:00 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@javelin.pnq.redhat.com
+To: linux-kernel@vger.kernel.org
+cc: vincent.weaver@maine.edu
+Subject: About perf,arm -- oops in validate_event
+Message-ID: <alpine.LFD.2.03.1308201522230.15482@erqung.pbz>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch populates the platform from the device tree into two steps:
-the first step creates the nodes that are referenced by a phandle,
-the second step creates the other nodes.
+   Hello,
 
-This permits to reduce the number of PROBE_DEFERs.
+  -> https://lkml.org/lkml/2013/8/7/259
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
-A better way to reduce probe deferral could be sorting the nodes
-according to their phandle level in the DT blob at compilation time ...
----
- drivers/of/platform.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+I wanted to confirm if this above fix should also go into ARM64 build Or is 
+ARM64 platform not vulnerable?
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index e0a6514..a2ea858 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -382,8 +382,23 @@ static int of_platform_bus_create(struct device_node *bus,
- 	if (!dev || !of_match_node(matches, bus))
- 		return 0;
- 
-+	/* first step: create the nodes that are referenced by phandle */
- 	for_each_child_of_node(bus, child) {
--		pr_debug("   create child: %s\n", child->full_name);
-+		if (child->phandle == 0)
-+			continue;
-+		pr_debug("   create child 1: %s\n", child->full_name);
-+		rc = of_platform_bus_create(child, matches, lookup, &dev->dev, strict);
-+		if (rc) {
-+			of_node_put(child);
-+			return rc;
-+		}
-+	}
+===
+$ git diff
+diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+index 9ba33c4..cbed82f 100644
+--- a/arch/arm64/kernel/perf_event.c
++++ b/arch/arm64/kernel/perf_event.c
+@@ -317,6 +317,9 @@ validate_event(struct pmu_hw_events *hw_events,
+         struct hw_perf_event fake_event = event->hw;
+         struct pmu *leader_pmu = event->group_leader->pmu;
+
++    if (is_software_event(event))
++        return 1;
 +
-+	/* second step: create the other nodes */
-+	for_each_child_of_node(bus, child) {
-+		if (child->phandle != 0)
-+			continue;
-+		pr_debug("   create child 2: %s\n", child->full_name);
- 		rc = of_platform_bus_create(child, matches, lookup, &dev->dev, strict);
- 		if (rc) {
- 			of_node_put(child);
+         if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
+                 return 1;
+===
 
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Thank you.
+--
+Prasad J Pandit / Red Hat Security Response Team
+DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
