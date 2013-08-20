@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab3HTE2k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 00:28:40 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:57764 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab3HTE2j (ORCPT
+	id S1752132Ab3HTEbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 00:31:14 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:27354 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab3HTEbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 00:28:39 -0400
-Date: Mon, 19 Aug 2013 21:28:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 0/3] v2 Documentation updates for 3.12
-Message-ID: <20130820042832.GZ29406@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130820023717.GA29357@linux.vnet.ibm.com>
- <20130820032411.GC4416@leaf>
+	Tue, 20 Aug 2013 00:31:13 -0400
+X-Spam-Score: -101.1
+Message-ID: <5212F0D4.3010602@asianux.com>
+Date: Tue, 20 Aug 2013 12:30:12 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130820032411.GC4416@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082004-1542-0000-0000-000000A7F9B1
+To: paulmck@linux.vnet.ibm.com
+CC: dipankar@in.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/rcutree.c: deem to be lazy if there are no callbacks.
+References: <5212E76A.40903@asianux.com> <20130820041054.GX29406@linux.vnet.ibm.com>
+In-Reply-To: <20130820041054.GX29406@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 08:24:11PM -0700, Josh Triplett wrote:
-> On Mon, Aug 19, 2013 at 07:37:17PM -0700, Paul E. McKenney wrote:
-> > Hello!
-> > 
-> > This series provides a few documentation updates:
-> > 
-> > 1.	Update rcu_barrier() documentation to note that it no longer is
-> > 	guaranteed to wait for a full grace period.  This guarantee was
-> > 	a victim of energy efficiency.
-> > 
-> > 2.	Update RTFP documentation.
-> > 
-> > 3.	Fix a control-dependency example in the memory-barriers
-> > 	documentation.
-> > 
-> > Changes from v1 (https://lkml.org/lkml/2013/8/17/94):
-> > 
-> > o	Apply Josh Triplett review comments.
+On 08/20/2013 12:10 PM, Paul E. McKenney wrote:
+> On Tue, Aug 20, 2013 at 11:50:02AM +0800, Chen Gang wrote:
+>> According to the comment above rcu_cpu_has_callbacks(): "If there are
+>> no callbacks, all of them are deemed to be lazy".
+>>
+>> So when both 'hc' and 'al' are false, '*all_lazy' should be true, not
+>> false.
 > 
-> Consider changing the patch tag for new versions, to "PATCH v2" or
-> similar; that way, all of the patches have a clearly distinct subject
-> for the new version.
+> If there are no callbacks, what must the value of "al" be at this
+> point in the code?  Given this, what is the effect of your patch?
 > 
-> git format-patch will do this for you; just pass "-v 2".
 
-Good point, my email client got them confused as well.  My version of git
-format-patch does not know about "-v 2", but --subject-prefix="PATCH v2"
-does fine.  I am using git version 1.8.1.5, for whatever it is worth.
+Hmm... I find it by reading code, the 'C code' says that 'hc' and 'al'
+has no relationships with each other, so for a reader they can assume
+when 'hc' is false, 'al' can be either 'true' or 'false'.
 
-							Thanx, Paul
+> 							Thanx, Paul
+> 
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> ---
+>>  kernel/rcutree.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+>> index 5b53a89..9ee9565 100644
+>> --- a/kernel/rcutree.c
+>> +++ b/kernel/rcutree.c
+>> @@ -2725,7 +2725,7 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
+>>  			hc = true;
+>>  	}
+>>  	if (all_lazy)
+>> -		*all_lazy = al;
+>> +		*all_lazy = !hc ? true : al;
+>>  	return hc;
+>>  }
+>>
+>> -- 
+>> 1.7.7.6
+>>
+> 
+> 
+> 
 
+
+-- 
+Chen Gang
