@@ -1,99 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751315Ab3HTOcP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 10:32:15 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:53031 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab3HTOcO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 10:32:14 -0400
+	id S1751363Ab3HTOd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 10:33:59 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36392 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014Ab3HTOd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 10:33:57 -0400
+Date: Tue, 20 Aug 2013 09:33:19 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: <balbi@ti.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>,
+        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
+        <idos@codeaurora.org>, <mgautam@codeaurora.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        Paul Zimmerman <paul.zimmerman@synopsys.com>
+Subject: Re: [PATCH v4 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
+ for DWC3 core
+Message-ID: <20130820143319.GG26587@radagast>
+Reply-To: <balbi@ti.com>
+References: <1376992565-22292-1-git-send-email-iivanov@mm-sol.com>
+ <1376992565-22292-3-git-send-email-iivanov@mm-sol.com>
+ <20130820122907.GU26587@radagast>
+ <1377005543.26268.22.camel@iivanov-dev.int.mm-sol.com>
+ <20130820133712.GC26587@radagast>
+ <1377007751.26268.27.camel@iivanov-dev.int.mm-sol.com>
 MIME-Version: 1.0
-In-Reply-To: <20130819165955.GA20522@localhost>
-References: <1376138582-7550-1-git-send-email-ezequiel.garcia@free-electrons.com>
-	<1376138582-7550-2-git-send-email-ezequiel.garcia@free-electrons.com>
-	<20130812182942.GA28695@mudshark.cambridge.arm.com>
-	<20130819165955.GA20522@localhost>
-Date: Tue, 20 Aug 2013 09:32:13 -0500
-Message-ID: <CAHCPf3t1Tv_kpkCi2YQrr7+6ujQJy9MhifueO=k6fT=oZuqAwA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] ARM: Introduce atomic MMIO clear/set
-From: Matt Sealey <neko@bakuhatsu.net>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lior Amsalem <alior@marvell.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CRtNIOhYBPVBLkTX"
+Content-Disposition: inline
+In-Reply-To: <1377007751.26268.27.camel@iivanov-dev.int.mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 11:59 AM, Ezequiel Garcia
-<ezequiel.garcia@free-electrons.com> wrote:
-> On Mon, Aug 12, 2013 at 07:29:42PM +0100, Will Deacon wrote:
->
->> This means that you don't have ordering guarantees between the two accesses
->> outside of the CPU, potentially giving you:
->>
->>       spin_lock(&__io_lock);
->>       spin_unlock(&__io_lock);
->>       writel((readl(reg) & ~clear) | set, reg);
->>
->> which is probably not what you want.
->>
->> I suggest adding an iowmb after the writel if you really need this ordering
->> to be enforced (but this may have a significant performance impact,
->> depending on your SoC).
->
-> I don't want to argue with you, given I have zero knowledge about this
-> ordering issue. However let me ask you a question.
->
-> In arch/arm/include/asm/spinlock.h I'm seeing this comment:
->
-> ""ARMv6 ticket-based spin-locking.
-> A memory barrier is required after we get a lock, and before we
-> release it, because V6 CPUs are assumed to have weakly ordered
-> memory.""
->
-> and also:
->
-> static inline void arch_spin_unlock(arch_spinlock_t *lock)
-> {
->         smp_mb();
->         lock->tickets.owner++;
->         dsb_sev();
-> }
->
-> So, knowing this atomic API should work for every ARMv{N}, and not being very
-> sure what the call to dsb_sev() does. Would you care to explain how the above
-> is *not* enough to guarantee a memory barrier before the spin unlocking?
+--CRtNIOhYBPVBLkTX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-arch_spin_[un]lock as an API is not guaranteed to use a barrier before
-or after doing anything, even if this particular implementation does.
+On Tue, Aug 20, 2013 at 05:09:11PM +0300, Ivan T. Ivanov wrote:
+> Hi,
+>=20
+> On Tue, 2013-08-20 at 08:37 -0500, Felipe Balbi wrote:=20
+> > Hi,
+> >=20
+> > On Tue, Aug 20, 2013 at 04:32:23PM +0300, Ivan T. Ivanov wrote:
+> > > > On Tue, Aug 20, 2013 at 12:56:04PM +0300, Ivan T. Ivanov wrote:
+> > > > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > > > >=20
+> > > > > These drivers handles control and configuration of the HS
+> > > > > and SS USB PHY transceivers. They are part of the driver
+> > > > > which manage Synopsys DesignWare USB3 controller stack
+> > > > > inside Qualcomm SoC's.
+> > > > >=20
+> > > > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > > > > ---
+> > > > >  drivers/usb/phy/Kconfig           |   11 ++
+> > > > >  drivers/usb/phy/Makefile          |    2 +
+> > > > >  drivers/usb/phy/phy-msm-dwc3-hs.c |  327 +++++++++++++++++++++++=
++++++++++
+> > > > >  drivers/usb/phy/phy-msm-dwc3-ss.c |  374 +++++++++++++++++++++++=
+++++++++++++++
+> > > >=20
+> > > > please rename these PHY drivers, they have nothing to do with DWC3.=
+ PHYs
+> > > > don't care about the USB controller.
+> > >=20
+> > > I think they are SNPS DesignWare PHY's, additionally
+> > > wrapped with Qualcomm logic. I could substitute "dwc3"
+> > > with just "dw", which will be more correct.
+> >=20
+> > alright, thank you. Let's add Paul to the loop since he might have very
+> > good insight in the synopsys PHYs.
+> >=20
+> > mental note: if any other platform shows up with Synopsys PHY, ask them
+> > to use this driver instead :-)
+>=20
+> I really doubt that this will bi possible. Control of the PHY's is
+> not directly trough ULPI, UTMI or PIPE3 interfaces, but trough
+> QSCRATCH registers, which of course is highly Qualcomm specific.
 
-dsb_sev() is an SMP helper which does a synchronization barrier and
-then sends events to other CPUs which informs them of the unlock. If
-the other CPUs were in WFE state waiting on that spinlock, they can
-now thunder in and attempt to lock it themselves. It's not really
-relevant to the discussion as arch_spin_unlock is not guaranteed to
-perform a barrier before returning.
+isn't it a memory mapped IP ? doesn't synopsys provide their own set of
+registers ?
 
-On some other architecture there may be ISA additions which make
-locking barrier-less, or on a specific implementation of an ARM
-architecture SoC whereby there may be a bank of "hardware spinlocks"
-available.
+--=20
+balbi
 
-So, in this sense, you shouldn't rely on implementation-specific
-behaviors of a function. If you need to be sure C follows B follows A,
-insert a barrier yourself. Don't expect A to barrier for you just
-because you saw some source code that does it today, as tomorrow it
-may be different. It's not an optimization, just a potential source of
-new bugs if the implementation changes underneath you later.
+--CRtNIOhYBPVBLkTX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
---
-Matt
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSE34vAAoJEIaOsuA1yqRErggQALQNYc3skZqHD7zDhRoK6eww
+eNgZ+iOCmmrLREmrhLgW8sYBZN6Ies6UkxKyfA9P2vihsBAP2zSlkJ+JpsjRT4Hk
+jJCktwUlwf0ASn4kF459dBFTyciVtHuQviIxfCUSA3qM7xVrxUA7sbFwBD2y766h
+sxSLcpG1JYf/bElJvEFcljIMmQG33rvhdZvcVKFejJViYlPyrTgaV5IK1pCjMHNf
+qyzjqDsGHzkGaNpUuL9WRgFcS4ZyR5JXDwC9bU709GAO8V4sh9osek03ijqdELv0
+wOYgnXXffmpYi7TASwLVteGCz2hGa9wOopP2puq+Us8PHAC5S3xyzg44myk2bh+f
+xdY+cAalUHXaTN3xSz40hO+tvc7cFTw0oRBG+IQ2CVtPS7xefHUbqJsPVqcnuOdj
+bJJACFgX8iJcMHrTiFF4lkTEKKc+eAFW+9a64erW5IX3QwAR2irqf4ZuvrTL6OoJ
+MxXXJ1C7ZXqWsCiymJzjpwYLdCdOa8gaKPJXR6YzmVPx1GVnfsMQ6V+flJnlmuf7
++KbrUrW60rB5guUFlAMX/k33dUhECzz50bvVOiNwwjWV4czWnVFxps9+7Zw900E0
+GIkgGw8vDJ4kp9qve7lkWsz8eVBhS3G2MQYrmAH8ZQYPqoG2c9o+Dw3ks4c+dLVG
+z6ARsGenDiMoNfY6EVzt
+=HbGL
+-----END PGP SIGNATURE-----
+
+--CRtNIOhYBPVBLkTX--
