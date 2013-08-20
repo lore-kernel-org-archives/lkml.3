@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab3HTA20 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 20:28:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56106 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385Ab3HTA2Y (ORCPT
+	id S1751861Ab3HTA3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 20:29:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20651 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab3HTA3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 20:28:24 -0400
-Date: Mon, 19 Aug 2013 17:28:22 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tom Gundersen <teg@jklm.no>
-Cc: stable@vger.kernel.org,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Felix Fietkau <nbd@openwrt.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [REGRESSION] 3.10.{6,7} crashes on network activity
-Message-ID: <20130820002822.GA18023@kroah.com>
-References: <CAG-2HqUXQeq=30EpGWmn6tkC=CP1W+=UZCVPTYhhE0WyU_C4nw@mail.gmail.com>
- <20130820000336.GA15548@kroah.com>
- <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 Aug 2013 20:29:04 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=F0my4ousGMIA:10 a=24EHVfX4r0sRwJ-5AJcA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 19 Aug 2013 20:29:03 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Kent Overstreet <kmo@daterainc.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.6-rt3
+Message-ID: <20130819202903.692097ea@gandalf.local.home>
+In-Reply-To: <521254A0.6050603@localhost>
+References: <20130812163413.GI23040@linutronix.de>
+	<520D212F.7030400@localhost>
+	<20130815152210.5ed93696@gandalf.local.home>
+	<520DCE5F.1040402@linutronix.de>
+	<521254A0.6050603@localhost>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 08:26:11AM +0800, Tom Gundersen wrote:
-> On Tue, Aug 20, 2013 at 8:03 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Aug 20, 2013 at 07:59:47AM +0800, Tom Gundersen wrote:
-> >> Hi guys,
-> >>
-> >> Starting with 3.10.6 (and still present in .7) I get an oops on
-> >> connecting to the network.
-> >>
-> >> The attached picture shows the oops. In case it does not reach the ML,
-> >> the top of the call trace reads:
-> >>
-> >> brcms_c_compute_rtscts_dur
-> >> brcms_c_ampdu_finalize
-> >> ampdu_finalize
-> >> dma_txfast
-> >> brcms_c_txfifo
-> >> brcms_c_sendpkt_mac80211
-> >> brcms_ops_tx
-> >> __ieee80211_tx
-> >>
-> >> I bisected the problem and the first bad commit is
-> >>
-> >> commit ef47a5e4f1aaf1d0e2e6875e34b2c9595897bef6
-> >> Author: Felix Fietkau <nbd@openwrt.org>
-> >> Date:   Fri Jun 28 21:04:35 2013 +0200
-> >>
-> >>     mac80211/minstrel_ht: fix cck rate sampling
-> >>
-> >>     commit 1cd158573951f737fbc878a35cb5eb47bf9af3d5 upstream.
-> >>
-> >> Reverting it on top of .7 fixes the problem.
-> >>
-> >> I had the same (I suppose) problem on mainline some time ago, but I
-> >> have not bisected it, verified that the problem still occurs there, or
-> >> checked if reverting the upstream patch fixes it. I'd be happy to do
-> >> that if it would help though.
-> >>
-> >> Let me know if you need any more information.
-> >
-> > Do you have this same problem with 3.11-rc6 as well?
+On Mon, 19 Aug 2013 10:23:44 -0700
+Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU> wrote:
+
+
+> > The problem is that bcache is using new semaphore functions which it
+> > just introduced which rt does not know about. The comment above their
+> > definition says that it is wrong to use them and completion is the
+> > right way to do it.
+> > So my question is, why don't we use completion but this nasty hack?
+
+I think I'm going to send them an email about that.
+
 > 
-> Yes, I just confirmed. I also confirmed that reverting the mainline
-> commit on top of -rc6 fixes the problem.
+> In the meanwhile, any hope of a patch to be able to compile and test 
+> with my current configuration?
 
-Great, thanks.
+Can you boot without enabling CONFIG_BCACHE?
 
-Felix and Johannes, any chance we can get this reverted in Linus tree
-soon, and push that revert back to the 3.10 stable tree as well?
+-- Steve
 
-thanks,
-
-greg k-h
