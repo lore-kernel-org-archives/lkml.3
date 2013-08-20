@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646Ab3HTVrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:47:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8742 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab3HTVrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:47:41 -0400
-Date: Tue, 20 Aug 2013 17:47:39 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: device-mapper development <dm-devel@redhat.com>,
-        Frank Mayhar <fmayhar@google.com>
-cc: Mike Snitzer <msnitzer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH] dm: Make MIN_IOS, et al, tunable via
- sysctl.
-In-Reply-To: <1377034118.24869.48.camel@bobble.lax.corp.google.com>
-Message-ID: <alpine.LRH.2.02.1308201745130.8826@file01.intranet.prod.int.rdu2.redhat.com>
-References: <1376070533.26057.244.camel@bobble.lax.corp.google.com> <alpine.LRH.2.02.1308201712090.8826@file01.intranet.prod.int.rdu2.redhat.com> <1377034118.24869.48.camel@bobble.lax.corp.google.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751822Ab3HTVs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:48:27 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:22910 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751367Ab3HTVsZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 17:48:25 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnYIAC7jE1J5LJ62/2dsb2JhbABagwW7HIVDgSYXdIIkAQEFJxMcIxAIAw4KCSUPBSUDIROID61pFpA/B4QUA5dkkVeBYYFNKg
+Date: Wed, 21 Aug 2013 07:48:19 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Jan Kara <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH v3 3/5] mm: Notify filesystems when it's time to apply a
+ deferred cmtime update
+Message-ID: <20130820214819.GK6023@dastard>
+References: <cover.1376679411.git.luto@amacapital.net>
+ <ec267e95fd21891986373c7af1c72b4c8b507332.1376679411.git.luto@amacapital.net>
+ <20130820023615.GE6023@dastard>
+ <CALCETrV-Toj-NGpmWnmoUbCwrMUXOSbjQdYsSVuTiH+2dEgPTQ@mail.gmail.com>
+ <20130820040814.GH6023@dastard>
+ <CALCETrWreWBwKdKS2w=fS+MwdaZv1eEsKjYo=P9eeXe7fZS6Jw@mail.gmail.com>
+ <20130820160057.GC2862@quack.suse.cz>
+ <CALCETrXotDRKV8FtLn3g_9g_yOVceHzKpwXMAH+w7tBZ1P2F7A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXotDRKV8FtLn3g_9g_yOVceHzKpwXMAH+w7tBZ1P2F7A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Tue, 20 Aug 2013, Frank Mayhar wrote:
-
-> On Tue, 2013-08-20 at 17:22 -0400, Mikulas Patocka wrote:
-> > On Fri, 16 Aug 2013, Frank Mayhar wrote:
-> > > The device mapper and some of its modules allocate memory pools at
-> > > various points when setting up a device.  In some cases, these pools are
-> > > fairly large, for example the multipath module allocates a 256-entry
-> > > pool and the dm itself allocates three of that size.  In a
-> > > memory-constrained environment where we're creating a lot of these
-> > > devices, the memory use can quickly become significant.  Unfortunately,
-> > > there's currently no way to change the size of the pools other than by
-> > > changing a constant and rebuilding the kernel.
-> > I think it would be better to set the values to some low value (1 should 
-> > be enough, there is 16 in some places that is already low enough). There 
-> > is no need to make it user-configurable, because the user will see no 
-> > additional benefit from bigger mempools.
-> > 
-> > Maybe multipath is the exception - but other dm targets don't really need 
-> > big mempools so there is no need to make the size configurable.
+On Tue, Aug 20, 2013 at 09:42:34AM -0700, Andy Lutomirski wrote:
+> On Tue, Aug 20, 2013 at 9:00 AM, Jan Kara <jack@suse.cz> wrote:
+> > On Mon 19-08-13 21:14:44, Andy Lutomirski wrote:
+> >> >> I could require ->writepages *and* ->flush_cmtime to handle the time
+> >> >> update, but that would complicate non-transactional filesystems.
+> >> >> Those filesystems should just flush cmtime at the end of writepages.
+> >> >
+> >> > do_writepages() is the wrong place to do such updates - we can get
+> >> > writeback directly through .writepage, so the time updates need to
+> >> > be in .writepage. That first .writepage call will clear the bit on
+> >> > the mapping, so it's only done on the first call to .writepage on
+> >> > the given mapping.
+> >>
+> >> Last time I checked, all the paths that actually needed the timestamp
+> >> update went through .writepages.  I'll double-check.
+> >   kswapd can call just .writepage to do the writeout so timestamp update
+> > should be handled there as well. Otherwise all pages in a mapping can be
+> > cleaned without timestamp being updated.
 > 
-> The point is not to make the mempools bigger, the point is to be able to
-> make them _smaller_ for memory-constrained environments.  In some cases,
-> even 16 can be too big, especially when creating a large number of
-> devices.
+> OK, I'll fix that.
 > 
-> In any event, it seems unfortunate to me that these values are
-> hard-coded.  One shouldn't have to rebuild the kernel to change them,
-> IMHO.
+> >
+> > Which btw made me realize that even your scheme doesn't completely make
+> > sure timestamp is updated after mmap write - if you have pages 0 and 1, you
+> > write to both of them - CMTIME flag gets set. Then fsync_range(fd, 0, 4096)
+> > is called. We write the page 0, writeprotect it, update timestamps. But
+> > page 1 is still writeable so writes to it won't set CMTIME flag, neither
+> > update the timestamp... Not that I think this can be reasonably solved but
+> > it is a food for thought.
+> 
+> This should already work.  AS_CMTIME is set when the pte goes from
+> dirty to clean, not when the pte goes from wp to writable.  So
+> whenever clear_page_dirty_for_io is called on page 1, AS_CMTIME will
+> be set and a subsequent writepages call will update the timestamp.
 
-So make a patch that changes 16 to 1 if it helps on your system (I'd like 
-to ask - what is the configuration where this kind of change helps?). 
-There is no need for that to be tunable, anyone can live with mempool size 
-being 1.
+Oh, I missed that - I thought you were setting AS_CMTIME during
+.page_mkwrite.
 
-Mikulas
+Setting it in clear_page_dirty_for_io() is too late for filesystems
+to include it in their existing transactions during .writepage, (at
+least for XFs and ext4) because they do their delayed allocation
+transactions before changing page state....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
