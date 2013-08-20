@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab3HTVdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:33:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25449 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145Ab3HTVdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:33:23 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        John Johansen <john.johansen@canonical.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Kentaro Takeda <takedakn@nttdata.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Richard Guy Briggs <rgb@redhat.com>
-Subject: [PATCH 01/12] audit: Kill the unused struct audit_aux_data_capset
-Date: Tue, 20 Aug 2013 17:31:53 -0400
-Message-Id: <94daa1fc5ae78e01e13790a9d8f0f0fdff78068c.1377032086.git.rgb@redhat.com>
-In-Reply-To: <cover.1377032086.git.rgb@redhat.com>
-References: <cover.1377032086.git.rgb@redhat.com>
-In-Reply-To: <cover.1377032086.git.rgb@redhat.com>
-References: <cover.1377032086.git.rgb@redhat.com>
+	id S1752040Ab3HTVhD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:37:03 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:63612 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab3HTVhA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 17:37:00 -0400
+Date: Tue, 20 Aug 2013 14:36:57 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Darren Hart <dvhart@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, hpa@zytor.com, linus.walleij@linaro.org,
+        rjw@sisk.pl
+Subject: Re: ACPI vs Device Tree - moving forward
+Message-ID: <20130820213657.GA23058@roeck-us.net>
+References: <20130820192650.GA19470@srcf.ucam.org>
+ <1377031863.1758.10.camel@dvhart-mobl4.amr.corp.intel.com>
+ <20130820205712.GA22850@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820205712.GA22850@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric W. Biederman <ebiederm@xmission.com>
+On Tue, Aug 20, 2013 at 09:57:13PM +0100, Matthew Garrett wrote:
+> On Tue, Aug 20, 2013 at 01:51:03PM -0700, Darren Hart wrote:
+> 
+> > It seems to me that the only way to end up in a situation where the data
+> > is reused by other OSes, is to go through a standards body. What about
+> > attempting to standardize the _DSM method? I suppose the challenge then
+> > is how do we standardize arbitrary data (which, of course, is an
+> > oxymoron)...
+> 
+> Right. We could certainly spec the DT bindings that currently exist, but 
+> the obvious pushback is that large chunks of it *are* already in ACPI - 
+> a _PS0 method (which is ACPI for "Power up the device") that toggles a 
+> GPIO pin, and then provides a different GPIO pin in the DT data, which 
+> would we believe?
+> 
+> > The interesting thing about this to me is that many of these devices are
+> > added after-the-fact (as add-on boards, for example). With the
+> > MinnowBoard we are looking to provide this configuration data in an
+> > EEPROM. Would it make sense for the device manufacturer (rather than the
+> > base-board manufacturer) to define the key-value pairs for their
+> > hardware?
+> 
+> Yes, hardware information that's on add-in boards should probably be 
+> provided by the add-in board if it carries a ROM. This is trivial on 
+> UEFI systems - you just need a UEFI driver for the board that can 
+> construct an appropriate SSDT. It's more of a problem for non-UEFI ACPI 
+> systems.
+> 
+> > Sadly, I will not be in New Orleans and am unlikely to receive a Kernel
+> > Summit invite, but I am planning be in Edinburgh and would like the
+> > opportunity to participate in this discussion.
+> 
+> I'm not planning on being at kernel summit this year, so I think we'll 
+> try to arrange something around that time but outside the event.
+> 
+For my part I'll be in New Orleans but not in Edinburgh. Meeting in Edinburgh
+for the DT/ACPI discussion would of course be an incentive to be there even
+without KS invitation, but it is too far to travel just for that purpose.
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-(cherry picked from commit 6904431d6b41190e42d6b94430b67cb4e7e6a4b7)
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- kernel/auditsc.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 9845cb3..8c644c5 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -121,12 +121,6 @@ struct audit_aux_data_bprm_fcaps {
- 	struct audit_cap_data	new_pcap;
- };
- 
--struct audit_aux_data_capset {
--	struct audit_aux_data	d;
--	pid_t			pid;
--	struct audit_cap_data	cap;
--};
--
- struct audit_tree_refs {
- 	struct audit_tree_refs *next;
- 	struct audit_chunk *c[31];
--- 
-1.7.1
-
+Guenter
