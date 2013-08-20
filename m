@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582Ab3HTRXY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 13:23:24 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54409 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751319Ab3HTRXX (ORCPT
+	id S1751659Ab3HTRZa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 13:25:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35964 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab3HTRZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 13:23:23 -0400
-Date: Tue, 20 Aug 2013 18:22:51 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [GIT PULL] arm64 perf fixes for 3.11
-Message-ID: <20130820172245.GA23603@arm.com>
+	Tue, 20 Aug 2013 13:25:29 -0400
+Message-ID: <5213A677.4030203@infradead.org>
+Date: Tue, 20 Aug 2013 10:25:11 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH -mm] docs: Document soft dirty behaviour for freshly created
+ memory regions
+References: <20130820153132.GK18673@moon> <5213A002.7020408@infradead.org> <20130820170105.GM18673@moon>
+In-Reply-To: <20130820170105.GM18673@moon>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 08/20/13 10:01, Cyrill Gorcunov wrote:
+> On Tue, Aug 20, 2013 at 09:57:38AM -0700, Randy Dunlap wrote:
+>>>  
+>>> +  While in most cases tracking memory changes by #PF-s is more than enough
+>>                                                                        enough,
+> 
+> ?
 
-Late pull request for arm64 perf fixes (similar to the recent arm perf
-patches). Thanks.
+Long introductory phrases usually merit a comma after them.
+
+> 
+> For the rest -- thanks a LOT Randy, I'll update.
+> --
 
 
-The following changes since commit c095ba7224d8edc71dcef0d655911399a8bd4a3f:
-
-  Linux 3.11-rc4 (2013-08-04 13:46:46 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-stable
-
-for you to fetch changes up to ee7538a008a45050c8f706d38b600f55953169f9:
-
-  arm64: perf: fix event validation for software group leaders (2013-08-20 12:05:57 +0100)
-
-----------------------------------------------------------------
-Perf backend fixes for arm64 where the user can cause kernel panic
-(discovered with Vince's fuzzing tool).
-
-----------------------------------------------------------------
-Will Deacon (2):
-      arm64: perf: fix array out of bounds access in armpmu_map_hw_event()
-      arm64: perf: fix event validation for software group leaders
-
- arch/arm64/kernel/perf_event.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
 
 -- 
-Catalin
+~Randy
