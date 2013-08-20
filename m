@@ -1,299 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544Ab3HTJfy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 05:35:54 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34419 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab3HTJaN (ORCPT
+	id S1751454Ab3HTJgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 05:36:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43447 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab3HTJgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 05:30:13 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Sudeep.KarkadaNagesha@arm.com, Viresh Kumar <viresh.kumar@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [PATCH v4 04/19] of: move of_get_cpu_node implementation to DT core library
-Date: Tue, 20 Aug 2013 10:30:06 +0100
-Message-Id: <1376991021-12160-5-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 20 Aug 2013 09:30:10.0099 (UTC) FILETIME=[DD671830:01CE9D87]
-X-MC-Unique: 113082010301108401
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 20 Aug 2013 05:36:45 -0400
+Message-ID: <521338A9.4040206@canonical.com>
+Date: Tue, 20 Aug 2013 11:36:41 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
+CC: dri-devel@lists.freedesktop.org, linux-arch@vger.kernel.org,
+        linaro-mm-sig@lists.linaro.org,
+        Alex Deucher <alexander.deucher@amd.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [RFC PATCH] drm/radeon: rework to new fence interface
+References: <20130815124308.14812.58197.stgit@patser> <5211F0C5.2040705@canonical.com> <5212112C.70808@vodafone.de> <52127411.2010106@canonical.com> <52132AE0.4010702@vodafone.de>
+In-Reply-To: <52132AE0.4010702@vodafone.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7K9ZxKo012369
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Op 20-08-13 10:37, Christian König schreef:
+> Am 19.08.2013 21:37, schrieb Maarten Lankhorst:
+>> Op 19-08-13 14:35, Christian König schreef:
+>>> Am 19.08.2013 12:17, schrieb Maarten Lankhorst:
+>>>> [SNIP]
+>>>> @@ -190,25 +225,24 @@ void radeon_fence_process(struct radeon_device *rdev, int ring)
+>>>>            }
+>>>>        } while (atomic64_xchg(&rdev->fence_drv[ring].last_seq, seq) > seq);
+>>>>    -    if (wake) {
+>>>> +    if (wake)
+>>>>            rdev->fence_drv[ring].last_activity = jiffies;
+>>>> -        wake_up_all(&rdev->fence_queue);
+>>>> -    }
+>>>> +    return wake;
+>>>>    }
+>>> Very bad idea, when sequence numbers change, you always want to wake up the whole fence queue here.
+>> Yes, and the callers of this function call wake_up_all or wake_up_all_locked themselves, based on the return value..
+>
+> And as I said that's a very bad idea. The fence processing shouldn't be called with any locks held and should be self responsible for activating any waiters.
+The call point (enable_signaling) only needs to know whether its own counter has passed or not. This prevents the race where the counter
+has elapsed, but the irq was not yet enabled.
 
-This patch moves the generalized implementation of of_get_cpu_node from
-PowerPC to DT core library, thereby adding support for retrieving cpu
-node for a given logical cpu index on any architecture.
+I don't really care if enable_signaling updates last_seq or not, it only needs to check if it's own fence has been signaled after enabling sw_irqs.
 
-The CPU subsystem can now use this function to assign of_node in the
-cpu device while registering CPUs.
+>>
+>>>> [SNIP]
+>>>> +/**
+>>>> + * radeon_fence_enable_signaling - enable signalling on fence
+>>>> + * @fence: fence
+>>>> + *
+>>>> + * This function is called with fence_queue lock held, and adds a callback
+>>>> + * to fence_queue that checks if this fence is signaled, and if so it
+>>>> + * signals the fence and removes itself.
+>>>> + */
+>>>> +static bool radeon_fence_enable_signaling(struct fence *f)
+>>>> +{
+>>>> +    struct radeon_fence *fence = to_radeon_fence(f);
+>>>> +
+>>>> +    if (atomic64_read(&fence->rdev->fence_drv[fence->ring].last_seq) >= fence->seq ||
+>>>> +        !fence->rdev->ddev->irq_enabled)
+>>>> +        return false;
+>>>> +
+>>> Do I get that right that you rely on IRQs to be enabled and working here? Cause that would be a quite bad idea from the conceptual side.
+>> For cross-device synchronization it would be nice to have working irqs, it allows signalling fences faster,
+>> and it allows for callbacks on completion to be called. For internal usage it's no more required than it was before.
+>
+> That's a big NAK.
+>
+> The fence processing is actually very fine tuned to avoid IRQs and as far as I can see you just leave them enabled by decrementing the atomic from IRQ context. Additional to that we need allot of special handling in case of a hardware lockup here, which isn't done if you abuse the fence interface like this.
+I think it's not needed to leave the irq enabled, it's a leftover from when I was debugging the mac and no interrupt occurred at all.
 
-It is recommended to use these helper function only in pre-SMP/early
-initialisation stages to retrieve CPU device node pointers in logical
-ordering. Once the cpu devices are registered, it can be retrieved easily
-from cpu device of_node which avoids unnecessary parsing and matching.
+> Also your approach of leaking the IRQ context outside of the driver is a very bad idea from the conceptual side. Please don't modify the fence interface at all and instead use the wait functions already exposed by radeon_fence.c. If you need some kind of signaling mechanism then wait inside a workqueue instead.
+The fence takes up the role of a single shot workqueue here. Manually resetting the counter and calling wake_up_all would end up waking all active fences, there's no special handling needed inside radeon for this.
+The fence api does provide a synchronous wait function, but this causes a stall of whomever waits on it. When I was testing this with intel I used the fence callback to poke a register in i915, this allowed it to not block until it hits the wait op in the command stream, and even then only if the callback was not called first.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Grant Likely <grant.likely@linaro.org>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
----
- arch/powerpc/include/asm/prom.h |  3 --
- arch/powerpc/kernel/prom.c      | 57 -------------------------
- drivers/of/base.c               | 95 +++++++++++++++++++++++++++++++++++++++++
- include/linux/cpu.h             |  1 +
- include/linux/of.h              |  7 +++
- 5 files changed, 103 insertions(+), 60 deletions(-)
+It's documented that the callbacks can be called from any context and will be called with irqs disabled, so nothing scary should be done. The kernel provides enough debug mechanisms to find any violators.
+PROVE_LOCKING and DEBUG_ATOMIC_SLEEP for example.
 
-diff --git a/arch/powerpc/include/asm/prom.h b/arch/powerpc/include/asm/prom.h
-index bc2da15..ac204e0 100644
---- a/arch/powerpc/include/asm/prom.h
-+++ b/arch/powerpc/include/asm/prom.h
-@@ -43,9 +43,6 @@ void of_parse_dma_window(struct device_node *dn, const void *dma_window_prop,
- 
- extern void kdump_move_device_tree(void);
- 
--/* CPU OF node matching */
--struct device_node *of_get_cpu_node(int cpu, unsigned int *thread);
--
- /* cache lookup */
- struct device_node *of_find_next_cache_node(struct device_node *np);
- 
-diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-index f7b8c0b..1c14cd4 100644
---- a/arch/powerpc/kernel/prom.c
-+++ b/arch/powerpc/kernel/prom.c
-@@ -870,63 +870,6 @@ bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
- 	return (int)phys_id == get_hard_smp_processor_id(cpu);
- }
- 
--static bool __of_find_n_match_cpu_property(struct device_node *cpun,
--			const char *prop_name, int cpu, unsigned int *thread)
--{
--	const __be32 *cell;
--	int ac, prop_len, tid;
--	u64 hwid;
--
--	ac = of_n_addr_cells(cpun);
--	cell = of_get_property(cpun, prop_name, &prop_len);
--	if (!cell)
--		return false;
--	prop_len /= sizeof(*cell);
--	for (tid = 0; tid < prop_len; tid++) {
--		hwid = of_read_number(cell, ac);
--		if (arch_match_cpu_phys_id(cpu, hwid)) {
--			if (thread)
--				*thread = tid;
--			return true;
--		}
--		cell += ac;
--	}
--	return false;
--}
--
--/* Find the device node for a given logical cpu number, also returns the cpu
-- * local thread number (index in ibm,interrupt-server#s) if relevant and
-- * asked for (non NULL)
-- */
--struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
--{
--	struct device_node *cpun, *cpus;
--
--	cpus = of_find_node_by_path("/cpus");
--	if (!cpus) {
--		pr_warn("Missing cpus node, bailing out\n");
--		return NULL;
--	}
--
--	for_each_child_of_node(cpus, cpun) {
--		if (of_node_cmp(cpun->type, "cpu"))
--			continue;
--
--		/* Check for non-standard "ibm,ppc-interrupt-server#s" property
--		 * for thread ids on PowerPC. If it doesn't exist fallback to
--		 * standard "reg" property.
--		 */
--		if (__of_find_n_match_cpu_property(cpun,
--				"ibm,ppc-interrupt-server#s", cpu, thread))
--			return cpun;
--
--		if (__of_find_n_match_cpu_property(cpun, "reg", cpu, thread))
--			return cpun;
--	}
--	return NULL;
--}
--EXPORT_SYMBOL(of_get_cpu_node);
--
- #if defined(CONFIG_DEBUG_FS) && defined(DEBUG)
- static struct debugfs_blob_wrapper flat_dt_blob;
- 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 5c54279..605afa9 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -18,6 +18,7 @@
-  *      2 of the License, or (at your option) any later version.
-  */
- #include <linux/ctype.h>
-+#include <linux/cpu.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/spinlock.h>
-@@ -230,6 +231,100 @@ const void *of_get_property(const struct device_node *np, const char *name,
- }
- EXPORT_SYMBOL(of_get_property);
- 
-+/*
-+ * arch_match_cpu_phys_id - Match the given logical CPU and physical id
-+ *
-+ * @cpu: logical cpu index of a core/thread
-+ * @phys_id: physical identifier of a core/thread
-+ *
-+ * CPU logical to physical index mapping is architecture specific.
-+ * However this __weak function provides a default match of physical
-+ * id to logical cpu index. phys_id provided here is usually values read
-+ * from the device tree which must match the hardware internal registers.
-+ *
-+ * Returns true if the physical identifier and the logical cpu index
-+ * correspond to the same core/thread, false otherwise.
-+ */
-+bool __weak arch_match_cpu_phys_id(int cpu, u64 phys_id)
-+{
-+	return (u32)phys_id == cpu;
-+}
-+
-+/**
-+ * Checks if the given "prop_name" property holds the physical id of the
-+ * core/thread corresponding to the logical cpu 'cpu'. If 'thread' is not
-+ * NULL, local thread number within the core is returned in it.
-+ */
-+static bool __of_find_n_match_cpu_property(struct device_node *cpun,
-+			const char *prop_name, int cpu, unsigned int *thread)
-+{
-+	const __be32 *cell;
-+	int ac, prop_len, tid;
-+	u64 hwid;
-+
-+	ac = of_n_addr_cells(cpun);
-+	cell = of_get_property(cpun, prop_name, &prop_len);
-+	if (!cell)
-+		return false;
-+	prop_len /= sizeof(*cell);
-+	for (tid = 0; tid < prop_len; tid++) {
-+		hwid = of_read_number(cell, ac);
-+		if (arch_match_cpu_phys_id(cpu, hwid)) {
-+			if (thread)
-+				*thread = tid;
-+			return true;
-+		}
-+		cell += ac;
-+	}
-+	return false;
-+}
-+
-+/**
-+ * of_get_cpu_node - Get device node associated with the given logical CPU
-+ *
-+ * @cpu: CPU number(logical index) for which device node is required
-+ * @thread: if not NULL, local thread number within the physical core is
-+ *          returned
-+ *
-+ * The main purpose of this function is to retrieve the device node for the
-+ * given logical CPU index. It should be used to initialize the of_node in
-+ * cpu device. Once of_node in cpu device is populated, all the further
-+ * references can use that instead.
-+ *
-+ * CPU logical to physical index mapping is architecture specific and is built
-+ * before booting secondary cores. This function uses arch_match_cpu_phys_id
-+ * which can be overridden by architecture specific implementation.
-+ *
-+ * Returns a node pointer for the logical cpu if found, else NULL.
-+ */
-+struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
-+{
-+	struct device_node *cpun, *cpus;
-+
-+	cpus = of_find_node_by_path("/cpus");
-+	if (!cpus) {
-+		pr_warn("Missing cpus node, bailing out\n");
-+		return NULL;
-+	}
-+
-+	for_each_child_of_node(cpus, cpun) {
-+		if (of_node_cmp(cpun->type, "cpu"))
-+			continue;
-+		/* Check for non-standard "ibm,ppc-interrupt-server#s" property
-+		 * for thread ids on PowerPC. If it doesn't exist fallback to
-+		 * standard "reg" property.
-+		 */
-+		if (IS_ENABLED(CONFIG_PPC) &&
-+			__of_find_n_match_cpu_property(cpun,
-+				"ibm,ppc-interrupt-server#s", cpu, thread))
-+			return cpun;
-+		if (__of_find_n_match_cpu_property(cpun, "reg", cpu, thread))
-+			return cpun;
-+	}
-+	return NULL;
-+}
-+EXPORT_SYMBOL(of_get_cpu_node);
-+
- /** Checks if the given "compat" string matches one of the strings in
-  * the device's "compatible" property
-  */
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index ab0eade..3dfed2b 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -28,6 +28,7 @@ struct cpu {
- extern int register_cpu(struct cpu *cpu, int num);
- extern struct device *get_cpu_device(unsigned cpu);
- extern bool cpu_is_hotpluggable(unsigned cpu);
-+extern bool arch_match_cpu_phys_id(int cpu, u64 phys_id);
- 
- extern int cpu_add_dev_attr(struct device_attribute *attr);
- extern void cpu_remove_dev_attr(struct device_attribute *attr);
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 1fd08ca..c0bb2f1 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -266,6 +266,7 @@ extern int of_device_is_available(const struct device_node *device);
- extern const void *of_get_property(const struct device_node *node,
- 				const char *name,
- 				int *lenp);
-+extern struct device_node *of_get_cpu_node(int cpu, unsigned int *thread);
- #define for_each_property_of_node(dn, pp) \
- 	for (pp = dn->properties; pp != NULL; pp = pp->next)
- 
-@@ -459,6 +460,12 @@ static inline const void *of_get_property(const struct device_node *node,
- 	return NULL;
- }
- 
-+static inline struct device_node *of_get_cpu_node(int cpu,
-+					unsigned int *thread)
-+{
-+	return NULL;
-+}
-+
- static inline int of_property_read_u64(const struct device_node *np,
- 				       const char *propname, u64 *out_value)
- {
--- 
-1.8.1.2
-
+~Maarten
 
