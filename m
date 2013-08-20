@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab3HTO2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 10:28:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50698 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062Ab3HTO2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 10:28:11 -0400
-Date: Tue, 20 Aug 2013 10:27:40 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Joerg Roedel <joro@8bytes.org>, x86@kernel.org, stable@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Ingo Molnar <mingo@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] [BUGFIX] crash/ioapic: Prevent crash_kexec() from
- deadlocking of ioapic_lock
-Message-ID: <20130820142740.GO239280@redhat.com>
-References: <20130819081220.24406.15846.stgit@yunodevel>
- <20130819094623.GA30389@gmail.com>
- <5212B31A.6090504@hitachi.com>
- <871u5or7qn.fsf@tw-ebiederman.twitter.com>
+	id S1751485Ab3HTO2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 10:28:22 -0400
+Received: from smtp107.biz.mail.ne1.yahoo.com ([98.138.207.14]:46818 "HELO
+	smtp107.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751193Ab3HTO2S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 10:28:18 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: KNRZra8VM1mglmna5O0Pq5EBNODllFVNX_wabZSfNDwVTzo
+ 4_etidb06NU32u07999SfZykT7Pe232kkTvFlgjNJC_ndKoR8BQgq22O4iwu
+ sM4a1qquaM4nSdndX5UcS19wfOgd2L9QBVIy2r3fbW7OEQb7DF9pvTFt0Unt
+ v4jUXcXgnCIbwouKVq93.VjYGdmCjjomAG4qweL7_ouWDQ_XfJ54mo89qxeJ
+ Z9PWwvq2d3ZdhdxNC8L2L3QXaO_fv4gxhwjTw4gwVyXTXfdPEmuZhMRB6Y8C
+ rS6zYW55xDIdDoIjnDBm3qzPr2LklGOYWmzhWK4nClEYoBAOlO34vg5yt6gY
+ QEMT6kUjcmfPjcyiIapssXoJdipIjOtteiaELvzgB300oCMlucwQhtDRTeQD
+ KH69qnEb16aAR8Ldse41dGGVtvnD6crJfRe_UyWvwgQgaVHjVyoPGvRhJH1p
+ zSyDImuBCW7sidWEEQdinCWLAwkorZuOoMwzHct6zWmGNlNHCyp0T37UFEoW
+ 7TZje_FX1TjI4mGm86U0g8lwKq6TloaNJH3ejSY.R_x5OzIRk6w--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.103] (casey@24.6.250.25 with )
+        by smtp107.biz.mail.ne1.yahoo.com with SMTP; 20 Aug 2013 07:28:17 -0700 PDT
+Message-ID: <52137CFF.70601@schaufler-ca.com>
+Date: Tue, 20 Aug 2013 07:28:15 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871u5or7qn.fsf@tw-ebiederman.twitter.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cong Wang <amwang@redhat.com>
+CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        james.l.morris@oracle.com, sds@tycho.nsa.gov, eparis@parisplace.org,
+        pmoore@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [Patch net-next v3 9/9] selinux: use generic union inet_addr
+References: <1376907278-26377-1-git-send-email-amwang@redhat.com>  <1376907278-26377-10-git-send-email-amwang@redhat.com>  <52127336.3080209@schaufler-ca.com>  <20130819.125026.636442915180863272.davem@davemloft.net>  <5212915F.20905@schaufler-ca.com> <1377003677.13412.5.camel@cr0>
+In-Reply-To: <1377003677.13412.5.camel@cr0>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 03:12:32AM -0700, Eric W. Biederman wrote:
-> Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> writes:
-> 
-> > Hi Ingo,
-> >
-> > Thank you for fixing typos!
-> > OK, I'll fix them and rename to ioapic_zap_locks().
-> >
-> > Thank you again!
-> 
-> 
-> The better fix for this would be to remove the disable_IO_APIC call from
-> crash_kexec.
-> 
-> I know last time it was investigated the kernel was very close to
-> working without needing that, and the code will be much more robust in
-> the long term if we can avoid disabling them in the crashing kernel.
-> 
-> Yoshihiro is there any chance you can look into removing the
-> disable_IO_APIC entirely?
-> 
-> The apic disablement and the disable_IO_APIC exists entirely due to
-> limitations in the kernel boot path.
+On 8/20/2013 6:01 AM, Cong Wang wrote:
+> On Mon, 2013-08-19 at 14:42 -0700, Casey Schaufler wrote:
+>> Well, they certainly don't appear to add any value on their own.
+>> I also generally oppose doing clever things with data structures. 
+> If you want to implement same thing for 5+ times,
 
-Yup.  We went down this path a year ago:
+Those 5+ implementations are already there, and already work.
+A 6th implementation to replace known working code is just churn
+unless it provides some additional value. Making the code "better"
+does not itself add value. 
 
-https://lkml.org/lkml/2012/2/2/331
+>  yes, it has no value
+> for you. Enjoy the following code in current tree:
+>
+> union nf_inet_addr;
+> union sctp_addr;
+> union vxlan_addr; (in my VXLAN IPv6 patches, search email archives)
+> struct br_mdb_entry::addr;
+> union inet_addr; (in netpoll.h)
+>
+> And may I tell you the last three are all from me? ;-)
 
-Then we got sidetracked and talked about removing the lapic stuff at
-shutdown too:
+I do use and enjoy all of these implementations! Thank you
+for the fine implementations. In the end, if you're maintaining
+the code it's your call. I question change that does not have
+an obvious purpose because statistically every 10th change has
+a bug.
 
-http://lists.infradead.org/pipermail/kexec/2012-February/006017.html
-(sorry couldn't find lkml link for some reason)
+Now that I know what the change is for I am fine with it. I
+like seeing reasons up front.
 
-And the second patch was committed.
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-However, it was quickly reverted when Yinghai Lu noticed a problem:
-
-https://lkml.org/lkml/2012/2/11/143
-
-The problem stemmed from the fact that the nmi_watchdog caused an NMI in
-the middle of transitioning between the two kernels (we didn't shutdown
-the lapic) and caused a reset (there is no NMI handler in purgatory).
-
-I think I dropped the ball in investigating how to write an idt for the
-purgatory code to handle spurious NMIs.
-
-Regardless of all that, I think if we stick to just removing the ioapic
-shutdown code (ie the first patch linked above), we should be ok.  I
-believe my testing went smoothly.  It was the lapic stuff that needed more
-tweaking.
-
-So, I agree with Eric, let's remove the disable_IO_APIC() stuff and keep
-the code simpler.
-
-Cheers,
-Don
