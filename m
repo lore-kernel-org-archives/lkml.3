@@ -1,51 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458Ab3HTLDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 07:03:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:50696 "EHLO mga14.intel.com"
+	id S1751422Ab3HTLFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 07:05:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48114 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937Ab3HTLDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 07:03:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,919,1367996400"; 
-   d="scan'208";a="284271543"
-Date: Tue, 20 Aug 2013 14:08:33 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH] ACPI / PM: Hold acpi_scan_lock over system PM transitions
-Message-ID: <20130820110833.GZ4898@intel.com>
-References: <2852781.TfChGuuEkJ@vostro.rjw.lan>
+	id S1750878Ab3HTLFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 07:05:42 -0400
+Date: Tue, 20 Aug 2013 13:05:36 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Xiong Zhou <jencce.kernel@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, Ben Hutchings <ben@decadent.org.uk>,
+        matthew.garrett@nebula.com, platform-driver-x86@vger.kernel.org,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jim Davis <jim.epost@gmail.com>
+Subject: Re: [PATCH]amilo-rfkill: add depends on i8042 in Kconfig
+In-Reply-To: <CADJHv_sSn9oU-xg5qgoHRKDeyHRCqy8VuPJW5_punHd45inzsA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1308201305160.21654@pobox.suse.cz>
+References: <alpine.DEB.2.02.1306181705530.28460@M2420> <1371560680.3495.121.camel@deadeye.wl.decadent.org.uk> <51C07608.2070406@infradead.org> <CADJHv_vZiPsDUiLrFao41rRVduf+AYFm0NuvpNaCW8S3KrAjnA@mail.gmail.com> <51CC6B09.5080809@infradead.org>
+ <CADJHv_sSn9oU-xg5qgoHRKDeyHRCqy8VuPJW5_punHd45inzsA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2852781.TfChGuuEkJ@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 01:47:57AM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Bad things happen if ACPI hotplug events are handled during system
-> PM transitions, especially if devices are removed as a result.
-> To prevent those bad things from happening, acquire acpi_scan_lock
-> when a transition is started and release it when that transition
-> is complete or has been aborted.
-> 
-> This fixes resume lockup on my test-bed Acer Aspire S5 that happens
-> when Thunderbolt devices are disconnected from the machine while
-> suspended.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Fri, 12 Jul 2013, Xiong Zhou wrote:
 
-I tested this on Intel DZ77RE-75K and after the patch is applied the
-machine didn't hang anymore once resuming.
+> >>>>> Fix randconfig build failure for Amilo x86 platform driver.
+> >>>>> AMILO_RFKILL requires SERIO_I8042 being available.
+> >>>>>
+> >>>>> amilo-rfkill.c:(.text+0x108b5b): undefined reference to `i8042_lock_chip'
+> >>>>> amilo-rfkill.c:(.text+0x108b69): undefined reference to `i8042_command'
+> >>>>> amilo-rfkill.c:(.text+0x108b71): undefined reference to `i8042_unlock_chip'
+> >>>>>
+> >>>>> Reported-by: Jim Davis <jim.epost@gmail.com>
+> >>>>> Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
+> >>>>
+> >>>> Acked-by: Ben Hutchings <ben@decadent.org.uk>
+> >>>>
+> >>>> But I thought somehow sent this same fix a while back...
+> >>>
+> >>> Yes, I reported it and sent a patch for it that you acked...
+> >>> I guess my patch was never picked up.
+> >>>
+> >>
+> >> ... Better someone pick this up.
+> >>
+> >
+> > This build error is still occurring in linux-next (20130627).
+> > I first reported it and posted a patch for it on May-15 2013.
+> >
+> > Please merge either patch...
+> >
+> > Is anybody out there?
+> >
+> >
+> >>
+> >>>>
+> >>>> Ben.
+> >>>>
+> >>>>> ---
+> >>>>>  drivers/platform/x86/Kconfig |    1 +
+> >>>>>  1 file changed, 1 insertion(+)
+> >>>>>
+> >>>>> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> >>>>> index 8577261..37645b9 100644
+> >>>>> --- a/drivers/platform/x86/Kconfig
+> >>>>> +++ b/drivers/platform/x86/Kconfig
+> >>>>> @@ -176,6 +176,7 @@ config FUJITSU_TABLET
+> >>>>>  config AMILO_RFKILL
+> >>>>>      tristate "Fujitsu-Siemens Amilo rfkill support"
+> >>>>>      depends on RFKILL
+> >>>>> +    depends on SERIO_I8042
+> >>>>>      ---help---
+> >>>>>        This is a driver for enabling wifi on some Fujitsu-Siemens Amilo
+> >>>>>        laptops.
+> >>>>
+> >>>
+> >>>
+> >>> --
+> >>> ~Randy
+> >> --
+> >
+> >
+> > --
+> > ~Randy
+> 
+> 
+> 
+> cc Jiri Kosina <trivial@kernel.org>
 
-Feel free to add my tested-by.
+Please resend the patch properly, it's not easy to dig it from the 
+multi-depth quoted text.
+
+-- 
+Jiri Kosina
+SUSE Labs
