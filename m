@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303Ab3HTMOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 08:14:10 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:51313 "EHLO hydra.sisk.pl"
+	id S1751330Ab3HTMPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 08:15:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20225 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918Ab3HTMOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 08:14:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH] ACPI / PM: Hold acpi_scan_lock over system PM transitions
-Date: Tue, 20 Aug 2013 14:24:42 +0200
-Message-ID: <4492949.n2Wo36SnUY@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130820110833.GZ4898@intel.com>
-References: <2852781.TfChGuuEkJ@vostro.rjw.lan> <20130820110833.GZ4898@intel.com>
+	id S1750976Ab3HTMPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 08:15:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,919,1367996400"; 
+   d="scan'208";a="365495464"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-spi@vger.kernel.org
+Cc: Mark Brown <broonie@kernel.org>, Stephen Warren <swarren@nvidia.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] spi: fix SPI_BIT_MASK() to use correct size for 32-bit transfer mask
+Date: Tue, 20 Aug 2013 15:15:32 +0300
+Message-Id: <1377000932-5438-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 20, 2013 02:08:33 PM Mika Westerberg wrote:
-> On Tue, Aug 20, 2013 at 01:47:57AM +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Bad things happen if ACPI hotplug events are handled during system
-> > PM transitions, especially if devices are removed as a result.
-> > To prevent those bad things from happening, acquire acpi_scan_lock
-> > when a transition is started and release it when that transition
-> > is complete or has been aborted.
-> > 
-> > This fixes resume lockup on my test-bed Acer Aspire S5 that happens
-> > when Thunderbolt devices are disconnected from the machine while
-> > suspended.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> I tested this on Intel DZ77RE-75K and after the patch is applied the
-> machine didn't hang anymore once resuming.
-> 
-> Feel free to add my tested-by.
+When building a 64-bit kernel we get the following warning from the
+compiler:
 
-I will, thanks!
+ drivers/spi/spi-pxa2xx.c: In function ‘pxa2xx_spi_probe’:
+ drivers/spi/spi-pxa2xx.c:1152:3: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+   master->bits_per_word_mask = SPI_BPW_RANGE_MASK(4, 32);
+   ^
+This is due the fact that when the max range is specified as 32
+SPI_BIT_MASK() expands to ~0UL which doesn't fit to the u32 type that the
+master->bits_per_word_mask is.
+
+Fix this by using ~0U instead.
+
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ include/linux/spi/spi.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+index 28e440b..c920c2f 100644
+--- a/include/linux/spi/spi.h
++++ b/include/linux/spi/spi.h
+@@ -309,7 +309,7 @@ struct spi_master {
+ 	/* bitmask of supported bits_per_word for transfers */
+ 	u32			bits_per_word_mask;
+ #define SPI_BPW_MASK(bits) BIT((bits) - 1)
+-#define SPI_BIT_MASK(bits) (((bits) == 32) ? ~0UL : (BIT(bits) - 1))
++#define SPI_BIT_MASK(bits) (((bits) == 32) ? ~0U : (BIT(bits) - 1))
+ #define SPI_BPW_RANGE_MASK(min, max) (SPI_BIT_MASK(max) - SPI_BIT_MASK(min - 1))
+ 
+ 	/* other constraints relevant to this driver */
+-- 
+1.8.4.rc2
 
