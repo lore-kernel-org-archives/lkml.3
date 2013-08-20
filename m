@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668Ab3HTUPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 16:15:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26890 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188Ab3HTUPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 16:15:50 -0400
-Date: Tue, 20 Aug 2013 16:15:45 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org, geert@linux-m68k.org,
-        agk@redhat.com
-Subject: [git pull] device-mapper fix for 3.11
-Message-ID: <20130820201018.GA5192@redhat.com>
+	id S1751673Ab3HTUTd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 16:19:33 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:43600 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab3HTUTc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 16:19:32 -0400
+Message-ID: <5213CF58.50703@gmail.com>
+Date: Tue, 20 Aug 2013 22:19:36 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 02/17] ARM: call clk_of_init from time_init
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376964271-22715-3-git-send-email-sebastian.hesselbarth@gmail.com> <52138F56.6030008@wwwdotorg.org> <5213C7E1.4070401@gmail.com> <5213C90F.9010407@wwwdotorg.org>
+In-Reply-To: <5213C90F.9010407@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 08/20/2013 09:52 PM, Stephen Warren wrote:
+> On 08/20/2013 01:47 PM, Sebastian Hesselbarth wrote:
+>> On 08/20/2013 05:46 PM, Stephen Warren wrote:
+>>> Some SoCs call this function in .init_irq() rather than .init_time().
+>>> Perhaps we adjust this patch to do that instead. That way, we can
+>>> presumably get rid of patch 1/17 since we can eliminate any duplicate
+>>> calls, and adjust patch 14/17 (Tegra board file) to remove its custom
+>>> call to of_clock_init(NULL)?
+>>
+>> Currently as of -next from yesterday, only tegra is requiring clocks
+>> that early, while others are fine with them close to timers. I really
+>> have no strong opinion on that. That decision should rather be made
+>> by those with a far more complete insight of the consequences than I
+>> have.
+>
+> Perhaps if Tegra is a special-case, it shouldn't rely on the generic
+> init_time() callback, and hence you could still eliminate patch 1/17?
+>
 
-The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
+Perhaps Tegra is the common case but other SoC haven't dug deep enough?
+IMHO from a HW point-of-view clocks are really among the essential
+things that need to be running before you can do anything useful.
 
-  Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
+Just consider boot loaders that run fine without irqs but don't without
+clocks (even if just represented by API). Maybe you are right, and we
+should call of_clk_init(NULL) as early as possible. That would also
+eliminate patch 1/17 as you suggest.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm tags/dm-3.11-fixes
-
-for you to fetch changes up to b936bf8b785f0fbe083d203049e4da1c56ec788f:
-
-  dm cache: avoid conflicting remove_mapping() in mq policy (2013-08-16 15:56:51 -0400)
-
-Please pull, thanks.
-Mike
-
-----------------------------------------------------------------
-A patch to fix dm-cache-policy-mq's remove_mapping() conflict with sparc32.
-
-----------------------------------------------------------------
-Geert Uytterhoeven (1):
-      dm cache: avoid conflicting remove_mapping() in mq policy
-
- drivers/md/dm-cache-policy-mq.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+Sebastian
