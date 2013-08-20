@@ -1,174 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab3HTIK1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:10:27 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:35141 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998Ab3HTIKY (ORCPT
+	id S1751814Ab3HTIMF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:12:05 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:65288 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab3HTIL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:10:24 -0400
-X-Spam-Score: -101.0
-Message-ID: <52132432.3050308@asianux.com>
-Date: Tue, 20 Aug 2013 16:09:22 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
-        riel@redhat.com, hughd@google.com, xemul@parallels.com,
-        rientjes@google.com, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] mm: mempolicy: the failure processing about mpol_to_str()
-References: <5212E8DF.5020209@asianux.com> <20130820053036.GB18673@moon> <52130194.4030903@asianux.com> <20130820064730.GD18673@moon> <52131F48.1030002@asianux.com> <52132011.60501@asianux.com>
-In-Reply-To: <52132011.60501@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Aug 2013 04:11:59 -0400
+X-AuditID: cbfee61a-b7f196d000007dfa-d2-521324cc2540
+Date: Tue, 20 Aug 2013 10:11:47 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        "R, Durgadoss" <durgadoss.r@intel.com>
+Subject: Re: [PATCH v7 0/7] cpufreq:boost: CPU Boost mode support
+Message-id: <20130820101147.5a7c2efa@amdc308.digital.local>
+In-reply-to: <2325996.izOUC9kIz1@vostro.rjw.lan>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <CAKohponN=JE4KiCL7pVXJvcf__qfC+Fb59ZjBAX5_WK49eCELw@mail.gmail.com>
+ <20130819085037.11e95c06@amdc308.digital.local>
+ <2325996.izOUC9kIz1@vostro.rjw.lan>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t9jQd0zKsJBBv1NOhYbZ6xntXja9IPd
+	Yt5nWYu+n1eYLdbs/8lk0Xn2CbNF74KrbBZvHnFbXN41h83ic+8RRovbjSvYLPoX9jJZPHnY
+	x2ax8auHA5/H4j0vmTzuXNvD5rFu2ltmj74tqxg9Hi1uYfQ4fmM7k8fnTXIB7FFcNimpOZll
+	qUX6dglcGTtmzWMp+KldMeN3F3sDY5NSFyMnh4SAicTRmd0sELaYxIV769m6GLk4hASmM0qs
+	+NrECOG0M0mcu7uYCaSKRUBVYuqnG+wgNpuAnsTnu0/B4iJA8S1P/oPFmQX2sUicOq8DYgsL
+	OEp039/PDGLzClhL3JvUD1bDKWAgMfHpUXaIBU8YJQ59vcwIkuAXkJRo//eDGeIkO4lznzaw
+	QzQLSvyYfI8FYoGWxOZtTawQtrzE5jVvmScwCs5CUjYLSdksJGULGJlXMYqmFiQXFCel5xrq
+	FSfmFpfmpesl5+duYgRH1TOpHYwrGywOMQpwMCrx8HYqCQUJsSaWFVfmHmKU4GBWEuF9oSwc
+	JMSbklhZlVqUH19UmpNafIhRmoNFSZz3QKt1oJBAemJJanZqakFqEUyWiYNTqoHRw+VzU90z
+	jbmbLUITDU/OlG/463jhe/2thw/yq6qdX9guKPz/28leRNpQMuLm2jJhc72V2fsvdB1bJ9/K
+	njuLqzVYN3l14jRd+b65DelxXNWFV49ezPNN2bLt9u0ivQk8Ks3+B46my/Evin4UavR4zj//
+	3YLLVeXl/ypIVP98t+HUN9czx/cosRRnJBpqMRcVJwIAX7uyNaYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 03:51 PM, Chen Gang wrote:
-> On 08/20/2013 03:48 PM, Chen Gang wrote:
->> On 08/20/2013 02:47 PM, Cyrill Gorcunov wrote:
->>> On Tue, Aug 20, 2013 at 01:41:40PM +0800, Chen Gang wrote:
->>>>
->>>>> sure you'll have to change shmem_show_mpol statement to return int code.
->>>>> Won't this be more short and convenient?
->>>>>
->>>>>
->>>>
->>>> Hmm... if return -ENOSPC, in common processing, it still need continue
->>>> (but need let outside know about the string truncation).
->>>>
->>>> So I still suggest to give more check for it.
->>>
->>> I still don't like adding additional code like
->>>
->>> +	ret = mpol_to_str(buffer, sizeof(buffer), mpol);
->>> +	if (ret < 0)
->>> +               switch (ret) {
->>> +               case -ENOSPC:
->>> +                       printk(KERN_WARNING
->>> +                               "in %s: string is truncated in mpol_to_str().\n",
->>> +                               __func__);
+On Tue, 20 Aug 2013 01:29:20 +0200 Rafael J. Wysocki rjw@sisk.pl wrote,
+> On Monday, August 19, 2013 08:50:37 AM Lukasz Majewski wrote:
+> > On Mon, 19 Aug 2013 12:08:26 +0530 Viresh Kumar
+> > viresh.kumar@linaro.org wrote,
+> > > On 13 August 2013 15:38, Lukasz Majewski <l.majewski@samsung.com>
+> > > wrote:
+> > > > This patch series introduces support for CPU overclocking
+> > > > technique called Boost.
+> > > >
+> > > > It is a follow up of a LAB governor proposal. Boost is a LAB
+> > > > component:
+> > > > http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
+> > > >
+> > > > Boost unifies hardware based solution (e.g. Intel Nehalem) with
+> > > > software oriented one (like the one done at Exynos).
+> > > > For this reason cpufreq/freq_table code has been reorganized to
+> > > > include common code.
+> > > >
+> > > > Important design decisions:
+> > > > - Boost related code is compiled-in unconditionally to cpufreq
+> > > > core and disabled by default. The cpufreq_driver is
+> > > > responsibile for setting boost_supported flag and providing
+> > > > set_boost callback(if HW support is needed). For software
+> > > > managed boost, special Kconfig flag - CONFIG_CPU_FREQ_BOOST_SW
+> > > > has been defined. It will be selected only when a target
+> > > > platform has thermal framework properly configured.
+> > > >
+> > > > - struct cpufreq_driver has been extended with boost related
+> > > > fields: -- boost_supported - when driver supports boosting
+> > > >         -- boost_enabled - boost state
+> > > >         -- set_boost - callback to function, which is necessary
+> > > > to enable/disable boost
+> > > >
+> > > > - Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost)
+> > > > is visible _only_ when cpufreq driver supports Boost.
+> > > >
+> > > > - No special spin_lock for Boost was created. The one from
+> > > > cpufreq core was reused.
+> > > >
+> > > > - The Boost code doesn't rely on any policy. When boost state is
+> > > > changed, then the policy list is iterated and proper
+> > > > adjustements are done.
+> > > >
+> > > > - To improve safety level, the thermal framework is also
+> > > > extended to disable software boosting, when thermal trip point
+> > > > is reached. Then it starts monitoring target temperature to
+> > > > evaluate if boost can be enabled again. This emulates behaviour
+> > > > similar to HW managed boost (like x86)
+> > > >
+> > > > Tested at HW:
+> > > >        Exynos 4412 3.11-rc4 Linux
+> > > >        Intel Core i7-3770 3.11-rc4 Linux
+> > > >
+> > > > Above patches were posted on top of linux_pm/linux-next with
+> > > > following patches applied:
+> > > >
+> > > > cpufreq: exynos5440: Fix to skip when new frequency same as
+> > > > current cpufreq: fix EXYNOS drivers selection
+> > > >
+> > > > Lukasz Majewski (7):
+> > > >   cpufreq: Add boost frequency support in core
+> > > >   cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with
+> > > > common boost solution
+> > > >   thermal:boost: Automatic enable/disable of BOOST feature
+> > > >   cpufreq:boost:Kconfig: Provide support for software managed
+> > > > BOOST cpufreq:exynos:Extend Exynos cpufreq driver to support
+> > > > boost framework
+> > > >   Documentation:cpufreq:boost: Update BOOST documentation
+> > > >   cpufreq:exynos4x12: Change L0 driver data to
+> > > > CPUFREQ_BOOST_FREQ
+> > > 
+> > > Hi Lukasz,
+> > > 
+> > 
+> > Hi Viresh,
+> > 
+> > > I haven't found time yet to go through this series.. 
+> > 
+> > I've just started wondering if I had send those patches
+> > correctly :-).
+> > 
+> > > I want to do a
+> > > deep/careful review this time as these are almost the final
+> > > patches.
+> > 
+> > Ok.
+> > 
+> > > 
+> > > Will try to get over them by the end of this week..
+> > 
+> > Ok, I understand.
 > 
-> Oh, that need 'break' in my original patch. :-)
+> Do I assume correctly that this stuff has been tested on
+> ACPI-compatible x86 with acpi-cpufreq and everything has worked
+> correctly there?
 > 
->>> +               default:
->>> +                       printk(KERN_ERR
->>> +                               "in %s: call mpol_to_str() fail, errcode: %d. buffer: %p, size: %zu, pol: %p\n",
->>> +                               __func__, ret, buffer, sizeof(buffer), mpol);
->>> +                       return;
->>> +               }
->>>
->>> this code is pretty neat for debugging purpose I think but in most case (if
->>> only I've not missed something obvious) it simply won't be the case.
->>>
->>
->> For mpol_to_str(), it is for printing string, I suggest to fill buffer
->> as full as possible like another printing string functions, -ENOSPC is
->> not critical error, callers may can bear it, and still want to continue.
->>
->> For 2 callers, I still suggest to process '-ENOSPC' and continue, it is
->> really not a critical error, they can continue.
->>
->> For the 'default' error processing:
->>
->>   I still suggest to 'printk' in shmem_show_mpol(), because when failure occurs, it has no return value to mark the failure to upper caller.
->>   Hmm... but for show_numa_map(), may remove the 'printk', only return the error code is OK. :-)
->>
->>
->> Thanks.
->>
-
-Oh, for '-ENOSPC', it means critical error, it is my fault.
-
-So, for simplify thinking and implementation, use your patch below is OK
-to me (but I suggest to print error information in the none return value
-function).
-
-:-)
-
->>> Won't somthing like below do the same but with smaller code change?
->>> Note I've not even compiled it but it shows the idea.
->>> ---
->>>  fs/proc/task_mmu.c |    4 +++-
->>>  mm/shmem.c         |   17 +++++++++--------
->>>  2 files changed, 12 insertions(+), 9 deletions(-)
->>>
->>> Index: linux-2.6.git/fs/proc/task_mmu.c
->>> ===================================================================
->>> --- linux-2.6.git.orig/fs/proc/task_mmu.c
->>> +++ linux-2.6.git/fs/proc/task_mmu.c
->>> @@ -1402,8 +1402,10 @@ static int show_numa_map(struct seq_file
->>>  	walk.mm = mm;
->>>  
->>>  	pol = get_vma_policy(task, vma, vma->vm_start);
->>> -	mpol_to_str(buffer, sizeof(buffer), pol);
->>> +	n = mpol_to_str(buffer, sizeof(buffer), pol);
->>>  	mpol_cond_put(pol);
->>> +	if (n < 0)
->>> +		return n;
->>>  
->>>  	seq_printf(m, "%08lx %s", vma->vm_start, buffer);
->>>  
->>> Index: linux-2.6.git/mm/shmem.c
->>> ===================================================================
->>> --- linux-2.6.git.orig/mm/shmem.c
->>> +++ linux-2.6.git/mm/shmem.c
->>> @@ -883,16 +883,20 @@ redirty:
->>>  
->>>  #ifdef CONFIG_NUMA
->>>  #ifdef CONFIG_TMPFS
->>> -static void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
->>> +static int shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
->>>  {
->>>  	char buffer[64];
->>> +	int ret;
->>>  
->>>  	if (!mpol || mpol->mode == MPOL_DEFAULT)
->>> -		return;		/* show nothing */
->>> +		return 0;	/* show nothing */
->>>  
->>> -	mpol_to_str(buffer, sizeof(buffer), mpol);
->>> +	ret = mpol_to_str(buffer, sizeof(buffer), mpol);
->>> +	if (ret < 0)
->>> +		return ret;
->>>  
->>>  	seq_printf(seq, ",mpol=%s", buffer);
->>> +	return 0;
->>>  }
->>>  
->>>  static struct mempolicy *shmem_get_sbmpol(struct shmem_sb_info *sbinfo)
->>> @@ -951,9 +955,7 @@ static struct page *shmem_alloc_page(gfp
->>>  }
->>>  #else /* !CONFIG_NUMA */
->>>  #ifdef CONFIG_TMPFS
->>> -static inline void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
->>> -{
->>> -}
->>> +static inline int shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol) { return 0; }
->>>  #endif /* CONFIG_TMPFS */
->>>  
->>>  static inline struct page *shmem_swapin(swp_entry_t swap, gfp_t gfp,
->>> @@ -2577,8 +2579,7 @@ static int shmem_show_options(struct seq
->>>  	if (!gid_eq(sbinfo->gid, GLOBAL_ROOT_GID))
->>>  		seq_printf(seq, ",gid=%u",
->>>  				from_kgid_munged(&init_user_ns, sbinfo->gid));
->>> -	shmem_show_mpol(seq, sbinfo->mpol);
->>> -	return 0;
->>> +	return shmem_show_mpol(seq, sbinfo->mpol);
->>>  }
->>>  #endif /* CONFIG_TMPFS */
->>>  
->>>
->>>
->>
->>
+> Rafael
 > 
-> 
+
+Hi Rafael,
+
+Following test configuration/test case (x86):
+
+- DELL OptiPlex 9010 Intel Core i7-3770
+- Linux repo: [kernel_pm_http/bleeding-edge] [kernel_pm_http/linux-next]
+	SHA1: a238ea5e20be7bea2b1fc951a024ecce770306b5 
+	with v7 applied on top
+
+- Linux version: 3.11-rc4 (patches v7) and 3.11-rc1 (v6)
+
+- Ubuntu 11.10 (make bzImage + make all when module was needed)
+- config_ubuntu_3_11 (the default one for ubuntu)
+- KConfig:
+	1. Disabled intel_pstate driver
+	2. Enabled ACPI-Prosessor P state driver
+	3. Legacy cpb sysfs knob support for AMD CPUs ON/OFF (which is a
+	part of acpi-cpufreq.c driver).
+	
+- acpi-cpufreq driver was build as a module or was embedded in kernel
+  (tested with modprobe -i / -r => no dmesg error|warning output)
+
+- I was able to read/write (echo 0/1
+  > /sys/devices/system/cpu/cpufreq/boost) => no output at dmesg -
+  system was working stable.
+
+Toolchain: gcc version 4.6.1 (Ubuntu/Linaro 4.6.1-9ubuntu3)
+
+Since I'm mostly working with ARM (exynos4412) and major work was done
+with cpufreq core (and x86 related work was to move common code to
+cpufreq core) tests mostly have been performed on ARM.
+
+Tests on ARM:
+- Stress tests with up to 4 scripts running to enable/disable boost
+  sysfs attribute with random time interval (gzip < /dev/urandom
+  > /dev/null). 
+- Test to overheat the ARM target and look if boost+thermal cools down
+  the device and enables boost again.
+- LAB governor (which was already posted to ML) to boost when power
+  envelope allows it.
 
 
 -- 
-Chen Gang
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
