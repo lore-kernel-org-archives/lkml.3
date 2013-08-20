@@ -1,109 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab3HTISy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:18:54 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:35909 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab3HTISw (ORCPT
+	id S1751527Ab3HTIVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:21:14 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:58648 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244Ab3HTIVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:18:52 -0400
-Date: Tue, 20 Aug 2013 10:18:48 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, mm: Add comments for step_size shift
-Message-ID: <20130820081848.GB11072@gmail.com>
-References: <1376546616-17489-1-git-send-email-yinghai@kernel.org>
+	Tue, 20 Aug 2013 04:21:11 -0400
+X-Spam-Score: -101.0
+Message-ID: <521326B7.2090100@asianux.com>
+Date: Tue, 20 Aug 2013 16:20:07 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376546616-17489-1-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        kosaki.motohiro@jp.fujitsu.com, riel@redhat.com, hughd@google.com,
+        xemul@parallels.com, rientjes@google.com,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] mm: mempolicy: the failure processing about mpol_to_str()
+References: <5212E8DF.5020209@asianux.com> <20130820053036.GB18673@moon> <52130194.4030903@asianux.com> <20130820064730.GD18673@moon> <52131F48.1030002@asianux.com> <52132011.60501@asianux.com> <52132432.3050308@asianux.com> <52132523.6040702@gmail.com>
+In-Reply-To: <52132523.6040702@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Yinghai Lu <yinghai@kernel.org> wrote:
+Sorry for reply multiple times to bother many members.
 
-> As request by hpa, add comments for why we choose 5 for
-> step size shift.
+It seems, I am tired, and need have a rest today. :-(
+
+
+On 08/20/2013 04:13 PM, Chen Gang F T wrote:
+> On 08/20/2013 04:09 PM, Chen Gang wrote:
+>> On 08/20/2013 03:51 PM, Chen Gang wrote:
+>>> On 08/20/2013 03:48 PM, Chen Gang wrote:
+>>>> On 08/20/2013 02:47 PM, Cyrill Gorcunov wrote:
+>>>>> On Tue, Aug 20, 2013 at 01:41:40PM +0800, Chen Gang wrote:
+>>>>>>
+>>>>>>> sure you'll have to change shmem_show_mpol statement to return int code.
+>>>>>>> Won't this be more short and convenient?
+>>>>>>>
+>>>>>>>
+>>>>>>
+>>>>>> Hmm... if return -ENOSPC, in common processing, it still need continue
+>>>>>> (but need let outside know about the string truncation).
+>>>>>>
+>>>>>> So I still suggest to give more check for it.
+>>>>>
+>>>>> I still don't like adding additional code like
+>>>>>
+>>>>> +	ret = mpol_to_str(buffer, sizeof(buffer), mpol);
+>>>>> +	if (ret < 0)
+>>>>> +               switch (ret) {
+>>>>> +               case -ENOSPC:
+>>>>> +                       printk(KERN_WARNING
+>>>>> +                               "in %s: string is truncated in mpol_to_str().\n",
+>>>>> +                               __func__);
+>>>
+>>> Oh, that need 'break' in my original patch. :-)
+>>>
+>>>>> +               default:
+>>>>> +                       printk(KERN_ERR
+>>>>> +                               "in %s: call mpol_to_str() fail, errcode: %d. buffer: %p, size: %zu, pol: %p\n",
+>>>>> +                               __func__, ret, buffer, sizeof(buffer), mpol);
+>>>>> +                       return;
+>>>>> +               }
+>>>>>
+>>>>> this code is pretty neat for debugging purpose I think but in most case (if
+>>>>> only I've not missed something obvious) it simply won't be the case.
+>>>>>
+>>>>
+>>>> For mpol_to_str(), it is for printing string, I suggest to fill buffer
+>>>> as full as possible like another printing string functions, -ENOSPC is
+>>>> not critical error, callers may can bear it, and still want to continue.
+>>>>
+>>>> For 2 callers, I still suggest to process '-ENOSPC' and continue, it is
+>>>> really not a critical error, they can continue.
+>>>>
+>>>> For the 'default' error processing:
+>>>>
+>>>>   I still suggest to 'printk' in shmem_show_mpol(), because when failure occurs, it has no return value to mark the failure to upper caller.
+>>>>   Hmm... but for show_numa_map(), may remove the 'printk', only return the error code is OK. :-)
+>>>>
+>>>>
+>>>> Thanks.
+>>>>
+>>
+>> Oh, for '-ENOSPC', it means critical error, it is my fault.
+>>
+>> So, for simplify thinking and implementation, use your patch below is OK
+>> to me (but I suggest to print error information in the none return value
+>> function).
+>>
+>> :-)
+>>
+>>>>> Won't somthing like below do the same but with smaller code change?
+>>>>> Note I've not even compiled it but it shows the idea.
+>>>>> ---
+>>>>>  fs/proc/task_mmu.c |    4 +++-
+>>>>>  mm/shmem.c         |   17 +++++++++--------
+>>>>>  2 files changed, 12 insertions(+), 9 deletions(-)
+>>>>>
+>>>>> Index: linux-2.6.git/fs/proc/task_mmu.c
+>>>>> ===================================================================
+>>>>> --- linux-2.6.git.orig/fs/proc/task_mmu.c
+>>>>> +++ linux-2.6.git/fs/proc/task_mmu.c
+>>>>> @@ -1402,8 +1402,10 @@ static int show_numa_map(struct seq_file
+>>>>>  	walk.mm = mm;
+>>>>>  
+>>>>>  	pol = get_vma_policy(task, vma, vma->vm_start);
+>>>>> -	mpol_to_str(buffer, sizeof(buffer), pol);
+>>>>> +	n = mpol_to_str(buffer, sizeof(buffer), pol);
+>>>>>  	mpol_cond_put(pol);
+>>>>> +	if (n < 0)
+>>>>> +		return n;
+>>>>>  
+>>>>>  	seq_printf(m, "%08lx %s", vma->vm_start, buffer);
+>>>>>  
+>>>>> Index: linux-2.6.git/mm/shmem.c
+>>>>> ===================================================================
+>>>>> --- linux-2.6.git.orig/mm/shmem.c
+>>>>> +++ linux-2.6.git/mm/shmem.c
+>>>>> @@ -883,16 +883,20 @@ redirty:
+>>>>>  
+>>>>>  #ifdef CONFIG_NUMA
+>>>>>  #ifdef CONFIG_TMPFS
+>>>>> -static void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+>>>>> +static int shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+>>>>>  {
+>>>>>  	char buffer[64];
+>>>>> +	int ret;
+>>>>>  
+>>>>>  	if (!mpol || mpol->mode == MPOL_DEFAULT)
+>>>>> -		return;		/* show nothing */
+>>>>> +		return 0;	/* show nothing */
+>>>>>  
+>>>>> -	mpol_to_str(buffer, sizeof(buffer), mpol);
+>>>>> +	ret = mpol_to_str(buffer, sizeof(buffer), mpol);
+>>>>> +	if (ret < 0)
+>>>>> +		return ret;
+>>>>>  
+>>>>>  	seq_printf(seq, ",mpol=%s", buffer);
+>>>>> +	return 0;
+>>>>>  }
+>>>>>  
+>>>>>  static struct mempolicy *shmem_get_sbmpol(struct shmem_sb_info *sbinfo)
+>>>>> @@ -951,9 +955,7 @@ static struct page *shmem_alloc_page(gfp
+>>>>>  }
+>>>>>  #else /* !CONFIG_NUMA */
+>>>>>  #ifdef CONFIG_TMPFS
+>>>>> -static inline void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+>>>>> -{
+>>>>> -}
+>>>>> +static inline int shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol) { return 0; }
+>>>>>  #endif /* CONFIG_TMPFS */
+>>>>>  
+>>>>>  static inline struct page *shmem_swapin(swp_entry_t swap, gfp_t gfp,
+>>>>> @@ -2577,8 +2579,7 @@ static int shmem_show_options(struct seq
+>>>>>  	if (!gid_eq(sbinfo->gid, GLOBAL_ROOT_GID))
+>>>>>  		seq_printf(seq, ",gid=%u",
+>>>>>  				from_kgid_munged(&init_user_ns, sbinfo->gid));
+>>>>> -	shmem_show_mpol(seq, sbinfo->mpol);
+>>>>> -	return 0;
+>>>>> +	return shmem_show_mpol(seq, sbinfo->mpol);
+>>>>>  }
+>>>>>  #endif /* CONFIG_TMPFS */
+>>>>>  
+>>>>>
+>>>>>
 > 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Oh, you have done, sorry.
 > 
-> ---
->  arch/x86/mm/init.c |   21 ++++++++++++++++++---
->  1 file changed, 18 insertions(+), 3 deletions(-)
+>>>>
+>>>>
+>>>
+>>>
+>>
+>>
 > 
-> Index: linux-2.6/arch/x86/mm/init.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/mm/init.c
-> +++ linux-2.6/arch/x86/mm/init.c
-> @@ -395,8 +395,23 @@ static unsigned long __init init_range_m
->  	return mapped_ram_size;
->  }
->  
-> -/* (PUD_SHIFT-PMD_SHIFT)/2 */
-> -#define STEP_SIZE_SHIFT 5
-> +static unsigned long __init get_new_step_size(unsigned long step_size)
-> +{
-> +	/*
-> +	 * initial mapped size is PMD_SIZE, aka 2M.
-> +	 * We can not set step_size to be PUD_SIZE aka 1G yet.
-> +	 * In worse case, when 1G is cross the 1G boundary, and
-> +	 * PG_LEVEL_2M is not set, we will need 1+1+512 pages (aka 2M + 8k)
-> +	 * to map 1G range with PTE. Use 5 as shift for now.
-> +	 */
-
-This is much more readable:
-
-+       /*
-+        * initial mapped size is PMD_SIZE (2M).
-+        * We can not set step_size to be PUD_SIZE (1G) yet.
-+        * In the worst case, when we cross the 1G boundary, and
-+        * PG_LEVEL_2M is not set, we will need 1+1+512 pages (2M+8k)
-+        * to map 1G range with PTE. Use 5 as shift for now.
-+        */
+> 
 
 
-> +	unsigned long new_step_size = step_size << 5;
-> +
-> +	if (new_step_size > step_size)
-> +		step_size = new_step_size;
-> +
-> +	return  step_size;
-> +}
-> +
->  void __init init_mem_mapping(void)
->  {
->  	unsigned long end, real_end, start, last_start;
-> @@ -445,7 +460,7 @@ void __init init_mem_mapping(void)
->  		min_pfn_mapped = last_start >> PAGE_SHIFT;
->  		/* only increase step_size after big range get mapped */
->  		if (new_mapped_ram_size > mapped_ram_size)
-> -			step_size <<= STEP_SIZE_SHIFT;
-> +			step_size = get_new_step_size(step_size);
->  		mapped_ram_size += new_mapped_ram_size;
->  	}
-
-As-is the changelog claims it only adds comments - but it 
-obviously does more than that ...
-
-Yinghai, for the 1001st time, please use the customary 
-changelog style we use in the kernel:
-
-  " Current code does (A), this has a problem when (B).
-    We can improve this doing (C), because (D)."
-
-I'm also going to suggest something radical: how about you 
-keep this sugestion of mine in mind for _all_ future 
-patches so I don't have to repeat it for every 3rd patch 
-like I had to for the past 4 years, non-stop? Okay?
-
-Thanks,
-
-	Ingo
+-- 
+Chen Gang
