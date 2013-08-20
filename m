@@ -1,119 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567Ab3HTRA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 13:00:26 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50315 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab3HTRAY (ORCPT
+	id S1751644Ab3HTRBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 13:01:10 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:39021 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab3HTRBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 13:00:24 -0400
-Message-ID: <5213A0A7.9010502@codeaurora.org>
-Date: Tue, 20 Aug 2013 10:00:23 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 20 Aug 2013 13:01:08 -0400
+Date: Tue, 20 Aug 2013 21:01:05 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH -mm] docs: Document soft dirty behaviour for freshly
+ created memory regions
+Message-ID: <20130820170105.GM18673@moon>
+References: <20130820153132.GK18673@moon>
+ <5213A002.7020408@infradead.org>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/4] devicetree: serial: Document msm_serial bindings
-References: <1376948397-6882-1-git-send-email-sboyd@codeaurora.org> <1376948397-6882-3-git-send-email-sboyd@codeaurora.org> <543F6671-8317-446A-B14A-147373BCA9B6@codeaurora.org>
-In-Reply-To: <543F6671-8317-446A-B14A-147373BCA9B6@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5213A002.7020408@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/13 07:41, Kumar Gala wrote:
-> On Aug 19, 2013, at 4:39 PM, Stephen Boyd wrote:
->
->> diff --git a/Documentation/devicetree/bindings/serial/msm_serial.txt b/Documentation/devicetree/bindings/serial/msm_serial.txt
->> new file mode 100644
->> index 0000000..a6efac3
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/serial/msm_serial.txt
->> @@ -0,0 +1,82 @@
->> +* MSM Serial UART and UARTDM
->> +
->> +There are two MSM serial hardware designs. UARTDM is designed for use with a
->> +dma engine in high-speed use cases and the non-DM design is for lower speed use
->> +cases. The two designs are mostly compatible from a software perspective except
->> +the non-DM design can only read and write one character at a time and so the
->> +register layout differs slightly.
-> I think you split this into two binding spec docs, one for each type of uart.
+On Tue, Aug 20, 2013 at 09:57:38AM -0700, Randy Dunlap wrote:
+> >  
+> > +  While in most cases tracking memory changes by #PF-s is more than enough
+>                                                                        enough,
 
-Should split into two files? I can do that.
+?
 
->
->> +
->> +UART
->> +----
->> +Required properties:
->> +- compatible: Should contain "qcom,msm-uart"
->> +- reg: Should contain UART register location and length. The first
-> first? is there more than one reg region?
->
->> +       register shall specify the main control registers
->> +- interrupts: Should contain UART interrupt.
->> +- clocks: Should contain the core clock.
->> +- clock-names: Should be "core_clk".
->> +
->> +Optional properties:
->> +- dmas: Should contain dma specifiers for transmit and receive
->> +- dma-names: Should contain "tx" for transmit and "rx" for receive
-> confused, above you say the non-DM doesn't support DMA so, why the optional props?
-
-Ah sorry, copy pasta.
-
->
->> +
->> +Example:
->> +
->> +A uart device with dma capabilities.
->> +
->> +serial@a9c00000 {
->> +	compatible = "qcom,msm-uart";
->> +	reg = <0xa9c00000 0x1000>;
->> +	interrupts = <11>;
->> +	clocks = <&uart_cxc>;
->> +	clock-names = "core_clk";
->> +	dmas = <&dma0 0>, <&dma0 1>;
->> +	dma-names = "tx", "rx";
->> +};
->> +
->> +UARTDM
->> +------
->> +Required properties:
->> +- compatible: Should contain at least "qcom,msm-uartdm".
->> +              A more specific property should be specified as follows depending
->> +	      on the version:
->> +		"qcom,msm-uartdm-v1.1"
->> +		"qcom,msm-uartdm-v1.2"
->> +		"qcom,msm-uartdm-v1.3"
->> +		"qcom,msm-uartdm-v1.4"
->> +- reg: Should contain UART register locations and lengths. The first
->> +       register shall specify the main control registers. An optional second
->> +       register location shall specify the GSBI control region.
-> Is GSBI region existing tied to particular versions (if so can we say that)
-
-Not really. GSBI will always be related to v1.3 but not all v1.3
-hardware is part of a GSBI.
-
->
-> reg-names?
-
-Optional should be fine? The driver is already handling this without
-reg-names.
-
->> +- interrupts: Should contain UART interrupt.
->> +- clocks: Should contain the core clock and the ahb clock.
-> nit, ahb in caps?
-
-Done.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+For the rest -- thanks a LOT Randy, I'll update.
