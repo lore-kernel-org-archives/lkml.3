@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab3HTU7U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 16:59:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37486 "EHLO
+	id S1752117Ab3HTU7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 16:59:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37506 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab3HTU7R (ORCPT
+	with ESMTP id S1751142Ab3HTU70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 16:59:17 -0400
-Date: Tue, 20 Aug 2013 13:59:15 -0700
+	Tue, 20 Aug 2013 16:59:26 -0400
+Date: Tue, 20 Aug 2013 13:59:24 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
@@ -23,11 +23,11 @@ Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
         Vlastimil Babka <vbabka@suse.cz>, linux-mm@kvack.org,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 5/9] mm + fs: store shadow entries in page cache
-Message-Id: <20130820135915.80e05e1554597666a8e6ef88@linux-foundation.org>
-In-Reply-To: <1376767883-4411-6-git-send-email-hannes@cmpxchg.org>
+Subject: Re: [patch 9/9] mm: workingset: keep shadow entries in check
+Message-Id: <20130820135924.937d93a3fd0368b48ba01189@linux-foundation.org>
+In-Reply-To: <1376767883-4411-10-git-send-email-hannes@cmpxchg.org>
 References: <1376767883-4411-1-git-send-email-hannes@cmpxchg.org>
-	<1376767883-4411-6-git-send-email-hannes@cmpxchg.org>
+	<1376767883-4411-10-git-send-email-hannes@cmpxchg.org>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -36,87 +36,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 17 Aug 2013 15:31:19 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Sat, 17 Aug 2013 15:31:23 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-> Reclaim will be leaving shadow entries in the page cache radix tree
-> upon evicting the real page.  As those pages are found from the LRU,
-> an iput() can lead to the inode being freed concurrently.  At this
-> point, reclaim must no longer install shadow pages because the inode
-> freeing code needs to ensure the page tree is really empty.
-> 
-> Add an address_space flag, AS_EXITING, that the inode freeing code
-> sets under the tree lock before doing the final truncate.  Reclaim
-> will check for this flag before installing shadow pages.
-> 
-> ...
->
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -503,6 +503,7 @@ void clear_inode(struct inode *inode)
->  	 */
->  	spin_lock_irq(&inode->i_data.tree_lock);
->  	BUG_ON(inode->i_data.nrpages);
-> +	BUG_ON(inode->i_data.nrshadows);
->  	spin_unlock_irq(&inode->i_data.tree_lock);
->  	BUG_ON(!list_empty(&inode->i_data.private_list));
->  	BUG_ON(!(inode->i_state & I_FREEING));
-> @@ -545,10 +546,14 @@ static void evict(struct inode *inode)
->  	 */
->  	inode_wait_for_writeback(inode);
->  
-> +	spin_lock_irq(&inode->i_data.tree_lock);
-> +	mapping_set_exiting(&inode->i_data);
-> +	spin_unlock_irq(&inode->i_data.tree_lock);
+> Previously, page cache radix tree nodes were freed after reclaim
+> emptied out their page pointers.  But now reclaim stores shadow
+> entries in their place, which are only reclaimed when the inodes
+> themselves are reclaimed.  This is problematic for bigger files that
+> are still in use after they have a significant amount of their cache
+> reclaimed, without any of those pages actually refaulting.  The shadow
+> entries will just sit there and waste memory.  In the worst case, the
+> shadow entries will accumulate until the machine runs out of memory.
 
-mapping_set_exiting() is atomic and the locking here probably doesn't do
-anythng useful.
+erk.  This whole patch is overhead :(
 
-
->  	if (op->evict_inode) {
->  		op->evict_inode(inode);
->  	} else {
-> -		if (inode->i_data.nrpages)
-> +		if (inode->i_data.nrpages || inode->i_data.nrshadows)
->  			truncate_inode_pages(&inode->i_data, 0);
->  		clear_inode(inode);
->  	}
+> To get this under control, a list of inodes that contain shadow
+> entries is maintained.  If the global number of shadows exceeds a
+> certain threshold, a shrinker is activated that reclaims old entries
+> from the mappings.  This is heavy-handed but it should not be a hot
+> path and is mainly there to protect from accidentally/maliciously
+> induced OOM kills.  The global list is also not a problem because the
+> modifications are very rare: inodes are added once in their lifetime
+> when the first shadow entry is stored (i.e. the first page reclaimed)
+> and lazily removed when the inode exits.  Or if the shrinker removes
+> all shadow entries.
 > 
 > ...
 >
 > --- a/include/linux/fs.h
 > +++ b/include/linux/fs.h
-> @@ -416,6 +416,7 @@ struct address_space {
->  	struct mutex		i_mmap_mutex;	/* protect tree, count, list */
+> @@ -417,6 +417,7 @@ struct address_space {
 >  	/* Protected by tree_lock together with the radix tree */
 >  	unsigned long		nrpages;	/* number of total pages */
-> +	unsigned long		nrshadows;	/* number of shadow entries */
+>  	unsigned long		nrshadows;	/* number of shadow entries */
+> +	struct list_head	shadow_list;	/* list of mappings with shadows */
 >  	pgoff_t			writeback_index;/* writeback starts here */
 >  	const struct address_space_operations *a_ops;	/* methods */
 >  	unsigned long		flags;		/* error bits/gfp mask */
 
-This grows the size of the in-core inode.  There can be tremendous
-numbers of those so this was a significantly costly change.
+There's another 16 bytes into the inode.  Bad.
 
-And this whole patchset contains no data which permits us to agree that
-this cost was worthwhile.
+>
+> ...
+>
+> +void workingset_shadows_inc(struct address_space *mapping)
+> +{
+> +	might_lock(&shadow_lock);
+> +
+> +	if (mapping->nrshadows == 0 && list_empty(&mapping->shadow_list)) {
+> +		spin_lock(&shadow_lock);
 
-> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-> index b6854b7..db3a78b 100644
-> --- a/include/linux/pagemap.h
-> +++ b/include/linux/pagemap.h
-> @@ -25,6 +25,7 @@ enum mapping_flags {
->  	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
->  	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
->  	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
-> +	AS_EXITING	= __GFP_BITS_SHIFT + 5, /* inode is being evicted */
+I can't work out whether or not shadow_lock is supposed to be irq-save.
+Some places it is, others are unobvious.
 
-This is far too little documentation.  I suggest adding the complete
-rationale at the mapping_set_exiting() definition site.  Or perhaps at
-the mapping_set_exiting callsite in evict().
+> +		list_add(&mapping->shadow_list, &shadow_mappings);
+> +		spin_unlock(&shadow_lock);
+> +	}
+> +
+> +	mapping->nrshadows++;
+> +	this_cpu_inc(nr_shadows);
+> +}
+> +
+>
+> ...
+>
+> +static unsigned long get_nr_old_shadows(void)
+> +{
+> +	unsigned long nr_max;
+> +	unsigned long nr;
+> +	long sum = 0;
+> +	int cpu;
+> +
+> +	for_each_possible_cpu(cpu)
+> +		sum += per_cpu(nr_shadows, cpu);
 
->  };
->  
-> 
+Ouch, slow.  shrink_slab() will call this repeatedly and scan_shadows()
+calls it from a loop.  Can we use something non-deathly-slow here? 
+Like percpu_counter_read_positive()?
+
+> +	nr = max(sum, 0L);
+> +
+> +	/*
+> +	 * Every shadow entry with a refault distance bigger than the
+> +	 * active list is ignored and so NR_ACTIVE_FILE would be a
+> +	 * reasonable ceiling.  But scanning and shrinking shadow
+> +	 * entries is quite expensive, so be generous.
+> +	 */
+> +	nr_max = global_dirtyable_memory() * 4;
+> +
+> +	if (nr <= nr_max)
+> +		return 0;
+> +	return nr - nr_max;
+> +}
+> +
+> +static unsigned long scan_mapping(struct address_space *mapping,
+> +				  unsigned long nr_to_scan)
+
+Some methodological description would be useful.
+
+> +{
+> +	unsigned long nr_scanned = 0;
+> +	struct radix_tree_iter iter;
+> +	void **slot;
+> +
+> +	rcu_read_lock();
+> +restart:
+> +	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, 0) {
+> +		unsigned long nrshadows;
+> +		unsigned long distance;
+> +		struct zone *zone;
+> +		struct page *page;
+> +
+> +		page = radix_tree_deref_slot(slot);
+> +		if (unlikely(!page))
+> +			continue;
+> +		if (!radix_tree_exception(page))
+> +			continue;
+> +		if (radix_tree_deref_retry(page))
+> +			goto restart;
+> +
+> +		unpack_shadow(page, &zone, &distance);
+> +
+> +		if (distance <= zone_page_state(zone, NR_ACTIVE_FILE))
+> +			continue;
+> +
+> +		spin_lock_irq(&mapping->tree_lock);
+> +		if (radix_tree_delete_item(&mapping->page_tree,
+> +					   iter.index, page)) {
+> +			inc_zone_state(zone, WORKINGSET_SHADOWS_RECLAIMED);
+> +			workingset_shadows_dec(mapping);
+> +			nr_scanned++;
+> +		}
+> +		nrshadows = mapping->nrshadows;
+> +		spin_unlock_irq(&mapping->tree_lock);
+> +
+> +		if (nrshadows == 0)
+> +			break;
+> +
+> +		if (--nr_to_scan == 0)
+> +			break;
+> +	}
+> +	rcu_read_unlock();
+> +
+> +	return nr_scanned;
+> +}
+> +
+>
 > ...
 >
 
