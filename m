@@ -1,124 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab3HTRtG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 13:49:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29898 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab3HTRtE (ORCPT
+	id S1751382Ab3HTRyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 13:54:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36980 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079Ab3HTRyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 13:49:04 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=WWWfXbpW1U4A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=G5Vss12qNGkA:10 a=3nbZYyFuAAAA:8 a=qvKfzsYS1eiJEvllE8MA:9 a=CjuIK1q_8ugA:10 a=EvKJbDF4Ut8A:10 a=VKV9jnB5HeBIhUuT:21 a=e5d2Wlg_k4ukIKWG:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 20 Aug 2013 13:49:02 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 07/11] [CLEANUP] trace-cmd: Split out binding a port
- and fork reader from open_udp()
-Message-ID: <20130820134902.3a06e4d0@gandalf.local.home>
-In-Reply-To: <20130819094637.26597.35505.stgit@yunodevel>
-References: <20130819094620.26597.79499.stgit@yunodevel>
-	<20130819094637.26597.35505.stgit@yunodevel>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Aug 2013 13:54:40 -0400
+Date: Tue, 20 Aug 2013 19:54:29 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20130820175429.GI3258@twins.programming.kicks-ass.net>
+References: <20130816160201.GA31682@redhat.com>
+ <20130816162056.GE24210@somewhere>
+ <20130816162654.GA453@redhat.com>
+ <20130816164626.GH24210@somewhere>
+ <20130819111026.GE24092@twins.programming.kicks-ass.net>
+ <521313D8.9080500@lab.ntt.co.jp>
+ <20130820084405.GC3258@twins.programming.kicks-ass.net>
+ <52138BE9.5090005@linux.intel.com>
+ <20130820160146.GG3258@twins.programming.kicks-ass.net>
+ <20130820163312.GA17957@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820163312.GA17957@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Aug 2013 18:46:37 +0900
-Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
+On Tue, Aug 20, 2013 at 06:33:12PM +0200, Oleg Nesterov wrote:
+> On 08/20, Peter Zijlstra wrote:
 
-> Split out binding a port and fork reader from open_udp() for avoiding duplicate
-> codes between listen mode and virt-server mode.
+> I am wondering how the extra lock(rq)/unlock(rq) in schedule() is bad
+> compared to atomic_dec.
 > 
-> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> ---
->  trace-listen.c |   34 ++++++++++++++++++++++++++--------
->  1 file changed, 26 insertions(+), 8 deletions(-)
+> IOW, what if we simply make rq->nr_iowait "int" and change schedule()
+> to update it? Something like below. Just curious.
 > 
-> diff --git a/trace-listen.c b/trace-listen.c
-> index f29dd35..bf9ef9d 100644
-> --- a/trace-listen.c
-> +++ b/trace-listen.c
-> @@ -228,13 +228,12 @@ static void process_udp_child(int sfd, const char *host, const char *port,
->  #define START_PORT_SEARCH 1500
->  #define MAX_PORT_SEARCH 6000
->  
-> -static int open_udp(const char *node, const char *port, int *pid,
-> -		    int cpu, int pagesize, int start_port)
-> +static int udp_bind_a_port(int start_port, int *sfd)
->  {
->  	struct addrinfo hints;
->  	struct addrinfo *result, *rp;
-> -	int sfd, s;
->  	char buf[BUFSIZ];
-> +	int s;
->  	int num_port = start_port;
->  
->   again:
-> @@ -250,15 +249,15 @@ static int open_udp(const char *node, const char *port, int *pid,
->  		pdie("getaddrinfo: error opening udp socket");
->  
->  	for (rp = result; rp != NULL; rp = rp->ai_next) {
-> -		sfd = socket(rp->ai_family, rp->ai_socktype,
-> -			     rp->ai_protocol);
-> -		if (sfd < 0)
-> +		*sfd = socket(rp->ai_family, rp->ai_socktype,
-> +			      rp->ai_protocol);
-> +		if (*sfd < 0)
->  			continue;
->  
-> -		if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
-> +		if (bind(*sfd, rp->ai_addr, rp->ai_addrlen) == 0)
->  			break;
->  
-> -		close(sfd);
-> +		close(*sfd);
->  	}
->  
->  	if (rp == NULL) {
-> @@ -270,6 +269,12 @@ static int open_udp(const char *node, const char *port, int *pid,
->  
->  	freeaddrinfo(result);
->  
-> +	return num_port;
-> +}
-> +
-> +static void fork_udp_reader(int sfd, const char *node, const char *port,
-> +			    int *pid, int cpu, int pagesize)
-> +{
->  	*pid = fork();
->  
->  	if (*pid < 0)
-> @@ -279,6 +284,19 @@ static int open_udp(const char *node, const char *port, int *pid,
->  		process_udp_child(sfd, node, port, cpu, pagesize);
->  
->  	close(sfd);
-> +}
-> +
-> +static int open_udp(const char *node, const char *port, int *pid,
-> +		    int cpu, int pagesize, int start_port)
-> +{
-> +	int sfd;
-> +	int num_port;
-> +
-> +	num_port = udp_bind_a_port(start_port, &sfd);
-> +	if (num_port < 0)
-> +		return num_port;
+> As for nr_iowait_local + nr_iowait_remote, this doesn't look safe...
+> in theory nr_iowait_cpu() or even nr_iowait() can return a negative
+> number.
 
-I don't see how num_port could be less than zero.
+I'm too tired to see how its different, I'll think on it :-)
 
--- Steve
 
-> +
-> +	fork_udp_reader(sfd, node, port, pid, cpu, pagesize);
+That said:
+
+> --- x/kernel/sched/core.c
+> +++ x/kernel/sched/core.c
+> @@ -2435,6 +2435,9 @@ need_resched:
+>  		rq->curr = next;
+>  		++*switch_count;
 >  
->  	return num_port;
->  }
+> +		if (unlikely(prev->in_iowait))
+> +			rq->nr_iowait++;
+> +
+>  		context_switch(rq, prev, next); /* unlocks the rq */
+>  		/*
+>  		 * The context switch have flipped the stack from under us
+> @@ -2442,6 +2445,12 @@ need_resched:
+>  		 * this task called schedule() in the past. prev == current
+>  		 * is still correct, but it can be moved to another cpu/rq.
+>  		 */
+> +		if (unlikely(prev->in_iowait)) {
+> +			raw_spin_lock_irq(&rq->lock);
+> +			rq->nr_iowait--;
+> +			raw_spin_unlock_irq(&rq->lock);
+> +		}
 
+This seems like the wrong place, this is where you return from
+schedule() running another task, not where the task you just send to
+sleep wakes up.
+
+If you want to to this, the nr_iowait decrement needs to be in the
+wakeup path someplace.
+
+>  		cpu = smp_processor_id();
+>  		rq = cpu_rq(cpu);
+>  	} else
