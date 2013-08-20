@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab3HTVtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:49:47 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:46185 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab3HTVtd convert rfc822-to-8bit (ORCPT
+	id S1751444Ab3HTVwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:52:49 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:43603 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab3HTVws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:49:33 -0400
-Date: Tue, 20 Aug 2013 16:49:29 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: rfc: trivial patches and slow deaths?
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors <kernel-janitors@vger.kernel.org>
-References: <1376944033.2016.13.camel@joe-AO722>
-	<alpine.LNX.2.00.1308192229360.21654@pobox.suse.cz>
-	<1376946644.2016.35.camel@joe-AO722>
-	<alpine.LNX.2.00.1308192315000.21654@pobox.suse.cz>
-	<1376947637.2016.39.camel@joe-AO722> <1377028944.2737.75@driftwood>
-	<1377029650.2016.72.camel@joe-AO722>
-In-Reply-To: <1377029650.2016.72.camel@joe-AO722> (from joe@perches.com on
-	Tue Aug 20 15:14:10 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1377035369.2737.85@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Aug 2013 17:52:48 -0400
+Message-ID: <1377035565.24869.53.camel@bobble.lax.corp.google.com>
+Subject: Re: [dm-devel] dm: Make MIN_IOS, et al, tunable via sysctl.
+From: Frank Mayhar <fmayhar@google.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 20 Aug 2013 14:52:45 -0700
+In-Reply-To: <alpine.LRH.2.02.1308201742350.8826@file01.intranet.prod.int.rdu2.redhat.com>
+References: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
+	 <20130819140016.GB27167@redhat.com>
+	 <1376934845.24869.43.camel@bobble.lax.corp.google.com>
+	 <alpine.LRH.2.02.1308201742350.8826@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 03:14:10 PM, Joe Perches wrote:
-> On Tue, 2013-08-20 at 15:02 -0500, Rob Landley wrote:
-> > On 08/19/2013 04:27:17 PM, Joe Perches wrote:
-> > > On Mon, 2013-08-19 at 23:22 +0200, Jiri Kosina wrote:
-> > > > On Mon, 19 Aug 2013, Joe Perches wrote:
-> > > >
-> > > > > This is a 7 line patch that corrects logging defects that has  
-> had
-> > > no
-> > > > > reply from you for the last month.
-> > > > >
-> > > > > https://patchwork.kernel.org/patch/2833648/
-> > > >
-> > > > This hasn't missed any Linus' major release, as it has been
-> > > submitted post
-> > > > 3.11 merge, right? (hint, that was Jul 4th).
-> > > >
-> > > > If this would miss *next* major Linus' release, I would accept  
-> your
-> > > > complaints. But this is definitely not the case.
-> > >
-> > > You're suggesting this patch, which corrects obvious
-> > > defects, should miss 3.12 and go into 3.13?
-> > >
-> > > I think that's wrong.
-> >
-> > Correcting obvious defects, which can't wait a release, is "trivial"
-> > now, is it?
+On Tue, 2013-08-20 at 17:44 -0400, Mikulas Patocka wrote:
+> On Mon, 19 Aug 2013, Frank Mayhar wrote:
+> > On Mon, 2013-08-19 at 10:00 -0400, Mike Snitzer wrote:
+> > > Performance isn't the concern.  The concern is: does DM allow for
+> > > forward progress if the system's memory is completely exhausted?
+> > > 
+> > > This is why request-based has such an extensive reserve, because it
+> > > needs to account for cloning the largest possible request that comes in
+> > > (with multiple bios).
+> > 
+> > Thanks for the response.  In our particular case, I/O will be file
+> > system based and over a network, which makes it pretty easy for us to be
+> > sure that large I/Os never happen.  That notwithstanding, however, as
+> > you said it just seems reasonable to make these values configurable.
+> > 
+> > I'm also looking at making some similar constants in dm-verity and
+> > dm-bufio configurable in the same way and for similar reasons.
 > 
-> Rob, how do you suggest this obvious and trivial
-> patch be handled?
+> Regarding dm-bufio: the user of dm-bufio sets the pool size as an argument 
+> in dm_bufio_client_create. There is no need to make it configurable - if 
+> the user selects too low value, deadlock is possible, if the user selects 
+> too high value, there is no additional advantage.
 
-Obvious != trivial. They're orthogonal.
+True, but dm-bufio also allocates a a fixed-size 8MB (on a 64-bit
+machine) hash table.  I'm still getting performance data but it appears
+that reducing this, even by a lot, doesn't impact performance
+significantly, at least not with the workload I'm running.  (Which is
+using fio, random and sequential reads of varying buffer sizes.)
 
-> Send 6+ 1 line patches that do the same thing to
-> individual maintainers?
+> Regarding dm-verity: the mempool size is 4, there is no need to make it 
+> bigger, there is no advantage from that.
 
-If it's important send it to Andrew Morton.
+Also true, but there may be an advantage in making it smaller.
+-- 
+Frank Mayhar
+310-460-4042
 
-> The next release in a couple/few weeks is 3.11.
-> 3.12 should take 2.5/3 months for a typical cycle.
-> 
-> Patches bound for 3.12 should be in -next today.
-> 
-> 3.13 should be out in about half a year.
-> 
-> Is it really appropriate to delay the trivially
-> obvious for sixish months?
-
-If it's trivial it's not time critical. If it's time critical it's not  
-trivial.
-
-Rob
