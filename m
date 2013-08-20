@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365Ab3HTM3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 08:29:47 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56850 "EHLO comal.ext.ti.com"
+	id S1751249Ab3HTMax (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 08:30:53 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51383 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750949Ab3HTM3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 08:29:44 -0400
-Date: Tue, 20 Aug 2013 07:29:07 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: <balbi@ti.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>,
-        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
-        <idos@codeaurora.org>, <mgautam@codeaurora.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v4 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
- for DWC3 core
-Message-ID: <20130820122907.GU26587@radagast>
-Reply-To: <balbi@ti.com>
-References: <1376992565-22292-1-git-send-email-iivanov@mm-sol.com>
- <1376992565-22292-3-git-send-email-iivanov@mm-sol.com>
+	id S1750923Ab3HTMaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 08:30:52 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>
+Subject: Re: [RFC PATCH] freezer: allow killing of frozen tasks
+Date: Tue, 20 Aug 2013 14:41:26 +0200
+Message-ID: <7588112.eXrFpITlCh@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130820122727.GC3926@htj.dyndns.org>
+References: <5917186.DMyAa9ofOj@amdc1032> <7346644.tueXegsfXu@vostro.rjw.lan> <20130820122727.GC3926@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="o3Y+93sjbn8Tp8J9"
-Content-Disposition: inline
-In-Reply-To: <1376992565-22292-3-git-send-email-iivanov@mm-sol.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---o3Y+93sjbn8Tp8J9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday, August 20, 2013 08:27:27 AM Tejun Heo wrote:
+> On Tue, Aug 20, 2013 at 02:34:14PM +0200, Rafael J. Wysocki wrote:
+> > On Tuesday, August 20, 2013 08:22:00 AM Tejun Heo wrote:
+> > > On Tue, Aug 20, 2013 at 02:30:18PM +0200, Rafael J. Wysocki wrote:
+> > > > > So, I don't think we can simply turn TASK_UNITERRUPTIBLE to
+> > > > > TASK_KILLABLE at this point.  We really need to strictly define where
+> > > > > a task can freeze before being able to do anything like this.
+> > > > 
+> > > > But we could do that for user space tasks I suppose?
+> > > 
+> > > Even for userland tasks, we don't know where the task is stuck at.  I
+> > > think there are enough freeze points in the kernel which are in the
+> > > middle of something which can be used by userland tasks excuting some
+> > > syscall.  We need to collect all those sites into well defined trap
+> > > points before doing this.
+> > 
+> > OK, thanks!
+> 
+> I scanned through try_to_freeze() users and it seems like we don't
+> have that many which can be hit by userland tasks.  I think it should
+> be doable to audit all the users, remove the ones which can be invoked
+> by userland and make try_to_freeze() whine loudly if it's running off
+> a userland task except from well-defined spots.
 
-Hi,
+Which might be worth doing anyway to be sure we know what's going on.
 
-On Tue, Aug 20, 2013 at 12:56:04PM +0300, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->=20
-> These drivers handles control and configuration of the HS
-> and SS USB PHY transceivers. They are part of the driver
-> which manage Synopsys DesignWare USB3 controller stack
-> inside Qualcomm SoC's.
->=20
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> ---
->  drivers/usb/phy/Kconfig           |   11 ++
->  drivers/usb/phy/Makefile          |    2 +
->  drivers/usb/phy/phy-msm-dwc3-hs.c |  327 ++++++++++++++++++++++++++++++++
->  drivers/usb/phy/phy-msm-dwc3-ss.c |  374 +++++++++++++++++++++++++++++++=
-++++++
+> Anyways, we need to ensure that userland task doesn't get stuck deep in the
+> kernel before allowing this.
 
-please rename these PHY drivers, they have nothing to do with DWC3. PHYs
-don't care about the USB controller.
+Agreed.
 
---=20
-balbi
+Thanks,
+Rafael
 
---o3Y+93sjbn8Tp8J9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSE2ESAAoJEIaOsuA1yqREIL4P/1cob1PswOBmMq65gFAxvk9z
-PFIjvP3IMG7iTwt74CC9QEHMinZCkTQ+XMII0ubsZG7EIxayknJt8igTG2rY/KHH
-7uWPYwuI89sDmGl3tCfq46rNqTvaZu3A9KRxmwBCDJFkaYF482KcIlFh6cdW8Cmq
-R3VgpM2fnDYcgHp9TcpZVktMuynl2fYfOETvirFd9Sevvu5GGSG/HP7RWW0jhD8u
-SYXVo+Et+MVRjqt0fcH1p9AxEz1iov0zTqubNkwjdgMN2teElP2hpt4VEMuKubnL
-2OphTzPd7HmuTh5pMe/elOI9EfJfOufFTBrS7WiVzHwEjPzMfgjJRRjkf3BzNlqL
-jDSimDF6hrQJm2DjTG0iwFxWtZX1FPeuERc4h+CgA2ED+1iipwNXvjdUrg/eOxj6
-sBlYp0d3mjTa02Y7xXybTOooqADsn7ffUiMSWpkNXnzwEqXi3jnYtxoYxlY0lIGI
-07O13LrJ+RhXcRIv6jmAPFVBfo91xbA/TJ5TkChCSixDQsFFeQZ1wJGeYEAIN1XH
-8VWDTkjUiJiLDKLfUdzmzPgO/MN80SwFu46ojDBr8J48wXrMt/+x+4com4Wc7MN7
-DvNx3BZfdOv+gKuemPlufE7n+OLER5XVPZyNR4vMd5AOW8yYbAjrfcTJ+7oVVRHH
-OW0WfohqKLIyQtZhLxGS
-=Py2d
------END PGP SIGNATURE-----
-
---o3Y+93sjbn8Tp8J9--
