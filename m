@@ -1,94 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab3HTVyc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:54:32 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:53774 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617Ab3HTVyY (ORCPT
+	id S1751949Ab3HTVyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:54:38 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42181 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab3HTVyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:54:24 -0400
+	Tue, 20 Aug 2013 17:54:36 -0400
+Date: Tue, 20 Aug 2013 22:51:21 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
+        jiada_wang@mentor.com, robherring2@gmail.com, grant.likely@linaro.org,
+        broonie@kernel.org, vapier@gentoo.org, ralf@linux-mips.org,
+        kyungmin.park@samsung.com, shawn.guo@linaro.org,
+        sebastian.hesselbarth@gmail.com, LW@KARO-electronics.de,
+        t.figa@samsung.com, g.liakhovetski@gmx.de,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] clk: Provide not locked variant of
+	of_clk_get_from_provider()
+Message-ID: <20130820215121.GG17845@n2100.arm.linux.org.uk>
+References: <1377020063-30213-1-git-send-email-s.nawrocki@samsung.com> <1377020063-30213-4-git-send-email-s.nawrocki@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20130820214819.GK6023@dastard>
-References: <cover.1376679411.git.luto@amacapital.net> <ec267e95fd21891986373c7af1c72b4c8b507332.1376679411.git.luto@amacapital.net>
- <20130820023615.GE6023@dastard> <CALCETrV-Toj-NGpmWnmoUbCwrMUXOSbjQdYsSVuTiH+2dEgPTQ@mail.gmail.com>
- <20130820040814.GH6023@dastard> <CALCETrWreWBwKdKS2w=fS+MwdaZv1eEsKjYo=P9eeXe7fZS6Jw@mail.gmail.com>
- <20130820160057.GC2862@quack.suse.cz> <CALCETrXotDRKV8FtLn3g_9g_yOVceHzKpwXMAH+w7tBZ1P2F7A@mail.gmail.com>
- <20130820214819.GK6023@dastard>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 20 Aug 2013 14:54:01 -0700
-Message-ID: <CALCETrXU3jm_R2SJbfgsM2COAuX_tRACQmuc7t7z5b2B+=kBgg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/5] mm: Notify filesystems when it's time to apply a
- deferred cmtime update
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377020063-30213-4-git-send-email-s.nawrocki@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 2:48 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Tue, Aug 20, 2013 at 09:42:34AM -0700, Andy Lutomirski wrote:
->> On Tue, Aug 20, 2013 at 9:00 AM, Jan Kara <jack@suse.cz> wrote:
->> > On Mon 19-08-13 21:14:44, Andy Lutomirski wrote:
->> >> >> I could require ->writepages *and* ->flush_cmtime to handle the time
->> >> >> update, but that would complicate non-transactional filesystems.
->> >> >> Those filesystems should just flush cmtime at the end of writepages.
->> >> >
->> >> > do_writepages() is the wrong place to do such updates - we can get
->> >> > writeback directly through .writepage, so the time updates need to
->> >> > be in .writepage. That first .writepage call will clear the bit on
->> >> > the mapping, so it's only done on the first call to .writepage on
->> >> > the given mapping.
->> >>
->> >> Last time I checked, all the paths that actually needed the timestamp
->> >> update went through .writepages.  I'll double-check.
->> >   kswapd can call just .writepage to do the writeout so timestamp update
->> > should be handled there as well. Otherwise all pages in a mapping can be
->> > cleaned without timestamp being updated.
->>
->> OK, I'll fix that.
->>
->> >
->> > Which btw made me realize that even your scheme doesn't completely make
->> > sure timestamp is updated after mmap write - if you have pages 0 and 1, you
->> > write to both of them - CMTIME flag gets set. Then fsync_range(fd, 0, 4096)
->> > is called. We write the page 0, writeprotect it, update timestamps. But
->> > page 1 is still writeable so writes to it won't set CMTIME flag, neither
->> > update the timestamp... Not that I think this can be reasonably solved but
->> > it is a food for thought.
->>
->> This should already work.  AS_CMTIME is set when the pte goes from
->> dirty to clean, not when the pte goes from wp to writable.  So
->> whenever clear_page_dirty_for_io is called on page 1, AS_CMTIME will
->> be set and a subsequent writepages call will update the timestamp.
->
-> Oh, I missed that - I thought you were setting AS_CMTIME during
-> .page_mkwrite.
->
-> Setting it in clear_page_dirty_for_io() is too late for filesystems
-> to include it in their existing transactions during .writepage, (at
-> least for XFs and ext4) because they do their delayed allocation
-> transactions before changing page state....
+On Tue, Aug 20, 2013 at 07:34:22PM +0200, Sylwester Nawrocki wrote:
+> Add helper functions for the of_clk_providers list locking and
+> an unlocked variant of of_clk_get_from_provider().
+> These functions are intended to be used in the clkdev to avoid
+> race condition in the device tree based clock look up in clk_get().
+> 
+> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+> Changes since v1:
+>  - moved the function declaractions to a local header.
 
-Couldn't it go between mpage_map_and_submit_extent and
-ext4_journal_stop in ext4_writepages?
+Yes, this is a much better solution, thanks.
 
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
