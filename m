@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab3HTVhD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:37:03 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:63612 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab3HTVhA (ORCPT
+	id S1751850Ab3HTVhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:37:53 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:54885 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab3HTVhw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:37:00 -0400
-Date: Tue, 20 Aug 2013 14:36:57 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Darren Hart <dvhart@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, hpa@zytor.com, linus.walleij@linaro.org,
-        rjw@sisk.pl
-Subject: Re: ACPI vs Device Tree - moving forward
-Message-ID: <20130820213657.GA23058@roeck-us.net>
-References: <20130820192650.GA19470@srcf.ucam.org>
- <1377031863.1758.10.camel@dvhart-mobl4.amr.corp.intel.com>
- <20130820205712.GA22850@srcf.ucam.org>
+	Tue, 20 Aug 2013 17:37:52 -0400
+Date: Tue, 20 Aug 2013 16:37:49 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: Why are BSD-licensed LZ4 symbols GPL exported?
+To: Joe Perches <joe@perches.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Richard Yao <ryao@gentoo.org>,
+        chanho.min@lge.com,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <520D8C4C.7000704@gentoo.org>
+	<20130820171148.GA17832@srcf.ucam.org> <1377020294.2016.51.camel@joe-AO722>
+In-Reply-To: <1377020294.2016.51.camel@joe-AO722> (from joe@perches.com on
+	Tue Aug 20 12:38:14 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1377034669.2737.83@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <20130820205712.GA22850@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 09:57:13PM +0100, Matthew Garrett wrote:
-> On Tue, Aug 20, 2013 at 01:51:03PM -0700, Darren Hart wrote:
+On 08/20/2013 12:38:14 PM, Joe Perches wrote:
+> On Tue, 2013-08-20 at 18:11 +0100, Matthew Garrett wrote:
+> > On Thu, Aug 15, 2013 at 10:19:56PM -0400, Richard Yao wrote:
+> > > Why are the LZ4 symbols being GPL-exported when the LZ4 code is
+> > > BSD-licensed and no substantial changes appear to have been made  
+> when it
+> > > was merged?
+> >
+> > EXPORT_SYMBOL_GPL is intended an indication that using a symbol is
+> > likely to result in you producing a derived work of the kernel, and  
+> the
+> > kernel as a whole is under the GPL. It has nothing to do with  
+> additional
+> > licenses that individual pieces of code may be available under.
 > 
-> > It seems to me that the only way to end up in a situation where the data
-> > is reused by other OSes, is to go through a standards body. What about
-> > attempting to standardize the _DSM method? I suppose the challenge then
-> > is how do we standardize arbitrary data (which, of course, is an
-> > oxymoron)...
+> Maybe not.
 > 
-> Right. We could certainly spec the DT bindings that currently exist, but 
-> the obvious pushback is that large chunks of it *are* already in ACPI - 
-> a _PS0 method (which is ACPI for "Power up the device") that toggles a 
-> GPIO pin, and then provides a different GPIO pin in the DT data, which 
-> would we believe?
-> 
-> > The interesting thing about this to me is that many of these devices are
-> > added after-the-fact (as add-on boards, for example). With the
-> > MinnowBoard we are looking to provide this configuration data in an
-> > EEPROM. Would it make sense for the device manufacturer (rather than the
-> > base-board manufacturer) to define the key-value pairs for their
-> > hardware?
-> 
-> Yes, hardware information that's on add-in boards should probably be 
-> provided by the add-in board if it carries a ROM. This is trivial on 
-> UEFI systems - you just need a UEFI driver for the board that can 
-> construct an appropriate SSDT. It's more of a problem for non-UEFI ACPI 
-> systems.
-> 
-> > Sadly, I will not be in New Orleans and am unlikely to receive a Kernel
-> > Summit invite, but I am planning be in Edinburgh and would like the
-> > opportunity to participate in this discussion.
-> 
-> I'm not planning on being at kernel summit this year, so I think we'll 
-> try to arrange something around that time but outside the event.
-> 
-For my part I'll be in New Orleans but not in Edinburgh. Meeting in Edinburgh
-for the DT/ACPI discussion would of course be an incentive to be there even
-without KS invitation, but it is too far to travel just for that purpose.
+> http://www.ifross.org/en/artikel/ongoing-dispute-over-value-exportsymbolgpl-function
 
-Guenter
+Kernel developers: "We're making symbols that we, as the creators of  
+this project, don't think you can use without the result being a  
+derived work".
+
+Lawyers: "we're prepared to argue over the definitions of 'that', 'as',  
+'of', 'this', 'use', and 'the', as long as we're paid by the hour."
+
+This random speculation outside of a courtroom actually capable of  
+setting precedent strikes you as relevant for what reason?
+
+Rob
