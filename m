@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829Ab3HTQm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:42:56 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:39162 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab3HTQmz (ORCPT
+	id S1751876Ab3HTQnq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:43:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34968 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab3HTQno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:42:55 -0400
+	Tue, 20 Aug 2013 12:43:44 -0400
+Date: Tue, 20 Aug 2013 09:43:43 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Johannes Berg <johannes@sipsolutions.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Linux 3.0.92
+Message-ID: <20130820164343.GA3958@kroah.com>
+References: <20130820155735.GA2805@kroah.com>
+ <CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130820160057.GC2862@quack.suse.cz>
-References: <cover.1376679411.git.luto@amacapital.net> <ec267e95fd21891986373c7af1c72b4c8b507332.1376679411.git.luto@amacapital.net>
- <20130820023615.GE6023@dastard> <CALCETrV-Toj-NGpmWnmoUbCwrMUXOSbjQdYsSVuTiH+2dEgPTQ@mail.gmail.com>
- <20130820040814.GH6023@dastard> <CALCETrWreWBwKdKS2w=fS+MwdaZv1eEsKjYo=P9eeXe7fZS6Jw@mail.gmail.com>
- <20130820160057.GC2862@quack.suse.cz>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 20 Aug 2013 09:42:34 -0700
-Message-ID: <CALCETrXotDRKV8FtLn3g_9g_yOVceHzKpwXMAH+w7tBZ1P2F7A@mail.gmail.com>
-Subject: Re: [PATCH v3 3/5] mm: Notify filesystems when it's time to apply a
- deferred cmtime update
-To: Jan Kara <jack@suse.cz>
-Cc: Dave Chinner <david@fromorbit.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 9:00 AM, Jan Kara <jack@suse.cz> wrote:
-> On Mon 19-08-13 21:14:44, Andy Lutomirski wrote:
->> >> I could require ->writepages *and* ->flush_cmtime to handle the time
->> >> update, but that would complicate non-transactional filesystems.
->> >> Those filesystems should just flush cmtime at the end of writepages.
->> >
->> > do_writepages() is the wrong place to do such updates - we can get
->> > writeback directly through .writepage, so the time updates need to
->> > be in .writepage. That first .writepage call will clear the bit on
->> > the mapping, so it's only done on the first call to .writepage on
->> > the given mapping.
->>
->> Last time I checked, all the paths that actually needed the timestamp
->> update went through .writepages.  I'll double-check.
->   kswapd can call just .writepage to do the writeout so timestamp update
-> should be handled there as well. Otherwise all pages in a mapping can be
-> cleaned without timestamp being updated.
+On Tue, Aug 20, 2013 at 09:33:30AM -0700, Linus Torvalds wrote:
+> On Tue, Aug 20, 2013 at 8:57 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >
+> > Johannes Berg (1):
+> >       genetlink: fix family dump race
+> 
+> This one turns out to be buggy, see thread called "3.11-rc6 genetlink
+> locking fix offends lockdep".
 
-OK, I'll fix that.
+Yeah, I messed up in keeping it here, I'll go revert it and push out a
+new 3.0 release.
 
->
-> Which btw made me realize that even your scheme doesn't completely make
-> sure timestamp is updated after mmap write - if you have pages 0 and 1, you
-> write to both of them - CMTIME flag gets set. Then fsync_range(fd, 0, 4096)
-> is called. We write the page 0, writeprotect it, update timestamps. But
-> page 1 is still writeable so writes to it won't set CMTIME flag, neither
-> update the timestamp... Not that I think this can be reasonably solved but
-> it is a food for thought.
+> I really think there should be delay before stable picks up stuff from
+> mainline, unless it's something particularly critical and
+> well-discussed.. Maybe a week or so.
 
-This should already work.  AS_CMTIME is set when the pte goes from
-dirty to clean, not when the pte goes from wp to writable.  So
-whenever clear_page_dirty_for_io is called on page 1, AS_CMTIME will
-be set and a subsequent writepages call will update the timestamp.
+I can do that, it's just hard to tell from my end what is "well
+discussed" all the time.
 
---Andy
+> Now it's both in 3.0 and 3.10, so the revert (unless we find a better
+> fix - and the first two patches have already failed) will have to go
+> there too.
+
+I thought that there was a fix already for this...  Ah, no, that was for
+another reported regression in an older 3.10-stable release, my bad.
+
+Johannes, what do you want to do here?  Just revert it in Linus's tree
+for now, given the late -rc cycle?
+
+thanks,
+
+greg k-h
