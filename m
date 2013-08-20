@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab3HTIHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:07:52 -0400
-Received: from mail-ph.de-nserver.de ([85.158.179.214]:56241 "EHLO
-	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab3HTIHu (ORCPT
+	id S1751818Ab3HTIIj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:08:39 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:41626 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab3HTIIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:07:50 -0400
-X-Fcrdns: No
-Message-ID: <521323D1.1070503@profihost.ag>
-Date: Tue, 20 Aug 2013 10:07:45 +0200
-From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Tue, 20 Aug 2013 04:08:37 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <stable@vger.kernel.org>
+CC: <gregkh@linuxfoundation.org>, <noamc@ezchip.com>,
+        <Anton.Kolesov@synopsys.com>, <linux-kernel@vger.kernel.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH 0/2] ARC fixes for 3.9/3.10 stable backport
+Date: Tue, 20 Aug 2013 13:38:09 +0530
+Message-ID: <1376986091-30241-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20130820062901.GA3758@kroah.com>
+References: <20130820062901.GA3758@kroah.com>
 MIME-Version: 1.0
-To: Kent Overstreet <kmo@daterainc.com>
-CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org
-Subject: Re: bcache: Fix a writeback performance regression
-References: <20130814225904.GA6427@kmo-pixel> <520C788A.1060208@profihost.ag> <520DFAB4.1050402@profihost.ag> <52114614.4070509@profihost.ag> <20130819222718.GA32104@kmo-pixel> <52132243.8050803@profihost.ag>
-In-Reply-To: <52132243.8050803@profihost.ag>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.26]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 20.08.2013 10:01, schrieb Stefan Priebe - Profihost AG:
-> Am 20.08.2013 00:27, schrieb Kent Overstreet:
->> On Mon, Aug 19, 2013 at 12:09:24AM +0200, Stefan Priebe wrote:
->>>
->>> Vanilla 3.10.7 + bcache: Fix a writeback performance regression
->>>
->>> http://pastebin.com/raw.php?i=LXZk4cMH
->>
->> Whoops, at first I thought this was the same bug as one I'd already been
->> chasing down that had been a harmless bug - turns out I didn't look
->> closely enough at the backtrace.
->>
->> What happened is background writeback is deadlocking, because for some
->> reason the workqueue it's running out of is a singlethreaded workqueue,
->> so as soon as it decides to queue enough writeback bios that it has to
->> sleep on that semaphore (which often won't happen due to the PD
->> controller based ratelimiting) - boom, deadlock.
->>
->> Here's the fixup patch I just tested and am applying:
+Hi,
 
-Oh i'm now seeing very high CPU spikes of kworker... i don't see if i
-remove bcache: Fix a writeback performance regression.
+Please apply the following 2 patches to 3.9/3.10 series.
+They have been extracted out of mainline patches which can't be individually
+backported due to other dependencies (please see respective changelogs for
+references).
 
-Stefan
+Thx,
+-Vineet
+
+Vineet Gupta (2):
+  ARC: gdbserver breakage in Big-Endian configuration #1
+  ARC: gdbserver breakage in Big-Endian configuration #2
+
+ arch/arc/include/asm/ptrace.h  | 2 ++
+ arch/arc/include/asm/syscall.h | 5 ++---
+ arch/arc/kernel/entry.S        | 4 ++--
+ 3 files changed, 6 insertions(+), 5 deletions(-)
+
+-- 
+1.8.1.2
+
