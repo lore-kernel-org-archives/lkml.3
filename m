@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688Ab3HTTLS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 15:11:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47079 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192Ab3HTTLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 15:11:17 -0400
-Date: Tue, 20 Aug 2013 21:05:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Brad Spengler <spender@grsecurity.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Colin Walters <walters@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
-Message-ID: <20130820190529.GA24512@redhat.com>
-References: <20130819172524.GA22268@redhat.com> <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com> <20130819183319.GA24846@redhat.com> <CALCETrWrpNszRGCRRMLgiOopcSdDShB3Mck6gRPco=dAZeX3pQ@mail.gmail.com> <20130819184355.GA25362@redhat.com> <CALCETrU4gTfzcpeEo-X7o-yZefKiw9BVNKdcN4fThUeiuZtOOg@mail.gmail.com> <20130820185043.GA24040@redhat.com> <CALCETrUjohT2D=jtVQ9mnbeUr2oJ9VoN812PtQhaB2ZZ89isNA@mail.gmail.com>
+	id S1751747Ab3HTTN5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 15:13:57 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31052 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab3HTTNz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 15:13:55 -0400
+Message-ID: <5213BFCB.3010503@oracle.com>
+Date: Tue, 20 Aug 2013 14:13:15 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUjohT2D=jtVQ9mnbeUr2oJ9VoN812PtQhaB2ZZ89isNA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Christoph Hellwig <hch@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>, Linux-Next <linux-next@vger.kernel.org>
+Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com> <20130820130056.GA9652@infradead.org>
+In-Reply-To: <20130820130056.GA9652@infradead.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20, Andy Lutomirski wrote:
->
-> On Tue, Aug 20, 2013 at 11:50 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> >> Currently (with or without your patch), vfork() followed by
-> >> unshare(CLONE_NEWUSER) or unshare(CLONE_NEWPID) will unshare the VM.
-> >
-> > Could you spell please?
-> >
-> > We never unshare the VM. CLONE_VM in sys_unshare() paths just means
-> > "fail unless ->mm is not shared".
-> >
->
-> Argh.  In that case this is probably buggy,
+Stephen,
+Would you be willing to pick up
+git://github.com/kleikamp/linux-shaggy.git for-next
+into linux-next?
 
-I don't think so. Just we can't really unshare ->mm or implement
-unshare(CLONE_THREAD). We simply pretend it works if there is nothing
-to unshare.
+There will be some unclean merges, and I can send you updated patches
+created against your latest tree. I'm not exactly sure of your process
+wrt cleaning up merges, but I guess they would help.
 
-> sys_unshare will see CLONE_NEWPID or CLONE_NEWUSER and set
-> CLONE_THREAD.  Then it will see CLONE_THREAD and set CLONE_VM.
+Thanks,
+Shaggy
 
-This matches copy_process() to some degree... but looks confusing,
-I agree.
-
-> Could this be made much more comprehensible by having a single list of
-> shareable things are allowed to be shared across namespaces and
-> enforcing the *same* list in clone and unshare?
-
-Not sure...
-
-but at least we can probably simplify this a little bit. Say, we can
-just kill
-
-	if (unshare_flags & CLONE_THREAD)
-		unshare_flags |= CLONE_VM;
-
-Oleg.
-
+On 08/20/2013 08:00 AM, Christoph Hellwig wrote:
+> As I've seen very few replies to this:  how do we ensure this gets
+> picked up for the 3.12 merge window?  The series has been a reposted
+> a few times without complaints or major changes, but the ball still
+> doesn't seem to get rolling.
+> 
+> I'd really like to do some ecryptfs and scsi target work that is going
+> to rely on this soon.
+> 
