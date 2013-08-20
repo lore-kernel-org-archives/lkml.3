@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab3HTLW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 07:22:26 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:43604 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab3HTLUa (ORCPT
+	id S1751503Ab3HTLWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 07:22:25 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:50335 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909Ab3HTLUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Aug 2013 07:20:30 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Chris Mason <chris.mason@fusionio.com>
 Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 06/12] Btrfs: Make btrfs_device_fsid() return unsigned long
-Date: Tue, 20 Aug 2013 13:20:12 +0200
-Message-Id: <1376997618-13573-7-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 07/12] Btrfs: Make btrfs_dev_extent_chunk_tree_uuid() return unsigned long
+Date: Tue, 20 Aug 2013 13:20:13 +0200
+Message-Id: <1376997618-13573-8-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1376997618-13573-1-git-send-email-geert@linux-m68k.org>
 References: <1376997618-13573-1-git-send-email-geert@linux-m68k.org>
@@ -21,63 +21,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All callers of btrfs_device_fsid() cast its return type to unsigned long.
+Internally, btrfs_dev_extent_chunk_tree_uuid() calculates an unsigned long,
+but casts it to a pointer, while all callers cast it to unsigned long
+again.
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
  fs/btrfs/ctree.h   |    4 ++--
- fs/btrfs/volumes.c |    8 +++-----
- 2 files changed, 5 insertions(+), 7 deletions(-)
+ fs/btrfs/volumes.c |    3 +--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
 diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index 2771f88..641a29a 100644
+index 641a29a..21f9632 100644
 --- a/fs/btrfs/ctree.h
 +++ b/fs/btrfs/ctree.h
-@@ -2135,9 +2135,9 @@ static inline unsigned long btrfs_device_uuid(struct btrfs_dev_item *d)
- 	return (unsigned long)d + offsetof(struct btrfs_dev_item, uuid);
- }
+@@ -2277,10 +2277,10 @@ BTRFS_SETGET_FUNCS(dev_extent_chunk_offset, struct btrfs_dev_extent,
+ 		   chunk_offset, 64);
+ BTRFS_SETGET_FUNCS(dev_extent_length, struct btrfs_dev_extent, length, 64);
  
--static inline char *btrfs_device_fsid(struct btrfs_dev_item *d)
-+static inline unsigned long btrfs_device_fsid(struct btrfs_dev_item *d)
+-static inline u8 *btrfs_dev_extent_chunk_tree_uuid(struct btrfs_dev_extent *dev)
++static inline unsigned long btrfs_dev_extent_chunk_tree_uuid(struct btrfs_dev_extent *dev)
  {
--	return (char *)d + offsetof(struct btrfs_dev_item, fsid);
-+	return (unsigned long)d + offsetof(struct btrfs_dev_item, fsid);
+ 	unsigned long ptr = offsetof(struct btrfs_dev_extent, chunk_tree_uuid);
+-	return (u8 *)((unsigned long)dev + ptr);
++	return (unsigned long)dev + ptr;
  }
  
- BTRFS_SETGET_FUNCS(chunk_length, struct btrfs_chunk, length, 64);
+ BTRFS_SETGET_FUNCS(extent_refs, struct btrfs_extent_item, refs, 64);
 diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 9abffc1..b05dbb6 100644
+index b05dbb6..15a0a4e 100644
 --- a/fs/btrfs/volumes.c
 +++ b/fs/btrfs/volumes.c
-@@ -1392,7 +1392,7 @@ static int btrfs_add_device(struct btrfs_trans_handle *trans,
+@@ -1277,8 +1277,7 @@ static int btrfs_alloc_dev_extent(struct btrfs_trans_handle *trans,
+ 	btrfs_set_dev_extent_chunk_offset(leaf, extent, chunk_offset);
  
- 	ptr = btrfs_device_uuid(dev_item);
- 	write_extent_buffer(leaf, device->uuid, ptr, BTRFS_UUID_SIZE);
--	ptr = (unsigned long)btrfs_device_fsid(dev_item);
-+	ptr = btrfs_device_fsid(dev_item);
- 	write_extent_buffer(leaf, root->fs_info->fsid, ptr, BTRFS_UUID_SIZE);
+ 	write_extent_buffer(leaf, root->fs_info->chunk_tree_uuid,
+-		    (unsigned long)btrfs_dev_extent_chunk_tree_uuid(extent),
+-		    BTRFS_UUID_SIZE);
++		    btrfs_dev_extent_chunk_tree_uuid(extent), BTRFS_UUID_SIZE);
+ 
+ 	btrfs_set_dev_extent_length(leaf, extent, num_bytes);
  	btrfs_mark_buffer_dirty(leaf);
- 
-@@ -1890,8 +1890,7 @@ next_slot:
- 		devid = btrfs_device_id(leaf, dev_item);
- 		read_extent_buffer(leaf, dev_uuid, btrfs_device_uuid(dev_item),
- 				   BTRFS_UUID_SIZE);
--		read_extent_buffer(leaf, fs_uuid,
--				   (unsigned long)btrfs_device_fsid(dev_item),
-+		read_extent_buffer(leaf, fs_uuid, btrfs_device_fsid(dev_item),
- 				   BTRFS_UUID_SIZE);
- 		device = btrfs_find_device(root->fs_info, devid, dev_uuid,
- 					   fs_uuid);
-@@ -5497,8 +5496,7 @@ static int read_one_dev(struct btrfs_root *root,
- 	devid = btrfs_device_id(leaf, dev_item);
- 	read_extent_buffer(leaf, dev_uuid, btrfs_device_uuid(dev_item),
- 			   BTRFS_UUID_SIZE);
--	read_extent_buffer(leaf, fs_uuid,
--			   (unsigned long)btrfs_device_fsid(dev_item),
-+	read_extent_buffer(leaf, fs_uuid, btrfs_device_fsid(dev_item),
- 			   BTRFS_UUID_SIZE);
- 
- 	if (memcmp(fs_uuid, root->fs_info->fsid, BTRFS_UUID_SIZE)) {
 -- 
 1.7.9.5
 
