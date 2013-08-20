@@ -1,50 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab3HTHHu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 03:07:50 -0400
-Received: from canardo.mork.no ([148.122.252.1]:39153 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251Ab3HTHHs convert rfc822-to-8bit (ORCPT
+	id S1751789Ab3HTHJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 03:09:16 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36590 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab3HTHJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 03:07:48 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.11.0-rc6+: INFO: possible circular locking dependency detected
-Organization: m
-References: <CAHFgRy9p2vMjTm+1KTZKei5i66dvD6FP1xW2XrRxkrHvCHPAvw@mail.gmail.com>
-Date: Tue, 20 Aug 2013 09:07:38 +0200
-In-Reply-To: <CAHFgRy9p2vMjTm+1KTZKei5i66dvD6FP1xW2XrRxkrHvCHPAvw@mail.gmail.com>
-	(Miles Lane's message of "Mon, 19 Aug 2013 22:26:06 -0700")
-Message-ID: <8761v0j0w5.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Aug 2013 03:09:15 -0400
+Date: Tue, 20 Aug 2013 00:09:14 -0700 (PDT)
+Message-Id: <20130820.000914.921286776807872431.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, nic_swsd@realtek.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 1/7] r8152: remove clearing the memory to zero
+ for netdev priv
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1376640578-4258-1-git-send-email-hayeswang@realtek.com>
+References: <1376640578-4258-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 20 Aug 2013 00:09:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miles Lane <miles.lane@gmail.com> writes:
 
-> [   24.990076] [ INFO: possible circular locking dependency detected ]
-> [   24.990086] 3.11.0-rc6+ #154 Not tainted
-> [   24.990094] -------------------------------------------------------
-> [   24.990103] crda/1159 is trying to acquire lock:
-> [   24.990111]  (genl_mutex){+.+.+.}, at: [<ffffffff812ff7e6>]
-> genl_lock+0x12/0x14
-> [   24.990134]
-> [   24.990134] but task is already holding lock:
-> [   24.990144]  (nlk->cb_mutex){+.+.+.}, at: [<ffffffff812fdab8>]
-> netlink_dump+0x1c/0x1da
+Series applied, thanks.
 
-Yes, me too...  This is already discussed on netdev:
-http://www.spinics.net/lists/stable/msg18179.html
+Please, in the future, provide an initial "[PATCH 0/N] " posting which
+gives a general overview to the series, and to which I can apply when
+I have something to say about the series as a whole.
 
-But the fix is still out in the blue as far as I understand.  Reverting
-58ad436fc will fix it, but leave the original problem (missing locking)
-unfixed.
-
-
-Bjørn
-
+Thanks.
