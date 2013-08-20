@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab3HTEUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 00:20:45 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:52807 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab3HTEUn (ORCPT
+	id S1752128Ab3HTEVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 00:21:21 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52536 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab3HTEVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 00:20:43 -0400
-Date: Mon, 19 Aug 2013 21:20:39 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-mtd@lists.infradead.org, Marek Vasut <marex@denx.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH 2/4] mtd: m25p80: make CONFIG_M25PXX_USE_FAST_READ safe
- to enable
-Message-ID: <20130820042039.GE28421@norris.computersforpeace.net>
-References: <1376302946-11534-1-git-send-email-s.hauer@pengutronix.de>
- <1376302946-11534-3-git-send-email-s.hauer@pengutronix.de>
- <20130817201702.GD11210@norris.computersforpeace.net>
- <20130819084226.GB31036@pengutronix.de>
+	Tue, 20 Aug 2013 00:21:20 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-c2-5212eebe5047
+Date: Tue, 20 Aug 2013 13:21:46 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH v6 3/5] zsmalloc: move it under zram
+Message-ID: <20130820042146.GR28062@bbox>
+References: <1376459736-7384-1-git-send-email-minchan@kernel.org>
+ <1376459736-7384-4-git-send-email-minchan@kernel.org>
+ <20130816220034.GD7265@variantweb.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130819084226.GB31036@pengutronix.de>
+In-Reply-To: <20130816220034.GD7265@variantweb.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 10:42:26AM +0200, Sascha Hauer wrote:
-> On Sat, Aug 17, 2013 at 01:17:02PM -0700, Brian Norris wrote:
-> > On Mon, Aug 12, 2013 at 12:22:24PM +0200, Sascha Hauer wrote:
-> > > This patch adds a flag to struct flash_info indicating that
-> > > fast_read is not supported. This now gives the following logic
-> > > when determing whether to enable fastread:
-> > > 
-> > > 1) enable fast_read if device node contains m25p,fast-read
-> > > 2) enable fast_read unconditionally if forced in Kconfig
-> > > 3) Disable fast_read if the chip does not support it
+Hello Seth,
+
+On Fri, Aug 16, 2013 at 05:00:34PM -0500, Seth Jennings wrote:
+> On Wed, Aug 14, 2013 at 02:55:34PM +0900, Minchan Kim wrote:
+> > This patch moves zsmalloc under zram directory because there
+> > isn't any other user any more.
 > > 
-> > This logic is either unclear or incorrect.
+> > Before that, description will explain why we have needed custom
+> > allocator.
 > > 
-> > > This makes enabling CONFIG_M25PXX_USE_FAST_READ a safe option
-> > > since we no longer enable the fast_read option unconditionally.
-> > 
-> > This statement seems to contradict 2 above, depending on the reading
-> > (how can 2 enable "unconditionally", yet CONFIG_..._FAST_READ "no longer
-> > enable[s] ... unconditionally"?).
-> > 
-> > The problem I have with this description is that it is assuming that
-> > 1, 2, and 3 are applied sequentially, so that later items in the
-> > sequence have higher precedence. So it's describing code ordering, not
-> > really logic. And statement 3 weakens the "unconditionally" of 2.
-> > 
-> > And to avoid simply complaining, I propose an alternative explanation:
-> > 
-> >   If the flash chip does not support fast_read, then disable it.
-> >   Otherwise:
-> >   1) enable fast_read if device node contains m25p,fast-read
-> >   2) enable fast_read if forced in Kconfig
-> > 
-> > If we correct this description, then:
-> > 
-> >   Acked-by: Brian Norris <computersforpeace@gmail.com>
-> > 
-> > I can edit the patch and push the whole thing if this is acceptable.
+> > Zsmalloc is a new slab-based memory allocator for storing
+> > compressed pages.  It is designed for low fragmentation and
+> > high allocation success rate on large object, but <= PAGE_SIZE
+> > allocations.
 > 
-> Yes, that would be great. Your explanation sounds better than mine.
-
-Can you incorporate this description and resend based on l2-mtd.git?
-Your patch currently doesn't apply.
-
-  http://git.infradead.org/l2-mtd.git
-
-> > 
-> > One related question (not required for this series): do we even need
-> > Kconfig M25PXX_USE_FAST_READ any more? Are there any SPI controllers
-> > that can't use FAST_READ? Or perhaps if they have a slow clock, it's
-> > preferable to use normal read?
-> > 
-> > If there are no restrictions from the controller side, I think this
-> > NO_FR flag gives enough information to determine everything at runtime,
-> > not compile-time.
+> One things zsmalloc will probably have to address before Andrew deems it
+> worthy is the "memmap peekers" issue.  I had to make this change in zbud
+> before Andrew would accept it and this is one of the reasons I have yet
+> to implement zsmalloc support for zswap yet.
 > 
-> This M25PXX_USE_FAST_READ is a no-go for multiplatform Kernels and
-> should be removed. I have no idea though how we can do this without
-> risking regressions since we have no idea who intentionally disabled
-> this option. Maybe we just have to find out by removing it and waiting
-> for people to complain^B^B^Bsend patches.
+> Basically, zsmalloc makes the assumption that once the kernel page
+> allocator gives it a page for the pool, zsmalloc can stuff whatever
+> metatdata it wants into the struct page.  The problem comes when some
+> parts of the kernel do not obtain the struct page pointer via the
+> allocator but via walking the memmap.  Those routines will make certain
+> assumption about the state and structure of the data in the struct page,
+> leading to issues.
 
-I don't think removal would be too bad. And yes, we can just wait for
-complaints :) I may send a patch after your series.
+All of memmap peekers should make such asummption based on pageflag
+so if zsmalloc don't need touch flag field, it should be no problem.
 
-Thanks,
-Brian
+In addition to that, SLUB allocator already have touched it so why not
+for zsmalloc?
+
+> 
+> My solution for zbud was to move the metadata into the pool pages
+> themselves, using the first block of each page for metadata regarding that
+> page.
+> 
+> Andrew might also have something to say about the placement of
+> zsmalloc.c.  IIRC, if it was going to be merged, he wanted it in mm/ if
+> it was going to be messing around in the struct page.
+
+NP.
+
+Thanks for the review, Seth.
+
+> 
+> Seth
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
