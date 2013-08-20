@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab3HTHC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 03:02:29 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:58803 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab3HTHC2 (ORCPT
+	id S1751926Ab3HTHDX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 03:03:23 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:49491 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab3HTHDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 03:02:28 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-40-521314833bf8
+	Tue, 20 Aug 2013 03:03:22 -0400
+X-AuditID: cbfee68e-b7f276d000002279-73-521314b9ef50
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>,
         "'Lee Jones'" <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, "'David Brown'" <davidb@codeaurora.org>,
-        "'Daniel Walker'" <dwalker@fifo99.com>,
-        "'Bryan Huntsman'" <bryanh@codeaurora.org>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 3/3] mfd: pm8921: use devm_*() functions
-Date: Tue, 20 Aug 2013 16:02:26 +0900
-Message-id: <005401ce9d73$3a52fc40$aef8f4c0$@samsung.com>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/6] mfd: max8997: use devm_*() functions
+Date: Tue, 20 Aug 2013 16:03:20 +0900
+Message-id: <005501ce9d73$5abdef80$1039ce80$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6dczda6piE1rTiSNOTEiLvediVJQ==
+Thread-index: Ac6dc1R8g79VzzyFTE+e1519TXJs0g==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zfd1mEeEgg9vNLBb/jk1hsni8/B+b
-	xdRlbawWlxdeYrW4//Uoo8XlXXPYLE53szqwe1zu62XyOD15P4vHnWt72DzmnQz06NuyitHj
-	8ya5ALYoLpuU1JzMstQifbsEroz1D9ezFvzmqXj7fwlzA+MWri5GDg4JAROJk5/Nuxg5gUwx
-	iQv31rN1MXJxCAksY5S49O04M0TCRKL31jYWiMR0Rom9cz6zQzi/GCWWvnnLBlLFJqAm8eXL
-	YXaQqSICfhINK8BqmAX2MkrcaullAqkRFrCQaD16F6yeRUBV4teWDewgNq+ApcS6v3vZIGxB
-	iR+T77GA2MwCWhLrdx5ngrDlJTaveQt1kYLEjrOvGUFsEQE9icNLv0DViEjse/GOEaLmErvE
-	pN2GELsEJL5NPsQC8bGsxKYDUGMkJQ6uuMEygVFsFpLNs5BsnoVk8ywkGxYwsqxiFE0tSC4o
-	TkovMtErTswtLs1L10vOz93ECInJCTsY7x2wPsSYDLR+IrOUaHI+MKbzSuINjc2MLExNTI2N
-	zC3NSBNWEudVb7EOFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDIdIGhR+GlpGKmbWyVauLy
-	4pYH897qT/Mqm7trytyjEct2VM3YHd5ufObiJcHZ7TfXO+mq7FDylQn7ptf7v0HIbKMLv1ew
-	p13Agh/fnlolhBoL5Abn7co94Lj7wtTvMwyznaa9Uw8MbvW6sDF28YLe1DWMf/08nu0qO8jB
-	pXAyNdnpVPmE5idKLMUZiYZazEXFiQCay8yK3wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsVy+t9jQd0mEeEggzNPbCz+HZvCZPF4+T82
-	i6nL2lgtLi+8xGpx/+tRRovLu+awWZzuZnVg97jc18vkcXryfhaPO9f2sHnMOxno0bdlFaPH
-	501yAWxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6Z
-	OUCnKCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz1j9cz1rwm6fi7f8l
-	zA2MW7i6GDk5JARMJHpvbWOBsMUkLtxbz9bFyMUhJDCdUWLvnM/sEM4vRomlb96ygVSxCahJ
-	fPlyGCjBwSEi4CfRsAKshllgL6PErZZeJpAaYQELidajd8HqWQRUJX5t2cAOYvMKWEqs+7uX
-	DcIWlPgx+R7YZmYBLYn1O48zQdjyEpvXvGWGuEhBYsfZ14wgtoiAnsThpV+gakQk9r14xziB
-	UWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER/0zqR2MKxss
-	DjEKcDAq8fB2KgkFCbEmlhVX5h5ilOBgVhLhdfkPFOJNSaysSi3Kjy8qzUktPsSYDPTpRGYp
-	0eR8YELKK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1oJBAemJJanZqakFqEcwWJg5OqQbGwFlJ
-	8hPPd75ur5Q0XPcjNtAo2vhak4qyzI489e5pXH4vb+kHsbwULopzlVxcUxap1bhZKV7Gcp1b
-	o+/smkyGVTkBZ1MvLf341SW6MulRuKn+z5+Xp0zxKC+b/DEn5M9y9XQmTeW+OdY6W7s6FfPf
-	f5yeH87MpSlz4UQqs6KVfqz5Feer3UosxRmJhlrMRcWJABq1ACM+AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zQ92dIsJBBl8+81lcXniJ1eL+16OM
+	Fpd3zWGzON3N6sDicefaHjaPeScDPfq2rGL0+LxJLoAlissmJTUnsyy1SN8ugSvj8nzZguU8
+	FQu3XWRuYGzm6mLk5JAQMJF49XMlE4QtJnHh3nq2LkYuDiGBZYwSl1bOZoQper2zmREisYhR
+	YubBZSwQzi9GiZ0f14JVsQmoSXz5cpi9i5GDQ0TAT6JhBZjJLOAicXSaCEiFsIClxKP9S8Cq
+	WQRUJWZfn8cMYvMCxZ+/PcACYQtK/Jh8D8xmFtCSWL/zOBOELS+xec1bZoh7FCR2nH0NNkdE
+	QE9ixZcn7BA1IhL7XrwDu1NCYB27xJ3ve9gglglIfJt8iAXkHgkBWYlNB6DmSEocXHGDZQKj
+	2Cwkq2chWT0LyepZSFYsYGRZxSiaWpBcUJyUXmSkV5yYW1yal66XnJ+7iRESX307GG8esD7E
+	mAy0fiKzlGhyPjA+80riDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8sSc1OTS1ILYovKs1J
+	LT7EyMTBKdXAKPDj4q+V7zh7nC+eCU7lqVNmUuVVS9u1huHTKu4X66WOiogwLClamhW/+9/u
+	D41FszVdDH5e0E5782dd7/HrP1QEnvzYbvrjxnHhbdveXmCYcjF3xwGvVfUc3qeudy9sznhw
+	XHb/saxaf9N9Km/Tp74PMjoW98ZxxwLd2i9/xdS9/7em/2U7/UCJpTgj0VCLuag4EQAeYtHD
+	xQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xgO5OEeEggxnTuS0uL7zEanH/61FG
+	i8u75rBZnO5mdWDxuHNtD5vHvJOBHn1bVjF6fN4kF8AS1cBok5GamJJapJCal5yfkpmXbqvk
+	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
+	Y4Sub0gQXI+RARpIWMeYcXm+bMFynoqF2y4yNzA2c3UxcnJICJhIvN7ZzAhhi0lcuLeerYuR
+	i0NIYBGjxMyDy1ggnF+MEjs/rgWrYhNQk/jy5TB7FyMHh4iAn0TDCjCTWcBF4ug0EZAKYQFL
+	iUf7l4BVswioSsy+Po8ZxOYFij9/e4AFwhaU+DH5HpjNLKAlsX7ncSYIW15i85q3zBD3KEjs
+	OPsabI6IgJ7Eii9P2CFqRCT2vXjHOIFRYBaSUbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrp
+	FSfmFpfmpesl5+duYgRH7zPpHYyrGiwOMQpwMCrx8HYoCQUJsSaWFVfmHmKU4GBWEuF1+Q8U
+	4k1JrKxKLcqPLyrNSS0+xJgM9OlEZinR5HxgYskriTc0NjEzsjQyszAyMTcnTVhJnPdgq3Wg
+	kEB6YklqdmpqQWoRzBYmDk6pBsaYaQEOGwq2XQtbI9rh8SPjGLe6CdeyFaJPqhskp6seEONL
+	ns9zq09/1adrcYuyNztF+XJwnPr3/fzUW7Y6384uuHpwbUJyjJ5a3qotZhEy36avKXw38cCF
+	L7deHv5oqCt2+OevsrOWjim7zm6pLt+R4f7edfKMT/csml6dUA5Qkp8nmh7PcC9aiaU4I9FQ
+	i7moOBEAKiWy4SIDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,54 +57,55 @@ Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/pm8921-core.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/mfd/max8997.c |   14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
-index 9a7c991..a6841f7 100644
---- a/drivers/mfd/pm8921-core.c
-+++ b/drivers/mfd/pm8921-core.c
-@@ -118,7 +118,7 @@ static int pm8921_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
+diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
+index 1523047..cee098c 100644
+--- a/drivers/mfd/max8997.c
++++ b/drivers/mfd/max8997.c
+@@ -191,7 +191,8 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 	struct max8997_platform_data *pdata = dev_get_platdata(&i2c->dev);
+ 	int ret = 0;
  
--	pmic = kzalloc(sizeof(struct pm8921), GFP_KERNEL);
-+	pmic = devm_kzalloc(&pdev->dev, sizeof(struct pm8921), GFP_KERNEL);
- 	if (!pmic) {
- 		pr_err("Cannot alloc pm8921 struct\n");
+-	max8997 = kzalloc(sizeof(struct max8997_dev), GFP_KERNEL);
++	max8997 = devm_kzalloc(&i2c->dev, sizeof(struct max8997_dev),
++				GFP_KERNEL);
+ 	if (max8997 == NULL)
  		return -ENOMEM;
-@@ -128,7 +128,7 @@ static int pm8921_probe(struct platform_device *pdev)
- 	rc = ssbi_read(pdev->dev.parent, REG_HWREV, &val, sizeof(val));
- 	if (rc) {
- 		pr_err("Failed to read hw rev reg %d:rc=%d\n", REG_HWREV, rc);
--		goto err_read_rev;
-+		return rc;
- 	}
- 	pr_info("PMIC revision 1: %02X\n", val);
- 	rev = val;
-@@ -138,7 +138,7 @@ static int pm8921_probe(struct platform_device *pdev)
- 	if (rc) {
- 		pr_err("Failed to read hw rev 2 reg %d:rc=%d\n",
- 			REG_HWREV_2, rc);
--		goto err_read_rev;
-+		return rc;
- 	}
- 	pr_info("PMIC revision 2: %02X\n", val);
- 	rev |= val << BITS_PER_BYTE;
-@@ -160,8 +160,6 @@ static int pm8921_probe(struct platform_device *pdev)
  
- err:
- 	mfd_remove_devices(pmic->dev);
--err_read_rev:
--	kfree(pmic);
- 	return rc;
+@@ -203,14 +204,12 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 
+ 	if (max8997->dev->of_node) {
+ 		pdata = max8997_i2c_parse_dt_pdata(max8997->dev);
+-		if (IS_ERR(pdata)) {
+-			ret = PTR_ERR(pdata);
+-			goto err;
+-		}
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
+ 	}
+ 
+ 	if (!pdata)
+-		goto err;
++		return ret;
+ 
+ 	max8997->pdata = pdata;
+ 	max8997->ono = pdata->ono;
+@@ -250,8 +249,6 @@ err_mfd:
+ 	i2c_unregister_device(max8997->muic);
+ 	i2c_unregister_device(max8997->haptic);
+ 	i2c_unregister_device(max8997->rtc);
+-err:
+-	kfree(max8997);
+ 	return ret;
  }
  
-@@ -179,7 +177,6 @@ static int pm8921_remove(struct platform_device *pdev)
- 		pm8xxx_irq_exit(pmic->irq_chip);
- 		pmic->irq_chip = NULL;
- 	}
--	kfree(pmic);
+@@ -263,7 +260,6 @@ static int max8997_i2c_remove(struct i2c_client *i2c)
+ 	i2c_unregister_device(max8997->muic);
+ 	i2c_unregister_device(max8997->haptic);
+ 	i2c_unregister_device(max8997->rtc);
+-	kfree(max8997);
  
  	return 0;
  }
