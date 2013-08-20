@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467Ab3HTOvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 10:51:15 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:36852 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab3HTOvO (ORCPT
+	id S1751532Ab3HTOvw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 10:51:52 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39474 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab3HTOvt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 10:51:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130819044444.GD26832@bbox>
-References: <CAKcLGm8EMruO5e8yw+nArTjyCGSvLB5pjnGZYvz0xdF9M99iwQ@mail.gmail.com>
-	<52119B4E.4060409@linux.vnet.ibm.com>
-	<20130819044444.GD26832@bbox>
-Date: Tue, 20 Aug 2013 09:51:13 -0500
-Message-ID: <CAKcLGm-wJjBeSczCi7-XkyDMd444HoQcFVfmpkPYZ2WcExCxaA@mail.gmail.com>
-Subject: Re: BUG: scheduling while atomic 3.10.7 in ZRAM Swap
-From: Mitch Harder <mitch.harder@sabayonlinux.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Michael wang <wangyun@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>, devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 20 Aug 2013 10:51:49 -0400
+Subject: Re: [PATCH v3] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex block
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1376910775.3157.1.camel@hornet>
+Date: Tue, 20 Aug 2013 09:51:55 -0500
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Jeffrey Hugo <jhugo@codeaurora.org>,
+        Eric Holmberg <eholmber@codeaurora.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E7A4BEAB-CBFD-41BF-A6DE-981F74FDB2CF@codeaurora.org>
+References: <1376507361-26907-1-git-send-email-galak@codeaurora.org> <1376573746.18617.45.camel@hornet> <520EADBC.9090608@wwwdotorg.org> <1376910775.3157.1.camel@hornet>
+To: Pawel Moll <pawel.moll@arm.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 18, 2013 at 11:44 PM, Minchan Kim <minchan@kernel.org> wrote:
-> Hello,
->
-> On Mon, Aug 19, 2013 at 12:13:02PM +0800, Michael wang wrote:
->> Hi, Mitch
->>
->> On 08/17/2013 10:01 PM, Mitch Harder wrote:
->> > I'm encountering a BUG while using a ZRAM Swap device.
->> >
->> > The call trace seems to involve the changes recently added to 3.10.6
->> > by the patch:
->> > zram: use zram->lock to protect zram_free_page() in swap free notify path
->> >
->> > The hardware is a x86 single CPU AMD Athlon XP system with 1GB RAM.
->> >
->> > I'm implementing a 352MB ZRAM swap device, and also have 1GB swap
->> > space on the hard disk.
->>
->> IMHO, it was caused by that swap_entry_free() was invoked with page
->> spin-locked, thus zram_slot_free_notify() should not use rw-lock which
->> may goto sleep.
->>
->> CC folks related.
->
-> Thanks for Ccing me, Michael,
->
-> Mitch, It's known problem and it should be fixed by [1] in recent linux-next.
->
-> [1] a0c516cbfc, zram: don't grab mutex in zram_slot_free_noity
->
-> Thanks for the report!
->
 
-Thanks.
+On Aug 19, 2013, at 6:12 AM, Pawel Moll wrote:
 
-If I apply the zram patches from linux-next, the problem seems to be resolved.
+> On Fri, 2013-08-16 at 23:54 +0100, Stephen Warren wrote:
+>> Indeed, I tend to think that reg-names is a bad idea.
+>> 
+>> IIRC, the rule for "reg" is that entries must always have a defined
+>> order, so that it can always be accessed by integer index. 
+> 
+> First time I hear about that rule, really...
+> 
+>> And given
+>> that's true, allowing for reg-names just creates confusion since it
+>> implies you can look up the index in reg-names and then read reg at that
+>> index.
+> 
+> I actually believe that named resources leave less are for error than
+> indexed ones. And this is the message I remember being "spread" in the
+> times of static platform devices.
+> 
+> Pawel
+
+I can understand that reg-names being optional for older bindings to ensure backwards compat, but for newer ones agree that it is less error prone.  This is something we should try to come to some agreement on.
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
