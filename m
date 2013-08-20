@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548Ab3HTVqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:46:23 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:58809 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab3HTVqV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:46:21 -0400
-Message-ID: <1377035588.32763.7.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH 0/9] target: Add support for COMPARE_AND_WRITE (VAAI)
- emulation
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Hannes Reinecke <hare@suse.de>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Date: Tue, 20 Aug 2013 14:53:08 -0700
-In-Reply-To: <20130820212912.GA9483@lst.de>
-References: <1377029280-19144-1-git-send-email-nab@daterainc.com>
-	 <20130820212912.GA9483@lst.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S1751867Ab3HTVqg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:46:36 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51725 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751408Ab3HTVqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 17:46:35 -0400
+Message-ID: <1377035193.2016.81.camel@joe-AO722>
+Subject: Re: Why are BSD-licensed LZ4 symbols GPL exported?
+From: Joe Perches <joe@perches.com>
+To: Rob Landley <rob@landley.net>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Richard Yao <ryao@gentoo.org>,
+        chanho.min@lge.com,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Date: Tue, 20 Aug 2013 14:46:33 -0700
+In-Reply-To: <1377034669.2737.83@driftwood>
+References: <520D8C4C.7000704@gentoo.org>
+	 <20130820171148.GA17832@srcf.ucam.org> <1377020294.2016.51.camel@joe-AO722>
+	 <1377034669.2737.83@driftwood>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-20 at 23:29 +0200, Christoph Hellwig wrote:
-> On Tue, Aug 20, 2013 at 08:07:51PM +0000, Nicholas A. Bellinger wrote:
+On Tue, 2013-08-20 at 16:37 -0500, Rob Landley wrote:
+> On 08/20/2013 12:38:14 PM, Joe Perches wrote:
+> > On Tue, 2013-08-20 at 18:11 +0100, Matthew Garrett wrote:
+> > > On Thu, Aug 15, 2013 at 10:19:56PM -0400, Richard Yao wrote:
+> > > > Why are the LZ4 symbols being GPL-exported when the LZ4 code is
+> > > > BSD-licensed and no substantial changes appear to have been made  
+> > when it
+> > > > was merged?
+> > >
+> > > EXPORT_SYMBOL_GPL is intended an indication that using a symbol is
+> > > likely to result in you producing a derived work of the kernel, and  
+> > the
+> > > kernel as a whole is under the GPL. It has nothing to do with  
+> > additional
+> > > licenses that individual pieces of code may be available under.
 > > 
-> > It's also currently lacking the necessary sychronization between I/O
-> > submission of COMPARE_AND_WRITE verify instance and write instance
-> > user data, which is still being worked on in order to avoid additional
-> > overhead in the main I/O fast path.
+> > Maybe not.
+> > http://www.ifross.org/en/artikel/ongoing-dispute-over-value-exportsymbolgpl-function
 > 
-> I don't think merging such a non-conforming implementation makes any sense.
+> Kernel developers: "We're making symbols that we, as the creators of  
+> this project, don't think you can use without the result being a  
+> derived work".
 > 
+> Lawyers: "we're prepared to argue over the definitions of 'that', 'as',  
+> 'of', 'this', 'use', and 'the', as long as we're paid by the hour."
 
-Yes, I don't intend to merge anything that's not fully functional.
+Law is certainly a, umm, useful occupation.
 
-The idea was to get review going on these pieces first.  I'll be posting
-an PATCH-v2 to complete the implementation over the next days.
+> This random speculation outside of a courtroom actually capable of  
+> setting precedent strikes you as relevant for what reason?
 
-> Also for a complex command like this with all it's race potential I would
-> really like to see some test cases to go along with it.
-> 
+Because your declarative statement that EXPORT_SYMBOL_GPL is
+"intended [as] an indication that using [the] symbol is likely
+to result..." is incomplete.
 
-Yes, Eric @ PureStorage has a sg_compare_write that I'm using to test
-this.  It's probably about time that this be included in upstream
-sg3-utils too..
+There are competing histories as to what EXPORT_SYMBOL_GPL
+was intended to do.
 
---nab
 
