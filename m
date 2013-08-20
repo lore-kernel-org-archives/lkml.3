@@ -1,127 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751033Ab3HTJMp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 05:12:45 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59475 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750747Ab3HTJMn (ORCPT
+	id S1751193Ab3HTJNi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 05:13:38 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:36835 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751077Ab3HTJNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 05:12:43 -0400
-Date: Tue, 20 Aug 2013 10:12:28 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
-Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH] iio: adc: Add bindigs documentation for twl6030 GPADC
-Message-ID: <20130820091228.GW3719@e106331-lin.cambridge.arm.com>
-References: <1376911765-7821-1-git-send-email-oleksandr.kozaruk@ti.com>
+	Tue, 20 Aug 2013 05:13:36 -0400
+X-IronPort-AV: E=Sophos;i="4.89,918,1367964000"; 
+   d="scan'208";a="29825046"
+Date: Tue, 20 Aug 2013 11:13:14 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Thierry Reding <thierry.reding@gmail.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] PCI: tegra: replace devm_request_and_ioremap by
+ devm_ioremap_resource
+In-Reply-To: <20130819193339.GB4961@mithrandir>
+Message-ID: <alpine.DEB.2.02.1308201112400.2269@hadrien>
+References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr> <1376911241-27720-2-git-send-email-Julia.Lawall@lip6.fr> <20130819120249.GA5740@ulmo> <alpine.DEB.2.02.1308191405450.2313@hadrien> <20130819121238.GB5740@ulmo> <alpine.DEB.2.02.1308191414360.2313@hadrien>
+ <20130819193339.GB4961@mithrandir>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376911765-7821-1-git-send-email-oleksandr.kozaruk@ti.com>
-Thread-Topic: [PATCH] iio: adc: Add bindigs documentation for twl6030 GPADC
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleksandr,
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-[Adding Jonathan Cameron and Guenter Roeck to Cc]
+Use devm_ioremap_resource instead of devm_request_and_ioremap.
 
-Apologies for the delay replying to this. In attempting to verify this
-made sense I went and read the IIO bindings documentation, and I'm
-somewhat confused by the model.
+This was done using the semantic patch
+scripts/coccinelle/api/devm_ioremap_resource.cocci
 
-As far as I can see, the only consumer of IIO channels is the
-"iio-hwmon" binding, which seems to be a binding for Linux-specific
-infrastructure rather than any actual device. This runs counter to the
-way DT is supposed to function (describing the hardware rather than how
-it's used). As far as I can see, this linkage is described because only
-a subset of the ADCs on the device are actually wired to something?
+Error-handling code was manually removed from the associated calls to
+platform_get_resource.
 
-I also see a couple of IIO bindings ("adi,adf435x*, and "adi,ad7303")
-which don't describe any iio channel cells at all, so I'm somewhat
-confused by what the IIO channels actually represent, and why they must
-be consumed elsewhere. As far as I can see, an IIO channel represents a
-single ADC's registers in an IIO device, so I'm not sure why this must
-be exported via the channel concept -- it's not physically wired.
+Adjust the comment at the third platform_get_resource_byname to make clear
+why ioremap is not done at this point.
 
-Have I misunderstood something here?
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Acked-by: Thierry Reding <thierry.reding@gmail.com>
+Tested-by: Thierry Reding <thierry.reding@gmail.com>
 
-Thanks,
-Mark.
+---
+v2: add the change to the comment
 
-On Mon, Aug 19, 2013 at 12:29:25PM +0100, Oleksandr Kozaruk wrote:
-> Add required documentation for twl6030 GPADC device tree
-> bindings.
-> 
-> Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
-> ---
->  .../devicetree/bindings/iio/adc/twl6030-gpadc.txt  | 45 ++++++++++++++++++++++
->  1 file changed, 45 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/iio/adc/twl6030-gpadc.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/iio/adc/twl6030-gpadc.txt b/Documentation/devicetree/bindings/iio/adc/twl6030-gpadc.txt
-> new file mode 100644
-> index 0000000..6cd3ef3
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/adc/twl6030-gpadc.txt
-> @@ -0,0 +1,45 @@
-> +Texas Instruments twl6030/twl6032 GPADC device driver
-> +
-> +Required properties:
-> +	- compatible: must be "ti,twl6030-gpadc" for TWL6030 or
-> +	  "ti,twl6032-gpadc" for TWL6032
-> +	- interrupts: interrupt number associated with it
-> +	- #io-channel-cells: must be <1> - multiple IIO outputs are present
-> +	  iio consumers can use following io-channels:
-> +		twl6030:
-> +			0 - battery type
-> +			1 - battery temperature resistor value
-> +			2 - audio accessory/general purpose
-> +			3 - general purpose
-> +			4 - temperature/general purpose
-> +			5 - general purpose
-> +			6 - general purpose
-> +			7 - main battery
-> +			8 - backup battery
-> +			9 - charger input
-> +			10 - VBUS
-> +			11 - VBUS charging current
-> +			14 - USB ID
-> +		twl6032:
-> +			0 - battery type
-> +			1 - battery temperature resistor value
-> +			2 - audio accessory/general purpose
-> +			3 - temperature with external diode/general purpose
-> +			4 - temperature/general purpose
-> +			5 - general purpose
-> +			6 - general purpose
-> +			7 - system supply
-> +			8 - backup battery
-> +			9 - charger input
-> +			10 - VBUS
-> +			11 - VBUS charging current
-> +			14 - USB ID
-> +			17 - battery charging current
-> +			18 - battery voltage
-> +
-> +Example:
-> +	adc {
-> +		compatible = "ti,twl6030-gpadc";
-> +		interrupts = <3>;
-> +		#io-channel-cells = <1>;
-> +	};
-> -- 
-> 1.8.1.2
-> 
-> 
+ drivers/pci/host/pci-tegra.c |   31 ++++++++++---------------------
+ 1 file changed, 10 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
+index 7356741..2e9888a 100644
+--- a/drivers/pci/host/pci-tegra.c
++++ b/drivers/pci/host/pci-tegra.c
+@@ -1031,32 +1031,21 @@ static int tegra_pcie_get_resources(struct tegra_pcie *pcie)
+ 		return err;
+ 	}
+
+-	/* request and remap controller registers */
+ 	pads = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pads");
+-	if (!pads) {
+-		err = -EADDRNOTAVAIL;
++	pcie->pads = devm_ioremap_resource(&pdev->dev, pads);
++	if (IS_ERR(pcie->pads)) {
++		err = PTR_ERR(pcie->pads);
+ 		goto poweroff;
+ 	}
+
+ 	afi = platform_get_resource_byname(pdev, IORESOURCE_MEM, "afi");
+-	if (!afi) {
+-		err = -EADDRNOTAVAIL;
+-		goto poweroff;
+-	}
+-
+-	pcie->pads = devm_request_and_ioremap(&pdev->dev, pads);
+-	if (!pcie->pads) {
+-		err = -EADDRNOTAVAIL;
+-		goto poweroff;
+-	}
+-
+-	pcie->afi = devm_request_and_ioremap(&pdev->dev, afi);
+-	if (!pcie->afi) {
+-		err = -EADDRNOTAVAIL;
++	pcie->afi = devm_ioremap_resource(&pdev->dev, afi);
++	if (IS_ERR(pcie->afi)) {
++		err = PTR_ERR(pcie->afi);
+ 		goto poweroff;
+ 	}
+
+-	/* request and remap configuration space */
++	/* request configuration space, but remap later, on demand */
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "cs");
+ 	if (!res) {
+ 		err = -EADDRNOTAVAIL;
+@@ -1492,9 +1481,9 @@ static int tegra_pcie_parse_dt(struct tegra_pcie *pcie)
+ 		rp->lanes = value;
+ 		rp->pcie = pcie;
+
+-		rp->base = devm_request_and_ioremap(pcie->dev, &rp->regs);
+-		if (!rp->base)
+-			return -EADDRNOTAVAIL;
++		rp->base = devm_ioremap_resource(pcie->dev, &rp->regs);
++		if (IS_ERR(rp->base))
++			return PTR_ERR(rp->base);
+
+ 		list_add_tail(&rp->list, &pcie->ports);
+ 	}
