@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab3HTFFo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 01:05:44 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51406 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab3HTFFn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 01:05:43 -0400
-X-Originating-IP: 50.43.39.152
-Date: Mon, 19 Aug 2013 22:05:27 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 0/3] v2 Documentation updates for 3.12
-Message-ID: <20130820050527.GA7333@leaf>
-References: <20130820023717.GA29357@linux.vnet.ibm.com>
- <20130820032411.GC4416@leaf>
- <20130820042832.GZ29406@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130820042832.GZ29406@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751955Ab3HTFJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 01:09:05 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33189 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751779Ab3HTFJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 01:09:03 -0400
+Message-ID: <1376975340.2016.42.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] kernel/sysctl.c: check return value after call
+ proc_put_char() in __do_proc_doulongvec_minmax()
+From: Joe Perches <joe@perches.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        Mel Gorman <mgorman@suse.de>, riel@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 19 Aug 2013 22:09:00 -0700
+In-Reply-To: <5212E4B2.5020708@asianux.com>
+References: <5212E481.9080204@asianux.com> <5212E4B2.5020708@asianux.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 09:28:32PM -0700, Paul E. McKenney wrote:
-> On Mon, Aug 19, 2013 at 08:24:11PM -0700, Josh Triplett wrote:
-> > On Mon, Aug 19, 2013 at 07:37:17PM -0700, Paul E. McKenney wrote:
-> > > Hello!
-> > > 
-> > > This series provides a few documentation updates:
-> > > 
-> > > 1.	Update rcu_barrier() documentation to note that it no longer is
-> > > 	guaranteed to wait for a full grace period.  This guarantee was
-> > > 	a victim of energy efficiency.
-> > > 
-> > > 2.	Update RTFP documentation.
-> > > 
-> > > 3.	Fix a control-dependency example in the memory-barriers
-> > > 	documentation.
-> > > 
-> > > Changes from v1 (https://lkml.org/lkml/2013/8/17/94):
-> > > 
-> > > o	Apply Josh Triplett review comments.
-> > 
-> > Consider changing the patch tag for new versions, to "PATCH v2" or
-> > similar; that way, all of the patches have a clearly distinct subject
-> > for the new version.
-> > 
-> > git format-patch will do this for you; just pass "-v 2".
+On Tue, 2013-08-20 at 11:38 +0800, Chen Gang wrote:
+> Need check the return value of proc_put_char(), just like another have
+> done in __do_proc_doulongvec_minmax().
 > 
-> Good point, my email client got them confused as well.  My version of git
-> format-patch does not know about "-v 2", but --subject-prefix="PATCH v2"
-> does fine.  I am using git version 1.8.1.5, for whatever it is worth.
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  kernel/sysctl.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index 7822cd8..ee00986 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -2214,8 +2214,11 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
+>  			*i = val;
+>  		} else {
+>  			val = convdiv * (*i) / convmul;
+> -			if (!first)
+> +			if (!first) {
+>  				err = proc_put_char(&buffer, &left, '\t');
+> +				if (err)
+> +					goto free;
+> +			}
 
-I have 1.8.4.rc3, which has -v.
+I think you should use break and convert it in
+to goto free in patch 2/2.
 
-- Josh Triplett
+Otherwise, this style looks out of place.
+
+>  			err = proc_put_long(&buffer, &left, val, false);
+>  			if (err)
+>  				break;
+
+
+
