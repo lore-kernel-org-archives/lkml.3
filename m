@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab3HTQQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:16:38 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:54839 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab3HTQQf (ORCPT
+	id S1751825Ab3HTQQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:16:57 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:57321 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab3HTQQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:16:35 -0400
-Subject: [PATCH v3 trivial 3/7] Docs: Kconfig: Clean up the radiotap
-                                               documentation
-Date: Tue, 20 Aug 2013 16:05:17 -0000
+	Tue, 20 Aug 2013 12:16:55 -0400
+Subject: [PATCH v3 trivial 4/7] Docs: Kconfig: `devlopers' -> `developers'
+Date: Tue, 20 Aug 2013 16:05:19 -0000
 From: Michael Witten <mfwitten@gmail.com>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: Rob Landley <rob@landley.net>, Randy Dunlap <rdunlap@infradead.org>,
         David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
-Message-ID: <44c613c35216473d9741d6308d9873ec-mfwitten@gmail.com>
+Message-ID: <f56c06463b6d42f9bb8642c89bafb32b-mfwitten@gmail.com>
 In-Reply-To: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com>
 References: <4cd8ab80726c43cf90243970c20f50ef-mfwitten@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Date: Fri, 8 Apr 2011 14:18:54 +0000
-
-In particular:
-
-  * The word `frame' was missing in `received frame',
-    so it has been added.
-
-  * The `RF' in `a RF' was both superfluous and awkward,
-    so it has been removed.
-
-As for the rest of the changes, well, I just couldn't help myself!
+Date: Wed, 14 Aug 2013 09:59:45 +0000
 
 Signed-off-by: Michael Witten <mfwitten@gmail.com>
 ---
- drivers/net/wireless/ipw2x00/Kconfig | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ fs/btrfs/Kconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/ipw2x00/Kconfig b/drivers/net/wireless/ipw2x00/Kconfig
-index 5397cd1..5abf297 100644
---- a/drivers/net/wireless/ipw2x00/Kconfig
-+++ b/drivers/net/wireless/ipw2x00/Kconfig
-@@ -112,13 +112,13 @@ config IPW2200_RADIOTAP
- 	depends on IPW2200_MONITOR
+diff --git a/fs/btrfs/Kconfig b/fs/btrfs/Kconfig
+index 2b3b832..e374bf9 100644
+--- a/fs/btrfs/Kconfig
++++ b/fs/btrfs/Kconfig
+@@ -59,7 +59,8 @@ config BTRFS_FS_RUN_SANITY_TESTS
+ 	help
+ 	  This will run some basic sanity tests on the free space cache
+ 	  code to make sure it is acting as it should.  These are mostly
+-	  regression tests and are only really interesting to btrfs devlopers.
++	  regression tests and are only really interesting to btrfs
++	  developers.
  
- config IPW2200_PROMISCUOUS
--	bool "Enable creation of a RF radiotap promiscuous interface"
-+	bool "Enable creation of a radiotap promiscuous interface"
- 	depends on IPW2200_MONITOR
- 	select IPW2200_RADIOTAP
- 	---help---
--	  Enables the creation of a second interface prefixed 'rtap'.
--	  This second interface will provide every received in radiotap
--	  format.
-+	  Enables the creation of a second interface (the name of which
-+	  is prefixed with 'rtap'), which provides every received frame
-+	  in radiotap format.
- 
- 	  This is useful for performing wireless network analysis while
- 	  maintaining an active association.
-@@ -129,9 +129,9 @@ config IPW2200_PROMISCUOUS
- 	    % ifconfig rtap0 up
- 	    % tethereal -i rtap0
- 
--	  If you do not specify 'rtap_iface=1' as a module parameter then
--	  the rtap interface will not be created and you will need to turn
--	  it on via sysfs:
-+	  If you do not specify 'rtap_iface=1' as a module parameter, then
-+	  the rtap interface will not be created automatically, but it can
-+	  still be created via sysfs:
- 
- 	    % echo 1 > /sys/bus/pci/drivers/ipw2200/*/rtap_iface
+ 	  If unsure, say N.
  
 -- 
 1.7.11.2.252.gc4a64c8
