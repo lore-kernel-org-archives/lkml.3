@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546Ab3HTWHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 18:07:10 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38790 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751168Ab3HTWHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 18:07:09 -0400
-Message-ID: <1377036428.2016.85.camel@joe-AO722>
-Subject: Re: Why are BSD-licensed LZ4 symbols GPL exported?
-From: Joe Perches <joe@perches.com>
-To: Rob Landley <rob@landley.net>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Richard Yao <ryao@gentoo.org>,
-        chanho.min@lge.com,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Yann Collet o <yann.collet.73@gmail.com>
-Date: Tue, 20 Aug 2013 15:07:08 -0700
-In-Reply-To: <1377035193.2016.81.camel@joe-AO722>
-References: <520D8C4C.7000704@gentoo.org>
-	 <20130820171148.GA17832@srcf.ucam.org> <1377020294.2016.51.camel@joe-AO722>
-	 <1377034669.2737.83@driftwood> <1377035193.2016.81.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1751678Ab3HTWHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 18:07:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47934 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab3HTWHk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 18:07:40 -0400
+Date: Tue, 20 Aug 2013 15:07:39 -0700 (PDT)
+Message-Id: <20130820.150739.295329075883411467.davem@davemloft.net>
+To: al@alarsen.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pch_gbe: ethtool cannot change parameters when link is
+ down
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1376819680-15359-1-git-send-email-al@alarsen.net>
+References: <1376819680-15359-1-git-send-email-al@alarsen.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 20 Aug 2013 15:07:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-20 at 14:46 -0700, Joe Perches wrote:
-> Because your
+From: Anders Larsen <al@alarsen.net>
+Date: Sun, 18 Aug 2013 11:54:40 +0200
 
-Sorry, not your's but Matthew's.
+> When attempting to change e.g. the advertising mask when the link is down
+> ecmd->speed is -1 causing mii_ethtool_sset() to bail out.
+> 
+> This bug bit when connecting to a gigabit switch through a 4-pin (industrial)
+> cable, since link negotiation would not complete (both endpoints claimed to
+> be gigabit-capable, but this is not possible with only 4 pins).
+> Any attempt to fix this by setting autonegation to not offer 1000Mbps
+> failed as the setting would not be accepted while the link was still down...
+> 
+> Set ecmd->speed to SPEED_1000 to satisfy mii_ethtool_sset()
+> (the actual value of ecmd->speed doesn't matter as long as it is valid,
+> since a re-negotation is forced afterwards).
+> 
+> Signed-off-by: Anders Larsen <al@alarsen.net>
 
-I do think the MODULE_LICENSE should be "Dual BSD/GPL"
-instead of merely "GPL" if for no other reason than
-politeness to the original developer and the
-license at the top of the files.
-
- * LZ4 - Fast LZ compression algorithm
- * Copyright (C) 2011-2012, Yann Collet.
- * BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
-
----
- lib/lz4/lz4_compress.c   | 2 +-
- lib/lz4/lz4_decompress.c | 2 +-
- lib/lz4/lz4hc_compress.c | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/lib/lz4/lz4_compress.c b/lib/lz4/lz4_compress.c
-index fd94058..a4001ee 100644
---- a/lib/lz4/lz4_compress.c
-+++ b/lib/lz4/lz4_compress.c
-@@ -439,5 +439,5 @@ exit:
- }
- EXPORT_SYMBOL_GPL(lz4_compress);
- 
--MODULE_LICENSE("GPL");
-+MODULE_LICENSE("Dual BSD/GPL");
- MODULE_DESCRIPTION("LZ4 compressor");
-diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
-index d3414ea..c45e685 100644
---- a/lib/lz4/lz4_decompress.c
-+++ b/lib/lz4/lz4_decompress.c
-@@ -321,6 +321,6 @@ exit_0:
- #ifndef STATIC
- EXPORT_SYMBOL_GPL(lz4_decompress_unknownoutputsize);
- 
--MODULE_LICENSE("GPL");
-+MODULE_LICENSE("Dual BSD/GPL");
- MODULE_DESCRIPTION("LZ4 Decompressor");
- #endif
-diff --git a/lib/lz4/lz4hc_compress.c b/lib/lz4/lz4hc_compress.c
-index eb1a74f..59f26e6 100644
---- a/lib/lz4/lz4hc_compress.c
-+++ b/lib/lz4/lz4hc_compress.c
-@@ -535,5 +535,5 @@ exit:
- }
- EXPORT_SYMBOL_GPL(lz4hc_compress);
- 
--MODULE_LICENSE("GPL");
-+MODULE_LICENSE("Dual BSD/GPL");
- MODULE_DESCRIPTION("LZ4HC compressor");
-
-
+Applied.
