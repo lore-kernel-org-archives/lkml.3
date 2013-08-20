@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab3HTK6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 06:58:44 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:59643 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab3HTK6n (ORCPT
+	id S1751171Ab3HTLBc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 07:01:32 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:44820 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab3HTLBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 06:58:43 -0400
-Message-ID: <52134BD8.4050004@monstr.eu>
-Date: Tue, 20 Aug 2013 12:58:32 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Michal Simek <michal.simek@xilinx.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the xilinx tree
-References: <20130703111030.c0df2a231fc3e4ba6cb566cd@canb.auug.org.au> <51D3BC5C.1080505@monstr.eu> <20130703160247.bc20792d7bfaef893ee72137@canb.auug.org.au>
-In-Reply-To: <20130703160247.bc20792d7bfaef893ee72137@canb.auug.org.au>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="WH6bNNW73KUdKPRV14JJL3FBhxIPlKCLi"
+	Tue, 20 Aug 2013 07:01:30 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-doc@vger.kernel.org
+Subject: [PATCH 1/2] Documentation/printk-formats.txt: No casts needed for u64/s64
+Date: Tue, 20 Aug 2013 13:01:15 +0200
+Message-Id: <1376996476-12027-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---WH6bNNW73KUdKPRV14JJL3FBhxIPlKCLi
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Now all 64-bit architectures have been converted to int-ll64.h in kernel
+space, casting to (unsigned) long long is no longer needed when formatting
+u64/s64.
 
-Hi Stephen,
+For backwards compatibility, alpha, ia64, mips64, and powerpc64 still use
+int-l64.h in userspace.
 
-On 07/03/2013 08:02 AM, Stephen Rothwell wrote:
-> Hi Michal,
->=20
-> On Wed, 03 Jul 2013 07:53:32 +0200 Michal Simek <monstr@monstr.eu> wrot=
-e:
->>
->> I have fixed it - it should be fixed there soon.
->=20
-> Thanks.
->=20
->> But I am thinking about removing this tree from linux-next
->> because we are pushing arm changes through arm-soc tree
->> and they require to have specific feature branches.
->=20
-> Just let me know when you decide.
->=20
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-doc@vger.kernel.org
+---
+This is the documentation part of more than two year old
+"asm/types.h: All architectures use int-ll64.h in kernelspace"
+(https://lkml.org/lkml/2011/8/13/104)
 
-Please remove this tree from the linux-next testing.
+ Documentation/printk-formats.txt |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-xilinx          git     git://git.xilinx.com/linux-xlnx.git#arm-next
+diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+index 3e8cb73..41aaed7 100644
+--- a/Documentation/printk-formats.txt
++++ b/Documentation/printk-formats.txt
+@@ -185,11 +185,11 @@ struct va_format:
+ 
+ u64 SHOULD be printed with %llu/%llx, (unsigned long long):
+ 
+-	printk("%llu", (unsigned long long)u64_var);
++	printk("%llu", u64_var);
+ 
+ s64 SHOULD be printed with %lld/%llx, (long long):
+ 
+-	printk("%lld", (long long)s64_var);
++	printk("%lld", s64_var);
+ 
+ If <type> is dependent on a config option for its size (e.g., sector_t,
+ blkcnt_t) or is architecture-dependent for its size (e.g., tcflag_t), use a
+-- 
+1.7.9.5
 
-Thanks,
-Michal
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---WH6bNNW73KUdKPRV14JJL3FBhxIPlKCLi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlITS9gACgkQykllyylKDCGBVgCfdb44aj53d6wTxUDPxilbQzB3
-LVsAoIJR/52TSElNsHiZYVcVrOHOtKal
-=mDww
------END PGP SIGNATURE-----
-
---WH6bNNW73KUdKPRV14JJL3FBhxIPlKCLi--
