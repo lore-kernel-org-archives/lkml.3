@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab3HTPnE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 11:43:04 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:65439 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab3HTPnC (ORCPT
+	id S1751734Ab3HTPox (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 11:44:53 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:40632 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab3HTPov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 11:43:02 -0400
-Date: Tue, 20 Aug 2013 17:42:59 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: Re: [sched next] overflowed cpu time for kernel threads in
- /proc/PID/stat
-Message-ID: <20130820154257.GD17441@somewhere>
-References: <20130820111426.GA27828@swordfish.datadirectnet.com>
- <20130820151509.GA17441@somewhere>
- <20130820153549.GB2315@swordfish.minsk.epam.com>
+	Tue, 20 Aug 2013 11:44:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130820153549.GB2315@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374067753-29560-1-git-send-email-oleksandr.savchenko@ti.com>
+References: <1374067753-29560-1-git-send-email-oleksandr.savchenko@ti.com>
+Date: Tue, 20 Aug 2013 08:44:50 -0700
+Message-ID: <CAGa+x84dE_RwN2G1y_9OJFxnq3JKq5g0YZd+mFueOjjvMzyyew@mail.gmail.com>
+Subject: Re: [PATCH] serial: omap: Fix IRQ handling return value
+From: Kevin Hilman <khilman@linaro.org>
+To: Alexander Savchenko <oleksandr.savchenko@ti.com>
+Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-serial@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Ruchika Kharwar <ruchika@ti.com>,
+        balbi@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 06:35:50PM +0300, Sergey Senozhatsky wrote:
-> On (08/20/13 17:15), Frederic Weisbecker wrote:
-> > On Tue, Aug 20, 2013 at 02:14:26PM +0300, Sergey Senozhatsky wrote:
-> > Hello,
-> > 
-> > Please upload your config.
-> > 
-> > I'm adding Stanislaw in Cc in case it relates to cputime scaling.
-> >
-> 
-> please find attached.
-> 
-> 	-ss
++Felipe
 
-> #
-> # CPU/Task time and stats accounting
-> #
-> CONFIG_VIRT_CPU_ACCOUNTING=y
-> CONFIG_VIRT_CPU_ACCOUNTING_GEN=y
+On Wed, Jul 17, 2013 at 6:29 AM, Alexander Savchenko
+<oleksandr.savchenko@ti.com> wrote:
+> From: Ruchika Kharwar <ruchika@ti.com>
+>
+> Ensure the Interrupt handling routine return IRQ_HANDLED vs
+> IRQ_NONE.
 
-So it happens with full dynticks cputime accounting.
-How reproducable is this? Does it always happen?
-Does it happen with CONFIG_TICK_CPU_ACCOUNTING as well? (you'll
-need to deactivate full dynticks.)
+Why?
 
-Thanks.
+By unconditionally returning IRQ_HANDLED, this patch will surely break
+systems where the UART IRQ is shared with other platforms.
+
+I just noticed this patch when bisecting a related problem.  Why
+wasn't this Cc'd to linux-omap where OMAP users might have been more
+likely to see it?
+
+Greg, without a better justification in the changelog, I think this
+patch should be dropped from tty-next.
+
+Kevin
+
+> Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
+> Signed-off-by: Alexander Savchenko <oleksandr.savchenko@ti.com>
+> ---
+>  drivers/tty/serial/omap-serial.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+>
+> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+> index b6d1728..70feeb3 100644
+> --- a/drivers/tty/serial/omap-serial.c
+> +++ b/drivers/tty/serial/omap-serial.c
+> @@ -479,7 +479,6 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
+>         struct uart_omap_port *up = dev_id;
+>         unsigned int iir, lsr;
+>         unsigned int type;
+> -       irqreturn_t ret = IRQ_NONE;
+>         int max_count = 256;
+>
+>         spin_lock(&up->port.lock);
+> @@ -490,7 +489,6 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
+>                 if (iir & UART_IIR_NO_INT)
+>                         break;
+>
+> -               ret = IRQ_HANDLED;
+>                 lsr = serial_in(up, UART_LSR);
+>
+>                 /* extract IRQ type from IIR register */
+> @@ -529,7 +527,7 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
+>         pm_runtime_put_autosuspend(up->dev);
+>         up->port_activity = jiffies;
+>
+> -       return ret;
+> +       return IRQ_HANDLED;
+>  }
+>
+>  static unsigned int serial_omap_tx_empty(struct uart_port *port)
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
