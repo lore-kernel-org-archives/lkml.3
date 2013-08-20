@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499Ab3HTBB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 21:01:59 -0400
-Received: from mga14.intel.com ([143.182.124.37]:6677 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751162Ab3HTBB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 21:01:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,915,1367996400"; 
-   d="scan'208";a="284097721"
-Date: Tue, 20 Aug 2013 03:01:54 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Kevin Hilman <khilman@linaro.org>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-omap@vger.kernel.org,
-        Ruslan Bilovol <ruslan.bilovol@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] mfd: twl6030-irq: rework and add twl6032 support
-Message-ID: <20130820010154.GB13324@zurbaran>
-References: <1374758151-12097-1-git-send-email-grygorii.strashko@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374758151-12097-1-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751628Ab3HTBCN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 21:02:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15249 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab3HTBCK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 21:02:10 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=F0my4ousGMIA:10 a=3wfm---skdX-aecXHHkA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 19 Aug 2013 21:02:08 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Kent Overstreet <kmo@daterainc.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.6-rt3
+Message-ID: <20130819210208.426e01b3@gandalf.local.home>
+In-Reply-To: <20130819202903.692097ea@gandalf.local.home>
+References: <20130812163413.GI23040@linutronix.de>
+	<520D212F.7030400@localhost>
+	<20130815152210.5ed93696@gandalf.local.home>
+	<520DCE5F.1040402@linutronix.de>
+	<521254A0.6050603@localhost>
+	<20130819202903.692097ea@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grygorii,
+On Mon, 19 Aug 2013 20:29:03 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-On Thu, Jul 25, 2013 at 04:15:46PM +0300, Grygorii Strashko wrote:
-> This patch series intorduces twl6030-irq module rework to use Threaded IRQ and
-> linear irq_domain, and adds support for PMIC TWL6032 IRQs.
+> On Mon, 19 Aug 2013 10:23:44 -0700
+> Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU> wrote:
 > 
-> After this patch series TWL6030/6032 IRQs will be supported only for DT boot mode.
 > 
-> Changes since v1:
-> - Added new patch "mfd: twl6030-irq: create struct twl6030_irq" 
->   which introduces "struct twl6030_irq" to store all local variables inside it.
-> - Patch "mfd: twl6030-irq: migrate to IRQ threaded handler":
->   Minor comments applied; fixed twl6030_exit_irq();
->   The Parent IRQ has been set for each nested IRQ.
-> - Patch "mfd: twl6030-irq: convert to use linear irq_domain":
->   The irq_find_mapping() is used in twl6030_mmc_card_detect_config()
->   to get virtual IRQ number.
-This looks good to me. Kevin, Graeme, any further comments/ACKs ?
+> > > The problem is that bcache is using new semaphore functions which it
+> > > just introduced which rt does not know about. The comment above their
+> > > definition says that it is wrong to use them and completion is the
+> > > right way to do it.
+> > > So my question is, why don't we use completion but this nasty hack?
+> 
+> I think I'm going to send them an email about that.
+> 
 
-Cheers,
-Samuel.
+Looking at it more, I can now see why they did what they did.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Grumble, we may need to bring back the old "compat" rwsem, or whatever
+we called it, and just use that instead. And say that this code will
+have no real time boosting.
+
+-- Steve
