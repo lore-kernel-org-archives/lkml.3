@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473Ab3HTQde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 12:33:34 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:62611 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab3HTQdb (ORCPT
+	id S1751502Ab3HTQhi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 12:37:38 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36733 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab3HTQhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 12:33:31 -0400
+	Tue, 20 Aug 2013 12:37:36 -0400
+Message-ID: <52139B4E.6070700@wwwdotorg.org>
+Date: Tue, 20 Aug 2013 10:37:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130820155735.GA2805@kroah.com>
-References: <20130820155735.GA2805@kroah.com>
-Date: Tue, 20 Aug 2013 09:33:30 -0700
-X-Google-Sender-Auth: JvPqTPLMOfo9va_7_5fStG_RI7U
-Message-ID: <CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
-Subject: Re: Linux 3.0.92
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Greg KH <gregkh@linuxfoundation.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Borislav Petkov <bp@alien8.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, lwn@lwn.net,
-        Jiri Slaby <jslaby@suse.cz>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: linux-spi@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi: fix SPI_BIT_MASK() to use correct size for 32-bit
+ transfer mask
+References: <1377000932-5438-1-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <1377000932-5438-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 8:57 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->
-> Johannes Berg (1):
->       genetlink: fix family dump race
+On 08/20/2013 06:15 AM, Mika Westerberg wrote:
+> When building a 64-bit kernel we get the following warning from the
+> compiler:
+> 
+>  drivers/spi/spi-pxa2xx.c: In function ‘pxa2xx_spi_probe’:
+>  drivers/spi/spi-pxa2xx.c:1152:3: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+>    master->bits_per_word_mask = SPI_BPW_RANGE_MASK(4, 32);
+>    ^
+> This is due the fact that when the max range is specified as 32
+> SPI_BIT_MASK() expands to ~0UL which doesn't fit to the u32 type that the
+> master->bits_per_word_mask is.
+> 
+> Fix this by using ~0U instead.
 
-This one turns out to be buggy, see thread called "3.11-rc6 genetlink
-locking fix offends lockdep".
-
-I really think there should be delay before stable picks up stuff from
-mainline, unless it's something particularly critical and
-well-discussed.. Maybe a week or so.
-
-Now it's both in 3.0 and 3.10, so the revert (unless we find a better
-fix - and the first two patches have already failed) will have to go
-there too.
-
-                   Linus
+The same patch is already in next-20130819 at least, as:
+b6aa23c spi: fix SPI_BIT_MASK so it always fits into 32-bits
