@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab3HTCsc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 22:48:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14250 "EHLO mx1.redhat.com"
+	id S1752116Ab3HTCre (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 22:47:34 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:59911 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764Ab3HTCsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 22:48:30 -0400
-Message-ID: <5212D8F2.10307@redhat.com>
-Date: Tue, 20 Aug 2013 10:48:18 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] vhost_net: remove the max pending check
-References: <1376630190-5912-1-git-send-email-jasowang@redhat.com> <1376630190-5912-7-git-send-email-jasowang@redhat.com> <20130816100225.GD21821@redhat.com>
-In-Reply-To: <20130816100225.GD21821@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752018Ab3HTCrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Aug 2013 22:47:31 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 3/9] nohz_full: Add Kconfig parameter for scalable detection of all-idle state
+Date: Mon, 19 Aug 2013 19:47:15 -0700
+Message-Id: <1376966841-31774-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130820024700.GA31075@linux.vnet.ibm.com>
+ <1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082002-0320-0000-0000-000000BBA37B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2013 06:02 PM, Michael S. Tsirkin wrote:
-> On Fri, Aug 16, 2013 at 01:16:30PM +0800, Jason Wang wrote:
->> We used to limit the max pending DMAs to prevent guest from pinning too many
->> pages. But this could be removed since:
->>
->> - We have the sk_wmem_alloc check in both tun/macvtap to do the same work
->> - This max pending check were almost useless since it was one done when there's
->>   no new buffers coming from guest. Guest can easily exceeds the limitation.
->> - We've already check upend_idx != done_idx and switch to non zerocopy then. So
->>   even if all vq->heads were used, we can still does the packet transmission.
-> We can but performance will suffer.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The check were in fact only done when no new buffers submitted from
-guest. So if guest keep sending, the check won't be done.
+At least one CPU must keep the scheduling-clock tick running for
+timekeeping purposes whenever there is a non-idle CPU.  However, with
+the new nohz_full adaptive-idle machinery, it is difficult to distinguish
+between all CPUs really being idle as opposed to all non-idle CPUs being
+in adaptive-ticks mode.  This commit therefore adds a Kconfig parameter
+as a first step towards enabling a scalable detection of full-system
+idle state.
 
-If we really want to do this, we should do it unconditionally. Anyway, I
-will do test to see the result.
->
->> So remove this check completely.
->>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>  drivers/vhost/net.c |   13 -------------
->>  1 files changed, 0 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
->> index a035a89..ed3f165 100644
->> --- a/drivers/vhost/net.c
->> +++ b/drivers/vhost/net.c
->> @@ -38,8 +38,6 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
->>   * Using this limit prevents one virtqueue from starving others. */
->>  #define VHOST_NET_WEIGHT 0x80000
->>  
->> -/* MAX number of TX used buffers for outstanding zerocopy */
->> -#define VHOST_MAX_PEND 128
->>  #define VHOST_GOODCOPY_LEN 256
->>  
->>  /*
->> @@ -372,17 +370,6 @@ static void handle_tx(struct vhost_net *net)
->>  			break;
->>  		/* Nothing new?  Wait for eventfd to tell us they refilled. */
->>  		if (head == vq->num) {
->> -			int num_pends;
->> -
->> -			/* If more outstanding DMAs, queue the work.
->> -			 * Handle upend_idx wrap around
->> -			 */
->> -			num_pends = likely(nvq->upend_idx >= nvq->done_idx) ?
->> -				    (nvq->upend_idx - nvq->done_idx) :
->> -				    (nvq->upend_idx + UIO_MAXIOV -
->> -				     nvq->done_idx);
->> -			if (unlikely(num_pends > VHOST_MAX_PEND))
->> -				break;
->>  			if (unlikely(vhost_enable_notify(&net->dev, vq))) {
->>  				vhost_disable_notify(&net->dev, vq);
->>  				continue;
->> -- 
->> 1.7.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+[ paulmck: Update help text per Frederic Weisbecker. ]
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/time/Kconfig | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index 70f27e8..c7d2fd6 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -134,6 +134,29 @@ config NO_HZ_FULL_ALL
+ 	 Note the boot CPU will still be kept outside the range to
+ 	 handle the timekeeping duty.
+ 
++config NO_HZ_FULL_SYSIDLE
++	bool "Detect full-system idle state for full dynticks system"
++	depends on NO_HZ_FULL
++	default n
++	help
++	 At least one CPU must keep the scheduling-clock tick running for
++	 timekeeping purposes whenever there is a non-idle CPU, where
++	 "non-idle" also includes dynticks CPUs as long as they are
++	 running non-idle tasks.  Because the underlying adaptive-tick
++	 support cannot distinguish between all CPUs being idle and
++	 all CPUs each running a single task in dynticks mode, the
++	 underlying support simply ensures that there is always a CPU
++	 handling the scheduling-clock tick, whether or not all CPUs
++	 are idle.  This Kconfig option enables scalable detection of
++	 the all-CPUs-idle state, thus allowing the scheduling-clock
++	 tick to be disabled when all CPUs are idle.  Note that scalable
++	 detection of the all-CPUs-idle state means that larger systems
++	 will be slower to declare the all-CPUs-idle state.
++
++	 Say Y if you would like to help debug all-CPUs-idle detection.
++
++	 Say N if you are unsure.
++
+ config NO_HZ
+ 	bool "Old Idle dynticks config"
+ 	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
+-- 
+1.8.1.5
 
