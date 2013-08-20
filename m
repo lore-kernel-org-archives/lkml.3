@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab3HTRgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 13:36:55 -0400
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:35830 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab3HTRgw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 13:36:52 -0400
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: linux-usb@vger.kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Krzysztof Mazur <krzysiek@podlesie.net>
-Subject: [PATCH 2/2] usb: fail on usb_hub_create_port_device() errors
-Date: Tue, 20 Aug 2013 19:24:36 +0200
-Message-Id: <1377019476-7701-3-git-send-email-krzysiek@podlesie.net>
-X-Mailer: git-send-email 1.8.4.rc1.409.gbd48715
-In-Reply-To: <1377019476-7701-1-git-send-email-krzysiek@podlesie.net>
-References: <1377019476-7701-1-git-send-email-krzysiek@podlesie.net>
+	id S1752028Ab3HTRiS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 13:38:18 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41495 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751339Ab3HTRiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 13:38:17 -0400
+Message-ID: <1377020294.2016.51.camel@joe-AO722>
+Subject: Re: Why are BSD-licensed LZ4 symbols GPL exported?
+From: Joe Perches <joe@perches.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Richard Yao <ryao@gentoo.org>, chanho.min@lge.com,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Date: Tue, 20 Aug 2013 10:38:14 -0700
+In-Reply-To: <20130820171148.GA17832@srcf.ucam.org>
+References: <520D8C4C.7000704@gentoo.org>
+	 <20130820171148.GA17832@srcf.ucam.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ignoring usb_hub_create_port_device() errors cause later NULL pointer
-deference when uninitialized hub->ports[i] entries are dereferenced
-after port memory allocation error.
+On Tue, 2013-08-20 at 18:11 +0100, Matthew Garrett wrote:
+> On Thu, Aug 15, 2013 at 10:19:56PM -0400, Richard Yao wrote:
+> > Why are the LZ4 symbols being GPL-exported when the LZ4 code is
+> > BSD-licensed and no substantial changes appear to have been made when it
+> > was merged?
+> 
+> EXPORT_SYMBOL_GPL is intended an indication that using a symbol is 
+> likely to result in you producing a derived work of the kernel, and the 
+> kernel as a whole is under the GPL. It has nothing to do with additional 
+> licenses that individual pieces of code may be available under.
 
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
----
-I'm not sure if failing in that case is a good idea, but other solutions
-are more complex.
+Maybe not.
 
-I tried also changing hdev->maxchild and skiping initialization
-of later ports, but it didn't work because in some cases
-hub->descriptor->bNbrPorts is used instead of hdev->maxchild.
-With simulated usb_hub_create_port_device() failure I have an Oops
-in hub_power_on().
+http://www.ifross.org/en/artikel/ongoing-dispute-over-value-exportsymbolgpl-function
 
-Another possible solution is allowing for uninitialized ports and
-checking for hub->ports[i] == NULL.
-
- drivers/usb/core/hub.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 588c3a3..afd334b 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1557,10 +1557,15 @@ static int hub_configure(struct usb_hub *hub,
- 	if (hub->has_indicators && blinkenlights)
- 		hub->indicator [0] = INDICATOR_CYCLE;
- 
--	for (i = 0; i < hdev->maxchild; i++)
--		if (usb_hub_create_port_device(hub, i + 1) < 0)
-+	for (i = 0; i < hdev->maxchild; i++) {
-+		ret = usb_hub_create_port_device(hub, i + 1);
-+		if (ret < 0) {
- 			dev_err(hub->intfdev,
- 				"couldn't create port%d device.\n", i + 1);
-+			hdev->maxchild = i;
-+			goto fail;
-+		}
-+	}
- 
- 	usb_hub_adjust_deviceremovable(hdev, hub->descriptor);
- 
--- 
-1.8.4.rc1.409.gbd48715
 
