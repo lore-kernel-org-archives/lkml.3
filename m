@@ -1,199 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852Ab3HTTgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 15:36:46 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:56235 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab3HTTgo (ORCPT
+	id S1751869Ab3HTTjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 15:39:01 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:33509 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375Ab3HTTi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 15:36:44 -0400
-Message-ID: <1377027386.13829.29.camel@jlt4.sipsolutions.net>
-Subject: Re: Linux 3.0.92
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Borislav Petkov <bp@alien8.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, lwn@lwn.net,
-        Jiri Slaby <jslaby@suse.cz>, Ding Tianhong <dingtianhong@huawei.com>,
-        netdev@vger.kernel.org, Pravin B Shelar <pshelar@nicira.com>,
-        Thomas Graf <tgraf@suug.ch>, sergey.senozhatsky@gmail.com
-Date: Tue, 20 Aug 2013 21:36:26 +0200
-In-Reply-To: <20130820164343.GA3958@kroah.com>
-References: <20130820155735.GA2805@kroah.com>
-	 <CA+55aFxrPP8=xPWuRVy0HPyiFkT8Mc03zWGKosg+WrEQfqNDfQ@mail.gmail.com>
-	 <20130820164343.GA3958@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Aug 2013 15:38:58 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] Kconfig: Remove hotplug enable hints in CONFIG_KEXEC help texts
+Date: Tue, 20 Aug 2013 21:38:03 +0200
+Message-Id: <1377027483-17025-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[too many email threads, so + a few folks]
+commit 40b313608ad4ea655addd2ec6cdd106477ae8e15 ("Finally eradicate
+CONFIG_HOTPLUG") removed remaining references to CONFIG_HOTPLUG, but missed
+a few plain English references in the CONFIG_KEXEC help texts.
 
-> > This one turns out to be buggy, see thread called "3.11-rc6 genetlink
-> > locking fix offends lockdep".
-> 
-> Yeah, I messed up in keeping it here, I'll go revert it and push out a
-> new 3.0 release.
+Remove them, too.
 
-Sorry everyone, I thought I tested that code but clearly I didn't test
-it well enough. I can easily reproduce the issues now so not sure why I
-didn't see it before.
-
-> I thought that there was a fix already for this...  Ah, no, that was for
-> another reported regression in an older 3.10-stable release, my bad.
-> 
-> Johannes, what do you want to do here?  Just revert it in Linus's tree
-> for now, given the late -rc cycle?
-
-I think that'd be the best course of action for now. I just tried a few
-other approaches but I can't come up with a dead-lock free way to
-actually add locking here, short of providing some way for dump to
-actually always have locking from "outside" (netlink code).
-
-I think the better way would be to convert it to just use RCU. This
-isn't very efficient, but then again we don't unregister generic netlink
-families all the time. Below patch works without lockdep complaining,
-but that's obvious since it can't check RCU ... I'm not sure I want to
-do this so close to a release?
-
-johannes
-
->From 5b4790a1188c40422e99b4fc8840e4860d57f0d0 Mon Sep 17 00:00:00 2001
-From: Johannes Berg <johannes.berg@intel.com>
-Date: Tue, 20 Aug 2013 21:31:48 +0200
-Subject: [PATCH] genetlink: convert family dump code to use RCU
-
-In my previous commit 58ad436fcf49810aa006016107f494c9ac9013db
-("genetlink: fix family dump race") I attempted to solve an
-issue in generic netlink that could lead to crashes, but it
-turns out that this introduced a possibility for deadlock. As
-I haven't found a way to actually add locking without causing
-that, convert the family, family ops/mcast group lists all to
-use RCU, so the family dump code can simply use RCU protection
-instead of locking.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- net/netlink/genetlink.c | 28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+ arch/arm/Kconfig     |    3 +--
+ arch/ia64/Kconfig    |    6 +++---
+ arch/mips/Kconfig    |    6 +++---
+ arch/powerpc/Kconfig |    6 +++---
+ arch/sh/Kconfig      |    6 +++---
+ arch/x86/Kconfig     |    6 +++---
+ 6 files changed, 16 insertions(+), 17 deletions(-)
 
-diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
-index f85f8a2..ceeaee4 100644
---- a/net/netlink/genetlink.c
-+++ b/net/netlink/genetlink.c
-@@ -246,7 +246,7 @@ static void __genl_unregister_mc_group(struct genl_family *family,
- 	netlink_table_ungrab();
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 43594d5..cd5c1c9 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -2064,8 +2064,7 @@ config KEXEC
  
- 	clear_bit(grp->id, mc_groups);
--	list_del(&grp->list);
-+	list_del_rcu(&grp->list);
- 	genl_ctrl_event(CTRL_CMD_DELMCAST_GRP, grp);
- 	grp->id = 0;
- 	grp->family = NULL;
-@@ -272,6 +272,7 @@ void genl_unregister_mc_group(struct genl_family *family,
- 	genl_lock_all();
- 	__genl_unregister_mc_group(family, grp);
- 	genl_unlock_all();
-+	synchronize_rcu();
- }
- EXPORT_SYMBOL(genl_unregister_mc_group);
+ 	  It is an ongoing process to be certain the hardware in a machine
+ 	  is properly shutdown, so do not be surprised if this code does not
+-	  initially work for you.  It may help to enable device hotplugging
+-	  support.
++	  initially work for you.
  
-@@ -281,6 +282,7 @@ static void genl_unregister_mc_groups(struct genl_family *family)
+ config ATAGS_PROC
+ 	bool "Export atags in procfs"
+diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+index 5a768ad..b36370d 100644
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -565,9 +565,9 @@ config KEXEC
  
- 	list_for_each_entry_safe(grp, tmp, &family->mcast_groups, list)
- 		__genl_unregister_mc_group(family, grp);
-+	synchronize_rcu();
- }
+ 	  It is an ongoing process to be certain the hardware in a machine
+ 	  is properly shutdown, so do not be surprised if this code does not
+-	  initially work for you.  It may help to enable device hotplugging
+-	  support.  As of this writing the exact hardware interface is
+-	  strongly in flux, so no good recommendation can be made.
++	  initially work for you.  As of this writing the exact hardware
++	  interface is strongly in flux, so no good recommendation can be
++	  made.
  
- /**
-@@ -351,9 +353,10 @@ int genl_unregister_ops(struct genl_family *family, struct genl_ops *ops)
- 	genl_lock_all();
- 	list_for_each_entry(rc, &family->ops_list, ops_list) {
- 		if (rc == ops) {
--			list_del(&ops->ops_list);
-+			list_del_rcu(&ops->ops_list);
- 			genl_unlock_all();
- 			genl_ctrl_event(CTRL_CMD_DELOPS, ops);
-+			synchronize_rcu();
- 			return 0;
- 		}
- 	}
-@@ -418,7 +421,7 @@ int genl_register_family(struct genl_family *family)
- 	} else
- 		family->attrbuf = NULL;
+ config CRASH_DUMP
+ 	  bool "kernel crash dumps"
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index e12764c..dccd7ce 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -2305,9 +2305,9 @@ config KEXEC
  
--	list_add_tail(&family->family_list, genl_family_chain(family->id));
-+	list_add_tail_rcu(&family->family_list, genl_family_chain(family->id));
- 	genl_unlock_all();
+ 	  It is an ongoing process to be certain the hardware in a machine
+ 	  is properly shutdown, so do not be surprised if this code does not
+-	  initially work for you.  It may help to enable device hotplugging
+-	  support.  As of this writing the exact hardware interface is
+-	  strongly in flux, so no good recommendation can be made.
++	  initially work for you.  As of this writing the exact hardware
++	  interface is strongly in flux, so no good recommendation can be
++	  made.
  
- 	genl_ctrl_event(CTRL_CMD_NEWFAMILY, family);
-@@ -498,7 +501,8 @@ int genl_unregister_family(struct genl_family *family)
- 		if (family->id != rc->id || strcmp(rc->name, family->name))
- 			continue;
+ config CRASH_DUMP
+ 	  bool "Kernel crash dumps"
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index dbd9d3c..cc61418 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -369,9 +369,9 @@ config KEXEC
  
--		list_del(&rc->family_list);
-+		list_del_rcu(&rc->family_list);
-+		synchronize_rcu();
- 		INIT_LIST_HEAD(&family->ops_list);
- 		genl_unlock_all();
+ 	  It is an ongoing process to be certain the hardware in a machine
+ 	  is properly shutdown, so do not be surprised if this code does not
+-	  initially work for you.  It may help to enable device hotplugging
+-	  support.  As of this writing the exact hardware interface is
+-	  strongly in flux, so no good recommendation can be made.
++	  initially work for you.  As of this writing the exact hardware
++	  interface is strongly in flux, so no good recommendation can be
++	  made.
  
-@@ -692,7 +696,7 @@ static int ctrl_fill_info(struct genl_family *family, u32 portid, u32 seq,
- 		if (nla_ops == NULL)
- 			goto nla_put_failure;
+ config CRASH_DUMP
+ 	bool "Build a kdump crash kernel"
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index 1020dd8..1018ed3 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -643,9 +643,9 @@ config KEXEC
  
--		list_for_each_entry(ops, &family->ops_list, ops_list) {
-+		list_for_each_entry_rcu(ops, &family->ops_list, ops_list) {
- 			struct nlattr *nest;
+ 	  It is an ongoing process to be certain the hardware in a machine
+ 	  is properly shutdown, so do not be surprised if this code does not
+-	  initially work for you.  It may help to enable device hotplugging
+-	  support.  As of this writing the exact hardware interface is
+-	  strongly in flux, so no good recommendation can be made.
++	  initially work for you.  As of this writing the exact hardware
++	  interface is strongly in flux, so no good recommendation can be
++	  made.
  
- 			nest = nla_nest_start(skb, idx++);
-@@ -718,7 +722,7 @@ static int ctrl_fill_info(struct genl_family *family, u32 portid, u32 seq,
- 		if (nla_grps == NULL)
- 			goto nla_put_failure;
+ config CRASH_DUMP
+ 	bool "kernel crash dumps (EXPERIMENTAL)"
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b32ebf9..6ace5de 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1627,9 +1627,9 @@ config KEXEC
  
--		list_for_each_entry(grp, &family->mcast_groups, list) {
-+		list_for_each_entry_rcu(grp, &family->mcast_groups, list) {
- 			struct nlattr *nest;
+ 	  It is an ongoing process to be certain the hardware in a machine
+ 	  is properly shutdown, so do not be surprised if this code does not
+-	  initially work for you.  It may help to enable device hotplugging
+-	  support.  As of this writing the exact hardware interface is
+-	  strongly in flux, so no good recommendation can be made.
++	  initially work for you.  As of this writing the exact hardware
++	  interface is strongly in flux, so no good recommendation can be
++	  made.
  
- 			nest = nla_nest_start(skb, idx++);
-@@ -789,14 +793,11 @@ static int ctrl_dumpfamily(struct sk_buff *skb, struct netlink_callback *cb)
- 	struct net *net = sock_net(skb->sk);
- 	int chains_to_skip = cb->args[0];
- 	int fams_to_skip = cb->args[1];
--	bool need_locking = chains_to_skip || fams_to_skip;
--
--	if (need_locking)
--		genl_lock();
- 
-+	rcu_read_lock();
- 	for (i = chains_to_skip; i < GENL_FAM_TAB_SIZE; i++) {
- 		n = 0;
--		list_for_each_entry(rt, genl_family_chain(i), family_list) {
-+		list_for_each_entry_rcu(rt, genl_family_chain(i), family_list) {
- 			if (!rt->netnsok && !net_eq(net, &init_net))
- 				continue;
- 			if (++n < fams_to_skip)
-@@ -811,12 +812,11 @@ static int ctrl_dumpfamily(struct sk_buff *skb, struct netlink_callback *cb)
- 	}
- 
- errout:
-+	rcu_read_unlock();
-+
- 	cb->args[0] = i;
- 	cb->args[1] = n;
- 
--	if (need_locking)
--		genl_unlock();
--
- 	return skb->len;
- }
- 
+ config CRASH_DUMP
+ 	bool "kernel crash dumps"
 -- 
-1.8.4.rc2
-
-
+1.7.9.5
 
