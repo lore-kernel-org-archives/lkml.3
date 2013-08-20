@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab3HTI6x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:58:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8762 "EHLO mga01.intel.com"
+	id S1751655Ab3HTI7E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:59:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17517 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751244Ab3HTI6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:58:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,918,1367996400"; 
-   d="scan'208";a="388946801"
-Date: Tue, 20 Aug 2013 13:45:22 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Hongbo Zhang <hongbo.zhang@freescale.com>
-Cc: djbw@fb.com, leoli@freescale.com, scottwood@freescale.com,
-        linuxppc-dev@lists.ozlabs.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 0/3] DMA: Freescale: Add support for 8-channel DMA
- engine
-Message-ID: <20130820081522.GC5810@intel.com>
-References: <1375094944-3343-1-git-send-email-hongbo.zhang@freescale.com>
- <20130729105901.GI29095@intel.com>
- <521329EA.3050900@freescale.com>
+	id S1751601Ab3HTI7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 04:59:01 -0400
+Message-ID: <52132FCE.3010304@redhat.com>
+Date: Tue, 20 Aug 2013 10:58:54 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <521329EA.3050900@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dave Hansen <dave.hansen@intel.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm: add overcommit_kbytes sysctl variable
+References: <1376925478-15506-1-git-send-email-jmarchan@redhat.com> <1376925478-15506-2-git-send-email-jmarchan@redhat.com> <52124DE7.8070502@intel.com>
+In-Reply-To: <52124DE7.8070502@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 04:33:46PM +0800, Hongbo Zhang wrote:
-> On 07/29/2013 06:59 PM, Vinod Koul wrote:
-> >On Mon, Jul 29, 2013 at 06:49:01PM +0800, hongbo.zhang@freescale.com wrote:
-> >>From: Hongbo Zhang <hongbo.zhang@freescale.com>
-> >>
-> >>Hi Vinod, Dan, Scott and Leo, please have a look at these V7 patches.
-> >The dma relates changes look okay to me.
-> >
-> >I need someone to review and ACK the DT bindings.
-> >
-> >~Vinod
-> Vinod,
-> Are you using this tree?
-> http://git.infradead.org/users/vkoul/slave-dma.git
-Yes
+On 08/19/2013 06:55 PM, Dave Hansen wrote:
+> On 08/19/2013 08:17 AM, Jerome Marchand wrote:
+>> Some applications that run on HPC clusters are designed around the
+>> availability of RAM and the overcommit ratio is fine tuned to get the
+>> maximum usage of memory without swapping. With growing memory, the
+>> 1%-of-all-RAM grain provided by overcommit_ratio has become too coarse
+>> for these workload (on a 2TB machine it represents no less than
+>> 20GB).
+>>
+>> This patch adds the new overcommit_kbytes sysctl variable that allow a
+>> much finer grain.
+> 
+> Instead of introducing yet another tunable, why don't we just make the
+> ratio that comes in from the user more fine-grained?
+> 
+> 	sysctl overcommit_ratio=0.2
+> 
+> We change the internal 'sysctl_overcommit_ratio' to store tenths or
+> hundreths of a percent (or whatever), then parse the input as two
+> integers.  I don't think we need fully correct floating point parsing
+> and rounding here, so it shouldn't be too much of a chore.  It'd
+> probably end up being less code than you have as it stands.
+> 
 
-> Did you merge these patches?
-No
+Whatever works for me. I did it in that way to be more consistent with
+what has already been done for dirty*_ratio/bytes.
 
-As I said I would like someone who know DT and dma binding to ack them. I see
-devicetree ML has been cced, can Arnd or someone else review these...
+Thanks,
+Jerome
 
-~Vinod
+
