@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747Ab3HTTN5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 15:13:57 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31052 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283Ab3HTTNz (ORCPT
+	id S1751824Ab3HTTOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 15:14:16 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39558 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab3HTTOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 15:13:55 -0400
-Message-ID: <5213BFCB.3010503@oracle.com>
-Date: Tue, 20 Aug 2013 14:13:15 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	Tue, 20 Aug 2013 15:14:11 -0400
+Date: Tue, 20 Aug 2013 20:13:39 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: sameo@linux.intel.com, swarren@wwwdotorg.org, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, rob@landley.net,
+        lee.jones@linaro.org, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gg@slimlogic.co.uk, kishon@ti.com,
+        j-keerthy@ti.com, ian.campbell@citrix.com
+Message-ID: <20130820191339.GT30073@sirena.org.uk>
+References: <1377004456-26318-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, Linux-Next <linux-next@vger.kernel.org>
-Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
-References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com> <20130820130056.GA9652@infradead.org>
-In-Reply-To: <20130820130056.GA9652@infradead.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UKUpI6lZ3P7mfoqz"
+Content-Disposition: inline
+In-Reply-To: <1377004456-26318-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: There is a fly on your nose.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V3] regulator: palmas: add support for external control
+ of rails
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen,
-Would you be willing to pick up
-git://github.com/kleikamp/linux-shaggy.git for-next
-into linux-next?
 
-There will be some unclean merges, and I can send you updated patches
-created against your latest tree. I'm not exactly sure of your process
-wrt cleaning up merges, but I guess they would help.
+--UKUpI6lZ3P7mfoqz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
-Shaggy
+On Tue, Aug 20, 2013 at 06:44:15PM +0530, Laxman Dewangan wrote:
 
-On 08/20/2013 08:00 AM, Christoph Hellwig wrote:
-> As I've seen very few replies to this:  how do we ensure this gets
-> picked up for the 3.12 merge window?  The series has been a reposted
-> a few times without complaints or major changes, but the ball still
-> doesn't seem to get rolling.
-> 
-> I'd really like to do some ecryptfs and scsi target work that is going
-> to rely on this soon.
-> 
+> +			econtrol = PALMAS_EXT_CONTROL_NSLEEP;
+> +			if (!ret) {
+> +				if (prop == 1)
+> +					econtrol = PALMAS_EXT_CONTROL_ENABLE1;
+> +				else if (prop == 2)
+> +					econtrol = PALMAS_EXT_CONTROL_ENABLE2;
+> +				else if (prop == 3)
+> +					econtrol = PALMAS_EXT_CONTROL_NSLEEP;
+
+Since Stephen identified an issue as well...  this looks like a switch
+statement.   Otherwise this looks fine.
+
+--UKUpI6lZ3P7mfoqz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSE7/fAAoJELSic+t+oim9Zp8P/RPggDonvpxfdWC3oLWcesPN
+rBlNSB5f+wqhepuWSB+szOICnNWwZyE6VSdzrjspJ+HOyL0mZLcS8OX3B9g5UZd1
+dN1a2e31DrFsVzc6Pez8tBU5WmdP2I25Hi6HZz7Xw6p55CtKzEjf5wMCDy9Ogw1U
+pymdmheNRQ9wGuh3oKqwzyp7iVo5cqZmpL4TCWC5i2iXDptBhLFWr7XwrqAaNkZt
+FbmA3/5f2doYre0yh+FVcIF0Rf0h4sZkctyDKBKH2xDh9PwCTIPT8JDamvIhJgot
+U5UfjveH22gTFkT02exssgDePbshBXGz7wFGF3I/QXDPTSmVQZiQ+sdYbaIjdwpH
+m9b5KceaigC51QL1BB8EQfTBhzRM1AndMwJdZ4tb9atewk9u1ZOKFej/2cTg4rfE
+Wl5r4JSu9HKz+gahbLsAOG4OSl8jhISvH/Iw3TkX9SkkgmgG7ftO0EviT0GoDRtT
+1/1cfUQANF7198H2clpVZ0LFgAlIfkiJpNITB5TgLXsL/MoSYtv9KIudDftoSvxo
+4NBJfIP6b6RcDvBRK2OcZpK/lMbFjXU+S0kvlY/pR6Kl8oYkyKCPZByyLFqz6nCo
+DgFiAvQHml13JAe1EKMxdNh5jMlvo9ClgxmvFWOrHk1KGjxOdopUuLvTNdAwyblh
+J7eGaMTXYCIl6rCF45tz
+=0Adl
+-----END PGP SIGNATURE-----
+
+--UKUpI6lZ3P7mfoqz--
