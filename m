@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752Ab3HTHBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 03:01:42 -0400
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:44133 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710Ab3HTHBl (ORCPT
+	id S1751891Ab3HTHCJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 03:02:09 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:49216 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab3HTHCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 03:01:41 -0400
-Message-ID: <52130AD7.1020000@lab.ntt.co.jp>
-Date: Tue, 20 Aug 2013 15:21:11 +0900
-From: =?UTF-8?B?RmVybmFuZG8gTHVpcyBWw6F6cXVleiBDYW8=?= 
-	<fernando_b1@lab.ntt.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-3-git-send-email-fweisbec@gmail.com> <20130816160201.GA31682@redhat.com> <20130816162056.GE24210@somewhere> <20130816162654.GA453@redhat.com> <20130816164626.GH24210@somewhere>
-In-Reply-To: <20130816164626.GH24210@somewhere>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: No
+	Tue, 20 Aug 2013 03:02:07 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-4f-5213146ef328
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Lee Jones'" <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, "'David Brown'" <davidb@codeaurora.org>,
+        "'Daniel Walker'" <dwalker@fifo99.com>,
+        "'Bryan Huntsman'" <bryanh@codeaurora.org>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 2/3] mfd: pm8921: remove unnecessary platform_set_drvdata()
+Date: Tue, 20 Aug 2013 16:02:05 +0900
+Message-id: <005301ce9d73$2df47b40$89dd71c0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6dcypaXfXokrQESRyQgyJqm5AsmA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zI908EeEgg47jvBb/jk1hsni8/B+b
+	xdRlbawWlxdeYrW4//Uoo8XlXXPYLE53szqwe1zu62XyOD15P4vHnWt72DzmnQz06NuyitHj
+	8ya5ALYoLpuU1JzMstQifbsEroyFvTvZCj6zV2zc1MvWwHiErYuRk0NCwETizfwf7BC2mMSF
+	e+uB4lwcQgLLGCXmP/nO2sXIAVY06VIeRHw6o8TRSb1MIHEhgV+MEj0lIL1sAmoSX74cZgcJ
+	iwj4STSsYAcpZxbYyyhxqwWknJNDWMBbYmXrObBdLAKqEvOn7wQbwytgKbF8ri5ImFdAUOLH
+	5HssIDazgJbE+p3HmSBseYnNa94yQ5ypILHj7GtGEFtEQE+i5+UVdogaEYl9L94xguyVELjF
+	LtHxbCMrxC4BiW+TD7FAvCIrsekA1BxJiYMrbrBMYBSbhWT1LCSrZyFZPQvJigWMLKsYRVML
+	kguKk9KLDPWKE3OLS/PS9ZLzczcxQuKxdwfj7QPWhxiTgdZPZJYSTc4HxnNeSbyhsZmRhamJ
+	qbGRuaUZacJK4rxqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhg7uuK1NU6dV30obvkp
+	8N+Mn2WBKmpB6doaP3byKVW1M363r3V0eLi5dnuTvv/Zq4U9dzXPJq8+NeWpM/vV9Y//f7Ly
+	2XDI7nJurkH460ML3B0/GBzRYptwumnrdYUDBa17U3XnXLD5J5zo8C//hm8Do9sb+3vPYzsP
+	nD27V3Z61deXOze/Md2lxFKckWioxVxUnAgAqlVzMd0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jQd08EeEgg2lHOC3+HZvCZPF4+T82
+	i6nL2lgtLi+8xGpx/+tRRovLu+awWZzuZnVg97jc18vkcXryfhaPO9f2sHnMOxno0bdlFaPH
+	501yAWxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6Z
+	OUCnKCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzFvbuZCv4zF6xcVMv
+	WwPjEbYuRg4OCQETiUmX8roYOYFMMYkL99YDhbk4hASmM0ocndTLBFIjJPCLUaKnBKSGTUBN
+	4suXw+wgYREBP4mGFewg5cwCexklbrWAlHNyCAt4S6xsPccOYrMIqErMn74TbAyvgKXE8rm6
+	IGFeAUGJH5PvsYDYzAJaEut3HmeCsOUlNq95ywxxjoLEjrOvGUFsEQE9iZ6XV9ghakQk9r14
+	xziBUWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER/szqR2M
+	KxssDjEKcDAq8fB2KgkFCbEmlhVX5h5ilOBgVhLhdfkPFOJNSaysSi3Kjy8qzUktPsSYDPTo
+	RGYp0eR8YCLKK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1oJBAemJJanZqakFqEcwWJg5OqQZG
+	8YTcDRIrdebb8HZl1RUv4biTtqOdl7V8X8CuWvlrsU91PZ7Py99crcp1T/mcoOiOfpWc+QWq
+	rVOuW83ayNSXZyH35q7a8swnzEtSLXfYaG55eefa5F0WB/PyBV+wh6x4+H/dc0P/zMY7uou2
+	MIYWXJt+MFbp7nl9hWZJ0bOqnscPXpD9rtisxFKckWioxVxUnAgAcNBzpToDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013年08月17日 01:46), Frederic Weisbecker wrote:
-> On Fri, Aug 16, 2013 at 06:26:54PM +0200, Oleg Nesterov wrote:
->> On 08/16, Frederic Weisbecker wrote:
->>> On Fri, Aug 16, 2013 at 06:02:01PM +0200, Oleg Nesterov wrote:
->>>>> +	do {
->>>>> +		seq = read_seqcount_begin(&ts->sleeptime_seq);
->>>>> +		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
->>>>> +			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
->>>>> +			iowait = ktime_add(ts->iowait_sleeptime, delta);
->>>>> +		} else {
->>>>> +			iowait = ts->iowait_sleeptime;
->>>>> +		}
->>>>> +	} while (read_seqcount_retry(&ts->sleeptime_seq, seq));
->>>> Unless I missread this patch, this is still racy a bit.
->>>>
->>>> Suppose it is called on CPU_0 and cpu == 1. Suppose that
->>>> ts->idle_active == T and nr_iowait_cpu(cpu) == 1.
->>>>
->>>> So we return iowait_sleeptime + delta.
->>>>
->>>> Suppose that we call get_cpu_iowait_time_us() again. By this time
->>>> the task which incremented ->nr_iowait can be woken up on another
->>>> CPU, and it can do atomic_dec(rq->nr_iowait). So the next time
->>>> we return iowait_sleeptime, and this is not monotonic again.
->>> Hmm, by the time it decrements nr_iowait, it returned from schedule() and
->>> so idle had flushed the pending iowait sleeptime.
->> Suppose a task does io_schedule() on CPU_0, and increments the counter.
->> This CPU becomes idle and nr_iowait_cpu(0) == 1.
->>
->> Then this task is woken up, but try_to_wake_up() selects another CPU != 0.
->>
->> It returns from schedule() and decrements the same counter, it doesn't
->> do raw_rq/etc again. nr_iowait_cpu(0) becomes 0.
->>
->> In fact the task can even migrate to another CPU right after raw_rq().
-> Ah I see now. So that indeed yet another race.
+The driver core clears the driver data to NULL after device_release
+or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+(device-core: Ensure drvdata = NULL when no driver is bound).
+Thus, it is not needed to manually clear the device driver data to NULL.
 
-I am sorry for chiming in late.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/mfd/pm8921-core.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-That precisely the race I described here:
+diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
+index bd4b37c..9a7c991 100644
+--- a/drivers/mfd/pm8921-core.c
++++ b/drivers/mfd/pm8921-core.c
+@@ -160,7 +160,6 @@ static int pm8921_probe(struct platform_device *pdev)
+ 
+ err:
+ 	mfd_remove_devices(pmic->dev);
+-	platform_set_drvdata(pdev, NULL);
+ err_read_rev:
+ 	kfree(pmic);
+ 	return rc;
+@@ -180,7 +179,6 @@ static int pm8921_remove(struct platform_device *pdev)
+ 		pm8xxx_irq_exit(pmic->irq_chip);
+ 		pmic->irq_chip = NULL;
+ 	}
+-	platform_set_drvdata(pdev, NULL);
+ 	kfree(pmic);
+ 
+ 	return 0;
+-- 
+1.7.10.4
 
-https://lkml.org/lkml/2013/7/2/3
 
-I should have been more concise in my explanation. I apologize.
-
-> Should we flush that iowait to the src CPU? But then it means we must handle
-> concurrent updates to iowait_sleeptime, idle_sleeptime from the migration
-> code and from idle enter / exit.
->
-> So I fear we need a seqlock.
->
-> Or we can live with that and still account the whole idle time slept until
-> tick_nohz_stop_idle() to iowait if we called tick_nohz_start_idle() with nr_iowait > 0.
-> All we need is just a new field in ts-> that records on which state we entered
-> idle.
-
-Another approach could be to shadow ->iowait_sleeptime as
-suggested here: https://lkml.org/lkml/2013/7/2/165
