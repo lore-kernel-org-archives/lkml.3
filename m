@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab3HTHFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 03:05:32 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:64224 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab3HTHFa (ORCPT
+	id S1751983Ab3HTHF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 03:05:56 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:59532 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502Ab3HTHFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 03:05:30 -0400
-X-AuditID: cbfee68e-b7f276d000002279-d0-52131539dd4d
+	Tue, 20 Aug 2013 03:05:55 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-a6-52131552cc90
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>,
         "'Lee Jones'" <lee.jones@linaro.org>
 Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 4/6] mfd: pcf50633-adc: use devm_*() functions
-Date: Tue, 20 Aug 2013 16:05:29 +0900
-Message-id: <005801ce9d73$a75ec990$f61c5cb0$@samsung.com>
+Subject: [PATCH 5/6] mfd: tps65010: use devm_*() functions
+Date: Tue, 20 Aug 2013 16:05:54 +0900
+Message-id: <005901ce9d73$b61bd400$22537c00$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6dc6HT5DuFR5IFQUK+wJABnkfSPQ==
+Thread-index: Ac6dc7ItoAYed6Y2TUaelkyQjpzyRA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zA11LUeEgg+s7zSwuL7zEanH/61FG
-	i8u75rBZnO5mdWDxuHNtD5vHvJOBHn1bVjF6fN4kF8ASxWWTkpqTWZZapG+XwJXRs/wTe8E+
-	toq102UaGFezdjFyckgImEjMmHaZGcIWk7hwbz1bFyMXh5DAMkaJaTN+scMU3dl0iwXEFhKY
-	zihxaD4rhP0LqOi/NojNJqAm8eXLYaB6Dg4RAT+JhhVgrcwCThI/t8wEaxUWsJPYuGcxI4jN
-	IqAqsbC/iQ2knFfAUmLvTjOQMK+AoMSPyfdYIFq1JNbvPM4EYctLbF7zFupMBYkdZ1+DjRER
-	0JNY3rYGql5EYt+Ld4wg50sIrGKXuDLjGQvELgGJb5MPsYDskhCQldh0AGqOpMTBFTdYJjCK
-	zUKyehaS1bOQrJ6FZMUCRpZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGCGx1beD8eYB60OM
-	yUDrJzJLiSbnA2MzryTe0NjMyMLUxNTYyNzSjDRhJXFetRbrQCGB9MSS1OzU1ILUovii0pzU
-	4kOMTBycUg2M66Vfzlvo1f1ITXjbBG0LoxtWO2rsLves43t9T0SI/fqVzdfVX333uXjMcQZz
-	8ceJq3c9Ky5PTrFYOsduj9uOL+v2PzjoOJdvT1D0VffyOJ3LKo+kBP4/PvrBfF283nrmHc/n
-	KL2+MOGs9hPtGx0N7y9x7p8ts5W1cuJR/su80y6m7HMttTt0QEyJpTgj0VCLuag4EQBtqgaP
-	wwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xoK6lqHCQweMOY4vLCy+xWtz/epTR
-	4vKuOWwWp7tZHVg87lzbw+Yx72SgR9+WVYwenzfJBbBENTDaZKQmpqQWKaTmJeenZOal2yp5
-	B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gBtVFIoS8wpBQoFJBYXK+nbYZoQGuKmawHT
-	GKHrGxIE12NkgAYS1jFm9Cz/xF6wj61i7XSZBsbVrF2MnBwSAiYSdzbdYoGwxSQu3FvPBmIL
-	CUxnlDg0nxXC/sUoMe2/NojNJqAm8eXLYfYuRg4OEQE/iYYV7CBhZgEniZ9bZoKNERawk9i4
-	ZzEjiM0ioCqxsL+JDaScV8BSYu9OM5Awr4CgxI/J91ggWrUk1u88zgRhy0tsXvOWGeIaBYkd
-	Z1+DjRER0JNY3rYGql5EYt+Ld4wTGAVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnqukV5x
-	Ym5xaV66XnJ+7iZGcOQ+k97BuKrB4hCjAAejEg9vh5JQkBBrYllxZe4hRgkOZiURXpf/QCHe
-	lMTKqtSi/Pii0pzU4kOMyUCPTmSWEk3OByaVvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7ZaBwoJ
-	pCeWpGanphakFsFsYeLglGpgTE4vnjxjs4PIqvwipSliVbIb1pVnzfjklSjmLtj+vl/q14ZX
-	ExaqrQ8L2nZv73wNjkqV0D3GIXs5eLVbD7/ka/3VwyOw7KbT2eitO9RuMOelblofHyS2Y+le
-	3uMavEv7d26x7/k8Q0JnaTPrzG17157efN5brlLt7T5L1teHjOem/N3KeyGSXYmlOCPRUIu5
-	qDgRAOLVfmggAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zQ90gUeEgg7ZXChaXF15itbj/9Sij
+	xeVdc9gsTnezOrB43Lm2h81j3slAj74tqxg9Pm+SC2CJ4rJJSc3JLEst0rdL4Mq4tHg1U8E6
+	7orJD98yNzD2cXYxcnBICJhILN0s0MXICWSKSVy4t56ti5GLQ0hgGaPE5neP2CESJhIPL9xm
+	gkgsYpRon7cXyvnFKHFv3y4mkCo2ATWJL18Os4NMFRHwk2hYAdbMLOAk8XPLTBYQW1jASuLt
+	hHOMIDaLgKrE4kdfwWxeAUuJ1Xe/MUPYghI/Jt9jgejVkli/8zgThC0vsXnNW2aIgxQkdpx9
+	DdYrIqAnsfDURkaIGhGJfS/eMULUbGKX2LbfGmKXgMS3yYdYIB6Wldh0AGqMpMTBFTdYJjCK
+	zUKyeRaSzbOQbJ6FZMMCRpZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmbGCHxNXEH4/0D1ocY
+	k4HWT2SWEk3OB8ZnXkm8obGZkYWpiamxkbmlGWnCSuK86i3WgUIC6YklqdmpqQWpRfFFpTmp
+	xYcYmTg4pRoYi8UmPBJwL/rx+URUxwH2SxNS1BY+ze588n5Zi2X4hYXbNwaF3DfQX1HN0HEh
+	vObGsi1rPYyVl/6+ufPe04odpX1Cat3hbcrb1G/qPg1puzC7bnrlr+QZl6e15i+babFRb2bt
+	MkE1572LJ1//Mv0jKz/zXuG731q6zly3Z+z1v7DHfbn3utCVm5RYijMSDbWYi4oTAdEyT/rF	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd0gUeEgg997ZS0uL7zEanH/61FG
+	i8u75rBZnO5mdWDxuHNtD5vHvJOBHn1bVjF6fN4kF8AS1cBok5GamJJapJCal5yfkpmXbqvk
+	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
+	Y4Sub0gQXI+RARpIWMeYcWnxaqaCddwVkx++ZW5g7OPsYuTkkBAwkXh44TYThC0mceHeerYu
+	Ri4OIYFFjBLt8/YyQTi/GCXu7dsFVsUmoCbx5cth9i5GDg4RAT+JhhXsIGFmASeJn1tmsoDY
+	wgJWEm8nnGMEsVkEVCUWP/oKZvMKWEqsvvuNGcIWlPgx+R4LRK+WxPqdx5kgbHmJzWveMkMc
+	pCCx4+xrsF4RAT2Jhac2MkLUiEjse/GOcQKjwCwko2YhGTULyahZSFoWMLKsYhRNLUguKE5K
+	zzXSK07MLS7NS9dLzs/dxAiO4GfSOxhXNVgcYhTgYFTi4e1QEgoSYk0sK67MPcQowcGsJMLr
+	8h8oxJuSWFmVWpQfX1Sak1p8iDEZ6NOJzFKiyfnA5JJXEm9obGJmZGlkZmFkYm5OmrCSOO/B
+	VutAIYH0xJLU7NTUgtQimC1MHJxSDYwucqz9NZ3i97VZ/+oui2J0/VUkd7Wr5f7zJUUSz4Sn
+	75F9eabgQOptKea0Xx8eXpBepPv63ru1dd9WrS0O3Kgefd+lK2DdNvvHQTar4717WV+EfTD5
+	e6M50XLr+rLr0uvuNtyZcdx2qnh/wdU19/wP7Pt77kDWqSztYxxK9/7+2HlcbZmu7KcpSizF
+	GYmGWsxFxYkAVdIIcyQDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,30 +56,49 @@ Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/pcf50633-adc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/mfd/tps65010.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/pcf50633-adc.c b/drivers/mfd/pcf50633-adc.c
-index 18b53cb..b8941a5 100644
---- a/drivers/mfd/pcf50633-adc.c
-+++ b/drivers/mfd/pcf50633-adc.c
-@@ -203,7 +203,7 @@ static int pcf50633_adc_probe(struct platform_device *pdev)
- {
- 	struct pcf50633_adc *adc;
- 
--	adc = kzalloc(sizeof(*adc), GFP_KERNEL);
-+	adc = devm_kzalloc(&pdev->dev, sizeof(*adc), GFP_KERNEL);
- 	if (!adc)
- 		return -ENOMEM;
- 
-@@ -236,7 +236,6 @@ static int pcf50633_adc_remove(struct platform_device *pdev)
- 		kfree(adc->queue[i]);
- 
- 	mutex_unlock(&adc->queue_mutex);
--	kfree(adc);
- 
+diff --git a/drivers/mfd/tps65010.c b/drivers/mfd/tps65010.c
+index 8114567..743fb52 100644
+--- a/drivers/mfd/tps65010.c
++++ b/drivers/mfd/tps65010.c
+@@ -530,7 +530,6 @@ static int __exit tps65010_remove(struct i2c_client *client)
+ 		free_irq(client->irq, tps);
+ 	cancel_delayed_work_sync(&tps->work);
+ 	debugfs_remove(tps->file);
+-	kfree(tps);
+ 	the_tps = NULL;
  	return 0;
  }
+@@ -550,7 +549,7 @@ static int tps65010_probe(struct i2c_client *client,
+ 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
+ 		return -EINVAL;
+ 
+-	tps = kzalloc(sizeof *tps, GFP_KERNEL);
++	tps = devm_kzalloc(&client->dev, sizeof(*tps), GFP_KERNEL);
+ 	if (!tps)
+ 		return -ENOMEM;
+ 
+@@ -568,7 +567,7 @@ static int tps65010_probe(struct i2c_client *client,
+ 		if (status < 0) {
+ 			dev_dbg(&client->dev, "can't get IRQ %d, err %d\n",
+ 					client->irq, status);
+-			goto fail1;
++			return status;
+ 		}
+ 		/* annoying race here, ideally we'd have an option
+ 		 * to claim the irq now and enable it later.
+@@ -668,9 +667,6 @@ static int tps65010_probe(struct i2c_client *client,
+ 	}
+ 
+ 	return 0;
+-fail1:
+-	kfree(tps);
+-	return status;
+ }
+ 
+ static const struct i2c_device_id tps65010_id[] = {
 -- 
 1.7.10.4
 
