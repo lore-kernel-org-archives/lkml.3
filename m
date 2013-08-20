@@ -1,46 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab3HTFXJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 01:23:09 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:59472 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab3HTFXH (ORCPT
+	id S1752174Ab3HTFXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 01:23:15 -0400
+Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:55564 "EHLO
+	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751856Ab3HTFXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 01:23:07 -0400
+	Tue, 20 Aug 2013 01:23:12 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <rjw@sisk.pl>, <daniel.lezcano@linaro.org>
+CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH] cpuidle: coupled: fix dead loop corner case
+Date: Tue, 20 Aug 2013 13:17:44 +0800
+Message-ID: <1376975864-31487-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-X-Google-Sender-Delegation: getarunks@gmail.com
-In-Reply-To: <20130819160542.38e4a91b568c0a15f1068e09@linux-foundation.org>
-References: <CAKZGPAOwpEcxxZJUbmUVL1J+enXGhFbbvyZ7L3uWDkPbwKnbyQ@mail.gmail.com>
-	<20130819160542.38e4a91b568c0a15f1068e09@linux-foundation.org>
-Date: Tue, 20 Aug 2013 10:53:06 +0530
-X-Google-Sender-Auth: 6xewmShwfxIW-YSwxEorySASF84
-Message-ID: <CAKZGPAOC0cZDvsWx-jFKnKtGPjjdST-=UgTU+WoVE0P6Q0ULTA@mail.gmail.com>
-Subject: Re: [PATCH] SeqFile: Fix overflow condition
-From: Arun KS <arunks.linux@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: viro@zeniv.linux.org.uk, Matthew Wilcox <matthew@wil.cx>,
-        Bruce Fields <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, vinayak menon <vinayakm.list@gmail.com>,
-        Nagachandra P <nagachandra@gmail.com>, Vikram MP <mp.vikram@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+There is a corener case when no peripheral irqs route to secondary
+cores.
+Let's take dual core system for example, the sequence is as following:
 
-On Tue, Aug 20, 2013 at 4:35 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Mon, 19 Aug 2013 17:02:37 +0530 Arun KS <arunks.linux@gmail.com> wrote:
->
->> seq_path()/seq_commit() is treating a d_path() failure as an overflow
->> condition, but it isn't.
->
-> This is too brief.  When fixing a bug please always describe the
-> user-visible effects of the bug.  And unless it's utterly obvious,
-> provide a description of how you set about fixing that bug.
->
-I ll address this and will send a patch soon.
+		Core 0			        Core1
+1.			           set waiting bit and enter waiting loop
+2. set waiting bit and poke core1
+3. 				   clear poke in irq and enter safe state
+4. set ready bit and enter ready loop
 
-Thanks,
-Arun
+Since there is no peripheral irq route to core 1, so it will stay in
+safe state forever, and core 0 will dead loop in the following code.
+	while (!cpuidle_coupled_cpus_ready(coupled)) {
+		/* Check if any other cpus bailed out of idle. */
+		if (!cpuidle_coupled_cpus_waiting(coupled))
+	}
+
+The solution is don't let secondary core enter safe state when it has
+already handled the poke interrupt.
+
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+Reviewed-by: Fangsuo Wu <fswu@marvell.com>
+---
+ drivers/cpuidle/coupled.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+index 2a297f8..a37c718 100644
+--- a/drivers/cpuidle/coupled.c
++++ b/drivers/cpuidle/coupled.c
+@@ -119,6 +119,7 @@ struct cpuidle_coupled {
+ #define CPUIDLE_COUPLED_NOT_IDLE	(-1)
+ 
+ static DEFINE_MUTEX(cpuidle_coupled_lock);
++static DEFINE_PER_CPU(bool, poke_sync);
+ static DEFINE_PER_CPU(struct call_single_data, cpuidle_coupled_poke_cb);
+ 
+ /*
+@@ -295,6 +296,7 @@ static void cpuidle_coupled_poked(void *info)
+ {
+ 	int cpu = (unsigned long)info;
+ 	cpumask_clear_cpu(cpu, &cpuidle_coupled_poked_mask);
++	__this_cpu_write(poke_sync, true);
+ }
+ 
+ /**
+@@ -473,6 +475,7 @@ retry:
+ 	 * allowed for a single cpu.
+ 	 */
+ 	while (!cpuidle_coupled_cpus_waiting(coupled)) {
++		__this_cpu_write(poke_sync, false);
+ 		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
+ 			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
+ 			goto out;
+@@ -483,6 +486,10 @@ retry:
+ 			goto out;
+ 		}
+ 
++		if (cpuidle_coupled_cpus_waiting(coupled)
++			&& __this_cpu_read(poke_sync))
++			break;
++
+ 		entered_state = cpuidle_enter_state(dev, drv,
+ 			dev->safe_state_index);
+ 	}
+-- 
+1.7.4.1
+
