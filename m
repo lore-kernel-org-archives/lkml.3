@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab3HTVzL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 17:55:11 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:58305 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab3HTVzI (ORCPT
+	id S1751712Ab3HTV5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 17:57:16 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:44275 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3HTV5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 17:55:08 -0400
-Date: Tue, 20 Aug 2013 23:55:03 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
-	<fernando_b1@lab.ntt.co.jp>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-Message-ID: <20130820215502.GA2412@somewhere>
-References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com>
- <1376667753-29014-3-git-send-email-fweisbec@gmail.com>
- <20130816160201.GA31682@redhat.com>
- <20130816162056.GE24210@somewhere>
- <20130816162654.GA453@redhat.com>
- <20130816164626.GH24210@somewhere>
- <52130AD7.1020000@lab.ntt.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52130AD7.1020000@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Aug 2013 17:57:15 -0400
+Message-ID: <1377035833.24869.57.camel@bobble.lax.corp.google.com>
+Subject: Re: [dm-devel] [PATCH] dm: Make MIN_IOS, et al, tunable via sysctl.
+From: Frank Mayhar <fmayhar@google.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        Mike Snitzer <msnitzer@redhat.com>, linux-kernel@vger.kernel.org
+Date: Tue, 20 Aug 2013 14:57:13 -0700
+In-Reply-To: <alpine.LRH.2.02.1308201745130.8826@file01.intranet.prod.int.rdu2.redhat.com>
+References: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
+	 <alpine.LRH.2.02.1308201712090.8826@file01.intranet.prod.int.rdu2.redhat.com>
+	 <1377034118.24869.48.camel@bobble.lax.corp.google.com>
+	 <alpine.LRH.2.02.1308201745130.8826@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 03:21:11PM +0900, Fernando Luis Vázquez Cao wrote:
-> (2013年08月17日 01:46), Frederic Weisbecker wrote:
-> >On Fri, Aug 16, 2013 at 06:26:54PM +0200, Oleg Nesterov wrote:
-> >>On 08/16, Frederic Weisbecker wrote:
-> >>>On Fri, Aug 16, 2013 at 06:02:01PM +0200, Oleg Nesterov wrote:
-> >>>>>+	do {
-> >>>>>+		seq = read_seqcount_begin(&ts->sleeptime_seq);
-> >>>>>+		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
-> >>>>>+			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-> >>>>>+			iowait = ktime_add(ts->iowait_sleeptime, delta);
-> >>>>>+		} else {
-> >>>>>+			iowait = ts->iowait_sleeptime;
-> >>>>>+		}
-> >>>>>+	} while (read_seqcount_retry(&ts->sleeptime_seq, seq));
-> >>>>Unless I missread this patch, this is still racy a bit.
-> >>>>
-> >>>>Suppose it is called on CPU_0 and cpu == 1. Suppose that
-> >>>>ts->idle_active == T and nr_iowait_cpu(cpu) == 1.
-> >>>>
-> >>>>So we return iowait_sleeptime + delta.
-> >>>>
-> >>>>Suppose that we call get_cpu_iowait_time_us() again. By this time
-> >>>>the task which incremented ->nr_iowait can be woken up on another
-> >>>>CPU, and it can do atomic_dec(rq->nr_iowait). So the next time
-> >>>>we return iowait_sleeptime, and this is not monotonic again.
-> >>>Hmm, by the time it decrements nr_iowait, it returned from schedule() and
-> >>>so idle had flushed the pending iowait sleeptime.
-> >>Suppose a task does io_schedule() on CPU_0, and increments the counter.
-> >>This CPU becomes idle and nr_iowait_cpu(0) == 1.
-> >>
-> >>Then this task is woken up, but try_to_wake_up() selects another CPU != 0.
-> >>
-> >>It returns from schedule() and decrements the same counter, it doesn't
-> >>do raw_rq/etc again. nr_iowait_cpu(0) becomes 0.
-> >>
-> >>In fact the task can even migrate to another CPU right after raw_rq().
-> >Ah I see now. So that indeed yet another race.
+On Tue, 2013-08-20 at 17:47 -0400, Mikulas Patocka wrote:
 > 
-> I am sorry for chiming in late.
+> On Tue, 20 Aug 2013, Frank Mayhar wrote:
 > 
-> That precisely the race I described here:
+> > On Tue, 2013-08-20 at 17:22 -0400, Mikulas Patocka wrote:
+> > > On Fri, 16 Aug 2013, Frank Mayhar wrote:
+> > > > The device mapper and some of its modules allocate memory pools at
+> > > > various points when setting up a device.  In some cases, these pools are
+> > > > fairly large, for example the multipath module allocates a 256-entry
+> > > > pool and the dm itself allocates three of that size.  In a
+> > > > memory-constrained environment where we're creating a lot of these
+> > > > devices, the memory use can quickly become significant.  Unfortunately,
+> > > > there's currently no way to change the size of the pools other than by
+> > > > changing a constant and rebuilding the kernel.
+> > > I think it would be better to set the values to some low value (1 should 
+> > > be enough, there is 16 in some places that is already low enough). There 
+> > > is no need to make it user-configurable, because the user will see no 
+> > > additional benefit from bigger mempools.
+> > > 
+> > > Maybe multipath is the exception - but other dm targets don't really need 
+> > > big mempools so there is no need to make the size configurable.
+> > 
+> > The point is not to make the mempools bigger, the point is to be able to
+> > make them _smaller_ for memory-constrained environments.  In some cases,
+> > even 16 can be too big, especially when creating a large number of
+> > devices.
+> > 
+> > In any event, it seems unfortunate to me that these values are
+> > hard-coded.  One shouldn't have to rebuild the kernel to change them,
+> > IMHO.
 > 
-> https://lkml.org/lkml/2013/7/2/3
-> 
-> I should have been more concise in my explanation. I apologize.
+> So make a patch that changes 16 to 1 if it helps on your system (I'd like 
+> to ask - what is the configuration where this kind of change helps?). 
+> There is no need for that to be tunable, anyone can live with mempool size 
+> being 1.
 
-Reading that again, the description was good. It's rather me who didn't read that
-not carefully enough :)
+I reiterate:  It seems unfortunate that these values are hard-coded.  It
+seems to me that a sysadmin should be able to tune them according to his
+or her needs.  Particularly when the same kernel is being run on many
+machines that may have different constraints; building a special kernel
+for each set of constraints doesn't scale.
 
-> 
-> >Should we flush that iowait to the src CPU? But then it means we must handle
-> >concurrent updates to iowait_sleeptime, idle_sleeptime from the migration
-> >code and from idle enter / exit.
-> >
-> >So I fear we need a seqlock.
-> >
-> >Or we can live with that and still account the whole idle time slept until
-> >tick_nohz_stop_idle() to iowait if we called tick_nohz_start_idle() with nr_iowait > 0.
-> >All we need is just a new field in ts-> that records on which state we entered
-> >idle.
-> 
-> Another approach could be to shadow ->iowait_sleeptime as
-> suggested here: https://lkml.org/lkml/2013/7/2/165
+And as I said, it's a memory-constrained environment.
+-- 
+Frank Mayhar
+310-460-4042
 
-Hmm, yeah it seems that it would enforce the monotonicity but the wrong forward jumps
-due to bad ordering could still happen.
-
-Oh and I realize you already suggested to account the iowait time on task migration more than
-one month ago. Grr I should really sit down before reading emails.
