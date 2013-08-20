@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751306Ab3HTJon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 05:44:43 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35489 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab3HTJom (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 05:44:42 -0400
-Message-ID: <1376991823.4000.22.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH 0/3] refactor some ldb related clocks
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Liu Ying <Ying.Liu@freescale.com>
-Cc: kernel@pengutronix.de, gregkh@linuxfoundation.org, shawn.guo@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Date: Tue, 20 Aug 2013 11:43:43 +0200
-In-Reply-To: <1376987932-5540-1-git-send-email-Ying.Liu@freescale.com>
-References: <1376987932-5540-1-git-send-email-Ying.Liu@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1750927Ab3HTJuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 05:50:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1275 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750791Ab3HTJux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 05:50:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,919,1367996400"; 
+   d="scan'208";a="390073062"
+Date: Tue, 20 Aug 2013 11:50:48 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Michael Grzeschik <mgr@pengutronix.de>
+Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] mc13xxx-ts: use zero as default value if no pdata was
+ defined
+Message-ID: <20130820095048.GC17521@zurbaran>
+References: <1376396070-24507-1-git-send-email-m.grzeschik@pengutronix.de>
+ <20130820013433.GE13324@zurbaran>
+ <20130820093432.GC26693@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820093432.GC26693@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 20.08.2013, 16:38 +0800 schrieb Liu Ying:
-> The ldb_di[0/1]_ipu_div clock dividers in the CSCMR2 register
-> of i.MX53, i.MX6Q and i.MX6DL SoCs can be configured to a 1/3.5
-> drivider or a 1/7 divider. The common clock framework cannot
-> deal with the two dividers directly even with the divider table
-> which only supports integral dividers. So, the idea is to take
-> the 1/3.5 and 1/7 dividers as separate fixed factor dividers and
-> introduce a new multiplexer clock to be derived from the them.
-> Then, the ldb display clock trees can be setup correctly.
-> This series contains the necessary clock driver changes, dts code
-> changes and imx-drm/ldb driver changes to fullfill the task.
+Hi Michael,
 
-I don't see how this improves the situation. Does this solve any real
-problem?
+On Tue, Aug 20, 2013 at 11:34:32AM +0200, Michael Grzeschik wrote:
+> On Tue, Aug 20, 2013 at 03:34:33AM +0200, Samuel Ortiz wrote:
+> > On Tue, Aug 13, 2013 at 02:14:30PM +0200, Michael Grzeschik wrote:
+> > > In case of devicetree, we currently don't have a way to append pdata for
+> > > the touchscreen. The current approach is to bail out in that case.
+> > > This patch makes it possible to probe the touchscreen without pdata
+> > > and use zero as default values for the atox and ato adc conversion.
+> > Would that still make the touchscreen somehow functional ?
+> 
+> Yes, it still works. It just defaults to zero values in no pdata case.
+> 
+> > If that's the case, and if Dmitry is fine with the ts part of this
+> > patch, could you please separate the mfd part of this patch into a
+> > separate one ?
+> 
+> Why?
+To avoid cross tree commits as much as possible.
 
-While I admit to having introduced the combination of 1/3.5 fixed
-divider and configurable 1/1,1/2 divder clocks to describe this
-fractional divider for the reasons you state, I think the correct
-solution would be to improve the table divider to support fractional
-values and get rid of the virtual ldb_di<n>_div_3_5 clocks, not
-introduce more virtual clocks.
 
-regards
-Philipp
+> The purpose of this patch is to have both cases working, pdata and no
+> pdata. 
+I understood that part. But you can still split the patch in 2 as the ts
+driver will not be probed without pdata until the mfd patch is merged
+upstream.
 
+> This patch is actually fixing the patch of Michael Thalmeier.
+> There we changed the mfd and touch in one patch as well.
+There was a build time dependency between the ts driver and the MFD
+changes, so the patch had to be merged atomically.
+That is not the case with your patch.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
