@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364Ab3HTS4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 14:56:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10432 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812Ab3HTS4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 14:56:34 -0400
-Date: Tue, 20 Aug 2013 20:50:43 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Brad Spengler <spender@grsecurity.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Colin Walters <walters@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
-Message-ID: <20130820185043.GA24040@redhat.com>
-References: <20130819172524.GA22268@redhat.com> <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com> <20130819183319.GA24846@redhat.com> <CALCETrWrpNszRGCRRMLgiOopcSdDShB3Mck6gRPco=dAZeX3pQ@mail.gmail.com> <20130819184355.GA25362@redhat.com> <CALCETrU4gTfzcpeEo-X7o-yZefKiw9BVNKdcN4fThUeiuZtOOg@mail.gmail.com>
+	id S1751499Ab3HTS6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 14:58:33 -0400
+Received: from smtp1.Stanford.EDU ([171.67.219.81]:41306 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751256Ab3HTS6b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 14:58:31 -0400
+Message-ID: <5213BC45.6020900@localhost>
+Date: Tue, 20 Aug 2013 11:58:13 -0700
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrU4gTfzcpeEo-X7o-yZefKiw9BVNKdcN4fThUeiuZtOOg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Kent Overstreet <kmo@daterainc.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.6-rt3
+References: <20130812163413.GI23040@linutronix.de> <520D212F.7030400@localhost> <20130815152210.5ed93696@gandalf.local.home> <520DCE5F.1040402@linutronix.de> <521254A0.6050603@localhost> <20130819202903.692097ea@gandalf.local.home>
+In-Reply-To: <20130819202903.692097ea@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20, Andy Lutomirski wrote:
+On 08/19/2013 05:29 PM, Steven Rostedt wrote:
+> On Mon, 19 Aug 2013 10:23:44 -0700
+> Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU> wrote:
 >
-> On Mon, Aug 19, 2013 at 11:43 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 08/19, Andy Lutomirski wrote:
-> >>
-> >> On Mon, Aug 19, 2013 at 11:33 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >> >
-> >> > So do you think this change is fine or not (ignoring the fact it needs
-> >> > cleanups) ?
-> >>
-> >> I think that removing the CLONE_VM check is fine (although there are
-> >> some other ones that should probably be removed as well), but I'm not
-> >> sure if that check needs replacing with something else.
-> >
-> > OK, thanks... but I still can't understand.
-> >
-> > The patch I sent is equivalent to the new one below. I just tried to
-> > unify it with another check in do_fork().
+>>> The problem is that bcache is using new semaphore functions which it
+>>> just introduced which rt does not know about. The comment above their
+>>> definition says that it is wrong to use them and completion is the
+>>> right way to do it.
+>>> So my question is, why don't we use completion but this nasty hack?
 >
-> I was confused.
+> I think I'm going to send them an email about that.
+>
+>> In the meanwhile, any hope of a patch to be able to compile and test
+>> with my current configuration?
+>
+> Can you boot without enabling CONFIG_BCACHE?
 
-Andy, I do not know how much you were confused, but I bet I am confused
-much more ;)
-
-> Currently (with or without your patch), vfork() followed by
-> unshare(CLONE_NEWUSER) or unshare(CLONE_NEWPID) will unshare the VM.
-
-Could you spell please?
-
-We never unshare the VM. CLONE_VM in sys_unshare() paths just means
-"fail unless ->mm is not shared".
-
-Oleg.
-
+Just to confirm that the kernel builds, installs and boots fine without 
+this option...
+-- Fernando
