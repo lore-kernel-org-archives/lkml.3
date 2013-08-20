@@ -1,186 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284Ab3HTMuP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 08:50:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60854 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751004Ab3HTMuN (ORCPT
+	id S1751315Ab3HTMyH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 08:54:07 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:38120 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab3HTMyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 08:50:13 -0400
-Date: Tue, 20 Aug 2013 09:50:14 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 08/17] ARM: mvebu: remove custom .init_time hook
-Message-ID: <20130820125012.GA4272@localhost>
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1376964271-22715-9-git-send-email-sebastian.hesselbarth@gmail.com>
+	Tue, 20 Aug 2013 08:54:05 -0400
+Message-ID: <521366EA.7080705@monstr.eu>
+Date: Tue, 20 Aug 2013 14:54:02 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1376964271-22715-9-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: James Walmsley <james@fullfat-fs.co.uk>, Chris Ball <cjb@laptop.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org
+Subject: Re: SDHCI - Add QUIRK2_BROKEN_WRITE_PROTEXT - Support Xilinx Zynq
+ (Linux 3.9.0)
+References: <BEDA323D25EF6045A68DAB9FD91A0BF14A5E84DB@AMSPRD0411MB426.eurprd04.prod.outlook.com>
+In-Reply-To: <BEDA323D25EF6045A68DAB9FD91A0BF14A5E84DB@AMSPRD0411MB426.eurprd04.prod.outlook.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="BFLC7o6olLGpGQ8su7TkXtE4bEjAuR1PH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--BFLC7o6olLGpGQ8su7TkXtE4bEjAuR1PH
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I've only received a few patches of this series. I *think*
-using "RFC" alone is not correct in LAKML and for some reason
-you're required to use RFC/PATCH.
+Hi James,
 
-Maybe that's why I'm getting only the patches where I'm Cced?
+isn't it better to implement host->ops->get_ro() function for it?
+It seems me better choice than introducing new quirk option.
 
-Could you please re-send this? The series looks promising and I'd like
-to take a peep :-)
+Chris: What do you think?
 
-BTW, some of this (but not all) has already been posted [1, 2] and
-is on its way to v3.12 through Daniel Lezcano.
+Thanks,
+Michal
 
-(Maybe you already noticed, but just in case...)
 
-[1] http://www.spinics.net/lists/arm-kernel/msg265509.html
-[2] http://comments.gmane.org/gmane.linux.ports.arm.kernel/260179
-
-Regards,
-Ezequiel
-
-On Tue, Aug 20, 2013 at 04:04:22AM +0200, Sebastian Hesselbarth wrote:
-> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-> remove custom .init_time hooks.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+On 08/16/2013 02:14 PM, James Walmsley wrote:
+> Hi Michal,
+>=20
+> I have built a Xilinx Zynq based design which doesn't use the SDHCI Wri=
+te-protect line.
+> However, we use the MIO_0 pin for configuring a multiplexer and consequ=
+ently the
+> SDHCI driver thinks that the card is read-only (RO).
+>=20
+> In the patch below I have proposed a new quirk, similar to the QUIRK_BR=
+OKEN_CARD_DETECTION
+> flag, which causes the sdhci driver to assume a card with RW access.
+>=20
+> This patch was made against the latest tree from Xilinx (github.com/Xil=
+inx/linux-xlnx), Kernel 3.9.0
+> and I have attached it to the LKML to propose the additional quirk whic=
+h may be useful on other platforms.
+>=20
+> Kind regards,
+>=20
+> James Walmsley
+>=20
 > ---
-> Notes:
-> - coherency, mbus, and cache init are moved to .init_machine hook
-> - time-armada-370-xp is converted to clocksource_of_init compatible init
-> 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/mach-mvebu/armada-370-xp.c      |   11 +----------
->  drivers/clocksource/time-armada-370-xp.c |    7 +++----
->  include/linux/time-armada-370-xp.h       |   16 ----------------
->  3 files changed, 4 insertions(+), 30 deletions(-)
->  delete mode 100644 include/linux/time-armada-370-xp.h
-> 
-> diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
-> index 829b573..139f572 100644
-> --- a/arch/arm/mach-mvebu/armada-370-xp.c
-> +++ b/arch/arm/mach-mvebu/armada-370-xp.c
-> @@ -14,11 +14,9 @@
->  
->  #include <linux/kernel.h>
->  #include <linux/init.h>
-> -#include <linux/clk-provider.h>
->  #include <linux/of_address.h>
->  #include <linux/of_platform.h>
->  #include <linux/io.h>
-> -#include <linux/time-armada-370-xp.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/mbus.h>
->  #include <asm/hardware/cache-l2x0.h>
-> @@ -34,19 +32,13 @@ static void __init armada_370_xp_map_io(void)
->  	debug_ll_io_init();
->  }
->  
-> -static void __init armada_370_xp_timer_and_clk_init(void)
-> +static void __init armada_370_xp_dt_init(void)
+>  drivers/mmc/host/sdhci-of-xilinxps.c | 4 ++++
+>  drivers/mmc/host/sdhci.c             | 4 ++++
+>  include/linux/mmc/sdhci.h            | 1 +
+>  3 files changed, 9 insertions(+)
+>=20
+> diff --git a/drivers/mmc/host/sdhci-of-xilinxps.c b/drivers/mmc/host/sd=
+hci-of-xilinxps.c
+> index f79e0db..5553bc0 100644
+> --- a/drivers/mmc/host/sdhci-of-xilinxps.c
+> +++ b/drivers/mmc/host/sdhci-of-xilinxps.c
+> @@ -211,6 +211,10 @@ static int sdhci_zynq_probe(struct platform_device=
+ *pdev)
+>  	if (prop =3D=3D NULL || (!(u32) be32_to_cpup(prop)))
+>  		host->quirks |=3D SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+> =20
+> +	prop =3D of_get_property(np, "xlnx,has-wp", NULL);
+> +	if (prop =3D=3D NULL || (!(u32) be32_to_cpup(prop)))
+> +		host->quirks2 |=3D SDHCI_QUIRK2_BROKEN_WRITE_PROTECT;
+> +
+>  	return 0;
+> =20
+>  clk_notif_unreg:
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 51bbba4..c40365f 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -1609,6 +1609,10 @@ static int sdhci_do_get_ro(struct sdhci_host *ho=
+st)
 >  {
-> -	of_clk_init(NULL);
-> -	armada_370_xp_timer_init();
->  	coherency_init();
->  	BUG_ON(mvebu_mbus_dt_init());
->  #ifdef CONFIG_CACHE_L2X0
->  	l2x0_of_init(0, ~0UL);
->  #endif
-> -}
-> -
-> -static void __init armada_370_xp_dt_init(void)
-> -{
->  	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
->  }
->  
-> @@ -59,7 +51,6 @@ DT_MACHINE_START(ARMADA_XP_DT, "Marvell Armada 370/XP (Device Tree)")
->  	.smp		= smp_ops(armada_xp_smp_ops),
->  	.init_machine	= armada_370_xp_dt_init,
->  	.map_io		= armada_370_xp_map_io,
-> -	.init_time	= armada_370_xp_timer_and_clk_init,
->  	.restart	= mvebu_restart,
->  	.dt_compat	= armada_370_xp_dt_compat,
->  MACHINE_END
-> diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
-> index 847cab6..67904cf 100644
-> --- a/drivers/clocksource/time-armada-370-xp.c
-> +++ b/drivers/clocksource/time-armada-370-xp.c
-> @@ -30,7 +30,6 @@
->  #include <linux/module.h>
->  #include <linux/sched_clock.h>
->  #include <linux/percpu.h>
-> -#include <linux/time-armada-370-xp.h>
->  
->  /*
->   * Timer block registers.
-> @@ -217,13 +216,11 @@ static struct notifier_block armada_370_xp_timer_cpu_nb = {
->  	.notifier_call = armada_370_xp_timer_cpu_notify,
->  };
->  
-> -void __init armada_370_xp_timer_init(void)
-> +void __init armada_370_xp_timer_init(struct device_node *np)
->  {
->  	u32 u;
-> -	struct device_node *np;
->  	int res;
->  
-> -	np = of_find_compatible_node(NULL, NULL, "marvell,armada-370-xp-timer");
->  	timer_base = of_iomap(np, 0);
->  	WARN_ON(!timer_base);
->  	local_base = of_iomap(np, 1);
-> @@ -293,3 +290,5 @@ void __init armada_370_xp_timer_init(void)
->  	if (!res)
->  		armada_370_xp_timer_setup(this_cpu_ptr(armada_370_xp_evt));
->  }
-> +CLOCKSOURCE_OF_DECLARE(armada_370_xp_timer, "marvell,armada-370-xp-timer",
-> +		       armada_370_xp_timer_init);
-> diff --git a/include/linux/time-armada-370-xp.h b/include/linux/time-armada-370-xp.h
-> deleted file mode 100644
-> index 6fb0856..0000000
-> --- a/include/linux/time-armada-370-xp.h
-> +++ /dev/null
-> @@ -1,16 +0,0 @@
-> -/*
-> - * Marvell Armada 370/XP SoC timer handling.
-> - *
-> - * Copyright (C) 2012 Marvell
-> - *
-> - * Lior Amsalem <alior@marvell.com>
-> - * Gregory CLEMENT <gregory.clement@free-electrons.com>
-> - * Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> - *
-> - */
-> -#ifndef __TIME_ARMADA_370_XPPRCMU_H
-> -#define __TIME_ARMADA_370_XPPRCMU_H
-> -
-> -void armada_370_xp_timer_init(void);
-> -
-> -#endif
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>  	int i, ro_count;
+> =20
+> +	if(host->quirks2 & SDHCI_QUIRK2_BROKEN_WRITE_PROTECT) {
+> +		return 0;	// Return zero to assume RW.
+> +	}
+> +
+>  	if (!(host->quirks & SDHCI_QUIRK_UNSTABLE_RO_DETECT))
+>  		return sdhci_check_ro(host);
+> =20
+> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+> index b838ffc..3eccf12 100644
+> --- a/include/linux/mmc/sdhci.h
+> +++ b/include/linux/mmc/sdhci.h
+> @@ -95,6 +95,7 @@ struct sdhci_host {
+>  /* The system physically doesn't support 1.8v, even if the host does *=
+/
+>  #define SDHCI_QUIRK2_NO_1_8_V				(1<<2)
+>  #define SDHCI_QUIRK2_PRESET_VALUE_BROKEN		(1<<3)
+> +#define SDHCI_QUIRK2_BROKEN_WRITE_PROTECT		(1<<4)
+> =20
+>  	int irq;		/* Device IRQ */
+>  	void __iomem *ioaddr;	/* Mapped address */
+>=20
 
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--BFLC7o6olLGpGQ8su7TkXtE4bEjAuR1PH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlITZuoACgkQykllyylKDCES0gCeOXltvLEO/yWTCQYUphIjSweX
+SYYAoJEi4G8Kv24NIFSoE4lcvVb1DRhi
+=IoS4
+-----END PGP SIGNATURE-----
+
+--BFLC7o6olLGpGQ8su7TkXtE4bEjAuR1PH--
