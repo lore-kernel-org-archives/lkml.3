@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab3HTDdg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 23:33:36 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:43865 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751757Ab3HTDdf (ORCPT
+	id S1752056Ab3HTDeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 23:34:17 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43892 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757Ab3HTDeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 23:33:35 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmMHAMniElJ5LJ62/2dsb2JhbABagwWDN7dHhTuBJBd0giQBAQQBJxMcIwULCAMOCgklDwUlAyETiAoFqzYWkEYHhBIDl2OKKYctgy4q
-Date: Tue, 20 Aug 2013 13:33:29 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH v3 2/5] fs: Add inode_update_time_writable
-Message-ID: <20130820033329.GG6023@dastard>
-References: <cover.1376679411.git.luto@amacapital.net>
- <a27accc2d9460b7ef194a203f305a18dafe926e8.1376679411.git.luto@amacapital.net>
- <20130820022822.GD6023@dastard>
- <CALCETrVE2G4x9mL0-o1FDQPfc=qZzw10Cx6AgOdhwphSaCmyzw@mail.gmail.com>
+	Mon, 19 Aug 2013 23:34:15 -0400
+Date: Mon, 19 Aug 2013 20:34:03 -0700
+From: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] acpi_i2c: set MODULE_LICENSE, MODULE_AUTHOR, and
+ MODULE_DESCRIPTION
+Message-ID: <20130820033403.GD4587@cantor.us.oracle.com>
+Reply-To: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+References: <1376702795-25912-1-git-send-email-jerry.snitselaar@oracle.com>
+ <2870377.GVGv4QBgQK@vostro.rjw.lan>
+ <20130819233528.GA4587@cantor.us.oracle.com>
+ <1838503.PYpZe7GJ51@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrVE2G4x9mL0-o1FDQPfc=qZzw10Cx6AgOdhwphSaCmyzw@mail.gmail.com>
+In-Reply-To: <1838503.PYpZe7GJ51@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 08:20:12PM -0700, Andy Lutomirski wrote:
-> On Mon, Aug 19, 2013 at 7:28 PM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Fri, Aug 16, 2013 at 04:22:09PM -0700, Andy Lutomirski wrote:
-> >> This is like file_update_time, except that it acts on a struct inode *
-> >> instead of a struct file *.
-> >>
-> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> >> ---
-> >>  fs/inode.c         | 72 ++++++++++++++++++++++++++++++++++++++++++------------
-> >>  include/linux/fs.h |  1 +
-> >>  2 files changed, 58 insertions(+), 15 deletions(-)
-> >>
+On Tue Aug 20 13, Rafael J. Wysocki wrote:
+> On Monday, August 19, 2013 04:35:29 PM Jerry Snitselaar wrote:
+> > On Tue Aug 20 13, Rafael J. Wysocki wrote:
+> > > On Monday, August 19, 2013 09:16:14 AM Mika Westerberg wrote:
+> > > > On Fri, Aug 16, 2013 at 06:26:35PM -0700, Jerry Snitselaar wrote:
+> > > > > Without MODULE_LICENSE set, I get the following with modprobe:
+> > > > > 
+> > > > > acpi_i2c: module license 'unspecified' taints kernel.
+> > > > > acpi_i2c: Unknown symbol i2c_new_device (err 0)
+> > > > > acpi_i2c: Unknown symbol acpi_dev_get_resources (err 0)
+> > > > > acpi_i2c: Unknown symbol acpi_dev_resource_interrupt (err 0)
+> > > > > acpi_i2c: Unknown symbol acpi_dev_free_resource_list (err 0)
+> > > > > 
+> > > > > Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+> > > > 
+> > > > Looks good to me.
+> > > > 
+> > > > Acked-by: Mika Westerbeg <mika.westerberg@linux.intel.com>
+> > > 
+> > > Well, OK, but do we need to be able to build that as a module?
+> > > 
+> > > Maybe it should just be yes or no?
+> > > 
+> > > Rafael
+> > > 
+> > 
+> > Perhaps have depends on I2C=y and be a bool instead of tristate?
 > 
-> [...]
+> Yes, that's the idea.
 > 
-> >> +
-> >> +int inode_update_time_writable(struct inode *inode)
-> >> +{
-> >> +     struct timespec now;
-> >> +     int sync_it = prepare_update_cmtime(inode, &now);
-> >> +     int ret;
-> >> +
-> >> +     if (!sync_it)
-> >> +             return 0;
-> >> +
-> >> +     /* sb_start_pagefault and update_time can both sleep. */
-> >> +     sb_start_pagefault(inode->i_sb);
-> >> +     ret = update_time(inode, &now, sync_it);
-> >> +     sb_end_pagefault(inode->i_sb);
-> >
-> > This gets called from the writeback path - you can't use
-> > sb_start_pagefault/sb_end_pagefault in that path.
-> 
-> The race I'm worried about is:
-> 
->  - mmap
->  - write to the mapping
->  - remount ro
->  - flush_cmtime -> inode_update_time_writable
+Does this look okay Mika?
 
-sb_start_pagefault() is for filesystem freeze protection, not
-remount-ro protection. If you freeze the filesystem, then we stop
-writes and pagefaults by making sb_start_pagefault/sb_start_write
-block, and then run writeback to clean all the pages.  If writeback
-then blocks on sb_start_pagefault(), we've got a deadlock.
+[PATCH] acpi_i2c: do not build as loadable module
 
-> This may be impossible, in which case I'm okay, but it's nice to have
-> a sanity check.  I'll see if I can figure out how to do that.
+Change from tristate to bool, and depend on I2C=y
 
-The process of remount-ro should flush the dirty pages - the inode
-and page has been marked dirty by page_mkwrite(), after all.
+Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+---
+ drivers/acpi/Kconfig | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Cheers,
-
-Dave.
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 100bd72..183a309 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -181,8 +181,9 @@ config ACPI_DOCK
+          drive bays such as the IBM Ultrabay and the Dell Module Bay.
+ 
+ config ACPI_I2C
+-       def_tristate I2C
+-       depends on I2C
++       bool "I2C"
++       depends on I2C=y
++       default n
+        help
+          ACPI I2C enumeration support.
+ 
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.4.rc3.2.g2c2b664
