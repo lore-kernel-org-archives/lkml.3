@@ -1,91 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364Ab3HTGUy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 02:20:54 -0400
-Received: from mail.eperm.de ([89.247.134.16]:52741 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751973Ab3HTGUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 02:20:52 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: sandyinchina@gmail.com, Theodore Tso <tytso@mit.edu>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH][RFC] Tests on 200 different CPUs/Arches and OSes with CPU Jitter RNG
-Date: Tue, 20 Aug 2013 08:20:40 +0200
-Message-ID: <114750096.FHpdnNQbA1@tauon>
-User-Agent: KMail/4.10.5 (Linux/3.10.6-200.fc19.x86_64; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <2846522.WmUuVkVV56@tauon>
-References: <2846522.WmUuVkVV56@tauon>
+	id S1752381Ab3HTGWe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 02:22:34 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:44287 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab3HTGWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 02:22:32 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r7K6J034020195, This message is accepted by code: ctloc85258
+From: <wei_wang@realsil.com.cn>
+To: <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH v3 3/6] mfd:rtsx: Move some actions from rtsx_pci_init_hw to individual extra_init_hw
+Date: Tue, 20 Aug 2013 14:18:53 +0800
+Message-ID: <bc64ce0f3e3593bc947c1717bb1c2f8865c77d43.1376978825.git.wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1376978825.git.wei_wang@realsil.com.cn>
+References: <cover.1376978825.git.wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 18. August 2013, 20:05:52 schrieb Stephan Mueller:
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-Hi Ted, Sandy,
+These actions are individual for each reader model, so should be put in
+extra_init_hw instead of rtsx_pci_init_hw.
 
-For FIPS 140-2, there is currently a draft of an Implementation Guidance 
-discussed covering the requirements of seed sources for deterministic 
-random number generators. The standard seed source when having no 
-hardware RNGs is either /dev/urandom or /dev/random. Please note that 
-the current discussion explicitly prohibits the use of /dev/urandom for 
-FIPS 140-2 compliant systems.
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+---
+ drivers/mfd/rts5209.c  |    4 ++++
+ drivers/mfd/rts5227.c  |    2 ++
+ drivers/mfd/rts5229.c  |    4 ++++
+ drivers/mfd/rts5249.c  |    2 ++
+ drivers/mfd/rtsx_pcr.c |    4 ----
+ 5 files changed, 12 insertions(+), 4 deletions(-)
 
-In addition, the recommendation of SP800-90B is available in draft form 
-at [1] placing quite severe requirements on seed sources. After 
-assessing the above mentioned IG discussion and in discussions with the 
-German BSI, these governmental folks seem to interpret the concept of 
-entropy as solely information theoretical entropy. They seem to 
-disregard cryptographic strength added by a whitening function. 
-Therefore, my gut feeling is that /dev/urandom is also questioned by 
-SP800-90B -- but I have no proof at this point.
-
-That focus on information theoretical entropy ultimately implies that 
-only /dev/random can be used and /dev/urandom must not be used. 
-Naturally, many people are not happy with that due to the blocking 
-behavior. Especially in a headless environment like server systems, 
-Linux is currently starved of entropy. This is even more a problem with 
-virtualized environments. For example, some time ago we tried to obtain 
-48 bytes out of /dev/random on a PPC system after the entropy pools 
-where completely drained. Well, we got it after some 20 hours as the 
-system was quiet (it may now be a bit better with the interrupt usage in 
-current kernels, but still there will be a noticeable block).
-
-Now, people will scream: those governmental guys sell snake oil and we 
-should still use /dev/urandom. And I have to concur. Yet, I am just 
-delivering the message. With the German BSI, the last discussion showed 
-that they are open to allowing /dev/urandom based on extensive 
-discussions. Yet, you have to make quite a stance to prove that.
-
->- addition of a patch to integrate the RNG into /dev/random as
->explained in appendix B.3 of [2], although the long-term goal of the
->RNG is rather the integration into the kernel crypto API when
->considering the Linux kernel as outlined in appendix B.1 of [2]
-
-All in all, with the suggested CPU Jitter RNG, all of this would be an 
-issue of the past on systems the init function considers appropriate -- 
-in my tests more than 95% of all systems are accepted. When using my 
-patch on /dev/random, dd shows a throughput of about 6kb/s on my system 
-when pulling out megabytes of data. It will be slower on slower systems, 
-but yet it will not block. Moreover when pulling data for seed which is 
-only a few bytes at a time, the invocation of /dev/random will not show 
-any noticeable delay.
-
-PS: As I mentioned earlier, however, my long term goal would be that 
-callers would disregard /dev/random entirely as it is a central entropy 
-source and therefore the prime spot for attacks to reduce entropy. With 
-the jitter RNG, even unprivileged user space can have its own instance 
-of a seed source.
-
-
-[1] http://csrc.nist.gov/publications/PubsDrafts.html#SP-800-90-B
-
-
-Ciao
-Stephan
+diff --git a/drivers/mfd/rts5209.c b/drivers/mfd/rts5209.c
+index c67935e..03a15f7 100644
+--- a/drivers/mfd/rts5209.c
++++ b/drivers/mfd/rts5209.c
+@@ -70,6 +70,10 @@ static int rts5209_extra_init_hw(struct rtsx_pcr *pcr)
+ 
+ 	/* Turn off LED */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_GPIO, 0xFF, 0x03);
++	/* Reset ASPM state to default value */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
++	/* Force CLKREQ# PIN to drive 0 to request clock */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0x08, 0x08);
+ 	/* Configure GPIO as output */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_GPIO_DIR, 0xFF, 0x03);
+ 	/* Configure driving */
+diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
+index 42ebf5c..724ce4c5 100644
+--- a/drivers/mfd/rts5227.c
++++ b/drivers/mfd/rts5227.c
+@@ -101,6 +101,8 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
+ 
+ 	/* Configure GPIO as output */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, GPIO_CTL, 0x02, 0x02);
++	/* Reset ASPM state to default value */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
+ 	/* Switch LDO3318 source from DV33 to card_3v3 */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x00);
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
+diff --git a/drivers/mfd/rts5229.c b/drivers/mfd/rts5229.c
+index a0b695a..e8261d7 100644
+--- a/drivers/mfd/rts5229.c
++++ b/drivers/mfd/rts5229.c
+@@ -67,6 +67,10 @@ static int rts5229_extra_init_hw(struct rtsx_pcr *pcr)
+ 
+ 	/* Configure GPIO as output */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, GPIO_CTL, 0x02, 0x02);
++	/* Reset ASPM state to default value */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
++	/* Force CLKREQ# PIN to drive 0 to request clock */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0x08, 0x08);
+ 	/* Switch LDO3318 source from DV33 to card_3v3 */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x00);
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
+diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
+index 79ff212..c5e54d7 100644
+--- a/drivers/mfd/rts5249.c
++++ b/drivers/mfd/rts5249.c
+@@ -104,6 +104,8 @@ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
+ 
+ 	/* Configure GPIO as output */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, GPIO_CTL, 0x02, 0x02);
++	/* Reset ASPM state to default value */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
+ 	/* Switch LDO3318 source from DV33 to card_3v3 */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x00);
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+index 97526f1..ffd393c 100644
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -972,8 +972,6 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, HOST_SLEEP_STATE, 0x03, 0x00);
+ 	/* Disable card clock */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_CLK_EN, 0x1E, 0);
+-	/* Reset ASPM state to default value */
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
+ 	/* Reset delink mode */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CHANGE_LINK_STATE, 0x0A, 0);
+ 	/* Card driving select */
+@@ -1003,8 +1001,6 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+ 	 *	0: ELBI interrupt flag[31:22] & [7:0] only can be write clear
+ 	 */
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, NFTS_TX_CTRL, 0x02, 0);
+-	/* Force CLKREQ# PIN to drive 0 to request clock */
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0x08, 0x08);
+ 
+ 	err = rtsx_pci_send_cmd(pcr, 100);
+ 	if (err < 0)
 -- 
-| Cui bono? |
+1.7.9.5
 
