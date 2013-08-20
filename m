@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723Ab3HTCE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 22:04:26 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:41213 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab3HTCEY (ORCPT
+	id S1751883Ab3HTCEm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 22:04:42 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:55974 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab3HTCEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 22:04:24 -0400
-Message-ID: <5212CE61.2090600@oracle.com>
-Date: Tue, 20 Aug 2013 10:03:13 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Bob Liu <lliubbo@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, eternaleye@gmail.com, minchan@kernel.org,
-        mgorman@suse.de, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        axboe@kernel.dk, ngupta@vflare.org, semenzato@google.com,
-        penberg@iki.fi, sonnyrao@google.com, smbarber@google.com,
-        konrad.wilk@oracle.com, riel@redhat.com, kmpark@infradead.org
-Subject: Re: [PATCH 4/4] mm: zswap: create a pseudo device /dev/zram0
-References: <1376815249-6611-1-git-send-email-bob.liu@oracle.com> <1376815249-6611-5-git-send-email-bob.liu@oracle.com> <20130819174634.GB5703@variantweb.net>
-In-Reply-To: <20130819174634.GB5703@variantweb.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 19 Aug 2013 22:04:34 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [RFC 01/17] clk: ensure __clk_of_table is only initialized once
+Date: Tue, 20 Aug 2013 04:04:15 +0200
+Message-Id: <1376964271-22715-2-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch ensures DT clock providers are only initialized once by
+using a static bool that is set after first call to of_clk_init().
 
-On 08/20/2013 01:46 AM, Seth Jennings wrote:
-> On Sun, Aug 18, 2013 at 04:40:49PM +0800, Bob Liu wrote:
->> This is used to replace previous zram.
->> zram users can enable this feature, then a pseudo device will be created
->> automaticlly after kernel boot.
->> Just using "mkswp /dev/zram0; swapon /dev/zram0" to use it as a swap disk.
->>
->> The size of this pseudeo is controlled by zswap boot parameter
->> zswap.max_pool_percent.
->> disksize = (totalram_pages * zswap.max_pool_percent/100)*PAGE_SIZE.
-> 
-> This /dev/zram0 will behave nothing like the block device that zram
-> creates.  It only allows reads/writes to the first PAGE_SIZE area of the
-> device, for mkswap to work, and then doesn't do anything for all other
-> accesses.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/clk/clk.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-Yes, all the other data should be stored in zswap pool and don't need to
-go through block layer.
-
-> 
-> I guess if you disabled zswap writeback, then... it would somewhat be
-> the same thing.  We do need to disable zswap writeback in this case so
-> that zswap does decompressed a ton of pages into the swapcache for
-> writebacks that will just fail.  Since zsmalloc does not yet support the
-> reclaim functionality, zswap writeback is implicitly disabled.
-> 
-
-Yes, ZSWAP_PSEUDO_BLKDEV depends on zsmalloc and if using zsmalloc as
-the allocator then the writeback is disabled(not implemented and no
-requirement).
-
-> But this is really weird conceptually since zswap is a caching layer
-> that uses frontswap.  If a frontswap store fails, it will try to send
-> the page to the zram0 device which will fail the write.  Then the page
-
-That's a problem. We should disable sending the page to zram0 if
-frontswap store fails. Return fail just like the swap device is full.
-
-> will be... put back on the active or inactive list?
-> 
-> Also, using the max_pool_percent in calculating the psuedo-device size
-> isn't right.  Right now, the code makes the device the max size of the
-> _compressed_ pool, but the underlying swap device size is in
-> _uncompressed_ pages. So you'll never be able to fill zswap sizing the
-> device like this, unless every page is highly incompressible to the
-> point that each compressed page effectively uses a memory pool page, in
-> which case, the user shouldn't be using memory compression.
-> 
-> This also means that this hasn't been tested in the zswap pool-is-full
-> case since there is no way, in this code, to hit that case.
-
-Yes, but in my understanding there is no need to trigger this path. It's
-the same with zram. Eg. create /dev/zram0 with disksize(eg. 100M), then
-mm-core will store ~100M uncompressed pages to /dev/zram0 at most. But
-the real memory spent for storing those pages are depended on the
-compression ratio. It's rare that zram will need 100M real memory.
-
-> 
-> In the zbud case the expected compression is 2:1 so you could just
-> multiply the compressed pool size by 2 and get a good psuedo-device
-> size.  With zsmalloc the expected compression is harder to determine
-> since it can achieve very high effective compression ratios on highly
-> compressible pages.
-> 
-
-Some users can know the compression ratio of their workloads even using
-zsmalloc.
-
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 56a00db..0a8a750 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -2117,9 +2117,15 @@ EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
+ void __init of_clk_init(const struct of_device_id *matches)
+ {
+ 	struct device_node *np;
++	static bool table_done;
+ 
+-	if (!matches)
++	if (!matches) {
++		/* init __clk_of_table drivers only once */
++		if (table_done)
++			return;
+ 		matches = __clk_of_table;
++		table_done = true;
++	}
+ 
+ 	for_each_matching_node(np, matches) {
+ 		const struct of_device_id *match = of_match_node(matches, np);
 -- 
-Regards,
--Bob
+1.7.10.4
+
