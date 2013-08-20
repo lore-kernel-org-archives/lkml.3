@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609Ab3HTSxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 14:53:38 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52790 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab3HTSxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 14:53:36 -0400
-Message-ID: <5213BB2C.60908@wwwdotorg.org>
-Date: Tue, 20 Aug 2013 12:53:32 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Julia Lawall <julia.lawall@lip6.fr>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        kernel-janitors@vger.kernel.org,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	id S1751364Ab3HTS4f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 14:56:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10432 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750812Ab3HTS4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 14:56:34 -0400
+Date: Tue, 20 Aug 2013 20:50:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Brad Spengler <spender@grsecurity.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin Walters <walters@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/7] PCI: tegra: replace devm_request_and_ioremap by devm_ioremap_resource
-References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr> <1376911241-27720-2-git-send-email-Julia.Lawall@lip6.fr> <20130819120249.GA5740@ulmo> <alpine.DEB.2.02.1308191405450.2313@hadrien> <20130819121238.GB5740@ulmo> <alpine.DEB.2.02.1308191414360.2313@hadrien> <20130819193339.GB4961@mithrandir> <alpine.DEB.2.02.1308201112400.2269@hadrien> <CAErSpo4WLt7zbyfkKfvMbXMQGmp0MAS=7AFiomUjtUCfdprDUA@mail.gmail.com>
-In-Reply-To: <CAErSpo4WLt7zbyfkKfvMbXMQGmp0MAS=7AFiomUjtUCfdprDUA@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
+Message-ID: <20130820185043.GA24040@redhat.com>
+References: <20130819172524.GA22268@redhat.com> <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com> <20130819183319.GA24846@redhat.com> <CALCETrWrpNszRGCRRMLgiOopcSdDShB3Mck6gRPco=dAZeX3pQ@mail.gmail.com> <20130819184355.GA25362@redhat.com> <CALCETrU4gTfzcpeEo-X7o-yZefKiw9BVNKdcN4fThUeiuZtOOg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrU4gTfzcpeEo-X7o-yZefKiw9BVNKdcN4fThUeiuZtOOg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 10:26 AM, Bjorn Helgaas wrote:
-> On Tue, Aug 20, 2013 at 3:13 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
->> From: Julia Lawall <Julia.Lawall@lip6.fr>
->>
->> Use devm_ioremap_resource instead of devm_request_and_ioremap.
->>
->> This was done using the semantic patch
->> scripts/coccinelle/api/devm_ioremap_resource.cocci
->>
->> Error-handling code was manually removed from the associated calls to
->> platform_get_resource.
->>
->> Adjust the comment at the third platform_get_resource_byname to make clear
->> why ioremap is not done at this point.
->>
->> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->> Acked-by: Thierry Reding <thierry.reding@gmail.com>
->> Tested-by: Thierry Reding <thierry.reding@gmail.com>
-> 
-> I'm hoping this goes via arm-soc.  Let me know if you need me to do
-> something.  If you need it:
-> 
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+On 08/20, Andy Lutomirski wrote:
+>
+> On Mon, Aug 19, 2013 at 11:43 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 08/19, Andy Lutomirski wrote:
+> >>
+> >> On Mon, Aug 19, 2013 at 11:33 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> >
+> >> > So do you think this change is fine or not (ignoring the fact it needs
+> >> > cleanups) ?
+> >>
+> >> I think that removing the CLONE_VM check is fine (although there are
+> >> some other ones that should probably be removed as well), but I'm not
+> >> sure if that check needs replacing with something else.
+> >
+> > OK, thanks... but I still can't understand.
+> >
+> > The patch I sent is equivalent to the new one below. I just tried to
+> > unify it with another check in do_fork().
+>
+> I was confused.
 
-In that case, Thierry, can you please bounce it to arm@kernel.org to be
-applied on top of wherever Tegra's for-3.12/soc branch was merged.
+Andy, I do not know how much you were confused, but I bet I am confused
+much more ;)
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+> Currently (with or without your patch), vfork() followed by
+> unshare(CLONE_NEWUSER) or unshare(CLONE_NEWPID) will unshare the VM.
+
+Could you spell please?
+
+We never unshare the VM. CLONE_VM in sys_unshare() paths just means
+"fail unless ->mm is not shared".
+
+Oleg.
+
