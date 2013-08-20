@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab3HTII5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 04:08:57 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:59817 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab3HTIIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 04:08:54 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <stable@vger.kernel.org>
-CC: <gregkh@linuxfoundation.org>, <noamc@ezchip.com>,
-        <Anton.Kolesov@synopsys.com>, <linux-kernel@vger.kernel.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH 2/2] ARC: gdbserver breakage in Big-Endian configuration #2
-Date: Tue, 20 Aug 2013 13:38:11 +0530
-Message-ID: <1376986091-30241-3-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376986091-30241-1-git-send-email-vgupta@synopsys.com>
-References: <20130820062901.GA3758@kroah.com>
- <1376986091-30241-1-git-send-email-vgupta@synopsys.com>
+	id S1751945Ab3HTIJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 04:09:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55092 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751238Ab3HTIJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 04:09:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,918,1367996400"; 
+   d="scan'208";a="388931991"
+Date: Tue, 20 Aug 2013 11:14:42 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] acpi_i2c: set MODULE_LICENSE, MODULE_AUTHOR, and
+ MODULE_DESCRIPTION
+Message-ID: <20130820081442.GU4898@intel.com>
+References: <1376702795-25912-1-git-send-email-jerry.snitselaar@oracle.com>
+ <2870377.GVGv4QBgQK@vostro.rjw.lan>
+ <20130819233528.GA4587@cantor.us.oracle.com>
+ <1838503.PYpZe7GJ51@vostro.rjw.lan>
+ <20130820033403.GD4587@cantor.us.oracle.com>
+ <20130820072820.GT4898@intel.com>
+ <20130820080008.GE4587@cantor.us.oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.26]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820080008.GE4587@cantor.us.oracle.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Based on mainline commit 352c1d95e3220d0: "ARC: stop using
-pt_regs->orig_r8"]
+On Tue, Aug 20, 2013 at 01:00:08AM -0700, Jerry Snitselaar wrote:
+> On Tue Aug 20 13, Mika Westerberg wrote:
+> > On Mon, Aug 19, 2013 at 08:34:03PM -0700, Jerry Snitselaar wrote:
+> > > On Tue Aug 20 13, Rafael J. Wysocki wrote:
+> > > > On Monday, August 19, 2013 04:35:29 PM Jerry Snitselaar wrote:
+> > > > > On Tue Aug 20 13, Rafael J. Wysocki wrote:
+> > > > > > On Monday, August 19, 2013 09:16:14 AM Mika Westerberg wrote:
+> > > > > > > On Fri, Aug 16, 2013 at 06:26:35PM -0700, Jerry Snitselaar wrote:
+> > > > > > > > Without MODULE_LICENSE set, I get the following with modprobe:
+> > > > > > > > 
+> > > > > > > > acpi_i2c: module license 'unspecified' taints kernel.
+> > > > > > > > acpi_i2c: Unknown symbol i2c_new_device (err 0)
+> > > > > > > > acpi_i2c: Unknown symbol acpi_dev_get_resources (err 0)
+> > > > > > > > acpi_i2c: Unknown symbol acpi_dev_resource_interrupt (err 0)
+> > > > > > > > acpi_i2c: Unknown symbol acpi_dev_free_resource_list (err 0)
+> > > > > > > > 
+> > > > > > > > Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+> > > > > > > 
+> > > > > > > Looks good to me.
+> > > > > > > 
+> > > > > > > Acked-by: Mika Westerbeg <mika.westerberg@linux.intel.com>
+> > > > > > 
+> > > > > > Well, OK, but do we need to be able to build that as a module?
+> > > > > > 
+> > > > > > Maybe it should just be yes or no?
+> > > > > > 
+> > > > > > Rafael
+> > > > > > 
+> > > > > 
+> > > > > Perhaps have depends on I2C=y and be a bool instead of tristate?
+> > > > 
+> > > > Yes, that's the idea.
+> > > > 
+> > > Does this look okay Mika?
+> > > 
+> > > [PATCH] acpi_i2c: do not build as loadable module
+> > > 
+> > > Change from tristate to bool, and depend on I2C=y
+> > 
+> > I'm not sure about this. Does the below mean that we can't build the ACPI
+> > I2C enumeration at all if I2C core is compiled as module?
+> 
+> Yes, that was what Rafael was suggesting. If the ability to compile as
+> a module if I2C is a module is needed, then we need the 1st patch.
 
-Stop using orig_r8 as it could get clobbered by ST in trap_with_param,
-and further it is semantically not needed either.
+In that case I would prefer the first patch. Otherwise we lose the ability
+to enumerate I2C devices from ACPI namespace on some distros (at least
+Debian builds I2C core as a module).
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/include/asm/syscall.h | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arc/include/asm/syscall.h b/arch/arc/include/asm/syscall.h
-index 33ab304..29de098 100644
---- a/arch/arc/include/asm/syscall.h
-+++ b/arch/arc/include/asm/syscall.h
-@@ -18,7 +18,7 @@ static inline long
- syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
- {
- 	if (user_mode(regs) && in_syscall(regs))
--		return regs->orig_r8;
-+		return regs->r8;
- 	else
- 		return -1;
- }
-@@ -26,8 +26,7 @@ syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
- static inline void
- syscall_rollback(struct task_struct *task, struct pt_regs *regs)
- {
--	/* XXX: I can't fathom how pt_regs->r8 will be clobbered ? */
--	regs->r8 = regs->orig_r8;
-+	regs->r0 = regs->orig_r0;
- }
- 
- static inline long
--- 
-1.8.1.2
-
+Rafael?
