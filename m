@@ -1,197 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab3HTDS3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Aug 2013 23:18:29 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52225 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab3HTDS1 (ORCPT
+	id S1751970Ab3HTDUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Aug 2013 23:20:32 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:54545 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab3HTDUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Aug 2013 23:18:27 -0400
-Date: Tue, 20 Aug 2013 04:18:21 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Davide Libenzi <davidel@xmailserver.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] vfio-pci: PCI hot reset interface
-Message-ID: <20130820031821.GF27005@ZenIV.linux.org.uk>
-References: <20130814200845.21923.64284.stgit@bling.home>
- <CAErSpo4zfuaaBSDci4jOu_9RgUfLQNPvKhro1OEh=8AMvAFWYw@mail.gmail.com>
+	Mon, 19 Aug 2013 23:20:31 -0400
+X-Originating-IP: 50.43.39.152
+Date: Mon, 19 Aug 2013 20:20:14 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Rik van Riel <riel@surriel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH tip/core/rcu 1/5] rcu: Add duplicate-callback tests to
+ rcutorture
+Message-ID: <20130820032014.GA4416@leaf>
+References: <20130818022453.GA3475@linux.vnet.ibm.com>
+ <1376792717-3755-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130818025420.GC28923@leaf>
+ <20130819035528.GD29406@linux.vnet.ibm.com>
+ <20130819041925.GA12202@leaf>
+ <20130819160945.GA32415@linux.vnet.ibm.com>
+ <20130819171651.GA11063@jtriplet-mobl1>
+ <20130820020558.GW29406@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo4zfuaaBSDci4jOu_9RgUfLQNPvKhro1OEh=8AMvAFWYw@mail.gmail.com>
+In-Reply-To: <20130820020558.GW29406@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 04:42:14PM -0600, Bjorn Helgaas wrote:
-> [+cc Al, linux-fsdevel for fdget/fdput usage]
+On Mon, Aug 19, 2013 at 07:05:58PM -0700, Paul E. McKenney wrote:
+> On Mon, Aug 19, 2013 at 10:16:52AM -0700, Josh Triplett wrote:
+> > On Mon, Aug 19, 2013 at 09:09:45AM -0700, Paul E. McKenney wrote:
+> > > On Sun, Aug 18, 2013 at 09:19:25PM -0700, Josh Triplett wrote:
+> > > > On Sun, Aug 18, 2013 at 08:55:28PM -0700, Paul E. McKenney wrote:
+> > > > > On Sat, Aug 17, 2013 at 07:54:20PM -0700, Josh Triplett wrote:
+> > > > > > On Sat, Aug 17, 2013 at 07:25:13PM -0700, Paul E. McKenney wrote:
+> > > > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > > > > 
+> > > > > > > This commit adds a object_debug option to rcutorture to allow the
+> > > > > > > debug-object-based checks for duplicate call_rcu() invocations to
+> > > > > > > be deterministically tested.
+> > > > > > > 
+> > > > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > > > > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > > > > > > Cc: Sedat Dilek <sedat.dilek@gmail.com>
+> > > > > > > Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> > > > > > > Cc: Rik van Riel <riel@surriel.com>
+> > > > > > > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > > > > > > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > > > > > > Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> > > > > > 
+> > > > > > Two comments below; with those fixed,
+> > > > > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > > > > > 
+> > > > > > > ---
+> > > > > > > @@ -100,6 +101,8 @@ module_param(fqs_stutter, int, 0444);
+> > > > > > >  MODULE_PARM_DESC(fqs_stutter, "Wait time between fqs bursts (s)");
+> > > > > > >  module_param(n_barrier_cbs, int, 0444);
+> > > > > > >  MODULE_PARM_DESC(n_barrier_cbs, "# of callbacks/kthreads for barrier testing");
+> > > > > > > +module_param(object_debug, int, 0444);
+> > > > > > > +MODULE_PARM_DESC(object_debug, "Enable debug-object double call_rcu() testing");
+> > > > > > 
+> > > > > > modules-next has a change to ignore and warn about
+> > > > > > unknown module parameters.  Thus, I'd suggest wrapping the ifdef around
+> > > > > > this module parameter, so it doesn't exist at all without
+> > > > > > CONFIG_DEBUG_OBJECTS_RCU_HEAD.
+> > > > > > 
+> > > > > > Alternatively, consider providing the test unconditionally, and just
+> > > > > > printing a big warning message saying that it's going to cause
+> > > > > > corruption in the !CONFIG_DEBUG_OBJECTS_RCU_HEAD case.
+> > > > > 
+> > > > > I currently do something like the above.  The module parameter
+> > > > > is defined unconditionally, but the actual tests are under #ifdef
+> > > > > CONFIG_DEBUG_OBJECTS_RCU_HEAD.  If you specify object_debug for a
+> > > > > !CONFIG_DEBUG_OBJECTS_RCU_HEAD kernel, the pr_alert() below happens,
+> > > > > and the test is omitted, thus avoiding the list corruption.
+> > > > > 
+> > > > > Seem reasonable?
+> > > > 
+> > > > That's exactly the bit I was commenting on.  I'm saying that you should
+> > > > either make the test unconditional (perhaps with a warning saying it's
+> > > > about to cause list corruption), or you should compile out the module
+> > > > parameter as well and then you don't need the pr_alert (since current
+> > > > kernels will emit a warning when you pass a non-existent module
+> > > > parameter).
+> > > > 
+> > > > Personally, I'd go with the latter.
+> > > 
+> > > Ah, the problem is the ugly ifdef in the middle of a function.  Yeah,
+> > > that is a problem in need of fixing.  No idea what I was thinking...
+> > > 
+> > > How about if I pull that block of code out into its own function, and
+> > > #ifdef the function body.  For example, something like that shown below.
+> > [...]
+> > > static void rcu_test_debug_objects(void)
+> > > {
+> > > #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+> > > 	struct rcu_head rh1;
+> > > 	struct rcu_head rh2;
+> > > 
+> > > 	init_rcu_head_on_stack(&rh1);
+> > > 	init_rcu_head_on_stack(&rh2);
+> > > 	pr_alert("rcutorture: WARN: Duplicate call_rcu() test starting.\n");
+> > > 	local_irq_disable(); /* Make it hard to finish grace period. */
+> > > 	call_rcu(&rh1, rcu_torture_leak_cb); /* start grace period. */
+> > > 	call_rcu(&rh2, rcu_torture_err_cb);
+> > > 	call_rcu(&rh2, rcu_torture_err_cb); /* duplicate callback. */
+> > > 	local_irq_enable();
+> > > 	rcu_barrier();
+> > > 	pr_alert("rcutorture: WARN: Duplicate call_rcu() test complete.\n");
+> > > 	destroy_rcu_head_on_stack(&rh1);
+> > > 	destroy_rcu_head_on_stack(&rh2);
+> > > #else /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+> > > 	pr_alert("rcutorture: !CONFIG_DEBUG_OBJECTS_RCU_HEAD, not testing duplicate call_rcu()\n");
+> > > #endif /* #else #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+> > > }
+> > 
+> > That's a major improvement, but I'd still suggest a couple more changes:
+> > move the if for the config option into that function inside the ifdef,
+> > wrap the config parameter itself in an ifdef so it doesn't exist without
+> > CONFIG_DEBUG_OBJECTS_RCU_HEAD, and drop the #else branch since the
+> > kernel will already emit a warning if you use the module parameter with
+> > !CONFIG_DEBUG_OBJECTS_RCU_HEAD.
+> 
+> I really feel the need to distinguish between "that is never a valid
+> parameter to rcutorture" (given by the module-parameter parser) and
+> "that parameter is valid, but cannot be used in this case, and here
+> are the consequences", so I will keep the pr_alert().  But definitely
+> fix the mid-function #ifdef!
 
-fdget/fdput use looks sane, the only thing is that I would rather
-have an explicit include of linux/file.h instead of relying upon
-linux/eventfd.h pulling it.  Incidentally, there are only 5 files
-that include the latter without an explicit include of the former -
-drivers/vfio/pci/vfio_pci.c, drivers/vhost/scsi.c, kernel/cgroup.c,
-mm/memcontrol.c and mm/vmpressure.c.  And only kernel/cgroup.c (and,
-with this patch, vfio_pci.c) really wants anything from linux/file.h,
-so I'd rather kill that indirect include in eventfd.h and slapped
-an explicit include of file.h in these two files...
-
-BTW, most of the eventfd_fget() users might as well be using fget()
-(or fdget(), for that matter).  They tend to be immediately followed
-by eventfd_ctx_fileget(), which repeats the "is that an eventfd file?"
-check anyway.
-
-Completely untested patch below does that to kernel/cgroup.c; Tejun,
-Davide - do you have any objections against the following?
-
-Kill indirect include of file.h from eventfd.h, use fdget() in cgroup.c
-
-kernel/cgroup.c is the only place in the tree that relies on eventfd.h
-pulling file.h; move that include there.  Switch from eventfd_fget()/fput()
-to fdget()/fdput(), while we are at it - eventfd_ctx_fileget() will fail
-on non-eventfd descriptors just fine, no need to do that check twice...
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
-diff --git a/include/linux/eventfd.h b/include/linux/eventfd.h
-index cf5d2af..ff0b981 100644
---- a/include/linux/eventfd.h
-+++ b/include/linux/eventfd.h
-@@ -9,7 +9,6 @@
- #define _LINUX_EVENTFD_H
- 
- #include <linux/fcntl.h>
--#include <linux/file.h>
- #include <linux/wait.h>
- 
- /*
-@@ -26,6 +25,8 @@
- #define EFD_SHARED_FCNTL_FLAGS (O_CLOEXEC | O_NONBLOCK)
- #define EFD_FLAGS_SET (EFD_SHARED_FCNTL_FLAGS | EFD_SEMAPHORE)
- 
-+struct file;
-+
- #ifdef CONFIG_EVENTFD
- 
- struct file *eventfd_file_create(unsigned int count, int flags);
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 781845a..f88ecaf 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -60,6 +60,7 @@
- #include <linux/poll.h>
- #include <linux/flex_array.h> /* used in cgroup_attach_task */
- #include <linux/kthread.h>
-+#include <linux/file.h>
- 
- #include <linux/atomic.h>
- 
-@@ -3969,8 +3970,8 @@ static int cgroup_write_event_control(struct cgroup *cgrp, struct cftype *cft,
- 	struct cgroup_event *event = NULL;
- 	struct cgroup *cgrp_cfile;
- 	unsigned int efd, cfd;
--	struct file *efile = NULL;
--	struct file *cfile = NULL;
-+	struct fd efile;
-+	struct fd cfile;
- 	char *endp;
- 	int ret;
- 
-@@ -3993,31 +3994,31 @@ static int cgroup_write_event_control(struct cgroup *cgrp, struct cftype *cft,
- 	init_waitqueue_func_entry(&event->wait, cgroup_event_wake);
- 	INIT_WORK(&event->remove, cgroup_event_remove);
- 
--	efile = eventfd_fget(efd);
--	if (IS_ERR(efile)) {
--		ret = PTR_ERR(efile);
--		goto fail;
-+	efile = fdget(efd);
-+	if (!efile.file) {
-+		ret = -EBADF;
-+		goto fail1;
- 	}
- 
--	event->eventfd = eventfd_ctx_fileget(efile);
-+	event->eventfd = eventfd_ctx_fileget(efile.file);
- 	if (IS_ERR(event->eventfd)) {
- 		ret = PTR_ERR(event->eventfd);
--		goto fail;
-+		goto fail2;
- 	}
- 
--	cfile = fget(cfd);
--	if (!cfile) {
-+	cfile = fdget(cfd);
-+	if (!cfile.file) {
- 		ret = -EBADF;
--		goto fail;
-+		goto fail3;
- 	}
- 
- 	/* the process need read permission on control file */
- 	/* AV: shouldn't we check that it's been opened for read instead? */
--	ret = inode_permission(file_inode(cfile), MAY_READ);
-+	ret = inode_permission(file_inode(cfile.file), MAY_READ);
- 	if (ret < 0)
- 		goto fail;
- 
--	event->cft = __file_cft(cfile);
-+	event->cft = __file_cft(cfile.file);
- 	if (IS_ERR(event->cft)) {
- 		ret = PTR_ERR(event->cft);
- 		goto fail;
-@@ -4027,7 +4028,7 @@ static int cgroup_write_event_control(struct cgroup *cgrp, struct cftype *cft,
- 	 * The file to be monitored must be in the same cgroup as
- 	 * cgroup.event_control is.
- 	 */
--	cgrp_cfile = __d_cgrp(cfile->f_dentry->d_parent);
-+	cgrp_cfile = __d_cgrp(cfile.file->f_dentry->d_parent);
- 	if (cgrp_cfile != cgrp) {
- 		ret = -EINVAL;
- 		goto fail;
-@@ -4043,7 +4044,7 @@ static int cgroup_write_event_control(struct cgroup *cgrp, struct cftype *cft,
- 	if (ret)
- 		goto fail;
- 
--	efile->f_op->poll(efile, &event->pt);
-+	efile.file->f_op->poll(efile.file, &event->pt);
- 
- 	/*
- 	 * Events should be removed after rmdir of cgroup directory, but before
-@@ -4056,21 +4057,18 @@ static int cgroup_write_event_control(struct cgroup *cgrp, struct cftype *cft,
- 	list_add(&event->list, &cgrp->event_list);
- 	spin_unlock(&cgrp->event_list_lock);
- 
--	fput(cfile);
--	fput(efile);
-+	fdput(cfile);
-+	fdput(efile);
- 
- 	return 0;
- 
- fail:
--	if (cfile)
--		fput(cfile);
--
--	if (event && event->eventfd && !IS_ERR(event->eventfd))
--		eventfd_ctx_put(event->eventfd);
--
--	if (!IS_ERR_OR_NULL(efile))
--		fput(efile);
--
-+	fdput(cfile);
-+fail3:
-+	eventfd_ctx_put(event->eventfd);
-+fail2:
-+	fdput(efile);
-+fail1:
- 	kfree(event);
- 
- 	return ret;
+OK; I can live with that.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
