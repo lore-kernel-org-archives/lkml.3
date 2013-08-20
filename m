@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653Ab3HTPRp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 11:17:45 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:3287 "EHLO mms3.broadcom.com"
+	id S1751396Ab3HTPUN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 11:20:13 -0400
+Received: from www.sr71.net ([198.145.64.142]:35917 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab3HTPRo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 11:17:44 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-From: "Graham Williams" <gwilli@broadcom.com>
-To: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] usb: acm gadget: Null termintate strings table
-Thread-Topic: [PATCH] usb: acm gadget: Null termintate strings table
-Thread-Index: Ac6duEwifWTJ4zn7RoOxb6qb5Az/Qg==
-Date: Tue, 20 Aug 2013 15:17:37 +0000
-Message-ID: <063828A851006E448B735F1021E028962ACE2FE9@SJEXCHMB09.corp.ad.broadcom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
+	id S1751193Ab3HTPUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 11:20:12 -0400
+Message-ID: <52138924.1040905@sr71.net>
+Date: Tue, 20 Aug 2013 08:20:04 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-WSS-ID: 7E0D59B82L876133803-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+To: Dave Jones <davej@redhat.com>, Anton Arapov <anton@redhat.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] oops.kernel.org prospect
+References: <20130819085405.GA22328@bandura.laptop> <20130819145505.GB15178@kroah.com> <20130819151643.GC19070@bandura.laptop> <20130819153939.GA23875@thunk.org> <20130819155202.GF19070@bandura.laptop> <20130819212512.GA7918@redhat.com>
+In-Reply-To: <20130819212512.GA7918@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The gadget strings table should be null terminated.
-usb_gadget_get_string() loops through the table
-expecting a null at the end of the list.
+On 08/19/2013 02:25 PM, Dave Jones wrote:
+> * This bug last seen: 2013-08-17
+>   Also useful here would be something like:
+>   Seen on: 3.2-rc2, 3.10-rc10  (You can probably just list earliest/latest rather than
+>    every single kernel it's been seen on, unless you want a 'show all' button)
 
-Signed-off-by: Graham <gwilli@broadcom.com>
----
- drivers/usb/gadget/f_acm.c | 1 +
- 1 file changed, 1 insertion(+)
+Once you have the "seen on" stuff sorted out, it would also be really
+nice to be able to easily select bugs only seen on "versions after 3.8",
+just so we can filter out some of the older stuff.  The kernel version
+in the filter is useful, but would be much more so if we had ranges,
+even if it was just "newer than $foo".
 
-diff --git a/drivers/usb/gadget/f_acm.c b/drivers/usb/gadget/f_acm.c
-index 4b7e33e..ab1065a 100644
---- a/drivers/usb/gadget/f_acm.c
-+++ b/drivers/usb/gadget/f_acm.c
-@@ -285,6 +285,7 @@ static struct usb_string acm_string_defs[] = {
-        [ACM_CTRL_IDX].s = "CDC Abstract Control Model (ACM)",
-        [ACM_DATA_IDX].s = "CDC ACM Data",
-        [ACM_IAD_IDX ].s = "CDC Serial",
-+       {  } /* end of list */
- };
+When you go to "Show Raw Oops", it usually doesn't show up for me in
+Chrome.  There's a javascript error:
 
- static struct usb_gadget_strings acm_string_table = {
---
-1.8.0.1
+> The page at https://oops.kernel.org/browse-reports/oops-detail/?id=30565# displayed insecure content from http://oops.kernel.org/get-raw.php?id=30565&token=a94733d146ae15f8cec871d4f238956da80d7c5322f6253f9b49d4c5cc8fe8a1.
 
+If I go over and load the page as plain old http, it works fine.  Also,
+when those oopses show up, the font is variable-width.  It would
+probably be a wee bit easier to read if it were displayed in a
+fixed-width font.
+
+This is a much more minor nit, but the source code links (like clicking
+on bad_page from here:
+https://oops.kernel.org/browse-reports/oops-detail/?id=30565#) from the
+traces for the distribution kernels link over to mainline kernel source.
+ This means that the line numbers don't _quite_ line up.  It would be
+really cool if it was able to dump you right over to a copy of the
+Debian-specific source in that bug's case.  But, this is a generic
+problem that folks have who work across lots of distros: you don't
+always have the right source in front of you for any given kernel.
+
+Anyway... cool stuff.  I always forget that oops.kernel.org is there,
+but it's always fun to poke around when I run across it. :)
