@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800Ab3HUBNk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 21:13:40 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55146 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab3HUBNi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 21:13:38 -0400
-Date: Wed, 21 Aug 2013 11:13:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Kconfig: Remove hotplug enable hints in CONFIG_KEXEC
- help texts
-Message-Id: <20130821111323.1325e3f37faf2f54f3549832@canb.auug.org.au>
-In-Reply-To: <1377027483-17025-1-git-send-email-geert@linux-m68k.org>
-References: <1377027483-17025-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__21_Aug_2013_11_13_23_+1000_GADke1ldKgHjpl8v"
+	id S1751917Ab3HUBRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 21:17:50 -0400
+Received: from ozlabs.org ([203.10.76.45]:46898 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751413Ab3HUBRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 21:17:47 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Chen Gang <gang.chen@asianux.com>, jg1.han@samsung.com, khali@linux-fr.org,
+        David.Woodhouse@intel.com
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/params.c: use scnprintf() instead of sprintf()
+In-Reply-To: <5212DFB0.8070902@asianux.com>
+References: <5212DFB0.8070902@asianux.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 20 Aug 2013 15:35:22 +0930
+Message-ID: <87siy4gan1.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__21_Aug_2013_11_13_23_+1000_GADke1ldKgHjpl8v
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Chen Gang <gang.chen@asianux.com> writes:
 
-Hi Geert,
+> For some strings (e.g. version string), they are permitted to be larger
+> than PAGE_SIZE (although meaningless), so recommend to use scnprintf()
+> instead of sprintf().
 
-On Tue, 20 Aug 2013 21:38:03 +0200 Geert Uytterhoeven <geert@linux-m68k.org=
-> wrote:
+Applied.
+
+Thanks,
+Rusty.
+
 >
-> commit 40b313608ad4ea655addd2ec6cdd106477ae8e15 ("Finally eradicate
-> CONFIG_HOTPLUG") removed remaining references to CONFIG_HOTPLUG, but miss=
-ed
-> a few plain English references in the CONFIG_KEXEC help texts.
->=20
-> Remove them, too.
->=20
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-Looks good to me.  Thanks.
-
-Acked-by: Stephen Rothwell <sfr@canb.auug.org.au>
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__21_Aug_2013_11_13_23_+1000_GADke1ldKgHjpl8v
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSFBQ4AAoJEECxmPOUX5FETsMP/3VZR2oZGvtk3dTQaWWzB2dD
-EkosPsIrqso9g4eHsEBYlDjZ8v45CKoTbp6kbV05x8YWsE+76NWWs6ey8jjoi9Cn
-sSUvUjJ+PuNWGEjM2lsNDIAOfEdcudUVCfTv6aImxGcgCNz4KI0sbxtbWsi9yhlY
-qwQJYtIjxv9gwb3f/gmdEfiyIsTMZPeBslrvWZLhM8yqi1iIFUntRFW8faX4UWAm
-VP9WC92xExfClmaA+jb9iv7bwIB0wsyLMC9v2PipkaWIl5DxAi1f9O1TqlWQUCAE
-FSzsvHl2iwB0vwPRzBSeB+VbJZxVtH9VHqVu3vrZWvPmFMZH00P4l6jkxgH/yUiK
-EBNVKCOUpZyOpBaZ7DYVd6IR8V32LUFysQQijbE81YM+8d/D5JAOUlMu10I8Bzsq
-sWZAe0Yn+tn7uhjIjG/HImewVnxwNjKwWqB258Wo7uvb0ku9+FPstFocAkNtKp3B
-R9wt/F22neliAI5JwuBsd8YE0mJG/MUJNjkJ6Whq+CDzsTZnqGAcvlMin2Tazc3J
-IjCz7Yjn63Pjv9spNvtTdotrzMalNRM7SSG/u7IvR505KYB1VcxL51AYCDnyAtUl
-gLOzWvSxyeq6c1XTr/vO+SKs98Sn0ONl+tlMMgaX04XkWx79qYBKOVlmpqfoiZgK
-ppDQ3M3O70TzO+fk5hNp
-=3DQN
------END PGP SIGNATURE-----
-
---Signature=_Wed__21_Aug_2013_11_13_23_+1000_GADke1ldKgHjpl8v--
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  kernel/params.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+>
+> diff --git a/kernel/params.c b/kernel/params.c
+> index 1f228a3..4da300f 100644
+> --- a/kernel/params.c
+> +++ b/kernel/params.c
+> @@ -241,7 +241,8 @@ int parse_args(const char *doing,
+>  	}								\
+>  	int param_get_##name(char *buffer, const struct kernel_param *kp) \
+>  	{								\
+> -		return sprintf(buffer, format, *((type *)kp->arg));	\
+> +		return scnprintf(buffer, PAGE_SIZE, format,		\
+> +				*((type *)kp->arg));			\
+>  	}								\
+>  	struct kernel_param_ops param_ops_##name = {			\
+>  		.set = param_set_##name,				\
+> @@ -285,7 +286,7 @@ EXPORT_SYMBOL(param_set_charp);
+>  
+>  int param_get_charp(char *buffer, const struct kernel_param *kp)
+>  {
+> -	return sprintf(buffer, "%s", *((char **)kp->arg));
+> +	return scnprintf(buffer, PAGE_SIZE, "%s", *((char **)kp->arg));
+>  }
+>  EXPORT_SYMBOL(param_get_charp);
+>  
+> @@ -827,7 +828,7 @@ ssize_t __modver_version_show(struct module_attribute *mattr,
+>  	struct module_version_attribute *vattr =
+>  		container_of(mattr, struct module_version_attribute, mattr);
+>  
+> -	return sprintf(buf, "%s\n", vattr->version);
+> +	return scnprintf(buf, PAGE_SIZE, "%s\n", vattr->version);
+>  }
+>  
+>  extern const struct module_version_attribute *__start___modver[];
+> -- 
+> 1.7.7.6
