@@ -1,138 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab3HTRGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 13:06:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35753 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441Ab3HTRGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 13:06:33 -0400
-Date: Tue, 20 Aug 2013 19:06:25 +0200
-From: Anton Arapov <anton@redhat.com>
-To: Dave Jones <davej@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
+	id S1751704Ab3HTRI7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 13:08:59 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:35351 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab3HTRI5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 13:08:57 -0400
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+To: Will Deacon <will.deacon@arm.com>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [ATTEND] oops.kernel.org prospect
-Message-ID: <20130820170625.GB6750@bandura.laptop>
-References: <20130819085405.GA22328@bandura.laptop>
- <20130819145505.GB15178@kroah.com>
- <20130819151643.GC19070@bandura.laptop>
- <20130819153939.GA23875@thunk.org>
- <20130819155202.GF19070@bandura.laptop>
- <20130819212512.GA7918@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130819212512.GA7918@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Sudeep.KarkadaNagesha@arm.com,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Subject: [PATCH v3 4/6] ARM64: arch_timer: configure and enable event stream
+Date: Tue, 20 Aug 2013 18:08:46 +0100
+Message-Id: <1377018526-9832-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376414984-14182-5-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+References: <1376414984-14182-5-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 20 Aug 2013 17:08:52.0586 (UTC) FILETIME=[F21554A0:01CE9DC7]
+X-MC-Unique: 113082018085502601
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7KH9411016035
 
-On Mon, Aug 19, 2013 at 05:25:12PM -0400, Dave Jones wrote:
-> On Mon, Aug 19, 2013 at 05:52:02PM +0200, Anton Arapov wrote:
->  > On Mon, Aug 19, 2013 at 11:39:39AM -0400, Theodore Ts'o wrote:
->  > > On Mon, Aug 19, 2013 at 05:16:43PM +0200, Anton Arapov wrote:
->  > > > > Why not just do that through email?  You'll reach a much wider group of
->  > > > > people than the tiny 80 developers at the conference.
->  > > > 
->  > > > Ouch! Someone to take it as replacement of email - the least I wanted. It will
->  > > > go email-way in either case.
->  > > > 
->  > > > These tiny 80 may give the most valuable feedback on the topic. And often
->  > > > it is the most difficult to get attention of them, especially via email.
->  > > > In case it fits the conference, it could dilute the heavy topics.
->  > > 
->  > > Usyually the best thing to do is to start the discussion on the
->  > > mailing list (and we can do that on ksummit-2013-discuss, but this is
->  > > always why it's sometimes useful to cc lkml on topic proposals, so we
->  > > can jump start the discussion), and see if it's controversial or not.
->  > 
->  > Oh well,... I didn't have a time for this right now, nor project is
->  > not exactly in the state I'm willing to show (mostly webui) 
->  > 
->  > // CC'd: lkml (please don't complain on styles yet, focus on functionality)
-> 
-> I stumbled across this a week or so ago, and had some thoughts back then,
-> but didn't mail them anywhere because I wasn't sure who ran it, and couldn't
-> tell how far along it was.
-> 
-> Quick brain dump
-> 
-> * Visiting it with chromium gets an annoying warning about the https server
->   identifying as a different server. (does it even need https?)
-> 
-> * There's a lot of tainted kernel traces in there. 99% of kernel developers
->   will never care about these in my experience.  You can adjust this on a per-query
->   basis it seems, but better would be to turn them off globally, and have them
->   available just for people who want to search for 'all' (tainted or untainted) oopses.
-> 
->   - That the tainted oopses are counted as 'regular' oopses is skewing the 'top bugs'
->     on the front page.
-> 
->   - As well as proprietary, take care of 'out of tree' tainted modules in the same way.
-> 
-> * I clicked through some of the debian oopses, and saw these:
->   https://oops.kernel.org/browse-reports/oops-detail/?id=30497
->   https://oops.kernel.org/browse-reports/oops-detail/?id=30499
->   It would be useful to know if this was the same user. (It seems likely, but
->   there's no way to know for sure). You don't need identifying info other than
->   "These came from the same system" side-stepping any privacy concerns.
-> 
-> * In the Linked modules section, if there's an out-of-tree/proprietary module,
->   we annotate those in oopses with (O), or (P). This seems to be lost in your UI.
->   (Bonus points for making them stand out)
-> 
-> * The traces by default lack a lot of information, forcing clicking of the 'show raw oops'
->   in every case.  Missing useful info (at least): EIP/RIP, other registers.
-> 
-> * 'Show raw oops' doesn't. (At least on chromium)
-> 
-> * This bug last seen: 2013-08-17
->   Also useful here would be something like:
->   Seen on: 3.2-rc2, 3.10-rc10  (You can probably just list earliest/latest rather than
->    every single kernel it's been seen on, unless you want a 'show all' button)
-> 
-> * Instead of summaries like "general protection fault: 4000 [#1] SMP"
->   Decode the EIP/RIP, and call it "general protection fault in i915_gem_do_execbuffer".
->   Not only does it make reading summaries easier, it should allow you to detect
->   dupes better.  (Sidenote, abrt needs this too, when it files bugzillas)
-> 
-> * Looking over the summaries at https://oops.kernel.org/browse-reports/?distro=Fedora&search=submit
->   The first thing that comes to mind is "There's a lot of soft lockup bugs here"
->   Some means of grouping similar looking bugs would be useful.
->   (In bugzilla, clicking 'sort by summary' kinda gives this, but it still sucks).
-> 
-> * When Arjan ran kerneloops, he would periodically mail out a "top 10 oopses" report
->   on the latest tree. That seems like something that would be worth doing again,
->   but only after filtering out the tainted stuff as mentioned above.
-> 
-> * Some kind of "find similar bugs in other bug trackers" feature would be really awesome.
-> 
-> * There's a bunch of bugs in there that have been tainted 'W'.  These are almost never useful,
->   because we're already deep in "bad shit happened" land at that point.
->   It'll also mean you could get flooded with oopses from a single crash if something
->   keeps on spewing traces. Just give up after filing the first oops.
-> 
-> * Take for example: https://oops.kernel.org/browse-reports/oops-detail/?id=30410
->   This is a 2.6.27.5 kernel bug, that was filed *last week*.
->   I'd bet dollars to donuts no-one is going to give a crap about that bug.
->   I'm not sure if it's better here to never file 'ancient' bugs, or to periodically
->   archive/delete ones that have been in the db more than a few years.  
-> 
-> * Looking at https://oops.kernel.org/browse-reports/?function=ironlake_crtc_disable&search=submit
->   It seems the hashing algorithm for detecting dupes could use some work.
->   Many of these traces are probably exactly the same problem.
->   Are you hashing symbols in the trace beginning with '? ' ? If so, you probably shouldn't be.
+From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-Dave, 
+This patch configures the event stream frequency and enables it.
+It also adds the hwcaps as well as compat-specific definitions to
+the user to detect this event stream feature.
 
-FYI,
-I've put all the above, hopefully nothing missed, to the list that
-available here:
-http://trello.com/b/ZvLKCkJX/oops-kernel-org-support-and-development
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+[sudeep: moving ARM/ARM64 changes into separate patches]
+Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+---
+ arch/arm64/include/asm/arch_timer.h | 15 +++++++++++++--
+ arch/arm64/include/asm/hwcap.h      |  7 ++++++-
+ arch/arm64/include/uapi/asm/hwcap.h |  1 +
+ arch/arm64/kernel/setup.c           |  6 ++++++
+ 4 files changed, 26 insertions(+), 3 deletions(-)
 
-Will keep lkml posted on progress though.
+Hi Will,
 
-Anton.
+This is modified version enabling timer event stream hwcap compat dynamically.
+Let me know if this looks fine.
+
+Regards,
+Sudeep
+
+---->8---
+
+diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+index 69f5c8e..90f9d1a 100644
+--- a/arch/arm64/include/asm/arch_timer.h
++++ b/arch/arm64/include/asm/arch_timer.h
+@@ -106,14 +106,25 @@ static inline void arch_counter_set_user_access(int divider)
+ 	/* Disable user access to the timers and the physical counter. */
+ 	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
+ 			| ARCH_TIMER_USR_VT_ACCESS_EN
++			| ARCH_TIMER_EVT_TRIGGER_MASK
+ 			| ARCH_TIMER_USR_PCT_ACCESS_EN);
+ 
+-	/* Enable user access to the virtual counter. */
+-	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
++	/* Enable event stream and user access to the virtual counter */
++	cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
++			| ARCH_TIMER_VIRT_EVT_EN
++			| ARCH_TIMER_USR_VCT_ACCESS_EN;
+ 
+ 	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+ }
+ 
++static inline void arch_timer_set_hwcap_evtstrm(void)
++{
++	elf_hwcap |= HWCAP_EVTSTRM;
++#ifdef CONFIG_COMPAT
++	compat_dyn_elf_hwcap |= COMPAT_HWCAP_EVTSTRM;
++#endif
++}
++
+ static inline u64 arch_counter_get_cntvct(void)
+ {
+ 	u64 cval;
+diff --git a/arch/arm64/include/asm/hwcap.h b/arch/arm64/include/asm/hwcap.h
+index 6d4482f..022d771 100644
+--- a/arch/arm64/include/asm/hwcap.h
++++ b/arch/arm64/include/asm/hwcap.h
+@@ -30,6 +30,7 @@
+ #define COMPAT_HWCAP_IDIVA	(1 << 17)
+ #define COMPAT_HWCAP_IDIVT	(1 << 18)
+ #define COMPAT_HWCAP_IDIV	(COMPAT_HWCAP_IDIVA|COMPAT_HWCAP_IDIVT)
++#define COMPAT_HWCAP_EVTSTRM	(1 << 21)
+ 
+ #ifndef __ASSEMBLY__
+ /*
+@@ -37,11 +38,15 @@
+  * instruction set this cpu supports.
+  */
+ #define ELF_HWCAP		(elf_hwcap)
++#ifdef CONFIG_COMPAT
+ #define COMPAT_ELF_HWCAP	(COMPAT_HWCAP_HALF|COMPAT_HWCAP_THUMB|\
+ 				 COMPAT_HWCAP_FAST_MULT|COMPAT_HWCAP_EDSP|\
+ 				 COMPAT_HWCAP_TLS|COMPAT_HWCAP_VFP|\
+ 				 COMPAT_HWCAP_VFPv3|COMPAT_HWCAP_VFPv4|\
+-				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV)
++				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV|\
++				 compat_dyn_elf_hwcap)
++extern unsigned int compat_dyn_elf_hwcap;
++#endif
+ 
+ extern unsigned int elf_hwcap;
+ #endif
+diff --git a/arch/arm64/include/uapi/asm/hwcap.h b/arch/arm64/include/uapi/asm/hwcap.h
+index eea4975..9b12476 100644
+--- a/arch/arm64/include/uapi/asm/hwcap.h
++++ b/arch/arm64/include/uapi/asm/hwcap.h
+@@ -21,6 +21,7 @@
+  */
+ #define HWCAP_FP		(1 << 0)
+ #define HWCAP_ASIMD		(1 << 1)
++#define HWCAP_EVTSTRM		(1 << 2)
+ 
+ 
+ #endif /* _UAPI__ASM_HWCAP_H */
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+index add6ea6..91af65a 100644
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -60,6 +60,11 @@ EXPORT_SYMBOL(processor_id);
+ unsigned int elf_hwcap __read_mostly;
+ EXPORT_SYMBOL_GPL(elf_hwcap);
+ 
++#ifdef CONFIG_COMPAT
++unsigned int compat_dyn_elf_hwcap __read_mostly = 0;
++EXPORT_SYMBOL_GPL(compat_dyn_elf_hwcap);
++#endif
++
+ static const char *cpu_name;
+ static const char *machine_name;
+ phys_addr_t __fdt_pointer __initdata;
+@@ -309,6 +314,7 @@ subsys_initcall(topology_init);
+ static const char *hwcap_str[] = {
+ 	"fp",
+ 	"asimd",
++	"evtstrm",
+ 	NULL
+ };
+ 
+-- 
+1.8.1.2
+
+
