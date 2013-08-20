@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674Ab3HTPbg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 11:31:36 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60628 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab3HTPbf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 11:31:35 -0400
-Date: Tue, 20 Aug 2013 19:31:32 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -mm] docs: Document soft dirty behaviour for freshly created
- memory regions
-Message-ID: <20130820153132.GK18673@moon>
+	id S1751746Ab3HTPcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 11:32:01 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47447 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751732Ab3HTPcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 11:32:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,921,1367996400"; 
+   d="scan'208";a="349048782"
+Message-ID: <52138BE9.5090005@linux.intel.com>
+Date: Tue, 20 Aug 2013 08:31:53 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: =?ISO-8859-1?Q?Fernando_Luis_V=E1zquez_Cao?= 
+	<fernando_b1@lab.ntt.co.jp>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-3-git-send-email-fweisbec@gmail.com> <20130816160201.GA31682@redhat.com> <20130816162056.GE24210@somewhere> <20130816162654.GA453@redhat.com> <20130816164626.GH24210@somewhere> <20130819111026.GE24092@twins.programming.kicks-ass.net> <521313D8.9080500@lab.ntt.co.jp> <20130820084405.GC3258@twins.programming.kicks-ass.net>
+In-Reply-To: <20130820084405.GC3258@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
----
- Documentation/vm/soft-dirty.txt |    7 +++++++
- 1 file changed, 7 insertions(+)
+On 8/20/2013 1:44 AM, Peter Zijlstra wrote:
+> On Tue, Aug 20, 2013 at 03:59:36PM +0900, Fernando Luis Vázquez Cao wrote:
+>> That said, if deemed acceptable, option A is the one I would
+>> choose.
+>
+> Right, so I think we can do A without much extra cost mostly because we
+> already have 2 atomics in the io_schedule() path. If we replace those
+> two atomic operations with locks and modify nr_iowait and the other
+> stats under the same lock, and ensure all those variables (including the
+> lock) live in the same cacheline we should have the same cost we have
+> now.
+>
+> Of course, if we can get away with completely removing all of that
+> (which I think Arjan suggested was a real possibility) then that would
+> be ever so much better still :-)
 
-Index: linux-2.6.git/Documentation/vm/soft-dirty.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/vm/soft-dirty.txt
-+++ linux-2.6.git/Documentation/vm/soft-dirty.txt
-@@ -28,6 +28,13 @@ This is so, since the pages are still ma
- the kernel does is finds this fact out and puts both writable and soft-dirty
- bits on the PTE.
- 
-+  While in most cases tracking memory changes by #PF-s is more than enough
-+there is still a scenario when we can loose soft dirty bit -- a task does
-+unmap previously mapped memory region and then maps new one exactly at the
-+same place. When unmap called the kernel internally clears PTEs values
-+including soft dirty bit. To notify user space application about such
-+memory region renewal the kernel always mark new memory regions (and
-+expanded regions) as soft dirtified.
- 
-   This feature is actively used by the checkpoint-restore project. You
- can find more details about it on http://criu.org
+I'm quite ok with removing that.
+
+however note that "top" also reports per cpu iowait...
+and that's a userspace expectation
+
+>
+
