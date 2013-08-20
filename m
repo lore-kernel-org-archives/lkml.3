@@ -1,233 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab3HTXHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 19:07:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38673 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab3HTXHh (ORCPT
+	id S1751919Ab3HTXJH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 19:09:07 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:60974 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449Ab3HTXJE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 19:07:37 -0400
-Date: Tue, 20 Aug 2013 16:07:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>, Rik van Riel <riel@redhat.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH v2 2/4] mm/sparse: introduce alloc_usemap_and_memmap
-Message-Id: <20130820160735.b12fe1b3dd64b4dc146d2fa0@linux-foundation.org>
-In-Reply-To: <1376981696-4312-2-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1376981696-4312-1-git-send-email-liwanp@linux.vnet.ibm.com>
-	<1376981696-4312-2-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Tue, 20 Aug 2013 19:09:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo5AiRw7HvGQMq-n596ZkHJs_KJNn346yf+jc7yti-xpUw@mail.gmail.com>
+References: <CAErSpo53L3-feEw0qZvBTmRrY+SXpGrGU6oxZg3wVjH1M8JDXg@mail.gmail.com>
+ <F6FB0E698C9B3143BDF729DF222866466FD41225@ORSMSX110.amr.corp.intel.com> <CAErSpo5AiRw7HvGQMq-n596ZkHJs_KJNn346yf+jc7yti-xpUw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 20 Aug 2013 17:08:43 -0600
+Message-ID: <CAErSpo4E9LNrfqTq1_WUoAx68_krw23BjSYbPpJPOr=zbq98xA@mail.gmail.com>
+Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type 00
+ to PF Nacked" messages
+To: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
+Cc: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Don Dutile <ddutile@redhat.com>
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Aug 2013 14:54:54 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+[+cc Don Dutile]
 
-> v1 -> v2:
->  * add comments to describe alloc_usemap_and_memmap 
-> 
-> After commit 9bdac91424075("sparsemem: Put mem map for one node together."),
-> vmemmap for one node will be allocated together, its logic is similar as
-> memory allocation for pageblock flags. This patch introduce alloc_usemap_and_memmap
-> to extract the same logic of memory alloction for pageblock flags and vmemmap.
-> 
+On Tue, Aug 13, 2013 at 8:23 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Aug 13, 2013 at 3:54 PM, Skidmore, Donald C
+> <donald.c.skidmore@intel.com> wrote:
+>
+>> We were unable to recreate your failure here locally so I have some additional questions.  First off you mentioned it was failing as far back as v3.9, was it ever working for you?  If so bisecting would be really helpful as I mentioned we have been unable to cause the failure in house.
+>
+> I'm not aware of any working version.  I'm exercising in the sysfs
+> SR-IOV configuration, which I think appeared in v3.8 or so.
+>
+>>  If not could you see if the problem still occurs without the external Magma PCIe expansion chassis, this is of course assuming that you can plug the X540 into your system without it.
+>
+> I played with this a little more and found this:
+>
+> 1) Magma card in z420, connected to chassis containing X540: fails
+> (original report)
+> 2) X540 in z420, Magma card in z420, connected to empty chassis: fails
+> 3) X540 in z420, Magma card in z420 but no cable to chassis: works
+>
+> The only difference I've noticed so far between configs 2 & 3 are
+> different bus numbers and different IRQ assignments:
+>
+> Config 2 (failing):
+>   pci 0000:0c:00.0: [8086:1528] type 00 class 0x020000
+>   pci 0000:0c:00.0: reg 0x10: [mem 0xdac00000-0xdadfffff 64bit pref]
+>   ixgbe 0000:0c:00.0: irq 82 for MSI/MSI-X
+>   IRQ 79: 79
+>   IRQ 80: eth0
+>   IRQ 81: snd_hda_intel
+>   IRQ: 82-93 eth1-TxRx-0 through eth1-TxRx-11
+>   IRQ 94: eth1
+>
+> Config 3 (working):
+>   pci 0000:04:00.0: [8086:1528] type 00 class 0x020000
+>   pci 0000:04:00.0: reg 0x10: [mem 0xdac00000-0xdadfffff 64bit pref]
+>   ixgbe 0000:04:00.0: irq 75 for MSI/MSI-X
+>   IRQ 72: ahci
+>   IRQ 73: eth0
+>   IRQ 74: snd_hda_intel
+>   IRQ 75-86: eth1-TxRx-0 through eth1-TxRx-11
+>   IRQ 87: eth1
+>
+> I'll try to narrow this down a little more; I'm just giving you this
+> preliminary info in case it rings any bells for you.
 
-9bdac91424075 was written by Yinghai.  He is an excellent reviewer, as
-long as people remember to cc him!
+Sorry, I haven't gotten anywhere with this yet.  I opened
+https://bugzilla.kernel.org/show_bug.cgi?id=60776 and attached logs
+and lspci info from v3.11-rc6.
 
-> ---
->  mm/sparse.c | 140 ++++++++++++++++++++++++++++--------------------------------
->  1 file changed, 66 insertions(+), 74 deletions(-)
-> 
-> diff --git a/mm/sparse.c b/mm/sparse.c
-> index 308d503..d27db9b 100644
-> --- a/mm/sparse.c
-> +++ b/mm/sparse.c
-> @@ -439,6 +439,14 @@ static void __init sparse_early_mem_maps_alloc_node(struct page **map_map,
->  					 map_count, nodeid);
->  }
->  #else
-> +
-> +static void __init sparse_early_mem_maps_alloc_node(struct page **map_map,
-> +				unsigned long pnum_begin,
-> +				unsigned long pnum_end,
-> +				unsigned long map_count, int nodeid)
-> +{
-> +}
-> +
->  static struct page __init *sparse_early_mem_map_alloc(unsigned long pnum)
->  {
->  	struct page *map;
-> @@ -460,6 +468,62 @@ void __attribute__((weak)) __meminit vmemmap_populate_print_last(void)
->  {
->  }
->  
-> +/**
-> + *  alloc_usemap_and_memmap - memory alloction for pageblock flags and vmemmap
-> + *  @map: usemap_map for pageblock flags or mmap_map for vmemmap
-> + *  @use_map: true if memory allocated for pageblock flags, otherwise false
-> + */
-> +static void alloc_usemap_and_memmap(unsigned long **map, bool use_map)
-> +{
-> +	unsigned long pnum;
-> +	unsigned long map_count;
-> +	int nodeid_begin = 0;
-> +	unsigned long pnum_begin = 0;
-> +
-> +	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
-> +		struct mem_section *ms;
-> +
-> +		if (!present_section_nr(pnum))
-> +			continue;
-> +		ms = __nr_to_section(pnum);
-> +		nodeid_begin = sparse_early_nid(ms);
-> +		pnum_begin = pnum;
-> +		break;
-> +	}
-> +	map_count = 1;
-> +	for (pnum = pnum_begin + 1; pnum < NR_MEM_SECTIONS; pnum++) {
-> +		struct mem_section *ms;
-> +		int nodeid;
-> +
-> +		if (!present_section_nr(pnum))
-> +			continue;
-> +		ms = __nr_to_section(pnum);
-> +		nodeid = sparse_early_nid(ms);
-> +		if (nodeid == nodeid_begin) {
-> +			map_count++;
-> +			continue;
-> +		}
-> +		/* ok, we need to take cake of from pnum_begin to pnum - 1*/
-> +		if (use_map)
-> +			sparse_early_usemaps_alloc_node(map, pnum_begin, pnum,
-> +						 map_count, nodeid_begin);
-> +		else
-> +			sparse_early_mem_maps_alloc_node((struct page **)map,
-> +				pnum_begin, pnum, map_count, nodeid_begin);
-> +		/* new start, update count etc*/
-> +		nodeid_begin = nodeid;
-> +		pnum_begin = pnum;
-> +		map_count = 1;
-> +	}
-> +	/* ok, last chunk */
-> +	if (use_map)
-> +		sparse_early_usemaps_alloc_node(map, pnum_begin,
-> +				NR_MEM_SECTIONS, map_count, nodeid_begin);
-> +	else
-> +		sparse_early_mem_maps_alloc_node((struct page **)map,
-> +			pnum_begin, NR_MEM_SECTIONS, map_count, nodeid_begin);
-> +}
-> +
->  /*
->   * Allocate the accumulated non-linear sections, allocate a mem_map
->   * for each and record the physical to section mapping.
-> @@ -471,11 +535,7 @@ void __init sparse_init(void)
->  	unsigned long *usemap;
->  	unsigned long **usemap_map;
->  	int size;
-> -	int nodeid_begin = 0;
-> -	unsigned long pnum_begin = 0;
-> -	unsigned long usemap_count;
->  #ifdef CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER
-> -	unsigned long map_count;
->  	int size2;
->  	struct page **map_map;
->  #endif
-> @@ -501,82 +561,14 @@ void __init sparse_init(void)
->  	usemap_map = alloc_bootmem(size);
->  	if (!usemap_map)
->  		panic("can not allocate usemap_map\n");
-> -
-> -	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
-> -		struct mem_section *ms;
-> -
-> -		if (!present_section_nr(pnum))
-> -			continue;
-> -		ms = __nr_to_section(pnum);
-> -		nodeid_begin = sparse_early_nid(ms);
-> -		pnum_begin = pnum;
-> -		break;
-> -	}
-> -	usemap_count = 1;
-> -	for (pnum = pnum_begin + 1; pnum < NR_MEM_SECTIONS; pnum++) {
-> -		struct mem_section *ms;
-> -		int nodeid;
-> -
-> -		if (!present_section_nr(pnum))
-> -			continue;
-> -		ms = __nr_to_section(pnum);
-> -		nodeid = sparse_early_nid(ms);
-> -		if (nodeid == nodeid_begin) {
-> -			usemap_count++;
-> -			continue;
-> -		}
-> -		/* ok, we need to take cake of from pnum_begin to pnum - 1*/
-> -		sparse_early_usemaps_alloc_node(usemap_map, pnum_begin, pnum,
-> -						 usemap_count, nodeid_begin);
-> -		/* new start, update count etc*/
-> -		nodeid_begin = nodeid;
-> -		pnum_begin = pnum;
-> -		usemap_count = 1;
-> -	}
-> -	/* ok, last chunk */
-> -	sparse_early_usemaps_alloc_node(usemap_map, pnum_begin, NR_MEM_SECTIONS,
-> -					 usemap_count, nodeid_begin);
-> +	alloc_usemap_and_memmap(usemap_map, true);
->  
->  #ifdef CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER
->  	size2 = sizeof(struct page *) * NR_MEM_SECTIONS;
->  	map_map = alloc_bootmem(size2);
->  	if (!map_map)
->  		panic("can not allocate map_map\n");
-> -
-> -	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
-> -		struct mem_section *ms;
-> -
-> -		if (!present_section_nr(pnum))
-> -			continue;
-> -		ms = __nr_to_section(pnum);
-> -		nodeid_begin = sparse_early_nid(ms);
-> -		pnum_begin = pnum;
-> -		break;
-> -	}
-> -	map_count = 1;
-> -	for (pnum = pnum_begin + 1; pnum < NR_MEM_SECTIONS; pnum++) {
-> -		struct mem_section *ms;
-> -		int nodeid;
-> -
-> -		if (!present_section_nr(pnum))
-> -			continue;
-> -		ms = __nr_to_section(pnum);
-> -		nodeid = sparse_early_nid(ms);
-> -		if (nodeid == nodeid_begin) {
-> -			map_count++;
-> -			continue;
-> -		}
-> -		/* ok, we need to take cake of from pnum_begin to pnum - 1*/
-> -		sparse_early_mem_maps_alloc_node(map_map, pnum_begin, pnum,
-> -						 map_count, nodeid_begin);
-> -		/* new start, update count etc*/
-> -		nodeid_begin = nodeid;
-> -		pnum_begin = pnum;
-> -		map_count = 1;
-> -	}
-> -	/* ok, last chunk */
-> -	sparse_early_mem_maps_alloc_node(map_map, pnum_begin, NR_MEM_SECTIONS,
-> -					 map_count, nodeid_begin);
-> +	alloc_usemap_and_memmap((unsigned long **)map_map, false);
->  #endif
->  
->  	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
-> -- 
-> 1.8.1.2
+Bjorn
