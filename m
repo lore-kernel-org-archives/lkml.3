@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab3HTU0D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 16:26:03 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:52716 "EHLO
+	id S1752076Ab3HTU0U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 16:26:20 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:46963 "EHLO
 	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab3HTUYD (ORCPT
+	with ESMTP id S1751907Ab3HTUYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Aug 2013 16:24:03 -0400
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
@@ -17,9 +17,9 @@ Cc: lkml <linux-kernel@vger.kernel.org>,
         James Bottomley <JBottomley@Parallels.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Nicholas Bellinger <nab@daterainc.com>
-Subject: [PATCH 5/9] target: Skip ->queue_data_in() callbacks for COMPARE_AND_WRITE
-Date: Tue, 20 Aug 2013 20:07:56 +0000
-Message-Id: <1377029280-19144-6-git-send-email-nab@daterainc.com>
+Subject: [PATCH 4/9] target: Add TCM_MISCOMPARE_VERIFY sense handling
+Date: Tue, 20 Aug 2013 20:07:55 +0000
+Message-Id: <1377029280-19144-5-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1377029280-19144-1-git-send-email-nab@daterainc.com>
 References: <1377029280-19144-1-git-send-email-nab@daterainc.com>
@@ -29,13 +29,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@daterainc.com>
 
-COMPARE_AND_WRITE uses cmd->t_bidi_data_sg for it's READ payload
-and cmd->data_direction == DMA_TO_DEVICE, but the payload is
-only used for internal comparision, and never actually sent over
-the wire.
-
-So, check for this special case in to avoid TFO->queue_data_in()
-within transport_complete_qf() + target_complete_ok_work() code.
+This patch adds TCM_MISCOMPARE_VERIFY (ASC=0x1d, ASCQ=0x00) sense
+handling to transport_send_check_condition_and_sense(), which is
+required for a COMPARE_AND_WRITE comparision failure.
 
 Cc: Christoph Hellwig <hch@lst.de>
 Cc: Hannes Reinecke <hare@suse.de>
@@ -45,33 +41,42 @@ Cc: James Bottomley <JBottomley@Parallels.com>
 Cc: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
 ---
- drivers/target/target_core_transport.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/target/target_core_transport.c |    9 +++++++++
+ include/target/target_core_base.h      |    1 +
+ 2 files changed, 10 insertions(+)
 
 diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index f7dc479..60d1336 100644
+index 5746d85..f7dc479 100644
 --- a/drivers/target/target_core_transport.c
 +++ b/drivers/target/target_core_transport.c
-@@ -1832,7 +1832,8 @@ static void transport_complete_qf(struct se_cmd *cmd)
- 		ret = cmd->se_tfo->queue_data_in(cmd);
+@@ -2844,6 +2844,15 @@ transport_send_check_condition_and_sense(struct se_cmd *cmd,
+ 		buffer[SPC_ASC_KEY_OFFSET] = asc;
+ 		buffer[SPC_ASCQ_KEY_OFFSET] = ascq;
  		break;
- 	case DMA_TO_DEVICE:
--		if (cmd->t_bidi_data_sg) {
-+		if (cmd->t_bidi_data_sg &&
-+		    cmd->t_task_cdb[0] != COMPARE_AND_WRITE) {
- 			ret = cmd->se_tfo->queue_data_in(cmd);
- 			if (ret < 0)
- 				break;
-@@ -1947,7 +1948,8 @@ static void target_complete_ok_work(struct work_struct *work)
- 		/*
- 		 * Check if we need to send READ payload for BIDI-COMMAND
- 		 */
--		if (cmd->t_bidi_data_sg) {
-+		if (cmd->t_bidi_data_sg &&
-+		    cmd->t_task_cdb[0] != COMPARE_AND_WRITE) {
- 			spin_lock(&cmd->se_lun->lun_sep_lock);
- 			if (cmd->se_lun->lun_sep) {
- 				cmd->se_lun->lun_sep->sep_stats.tx_data_octets +=
++	case TCM_MISCOMPARE_VERIFY:
++		/* CURRENT ERROR */
++		buffer[0] = 0x70;
++		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
++		buffer[SPC_SENSE_KEY_OFFSET] = MISCOMPARE;
++		/* MISCOMPARE DURING VERIFY OPERATION */
++		buffer[SPC_ASC_KEY_OFFSET] = 0x1d;
++		buffer[SPC_ASCQ_KEY_OFFSET] = 0x00;
++		break;
+ 	case TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE:
+ 	default:
+ 		/* CURRENT ERROR */
+diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
+index 6e946f3..fac25c5 100644
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -197,6 +197,7 @@ enum tcm_sense_reason_table {
+ 	TCM_ADDRESS_OUT_OF_RANGE		= R(0x11),
+ 	TCM_OUT_OF_RESOURCES			= R(0x12),
+ 	TCM_PARAMETER_LIST_LENGTH_ERROR		= R(0x13),
++	TCM_MISCOMPARE_VERIFY			= R(0x14),
+ #undef R
+ };
+ 
 -- 
 1.7.10.4
 
