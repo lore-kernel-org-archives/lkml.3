@@ -1,122 +1,391 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab3HUOre (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:47:34 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:26174 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752229Ab3HUOnH convert rfc822-to-8bit (ORCPT
+	id S1752323Ab3HUOsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:48:21 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:35870 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab3HUOsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:43:07 -0400
-Date: Wed, 21 Aug 2013 16:39:17 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Shinya Kuribayashi <skuribay@pobox.com>
-Cc: mika.westerberg@linux.intel.com, linux-i2c@vger.kernel.org,
-        wsa@the-dreams.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] i2c-designware: make *CNT values configurable
-Message-ID: <20130821143915.GA3046@ab42.lan>
-References: <20130711101330.GP4898@intel.com>
- <51DFB6C1.4040001@pobox.com>
- <20130712085140.GY4898@intel.com>
- <51E0E76B.1040304@pobox.com>
- <20130716111616.GA25835@ab42.lan>
- <51E6ACBE.7000509@pobox.com>
- <20130722131706.GA24081@ab42.lan>
- <51EFE550.1000507@pobox.com>
- <20130805093126.GE20936@ab42.lan>
- <520D8B30.9000602@pobox.com>
+	Wed, 21 Aug 2013 10:48:19 -0400
+Date: Wed, 21 Aug 2013 16:48:16 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Andi Kleen <andi@firstfloor.org>, mingo@kernel.org, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/4] perf, tools: Add perf stat --transaction v3
+Message-ID: <20130821144816.GD19750@two.firstfloor.org>
+References: <1376505267-8902-1-git-send-email-andi@firstfloor.org>
+ <1376505267-8902-5-git-send-email-andi@firstfloor.org>
+ <20130815132637.GE1861@ghostprotocols.net>
+ <20130815142925.GG19750@two.firstfloor.org>
+ <20130815150150.GB1940@ghostprotocols.net>
+ <20130815164203.GJ19750@two.firstfloor.org>
+ <20130821131525.GB21880@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <520D8B30.9000602@pobox.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20130821131525.GB21880@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 11:15:12AM +0900, Shinya Kuribayashi wrote:
-> Hi,
+On Wed, Aug 21, 2013 at 10:15:25AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Aug 15, 2013 at 06:42:03PM +0200, Andi Kleen escreveu:
+> > 
+> > Here's an updated patch.
+>  
+> > perf, tools: Add perf stat --transaction v4
+> > @@ -1419,6 +1559,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+> >  		     "aggregate counts per processor socket", AGGR_SOCKET),
+> >  	OPT_SET_UINT(0, "per-core", &aggr_mode,
+> >  		     "aggregate counts per physical processor core", AGGR_CORE),
+> > +	OPT_BOOLEAN('T', "transaction", &transaction_run,
+> > +		    "hardware transaction statistics"),
+> >  	OPT_END()
 > 
-> On 8/5/13 6:31 PM, Christian Ruppert wrote:> On Wed, Jul 24, 2013 at 11:31:44PM +0900, Shinya Kuribayashi wrote:
-> >>As said before, all t_SCL things should go away.  Please forget
-> >>about 100kbps, 400kbps, and so on.  Bus/clock speed is totally
-> >>pointless concept for the I2C bus systems.  For example, as long
-> >>as tr/tf, tHIGH/tLOW, tHD;STA, etc. are met by _all_ devices in a
-> >>certain I2C bus, it doesn't matter that the resulting clock speed
-> >>is, say 120 kbps with Standard-mode, or even 800 kbps for Fast-mode.
-> >>Nobody in the I2C bus doesn't care about actual bus/clock speed.
-> >>
-> >>We don't have to care about the resulting bus speed, or rather
-> >>we should/must not check to see if it's within the proper range.
-> >
-> >Actually, the I2C specification clearly defines f_SCL;max (and thus
-> >implies t_SCL;min), both in the tables and the timing diagrams. Why can
-> >we ignore this constraint while having to meet all the others?
-> 
-> If we meet t_r, t_f, t_HIGH, t_LOW (and t_HIGH in this DW case),
-> f_SCL;max will be met by itself.
+> Clashes with another patch, from you, that is in Ingo's perf/core as
+> well, that adds -D, so the above hunk doesn't apply:
 
-I'm not sure if I agree with this:
+I moved the new option to the beginning to avoid this problem
 
-Standard mode:
-       t_r;min          0ns
-       t_f;min     +    0ns
-       t_HIGH;min  + 4000ns
-       t_LOW;min   + 4700ns
-       1/f_SCL     = 8700ns
-   ==> f_SCL       = 115kHz    ==>    violation of f_SCL;max=100kHz
+---
 
-Fast mode (let's assume V_DD = 5.5V):
-       t_r;min         20ns
-       t_f;min     +   20ns
-       t_HIGH;min  +  600ns
-       t_LIW;min   + 1300ns
-       1/f_SCL     = 1940ns
-   ==> f_SCL       = 515kHz    ==>    violation of f_SCL;max=400kHz
+perf, tools: Add perf stat --transaction v5
 
-In my understanding, f_SCL;max condition is only met
-a) either if t_HIGH = t_HIGH;min and t_LOW = t_LOW;min
-          then t_r must be t_r;max and t_f must be t_f;max
-b) or if t_r < t_r;max and t_f < t_f;max 
-      then t_HIGH must be > t_HIGH;min and T_LOW must be T_LOW;min
+Add support to perf stat to print the basic transactional execution statistics:
+Total cycles, Cycles in Transaction, Cycles in aborted transsactions
+using the in_tx and in_tx_checkpoint qualifiers.
+Transaction Starts and Elision Starts, to compute the average transaction
+length.
 
-Given that we cannot easily influence t_r and t_f we must adjust t_HIGH
-and t_LOW. What am I missing here?
+This is a reasonable overview over the success of the transactions.
 
-> And again, all I2C master and
-> slave devices in the bus don't care about f_SCL; what they do care
-> are t_f, t_r, t_HIGH, t_LOW, and so on.  That's why I'm saying
-> f_SCL is pointless and has no value for HCNT/LCNT calculations.
+Enable with a new --transaction / -T option.
 
-I partially agree: If I2C devices don't care about f_SCL but only about
-t_r, t_f, t_HIGH and t_LOW there's no need to respect the f_SCL;max
-constraint. If this is the case, I'm wondering why it is part of the
-specification, though.
+This requires measuring these events in a group, since they depend on each
+other.
 
-> Is that clear?  What is the point to make sure whether f_SCL
-> constraint is met or not?  Is there any combination where t_f,
-> t_r, t_HIGH, t_LOW, t_HD;SATA are met, but f_SCL is out of range?
-> I don't think there is.
+This is implemented by using TM sysfs events exported by the kernel
 
-See above.
+v2: Only print the extended statistics when the option is enabled.
+This avoids negative output when the user specifies the -T events
+in separate groups.
+v3: Port to latest tree
+v4: Remove merge error. Avoid linear walks for comparisons. Check
+transaction_run earlier. Minor fixes.
+v5: Move option to avoid conflict. Improve description.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-stat.txt |   5 ++
+ tools/perf/builtin-stat.c              | 144 ++++++++++++++++++++++++++++++++-
+ tools/perf/util/evsel.h                |   6 ++
+ tools/perf/util/pmu.c                  |  16 ++++
+ tools/perf/util/pmu.h                  |   1 +
+ 5 files changed, 171 insertions(+), 1 deletion(-)
 
-> I'd make a compromise proposal; it's fine to make sure whether the
-> resulting f_SCL is within a supported range, but should not make a
-> correction of HCNT/LCNT values.  Just report warning messages that
-> some parameters/calculations might be mis-configured an/or wrong.
-
-Not sure if this is a good idea: If f_SCL is met by design I'm perfectly
-happy with dropping the t_HIGH/t_LOW adjustment code, no need to bloat
-the kernel with confusing warnings. If f_SCL is not automatically met we
-must either make sure t_HIGH/t_LOW are adjusted or we must take the
-decision to ignore that constraint and document the reasons behind that
-decision accordingly.
-
-Greetings,
-  Christian
-
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 2fe87fb..40bc65a 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -132,6 +132,11 @@ is a useful mode to detect imbalance between physical cores.  To enable this mod
+ use --per-core in addition to -a. (system-wide).  The output includes the
+ core number and the number of online logical processors on that physical processor.
+ 
++-T::
++--transaction::
++
++Print statistics of transactional execution if supported.
++
+ EXAMPLES
+ --------
+ 
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 352fbd7..6bd90e4 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -46,6 +46,7 @@
+ #include "util/util.h"
+ #include "util/parse-options.h"
+ #include "util/parse-events.h"
++#include "util/pmu.h"
+ #include "util/event.h"
+ #include "util/evlist.h"
+ #include "util/evsel.h"
+@@ -70,6 +71,41 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
+ static void print_counter(struct perf_evsel *counter, char *prefix);
+ static void print_aggr(char *prefix);
+ 
++/* Default events used for perf stat -T */
++static const char * const transaction_attrs[] = {
++	"task-clock",
++	"{"
++	"instructions,"
++	"cycles,"
++	"cpu/cycles-t/,"
++	"cpu/tx-start/,"
++	"cpu/el-start/,"
++	"cpu/cycles-ct/"
++	"}"
++};
++
++/* More limited version when the CPU does not have all events. */
++static const char * const transaction_limited_attrs[] = {
++	"task-clock",
++	"{"
++	"instructions,"
++	"cycles,"
++	"cpu/cycles-t/,"
++	"cpu/tx-start/"
++	"}"
++};
++
++/* must match transaction_attrs and the beginning limited_attrs */
++enum {
++	T_TASK_CLOCK,
++	T_INSTRUCTIONS,
++	T_CYCLES,
++	T_CYCLES_IN_TX,
++	T_TRANSACTION_START,
++	T_ELISION_START,
++	T_CYCLES_IN_TX_CP,
++};
++
+ static struct perf_evlist	*evsel_list;
+ 
+ static struct perf_target	target = {
+@@ -90,6 +126,7 @@ static enum aggr_mode		aggr_mode			= AGGR_GLOBAL;
+ static volatile pid_t		child_pid			= -1;
+ static bool			null_run			=  false;
+ static int			detailed_run			=  0;
++static bool			transaction_run;
+ static bool			big_num				=  true;
+ static int			big_num_opt			=  -1;
+ static const char		*csv_sep			= NULL;
+@@ -213,7 +250,10 @@ static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
+ static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
++static struct stats runtime_cycles_in_tx_stats[MAX_NR_CPUS];
+ static struct stats walltime_nsecs_stats;
++static struct stats runtime_transaction_stats[MAX_NR_CPUS];
++static struct stats runtime_elision_stats[MAX_NR_CPUS];
+ 
+ static void perf_stat__reset_stats(struct perf_evlist *evlist)
+ {
+@@ -235,6 +275,11 @@ static void perf_stat__reset_stats(struct perf_evlist *evlist)
+ 	memset(runtime_ll_cache_stats, 0, sizeof(runtime_ll_cache_stats));
+ 	memset(runtime_itlb_cache_stats, 0, sizeof(runtime_itlb_cache_stats));
+ 	memset(runtime_dtlb_cache_stats, 0, sizeof(runtime_dtlb_cache_stats));
++	memset(runtime_cycles_in_tx_stats, 0,
++			sizeof(runtime_cycles_in_tx_stats));
++	memset(runtime_transaction_stats, 0,
++		sizeof(runtime_transaction_stats));
++	memset(runtime_elision_stats, 0, sizeof(runtime_elision_stats));
+ 	memset(&walltime_nsecs_stats, 0, sizeof(walltime_nsecs_stats));
+ }
+ 
+@@ -272,6 +317,29 @@ static inline int nsec_counter(struct perf_evsel *evsel)
+ 	return 0;
+ }
+ 
++static struct perf_evsel *nth_evsel(int n)
++{
++	static struct perf_evsel **array;
++	static int array_len;
++	struct perf_evsel *ev;
++	int j;
++
++	/* Assumes this only called when evsel_list does not change anymore. */
++	if (!array) {
++		list_for_each_entry(ev, &evsel_list->entries, node)
++			array_len++;
++		array = malloc(array_len * sizeof(void *));
++		if (!array)
++			exit(ENOMEM);
++		j = 0;
++		list_for_each_entry(ev, &evsel_list->entries, node)
++			array[j++] = ev;
++	}
++	if (n < array_len)
++		return array[n];
++	return NULL;
++}
++
+ /*
+  * Update various tracking values we maintain to print
+  * more semantic information such as miss/hit ratios,
+@@ -283,6 +351,15 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
+ 		update_stats(&runtime_nsecs_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
+ 		update_stats(&runtime_cycles_stats[0], count[0]);
++	else if (transaction_run &&
++		 perf_evsel__cmp(counter, nth_evsel(T_CYCLES_IN_TX)))
++		update_stats(&runtime_cycles_in_tx_stats[0], count[0]);
++	else if (transaction_run &&
++		 perf_evsel__cmp(counter, nth_evsel(T_TRANSACTION_START)))
++		update_stats(&runtime_transaction_stats[0], count[0]);
++	else if (transaction_run &&
++		 perf_evsel__cmp(counter, nth_evsel(T_ELISION_START)))
++		update_stats(&runtime_elision_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_FRONTEND))
+ 		update_stats(&runtime_stalled_cycles_front_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_BACKEND))
+@@ -807,7 +884,7 @@ static void print_ll_cache_misses(int cpu,
+ 
+ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ {
+-	double total, ratio = 0.0;
++	double total, ratio = 0.0, total2;
+ 	const char *fmt;
+ 
+ 	if (csv_output)
+@@ -903,6 +980,43 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 			ratio = 1.0 * avg / total;
+ 
+ 		fprintf(output, " # %8.3f GHz                    ", ratio);
++	} else if (transaction_run &&
++		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX))) {
++		total = avg_stats(&runtime_cycles_stats[cpu]);
++		if (total)
++			fprintf(output,
++				" #   %5.2f%% transactional cycles   ",
++				100.0 * (avg / total));
++	} else if (transaction_run &&
++		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX_CP))) {
++		total = avg_stats(&runtime_cycles_stats[cpu]);
++		total2 = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
++		if (total2 < avg)
++			total2 = avg;
++		if (total)
++			fprintf(output,
++				" #   %5.2f%% aborted cycles         ",
++				100.0 * ((total2-avg) / total));
++	} else if (transaction_run &&
++		   perf_evsel__cmp(evsel, nth_evsel(T_TRANSACTION_START)) &&
++		   avg > 0 &&
++		   runtime_cycles_in_tx_stats[cpu].n != 0) {
++		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
++
++		if (total)
++			ratio = total / avg;
++
++		fprintf(output, " # %8.0f cycles / transaction   ", ratio);
++	} else if (transaction_run &&
++		   perf_evsel__cmp(evsel, nth_evsel(T_ELISION_START)) &&
++		   avg > 0 &&
++		   runtime_cycles_in_tx_stats[cpu].n != 0) {
++		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
++
++		if (total)
++			ratio = total / avg;
++
++		fprintf(output, " # %8.0f cycles / elision       ", ratio);
+ 	} else if (runtime_nsecs_stats[cpu].n != 0) {
+ 		char unit = 'M';
+ 
+@@ -1216,6 +1330,16 @@ static int perf_stat_init_aggr_mode(void)
+ 	return 0;
+ }
+ 
++static int setup_events(const char * const *attrs, unsigned len)
++{
++	unsigned i;
++
++	for (i = 0; i < len; i++) {
++		if (parse_events(evsel_list, attrs[i]))
++			return -1;
++	}
++	return 0;
++}
+ 
+ /*
+  * Add default attributes, if there were no attributes specified or
+@@ -1334,6 +1458,22 @@ static int add_default_attributes(void)
+ 	if (null_run)
+ 		return 0;
+ 
++	if (transaction_run) {
++		int err;
++		if (pmu_have_event("cpu", "cycles-ct") &&
++		    pmu_have_event("cpu", "el-start"))
++			err = setup_events(transaction_attrs,
++					ARRAY_SIZE(transaction_attrs));
++		else
++			err = setup_events(transaction_limited_attrs,
++				 ARRAY_SIZE(transaction_limited_attrs));
++		if (err < 0) {
++			fprintf(stderr, "Cannot set up transaction events\n");
++			return -1;
++		}
++		return 0;
++	}
++
+ 	if (!evsel_list->nr_entries) {
+ 		if (perf_evlist__add_default_attrs(evsel_list, default_attrs) < 0)
+ 			return -1;
+@@ -1368,6 +1508,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	int output_fd = 0;
+ 	const char *output_name	= NULL;
+ 	const struct option options[] = {
++	OPT_BOOLEAN('T', "transaction", &transaction_run,
++		    "hardware transaction statistics"),
+ 	OPT_CALLBACK('e', "event", &evsel_list, "event",
+ 		     "event selector. use 'perf list' to list available events",
+ 		     parse_events_option),
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 3f156cc..2f3dc86 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -180,6 +180,12 @@ static inline bool perf_evsel__match2(struct perf_evsel *e1,
+ 	       (e1->attr.config == e2->attr.config);
+ }
+ 
++#define perf_evsel__cmp(a, b)			\
++	((a) &&					\
++	 (b) &&					\
++	 (a)->attr.type == (b)->attr.type &&	\
++	 (a)->attr.config == (b)->attr.config)
++
+ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 			      int cpu, int thread, bool scale);
+ 
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index bc9d806..64362fe 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -637,3 +637,19 @@ void print_pmu_events(const char *event_glob, bool name_only)
+ 		printf("\n");
+ 	free(aliases);
+ }
++
++bool pmu_have_event(const char *pname, const char *name)
++{
++	struct perf_pmu *pmu;
++	struct perf_pmu_alias *alias;
++
++	pmu = NULL;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
++		if (strcmp(pname, pmu->name))
++			continue;
++		list_for_each_entry(alias, &pmu->aliases, list)
++			if (!strcmp(alias->name, name))
++				return true;
++	}
++	return false;
++}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 6b2cbe2..1179b26 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -42,6 +42,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
+ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
+ 
+ void print_pmu_events(const char *event_glob, bool name_only);
++bool pmu_have_event(const char *pname, const char *name);
+ 
+ int perf_pmu__test(void);
+ #endif /* __PMU_H */
 -- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+1.8.3.1
+
