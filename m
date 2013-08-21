@@ -1,60 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741Ab3HUItB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 04:49:01 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37401 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab3HUIs6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 04:48:58 -0400
-Date: Wed, 21 Aug 2013 09:48:42 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: wei_wang@realsil.com.cn
-Cc: cjb@laptop.org, sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        gregkh@linuxfoundation.org, rogerable@realtek.com
-Subject: Re: [PATCH 1/3] mfd:mmc:rtsx: Change default tx phase
-Message-ID: <20130821084842.GE29850@lee--X1>
-References: <cover.1377049122.git.wei_wang@realsil.com.cn>
- <0dd50ed0bb16afbb47d8de8ba6eb4f9d1c901d45.1377049122.git.wei_wang@realsil.com.cn>
+	id S1751746Ab3HUIwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 04:52:51 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:1038 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751498Ab3HUIws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 04:52:48 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <52147FD2.9020401@broadcom.com>
+Date: Wed, 21 Aug 2013 10:52:34 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <0dd50ed0bb16afbb47d8de8ba6eb4f9d1c901d45.1377049122.git.wei_wang@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Josh Boyer" <jwboyer@fedoraproject.org>
+cc: "Felix Fietkau" <nbd@openwrt.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Tom Gundersen" <teg@jklm.no>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "Linux Wireless List" <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Johannes Berg" <johannes@sipsolutions.net>
+Subject: Re: [REGRESSION] 3.10.{6,7} crashes on network activity
+References: <CAG-2HqUXQeq=30EpGWmn6tkC=CP1W+=UZCVPTYhhE0WyU_C4nw@mail.gmail.com>
+ <20130820000336.GA15548@kroah.com>
+ <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com>
+ <20130820002822.GA18023@kroah.com> <5212F6E8.3090107@openwrt.org>
+ <52132589.5000306@broadcom.com>
+ <CA+5PVA7gvnfX2vnpxEGCgaAYXRvA=SME4SYZpTESqLsMkgSu=g@mail.gmail.com>
+In-Reply-To: <CA+5PVA7gvnfX2vnpxEGCgaAYXRvA=SME4SYZpTESqLsMkgSu=g@mail.gmail.com>
+X-WSS-ID: 7E0AA1EA1R082747592-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Aug 2013, wei_wang@realsil.com.cn wrote:
+On 08/21/2013 02:11 AM, Josh Boyer wrote:
+> On Tue, Aug 20, 2013 at 4:15 AM, Arend van Spriel <arend@broadcom.com> wrote:
+>> On 08/20/2013 06:56 AM, Felix Fietkau wrote:
+>>>
+>>> On 2013-08-20 2:28 AM, Greg Kroah-Hartman wrote:
+>>>>
+>>>> On Tue, Aug 20, 2013 at 08:26:11AM +0800, Tom Gundersen wrote:
+>>>>>
+>>>>> On Tue, Aug 20, 2013 at 8:03 AM, Greg Kroah-Hartman
+>>>>> <gregkh@linuxfoundation.org> wrote:
+>>>>>>
+>>>>>> On Tue, Aug 20, 2013 at 07:59:47AM +0800, Tom Gundersen wrote:
+>>>>>>>
+>>>>>>> Hi guys,
+>>>>>>>
+>>>>>>> Starting with 3.10.6 (and still present in .7) I get an oops on
+>>>>>>> connecting to the network.
+>>>>>>>
+>>>>>>> The attached picture shows the oops. In case it does not reach the ML,
+>>>>>>> the top of the call trace reads:
+>>>>>>>
+>>>>>>> brcms_c_compute_rtscts_dur
+>>>>>>> brcms_c_ampdu_finalize
+>>>>>>> ampdu_finalize
+>>>>>>> dma_txfast
+>>>>>>> brcms_c_txfifo
+>>>>>>> brcms_c_sendpkt_mac80211
+>>>>>>> brcms_ops_tx
+>>>>>>> __ieee80211_tx
+>>>>>>>
+>>>>>>> I bisected the problem and the first bad commit is
+>>>>>>>
+>>>>>>> commit ef47a5e4f1aaf1d0e2e6875e34b2c9595897bef6
+>>>>>>> Author: Felix Fietkau <nbd@openwrt.org>
+>>>>>>> Date:   Fri Jun 28 21:04:35 2013 +0200
+>>>>>>>
+>>>>>>>       mac80211/minstrel_ht: fix cck rate sampling
+>>>>>>>
+>>>>>>>       commit 1cd158573951f737fbc878a35cb5eb47bf9af3d5 upstream.
+>>>>>>>
+>>>>>>> Reverting it on top of .7 fixes the problem.
+>>>>>>>
+>>>>>>> I had the same (I suppose) problem on mainline some time ago, but I
+>>>>>>> have not bisected it, verified that the problem still occurs there, or
+>>>>>>> checked if reverting the upstream patch fixes it. I'd be happy to do
+>>>>>>> that if it would help though.
+>>>>>>>
+>>>>>>> Let me know if you need any more information.
+>>>>>>
+>>>>>>
+>>>>>> Do you have this same problem with 3.11-rc6 as well?
+>>>>>
+>>>>>
+>>>>> Yes, I just confirmed. I also confirmed that reverting the mainline
+>>>>> commit on top of -rc6 fixes the problem.
+>>>>
+>>>>
+>>>> Great, thanks.
+>>>>
+>>>> Felix and Johannes, any chance we can get this reverted in Linus tree
+>>>> soon, and push that revert back to the 3.10 stable tree as well?
+>>>
+>>> I'd like to avoid a revert, since that will simply replace one set of
+>>> issues with another. Let's limit the use of the feature that brcmsmac
+>>> can't handle to drivers that are known to work with it. Tom, Please
+>>> test this patch to see if it fixes your issue.
+>>
+>>
+>> Hi Felix,
+>>
+>> I have been diving into root causing why brcmsmac can not handle cck
+>> fallback rates, because it should. Maybe it is better to flag no cck support
+>> and only change brcmsmac.
+>
+> We have a number of users hitting this in Fedora 18 and 19 now.  We're
+> tracking it with https://bugzilla.redhat.com/show_bug.cgi?id=998080
+> and I'm sure we can find people to test easily.
 
-> From: Wei WANG <wei_wang@realsil.com.cn>
-> 
-> The default phase can meet most cards' requirement, but it is not the
-> optimal one. In some extreme situation, the rx phase point produced by
-> the following tuning process will drift quite a distance.
-> Before tuning UHS card, this patch will set a more proper initial tx
-> phase point, which is calculated from statistic data, and can achieve
-> a much better tx signal quality.
-> 
-> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
-> ---
->  drivers/mfd/rtl8411.c             |    4 +++
->  drivers/mfd/rts5209.c             |    2 ++
->  drivers/mfd/rts5227.c             |    2 ++
->  drivers/mfd/rts5229.c             |    2 ++
->  drivers/mfd/rts5249.c             |    2 ++
->  drivers/mmc/host/rtsx_pci_sdmmc.c |   58 +++++++++++++++++++++++++++----------
->  include/linux/mfd/rtsx_pci.h      |   15 ++++++++++
->  7 files changed, 69 insertions(+), 16 deletions(-)
+There is already another one (possibly) dealing with the same issue:
 
-MFD parts looks okay to me:
+https://bugzilla.redhat.com/show_bug.cgi?id=989269
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+One of them should probably be flagged as duplicate.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> If you have a patch disabling cck in brcmsmac, I'd be happy to build a
+> kernel for people.  If that's going to be some time coming, perhaps
+> it's better to grab Felix's patch on a temporary basis?
+
+I think it is better to grab Felix's patch because as we both observed 
+there is stuff missing in brcmsmac to deal with CCK rates and A-MPDU 
+packet aggregation.
+
+Regards,
+Arend
+
