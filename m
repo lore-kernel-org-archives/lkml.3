@@ -1,52 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618Ab3HUH7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 03:59:51 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:19546 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751368Ab3HUH7t (ORCPT
+	id S1751749Ab3HUIBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 04:01:46 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47133 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab3HUIBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 03:59:49 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18lF1oRuG6No0vBPCuotubf
-Date: Wed, 21 Aug 2013 00:59:39 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Lars Poeschel <poeschel@lemonage.de>
-Cc: Benoit Cousson <bcousson@baylibre.com>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ian.campbell@citrix.com, linux@arm.linux.org.uk,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: am33xx: Correct gpio #interrupt-cells
- property
-Message-ID: <20130821075939.GA7656@atomide.com>
-References: <1375873592-26881-1-git-send-email-larsi@wh2.tu-dresden.de>
- <20130821075016.GW7656@atomide.com>
- <201308210957.01956.poeschel@lemonage.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201308210957.01956.poeschel@lemonage.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 21 Aug 2013 04:01:44 -0400
+Date: Wed, 21 Aug 2013 18:01:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>,
+        Christoph Jaeger <christophjaeger@linux.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: linux-next: manual merge of the akpm-current tree with the modules
+ tree
+Message-Id: <20130821180137.c3b4d9240ce859e9e8f8ede9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__21_Aug_2013_18_01_37_+1000_ReMJgBQfHkV6Uz.a"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Lars Poeschel <poeschel@lemonage.de> [130821 01:04]:
-> Hi Tony!
-> 
-> On Wednesday 21 August 2013 at 09:50:16, Tony Lindgren wrote:
-> > Benoit,
-> > 
-> > Care to take a look at this too?
-> 
-> Benoit already applied this with Mark Rutlands Acked-By and Javier Martinez 
-> Canillas Reviewed-by.
+--Signature=_Wed__21_Aug_2013_18_01_37_+1000_ReMJgBQfHkV6Uz.a
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK thanks for the update, I'm just trying to follow-up and clear
-my inbox a bit.
+Hi Andrew,
 
-Tony
+Today's linux-next merge of the akpm-current tree got a conflict in
+kernel/params.c between commit 79ac6834c255 ("module: fix sprintf format
+specifier in param_get_byte()") from the modules tree and commit
+55bba1b7fcce ("kernel: replace strict_strto*() with kstrto*()") from the
+akpm-current tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc kernel/params.c
+index e5f8f17,1f228a3..0000000
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@@ -253,13 -252,13 +253,13 @@@ int parse_args(const char *doing
+  	EXPORT_SYMBOL(param_ops_##name)
+ =20
+ =20
+- STANDARD_PARAM_DEF(byte, unsigned char, "%hhu", unsigned long, strict_str=
+toul);
+- STANDARD_PARAM_DEF(short, short, "%hi", long, strict_strtol);
+- STANDARD_PARAM_DEF(ushort, unsigned short, "%hu", unsigned long, strict_s=
+trtoul);
+- STANDARD_PARAM_DEF(int, int, "%i", long, strict_strtol);
+- STANDARD_PARAM_DEF(uint, unsigned int, "%u", unsigned long, strict_strtou=
+l);
+- STANDARD_PARAM_DEF(long, long, "%li", long, strict_strtol);
+- STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", unsigned long, strict_str=
+toul);
+ -STANDARD_PARAM_DEF(byte, unsigned char, "%c", unsigned long, kstrtoul);
+++STANDARD_PARAM_DEF(byte, unsigned char, "%hhu", unsigned long, kstrtoul);
++ STANDARD_PARAM_DEF(short, short, "%hi", long, kstrtol);
++ STANDARD_PARAM_DEF(ushort, unsigned short, "%hu", unsigned long, kstrtoul=
+);
++ STANDARD_PARAM_DEF(int, int, "%i", long, kstrtol);
++ STANDARD_PARAM_DEF(uint, unsigned int, "%u", unsigned long, kstrtoul);
++ STANDARD_PARAM_DEF(long, long, "%li", long, kstrtol);
++ STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", unsigned long, kstrtoul);
+ =20
+  int param_set_charp(const char *val, const struct kernel_param *kp)
+  {
+
+--Signature=_Wed__21_Aug_2013_18_01_37_+1000_ReMJgBQfHkV6Uz.a
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSFHPhAAoJEECxmPOUX5FE/tYQAKOnT1Qsp/flyhDzL+n+UMcQ
+OuTFugz8Wy+F1RiDP7JPRy/Bs783ut0RC+YM6p0UIYEs8JA4OX+IrBB9KvlMWEvK
+ovZ4sTwjqg18x0MXOmWkWPbK9yVZlJ6H+02SsHriM19nESHFzpTnPJiHO8U8fW+8
+8XCEkZ3zhhWJjhp1x7GDIlgZdbuh+BC9b7g8JkJwMyFnBKtTgd0rKRFQBnGv4+uT
+4yHZEjlckNLHMYh/8Acsb1909PDqlxoFRvY1swy8ANs0JKwIfYbDH7eoIJ+7ZJ++
+TDSohG6w/j+QK2aVb6coGi9wfvOagJdkG9p8SwP62rFsrFbBEpPvPuFa3XFQ5v/2
+ndI+liZ0sIBsWHQidvoP8UGFvn/68RqloRIZTyRiRMR61km6476C2i/Jj3ep1htv
+Q4Ij7vJQeBwlkRhd37bHB2XeHQU2WQ2gF25s8oa9kReoDGqhWYLIV6nHq/hKOqA5
+a5BTvve/HBsbfQy5eGY8G/tI7r273+kLEV9EnzbR2CTjLzVwji0SdXG/VVY9O1sh
+H0uMlYWTFxNgOQb1hvI1KNco7bk/fI/I4t8Y5myoNGNjyVoHctZP1vPl9YuMVa5k
++j9V2UIxxTZeeSnWG1cKKUHY/3Eb4tzfoBH7FPVu231oXBoMwKpu7+HqEM3RXZmv
+KpJAM+VpgeyT/vDIXiud
+=RB9h
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__21_Aug_2013_18_01_37_+1000_ReMJgBQfHkV6Uz.a--
