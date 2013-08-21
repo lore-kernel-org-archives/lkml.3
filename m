@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab3HUS0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 14:26:40 -0400
-Received: from smtp2-g21.free.fr ([212.27.42.2]:45429 "EHLO smtp2-g21.free.fr"
+	id S1752629Ab3HUS1L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 14:27:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59751 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752052Ab3HUS0j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 14:26:39 -0400
-Date: Wed, 21 Aug 2013 20:26:46 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, dri-devel@lists.freedesktop.org
-Cc: David Airlie <airlied@linux.ie>,
-        Darren Etheridge <darren.etheridge@gmail.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/8] drm/i2c: tda998x: prepare for video input
- configuration
-Message-ID: <20130821202646.47af66a5@armhf>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752545Ab3HUS1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 14:27:09 -0400
+Date: Wed, 21 Aug 2013 20:20:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "security@kernel.org" <security@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Willy Tarreau <w@1wt.eu>,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>, spender@grsecurity.net
+Subject: Re: [PATCH] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
+Message-ID: <20130821182053.GA19624@redhat.com>
+References: <CALCETrXMQdjRyvP8RHOd5xjciurS7-hKUOExvkvQ1RWmdRdypA@mail.gmail.com> <0be9da18c0ca360773a397de3063d01019ff88d8.1377107508.git.luto@amacapital.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0be9da18c0ca360773a397de3063d01019ff88d8.1377107508.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Aug 14 12:43:29 PDT 2013, Sebastian Hesselbarth wrote:
-> From: Russell King <rmk+kernel at arm.linux.org.uk>
-> 
-> The video-input-port (VIP) is highly configurable. This prepares
-> current driver to allow to configure VIP configuration, as some
-> boards connect lcd controller and TDA998x "pin-swapped" and depend
-> on VIP to swap the pins by register configuration.
-> 
-> Signed-off-by: Russell King <rmk+kernel at arm.linux.org.uk>
-> Tested-by: Darren Etheridge <detheridge at ti.com>
-> Tested-by: Sebastian Hesselbarth <sebastian.hesselbarth at gmail.com>
-	[snip]
+Can't really comment the patch, just a nit:
 
-AFAIK, the TI boards have no "pin-swapped", nor has the Cubox (there is
-no need to set the bit CFG_GRA_SWAPRB of the register LCD_SPU_DMA_CTRL0
-of the Dove lcd for RGB or YUV formats).
+On 08/21, Andy Lutomirski wrote:
+>
+> +static bool may_flink(const struct path *path)
+> +{
+> +	bool ret;
+> +	struct inode *inode = path->dentry->d_inode;
+> +
+> +	/*
+> +	 * This is racy: I_LINKABLE could be cleared between this check
+> +	 * and the actual link operation.
 
-Which board needs a special VIP configuration?
+OK,
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+> +	spin_lock(&inode->i_lock);
+> +	ret = !!(inode->i_state & I_LINKABLE);
+> +	spin_unlock(&inode->i_lock);
+
+so why do we need to take a lock ?
+
+Oleg.
+
