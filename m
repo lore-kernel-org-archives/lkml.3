@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab3HUCJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 22:09:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8951 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751408Ab3HUCJ5 convert rfc822-to-8bit (ORCPT
+	id S1751987Ab3HUCSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 22:18:53 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:54554 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab3HUCSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 22:09:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,924,1367996400"; 
-   d="scan'208";a="365903158"
-From: "Ma, Xindong" <xindong.ma@intel.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] LMK: Optimize lowmem_shrink
-Thread-Topic: [PATCH] LMK: Optimize lowmem_shrink
-Thread-Index: AQHOnX/IOu4x6dbkAES6VAPPp0jfAZme6yxQ
-Date: Wed, 21 Aug 2013 02:09:42 +0000
-Message-ID: <3917C05D9F83184EAA45CE249FF1B1DD024E1EE3@SHSMSX103.ccr.corp.intel.com>
-References: <1376961393.20932.8.camel@leonma-sh>
- <20130820083024.GJ22811@mwanda>
-In-Reply-To: <20130820083024.GJ22811@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Aug 2013 22:18:52 -0400
+Date: Tue, 20 Aug 2013 19:19:00 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org,
+        dm-devel@redhat.com, Christoph Hellwig <hch@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] bcache: Remove use of down/up_read_non_owner()
+Message-ID: <20130821021900.GB4051@kmo-pixel>
+References: <20130820111602.3cea203c@gandalf.local.home>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820111602.3cea203c@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 20, 2013 at 11:16:02AM -0400, Steven Rostedt wrote:
+> 
+> The down/up_read_non_owner() is a nasty hack in the API of the rwsem
+> operations. It was once removed, but then resurrected for use with
+> bcache. Not only is the API an abomination to the rwsem API, it also
+> prevents bcache from ever being compiled with PREEMPT_RT, as the RT
+> kernel requires all rwsems to have an owner.
+> 
+> Instead of keeping the down/up_read_non_owner() around, it is better to
+> modify the one user of it and have it do something a bit differently.
+> 
+> From reading the bcache code, the reason for the non_owner usage is
+> that a request is made, and writers must wait for that request to
+> finish before they can continue. But because the request is completed
+> by another task, the rwsem can not be held for read and then released
+> on completion.
+> 
+> Instead of abusing the rwsem code for this, I added a refcount
+> "nr_requests" to the cached_dev structure as well as a "write_waiters"
+> wait queue. When a request is to be made, the rwsem is still taken for
+> read, but this time with an owner. The refcount is incremented and
+> before exiting the function, the rwsem is released.
+> 
+> The writer will then take the rwsem for write, check the refcount, if
+> it is not zero, it will release the rwsem, add itself to a wait_event()
+> waiting for refcount to become zero, and then try again.
 
-> -----Original Message-----
-> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
-> Sent: Tuesday, August 20, 2013 4:30 PM
-> To: Ma, Xindong
-> Cc: gregkh@linuxfoundation.org; ccross@android.com;
-> devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] LMK: Optimize lowmem_shrink
-> 
-> On Tue, Aug 20, 2013 at 09:16:33AM +0800, Leon Ma wrote:
-> > From: Leon Ma <xindong.ma@intel.com>
-> > Date: Mon, 19 Aug 2013 14:22:38 +0800
-> > Subject: [PATCH] LMK: Optimize lowmem_shrink.
-> >
-> > By comparing with selected_oom_score_adj instead of min_score_adj, we
-> > may do less calculation.
-> >
-> 
-> The patch is line wrapped and doesn't apply.
-> Read Documentation/email-clients.txt.  Send it to yourself first.
-> Save the whole email as raw text (including headers and everything).
-> cat email.txt | git am.
-> When that works, then resend.
-Sorry for the trouble. I forgot to click "Prefomatted" in Evolution. I've resend the patch
-https://lkml.org/lkml/2013/8/20/754
-Please have a review.
-> 
-> regards,
-> dan carpenter
+I _really_ disagree with this approach.
 
+I get that there's a problem, but the bcache code REALLY IS USING THE
+RWSEM AS A LOCK; the answer isn't to open code the lock!
+
+Apologies to Christoph for getting distracted and not responding when
+you started to explain what the issues were for RT. I'm not really
+convinced they're that insurmountable (one of the issues was debugging,
+which the _non_owner() stuff always handled just fine), but I'll take it
+on faith that this usage is incompatible with rwsems + the RT
+functionality since I haven't actually had time to dig into it.
+
+So assuming that's the case, IMO the sanest thing to do is make a new
+type of lock - "rwsem_non_process" or somesuch - and use _that_ in
+bcache. Not open coding the lock.
+
+It can even live in the bcache code if we want since there currently
+wouldn't be any other users, I don't really care. But open coding it?
+Come on... makes me wonder what other code in the kernel is open coding
+locks because it couldn't release it in the same process context that
+took the lock for whatever reason.
+
+Also, nack this patch because increasing the number of atomic ops to
+shared cachelines in our fast path. If it does end up being open coded,
+I'll make a more efficient version.
