@@ -1,86 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab3HUUa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 16:30:59 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:30715 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab3HUUa5 (ORCPT
+	id S1752843Ab3HUUdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 16:33:23 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:40752 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235Ab3HUUdV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 16:30:57 -0400
-Message-ID: <1377116968.10300.514.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Date: Wed, 21 Aug 2013 14:29:28 -0600
-In-Reply-To: <20130821195410.GA2436@htj.dyndns.org>
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <20130821130647.GB19286@mtj.dyndns.org> <5214D60A.2090309@gmail.com>
-	 <20130821153639.GA17432@htj.dyndns.org>
-	 <1377113503.10300.492.camel@misato.fc.hp.com>
-	 <20130821195410.GA2436@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Aug 2013 16:33:21 -0400
+Date: Wed, 21 Aug 2013 22:33:11 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: liujunliang_ljl <liujunliang_ljl@163.com>
+Cc: gregkh <gregkh@suse.de>, sunhecheng <sunhecheng@vip.126.com>,
+        linux-usb <linux-usb@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Re: [PATCH-SR9700] Merge USB 1.1 Ethernet Adapter SR9700
+ DeviceDriver into the Linux Kernel
+Message-ID: <20130821203311.GA23527@electric-eye.fr.zoreil.com>
+References: <201308201841116403992@163.com>
+ <20130820204606.GB26241@electric-eye.fr.zoreil.com>
+ <201308211805574844059@163.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201308211805574844059@163.com>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tejun,
+liujunliang_ljl <liujunliang_ljl@163.com> :
+[...]
+> diff --git a/drivers/net/usb/sr9700.c b/drivers/net/usb/sr9700.c
+> new file mode 100644
+> index 0000000..9c8f167
+> --- /dev/null
+> +++ b/drivers/net/usb/sr9700.c
+[...]
+> +static int sr_read(struct usbnet *dev, u8 reg, u16 length, void *data)
+> +{
+> +	int err;
+> +
+> +	err = usbnet_read_cmd(dev, SR_RD_REGS, SR_REQ_RD_REG,
+> +					0, reg, data, length);
 
-On Wed, 2013-08-21 at 15:54 -0400, Tejun Heo wrote:
-> On Wed, Aug 21, 2013 at 01:31:43PM -0600, Toshi Kani wrote:
-> > Well, there is reason why we have earlyprintk feature today.  So, let's
-> > not debate on this feature now.  There was previous attempt to support
-> 
-> Are you saying the existing earlyprintk automatically justifies
-> addition of more complex mechanism?  The added complex of course
-> should be traded off against the benefits of gaining ACPI based early
-> boot.  You aren't gonna suggest implementing netconsole based
-> earlyprintk, right?
+	err = usbnet_read_cmd(dev, SR_RD_REGS, SR_REQ_RD_REG, 0, reg, data,
+			      length);
 
-Platforms vendors (which care Linux) need to support the existing Linux
-features.  This means that they have to implement legacy interfaces on
-x86 until the kernel supports an alternative method.  For instance, some
-platforms are legacy-free and do not have legacy COM ports.  These ACPI
-tables were defined so that non-legacy COM ports can be described and
-informed to the OS.  Without this support, such platforms may have to
-emulate the legacy COM ports for Linux, or drop Linux support.
+(I already outlined it in my first review)
 
-> > this feature with ACPI tables below.  As described, it had the same
-> > ordering issue.
-> > 
-> > https://lkml.org/lkml/2012/10/8/498
-> > 
-> > There is a basic problem that when we try to use ACPI tables that
-> > extends or replaces legacy interfaces (ex. SRAT extending e820), we hit
-> > this ordering issue because ACPI is not available as early as the legacy
-> > interfaces.
-> 
-> Do we even want ACPI parsing and all that that early?  Parsing SRAT
-> early doesn't buy us much and I'm not sure whether adding ACPI
-> earlyprintk would increase or decrease debuggability during earlyboot.
-> It adds whole lot more code paths where things can go wrong while the
-> basic execution environment is unstable.  Why do that?
+> +	if ((err != length) && (err >= 0))
+> +		err = -EINVAL;
+> +	return err;
+> +}
+> +
+> +static int sr_write(struct usbnet *dev, u8 reg, u16 length, void *data)
+> +{
+> +	int err;
+> +
+> +	err = usbnet_write_cmd(dev, SR_WR_REGS, SR_REQ_WR_REG,
+> +					0, reg, data, length);
 
-I think the kernel boot-up sequence should be designed in such a way
-that can support legacy-free and/or NUMA platforms properly.
+See my first review as well.
 
-Thanks,
--Toshi
+> +	if ((err >= 0) && (err < length))
+> +		err = -EINVAL;
+> +	return err;
+> +}
+> +
+> +static int sr_read_reg(struct usbnet *dev, u8 reg, u8 *value)
+> +{
+> +	return sr_read(dev, reg, 1, value);
+> +}
+> +
+> +static int sr_write_reg(struct usbnet *dev, u8 reg, u8 value)
+> +{
+> +	return usbnet_write_cmd(dev, SR_WR_REGS, SR_REQ_WR_REG,
+> +					value, reg, NULL, 0);
 
+See my first review as well.
 
+> +}
+> +
+> +static void sr_write_async(struct usbnet *dev, u8 reg, u16 length, void *data)
+> +{
+> +	usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
+> +					0, reg, data, length);
+
+See my first review as well.
+
+> +}
+> +
+> +static void sr_write_reg_async(struct usbnet *dev, u8 reg, u8 value)
+> +{
+> +	usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
+> +					value, reg, NULL, 0);
+
+See my first review as well.
+
+> +}
+> +
+> +static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg, __le16 *value)
+> +{
+> +	int ret, i;
+> +
+> +	mutex_lock(&dev->phy_mutex);
+> +
+> +	sr_write_reg(dev, EPAR, phy ? (reg | 0x40) : reg);
+> +	sr_write_reg(dev, EPCR, phy ? 0xc : 0x4);
+> +
+> +	for (i = 0; i < SR_SHARE_TIMEOUT; i++) {
+> +		u8 tmp = 0;
+> +
+> +		udelay(1);
+> +		ret = sr_read_reg(dev, EPCR, &tmp);
+> +		if (ret < 0)
+> +			goto out_unlock;
+> +
+> +		/* ready */
+> +		if ((tmp & EPCR_ERRE) == 0)
+> +			break;
+> +	}
+> +
+> +	if (i >= SR_SHARE_TIMEOUT) {
+> +		netdev_err(dev->net, "%s read timed out!\n", phy ? "phy" : "eeprom");
+> +		ret = -EIO;
+> +		goto out_unlock;
+> +	}
+> +
+> +	sr_write_reg(dev, EPCR, 0x0);
+> +	ret = sr_read(dev, EPDR, 2, value);
+> +
+> +	netdev_dbg(dev->net, "read shared %d 0x%02x returned 0x%04x, %d\n",
+> +	       phy, reg, *value, ret);
+> +
+> + out_unlock:
+   ^ please remove space.
+
+(you renamed it but the "no space before label" part has been ignored)
+
+> +	mutex_unlock(&dev->phy_mutex);
+> +	return ret;
+> +}
+> +
+> +static int sr_share_write_word(struct usbnet *dev, int phy, u8 reg, __le16 value)
+> +{
+> +	int ret, i;
+> +
+> +	mutex_lock(&dev->phy_mutex);
+> +
+> +	ret = sr_write(dev, EPDR, 2, &value);
+> +	if (ret < 0)
+> +		goto out_unlock;
+> +
+> +	sr_write_reg(dev, EPAR, phy ? (reg | 0x40) : reg);
+> +	sr_write_reg(dev, EPCR, phy ? 0x1a : 0x12);
+> +
+> +	for (i = 0; i < SR_SHARE_TIMEOUT; i++) {
+> +		u8 tmp = 0;
+> +
+> +		udelay(1);
+> +		ret = sr_read_reg(dev, EPCR, &tmp);
+> +		if (ret < 0)
+> +			goto out_unlock;
+> +
+> +		/* ready */
+> +		if ((tmp & EPCR_ERRE) == 0)
+> +			break;
+> +	}
+
+I made a remark about the 11 lines above in my first review. May I politely
+ask you to read it again ?
+
+[...]
+> +static const struct ethtool_ops sr9700_ethtool_ops = {
+> +	.get_drvinfo	= usbnet_get_drvinfo,
+> +	.get_link		= sr9700_get_link,
+> +	.get_msglevel	= usbnet_get_msglevel,
+> +	.set_msglevel	= usbnet_set_msglevel,
+> +	.get_eeprom_len	= sr9700_get_eeprom_len,
+> +	.get_eeprom		= sr9700_get_eeprom,
+> +	.get_settings	= usbnet_get_settings,
+> +	.set_settings	= usbnet_set_settings,
+> +	.nway_reset		= usbnet_nway_reset,
+
+The fields above line up nicely with a 4 spaces tabulation but the
+standard kernel one is 8 spaces wide.
+
+[...]
+> +static const struct net_device_ops sr9700_netdev_ops = {
+> +	.ndo_open			= usbnet_open,
+> +	.ndo_stop			= usbnet_stop,
+> +	.ndo_start_xmit		= usbnet_start_xmit,
+> +	.ndo_tx_timeout		= usbnet_tx_timeout,
+> +	.ndo_change_mtu		= usbnet_change_mtu,
+> +	.ndo_validate_addr	= eth_validate_addr,
+> +	.ndo_do_ioctl		= sr9700_ioctl,
+> +	.ndo_set_rx_mode	= sr9700_set_multicast,
+> +	.ndo_set_mac_address	= sr9700_set_mac_address,
+
+Same 4 vs 8 spaces tabs problem as above.
+
+[...]
+> +static int sr9700_bind(struct usbnet *dev, struct usb_interface *intf)
+> +{
+> +	int ret;
+> +
+> +	ret = usbnet_get_endpoints(dev, intf);
+> +	if (ret)
+> +		goto out;
+> +
+> +	dev->net->netdev_ops = &sr9700_netdev_ops;
+> +	dev->net->ethtool_ops = &sr9700_ethtool_ops;
+> +	dev->net->hard_header_len += SR_TX_OVERHEAD;
+> +	dev->hard_mtu = dev->net->mtu + dev->net->hard_header_len;
+> +	dev->rx_urb_size = 3072;	/* bulkin buffer is preferably not less than 3K */
+> +
+> +	dev->mii.dev = dev->net;
+> +	dev->mii.mdio_read = sr_mdio_read;
+> +	dev->mii.mdio_write = sr_mdio_write;
+> +	dev->mii.phy_id_mask = 0x1f;
+> +	dev->mii.reg_num_mask = 0x1f;
+
+Please add local dev->net and dev->mii variables.
+
+[...]
+> +	/* power up and reset phy */
+> +	sr_write_reg(dev, PRR, 1);
+
+Please replace '1' with appropriate #define.
+
+> +	mdelay(20);		/* at least 10ms, here 20ms for safe */
+> +	sr_write_reg(dev, PRR, 0);
+
+Please replace '0' with appropriate #define.
+
+[...]
+> +static int sr9700_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+> +{
+> +	int len;
+> +	struct sk_buff *sr_skb;
+
+	struct sk_buff *sr_skb;
+	int len;
+
+(long lines first)
+
+[...]
+> +	/* Each packet contains multiple skbs */
+> +	while (skb->len > SR_RX_OVERHEAD) {
+> +		if (skb->data[0] != 0x40)
+> +			return 0;
+> +
+> +		/* ignore the CRC length */
+> +		len = (skb->data[1] | (skb->data[2] << 8)) - 4;
+> +
+> +		if (len > ETH_FRAME_LEN)
+> +			return 0;
+> +
+> +		/* the last skb of current packet */
+> +		if (skb->len == (len + SR_RX_OVERHEAD))	{
+> +			skb_pull(skb, 3);
+> +			skb->len = len;
+> +			skb->tail = skb->data + len;
+> +			skb->truesize = len + sizeof(struct sk_buff);
+> +			return 2;
+> +		}
+> +
+> +		/* skb_clone is used for address align */
+> +		sr_skb = skb_clone(skb, GFP_ATOMIC);
+> +		if (sr_skb) {
+
+		if (!sr_skb)
+			return 0;
+
+> +			sr_skb->len = len;
+> +			sr_skb->data = skb->data + 3;
+> +			sr_skb->tail = skb->data + len;
+> +			sr_skb->truesize = len + sizeof(struct sk_buff);
+> +			usbnet_skb_return(dev, sr_skb);
+> +		} else {
+> +			return 0;
+> +		}
+> +
+> +		skb_pull(skb, len + SR_RX_OVERHEAD);
+> +	};
+> +
+> +	return 0;
+> +}
+[...]
+> +static struct usb_driver sr9700_usb_driver = {
+> +	.name = "sr9700",
+> +	.id_table = products,
+> +	.probe = usbnet_probe,
+> +	.disconnect = usbnet_disconnect,
+> +	.suspend = usbnet_suspend,
+> +	.resume = usbnet_resume,
+> +	.disable_hub_initiated_lpm = 1,
+> +};
+
+Please line things up (see my first review).
+
+[...]
+> ???????? Francois Romieu 
+> ?????????? 2013-08-21  04:46:12 
+> ???????? liujunliang_ljl 
+> ?????? gregkh; sunhecheng; linux-usb; netdev; linux-kernel 
+> ?????? Re: [PATCH-SR9700] Merge USB 1.1 Ethernet Adapter SR9700 DeviceDriver into the Linux Kernel 
+
+Please avoid full quote and top posting.
+
+-- 
+Ueimor
