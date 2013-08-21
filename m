@@ -1,84 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664Ab3HUJW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 05:22:57 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:10751 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3HUJW4 (ORCPT
+	id S1751933Ab3HUJYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 05:24:45 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:25126 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab3HUJYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 05:22:56 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-ae-521486ef2d0d
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Daniel Lezcano'" <daniel.lezcano@linaro.org>
-Cc: "'Thomas Gleixner'" <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "'Simon Horman'" <horms+renesas@verge.net.au>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <001b01ce9e4f$d1c97950$755c6bf0$%han@samsung.com>
-In-reply-to: <001b01ce9e4f$d1c97950$755c6bf0$%han@samsung.com>
-Subject: [PATCH 2/2] clocksource: sh_mtu2: remove unnecessary
- platform_set_drvdata()
-Date: Wed, 21 Aug 2013 18:22:55 +0900
-Message-id: <002601ce9e50$04863680$0d92a380$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6eT9Gw4QMTlzEDTGKp7zWeUER7LwAABeeA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zY933bSJBBlteClrM+yxrceHtBzaL
-	ywsvsVpc3jWHzWLzpqnMDqwed67tYfN4d+4cu0ffllWMHnN+fmPx+LxJLoA1issmJTUnsyy1
-	SN8ugStj5qpNLAVXWSs+3drE0sB4iaWLkZNDQsBEYuvkz2wQtpjEhXvrgWwuDiGBZYwSj9b9
-	ZIYp+vL6NyOILSSwiFHizURviKJfjBK3Nl4Dm8QmoCbx5cthdhBbRMBA4vXp3+wgRcwCsxkl
-	Nv55yArRbSsxf9FnJhCbU8BO4vGPfWC2sECYxLWfV8G2sQioSnQ+7AUbxAtUP/lCNyOELSjx
-	Y/I9sGXMAloS63ceZ4Kw5SU2r3kL1MsBdKm6xKO/uhA3GEkcmPOJDaJERGLfi3eMIPdICNxi
-	l2htnMEOsUtA4tvkQywQvbISmw5APSwpcXDFDZYJjBKzkGyehWTzLCSbZyFZsYCRZRWjaGpB
-	ckFxUnqRiV5xYm5xaV66XnJ+7iZGSKRO2MF474D1IcZkoPUTmaVEk/OBkZ5XEm9obGZkYWpi
-	amxkbmlGmrCSOK96i3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsawgEhvP79Z1nlyXou2
-	XDp89xCTX+jsBcEtL7ayiV55tDNILyg3O0KP5bqS57fJ/ZfnBwcd714e1rv/ztXP987vNOFI
-	8dPL2PNVq+R8x/wXwXMjrGfUCoRMaGNa83TJp8tJBgHbbpttUzfgXbyt91LuYYmylLmT0nU6
-	Sph8NX//X90+zerFzJNKLMUZiYZazEXFiQCu9eFc6gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jAd33bSJBBnsa+SzmfZa1uPD2A5vF
-	5YWXWC0u75rDZrF501RmB1aPO9f2sHm8O3eO3aNvyypGjzk/v7F4fN4kF8Aa1cBok5GamJJa
-	pJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0XEmhLDGnFCgUkFhc
-	rKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYMXPVJpaCq6wVn25tYmlgvMTSxcjJISFgIvHl
-	9W9GCFtM4sK99WwgtpDAIkaJNxO9uxi5gOxfjBK3Nl4Da2ATUJP48uUwO4gtImAg8fr0b3aQ
-	ImaB2YwSG/88ZIXotpWYv+gzE4jNKWAn8fjHPjBbWCBM4trPq8wgNouAqkTnw16wQbxA9ZMv
-	dDNC2IISPybfA1vGLKAlsX7ncSYIW15i85q3QL0cQJeqSzz6qwtxg5HEgTmf2CBKRCT2vXjH
-	OIFRaBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgSngWfSOxhX
-	NVgcYhTgYFTi4b2gLBIkxJpYVlyZe4hRgoNZSYR3UTVQiDclsbIqtSg/vqg0J7X4EGMy0KMT
-	maVEk/OBKSqvJN7Q2MTMyNLIzMLIxNycNGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhir
-	eBdtXRn5M41PWig6sbPmw7Tn0xKtXjdwt0oemilnKK3NXxIcoD+RYQnPZOHFi822/NFY3fiT
-	ee6T4ARJrg/XI3sPPT4Sci9phUAHb+sfXRHhiy7z11t15QUnhn7Y0C20cNJdZrs9j+ruumpu
-	2P61ortnE0/5U/bb+e8SRdruzztfaTlF6ZgSS3FGoqEWc1FxIgD9U2C9RwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 21 Aug 2013 05:24:43 -0400
+Message-ID: <52148730.4000709@oracle.com>
+Date: Wed, 21 Aug 2013 17:24:00 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Mel Gorman <mgorman@suse.de>, lliubbo@gmail.com
+Subject: Re: [PATCH v7 0/5] zram/zsmalloc promotion
+References: <1377065791-2959-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1377065791-2959-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver core clears the driver data to NULL after device_release
-or on probe failure. Thus, it is not needed to manually clear the
-device driver data to NULL.
+Hi Minchan,
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/clocksource/sh_mtu2.c |    1 -
- 1 file changed, 1 deletion(-)
+On 08/21/2013 02:16 PM, Minchan Kim wrote:
+> It's 7th trial of zram/zsmalloc promotion.
+> I rewrote cover-letter totally based on previous discussion.
+> 
+> The main reason to prevent zram promotion was no review of
+> zsmalloc part while Jens, block maintainer, already acked
+> zram part.
+> 
+> At that time, zsmalloc was used for zram, zcache and zswap so
+> everybody wanted to make it general and at last, Mel reviewed it
+> when zswap was submitted to merge mainline a few month ago.
+> Most of review was related to zswap writeback mechanism which
+> can pageout compressed page in memory into real swap storage
+> in runtime and the conclusion was that zsmalloc isn't good for
+> zswap writeback so zswap borrowed zbud allocator from zcache to
+> replace zsmalloc. The zbud is bad for memory compression ratio(2)
+> but it's very predictable behavior because we can expect a zpage
+> includes just two pages as maximum. Other reviews were not major. 
+> http://lkml.indiana.edu/hypermail/linux/kernel/1304.1/04334.html
+> 
+> Zcache doesn't use zsmalloc either so zsmalloc's user is only
+> zram now so this patchset moves it into zsmalloc directory.
+> Recently, Bob tried to move zsmalloc under mm directory to unify
+> zram and zswap with adding pseudo block device in zswap(It's
+> very weired to me) but he was simple ignoring zram's block device
+> (a.k.a zram-blk) feature and considered only swap usecase of zram,
+> in turn, it lose zram's good concept.
+> 
 
-diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
-index 4aac9ee..f02648e 100644
---- a/drivers/clocksource/sh_mtu2.c
-+++ b/drivers/clocksource/sh_mtu2.c
-@@ -346,7 +346,6 @@ static int sh_mtu2_probe(struct platform_device *pdev)
- 	ret = sh_mtu2_setup(p, pdev);
- 	if (ret) {
- 		kfree(p);
--		platform_set_drvdata(pdev, NULL);
- 		pm_runtime_idle(&pdev->dev);
- 		return ret;
- 	}
+Yes, I didn't notice the feature that zram can be used as a normal block
+device.
+
+
+> Mel raised an another issue in v6, "maintainance headache".
+> He claimed zswap and zram has a similar goal that is to compresss
+> swap pages so if we promote zram, maintainance headache happens
+> sometime by diverging implementaion between zswap and zram
+> so that he want to unify zram and zswap. For it, he want zswap
+> to implement pseudo block device like Bob did to emulate zram so
+> zswap can have an advantage of writeback as well as zram's benefit.
+
+If consider zram as a swap device only, I still think it's better to add
+a pseudo block device to zswap and just disable the writeback of zswap.
+
+But I have no idea of zram's block device feature.
+
+> But I wonder frontswap-based zswap's writeback is really good
+> approach for writeback POV. I think that problem isn't only
+> specific for zswap. If we want to configure multiple swap hierarchy
+> with various speed device such as RAM, NVRAM, SSD, eMMC, NAS etc,
+> it would be a general problem. So we should think of more general
+> approach. At a glance, I can see two approach.
+> 
+> First, VM could be aware of heterogeneous swap configuration
+> so it could aim for being able to configure cache hierarchy
+> among swap devices. It may need indirction layer on swap, which
+> was already talked about that way so VM can migrate a block from 
+> A to B easily. It will support various configuration with VM's
+> hints, maybe, in future.
+> http://lkml.indiana.edu/hypermail/linux/kernel/1203.3/03812.html
+> 
+> Second, as more practical solution, we could use device mapper like
+> dm-cache(https://lwn.net/Articles/540996/), which makes it very
+> flexible. Now, it supports various configruation and cache policy
+> (block size, writeback/writethrough, LRU, MFU although MQ is merged
+> now) so it would be good fit for our purpose. Even, it can make zram
+> support writeback. I tested it following as following scenario
+> in KVM 4 CPU, 1G DRAM with background 800M memory hogger, which is
+> allocates random data up to 800M.
+> 
+> 1) zram swap disk 1G, untar kernel.tgz to tmpfs, build -j 4
+>    Fail to untar due to shortage of memory space by tmpfs default size limit
+> 
+> 2) zram swap disk 1G, untar kernel.tgz to ext2 on zram-blk, build -j 4
+>    OOM happens while building the kernel but it untar successfully
+>    on ext2 based on zram-blk. The reason OOM happend is zram can not find
+>    free pages from main memory to store swap out pages although empty
+>    swap space is still enough.
+> 
+> 3) dm-cache swap disk 1G, untar kernel.tgz to ext2 on zram-blk, build -j 4
+>    dmcache consists of zram-meta 10M, zram-cache 1G and real swap storage 1G
+>    No OOM happens and successfully building done.
+> 
+> Above tests proves zram can support writeback into real swap storage
+> so that zram-cache can always have a free space. If necessary, we could
+> add new plugin in dm-cache. I see It's really flexible and well-layered
+> architecure so zram-blk's concept is good for us and it has lots of
+> potential to be enhanced by MM/FS/Block developers. 
+> 
+
+That's an exciting direction!
+
 -- 
-1.7.10.4
-
-
+Regards,
+-Bob
