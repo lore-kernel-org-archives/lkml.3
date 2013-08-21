@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab3HUSRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 14:17:37 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:40193 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab3HUSRg (ORCPT
+	id S1752637Ab3HUSUP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 14:20:15 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37692 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478Ab3HUSUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 14:17:36 -0400
-Date: Wed, 21 Aug 2013 22:17:33 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Jan Beulich <JBeulich@suse.com>, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Xen-devel@lists.xen.org, Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with
- existing use
-Message-ID: <20130821181733.GC3814@moon>
-References: <5214C524.1050900@citrix.com>
- <20130821141223.GS18673@moon>
- <5214F09002000078000ED5C3@nat28.tlf.novell.com>
- <20130821154238.GV18673@moon>
- <521500E102000078000ED65C@nat28.tlf.novell.com>
- <20130821161946.GW18673@moon>
- <5214F128.1000901@citrix.com>
- <20130821172547.GY18673@moon>
+	Wed, 21 Aug 2013 14:20:12 -0400
+Message-ID: <521504D7.7090204@wwwdotorg.org>
+Date: Wed, 21 Aug 2013 12:20:07 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821172547.GY18673@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net,
+        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Proposed stable release changes
+References: <20130820224032.GA20491@kroah.com>
+In-Reply-To: <20130820224032.GA20491@kroah.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 09:25:47PM +0400, Cyrill Gorcunov wrote:
-> > 
-> > However, I do find the use of PTE bits in this way somewhat fragile.
-> > What other potential corner cases might still remain that will require
-> > further games with PTE bits?
+On 08/20/2013 04:40 PM, Greg KH wrote:
+> Hi all,
 > 
->   OK, so this is not a bug finally. The problem is that 2 level pte is
-> quite small and 7th bit is the only one spare I can use for soft dirty
-> tracking when page get swapped out. And swap engine is very depending
-> on pte being non-present, so we are on a safe side.
+> Given that I had to just revert a patch in the recent stable releases
+> that didn't get enough time to "bake" in Linus's tree (or in -next), I
+> figured it was worth discussing some possible changes with how "fast" I
+> pick up patches for stable releases.
+> 
+> So, how about this proposal:
+> 
+> - I will wait for a -rc to come out with the patch in it before putting
+>   it into a stable release, unless: [...]
 
-To make it clear: I'm working on patch that won't use pse bit for dirty
-page tracking, just give some time to cook it and test.
+Presumably the idea is that much useful testing only happens on -rc
+kernels rather than linux-next or arbitrary points in Linus' tree.
+
+If so, then don't you want to wait for two -rc releases to come out that
+include the patch?
+
+When the first -rc that contains the patch is released, people will test
+it then. This won't happen immediately, but might take a few days.
+
+By the time the second -rc that contains the patch is released, that's
+presumably enough time for people to have tested the first -rc, and
+hence we then presume the patch doesn't cause too many issues.
+
+That's still only an average of 1.5 weeks delay, with a min-max of 1-2,
+ignoring the merge window and assuming bugfix patches go quickly
+upstream from subsystem maintainers.
