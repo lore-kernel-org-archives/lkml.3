@@ -1,56 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab3HUPJN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:09:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1080 "EHLO mga09.intel.com"
+	id S1752391Ab3HUPJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:09:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42967 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751829Ab3HUPJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:09:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,928,1367996400"; 
-   d="scan'208";a="366250145"
-Message-ID: <5214D812.3090906@linux.intel.com>
-Date: Wed, 21 Aug 2013 18:09:06 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752335Ab3HUPJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 11:09:26 -0400
+Date: Wed, 21 Aug 2013 11:09:16 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, Mikulas Patocka <mpatocka@redhat.com>,
+        "Alasdair G. Kergon" <agk@redhat.com>
+Subject: [PATCH] math64: New separate div64_u64_rem helper
+Message-ID: <20130821150916.GA11431@redhat.com>
+References: <1376078164-23147-1-git-send-email-snitzer@redhat.com>
+ <20130820070045.GA1665@redhat.com>
+ <20130820080910.GA11072@gmail.com>
+ <20130820192508.GA4799@redhat.com>
+ <20130821072122.GA27360@gmail.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Amir Vadai <amirv@mellanox.com>, Willem de Bruijn <willemb@google.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH RFC net-next] net: epoll support for busy poll
-References: <20130821103954.30607.6819.stgit@ladj378.jer.intel.com> <1377093188.4226.108.camel@edumazet-glaptop>
-In-Reply-To: <1377093188.4226.108.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130821072122.GA27360@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/08/2013 16:53, Eric Dumazet wrote:
-> On Wed, 2013-08-21 at 13:39 +0300, Eliezer Tamir wrote:
-> 
->>
->> Instead of remembering the napi_id for all the sockets in an epoll,
->> we only track the first socket we see with any unique napi_id.
->> The rational for this is that while there may be many thousands of
->> sockets tracked by a single epoll, we expect to only see a handful
->> of unique napi_ids in most cases.
-> 
-> This looks buggy assumption to me.
-> 
-> We use epoll() with in the order of millions of fds per epoller, and
-> typically one napi_id per cpu.
-> 
-> With your model, we would have to use nr_cpu epollers and make sure that
-> sockets are properly placed on those epollers by their napi_ids.
+Commit f792685006274a850e6cc0ea9ade275ccdfc90bc ("math64: New
+div64_u64_rem helper") implemented div64_u64 in terms of div64_u64_rem.
+But div64_u64_rem was removed because it slowed down div64_u64 (and
+there were no other users of div64_u64_rem).
 
-There is no assumption here on how the user configures epoll.
-All we are doing is reducing the list of sockets monitored
-by an epoll instance to a smaller subset where each NAPI_ID
-appears only once.
+Device Mapper's I/O statistics support has a need for div64_u64_rem;
+reintroduce this helper as a separate method that doesn't slow down
+div64_u64, especially on 32-bit systems.
 
-The user is free to have an epoll monitor sockets from queues
-associated to any CPU.
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair Kergon <agk@redhat.com>
+---
+ include/linux/math64.h |   13 +++++++++++++
+ lib/div64.c            |   40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 53 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/math64.h b/include/linux/math64.h
+index 2913b86..69ed5f5 100644
+--- a/include/linux/math64.h
++++ b/include/linux/math64.h
+@@ -31,6 +31,15 @@ static inline s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder)
+ }
+ 
+ /**
++ * div64_u64_rem - unsigned 64bit divide with 64bit divisor and remainder
++ */
++static inline u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
++{
++	*remainder = dividend % divisor;
++	return dividend / divisor;
++}
++
++/**
+  * div64_u64 - unsigned 64bit divide with 64bit divisor
+  */
+ static inline u64 div64_u64(u64 dividend, u64 divisor)
+@@ -63,6 +72,10 @@ static inline u64 div_u64_rem(u64 dividend, u32 divisor, u32 *remainder)
+ extern s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder);
+ #endif
+ 
++#ifndef div64_u64_rem
++extern u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder);
++#endif
++
+ #ifndef div64_u64
+ extern u64 div64_u64(u64 dividend, u64 divisor);
+ #endif
+diff --git a/lib/div64.c b/lib/div64.c
+index a163b6c..4382ad7 100644
+--- a/lib/div64.c
++++ b/lib/div64.c
+@@ -79,6 +79,46 @@ EXPORT_SYMBOL(div_s64_rem);
+ #endif
+ 
+ /**
++ * div64_u64_rem - unsigned 64bit divide with 64bit divisor and remainder
++ * @dividend:	64bit dividend
++ * @divisor:	64bit divisor
++ * @remainder:  64bit remainder
++ *
++ * This implementation is a comparable to algorithm used by div64_u64.
++ * But this operation, which includes math for calculating the remainder,
++ * is kept distinct to avoid slowing down the div64_u64 operation on 32bit
++ * systems.
++ */
++#ifndef div64_u64_rem
++u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
++{
++	u32 high = divisor >> 32;
++	u64 quot;
++
++	if (high == 0) {
++		u32 rem32;
++		quot = div_u64_rem(dividend, divisor, &rem32);
++		*remainder = rem32;
++	} else {
++		int n = 1 + fls(high);
++		quot = div_u64(dividend >> n, divisor >> n);
++
++		if (quot != 0)
++			quot--;
++
++		*remainder = dividend - quot * divisor;
++		if (*remainder >= divisor) {
++			quot++;
++			*remainder -= divisor;
++		}
++	}
++
++	return quot;
++}
++EXPORT_SYMBOL(div64_u64_rem);
++#endif
++
++/**
+  * div64_u64 - unsigned 64bit divide with 64bit divisor
+  * @dividend:	64bit dividend
+  * @divisor:	64bit divisor
+-- 
+1.7.4.4
+
