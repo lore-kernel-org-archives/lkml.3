@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab3HUR3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 13:29:00 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:35737 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253Ab3HUR27 (ORCPT
+	id S1752561Ab3HUR3i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 13:29:38 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40041 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab3HUR3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 13:28:59 -0400
+	Wed, 21 Aug 2013 13:29:36 -0400
+Message-ID: <5214F8FD.3070003@wwwdotorg.org>
+Date: Wed, 21 Aug 2013 11:29:33 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <5214C524.1050900@citrix.com>
-References: <5214C524.1050900@citrix.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 21 Aug 2013 10:28:38 -0700
-Message-ID: <CALCETrWZqGUC4+43VT54gFd8qAf+0o4Ekyq8dKVqYpuZOCR9qg@mail.gmail.com>
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with
- existing use
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Xen-devel@lists.xen.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: tegra: add Palmas pincontrol to Dalmore device
+ tree
+References: <1377088461-9499-1-git-send-email-ldewangan@nvidia.com> <1377088461-9499-2-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1377088461-9499-2-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 6:48 AM, David Vrabel <david.vrabel@citrix.com> wrote:
-> All,
->
-> 179ef71c (mm: save soft-dirty bits on swapped pages) introduces a new
-> PTE bit on x86 _PTE_SWP_SOFT_DIRTY which has the same value as _PTE_PSE
-> and _PTE_PAT.
->
-> With a Xen PV guest, the use of the _PTE_PAT will result in the page
-> having unexpected cachability which will introduce a range of subtle
-> performance and correctness issues.  Xen programs the entry 4 in the PAT
-> table with WC so a page that was previously WB will end up as WC.
->
+On 08/21/2013 06:34 AM, Laxman Dewangan wrote:
+> Add Palmas pincontrol to Dalmore device tree and make following
+> configuration as default:
+> - Disable DVFS1 and DVFS2.
+> - Set GPIO6 to gpio mode.
 
-Kind of off topic, but do you have a summary of how Xen uses the high
-PAT bits?  I'm the one who wants WT, and if there's already precedent
-for using the high PAT bits, it'll be helpful.
+> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
 
-(Also, Xen is a little weird, and I'd rather not break it again by
-accident like I did with the vsyscall changes a couple years ago.)
+> +			palmas_pinctrl {
+> +				compatible = "ti,tps65913-pinctrl";
 
---Andy
+A node name of "pinmux" would be more appropriate here, since the node
+name should represent device type rather than device identity.
+
+Aside from that, the series looks fine, but at this point will have to
+wait for 3.13 I think, unless this series has a side-effect of fixing
+some bug/regression. Can you please repost once 3.12-rc1 is out?
