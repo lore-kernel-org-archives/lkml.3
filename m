@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab3HUWdW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 18:33:22 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54075 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab3HUWdV (ORCPT
+	id S1752962Ab3HUWhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 18:37:09 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:37487 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413Ab3HUWhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 18:33:21 -0400
-Message-ID: <5215402E.70007@wwwdotorg.org>
-Date: Wed, 21 Aug 2013 16:33:18 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 21 Aug 2013 18:37:07 -0400
 MIME-Version: 1.0
-To: hongbo.zhang@freescale.com
-CC: vinod.koul@intel.com, djbw@fb.com, leoli@freescale.com,
-        scottwood@freescale.com, linuxppc-dev@lists.ozlabs.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 1/3] DMA: Freescale: revise device tree binding document
-References: <1375094944-3343-1-git-send-email-hongbo.zhang@freescale.com> <1375094944-3343-2-git-send-email-hongbo.zhang@freescale.com>
-In-Reply-To: <1375094944-3343-2-git-send-email-hongbo.zhang@freescale.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <CAOesGMgd51g7WAkQu+ckT-=skKuMyj19nJkHxh+YmGSBhSL+Vg@mail.gmail.com>
+References: <1374243229-8585-1-git-send-email-lee.jones@linaro.org>
+	<1374243229-8585-6-git-send-email-lee.jones@linaro.org>
+	<CAOesGMgd51g7WAkQu+ckT-=skKuMyj19nJkHxh+YmGSBhSL+Vg@mail.gmail.com>
+Date: Thu, 22 Aug 2013 00:37:05 +0200
+Message-ID: <CACRpkdasMSCfdhzrW+7kHM8UUxxQ5UMAcc5bOogc-9RwXE9RVg@mail.gmail.com>
+Subject: Re: [PATCH 05/13] ARM: ux500: Apply a ste-* prefix onto snowball.dts
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 04:49 AM, hongbo.zhang@freescale.com wrote:
-> From: Hongbo Zhang <hongbo.zhang@freescale.com>
-> 
-> This patch updates the discription of each type of DMA controller and its
-> channels, it is preparation for adding another new DMA controller binding, it
-> also fixes some defects of indent for text alignment at the same time.
+On Wed, Aug 21, 2013 at 2:31 AM, Olof Johansson <olof@lixom.net> wrote:
 
-> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+>> diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/ste-snowball.dts
+>> similarity index 100%
+>> rename from arch/arm/boot/dts/snowball.dts
+>> rename to arch/arm/boot/dts/ste-snowball.dts
+>
+> Grmbl, grmbl, grmbl. This now breaks any script that knows to use
+> snowball.dtb. :(
+>
+> It's good to get the prefixes added, but it's annoying to have to deal
+> with both during an overlap period. Maybe generate both dtb filenames
+> for a while but rename the source?
 
-> -- compatible        : compatible list, contains 2 entries, first is
-> -		 "fsl,CHIP-dma", where CHIP is the processor
-> -		 (mpc8349, mpc8360, etc.) and the second is
-> -		 "fsl,elo-dma"
-> +- compatible        : must include "fsl,elo-dma"
+Hm I had the same problem but changed my Makefile
+(scripts are too simple for me) like this:
 
-Why remove the list of supported compatible values. Lately it seems that
-we're moving towards listing more/all the values rather than removing
-their documentation...
+ dtb            := $(build_dir)/arch/arm/boot/dts/ste-hrefv60plus.dtb
++fallbackdtb    := $(build_dir)/arch/arm/boot/dts/hrefv60plus.dtb
+(...)
+-       cat $(dtb) >> $(output_dir)/zImage
++       if [ -f arch/arm/boot/dts/hrefv60plus.dts ] ; then \
++           cat $(fallbackdtb) >> $(output_dir)/zImage ; echo "fallback" ; \
++       else \
++           cat $(dtb) >> $(output_dir)/zImage ; \
++       fi
 
-> -- ranges		: Should be defined as specified in 1) to describe the
-> -		  DMA controller channels.
-> +- ranges            : describes the mapping between the address space of the
-> +                      DMA channels and the address space of the DMA controller
-
-What is "the address space of the DMA controller". Perhaps this should
-say "the CPU-visible address space" instead?
+Yours,
+Linus Walleij
