@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab3HUERU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 00:17:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34697 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591Ab3HUERT (ORCPT
+	id S1752000Ab3HUEUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 00:20:20 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:54624 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751524Ab3HUEUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 00:17:19 -0400
-Date: Wed, 21 Aug 2013 14:17:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Masanari Iida <standby24x7@gmail.com>,
-        Manish Chopra <manish.chopra@qlogic.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the trivial tree with the net-next tree
-Message-Id: <20130821141715.a1b18a28965e341531775656@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__21_Aug_2013_14_17_15_+1000_Yu.tMxvqGDXj4q8M"
+	Wed, 21 Aug 2013 00:20:19 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zcb8kzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz8dhz1de098h8275bh1de097hz2dh2a8h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h1155h)
+Message-ID: <5214401D.8010402@freescale.com>
+Date: Wed, 21 Aug 2013 12:20:45 +0800
+From: Liu Ying <Ying.Liu@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Fabio Estevam <festevam@gmail.com>
+CC: Sascha Hauer <kernel@pengutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] ARM: imx6q: refactor some ldb related clocks
+References: <1376987932-5540-1-git-send-email-Ying.Liu@freescale.com> <1376987932-5540-2-git-send-email-Ying.Liu@freescale.com> <CAOMZO5Afjp-zPzUaNE63L7Y2LjZbSrLupAJ_jFnf1Gg1+hx0Nw@mail.gmail.com>
+In-Reply-To: <CAOMZO5Afjp-zPzUaNE63L7Y2LjZbSrLupAJ_jFnf1Gg1+hx0Nw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__21_Aug_2013_14_17_15_+1000_Yu.tMxvqGDXj4q8M
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/20/2013 11:40 PM, Fabio Estevam wrote:
+> On Tue, Aug 20, 2013 at 5:38 AM, Liu Ying <Ying.Liu@freescale.com> wrote:
+> 
+>> diff --git a/Documentation/devicetree/bindings/clock/imx6q-clock.txt b/Documentation/devicetree/bindings/clock/imx6q-clock.txt
+>> index 5a90a72..90e923e 100644
+>> --- a/Documentation/devicetree/bindings/clock/imx6q-clock.txt
+>> +++ b/Documentation/devicetree/bindings/clock/imx6q-clock.txt
+>> @@ -89,8 +89,6 @@ clocks and IDs.
+>>         gpu3d_shader            74
+>>         ipu1_podf               75
+>>         ipu2_podf               76
+>> -       ldb_di0_podf            77
+>> -       ldb_di1_podf            78
+>>         ipu1_di0_pre            79
+>>         ipu1_di1_pre            80
+>>         ipu2_di0_pre            81
+> 
+> This causes a 'hole' in the clock numbering scheme: 74, 75, 76, 79, 80, etc
+> 
 
-Hi Jiri,
+I find there is a 'hole' in Documentation/devicetree/bindings/clock/imx5-clock.txt as well.
+The 'hole' was taken by tve_di(26) clock before.
 
-Today's linux-next merge of the trivial tree got a conflict in
-drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c between commit
-068a8d197e00 ("qlcnic: Replace poll mode mailbox interface with interrupt
-based mailbox interface") from the  tree and commit 0b1587b18bfe
-("treewide: Fix typo in printk") from the trivial tree.
+Is this more acceptable?
 
-I fixed it up (the former removed the line fixed by the latter, so I used
-that) and can carry the fix as necessary (no action is required).
+ldb_di0_podf_unused            77
+ldb_di1_podf_unused            78
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Liu Ying
 
---Signature=_Wed__21_Aug_2013_14_17_15_+1000_Yu.tMxvqGDXj4q8M
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSFD9LAAoJEECxmPOUX5FE6NIP/Rp0WZ+gNRLq4BTRU+bRk7Vu
-3A9p3UumTbDR+4O+8PE1NUVvu2mC29FXdVeZpKggzcS1J2dbc2j+3KpUGjS1yy3l
-+AsW3MYFiRxO5+dM8k4BcGbcE8E+83bH9xCI/saHFR7VoV8mod8BUQwLoqkKGTYW
-yJQdCsnYr3aEUbj+nJkOSO97iY83qUangtERX37gxATLguER+Wabtha0RZm/Tmio
-W7tIc7Suemwqcca4wGW9P/EvYPPaQSqceTP92YtgWQWOzSdO/Nzfpga1SrBvGha0
-Fp2EbyMQhpQVZK0G/dSqVuYDB0Ee1drLrhSSZDsT1BiAdKm6aeWGPNiXYBoyq2Ye
-DeOSOHD6wNxB5Rqdl5fQkMTDT6ivq2LVjonrDJAFqaNV2yBsJ3TlPVPSmIB+/wLA
-2ixeKE1nk3WoYuT9gu4mSh3tV1wTU/IoxAA3+VwKrOuOmWb+qpAv7mh4inDkhtBn
-4BK5PPSyeBzlOOfiwWDLO7jn5dx3ceg6t3ugudO9eZKNidy7waoheN27vPV8EO4t
-yUWTKG+Zmpris3AQV+R2ZJbcgNGGm1mwjBU4kTMOtK9hYeJXE/mCdSvHLrXwhV7i
-qzyCsnqAt7sIjmqh5MqINRUZxRtGR8KSOtqdfw4dNKBppx8B4LkrhFco/pIB1jxt
-vOFUYblOsORTtYHF7H6u
-=t1XW
------END PGP SIGNATURE-----
-
---Signature=_Wed__21_Aug_2013_14_17_15_+1000_Yu.tMxvqGDXj4q8M--
