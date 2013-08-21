@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab3HUCZL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 22:25:11 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:60664 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab3HUCZI (ORCPT
+	id S1752155Ab3HUCZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 22:25:20 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:13907 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502Ab3HUCZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 22:25:08 -0400
+	Tue, 20 Aug 2013 22:25:16 -0400
+X-Spam-Score: -101.0
+Message-ID: <52142008.203@asianux.com>
+Date: Wed, 21 Aug 2013 10:03:52 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Date: Tue, 20 Aug 2013 19:25:06 -0700
-Message-ID: <CAN8TOE_8f_vhCAhRaBGXk9=F8=-2YtY5eSNgypSuxiL5z-B-=Q@mail.gmail.com>
-Subject: [Device-tree] mailing list responsiveness and discoverability
-From: Brian Norris <computersforpeace@gmail.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Cc: devicetree@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/module.c: use scnprintf() instead of sprintf()
+References: <5212DEC3.9070007@asianux.com> <87vc30gao5.fsf@rustcorp.com.au>
+In-Reply-To: <87vc30gao5.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello device tree maintainers,
+On 08/20/2013 02:04 PM, Rusty Russell wrote:
+> Chen Gang <gang.chen@asianux.com> writes:
+> 
+>> For some strings, they are permitted to be larger than PAGE_SIZE, so
+>> need use scnprintf() instead of sprintf(), or it will cause issue.
+>>
+>> One case is:
+>>
+>>   if a module version is crazy defined (length more than PAGE_SIZE),
+>>   'modinfo' command is still OK (print full contents),
+>>   but for "cat /sys/modules/'modname'/version", will cause issue in kernel.
+> 
+> Applied!
+> 
 
-I (sub)maintain the Linux MTD subsystem and hang out on the
-linux-mtd@infradead.org mailing list. I have been seeing an increasing
-number of submissions that involve device-tree changes. Many of these
-changes are ill thought out and may even cause ABI breakage.
+Thanks.
 
-According to discussions I've seen on LKML, you want to see better
-bindings merged into the kernel, and you want to maintain more control
-over the acceptance of bindings in general. However, I see a few
-problems that have inhibited this.
+> Thanks,
+> Rusty.
+> 
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> ---
+>>  kernel/module.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/kernel/module.c b/kernel/module.c
+>> index 2069158..0618e63 100644
+>> --- a/kernel/module.c
+>> +++ b/kernel/module.c
+>> @@ -603,7 +603,7 @@ static void setup_modinfo_##field(struct module *mod, const char *s)  \
+>>  static ssize_t show_modinfo_##field(struct module_attribute *mattr,   \
+>>  			struct module_kobject *mk, char *buffer)      \
+>>  {                                                                     \
+>> -	return sprintf(buffer, "%s\n", mk->mod->field);               \
+>> +	return scnprintf(buffer, PAGE_SIZE, "%s\n", mk->mod->field);  \
+>>  }                                                                     \
+>>  static int modinfo_##field##_exists(struct module *mod)               \
+>>  {                                                                     \
+>> -- 
+>> 1.7.7.6
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-(1) Mailing list change: it just so happens that you recently moved
-your mailing list to @vger.kernel.org. Some people are still CC'ing
-the old one (if they CC any DT list at all). I'm not sure what can be
-done about this, exactly. Perhaps a forwarding rule + a warning
-response would have been better for a transition period, rather than
-just shutting down and rejecting from the old one.
 
-(2) Responsiveness: when we finally do CC devicetree@vger.kernel.org,
-I don't see much feedback, even for those which (when I get around to
-reviewing them myself) look like they have obvious issues that
-device-tree maintainers should care about.
-
-(3) Archives: Archives for devicetree@vger.kernel.org are not easy to
-find. I recently subscribed to the mailing list, so general
-device-tree activity doesn't get lost in oblivion (to me). But if no
-one has done so yet, I'd like to see this mailing list archived on at
-least one of gmane (gmane has the old devicetree list and not the new
-one.), marc.info (I "devicetree" is this the new one?), etc. and
-linked at:
-
-http://vger.kernel.org/vger-lists.html#devicetree
-
-(there are no listed archives as of this email)
-
-Admittedly, (2) is exacerbated by (1) when submitters send to the
-wrong address and don't bother correcting and resending, so maybe
-discoverability ((1) and (3)) is the only real issue.
-
-Thanks for considering my complaints.
-
-Regards,
-Brian
+-- 
+Chen Gang
