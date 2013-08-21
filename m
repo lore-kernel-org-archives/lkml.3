@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214Ab3HUQUl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 12:20:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52175 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab3HUQUk (ORCPT
+	id S1752269Ab3HUQU4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 12:20:56 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:41443 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab3HUQUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 12:20:40 -0400
-Date: Wed, 21 Aug 2013 09:20:38 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: liujunliang_ljl <liujunliang_ljl@163.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>,
-        sunhecheng <sunhecheng@vip.126.com>,
-        linux-usb <linux-usb@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [PATCH-SR9700] Merge USB 1.1 Ethernet Adapter SR9700
- DeviceDriver into the Linux Kernel
-Message-ID: <20130821162038.GB14364@kroah.com>
-References: <201308201841116403992@163.com>
- <20130820204606.GB26241@electric-eye.fr.zoreil.com>
- <201308211805574844059@163.com>
+	Wed, 21 Aug 2013 12:20:53 -0400
+Date: Wed, 21 Aug 2013 09:20:49 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Manish Badarkhe <badarkhe.manish@gmail.com>
+Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
+        dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        LDOC <linux-doc@vger.kernel.org>,
+        device-tree <devicetree-discuss@lists.ozlabs.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Subject: Re: [PATCH V3 1/2] tps6507x-ts: Add DT support
+Message-ID: <20130821162049.GA28359@core.coreip.homeip.net>
+References: <1369126458-24872-1-git-send-email-manishv.b@ti.com>
+ <1369126458-24872-2-git-send-email-manishv.b@ti.com>
+ <CA+V-a8u1BEXMHHso80NdP4FX_au2mnUEtzqYyJXg_vA9JvSJbA@mail.gmail.com>
+ <CAKDJKT45=BUcx5q8bHL=xzHQ0aAhE=cwGy4EK8MWRfpiKVzt0g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201308211805574844059@163.com>
+In-Reply-To: <CAKDJKT45=BUcx5q8bHL=xzHQ0aAhE=cwGy4EK8MWRfpiKVzt0g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 06:06:02PM +0800, liujunliang_ljl wrote:
-> Dear Francois Romieu :
-> 
-> 	1, all the format problems have been fixed
-> 	
-> 	2, sr9700.h registers definition is re-written
-> 
-> 	3, Thanks for your detail checking and I have beed scripts/checkpatch.pl the patch and please check it.
-> 
-> [PATCH] :
+Hi Manish,
 
-You still aren't sending the patch in a format in which we can apply it
-in.  Please read the file, Documentation/SubmittingPatches, specifically
-the part about the "Signed-off-by:" line, and provding a proper body of
-the patch for the changelog.
+On Tue, Aug 20, 2013 at 12:25:32PM +0530, Manish Badarkhe wrote:
+> Hi Prabhakar,
+> 
+> On Tue, Aug 20, 2013 at 11:44 AM, Prabhakar Lad
+> >
+> > All the three above properties as per the documentation  above
+> > are optional, but the code here makes them required property.
+> > May be what you can do is if property is not defined make it as
+> > zero as per documentation.
+> 
+> I already taken care of this as per Dmitry's comment but not yet
+> posted patch series as
+> there is discussion going on populating child node's properties.
 
-thanks,
+Please post the series using find node properties (as they were). We can
+discuss if MFD devices should be automatically attaching parents OF data
+to child devices they are creating later.
 
-greg k-h
+Thanks.
+
+-- 
+Dmitry
