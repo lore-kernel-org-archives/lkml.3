@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab3HUOo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:44:28 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:50587 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab3HUOoX (ORCPT
+	id S1752567Ab3HUOok (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:44:40 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42725 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab3HUOoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:44:23 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 14/14] cpufreq: tegra: use cpufreq_generic_init() routine
-Date: Wed, 21 Aug 2013 20:12:33 +0530
-Message-Id: <45979df742e182f28704d3a05b4d011aeae4ef3c.1377093938.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1377093938.git.viresh.kumar@linaro.org>
-References: <cover.1377093938.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1377093938.git.viresh.kumar@linaro.org>
-References: <cover.1377093938.git.viresh.kumar@linaro.org>
+	Wed, 21 Aug 2013 10:44:37 -0400
+Date: Wed, 21 Aug 2013 10:42:58 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
+        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 5/8] x86, brk: Make extend_brk() available with va/pa.
+Message-ID: <20130821144258.GH2593@phenom.dumpdata.com>
+References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1377080143-28455-6-git-send-email-tangchen@cn.fujitsu.com>
+ <18d71946-6de9-4af2-a6a8-05fae51755af@email.android.com>
+ <68a532f2-e468-4aea-b42b-a444ec079c3f@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <68a532f2-e468-4aea-b42b-a444ec079c3f@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use generic cpufreq_generic_init() routine instead of replicating the same code
-here.
+On Wed, Aug 21, 2013 at 02:35:36PM +0200, H. Peter Anvin wrote:
+> Global symbols are inaccessible in physical mode.
 
-Along with that we are disabling clks in error cases and ->exit() routine.
+Even if they are embedded in the assembler code and use GLOBAL(paging_enabled) ?
 
-Cc: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/tegra-cpufreq.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+> 
+> This is incidentally yet another example of "PV/weird platform violence", since in their absence it would be trivial to work around this by using segmentation.
 
-diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-index 3f25ab6..bc7c2a1 100644
---- a/drivers/cpufreq/tegra-cpufreq.c
-+++ b/drivers/cpufreq/tegra-cpufreq.c
-@@ -161,18 +161,21 @@ static struct notifier_block tegra_cpu_pm_notifier = {
- 
- static int tegra_cpu_init(struct cpufreq_policy *policy)
- {
-+	int ret;
-+
- 	if (policy->cpu >= NUM_CPUS)
- 		return -EINVAL;
- 
- 	clk_prepare_enable(emc_clk);
- 	clk_prepare_enable(cpu_clk);
- 
--	cpufreq_table_validate_and_show(policy, freq_table);
--
- 	/* FIXME: what's the actual transition time? */
--	policy->cpuinfo.transition_latency = 300 * 1000;
--
--	cpumask_copy(policy->cpus, cpu_possible_mask);
-+	ret = cpufreq_generic_init(policy, freq_table, 300 * 1000);
-+	if (ret) {
-+		clk_disable_unprepare(cpu_clk);
-+		clk_disable_unprepare(emc_clk);
-+		return ret;
-+	}
- 
- 	if (policy->cpu == 0)
- 		register_pm_notifier(&tegra_cpu_pm_notifier);
-@@ -183,6 +186,7 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
- static int tegra_cpu_exit(struct cpufreq_policy *policy)
- {
- 	cpufreq_frequency_table_put_attr(policy->cpu);
-+	clk_disable_unprepare(cpu_clk);
- 	clk_disable_unprepare(emc_clk);
- 	return 0;
- }
--- 
-1.7.12.rc2.18.g61b472e
+I don't follow why it could not.
 
+Why can't there be a __pa_symbol(paging_enabled) that is used. Won't
+that in effect allow you to check the contents of that 'global
+constant' even when you don't have paging enabled?
+
+> >>As mentioned above, on 32bit before paging is enabled, we have to
+> >>access variables
+> >>with pa. So introduce a "bool is_phys" parameter to extend_brk(), and
+> >>convert va
+> >>to pa is it is true.
+> >
+> >Could you do it differently? Meaning have a global symbol
+> >(paging_enabled) which will be used by most of the functions you
+> >changed in this patch and the next ones? It would naturally be enabled
+> >when paging is on and __va addresses can be used. 
+> >
+> >That could also be used in the printk case to do a BUG_ON before paging
+> >is enabled on 32bit. Or perhaps use a different code path to deal with
+> >using __pa address. 
+> >
+> >? 
