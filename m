@@ -1,104 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab3HUKta (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 06:49:30 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:35176 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab3HUKt3 (ORCPT
+	id S1751504Ab3HULHe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 07:07:34 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:17784 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273Ab3HULHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 06:49:29 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2 10/20] mm, hugetlb: remove resv_map_put()
-In-Reply-To: <1376040398-11212-11-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com> <1376040398-11212-11-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Wed, 21 Aug 2013 16:19:20 +0530
-Message-ID: <8761uzgvyn.fsf@linux.vnet.ibm.com>
+	Wed, 21 Aug 2013 07:07:33 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 21 Aug 2013 04:07:32 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <linus.walleij@linaro.org>
+CC: <swarren@wwwdotorg.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2 1/2] pinctrl: utils : add support to pass config type in generic util APIs
+Date: Wed, 21 Aug 2013 16:53:37 +0530
+Message-ID: <1377084218-13858-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
 Content-Type: text/plain
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082110-8878-0000-0000-0000087C1D6B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+Add support to pass the config type like GROUP or PIN when using
+the utils or generic pin configuration APIs. This will make the
+APIs more generic.
 
-> In following patch, I change vma_resv_map() to return resv_map
-> for all case. This patch prepares it by removing resv_map_put() which
-> doesn't works properly with following change, because it works only for
-> HPAGE_RESV_OWNER's resv_map, not for all resv_maps.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 73034dd..869c3e0 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2212,15 +2212,6 @@ static void hugetlb_vm_op_open(struct vm_area_struct *vma)
->  		kref_get(&resv->refs);
->  }
->
-> -static void resv_map_put(struct vm_area_struct *vma)
-> -{
-> -	struct resv_map *resv = vma_resv_map(vma);
-> -
-> -	if (!resv)
-> -		return;
-> -	kref_put(&resv->refs, resv_map_release);
-> -}
+Added additional inline APIs such that it can be use directly as
+callback for the pinctrl_ops.
 
-Why not have seperate functions to return vma_resv_map for
-HPAGE_RESV_OWNER and one for put ? That way we could have something like
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Changes from V1:
+- Remove separate implementation for pins and group for
+  pinctrl_utils_dt_free_map and improve this function
+  to support both i.e. PINS and GROUPs.
 
-resv_map_hpage_resv_owner_get()
-resv_map_hpge_resv_put() 
+ drivers/pinctrl/pinconf-generic.c       |    9 +++++----
+ drivers/pinctrl/pinctrl-palmas.c        |    2 +-
+ drivers/pinctrl/pinctrl-utils.c         |   12 +++++++++---
+ include/linux/pinctrl/pinconf-generic.h |   22 ++++++++++++++++++++--
+ 4 files changed, 35 insertions(+), 10 deletions(-)
 
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-
-> -
->  static void hugetlb_vm_op_close(struct vm_area_struct *vma)
->  {
->  	struct hstate *h = hstate_vma(vma);
-> @@ -2237,7 +2228,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
->  		reserve = (end - start) -
->  			region_count(resv, start, end);
->
-> -		resv_map_put(vma);
-> +		kref_put(&resv->refs, resv_map_release);
->
->  		if (reserve) {
->  			hugetlb_acct_memory(h, -reserve);
-> @@ -3164,8 +3155,8 @@ int hugetlb_reserve_pages(struct inode *inode,
->  		region_add(resv_map, from, to);
->  	return 0;
->  out_err:
-> -	if (vma)
-> -		resv_map_put(vma);
-> +	if (vma && is_vma_resv_set(vma, HPAGE_RESV_OWNER))
-> +		kref_put(&resv_map->refs, resv_map_release);
-
-for this
-
-    if (alloc)
-           resv_map_hpage_resv_put();
-
->  	return ret;
->  }
->
-> -- 
-> 1.7.9.5
+diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
+index d9536ca..2c62225 100644
+--- a/drivers/pinctrl/pinconf-generic.c
++++ b/drivers/pinctrl/pinconf-generic.c
+@@ -240,7 +240,8 @@ out:
+ 
+ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+ 		struct device_node *np, struct pinctrl_map **map,
+-		unsigned *reserved_maps, unsigned *num_maps)
++		unsigned *reserved_maps, unsigned *num_maps,
++		enum pinctrl_map_type type)
+ {
+ 	int ret;
+ 	const char *function;
+@@ -295,7 +296,7 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+ 		if (num_configs) {
+ 			ret = pinctrl_utils_add_map_configs(pctldev, map,
+ 					reserved_maps, num_maps, group, configs,
+-					num_configs, PIN_MAP_TYPE_CONFIGS_PIN);
++					num_configs, type);
+ 			if (ret < 0)
+ 				goto exit;
+ 		}
+@@ -310,7 +311,7 @@ EXPORT_SYMBOL_GPL(pinconf_generic_dt_subnode_to_map);
+ 
+ int pinconf_generic_dt_node_to_map(struct pinctrl_dev *pctldev,
+ 		struct device_node *np_config, struct pinctrl_map **map,
+-		unsigned *num_maps)
++		unsigned *num_maps, enum pinctrl_map_type type)
+ {
+ 	unsigned reserved_maps;
+ 	struct device_node *np;
+@@ -322,7 +323,7 @@ int pinconf_generic_dt_node_to_map(struct pinctrl_dev *pctldev,
+ 
+ 	for_each_child_of_node(np_config, np) {
+ 		ret = pinconf_generic_dt_subnode_to_map(pctldev, np, map,
+-						&reserved_maps, num_maps);
++					&reserved_maps, num_maps, type);
+ 		if (ret < 0) {
+ 			pinctrl_utils_dt_free_map(pctldev, *map, *num_maps);
+ 			return ret;
+diff --git a/drivers/pinctrl/pinctrl-palmas.c b/drivers/pinctrl/pinctrl-palmas.c
+index 2697c2e..9550c33 100644
+--- a/drivers/pinctrl/pinctrl-palmas.c
++++ b/drivers/pinctrl/pinctrl-palmas.c
+@@ -655,7 +655,7 @@ static const struct pinctrl_ops palmas_pinctrl_ops = {
+ 	.get_groups_count = palmas_pinctrl_get_groups_count,
+ 	.get_group_name = palmas_pinctrl_get_group_name,
+ 	.get_group_pins = palmas_pinctrl_get_group_pins,
+-	.dt_node_to_map = pinconf_generic_dt_node_to_map,
++	.dt_node_to_map = pinconf_generic_dt_node_to_map_pin,
+ 	.dt_free_map = pinctrl_utils_dt_free_map,
+ };
+ 
+diff --git a/drivers/pinctrl/pinctrl-utils.c b/drivers/pinctrl/pinctrl-utils.c
+index b7ac646..48277e0 100644
+--- a/drivers/pinctrl/pinctrl-utils.c
++++ b/drivers/pinctrl/pinctrl-utils.c
+@@ -126,10 +126,16 @@ void pinctrl_utils_dt_free_map(struct pinctrl_dev *pctldev,
+ {
+ 	int i;
+ 
+-	for (i = 0; i < num_maps; i++)
+-		if (map[i].type == PIN_MAP_TYPE_CONFIGS_GROUP)
++	for (i = 0; i < num_maps; i++) {
++		switch (map[i].type) {
++		case PIN_MAP_TYPE_CONFIGS_GROUP:
++		case PIN_MAP_TYPE_CONFIGS_PIN:
+ 			kfree(map[i].data.configs.configs);
+-
++			break;
++		default:
++			break;
++		}
++	}
+ 	kfree(map);
+ }
+ EXPORT_SYMBOL_GPL(pinctrl_utils_dt_free_map);
+diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
+index 83f5179..fb90ef5 100644
+--- a/include/linux/pinctrl/pinconf-generic.h
++++ b/include/linux/pinctrl/pinconf-generic.h
+@@ -140,15 +140,33 @@ static inline unsigned long pinconf_to_config_packed(enum pin_config_param param
+ #ifdef CONFIG_OF
+ 
+ #include <linux/device.h>
++#include <linux/pinctrl/machine.h>
+ struct pinctrl_dev;
+ struct pinctrl_map;
+ 
+ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+ 		struct device_node *np, struct pinctrl_map **map,
+-		unsigned *reserved_maps, unsigned *num_maps);
++		unsigned *reserved_maps, unsigned *num_maps,
++		enum pinctrl_map_type type);
+ int pinconf_generic_dt_node_to_map(struct pinctrl_dev *pctldev,
+ 		struct device_node *np_config, struct pinctrl_map **map,
+-		unsigned *num_maps);
++		unsigned *num_maps, enum pinctrl_map_type type);
++
++static inline int pinconf_generic_dt_node_to_map_group(
++		struct pinctrl_dev *pctldev, struct device_node *np_config,
++		struct pinctrl_map **map, unsigned *num_maps)
++{
++	return pinconf_generic_dt_node_to_map(pctldev, np_config, map, num_maps,
++			PIN_MAP_TYPE_CONFIGS_GROUP);
++}
++
++static inline int pinconf_generic_dt_node_to_map_pin(
++		struct pinctrl_dev *pctldev, struct device_node *np_config,
++		struct pinctrl_map **map, unsigned *num_maps)
++{
++	return pinconf_generic_dt_node_to_map(pctldev, np_config, map, num_maps,
++			PIN_MAP_TYPE_CONFIGS_PIN);
++}
+ 
+ #endif
+ 
+-- 
+1.7.1.1
 
