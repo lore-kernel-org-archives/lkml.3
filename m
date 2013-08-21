@@ -1,51 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab3HUHFJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 03:05:09 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:38103 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306Ab3HUHFH (ORCPT
+	id S1752381Ab3HUHHe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 03:07:34 -0400
+Received: from relayp.teleport.net.mm ([203.81.162.50]:56459 "EHLO
+	mxo.teleport.net.mm" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752174Ab3HUHHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 03:05:07 -0400
-From: Libo Chen <libo.chen@huawei.com>
-To: <davem@davemloft.net>
-CC: <emilio@elopez.com.ar>, <gregkh@linuxfoundation.org>, <wfp5p@virginia.edu>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lizefan@huawei.com>, <libo.chen@huawei.com>
-Subject: [PATCH 4/8] net: sunbmac: remove unnecessary dev_set_drvdata()
-Date: Wed, 21 Aug 2013 15:02:27 +0800
-Message-ID: <1377068547-54816-1-git-send-email-libo.chen@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
+	Wed, 21 Aug 2013 03:07:32 -0400
+X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Aug 2013 03:07:32 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AthkAJhjFFLLUaJgjGdsb2JhbAAmNA+BYgIBgVFGgxq1IIJrgnyBO4ErFg4BAQEnOwGBBwEBAWkBARQBAQELAQEBAgQBAQErcRoCDRkCQggYAwEMH4UqAQEBARUUgXsBAQEKAQEBDpQZhnyIA4g5IAMjGoFQgSmOeIMjDoEeA4krmGyEAIYGAkOBZTo
+X-IronPort-AV: E=Sophos;i="4.89,926,1367947800"; 
+   d="scan'208";a="23126160"
+Date: Wed, 21 Aug 2013 13:27:50 +0630 (MMT)
+From: 2013 Heritage Board <wintrade@myanmar.com.mm>
+Reply-To: "Mrs. Hillary Florence" <wutransfer001@xtra.co.nz>
+Message-ID: <774969896.222489.1377068270899.JavaMail.root@YTP-PMX1>
+Subject: Re: Cash Awaiting Pick Up
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [203.81.162.96]
+X-Mailer: Zimbra 6.0.13_GA_2918 (zclient/6.0.13_GA_2918)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unnecessary dev_set_drvdata() is removed, because the driver core
-clears the driver data to NULL after device_release or on probe failure.
-
-Signed-off-by: Libo Chen <libo.chen@huawei.com>
----
- drivers/net/ethernet/sun/sunbmac.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/sun/sunbmac.c b/drivers/net/ethernet/sun/sunbmac.c
-index 0a32ca5..7217ee5 100644
---- a/drivers/net/ethernet/sun/sunbmac.c
-+++ b/drivers/net/ethernet/sun/sunbmac.c
-@@ -1259,8 +1259,6 @@ static int bigmac_sbus_remove(struct platform_device *op)
- 
- 	free_netdev(net_dev);
- 
--	dev_set_drvdata(&op->dev, NULL);
--
- 	return 0;
- }
- 
--- 
-1.7.1
-
-
+Congrats:You have won 500,000.00 Contact Mrs. Hillary Florence: wutransfer001@xtra.co.nz. Mobile:+447035927183
