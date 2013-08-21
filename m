@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463Ab3HUIHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 04:07:53 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51421 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab3HUIHu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 04:07:50 -0400
-Message-ID: <5214754D.7050203@oracle.com>
-Date: Wed, 21 Aug 2013 16:07:41 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1751520Ab3HUII3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 04:08:29 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61603 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090Ab3HUII0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 04:08:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,926,1367996400"; 
+   d="scan'208";a="349434623"
+From: "Li, Fei" <fei.li@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "holt@sgi.com" <holt@sgi.com>,
+        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Li, Fei" <fei.li@intel.com>
+Subject: RE: [PATCH] reboot: perform warm/cold reset correctly for CF9 type
+Thread-Topic: [PATCH] reboot: perform warm/cold reset correctly for CF9 type
+Thread-Index: AQHOnkAyupFWw/TFQUeMMS/7isOBqpmevtGAgACNFwA=
+Date: Wed, 21 Aug 2013 08:08:23 +0000
+Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE3634012ED68C@SHSMSX104.ccr.corp.intel.com>
+References: <1377049949.18357.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <20130821072940.GB27495@gmail.com>
+ <69b80c44-3245-4393-b6e9-4d8a7f3d3c66@email.android.com>
+In-Reply-To: <69b80c44-3245-4393-b6e9-4d8a7f3d3c66@email.android.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>, Alasdair Kergon <agk@redhat.com>,
-        dm-devel@redhat.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joe Jin <joe.jin@oracle.com>
-Subject: [PATCH] dm ioctl: allow change device target type to error
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7L88Yc3020851
 
-commit a5664da "dm ioctl: make bio or request based device type immutable"
-prevented "dmsetup wape_table" change the target type to "error".
+> Careful.  This is a very different definition of warm vs cold boot used elsewhere.
 
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
----
- drivers/md/dm-ioctl.c |  6 +++++-
- drivers/md/dm-table.c | 12 ++++++++++++
- drivers/md/dm.h       |  1 +
- 3 files changed, 18 insertions(+), 1 deletion(-)
+We have tested both warm and cold reboot on our x86 platform, and it works well.
+Besides with commit, the expected warm and reboot type can be specified through
+command line.
 
-diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
-index f1b7586..1ee9e41 100644
---- a/drivers/md/dm-ioctl.c
-+++ b/drivers/md/dm-ioctl.c
-@@ -1250,7 +1250,7 @@ static int populate_table(struct dm_table *table,
- 
- static int table_load(struct dm_ioctl *param, size_t param_size)
- {
--	int r;
-+	int r = 0;
- 	struct hash_cell *hc;
- 	struct dm_table *t, *old_map = NULL;
- 	struct mapped_device *md;
-@@ -1280,6 +1280,9 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
- 		goto out;
- 	}
- 
-+	if (dm_is_error_target(t))
-+		goto error_target;
-+
- 	/* Protect md->type and md->queue against concurrent table loads. */
- 	dm_lock_md_type(md);
- 	if (dm_get_md_type(md) == DM_TYPE_NONE)
-@@ -1303,6 +1306,7 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
- 	}
- 	dm_unlock_md_type(md);
- 
-+error_target:
- 	/* stage inactive table */
- 	down_write(&_hash_lock);
- 	hc = dm_get_mdptr(md);
-diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-index f221812..27be46a 100644
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -184,6 +184,18 @@ static int alloc_targets(struct dm_table *t, unsigned int num)
- 	return 0;
- }
- 
-+bool dm_is_error_target(struct dm_table *t)
-+{
-+	unsigned i;
-+
-+	for (i = 0; i < t->num_targets; i++) {
-+		struct dm_target *tgt = t->targets + i;
-+		if (strcmp(tgt->type->name, "error") == 0)
-+			return true;
-+	}
-+	return false;
-+}
-+
- int dm_table_create(struct dm_table **result, fmode_t mode,
- 		    unsigned num_targets, struct mapped_device *md)
- {
-diff --git a/drivers/md/dm.h b/drivers/md/dm.h
-index 45b97da..c7bceeb 100644
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -69,6 +69,7 @@ unsigned dm_table_get_type(struct dm_table *t);
- struct target_type *dm_table_get_immutable_target_type(struct dm_table *t);
- bool dm_table_request_based(struct dm_table *t);
- bool dm_table_supports_discards(struct dm_table *t);
-+bool dm_is_error_target(struct dm_table *t);
- int dm_table_alloc_md_mempools(struct dm_table *t);
- void dm_table_free_md_mempools(struct dm_table *t);
- struct dm_md_mempools *dm_table_get_md_mempools(struct dm_table *t);
--- 
-1.8.3.1
+> >Looks good, but please introduce a reboot_val intermediate
+> >variable instead of duplicating that ugly line-broken
+> >construct twice.
 
+Accepted and will update it in later version. 
+
+> >
+> >Thanks,
+> >
+> >	Ingo
+> 
+
+Thanks,
+Fei
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
