@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab3HUCbG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 22:31:06 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:13862 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab3HUCbF (ORCPT
+	id S1752157Ab3HUCbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 22:31:44 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:64198 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab3HUCbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 22:31:05 -0400
-X-Spam-Score: -101.0
-Message-ID: <52142464.8060903@asianux.com>
-Date: Wed, 21 Aug 2013 10:22:28 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 20 Aug 2013 22:31:43 -0400
+Date: Tue, 20 Aug 2013 19:31:51 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] idr: Use this_cpu_ptr() for percpu_ida
+Message-ID: <20130821023151.GC4051@kmo-pixel>
+References: <1375896905-6074-5-git-send-email-kmo@daterainc.com>
+ <0000014059ec4c34-1bb53d48-c9ee-4e71-81b8-253026431c5c-000000@email.amazonses.com>
+ <20130807183345.GA11612@kmo-pixel>
+ <000001405a4b39ef-0715410a-5061-41e9-9414-86559f16570d-000000@email.amazonses.com>
+ <20130807195733.GB11612@kmo-pixel>
+ <000001405e5776ba-bcc96088-b5e8-4abe-b98e-2e9d7d9b112b-000000@email.amazonses.com>
+ <1377033546.32763.4.camel@haakon3.risingtidesystems.com>
+ <20130820142956.1194d8c798abf53f884a1fb6@linux-foundation.org>
+ <20130821020132.GA4051@kmo-pixel>
+ <20130821020742.GA3495@htj.dyndns.org>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
-        riel@redhat.com, hughd@google.com, xemul@parallels.com,
-        rientjes@google.com, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] fs/proc/task_mmu.c: check the return value of mpol_to_str()
-References: <5212E8DF.5020209@asianux.com> <20130820053036.GB18673@moon> <52130194.4030903@asianux.com> <20130820064730.GD18673@moon> <52131F48.1030002@asianux.com> <52132011.60501@asianux.com> <52132432.3050308@asianux.com> <20130820082516.GE18673@moon> <52142422.9050209@asianux.com>
-In-Reply-To: <52142422.9050209@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130821020742.GA3495@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mpol_to_str() may fail, and not fill the buffer (e.g. -EINVAL), so need
-check about it, or buffer may not be zero based, and next seq_printf()
-will cause issue.
+On Tue, Aug 20, 2013 at 10:07:42PM -0400, Tejun Heo wrote:
+> Hello, Kent.
+> 
+> On Tue, Aug 20, 2013 at 07:01:32PM -0700, Kent Overstreet wrote:
+> > I think Tejun and I might be at a bit of an impasse with the ida rewrite
+> > itself, but I don't think there were any outstanding objections to the
+> > percpu ida code itself - and this is a standalone version.
+> 
+> The percpu ida code can be applied separately from the ida rewrite?
 
-The failure return need after mpol_cond_put() to match get_vma_policy().
+Yes - at the cost of using significantly more memory for the global
+freelist
 
+> > I was meaning to ask you Andrew, if you could take a look at the ida
+> > discussion and lend your opinion - I don't think there's any _specific_
+> > technical objections left to my ida code, and it's now on a more
+> > philisophical "complexity vs. ..." level.
+> 
+> Hmmm... the objection was pretty specific - don't depend on high-order
+> or vmalloc allocations when it can be easily avoided by using proper
+> radix tree.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
----
- fs/proc/task_mmu.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+We only do vmalloc allocations for CONFIG_COMPACTION=n, and then only
+when we need to allocate more than almost 1 _billion_ ids from a single
+ida (twice than on 32 bit, so never because that gets us just about to
+INT_MAX) - and then it's only 32k of vmalloc memory, for the entire ida.
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 107d026..d87f5da 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -1376,8 +1376,10 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
- 	walk.mm = mm;
- 
- 	pol = get_vma_policy(task, vma, vma->vm_start);
--	mpol_to_str(buffer, sizeof(buffer), pol);
-+	n = mpol_to_str(buffer, sizeof(buffer), pol);
- 	mpol_cond_put(pol);
-+	if (n < 0)
-+		return n;
- 
- 	seq_printf(m, "%08lx %s", vma->vm_start, buffer);
- 
--- 
-1.7.7.6
+This is with max allocation order of 4 for COMPACTION=y, 2 for
+COMPACTION=n. 
+
+All this for a performance improvement of 10x to 50x (or more), for the
+ida sizes I measured.
+
+So I could see your point if we were allocating gobs of vmalloc memory,
+or high order allocations big enough to realistically be problematic (I
+honestly don't think these will be) - but to me, this seems like a
+pretty reasonable tradeoff for those performance gains.
+
+(And the performance gains do substantially come from using more
+contiguous memory and treating the whole data structure as an array, and
+doing less pointer chasing/looping)
