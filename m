@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab3HUJfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 05:35:21 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:13186 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab3HUJfU (ORCPT
+	id S1751821Ab3HUJic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 05:38:32 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:63375 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab3HUJi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 05:35:20 -0400
-Message-ID: <521489EC.9090107@atmel.com>
-Date: Wed, 21 Aug 2013 11:35:40 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 21 Aug 2013 05:38:29 -0400
 MIME-Version: 1.0
-To: Bo Shen <voice.shen@atmel.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <ludovic.desroches@atmel.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v2 0/3] arm: atmel: at91sam9n12: add i2c pinctrl and qt1070
- support
-References: <1373513446-18215-1-git-send-email-voice.shen@atmel.com>
-In-Reply-To: <1373513446-18215-1-git-send-email-voice.shen@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <20130812024556.GB29956@sanechka.spb.ru>
+References: <20130812024556.GB29956@sanechka.spb.ru>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Wed, 21 Aug 2013 10:38:08 +0100
+X-Google-Sender-Auth: a3cVbjciwB60peiApRjZaLJGcJM
+Message-ID: <CAHkRjk4y06puTL_Gq5RbpoV+kpEp+k32z5aq3HpEu9u3qsS_Aw@mail.gmail.com>
+Subject: Re: kmemleak in apei_res_add
+To: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>
+Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Huang Ying <ying.huang@intel.com>
+Content-Type: text/plain; charset=KOI8-R
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2013 05:30, Bo Shen :
-> this patch is based on linux master branch, implementation as following:
->    - add the i2c pinctrl which needed for using at91sam9n12 TWI
->    - enable qt1070
->    - trival fix for the gpio-key pin number
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-On the whole series.
-
+On 12 August 2013 03:45, Alexandra N. Kossovsky
+<Alexandra.Kossovsky@oktetlabs.ru> wrote:
+> When running 3.10.3 with kmemleak enabled, I see following warnings from
+> kmemleak:
 >
-> Changes in v2:
->    - remove comments as use micro
->    - using micro for interrupt trigger mode
->
-> Bo Shen (3):
->    arm: atmel: at91sam9n12: add pinctrl of TWI
+> unreferenced object 0xffff88024d2219a0 (size 32):
+>   comm "swapper/0", pid 1, jiffies 4294894532 (age 26865.180s)
+>   hex dump (first 32 bytes):
+>     58 de 0c 73 02 88 ff ff 58 de 0c 73 02 88 ff ff  X..s....X..s....
+>     18 50 fd 7d 00 00 00 00 3f 50 fd 7d 00 00 00 00  .P.}....?P.}....
+>   backtrace:
+>     [<ffffffff813ddf40>] kmemleak_alloc+0x21/0x3e
+>     [<ffffffff8111cb99>] kmemleak_alloc_recursive.constprop.58+0x16/0x18
+>     [<ffffffff8111efac>] kmem_cache_alloc_trace+0xe6/0x12f
+>     [<ffffffff81278f0e>] apei_res_add+0xb9/0xe8
+>     [<ffffffff81278faa>] collect_res_callback+0x6d/0x7c
+>     [<ffffffff812788ed>] apei_exec_for_each_entry+0x78/0x93
+>     [<ffffffff8127891d>] apei_exec_collect_resources+0x15/0x17
+>     [<ffffffff81b010e5>] erst_init+0x278/0x2a3
+>     [<ffffffff810020b5>] do_one_initcall+0x7b/0x116
+>     [<ffffffff81ac9ee7>] kernel_init_freeable+0x13f/0x1cc
+>     [<ffffffff813db19f>] kernel_init+0x9/0xd6
+>     [<ffffffff813fe5bc>] ret_from_fork+0x7c/0xb0
+>     [<ffffffffffffffff>] 0xffffffffffffffff
 
-Beware:
-1/ "arm" in upper case
-2/ not "atmel" as second identifier but "at91" (lower case)
+Are there any "APEI:" errors in the kernel log? It could be some
+freeing missing on an error path.
 
->    arm: atmel: at91sam9n12: add qt1070 support
->    arm: atmel: at91sam9n12: correct pin number of gpio-key
->
->   arch/arm/boot/dts/at91sam9n12.dtsi  |   20 ++++++++++++++++++++
->   arch/arm/boot/dts/at91sam9n12ek.dts |   18 +++++++++++++++++-
->   2 files changed, 37 insertions(+), 1 deletion(-)
->
+apei_res_add() allocates struct apei_res objects and places them on
+the erst_resources.{iomem,ioport} list heads as given by erst_init().
+The erst_resources is just a local variable on the erst_init() stack,
+hence kmemleak doesn't have any trace of the allocated objects.
 
+It looks like erst_init() calls apei_resources_request() which should
+merge the local erst_resources list heads with the global
+apei_resources_all but for whatever reason, this or any of the
+previous calls in erst_init() fail and we don't get the merging. Some
+of the goto err_fini in this function should probably be err_release.
+I cc'ed Huang as the driver author.
 
 -- 
-Nicolas Ferre
+Catalin
