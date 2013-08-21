@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab3HUArd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 20:47:33 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:49114 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab3HUArb (ORCPT
+	id S1751946Ab3HUArh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 20:47:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40761 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883Ab3HUArd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 20:47:31 -0400
+	Tue, 20 Aug 2013 20:47:33 -0400
+Date: Tue, 20 Aug 2013 17:49:24 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net,
+        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Proposed stable release changes
+Message-ID: <20130821004924.GA19098@kroah.com>
+References: <20130820224032.GA20491@kroah.com>
+ <CA+5PVA4s8D6Hkvj7c4Hpw6MOefZG4BEEWZjWb4XHW+k4n_sWjA@mail.gmail.com>
+ <20130820235700.GA7209@kroah.com>
+ <CA+5PVA4q1K9iS0-ppZKMM8QfKQZBHX8auEp+C=Y=gnSMCkbP2Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130820224349.GM6023@dastard>
-References: <cover.1376679411.git.luto@amacapital.net> <ec267e95fd21891986373c7af1c72b4c8b507332.1376679411.git.luto@amacapital.net>
- <20130820023615.GE6023@dastard> <CALCETrV-Toj-NGpmWnmoUbCwrMUXOSbjQdYsSVuTiH+2dEgPTQ@mail.gmail.com>
- <20130820040814.GH6023@dastard> <CALCETrWreWBwKdKS2w=fS+MwdaZv1eEsKjYo=P9eeXe7fZS6Jw@mail.gmail.com>
- <20130820160057.GC2862@quack.suse.cz> <CALCETrXotDRKV8FtLn3g_9g_yOVceHzKpwXMAH+w7tBZ1P2F7A@mail.gmail.com>
- <20130820214819.GK6023@dastard> <CALCETrXU3jm_R2SJbfgsM2COAuX_tRACQmuc7t7z5b2B+=kBgg@mail.gmail.com>
- <20130820224349.GM6023@dastard>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 20 Aug 2013 17:47:10 -0700
-Message-ID: <CALCETrVY2dhiAO_k9=mCL3_Tuyzr52tnKB57YteO_7PXJBmAHw@mail.gmail.com>
-Subject: Re: [PATCH v3 3/5] mm: Notify filesystems when it's time to apply a
- deferred cmtime update
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA4q1K9iS0-ppZKMM8QfKQZBHX8auEp+C=Y=gnSMCkbP2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 3:43 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Tue, Aug 20, 2013 at 02:54:01PM -0700, Andy Lutomirski wrote:
->> On Tue, Aug 20, 2013 at 2:48 PM, Dave Chinner <david@fromorbit.com> wrote:
->> > On Tue, Aug 20, 2013 at 09:42:34AM -0700, Andy Lutomirski wrote:
->> >> On Tue, Aug 20, 2013 at 9:00 AM, Jan Kara <jack@suse.cz> wrote:
->> >> > On Mon 19-08-13 21:14:44, Andy Lutomirski wrote:
->> >> >> >> I could require ->writepages *and* ->flush_cmtime to handle the time
->> >> >> >> update, but that would complicate non-transactional filesystems.
->> >> >> >> Those filesystems should just flush cmtime at the end of writepages.
->> >> >> >
->> >> >> > do_writepages() is the wrong place to do such updates - we can get
->> >> >> > writeback directly through .writepage, so the time updates need to
->> >> >> > be in .writepage. That first .writepage call will clear the bit on
->> >> >> > the mapping, so it's only done on the first call to .writepage on
->> >> >> > the given mapping.
->> >> >>
->> >> >> Last time I checked, all the paths that actually needed the timestamp
->> >> >> update went through .writepages.  I'll double-check.
->> >> >   kswapd can call just .writepage to do the writeout so timestamp update
->> >> > should be handled there as well. Otherwise all pages in a mapping can be
->> >> > cleaned without timestamp being updated.
->> >>
->> >> OK, I'll fix that.
->> >>
->> >> >
->> >> > Which btw made me realize that even your scheme doesn't completely make
->> >> > sure timestamp is updated after mmap write - if you have pages 0 and 1, you
->> >> > write to both of them - CMTIME flag gets set. Then fsync_range(fd, 0, 4096)
->> >> > is called. We write the page 0, writeprotect it, update timestamps. But
->> >> > page 1 is still writeable so writes to it won't set CMTIME flag, neither
->> >> > update the timestamp... Not that I think this can be reasonably solved but
->> >> > it is a food for thought.
->> >>
->> >> This should already work.  AS_CMTIME is set when the pte goes from
->> >> dirty to clean, not when the pte goes from wp to writable.  So
->> >> whenever clear_page_dirty_for_io is called on page 1, AS_CMTIME will
->> >> be set and a subsequent writepages call will update the timestamp.
->> >
->> > Oh, I missed that - I thought you were setting AS_CMTIME during
->> > .page_mkwrite.
->> >
->> > Setting it in clear_page_dirty_for_io() is too late for filesystems
->> > to include it in their existing transactions during .writepage, (at
->> > least for XFs and ext4) because they do their delayed allocation
->> > transactions before changing page state....
->>
->> Couldn't it go between mpage_map_and_submit_extent and
->> ext4_journal_stop in ext4_writepages?
->
-> Maybe - I'm not an ext4 expert - but even if you can make it work
-> for ext4 in some way, that doesn't mean it is possible for any other
-> filesystem to use the same method. You're adding code to generic,
-> non-filesystem specific code paths and so the solutions need to be
-> generic rather not tied to how a specific filesystem is implemented.
->
+On Tue, Aug 20, 2013 at 08:41:23PM -0400, Josh Boyer wrote:
+> On Tue, Aug 20, 2013 at 7:57 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> I like this overall.  The only thing I might change is "wait for -rc2"
+> >> for patches tagged with CC: stable that go in during the merge window.
+> >>  It seems those are the ones that tend to bite us.
+> >
+> > Maintainers can always tag their patches to have me hold off until -rc2
+> > for that.
+> 
+> They can (not immediately sure how though?)
 
-I don't see the problem for xfs or btrfs either.
+Some do:
+	Cc: stable <stable@vger.kernel.org> # after -rc5 is out
+or
+	Cc: stable <stable@vger.kernel.org> # wait a -rc cycle
+or
+	Cc: stable <stable@vger.kernel.org> # wait a few weeks to bake
 
-xfs uses generic_writepages, which already does the right thing.  (xfs
-with my updated patches passes my tests.)  xfs_vm_writepage calls
-xfs_start_page_writeback(..., 1, ...), so clear_page_dirty_for_io is
-called.  At that point (I presume), it would still be possible to add
-metadata to a transaction (assuming there's a transaction open -- I
-don't have a clue here).  Even if this is too late, xfs_vm_writepage
-could call page_mkwrite to for AS_CMTIME to be set if needed.
-page_mkwrite will be fast if the page isn't mmapped.  What am I
-missing?
+> , but they don't with the
+> exception of the few that don't tag at all and send you patches in
+> bundles.  I mean, that's what the huge thread about the stable trees
+> that hopefully leads to a conversation at KS is about, right?
 
-btrfs seems to do much the same thing.
+Hopefully, yes, but I don't know about that yet.
 
---Andy
+> Let me phrase this as a question instead.  Is there something we can
+> do to help catch the patches that get sucked into stable during the
+> merge window and then wind up causing issues and reverted/fixed after
+> things settle down in the -rc releases?
 
+Test linux-next and Linus's tree-of-the-day better.  If problems happen,
+and a patch has a cc: stable@ on it, let stable@ know about it.
 
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+> I'm offering to help in whatever way you think is best.  It's your
+> workflow (and sanity) that are the most impacted.  However, I share
+> the pain whenever something breaks in stable through the wonderful
+> place that is Fedora bugzilla so I'm looking for ways to reduce that.
 
+Letting me know when something breaks is always good as well.  Right now
+that doesn't seem to happen much, so either not much is breaking, or I'm
+just not told about it, I don't know which.
 
+thanks,
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+greg k-h
