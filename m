@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab3HUVn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 17:43:57 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:58412 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705Ab3HUVn4 (ORCPT
+	id S1752968Ab3HUVpD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 17:45:03 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:40528 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab3HUVpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 17:43:56 -0400
+	Wed, 21 Aug 2013 17:45:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130821184042.GC3577@xanatos>
-References: <1377040909-18428-1-git-send-email-jwerner@chromium.org>
-	<20130821184042.GC3577@xanatos>
-Date: Wed, 21 Aug 2013 14:43:55 -0700
-X-Google-Sender-Auth: 92pqB1aC2KQB89WLuFnicaLn2ec
-Message-ID: <CAODwPW8tCFaykJnatyweJ96UzntRVNmo3WU1UYXw9nwp2bq_Ow@mail.gmail.com>
-Subject: Re: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support for
- platform xHCs
-From: Julius Werner <jwerner@chromium.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Julius Werner <jwerner@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Benson Leung <bleung@chromium.org>, Felipe Balbi <balbi@ti.com>,
-        mathias.nyman@linux.intel.com
+In-Reply-To: <1375609657-15434-8-git-send-email-maxime.ripard@free-electrons.com>
+References: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
+	<1375609657-15434-8-git-send-email-maxime.ripard@free-electrons.com>
+Date: Wed, 21 Aug 2013 23:45:01 +0200
+Message-ID: <CACRpkdbGPVzEtLWLDQgqKMz-XkuCQW4yKyK1XySuU+thQVS2RQ@mail.gmail.com>
+Subject: Re: [PATCHv3 07/10] pinctrl: sunxi: Add Allwinner A31 pins set
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-sunxi@googlegroups.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Thanks for the patch!  Did you test with a USB analyzer to see if the
-> device was actually going into USB 2.0 Link PM?  I'd like to confirm we
-> really aren't breaking anything for DW3 hosts by enabling this.
+On Sun, Aug 4, 2013 at 11:47 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
 
-Yes, I did. The LPM transfers on the analyzer look good and the device
-works as expected.
+> The Allwinner A31 SoC uses the same IP than the one found in the
+> A10/A13, with only different pins. Add the pins and the associated
+> functions found in the A31.
+>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
 
-My platform only runs a 3.8 derivative, though, so I now have also
-cherry-picked the BESL patches that went in since then to make sure
-they don't break things. I had problems on one device until I found
-the XHCI_BLC fix Mathias sent out this morning, so you should pick
-that one up first. (Without it LPM doesn't break completely but seems
-to assert resume for less time than the HIRD defines, so the device
-sometimes gets confused and resets. I can't figure out how BESL is
-really supposed to work since the XHCI spec from 8/14/12 where it's
-supposedly defined doesn't seem to be publicly available.)
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Do you want me to apply this to the pinctrl tree?
+
+Yours,
+Linus Walleij
