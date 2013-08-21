@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab3HUPDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:03:19 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:19630 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab3HUPDS (ORCPT
+	id S1752083Ab3HUPFP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:05:15 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:55174 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537Ab3HUPFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:03:18 -0400
-Date: Wed, 21 Aug 2013 11:03:11 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: axboe@kernel.dx, linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-jens-3.12 for Linux 3.12 merge window.
-Message-ID: <20130821150311.GB21743@phenom.dumpdata.com>
+	Wed, 21 Aug 2013 11:05:13 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Richard Genoud <richard.genoud@gmail.com>,
+        <alexandre.belloni@free-electrons.com>, Bo Shen <voice.shen@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: device tree update for 3.12 #1
+Date: Wed, 21 Aug 2013 17:05:10 +0200
+Message-ID: <1377097510-14090-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="i9LlY+UWpKt15+FH"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Arnd, Olof, Kevin,
 
---i9LlY+UWpKt15+FH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Here is the first pull request about DT on AT91 for 3.12.
+It is based on 3.11-rc5 as I saw that the branch is coming from this tag on
+your side.
 
+Thanks, best regards,
 
-Hey Jens,
+The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
 
-Please git pull the following branch for your 3.12 tree:
+  Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
 
- git pull  git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable=
-/for-jens-3.12
+are available in the git repository at:
 
-It has two fixes to the xen-blkfront driver - both deal with the indirect
-requests and make better usage of the persistent grants.
+  git://github.com/at91linux/linux-at91.git tags/at91-dt
 
-Please pull
+for you to fetch changes up to 90d01929ad38259596371c78df8a9ecf37a7f815:
 
-=20
-drivers/block/xen-blkfront.c | 44 ++++++++++++++++++++++++++++++++++++-----=
----
- 1 file changed, 36 insertions(+), 8 deletions(-)
+  ARM: at91/dt: sam9x5ek: add sound configuration (2013-08-21 13:33:44 +0200)
 
-Roger Pau Monne (2):
-      xen-blkfront: revoke foreign access for grants not mapped by the back=
-end
-      xen-blkfront: improve aproximation of required grants per request
+----------------------------------------------------------------
+More DT work on AT91:
+- sound support for at91sam9x5 family
+- at91sam9n12: touch button, i2c and gpio-keys
+- adding missing pinctrl-names to MCI on at91rm9200 and at91sam9260/9g20
+- adding ARM Performance Monitor Unit (PMU) on sama5d3
 
+----------------------------------------------------------------
+Alexandre Belloni (1):
+      ARM: at91: Add PMU support for sama5d3
 
---i9LlY+UWpKt15+FH
-Content-Type: application/pgp-signature
+Jean-Christophe PLAGNIOL-VILLARD (3):
+      ARM: at91: at91sam9260: add missing pinctrl-names on mmc
+      ARM: at91: at91rm9200: set default mmc0 pinctrl-names
+      ARM: at91/dt: add at91rm9200 PQFP package version
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+Richard Genoud (4):
+      ARM: at91/dt: sam9x5: add SSC DMA parameters
+      ARM: at91/dt: sam9x5ek: add WM8731 codec
+      ARM: at91/dt: sam9x5ek: enable SSC
+      ARM: at91/dt: sam9x5ek: add sound configuration
 
-iQEcBAEBAgAGBQJSFNarAAoJEFjIrFwIi8fJT3AIANG8QLMT1qnE86TuKHi4WbW/
-ibMHfM6IYcGO/ydx0LJG+kWSc01yQ7kHhAYxxe5BsX/Fzf5rvOZO5JQrWU01GZ5Z
-G4iswfp97/rgG1Ej+niOu1pfXJbW2LPeZ9YHRhlUbxKbcfgqQAk9kM0A6RschXY6
-jOHjKftYqTL4YlGUKxKJsn89gZRi4JNa+F4gchWHnKC61mE308wZv3POXQZpLVjg
-wmzbvvQQfJSENahKPul/f6HL6rDweFt0YtT51TjS/D0UK8xa7hpQPly9N4270KaS
-o9DzpXx68+3t8AuUN0TcOpu7/C5JvhVvSd6XmPyyNjiERB9g1dLCf/JNARCMzSg=
-=zBHF
------END PGP SIGNATURE-----
+voice (3):
+      ARM: at91: at91sam9n12: add pinctrl of TWI
+      ARM: at91: at91sam9n12: add qt1070 support
+      ARM: at91: at91sam9n12: correct pin number of gpio-key
 
---i9LlY+UWpKt15+FH--
+ arch/arm/boot/dts/at91rm9200.dtsi      |  1 +
+ arch/arm/boot/dts/at91rm9200_pqfp.dtsi | 17 +++++++++++++++++
+ arch/arm/boot/dts/at91sam9260.dtsi     |  1 +
+ arch/arm/boot/dts/at91sam9n12.dtsi     | 20 ++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9n12ek.dts    | 18 +++++++++++++++++-
+ arch/arm/boot/dts/at91sam9x5.dtsi      |  3 +++
+ arch/arm/boot/dts/at91sam9x5ek.dtsi    | 24 ++++++++++++++++++++++++
+ arch/arm/boot/dts/sama5d3.dtsi         |  5 +++++
+ 8 files changed, 88 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/at91rm9200_pqfp.dtsi
+
+-- 
+Nicolas Ferre
