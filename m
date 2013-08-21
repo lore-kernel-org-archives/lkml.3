@@ -1,94 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab3HUNYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 09:24:51 -0400
-Received: from protonic.xs4all.nl ([213.84.116.84]:17668 "EHLO
-	protonic.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab3HUNYu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 09:24:50 -0400
-X-Greylist: delayed 1325 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Aug 2013 09:24:49 EDT
-From: David Jander <david@protonic.nl>
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Cc: Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        David Jander <david@protonic.nl>
-Subject: [PATCH] drivers: regmap: bugfix in regcache-rbtree.c
-Date: Wed, 21 Aug 2013 15:02:35 +0200
-Message-Id: <1377090155-3443-1-git-send-email-david@protonic.nl>
-X-Mailer: git-send-email 1.8.1.2
+	id S1752024Ab3HUNbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 09:31:07 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:49252 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751728Ab3HUNbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 09:31:01 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: balbi@ti.com
+Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
+        gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: [PATCH v5 1/3] usb: dwc3: msm: Add device tree binding information
+Date: Wed, 21 Aug 2013 16:29:44 +0300
+Message-Id: <1377091786-5613-2-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1377091786-5613-1-git-send-email-iivanov@mm-sol.com>
+References: <1377091786-5613-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The functionality of rbtree_ctx->cached_rbnode is broken. Remove it to
-avoid hitting the wrong rbnode when locating a register.
-rbnode register ranges can overlap, which is not a problem as long as
-every lookup for a register returns the same rbnode. Therefor we need
-to start searching from the top of the rb-tree _always_.
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Signed-off-by: David Jander <david@protonic.nl>
+MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
+(SNPS) and HS, SS PHY's control and configuration registers.
+
+It could operate in device mode (SS, HS, FS) and host
+mode (SS, HS, FS, LS).
+
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
- drivers/base/regmap/regcache-rbtree.c | 13 -------------
- 1 file changed, 13 deletions(-)
+ .../devicetree/bindings/usb/msm-ssusb.txt          |  104 ++++++++++++++++++++
+ 1 file changed, 104 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/msm-ssusb.txt
 
-diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
-index 5c1435c..2f9783f 100644
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -35,7 +35,6 @@ struct regcache_rbtree_node {
- 
- struct regcache_rbtree_ctx {
- 	struct rb_root root;
--	struct regcache_rbtree_node *cached_rbnode;
- };
- 
- static inline void regcache_rbtree_get_base_top_reg(
-@@ -68,21 +67,12 @@ static struct regcache_rbtree_node *regcache_rbtree_lookup(struct regmap *map,
- 	struct regcache_rbtree_node *rbnode;
- 	unsigned int base_reg, top_reg;
- 
--	rbnode = rbtree_ctx->cached_rbnode;
--	if (rbnode) {
--		regcache_rbtree_get_base_top_reg(map, rbnode, &base_reg,
--						 &top_reg);
--		if (reg >= base_reg && reg <= top_reg)
--			return rbnode;
--	}
--
- 	node = rbtree_ctx->root.rb_node;
- 	while (node) {
- 		rbnode = container_of(node, struct regcache_rbtree_node, node);
- 		regcache_rbtree_get_base_top_reg(map, rbnode, &base_reg,
- 						 &top_reg);
- 		if (reg >= base_reg && reg <= top_reg) {
--			rbtree_ctx->cached_rbnode = rbnode;
- 			return rbnode;
- 		} else if (reg > top_reg) {
- 			node = node->rb_right;
-@@ -209,7 +199,6 @@ static int regcache_rbtree_init(struct regmap *map)
- 
- 	rbtree_ctx = map->cache;
- 	rbtree_ctx->root = RB_ROOT;
--	rbtree_ctx->cached_rbnode = NULL;
- 
- 	for (i = 0; i < map->num_reg_defaults; i++) {
- 		ret = regcache_rbtree_write(map,
-@@ -392,7 +381,6 @@ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
- 								      value);
- 				if (ret)
- 					return ret;
--				rbtree_ctx->cached_rbnode = rbnode_tmp;
- 				return 0;
- 			}
- 		}
-@@ -406,7 +394,6 @@ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
- 		regcache_rbtree_set_register(map, rbnode,
- 					     reg - rbnode->base_reg, value);
- 		regcache_rbtree_insert(map, &rbtree_ctx->root, rbnode);
--		rbtree_ctx->cached_rbnode = rbnode;
- 	}
- 
- 	return 0;
+diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+new file mode 100644
+index 0000000..f57ba8d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+@@ -0,0 +1,104 @@
++MSM SuperSpeed DWC3 USB SoC controller
++
++
++MSM DW Highspeed USB PHY
++========================
++Required properities :
++- compatible : sould be "qcom,dw-hsphy";
++- reg : offset and length of the register set in the memory map
++- clocks : phandles to clock instances of the device tree nodes
++- clock-names :
++	"xo" : External reference clock 19 MHz
++	"sleep_a" : Sleep clock, used when USB3 core goes into low
++	power mode (U3).
++<supply-name>-supply : phandle to the regulator device tree node
++Required "supply-name" are:
++	"v1p8" : 1.8v supply for HSPHY
++	"v3p3" : 3.3v supply for HSPHY
++	"vbus" : vbus supply for host mode
++	"vddcx" : vdd supply for HS-PHY digital circuit operation
++
++MSM DW Superspeed USB PHY
++=========================
++Required properities :
++- compatible : sould be "qcom,dw-ssphy";
++- reg : offset and length of the register set in the memory map
++- clocks : phandles to clock instances of the device tree nodes
++- clock-names :
++	"xo" : External reference clock 19 MHz
++	"ref" : Reference clock - used in host mode.
++<supply-name>-supply : phandle to the regulator device tree node
++Required "supply-name" are:
++	"v1p8" : 1.8v supply for SS-PHY
++	"vddcx" : vdd supply for SS-PHY digital circuit operation
++
++MSM DWC3 controller wrapper
++===========================
++Required properties :
++- compatible : should be "qcom,dwc3"
++- reg : offset and length of the register set in the memory map
++	offset and length of the TCSR register for routing USB
++	signals to either picoPHY0 or picoPHY1.
++- clocks : phandles to clock instances of the device tree nodes
++- clock-names :
++	"core" : Master/Core clock, have to be >= 125 MHz for SS
++	operation and >= 60MHz for HS operation
++	"iface" : System bus AXI clock
++	"sleep" : Sleep clock, used when USB3 core goes into low
++	power mode (U3).
++	"utmi" : Generated by HS-PHY. Used to clock the low power
++	parts of thr HS Link layer.
++Optional properties :
++- gdsc-supply : phandle to the globally distributed switch controller
++  regulator node to the USB controller.
++Required child node:
++A child node must exist to represent the core DWC3 IP block. The name of
++the node is not important. The content of the node is defined in dwc3.txt.
++
++Example device nodes:
++
++	dw_hsphy: phy@f92f8800 {
++		compatible = "qcom,dw-hsphy";
++		reg = <0xf92f8800 0x30>;
++
++		clocks = <&cxo>, <&usb2a_phy_sleep_cxc>;
++		clock-names = "xo", "sleep_a";
++
++		vbus-supply = <&supply>;
++		vddcx-supply = <&supply>;
++		v1p8-supply = <&supply>;
++		v3p3-supply = <&supply>;
++	};
++
++	dw_ssphy: phy@f92f8830 {
++		compatible = "qcom,dw-ssphy";
++		reg = <0xf92f8830 0x30>;
++
++		clocks = <&cxo>, <&usb30_mock_utmi_cxc>;
++		clock-names = "xo", "ref";
++
++		vddcx-supply = <&supply>;
++		v1p8-supply = <&supply>;
++	};
++
++	usb@fd4ab000 {
++		compatible = "qcom,dwc3";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		reg = <0xfd4ab000 0x4>;
++
++		clocks = <&usb30_master_cxc>, <&sys_noc_usb3_axi_cxc>,
++				<&usb30_sleep_cxc>, <&usb30_mock_utmi_cxc>;
++		clock-names = "core", "iface", "sleep", "utmi";
++
++		gdsc-supply = <&supply>;
++
++		ranges;
++		dwc3@f9200000 {
++			compatible = "snps,dwc3";
++			reg = <0xf9200000 0xcd00>;
++			interrupts = <0 131 0>;
++			usb-phy = <&dw_hsphy>, <&dw_ssphy>;
++			tx-fifo-resize;
++		};
++	};
 -- 
-1.8.1.2
+1.7.9.5
 
