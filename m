@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567Ab3HUOok (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:44:40 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42725 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab3HUOoh (ORCPT
+	id S1752574Ab3HUOpH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:45:07 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:60433 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab3HUOpC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:44:37 -0400
-Date: Wed, 21 Aug 2013 10:42:58 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
-        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 5/8] x86, brk: Make extend_brk() available with va/pa.
-Message-ID: <20130821144258.GH2593@phenom.dumpdata.com>
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
- <1377080143-28455-6-git-send-email-tangchen@cn.fujitsu.com>
- <18d71946-6de9-4af2-a6a8-05fae51755af@email.android.com>
- <68a532f2-e468-4aea-b42b-a444ec079c3f@email.android.com>
+	Wed, 21 Aug 2013 10:45:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <68a532f2-e468-4aea-b42b-a444ec079c3f@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <5214CE5F.5010009@broadcom.com>
+References: <CAG-2HqUXQeq=30EpGWmn6tkC=CP1W+=UZCVPTYhhE0WyU_C4nw@mail.gmail.com>
+	<20130820000336.GA15548@kroah.com>
+	<CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com>
+	<20130820002822.GA18023@kroah.com>
+	<5212F6E8.3090107@openwrt.org>
+	<52132589.5000306@broadcom.com>
+	<CA+5PVA7gvnfX2vnpxEGCgaAYXRvA=SME4SYZpTESqLsMkgSu=g@mail.gmail.com>
+	<52147FD2.9020401@broadcom.com>
+	<CA+5PVA5Wi=Xjrsb_Rh53A4NkWHe3h-gfs89dO6Zfb+6uh+G=dQ@mail.gmail.com>
+	<5214CE5F.5010009@broadcom.com>
+Date: Wed, 21 Aug 2013 10:45:01 -0400
+X-Google-Sender-Auth: jny7FbzywOf2ENY07suARu-EbVM
+Message-ID: <CA+5PVA6hjgSYazZbUsa9CG_u88BpXA4T0HR1PjqrcWKLWmmiQA@mail.gmail.com>
+Subject: Re: [REGRESSION] 3.10.{6,7} crashes on network activity
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tom Gundersen <teg@jklm.no>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 02:35:36PM +0200, H. Peter Anvin wrote:
-> Global symbols are inaccessible in physical mode.
+On Wed, Aug 21, 2013 at 10:27 AM, Arend van Spriel <arend@broadcom.com> wrote:
+> On 08/21/13 14:38, Josh Boyer wrote:
+>>
+>> On Wed, Aug 21, 2013 at 4:52 AM, Arend van Spriel<arend@broadcom.com>
+>> wrote:
+>>>>>
+>>>>> Hi Felix,
+>>>>>
+>>>>> I have been diving into root causing why brcmsmac can not handle cck
+>>>>> fallback rates, because it should. Maybe it is better to flag no cck
+>>>>> support
+>>>>> and only change brcmsmac.
+>>>>
+>>>>
+>>>>
+>>>> We have a number of users hitting this in Fedora 18 and 19 now.  We're
+>>>> tracking it with https://bugzilla.redhat.com/show_bug.cgi?id=998080
+>>>> and I'm sure we can find people to test easily.
+>>>
+>>>
+>>>
+>>> There is already another one (possibly) dealing with the same issue:
+>>>
+>>> https://bugzilla.redhat.com/show_bug.cgi?id=989269
+>>>
+>>> One of them should probably be flagged as duplicate.
+>>>
+>>>
+>>>> If you have a patch disabling cck in brcmsmac, I'd be happy to build a
+>>>> kernel for people.  If that's going to be some time coming, perhaps
+>>>> it's better to grab Felix's patch on a temporary basis?
+>>>
+>>>
+>>>
+>>> I think it is better to grab Felix's patch because as we both observed
+>>> there
+>>> is stuff missing in brcmsmac to deal with CCK rates and A-MPDU packet
+>>> aggregation.
+>>
+>>
+>> OK, thanks.
+>>
+>> Felix, are you going to send that upstream?
+>
+>
+> It already has been sent:
+> http://mid.gmane.org/1377020634-27064-1-git-send-email-nbd@openwrt.org
+>
+> Johannes has submitted it to John so it is getting there soon(ish).
 
-Even if they are embedded in the assembler code and use GLOBAL(paging_enabled) ?
+Ah, wonderful.  Thanks!
 
-> 
-> This is incidentally yet another example of "PV/weird platform violence", since in their absence it would be trivial to work around this by using segmentation.
-
-I don't follow why it could not.
-
-Why can't there be a __pa_symbol(paging_enabled) that is used. Won't
-that in effect allow you to check the contents of that 'global
-constant' even when you don't have paging enabled?
-
-> >>As mentioned above, on 32bit before paging is enabled, we have to
-> >>access variables
-> >>with pa. So introduce a "bool is_phys" parameter to extend_brk(), and
-> >>convert va
-> >>to pa is it is true.
-> >
-> >Could you do it differently? Meaning have a global symbol
-> >(paging_enabled) which will be used by most of the functions you
-> >changed in this patch and the next ones? It would naturally be enabled
-> >when paging is on and __va addresses can be used. 
-> >
-> >That could also be used in the printk case to do a BUG_ON before paging
-> >is enabled on 32bit. Or perhaps use a different code path to deal with
-> >using __pa address. 
-> >
-> >? 
+josh
