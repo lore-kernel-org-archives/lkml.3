@@ -1,172 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab3HUGBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 02:01:34 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:41763 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068Ab3HUGBd (ORCPT
+	id S1752206Ab3HUGQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 02:16:08 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47261 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab3HUGQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 02:01:33 -0400
-MIME-Version: 1.0
-X-Google-Sender-Delegation: getarunks@gmail.com
-In-Reply-To: <20130820140447.GL27005@ZenIV.linux.org.uk>
-References: <CAKZGPANQz5-uyf=uSp_0HxBq1_uH053H0XOohpAaWsbeoy7zhw@mail.gmail.com>
-	<20130820055153.GH27005@ZenIV.linux.org.uk>
-	<CAKZGPAN3W_FFHcxnatFJNQ9VDt-TL9c2Wyddqvdz98612U4gzQ@mail.gmail.com>
-	<20130820073622.GK27005@ZenIV.linux.org.uk>
-	<20130820140447.GL27005@ZenIV.linux.org.uk>
-Date: Wed, 21 Aug 2013 11:31:32 +0530
-X-Google-Sender-Auth: ptFKOEQEIt1fQM6gqIC_gXX3j7s
-Message-ID: <CAKZGPAPX+cDWJorAnXkKRLtGijKtJgfU_8WLpfjvbkXSUv9UFA@mail.gmail.com>
-Subject: Re: [PATCH v1] seq_file: Fix overflow condition in seq_commit
-From: Arun KS <arunks.linux@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Matthew Wilcox <matthew@wil.cx>,
-        Bruce Fields <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, vinayak menon <vinayakm.list@gmail.com>,
-        Nagachandra P <nagachandra@gmail.com>, Vikram MP <mp.vikram@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Aug 2013 02:16:05 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-2b-52145b215328
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Mel Gorman <mgorman@suse.de>, lliubbo@gmail.com,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v7 0/5] zram/zsmalloc promotion
+Date: Wed, 21 Aug 2013 15:16:26 +0900
+Message-Id: <1377065791-2959-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al Viro,
+It's 7th trial of zram/zsmalloc promotion.
+I rewrote cover-letter totally based on previous discussion.
 
-On Tue, Aug 20, 2013 at 7:34 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Tue, Aug 20, 2013 at 08:36:22AM +0100, Al Viro wrote:
->
->> Aha.  _That_ is a bug, all right - dynamic_dname() is simply not suitable
->> for that kind of uses.  ashmem.c is certainly abusing shmem_file_setup();
->> feeding that kind of mess as dentry name is a Bad Idea(tm).  Anyway,
->> I'd suggest this for a fix:
->>
->>       va_list args;
->>       size_t sz;
->>       va_start(args, fmt);
->>       sz = vsnprintf(NULL, 0, fmt, args) + 1;
->>       va_end(args);
->>       if (sz > buflen)
->>               return ERR_PTR(-ENAMETOOLONG);
->>       va_start(args, fmt);
->>       buffer += buflen - sz;
->>       vsprintf(buffer, fmt, args);
->>       va_end(args);
->>       return buffer;
->>
->> Either right in dynamic_dname(), or as possibly_fucking_long_dname(),
->> to be used by shmem.c...
->
-> Actually, looking at the users of dynamic_dname()...  Most of them are
-> fine with dynamic_dname() as it is, with 2 possible exceptions:
-> hugetlb_dname() and shmem_dname().  Both are using "/%s (deleted)",
-> dentry->d_name.name as format...  So the solution above may very
-> well be an overkill; something like
->
-> char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
-> {
->         char *end = buffer + buflen;
->         /* these dentries are never renamed, so d_lock is not needed */
->         if (prepend(&end, &buflen, " (deleted)", 11) ||
->             prepend_name(&end, &buflen, &dentry->d_name) ||
->             prepend(&end, &buflen, "/", 1))
->                 end = ERR_PTR(-ENAMETOOLONG);
->         return end;
-> }
->
-> will do for those two.  Care to test the diff below?
-Patch works fine.
+The main reason to prevent zram promotion was no review of
+zsmalloc part while Jens, block maintainer, already acked
+zram part.
 
-Tested-by: Arun KS<arunks.linux@gmail.com>
+At that time, zsmalloc was used for zram, zcache and zswap so
+everybody wanted to make it general and at last, Mel reviewed it
+when zswap was submitted to merge mainline a few month ago.
+Most of review was related to zswap writeback mechanism which
+can pageout compressed page in memory into real swap storage
+in runtime and the conclusion was that zsmalloc isn't good for
+zswap writeback so zswap borrowed zbud allocator from zcache to
+replace zsmalloc. The zbud is bad for memory compression ratio(2)
+but it's very predictable behavior because we can expect a zpage
+includes just two pages as maximum. Other reviews were not major. 
+http://lkml.indiana.edu/hypermail/linux/kernel/1304.1/04334.html
 
-Thanks,
-Arun
->
-> cope with potentially long ->d_dname() output for shmem/hugetlb
->
-> dynamic_dname() is both too much and too little for those - the
-> output may be well in excess of 64 bytes dynamic_dname() assumes
-> to be enough (thanks to ashmem feeding really long names to
-> shmem_file_setup()) and vsnprintf() is an overkill for those
-> guys.
->
-> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> ---
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 87bdb53..83cfb83 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -2724,6 +2724,17 @@ char *dynamic_dname(struct dentry *dentry, char *buffer, int buflen,
->         return memcpy(buffer, temp, sz);
->  }
->
-> +char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
-> +{
-> +       char *end = buffer + buflen;
-> +       /* these dentries are never renamed, so d_lock is not needed */
-> +       if (prepend(&end, &buflen, " (deleted)", 11) ||
-> +           prepend_name(&end, &buflen, &dentry->d_name) ||
-> +           prepend(&end, &buflen, "/", 1))
-> +               end = ERR_PTR(-ENAMETOOLONG);
-> +       return end;
-> +}
-> +
->  /*
->   * Write full pathname from the root of the filesystem into the buffer.
->   */
-> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> index a3f868a..4e5f332 100644
-> --- a/fs/hugetlbfs/inode.c
-> +++ b/fs/hugetlbfs/inode.c
-> @@ -916,14 +916,8 @@ static int get_hstate_idx(int page_size_log)
->         return h - hstates;
->  }
->
-> -static char *hugetlb_dname(struct dentry *dentry, char *buffer, int buflen)
-> -{
-> -       return dynamic_dname(dentry, buffer, buflen, "/%s (deleted)",
-> -                               dentry->d_name.name);
-> -}
-> -
->  static struct dentry_operations anon_ops = {
-> -       .d_dname = hugetlb_dname
-> +       .d_dname = simple_dname
->  };
->
->  /*
-> diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-> index b90337c..4a12532 100644
-> --- a/include/linux/dcache.h
-> +++ b/include/linux/dcache.h
-> @@ -336,6 +336,7 @@ extern int d_validate(struct dentry *, struct dentry *);
->   * helper function for dentry_operations.d_dname() members
->   */
->  extern char *dynamic_dname(struct dentry *, char *, int, const char *, ...);
-> +extern char *simple_dname(struct dentry *, char *, int);
->
->  extern char *__d_path(const struct path *, const struct path *, char *, int);
->  extern char *d_absolute_path(const struct path *, char *, int);
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index 8335dbd..e43dc55 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -2909,14 +2909,8 @@ EXPORT_SYMBOL_GPL(shmem_truncate_range);
->
->  /* common code */
->
-> -static char *shmem_dname(struct dentry *dentry, char *buffer, int buflen)
-> -{
-> -       return dynamic_dname(dentry, buffer, buflen, "/%s (deleted)",
-> -                               dentry->d_name.name);
-> -}
-> -
->  static struct dentry_operations anon_ops = {
-> -       .d_dname = shmem_dname
-> +       .d_dname = simple_dname
->  };
->
->  /**
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Zcache doesn't use zsmalloc either so zsmalloc's user is only
+zram now so this patchset moves it into zsmalloc directory.
+Recently, Bob tried to move zsmalloc under mm directory to unify
+zram and zswap with adding pseudo block device in zswap(It's
+very weired to me) but he was simple ignoring zram's block device
+(a.k.a zram-blk) feature and considered only swap usecase of zram,
+in turn, it lose zram's good concept.
+
+Mel raised an another issue in v6, "maintainance headache".
+He claimed zswap and zram has a similar goal that is to compresss
+swap pages so if we promote zram, maintainance headache happens
+sometime by diverging implementaion between zswap and zram
+so that he want to unify zram and zswap. For it, he want zswap
+to implement pseudo block device like Bob did to emulate zram so
+zswap can have an advantage of writeback as well as zram's benefit.
+But I wonder frontswap-based zswap's writeback is really good
+approach for writeback POV. I think that problem isn't only
+specific for zswap. If we want to configure multiple swap hierarchy
+with various speed device such as RAM, NVRAM, SSD, eMMC, NAS etc,
+it would be a general problem. So we should think of more general
+approach. At a glance, I can see two approach.
+
+First, VM could be aware of heterogeneous swap configuration
+so it could aim for being able to configure cache hierarchy
+among swap devices. It may need indirction layer on swap, which
+was already talked about that way so VM can migrate a block from 
+A to B easily. It will support various configuration with VM's
+hints, maybe, in future.
+http://lkml.indiana.edu/hypermail/linux/kernel/1203.3/03812.html
+
+Second, as more practical solution, we could use device mapper like
+dm-cache(https://lwn.net/Articles/540996/), which makes it very
+flexible. Now, it supports various configruation and cache policy
+(block size, writeback/writethrough, LRU, MFU although MQ is merged
+now) so it would be good fit for our purpose. Even, it can make zram
+support writeback. I tested it following as following scenario
+in KVM 4 CPU, 1G DRAM with background 800M memory hogger, which is
+allocates random data up to 800M.
+
+1) zram swap disk 1G, untar kernel.tgz to tmpfs, build -j 4
+   Fail to untar due to shortage of memory space by tmpfs default size limit
+
+2) zram swap disk 1G, untar kernel.tgz to ext2 on zram-blk, build -j 4
+   OOM happens while building the kernel but it untar successfully
+   on ext2 based on zram-blk. The reason OOM happend is zram can not find
+   free pages from main memory to store swap out pages although empty
+   swap space is still enough.
+
+3) dm-cache swap disk 1G, untar kernel.tgz to ext2 on zram-blk, build -j 4
+   dmcache consists of zram-meta 10M, zram-cache 1G and real swap storage 1G
+   No OOM happens and successfully building done.
+
+Above tests proves zram can support writeback into real swap storage
+so that zram-cache can always have a free space. If necessary, we could
+add new plugin in dm-cache. I see It's really flexible and well-layered
+architecure so zram-blk's concept is good for us and it has lots of
+potential to be enhanced by MM/FS/Block developers. 
+
+As other disadvantage of zswap writeback, frontswap's semantic is
+synchronous API so zswap should decompress in memory zpage
+right before writeback and even, it writes pages one by one,
+not a batch. If we extend frontswap API, we would enhance it but
+I belive we can do better in device mapper layer which is aware of
+block align, bandwidth, mapping table, asynchronous and lots of hints
+from the block layer. Nonetheless, if we should merge zram's
+functionality to zswap, I think zram should include zswap's
+functionaliy(But I hope it will never happen) because old age zram
+already has lots of real users rather than new young zswap so it's
+more handy to unify them with keeping changelog which is one of
+valuable things getting from staging stay for a long time.
+
+The reason zram doesn't support writeback until now is just shortage
+of needs. The zram's main customers were embedded people so writeback
+into real swap storage is too bad for interactivity and wear-leveling
+on low falsh devices. But like above, zram has a potential to support
+writeback with other block drivers or more reasonable VM enhance
+so I'd like to claim zram's block concept is really good.
+
+Another zram-blk's usecase is following as.
+The admin can format /dev/zramX with any FS and mount on it.
+It could help small memory system, too. For exmaple, many embedded
+system don't have swap so although tmpfs can support swapout,
+it's pointless. Then, let's assume temp file growing up until half
+of system memory once in a while. We don't want to write it on flash
+by wear-leveing issue and response problem so we want to keep in-memory.
+But if we use tmpfs, it should evict half of working set to cover them
+when the size reach peak. In the case, zram-blk would be good fit, too.
+
+I'd like to enhance zram with more features like compaction to prevent
+fragmentation problem but zram developers cannot do it now because Greg,
+staging maintainer, doesn't want to add new feature until promotion is
+done because zram have been in staging for a very long time. Acutally,
+some patches about enhance are pending for a long time.
+
+It's time to promote and let's make further enhancements.
+
+Patch 1 adds new Kconfig for zram to use page table method instead
+of copy. Andrew suggested it.
+
+Patch 2 adds lots of comment for zsmalloc.
+
+Patch 3 moves zsmalloc under driver/staging/zram because zram is only
+user for zram now.
+
+Patch 4 makes unmap_kernel_range exportable function because zsmalloc
+have used map_vm_area which is already exported function so zsmalloc
+need to use unmap_kernel_range for building as module.
+
+Patch 5 moves zram from driver/staging to driver/blocks, finally.
+
+It touches mm, staging, blocks so I am not sure who is right position
+maintainer so I will Cc Andrew, Jens and Greg.
+
+Minchan Kim (4):
+  zsmalloc: add Kconfig for enabling page table method
+  zsmalloc: move it under zram
+  mm: export unmap_kernel_range
+  zram: promote zram from staging
+
+Nitin Cupta (1):
+  zsmalloc: add more comment
+
+ drivers/block/Kconfig                    |    2 +
+ drivers/block/Makefile                   |    1 +
+ drivers/block/zram/Kconfig               |   37 +
+ drivers/block/zram/Makefile              |    3 +
+ drivers/block/zram/zram.txt              |   71 ++
+ drivers/block/zram/zram_drv.c            |  987 +++++++++++++++++++++++++++
+ drivers/block/zram/zsmalloc.c            | 1084 ++++++++++++++++++++++++++++++
+ drivers/staging/Kconfig                  |    4 -
+ drivers/staging/Makefile                 |    2 -
+ drivers/staging/zram/Kconfig             |   25 -
+ drivers/staging/zram/Makefile            |    3 -
+ drivers/staging/zram/zram.txt            |   77 ---
+ drivers/staging/zram/zram_drv.c          |  984 ---------------------------
+ drivers/staging/zram/zram_drv.h          |  125 ----
+ drivers/staging/zsmalloc/Kconfig         |   10 -
+ drivers/staging/zsmalloc/Makefile        |    3 -
+ drivers/staging/zsmalloc/zsmalloc-main.c | 1063 -----------------------------
+ drivers/staging/zsmalloc/zsmalloc.h      |   43 --
+ include/linux/zram.h                     |  123 ++++
+ include/linux/zsmalloc.h                 |   52 ++
+ mm/vmalloc.c                             |    1 +
+ 21 files changed, 2361 insertions(+), 2339 deletions(-)
+ create mode 100644 drivers/block/zram/Kconfig
+ create mode 100644 drivers/block/zram/Makefile
+ create mode 100644 drivers/block/zram/zram.txt
+ create mode 100644 drivers/block/zram/zram_drv.c
+ create mode 100644 drivers/block/zram/zsmalloc.c
+ delete mode 100644 drivers/staging/zram/Kconfig
+ delete mode 100644 drivers/staging/zram/Makefile
+ delete mode 100644 drivers/staging/zram/zram.txt
+ delete mode 100644 drivers/staging/zram/zram_drv.c
+ delete mode 100644 drivers/staging/zram/zram_drv.h
+ delete mode 100644 drivers/staging/zsmalloc/Kconfig
+ delete mode 100644 drivers/staging/zsmalloc/Makefile
+ delete mode 100644 drivers/staging/zsmalloc/zsmalloc-main.c
+ delete mode 100644 drivers/staging/zsmalloc/zsmalloc.h
+ create mode 100644 include/linux/zram.h
+ create mode 100644 include/linux/zsmalloc.h
+
+-- 
+1.7.9.5
+
