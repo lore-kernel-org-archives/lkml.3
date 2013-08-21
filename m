@@ -1,112 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab3HUPgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:36:48 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:40767 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab3HUPgo (ORCPT
+	id S1752169Ab3HUPhT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:37:19 -0400
+Received: from protonic.xs4all.nl ([213.84.116.84]:20235 "EHLO
+	protonic.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab3HUPhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:36:44 -0400
-Date: Wed, 21 Aug 2013 11:36:39 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-Message-ID: <20130821153639.GA17432@htj.dyndns.org>
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
- <20130821130647.GB19286@mtj.dyndns.org>
- <5214D60A.2090309@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5214D60A.2090309@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Aug 2013 11:37:17 -0400
+From: David Jander <david@protonic.nl>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        David Jander <david@protonic.nl>
+Subject: [PATCH V2] drivers: regmap: regcache-rbtree.c: Fix overlapping rbnodes.
+Date: Wed, 21 Aug 2013 17:37:22 +0200
+Message-Id: <1377099442-13884-1-git-send-email-david@protonic.nl>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Avoid overlapping register regions by making the initial blklen of a new
+node 1. If a register write occurs to a yet uncached register, that is
+lower than but near an existing node's base_reg, a new node is created
+and it's blklen is set to an arbitrary value (sizeof(*rbnode)). That may
+cause this node to overlap with another node. Those nodes should be merged,
+but this merge doesn't happen yet, so this patch at least makes the initial
+blklen small enough to avoid hitting the wrong node, which may otherwise
+lead to severe breakage.
 
-On Wed, Aug 21, 2013 at 11:00:26PM +0800, Zhang Yanfei wrote:
-> In current boot order, before we get the SRAT, we have a big consumer of early
-> allocations: we are setting up the page table in top-down (The idea was proposed by HPA,
-> Link: https://lkml.org/lkml/2012/10/4/701). That said, this kind of page table
-> setup will make the page tables as high as possible in memory, since memory at low 
-> addresses is precious (for stupid DMA devices, for things like  kexec/kdump, and so on.)
+Signed-off-by: David Jander <david@protonic.nl>
+---
+ drivers/base/regmap/regcache-rbtree.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-With huge mappings, they are fairly small, right?  And this whole
-thing needs a kernel param anyway at this point, so the allocation
-direction can be made dependent on that or huge mapping availability
-and, even with 4k mappings, we aren't talking about gigabytes of
-memory, are we?
-
-> So if we are trying to make early allocations close to kernel image, we should
-> rewrite the way we are setting up page table totally. That is not a easy thing
-> to do.
-
-It has been a while since I looked at the code so can you please
-elaborate why that is not easy?  It's pretty simple conceptually.
-
-> * For memory hotplug, we need ACPI SRAT at early time to be aware of which memory
->   ranges are hotpluggable, and tell the kernel to try to stay away from hotpluggable
->   nodes.
-> 
-> This one is the current requirement of us but may be very helpful for future change:
-> 
-> * As suggested by Yinghai, we should allocate page tables in local node. This also
->   needs SRAT before direct mapping page tables are setup.
-
-Does this even matter for huge mappings?
-
-> * As mentioned by Toshi Kani <toshi.kani@hp.com>, ACPI SCPR/DBGP/DBG2 tables
->   allow the OS to initialize serial console/debug ports at early boot time. The
->   earlier it can be initialized, the better this feature will be.  These tables
->   are not currently used by Linux due to a licensing issue, but it could be
->   addressed some time soon.
-> 
-> So we decided to firstly make ACPI override earlier and use BRK (this is obviously
-> near the kernel image range) to store the found ACPI tables.
-
-I don't know.  The whole effort seems way overcomplicated compared to
-the benefits it would bring.  For NUMA memory hotunplug, what's the
-point of doing all this when the kernel doesn't have any control over
-where its image is gonna be?  Some megabytes at the tail aren't gonna
-make a huge difference and if you wanna do this properly, you need to
-determine the load address of the kernel considering the node
-boundaries and hotpluggability of each node, which has to happen
-before the early kernel boot code executes.  And if there's a code
-piece which does that, that might as well place the kernel image such
-that extra allocation afterwards doesn't interfere with memory
-hotunplugging.
-
-It looks like a lot of code changes for a mechanism which doesn't seem
-all that useful.  This code is already too late in boot sequence to be
-a proper solution so I don't see the point in pushing the coverage to
-the maximum from here.  It's kinda silly.
-
-The last point - early init of debug facility - makes some sense but
-again how extra coverage are we talking about?  The code path between
-the two points is fairly short and the change doesn't come free.  It
-means we add more fragile firmware-specific code path before the
-execution environment is stable and get to do things like traveling
-the same code paths multiple times in different environments.  Doesn't
-seem like a win.  We want to reach stable execution environment as
-soon as possible.  Shoving whole more logic before that in the name of
-"earlier debugging" doesn't make a lot of sense.
-
-Thanks.
-
+diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
+index 5c1435c..0fccc99 100644
+--- a/drivers/base/regmap/regcache-rbtree.c
++++ b/drivers/base/regmap/regcache-rbtree.c
+@@ -332,7 +332,7 @@ regcache_rbtree_node_alloc(struct regmap *map, unsigned int reg)
+ 	}
+ 
+ 	if (!rbnode->blklen) {
+-		rbnode->blklen = sizeof(*rbnode);
++		rbnode->blklen = 1;
+ 		rbnode->base_reg = reg;
+ 	}
+ 
 -- 
-tejun
+1.8.1.2
+
