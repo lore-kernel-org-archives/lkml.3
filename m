@@ -1,57 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab3HUWh3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 18:37:29 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42354 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab3HUWhZ (ORCPT
+	id S1753170Ab3HUWiG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 18:38:06 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:35720 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845Ab3HUWiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 18:37:25 -0400
-Date: Wed, 21 Aug 2013 23:36:05 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        Darren Etheridge <darren.etheridge@gmail.com>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/8] drm/i2c: tda998x: prepare for video input
-	configuration
-Message-ID: <20130821223605.GA6617@n2100.arm.linux.org.uk>
-References: <20130821202646.47af66a5@armhf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821202646.47af66a5@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 21 Aug 2013 18:38:04 -0400
+Message-ID: <1377124595.10300.594.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Date: Wed, 21 Aug 2013 16:36:35 -0600
+In-Reply-To: <20130821204041.GC2436@htj.dyndns.org>
+References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <20130821130647.GB19286@mtj.dyndns.org> <5214D60A.2090309@gmail.com>
+	 <20130821153639.GA17432@htj.dyndns.org>
+	 <1377113503.10300.492.camel@misato.fc.hp.com>
+	 <20130821195410.GA2436@htj.dyndns.org>
+	 <1377116968.10300.514.camel@misato.fc.hp.com>
+	 <20130821204041.GC2436@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 08:26:46PM +0200, Jean-Francois Moine wrote:
-> On Wed Aug 14 12:43:29 PDT 2013, Sebastian Hesselbarth wrote:
-> > From: Russell King <rmk+kernel at arm.linux.org.uk>
-> > 
-> > The video-input-port (VIP) is highly configurable. This prepares
-> > current driver to allow to configure VIP configuration, as some
-> > boards connect lcd controller and TDA998x "pin-swapped" and depend
-> > on VIP to swap the pins by register configuration.
-> > 
-> > Signed-off-by: Russell King <rmk+kernel at arm.linux.org.uk>
-> > Tested-by: Darren Etheridge <detheridge at ti.com>
-> > Tested-by: Sebastian Hesselbarth <sebastian.hesselbarth at gmail.com>
-> 	[snip]
-> 
-> AFAIK, the TI boards have no "pin-swapped", nor has the Cubox (there is
-> no need to set the bit CFG_GRA_SWAPRB of the register LCD_SPU_DMA_CTRL0
-> of the Dove lcd for RGB or YUV formats).
-> 
-> Which board needs a special VIP configuration?
+Hello Tejun,
 
-If you run the NXP driver, and then run this driver, things get messed
-up - which has already been covered months ago when this patch was first
-brought up.
+On Wed, 2013-08-21 at 16:40 -0400, Tejun Heo wrote:
+> On Wed, Aug 21, 2013 at 02:29:28PM -0600, Toshi Kani wrote:
+> > Platforms vendors (which care Linux) need to support the existing Linux
+> > features.  This means that they have to implement legacy interfaces on
+> > x86 until the kernel supports an alternative method.  For instance, some
+> > platforms are legacy-free and do not have legacy COM ports.  These ACPI
+> > tables were defined so that non-legacy COM ports can be described and
+> > informed to the OS.  Without this support, such platforms may have to
+> > emulate the legacy COM ports for Linux, or drop Linux support.
+> 
+> Are you seriously saying that vendors are gonna drop linux support for
+> lacking ACPI earlyprintk support?  Please...
 
-It's there to ensure that the TDA998x is correctly configured no matter
-what it's previous state is, and prevent the thing being fragile as hell.
-No, reset doesn't restore its settings, only a power cycle does.
+earlyprintk is an example of the issues.  The point is that vendors are
+required to support legacy stuff for Linux.
+
+> Please take a look at the existing earlyprintk code and how compact
+> and self-contained they are.  If you want to add ACPI earlyprintk, do
+> similar stuff.  Forget about firmware blob override from initrd or
+> ACPICA.  Just implement the bare minimum to get the thing working.  Do
+> not add dependency to large body of code from earlyboot.  It's a bad
+> idea through and through.
+
+I am not saying that ACPI earlyprintk must be available at exactly the
+same point.  How early it can reasonably be is a subject of discussion.
+
+> > I think the kernel boot-up sequence should be designed in such a way
+> > that can support legacy-free and/or NUMA platforms properly.
+> 
+> Blanket statements like the above don't mean much.  There are many
+> separate stages of boot and you're talking about one of the very first
+> stages where we traditionally have always depended upon only the very
+> bare minimum of the platform both in hardware itself and configuration
+> information.  We've been doing that for *very* good reasons.  If you
+> screw up there, it's mighty tricky to figure out what went wrong
+> especially on the machines that you can't physically kick.  You're now
+> suggesting to add whole ACPI parsing including overloading from initrd
+> into that stage with pretty weak rationale.
+
+I agree that ACPI is rather complicated stuff.  But in my experience,
+the majority complication comes from ACPI namespace and methods, not
+from ACPI tables.  Do you really think ACPI table init is that risky?  I
+consider ACPI tables are part of the minimum config info, esp. for
+legacy-free platforms.
+
+> Seriously, if you want ACPI based earlyprintk, implement it in a
+> discrete minimal code which is easy to verify and won't get affected
+> when the rest of ACPI machinery is updated.  We really don't want
+> earlyboot to fail because someone screwed up ACPI or initrd handling.
+
+earlyprintk is just another example to this SRAT issue.  The local page
+table is yet another example.  My hope here is for us to be able to
+utilize ACPI tables properly without hitting this kind of ordering
+issues again and again, which requires considerable time & effort to
+address.
+
+Thanks,
+-Toshi
+
+
