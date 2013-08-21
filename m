@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153Ab3HUPGI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:06:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40645 "EHLO mail.zytor.com"
+	id S1752192Ab3HUPGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:06:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10588 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752089Ab3HUPGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:06:05 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130821144258.GH2593@phenom.dumpdata.com>
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com> <1377080143-28455-6-git-send-email-tangchen@cn.fujitsu.com> <18d71946-6de9-4af2-a6a8-05fae51755af@email.android.com> <68a532f2-e468-4aea-b42b-a444ec079c3f@email.android.com> <20130821144258.GH2593@phenom.dumpdata.com>
+	id S1751859Ab3HUPGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 11:06:46 -0400
+Date: Wed, 21 Aug 2013 11:06:42 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: dm-devel@redhat.com, joe.jin@oracle.com, agk@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] dm ioctl: allow change device target type to error
+Message-ID: <20130821150547.GA10987@redhat.com>
+References: <5214CC25.1070307@oracle.com>
+ <alpine.LRH.2.02.1308211041180.10797@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 5/8] x86, brk: Make extend_brk() available with va/pa.
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 21 Aug 2013 17:04:21 +0200
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
-        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Message-ID: <025ad747-18b5-4d7a-8eea-9ba8a5b0d53c@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1308211041180.10797@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 21 2013 at 10:48am -0400,
+Mikulas Patocka <mpatocka@redhat.com> wrote:
 
+> 
+> 
+> On Wed, 21 Aug 2013, Joe Jin wrote:
+> 
+> > commit a5664da "dm ioctl: make bio or request based device type immutable"
+> > prevented "dmsetup wape_table" change the target type to "error".
+> 
+> That commit a5664da is there for a reason (it is not possible to change 
+> bio-based device to request-based and vice versa) and I don't really see 
+> how this patch is supposed to work.
+> 
+> If there are bios that are in flight and that already passed through 
+> blk_queue_bio, and you change the device from request-based to bio-based, 
+> what are you going to do with them? - The patch doesn't do anything about 
+> it.
+> 
+> A better approach would be to create a new request-based target "error-rq" 
+> and change the multipath target to "error-rq" target. That way, you don't 
+> have to change device type from request based to bio based.
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->On Wed, Aug 21, 2013 at 02:35:36PM +0200, H. Peter Anvin wrote:
->> Global symbols are inaccessible in physical mode.
->
->Even if they are embedded in the assembler code and use
->GLOBAL(paging_enabled) ?
+My thoughts _exactly_.  This patch is very confused.
 
-Yes, because the address is different in physical mode.  Think about it.  You could do a *function* like:
+Joe, what are you looking to be able to do?  Switch a dm-multipath
+device to error?  Or allowing switching a target that has
+DM_TARGET_IMMUTABLE flag set to be switched to error target?
 
-paging_enabled:
-	mov (%esp),%edx
-	xor %eax,%eax
-	cmpl $PAGE_OFFSET,%edx
-	setae %al
-	ret
+The latter restriction was introduced with commit 36a0456fb ("dm table:
+add immutable feature").
 
->> 
->> This is incidentally yet another example of "PV/weird platform
->violence", since in their absence it would be trivial to work around
->this by using segmentation.
->
->I don't follow why it could not.
->
->Why can't there be a __pa_symbol(paging_enabled) that is used. Won't
->that in effect allow you to check the contents of that 'global
->constant' even when you don't have paging enabled?
-
-Yes.  But not once paging has been turned on.
-
->> >>As mentioned above, on 32bit before paging is enabled, we have to
->> >>access variables
->> >>with pa. So introduce a "bool is_phys" parameter to extend_brk(),
->and
->> >>convert va
->> >>to pa is it is true.
->> >
->> >Could you do it differently? Meaning have a global symbol
->> >(paging_enabled) which will be used by most of the functions you
->> >changed in this patch and the next ones? It would naturally be
->enabled
->> >when paging is on and __va addresses can be used. 
->> >
->> >That could also be used in the printk case to do a BUG_ON before
->paging
->> >is enabled on 32bit. Or perhaps use a different code path to deal
->with
->> >using __pa address. 
->> >
->> >? 
-
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Mike
