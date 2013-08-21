@@ -1,294 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab3HUWpa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 18:45:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36018 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab3HUWpU (ORCPT
+	id S1753314Ab3HUWpg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 18:45:36 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:41398 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284Ab3HUWp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 18:45:20 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Evgeniy Polyakov <zbr@ioremap.net>,
-        Jean-Francois Dagenais <jeff.dagenais@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-Subject: [PATCH 03/11] w1: slaves: w1_ds2408: convert to use w1_family_ops.groups
-Date: Wed, 21 Aug 2013 15:44:57 -0700
-Message-Id: <1377125105-25388-3-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <1377125105-25388-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1377125105-25388-1-git-send-email-gregkh@linuxfoundation.org>
+	Wed, 21 Aug 2013 18:45:29 -0400
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: anton@enomsg.org, dwmw2@infradead.org
+Cc: linux-kernel@vger.kernel.org, pali.rohar@gmail.com,
+        Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH] power: rx51_battery: Replace hardcoded channels values.
+Date: Thu, 22 Aug 2013 00:45:10 +0200
+Message-Id: <1377125110-16886-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves the sysfs file creation/removal to the w1 core by using the
-.groups field, saving code in the slave driver.
+In twl4030_madc header exist defines for fixed channels
++ add rx51 specific channels and replace all hardcoded channels
+values.
 
-Cc: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- drivers/w1/slaves/w1_ds2408.c | 174 +++++++++++++-----------------------------
- 1 file changed, 52 insertions(+), 122 deletions(-)
+ drivers/power/rx51_battery.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/w1/slaves/w1_ds2408.c b/drivers/w1/slaves/w1_ds2408.c
-index cb8a8e5d..7dfa0e11 100644
---- a/drivers/w1/slaves/w1_ds2408.c
-+++ b/drivers/w1/slaves/w1_ds2408.c
-@@ -72,10 +72,9 @@ static int _read_reg(struct w1_slave *sl, u8 address, unsigned char* buf)
- 	return 1;
- }
+diff --git a/drivers/power/rx51_battery.c b/drivers/power/rx51_battery.c
+index 8a6288d..03f5761 100644
+--- a/drivers/power/rx51_battery.c
++++ b/drivers/power/rx51_battery.c
+@@ -25,6 +25,10 @@
+ #include <linux/slab.h>
+ #include <linux/i2c/twl4030-madc.h>
  
--static ssize_t w1_f29_read_state(
--	struct file *filp, struct kobject *kobj,
--	struct bin_attribute *bin_attr,
--	char *buf, loff_t off, size_t count)
-+static ssize_t state_read(struct file *filp, struct kobject *kobj,
-+			  struct bin_attribute *bin_attr, char *buf, loff_t off,
-+			  size_t count)
- {
- 	dev_dbg(&kobj_to_w1_slave(kobj)->dev,
- 		"Reading %s kobj: %p, off: %0#10x, count: %zu, buff addr: %p",
-@@ -85,10 +84,9 @@ static ssize_t w1_f29_read_state(
- 	return _read_reg(kobj_to_w1_slave(kobj), W1_F29_REG_LOGIG_STATE, buf);
- }
- 
--static ssize_t w1_f29_read_output(
--	struct file *filp, struct kobject *kobj,
--	struct bin_attribute *bin_attr,
--	char *buf, loff_t off, size_t count)
-+static ssize_t output_read(struct file *filp, struct kobject *kobj,
-+			   struct bin_attribute *bin_attr, char *buf,
-+			   loff_t off, size_t count)
- {
- 	dev_dbg(&kobj_to_w1_slave(kobj)->dev,
- 		"Reading %s kobj: %p, off: %0#10x, count: %zu, buff addr: %p",
-@@ -99,10 +97,9 @@ static ssize_t w1_f29_read_output(
- 					 W1_F29_REG_OUTPUT_LATCH_STATE, buf);
- }
- 
--static ssize_t w1_f29_read_activity(
--	struct file *filp, struct kobject *kobj,
--	struct bin_attribute *bin_attr,
--	char *buf, loff_t off, size_t count)
-+static ssize_t activity_read(struct file *filp, struct kobject *kobj,
-+			     struct bin_attribute *bin_attr, char *buf,
-+			     loff_t off, size_t count)
- {
- 	dev_dbg(&kobj_to_w1_slave(kobj)->dev,
- 		"Reading %s kobj: %p, off: %0#10x, count: %zu, buff addr: %p",
-@@ -113,10 +110,9 @@ static ssize_t w1_f29_read_activity(
- 					 W1_F29_REG_ACTIVITY_LATCH_STATE, buf);
- }
- 
--static ssize_t w1_f29_read_cond_search_mask(
--	struct file *filp, struct kobject *kobj,
--	struct bin_attribute *bin_attr,
--	char *buf, loff_t off, size_t count)
-+static ssize_t cond_search_mask_read(struct file *filp, struct kobject *kobj,
-+				     struct bin_attribute *bin_attr, char *buf,
-+				     loff_t off, size_t count)
- {
- 	dev_dbg(&kobj_to_w1_slave(kobj)->dev,
- 		"Reading %s kobj: %p, off: %0#10x, count: %zu, buff addr: %p",
-@@ -127,10 +123,10 @@ static ssize_t w1_f29_read_cond_search_mask(
- 		W1_F29_REG_COND_SEARCH_SELECT_MASK, buf);
- }
- 
--static ssize_t w1_f29_read_cond_search_polarity(
--	struct file *filp, struct kobject *kobj,
--	struct bin_attribute *bin_attr,
--	char *buf, loff_t off, size_t count)
-+static ssize_t cond_search_polarity_read(struct file *filp,
-+					 struct kobject *kobj,
-+					 struct bin_attribute *bin_attr,
-+					 char *buf, loff_t off, size_t count)
- {
- 	if (count != 1 || off != 0)
- 		return -EFAULT;
-@@ -138,10 +134,9 @@ static ssize_t w1_f29_read_cond_search_polarity(
- 		W1_F29_REG_COND_SEARCH_POL_SELECT, buf);
- }
- 
--static ssize_t w1_f29_read_status_control(
--	struct file *filp, struct kobject *kobj,
--	struct bin_attribute *bin_attr,
--	char *buf, loff_t off, size_t count)
-+static ssize_t status_control_read(struct file *filp, struct kobject *kobj,
-+				   struct bin_attribute *bin_attr, char *buf,
-+				   loff_t off, size_t count)
- {
- 	if (count != 1 || off != 0)
- 		return -EFAULT;
-@@ -149,13 +144,9 @@ static ssize_t w1_f29_read_status_control(
- 		W1_F29_REG_CONTROL_AND_STATUS, buf);
- }
- 
--
--
--
--static ssize_t w1_f29_write_output(
--	struct file *filp, struct kobject *kobj,
--	struct bin_attribute *bin_attr,
--	char *buf, loff_t off, size_t count)
-+static ssize_t output_write(struct file *filp, struct kobject *kobj,
-+			    struct bin_attribute *bin_attr, char *buf,
-+			    loff_t off, size_t count)
- {
- 	struct w1_slave *sl = kobj_to_w1_slave(kobj);
- 	u8 w1_buf[3];
-@@ -224,10 +215,9 @@ error:
- /**
-  * Writing to the activity file resets the activity latches.
-  */
--static ssize_t w1_f29_write_activity(
--	struct file *filp, struct kobject *kobj,
--	struct bin_attribute *bin_attr,
--	char *buf, loff_t off, size_t count)
-+static ssize_t activity_write(struct file *filp, struct kobject *kobj,
-+			      struct bin_attribute *bin_attr, char *buf,
-+			      loff_t off, size_t count)
- {
- 	struct w1_slave *sl = kobj_to_w1_slave(kobj);
- 	unsigned int retries = W1_F29_RETRIES;
-@@ -255,13 +245,9 @@ error:
- 	return -EIO;
- }
- 
--static ssize_t w1_f29_write_status_control(
--	struct file *filp,
--	struct kobject *kobj,
--	struct bin_attribute *bin_attr,
--	char *buf,
--	loff_t off,
--	size_t count)
-+static ssize_t status_control_write(struct file *filp, struct kobject *kobj,
-+				    struct bin_attribute *bin_attr, char *buf,
-+				    loff_t off, size_t count)
- {
- 	struct w1_slave *sl = kobj_to_w1_slave(kobj);
- 	u8 w1_buf[4];
-@@ -330,91 +316,35 @@ out:
- 	return res;
- }
- 
--static struct bin_attribute w1_f29_sysfs_bin_files[] = {
--	{
--		.attr =	{
--			.name = "state",
--			.mode = S_IRUGO,
--		},
--		.size = 1,
--		.read = w1_f29_read_state,
--	},
--	{
--		.attr =	{
--			.name = "output",
--			.mode = S_IRUGO | S_IWUSR | S_IWGRP,
--		},
--		.size = 1,
--		.read = w1_f29_read_output,
--		.write = w1_f29_write_output,
--	},
--	{
--		.attr =	{
--			.name = "activity",
--			.mode = S_IRUGO,
--		},
--		.size = 1,
--		.read = w1_f29_read_activity,
--		.write = w1_f29_write_activity,
--	},
--	{
--		.attr =	{
--			.name = "cond_search_mask",
--			.mode = S_IRUGO,
--		},
--		.size = 1,
--		.read = w1_f29_read_cond_search_mask,
--	},
--	{
--		.attr =	{
--			.name = "cond_search_polarity",
--			.mode = S_IRUGO,
--		},
--		.size = 1,
--		.read = w1_f29_read_cond_search_polarity,
--	},
--	{
--		.attr =	{
--			.name = "status_control",
--			.mode = S_IRUGO | S_IWUSR | S_IWGRP,
--		},
--		.size = 1,
--		.read = w1_f29_read_status_control,
--		.write = w1_f29_write_status_control,
--	}
-+static BIN_ATTR_RO(state, 1);
-+static BIN_ATTR_RW(output, 1);
-+static BIN_ATTR_RW(activity, 1);
-+static BIN_ATTR_RO(cond_search_mask, 1);
-+static BIN_ATTR_RO(cond_search_polarity, 1);
-+static BIN_ATTR_RW(status_control, 1);
++/* RX51 specific channels */
++#define TWL4030_MADC_BTEMP_RX51	TWL4030_MADC_ADCIN0
++#define TWL4030_MADC_BCI_RX51	TWL4030_MADC_ADCIN4
 +
-+static struct bin_attribute *w1_f29_bin_attrs[] = {
-+	&bin_attr_state,
-+	&bin_attr_output,
-+	&bin_attr_activity,
-+	&bin_attr_cond_search_mask,
-+	&bin_attr_cond_search_polarity,
-+	&bin_attr_status_control,
-+	NULL,
- };
+ struct rx51_device_info {
+ 	struct device *dev;
+ 	struct power_supply bat;
+@@ -37,7 +41,7 @@ static int rx51_battery_read_adc(int channel)
+ {
+ 	struct twl4030_madc_request req;
  
--static int w1_f29_add_slave(struct w1_slave *sl)
--{
--	int err = 0;
--	int i;
--
--	err = w1_f29_disable_test_mode(sl);
--	if (err)
--		return err;
--
--	for (i = 0; i < ARRAY_SIZE(w1_f29_sysfs_bin_files) && !err; ++i)
--		err = sysfs_create_bin_file(
--			&sl->dev.kobj,
--			&(w1_f29_sysfs_bin_files[i]));
--	if (err)
--		while (--i >= 0)
--			sysfs_remove_bin_file(&sl->dev.kobj,
--				&(w1_f29_sysfs_bin_files[i]));
--	return err;
--}
-+static const struct attribute_group w1_f29_group = {
-+	.bin_attrs = w1_f29_bin_attrs,
-+};
+-	req.channels = 1 << channel;
++	req.channels = channel;
+ 	req.do_avg = 1;
+ 	req.method = TWL4030_MADC_SW1;
+ 	req.func_cb = NULL;
+@@ -56,7 +60,7 @@ static int rx51_battery_read_adc(int channel)
+  */
+ static int rx51_battery_read_voltage(struct rx51_device_info *di)
+ {
+-	int voltage = rx51_battery_read_adc(12);
++	int voltage = rx51_battery_read_adc(TWL4030_MADC_VBAT);
  
--static void w1_f29_remove_slave(struct w1_slave *sl)
--{
--	int i;
--	for (i = ARRAY_SIZE(w1_f29_sysfs_bin_files) - 1; i >= 0; --i)
--		sysfs_remove_bin_file(&sl->dev.kobj,
--			&(w1_f29_sysfs_bin_files[i]));
--}
-+static const struct attribute_group *w1_f29_groups[] = {
-+	&w1_f29_group,
-+	NULL,
-+};
+ 	if (voltage < 0)
+ 		return voltage;
+@@ -108,7 +112,7 @@ static int rx51_battery_read_temperature(struct rx51_device_info *di)
+ {
+ 	int min = 0;
+ 	int max = ARRAY_SIZE(rx51_temp_table2) - 1;
+-	int raw = rx51_battery_read_adc(0);
++	int raw = rx51_battery_read_adc(TWL4030_MADC_BTEMP_RX51);
  
- static struct w1_family_ops w1_f29_fops = {
--	.add_slave      = w1_f29_add_slave,
--	.remove_slave   = w1_f29_remove_slave,
-+	.add_slave      = w1_f29_disable_test_mode,
-+	.groups		= w1_f29_groups,
- };
+ 	/* Zero and negative values are undefined */
+ 	if (raw <= 0)
+@@ -142,7 +146,7 @@ static int rx51_battery_read_temperature(struct rx51_device_info *di)
+  */
+ static int rx51_battery_read_capacity(struct rx51_device_info *di)
+ {
+-	int capacity = rx51_battery_read_adc(4);
++	int capacity = rx51_battery_read_adc(TWL4030_MADC_BCI_RX51);
  
- static struct w1_family w1_family_29 = {
+ 	if (capacity < 0)
+ 		return capacity;
 -- 
-1.8.3.rc0.20.gb99dd2e
+1.8.1.2
 
