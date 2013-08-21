@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751457Ab3HUIPk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 04:15:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8397 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268Ab3HUIPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 04:15:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,926,1367996400"; 
-   d="scan'208";a="390739942"
-Subject: [PATCH V2] reboot: perform warm/cold reset correctly for CF9 type
-From: Li Fei <fei.li@intel.com>
-To: hpa@zytor.com, mingo@redhat.com
-Cc: tglx@linutronix.de, chuansheng.liu@intel.com, x86@kernel.org,
-        akpm@linux-foundation.org, holt@sgi.com, rmk+kernel@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, fei.li@intel.com
-In-Reply-To: <1377049949.18357.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-References: <1377049949.18357.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Aug 2013 16:13:57 +0800
-Message-ID: <1377072837.24556.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751480Ab3HUIRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 04:17:33 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:36187 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab3HUIRa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 04:17:30 -0400
+Date: Wed, 21 Aug 2013 09:17:20 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH 28/33] ARM: ux500: Remove AUXDATA relating to MSP (Audio)
+ clock-name bindings
+Message-ID: <20130821081720.GA29850@lee--X1>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+ <1370521041-32318-29-git-send-email-lee.jones@linaro.org>
+ <CACRpkdYE7SgJiacneBq=cZ=7dAO2x3sBscFW075cDODxesYUWA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdYE7SgJiacneBq=cZ=7dAO2x3sBscFW075cDODxesYUWA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current implementation for reboot type CF9 and CF9_COND,
-warm and cold reset are not differentiated, and both are
-performed by writing 0x06 to port 0xCF9 as warm reset. It's not
-correct.
+On Wed, 21 Aug 2013, Linus Walleij wrote:
 
-This commit will differentiate warm and cold reset, and perform
-them correctly as below:
-For warm reset, write 0x06 to port 0xCF9;
-For cold reset, write 0x0E to port 0xCF9.
+> On Thu, Jun 6, 2013 at 2:17 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > @@ -232,15 +232,6 @@ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+> >         /* Requires device name bindings. */
+> >         OF_DEV_AUXDATA("stericsson,db8500-pinctrl", U8500_PRCMU_BASE,
+> >                 "pinctrl-db8500", NULL),
+> > -       /* Requires clock name and DMA bindings. */
+> 
+> The comment is just wrong.
+> 
+> > -       OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80123000,
+> > -               "ux500-msp-i2s.0", &msp0_platform_data),
+> 
+> Look, it also adds &msp0_platform_data, which is vital.
+> 
+> Result after boot:
+> ALSA device list:
+>   No soundcards found.
+> 
+> Before the patch set we had audio and I kind of liked it :-)
+> 
+> I think you're able to set the device name as NULL though so
+> we only add this platform data, try it out.
 
-From: Liu Chuansheng <chuansheng.liu@intel.com>
-Signed-off-by: Li Fei <fei.li@intel.com>
----
- arch/x86/kernel/reboot.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+Makes sense. Although, I don't think there is a need to change the
+device name. I'll just put it under the a different heading of
+"Requires DMA bindings".
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 563ed91..ca42f63 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -511,10 +511,13 @@ static void native_machine_emergency_restart(void)
- 
- 		case BOOT_CF9_COND:
- 			if (port_cf9_safe) {
--				u8 cf9 = inb(0xcf9) & ~6;
-+				u8 reboot_code = reboot_mode == REBOOT_WARM ?
-+					0x06 : 0x0E;
-+				u8 cf9 = inb(0xcf9) & ~reboot_code;
- 				outb(cf9|2, 0xcf9); /* Request hard reset */
- 				udelay(50);
--				outb(cf9|6, 0xcf9); /* Actually do the reset */
-+				/* Actually do the reset */
-+				outb(cf9|reboot_code, 0xcf9);
- 				udelay(50);
- 			}
- 			reboot_type = BOOT_KBD;
 -- 
-1.7.4.1
-
-
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
