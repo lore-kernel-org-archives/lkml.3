@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab3HUKPV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 06:15:21 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:22328 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218Ab3HUKPT (ORCPT
+	id S1752526Ab3HUKPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 06:15:32 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:29894 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab3HUKP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 06:15:19 -0400
+	Wed, 21 Aug 2013 06:15:27 -0400
 From: Libo Chen <libo.chen@huawei.com>
 To: <wg@grandegger.com>, <mkl@pengutronix.de>
-CC: <davem@davemloft.net>, <linux-can@vger.kernel.org>, <lizefan@huawei.com>,
+CC: <linux-can@vger.kernel.org>, <davem@davemloft.net>,
         <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <libo.chen@huawei.com>
-Subject: [PATCH 0/2] net: can: use platform_set_drvdata()
-Date: Wed, 21 Aug 2013 18:14:59 +0800
-Message-ID: <1377080099-14552-1-git-send-email-libo.chen@huawei.com>
+        <lizefan@huawei.com>, <libo.chen@huawei.com>
+Subject: [PATCH 2/2] net: can: flexcan: use platform_set_drvdata()
+Date: Wed, 21 Aug 2013 18:15:08 +0800
+Message-ID: <1377080108-33780-1-git-send-email-libo.chen@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -28,12 +28,25 @@ Use the wrapper functions for getting and setting the driver data using
 platform_device instead of using dev_set_drvdata() with &pdev->dev,
 so we can directly pass a struct platform_device.
 
-Libo Chen (2):
-  net: can: at91_can: use platform_set_drvdata()
-  net: can: flexcan: use platform_set_drvdata()
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
+---
+ drivers/net/can/flexcan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
- drivers/net/can/at91_can.c |    2 +-
- drivers/net/can/flexcan.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index 7b0be09..9978de7 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -1087,7 +1087,7 @@ static int flexcan_probe(struct platform_device *pdev)
+ 
+ 	netif_napi_add(dev, &priv->napi, flexcan_poll, FLEXCAN_NAPI_WEIGHT);
+ 
+-	dev_set_drvdata(&pdev->dev, dev);
++	platform_set_drvdata(pdev, dev);
+ 	SET_NETDEV_DEV(dev, &pdev->dev);
+ 
+ 	err = register_flexcandev(dev);
+-- 
+1.7.1
 
 
