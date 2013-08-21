@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab3HUTVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 15:21:41 -0400
-Received: from relay.parallels.com ([195.214.232.42]:44196 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab3HUTVk (ORCPT
+	id S1752628Ab3HUTY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 15:24:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17615 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab3HUTYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 15:21:40 -0400
-Message-ID: <5215133D.90005@parallels.com>
-Date: Wed, 21 Aug 2013 23:21:33 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        <Xen-devel@lists.xen.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with
- existing use
-References: <5214C524.1050900@citrix.com> <20130821141223.GS18673@moon> <5214F09002000078000ED5C3@nat28.tlf.novell.com> <20130821154238.GV18673@moon> <521500E102000078000ED65C@nat28.tlf.novell.com> <20130821161946.GW18673@moon> <5214F128.1000901@citrix.com> <20130821172547.GY18673@moon> <20130821181733.GC3814@moon> <4fec3e5b-695c-438b-ad6d-55ca50becc4c@email.android.com> <20130821190307.GB18673@moon> <CALCETrWe-BH-ope+bdnW0jJy6EGcEGeT4xA=SZT4xZQO+MMTMA@mail.gmail.com>
-In-Reply-To: <CALCETrWe-BH-ope+bdnW0jJy6EGcEGeT4xA=SZT4xZQO+MMTMA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Wed, 21 Aug 2013 15:24:55 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Q2XQTs2BGfUA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=n8N6v9TcQfMA:10 a=9JqiQa6tcvzDIpBCPpcA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 21 Aug 2013 15:24:53 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz, hare@suse.de
+Subject: Re: [PATCH 4/4] printk: Use unbound irq work for printing and
+ waking
+Message-ID: <20130821152453.16b07622@gandalf.local.home>
+In-Reply-To: <1377072512-7986-5-git-send-email-jack@suse.cz>
+References: <1377072512-7986-1-git-send-email-jack@suse.cz>
+	<1377072512-7986-5-git-send-email-jack@suse.cz>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [89.169.95.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2013 11:07 PM, Andy Lutomirski wrote:
-> On Wed, Aug 21, 2013 at 12:03 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->> On Wed, Aug 21, 2013 at 08:50:26PM +0200, H. Peter Anvin wrote:
->>> But is there a manifest bug or not?  What is the deal with Xen?
->>>
->>
->> I personally don't see bug here because
->>
->>  - this swapped page soft dirty bit is set for non-present entries only,
->>    never for present ones, just at moment we form swap pte entry
->>
->>  - i don't find any code which would test for this bit directly without
->>    is_swap_pte call
->>
->> but the use of paw bit itself is confusing, so I'm working on patch which
->> won't use it. Again, if someone knows where exactly access to pse bit when
->> pte keeps swap entry may happen (for any purpose other than dirty page
->> tracking) please share.
+On Wed, 21 Aug 2013 10:08:32 +0200
+Jan Kara <jack@suse.cz> wrote:
+
+> Now when per-cpu printk buffers are gone, there's no need to have printk
+> flags or printk irq_work per cpu. Just make printk_pending a single
+> variable operated by atomic operations and have single unbound irq work
+> doing the waking and printing. This has an advantage that any cpu can do the
+> printing / wakeup work thus lowering the latency of printing and better
+> distributing the printing work over cpus.
 > 
-> I doubt that there are cacheability issues here, since the swap type
-> already overlaps with PWT and PCD.
-> 
-> What happens if the page being swapped is a THP page?  (I have no idea
-> how, or even if, this works, but presumably PSE is important.)
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
 
-Huge-page is splitted into small ones, then the smaller ones get swapped out.
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
-> --Andy
-> 
-
-
+-- Steve
