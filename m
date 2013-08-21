@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab3HUOdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:33:00 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:57936 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150Ab3HUOc6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:32:58 -0400
-Date: Wed, 21 Aug 2013 10:32:54 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Libin <huawei.libin@huawei.com>
-Cc: linux-kernel@vger.kernel.org, wangyijing@huawei.com, guohanjun@huawei.com
-Subject: Re: [PATCH v2 0/3] workqueue: Comment/Doc correction with no
- functional change
-Message-ID: <20130821143254.GM19286@mtj.dyndns.org>
-References: <1377046241-18516-1-git-send-email-huawei.libin@huawei.com>
+	id S1752163Ab3HUOcW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:32:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47532 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752041Ab3HUOcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 10:32:19 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <bcousson@baylibre.com>, <tony@atomide.com>, <balbi@ti.com>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
+        <linux@arm.linux.org.uk>, <javier.martinez@collabora.co.uk>,
+        <devicetree@vger.kernel.org>, <kishon@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH v3 2/5] arm: omap5: dts: fix ocp2scp DTS data
+Date: Wed, 21 Aug 2013 20:01:31 +0530
+Message-ID: <1377095494-15380-3-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1377095494-15380-1-git-send-email-kishon@ti.com>
+References: <1377095494-15380-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377046241-18516-1-git-send-email-huawei.libin@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 08:50:38AM +0800, Libin wrote:
-> This patch set doesn't make any functional differences.
-> 
-> Libin (3):
->   workqueue: Comment correction in file header
->   workqueue: Fix manage_workers() RETURNS description
->   workqueue: Correct/Drop references to gcwq in Documentation
+From: Felipe Balbi <balbi@ti.com>
 
-Applied 1-3 to wq/for-3.12 with minor updates.
+this patch fixes the DTS data for ocp2scp
+node by adding the missing reg property.
 
-Thanks.
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/boot/dts/omap5.dtsi |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index 5c99f19..4e41409 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -652,10 +652,11 @@
+ 			};
+ 		};
+ 
+-		ocp2scp {
++		ocp2scp@4a080000 {
+ 			compatible = "ti,omap-ocp2scp";
+ 			#address-cells = <1>;
+ 			#size-cells = <1>;
++			reg = <0x4a080000 0x20>;
+ 			ranges;
+ 			ti,hwmods = "ocp2scp1";
+ 			usb2_phy: usb2phy@4a084000 {
 -- 
-tejun
+1.7.10.4
+
