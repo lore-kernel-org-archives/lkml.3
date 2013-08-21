@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab3HUTlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 15:41:05 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:36389 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab3HUTlD (ORCPT
+	id S1752608Ab3HUToM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 15:44:12 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:40652 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836Ab3HUToL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 15:41:03 -0400
-From: Jens Frederich <jfrederich@gmail.com>
-To: rob@landley.net
-Cc: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, linux-pm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Frederich <jfrederich@gmail.com>
-Subject: [PATCH] power: Documentation: Update s2ram link
-Date: Wed, 21 Aug 2013 21:40:46 +0200
-Message-Id: <1377114046-10441-1-git-send-email-jfrederich@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 21 Aug 2013 15:44:11 -0400
+Date: Wed, 21 Aug 2013 21:43:57 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Anton Arapov <anton@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [ATTEND] oops.kernel.org prospect
+Message-ID: <20130821194357.GA22587@electric-eye.fr.zoreil.com>
+References: <20130819085405.GA22328@bandura.laptop>
+ <20130819145505.GB15178@kroah.com>
+ <20130819151643.GC19070@bandura.laptop>
+ <20130819153939.GA23875@thunk.org>
+ <20130819155202.GF19070@bandura.laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130819155202.GF19070@bandura.laptop>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The s2ram link is broken because there is a new OpenSuse wiki online.
-The page does no longer exist, it was merged in the Suspend_to_RAM
-page.
+Anton Arapov <anton@redhat.com> :
+[...]
+> Oh well,... I didn't have a time for this right now, nor project is
+> not exactly in the state I'm willing to show (mostly webui) 
 
-Signed-off-by: Jens Frederich <jfrederich@gmail.com>
+I have sorted the r8169 oopses by kernel revision to start with the most
+recent kernels. I don't get why the r8169 driver appears in the
+"Caused by:" field when
+- the bug is about "scheduling while atomic: Xorg/3042/0×00000001"
+- the kernel is PDWO with fglrx
+- r8169 appears in the module list, nowhere else (not even the oops)
 
-diff --git a/Documentation/power/basic-pm-debugging.txt b/Documentation/power/basic-pm-debugging.txt
-index 262acf5..e9b54de8 100644
---- a/Documentation/power/basic-pm-debugging.txt
-+++ b/Documentation/power/basic-pm-debugging.txt
-@@ -179,7 +179,7 @@ use the PM_TRACE mechanism documented in Documentation/power/s2ram.txt .
- 
- To verify that the STR works, it is generally more convenient to use the s2ram
- tool available from http://suspend.sf.net and documented at
--http://en.opensuse.org/SDB:Suspend_to_RAM.
-+http://en.opensuse.org/SDB:Suspend_to_RAM (S2RAM_LINK).
- 
- Namely, after writing "freezer", "devices", "platform", "processors", or "core"
- into /sys/power/pm_test (available if the kernel is compiled with
-@@ -194,10 +194,10 @@ Among other things, the testing with the help of /sys/power/pm_test may allow
- you to identify drivers that fail to suspend or resume their devices.  They
- should be unloaded every time before an STR transition.
- 
--Next, you can follow the instructions at http://en.opensuse.org/s2ram to test
--the system, but if it does not work "out of the box", you may need to boot it
--with "init=/bin/bash" and test s2ram in the minimal configuration.  In that
--case, you may be able to search for failing drivers by following the procedure
-+Next, you can follow the instructions at S2RAM_LINK to test the system, but if
-+it does not work "out of the box", you may need to boot it with
-+"init=/bin/bash" and test s2ram in the minimal configuration.  In that case,
-+you may be able to search for failing drivers by following the procedure
- analogous to the one described in section 1.  If you find some failing drivers,
- you will have to unload them every time before an STR transition (ie. before
- you run s2ram), and please report the problems with them.
+I tried :
+
+http://oops.kernel.org/browse-reports/?c=1&d=1&oopsclass=default&oopstype=default&distro=default&module=&driver=r8169&function=&file=&bugline=&kernel=&tainted=true&search=submit
+
+(0 answer if Stack, Registers or Disassembled code is added)
+
+("tainted=true" while "Untainted only" was asked for, huh ?)
+
+The answers contains:
+
+http://oops.kernel.org/browse-reports/oops-detail/?id=29778
+
+and
+
+http://oops.kernel.org/browse-reports/oops-detail/?id=29856
+
+I can't even find the "r8169" word in those.
+
+Is it the currently expected behavior ?
+
 -- 
-1.7.9.5
-
+Ueimor
