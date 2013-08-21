@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab3HUI2Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 04:28:24 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:54399 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab3HUI2V (ORCPT
+	id S1751632Ab3HUIa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 04:30:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53328 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab3HUIa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 04:28:21 -0400
-Date: Wed, 21 Aug 2013 09:28:11 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
- DBX500 DT
-Message-ID: <20130821082811.GC29850@lee--X1>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
- <1370521041-32318-10-git-send-email-lee.jones@linaro.org>
- <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
+	Wed, 21 Aug 2013 04:30:58 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
+        <notasas@gmail.com>
+Subject: [PATCH] power: twl4030-charger: Fix compiler warning with regulator_enable()
+Date: Wed, 21 Aug 2013 11:31:37 +0300
+Message-ID: <1377073897-5165-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Aug 2013, Linus Walleij wrote:
+The return value of regulator_enable need to be checked. This patch fixes
+the following warning:
+drivers/power/twl4030_charger.c: In function ‘twl4030_charger_enable_usb’:
+drivers/power/twl4030_charger.c:192:20: warning: ignoring return value of ‘regulator_enable’, declared with attribute warn_unused_result [-Wunused-result]
 
-> On Thu, Jun 6, 2013 at 2:16 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > +++ b/arch/arm/boot/dts/dbx5x0.dtsi
-> > @@ -572,6 +572,8 @@
-> >                         v-i2c-supply = <&db8500_vape_reg>;
-> >
-> >                         clock-frequency = <400000>;
-> > +                       clocks = <&prcc_kclk 3 3>, <&prcc_pclk 3 3>;
-> > +                       clock-names = "nmk-i2c.0", "apb_pclk";
-> 
-> To avoid confusing the clock name "nmk-i2c.0" with the device
-> name in Linux of that device instance, can we use a name such
-> that it is clear that this is not a dev_name match?
-> 
-> "i2c0" works just fine as name I think?
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/power/twl4030_charger.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-If you do that, then I think you need to change all of these too:
-
-git grep -e "\.0" -e "\.1" -e "\.2" -e "\.3" -- drivers/clk/ux500/
-
+diff --git a/drivers/power/twl4030_charger.c b/drivers/power/twl4030_charger.c
+index be98e70..d98abe9 100644
+--- a/drivers/power/twl4030_charger.c
++++ b/drivers/power/twl4030_charger.c
+@@ -189,7 +189,12 @@ static int twl4030_charger_enable_usb(struct twl4030_bci *bci, bool enable)
+ 
+ 		/* Need to keep regulator on */
+ 		if (!bci->usb_enabled) {
+-			regulator_enable(bci->usb_reg);
++			ret = regulator_enable(bci->usb_reg);
++			if (ret) {
++				dev_err(bci->dev,
++					"Failed to enable regulator\n");
++				return ret;
++			}
+ 			bci->usb_enabled = 1;
+ 		}
+ 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.2
+
