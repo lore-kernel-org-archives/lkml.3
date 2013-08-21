@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab3HUIRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 04:17:33 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:36187 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab3HUIRa (ORCPT
+	id S1751539Ab3HUISC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 04:18:02 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:38382 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab3HUISA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 04:17:30 -0400
-Date: Wed, 21 Aug 2013 09:17:20 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
+	Wed, 21 Aug 2013 04:18:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <1370521041-32318-22-git-send-email-lee.jones@linaro.org>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+	<1370521041-32318-22-git-send-email-lee.jones@linaro.org>
+Date: Wed, 21 Aug 2013 10:17:59 +0200
+Message-ID: <CACRpkdY2KOxX=oA7i9GUnzpwRKiK2rXqTBPVpg+zW082f2TJdg@mail.gmail.com>
+Subject: Re: [PATCH 21/33] clk: ux500: Add Device Tree support for the PRCC
+ Kernel clock
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
 Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Arnd Bergmann <arnd@arndb.de>,
         Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH 28/33] ARM: ux500: Remove AUXDATA relating to MSP (Audio)
- clock-name bindings
-Message-ID: <20130821081720.GA29850@lee--X1>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
- <1370521041-32318-29-git-send-email-lee.jones@linaro.org>
- <CACRpkdYE7SgJiacneBq=cZ=7dAO2x3sBscFW075cDODxesYUWA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdYE7SgJiacneBq=cZ=7dAO2x3sBscFW075cDODxesYUWA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Aug 2013, Linus Walleij wrote:
+On Thu, Jun 6, 2013 at 2:17 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> On Thu, Jun 6, 2013 at 2:17 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > @@ -232,15 +232,6 @@ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
-> >         /* Requires device name bindings. */
-> >         OF_DEV_AUXDATA("stericsson,db8500-pinctrl", U8500_PRCMU_BASE,
-> >                 "pinctrl-db8500", NULL),
-> > -       /* Requires clock name and DMA bindings. */
-> 
-> The comment is just wrong.
-> 
-> > -       OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80123000,
-> > -               "ux500-msp-i2s.0", &msp0_platform_data),
-> 
-> Look, it also adds &msp0_platform_data, which is vital.
-> 
-> Result after boot:
-> ALSA device list:
->   No soundcards found.
-> 
-> Before the patch set we had audio and I kind of liked it :-)
-> 
-> I think you're able to set the device name as NULL though so
-> we only add this platform data, try it out.
+> This patch enables clocks to be specified from Device Tree via phandles
+> to the "prcc-kernel-clock" node.
+>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+(...)
+>  static struct clk *prcmu_clk[PRCMU_NUM_CLKS];
+>  static struct clk *prcc_pclk[(PRCC_NUM_PERIPH_CLUSTERS + 1) * PRCC_PERIPHS_PER_CLUSTER];
+> +static struct clk *prcc_kclk[(PRCC_NUM_PERIPH_CLUSTERS + 1) * PRCC_PERIPHS_PER_CLUSTER];
+>
+>  #define PRCC_SHOW(clk, base, bit) \
+>         clk[(base * PRCC_PERIPHS_PER_CLUSTER) + bit]
+> @@ -540,110 +541,136 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
+>         clk = clk_reg_prcc_kclk("p1_uart0_kclk", "uartclk",
+>                         clkrst1_base, BIT(0), CLK_SET_RATE_GATE);
+>         clk_register_clkdev(clk, NULL, "uart0");
+> +       PRCC_KCLK_STORE(clk, 1, 0);
+>
+>         clk = clk_reg_prcc_kclk("p1_uart1_kclk", "uartclk",
+>                         clkrst1_base, BIT(1), CLK_SET_RATE_GATE);
+>         clk_register_clkdev(clk, NULL, "uart1");
+> +       PRCC_KCLK_STORE(clk, 1, 1);
 
-Makes sense. Although, I don't think there is a need to change the
-device name. I'll just put it under the a different heading of
-"Requires DMA bindings".
+(etc)
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+On device tree boots, clk_register_clkdev() is obviously pointless,
+as you're later deleting the AUXDATA connecting that device name
+to the clock.
+
+This should not be called at all on the DT boot path.
+
+However this looks cluttered as well:
+
+if (dt_probe)
+  clk_register_clkdev(clk, NULL, "uart0");
+else
+  PRCC_KCLK_STORE(clk, 1, 0);
+
+Isn't it possible to fork a function u8500_clk_init_dt() to add all the
+clocks in the DT probe path and keep this function
+u8500_clk_init() as it is?
+
+Yours,
+Linus Walleij
