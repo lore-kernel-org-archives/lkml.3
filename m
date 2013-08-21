@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab3HUCZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 22:25:20 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:13907 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab3HUCZQ (ORCPT
+	id S1752079Ab3HUC25 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 22:28:57 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56665 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab3HUC2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 22:25:16 -0400
-X-Spam-Score: -101.0
-Message-ID: <52142008.203@asianux.com>
-Date: Wed, 21 Aug 2013 10:03:52 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/module.c: use scnprintf() instead of sprintf()
-References: <5212DEC3.9070007@asianux.com> <87vc30gao5.fsf@rustcorp.com.au>
-In-Reply-To: <87vc30gao5.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 20 Aug 2013 22:28:55 -0400
+Message-ID: <1377052130.20078.0.camel@phoenix>
+Subject: [PATCH] pinctrl: rockchip: Simplify for loop iteration
+From: Axel Lin <axel.lin@ingics.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 21 Aug 2013 10:28:50 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 02:04 PM, Rusty Russell wrote:
-> Chen Gang <gang.chen@asianux.com> writes:
-> 
->> For some strings, they are permitted to be larger than PAGE_SIZE, so
->> need use scnprintf() instead of sprintf(), or it will cause issue.
->>
->> One case is:
->>
->>   if a module version is crazy defined (length more than PAGE_SIZE),
->>   'modinfo' command is still OK (print full contents),
->>   but for "cat /sys/modules/'modname'/version", will cause issue in kernel.
-> 
-> Applied!
-> 
+Just return once a match found makes the code simpler and shorter.
 
-Thanks.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/pinctrl/pinctrl-rockchip.c | 21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
 
-> Thanks,
-> Rusty.
-> 
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> ---
->>  kernel/module.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/kernel/module.c b/kernel/module.c
->> index 2069158..0618e63 100644
->> --- a/kernel/module.c
->> +++ b/kernel/module.c
->> @@ -603,7 +603,7 @@ static void setup_modinfo_##field(struct module *mod, const char *s)  \
->>  static ssize_t show_modinfo_##field(struct module_attribute *mattr,   \
->>  			struct module_kobject *mk, char *buffer)      \
->>  {                                                                     \
->> -	return sprintf(buffer, "%s\n", mk->mod->field);               \
->> +	return scnprintf(buffer, PAGE_SIZE, "%s\n", mk->mod->field);  \
->>  }                                                                     \
->>  static int modinfo_##field##_exists(struct module *mod)               \
->>  {                                                                     \
->> -- 
->> 1.7.7.6
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-
-
+diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
+index c22457d..64ad0c0 100644
+--- a/drivers/pinctrl/pinctrl-rockchip.c
++++ b/drivers/pinctrl/pinctrl-rockchip.c
+@@ -167,18 +167,14 @@ static const inline struct rockchip_pin_group *pinctrl_name_to_group(
+ 					const struct rockchip_pinctrl *info,
+ 					const char *name)
+ {
+-	const struct rockchip_pin_group *grp = NULL;
+ 	int i;
+ 
+ 	for (i = 0; i < info->ngroups; i++) {
+-		if (strcmp(info->groups[i].name, name))
+-			continue;
+-
+-		grp = &info->groups[i];
+-		break;
++		if (!strcmp(info->groups[i].name, name))
++			return &info->groups[i];
+ 	}
+ 
+-	return grp;
++	return NULL;
+ }
+ 
+ /*
+@@ -204,17 +200,12 @@ static struct rockchip_pin_bank *bank_num_to_bank(
+ 	struct rockchip_pin_bank *b = info->ctrl->pin_banks;
+ 	int i;
+ 
+-	for (i = 0; i < info->ctrl->nr_banks; i++) {
++	for (i = 0; i < info->ctrl->nr_banks; i++, b++) {
+ 		if (b->bank_num == num)
+-			break;
+-
+-		b++;
++			return b;
+ 	}
+ 
+-	if (b->bank_num != num)
+-		return ERR_PTR(-EINVAL);
+-
+-	return b;
++	return ERR_PTR(-EINVAL);
+ }
+ 
+ /*
 -- 
-Chen Gang
+1.8.1.2
+
+
+
