@@ -1,71 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab3HUVa3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 17:30:29 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:37914 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab3HUVaY (ORCPT
+	id S1753191Ab3HUVb2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 17:31:28 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:44641 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624Ab3HUVb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 17:30:24 -0400
-Date: Wed, 21 Aug 2013 17:30:27 -0400
-From: Milosz Tanski <milosz@adfin.com>
-To: ceph-devel@vger.kernel.org
-Cc: sage@inktank.com, zheng.z.yan@intel.com, dhowells@redhat.com,
-        linux-cachefs@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] ceph: clean PgPrivate2 on returning from readpages
-Message-ID: <b58df1940ff867aa12ada71d2a21eefb2d84494b.1375999914.git.milosz@adfin.com>
-References: <cover.1375999914.git.milosz@adfin.com>
+	Wed, 21 Aug 2013 17:31:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1375999914.git.milosz@adfin.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1376877989.10251.2.camel@phoenix>
+References: <1376877989.10251.2.camel@phoenix>
+Date: Wed, 21 Aug 2013 23:31:26 +0200
+Message-ID: <CACRpkdYdKBbD6qBeKxdFp8mcuPxNH+D1ZJFpm+VF4VARCpGneA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: core: Remove unnecessary test for desc->name
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cases the ceph readapages code code bails without filling all the pages
-already marked by fscache. When we return back to readahead code this causes
-a BUG.
+On Mon, Aug 19, 2013 at 4:06 AM, Axel Lin <axel.lin@ingics.com> wrote:
 
-Signed-off-by: Milosz Tanski <milosz@adfin.com>
----
- fs/ceph/addr.c  | 2 ++
- fs/ceph/cache.h | 7 +++++++
- 2 files changed, 9 insertions(+)
+> The implementation in pinctrl_register_one_pin() ensures pindesc->name is always
+> not NULL before insert the pindesc to radix tree.
+> If the desc return from pin_desc_get is not NULL, desc->name is always not NULL.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index 632bb48..e8ea383 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -413,6 +413,8 @@ static int ceph_readpages(struct file *file, struct address_space *mapping,
- 		BUG_ON(rc == 0);
- 	}
- out:
-+	ceph_fscache_readpages_cancel(inode, page_list);
-+
- 	dout("readpages %p file %p ret %d\n", inode, file, rc);
- 	return rc;
- }
-diff --git a/fs/ceph/cache.h b/fs/ceph/cache.h
-index 23f2666..a0642ee 100644
---- a/fs/ceph/cache.h
-+++ b/fs/ceph/cache.h
-@@ -81,6 +81,13 @@ static inline int ceph_release_fscache_page(struct page *page, gfp_t gfp)
- 	return fscache_maybe_release_page(ci->fscache, page, gfp);
- }
- 
-+static inline void ceph_fscache_readpages_cancel(struct inode *inode,
-+						 struct list_head *pages)
-+{
-+	struct ceph_inode_info *ci = ceph_inode(inode);
-+	return fscache_readpages_cancel(ci->fscache, pages);
-+}
-+
- #else
- 
- static inline int ceph_readpage_from_fscache(struct inode* inode,
--- 
-1.8.1.2
+Good point. Patch applied.
 
+Yours,
+Linus Walleij
