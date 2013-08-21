@@ -1,70 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab3HUUYx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 16:24:53 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:60018 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507Ab3HUUYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 16:24:51 -0400
-Date: Wed, 21 Aug 2013 16:24:48 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, linux-aio@kvack.org
-Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
-Message-ID: <20130821202448.GJ13330@kvack.org>
-References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com> <20130821130231.GG13330@kvack.org> <20130821123032.8d0668d34231aabeddff24ea@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821123032.8d0668d34231aabeddff24ea@linux-foundation.org>
-User-Agent: Mutt/1.4.2.2i
+	id S1752874Ab3HUUZQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 16:25:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35260 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812Ab3HUUYo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 16:24:44 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Evgeniy Polyakov <zbr@ioremap.net>
+Subject: [PATCH 2/2] w1: use default attribute groups for w1 slave devices
+Date: Wed, 21 Aug 2013 13:24:33 -0700
+Message-Id: <1377116673-31216-2-git-send-email-gregkh@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <1377116673-31216-1-git-send-email-gregkh@linuxfoundation.org>
+References: <1377116673-31216-1-git-send-email-gregkh@linuxfoundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 12:30:32PM -0700, Andrew Morton wrote:
-> On Wed, 21 Aug 2013 09:02:31 -0400 Benjamin LaHaise <bcrl@kvack.org> wrote:
-> 
-> > One of the major problems your changeset continues to carry is that your 
-> > new read_iter/write_iter operations permit blocking (implicitely), which 
-> > really isn't what we want for aio.  If you're going to introduce a new api, 
-> > it should be made non-blocking, and enforce that non-blocking requirement 
-> 
-> It's been so incredibly long and I've forgotten everything AIO :(
-> 
-> In this context, "non-blocking" means no synchronous IO, yes?  Even for
-> indirect blocks, etc.  What about accidental D-state blockage in page
-> reclaim, or against random sleeping locks?
+As we have 2 sysfs files for the w1 slave devices, let the driver core
+create / destroy them automatically by setting the default attribute
+group for them, saving code and housekeeping logic.
 
-Those are all no-nos.  Blocking for memory allocation for short durations 
-is okay, but not for wandering off into scan-the-world type ordeals (that 
-is, it should be avoided).
+Cc: Evgeniy Polyakov <zbr@ioremap.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/w1/w1.c | 38 +++++++++++---------------------------
+ 1 file changed, 11 insertions(+), 27 deletions(-)
 
-> Also, why does this requirement exist?  "99% async" is not good enough?
-> How come?
-
-99% async is okay for the database folks, but not for all users.  Think 
-unified event loops.  For example, the application I'm currently working 
-on is using AIO to isolate disk access from blocking the main thread.  If 
-things go off and block on random locks or on disk I/O, bad things happen, 
-like watchdogs triggering.  One of the real world requirements we have is 
-that the application has to keep running even if the disks we're running 
-on go bad.  With SANs and multipath involved, sometimes I/O can take tens 
-of seconds to complete.  You also don't want to block operations that can 
-proceed by those that are presently blocked, as that reduces the available 
-parallelism to devices and increases overall latency.
-
-I'll admit there's a lot of work to be done in this area, hence why I've 
-done some work on thread based AIO recently, but threads aren't great for 
-all use-cases.  Ultimately something like Zach's schedulable stacks are 
-needed to get the overhead down to something reasonable.
-
-Still, we shouldn't keep on propagating broken APIs that don't reflect 
-actual requirements.
-
-		-ben
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index 3c798db0..52b6c2f0 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -96,14 +96,15 @@ static void w1_slave_release(struct device *dev)
+ 	complete(&sl->released);
+ }
+ 
+-static ssize_t w1_slave_read_name(struct device *dev, struct device_attribute *attr, char *buf)
++static ssize_t name_show(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+ 	struct w1_slave *sl = dev_to_w1_slave(dev);
+ 
+ 	return sprintf(buf, "%s\n", sl->name);
+ }
++static DEVICE_ATTR_RO(name);
+ 
+-static ssize_t w1_slave_read_id(struct device *dev,
++static ssize_t id_show(struct device *dev,
+ 	struct device_attribute *attr, char *buf)
+ {
+ 	struct w1_slave *sl = dev_to_w1_slave(dev);
+@@ -112,11 +113,14 @@ static ssize_t w1_slave_read_id(struct device *dev,
+ 	memcpy(buf, (u8 *)&sl->reg_num, count);
+ 	return count;
+ }
++static DEVICE_ATTR_RO(id);
+ 
+-static struct device_attribute w1_slave_attr_name =
+-	__ATTR(name, S_IRUGO, w1_slave_read_name, NULL);
+-static struct device_attribute w1_slave_attr_id =
+-	__ATTR(id, S_IRUGO, w1_slave_read_id, NULL);
++static struct attribute *w1_slave_attrs[] = {
++	&dev_attr_name.attr,
++	&dev_attr_id.attr,
++	NULL,
++};
++ATTRIBUTE_GROUPS(w1_slave);
+ 
+ /* Default family */
+ 
+@@ -610,25 +614,6 @@ static int w1_bus_notify(struct notifier_block *nb, unsigned long action,
+ 
+ 	switch (action) {
+ 	case BUS_NOTIFY_ADD_DEVICE:
+-		/* Create our sysfs files before userspace is told about it */
+-		/* Create "name" entry */
+-		err = device_create_file(&sl->dev, &w1_slave_attr_name);
+-		if (err < 0) {
+-			dev_err(&sl->dev,
+-				"sysfs file creation for [%s] failed. err=%d\n",
+-				dev_name(&sl->dev), err);
+-			return err;
+-		}
+-
+-		/* Create "id" entry */
+-		err = device_create_file(&sl->dev, &w1_slave_attr_id);
+-		if (err < 0) {
+-			dev_err(&sl->dev,
+-				"sysfs file creation for [%s] failed. err=%d\n",
+-				dev_name(&sl->dev), err);
+-			return err;
+-		}
+-
+ 		/* if the family driver needs to initialize something... */
+ 		if (sl->family->fops && sl->family->fops->add_slave &&
+ 		    ((err = sl->family->fops->add_slave(sl)) < 0)) {
+@@ -643,8 +628,6 @@ static int w1_bus_notify(struct notifier_block *nb, unsigned long action,
+ 		/* Remove our sysfs files */
+ 		if (sl->family->fops && sl->family->fops->remove_slave)
+ 			sl->family->fops->remove_slave(sl);
+-		device_remove_file(&sl->dev, &w1_slave_attr_id);
+-		device_remove_file(&sl->dev, &w1_slave_attr_name);
+ 		break;
+ 	}
+ 	return 0;
+@@ -662,6 +645,7 @@ static int __w1_attach_slave_device(struct w1_slave *sl)
+ 	sl->dev.driver = &w1_slave_driver;
+ 	sl->dev.bus = &w1_bus_type;
+ 	sl->dev.release = &w1_slave_release;
++	sl->dev.groups = w1_slave_groups;
+ 
+ 	dev_set_name(&sl->dev, "%02x-%012llx",
+ 		 (unsigned int) sl->reg_num.family,
 -- 
-"Thought is the essence of where you are now."
+1.8.3.rc0.20.gb99dd2e
+
