@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569Ab3HUKA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 06:00:27 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:38313 "EHLO
+	id S1752557Ab3HUKA0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 06:00:26 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:38298 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab3HUKAY (ORCPT
+	with ESMTP id S1752037Ab3HUKAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 06:00:24 -0400
-Message-ID: <52148F9C.2080600@huawei.com>
-Date: Wed, 21 Aug 2013 17:59:56 +0800
+	Wed, 21 Aug 2013 06:00:21 -0400
+Message-ID: <52148FA9.806@huawei.com>
+Date: Wed, 21 Aug 2013 18:00:09 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
 CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
         Containers <containers@lists.linux-foundation.org>
-Subject: [PATCH 06/11] cpuset: apply cs->real_{cpus,mems}_allowed
+Subject: [PATCH 07/11] cpuset: use effective cpumask to build sched domains
 References: <52148F52.0@huawei.com>
 In-Reply-To: <52148F52.0@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -26,218 +26,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we can use cs->real{cpus,mems}_allowed as effective masks. It's
-used whenever:
+We're going to have separate user-configured masks and effective ones,
+and configured masks won't be restricted by the parent, so we should
+use effective masks to build sched domains.
 
-- we update tasks' cpus_allowed/mems_allowed,
-- we want to retrieve tasks_cs(tsk)'s cpus_allowed/mems_allowed.
-
-They actually replace effective_{cpu,node}mask_cpuset().
+This won't introduce behavior change.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- kernel/cpuset.c | 83 ++++++++++-----------------------------------------------
- 1 file changed, 14 insertions(+), 69 deletions(-)
+ kernel/cpuset.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index b7b63dd..0de15eb 100644
+index 0de15eb..e7ad4a7 100644
 --- a/kernel/cpuset.c
 +++ b/kernel/cpuset.c
-@@ -318,9 +318,9 @@ static struct file_system_type cpuset_fs_type = {
+@@ -500,11 +500,11 @@ out:
+ #ifdef CONFIG_SMP
+ /*
+  * Helper routine for generate_sched_domains().
+- * Do cpusets a, b have overlapping cpus_allowed masks?
++ * Do cpusets a, b have overlapping effective cpus_allowed masks?
   */
- static void guarantee_online_cpus(struct cpuset *cs, struct cpumask *pmask)
+ static int cpusets_overlap(struct cpuset *a, struct cpuset *b)
  {
--	while (!cpumask_intersects(cs->cpus_allowed, cpu_online_mask))
-+	while (!cpumask_intersects(cs->real_cpus_allowed, cpu_online_mask))
- 		cs = parent_cs(cs);
--	cpumask_and(pmask, cs->cpus_allowed, cpu_online_mask);
-+	cpumask_and(pmask, cs->real_cpus_allowed, cpu_online_mask);
+-	return cpumask_intersects(a->cpus_allowed, b->cpus_allowed);
++	return cpumask_intersects(a->real_cpus_allowed, b->real_cpus_allowed);
  }
  
- /*
-@@ -336,9 +336,9 @@ static void guarantee_online_cpus(struct cpuset *cs, struct cpumask *pmask)
-  */
- static void guarantee_online_mems(struct cpuset *cs, nodemask_t *pmask)
- {
--	while (!nodes_intersects(cs->mems_allowed, node_states[N_MEMORY]))
-+	while (!nodes_intersects(cs->real_mems_allowed, node_states[N_MEMORY]))
- 		cs = parent_cs(cs);
--	nodes_and(*pmask, cs->mems_allowed, node_states[N_MEMORY]);
-+	nodes_and(*pmask, cs->real_mems_allowed, node_states[N_MEMORY]);
- }
- 
- /*
-@@ -804,45 +804,6 @@ void rebuild_sched_domains(void)
- 	mutex_unlock(&cpuset_mutex);
- }
- 
--/*
-- * effective_cpumask_cpuset - return nearest ancestor with non-empty cpus
-- * @cs: the cpuset in interest
-- *
-- * A cpuset's effective cpumask is the cpumask of the nearest ancestor
-- * with non-empty cpus. We use effective cpumask whenever:
-- * - we update tasks' cpus_allowed. (they take on the ancestor's cpumask
-- *   if the cpuset they reside in has no cpus)
-- * - we want to retrieve task_cs(tsk)'s cpus_allowed.
-- *
-- * Called with cpuset_mutex held. cpuset_cpus_allowed_fallback() is an
-- * exception. See comments there.
-- */
--static struct cpuset *effective_cpumask_cpuset(struct cpuset *cs)
--{
--	while (cpumask_empty(cs->cpus_allowed))
--		cs = parent_cs(cs);
--	return cs;
--}
--
--/*
-- * effective_nodemask_cpuset - return nearest ancestor with non-empty mems
-- * @cs: the cpuset in interest
-- *
-- * A cpuset's effective nodemask is the nodemask of the nearest ancestor
-- * with non-empty memss. We use effective nodemask whenever:
-- * - we update tasks' mems_allowed. (they take on the ancestor's nodemask
-- *   if the cpuset they reside in has no mems)
-- * - we want to retrieve task_cs(tsk)'s mems_allowed.
-- *
-- * Called with cpuset_mutex held.
-- */
--static struct cpuset *effective_nodemask_cpuset(struct cpuset *cs)
--{
--	while (nodes_empty(cs->mems_allowed))
--		cs = parent_cs(cs);
--	return cs;
--}
--
- /**
-  * cpuset_change_cpumask - make a task's cpus_allowed the same as its cpuset's
-  * @tsk: task to test
-@@ -857,9 +818,8 @@ static struct cpuset *effective_nodemask_cpuset(struct cpuset *cs)
- static void cpuset_change_cpumask(struct task_struct *tsk, void *data)
- {
- 	struct cpuset *cs = data;
--	struct cpuset *cpus_cs = effective_cpumask_cpuset(cs);
- 
--	set_cpus_allowed_ptr(tsk, cpus_cs->cpus_allowed);
-+	set_cpus_allowed_ptr(tsk, cs->real_cpus_allowed);
- }
- 
- /**
-@@ -1014,14 +974,12 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
- 							const nodemask_t *to)
- {
- 	struct task_struct *tsk = current;
--	struct cpuset *mems_cs;
- 
- 	tsk->mems_allowed = *to;
- 
- 	do_migrate_pages(mm, from, to, MPOL_MF_MOVE_ALL);
- 
--	mems_cs = effective_nodemask_cpuset(task_cs(tsk));
--	guarantee_online_mems(mems_cs, &tsk->mems_allowed);
-+	guarantee_online_mems(task_cs(tsk), &tsk->mems_allowed);
- }
- 
- /*
-@@ -1116,13 +1074,12 @@ static void *cpuset_being_rebound;
- static void update_tasks_nodemask(struct cpuset *cs, struct ptr_heap *heap)
- {
- 	static nodemask_t newmems;	/* protected by cpuset_mutex */
--	struct cpuset *mems_cs = effective_nodemask_cpuset(cs);
- 	struct cpuset_change_nodemask_arg arg = { .cs = cs,
- 						  .newmems = &newmems };
- 
- 	cpuset_being_rebound = cs;		/* causes mpol_dup() rebind */
- 
--	guarantee_online_mems(mems_cs, &newmems);
-+	guarantee_online_mems(cs, &newmems);
- 
- 	/*
- 	 * The mpol_rebind_mm() call takes mmap_sem, which we couldn't
-@@ -1556,8 +1513,6 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
- 							cpuset_subsys_id);
- 	struct cpuset *cs = css_cs(css);
- 	struct cpuset *oldcs = css_cs(oldcss);
--	struct cpuset *cpus_cs = effective_cpumask_cpuset(cs);
--	struct cpuset *mems_cs = effective_nodemask_cpuset(cs);
- 
- 	mutex_lock(&cpuset_mutex);
- 
-@@ -1565,9 +1520,9 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
- 	if (cs == &top_cpuset)
- 		cpumask_copy(cpus_attach, cpu_possible_mask);
- 	else
--		guarantee_online_cpus(cpus_cs, cpus_attach);
-+		guarantee_online_cpus(cs, cpus_attach);
- 
--	guarantee_online_mems(mems_cs, &cpuset_attach_nodemask_to);
-+	guarantee_online_mems(cs, &cpuset_attach_nodemask_to);
- 
- 	cgroup_taskset_for_each(task, css, tset) {
- 		/*
-@@ -1584,11 +1539,9 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
- 	 * Change mm, possibly for multiple threads in a threadgroup. This is
- 	 * expensive and may sleep.
- 	 */
--	cpuset_attach_nodemask_to = cs->mems_allowed;
-+	cpuset_attach_nodemask_to = cs->real_mems_allowed;
- 	mm = get_task_mm(leader);
- 	if (mm) {
--		struct cpuset *mems_oldcs = effective_nodemask_cpuset(oldcs);
--
- 		mpol_rebind_mm(mm, &cpuset_attach_nodemask_to);
- 
- 		/*
-@@ -1599,7 +1552,7 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
- 		 * mm from.
- 		 */
- 		if (is_memory_migrate(cs)) {
--			cpuset_migrate_mm(mm, &mems_oldcs->old_mems_allowed,
-+			cpuset_migrate_mm(mm, &oldcs->old_mems_allowed,
- 					  &cpuset_attach_nodemask_to);
+ static void
+@@ -621,7 +621,7 @@ static int generate_sched_domains(cpumask_var_t **domains,
+ 			*dattr = SD_ATTR_INIT;
+ 			update_domain_attr_tree(dattr, &top_cpuset);
  		}
- 		mmput(mm);
-@@ -2398,23 +2351,17 @@ void __init cpuset_init_smp(void)
+-		cpumask_copy(doms[0], top_cpuset.cpus_allowed);
++		cpumask_copy(doms[0], top_cpuset.real_cpus_allowed);
  
- void cpuset_cpus_allowed(struct task_struct *tsk, struct cpumask *pmask)
+ 		goto done;
+ 	}
+@@ -728,7 +728,7 @@ restart:
+ 			struct cpuset *b = csa[j];
+ 
+ 			if (apn == b->pn) {
+-				cpumask_or(dp, dp, b->cpus_allowed);
++				cpumask_or(dp, dp, b->real_cpus_allowed);
+ 				if (dattr)
+ 					update_domain_attr_tree(dattr + nslot, b);
+ 
+@@ -854,6 +854,7 @@ static void update_cpumasks_hier(struct cpuset *cs, struct cpuset *trialcs,
  {
--	struct cpuset *cpus_cs;
--
- 	mutex_lock(&callback_mutex);
- 	task_lock(tsk);
--	cpus_cs = effective_cpumask_cpuset(task_cs(tsk));
--	guarantee_online_cpus(cpus_cs, pmask);
-+	guarantee_online_cpus(task_cs(tsk), pmask);
- 	task_unlock(tsk);
- 	mutex_unlock(&callback_mutex);
+ 	struct cgroup_subsys_state *pos_css;
+ 	struct cpuset *cp;
++	bool need_rebuild_sched_domains = false;
+ 
+ 	rcu_read_lock();
+ 	cpuset_for_each_descendant_pre(cp, pos_css, cs) {
+@@ -887,10 +888,17 @@ static void update_cpumasks_hier(struct cpuset *cs, struct cpuset *trialcs,
+ 
+ 		update_tasks_cpumask(cp, heap);
+ 
++		if (!cpumask_empty(cp->cpus_allowed) &&
++		    is_sched_load_balance(cp))
++			need_rebuild_sched_domains = true;
++
+ 		rcu_read_lock();
+ 		css_put(&cp->css);
+ 	}
+ 	rcu_read_unlock();
++
++	if (need_rebuild_sched_domains)
++		rebuild_sched_domains_locked();
  }
  
- void cpuset_cpus_allowed_fallback(struct task_struct *tsk)
- {
--	struct cpuset *cpus_cs;
+ /**
+@@ -944,9 +952,6 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
+ 	update_cpumasks_hier(cs, trialcs, &heap);
+ 
+ 	heap_free(&heap);
 -
- 	rcu_read_lock();
--	cpus_cs = effective_cpumask_cpuset(task_cs(tsk));
--	do_set_cpus_allowed(tsk, cpus_cs->cpus_allowed);
-+	do_set_cpus_allowed(tsk, task_cs(tsk)->real_cpus_allowed);
- 	rcu_read_unlock();
- 
- 	/*
-@@ -2453,13 +2400,11 @@ void cpuset_init_current_mems_allowed(void)
- 
- nodemask_t cpuset_mems_allowed(struct task_struct *tsk)
- {
--	struct cpuset *mems_cs;
- 	nodemask_t mask;
- 
- 	mutex_lock(&callback_mutex);
- 	task_lock(tsk);
--	mems_cs = effective_nodemask_cpuset(task_cs(tsk));
--	guarantee_online_mems(mems_cs, &mask);
-+	guarantee_online_mems(task_cs(tsk), &mask);
- 	task_unlock(tsk);
- 	mutex_unlock(&callback_mutex);
+-	if (is_sched_load_balance(cs))
+-		rebuild_sched_domains_locked();
+ 	return 0;
+ }
  
 -- 
 1.8.0.2
+
