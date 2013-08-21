@@ -1,170 +1,765 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852Ab3HUMi5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 08:38:57 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:53371
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751818Ab3HUMiz (ORCPT
+	id S1751881Ab3HUMjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 08:39:45 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:52352 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab3HUMjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 08:38:55 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz98dI9371I1432I1521Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h1155h)
-Date: Wed, 21 Aug 2013 20:37:09 +0800
-From: Dong Aisheng <b29396@freescale.com>
-To: Grant Likely <grant.likely@linaro.org>
-CC: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 0/3] of: add update device node status via cmdline feature
-Message-ID: <20130821123708.GA17748@b29396-Latitude-E6410>
-References: <1376564133-11286-1-git-send-email-b29396@freescale.com>
- <CACxGe6tMm=u1jFKUQ59+cj-rYkLLAZUqMhsXamyi-wwpWaOGvw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CACxGe6tMm=u1jFKUQ59+cj-rYkLLAZUqMhsXamyi-wwpWaOGvw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Wed, 21 Aug 2013 08:39:41 -0400
+X-Nat-Received: from [202.181.97.72]:54496 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1377088779.26205
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v3] KPortReserve : kernel version of portreserve utility
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201308031715.FCH73469.OVOHQStOFMLJFF@I-love.SAKURA.ne.jp>
+	<20130807143151.GA4560@cachalot>
+	<201308081950.HDC18500.OFSFMHOtFLJQVO@I-love.SAKURA.ne.jp>
+	<201308111150.EJG69287.LtOFFMOOFJSHQV@I-love.SAKURA.ne.jp>
+In-Reply-To: <201308111150.EJG69287.LtOFFMOOFJSHQV@I-love.SAKURA.ne.jp>
+Message-Id: <201308212139.BCF43732.LFOFOFHtVSMQJO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 21 Aug 2013 21:39:37 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 21082013 #11015477, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 01:45:48PM +0100, Grant Likely wrote:
-> On Thu, Aug 15, 2013 at 11:55 AM, Dong Aisheng <b29396@freescale.com> wrote:
-> > We meet some boards having a lot of pin conflicts between different devices,
-> > only one of them can be enabled to run at one time.
-> >
-> > e.g. imx6q sabreauto board, i2c, spi, weim, flexcan, uart and etc involved
-> > with pin conflict.
-> >
-> > Instead of changing dts manually or adding a lot dts files according to
-> > different device availability, we provide feature to dynamically update the
-> > device node status via command line, then those devices involved with
-> > pin conflict can be enabled or disabled dynamically.
-> 
-> Ugh, no. If there are dynamic conflicts, then the driver really should
-> be responsible for handling them. ie. if the driver isn't able to get
-> the resource it needs because they don't exist, then driver probe
-> should fail.
-> 
+Hello.
 
-Detect pin confliction in driver is not our purpose.
-The real requirement is to flexibly decide which device involved in confliction
-is enabled when booting kernel since only one of them can be running at one time,
-not detect them.
+A good summary on this proposal written by Jake Edge is available at
+http://lwn.net/SubscriberLink/563178/c8a2e2fd4a794a9e/ .
 
-Before using device tree, we defined kernel param in mach code ourself to fix
-this issue.
-e.g. i2c and spi are conflicted.
-We add kernel boot param i2c3_en to decide whether enable i2c3 or spi.
-Then user can test devices flexibly as they want.
+Changes from version 2:
 
-After switch to device tree, since this part of work actually is soc independent,
-we move it into the dt core to let the kernel provide such feature.
-Then everyone else can also use it if needed.
+(1) Report number of rejections, the name of process and its pid, up to once
+    per a minute, in order to be able to figure out unexpected rejection
+    which could be caused by misconfiguration / misunderstanding.
 
-If do not provide such features in kernel, we may have to do it either in mach-code
-which may cause a lot of code duplication, or board dts file which cause add a lot
-duplicated board dts files.
-e.g. there are 11 devices involved with pin confliction in imx6q sabreauto board.
-i2c3, ecspi1, weim_nor, uart3, gpmi, can1, enet, tunner, satellite, mipi, csi.
-Some of them are combined conflicted.(e.g i2c3, ecspi1, weim_nor all conflict with EIM_D18)
-One simple way to use board dts to fix this issue may be add 11 more board dts files
-with one common board dts with all those device disabled by default.
-It may be:
-imx6q-sabreauto.dts
-imx6q-sabreauto-with-i2c3.dts
-imx6q-sabreauto-with-ecspi1.dts
-imx6q-sabreauto-with-weim-nor.dts
-imx6q-sabreauto-with-uart3.dts
-imx6q-sabreauto-with-gpmi.dts
-imx6q-sabreauto-with-can1.dts
-imx6q-sabreauto-with-enet.dts
-imx6q-sabreauto-with-tunner.dts
-imx6q-sabreauto-with-satellite.dts
-imx6q-sabreauto-with-mipi.dts
-imx6q-sabreauto-with-csi.dts
+    Aug 21 21:28:38 localhost kernel: [  139.438347] KPortReserve:(#1): Rejected bind(22) by /root/testapp1 (pid=4636)
+    Aug 21 21:31:25 localhost kernel: [  306.755200] KPortReserve:(#3): Rejected bind(80) by /root/testapp2 (pid=4688)
 
-We may also reduce them by combine some of them.
-e.g.
-imx6q-sabreauto-with-i2c3-uart3-can1-tunner-mipi.dts
-imx6q-sabreauto-with-ecspi1-gpmi-enet-satellite-csi.dts
-imx6q-sabreauto-with-weim-nor-*.dts
-....
-The defect is the combination and name is arbitrary and may
-cause dts file name changed usually.
+(2) Updated Kconfig help.
 
-The common issue of above two way is that 1) it bloats the device tree,
-add a lot of duplicated dts files with the same board
-2) the fix is out of control and not permanent.
-If any new board having more conflict devices, we have to add these new board dts
-separately and figure out the combination again.
-e.g. for imx6q arm2 board, it also has conflicted devices flexcan, gpmi, sd and etc.
-So i'm not sure if you can accept this way.
+Regards.
+--------------------
+>From efc84232e6df17ad0a7359fb9f4b72b4f4a02ed6 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Wed, 21 Aug 2013 21:19:28 +0900
+Subject: [PATCH v3] KPortReserve : kernel version of portreserve utility
 
-By comparing adding dts file, if the kernel provides such feature, we do not have
-to add these duplicated board dts files, only one board dts file with all conflicted
-devices disable by default and let user decide which device is enabled flexibly with
-kernel command line. And the fix is also permanently, not depends on hw design
-and how many device conflicted.
+This module reserves local port like /proc/sys/net/ipv4/ip_local_reserved_ports
+does, but this module is designed for stopping bind() requests with non-zero
+local port numbers from unwanted programs.
 
-Also in our case, it's pin confliction. However, it works for other conflict type
-as well that only one can work which may also exist on other platforms.
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ security/Kconfig               |    6 +
+ security/Makefile              |    2 +
+ security/kportreserve/Kconfig  |   43 +++
+ security/kportreserve/Makefile |    1 +
+ security/kportreserve/kpr.c    |  573 ++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 625 insertions(+), 0 deletions(-)
+ create mode 100644 security/kportreserve/Kconfig
+ create mode 100644 security/kportreserve/Makefile
+ create mode 100644 security/kportreserve/kpr.c
 
-> Except in very excpetional circumstances (ie. firmware workarounds)
-> the kernel needs to treat the device tree as immutable*. The tree
-> passed in at boot should not be manipulated at runtime.
-> 
-
-I understand the tree passed should be treated as inmmutable at most time.
-But now we did have this requirement and this is caused by real hw design.
-I'm not sure if our case can be treated as an excpetional circumstances,
-but it does look like a excpetional to me.
-
-so i wonder if kernel could provide such feature and let user to decide whether
-to use since it is valuable.
-
-BTW, except the pin confliction, freescale imx6q soc can also be fused
-with different IP availability.
-
-That means the same imx6q sabreauto board, if the soc chip is with different fuse,
-the device availability may be different.
-e.g. 
-imx6q(a) sabreauto with enet enabled.
-imx6q(b) sabreauto with enet disabled.
-
-We probably may still want to dynamically update the device node status by reading
-the fuse map before populating platform devices since if the IP is not exist,
-creating it's device is unreasonable.
-
-The devices involved with fused devices for imx6sdl are:
-"pxp", "ovg", "dsi_csi2", "enet", "mlb",
-"epdc", "hdmi", "pcie", "sata", "dtcp",
-"2d", "3d", "vpu", "divx3", "rv",
-"sorensen",
-
-> * There are powerpc platforms that modify the FDT at runtime; but in
-> those cases it is in response to firmware changing the data, not the
-> kernel.
-> 
-
-I'm not very clear about the case in response to firmware changing the data.
-Can you help give a example?
-Then i can understand the difference between our case and the exception you said.
-
-However, i did saw many exist code calling of_property_* API to change the device tree
-in kernel, although not clear about their purpose. But,
-e.g
-arch/powerpc/platforms/85xx/p1022_ds.c
-In these file, it also disable device node dynamically by commandline.
-If kernel has this feature, these code can be removed.
-arch/arm/mach-omap2/timer.c
-also disable the node...
-
-Regards
-Dong Aisheng
-
+diff --git a/security/Kconfig b/security/Kconfig
+index e9c6ac7..f4058ff 100644
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -122,6 +122,7 @@ source security/smack/Kconfig
+ source security/tomoyo/Kconfig
+ source security/apparmor/Kconfig
+ source security/yama/Kconfig
++source security/kportreserve/Kconfig
+ 
+ source security/integrity/Kconfig
+ 
+@@ -132,6 +133,7 @@ choice
+ 	default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
+ 	default DEFAULT_SECURITY_APPARMOR if SECURITY_APPARMOR
+ 	default DEFAULT_SECURITY_YAMA if SECURITY_YAMA
++	default DEFAULT_SECURITY_KPR if SECURITY_KPR
+ 	default DEFAULT_SECURITY_DAC
+ 
+ 	help
+@@ -153,6 +155,9 @@ choice
+ 	config DEFAULT_SECURITY_YAMA
+ 		bool "Yama" if SECURITY_YAMA=y
+ 
++	config DEFAULT_SECURITY_KPR
++		bool "KPortReserve" if SECURITY_KPR=y
++
+ 	config DEFAULT_SECURITY_DAC
+ 		bool "Unix Discretionary Access Controls"
+ 
+@@ -165,6 +170,7 @@ config DEFAULT_SECURITY
+ 	default "tomoyo" if DEFAULT_SECURITY_TOMOYO
+ 	default "apparmor" if DEFAULT_SECURITY_APPARMOR
+ 	default "yama" if DEFAULT_SECURITY_YAMA
++	default "kpr" if DEFAULT_SECURITY_KPR
+ 	default "" if DEFAULT_SECURITY_DAC
+ 
+ endmenu
+diff --git a/security/Makefile b/security/Makefile
+index c26c81e..87f95cc 100644
+--- a/security/Makefile
++++ b/security/Makefile
+@@ -8,6 +8,7 @@ subdir-$(CONFIG_SECURITY_SMACK)		+= smack
+ subdir-$(CONFIG_SECURITY_TOMOYO)        += tomoyo
+ subdir-$(CONFIG_SECURITY_APPARMOR)	+= apparmor
+ subdir-$(CONFIG_SECURITY_YAMA)		+= yama
++subdir-$(CONFIG_SECURITY_KPR)		+= kportreserve
+ 
+ # always enable default capabilities
+ obj-y					+= commoncap.o
+@@ -23,6 +24,7 @@ obj-$(CONFIG_AUDIT)			+= lsm_audit.o
+ obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/built-in.o
+ obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/built-in.o
+ obj-$(CONFIG_SECURITY_YAMA)		+= yama/built-in.o
++obj-$(CONFIG_SECURITY_KPR)		+= kportreserve/built-in.o
+ obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
+ 
+ # Object integrity file lists
+diff --git a/security/kportreserve/Kconfig b/security/kportreserve/Kconfig
+new file mode 100644
+index 0000000..41049ae
+--- /dev/null
++++ b/security/kportreserve/Kconfig
+@@ -0,0 +1,43 @@
++config SECURITY_KPR
++	bool "KPortReserve support"
++	depends on SECURITY
++	select SECURITY_NETWORK
++	select SECURITY_FS
++	default n
++	help
++	  This selects local port reserving module which is similar to
++	  /proc/sys/net/ipv4/ip_local_reserved_ports . But this module is
++	  designed for stopping bind() requests with non-zero local port
++	  numbers from unwanted programs using white list reservations.
++
++	  If you are unsure how to answer this question, answer N.
++
++	  Specifications:
++
++	  Use "$port $identifier" format to add reservation.
++	  Use "del $port $identifier" format to remove reservation.
++
++	  The $port is a single port number between 0 and 65535.
++	  The $identifier is an identifier word in TOMOYO's string
++	  representation rule (i.e. consists with only ASCII printable
++	  characters). Upon successful execve() operation, $identifier is
++	  automatically replaced with the filename passed to execve()
++	  operation succeeds. For example, $identifier of current thread will
++	  be changed to /usr/sbin/httpd if execve("/usr/sbin/httpd") succeeds.
++	  The kernel threads get <kernel> as the identifier, with an exception
++	  that the userspace processes will also get <kernel> as the identifier
++	  if execve("<kernel>") (i.e. executing a program named <kernel>
++	  located in the current directory) succeeds.
++
++	  Example:
++
++	  Configuring
++
++	  # echo "10000 /bin/bash" > /sys/kernel/security/kportreserve/entry
++	  # echo "20000 <kernel>" > /sys/kernel/security/kportreserve/entry
++
++	  will allow /bin/bash to bind() on port 10000 and allow <kernel> to
++	  bind() on port 20000.
++
++	  Note that only port numbers which have at least one reservation are
++	  checked by this module.
+diff --git a/security/kportreserve/Makefile b/security/kportreserve/Makefile
+new file mode 100644
+index 0000000..6342521
+--- /dev/null
++++ b/security/kportreserve/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_SECURITY_KPR) := kpr.o
+diff --git a/security/kportreserve/kpr.c b/security/kportreserve/kpr.c
+new file mode 100644
+index 0000000..67bfdcb
+--- /dev/null
++++ b/security/kportreserve/kpr.c
+@@ -0,0 +1,573 @@
++/*
++ * kpr.c - kernel version of portreserve.
++ */
++#include <linux/security.h>
++#include <linux/vmalloc.h>
++#include <linux/net.h>
++#include <linux/inet.h>
++#include <linux/uaccess.h>
++#include <linux/binfmts.h>
++#include <net/sock.h>
++#include <net/ip.h>
++#include <net/ipv6.h>
++
++/* Max length of a line. */
++#define MAX_LINE_LEN 16384
++
++/* Port numbers with at least one whitelist element exists. */
++static unsigned long reserved_port_map[65536 / BITS_PER_LONG];
++
++/* Whitelist element. */
++struct reserved_port_entry {
++	struct list_head list;
++	u16 port;
++	char id[0];
++};
++/* List of whitelist elements. */
++static LIST_HEAD(reserved_port_list);
++
++/* Per a "struct cred" info. */
++struct task_name_info {
++	atomic_t users;
++	char id[0];
++};
++
++/**
++ * kpr_cred_alloc_blank - Target for security_cred_alloc_blank().
++ *
++ * @new: Pointer to "struct cred".
++ * @gfp: Memory allocation flags.
++ *
++ * Returns 0.
++ */
++static int kpr_cred_alloc_blank(struct cred *new, gfp_t gfp)
++{
++	new->security = NULL;
++	return 0;
++}
++
++/**
++ * kpr_cred_prepare - Target for security_prepare_creds().
++ *
++ * @new: Pointer to "struct cred".
++ * @old: Pointer to "struct cred".
++ * @gfp: Memory allocation flags.
++ *
++ * Returns 0.
++ */
++static int kpr_cred_prepare(struct cred *new, const struct cred *old,
++			       gfp_t gfp)
++{
++	struct task_name_info *info = old->security;
++	new->security = info;
++	if (info)
++		atomic_inc(&info->users);
++	return 0;
++}
++
++/**
++ * kpr_cred_transfer - Target for security_transfer_creds().
++ *
++ * @new: Pointer to "struct cred".
++ * @old: Pointer to "struct cred".
++ */
++static void kpr_cred_transfer(struct cred *new, const struct cred *old)
++{
++	kpr_cred_prepare(new, old, 0);
++}
++
++/**
++ * kpr_cred_free - Target for security_cred_free().
++ *
++ * @cred: Pointer to "struct cred".
++ */
++static void kpr_cred_free(struct cred *cred)
++{
++	struct task_name_info *info = cred->security;
++	if (info && atomic_dec_and_test(&info->users))
++		kfree(info);
++}
++
++/**
++ * kpr_make_info - Encode binary string to ascii string.
++ *
++ * @str: String in binary format.
++ *
++ * Returns pointer to "struct task_info_name" with @str in ascii format on
++ * success, NULL otherwise.
++ *
++ * This function uses kmalloc(), so caller must kfree() if this function
++ * didn't return NULL.
++ */
++static struct task_name_info *kpr_make_info(const char *str)
++{
++	int i;
++	int len = 0;
++	struct task_name_info *info;
++	const char *p = str;
++	char *cp;
++	const int str_len = strlen(str);
++
++	for (i = 0; i < str_len; i++) {
++		const unsigned char c = p[i];
++		if (c == '\\')
++			len += 2;
++		else if (c > ' ' && c < 127)
++			len++;
++		else
++			len += 4;
++	}
++	len++;
++	info = kmalloc(sizeof(*info) + len, GFP_KERNEL);
++	if (!info)
++		return NULL;
++	atomic_set(&info->users, 1);
++	cp = info->id;
++	p = str;
++	for (i = 0; i < str_len; i++) {
++		const unsigned char c = p[i];
++		if (c == '\\') {
++			*cp++ = '\\';
++			*cp++ = '\\';
++		} else if (c > ' ' && c < 127) {
++			*cp++ = c;
++		} else {
++			*cp++ = '\\';
++			*cp++ = (c >> 6) + '0';
++			*cp++ = ((c >> 3) & 7) + '0';
++			*cp++ = (c & 7) + '0';
++		}
++	}
++	*cp = '\0';
++	return info;
++}
++
++/**
++ * kpr_correct_word - Validate a string.
++ *
++ * @string: The string to check.
++ *
++ * Check whether the given string follows the naming rules.
++ * Returns true if @string follows the naming rules, false otherwise.
++ */
++static bool kpr_correct_word(const char *string)
++{
++	if (!*string)
++		return false;
++	while (1) {
++		unsigned char c = *string++;
++		if (!c)
++			return true;
++		if (c == '\\') {
++			c = *string++;
++			switch (c) {
++			case '\\':  /* "\\" */
++				continue;
++			case '0':   /* "\ooo" */
++			case '1':
++			case '2':
++			case '3':
++				{
++					unsigned char d;
++					unsigned char e;
++					c -= '0';
++					d = *string++ - '0';
++					if (d > 7)
++						break;
++					e = *string++ - '0';
++					if (e > 7)
++						break;
++					c = (c << 6) + (d << 3) + (e);
++					if (c <= ' ' || c >= 127)
++						continue;
++				}
++			}
++			return false;
++		} else if (c <= ' ' || c >= 127) {
++			return false;
++		}
++	}
++	return true;
++}
++
++/**
++ * kpr_bprm_set_creds - Target for security_bprm_set_creds().
++ *
++ * @bprm: Pointer to "struct linux_binprm".
++ *
++ * Returns 0 on success, negative value otherwise.
++ */
++static int kpr_bprm_set_creds(struct linux_binprm *bprm)
++{
++	const int rc = cap_bprm_set_creds(bprm);
++
++	if (rc)
++		return rc;
++	if (!bprm->cred_prepared) {
++		struct task_name_info *info = kpr_make_info(bprm->filename);
++
++		if (!info)
++			return -ENOMEM;
++		kpr_cred_free(bprm->cred);
++		bprm->cred->security = info;
++	}
++	return 0;
++}
++
++
++/**
++ * kpr_socket_bind - Check permission for bind().
++ *
++ * @sock:     Pointer to "struct socket".
++ * @addr:     Pointer to "struct sockaddr".
++ * @addr_len: Size of @addr.
++ *
++ * Returns 0 on success, negative value otherwise.
++ */
++static int kpr_socket_bind(struct socket *sock, struct sockaddr *addr,
++			   int addr_len)
++{
++	u16 port;
++	switch (sock->sk->sk_family) {
++	case PF_INET:
++	case PF_INET6:
++		break;
++	default:
++		return 0;
++	}
++	switch (sock->type) {
++	case SOCK_STREAM:
++	case SOCK_DGRAM:
++		break;
++	default:
++		return 0;
++	}
++	switch (addr->sa_family) {
++	case AF_INET:
++		if (addr_len < sizeof(struct sockaddr_in))
++			return 0;
++		port = ((struct sockaddr_in *) addr)->sin_port;
++		break;
++	case AF_INET6:
++		if (addr_len < SIN6_LEN_RFC2133)
++			return 0;
++		port = ((struct sockaddr_in6 *) addr)->sin6_port;
++		break;
++	default:
++		return 0;
++	}
++	port = ntohs(port);
++	if (!test_bit(port, reserved_port_map))
++		return 0;
++	{
++		static atomic_t counter = ATOMIC_INIT(0);
++		static u64 last_time;
++		u64 now_time;
++		struct reserved_port_entry *ptr;
++		bool reserved = false;
++		const char *id = ((struct task_name_info *)
++				  current_security())->id;
++
++		rcu_read_lock();
++		list_for_each_entry_rcu(ptr, &reserved_port_list, list) {
++			if (port != ptr->port)
++				continue;
++			if (strcmp(id, ptr->id)) {
++				reserved = true;
++				continue;
++			}
++			reserved = false;
++			break;
++		}
++		rcu_read_unlock();
++		if (!reserved)
++			return 0;
++		/*
++		 * Notify up to once per a minute, in case of rejection by
++		 * inappropriate configuration.
++		 */
++		now_time = jiffies_64;
++		atomic_inc(&counter);
++		if (!last_time || now_time > last_time + 60 * HZ) {
++			last_time = now_time;
++			pr_info("KPortReserve:(#%u): Rejected bind(%d) by %s (pid=%d)\n",
++				atomic_read(&counter), port, id, current->pid);
++		}
++		return -EADDRINUSE;
++	}
++}
++
++/**
++ * kpr_entry_read - Read current configuration.
++ *
++ * @file:  Pointer to "struct file".
++ * @buf:   Pointer to buffer.
++ * @count: Size of @buf.
++ * @ppos:  Offset of @file.
++ *
++ * Returns bytes read on success, negative value otherwise.
++ */
++static ssize_t kpr_entry_read(struct file *file, char __user *buf,
++			      size_t count, loff_t *ppos)
++{
++	ssize_t copied = 0;
++	int error = 0;
++	int record = 0;
++	loff_t offset = 0;
++	char *data = vmalloc(MAX_LINE_LEN);
++	if (!data)
++		return -ENOMEM;
++	while (1) {
++		struct reserved_port_entry *ptr;
++		int i = 0;
++		data[0] = '\0';
++		rcu_read_lock();
++		list_for_each_entry_rcu(ptr, &reserved_port_list, list) {
++			if (i++ < record)
++				continue;
++			snprintf(data, MAX_LINE_LEN - 1, "%u %s\n", ptr->port,
++				 ptr->id);
++			break;
++		}
++		rcu_read_unlock();
++		if (!data[0])
++			break;
++		for (i = 0; data[i]; i++) {
++			if (offset++ < *ppos)
++				continue;
++			if (put_user(data[i], buf)) {
++				error = -EFAULT;
++				break;
++			}
++			buf++;
++			copied++;
++			(*ppos)++;
++		}
++		record++;
++	}
++	vfree(data);
++	return copied ? copied : error;
++}
++
++/**
++ * kpr_normalize_line - Format string.
++ *
++ * @buffer: The line to normalize.
++ *
++ * Returns nothing.
++ *
++ * Leading and trailing whitespaces are removed.
++ * Multiple whitespaces are packed into single space.
++ */
++static void kpr_normalize_line(unsigned char *buffer)
++{
++	unsigned char *sp = buffer;
++	unsigned char *dp = buffer;
++	bool first = true;
++	while (*sp && (*sp <= ' ' || *sp >= 127))
++		sp++;
++	while (*sp) {
++		if (!first)
++			*dp++ = ' ';
++		first = false;
++		while (*sp > ' ' && *sp < 127)
++			*dp++ = *sp++;
++		while (*sp && (*sp <= ' ' || *sp >= 127))
++			sp++;
++	}
++	*dp = '\0';
++}
++
++/**
++ * kpr_find_entry - Find an existing entry.
++ *
++ * @port: Port number.
++ * @id:   Identifier. NULL for any.
++ *
++ * Returns pointer to existing entry if found, NULL otherwise.
++ */
++static struct reserved_port_entry *kpr_find_entry(const u16 port,
++						  const char *id)
++{
++	struct reserved_port_entry *ptr;
++	bool found = false;
++	rcu_read_lock();
++	list_for_each_entry_rcu(ptr, &reserved_port_list, list) {
++		if (port != ptr->port)
++			continue;
++		if (id && strcmp(id, ptr->id))
++			continue;
++		found = true;
++		break;
++	}
++	rcu_read_unlock();
++	return found ? ptr : NULL;
++}
++
++/**
++ * kpr_update_entry - Update the list of whitelist elements.
++ *
++ * @data: Line of data to parse.
++ *
++ * Returns 0 on success, negative value otherwise.
++ *
++ * Caller holds a mutex to protect from concurrent updates.
++ */
++static int kpr_update_entry(const char *data)
++{
++	struct reserved_port_entry *ptr;
++	unsigned int port;
++	int len;
++	if (sscanf(data, "%u", &port) == 1 && port < 65536) {
++		const char *cp = strchr(data, ' ');
++		if (!cp++ || !kpr_correct_word(cp))
++			return -EINVAL;
++		if (kpr_find_entry(port, cp))
++			return 0;
++		len = strlen(cp) + 1;
++		ptr = kmalloc(sizeof(*ptr) + len, GFP_KERNEL);
++		if (!ptr)
++			return -ENOMEM;
++		ptr->port = (u16) port;
++		strcpy(ptr->id, cp);
++		list_add_tail_rcu(&ptr->list, &reserved_port_list);
++		set_bit(ptr->port, reserved_port_map);
++	} else if (sscanf(data, "del %u", &port) == 1 && port < 65536) {
++		const char *cp = strchr(data + 4, ' ');
++		if (!cp++ || !kpr_correct_word(cp))
++			return -EINVAL;
++		ptr = kpr_find_entry(port, cp);
++		if (!ptr)
++			return 0;
++		list_del_rcu(&ptr->list);
++		synchronize_rcu();
++		kfree(ptr);
++		if (!kpr_find_entry(port, NULL))
++			clear_bit(ptr->port, reserved_port_map);
++	} else {
++		return -EINVAL;
++	}
++	return 0;
++}
++
++/**
++ * kpr_entry_write - Update current configuration.
++ *
++ * @file:  Pointer to "struct file".
++ * @buf:   Domainname to transit to.
++ * @count: Size of @buf.
++ * @ppos:  Unused.
++ *
++ * Returns bytes parsed on success, negative value otherwise.
++ */
++static ssize_t kpr_entry_write(struct file *file, const char __user *buf,
++			       size_t count, loff_t *ppos)
++{
++	char *data;
++	ssize_t copied = 0;
++	int error;
++	if (!count)
++		return 0;
++	if (count > MAX_LINE_LEN - 1)
++		count = MAX_LINE_LEN - 1;
++	data = vmalloc(count + 1);
++	if (!data)
++		return -ENOMEM;
++	if (copy_from_user(data, buf, count)) {
++		error = -EFAULT;
++		goto out;
++	}
++	data[count] = '\0';
++	while (1) {
++		static DEFINE_MUTEX(lock);
++		char *cp = strchr(data, '\n');
++		int len;
++		if (!cp) {
++			error = -EINVAL;
++			break;
++		}
++		*cp = '\0';
++		len = strlen(data) + 1;
++		kpr_normalize_line(data);
++		if (mutex_lock_interruptible(&lock)) {
++			error = -EINTR;
++			break;
++		}
++		error = kpr_update_entry(data);
++		mutex_unlock(&lock);
++		if (error < 0)
++			break;
++		copied += len;
++		memmove(data, data + len, strlen(data + len) + 1);
++	}
++out:
++	vfree(data);
++	return copied ? copied : error;
++}
++
++/* List of hooks. */
++static struct security_operations kpr_ops = {
++	.name             = "kpr",
++	.cred_prepare     = kpr_cred_prepare,
++	.cred_alloc_blank = kpr_cred_alloc_blank,
++	.cred_transfer    = kpr_cred_transfer,
++	.cred_free        = kpr_cred_free,
++	.bprm_set_creds   = kpr_bprm_set_creds,
++	.socket_bind      = kpr_socket_bind,
++};
++
++static bool kpr_registered;
++
++/**
++ * kpr_register - Register this module.
++ *
++ * Returns 0.
++ */
++static int __init kpr_register(void)
++{
++	struct cred *cred = (struct cred *) current_cred();
++	struct task_name_info *info;
++	const char kernel_name[] = "<kernel>";
++
++	if (!security_module_enable(&kpr_ops))
++		return 0;
++	info = kmalloc(sizeof(*info) + sizeof(kernel_name), GFP_KERNEL);
++	if (!info)
++		goto out;
++	atomic_set(&info->users, 1);
++	strcpy(info->id, kernel_name);
++	cred->security = info;
++	if (register_security(&kpr_ops))
++		goto out;
++	kpr_registered = true;
++	pr_info("KPortReserve initialized\n");
++	return 0;
++out:
++	panic("Failure registering kportreserve");
++}
++security_initcall(kpr_register);
++
++/* Operations for /sys/kernel/security/kportreserve/entry interface. */
++static const struct file_operations kpr_entry_operations = {
++	.write = kpr_entry_write,
++	.read  = kpr_entry_read,
++};
++
++/**
++ * kpr_init - Initialize this module.
++ *
++ * Returns 0.
++ */
++static int __init kpr_init(void)
++{
++	if (kpr_registered) {
++		struct dentry *kpr_dir = securityfs_create_dir("kportreserve",
++							       NULL);
++		if (!kpr_dir ||
++		    !securityfs_create_file("entry", 0644, kpr_dir, NULL,
++					    &kpr_entry_operations))
++			panic("Failure registering kportreserve");
++	}
++	return 0;
++}
++fs_initcall(kpr_init);
+-- 
+1.7.1
