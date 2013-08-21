@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab3HUVY7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 17:24:59 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:63555 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab3HUVY6 (ORCPT
+	id S1752805Ab3HUV0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 17:26:40 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:52270 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624Ab3HUV0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 17:24:58 -0400
-Date: Wed, 21 Aug 2013 14:24:42 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] idr: Use this_cpu_ptr() for percpu_ida
-Message-ID: <20130821212442.GC4657@kmo-pixel>
-References: <20130807195733.GB11612@kmo-pixel>
- <000001405e5776ba-bcc96088-b5e8-4abe-b98e-2e9d7d9b112b-000000@email.amazonses.com>
- <1377033546.32763.4.camel@haakon3.risingtidesystems.com>
- <20130820142956.1194d8c798abf53f884a1fb6@linux-foundation.org>
- <20130821020132.GA4051@kmo-pixel>
- <20130821020742.GA3495@htj.dyndns.org>
- <20130821023151.GC4051@kmo-pixel>
- <20130821115941.GA18617@mtj.dyndns.org>
- <20130821210901.GA4657@kmo-pixel>
- <20130821211650.GD2436@htj.dyndns.org>
+	Wed, 21 Aug 2013 17:26:39 -0400
+Date: Wed, 21 Aug 2013 17:26:41 -0400
+From: Milosz Tanski <milosz@adfin.com>
+To: ceph-devel@vger.kernel.org
+Cc: sage@inktank.com, zheng.z.yan@intel.com, dhowells@redhat.com,
+        linux-cachefs@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: [PATCHv4 0/5] ceph: persistent caching with fscache
+Message-ID: <cover.1375999914.git.milosz@adfin.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130821211650.GD2436@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 05:16:50PM -0400, Tejun Heo wrote:
-> Hello, Kent.
-> 
-> On Wed, Aug 21, 2013 at 02:09:01PM -0700, Kent Overstreet wrote:
-> > These "micro optimizations" mean either less pointer chasing or less
-> > branching in the _common_ case; you'd trade common case performance for
-> > avoiding ever doing higher order allocations (and 2 with COMPACTION=n
-> > and 4 with COMPACTION=y is not particularly high order!).
-> 
-> Order 4 allocation probably isn't as bad as before but it still is a
-> lot nastier than single page allocations.  You say doing it the other
-> way would harm the common case performance but didn't answer my
-> question about the number of IDs being served per page.  How many can
-> be served from a single page?  And how many from two layer single page
-> configuration?  How are you defining the "common" case?
+This an updated version of the fscache support for the Ceph filesystem. What's
+changed since the last patchset:
 
-With single page allocations:
+1. Sparater the readpages refactor into it's own patches. These were already
+   accepted into the testing branch.
 
-1 << 15 bits per page
+2. Tracked down the BUG in readahead cleanup code. We were returning with pages
+   marked as private_2 from readpages(). I added a simple convenience function
+   to the fscache netfs interface for cleaning up the page list at the end of
+   asop readpages(). I know other filesystems (NFS) have ran into that since
+   I've seen a few similar traces in Google search and the cachefs mailig list.
+   The second patch new make Ceph use this interface.
 
-1 << 9 pointers per page
+I've been running this code (minus the BUG fix) on clients for a couple weeks
+with moderate 24/7 use without issues. At this point in time I feel like it's
+solid enough to go into the ceph kclient.
 
-So two layers of pointers does get us to 1 << 33 bits, which is what we
-need.
+Please pull the code from my repository:
+https://bitbucket.org/adfin/linux-fs.git branch: wip-ceph-fscache
 
-But now, since we need two layers of pointers instead of one, we need
-either another pointer deref for a node lookup - _always_, even when
-we've got 8 bytes of bits - or we need to branch on the depth of the
-tree, which is something we don't have now.
+The first two patches I included were not written by me but were written by 
+Hongyi Jia. He implemented the cookie re-validation scheme into fscache core.
 
-This is extra overhead _no matter the size of the ida_, over my current
-approach.
+Finally, I CCed a couple other mailing lists (fsdevel, nfs) because the new
+fscache_readpages_cancel() should be used by other filesystems to avoid the
+same problem.
 
-I'm assuming the common case is < one page of bits, based on the usage
-I've seen throughout the kernel that's probably way conservative.
 
-In that case, your approach is going to be slower than mine, and there's
-no difference in the size of the allocations.
+Hongyi Jia (2):
+  new cachefiles interface to check cache consistency
+  new fscache interface to check cache consistency
 
-> > I don't buy that that's a good tradeoff. If you're convinced radix trees
-> > are the way to go and it can be done without much performance cost, why
-> > not code it up and show us?
-> 
-> Well, I'm not the one trying to rewrite ida, so the onus to justify
-> the proposed code is primarily on you.  Another thing is that the
-> proposed code is *not* using the existing radix tree and instead
-> implementing its own simplified radix tree, which *can* be fine but
-> the bar to clear is fairly high.  You have to be able to show
-> *clearly* that using the existing radix tree is not an option.  Until
-> now, the only thing that I gathered is the simplified thing is gonna
-> be faster in some extreme cases while having clear disadvantage in
-> terms of memory allocation.  Not very convincing.
+Milosz Tanski (3):
+  ceph: use fscache as a local presisent cache
+  fscache: netfs function for cleanup post readpages
+  ceph: clean PgPrivate2 on returning from readpages
 
-I've already shown massive performance gains over the existing radix
-tree approach, you're the one claiming a different approach would be
-better.
+ fs/cachefiles/interface.c     |  19 +++
+ fs/cachefiles/internal.h      |   1 +
+ fs/cachefiles/xattr.c         |  39 ++++++
+ fs/ceph/Kconfig               |   9 ++
+ fs/ceph/Makefile              |   2 +
+ fs/ceph/addr.c                |  39 +++++-
+ fs/ceph/cache.c               | 311 ++++++++++++++++++++++++++++++++++++++++++
+ fs/ceph/cache.h               | 130 ++++++++++++++++++
+ fs/ceph/caps.c                |  19 ++-
+ fs/ceph/file.c                |  17 +++
+ fs/ceph/inode.c               |  66 ++++++++-
+ fs/ceph/super.c               |  47 ++++++-
+ fs/ceph/super.h               |  17 +++
+ fs/fscache/cookie.c           |  22 +++
+ fs/fscache/page.c             |  16 +++
+ include/linux/fscache-cache.h |   4 +
+ include/linux/fscache.h       |  39 ++++++
+ 17 files changed, 785 insertions(+), 12 deletions(-)
+ create mode 100644 fs/ceph/cache.c
+ create mode 100644 fs/ceph/cache.h
+
+-- 
+1.8.1.2
+
