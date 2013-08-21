@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab3HURpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 13:45:31 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38545 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab3HURpa (ORCPT
+	id S1752501Ab3HURqC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 13:46:02 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:55587 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab3HURp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 13:45:30 -0400
-Message-ID: <5214FCB6.4040200@wwwdotorg.org>
-Date: Wed, 21 Aug 2013 11:45:26 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Lars Poeschel <poeschel@lemonage.de>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2] pinctrl: queue GPIO operations instead of defering
-References: <1376751410-14560-1-git-send-email-linus.walleij@linaro.org> <52127035.7000909@wwwdotorg.org>
-In-Reply-To: <52127035.7000909@wwwdotorg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Aug 2013 13:45:59 -0400
+Message-ID: <1377107568.32763.59.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 9/9] tcm_qla2xxx: Add special case for COMPARE_AND_WRITE
+ data_direction
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Roland Dreier <roland@purestorage.com>,
+        "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Martin Petersen <martin.petersen@oracle.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>
+Date: Wed, 21 Aug 2013 10:52:48 -0700
+In-Reply-To: <20130821155314.GA17850@infradead.org>
+References: <1377029280-19144-1-git-send-email-nab@daterainc.com>
+	 <1377029280-19144-10-git-send-email-nab@daterainc.com>
+	 <CAL1RGDVSrf6++PMdfnAZAUw=QX0VbQ9Wck+v=7ebfc-_FXJ_NA@mail.gmail.com>
+	 <20130821155314.GA17850@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2013 01:21 PM, Stephen Warren wrote:
-> On 08/17/2013 08:56 AM, Linus Walleij wrote:
->> We currently defer probing of the caller if a pinctrl GPIO
->> request or direction setting comes in before the range mapping
->> a certain GPIO to a certain pin controller is available.
->>
->> This can end up with a circular dependency: the GPIO driver
->> needs the pin controller to be ready and the pin controller
->> need the GPIO driver to be ready. This also happens if
->> pin controllers and GPIO controllers compiled as modules
->> are inserted in a certain order.
->>
->> To break this circular dependence, queue any GPIO
->> operations coming to the framework until the range is ready,
->> instead of deferring the probe of the caller.
+On Wed, 2013-08-21 at 08:53 -0700, Christoph Hellwig wrote:
+> On Wed, Aug 21, 2013 at 07:38:21AM -0700, Roland Dreier wrote:
+> > I don't understand this.  In fact the whole patch series looks quite
+> > confused.  COMPARE AND WRITE is a normal Data-Out command, with no
+> > requirement for special bidirectional handling or anything like that.
+> > The only slightly unusual thing is that a CAW command with a NUMBER OF
+> > LOGICAL BLOCKS equal to N will actually transfer 2*N worth of data --
+> > one set of data for the compare operation and a second set to write if
+> > the compare succeeds.  But just to be clear, the transfer of those 2*N
+> > blocks happens as a single transfer during the Data-Out phase.
 > 
-> I just noticed that next-20130819 is failing on the Tegra114 Dalmore
-> board because of this patch. The kernel log is below. Reverting this
-> patch solves the problem
+> I think the confusion is that the implementation of COMPARE AND WRITE
+> obviously requires a read and a write phase, and the implementation
+> tries to mix this up with an actual bidirectional scsi command.
+> 
+> If the core stopped keying off t_bidi_data_sg and used better flag
+> this could be easily solved.
 
-Linus, any thoughts here?
+Good point here as well..  Changing these cases to check for SCF_BIDI
+instead, and adding a extra SCF_COMPARE_AND_WRITE check for the case in
+transport_generic_new_cmd() to call transport_generic_get_mem_bidi().
 
->> [   12.427751] tegra114-pinctrl 70000868.pinmux: pin USB_VBUS_EN0 PN4 already requested by Tegra GPIOs:108; cannot claim for Tegra GPIOs:108
->> [   12.440320] tegra114-pinctrl 70000868.pinmux: pin-108 (Tegra GPIOs:108) status -22
->> [   12.447965] usb1_vbus: Failed to request enable GPIO108: -22
->> [   12.454306] reg-fixed-voltage 3.regulator: Failed to register regulator: -22
->> [   12.461508] reg-fixed-voltage: probe of 3.regulator failed with error -22
->> [   12.469659] tegra114-pinctrl 70000868.pinmux: pin SPDIF_IN PK6 already requested by Tegra GPIOs:86; cannot claim for Tegra GPIOs:86
->> [   12.481606] tegra114-pinctrl 70000868.pinmux: pin-86 (Tegra GPIOs:86) status -22
->> [   12.489052] usb2_vbus: Failed to request enable GPIO86: -22
->> [   12.495226] reg-fixed-voltage 4.regulator: Failed to register regulator: -22
->> [   12.502449] reg-fixed-voltage: probe of 4.regulator failed with error -22
->> [   12.510542] tegra114-pinctrl 70000868.pinmux: pin GMI_CLK PK1 already requested by Tegra GPIOs:81; cannot claim for Tegra GPIOs:81
->> [   12.522403] tegra114-pinctrl 70000868.pinmux: pin-81 (Tegra GPIOs:81) status -22
->> [   12.529896] vdd_hdmi_5v0: Failed to request enable GPIO81: -22
->> [   12.536281] reg-fixed-voltage 5.regulator: Failed to register regulator: -22
->> [   12.543465] reg-fixed-voltage: probe of 5.regulator failed with error -22
->> [   12.552509] vdd_cam_1v8_reg: 1800 mV 
->> [   12.558205] platform 7d008000.usb: Driver tegra-ehci requests probe deferral
->> [   12.566600] platform 7d008000.usb-phy: Driver tegra-phy requests probe deferral
->> [   12.577475] input: gpio-keys.2 as /devices/soc0/gpio-keys.2/input/input1
->> [   12.588329] platform 7d008000.usb: Driver tegra-ehci requests probe deferral
->> [   12.596967] platform 7d008000.usb-phy: Driver tegra-phy requests probe deferral
+--nab
 
