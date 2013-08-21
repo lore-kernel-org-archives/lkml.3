@@ -1,90 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab3HUR6W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 13:58:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15931 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab3HUR6T (ORCPT
+	id S1753029Ab3HUSF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 14:05:29 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:49716 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab3HUSFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 13:58:19 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=roXeUe4e85gA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=JzSCUfRX3cwA:10 a=XyMNlIghAAAA:8 a=D1pviyP8qKv71XvsCqsA:9 a=CjuIK1q_8ugA:10 a=69vhMaErX6oAKDbg:21 a=Ktd2vMW4ndwQ1_58:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 21 Aug 2013 13:58:16 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jochen Striepe <jochen@tolot.escape.de>
-Cc: Willy Tarreau <w@1wt.eu>, Greg KH <gregkh@linuxfoundation.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, lwn@lwn.net,
-        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Proposed stable release changes
-Message-ID: <20130821135816.41127e6f@gandalf.local.home>
-In-Reply-To: <20130821172327.GB2398@pompeji.miese-zwerge.org>
-References: <20130820224032.GA20491@kroah.com>
-	<CA+5PVA4s8D6Hkvj7c4Hpw6MOefZG4BEEWZjWb4XHW+k4n_sWjA@mail.gmail.com>
-	<20130820235700.GA7209@kroah.com>
-	<CA+5PVA4q1K9iS0-ppZKMM8QfKQZBHX8auEp+C=Y=gnSMCkbP2Q@mail.gmail.com>
-	<20130821004924.GA19098@kroah.com>
-	<20130821053836.GF16424@1wt.eu>
-	<20130821133713.GA16493@home.goodmis.org>
-	<20130821172327.GB2398@pompeji.miese-zwerge.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Aug 2013 14:05:25 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "security@kernel.org" <security@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Willy Tarreau <w@1wt.eu>,
+        linux-kernel@vger.kernel.org, oleg@redhat.com,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>, spender@grsecurity.net,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
+Date: Wed, 21 Aug 2013 11:05:13 -0700
+Message-Id: <0be9da18c0ca360773a397de3063d01019ff88d8.1377107508.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <CALCETrXMQdjRyvP8RHOd5xjciurS7-hKUOExvkvQ1RWmdRdypA@mail.gmail.com>
+References: <CALCETrXMQdjRyvP8RHOd5xjciurS7-hKUOExvkvQ1RWmdRdypA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Aug 2013 19:23:27 +0200
-Jochen Striepe <jochen@tolot.escape.de> wrote:
+There have long been two ways to ask the kernel to create a new
+hardlink to the inode represented by an fd: linkat(..., AT_EMPTY_PATH)
+and AT_SYMLINK_FOLLOW on /proc/self/fd/N.  The latter has no
+particular security restrictions, but the former required privilege
+until:
 
-> ... people are very different. Many just update here and then, but
-> there are those who do update on most stable releases. Those are the
-> ones you get feedback and testing from, and I think you should encourage
-> them to update as soon as a new -stable kernel is released. Getting
-> regression fixes fast sounds like a good encouragement especially for
-> people interested in the -stable series. Keeping the number of
-> regressions low is the whole point of -stable, right?
+    commit bb2314b47996491bbc5add73633905c3120b6268
+    Author: Andy Lutomirski <luto@amacapital.net>
+    Date:   Thu Aug 1 21:44:31 2013 -0700
 
-Yes, but its even worse when we add a new regression to fix the old one.
+        fs: Allow unprivileged linkat(..., AT_EMPTY_PATH) aka flink
 
-Note, this will still encourage people to upgrade to stable, and the
-delay should be even more encouragement. The point of the delay is to
-catch regressions caused by fixes in mainline. We don't want that added
-regression to trickle into stable like it has a few times.
+Spender pointed out that there could be code that passes an fd to an
+untrusted, chrooted process, and allowing that process to flink the
+fd could be dangerous.  (I'm not aware of any actual known attack.)
 
-As you say "Keeping the number of regressions low is the whole point of
--stable". Yes it is. By the delay, it should help stable from getting
-as many regressions as it is today.
+So let's be careful for now: only allow linkat(..., AT_EMPTY_PATH)
+if the target is I_LINKABLE.  I_LINKABLE is only set for inodes
+created by O_TMPFILE without O_EXCL, which is an explicit request
+for flinkability.
 
-> 
-> > Maybe people are rushing, but I don't update my main machines every
-> > stable release because I can't always afford the down time it causes me
-> > to do so.
-> 
-> On my server/router and on my desktop machine it's the same, those are
-> for daily work. But I have a netbook for playing around. :)
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ fs/namei.c | 36 ++++++++++++++++++++++++++++++++----
+ 1 file changed, 32 insertions(+), 4 deletions(-)
 
-Right, and after upgrading your server/router to a new stable, it will
-suck that it hits a new regression and you have to update again. A
-delay should help limit those occurrences even more.
+diff --git a/fs/namei.c b/fs/namei.c
+index 89a612e..44ffd3d 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3652,6 +3652,32 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
+ }
+ 
+ /*
++ * flink is dangerous.  For now, only allow it when specifically requested
++ * or when the caller is privileged.
++ *
++ * NB: This is not currently enforced for AT_SYMLINK_FOLLOW on procfs.
++ *     Fixing that would be intrusive and could break something.
++ */
++static bool may_flink(const struct path *path)
++{
++	bool ret;
++	struct inode *inode = path->dentry->d_inode;
++
++	/*
++	 * This is racy: I_LINKABLE could be cleared between this check
++	 * and the actual link operation.  This is odd but not a security
++	 * problem: the caller could get the same effect by flinking once
++	 * and then using normal link(2) to create a second link.
++	 */
++
++	spin_lock(&inode->i_lock);
++	ret = !!(inode->i_state & I_LINKABLE);
++	spin_unlock(&inode->i_lock);
++
++	return ret || capable(CAP_DAC_READ_SEARCH);
++}
++
++/*
+  * Hardlinks are often used in delicate situations.  We avoid
+  * security-related surprises by not following symlinks on the
+  * newname.  --KAB
+@@ -3670,10 +3696,7 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+ 
+ 	if ((flags & ~(AT_SYMLINK_FOLLOW | AT_EMPTY_PATH)) != 0)
+ 		return -EINVAL;
+-	/*
+-	 * Using empty names is equivalent to using AT_SYMLINK_FOLLOW
+-	 * on /proc/self/fd/<fd>.
+-	 */
++
+ 	if (flags & AT_EMPTY_PATH)
+ 		how = LOOKUP_EMPTY;
+ 
+@@ -3684,6 +3707,11 @@ retry:
+ 	if (error)
+ 		return error;
+ 
++	if ((flags & AT_EMPTY_PATH) && !may_flink(&old_path)) {
++		error = -EPERM;
++		goto out;
++	}
++
+ 	new_dentry = user_path_create(newdfd, newname, &new_path,
+ 					(how & LOOKUP_REVAL));
+ 	error = PTR_ERR(new_dentry);
+-- 
+1.8.3.1
 
-For netbook that you can play with the -rc candidates and if you hit a
-regression, report it, and go back to a more stable kernel.
-
-The point I'm making, we should be more reluctant in pulling patches
-into stable as quick as we are. A patch ideally should simmer in
-linux-next for a bit, then go into mainline. It should also simmer
-there for a bit before it goes into stable. Except for those very rare
-patches that can cause the system to easily crash, let an exploit
-happen, or corrupt data. Those do need to go into stable ASAP. But
-luckily, those are also rare and far between.
-
--- Steve
