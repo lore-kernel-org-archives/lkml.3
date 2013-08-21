@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab3HUO15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:27:57 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:2638 "EHLO mms1.broadcom.com"
+	id S1752131Ab3HUO2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:28:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51319 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab3HUO14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:27:56 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <5214CE5F.5010009@broadcom.com>
-Date: Wed, 21 Aug 2013 16:27:43 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US;
- rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: "Josh Boyer" <jwboyer@fedoraproject.org>
-cc: "Felix Fietkau" <nbd@openwrt.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Tom Gundersen" <teg@jklm.no>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Linux Wireless List" <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Johannes Berg" <johannes@sipsolutions.net>
-Subject: Re: [REGRESSION] 3.10.{6,7} crashes on network activity
-References: <CAG-2HqUXQeq=30EpGWmn6tkC=CP1W+=UZCVPTYhhE0WyU_C4nw@mail.gmail.com>
- <20130820000336.GA15548@kroah.com>
- <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com>
- <20130820002822.GA18023@kroah.com> <5212F6E8.3090107@openwrt.org>
- <52132589.5000306@broadcom.com>
- <CA+5PVA7gvnfX2vnpxEGCgaAYXRvA=SME4SYZpTESqLsMkgSu=g@mail.gmail.com>
- <52147FD2.9020401@broadcom.com>
- <CA+5PVA5Wi=Xjrsb_Rh53A4NkWHe3h-gfs89dO6Zfb+6uh+G=dQ@mail.gmail.com>
-In-Reply-To: <CA+5PVA5Wi=Xjrsb_Rh53A4NkWHe3h-gfs89dO6Zfb+6uh+G=dQ@mail.gmail.com>
-X-WSS-ID: 7E0A12F331W86468204-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
+	id S1751694Ab3HUO2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 10:28:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,928,1367996400"; 
+   d="scan'208";a="366230811"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <alpine.DEB.2.02.1308201716510.25665@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1308201716510.25665@chino.kir.corp.google.com>
+Subject: RE: [patch] mm, thp: count thp_fault_fallback anytime thp fault fails
 Content-Transfer-Encoding: 7bit
+Message-Id: <20130821142817.8EB4BE0090@blue.fi.intel.com>
+Date: Wed, 21 Aug 2013 17:28:17 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/13 14:38, Josh Boyer wrote:
-> On Wed, Aug 21, 2013 at 4:52 AM, Arend van Spriel<arend@broadcom.com>  wrote:
->>>> Hi Felix,
->>>>
->>>> I have been diving into root causing why brcmsmac can not handle cck
->>>> fallback rates, because it should. Maybe it is better to flag no cck
->>>> support
->>>> and only change brcmsmac.
->>>
->>>
->>> We have a number of users hitting this in Fedora 18 and 19 now.  We're
->>> tracking it with https://bugzilla.redhat.com/show_bug.cgi?id=998080
->>> and I'm sure we can find people to test easily.
->>
->>
->> There is already another one (possibly) dealing with the same issue:
->>
->> https://bugzilla.redhat.com/show_bug.cgi?id=989269
->>
->> One of them should probably be flagged as duplicate.
->>
->>
->>> If you have a patch disabling cck in brcmsmac, I'd be happy to build a
->>> kernel for people.  If that's going to be some time coming, perhaps
->>> it's better to grab Felix's patch on a temporary basis?
->>
->>
->> I think it is better to grab Felix's patch because as we both observed there
->> is stuff missing in brcmsmac to deal with CCK rates and A-MPDU packet
->> aggregation.
->
-> OK, thanks.
->
-> Felix, are you going to send that upstream?
+David Rientjes wrote:
+> Currently, thp_fault_fallback in vmstat only gets incremented if a
+> hugepage allocation fails.  If current's memcg hits its limit or the page
+> fault handler returns an error, it is incorrectly accounted as a
+> successful thp_fault_alloc.
+> 
+> Count thp_fault_fallback anytime the page fault handler falls back to
+> using regular pages and only count thp_fault_alloc when a hugepage has
+> actually been faulted.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-It already has been sent: 
-http://mid.gmane.org/1377020634-27064-1-git-send-email-nbd@openwrt.org
+It's probably a good idea, but please make the behaviour consistent in
+do_huge_pmd_wp_page() and collapse path, otherwise it doesn't make sense.
 
-Johannes has submitted it to John so it is getting there soon(ish).
+And please make the patch against mm tree: do_huge_pmd_anonymous_page()
+was modified recently.
 
-> josh
+> ---
+>  mm/huge_memory.c | 8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -801,7 +801,6 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  			zero_page = get_huge_zero_page();
+>  			if (unlikely(!zero_page)) {
+>  				pte_free(mm, pgtable);
+> -				count_vm_event(THP_FAULT_FALLBACK);
+>  				goto out;
+>  			}
+>  			spin_lock(&mm->page_table_lock);
+> @@ -816,11 +815,8 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		}
+>  		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+>  					  vma, haddr, numa_node_id(), 0);
+> -		if (unlikely(!page)) {
+> -			count_vm_event(THP_FAULT_FALLBACK);
+> +		if (unlikely(!page))
+>  			goto out;
+> -		}
+> -		count_vm_event(THP_FAULT_ALLOC);
+>  		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
+>  			put_page(page);
+>  			goto out;
+> @@ -832,9 +828,11 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  			goto out;
+>  		}
+>  
+> +		count_vm_event(THP_FAULT_ALLOC);
+>  		return 0;
+>  	}
+>  out:
+> +	count_vm_event(THP_FAULT_FALLBACK);
+>  	/*
+>  	 * Use __pte_alloc instead of pte_alloc_map, because we can't
+>  	 * run pte_offset_map on the pmd, if an huge pmd could
 
-Regards,
-Arend
-
-
-
+-- 
+ Kirill A. Shutemov
