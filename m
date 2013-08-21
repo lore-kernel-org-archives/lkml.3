@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823Ab3HUAn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 20:43:29 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:53005 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab3HUAn2 (ORCPT
+	id S1751874Ab3HUArd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 20:47:33 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:49114 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab3HUArb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 20:43:28 -0400
-Date: Wed, 21 Aug 2013 08:43:25 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: axboe <axboe@kernel.dk>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: [PATCH] block: trace all devices plug operation.
-X-Priority: 3
-X-GUID: B54F1205-E8A4-4AB1-9234-24F2294FE161
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.93[cn]
-Mime-Version: 1.0
-Message-ID: <201308210843204575191@gmail.com>
-Content-Type: text/plain;
-	charset="us-ascii"
+	Tue, 20 Aug 2013 20:47:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130820224349.GM6023@dastard>
+References: <cover.1376679411.git.luto@amacapital.net> <ec267e95fd21891986373c7af1c72b4c8b507332.1376679411.git.luto@amacapital.net>
+ <20130820023615.GE6023@dastard> <CALCETrV-Toj-NGpmWnmoUbCwrMUXOSbjQdYsSVuTiH+2dEgPTQ@mail.gmail.com>
+ <20130820040814.GH6023@dastard> <CALCETrWreWBwKdKS2w=fS+MwdaZv1eEsKjYo=P9eeXe7fZS6Jw@mail.gmail.com>
+ <20130820160057.GC2862@quack.suse.cz> <CALCETrXotDRKV8FtLn3g_9g_yOVceHzKpwXMAH+w7tBZ1P2F7A@mail.gmail.com>
+ <20130820214819.GK6023@dastard> <CALCETrXU3jm_R2SJbfgsM2COAuX_tRACQmuc7t7z5b2B+=kBgg@mail.gmail.com>
+ <20130820224349.GM6023@dastard>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 20 Aug 2013 17:47:10 -0700
+Message-ID: <CALCETrVY2dhiAO_k9=mCL3_Tuyzr52tnKB57YteO_7PXJBmAHw@mail.gmail.com>
+Subject: Re: [PATCH v3 3/5] mm: Notify filesystems when it's time to apply a
+ deferred cmtime update
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7L0hYqP018904
 
-In func blk_queue_bio, if list of plug is empty,it will call
-blk_trace_plug.
-If process deal with a single device,it't ok.But if process deal with
-multi devices,it only trace the first device.
-Using request_count to judge, it can soleve this problem.
+On Tue, Aug 20, 2013 at 3:43 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Tue, Aug 20, 2013 at 02:54:01PM -0700, Andy Lutomirski wrote:
+>> On Tue, Aug 20, 2013 at 2:48 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> > On Tue, Aug 20, 2013 at 09:42:34AM -0700, Andy Lutomirski wrote:
+>> >> On Tue, Aug 20, 2013 at 9:00 AM, Jan Kara <jack@suse.cz> wrote:
+>> >> > On Mon 19-08-13 21:14:44, Andy Lutomirski wrote:
+>> >> >> >> I could require ->writepages *and* ->flush_cmtime to handle the time
+>> >> >> >> update, but that would complicate non-transactional filesystems.
+>> >> >> >> Those filesystems should just flush cmtime at the end of writepages.
+>> >> >> >
+>> >> >> > do_writepages() is the wrong place to do such updates - we can get
+>> >> >> > writeback directly through .writepage, so the time updates need to
+>> >> >> > be in .writepage. That first .writepage call will clear the bit on
+>> >> >> > the mapping, so it's only done on the first call to .writepage on
+>> >> >> > the given mapping.
+>> >> >>
+>> >> >> Last time I checked, all the paths that actually needed the timestamp
+>> >> >> update went through .writepages.  I'll double-check.
+>> >> >   kswapd can call just .writepage to do the writeout so timestamp update
+>> >> > should be handled there as well. Otherwise all pages in a mapping can be
+>> >> > cleaned without timestamp being updated.
+>> >>
+>> >> OK, I'll fix that.
+>> >>
+>> >> >
+>> >> > Which btw made me realize that even your scheme doesn't completely make
+>> >> > sure timestamp is updated after mmap write - if you have pages 0 and 1, you
+>> >> > write to both of them - CMTIME flag gets set. Then fsync_range(fd, 0, 4096)
+>> >> > is called. We write the page 0, writeprotect it, update timestamps. But
+>> >> > page 1 is still writeable so writes to it won't set CMTIME flag, neither
+>> >> > update the timestamp... Not that I think this can be reasonably solved but
+>> >> > it is a food for thought.
+>> >>
+>> >> This should already work.  AS_CMTIME is set when the pte goes from
+>> >> dirty to clean, not when the pte goes from wp to writable.  So
+>> >> whenever clear_page_dirty_for_io is called on page 1, AS_CMTIME will
+>> >> be set and a subsequent writepages call will update the timestamp.
+>> >
+>> > Oh, I missed that - I thought you were setting AS_CMTIME during
+>> > .page_mkwrite.
+>> >
+>> > Setting it in clear_page_dirty_for_io() is too late for filesystems
+>> > to include it in their existing transactions during .writepage, (at
+>> > least for XFs and ext4) because they do their delayed allocation
+>> > transactions before changing page state....
+>>
+>> Couldn't it go between mpage_map_and_submit_extent and
+>> ext4_journal_stop in ext4_writepages?
+>
+> Maybe - I'm not an ext4 expert - but even if you can make it work
+> for ext4 in some way, that doesn't mean it is possible for any other
+> filesystem to use the same method. You're adding code to generic,
+> non-filesystem specific code paths and so the solutions need to be
+> generic rather not tied to how a specific filesystem is implemented.
+>
 
-In addition, i modify the comment.
+I don't see the problem for xfs or btrfs either.
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
- block/blk-core.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+xfs uses generic_writepages, which already does the right thing.  (xfs
+with my updated patches passes my tests.)  xfs_vm_writepage calls
+xfs_start_page_writeback(..., 1, ...), so clear_page_dirty_for_io is
+called.  At that point (I presume), it would still be possible to add
+metadata to a transaction (assuming there's a transaction open -- I
+don't have a clue here).  Even if this is too late, xfs_vm_writepage
+could call page_mkwrite to for AS_CMTIME to be set if needed.
+page_mkwrite will be fast if the page isn't mmapped.  What am I
+missing?
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 93a18d1..91037f7 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1549,11 +1549,9 @@ get_rq:
- 	if (plug) {
- 		/*
- 		 * If this is the first request added after a plug, fire
--		 * of a plug trace. If others have been added before, check
--		 * if we have multiple devices in this plug. If so, make a
--		 * note to sort the list before dispatch.
-+		 * of a plug trace.
- 		 */
--		if (list_empty(&plug->list))
-+		if (!request_count)
- 			trace_block_plug(q);
- 		else {
- 			if (request_count >= BLK_MAX_REQUEST_COUNT) {
+btrfs seems to do much the same thing.
+
+--Andy
+
+
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
+
+
+
 -- 
-1.8.3
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Andy Lutomirski
+AMA Capital Management, LLC
