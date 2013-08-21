@@ -1,71 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab3HUWDk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 18:03:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35854 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab3HUWDj (ORCPT
+	id S1752914Ab3HUWJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 18:09:39 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:47980 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465Ab3HUWJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 18:03:39 -0400
-Date: Wed, 21 Aug 2013 15:03:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
-        riel@redhat.com, hughd@google.com, xemul@parallels.com,
-        rientjes@google.com, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] mm/shmem.c: let shmem_show_mpol() return value.
-Message-Id: <20130821150337.bad5f71869cec813e2ded90c@linux-foundation.org>
-In-Reply-To: <521424BE.8020309@asianux.com>
-References: <5212E8DF.5020209@asianux.com>
-	<20130820053036.GB18673@moon>
-	<52130194.4030903@asianux.com>
-	<20130820064730.GD18673@moon>
-	<52131F48.1030002@asianux.com>
-	<52132011.60501@asianux.com>
-	<52132432.3050308@asianux.com>
-	<20130820082516.GE18673@moon>
-	<52142422.9050209@asianux.com>
-	<52142464.8060903@asianux.com>
-	<521424BE.8020309@asianux.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Aug 2013 18:09:37 -0400
+Date: Wed, 21 Aug 2013 15:09:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tibor Billes <tbilles@gmx.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Unusually high system CPU usage with recent kernels
+Message-ID: <20130821220932.GZ29406@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130821210551.168660@gmx.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130821210551.168660@gmx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082122-7164-0000-0000-000000E96B47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Aug 2013 10:23:58 +0800 Chen Gang <gang.chen@asianux.com> wrote:
-
-> Let shmem_show_mpol() return value, since it may fail.
+On Wed, Aug 21, 2013 at 11:05:51PM +0200, Tibor Billes wrote:
+> > From: Paul E. McKenney Sent: 08/21/13 09:12 PM
+> > On Wed, Aug 21, 2013 at 08:14:46PM +0200, Tibor Billes wrote:
+> > > > From: Paul E. McKenney Sent: 08/20/13 11:43 PM
+> > > > On Tue, Aug 20, 2013 at 10:52:26PM +0200, Tibor Billes wrote:
+> > > > > > From: Paul E. McKenney Sent: 08/20/13 04:53 PM
+> > > > > > On Tue, Aug 20, 2013 at 08:01:28AM +0200, Tibor Billes wrote:
+> > > > > > > Hi,
+> > > > > > > 
+> > > > > > > I was using the 3.9.7 stable release and tried to upgrade to the 3.10.x series.
+> > > > > > > The 3.10.x series was showing unusually high (>75%) system CPU usage in some
+> > > > > > > situations, making things really slow. The latest stable I tried is 3.10.7.
+> > > > > > > I also tried 3.11-rc5, they both show this behaviour. This behaviour doesn't
+> > > > > > > show up when the system is idling, only when doing some CPU intensive work,
+> > > > > > > like compiling with multiple threads. Compiling with only one thread seems not
+> > > > > > > to trigger this behaviour.
+> > > > > > > 
+> > > > > > > To be more precise I did a `perf record -a` while compiling a large C++ program
+> > > > > > > with scons using 4 threads, the result is appended at the end of this email.
+> > > > > > 
+> > > > > > New one on me! You are running a mainstream system (x86_64), so I am
+> > > > > > surprised no one else noticed.
+> > > > > > 
+> > > > > > Could you please send along your .config file?
+> > > > > 
+> > > > > Here it is
+> > > > 
+> > > > Interesting. I don't see RCU stuff all that high on the list, but
+> > > > the items I do see lead me to suspect RCU_FAST_NO_HZ, which has some
+> > > > relevance to the otherwise inexplicable group of commits you located
+> > > > with your bisection. Could you please rerun with CONFIG_RCU_FAST_NO_HZ=n?
+> > > > 
+> > > > If that helps, there are some things I could try.
+> > > 
+> > > It did help. I didn't notice anything unusual when running with CONFIG_RCU_FAST_NO_HZ=n.
+> > 
+> > Interesting. Thank you for trying this -- and we at least have a
+> > short-term workaround for this problem. I will put a patch together
+> > for further investigation.
 > 
+> I don't specifically need this config option so I'm fine without it in
+> the long term, but I guess it's not supposed to behave like that.
 
-This patch has no effect.
+OK, good, we have a long-term workload for your specific case,
+even better.  ;-)
 
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -883,16 +883,17 @@ redirty:
->  
->  #ifdef CONFIG_NUMA
->  #ifdef CONFIG_TMPFS
-> -static void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
-> +static int shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
->  {
->  	char buffer[64];
->  
->  	if (!mpol || mpol->mode == MPOL_DEFAULT)
-> -		return;		/* show nothing */
-> +		return 0;		/* show nothing */
->  
->  	mpol_to_str(buffer, sizeof(buffer), mpol);
+But yes, there are situations where RCU_FAST_NO_HZ needs to work
+a bit better.  I hope you will bear with me with a bit more
+testing...
 
-Perhaps you meant to check the mpol_to_str() return value here.
+> > In the meantime, could you please tell me how you were measuring
+> > performance for your kernel builds? Wall-clock time required to complete
+> > one build? Number of builds completed per unit time? Something else?
+> 
+> Actually, I wasn't all this sophisticated. I have a system monitor
+> applet on my top panel (using MATE, Linux Mint), four little graphs,
+> one of which shows CPU usage. Different colors indicate different kind
+> of CPU usage. Blue shows user space usage, red shows system usage, and
+> two more for nice and iowait. During a normal compile it's almost
+> completely filled with blue user space CPU usage, only the top few
+> pixels show some iowait and system usage. With CONFIG_RCU_FAST_NO_HZ
+> set, about 3/4 of the graph was red system CPU usage, the rest was
+> blue. So I just looked for a pile of red on my graphs when I tested
+> different kernel builds. But also compile speed was horrible I couldn't
+> wait for the build to finish. Even the UI got unresponsive.
 
->  	seq_printf(seq, ",mpol=%s", buffer);
-> +	return 0;
->  }
->  
->  static struct mempolicy *shmem_get_sbmpol(struct shmem_sb_info *sbinfo)
+We have been having problems with CPU accounting, but this one looks
+quite real.
+
+> Now I did some measuring. In the normal case a compile finished in 36
+> seconds, compiled 315 object files. Here are some output lines from
+> dstat -tasm --vm during compile:
+> ----system---- ----total-cpu-usage---- -dsk/total- -net/total- ---paging-- ---system-- ----swap--- ------memory-usage----- -----virtual-memory----
+>      time     |usr sys idl wai hiq siq| read  writ| recv  send|  in   out | int   csw | used  free| used  buff  cach  free|majpf minpf alloc  free
+> 21-08 21:48:05| 91   8   2   0   0   0|   0  5852k|   0     0 |   0     0 |1413  1772 |   0  7934M| 581M 58.0M  602M 6553M|   0    71k   46k   54k
+> 21-08 21:48:06| 93   6   1   0   0   0|   0  2064k| 137B  131B|   0     0 |1356  1650 |   0  7934M| 649M 58.0M  604M 6483M|   0    72k   47k   28k
+> 21-08 21:48:07| 86  11   4   0   0   0|   0  5872k|   0     0 |   0     0 |2000  2991 |   0  7934M| 577M 58.0M  627M 6531M|   0    99k   67k   79k
+> 21-08 21:48:08| 87   9   3   0   0   0|   0  2840k|   0     0 |   0     0 |2558  4164 |   0  7934M| 597M 58.0M  632M 6507M|   0    96k   57k   51k
+> 21-08 21:48:09| 93   7   1   0   0   0|   0  3032k|   0     0 |   0     0 |1329  1512 |   0  7934M| 641M 58.0M  626M 6469M|   0    61k   48k   39k
+> 21-08 21:48:10| 93   6   0   0   0   0|   0  4984k|   0     0 |   0     0 |1160  1146 |   0  7934M| 572M 58.0M  628M 6536M|   0    50k   40k   57k
+> 21-08 21:48:11| 86   9   6   0   0   0|   0  2520k|   0     0 |   0     0 |2947  4760 |   0  7934M| 605M 58.0M  631M 6500M|   0   103k   55k   45k
+> 21-08 21:48:12| 90   8   2   0   0   0|   0  2840k|   0     0 |   0     0 |2674  4179 |   0  7934M| 671M 58.0M  635M 6431M|   0    84k   59k   42k
+> 21-08 21:48:13| 90   9   1   0   0   0|   0  4656k|   0     0 |   0     0 |1223  1410 |   0  7934M| 643M 58.0M  638M 6455M|   0    90k   62k   68k
+> 21-08 21:48:14| 91   8   1   0   0   0|   0  3572k|   0     0 |   0     0 |1432  1828 |   0  7934M| 647M 58.0M  641M 6447M|   0    81k   59k   57k
+> 21-08 21:48:15| 91   8   1   0   0   0|   0  5116k| 116B    0 |   0     0 |1194  1295 |   0  7934M| 605M 58.0M  644M 6487M|   0    69k   54k   64k
+> 21-08 21:48:16| 87  10   3   0   0   0|   0  5140k|   0     0 |   0     0 |1761  2586 |   0  7934M| 584M 58.0M  650M 6502M|   0   105k   64k   68k
+> 
+> The abnormal case compiled only 182 object file in 6 and a half minutes,
+> then I stopped it. The same dstat output for this case:
+> ----system---- ----total-cpu-usage---- -dsk/total- -net/total- ---paging-- ---system-- ----swap--- ------memory-usage----- -----virtual-memory----
+>      time     |usr sys idl wai hiq siq| read  writ| recv  send|  in   out | int   csw | used  free| used  buff  cach  free|majpf minpf alloc  free
+> 21-08 22:10:49| 27  62   0   0  11   0|   0     0 | 210B    0 |   0     0 |1414  3137k|   0  7934M| 531M 57.6M  595M 6611M|   0  1628  1250   322 
+> 21-08 22:10:50| 25  60   4   0  11   0|   0    88k| 126B    0 |   0     0 |1337  3110k|   0  7934M| 531M 57.6M  595M 6611M|   0    91   128   115 
+> 21-08 22:10:51| 26  63   0   0  11   0|   0   184k| 294B    0 |   0     0 |1411  3147k|   0  7934M| 531M 57.6M  595M 6611M|   0  1485   814   815 
+> 21-08 22:10:52| 26  63   0   0  11   0|   0     0 | 437B  239B|   0     0 |1355  3160k|   0  7934M| 531M 57.6M  595M 6611M|   0    24    94    97 
+> 21-08 22:10:53| 26  63   0   0  11   0|   0     0 | 168B    0 |   0     0 |1397  3155k|   0  7934M| 531M 57.6M  595M 6611M|   0   479   285   273 
+> 21-08 22:10:54| 26  63   0   0  11   0|   0  4096B| 396B  324B|   0     0 |1346  3154k|   0  7934M| 531M 57.6M  595M 6611M|   0    27   145   145 
+> 21-08 22:10:55| 26  63   0   0  11   0|   0    60k|   0     0 |   0     0 |1353  3148k|   0  7934M| 531M 57.6M  595M 6610M|   0    93   117    36 
+> 21-08 22:10:56| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1341  3172k|   0  7934M| 531M 57.6M  595M 6610M|   0   158    87    74 
+> 21-08 22:10:57| 26  62   1   0  11   0|   0     0 |  42B   60B|   0     0 |1332  3162k|   0  7934M| 531M 57.6M  595M 6610M|   0    56    82    78 
+> 21-08 22:10:58| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1334  3178k|   0  7934M| 531M 57.6M  595M 6610M|   0    26    56    56 
+> 21-08 22:10:59| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1336  3179k|   0  7934M| 531M 57.6M  595M 6610M|   0     3    33    32 
+> 21-08 22:11:00| 26  63   0   0  11   0|   0    24k|  90B  108B|   0     0 |1347  3172k|   0  7934M| 531M 57.6M  595M 6610M|   0    41    73    71
+> 
+> I have four logical cores so 25% makes up 1 core. I don't know if the ~26% user CPU usage has anthing to do with this fact or just coincidence. The rest is ~63% system and ~11% hardware interrupt. Do these support what you suspect?
+
+The massive increase in context switches does come as a bit of a surprise!
+It does rule out my initial suspicion of lock contention, but then again
+the fact that you have only four CPUs made that pretty unlikely to begin
+with.
+
+2.4k average context switches in the good case for the full run vs. 3,156k
+for about half of a run in the bad case.  That is an increase of more
+than three orders of magnitude!
+
+Yow!!!
+
+Page faults are actually -higher- in the good case.  You have about 6.5GB
+free in both cases, so you are not running out of memory.  Lots more disk
+writes in the good case, perhaps consistent with its getting more done.
+Networking is negligible in both cases.
+
+Lots of hardware interrupts in the bad case as well.  Would you be willing
+to take a look at /proc/interrupts before and after to see which one you
+are getting hit with?  (Or whatever interrupt tracking tool you prefer.)
+
+One hypothesis is that your workload and configuration are interacting
+with RCU_FAST_NO_HZ to force very large numbers of RCU grace periods.
+Could you please check for this by building with CONFIG_RCU_TRACE=y,
+mounting debugfs somewhere and dumping rcu/rcu_sched/rcugp before and
+after each run?
+
+							Thanx, Paul
 
