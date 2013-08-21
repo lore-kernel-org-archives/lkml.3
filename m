@@ -1,158 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab3HUGAc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 02:00:32 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:50509 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068Ab3HUGAb (ORCPT
+	id S1752191Ab3HUGBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 02:01:34 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:41763 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752068Ab3HUGBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 02:00:31 -0400
-X-Spam-Score: -101.0
-Message-ID: <52145741.7000008@asianux.com>
-Date: Wed, 21 Aug 2013 13:59:29 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 21 Aug 2013 02:01:33 -0400
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: dipankar@in.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/rcutree.c: deem to be lazy if there are no callbacks.
-References: <5212E76A.40903@asianux.com> <5212E7BB.4020602@asianux.com> <20130820041832.GY29406@linux.vnet.ibm.com> <5212F3E5.7080700@asianux.com> <5212F467.8090407@asianux.com>
-In-Reply-To: <5212F467.8090407@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-Google-Sender-Delegation: getarunks@gmail.com
+In-Reply-To: <20130820140447.GL27005@ZenIV.linux.org.uk>
+References: <CAKZGPANQz5-uyf=uSp_0HxBq1_uH053H0XOohpAaWsbeoy7zhw@mail.gmail.com>
+	<20130820055153.GH27005@ZenIV.linux.org.uk>
+	<CAKZGPAN3W_FFHcxnatFJNQ9VDt-TL9c2Wyddqvdz98612U4gzQ@mail.gmail.com>
+	<20130820073622.GK27005@ZenIV.linux.org.uk>
+	<20130820140447.GL27005@ZenIV.linux.org.uk>
+Date: Wed, 21 Aug 2013 11:31:32 +0530
+X-Google-Sender-Auth: ptFKOEQEIt1fQM6gqIC_gXX3j7s
+Message-ID: <CAKZGPAPX+cDWJorAnXkKRLtGijKtJgfU_8WLpfjvbkXSUv9UFA@mail.gmail.com>
+Subject: Re: [PATCH v1] seq_file: Fix overflow condition in seq_commit
+From: Arun KS <arunks.linux@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Matthew Wilcox <matthew@wil.cx>,
+        Bruce Fields <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, vinayak menon <vinayakm.list@gmail.com>,
+        Nagachandra P <nagachandra@gmail.com>, Vikram MP <mp.vikram@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Al Viro,
 
-If we still doubt about it, but can not find a suitable way to fix it
-(neither of us are familiar with it).
-
-Is it suitable to use BUG_ON() for it (the diff may like below) ?
-
--------------------------------diff begin-------------------------------
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index dbf74b5..1d02659 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -2728,6 +2728,7 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
- 		if (rdp->nxtlist)
- 			hc = true;
- 	}
-+	BUG_ON(!hc && !al);
- 	if (all_lazy)
- 		*all_lazy = al;
- 	return hc;
-
--------------------------------diff end---------------------------------
-
-Thanks.
-
-
-On 08/20/2013 12:45 PM, Chen Gang wrote:
-> On 08/20/2013 12:43 PM, Chen Gang wrote:
->> On 08/20/2013 12:18 PM, Paul E. McKenney wrote:
->>> On Tue, Aug 20, 2013 at 11:51:23AM +0800, Chen Gang wrote:
->>>>
->>>>
->>>> If 'hc' is false, 'al' will never be false, either (only need check
->>>> "irdp->qlen != rdp->qlen_lazy' when 'rdp->nxtlist' existance).
->>>>
->>>> Recommend to improve the related code, like the diff below.
->>>
->>> Are you sure that this represents an improvement?  If so, why?
->>>
+On Tue, Aug 20, 2013 at 7:34 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Tue, Aug 20, 2013 at 08:36:22AM +0100, Al Viro wrote:
+>
+>> Aha.  _That_ is a bug, all right - dynamic_dname() is simply not suitable
+>> for that kind of uses.  ashmem.c is certainly abusing shmem_file_setup();
+>> feeding that kind of mess as dentry name is a Bad Idea(tm).  Anyway,
+>> I'd suggest this for a fix:
 >>
->> If 'hc' and 'al' really has relationships, better to let 'C code'
->> express it, that will make the code clearer.
+>>       va_list args;
+>>       size_t sz;
+>>       va_start(args, fmt);
+>>       sz = vsnprintf(NULL, 0, fmt, args) + 1;
+>>       va_end(args);
+>>       if (sz > buflen)
+>>               return ERR_PTR(-ENAMETOOLONG);
+>>       va_start(args, fmt);
+>>       buffer += buflen - sz;
+>>       vsprintf(buffer, fmt, args);
+>>       va_end(args);
+>>       return buffer;
 >>
->>> Or to put it another way, I see a patch that increases the size of the
->>> kernel by three lines.  What is the corresponding benefit given common
->>> kernel workloads?
->>>
->>
->> For 'al', need not check for each looping, and for 'hc', may save the
->> useless looping (so it can make performance better).
->>
->> For C code, it really increases 3 lines, but may not for assembly code
->> (excuse me, I am not check it, I think it is not important, although it
->> is easy to give a comparing for binary).
->>
-> 
-> Oh, sorry, I mean: only for our case, "it is not important".
-> 
-> 
->>> 							Thanx, Paul
->>>
->>>> ----------------------------------diff begin------------------------------------
->>>>
->>>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
->>>> index 5b53a89..421caf0 100644
->>>> --- a/kernel/rcutree.c
->>>> +++ b/kernel/rcutree.c
->>>> @@ -2719,10 +2719,13 @@ static int rcd'_cpu_has_callbacks(int cpu, bool *all_lazy)
->>>>
->>>>  	for_each_rcu_flavor(rsp) {
->>>>  		rdp = per_cpu_ptr(rsp->rda, cpu);
->>>> -		if (rdp->qlen != rdp->qlen_lazy)
->>>> -			al = false;
->>>> -		if (rdp->nxtlist)
->>>> +		if (rdp->nxtlist) {
->>>>  			hc = true;
->>>> +			if (rdp->qlen != rdp->qlen_lazy) {
->>>> +				al = false;
->>>> +				break;
->>>> +			}
->>>> +		}
->>>>  	}
->>>>  	if (all_lazy)
->>>>  		*all_lazy = al;
->>>>
->>>> ----------------------------------diff end--------------------------------------
->>>>
->>>>
->>>> On 08/20/2013 11:50 AM, Chen Gang wrote:
->>>>> According to the comment above rcu_cpu_has_callbacks(): "If there are
->>>>> no callbacks, all of them are deemed to be lazy".
->>>>>
->>>>> So when both 'hc' and 'al' are false, '*all_lazy' should be true, not
->>>>> false.
->>>>>
->>>>>
->>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>>>> ---
->>>>>  kernel/rcutree.c |    2 +-
->>>>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>>>
->>>>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
->>>>> index 5b53a89..9ee9565 100644
->>>>> --- a/kernel/rcutree.c
->>>>> +++ b/kernel/rcutree.c
->>>>> @@ -2725,7 +2725,7 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
->>>>>  			hc = true;
->>>>>  	}
->>>>>  	if (all_lazy)
->>>>> -		*all_lazy = al;
->>>>> +		*all_lazy = !hc ? true : al;
->>>>>  	return hc;
->>>>>  }
->>>>>  
->>>>>
->>>>
->>>>
->>>> -- 
->>>> Chen Gang
->>>>
->>>
->>>
->>>
->>
->>
-> 
-> 
+>> Either right in dynamic_dname(), or as possibly_fucking_long_dname(),
+>> to be used by shmem.c...
+>
+> Actually, looking at the users of dynamic_dname()...  Most of them are
+> fine with dynamic_dname() as it is, with 2 possible exceptions:
+> hugetlb_dname() and shmem_dname().  Both are using "/%s (deleted)",
+> dentry->d_name.name as format...  So the solution above may very
+> well be an overkill; something like
+>
+> char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
+> {
+>         char *end = buffer + buflen;
+>         /* these dentries are never renamed, so d_lock is not needed */
+>         if (prepend(&end, &buflen, " (deleted)", 11) ||
+>             prepend_name(&end, &buflen, &dentry->d_name) ||
+>             prepend(&end, &buflen, "/", 1))
+>                 end = ERR_PTR(-ENAMETOOLONG);
+>         return end;
+> }
+>
+> will do for those two.  Care to test the diff below?
+Patch works fine.
 
+Tested-by: Arun KS<arunks.linux@gmail.com>
 
--- 
-Chen Gang
+Thanks,
+Arun
+>
+> cope with potentially long ->d_dname() output for shmem/hugetlb
+>
+> dynamic_dname() is both too much and too little for those - the
+> output may be well in excess of 64 bytes dynamic_dname() assumes
+> to be enough (thanks to ashmem feeding really long names to
+> shmem_file_setup()) and vsnprintf() is an overkill for those
+> guys.
+>
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> ---
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 87bdb53..83cfb83 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -2724,6 +2724,17 @@ char *dynamic_dname(struct dentry *dentry, char *buffer, int buflen,
+>         return memcpy(buffer, temp, sz);
+>  }
+>
+> +char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
+> +{
+> +       char *end = buffer + buflen;
+> +       /* these dentries are never renamed, so d_lock is not needed */
+> +       if (prepend(&end, &buflen, " (deleted)", 11) ||
+> +           prepend_name(&end, &buflen, &dentry->d_name) ||
+> +           prepend(&end, &buflen, "/", 1))
+> +               end = ERR_PTR(-ENAMETOOLONG);
+> +       return end;
+> +}
+> +
+>  /*
+>   * Write full pathname from the root of the filesystem into the buffer.
+>   */
+> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> index a3f868a..4e5f332 100644
+> --- a/fs/hugetlbfs/inode.c
+> +++ b/fs/hugetlbfs/inode.c
+> @@ -916,14 +916,8 @@ static int get_hstate_idx(int page_size_log)
+>         return h - hstates;
+>  }
+>
+> -static char *hugetlb_dname(struct dentry *dentry, char *buffer, int buflen)
+> -{
+> -       return dynamic_dname(dentry, buffer, buflen, "/%s (deleted)",
+> -                               dentry->d_name.name);
+> -}
+> -
+>  static struct dentry_operations anon_ops = {
+> -       .d_dname = hugetlb_dname
+> +       .d_dname = simple_dname
+>  };
+>
+>  /*
+> diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+> index b90337c..4a12532 100644
+> --- a/include/linux/dcache.h
+> +++ b/include/linux/dcache.h
+> @@ -336,6 +336,7 @@ extern int d_validate(struct dentry *, struct dentry *);
+>   * helper function for dentry_operations.d_dname() members
+>   */
+>  extern char *dynamic_dname(struct dentry *, char *, int, const char *, ...);
+> +extern char *simple_dname(struct dentry *, char *, int);
+>
+>  extern char *__d_path(const struct path *, const struct path *, char *, int);
+>  extern char *d_absolute_path(const struct path *, char *, int);
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 8335dbd..e43dc55 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -2909,14 +2909,8 @@ EXPORT_SYMBOL_GPL(shmem_truncate_range);
+>
+>  /* common code */
+>
+> -static char *shmem_dname(struct dentry *dentry, char *buffer, int buflen)
+> -{
+> -       return dynamic_dname(dentry, buffer, buflen, "/%s (deleted)",
+> -                               dentry->d_name.name);
+> -}
+> -
+>  static struct dentry_operations anon_ops = {
+> -       .d_dname = shmem_dname
+> +       .d_dname = simple_dname
+>  };
+>
+>  /**
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
