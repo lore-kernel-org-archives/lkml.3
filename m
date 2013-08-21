@@ -1,59 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab3HUPGr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:06:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10588 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751859Ab3HUPGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:06:46 -0400
-Date: Wed, 21 Aug 2013 11:06:42 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: dm-devel@redhat.com, joe.jin@oracle.com, agk@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] dm ioctl: allow change device target type to error
-Message-ID: <20130821150547.GA10987@redhat.com>
-References: <5214CC25.1070307@oracle.com>
- <alpine.LRH.2.02.1308211041180.10797@file01.intranet.prod.int.rdu2.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1308211041180.10797@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752282Ab3HUPGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:06:55 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:35917 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752206Ab3HUPGv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 11:06:51 -0400
+From: Steffen Maier <maier@linux.vnet.ibm.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-scsi@vger.kernel.org, linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        stable@vger.kernel.org.#2.6.35+,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/8] zfcp: fix lock imbalance by reworking request queue locking
+Date: Wed, 21 Aug 2013 17:05:27 +0200
+Message-Id: <1377097531-4942-5-git-send-email-maier@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <1377097531-4942-1-git-send-email-maier@linux.vnet.ibm.com>
+References: <1377097531-4942-1-git-send-email-maier@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082115-2966-0000-0000-000008854613
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21 2013 at 10:48am -0400,
-Mikulas Patocka <mpatocka@redhat.com> wrote:
+From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 
-> 
-> 
-> On Wed, 21 Aug 2013, Joe Jin wrote:
-> 
-> > commit a5664da "dm ioctl: make bio or request based device type immutable"
-> > prevented "dmsetup wape_table" change the target type to "error".
-> 
-> That commit a5664da is there for a reason (it is not possible to change 
-> bio-based device to request-based and vice versa) and I don't really see 
-> how this patch is supposed to work.
-> 
-> If there are bios that are in flight and that already passed through 
-> blk_queue_bio, and you change the device from request-based to bio-based, 
-> what are you going to do with them? - The patch doesn't do anything about 
-> it.
-> 
-> A better approach would be to create a new request-based target "error-rq" 
-> and change the multipath target to "error-rq" target. That way, you don't 
-> have to change device type from request based to bio based.
+This patch adds wait_event_interruptible_lock_irq_timeout(), which is a
+straight-forward descendant of wait_event_interruptible_timeout() and
+wait_event_interruptible_lock_irq().
 
-My thoughts _exactly_.  This patch is very confused.
+The zfcp driver used to call wait_event_interruptible_timeout()
+in combination with some intricate and error-prone locking. Using
+wait_event_interruptible_lock_irq_timeout() as a replacement
+nicely cleans up that locking.
 
-Joe, what are you looking to be able to do?  Switch a dm-multipath
-device to error?  Or allowing switching a target that has
-DM_TARGET_IMMUTABLE flag set to be switched to error target?
+This rework removes a situation that resulted in a locking imbalance
+in zfcp_qdio_sbal_get():
 
-The latter restriction was introduced with commit 36a0456fb ("dm table:
-add immutable feature").
+BUG: workqueue leaked lock or atomic: events/1/0xffffff00/10
+    last function: zfcp_fc_wka_port_offline+0x0/0xa0 [zfcp]
 
-Mike
+It was introduced by commit c2af7545aaff3495d9bf9a7608c52f0af86fb194
+"[SCSI] zfcp: Do not wait for SBALs on stopped queue", which had a new
+code path related to ZFCP_STATUS_ADAPTER_QDIOUP that took an early exit
+without a required lock being held. The problem occured when a
+special, non-SCSI I/O request was being submitted in process context,
+when the adapter's queues had been torn down. In this case the bug
+surfaced when the Fibre Channel port connection for a well-known address
+was closed during a concurrent adapter shut-down procedure, which is a
+rare constellation.
+
+This patch also fixes these warnings from the sparse tool (make C=1):
+
+drivers/s390/scsi/zfcp_qdio.c:224:12: warning: context imbalance in
+ 'zfcp_qdio_sbal_check' - wrong count at exit
+drivers/s390/scsi/zfcp_qdio.c:244:5: warning: context imbalance in
+ 'zfcp_qdio_sbal_get' - unexpected unlock
+
+Last but not least, we get rid of that crappy lock-unlock-lock
+sequence at the beginning of the critical section.
+
+It is okay to call zfcp_erp_adapter_reopen() with req_q_lock held.
+
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Cc: stable@vger.kernel.org #2.6.35+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+---
+ drivers/s390/scsi/zfcp_qdio.c |    8 +----
+ include/linux/wait.h          |   57 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 6 deletions(-)
+
+--- a/drivers/s390/scsi/zfcp_qdio.c
++++ b/drivers/s390/scsi/zfcp_qdio.c
+@@ -224,11 +224,9 @@ int zfcp_qdio_sbals_from_sg(struct zfcp_
+ 
+ static int zfcp_qdio_sbal_check(struct zfcp_qdio *qdio)
+ {
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	if (atomic_read(&qdio->req_q_free) ||
+ 	    !(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return 1;
+-	spin_unlock_irq(&qdio->req_q_lock);
+ 	return 0;
+ }
+ 
+@@ -246,9 +244,8 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio
+ {
+ 	long ret;
+ 
+-	spin_unlock_irq(&qdio->req_q_lock);
+-	ret = wait_event_interruptible_timeout(qdio->req_q_wq,
+-			       zfcp_qdio_sbal_check(qdio), 5 * HZ);
++	ret = wait_event_interruptible_lock_irq_timeout(qdio->req_q_wq,
++		       zfcp_qdio_sbal_check(qdio), qdio->req_q_lock, 5 * HZ);
+ 
+ 	if (!(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return -EIO;
+@@ -262,7 +259,6 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio
+ 		zfcp_erp_adapter_reopen(qdio->adapter, 0, "qdsbg_1");
+ 	}
+ 
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	return -EIO;
+ }
+ 
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -811,6 +811,63 @@ do {									\
+ 	__ret;								\
+ })
+ 
++#define __wait_event_interruptible_lock_irq_timeout(wq, condition,	\
++						    lock, ret)		\
++do {									\
++	DEFINE_WAIT(__wait);						\
++									\
++	for (;;) {							\
++		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
++		if (condition)						\
++			break;						\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			break;						\
++		}							\
++		spin_unlock_irq(&lock);					\
++		ret = schedule_timeout(ret);				\
++		spin_lock_irq(&lock);					\
++		if (!ret)						\
++			break;						\
++	}								\
++	finish_wait(&wq, &__wait);					\
++} while (0)
++
++/**
++ * wait_event_interruptible_lock_irq_timeout - sleep until a condition gets true or a timeout elapses.
++ *		The condition is checked under the lock. This is expected
++ *		to be called with the lock taken.
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @lock: a locked spinlock_t, which will be released before schedule()
++ *	  and reacquired afterwards.
++ * @timeout: timeout, in jiffies
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or signal is received. The @condition is
++ * checked each time the waitqueue @wq is woken up.
++ *
++ * wake_up() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * This is supposed to be called while holding the lock. The lock is
++ * dropped before going to sleep and is reacquired afterwards.
++ *
++ * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
++ * was interrupted by a signal, and the remaining jiffies otherwise
++ * if the condition evaluated to true before the timeout elapsed.
++ */
++#define wait_event_interruptible_lock_irq_timeout(wq, condition, lock,	\
++						  timeout)		\
++({									\
++	int __ret = timeout;						\
++									\
++	if (!(condition))						\
++		__wait_event_interruptible_lock_irq_timeout(		\
++					wq, condition, lock, __ret);	\
++	__ret;								\
++})
++
+ 
+ /*
+  * These are the old interfaces to sleep waiting for an event.
+
