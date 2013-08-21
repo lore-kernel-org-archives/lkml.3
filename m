@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab3HUEUl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 00:20:41 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42005 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab3HUEUk (ORCPT
+	id S1751841Ab3HUE2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 00:28:31 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:32938 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab3HUE2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 00:20:40 -0400
-Date: Wed, 21 Aug 2013 14:20:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Masanari Iida <standby24x7@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: linux-next: manual merge of the trivial tree with the wireless tree
-Message-Id: <20130821142036.e7d5e9fec3c2e1e96363a9c7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__21_Aug_2013_14_20_36_+1000__8VmOlH=pLdYeOWG"
+	Wed, 21 Aug 2013 00:28:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <52142ffe.84c0440a.57e5.02acSMTPIN_ADDED_BROKEN@mx.google.com>
+References: <1376981696-4312-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	<1376981696-4312-2-git-send-email-liwanp@linux.vnet.ibm.com>
+	<20130820160735.b12fe1b3dd64b4dc146d2fa0@linux-foundation.org>
+	<CAE9FiQVy2uqLm2XyStYmzxSmsw7TzrB0XDhCRLymnf+L3NPxrA@mail.gmail.com>
+	<52142ffe.84c0440a.57e5.02acSMTPIN_ADDED_BROKEN@mx.google.com>
+Date: Tue, 20 Aug 2013 21:28:29 -0700
+X-Google-Sender-Auth: RuH0NR0F3gWyAC6QwfbcgQBzefM
+Message-ID: <CAE9FiQW1c3-d+iMebRK6JyHCpMt8mjga-TnsfTuVsC1bQZqsYA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] mm/sparse: introduce alloc_usemap_and_memmap
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>, Rik van Riel <riel@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jiri Kosina <jkosina@suse.cz>, Linux MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__21_Aug_2013_14_20_36_+1000__8VmOlH=pLdYeOWG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Aug 20, 2013 at 8:11 PM, Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+> Hi Yinghai,
+> On Tue, Aug 20, 2013 at 05:02:17PM -0700, Yinghai Lu wrote:
+>>>> -     /* ok, last chunk */
+>>>> -     sparse_early_usemaps_alloc_node(usemap_map, pnum_begin, NR_MEM_SECTIONS,
+>>>> -                                      usemap_count, nodeid_begin);
+>>>> +     alloc_usemap_and_memmap(usemap_map, true);
+>>
+>>alloc_usemap_and_memmap() is somehow confusing.
+>>
+>>Please check if you can pass function pointer instead of true/false.
+>>
+>
+> sparse_early_usemaps_alloc_node and sparse_early_mem_maps_alloc_node is
+> similar, however, one has a parameter unsigned long ** and the other has
+> struct page **. function pointer can't help, isn't it? ;-)
 
-Hi Jiri,
+you could have one generic function pointer like
+void *alloc_func(void *data);
 
-Today's linux-next merge of the trivial tree got a conflict in
-drivers/net/wireless/iwlwifi/mvm/time-event.c between commit 057397943eee
-("iwlwifi: mvm: disconnect if time event scheduling fails") from the
-wireless tree and commit 0b1587b18bfe ("treewide: Fix typo in printk")
-from the trivial tree.
+and in the every alloc function, have own struct data to pass in/out...
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/wireless/iwlwifi/mvm/time-event.c
-index c17b74c,39b3ffb..0000000
---- a/drivers/net/wireless/iwlwifi/mvm/time-event.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/time-event.c
-@@@ -198,12 -180,19 +198,12 @@@ static void iwl_mvm_te_handle_notif(str
-  		 * By now, we should have finished association
-  		 * and know the dtim period.
-  		 */
- -		if (te_data->vif->type =3D=3D NL80211_IFTYPE_STATION &&
- -		    (!te_data->vif->bss_conf.assoc ||
- -		     !te_data->vif->bss_conf.dtim_period)) {
- -			IWL_ERR(mvm,
- -				"No association and the time event is over already...\n");
- -			ieee80211_connection_loss(te_data->vif);
- -		}
- -
- +		iwl_mvm_te_check_disconnect(mvm, te_data->vif,
-- 			"No assocation and the time event is over already...");
-++			"No association and the time event is over already...");
-  		iwl_mvm_te_clear_data(mvm, te_data);
- -	} else if (le32_to_cpu(notif->action) & TE_NOTIF_HOST_EVENT_START) {
- +	} else if (le32_to_cpu(notif->action) & TE_V2_NOTIF_HOST_EVENT_START) {
-  		te_data->running =3D true;
- -		te_data->end_jiffies =3D jiffies +
- -			TU_TO_JIFFIES(te_data->duration);
- +		te_data->end_jiffies =3D TU_TO_EXP_TIME(te_data->duration);
- =20
-  		if (te_data->vif->type =3D=3D NL80211_IFTYPE_P2P_DEVICE) {
-  			set_bit(IWL_MVM_STATUS_ROC_RUNNING, &mvm->status);
-
---Signature=_Wed__21_Aug_2013_14_20_36_+1000__8VmOlH=pLdYeOWG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSFEAUAAoJEECxmPOUX5FEQugQAKLhJ5ay2TMzI3+OmFPQzATM
-Y0UfEV2gZ/mBmJesdh3dv+0oPfii87UcJouU6D83VnO1AUcgM+S81IspJ0rAdRIC
-xuUDRFsDXtJBiHq6k0iXUJz7iXiuhXv+sdru+LZwvlXLP+gFuTghWDeIhpxJ1w2/
-1jMHcrIkTkZbWl4w1A49BGW8NAkpduzYp3zsyVs1p0Rc1SMVJnEdc3OtxwZ7HFL2
-/P/G8lyub4ijs0UtAbhi3f6lrHDww9Z8PG8jwamQ0xvUi10x7lTh+oI69FZMY9zw
-vjJPCJYQgkh2ZRily5G55FGCYd3ZvNb0OYxCkjE/fnjkQHG9Qy9yTkCkwaxpZM6O
-blvPLHNYIbgBeryZp52fd+OrKP8mku2JQp/wlZj21XZf1kXAVdPY5AbsljNA2q0G
-7lZFupk6t96J0zpVVT7iiGjHg78MfOEeqICjqCYZpG65cJ/K3iz/zwK+2jCwqWK5
-qZziqpzBd51HAKpNWxJoBhgxt8dSMWC378p4HcZCV3bqvrRhimMJfRRhrFzUDSsj
-Aa7wvE+eHxamHg2RkBDEsRYpS+dIhhl/fLH+MrqUdRLTOHrH+TTOs4XyVcvzFE2E
-m0miUKBFGZyTtJ31KcTDtkDdqII3bnykf1aPR5OZmu56oLxmz8rsfSPvaskaH/2O
-M55c2j61FpXptBiK1Cw7
-=U9MF
------END PGP SIGNATURE-----
-
---Signature=_Wed__21_Aug_2013_14_20_36_+1000__8VmOlH=pLdYeOWG--
+Yinghai
