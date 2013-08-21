@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602Ab3HUNMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 09:12:53 -0400
-Received: from mout.gmx.net ([212.227.15.15]:58138 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751463Ab3HUNMw convert rfc822-to-8bit (ORCPT
+	id S1751794Ab3HUNPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 09:15:32 -0400
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:38332 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab3HUNPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 09:12:52 -0400
-From: Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: PaX Team <pageexec@freemail.hu>, Behan Webster <behanw@converseincode.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [TRIVIAL] Remove braces in drivers/scsi/in2000.h to fix build for clang. No functional change otherwise.
-Date: Wed, 21 Aug 2013 15:11:33 +0200
-Message-ID: <4059776.Z90q7kXsSC@aragorn.auenland.lan>
-User-Agent: KMail/4.11 (Linux/3.7.10-1.16-default; KDE/4.11.0; x86_64; ; )
-In-Reply-To: <2050670.KsM0dPm3or@aragorn.auenland.lan>
-References: <1377033546-19475-1-git-send-email-dl9pf@gmx.de> <20130821065018.GB9043@infradead.org> <2050670.KsM0dPm3or@aragorn.auenland.lan>
+	Wed, 21 Aug 2013 09:15:31 -0400
+Date: Wed, 21 Aug 2013 10:15:25 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/4] perf, tools: Add perf stat --transaction v3
+Message-ID: <20130821131525.GB21880@ghostprotocols.net>
+References: <1376505267-8902-1-git-send-email-andi@firstfloor.org>
+ <1376505267-8902-5-git-send-email-andi@firstfloor.org>
+ <20130815132637.GE1861@ghostprotocols.net>
+ <20130815142925.GG19750@two.firstfloor.org>
+ <20130815150150.GB1940@ghostprotocols.net>
+ <20130815164203.GJ19750@two.firstfloor.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
-X-Provags-ID: V03:K0:b5AZX/pittW9YzsEVpB4v8REOCG91INFmfMaC+IGcXcp3uQ+PJL
- 3ksh6HB6avca972tDOa7sGhsyf0Y7xw4wntBPVqXSshj4Yz21i7oSx9ZCytvBoiVjpxlJea
- D/RHv+Pca4ECKSfmPSM3NZUbb0xM2KDsek8q2+IeDShWOqz59hwWJiltVIiRgSNMwYkhSOa
- xa9nbxWFC+EY+dg4Nz9kA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130815164203.GJ19750@two.firstfloor.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 August 2013 09:26:14 Jan-Simon Möller wrote:
-> > > Description:
-> > >   Clang chokes on the notation "insw (%%dx)" but works for "insw %%dx"
-> > >   (outsw likewise); GNU as accepts both forms.
-> > > 
-> > > Signed-off-by: Jan-Simon M??ller <dl9pf@gmx.de>
-> > 
-> > I think the right fix is to simply kill the FAST_READ_IO/FAST_WRITE_IO
-> > defines and their associated inline assembly entirely.
+Em Thu, Aug 15, 2013 at 06:42:03PM +0200, Andi Kleen escreveu:
 > 
-> No objection ;) .
-@Christoph Hellwig:
-Do you take care of removing it then ?
+> Here's an updated patch.
+ 
+> perf, tools: Add perf stat --transaction v4
+> @@ -1419,6 +1559,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+>  		     "aggregate counts per processor socket", AGGR_SOCKET),
+>  	OPT_SET_UINT(0, "per-core", &aggr_mode,
+>  		     "aggregate counts per physical processor core", AGGR_CORE),
+> +	OPT_BOOLEAN('T', "transaction", &transaction_run,
+> +		    "hardware transaction statistics"),
+>  	OPT_END()
 
-BR,
-JS
+Clashes with another patch, from you, that is in Ingo's perf/core as
+well, that adds -D, so the above hunk doesn't apply:
+
+	OPT_UINTEGER('I', "interval-print", &interval,
+		    "print counts at regular interval in ms (>= 100)"),
+	OPT_SET_UINT(0, "per-socket", &aggr_mode,
+		     "aggregate counts per processor socket", AGGR_SOCKET),
+	OPT_SET_UINT(0, "per-core", &aggr_mode,
+		     "aggregate counts per physical processor core", AGGR_CORE),
+	OPT_UINTEGER('D', "delay", &initial_delay,
+		     "ms to wait before starting measurement after program start"),
+	OPT_END()
+	};
+
+- Arnaldo
