@@ -1,143 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab3HUWp1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 18:45:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36024 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab3HUWpU (ORCPT
+	id S1753322Ab3HUWqJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 18:46:09 -0400
+Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:11105
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753020Ab3HUWqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 18:45:20 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Evgeniy Polyakov <zbr@ioremap.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>,
-        Mariusz Bialonczyk <manio@skyboo.net>
-Subject: [PATCH 04/11] w1: slaves: w1_ds2413.c: convert to use w1_family_ops.groups
-Date: Wed, 21 Aug 2013 15:44:58 -0700
-Message-Id: <1377125105-25388-4-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <1377125105-25388-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1377125105-25388-1-git-send-email-gregkh@linuxfoundation.org>
+	Wed, 21 Aug 2013 18:46:06 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zzbb2dI98dI9371I936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+Message-ID: <1377125156.5029.40.camel@snotra.buserror.net>
+Subject: Re: [PATCH v7 1/3] DMA: Freescale: revise device tree binding
+ document
+From: Scott Wood <scottwood@freescale.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: <hongbo.zhang@freescale.com>, <vinod.koul@intel.com>, <djbw@fb.com>,
+        <leoli@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Date: Wed, 21 Aug 2013 17:45:56 -0500
+In-Reply-To: <5215402E.70007@wwwdotorg.org>
+References: <1375094944-3343-1-git-send-email-hongbo.zhang@freescale.com>
+	 <1375094944-3343-2-git-send-email-hongbo.zhang@freescale.com>
+	 <5215402E.70007@wwwdotorg.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves the sysfs file creation/removal to the w1 core by using the
-.groups field, saving code in the slave driver.
+On Wed, 2013-08-21 at 16:33 -0600, Stephen Warren wrote:
+> On 07/29/2013 04:49 AM, hongbo.zhang@freescale.com wrote:
+> > From: Hongbo Zhang <hongbo.zhang@freescale.com>
+> > 
+> > This patch updates the discription of each type of DMA controller and its
+> > channels, it is preparation for adding another new DMA controller binding, it
+> > also fixes some defects of indent for text alignment at the same time.
+> 
+> > diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+> 
+> > -- compatible        : compatible list, contains 2 entries, first is
+> > -		 "fsl,CHIP-dma", where CHIP is the processor
+> > -		 (mpc8349, mpc8360, etc.) and the second is
+> > -		 "fsl,elo-dma"
+> > +- compatible        : must include "fsl,elo-dma"
+> 
+> Why remove the list of supported compatible values. Lately it seems that
+> we're moving towards listing more/all the values rather than removing
+> their documentation...
 
-Cc: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-Cc: Mariusz Bialonczyk <manio@skyboo.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/w1/slaves/w1_ds2413.c | 72 +++++++++++++------------------------------
- 1 file changed, 22 insertions(+), 50 deletions(-)
+Previous versions had language that required fsl,CHIP-dma for 83xx (and
+maybe 85xx?) but not the new chip.  I asked for it to be consistent.
+The reason that 83xx still has fsl,CHIP-dma is not because of anything
+special to 83xx, but that most other chips with this device have been
+converted to dtsi and it's much more of a pain to specify the specific
+SoC in that context.  The existing language does not match actual device
+trees when it comes to 85xx.
 
-diff --git a/drivers/w1/slaves/w1_ds2413.c b/drivers/w1/slaves/w1_ds2413.c
-index 85937773..ee28fc1f 100644
---- a/drivers/w1/slaves/w1_ds2413.c
-+++ b/drivers/w1/slaves/w1_ds2413.c
-@@ -30,10 +30,9 @@ MODULE_ALIAS("w1-family-" __stringify(W1_FAMILY_DS2413));
- #define W1_F3A_FUNC_PIO_ACCESS_WRITE       0x5A
- #define W1_F3A_SUCCESS_CONFIRM_BYTE        0xAA
- 
--static ssize_t w1_f3a_read_state(
--	struct file *filp, struct kobject *kobj,
--	struct bin_attribute *bin_attr,
--	char *buf, loff_t off, size_t count)
-+static ssize_t state_read(struct file *filp, struct kobject *kobj,
-+			  struct bin_attribute *bin_attr, char *buf, loff_t off,
-+			  size_t count)
- {
- 	struct w1_slave *sl = kobj_to_w1_slave(kobj);
- 	dev_dbg(&sl->dev,
-@@ -66,10 +65,11 @@ static ssize_t w1_f3a_read_state(
- 		return 1;
- }
- 
--static ssize_t w1_f3a_write_output(
--	struct file *filp, struct kobject *kobj,
--	struct bin_attribute *bin_attr,
--	char *buf, loff_t off, size_t count)
-+static BIN_ATTR_RO(state, 1);
-+
-+static ssize_t output_write(struct file *filp, struct kobject *kobj,
-+			    struct bin_attribute *bin_attr, char *buf,
-+			    loff_t off, size_t count)
- {
- 	struct w1_slave *sl = kobj_to_w1_slave(kobj);
- 	u8 w1_buf[3];
-@@ -110,53 +110,25 @@ error:
- 	return -EIO;
- }
- 
--#define NB_SYSFS_BIN_FILES 2
--static struct bin_attribute w1_f3a_sysfs_bin_files[NB_SYSFS_BIN_FILES] = {
--	{
--		.attr = {
--			.name = "state",
--			.mode = S_IRUGO,
--		},
--		.size = 1,
--		.read = w1_f3a_read_state,
--	},
--	{
--		.attr = {
--			.name = "output",
--			.mode = S_IRUGO | S_IWUSR | S_IWGRP,
--		},
--		.size = 1,
--		.write = w1_f3a_write_output,
--	}
-+static BIN_ATTR(output, S_IRUGO | S_IWUSR | S_IWGRP, NULL, output_write, 1);
-+
-+static struct bin_attribute *w1_f3a_bin_attrs[] = {
-+	&bin_attr_state,
-+	&bin_attr_output,
-+	NULL,
- };
- 
--static int w1_f3a_add_slave(struct w1_slave *sl)
--{
--	int err = 0;
--	int i;
--
--	for (i = 0; i < NB_SYSFS_BIN_FILES && !err; ++i)
--		err = sysfs_create_bin_file(
--			&sl->dev.kobj,
--			&(w1_f3a_sysfs_bin_files[i]));
--	if (err)
--		while (--i >= 0)
--			sysfs_remove_bin_file(&sl->dev.kobj,
--				&(w1_f3a_sysfs_bin_files[i]));
--	return err;
--}
-+static const struct attribute_group w1_f3a_group = {
-+	.bin_attrs = w1_f3a_bin_attrs,
-+};
- 
--static void w1_f3a_remove_slave(struct w1_slave *sl)
--{
--	int i;
--	for (i = NB_SYSFS_BIN_FILES - 1; i >= 0; --i)
--		sysfs_remove_bin_file(&sl->dev.kobj,
--			&(w1_f3a_sysfs_bin_files[i]));
--}
-+static const struct attribute_group *w1_f3a_groups[] = {
-+	&w1_f3a_group,
-+	NULL,
-+};
- 
- static struct w1_family_ops w1_f3a_fops = {
--	.add_slave      = w1_f3a_add_slave,
--	.remove_slave   = w1_f3a_remove_slave,
-+	.groups		= w1_f3a_groups,
- };
- 
- static struct w1_family w1_family_3a = {
--- 
-1.8.3.rc0.20.gb99dd2e
+Plus, the exact SoC name is of dubious value for integrated devices.  It
+doesn't uniquely identify the hardware because different versions of the
+SoC could have different versions of the subdevice.  As such, on our
+chips we've been moving away from including a compatible that specifies
+the exact SoC.  If it turns out we made a mistake in naming different
+versions of the device, or if there are errata, the exact SoC can still
+be determined at runtime using SVR.
+
+> > -- ranges		: Should be defined as specified in 1) to describe the
+> > -		  DMA controller channels.
+> > +- ranges            : describes the mapping between the address space of the
+> > +                      DMA channels and the address space of the DMA controller
+> 
+> What is "the address space of the DMA controller". Perhaps this should
+> say "the CPU-visible address space" instead?
+
+It's translating from the addresses used in the child nodes to a CCSR
+offset.  It's really just a convenience for the readability and
+macro-ability of the device tree that we do this translation at all,
+versus having an empty ranges and using CCSR offsets in the children.
+
+It's not about translating between the DMA controller's view and the
+CPU's view or anything like that.
+
+-Scott
+
+
 
