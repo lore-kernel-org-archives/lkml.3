@@ -1,104 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab3HUSLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 14:11:31 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:57248 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab3HUSL2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 14:11:28 -0400
+	id S1752775Ab3HUSOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 14:14:52 -0400
+Received: from mout.gmx.net ([212.227.17.22]:63774 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751969Ab3HUSOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 14:14:51 -0400
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Date: Wed, 21 Aug 2013 20:14:46 +0200
+From: "Tibor Billes" <tbilles@gmx.com>
+Message-ID: <20130821181446.168690@gmx.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130821134441.GE26909@phenom.ffwll.local>
-References: <CA+icZUUkS-UptLRM1CfcaHH=8UD-ZaHbXr8wFkA+YKyk-rPjvg@mail.gmail.com>
-	<20130821134441.GE26909@phenom.ffwll.local>
-Date: Wed, 21 Aug 2013 20:11:27 +0200
-Message-ID: <CA+icZUVLau7AgZvcnWKjx=tc4WeuJ3qEH7qQta+YLKDmxk6QvA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 21 [ screen corruption in graphical mode ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Sedat Dilek <sedat.dilek@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: multipart/mixed; boundary=f46d043c82621c12da04e4791ad1
+Subject: Re: Unusually high system CPU usage with recent kernels
+To: paulmck@linux.vnet.ibm.com
+X-Flags: 0001
+X-Mailer: GMX.com Web Mailer
+x-registered: 0
+Content-Transfer-Encoding: 8bit
+X-GMX-UID: wWZncoEgeSEqJL5QQHch7OB+IGRvb8At
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d043c82621c12da04e4791ad1
-Content-Type: text/plain; charset=UTF-8
+> From: Paul E. McKenney Sent: 08/20/13 11:43 PM
+> On Tue, Aug 20, 2013 at 10:52:26PM +0200, Tibor Billes wrote:
+> > > From: Paul E. McKenney Sent: 08/20/13 04:53 PM
+> > > On Tue, Aug 20, 2013 at 08:01:28AM +0200, Tibor Billes wrote:
+> > > > Hi,
+> > > > 
+> > > > I was using the 3.9.7 stable release and tried to upgrade to the 3.10.x series.
+> > > > The 3.10.x series was showing unusually high (>75%) system CPU usage in some
+> > > > situations, making things really slow. The latest stable I tried is 3.10.7.
+> > > > I also tried 3.11-rc5, they both show this behaviour. This behaviour doesn't
+> > > > show up when the system is idling, only when doing some CPU intensive work,
+> > > > like compiling with multiple threads. Compiling with only one thread seems not
+> > > > to trigger this behaviour.
+> > > > 
+> > > > To be more precise I did a `perf record -a` while compiling a large C++ program
+> > > > with scons using 4 threads, the result is appended at the end of this email.
+> > > 
+> > > New one on me! You are running a mainstream system (x86_64), so I am
+> > > surprised no one else noticed.
+> > > 
+> > > Could you please send along your .config file?
+> > 
+> > Here it is
+> 
+> Interesting. I don't see RCU stuff all that high on the list, but
+> the items I do see lead me to suspect RCU_FAST_NO_HZ, which has some
+> relevance to the otherwise inexplicable group of commits you located
+> with your bisection. Could you please rerun with CONFIG_RCU_FAST_NO_HZ=n?
+> 
+> If that helps, there are some things I could try.
 
-On Wed, Aug 21, 2013 at 3:44 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Wed, Aug 21, 2013 at 12:35:08PM +0200, Sedat Dilek wrote:
->> On Wed, Aug 21, 2013 at 11:21 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> > Hi all,
->> >
->> > There will be no linux-next trees on Aug 23 or 26.
->> >
->> > Changes since 20130820:
->> >
->> > New tree: aio-direct
->> >
->> > Removed tree: xilinx (at maintainer's request)
->> >
->> > The xfs tree still had its build failure for which I reverted a commit.
->> >
->> > The trivial tree gained conflicts against the crypto, net-next and
->> > wireless trees.
->> >
->> > The aio tree gained conflicts against the aio-direct tree.
->> >
->> > The akpm-current tree gained conflicts against the modules and aio-direct
->> > trees.
->> >
->> > ----------------------------------------------------------------------------
->> >
->>
->> Hi,
->>
->> I still have this issue with next-20130821 and "Linux v3.11-rc6 plus
->> drm-intel-nightly on top"
->> Any new development on this?
->> Patches?
->
-> Tbh I'm at a loss what we could try above&beyond what Chris has already
-> tried out.
->
->> Currently, I have two workarounds:
->>
->> [1] Revert this commit:
->>
->> commit 5456fe3882812aba251886e36fe55bfefb8e8829
->> "drm/i915: Allocate LLC ringbuffers from stolen"
->
-> Since with a rather decent chance the next testing cycle I'll do this
-> friday will be the last chunk of features for 3.12 I'll probably drop the
-> above patch from my queue and we can try again in 3.13.
->
+It did help. I didn't notice anything unusual when running with CONFIG_RCU_FAST_NO_HZ=n.
 
-Inspired by [1] I have switched from UXA to SNA...
-...and applied "[PATCH] drm/i915: Cleaning up the relocate entry
-function" on top of next-20130821...
-...and can NOT see the screen corruptions anymore.
-
-Can you explain that?
-
-- Sedat -
-
-[1] http://cynic.cc/blog//posts/sna_acceleration_vs_uxa/
-[2] http://lists.freedesktop.org/archives/intel-gfx/2013-August/032182.html
-[3] https://patchwork.kernel.org/patch/2847846/
-
---f46d043c82621c12da04e4791ad1
-Content-Type: application/octet-stream; name="xorg.conf"
-Content-Disposition: attachment; filename="xorg.conf"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hkmuwrga0
-
-U2VjdGlvbiAiRGV2aWNlIgogICAgICAgIElkZW50aWZpZXIgIkludGVsIEdyYXBoaWNzIgogICAg
-ICAgIERyaXZlciAiaW50ZWwiCiAgICAgICAgT3B0aW9uICJBY2NlbE1ldGhvZCIgInNuYSIKRW5k
-U2VjdGlvbgo=
---f46d043c82621c12da04e4791ad1--
+Tibor
