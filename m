@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488Ab3HURfi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 13:35:38 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41882 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab3HURff (ORCPT
+	id S1752152Ab3HURkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 13:40:42 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:54968 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab3HURkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 13:35:35 -0400
-Message-ID: <5214FA64.3040902@wwwdotorg.org>
-Date: Wed, 21 Aug 2013 11:35:32 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: balbi@ti.com, myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, grant.likely@linaro.org, rob@landley.net,
-        ian.campbell@citrix.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        rob.herring@calxeda.com, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, bcousson@baylibre.com
-Subject: Re: [PATCH 1/2] extcon: extcon-dra7xx: Add extcon driver for USB
- ID detection
-References: <1376648029-30659-1-git-send-email-george.cherian@ti.com> <1376648029-30659-2-git-send-email-george.cherian@ti.com> <52127284.6030506@wwwdotorg.org> <521312CC.8060003@ti.com> <52139F0F.6090507@wwwdotorg.org> <5214BB6C.3060903@ti.com>
-In-Reply-To: <5214BB6C.3060903@ti.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Aug 2013 13:40:41 -0400
+Message-ID: <1377107249.32763.54.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 8/9] target: Add support for COMPARE_AND_WRITE emulation
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Martin Petersen <martin.petersen@oracle.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Date: Wed, 21 Aug 2013 10:47:29 -0700
+In-Reply-To: <20130821161408.GB30848@infradead.org>
+References: <1377029280-19144-1-git-send-email-nab@daterainc.com>
+	 <1377029280-19144-9-git-send-email-nab@daterainc.com>
+	 <20130821161408.GB30848@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2013 07:06 AM, George Cherian wrote:
-> Hi Stephen,
+On Wed, 2013-08-21 at 09:14 -0700, Christoph Hellwig wrote:
+> I don't like the layering here.  The re-execution of the same command
+> for both reading and writing the data from/to the backend device already
+> looks sketchy here due to doubling work of task attribute handling, the
+> various state bits, etc.  And it will only get more complicated when
+> the required locking is added.  In addition we have all that confusion
+> about overloading the data direction.
 > 
-> On 8/20/2013 10:23 PM, Stephen Warren wrote:
->>> >ID pins are connected to pcf8575, and the pcf8575's interrupt line is
->>> >inturn connected to
->>> >gpio bank6 pin 11, we use this gpio interrupt to detect the ID pin
->>> change.
->> In that case, the PCF8575 node needs to be a GPIO controller and an IRQ
->> controller, as does the driver for the PCF8575. This binding should have
->> a single entry in the gpios property, and the driver can call
->> gpio_to_irq() on that so it knows which IRQ to request.
+> I think the way this should be handled is:
 > 
-> You meant some thing like this?
 > 
->        pcf_usb: pcf8575@21 {
->                 compatible = "ti,pcf8575";
->                 reg = <0x21>;
->                 gpio-controller;
->                 #gpio-cells = <2>;
->                 interrupt-parent = <&gpio6>;
->                 interrupts = <11 2>;
->                 interrupt-controller;
->                 #interrupt-cells = <2>;
->      };
+>  - cmd->execute_cmd gets set to a new sbc_emulate_compare_and_write
+>  - sbc_emulate_compare_and_write does all the setup for the locking,
+>    sets up the read buffer, then calls ops->execute_rw to do the
+>    read.  The complete callback does the comparism, then calls
+>    ops->execute_rw to do the write, and the second time we hit
+>    the complete callback we teard down the read buffer, stop the
+>    locking, etc.
 > 
->      usb_vid_gpio {
->                 compatible = "ti,dra7xx-usb";
->                 gpios = <&pcf_usb 1 0>;
->      };
 
-Yes.
+I do like this approach better, however calling ops->execute_rw() the
+second time around does require at least the TRANSPORT_PROCESSING and
+other transport_state bits from target_execute_cmd() to be set for
+things to work correctly.  Bypassing the aborted + CMD_*STOP checks
+should be OK for the write submission, and will kick (if necessary)
+during the final completion.
 
-Except that the compatible value for the usb_vid_gpio node still looks
-wrong, since I think that node isn't anything to do with any particular SoC.
+Setting up the read buffer from sbc_emulate_compare_and_write() would
+require two extra COMPARE_AND_WRITE specific se_cmd elements, so I'm
+tempted to continue to use the bidi fields for this (because they
+already exist) with transport_generic_get_mem_bidi(), and use a
+SCF_COMPARE_AND_WRITE flag to avoid any CDB specific checks in
+transport_complete_ok(), and reverse dma direction mapping case.
+
+> This also avoids bloating the command with another function pointer
+> or having to change all execute_cmd prototypes.
+
+Indeed.
+
+--nab
+
