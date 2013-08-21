@@ -1,110 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab3HUACT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 20:02:19 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:49117 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab3HUACS (ORCPT
+	id S1751690Ab3HUAK1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 20:10:27 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:39683 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab3HUAKZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 20:02:18 -0400
+	Tue, 20 Aug 2013 20:10:25 -0400
+Date: Tue, 20 Aug 2013 19:10:22 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: rfc: trivial patches and slow deaths?
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Kosina <jkosina@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors <kernel-janitors@vger.kernel.org>
+In-Reply-To: <1377036678.2016.88.camel@joe-AO722> (from joe@perches.com on
+	Tue Aug 20 17:11:18 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1377043822.2737.86@driftwood>
 MIME-Version: 1.0
-In-Reply-To: <20130820160735.b12fe1b3dd64b4dc146d2fa0@linux-foundation.org>
-References: <1376981696-4312-1-git-send-email-liwanp@linux.vnet.ibm.com>
-	<1376981696-4312-2-git-send-email-liwanp@linux.vnet.ibm.com>
-	<20130820160735.b12fe1b3dd64b4dc146d2fa0@linux-foundation.org>
-Date: Tue, 20 Aug 2013 17:02:17 -0700
-X-Google-Sender-Auth: Pe60AQIn4LkPEo5SLkbOHxSa6Gk
-Message-ID: <CAE9FiQVy2uqLm2XyStYmzxSmsw7TzrB0XDhCRLymnf+L3NPxrA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] mm/sparse: introduce alloc_usemap_and_memmap
-From: Yinghai Lu <yinghai@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Jiri Kosina <jkosina@suse.cz>, Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 4:07 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 20 Aug 2013 14:54:54 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
->
->> v1 -> v2:
->>  * add comments to describe alloc_usemap_and_memmap
->>
->> After commit 9bdac91424075("sparsemem: Put mem map for one node together."),
->> vmemmap for one node will be allocated together, its logic is similar as
->> memory allocation for pageblock flags. This patch introduce alloc_usemap_and_memmap
->> to extract the same logic of memory alloction for pageblock flags and vmemmap.
->>
->
-> 9bdac91424075 was written by Yinghai.  He is an excellent reviewer, as
-> long as people remember to cc him!
+On 08/20/2013 05:11:18 PM, Joe Perches wrote:
+> On Tue, 2013-08-20 at 16:49 -0500, Rob Landley wrote:
+> > On 08/20/2013 03:14:10 PM, Joe Perches wrote:
+> > > On Tue, 2013-08-20 at 15:02 -0500, Rob Landley wrote:
+> > > > On 08/19/2013 04:27:17 PM, Joe Perches wrote:
+> > > > > On Mon, 2013-08-19 at 23:22 +0200, Jiri Kosina wrote:
+> > > > > > On Mon, 19 Aug 2013, Joe Perches wrote:
+> > > > > >
+> > > > > > > This is a 7 line patch that corrects logging defects that  
+> has
+> > > had
+> > > > > no
+> > > > > > > reply from you for the last month.
+> > > > > > >
+> > > > > > > https://patchwork.kernel.org/patch/2833648/
+> > > > > >
+> > > > > > This hasn't missed any Linus' major release, as it has been
+> > > > > submitted post
+> > > > > > 3.11 merge, right? (hint, that was Jul 4th).
+> > > > > >
+> > > > > > If this would miss *next* major Linus' release, I would  
+> accept
+> > > your
+> > > > > > complaints. But this is definitely not the case.
+> > > > >
+> > > > > You're suggesting this patch, which corrects obvious
+> > > > > defects, should miss 3.12 and go into 3.13?
+> > > > >
+> > > > > I think that's wrong.
+> > > >
+> > > > Correcting obvious defects, which can't wait a release, is  
+> "trivial"
+> > > > now, is it?
+> > >
+> > > Rob, how do you suggest this obvious and trivial
+> > > patch be handled?
+> >
+> > Obvious != trivial. They're orthogonal.
+> 
+> Silly.  Some things are both obvious _and_ trivial.
 
-could be that he forgot to use scripts/get_maintainer.pl
+You believe orthogonal things never coincide? Then they wouldn't be  
+orthogonal. (It means unrelated, not exclusive.)
 
-or get_maintainer.pl has some problem.
+> > > Send 6+ 1 line patches that do the same thing to
+> > > individual maintainers?
+> >
+> > If it's important send it to Andrew Morton.
+> 
+> Andrew?  Do you want to handle patches for defects that
+> are both obvious _and_ trivial?
 
->
->> ---
->>  mm/sparse.c | 140 ++++++++++++++++++++++++++++--------------------------------
->>  1 file changed, 66 insertions(+), 74 deletions(-)
->>
->> diff --git a/mm/sparse.c b/mm/sparse.c
->> index 308d503..d27db9b 100644
->> --- a/mm/sparse.c
->> +++ b/mm/sparse.c
->> @@ -439,6 +439,14 @@ static void __init sparse_early_mem_maps_alloc_node(struct page **map_map,
->>                                        map_count, nodeid);
->>  }
->>  #else
->> +
->> +static void __init sparse_early_mem_maps_alloc_node(struct page **map_map,
->> +                             unsigned long pnum_begin,
->> +                             unsigned long pnum_end,
->> +                             unsigned long map_count, int nodeid)
->> +{
->> +}
->> +
-...
-could be avoided, if passing function pointer instead.
+The important question is does he want to handle patches that you're  
+flipping out about not going in before the next merge window because  
+they are SO IMPORTANT that the trivial tree must promote them out of  
+sequence.
 
->>  static struct page __init *sparse_early_mem_map_alloc(unsigned long pnum)
->>  {
->>       struct page *map;
->> @@ -460,6 +468,62 @@ void __attribute__((weak)) __meminit vmemmap_populate_print_last(void)
->>  {
->>  }
->>
->> +/**
->> + *  alloc_usemap_and_memmap - memory alloction for pageblock flags and vmemmap
->> + *  @map: usemap_map for pageblock flags or mmap_map for vmemmap
->> + *  @use_map: true if memory allocated for pageblock flags, otherwise false
->> + */
->> +static void alloc_usemap_and_memmap(unsigned long **map, bool use_map)
-...
->> @@ -471,11 +535,7 @@ void __init sparse_init(void)
->>       unsigned long *usemap;
->>       unsigned long **usemap_map;
->>       int size;
-...
->> -     /* ok, last chunk */
->> -     sparse_early_usemaps_alloc_node(usemap_map, pnum_begin, NR_MEM_SECTIONS,
->> -                                      usemap_count, nodeid_begin);
->> +     alloc_usemap_and_memmap(usemap_map, true);
+If it's that important, it's not "trivial".
 
-alloc_usemap_and_memmap() is somehow confusing.
+> > If it's trivial it's not time critical. If it's time critical it's  
+> not
+> > trivial.
+> 
+> We disagree on the definition of trivial.
 
-Please check if you can pass function pointer instead of true/false.
+Yes. Yes we do.
 
-Thanks
+> Trivial can also mean simple and immediately evident.
 
-Yinghai
+If it's so important that it can't wait until the next merge window,  
+the trivial tree's maintainer said the trivial tree is not the right  
+channel to merge it through.
+
+Rob
