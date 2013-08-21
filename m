@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab3HUCSx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 22:18:53 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:54554 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab3HUCSw (ORCPT
+	id S1752048Ab3HUCUE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 22:20:04 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:59996 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427Ab3HUCUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 22:18:52 -0400
-Date: Tue, 20 Aug 2013 19:19:00 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, Christoph Hellwig <hch@infradead.org>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] bcache: Remove use of down/up_read_non_owner()
-Message-ID: <20130821021900.GB4051@kmo-pixel>
-References: <20130820111602.3cea203c@gandalf.local.home>
+	Tue, 20 Aug 2013 22:20:02 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-96-521423cfaf9d
+Date: Wed, 21 Aug 2013 11:20:02 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Lei Wen <leiwen@marvell.com>,
+        Rik van Riel <riel@surriel.com>
+Subject: Re: [PATCH 04/10] sched, fair: Shrink sg_lb_stats and play memset
+ games
+Message-ID: <20130821022002.GC6142@lge.com>
+References: <20130819160058.539049611@infradead.org>
+ <20130819160425.310264395@infradead.org>
+ <20130821020829.GA6142@lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130820111602.3cea203c@gandalf.local.home>
+In-Reply-To: <20130821020829.GA6142@lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 11:16:02AM -0400, Steven Rostedt wrote:
+On Wed, Aug 21, 2013 at 11:08:29AM +0900, Joonsoo Kim wrote:
+> On Mon, Aug 19, 2013 at 06:01:02PM +0200, Peter Zijlstra wrote:
+> > +static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
+> > +{
+> > +	/*
+> > +	 * struct sd_lb_stats {
+> > +	 *	   struct sched_group *       busiest;             //     0  8
+> > +	 *	   struct sched_group *       this;                //     8  8
+> > +	 *	   long unsigned int          total_load;          //    16  8
+> > +	 *	   long unsigned int          total_pwr;           //    24  8
+> > +	 *	   long unsigned int          avg_load;            //    32  8
+> > +	 *	   struct sg_lb_stats {
+> > +	 *		   long unsigned int  avg_load;            //    40  8
+> > +	 *		   long unsigned int  group_load;          //    48  8
+> > +	 *	           ...
+> > +	 *	   } busiest_stat;                                 //    40 56
+> > +	 *	   struct sg_lb_stats	      this_stat;	   //    96 56
+> > +	 *
+> > +	 *	   // size: 152, cachelines: 3, members: 7
+> > +	 *	   // last cacheline: 24 bytes
+> > +	 * };
+> > +	 *
+> > +	 * Skimp on the clearing to avoid duplicate work. We can avoid clearing
+> > +	 * this_stat because update_sg_lb_stats() does a full clear/assignment.
+> > +	 * We must however clear busiest_stat::avg_load because
+> > +	 * update_sd_pick_busiest() reads this before assignment.
+> > +	 */
+> > +	memset(sds, 0, offsetof(struct sd_lb_stats, busiest_stat.group_load));
 > 
-> The down/up_read_non_owner() is a nasty hack in the API of the rwsem
-> operations. It was once removed, but then resurrected for use with
-> bcache. Not only is the API an abomination to the rwsem API, it also
-> prevents bcache from ever being compiled with PREEMPT_RT, as the RT
-> kernel requires all rwsems to have an owner.
+> Hello, Peter.
 > 
-> Instead of keeping the down/up_read_non_owner() around, it is better to
-> modify the one user of it and have it do something a bit differently.
+> IMHO, this is so tricky.
+> With below change, we can simply do 'offsetof(struct sd_lb_stats, busiest_stat)'.
 > 
-> From reading the bcache code, the reason for the non_owner usage is
-> that a request is made, and writers must wait for that request to
-> finish before they can continue. But because the request is completed
-> by another task, the rwsem can not be held for read and then released
-> on completion.
+> @@ -4546,7 +4546,7 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+>                                    struct sched_group *sg,
+>                                    struct sg_lb_stats *sgs)
+>  {
+> -       if (sgs->avg_load <= sds->busiest_stat.avg_load)
+> +       if (!sds->busiest && sgs->avg_load <= sds->busiest_stat.avg_load)
+>                 return false;
+>  
+>         if (sgs->sum_nr_running > sgs->group_capacity)
 > 
-> Instead of abusing the rwsem code for this, I added a refcount
-> "nr_requests" to the cached_dev structure as well as a "write_waiters"
-> wait queue. When a request is to be made, the rwsem is still taken for
-> read, but this time with an owner. The refcount is incremented and
-> before exiting the function, the rwsem is released.
-> 
-> The writer will then take the rwsem for write, check the refcount, if
-> it is not zero, it will release the rwsem, add itself to a wait_event()
-> waiting for refcount to become zero, and then try again.
 
-I _really_ disagree with this approach.
+Sorry, instead of !sds->busiest, it should be sds->busiest. :)
 
-I get that there's a problem, but the bcache code REALLY IS USING THE
-RWSEM AS A LOCK; the answer isn't to open code the lock!
+Thanks.
 
-Apologies to Christoph for getting distracted and not responding when
-you started to explain what the issues were for RT. I'm not really
-convinced they're that insurmountable (one of the issues was debugging,
-which the _non_owner() stuff always handled just fine), but I'll take it
-on faith that this usage is incompatible with rwsems + the RT
-functionality since I haven't actually had time to dig into it.
-
-So assuming that's the case, IMO the sanest thing to do is make a new
-type of lock - "rwsem_non_process" or somesuch - and use _that_ in
-bcache. Not open coding the lock.
-
-It can even live in the bcache code if we want since there currently
-wouldn't be any other users, I don't really care. But open coding it?
-Come on... makes me wonder what other code in the kernel is open coding
-locks because it couldn't release it in the same process context that
-took the lock for whatever reason.
-
-Also, nack this patch because increasing the number of atomic ops to
-shared cachelines in our fast path. If it does end up being open coded,
-I'll make a more efficient version.
