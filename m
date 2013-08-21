@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599Ab3HUMBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 08:01:24 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:40894 "EHLO
+	id S1751661Ab3HUMBb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 08:01:31 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:40900 "EHLO
 	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab3HUMBW (ORCPT
+	with ESMTP id S1751467Ab3HUMBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 08:01:22 -0400
+	Wed, 21 Aug 2013 08:01:23 -0400
 From: Heiko Carstens <heiko.carstens@de.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
@@ -14,243 +14,230 @@ To: Andrew Morton <akpm@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>
 Cc: linux-kernel@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 1/3] kprobes: unify insn caches
-Date: Wed, 21 Aug 2013 14:01:03 +0200
-Message-Id: <1377086465-6471-2-git-send-email-heiko.carstens@de.ibm.com>
+Subject: [PATCH 3/3] s390/kprobes: add support for pc-relative long displacement instructions
+Date: Wed, 21 Aug 2013 14:01:05 +0200
+Message-Id: <1377086465-6471-4-git-send-email-heiko.carstens@de.ibm.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1377086465-6471-1-git-send-email-heiko.carstens@de.ibm.com>
 References: <1377086465-6471-1-git-send-email-heiko.carstens@de.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082111-8372-0000-0000-000006F2B684
+x-cbid: 13082111-8372-0000-0000-000006F2B68B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The two insn caches (insn, and optinsn) each have an own mutex and
-alloc/free functions (get_[opt]insn_slot() / free_[opt]insn_slot()).
+With the general-instruction extension facility (z10) a couple of
+instructions with a pc-relative long displacement were introduced.
+The kprobes support for these instructions however was never implemented.
 
-Since I need yet another insn cache which satifies dma allocations,
-unify and simplify the current implementation:
+In result, if anybody ever put a probe on any of these instructions the
+result would have been random behaviour after the instruction got executed
+within the insn slot.
 
-- Move the per insn cache mutex into struct kprobe_insn_cache.
-- Move the alloc/free functions to kprobe.h so they are simply
-  wrappers for the generic __get_insn_slot/__free_insn_slot.
-  The implementation is done with a DEFINE_INSN_CACHE_OPS() macro
-  which provides the alloc/free functions for each cache if needed.
+So lets add the missing handling for these instructions. Since all of the
+new instructions have 32 bit signed displacement the easiest solution is
+to allocate an insn slot that is within the same 2GB area like the original
+instruction and patch the displacement field.
 
 Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- include/linux/kprobes.h |   26 +++++++++++++++---
- kernel/kprobes.c        |   70 +++++++++++++++--------------------------------
- 2 files changed, 44 insertions(+), 52 deletions(-)
+ arch/s390/Kconfig               |    1 +
+ arch/s390/include/asm/kprobes.h |    4 +-
+ arch/s390/kernel/kprobes.c      |  124 ++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 121 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index ca1d27a..ffd9171 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -264,10 +264,28 @@ extern void arch_arm_kprobe(struct kprobe *p);
- extern void arch_disarm_kprobe(struct kprobe *p);
- extern int arch_init_kprobes(void);
- extern void show_registers(struct pt_regs *regs);
--extern kprobe_opcode_t *get_insn_slot(void);
--extern void free_insn_slot(kprobe_opcode_t *slot, int dirty);
- extern void kprobes_inc_nmissed_count(struct kprobe *p);
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 8a4cae7..ce389a9 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -96,6 +96,7 @@ config S390
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select BUILDTIME_EXTABLE_SORT
+ 	select CLONE_BACKWARDS2
++	select DMAPROBES if KPROBES
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_CPU_DEVICES if !SMP
+ 	select GENERIC_SMP_IDLE_THREAD
+diff --git a/arch/s390/include/asm/kprobes.h b/arch/s390/include/asm/kprobes.h
+index dcf6948..4176dfe 100644
+--- a/arch/s390/include/asm/kprobes.h
++++ b/arch/s390/include/asm/kprobes.h
+@@ -31,6 +31,8 @@
+ #include <linux/ptrace.h>
+ #include <linux/percpu.h>
  
-+struct kprobe_insn_cache;
-+extern kprobe_opcode_t *__get_insn_slot(struct kprobe_insn_cache *c);
-+extern void __free_insn_slot(struct kprobe_insn_cache *c,
-+			     kprobe_opcode_t *slot, int dirty);
++#define __ARCH_WANT_KPROBES_INSN_SLOT
 +
-+#define DEFINE_INSN_CACHE_OPS(__name)					\
-+extern struct kprobe_insn_cache kprobe_##__name##_slots;		\
-+									\
-+static inline kprobe_opcode_t *get_##__name##_slot(void)		\
-+{									\
-+	return __get_insn_slot(&kprobe_##__name##_slots);		\
-+}									\
-+									\
-+static inline void free_##__name##_slot(kprobe_opcode_t *slot, int dirty)\
-+{									\
-+	__free_insn_slot(&kprobe_##__name##_slots, slot, dirty);	\
-+}									\
-+
-+DEFINE_INSN_CACHE_OPS(insn);
-+
- #ifdef CONFIG_OPTPROBES
- /*
-  * Internal structure for direct jump optimized probe
-@@ -287,13 +305,13 @@ extern void arch_optimize_kprobes(struct list_head *oplist);
- extern void arch_unoptimize_kprobes(struct list_head *oplist,
- 				    struct list_head *done_list);
- extern void arch_unoptimize_kprobe(struct optimized_kprobe *op);
--extern kprobe_opcode_t *get_optinsn_slot(void);
--extern void free_optinsn_slot(kprobe_opcode_t *slot, int dirty);
- extern int arch_within_optimized_kprobe(struct optimized_kprobe *op,
- 					unsigned long addr);
+ struct pt_regs;
+ struct kprobe;
  
- extern void opt_pre_handler(struct kprobe *p, struct pt_regs *regs);
- 
-+DEFINE_INSN_CACHE_OPS(optinsn);
-+
- #ifdef CONFIG_SYSCTL
- extern int sysctl_kprobes_optimization;
- extern int proc_kprobes_optimization_handler(struct ctl_table *table,
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 6e33498..30659b3 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -122,6 +122,7 @@ struct kprobe_insn_page {
- 	 (sizeof(char) * (slots)))
- 
- struct kprobe_insn_cache {
-+	struct mutex mutex;
- 	struct list_head pages;	/* list of kprobe_insn_page */
- 	size_t insn_size;	/* size of instruction slot */
- 	int nr_garbage;
-@@ -138,8 +139,8 @@ enum kprobe_slot_state {
- 	SLOT_USED = 2,
+@@ -57,7 +59,7 @@ typedef u16 kprobe_opcode_t;
+ /* Architecture specific copy of original instruction */
+ struct arch_specific_insn {
+ 	/* copy of original instruction */
+-	kprobe_opcode_t insn[MAX_INSN_SIZE];
++	kprobe_opcode_t *insn;
  };
  
--static DEFINE_MUTEX(kprobe_insn_mutex);	/* Protects kprobe_insn_slots */
--static struct kprobe_insn_cache kprobe_insn_slots = {
-+struct kprobe_insn_cache kprobe_insn_slots = {
-+	.mutex = __MUTEX_INITIALIZER(kprobe_insn_slots.mutex),
- 	.pages = LIST_HEAD_INIT(kprobe_insn_slots.pages),
- 	.insn_size = MAX_INSN_SIZE,
- 	.nr_garbage = 0,
-@@ -150,10 +151,12 @@ static int __kprobes collect_garbage_slots(struct kprobe_insn_cache *c);
-  * __get_insn_slot() - Find a slot on an executable page for an instruction.
-  * We allocate an executable page if there's no room on existing ones.
-  */
--static kprobe_opcode_t __kprobes *__get_insn_slot(struct kprobe_insn_cache *c)
-+kprobe_opcode_t __kprobes *__get_insn_slot(struct kprobe_insn_cache *c)
- {
- 	struct kprobe_insn_page *kip;
-+	kprobe_opcode_t *slot = NULL;
- 
-+	mutex_lock(&c->mutex);
-  retry:
- 	list_for_each_entry(kip, &c->pages, list) {
- 		if (kip->nused < slots_per_page(c)) {
-@@ -162,7 +165,8 @@ static kprobe_opcode_t __kprobes *__get_insn_slot(struct kprobe_insn_cache *c)
- 				if (kip->slot_used[i] == SLOT_CLEAN) {
- 					kip->slot_used[i] = SLOT_USED;
- 					kip->nused++;
--					return kip->insns + (i * c->insn_size);
-+					slot = kip->insns + (i * c->insn_size);
-+					goto out;
- 				}
- 			}
- 			/* kip->nused is broken. Fix it. */
-@@ -178,7 +182,7 @@ static kprobe_opcode_t __kprobes *__get_insn_slot(struct kprobe_insn_cache *c)
- 	/* All out of space.  Need to allocate a new page. */
- 	kip = kmalloc(KPROBE_INSN_PAGE_SIZE(slots_per_page(c)), GFP_KERNEL);
- 	if (!kip)
--		return NULL;
-+		goto out;
- 
- 	/*
- 	 * Use module_alloc so this page is within +/- 2GB of where the
-@@ -188,7 +192,7 @@ static kprobe_opcode_t __kprobes *__get_insn_slot(struct kprobe_insn_cache *c)
- 	kip->insns = module_alloc(PAGE_SIZE);
- 	if (!kip->insns) {
- 		kfree(kip);
--		return NULL;
-+		goto out;
- 	}
- 	INIT_LIST_HEAD(&kip->list);
- 	memset(kip->slot_used, SLOT_CLEAN, slots_per_page(c));
-@@ -196,19 +200,10 @@ static kprobe_opcode_t __kprobes *__get_insn_slot(struct kprobe_insn_cache *c)
- 	kip->nused = 1;
- 	kip->ngarbage = 0;
- 	list_add(&kip->list, &c->pages);
--	return kip->insns;
--}
--
--
--kprobe_opcode_t __kprobes *get_insn_slot(void)
--{
--	kprobe_opcode_t *ret = NULL;
--
--	mutex_lock(&kprobe_insn_mutex);
--	ret = __get_insn_slot(&kprobe_insn_slots);
--	mutex_unlock(&kprobe_insn_mutex);
--
--	return ret;
-+	slot = kip->insns;
-+out:
-+	mutex_unlock(&c->mutex);
-+	return slot;
+ struct prev_kprobe {
+diff --git a/arch/s390/kernel/kprobes.c b/arch/s390/kernel/kprobes.c
+index 3388b2b..bc1071c 100644
+--- a/arch/s390/kernel/kprobes.c
++++ b/arch/s390/kernel/kprobes.c
+@@ -100,9 +100,8 @@ static int __kprobes get_fixup_type(kprobe_opcode_t *insn)
+ 			fixup |= FIXUP_RETURN_REGISTER;
+ 		break;
+ 	case 0xc0:
+-		if ((insn[0] & 0x0f) == 0x00 ||	/* larl  */
+-		    (insn[0] & 0x0f) == 0x05)	/* brasl */
+-		fixup |= FIXUP_RETURN_REGISTER;
++		if ((insn[0] & 0x0f) == 0x05)	/* brasl */
++			fixup |= FIXUP_RETURN_REGISTER;
+ 		break;
+ 	case 0xeb:
+ 		if ((insn[2] & 0xff) == 0x44 ||	/* bxhg  */
+@@ -117,18 +116,128 @@ static int __kprobes get_fixup_type(kprobe_opcode_t *insn)
+ 	return fixup;
  }
  
- /* Return 1 if all garbages are collected, otherwise 0. */
-@@ -255,11 +250,12 @@ static int __kprobes collect_garbage_slots(struct kprobe_insn_cache *c)
++static int __kprobes is_insn_relative_long(kprobe_opcode_t *insn)
++{
++	/* Check if we have a RIL-b or RIL-c format instruction which
++	 * we need to modify in order to avoid instruction emulation. */
++	switch (insn[0] >> 8) {
++	case 0xc0:
++		if ((insn[0] & 0x0f) == 0x00) /* larl */
++			return true;
++		break;
++	case 0xc4:
++		switch (insn[0] & 0x0f) {
++		case 0x02: /* llhrl  */
++		case 0x04: /* lghrl  */
++		case 0x05: /* lhrl   */
++		case 0x06: /* llghrl */
++		case 0x07: /* sthrl  */
++		case 0x08: /* lgrl   */
++		case 0x0b: /* stgrl  */
++		case 0x0c: /* lgfrl  */
++		case 0x0d: /* lrl    */
++		case 0x0e: /* llgfrl */
++		case 0x0f: /* strl   */
++			return true;
++		}
++		break;
++	case 0xc6:
++		switch (insn[0] & 0x0f) {
++		case 0x00: /* exrl   */
++		case 0x02: /* pfdrl  */
++		case 0x04: /* cghrl  */
++		case 0x05: /* chrl   */
++		case 0x06: /* clghrl */
++		case 0x07: /* clhrl  */
++		case 0x08: /* cgrl   */
++		case 0x0a: /* clgrl  */
++		case 0x0c: /* cgfrl  */
++		case 0x0d: /* crl    */
++		case 0x0e: /* clgfrl */
++		case 0x0f: /* clrl   */
++			return true;
++		}
++		break;
++	}
++	return false;
++}
++
++static void __kprobes copy_instruction(struct kprobe *p)
++{
++	s64 disp, new_disp;
++	u64 addr, new_addr;
++
++	memcpy(p->ainsn.insn, p->addr, ((p->opcode >> 14) + 3) & -2);
++	if (!is_insn_relative_long(p->ainsn.insn))
++		return;
++	/*
++	 * For pc-relative instructions in RIL-b or RIL-c format patch the
++	 * RI2 displacement field. We have already made sure that the insn
++	 * slot for the patched instruction is within the same 2GB area
++	 * as the original instruction (either kernel image or module area).
++	 * Therefore the new displacement will always fit.
++	 */
++	disp = *(s32 *)&p->ainsn.insn[1];
++	addr = (u64)(unsigned long)p->addr;
++	new_addr = (u64)(unsigned long)p->ainsn.insn;
++	new_disp = ((addr + (disp * 2)) - new_addr) / 2;
++	*(s32 *)&p->ainsn.insn[1] = new_disp;
++}
++
++static inline int is_kernel_addr(void *addr)
++{
++	return addr < (void *)_end;
++}
++
++static inline int is_module_addr(void *addr)
++{
++#ifdef CONFIG_64BIT
++	BUILD_BUG_ON(MODULES_LEN > (1UL << 31));
++	if (addr < (void *)MODULES_VADDR)
++		return 0;
++	if (addr > (void *)MODULES_END)
++		return 0;
++#endif
++	return 1;
++}
++
++static int __kprobes s390_get_insn_slot(struct kprobe *p)
++{
++	/*
++	 * Get an insn slot that is within the same 2GB area like the original
++	 * instruction. That way instructions with a 32bit signed displacement
++	 * field can be patched and executed within the insn slot.
++	 */
++	p->ainsn.insn = NULL;
++	if (is_kernel_addr(p->addr))
++		p->ainsn.insn = get_dmainsn_slot();
++	if (is_module_addr(p->addr))
++		p->ainsn.insn = get_insn_slot();
++	return p->ainsn.insn ? 0 : -ENOMEM;
++}
++
++static void __kprobes s390_free_insn_slot(struct kprobe *p)
++{
++	if (!p->ainsn.insn)
++		return;
++	if (is_kernel_addr(p->addr))
++		free_dmainsn_slot(p->ainsn.insn, 0);
++	else
++		free_insn_slot(p->ainsn.insn, 0);
++	p->ainsn.insn = NULL;
++}
++
+ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ {
+ 	if ((unsigned long) p->addr & 0x01)
+ 		return -EINVAL;
+-
+ 	/* Make sure the probe isn't going on a difficult instruction */
+ 	if (is_prohibited_opcode(p->addr))
+ 		return -EINVAL;
+-
++	if (s390_get_insn_slot(p))
++		return -ENOMEM;
+ 	p->opcode = *p->addr;
+-	memcpy(p->ainsn.insn, p->addr, ((p->opcode >> 14) + 3) & -2);
+-
++	copy_instruction(p);
  	return 0;
  }
  
--static void __kprobes __free_insn_slot(struct kprobe_insn_cache *c,
--				       kprobe_opcode_t *slot, int dirty)
-+void __kprobes __free_insn_slot(struct kprobe_insn_cache *c,
-+				kprobe_opcode_t *slot, int dirty)
- {
- 	struct kprobe_insn_page *kip;
+@@ -169,6 +278,7 @@ void __kprobes arch_disarm_kprobe(struct kprobe *p)
  
-+	mutex_lock(&c->mutex);
- 	list_for_each_entry(kip, &c->pages, list) {
- 		long idx = ((long)slot - (long)kip->insns) /
- 				(c->insn_size * sizeof(kprobe_opcode_t));
-@@ -272,45 +268,23 @@ static void __kprobes __free_insn_slot(struct kprobe_insn_cache *c,
- 					collect_garbage_slots(c);
- 			} else
- 				collect_one_slot(kip, idx);
--			return;
-+			goto out;
- 		}
- 	}
- 	/* Could not free this slot. */
- 	WARN_ON(1);
-+out:
-+	mutex_unlock(&c->mutex);
+ void __kprobes arch_remove_kprobe(struct kprobe *p)
+ {
++	s390_free_insn_slot(p);
  }
  
--void __kprobes free_insn_slot(kprobe_opcode_t * slot, int dirty)
--{
--	mutex_lock(&kprobe_insn_mutex);
--	__free_insn_slot(&kprobe_insn_slots, slot, dirty);
--	mutex_unlock(&kprobe_insn_mutex);
--}
- #ifdef CONFIG_OPTPROBES
- /* For optimized_kprobe buffer */
--static DEFINE_MUTEX(kprobe_optinsn_mutex); /* Protects kprobe_optinsn_slots */
--static struct kprobe_insn_cache kprobe_optinsn_slots = {
-+struct kprobe_insn_cache kprobe_optinsn_slots = {
-+	.mutex = __MUTEX_INITIALIZER(kprobe_optinsn_slots.mutex),
- 	.pages = LIST_HEAD_INIT(kprobe_optinsn_slots.pages),
- 	/* .insn_size is initialized later */
- 	.nr_garbage = 0,
- };
--/* Get a slot for optimized_kprobe buffer */
--kprobe_opcode_t __kprobes *get_optinsn_slot(void)
--{
--	kprobe_opcode_t *ret = NULL;
--
--	mutex_lock(&kprobe_optinsn_mutex);
--	ret = __get_insn_slot(&kprobe_optinsn_slots);
--	mutex_unlock(&kprobe_optinsn_mutex);
--
--	return ret;
--}
--
--void __kprobes free_optinsn_slot(kprobe_opcode_t * slot, int dirty)
--{
--	mutex_lock(&kprobe_optinsn_mutex);
--	__free_insn_slot(&kprobe_optinsn_slots, slot, dirty);
--	mutex_unlock(&kprobe_optinsn_mutex);
--}
- #endif
- #endif
- 
+ static void __kprobes enable_singlestep(struct kprobe_ctlblk *kcb,
 -- 
 1.7.10.4
 
