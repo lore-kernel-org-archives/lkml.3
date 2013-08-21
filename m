@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab3HUQIX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 12:08:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53103 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751539Ab3HUQIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 12:08:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,928,1367996400"; 
-   d="scan'208";a="366284818"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>, NeilBrown <neilb@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1377100012.2738.28.camel@menhir>
-References: <1377099441-2224-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1377100012.2738.28.camel@menhir>
-Subject: Re: [PATCH] mm, fs: avoid page allocation beyond i_size on read
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130821160817.940D3E0090@blue.fi.intel.com>
-Date: Wed, 21 Aug 2013 19:08:17 +0300 (EEST)
+	id S1752097Ab3HUQJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 12:09:09 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54613 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab3HUQJH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 12:09:07 -0400
+Date: Wed, 21 Aug 2013 17:09:03 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Darren Hart <dvhart@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: ACPI vs Device Tree - moving forward
+Message-ID: <20130821160903.GA11908@srcf.ucam.org>
+References: <20130820192650.GA19470@srcf.ucam.org>
+ <2276651.WHL3SkvOZi@vostro.rjw.lan>
+ <CACRpkdaVz28gn-keUC4tTX+bdTKEV2ZrdHxshG=K3oM_NhvroA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaVz28gn-keUC4tTX+bdTKEV2ZrdHxshG=K3oM_NhvroA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Whitehouse wrote:
-> Hi,
-> 
-> On Wed, 2013-08-21 at 18:37 +0300, Kirill A. Shutemov wrote:
-> > I've noticed that we allocated unneeded page for cache on read beyond
-> > i_size. Simple test case (I checked it on ramfs):
-> > 
-> > $ touch testfile
-> > $ cat testfile
-> > 
-> > It triggers 'no_cached_page' code path in do_generic_file_read().
-> > 
-> > Looks like it's regression since commit a32ea1e. Let's fix it.
-> > 
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > Acked-by: NeilBrown <neilb@suse.de>
-> > ---
-> >  mm/filemap.c | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> > 
-> > diff --git a/mm/filemap.c b/mm/filemap.c
-> > index 1905f0e..b1a4d35 100644
-> > --- a/mm/filemap.c
-> > +++ b/mm/filemap.c
-> > @@ -1163,6 +1163,10 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
-> >  		loff_t isize;
-> >  		unsigned long nr, ret;
-> >  
-> > +		isize = i_size_read(inode);
-> > +		if (!isize || index > (isize - 1) >> PAGE_CACHE_SHIFT)
-> > +			goto out;
-> > +
-> >  		cond_resched();
-> >  find_page:
-> >  		page = find_get_page(mapping, index);
-> 
-> Please don't do that... there is no reason to think that i_size will be
-> correct at that moment. Why not just get readpage(s) to return the
-> correct return code in that case?
+On Wed, Aug 21, 2013 at 05:57:07PM +0200, Linus Walleij wrote:
 
-I work on THP for page cache. Allocation and clearing a huge page for
-nothing is pretty expensive.
+> - The I2C address is specified in "reg" - maybe ACPI have
+>   some other way to assign I2C addresses to I2C devices?
+>   In any case, it *must* reference the parent I2C controller,
+>   here that is done implicitly by placing this DT node inside
+>   the I2C controllers DT node.
 
-I don't think the change is harmful. The worst case scenario is race with
-write or truncate, but it's valid to return EOF in this case.
+That's fine. You put the child device inside the I2C contorller's scope, 
+which can be done from a separate ACPI table if you want. The address 
+can be provided via _ADR().
 
-What scenario do you have in mind?
+> - Then it is using a GPIO line as interrupt, and specify that
+>   this shall be configured as a falling edge IRQ.
+
+ACPI 5 permits this.
+
+> - It then tells the interrupt controller parent. So it needs
+>   to have a reference to whatever interrupt chip device
+>   will handle that IRQ.
+
+By interrupt controller, do you mean the GPIO controller? ACPI GPIO 
+definitions include the parent device.
+
+> - Further it *is* an interrupt controller, so devices connected
+>   to the GPIO lines may generate IRQs and then this
+>   device should service them. Is it possible that the devices
+>   connected to this expander in turn use ACPI to describe
+>   themselves? Then we need a reference in the other
+>   direction.
+
+I think that's also doable.
+
+> - Further it is a wakeup source, so each IRQ it provides
+>   on its GPIO lines can be set as a wakeup. I wonder how
+>   this plays with D-states and ACPI.
+
+That's fine. GPIO lines can be described as causing ACPI events and then 
+that simply referenced as a wakeup event.
+
+> I did present the above as an extreme example, but if we
+> start to combine DT and ACPI we have to have that kind of
+> hardware in mind. GPIO expanders with IRQs and all are
+> maybe rare on desktops and laptops but very common on
+> embedded systems.
+
+Yeah, describing complicated device topology isn't really the problem I 
+think we'll end up facing - it's the wider range of device configuration 
+data that worries me.
 
 -- 
- Kirill A. Shutemov
+Matthew Garrett | mjg59@srcf.ucam.org
