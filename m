@@ -1,222 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab3HUKNr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 06:13:47 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:49090 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3HUKNp (ORCPT
+	id S1752205Ab3HUKOz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 06:14:55 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47006 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab3HUKOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 06:13:45 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2 09/20] mm, hugetlb: protect region tracking via newly introduced resv_map lock
-In-Reply-To: <1376040398-11212-10-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com> <1376040398-11212-10-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Wed, 21 Aug 2013 15:43:27 +0530
-Message-ID: <87eh9ngxmg.fsf@linux.vnet.ibm.com>
+	Wed, 21 Aug 2013 06:14:54 -0400
+Date: Wed, 21 Aug 2013 11:14:48 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH 21/33] clk: ux500: Add Device Tree support for the PRCC
+ Kernel clock
+Message-ID: <20130821101448.GJ29850@lee--X1>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+ <1370521041-32318-22-git-send-email-lee.jones@linaro.org>
+ <CACRpkdY2KOxX=oA7i9GUnzpwRKiK2rXqTBPVpg+zW082f2TJdg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082121-3568-0000-0000-0000041DCF36
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdY2KOxX=oA7i9GUnzpwRKiK2rXqTBPVpg+zW082f2TJdg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+On Wed, 21 Aug 2013, Linus Walleij wrote:
 
-> There is a race condition if we map a same file on different processes.
-> Region tracking is protected by mmap_sem and hugetlb_instantiation_mutex.
-> When we do mmap, we don't grab a hugetlb_instantiation_mutex, but,
-> grab a mmap_sem. This doesn't prevent other process to modify region
-> structure, so it can be modified by two processes concurrently.
->
-> To solve this, I introduce a lock to resv_map and make region manipulation
-> function grab a lock before they do actual work. This makes region
-> tracking safe.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 2677c07..e29e28f 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -26,6 +26,7 @@ struct hugepage_subpool {
->
->  struct resv_map {
->  	struct kref refs;
-> +	spinlock_t lock;
->  	struct list_head regions;
->  };
->  extern struct resv_map *resv_map_alloc(void);
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index d9cabf6..73034dd 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -134,15 +134,8 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
->   * Region tracking -- allows tracking of reservations and instantiated pages
->   *                    across the pages in a mapping.
->   *
-> - * The region data structures are protected by a combination of the mmap_sem
-> - * and the hugetlb_instantiation_mutex.  To access or modify a region the caller
-> - * must either hold the mmap_sem for write, or the mmap_sem for read and
-> - * the hugetlb_instantiation_mutex:
-> - *
-> - *	down_write(&mm->mmap_sem);
-> - * or
-> - *	down_read(&mm->mmap_sem);
-> - *	mutex_lock(&hugetlb_instantiation_mutex);
-> + * The region data structures are embedded into a resv_map and
-> + * protected by a resv_map's lock
->   */
->  struct file_region {
->  	struct list_head link;
-> @@ -155,6 +148,7 @@ static long region_add(struct resv_map *resv, long f, long t)
->  	struct list_head *head = &resv->regions;
->  	struct file_region *rg, *nrg, *trg;
->
-> +	spin_lock(&resv->lock);
->  	/* Locate the region we are either in or before. */
->  	list_for_each_entry(rg, head, link)
->  		if (f <= rg->to)
-> @@ -184,15 +178,18 @@ static long region_add(struct resv_map *resv, long f, long t)
->  	}
->  	nrg->from = f;
->  	nrg->to = t;
-> +	spin_unlock(&resv->lock);
->  	return 0;
->  }
->
->  static long region_chg(struct resv_map *resv, long f, long t)
->  {
->  	struct list_head *head = &resv->regions;
-> -	struct file_region *rg, *nrg;
-> +	struct file_region *rg, *nrg = NULL;
->  	long chg = 0;
->
-> +retry:
-> +	spin_lock(&resv->lock);
->  	/* Locate the region we are before or in. */
->  	list_for_each_entry(rg, head, link)
->  		if (f <= rg->to)
-> @@ -202,15 +199,27 @@ static long region_chg(struct resv_map *resv, long f, long t)
->  	 * Subtle, allocate a new region at the position but make it zero
->  	 * size such that we can guarantee to record the reservation. */
->  	if (&rg->link == head || t < rg->from) {
-> -		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-> -		if (!nrg)
-> -			return -ENOMEM;
-> +		if (!nrg) {
-> +			nrg = kmalloc(sizeof(*nrg), GFP_NOWAIT);
+> On Thu, Jun 6, 2013 at 2:17 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > This patch enables clocks to be specified from Device Tree via phandles
+> > to the "prcc-kernel-clock" node.
+> >
+> > Cc: Mike Turquette <mturquette@linaro.org>
+> > Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> (...)
+> >  static struct clk *prcmu_clk[PRCMU_NUM_CLKS];
+> >  static struct clk *prcc_pclk[(PRCC_NUM_PERIPH_CLUSTERS + 1) * PRCC_PERIPHS_PER_CLUSTER];
+> > +static struct clk *prcc_kclk[(PRCC_NUM_PERIPH_CLUSTERS + 1) * PRCC_PERIPHS_PER_CLUSTER];
+> >
+> >  #define PRCC_SHOW(clk, base, bit) \
+> >         clk[(base * PRCC_PERIPHS_PER_CLUSTER) + bit]
+> > @@ -540,110 +541,136 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
+> >         clk = clk_reg_prcc_kclk("p1_uart0_kclk", "uartclk",
+> >                         clkrst1_base, BIT(0), CLK_SET_RATE_GATE);
+> >         clk_register_clkdev(clk, NULL, "uart0");
+> > +       PRCC_KCLK_STORE(clk, 1, 0);
+> >
+> >         clk = clk_reg_prcc_kclk("p1_uart1_kclk", "uartclk",
+> >                         clkrst1_base, BIT(1), CLK_SET_RATE_GATE);
+> >         clk_register_clkdev(clk, NULL, "uart1");
+> > +       PRCC_KCLK_STORE(clk, 1, 1);
+> 
+> (etc)
+> 
+> On device tree boots, clk_register_clkdev() is obviously pointless,
+> as you're later deleting the AUXDATA connecting that device name
+> to the clock.
+> 
+> This should not be called at all on the DT boot path.
+> 
+> However this looks cluttered as well:
+> 
+> if (dt_probe)
+>   clk_register_clkdev(clk, NULL, "uart0");
+> else
+>   PRCC_KCLK_STORE(clk, 1, 0);
+> 
+> Isn't it possible to fork a function u8500_clk_init_dt() to add all the
+> clocks in the DT probe path and keep this function
+> u8500_clk_init() as it is?
 
-Do we really need to have the GFP_NOWAIT allocation attempt. Why can't we simply say
-allocate and retry ? Or should resv->lock be a mutex ?
+Yes, we probably could do that, but as we're ripping out ATAG booting
+support from the ux500 platform, I'll just remove the
+clk_register_clkdev()s during the process.
 
-> +			if (!nrg) {
-> +				spin_unlock(&resv->lock);
-> +				nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-> +				if (!nrg) {
-> +					chg = -ENOMEM;
-> +					goto out;
-> +				}
-> +				goto retry;
-> +			}
-> +		}
-> +
->  		nrg->from = f;
->  		nrg->to   = f;
->  		INIT_LIST_HEAD(&nrg->link);
->  		list_add(&nrg->link, rg->link.prev);
-> +		nrg = NULL;
->
-> -		return t - f;
-> +		chg = t - f;
-> +		goto out_locked;
->  	}
->
->  	/* Round our left edge to the current segment if it encloses us. */
-> @@ -223,7 +232,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
->  		if (&rg->link == head)
->  			break;
->  		if (rg->from > t)
-> -			return chg;
-> +			goto out_locked;
->
->  		/* We overlap with this area, if it extends further than
->  		 * us then we must extend ourselves.  Account for its
-> @@ -234,6 +243,11 @@ static long region_chg(struct resv_map *resv, long f, long t)
->  		}
->  		chg -= rg->to - rg->from;
->  	}
-> +
-> +out_locked:
-> +	spin_unlock(&resv->lock);
-> +out:
-> +	kfree(nrg);
->  	return chg;
->  }
->
-> @@ -243,12 +257,13 @@ static long region_truncate(struct resv_map *resv, long end)
->  	struct file_region *rg, *trg;
->  	long chg = 0;
->
-> +	spin_lock(&resv->lock);
->  	/* Locate the region we are either in or before. */
->  	list_for_each_entry(rg, head, link)
->  		if (end <= rg->to)
->  			break;
->  	if (&rg->link == head)
-> -		return 0;
-> +		goto out;
->
->  	/* If we are in the middle of a region then adjust it. */
->  	if (end > rg->from) {
-> @@ -265,6 +280,9 @@ static long region_truncate(struct resv_map *resv, long end)
->  		list_del(&rg->link);
->  		kfree(rg);
->  	}
-> +
-> +out:
-> +	spin_unlock(&resv->lock);
->  	return chg;
->  }
->
-> @@ -274,6 +292,7 @@ static long region_count(struct resv_map *resv, long f, long t)
->  	struct file_region *rg;
->  	long chg = 0;
->
-> +	spin_lock(&resv->lock);
->  	/* Locate each segment we overlap with, and count that overlap. */
->  	list_for_each_entry(rg, head, link) {
->  		long seg_from;
-> @@ -289,6 +308,7 @@ static long region_count(struct resv_map *resv, long f, long t)
->
->  		chg += seg_to - seg_from;
->  	}
-> +	spin_unlock(&resv->lock);
->
->  	return chg;
->  }
-> @@ -386,6 +406,7 @@ struct resv_map *resv_map_alloc(void)
->  		return NULL;
->
->  	kref_init(&resv_map->refs);
-> +	spin_lock_init(&resv_map->lock);
->  	INIT_LIST_HEAD(&resv_map->regions);
->
->  	return resv_map;
-> -- 
-> 1.7.9.5
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
