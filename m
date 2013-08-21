@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab3HUXQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 19:16:10 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41081 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab3HUXQH (ORCPT
+	id S1753167Ab3HUXW1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 19:22:27 -0400
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:41753 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab3HUXW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 19:16:07 -0400
-Message-ID: <52154A34.4020405@wwwdotorg.org>
-Date: Wed, 21 Aug 2013 17:16:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 21 Aug 2013 19:22:26 -0400
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: hongbo.zhang@freescale.com, vinod.koul@intel.com, djbw@fb.com,
-        leoli@freescale.com, linuxppc-dev@lists.ozlabs.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 2/3] DMA: Freescale: Add new 8-channel DMA engine device
- tree nodes
-References: <1375094944-3343-1-git-send-email-hongbo.zhang@freescale.com>  <1375094944-3343-3-git-send-email-hongbo.zhang@freescale.com>  <521541EE.4010303@wwwdotorg.org> <1377126028.5029.52.camel@snotra.buserror.net>
-In-Reply-To: <1377126028.5029.52.camel@snotra.buserror.net>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <CACRpkdasMSCfdhzrW+7kHM8UUxxQ5UMAcc5bOogc-9RwXE9RVg@mail.gmail.com>
+References: <1374243229-8585-1-git-send-email-lee.jones@linaro.org>
+	<1374243229-8585-6-git-send-email-lee.jones@linaro.org>
+	<CAOesGMgd51g7WAkQu+ckT-=skKuMyj19nJkHxh+YmGSBhSL+Vg@mail.gmail.com>
+	<CACRpkdasMSCfdhzrW+7kHM8UUxxQ5UMAcc5bOogc-9RwXE9RVg@mail.gmail.com>
+Date: Wed, 21 Aug 2013 16:22:26 -0700
+Message-ID: <CAOesGMgZYFgwAhVCc-ObnxcmGTLTM-Zk27Dh7r1_p646ULWHeg@mail.gmail.com>
+Subject: Re: [PATCH 05/13] ARM: ux500: Apply a ste-* prefix onto snowball.dts
+From: Olof Johansson <olof@lixom.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2013 05:00 PM, Scott Wood wrote:
-> On Wed, 2013-08-21 at 16:40 -0600, Stephen Warren wrote:
->> On 07/29/2013 04:49 AM, hongbo.zhang@freescale.com wrote:
->>> +        - reg               : <registers mapping for channel>
->>> +        - interrupts        : <interrupt mapping for DMA channel IRQ>
+On Wed, Aug 21, 2013 at 3:37 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Wed, Aug 21, 2013 at 2:31 AM, Olof Johansson <olof@lixom.net> wrote:
+>
+>>> diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/ste-snowball.dts
+>>> similarity index 100%
+>>> rename from arch/arm/boot/dts/snowball.dts
+>>> rename to arch/arm/boot/dts/ste-snowball.dts
 >>
->> s/interrupts/specifier/
-> 
-> Do you mean s/interrupt mapping/interrupt specifier/?
-> 
-> And probably s/registers mapping/register specifier/ as well.
+>> Grmbl, grmbl, grmbl. This now breaks any script that knows to use
+>> snowball.dtb. :(
+>>
+>> It's good to get the prefixes added, but it's annoying to have to deal
+>> with both during an overlap period. Maybe generate both dtb filenames
+>> for a while but rename the source?
+>
+> Hm I had the same problem but changed my Makefile
+> (scripts are too simple for me) like this:
+>
+>  dtb            := $(build_dir)/arch/arm/boot/dts/ste-hrefv60plus.dtb
+> +fallbackdtb    := $(build_dir)/arch/arm/boot/dts/hrefv60plus.dtb
+> (...)
+> -       cat $(dtb) >> $(output_dir)/zImage
+> +       if [ -f arch/arm/boot/dts/hrefv60plus.dts ] ; then \
+> +           cat $(fallbackdtb) >> $(output_dir)/zImage ; echo "fallback" ; \
+> +       else \
+> +           cat $(dtb) >> $(output_dir)/zImage ; \
+> +       fi
 
-Yup.
+Sure, working around it is trivial. I just did a:
+   -@cp $</arch/arm/boot/dts/ste-snowball.dtb $</arch/arm/boot/dts/snowball.dtb
 
+But the point is that everybody needs to do something like that now,
+which is unfortunate.
+
+
+-Olof
