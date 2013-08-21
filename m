@@ -1,91 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab3HUOcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:32:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60865 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752290Ab3HUOco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:32:44 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <bcousson@baylibre.com>, <tony@atomide.com>, <balbi@ti.com>
-CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
-        <linux@arm.linux.org.uk>, <javier.martinez@collabora.co.uk>,
-        <devicetree@vger.kernel.org>, <kishon@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: [PATCH v3 5/5] arm: omap2plus_defconfig: enable dwc3 and dependencies
-Date: Wed, 21 Aug 2013 20:01:34 +0530
-Message-ID: <1377095494-15380-6-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1377095494-15380-1-git-send-email-kishon@ti.com>
-References: <1377095494-15380-1-git-send-email-kishon@ti.com>
+	id S1752343Ab3HUOdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:33:00 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:57936 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150Ab3HUOc6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 10:32:58 -0400
+Date: Wed, 21 Aug 2013 10:32:54 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Libin <huawei.libin@huawei.com>
+Cc: linux-kernel@vger.kernel.org, wangyijing@huawei.com, guohanjun@huawei.com
+Subject: Re: [PATCH v2 0/3] workqueue: Comment/Doc correction with no
+ functional change
+Message-ID: <20130821143254.GM19286@mtj.dyndns.org>
+References: <1377046241-18516-1-git-send-email-huawei.libin@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377046241-18516-1-git-send-email-huawei.libin@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felipe Balbi <balbi@ti.com>
+On Wed, Aug 21, 2013 at 08:50:38AM +0800, Libin wrote:
+> This patch set doesn't make any functional differences.
+> 
+> Libin (3):
+>   workqueue: Comment correction in file header
+>   workqueue: Fix manage_workers() RETURNS description
+>   workqueue: Correct/Drop references to gcwq in Documentation
 
-DWC3 enables USB3 functionality for OMAP5 boards,
-it's safe to enable those drivers in omap2plus_defconfig.
+Applied 1-3 to wq/for-3.12 with minor updates.
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/configs/omap2plus_defconfig |    9 +++++++++
- 1 file changed, 9 insertions(+)
+Thanks.
 
-diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
-index 5339e6a..aed3cce 100644
---- a/arch/arm/configs/omap2plus_defconfig
-+++ b/arch/arm/configs/omap2plus_defconfig
-@@ -81,6 +81,7 @@ CONFIG_CMA=y
- CONFIG_CONNECTOR=y
- CONFIG_DEVTMPFS=y
- CONFIG_DEVTMPFS_MOUNT=y
-+CONFIG_OMAP_OCP2SCP=y
- CONFIG_MTD=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
-@@ -167,9 +168,11 @@ CONFIG_THERMAL_GOV_USER_SPACE=y
- CONFIG_CPU_THERMAL=y
- CONFIG_OMAP_WATCHDOG=y
- CONFIG_TWL4030_WATCHDOG=y
-+CONFIG_MFD_PALMAS=y
- CONFIG_MFD_TPS65217=y
- CONFIG_MFD_TPS65910=y
- CONFIG_TWL6040_CORE=y
-+CONFIG_REGULATOR_PALMAS=y
- CONFIG_REGULATOR_TWL4030=y
- CONFIG_REGULATOR_TPS65023=y
- CONFIG_REGULATOR_TPS6507X=y
-@@ -222,10 +225,14 @@ CONFIG_USB_MON=y
- CONFIG_USB_WDM=y
- CONFIG_USB_STORAGE=y
- CONFIG_USB_LIBUSUAL=y
-+CONFIG_USB_DWC3=m
-+CONFIG_USB_DWC3_OMAP=m
- CONFIG_USB_TEST=y
- CONFIG_USB_PHY=y
- CONFIG_NOP_USB_XCEIV=y
- CONFIG_USB_GADGET=y
-+CONFIG_OMAP_USB2=y
-+CONFIG_OMAP_USB3=y
- CONFIG_USB_GADGET_DEBUG=y
- CONFIG_USB_GADGET_DEBUG_FILES=y
- CONFIG_USB_GADGET_DEBUG_FS=y
-@@ -258,6 +265,8 @@ CONFIG_TI_THERMAL=y
- CONFIG_OMAP4_THERMAL=y
- CONFIG_OMAP5_THERMAL=y
- CONFIG_DRA752_THERMAL=y
-+CONFIG_EXTCON=y
-+CONFIG_EXTCON_PALMAS=y
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
- # CONFIG_EXT3_FS_XATTR is not set
 -- 
-1.7.10.4
-
+tejun
