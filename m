@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab3HUSgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 14:36:09 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:42864 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab3HUSgH (ORCPT
+	id S1752749Ab3HUSgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 14:36:33 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18071 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451Ab3HUSgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 14:36:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <521504D7.7090204@wwwdotorg.org>
-References: <20130820224032.GA20491@kroah.com>
-	<521504D7.7090204@wwwdotorg.org>
-Date: Wed, 21 Aug 2013 11:36:05 -0700
-X-Google-Sender-Auth: QJdwc7yZV9irGT48uBkcwtJYs98
-Message-ID: <CA+55aFxMkQoJAJd2=XyJu0NX2dG3mX=obx=YL6YXatLg4S=-Vw@mail.gmail.com>
-Subject: Re: Proposed stable release changes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, lwn@lwn.net,
-        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 21 Aug 2013 14:36:32 -0400
+Date: Wed, 21 Aug 2013 14:33:51 -0400
+From: Dwight Engen <dwight.engen@oracle.com>
+To: Ben Myers <bpm@sgi.com>
+Cc: Jeremy Kerr <jk@ozlabs.org>, cbe-oss-dev@lists.ozlabs.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-next@vger.kernel.org, Gao feng <gaofeng@cn.fujitsu.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] powerpc/spufs: convert userns uid/gid mount options to
+ kuid/kgid
+Message-ID: <20130821143351.5840d556@oracle.com>
+In-Reply-To: <20130821155654.GI5262@sgi.com>
+References: <20130820172052.1f0d89ddf6a1a40ef70333fd@canb.auug.org.au>
+	<20130820120702.000b044e@oracle.com>
+	<201308202246.30869.arnd@arndb.de>
+	<20130821010822.220f592a@oracle.com>
+	<52145E6C.80404@ozlabs.org>
+	<20130821155654.GI5262@sgi.com>
+Organization: Oracle Corporation
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 11:20 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 08/20/2013 04:40 PM, Greg KH wrote:
->
-> Presumably the idea is that much useful testing only happens on -rc
-> kernels rather than linux-next or arbitrary points in Linus' tree.
+Acked-by: Jeremy Kerr <jk@ozlabs.org>
+Tested-by: Jeremy Kerr <jk@ozlabs.org>
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+---
+ arch/powerpc/platforms/cell/spufs/inode.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-Linux-next gets little to no testing outside of compiles.
+diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
+index f390042..87ba7cf 100644
+--- a/arch/powerpc/platforms/cell/spufs/inode.c
++++ b/arch/powerpc/platforms/cell/spufs/inode.c
+@@ -620,12 +620,16 @@ spufs_parse_options(struct super_block *sb, char *options, struct inode *root)
+ 		case Opt_uid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+-			root->i_uid = option;
++			root->i_uid = make_kuid(current_user_ns(), option);
++			if (!uid_valid(root->i_uid))
++				return 0;
+ 			break;
+ 		case Opt_gid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+-			root->i_gid = option;
++			root->i_gid = make_kgid(current_user_ns(), option);
++			if (!gid_valid(root->i_gid))
++				return 0;
+ 			break;
+ 		case Opt_mode:
+ 			if (match_octal(&args[0], &option))
+-- 
+1.8.1.4
 
-And I don't think the -rc releases are all that important either. The
-important part is to _wait_. Not "wait for an -rc". There are
-reasonable number of developers and users who actually run git
-kernels, just because they want to help. At rc points, you tend to get
-a few more of those.
+On Wed, 21 Aug 2013 10:56:54 -0500
+Ben Myers <bpm@sgi.com> wrote:
 
-In contrast, when patches get moved from the development tree to
-stable within a day or two, that patch has gotten basically _no_
-testing in some cases (or rather, it's been tested to fix the thing it
-was supposed to fix, but then there are surprising new problems that
-it introduces that nobody even though about, and wasn't tested for).
+> Hey Dwight,
+> 
+> On Wed, Aug 21, 2013 at 02:30:04PM +0800, Jeremy Kerr wrote:
+> > > Yes, I agree. The other filesystems that take an Opt_uid as well
+> > > do use current_user_ns() and not init_user_ns. They also do a
+> > > uid_valid() check and fail the mount (or fallback to
+> > > GLOBAL_ROOT_UID). So I think that would look like this:
+> > 
+> > Looks good to me. Builds and mounts as expected.
+> > 
+> > Acked-by: Jeremy Kerr <jk@ozlabs.org>
+> 
+> Could you repost this patch with the right subject and a commit
+> header?  Given Jeremy's Ack I think we could proceed to pull this in.
 
-So I don't think "is in an rc release" is the important thing. I think
-"has been in the standard git tree for at least a week" is what we
-should aim for.
+Sure, I just wanted to make sure someone had tested it first, which it
+looks like Jeremy did, thanks.
 
-Will it catch all cases? Hell no. We don't have *that* many people who
-run git kernels, and even people who do don't tend to update daily
-anyway. But at least this kind of embarrassing "We found a bug within
-almost minutes of it hitting mainline" should not make it into stable.
+> Regards,
+> 	Ben
 
-              Linus
