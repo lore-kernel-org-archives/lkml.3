@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab3HUQyP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 12:54:15 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:24828 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab3HUQxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 12:53:54 -0400
-X-AuditID: cbfec7f5-b7f5f6d00000105f-07-5214f0a13c03
-From: Andrzej Hajda <a.hajda@samsung.com>
-To: lee.jones@linaro.org
-Cc: Andrzej Hajda <a.hajda@samsung.com>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3 2/2] max77693: added device tree support
-Date: Wed, 21 Aug 2013 18:53:34 +0200
-Message-id: <1377104014-21910-3-git-send-email-a.hajda@samsung.com>
-X-Mailer: git-send-email 1.8.1.2
-In-reply-to: <1377104014-21910-1-git-send-email-a.hajda@samsung.com>
-References: <1377104014-21910-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t/xa7oLP4gEGdzrYLG4te4cq8X8I0Di
-	wJ8djBZveoFinWefMFucbXrDbnH/61FGi8u75rBZLL1+kcliwvS1LBaHVxxgslj3cjqQ9aad
-	1eJ0N6vFq4NtLA78HmvmrWH0WPD5CrvH68kTGD1erZ7J6nHn2h42j3knAz36tqxi9Pi8Sc5j
-	49zQAM4oLpuU1JzMstQifbsEroy985awF/xirzh2aBV7A+MBti5GTg4JAROJCQveMELYYhIX
-	7q0HinNxCAksZZQ4+3Y7M4TTxyTx7G8LO0gVm4CmxN/NN8G6RQQkJDb+6GMBKWIWOMUiMbf1
-	NhNIQljAWmLpodWsIDaLgKrE/0s9QA0cHLwCzhKbjstCbFOQ+Hn5BNgcTgEXiba/98DmCwGV
-	tFxYzDKBkXcBI8MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJBA/rqDcekxq0OMAhyMSjy8
-	F3aKBAmxJpYVV+YeYpTgYFYS4S08CRTiTUmsrEotyo8vKs1JLT7EyMTBKdXAOJUhIWjD/vQv
-	65ftOPevf/6suz83hZiI/jAoK7rboOSb6ltleK9fTWDZ90VNe3gv95dKyG8oOXAuTkL4U116
-	vIzWbeHrJX7MZ5N+m872fmwXosA2ZV2p2KOUaR8Ocwe+9FgTIlZrWPnkt8VmacXQ5bvPcFm2
-	1779EcNZIRnA2sf7R4o7cF6QEktxRqKhFnNRcSIASKEvCEICAAA=
+	id S1752392Ab3HUQ4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 12:56:12 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:39049 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751633Ab3HUQ4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 12:56:11 -0400
+X-IronPort-AV: E=Sophos;i="4.89,929,1367971200"; 
+   d="scan'208";a="46241093"
+Message-ID: <5214F128.1000901@citrix.com>
+Date: Wed, 21 Aug 2013 17:56:08 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Jan Beulich <JBeulich@suse.com>, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        <Xen-devel@lists.xen.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with
+ existing use
+References: <5214C524.1050900@citrix.com> <20130821141223.GS18673@moon> <5214F09002000078000ED5C3@nat28.tlf.novell.com> <20130821154238.GV18673@moon> <521500E102000078000ED65C@nat28.tlf.novell.com> <20130821161946.GW18673@moon>
+In-Reply-To: <20130821161946.GW18673@moon>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds only of_match_table.
-There are no device specific properties.
+On 21/08/13 17:19, Cyrill Gorcunov wrote:
+> On Wed, Aug 21, 2013 at 05:03:13PM +0100, Jan Beulich wrote:
+>>>
+>>> Only to non-present ptes, as far as I know.
+>>
+>> That's not really any guarantee. And the accessor functions also
+>> don't check that they'd be used on non-present PTEs only.
+> 
+> Wait. This _PAGE_SWP_SOFT_DIRTY bit (which is in real PSE bit) assigned
+> in only one place -- in try_to_unmap_one(). The PTE get non-present then
+> and consists of swap entry format. I don't see any accessor to such entry
+> without testing if it's swap entry or pte-none. What I'm missing?
+> 
+>>> orig_pte has pse bit set if page has been soft dirty
+>>> when it reached swap.
+>>
+>> "when it reached swap" to me again implies that it could come
+>> from a live page table, with the present bit set. So that
+>> explanation attempt of yours confuses me more than it
+>> clarifies things for me. (And referring to this bit as PSE bit is
+> 
+> When page swapped out it become non-present in pte entry.
+> 
+>> sort of wrong here too - there's no PSE bit for 4k PTEs, that
+>> bit is the PAT one, and that's what the whole discussion
+>> started from.)
+> 
+> And I asked David to point me how it happens, because I don't
+> understand at which point pse bit get analized when page is
+> not present.
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/mfd/max77693.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+As Jan said, we're concerned that the bit was being used on present PTEs
+and not just non-present ones.  From a more careful look at this code
+this does not appear to be the case.
 
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index 27f5da3..e0b11a9 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -225,11 +225,19 @@ static const struct dev_pm_ops max77693_pm = {
- 	.resume = max77693_resume,
- };
- 
-+#ifdef CONFIG_OF
-+static struct of_device_id max77693_dt_match[] = {
-+	{.compatible = "maxim,max77693"},
-+	{},
-+};
-+#endif
-+
- static struct i2c_driver max77693_i2c_driver = {
- 	.driver = {
- 		   .name = "max77693",
- 		   .owner = THIS_MODULE,
- 		   .pm = &max77693_pm,
-+		   .of_match_table = of_match_ptr(max77693_dt_match),
- 	},
- 	.probe = max77693_i2c_probe,
- 	.remove = max77693_i2c_remove,
--- 
-1.8.1.2
+However, I do find the use of PTE bits in this way somewhat fragile.
+What other potential corner cases might still remain that will require
+further games with PTE bits?
 
+FWIW, Xen uses a separate dirty log to track which pages have become
+dirty since the log was last cleared.  Such a dirty log seems more
+efficient than having scan all the PTEs looking for the soft dirty bits
+and then having to scan them all again to clear them (particularly if
+you need multiple passes because the task is still running and
+continuing to dirty pages).
+
+David
