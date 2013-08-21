@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab3HUQFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 12:05:33 -0400
-Received: from ms-gwomx02.so-net.ne.jp ([202.238.84.149]:29519 "EHLO
-	ms-gwomx02.so-net.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab3HUQFb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 12:05:31 -0400
-MIME-Version: 1.0
-Message-ID: <20130821160409.00002550.0762@u01.gate01.com>
-Date: Thu, 22 Aug 2013 01:04:09 +0900
-From: "gcb" <sksmyhole@u01.gate01.com>
-To: <info@uk.com>
-Reply-To: <gcb.foundation@postafiok.hu>
-Subject: 
-Content-Type: Text/plain; charset=UTF-8
+	id S1751849Ab3HUQIX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 12:08:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53103 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751539Ab3HUQIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 12:08:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,928,1367996400"; 
+   d="scan'208";a="366284818"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, NeilBrown <neilb@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1377100012.2738.28.camel@menhir>
+References: <1377099441-2224-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1377100012.2738.28.camel@menhir>
+Subject: Re: [PATCH] mm, fs: avoid page allocation beyond i_size on read
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-ORGANIZATION: gcb
-X-MAILER: Active! mail
+Message-Id: <20130821160817.940D3E0090@blue.fi.intel.com>
+Date: Wed, 21 Aug 2013 19:08:17 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Steven Whitehouse wrote:
+> Hi,
+> 
+> On Wed, 2013-08-21 at 18:37 +0300, Kirill A. Shutemov wrote:
+> > I've noticed that we allocated unneeded page for cache on read beyond
+> > i_size. Simple test case (I checked it on ramfs):
+> > 
+> > $ touch testfile
+> > $ cat testfile
+> > 
+> > It triggers 'no_cached_page' code path in do_generic_file_read().
+> > 
+> > Looks like it's regression since commit a32ea1e. Let's fix it.
+> > 
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > Acked-by: NeilBrown <neilb@suse.de>
+> > ---
+> >  mm/filemap.c | 4 ++++
+> >  1 file changed, 4 insertions(+)
+> > 
+> > diff --git a/mm/filemap.c b/mm/filemap.c
+> > index 1905f0e..b1a4d35 100644
+> > --- a/mm/filemap.c
+> > +++ b/mm/filemap.c
+> > @@ -1163,6 +1163,10 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
+> >  		loff_t isize;
+> >  		unsigned long nr, ret;
+> >  
+> > +		isize = i_size_read(inode);
+> > +		if (!isize || index > (isize - 1) >> PAGE_CACHE_SHIFT)
+> > +			goto out;
+> > +
+> >  		cond_resched();
+> >  find_page:
+> >  		page = find_get_page(mapping, index);
+> 
+> Please don't do that... there is no reason to think that i_size will be
+> correct at that moment. Why not just get readpage(s) to return the
+> correct return code in that case?
 
-My wife and I won the Euro Millions Lottery of 41 Million British Pounds and we have decided to donate 1.5 million British Pounds to 6 individuals worldwide as our own charity project. Your email address was among the emails which were submitted to us by the Google, Inc as a web user, which was used for the draw with an electronic balloting system your email address came out as the 4th lucky beneficiary world wide.
-To verify, please see our interview by visiting the web page below: http://www.dailymail.co.uk/news/article-2091124/EuroMillions-winners-Gareth-Catherine-Bull-scoop-41MILLION-lotto-jackpot.html
-Send the below information for urgent processing.
-Full Name:
-Mobile No:
-Age:
-Country:
-Send your response to
+I work on THP for page cache. Allocation and clearing a huge page for
+nothing is pretty expensive.
 
-Congratulations once again,
-Best Regards,
-Gareth & Catherine Bull
-gcb.foundation@postafiok.hu
+I don't think the change is harmful. The worst case scenario is race with
+write or truncate, but it's valid to return EOF in this case.
 
+What scenario do you have in mind?
 
+-- 
+ Kirill A. Shutemov
