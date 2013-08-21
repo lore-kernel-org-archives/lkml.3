@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab3HUJ77 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 05:59:59 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:37734 "EHLO
+	id S1752569Ab3HUKA1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 06:00:27 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:38313 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab3HUJ74 (ORCPT
+	with ESMTP id S1752119Ab3HUKAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 05:59:56 -0400
-Message-ID: <52148F90.7070809@huawei.com>
-Date: Wed, 21 Aug 2013 17:59:44 +0800
+	Wed, 21 Aug 2013 06:00:24 -0400
+Message-ID: <52148F9C.2080600@huawei.com>
+Date: Wed, 21 Aug 2013 17:59:56 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
 CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
         Containers <containers@lists.linux-foundation.org>
-Subject: [PATCH 05/11] cpuset: inherite ancestor's masks if real_{cpus,mems}_allowed
- become empty
+Subject: [PATCH 06/11] cpuset: apply cs->real_{cpus,mems}_allowed
 References: <52148F52.0@huawei.com>
 In-Reply-To: <52148F52.0@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -27,95 +26,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're going to have separate user-configured masks and effective ones.
+Now we can use cs->real{cpus,mems}_allowed as effective masks. It's
+used whenever:
 
-At last configured masks can only be changed by writing cpuset.cpus
-and cpuset.mems, and they won't be restricted by parent cpuset. While
-effective masks reflect cpu/memory hotplug and hierachical restriction.
+- we update tasks' cpus_allowed/mems_allowed,
+- we want to retrieve tasks_cs(tsk)'s cpus_allowed/mems_allowed.
 
-This is a preparation to make real_{cpus,mems}_allowed to be effective
-masks of the cpuset:
-
-- change the effective masks at hotplug: done
-- change the effective masks at config change: done
-- take on ancestor's mask when the effective mask is empty: done
-
-This won't introduce behavior change.
+They actually replace effective_{cpu,node}mask_cpuset().
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- kernel/cpuset.c | 33 +++++++++++++++++++++++----------
- 1 file changed, 23 insertions(+), 10 deletions(-)
+ kernel/cpuset.c | 83 ++++++++++-----------------------------------------------
+ 1 file changed, 14 insertions(+), 69 deletions(-)
 
 diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 72afef4..b7b63dd 100644
+index b7b63dd..0de15eb 100644
 --- a/kernel/cpuset.c
 +++ b/kernel/cpuset.c
-@@ -904,12 +904,14 @@ static void update_cpumasks_hier(struct cpuset *cs, struct cpuset *trialcs,
- 			    parent->real_cpus_allowed);
+@@ -318,9 +318,9 @@ static struct file_system_type cpuset_fs_type = {
+  */
+ static void guarantee_online_cpus(struct cpuset *cs, struct cpumask *pmask)
+ {
+-	while (!cpumask_intersects(cs->cpus_allowed, cpu_online_mask))
++	while (!cpumask_intersects(cs->real_cpus_allowed, cpu_online_mask))
+ 		cs = parent_cs(cs);
+-	cpumask_and(pmask, cs->cpus_allowed, cpu_online_mask);
++	cpumask_and(pmask, cs->real_cpus_allowed, cpu_online_mask);
+ }
  
- 		/*
--		 * Skip the whole subtree if the cpumask is not changed, unless
--		 * it's empty, and in this case we need to update tasks to take
--		 * on an ancestor's cpumask.
-+		 * If it becomes empty, inherite the effective mask of the
-+		 * parent, which is guarantted to have some CPUs.
- 		 */
--		if (cpumask_equal(new_cpus, cp->real_cpus_allowed) &&
--		    ((cp == cs) || !cpumask_empty(new_cpus))) {
-+		if (cpumask_empty(new_cpus))
-+			cpumask_copy(new_cpus, parent->real_cpus_allowed);
-+
-+		/* Skip the whole subtree if the cpumask is not changed. */
-+		if (cpumask_equal(new_cpus, cp->real_cpus_allowed)) {
- 			pos_css = css_rightmost_descendant(pos_css);
- 			continue;
- 		}
-@@ -1168,12 +1170,14 @@ static void update_nodemasks_hier(struct cpuset *cs, struct cpuset *trialcs,
- 			  parent->real_mems_allowed);
+ /*
+@@ -336,9 +336,9 @@ static void guarantee_online_cpus(struct cpuset *cs, struct cpumask *pmask)
+  */
+ static void guarantee_online_mems(struct cpuset *cs, nodemask_t *pmask)
+ {
+-	while (!nodes_intersects(cs->mems_allowed, node_states[N_MEMORY]))
++	while (!nodes_intersects(cs->real_mems_allowed, node_states[N_MEMORY]))
+ 		cs = parent_cs(cs);
+-	nodes_and(*pmask, cs->mems_allowed, node_states[N_MEMORY]);
++	nodes_and(*pmask, cs->real_mems_allowed, node_states[N_MEMORY]);
+ }
  
- 		/*
--		 * Skip the whole subtree if the nodemask is not changed, unless
--		 * it's empty, and in this case we need to update tasks to take
--		 * on an ancestor's nodemask.
-+		 * If it becoms empty, inherite the effective mask of the
-+		 * parent, which is guaranteed to have some MEMs.
- 		 */
--		if (nodes_equal(*new_mems, cp->real_mems_allowed) &&
--		    ((cp == cs) || !nodes_empty(*new_mems))) {
-+		if (nodes_empty(*new_mems))
-+			*new_mems = parent->real_mems_allowed;
-+
-+		/* Skip the whole subtree if the nodemask is not changed. */
-+		if (nodes_equal(*new_mems, cp->real_mems_allowed)) {
- 			pos_css = css_rightmost_descendant(pos_css);
- 			continue;
- 		}
-@@ -2202,8 +2206,13 @@ retry:
+ /*
+@@ -804,45 +804,6 @@ void rebuild_sched_domains(void)
+ 	mutex_unlock(&cpuset_mutex);
+ }
  
- 	mutex_lock(&callback_mutex);
- 	cpumask_andnot(cs->cpus_allowed, cs->cpus_allowed, &off_cpus);
-+
- 	cpumask_andnot(cs->real_cpus_allowed, cs->real_cpus_allowed,
- 		       &off_cpus);
-+	/* Inherite the effective mask of the parent, if it becomes empty */
-+	if (cpumask_empty(cs->real_cpus_allowed))
-+		cpumask_copy(cs->real_cpus_allowed,
-+			     parent_cs(cs)->real_cpus_allowed);
- 	mutex_unlock(&callback_mutex);
+-/*
+- * effective_cpumask_cpuset - return nearest ancestor with non-empty cpus
+- * @cs: the cpuset in interest
+- *
+- * A cpuset's effective cpumask is the cpumask of the nearest ancestor
+- * with non-empty cpus. We use effective cpumask whenever:
+- * - we update tasks' cpus_allowed. (they take on the ancestor's cpumask
+- *   if the cpuset they reside in has no cpus)
+- * - we want to retrieve task_cs(tsk)'s cpus_allowed.
+- *
+- * Called with cpuset_mutex held. cpuset_cpus_allowed_fallback() is an
+- * exception. See comments there.
+- */
+-static struct cpuset *effective_cpumask_cpuset(struct cpuset *cs)
+-{
+-	while (cpumask_empty(cs->cpus_allowed))
+-		cs = parent_cs(cs);
+-	return cs;
+-}
+-
+-/*
+- * effective_nodemask_cpuset - return nearest ancestor with non-empty mems
+- * @cs: the cpuset in interest
+- *
+- * A cpuset's effective nodemask is the nodemask of the nearest ancestor
+- * with non-empty memss. We use effective nodemask whenever:
+- * - we update tasks' mems_allowed. (they take on the ancestor's nodemask
+- *   if the cpuset they reside in has no mems)
+- * - we want to retrieve task_cs(tsk)'s mems_allowed.
+- *
+- * Called with cpuset_mutex held.
+- */
+-static struct cpuset *effective_nodemask_cpuset(struct cpuset *cs)
+-{
+-	while (nodes_empty(cs->mems_allowed))
+-		cs = parent_cs(cs);
+-	return cs;
+-}
+-
+ /**
+  * cpuset_change_cpumask - make a task's cpus_allowed the same as its cpuset's
+  * @tsk: task to test
+@@ -857,9 +818,8 @@ static struct cpuset *effective_nodemask_cpuset(struct cpuset *cs)
+ static void cpuset_change_cpumask(struct task_struct *tsk, void *data)
+ {
+ 	struct cpuset *cs = data;
+-	struct cpuset *cpus_cs = effective_cpumask_cpuset(cs);
+ 
+-	set_cpus_allowed_ptr(tsk, cpus_cs->cpus_allowed);
++	set_cpus_allowed_ptr(tsk, cs->real_cpus_allowed);
+ }
+ 
+ /**
+@@ -1014,14 +974,12 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
+ 							const nodemask_t *to)
+ {
+ 	struct task_struct *tsk = current;
+-	struct cpuset *mems_cs;
+ 
+ 	tsk->mems_allowed = *to;
+ 
+ 	do_migrate_pages(mm, from, to, MPOL_MF_MOVE_ALL);
+ 
+-	mems_cs = effective_nodemask_cpuset(task_cs(tsk));
+-	guarantee_online_mems(mems_cs, &tsk->mems_allowed);
++	guarantee_online_mems(task_cs(tsk), &tsk->mems_allowed);
+ }
+ 
+ /*
+@@ -1116,13 +1074,12 @@ static void *cpuset_being_rebound;
+ static void update_tasks_nodemask(struct cpuset *cs, struct ptr_heap *heap)
+ {
+ 	static nodemask_t newmems;	/* protected by cpuset_mutex */
+-	struct cpuset *mems_cs = effective_nodemask_cpuset(cs);
+ 	struct cpuset_change_nodemask_arg arg = { .cs = cs,
+ 						  .newmems = &newmems };
+ 
+ 	cpuset_being_rebound = cs;		/* causes mpol_dup() rebind */
+ 
+-	guarantee_online_mems(mems_cs, &newmems);
++	guarantee_online_mems(cs, &newmems);
  
  	/*
-@@ -2218,7 +2227,11 @@ retry:
+ 	 * The mpol_rebind_mm() call takes mmap_sem, which we couldn't
+@@ -1556,8 +1513,6 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
+ 							cpuset_subsys_id);
+ 	struct cpuset *cs = css_cs(css);
+ 	struct cpuset *oldcs = css_cs(oldcss);
+-	struct cpuset *cpus_cs = effective_cpumask_cpuset(cs);
+-	struct cpuset *mems_cs = effective_nodemask_cpuset(cs);
  
+ 	mutex_lock(&cpuset_mutex);
+ 
+@@ -1565,9 +1520,9 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
+ 	if (cs == &top_cpuset)
+ 		cpumask_copy(cpus_attach, cpu_possible_mask);
+ 	else
+-		guarantee_online_cpus(cpus_cs, cpus_attach);
++		guarantee_online_cpus(cs, cpus_attach);
+ 
+-	guarantee_online_mems(mems_cs, &cpuset_attach_nodemask_to);
++	guarantee_online_mems(cs, &cpuset_attach_nodemask_to);
+ 
+ 	cgroup_taskset_for_each(task, css, tset) {
+ 		/*
+@@ -1584,11 +1539,9 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
+ 	 * Change mm, possibly for multiple threads in a threadgroup. This is
+ 	 * expensive and may sleep.
+ 	 */
+-	cpuset_attach_nodemask_to = cs->mems_allowed;
++	cpuset_attach_nodemask_to = cs->real_mems_allowed;
+ 	mm = get_task_mm(leader);
+ 	if (mm) {
+-		struct cpuset *mems_oldcs = effective_nodemask_cpuset(oldcs);
+-
+ 		mpol_rebind_mm(mm, &cpuset_attach_nodemask_to);
+ 
+ 		/*
+@@ -1599,7 +1552,7 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
+ 		 * mm from.
+ 		 */
+ 		if (is_memory_migrate(cs)) {
+-			cpuset_migrate_mm(mm, &mems_oldcs->old_mems_allowed,
++			cpuset_migrate_mm(mm, &oldcs->old_mems_allowed,
+ 					  &cpuset_attach_nodemask_to);
+ 		}
+ 		mmput(mm);
+@@ -2398,23 +2351,17 @@ void __init cpuset_init_smp(void)
+ 
+ void cpuset_cpus_allowed(struct task_struct *tsk, struct cpumask *pmask)
+ {
+-	struct cpuset *cpus_cs;
+-
  	mutex_lock(&callback_mutex);
- 	nodes_andnot(cs->mems_allowed, cs->mems_allowed, off_mems);
-+
- 	nodes_andnot(cs->real_mems_allowed, cs->real_mems_allowed, off_mems);
-+	/* Inherite the effective mask of the parent, if it becomes empty */
-+	if (nodes_empty(cs->real_mems_allowed))
-+		cs->real_mems_allowed = parent_cs(cs)->real_mems_allowed;
+ 	task_lock(tsk);
+-	cpus_cs = effective_cpumask_cpuset(task_cs(tsk));
+-	guarantee_online_cpus(cpus_cs, pmask);
++	guarantee_online_cpus(task_cs(tsk), pmask);
+ 	task_unlock(tsk);
  	mutex_unlock(&callback_mutex);
+ }
+ 
+ void cpuset_cpus_allowed_fallback(struct task_struct *tsk)
+ {
+-	struct cpuset *cpus_cs;
+-
+ 	rcu_read_lock();
+-	cpus_cs = effective_cpumask_cpuset(task_cs(tsk));
+-	do_set_cpus_allowed(tsk, cpus_cs->cpus_allowed);
++	do_set_cpus_allowed(tsk, task_cs(tsk)->real_cpus_allowed);
+ 	rcu_read_unlock();
  
  	/*
+@@ -2453,13 +2400,11 @@ void cpuset_init_current_mems_allowed(void)
+ 
+ nodemask_t cpuset_mems_allowed(struct task_struct *tsk)
+ {
+-	struct cpuset *mems_cs;
+ 	nodemask_t mask;
+ 
+ 	mutex_lock(&callback_mutex);
+ 	task_lock(tsk);
+-	mems_cs = effective_nodemask_cpuset(task_cs(tsk));
+-	guarantee_online_mems(mems_cs, &mask);
++	guarantee_online_mems(task_cs(tsk), &mask);
+ 	task_unlock(tsk);
+ 	mutex_unlock(&callback_mutex);
+ 
 -- 
 1.8.0.2
