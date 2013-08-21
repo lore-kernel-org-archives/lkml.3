@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab3HUPmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:42:42 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:60058 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3HUPml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:42:41 -0400
-Date: Wed, 21 Aug 2013 19:42:38 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Xen-devel@lists.xen.org, Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with
- existing use
-Message-ID: <20130821154238.GV18673@moon>
-References: <5214C524.1050900@citrix.com>
- <20130821141223.GS18673@moon>
- <5214F09002000078000ED5C3@nat28.tlf.novell.com>
+	id S1752523Ab3HUPop (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:44:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52788 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751708Ab3HUPoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 11:44:44 -0400
+Date: Wed, 21 Aug 2013 11:43:55 -0400
+From: Dave Jones <davej@redhat.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Kees Cook <keescook@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit
+ mitigations
+Message-ID: <20130821154355.GA20784@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Aaro Koskinen <aaro.koskinen@iki.fi>,
+	ksummit-2013-discuss@lists.linuxfoundation.org,
+	Kees Cook <keescook@chromium.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
+ <20130730221435.GA22240@redhat.com>
+ <20130730231120.GC30725@blackmetal.musicnaut.iki.fi>
+ <20130730231533.GA26824@redhat.com>
+ <20130730235834.GD30725@blackmetal.musicnaut.iki.fi>
+ <20130731000444.GC1281@redhat.com>
+ <20130731094012.GU24642@n2100.arm.linux.org.uk>
+ <20130731142430.GA4545@redhat.com>
+ <20130821152614.GN17845@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5214F09002000078000ED5C3@nat28.tlf.novell.com>
+In-Reply-To: <20130821152614.GN17845@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 03:53:36PM +0100, Jan Beulich wrote:
-> >>> On 21.08.13 at 16:12, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> > On Wed, Aug 21, 2013 at 02:48:20PM +0100, David Vrabel wrote:
-> >> All,
-> >> 
-> >> 179ef71c (mm: save soft-dirty bits on swapped pages) introduces a new
-> >> PTE bit on x86 _PTE_SWP_SOFT_DIRTY which has the same value as _PTE_PSE
-> >> and _PTE_PAT.
-> >> 
-> >> With a Xen PV guest, the use of the _PTE_PAT will result in the page
-> >> having unexpected cachability which will introduce a range of subtle
-> >> performance and correctness issues.  Xen programs the entry 4 in the PAT
-> >> table with WC so a page that was previously WB will end up as WC.
-> >> 
-> > 
-> > David, could you please explain, Xen keeps and analyze _PTE_PAT bit
-> > for ptes which are not present?
-> 
-> No, the problem isn't with not-present PTEs (i.e. swap entries),
-> but with present ones - the same bit (7) is being used for both,
-> according to this comment:
-> 
-> /*
->  * Tracking soft dirty bit when a page goes to a swap is tricky.
->  * We need a bit which can be stored in pte _and_ not conflict
->  * with swap entry format. On x86 bits 6 and 7 are *not* involved
->  * into swap entry computation, but bit 6 is used for nonlinear
->  * file mapping, so we borrow bit 7 for soft dirty tracking.
->  */
-> 
-> Or are you telling me that the comment is misleading (at least me),
-> and this applies only to not-present PTEs? And even then - where
-> would the value of the original PAT bit be stored while swapped
-> out (or is it impossible - now and forever - for WC pages to get
-> swapped)?
+On Wed, Aug 21, 2013 at 04:26:14PM +0100, Russell King - ARM Linux wrote:
+ > On Wed, Jul 31, 2013 at 10:24:30AM -0400, Dave Jones wrote:
+ > > On Wed, Jul 31, 2013 at 10:40:12AM +0100, Russell King - ARM Linux wrote:
+ > >  > On Tue, Jul 30, 2013 at 08:04:44PM -0400, Dave Jones wrote:
+ > >  > > To use ARM as an example, the bugs I've seen have mostly been in arch specific
+ > >  > > code that does things like page-table manipulation.  The chromebook bugs I
+ > >  > > was hitting for eg were various kinds of PTE corruption warnings. 
+ > >  > 
+ > >  > Hmm, really?  Did you reported these bugs?  I'm not aware of mainline
+ > >  > having any changes related to bug reports on PTEs on ARM.
+ > > 
+ > > I wasn't sure if it was a googleism, or happens on mainline, so no.
+ > 
+ > I've been running several iterations of it for a while (== up to 10 minutes
+ > run time - which is normally about how long it takes to find the rather-too-
+ > exposed kmalloc in sys_oabi_epoll_wait) and so far have seen no sign of any
+ > page table corruption.
 
-Only to non-present ptes, as far as I know.
+awesome. Guess it was a google specific issue then.
+(Or something that got fixed post 3.4)
 
-do_swap_page
-	...
-	pte = mk_pte(page, vma->vm_page_prot);
+ > Maybe you can give some ideas as to how you were running it?  Was it
+ > running as root or as a normal user? 
 
-	/* new pte from vm_page_prot generated */
-	...
-	set_pte_at(mm, address, page_table, pte);
-	/* and assigned to old place */
+yeah, unpriv'd user. 
 
-with soft dirty in swap it is somehow more weirdy
+ > Were there any nonstandard platform
+ > specific devices in /dev which that user could access - such as graphics
+ > or video decoder devices which could be exposing big holes?
 
-	pte = mk_pte(page, vma->vm_page_prot);
-	...
-	if (pte_swp_soft_dirty(orig_pte))
-		pte = pte_mksoft_dirty(pte);
-	set_pte_at(mm, address, page_table, pte);
+I'm not sure what google patched into that kernel altogether, so who knows..
 
-orig_pte has pse bit set if page has been soft dirty
-when it reached swap.
+	Dave
+
