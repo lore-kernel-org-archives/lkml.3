@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab3HUH1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 03:27:31 -0400
-Received: from mout.gmx.net ([212.227.17.20]:56101 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752258Ab3HUH13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 03:27:29 -0400
-From: Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: PaX Team <pageexec@freemail.hu>, Behan Webster <behanw@converseincode.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [TRIVIAL] Remove braces in drivers/scsi/in2000.h to fix build for clang. No functional change otherwise.
-Date: Wed, 21 Aug 2013 09:26:14 +0200
-Message-ID: <2050670.KsM0dPm3or@aragorn.auenland.lan>
-User-Agent: KMail/4.10.5 (Linux/3.7.10-1.16-default; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130821065018.GB9043@infradead.org>
-References: <1377033546-19475-1-git-send-email-dl9pf@gmx.de> <20130821065018.GB9043@infradead.org>
+	id S1752409Ab3HUH3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 03:29:45 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:61410 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246Ab3HUH3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 03:29:44 -0400
+Date: Wed, 21 Aug 2013 09:29:40 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Li Fei <fei.li@intel.com>
+Cc: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
+        chuansheng.liu@intel.com, x86@kernel.org, akpm@linux-foundation.org,
+        holt@sgi.com, rmk+kernel@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] reboot: perform warm/cold reset correctly for CF9 type
+Message-ID: <20130821072940.GB27495@gmail.com>
+References: <1377049949.18357.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:tZZqj6dEqXmJKD5ThR0+gh42zBoQW9Q7BnNm7uSWgSYHpT0shtQ
- MEsJHs4NIS93ghxxllgQGdBkcoh9cRdB2Zmb61ZuGRUV3zGFrJb3dKTY8zKUxb274sRhhea
- CstQaJ4mvbwB3L6SV5NT3A2Y3ijbMAeYQyjAy7+DJYdAwOMPaFH8JtnxpV8gq84Ui1isdsx
- eoOjNemwV/qWS6U9MELaw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377049949.18357.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > Description:
-> >   Clang chokes on the notation "insw (%%dx)" but works for "insw %%dx"
-> >   (outsw likewise); GNU as accepts both forms.
-> > 
-> > Signed-off-by: Jan-Simon M??ller <dl9pf@gmx.de>
-> 
-> I think the right fix is to simply kill the FAST_READ_IO/FAST_WRITE_IO
-> defines and their associated inline assembly entirely.
 
-No objection ;) .
+* Li Fei <fei.li@intel.com> wrote:
+
+> In current implementation for reboot type CF9 and CF9_COND,
+> warm and cold reset are not differentiated, and both are
+> performed by writing 0x06 to port 0xCF9 as warm reset. It's not
+> correct.
+> 
+> This commit will differentiate warm and cold reset, and perform
+> them correctly as below:
+> For warm reset, write 0x06 to port 0xCF9;
+> For cold reset, write 0x0E to port 0xCF9.
+> 
+> From: Liu Chuansheng <chuansheng.liu@intel.com>
+> Signed-off-by: Li Fei <fei.li@intel.com>
+> ---
+>  arch/x86/kernel/reboot.c |    9 +++++++--
+>  1 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+> index 563ed91..6e06299 100644
+> --- a/arch/x86/kernel/reboot.c
+> +++ b/arch/x86/kernel/reboot.c
+> @@ -511,10 +511,15 @@ static void native_machine_emergency_restart(void)
+>  
+>  		case BOOT_CF9_COND:
+>  			if (port_cf9_safe) {
+> -				u8 cf9 = inb(0xcf9) & ~6;
+> +				u8 cf9 = inb(0xcf9) &
+> +						~(reboot_mode == REBOOT_WARM ?
+> +						0x06 : 0x0E);
+>  				outb(cf9|2, 0xcf9); /* Request hard reset */
+>  				udelay(50);
+> -				outb(cf9|6, 0xcf9); /* Actually do the reset */
+> +				/* Actually do the reset */
+> +				outb(cf9|(reboot_mode == REBOOT_WARM ?
+> +					0x06 : 0x0E),
+> +					0xcf9);
+>  				udelay(50);
+
+Looks good, but please introduce a reboot_val intermediate 
+variable instead of duplicating that ugly line-broken 
+construct twice.
+
+Thanks,
+
+	Ingo
