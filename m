@@ -1,91 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab3HUO4k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:56:40 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:50477 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab3HUO4j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:56:39 -0400
-Date: Wed, 21 Aug 2013 10:56:30 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-linus-3.11-rc6-tag
-Message-ID: <20130821145630.GA21743@phenom.dumpdata.com>
+	id S1752020Ab3HUO7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:59:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40501 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751708Ab3HUO7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 10:59:10 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <5214F09002000078000ED5C3@nat28.tlf.novell.com>
+References: <5214C524.1050900@citrix.com> <20130821141223.GS18673@moon> <5214F09002000078000ED5C3@nat28.tlf.novell.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with existing use
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 21 Aug 2013 16:58:39 +0200
+To: Jan Beulich <JBeulich@suse.com>, David Vrabel <david.vrabel@citrix.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Xen-devel@lists.xen.org, Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <71a3ac45-a091-4e5a-aa04-68af9219e30f@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Only WB pages should be swappable, but even so, the cacheability should be in the vma.
 
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Jan Beulich <JBeulich@suse.com> wrote:
+>>>> On 21.08.13 at 16:12, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>> On Wed, Aug 21, 2013 at 02:48:20PM +0100, David Vrabel wrote:
+>>> All,
+>>> 
+>>> 179ef71c (mm: save soft-dirty bits on swapped pages) introduces a
+>new
+>>> PTE bit on x86 _PTE_SWP_SOFT_DIRTY which has the same value as
+>_PTE_PSE
+>>> and _PTE_PAT.
+>>> 
+>>> With a Xen PV guest, the use of the _PTE_PAT will result in the page
+>>> having unexpected cachability which will introduce a range of subtle
+>>> performance and correctness issues.  Xen programs the entry 4 in the
+>PAT
+>>> table with WC so a page that was previously WB will end up as WC.
+>>> 
+>> 
+>> David, could you please explain, Xen keeps and analyze _PTE_PAT bit
+>> for ptes which are not present?
+>
+>No, the problem isn't with not-present PTEs (i.e. swap entries),
+>but with present ones - the same bit (7) is being used for both,
+>according to this comment:
+>
+>/*
+> * Tracking soft dirty bit when a page goes to a swap is tricky.
+> * We need a bit which can be stored in pte _and_ not conflict
+> * with swap entry format. On x86 bits 6 and 7 are *not* involved
+> * into swap entry computation, but bit 6 is used for nonlinear
+> * file mapping, so we borrow bit 7 for soft dirty tracking.
+> */
+>
+>Or are you telling me that the comment is misleading (at least me),
+>and this applies only to not-present PTEs? And even then - where
+>would the value of the original PAT bit be stored while swapped
+>out (or is it impossible - now and forever - for WC pages to get
+>swapped)?
+>
+>Jan
 
-Hey Linus,
-
-Please git pull the following tag:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-3.11-rc6-tag
-
-which is full of bug-fixes that took a while to figure out right.
-The signed git tag says it all:
-<start>
- - On ARM did not have balanced calls to get/put_cpu.
- - Fix to make tboot + Xen + Linux boot correctly.
- - Fix events VCPU binding issues.
- - Fix a vCPU online race where IPIs are sent to not-yet-online vCPU.
-<end>
-
-The 'stable/for-linus-3.11' branch (from which this signed tag is) was
-based on v3.10-rc1. Stefano merged the v3.10-rc2 as the fix from Julien
-depended on features added during that time.
-
-Please pull!
-
-Thanks.
-
- arch/arm/xen/enlighten.c |  1 +
- arch/x86/xen/setup.c     | 22 ++++++++++++++++++++++
- arch/x86/xen/smp.c       | 11 +++++++++--
- drivers/xen/events.c     | 13 ++++++++++++-
- 4 files changed, 44 insertions(+), 3 deletions(-)
-
-Chuck Anderson (1):
-      xen/smp: initialize IPI vectors before marking CPU online
-
-David Vrabel (3):
-      x86/xen: do not identity map UNUSABLE regions in the machine E820
-      xen/events: initialize local per-cpu mask for all possible events
-      xen/events: mask events when changing their VCPU binding
-
-Julien Grall (1):
-      xen/arm: missing put_cpu in xen_percpu_init
-
-Stefano Stabellini (1):
-      Merging v3.10-rc2 as I need to apply a fix for
-
-
---sdtB3X0nJg68CQEu
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQEcBAEBAgAGBQJSFNUaAAoJEFjIrFwIi8fJVOwH/155pZS5vzzE9GbwdC9NMeJL
-Kb9fP93mEoGmXW78B88Qc3PEIc6LyEZcqd+dyGcPpP2ZjqyYFOaiZtJmFJlUN+Du
-7h9liA7fA5YQ6v/wKaIy+QcehmTbaAQApzTYJkMAu4aJefV3YCAMPmWOIvz3J81Z
-V4+MoW6fJczK46ZQlAzIvffZhq/irfVQU30a97ImhsSgxWQT4z75at7G1+CtAC7Z
-GfK3SAZDgB3uXYXPzHYjsWprL1ae2bY5GwOsNIPmfAJMY0qze2sLJDM9CezhnBht
-5kMr5b/yBURkm333nh1VLQncQOgTlmMtW207WLtL/dDj1iJ7JujTklxT3U6yMmU=
-=hmoH
------END PGP SIGNATURE-----
-
---sdtB3X0nJg68CQEu--
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
