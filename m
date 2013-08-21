@@ -1,190 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282Ab3HUPGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:06:55 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:35917 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab3HUPGv (ORCPT
+	id S1751957Ab3HUPIg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:08:36 -0400
+Received: from protonic.xs4all.nl ([213.84.116.84]:19672 "EHLO
+	protonic.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab3HUPIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:06:51 -0400
-From: Steffen Maier <maier@linux.vnet.ibm.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-scsi@vger.kernel.org, linux-s390@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
-        stable@vger.kernel.org.#2.6.35+,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/8] zfcp: fix lock imbalance by reworking request queue locking
-Date: Wed, 21 Aug 2013 17:05:27 +0200
-Message-Id: <1377097531-4942-5-git-send-email-maier@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <1377097531-4942-1-git-send-email-maier@linux.vnet.ibm.com>
-References: <1377097531-4942-1-git-send-email-maier@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082115-2966-0000-0000-000008854613
+	Wed, 21 Aug 2013 11:08:35 -0400
+Date: Wed, 21 Aug 2013 17:08:46 +0200
+From: David Jander <david.jander@protonic.nl>
+To: Mark Brown <broonie@kernel.org>
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: regmap: bugfix in regcache-rbtree.c
+Message-ID: <20130821170846.66b5b1d5@archvile>
+In-Reply-To: <20130821144442.GD26118@sirena.org.uk>
+References: <1377090155-3443-1-git-send-email-david@protonic.nl>
+	<20130821133200.GB26118@sirena.org.uk>
+	<20130821162143.42ca91de@archvile>
+	<20130821144442.GD26118@sirena.org.uk>
+Organization: Protonic Holland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+On Wed, 21 Aug 2013 15:44:42 +0100
+Mark Brown <broonie@kernel.org> wrote:
 
-This patch adds wait_event_interruptible_lock_irq_timeout(), which is a
-straight-forward descendant of wait_event_interruptible_timeout() and
-wait_event_interruptible_lock_irq().
+> On Wed, Aug 21, 2013 at 04:21:43PM +0200, David Jander wrote:
+> 
+> > I hope you can explain to me how regcache_rbtree_node_alloc() is supposed
+> > to work, because I start to think that something in there is broken...
+> > Specially the code at line 323 strikes me:
+> 
+> > 	if (!rbnode->blklen) {
+> > 		rbnode->blklen = sizeof(*rbnode);
+> > 		rbnode->base_reg = reg;
+> > 	}
+> 
+> That's intended to avoid creating lots of tiny blocks.  I think this bit
+> is actually OK but what should be happening here is that the collision
+> gets noticed when we try to insert the block and we at least constrain
+> the size of the new block if not merge it with the old one immediately
+> after (which is obvioulsy better).
+> 
+> As a bug fix setting blklen to be a single register ought to avoid
+> triggering problems though it will be less efficient - does that work
+> for you?  Doing the merging is going to be too much for a fix.
 
-The zfcp driver used to call wait_event_interruptible_timeout()
-in combination with some intricate and error-prone locking. Using
-wait_event_interruptible_lock_irq_timeout() as a replacement
-nicely cleans up that locking.
+Yes! This does indeed help, but it makes the other bug in sgtl5000.c much more
+evident:
 
-This rework removes a situation that resulted in a locking imbalance
-in zfcp_qdio_sbal_get():
+# cat /sys/kernel/debug/regmap/1-000a/rbtree 
+2-2 (1)
+4-4 (1)
+6-6 (1)
+a-a (1)
+10-10 (1)
+14-14 (1)
+20-20 (1)
+22-22 (1)
+24-24 (1)
+26-26 (1)
+28-28 (1)
+2a-2a (1)
+2c-2c (1)
+2e-2e (1)
+30-30 (1)
+32-32 (1)
+34-34 (1)
+3c-3c (1)
+100-100 (1)
+104-104 (1)
+106-106 (1)
+10a-10a (1)
+116-116 (1)
+118-118 (1)
+11a-11a (1)
+11c-11c (1)
+11e-11e (1)
+120-120 (1)
+124-124 (1)
+126-126 (1)
+128-128 (1)
+12a-12a (1)
 
-BUG: workqueue leaked lock or atomic: events/1/0xffffff00/10
-    last function: zfcp_fc_wka_port_offline+0x0/0xa0 [zfcp]
+Now all rbnodes are 1 register long, because the sgtl5000 driver does not set
+regmap_config->reg_stride correctly (should be 2).
 
-It was introduced by commit c2af7545aaff3495d9bf9a7608c52f0af86fb194
-"[SCSI] zfcp: Do not wait for SBALs on stopped queue", which had a new
-code path related to ZFCP_STATUS_ADAPTER_QDIOUP that took an early exit
-without a required lock being held. The problem occured when a
-special, non-SCSI I/O request was being submitted in process context,
-when the adapter's queues had been torn down. In this case the bug
-surfaced when the Fibre Channel port connection for a well-known address
-was closed during a concurrent adapter shut-down procedure, which is a
-rare constellation.
+If I also correct that, I get:
 
-This patch also fixes these warnings from the sparse tool (make C=1):
+# cat /sys/kernel/debug/regmap/1-000a/rbtree 
+2-6 (3)
+a-a (1)
+10-10 (1)
+14-14 (1)
+20-2a (6)
+2c-34 (5)
+3c-3c (1)
+100-100 (1)
+104-106 (2)
+10a-10a (1)
+116-120 (6)
+124-12a (4)
+12 nodes, 32 registers, average 2 registers, used 400 bytes
 
-drivers/s390/scsi/zfcp_qdio.c:224:12: warning: context imbalance in
- 'zfcp_qdio_sbal_check' - wrong count at exit
-drivers/s390/scsi/zfcp_qdio.c:244:5: warning: context imbalance in
- 'zfcp_qdio_sbal_get' - unexpected unlock
+This looks better. Not ideal still, but at least the codec works!
 
-Last but not least, we get rid of that crappy lock-unlock-lock
-sequence at the beginning of the critical section.
+Should I re-send a patch with this fix?
 
-It is okay to call zfcp_erp_adapter_reopen() with req_q_lock held.
+Best Regards,
 
-Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Cc: stable@vger.kernel.org #2.6.35+
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
----
- drivers/s390/scsi/zfcp_qdio.c |    8 +----
- include/linux/wait.h          |   57 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 59 insertions(+), 6 deletions(-)
-
---- a/drivers/s390/scsi/zfcp_qdio.c
-+++ b/drivers/s390/scsi/zfcp_qdio.c
-@@ -224,11 +224,9 @@ int zfcp_qdio_sbals_from_sg(struct zfcp_
- 
- static int zfcp_qdio_sbal_check(struct zfcp_qdio *qdio)
- {
--	spin_lock_irq(&qdio->req_q_lock);
- 	if (atomic_read(&qdio->req_q_free) ||
- 	    !(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
- 		return 1;
--	spin_unlock_irq(&qdio->req_q_lock);
- 	return 0;
- }
- 
-@@ -246,9 +244,8 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio
- {
- 	long ret;
- 
--	spin_unlock_irq(&qdio->req_q_lock);
--	ret = wait_event_interruptible_timeout(qdio->req_q_wq,
--			       zfcp_qdio_sbal_check(qdio), 5 * HZ);
-+	ret = wait_event_interruptible_lock_irq_timeout(qdio->req_q_wq,
-+		       zfcp_qdio_sbal_check(qdio), qdio->req_q_lock, 5 * HZ);
- 
- 	if (!(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
- 		return -EIO;
-@@ -262,7 +259,6 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio
- 		zfcp_erp_adapter_reopen(qdio->adapter, 0, "qdsbg_1");
- 	}
- 
--	spin_lock_irq(&qdio->req_q_lock);
- 	return -EIO;
- }
- 
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -811,6 +811,63 @@ do {									\
- 	__ret;								\
- })
- 
-+#define __wait_event_interruptible_lock_irq_timeout(wq, condition,	\
-+						    lock, ret)		\
-+do {									\
-+	DEFINE_WAIT(__wait);						\
-+									\
-+	for (;;) {							\
-+		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
-+		if (condition)						\
-+			break;						\
-+		if (signal_pending(current)) {				\
-+			ret = -ERESTARTSYS;				\
-+			break;						\
-+		}							\
-+		spin_unlock_irq(&lock);					\
-+		ret = schedule_timeout(ret);				\
-+		spin_lock_irq(&lock);					\
-+		if (!ret)						\
-+			break;						\
-+	}								\
-+	finish_wait(&wq, &__wait);					\
-+} while (0)
-+
-+/**
-+ * wait_event_interruptible_lock_irq_timeout - sleep until a condition gets true or a timeout elapses.
-+ *		The condition is checked under the lock. This is expected
-+ *		to be called with the lock taken.
-+ * @wq: the waitqueue to wait on
-+ * @condition: a C expression for the event to wait for
-+ * @lock: a locked spinlock_t, which will be released before schedule()
-+ *	  and reacquired afterwards.
-+ * @timeout: timeout, in jiffies
-+ *
-+ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
-+ * @condition evaluates to true or signal is received. The @condition is
-+ * checked each time the waitqueue @wq is woken up.
-+ *
-+ * wake_up() has to be called after changing any variable that could
-+ * change the result of the wait condition.
-+ *
-+ * This is supposed to be called while holding the lock. The lock is
-+ * dropped before going to sleep and is reacquired afterwards.
-+ *
-+ * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
-+ * was interrupted by a signal, and the remaining jiffies otherwise
-+ * if the condition evaluated to true before the timeout elapsed.
-+ */
-+#define wait_event_interruptible_lock_irq_timeout(wq, condition, lock,	\
-+						  timeout)		\
-+({									\
-+	int __ret = timeout;						\
-+									\
-+	if (!(condition))						\
-+		__wait_event_interruptible_lock_irq_timeout(		\
-+					wq, condition, lock, __ret);	\
-+	__ret;								\
-+})
-+
- 
- /*
-  * These are the old interfaces to sleep waiting for an event.
-
+-- 
+David Jander
+Protonic Holland.
