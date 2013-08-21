@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab3HUPUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:20:09 -0400
-Received: from smtp1-1.goneo.de ([212.90.139.81]:52127 "EHLO smtp1-1.goneo.de"
+	id S1752014Ab3HUPWN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:22:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12675 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751550Ab3HUPUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:20:07 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -2.828
-To: rob.herring@calxeda.com, Pawel Moll <Pawel.Moll@arm.com>,
-        mark.rutland@arm.com, Stephen Warren <swarren@wwwdotorg.org>,
-        ian.campbell@citrix.com, rob@landley.net,
-        Grant Likely <grant.likely@linaro.org>, arnd@arndb.de,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] of: add vendor prefix for Microchip Technology Inc
-From: Lars Poeschel <poeschel@lemonage.de>
-Date: Wed, 21 Aug 2013 17:19:57 +0200
+	id S1751609Ab3HUPWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 11:22:12 -0400
+Message-ID: <5214DB1B.6070803@redhat.com>
+Date: Wed, 21 Aug 2013 17:22:03 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Dave Hansen <dave.hansen@intel.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm: add overcommit_kbytes sysctl variable
+References: <1376925478-15506-1-git-send-email-jmarchan@redhat.com> <1376925478-15506-2-git-send-email-jmarchan@redhat.com> <52124DE7.8070502@intel.com>
+In-Reply-To: <52124DE7.8070502@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201308211719.57748.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial patch to add Microchip Technology Inc. to the list
-of devicetree vendor prefixes, as it is already used in
-Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+On 08/19/2013 06:55 PM, Dave Hansen wrote:
+> On 08/19/2013 08:17 AM, Jerome Marchand wrote:
+>> Some applications that run on HPC clusters are designed around the
+>> availability of RAM and the overcommit ratio is fine tuned to get the
+>> maximum usage of memory without swapping. With growing memory, the
+>> 1%-of-all-RAM grain provided by overcommit_ratio has become too coarse
+>> for these workload (on a 2TB machine it represents no less than
+>> 20GB).
+>>
+>> This patch adds the new overcommit_kbytes sysctl variable that allow a
+>> much finer grain.
+> 
+> Instead of introducing yet another tunable, why don't we just make the
+> ratio that comes in from the user more fine-grained?
+> 
+> 	sysctl overcommit_ratio=0.2
+> 
+> We change the internal 'sysctl_overcommit_ratio' to store tenths or
+> hundreths of a percent (or whatever), then parse the input as two
+> integers.  I don't think we need fully correct floating point parsing
+> and rounding here, so it shouldn't be too much of a chore.  It'd
+> probably end up being less code than you have as it stands.
+> 
 
-Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
----
- Documentation/devicetree/bindings/vendor-prefixes.txt |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt 
-b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 366ce9b..b3b2ad7 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -36,6 +36,7 @@ linux	Linux-specific binding
- lsi	LSI Corp. (LSI Logic)
- marvell	Marvell Technology Group Ltd.
- maxim	Maxim Integrated Products
-+mcp	Microchip Technology Inc.
- mosaixtech	Mosaix Technologies, Inc.
- national	National Semiconductor
- nintendo	Nintendo
--- 
-1.7.10.4
+Now that I think about it, that could break user space. Sure write access
+wouldn't be a problem (one can still write a plain integer), but a script
+that reads a fractional value when it expects an integer might not be able
+to cope with it.
 
