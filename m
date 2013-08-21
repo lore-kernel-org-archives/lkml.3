@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119Ab3HUNmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 09:42:13 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:43038 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab3HUNmL (ORCPT
+	id S1752134Ab3HUNmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 09:42:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33431 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670Ab3HUNmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 09:42:11 -0400
-Date: Wed, 21 Aug 2013 06:42:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH 5/8] rcu: eliminate deadlock for rcu read site
-Message-ID: <20130821134204.GU29406@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
- <1375871104-10688-6-git-send-email-laijs@cn.fujitsu.com>
- <20130808204020.GA31127@linux.vnet.ibm.com>
- <5205B6FF.7060502@cn.fujitsu.com>
- <20130810150715.GF29406@linux.vnet.ibm.com>
- <20130821031727.GA21711@linux.vnet.ibm.com>
- <52143343.4090303@cn.fujitsu.com>
+	Wed, 21 Aug 2013 09:42:49 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=wom5GMh1gUkA:10 a=roXeUe4e85gA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=JzSCUfRX3cwA:10 a=4NRdzSatcP40QqvyGe0A:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 21 Aug 2013 09:42:48 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net,
+        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Proposed stable release changes
+Message-ID: <20130821134248.GB16493@home.goodmis.org>
+References: <20130820224032.GA20491@kroah.com>
+ <CA+5PVA4s8D6Hkvj7c4Hpw6MOefZG4BEEWZjWb4XHW+k4n_sWjA@mail.gmail.com>
+ <20130820235700.GA7209@kroah.com>
+ <CA+5PVA4q1K9iS0-ppZKMM8QfKQZBHX8auEp+C=Y=gnSMCkbP2Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52143343.4090303@cn.fujitsu.com>
+In-Reply-To: <CA+5PVA4q1K9iS0-ppZKMM8QfKQZBHX8auEp+C=Y=gnSMCkbP2Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082113-2398-0000-0000-000001AFC1D1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 11:25:55AM +0800, Lai Jiangshan wrote:
-> On 08/21/2013 11:17 AM, Paul E. McKenney wrote:
-> > On Sat, Aug 10, 2013 at 08:07:15AM -0700, Paul E. McKenney wrote:
-> >> On Sat, Aug 10, 2013 at 11:43:59AM +0800, Lai Jiangshan wrote:
-> > 
-> > [ . . . ]
-> > 
-> >>> So I have to narrow the range of suspect locks. Two choices:
-> >>> A) don't call rt_mutex_unlock() from rcu_read_unlock(), only call it
-> >>>    from rcu_preempt_not_context_switch(). we need to rework these
-> >>>    two functions and it will add complexity to RCU, and it also still
-> >>>    adds some probability of deferring.
-> >>
-> >> One advantage of bh-disable locks is that enabling bh checks
-> >> TIF_NEED_RESCHED, so that there is no deferring beyond that
-> >> needed by bh disable.  The same of course applies to preempt_disable().
-> >>
-> >> So one approach is to defer when rcu_read_unlock_special() is entered
-> >> with either preemption or bh disabled.  Your current set_need_resched()
-> >> trick would work fine in this case.  Unfortunately, re-enabling interrupts
-> >> does -not- check TIF_NEED_RESCHED, which is why we have latency problems
-> >> in that case.  (Hence my earlier question about making self-IPI safe
-> >> on all arches, which would result in an interrupt as soon as interrupts
-> >> were re-enabled.)
-> >>
-> >> Another possibility is to defer only when preemption or bh are disabled
-> >> on entry ro rcu_read_unlock_special(), but to retain the current
-> >> (admittedly ugly) nesting rules for the scheduler locks.
-> > 
-> > Would you be willing to do a patch that deferred rt_mutex_unlock() in
-> > the preempt/bh cases?  This of course does not solve the irq-disable
-> > case, but it should at least narrow the problem to the scheduler locks.
-> > 
-> > Not a big hurry, given the testing required, this is 3.13 or 3.14 material,
-> > I think.
-> > 
-> > If you are busy, no problem, I can do it, just figured you have priority
-> > if you want it.
+On Tue, Aug 20, 2013 at 08:41:23PM -0400, Josh Boyer wrote:
 > 
-> I'm writing a special rt_mutex_unlock() for rcu deboost only.
-> I hope Steven accept it.
+> Let me phrase this as a question instead.  Is there something we can
+> do to help catch the patches that get sucked into stable during the
+> merge window and then wind up causing issues and reverted/fixed after
+> things settle down in the -rc releases?
 
-That would be very cool, though if I understand the requirements,
-especially for -rt, very challenging.  Looking forward to seeing it!
+I'm curious. Of the patches that went into stable that caused problems,
+how many were from the merge window?
 
-							Thanx, Paul
+Reason that I ask this, is because the patches I tag for stable that I
+wait for a merge window for release, goes through the process of all my
+patches that enter the merge window. It sits in linux-next for a while
+and usually gets much more testing than a fix that may come later in the
+-rc cycles.
+
+Personally, I still let my stable patches that go into later -rc sit
+in linux-next for a few days before pushing them to mainline. I may even
+wait for the next -rc to push it just to make sure the patch wont cause
+more issues. But I know others that just send the fix directly to
+mainline without going through linux-next. Those, I would think, are the
+most prone to cause issues in stable.
+
+-- Steve
 
