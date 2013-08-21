@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab3HUSxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 14:53:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752502Ab3HUSxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 14:53:19 -0400
-Date: Wed, 21 Aug 2013 20:47:06 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Willy Tarreau <w@1wt.eu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>
-Subject: Re: [PATCH] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
-Message-ID: <20130821184706.GA20591@redhat.com>
-References: <CALCETrXMQdjRyvP8RHOd5xjciurS7-hKUOExvkvQ1RWmdRdypA@mail.gmail.com> <0be9da18c0ca360773a397de3063d01019ff88d8.1377107508.git.luto@amacapital.net> <20130821182053.GA19624@redhat.com> <CALCETrXtJBDqkvO3mHxDrHL3whCWX_B-LAXOnue7r90nyyWY_A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXtJBDqkvO3mHxDrHL3whCWX_B-LAXOnue7r90nyyWY_A@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752802Ab3HUSyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 14:54:09 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:36579 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab3HUSyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 14:54:08 -0400
+From: Filipe David Borba Manana <fdmanana@gmail.com>
+To: jglisse@redhat.com
+Cc: linux-kernel@vger.kernel.org,
+        Filipe David Borba Manana <fdmanana@gmail.com>
+Subject: [PATCH v2] Radeon driver: fix memory leak
+Date: Wed, 21 Aug 2013 19:53:47 +0100
+Message-Id: <1377111227-15947-1-git-send-email-fdmanana@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1377109891-14503-1-git-send-email-fdmanana@gmail.com>
+References: <1377109891-14503-1-git-send-email-fdmanana@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21, Andy Lutomirski wrote:
->
-> On Wed, Aug 21, 2013 at 11:20 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > Can't really comment the patch, just a nit:
-> >
-> > On 08/21, Andy Lutomirski wrote:
-> >>
-> >> +static bool may_flink(const struct path *path)
-> >> +{
-> >> +     bool ret;
-> >> +     struct inode *inode = path->dentry->d_inode;
-> >> +
-> >> +     /*
-> >> +      * This is racy: I_LINKABLE could be cleared between this check
-> >> +      * and the actual link operation.
-> >
-> > OK,
-> >
-> >> +     spin_lock(&inode->i_lock);
-> >> +     ret = !!(inode->i_state & I_LINKABLE);
-> >> +     spin_unlock(&inode->i_lock);
-> >
-> > so why do we need to take a lock ?
-> >
->
-> We probably don't.  But other accesses to this field take that lock,
+When freeing a struct radeon_device, its member iio was
+not being freed, resulting in a memory leak.
 
-Not if you only need to check ->i_lock,
+Signed-off-by: Filipe David Borba Manana <fdmanana@gmail.com>
+---
 
-> (In principle, someone could take the lock, write I_LINKABLE, clear
-> it, and unlock, and we'd get confused if we didn't take the lock
-> ourselves.)
+V2: put kfree() call inside if statement.
 
-Or it can be cleared right after we drop i_lock, I do not think there
-is any difference.
+ drivers/gpu/drm/radeon/radeon_device.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-But OK, I won't argue.
-
-Oleg.
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index 63398ae..5d94d5e 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -911,6 +911,7 @@ void radeon_atombios_fini(struct radeon_device *rdev)
+ {
+ 	if (rdev->mode_info.atom_context) {
+ 		kfree(rdev->mode_info.atom_context->scratch);
++		kfree(rdev->mode_info.atom_context->iio);
+ 	}
+ 	kfree(rdev->mode_info.atom_context);
+ 	rdev->mode_info.atom_context = NULL;
+-- 
+1.7.9.5
 
