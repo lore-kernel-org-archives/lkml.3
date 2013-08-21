@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab3HUUHH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 16:07:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52422 "EHLO mail.skyhub.de"
+	id S1752825Ab3HUUHp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 16:07:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13150 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752289Ab3HUUHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 16:07:04 -0400
-Date: Wed, 21 Aug 2013 22:07:03 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jochen Striepe <jochen@tolot.escape.de>, Willy Tarreau <w@1wt.eu>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, lwn@lwn.net,
-        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Proposed stable release changes
-Message-ID: <20130821200702.GA10762@nazgul.tnic>
-References: <20130820224032.GA20491@kroah.com>
- <CA+5PVA4s8D6Hkvj7c4Hpw6MOefZG4BEEWZjWb4XHW+k4n_sWjA@mail.gmail.com>
- <20130820235700.GA7209@kroah.com>
- <CA+5PVA4q1K9iS0-ppZKMM8QfKQZBHX8auEp+C=Y=gnSMCkbP2Q@mail.gmail.com>
- <20130821004924.GA19098@kroah.com>
- <20130821053836.GF16424@1wt.eu>
- <20130821133713.GA16493@home.goodmis.org>
- <20130821172327.GB2398@pompeji.miese-zwerge.org>
- <20130821135816.41127e6f@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130821135816.41127e6f@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752393Ab3HUUHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 16:07:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,929,1367996400"; 
+   d="scan'208";a="366418183"
+From: Andi Kleen <andi@firstfloor.org>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] x86, asmlinkage: Fix warning in xen asmlinkage change v2
+Date: Wed, 21 Aug 2013 13:07:42 -0700
+Message-Id: <1377115662-4865-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 01:58:16PM -0400, Steven Rostedt wrote:
-> The point I'm making, we should be more reluctant in pulling patches
-> into stable as quick as we are. A patch ideally should simmer in
-> linux-next for a bit, then go into mainline.
+From: Andi Kleen <ak@linux.intel.com>
 
-Oh, and it is really debatable if the sheer volume of -stable patches is
-actually warranted - several people already raised the question whether
-we should be more conservative with the stable tag. But you're probably
-going to have this as one of the topics at KS...
+Current code uses asmlinkage for functions without arguments.
+This adds an implicit regparm(0) which creates a warning
+when assigning the function to pointers.
+Use __visible for the functions without arguments.
+This avoids having to add regparm(0) to function pointers.
+Since they have no arguments it does not make any difference.
 
-Thanks.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/xen/xen-ops.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index d380213..95f8c61 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -105,7 +105,7 @@ static inline void __init xen_init_apic(void)
+ /* Declare an asm function, along with symbols needed to make it
+    inlineable */
+ #define DECL_ASM(ret, name, ...)		\
+-	asmlinkage ret name(__VA_ARGS__);	\
++	__visible ret name(__VA_ARGS__);	\
+ 	extern char name##_end[] __visible;	\
+ 	extern char name##_reloc[] __visible
+ 
+@@ -115,11 +115,11 @@ DECL_ASM(unsigned long, xen_save_fl_direct, void);
+ DECL_ASM(void, xen_restore_fl_direct, unsigned long);
+ 
+ /* These are not functions, and cannot be called normally */
+-asmlinkage void xen_iret(void);
+-asmlinkage void xen_sysexit(void);
+-asmlinkage void xen_sysret32(void);
+-asmlinkage void xen_sysret64(void);
+-asmlinkage void xen_adjust_exception_frame(void);
++__visible void xen_iret(void);
++__visible void xen_sysexit(void);
++__visible void xen_sysret32(void);
++__visible void xen_sysret64(void);
++__visible void xen_adjust_exception_frame(void);
+ 
+ extern int xen_panic_handler_init(void);
+ 
+-- 
+1.8.3.1
+
