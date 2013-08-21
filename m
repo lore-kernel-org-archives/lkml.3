@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab3HUNhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 09:37:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25882 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab3HUNhR (ORCPT
+	id S1751941Ab3HUNhg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 09:37:36 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:36555 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751861Ab3HUNhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 09:37:17 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=wom5GMh1gUkA:10 a=roXeUe4e85gA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=JzSCUfRX3cwA:10 a=VwQbUJbxAAAA:8 a=AIXmSJp-6wMKP3QmP28A:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 21 Aug 2013 09:37:13 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, lwn@lwn.net,
-        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Proposed stable release changes
-Message-ID: <20130821133713.GA16493@home.goodmis.org>
-References: <20130820224032.GA20491@kroah.com>
- <CA+5PVA4s8D6Hkvj7c4Hpw6MOefZG4BEEWZjWb4XHW+k4n_sWjA@mail.gmail.com>
- <20130820235700.GA7209@kroah.com>
- <CA+5PVA4q1K9iS0-ppZKMM8QfKQZBHX8auEp+C=Y=gnSMCkbP2Q@mail.gmail.com>
- <20130821004924.GA19098@kroah.com>
- <20130821053836.GF16424@1wt.eu>
+	Wed, 21 Aug 2013 09:37:35 -0400
+Date: Wed, 21 Aug 2013 06:37:34 -0700 (PDT)
+From: Andy King <acking@vmware.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
+        Greg KH <gregkh@linuxfoundation.org>
+Message-ID: <1944820276.33601674.1377092254160.JavaMail.root@vmware.com>
+In-Reply-To: <20130821.000255.1258155583733908892.davem@davemloft.net>
+References: <1377020012-1839-1-git-send-email-acking@vmware.com> <20130821.000255.1258155583733908892.davem@davemloft.net>
+Subject: Re: [PATCH] VMXNET3: Add support for virtual IOMMU
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821053836.GF16424@1wt.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.163.67]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - GC28 (Linux)/8.0.3_GA_5664)
+Thread-Topic: VMXNET3: Add support for virtual IOMMU
+Thread-Index: iteshscowKzxVYPIJWS3nHbeGVswJg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adding Greg, since this will apply to a similar patchset I sent out
+for VMCI.
 
-First I want to say that I 100% support the idea of waiting at least one
--rc. Maybe even two.
-
-On Wed, Aug 21, 2013 at 07:38:36AM +0200, Willy Tarreau wrote:
-> > 	Cc: stable <stable@vger.kernel.org> # after -rc5 is out
-> > or
-> > 	Cc: stable <stable@vger.kernel.org> # wait a -rc cycle
-> > or
-> > 	Cc: stable <stable@vger.kernel.org> # wait a few weeks to bake
+----- Original Message -----
+> From: Andy King <acking@vmware.com>
+> Date: Tue, 20 Aug 2013 10:33:32 -0700
 > 
-> That's where I think that the default one (with no indication) should
-> be the higher delay. If the author has no clue about the emergency of
-> his patch, who else can guess for him ?
-> 
-> It's too optimistic to consider that some code authors will be
-> realist about the impacts of their code. We all create bugs and
-> regressions everywhere because we're sure about what we do, until
-> someone says "hey dude you broke this". So if we expect authors to
-> say "look, I managed to get this merged into mainline but I'm still
-> not sure about the risks", I suspect only a small fraction of the
-> patches will be tagged this way. But I may be wrong, after all it
-> already works well with -net.
+> > We can't just do virt_to_phys() on memory that we pass to the device and
+> > expect it to work in presence of a virtual IOMMU.  We need to add IOMMU
+> > mappings for such DMAs to work correctly.  Fix that with
+> > pci_alloc_consistent() where possible, or pci_map_single() where the
+> > mapping is short-lived or we don't control the allocation (netdev).
+>
+> Please use dma_alloc_coherent() (or in fact dma_zalloc_coherent()),
+> dma_map_single() et al., because they are preferred and in particular
+> allow specification of GFP_* flags
 
-Really, most fixes are for regressions. If it isn't something that can
-let non root crash the kernel, or have access that they shouldn't have,
-then let it simmer in the kernel for a while. I don't see any reason to
-rush out a regression fix if it just causes a device not to work
-anymore. The user can go back to the old kernel for a week or two and
-wait. Even with two weeks (or even a month) of waiting, we are still much
-faster than Apple or Microsoft in getting regression fixes out.
+Sorry about that, I'll fix that and send out a new patch.
 
-If people are not rushing to update their kernel to stable every time a
-new stable is released then why are we rushing to get them out?
-
-Maybe people are rushing, but I don't update my main machines every
-stable release because I can't always afford the down time it causes me
-to do so.
-
--- Steve
-
+Thanks!
+- Andy
