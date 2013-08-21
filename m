@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab3HUWhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 18:37:09 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:37487 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab3HUWhH (ORCPT
+	id S1753120Ab3HUWh3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 18:37:29 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42354 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab3HUWhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 18:37:07 -0400
+	Wed, 21 Aug 2013 18:37:25 -0400
+Date: Wed, 21 Aug 2013 23:36:05 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Darren Etheridge <darren.etheridge@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/8] drm/i2c: tda998x: prepare for video input
+	configuration
+Message-ID: <20130821223605.GA6617@n2100.arm.linux.org.uk>
+References: <20130821202646.47af66a5@armhf>
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMgd51g7WAkQu+ckT-=skKuMyj19nJkHxh+YmGSBhSL+Vg@mail.gmail.com>
-References: <1374243229-8585-1-git-send-email-lee.jones@linaro.org>
-	<1374243229-8585-6-git-send-email-lee.jones@linaro.org>
-	<CAOesGMgd51g7WAkQu+ckT-=skKuMyj19nJkHxh+YmGSBhSL+Vg@mail.gmail.com>
-Date: Thu, 22 Aug 2013 00:37:05 +0200
-Message-ID: <CACRpkdasMSCfdhzrW+7kHM8UUxxQ5UMAcc5bOogc-9RwXE9RVg@mail.gmail.com>
-Subject: Re: [PATCH 05/13] ARM: ux500: Apply a ste-* prefix onto snowball.dts
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130821202646.47af66a5@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 2:31 AM, Olof Johansson <olof@lixom.net> wrote:
+On Wed, Aug 21, 2013 at 08:26:46PM +0200, Jean-Francois Moine wrote:
+> On Wed Aug 14 12:43:29 PDT 2013, Sebastian Hesselbarth wrote:
+> > From: Russell King <rmk+kernel at arm.linux.org.uk>
+> > 
+> > The video-input-port (VIP) is highly configurable. This prepares
+> > current driver to allow to configure VIP configuration, as some
+> > boards connect lcd controller and TDA998x "pin-swapped" and depend
+> > on VIP to swap the pins by register configuration.
+> > 
+> > Signed-off-by: Russell King <rmk+kernel at arm.linux.org.uk>
+> > Tested-by: Darren Etheridge <detheridge at ti.com>
+> > Tested-by: Sebastian Hesselbarth <sebastian.hesselbarth at gmail.com>
+> 	[snip]
+> 
+> AFAIK, the TI boards have no "pin-swapped", nor has the Cubox (there is
+> no need to set the bit CFG_GRA_SWAPRB of the register LCD_SPU_DMA_CTRL0
+> of the Dove lcd for RGB or YUV formats).
+> 
+> Which board needs a special VIP configuration?
 
->> diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/ste-snowball.dts
->> similarity index 100%
->> rename from arch/arm/boot/dts/snowball.dts
->> rename to arch/arm/boot/dts/ste-snowball.dts
->
-> Grmbl, grmbl, grmbl. This now breaks any script that knows to use
-> snowball.dtb. :(
->
-> It's good to get the prefixes added, but it's annoying to have to deal
-> with both during an overlap period. Maybe generate both dtb filenames
-> for a while but rename the source?
+If you run the NXP driver, and then run this driver, things get messed
+up - which has already been covered months ago when this patch was first
+brought up.
 
-Hm I had the same problem but changed my Makefile
-(scripts are too simple for me) like this:
-
- dtb            := $(build_dir)/arch/arm/boot/dts/ste-hrefv60plus.dtb
-+fallbackdtb    := $(build_dir)/arch/arm/boot/dts/hrefv60plus.dtb
-(...)
--       cat $(dtb) >> $(output_dir)/zImage
-+       if [ -f arch/arm/boot/dts/hrefv60plus.dts ] ; then \
-+           cat $(fallbackdtb) >> $(output_dir)/zImage ; echo "fallback" ; \
-+       else \
-+           cat $(dtb) >> $(output_dir)/zImage ; \
-+       fi
-
-Yours,
-Linus Walleij
+It's there to ensure that the TDA998x is correctly configured no matter
+what it's previous state is, and prevent the thing being fragile as hell.
+No, reset doesn't restore its settings, only a power cycle does.
