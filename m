@@ -1,125 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab3HUTdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 15:33:15 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:47281 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab3HUTdN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 15:33:13 -0400
-Message-ID: <1377113503.10300.492.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Date: Wed, 21 Aug 2013 13:31:43 -0600
-In-Reply-To: <20130821153639.GA17432@htj.dyndns.org>
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <20130821130647.GB19286@mtj.dyndns.org> <5214D60A.2090309@gmail.com>
-	 <20130821153639.GA17432@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752639Ab3HUTfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 15:35:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49896 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751969Ab3HUTfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 15:35:06 -0400
+Date: Wed, 21 Aug 2013 17:13:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Jones <davej@redhat.com>
+Cc: Anton Arapov <anton@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [ATTEND] oops.kernel.org prospect
+Message-ID: <20130821151302.GA9071@nazgul.tnic>
+References: <20130819085405.GA22328@bandura.laptop>
+ <20130819145505.GB15178@kroah.com>
+ <20130819151643.GC19070@bandura.laptop>
+ <20130819153939.GA23875@thunk.org>
+ <20130819155202.GF19070@bandura.laptop>
+ <20130819212512.GA7918@redhat.com>
+ <20130820080243.GB2613@bandura.laptop>
+ <20130820082216.GA13078@pd.tnic>
+ <20130820123748.GB23101@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130820123748.GB23101@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-21 at 11:36 -0400, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Aug 21, 2013 at 11:00:26PM +0800, Zhang Yanfei wrote:
-> > In current boot order, before we get the SRAT, we have a big consumer of early
-> > allocations: we are setting up the page table in top-down (The idea was proposed by HPA,
-> > Link: https://lkml.org/lkml/2012/10/4/701). That said, this kind of page table
-> > setup will make the page tables as high as possible in memory, since memory at low 
-> > addresses is precious (for stupid DMA devices, for things like  kexec/kdump, and so on.)
-> 
-> With huge mappings, they are fairly small, right?  And this whole
-> thing needs a kernel param anyway at this point, so the allocation
-> direction can be made dependent on that or huge mapping availability
-> and, even with 4k mappings, we aren't talking about gigabytes of
-> memory, are we?
-> 
-> > So if we are trying to make early allocations close to kernel image, we should
-> > rewrite the way we are setting up page table totally. That is not a easy thing
-> > to do.
-> 
-> It has been a while since I looked at the code so can you please
-> elaborate why that is not easy?  It's pretty simple conceptually.
-> 
-> > * For memory hotplug, we need ACPI SRAT at early time to be aware of which memory
-> >   ranges are hotpluggable, and tell the kernel to try to stay away from hotpluggable
-> >   nodes.
-> > 
-> > This one is the current requirement of us but may be very helpful for future change:
-> > 
-> > * As suggested by Yinghai, we should allocate page tables in local node. This also
-> >   needs SRAT before direct mapping page tables are setup.
-> 
-> Does this even matter for huge mappings?
-> 
-> > * As mentioned by Toshi Kani <toshi.kani@hp.com>, ACPI SCPR/DBGP/DBG2 tables
-> >   allow the OS to initialize serial console/debug ports at early boot time. The
-> >   earlier it can be initialized, the better this feature will be.  These tables
-> >   are not currently used by Linux due to a licensing issue, but it could be
-> >   addressed some time soon.
-> > 
-> > So we decided to firstly make ACPI override earlier and use BRK (this is obviously
-> > near the kernel image range) to store the found ACPI tables.
-> 
-> I don't know.  The whole effort seems way overcomplicated compared to
-> the benefits it would bring.  For NUMA memory hotunplug, what's the
-> point of doing all this when the kernel doesn't have any control over
-> where its image is gonna be?  Some megabytes at the tail aren't gonna
-> make a huge difference and if you wanna do this properly, you need to
-> determine the load address of the kernel considering the node
-> boundaries and hotpluggability of each node, which has to happen
-> before the early kernel boot code executes.  And if there's a code
-> piece which does that, that might as well place the kernel image such
-> that extra allocation afterwards doesn't interfere with memory
-> hotunplugging.
-> 
-> It looks like a lot of code changes for a mechanism which doesn't seem
-> all that useful.  This code is already too late in boot sequence to be
-> a proper solution so I don't see the point in pushing the coverage to
-> the maximum from here.  It's kinda silly.
-> 
-> The last point - early init of debug facility - makes some sense but
-> again how extra coverage are we talking about?  The code path between
-> the two points is fairly short and the change doesn't come free.  It
-> means we add more fragile firmware-specific code path before the
-> execution environment is stable and get to do things like traveling
-> the same code paths multiple times in different environments.  Doesn't
-> seem like a win.  We want to reach stable execution environment as
-> soon as possible.  Shoving whole more logic before that in the name of
-> "earlier debugging" doesn't make a lot of sense.
+On Tue, Aug 20, 2013 at 08:37:48AM -0400, Dave Jones wrote:
+> abrt used to have a free-form entry like this. What happened is users
+> have no idea what to type in there, so you end up with bugs containing
+> things like "don't know" or worse, some crazy moon language you can't
+> even read.
 
-Well, there is reason why we have earlyprintk feature today.  So, let's
-not debate on this feature now.  There was previous attempt to support
-this feature with ACPI tables below.  As described, it had the same
-ordering issue.
+Prepend the entry with an informative question maybe:
 
-https://lkml.org/lkml/2012/10/8/498
+"Enter bug reproduction information here:"
 
-There is a basic problem that when we try to use ACPI tables that
-extends or replaces legacy interfaces (ex. SRAT extending e820), we hit
-this ordering issue because ACPI is not available as early as the legacy
-interfaces.
+> Two things worth noting here, are 1) the original kerneloops also
+> didn't collect anything like this, and was still very useful, and
+> 2) for the more common issues (which let's face it, are going to be
+> the only things people really look at) chances are pretty high that
+> there's going to be someone also reporting it on lkml, or in a distro
+> bug tracker.
 
-Thanks,
--Toshi
+Ok.
 
+> What might be useful however, is collecting things like
+> dmi/lspci/lsusb etc and _asking_ the user if they're ok with including
+> them at time of filing. We might scare off some of the more paranoid
+> OMGMYSECRETDATAS users, but chances are high most people won't care.
+> This requires the client to have a UI though, which aiui, it currently
+> doesn't. Anton?
+
+Definitely a step in the right direction.
+
+> We might also ask if they want to provide an email address for
+> feedback, but that leads to a bunch of questions about how we expose
+> that to developers without exposing it to spambots.
+
+Right.
