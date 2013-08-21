@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab3HUO7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:59:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40501 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708Ab3HUO7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:59:10 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <5214F09002000078000ED5C3@nat28.tlf.novell.com>
-References: <5214C524.1050900@citrix.com> <20130821141223.GS18673@moon> <5214F09002000078000ED5C3@nat28.tlf.novell.com>
+	id S1752025Ab3HUPA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:00:59 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:42464 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab3HUPA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 11:00:56 -0400
+Message-ID: <5214D60A.2090309@gmail.com>
+Date: Wed, 21 Aug 2013 23:00:26 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with existing use
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 21 Aug 2013 16:58:39 +0200
-To: Jan Beulich <JBeulich@suse.com>, David Vrabel <david.vrabel@citrix.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Xen-devel@lists.xen.org, Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <71a3ac45-a091-4e5a-aa04-68af9219e30f@email.android.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com> <20130821130647.GB19286@mtj.dyndns.org>
+In-Reply-To: <20130821130647.GB19286@mtj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only WB pages should be swappable, but even so, the cacheability should be in the vma.
+Hi tejun,
 
-Jan Beulich <JBeulich@suse.com> wrote:
->>>> On 21.08.13 at 16:12, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->> On Wed, Aug 21, 2013 at 02:48:20PM +0100, David Vrabel wrote:
->>> All,
->>> 
->>> 179ef71c (mm: save soft-dirty bits on swapped pages) introduces a
->new
->>> PTE bit on x86 _PTE_SWP_SOFT_DIRTY which has the same value as
->_PTE_PSE
->>> and _PTE_PAT.
->>> 
->>> With a Xen PV guest, the use of the _PTE_PAT will result in the page
->>> having unexpected cachability which will introduce a range of subtle
->>> performance and correctness issues.  Xen programs the entry 4 in the
->PAT
->>> table with WC so a page that was previously WB will end up as WC.
->>> 
->> 
->> David, could you please explain, Xen keeps and analyze _PTE_PAT bit
->> for ptes which are not present?
->
->No, the problem isn't with not-present PTEs (i.e. swap entries),
->but with present ones - the same bit (7) is being used for both,
->according to this comment:
->
->/*
-> * Tracking soft dirty bit when a page goes to a swap is tricky.
-> * We need a bit which can be stored in pte _and_ not conflict
-> * with swap entry format. On x86 bits 6 and 7 are *not* involved
-> * into swap entry computation, but bit 6 is used for nonlinear
-> * file mapping, so we borrow bit 7 for soft dirty tracking.
-> */
->
->Or are you telling me that the comment is misleading (at least me),
->and this applies only to not-present PTEs? And even then - where
->would the value of the original PAT bit be stored while swapped
->out (or is it impossible - now and forever - for WC pages to get
->swapped)?
->
->Jan
+On 08/21/2013 09:06 PM, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Aug 21, 2013 at 06:15:35PM +0800, Tang Chen wrote:
+>> [What are we doing]
+>>
+>> We are trying to initialize acip tables as early as possible. But Linux kernel
+>> allows users to override acpi tables by specifying their own tables in initrd.
+>> So we have to do acpi_initrd_override() earlier first.
+> 
+> So, are we now back to making SRAT info as early as possible?  What
+> happened to just co-locating early allocations close to kernel image?
+> What'd be the benefit of doing this over that?
+
+We know you are trying to give the direction to make the change more natural and
+robust and very thankful for your comments. We have taken your comments and suggestions
+about co-locating early allocations close to kernel image into consideration, but
+still we found that not that easy.
+
+In current boot order, before we get the SRAT, we have a big consumer of early
+allocations: we are setting up the page table in top-down (The idea was proposed by HPA,
+Link: https://lkml.org/lkml/2012/10/4/701). That said, this kind of page table
+setup will make the page tables as high as possible in memory, since memory at low 
+addresses is precious (for stupid DMA devices, for things like  kexec/kdump, and so on.)
+
+So if we are trying to make early allocations close to kernel image, we should
+rewrite the way we are setting up page table totally. That is not a easy thing
+to do.
+
+As for the benefits of the patchset, just as Tang said in this patch,
+
+* For memory hotplug, we need ACPI SRAT at early time to be aware of which memory
+  ranges are hotpluggable, and tell the kernel to try to stay away from hotpluggable
+  nodes.
+
+This one is the current requirement of us but may be very helpful for future change:
+
+* As suggested by Yinghai, we should allocate page tables in local node. This also
+  needs SRAT before direct mapping page tables are setup.
+
+* As mentioned by Toshi Kani <toshi.kani@hp.com>, ACPI SCPR/DBGP/DBG2 tables
+  allow the OS to initialize serial console/debug ports at early boot time. The
+  earlier it can be initialized, the better this feature will be.  These tables
+  are not currently used by Linux due to a licensing issue, but it could be
+  addressed some time soon.
+
+So we decided to firstly make ACPI override earlier and use BRK (this is obviously
+near the kernel image range) to store the found ACPI tables.
 
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Thanks.
+Zhang Yanfei
