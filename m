@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab3HUKTw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 06:19:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58595 "EHLO song.cn.fujitsu.com"
+	id S1752694Ab3HUKUD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 06:20:03 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:19009 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949Ab3HUKTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 06:19:49 -0400
+	id S1752392Ab3HUKT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 06:19:59 -0400
 X-IronPort-AV: E=Sophos;i="4.89,927,1367942400"; 
-   d="scan'208";a="8261327"
+   d="scan'208";a="8261326"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: konrad.wilk@oracle.com, robert.moore@intel.com, lv.zheng@intel.com,
         rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
@@ -21,12 +21,10 @@ To: konrad.wilk@oracle.com, robert.moore@intel.com, lv.zheng@intel.com,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH 1/8] x86: Make get_ramdisk_{image|size}() global.
-Date: Wed, 21 Aug 2013 18:15:36 +0800
-Message-Id: <1377080143-28455-2-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+Date: Wed, 21 Aug 2013 18:15:35 +0800
+Message-Id: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/08/21 18:15:15,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
@@ -36,116 +34,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
+This patch-set aims to move acpi_initrd_override() earlier on x86.
+Some of the patches are from Yinghai's patch-set:
+https://lkml.org/lkml/2013/6/14/561
 
-This patch does two things:
+The difference between this patch-set and Yinghai's original patch-set are:
+1. This patch-set doesn't split acpi_initrd_override(), but call it as a
+   whole operation at early time.
+2. Allocate memory from BRK to store override tables.
+   (This idea is also from Yinghai.)
 
-1. Make get_ramdisk_image() and get_ramdisk_size() global so that we can use
-   them in the later patches.
 
-2. In later patches, we are going to call them in head_32.S before paging is
-   enabled. In that case, we can only use physical address to access global
-   variable like boot_params. So make them take a boot_params pointer parameter
-   so that we can pass va or pa to them.
+[Current state]
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Tejun Heo <tj@kernel.org>
-Tested-by: Thomas Renninger <trenn@suse.de>
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/include/asm/setup.h |    3 +++
- arch/x86/kernel/setup.c      |   28 ++++++++++++++--------------
- 2 files changed, 17 insertions(+), 14 deletions(-)
+The current Linux kernel will initialize acpi tables like the following:
 
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index b7bf350..4f71d48 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -106,6 +106,9 @@ void *extend_brk(size_t size, size_t align);
- 	RESERVE_BRK(name, sizeof(type) * entries)
- 
- extern void probe_roms(void);
-+u64 get_ramdisk_image(struct boot_params *bp);
-+u64 get_ramdisk_size(struct boot_params *bp);
-+
- #ifdef __i386__
- 
- void __init i386_start_kernel(void);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f8ec578..5bfd4c8 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -297,19 +297,19 @@ static void __init reserve_brk(void)
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 
--static u64 __init get_ramdisk_image(void)
-+u64 __init get_ramdisk_image(struct boot_params *bp)
- {
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
-+	u64 ramdisk_image = bp->hdr.ramdisk_image;
- 
--	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
-+	ramdisk_image |= (u64)bp->ext_ramdisk_image << 32;
- 
- 	return ramdisk_image;
- }
--static u64 __init get_ramdisk_size(void)
-+u64 __init get_ramdisk_size(struct boot_params *bp)
- {
--	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_size = bp->hdr.ramdisk_size;
- 
--	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
-+	ramdisk_size |= (u64)bp->ext_ramdisk_size << 32;
- 
- 	return ramdisk_size;
- }
-@@ -318,8 +318,8 @@ static u64 __init get_ramdisk_size(void)
- static void __init relocate_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
- 	u64 ramdisk_here;
- 	unsigned long slop, clen, mapaddr;
-@@ -358,8 +358,8 @@ static void __init relocate_initrd(void)
- 		ramdisk_size  -= clen;
- 	}
- 
--	ramdisk_image = get_ramdisk_image();
--	ramdisk_size  = get_ramdisk_size();
-+	ramdisk_image = get_ramdisk_image(&boot_params);
-+	ramdisk_size  = get_ramdisk_size(&boot_params);
- 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
- 		" [mem %#010llx-%#010llx]\n",
- 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
-@@ -369,8 +369,8 @@ static void __init relocate_initrd(void)
- static void __init early_reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 
- 	if (!boot_params.hdr.type_of_loader ||
-@@ -382,8 +382,8 @@ static void __init early_reserve_initrd(void)
- static void __init reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 	u64 mapped_size;
- 
--- 
-1.7.1
+1. Find all acpi override table provided by users in initrd.
+   (Linux allows users to override acpi tables in firmware, by specifying
+   their own tables in initrd.)
+
+2. Use acpica code to initialize acpi global root table list and install all
+   tables into it. If any override tables exists, use it to override the one
+   provided by firmware.
+
+Then others can parse these tables and get useful info.
+
+Both of the two steps happen after direct mapping page tables are setup.
+
+[Issues]
+
+In the current Linux kernel, the initialization of acpi tables is too late for
+new functionalities.
+
+We have some issues about this:
+
+* For memory hotplug, we need ACPI SRAT at early time to be aware of which memory
+  ranges are hotpluggable, and prevent bootmem allocator from allocating memory
+  for the kernel. (Kernel pages cannot be hotplugged because )
+
+* As suggested by Yinghai Lu <yinghai@kernel.org>, we should allocate page tables
+  in local node. This also needs SRAT before direct mapping page tables are setup.
+
+* As mentioned by Toshi Kani <toshi.kani@hp.com>, ACPI SCPR/DBGP/DBG2 tables
+  allow the OS to initialize serial console/debug ports at early boot time. The
+  earlier it can be initialized, the better this feature will be.  These tables
+  are not currently used by Linux due to a licensing issue, but it could be
+  addressed some time soon.
+
+
+[What are we doing]
+
+We are trying to initialize acip tables as early as possible. But Linux kernel
+allows users to override acpi tables by specifying their own tables in initrd.
+So we have to do acpi_initrd_override() earlier first.
+
+
+[About this patch-set]
+
+This patch-set aims to move acpi_initrd_override() as early as possible on x86.
+As suggested by Yinghai, we are trying to do it like this:
+
+On 32bit: do it in head_32.S, before paging is enabled. In this case, we can
+          access initrd with physical address without page tables.
+
+On 64bit: do it in head_64.c, after paging is enabled but before direct mapping
+          is setup.
+
+And also, acpi_initrd_override() needs to allocate memory for override tables.
+But at such an early time, there is no memory allocator works. So the basic idea
+from Yinghai is to use BRK. We will extend BRK 256KB in this patch-set.
+
+
+Tang Chen (6):
+  x86, acpi: Move table_sigs[] to stack.
+  x86, acpi, brk: Extend BRK 256KB to store acpi override tables.
+  x86, brk: Make extend_brk() available with va/pa.
+  x86, acpi: Make acpi_initrd_override() available with va or pa.
+  x86, acpi, brk: Make early_alloc_acpi_override_tables_buf() available
+    with va/pa.
+  x86, acpi: Do acpi_initrd_override() earlier in head_32.S/head64.c.
+
+Yinghai Lu (2):
+  x86: Make get_ramdisk_{image|size}() global.
+  x86, microcode: Use get_ramdisk_{image|size}() in microcode handling.
+
+ arch/x86/include/asm/dmi.h              |    2 +-
+ arch/x86/include/asm/setup.h            |   11 +++-
+ arch/x86/kernel/head64.c                |    4 +
+ arch/x86/kernel/head_32.S               |    4 +
+ arch/x86/kernel/microcode_intel_early.c |    8 +-
+ arch/x86/kernel/setup.c                 |   93 ++++++++++++++++------
+ arch/x86/mm/init.c                      |    2 +-
+ arch/x86/xen/enlighten.c                |    2 +-
+ arch/x86/xen/mmu.c                      |    6 +-
+ arch/x86/xen/p2m.c                      |   27 ++++---
+ drivers/acpi/osl.c                      |  130 ++++++++++++++++++++-----------
+ include/linux/acpi.h                    |    5 +-
+ 12 files changed, 196 insertions(+), 98 deletions(-)
 
