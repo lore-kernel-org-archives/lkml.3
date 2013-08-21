@@ -1,276 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab3HUHI6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 03:08:58 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:42458 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab3HUHI4 (ORCPT
+	id S1752339Ab3HUHKq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 03:10:46 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:2507 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab3HUHKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 03:08:56 -0400
-Message-ID: <1377062750.1797.9.camel@linux-fkkt.site>
-Subject: Re: [PATCH 2/2] input: misc: New USB eBeam input driver
-From: Oliver Neukum <oliver@neukum.org>
-To: Yann Cantin <yann.cantin@laposte.net>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        dmitry.torokhov@gmail.com, jkosina@suse.cz, rob@landley.net,
-        gregkh@linuxfoundation.org
-In-Reply-To: <1376684743-25047-3-git-send-email-yann.cantin@laposte.net>
-References: <1376684743-25047-1-git-send-email-yann.cantin@laposte.net>
-	 <1376684743-25047-3-git-send-email-yann.cantin@laposte.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Aug 2013 07:25:50 +0200
-Mime-Version: 1.0
-X-Mailer: Evolution 3.9.4 
+	Wed, 21 Aug 2013 03:10:45 -0400
+X-Spam-Score: -101.0
+Message-ID: <52145F5C.9090907@asianux.com>
+Date: Wed, 21 Aug 2013 14:34:04 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Rob Landley <rob@landley.net>
+CC: Joe Perches <joe@perches.com>, "'Jiri Kosina'" <trivial@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, davej@redhat.com,
+        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
+ and "uapi/linux/Kbuild"
+References: <52005571.4080704@asianux.com> <1375810303.2424.28.camel@joe-AO722> <1375860749.8422.25@driftwood> <520209FA.70409@asianux.com> <5202FEC3.4010408@asianux.com>
+In-Reply-To: <5202FEC3.4010408@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-16 at 22:25 +0200, Yann Cantin wrote:
+Hello all:
 
-> +/* IRQ */
-> +static int ebeam_read_data(struct ebeam_device *ebeam, unsigned char *pkt)
-> +{
-> +
-> +/*
-> + * Packet description : 8 bytes
-> + *
-> + *  nop packet : FF FF FF FF FF FF FF FF
-> + *
-> + *  pkt[0] : Sensors
-> + *	bit 1 : ultrasound signal (guessed)
-> + *	bit 2 : IR signal (tested with a remote...) ;
-> + *	readings OK : 0x03 (anything else is a show-stopper)
-> + *
-> + *  pkt[1] : raw_x low
-> + *  pkt[2] : raw_x high
-> + *
-> + *  pkt[3] : raw_y low
-> + *  pkt[4] : raw_y high
-> + *
-> + *  pkt[5] : fiability ?
-> + *	often 0xC0
-> + *	> 0x80 : OK
-> + *
-> + *  pkt[6] :
-> + *	buttons state (low 4 bits)
-> + *		0x1 = no buttons
-> + *		bit 0 : tip (WARNING inversed : 0=pressed)
-> + *		bit 1 : ? (always 0 during tests)
-> + *		bit 2 : little (1=pressed)
-> + *		bit 3 : big (1=pressed)
-> + *
-> + *	pointer ID : (high 4 bits)
-> + *		Tested  : 0x6=wand ;
-> + *		Guessed : 0x1=red ; 0x2=blue ; 0x3=green ; 0x4=black ;
-> + *			  0x5=eraser
-> + *		bit 4 : pointer ID
-> + *		bit 5 : pointer ID
-> + *		bit 6 : pointer ID
-> + *		bit 7 : pointer ID
-> + *
-> + *
-> + *  pkt[7] : fiability ?
-> + *	often 0xFF
-> + *
-> + */
-> +
-> +	/* Filtering bad/nop packet */
-> +	if (pkt[0] != 0x03)
-> +		return 0;
-> +
-> +	ebeam->raw_x = (pkt[2] << 8) | pkt[1];
-> +	ebeam->raw_y = (pkt[4] << 8) | pkt[3];
+According to the reply of yours, it seems we need more 'work' for the
+API related documents.  If really it is, I need change my 'work' way
+for it.
 
-We have macros. In this case get_unaligned_le16.
+Currently, my 'work' way is "finding and solving issues", which may be
+efficient for 'grow up' sub-systems (e.g. "kernel/" sub-system).
 
-> +	ebeam->btn_map = (!(pkt[6] & 0x1))	|
-> +			 ((pkt[6] & 0x4) >> 1)	|
-> +			 ((pkt[6] & 0x8) >> 1);
-> +
-> +	return 1;
-> +}
+But for the sub-systems which are lack of main contents (or too many
+issues to solve), I think the efficient way is "get 'tasks' from the
+related maintainers and finish 'tasks' one by one".
+
+If the related maintainers agree with me, they can send 'tasks' to me,
+and I am glad to finish them one by one.
 
 
-> +static void ebeam_close(struct input_dev *input)
-> +{
-> +	struct ebeam_device *ebeam = input_get_drvdata(input);
-> +	int r;
-> +
-> +	usb_kill_urb(ebeam->irq);
-> +
-> +	r = usb_autopm_get_interface(ebeam->interface);
+Reason (why I am glad to do it):
 
-Nope. That's an uncool race. If the interface is suspended when
-you call this, you will resume it and restart the URB. Therefore
-you ought to kill the URB after resuming.
-
-> +	ebeam->interface->needs_remote_wakeup = 0;
-> +
-> +	if (!r)
-> +		usb_autopm_put_interface(ebeam->interface);
-> +}
-> +
-> +static int ebeam_suspend(struct usb_interface *intf, pm_message_t message)
-> +{
-> +	struct ebeam_device *ebeam = usb_get_intfdata(intf);
-> +
-> +	usb_kill_urb(ebeam->irq);
-> +
-> +	return 0;
-> +}
-> +
-> +static int ebeam_resume(struct usb_interface *intf)
-> +{
-> +	struct ebeam_device *ebeam = usb_get_intfdata(intf);
-> +	struct input_dev *input = ebeam->input;
-> +	int result = 0;
-> +
-> +	mutex_lock(&input->mutex);
-> +	if (input->users)
-> +		result = usb_submit_urb(ebeam->irq, GFP_NOIO);
-> +	mutex_unlock(&input->mutex);
-> +
-> +	return result;
-> +}
-> +
-> +static int ebeam_reset_resume(struct usb_interface *intf)
-> +{
-> +	return ebeam_resume(intf);
-> +}
-
-No need to define a function. You can use the function as
-value for resume and reset_resume.
-
-> +
-> +static int ebeam_probe(struct usb_interface *intf,
-> +		       const struct usb_device_id *id)
-> +{
-> +	struct ebeam_device *ebeam;
-> +	struct input_dev *input_dev;
-> +	struct usb_endpoint_descriptor *endpoint;
-> +	struct usb_device *udev = interface_to_usbdev(intf);
-> +	int err = -ENOMEM;
-> +
-> +	endpoint = ebeam_get_input_endpoint(intf->cur_altsetting);
-> +	if (!endpoint)
-> +		return -ENXIO;
-> +
-> +	ebeam = kzalloc(sizeof(struct ebeam_device), GFP_KERNEL);
-> +	input_dev = input_allocate_device();
-> +	if (!ebeam || !input_dev)
-> +		goto out_free;
-> +
-> +	ebeam_init_settings(ebeam);
-> +
-> +	ebeam->data = usb_alloc_coherent(udev, REPT_SIZE,
-> +					 GFP_KERNEL, &ebeam->data_dma);
-> +	if (!ebeam->data)
-> +		goto out_free;
-> +
-> +	ebeam->irq = usb_alloc_urb(0, GFP_KERNEL);
-> +	if (!ebeam->irq) {
-> +		dev_dbg(&intf->dev,
-> +			"%s - usb_alloc_urb failed: ebeam->irq\n", __func__);
-> +		goto out_free_buffers;
-> +	}
-> +
-> +	ebeam->interface = intf;
-> +	ebeam->input = input_dev;
-> +
-> +	/* setup name */
-> +	snprintf(ebeam->name, sizeof(ebeam->name),
-> +		 "USB eBeam %04x:%04x",
-> +		 le16_to_cpu(udev->descriptor.idVendor),
-> +		 le16_to_cpu(udev->descriptor.idProduct));
-> +
-> +	if (udev->manufacturer || udev->product) {
-> +		strlcat(ebeam->name,
-> +			" (",
-> +			sizeof(ebeam->name));
-> +
-> +		if (udev->manufacturer)
-> +			strlcat(ebeam->name,
-> +				udev->manufacturer,
-> +				sizeof(ebeam->name));
-> +
-> +		if (udev->product) {
-> +			if (udev->manufacturer)
-> +				strlcat(ebeam->name,
-> +					" ",
-> +					sizeof(ebeam->name));
-> +			strlcat(ebeam->name,
-> +				udev->product,
-> +				sizeof(ebeam->name));
-> +		}
-> +
-> +		if (strlcat(ebeam->name, ")", sizeof(ebeam->name))
-> +			>= sizeof(ebeam->name)) {
-> +			/* overflowed, closing ) anyway */
-> +			ebeam->name[sizeof(ebeam->name)-2] = ')';
-> +		}
-> +	}
-> +
-> +	/* usb tree */
-> +	usb_make_path(udev, ebeam->phys, sizeof(ebeam->phys));
-> +	strlcat(ebeam->phys, "/input0", sizeof(ebeam->phys));
-> +
-> +	/* input setup */
-> +	input_dev->name = ebeam->name;
-> +	input_dev->phys = ebeam->phys;
-> +	usb_to_input_id(udev, &input_dev->id);
-> +	input_dev->dev.parent = &intf->dev;
-> +
-> +	input_set_drvdata(input_dev, ebeam);
-> +
-> +	input_dev->open = ebeam_open;
-> +	input_dev->close = ebeam_close;
-> +
-> +	/* usb urb setup */
-> +	if (usb_endpoint_type(endpoint) == USB_ENDPOINT_XFER_INT)
-> +		usb_fill_int_urb(ebeam->irq, udev,
-> +			usb_rcvintpipe(udev, endpoint->bEndpointAddress),
-> +			ebeam->data, REPT_SIZE,
-> +			ebeam_irq, ebeam, endpoint->bInterval);
-> +	else
-> +		usb_fill_bulk_urb(ebeam->irq, udev,
-> +			usb_rcvbulkpipe(udev, endpoint->bEndpointAddress),
-> +			ebeam->data, REPT_SIZE,
-> +			ebeam_irq, ebeam);
-> +
-> +	ebeam->irq->dev = udev;
-> +	ebeam->irq->transfer_dma = ebeam->data_dma;
-> +	ebeam->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
-> +
-> +	/* input final setup */
-> +	ebeam_setup_input(ebeam, input_dev);
-> +
-> +	err = input_register_device(ebeam->input);
-> +	if (err) {
-> +		dev_dbg(&intf->dev,
-> +			"%s - input_register_device failed, err: %d\n",
-> +			__func__, err);
-> +		goto out_free_urb;
-> +	}
-> +
-> +	/* usb final setup */
-> +	usb_set_intfdata(intf, ebeam);
-> +
-> +	/* sysfs setup */
-> +	err = sysfs_create_group(&intf->dev.kobj, &ebeam_attr_group);
-> +	if (err) {
-> +		dev_dbg(&intf->dev,
-> +			"%s - cannot create sysfs group, err: %d\n",
-> +			__func__, err);
-> +		goto out_unregister_input;
-> +	}
-
-This is not nice. User space may react to a new input device of this
-type by setting up the calibration. But the sysfs files may be created
-after that. You should invert the order.
-
-	HTH
-		Oliver
+  1. The API related documents are really important for us, and currently need more 'work'.
+  2. 'getting tasks' is an efficient way for it.
+  3. it is additional good chance to me for English training (I should do additional trying to improve my English).
 
 
+Limitations (my resources):
+
+  1. finish one API document related task per month (excuse me, I have no additional time resources for it).
+  2. my English is not quite well, it may have negative effect with the efficiency.
+  3. sometimes, I can not connect to net, which may not give response in time.
+
+     e.g. recently, 2013-08-08 -- 2013-08-19, but I may still can 'work' for it (queue patches and waiting the network OK).
+
+
+BTW: I also can try the English-Chinese translations tasks. ;-)
+
+
+Thanks.
+
+
+On 08/08/2013 10:13 AM, Chen Gang wrote:
+> Hello Rob:
+> 
+> Maybe I misunderstand what you said (if so, I am sorry for it).
+> 
+> At least for me, what you said is valuable to get additional discussion,
+> but it seems better to start a new thread for it and also cc to
+> linux-doc mail list.
+> 
+> If so better include me in cc list, thanks.  ;-)
+> 
+> If you think still suitable to discuss about it in this mail thread,
+> please continue, at least, I still welcome.  :-)
+> 
+> 
+> Thanks.
+> 
+> On 08/07/2013 04:48 PM, Chen Gang wrote:
+>> On 08/07/2013 03:32 PM, Rob Landley wrote:
+>>> On 08/06/2013 12:31:43 PM, Joe Perches wrote:
+>>>> On Tue, 2013-08-06 at 09:46 +0800, Chen Gang wrote:
+>>>>> "include/uapi/" is the whole Linux kernel API, it is important enough
+>>>>> to get more global explanations by comments.
+>>>>
+>>>> It'd probably be useful to have more descriptions
+>>>> of uapi in the Documentation directory too.
+>>>
+>>> I'd rather have comments in the headers that get exported to userspace
+>>> and then have other forms of documentation generated from that by some
+>>> process similar to "make htmldocs". Otherwise you've got two places to
+>>> keep in sync.
+>>>
+>>
+>> At least for me, it is a good idea, although UAPI files is rarely
+>> changed (may add new item, but few modifying the existing items).
+>>
+>> And for our case, it is summary comments for directory organization for
+>> all UAPI files, so in my opinion, it is still necessary to give summary
+>> comments in Kbuild.
+>>
+>> In Linux user mode or another OS which share the same files of UAPI,
+>> they do not care about our kernel's Kbuild, for they have their own
+>> directory organizations which may different with Linux kernel's.
+>>
+>>> (Really the guy you've got to keep in the loop about this is Michael
+>>> Kerrisk. The section 2 man pages are the current best reference on UAPI
+>>> stuff...)
+>>>
+>>
+>> As far as I know, the section 2 man pages is already for it (e.g. man 2
+>> setfuid, man 2 open, ...).
+>>
+>> Do you mean currently it is only for some of system calls (part of
+>> UAPI), not for the whole UAPI ?
+>>
+>>
+>>> Rob
+>>>
+>>
+>>
+> 
+> 
+
+
+-- 
+Chen Gang
