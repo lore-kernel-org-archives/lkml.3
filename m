@@ -1,132 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab3HUKR7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 06:17:59 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:27852 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab3HUKR5 (ORCPT
+	id S1752598Ab3HUKSI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 06:18:08 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:39840 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab3HUKSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 06:17:57 -0400
-Message-ID: <52148FFC.4080701@huawei.com>
-Date: Wed, 21 Aug 2013 18:01:32 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 21 Aug 2013 06:18:04 -0400
+From: Libo Chen <libo.chen@huawei.com>
+To: <wg@grandegger.com>, <mkl@pengutronix.de>
+CC: <davem@davemloft.net>, <linux-can@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <lizefan@huawei.com>, <libo.chen@huawei.com>
+Subject: [PATCH 1/2] net: can: at91_can: use platform_set_drvdata()
+Date: Wed, 21 Aug 2013 18:15:03 +0800
+Message-ID: <1377080103-33872-1-git-send-email-libo.chen@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: [PATCH 11/11] cpuset: export effective masks to userspace
-References: <52148F52.0@huawei.com>
-In-Reply-To: <52148F52.0@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
+Content-Type: text/plain
+X-Originating-IP: [10.135.72.158]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpuset.cpus and cpuset.mems are the configured masks, and we need
-to export effective masks to userspace, so users know the real
-cpus_allowed and mems_allowed that apply to the tasks in a cpuset.
+Use the wrapper functions for getting and setting the driver data using
+platform_device instead of using dev_set_drvdata() with &pdev->dev,
+so we can directly pass a struct platform_device.
 
-cpuset.effective_cpus and cpuset.effective_mems will be created for
-sane_behavior only.
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
 ---
- kernel/cpuset.c | 36 ++++++++++++++++++++++++++++++------
- 1 file changed, 30 insertions(+), 6 deletions(-)
+ drivers/net/can/at91_can.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index c302979..a4f3483 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1583,6 +1583,8 @@ typedef enum {
- 	FILE_MEMORY_MIGRATE,
- 	FILE_CPULIST,
- 	FILE_MEMLIST,
-+	FILE_EFFECTIVE_CPULIST,
-+	FILE_EFFECTIVE_MEMLIST,
- 	FILE_CPU_EXCLUSIVE,
- 	FILE_MEM_EXCLUSIVE,
- 	FILE_MEM_HARDWALL,
-@@ -1731,23 +1733,23 @@ out_unlock:
-  * across a page fault.
-  */
+diff --git a/drivers/net/can/at91_can.c b/drivers/net/can/at91_can.c
+index dbbe97a..3b1ff61 100644
+--- a/drivers/net/can/at91_can.c
++++ b/drivers/net/can/at91_can.c
+@@ -1355,7 +1355,7 @@ static int at91_can_probe(struct platform_device *pdev)
+ 	if (at91_is_sam9263(priv))
+ 		dev->sysfs_groups[0] = &at91_sysfs_attr_group;
  
--static size_t cpuset_sprintf_cpulist(char *page, struct cpuset *cs)
-+static size_t cpuset_sprintf_cpulist(char *page, struct cpumask *pmask)
- {
- 	size_t count;
+-	dev_set_drvdata(&pdev->dev, dev);
++	platform_set_drvdata(pdev, dev);
+ 	SET_NETDEV_DEV(dev, &pdev->dev);
  
- 	mutex_lock(&callback_mutex);
--	count = cpulist_scnprintf(page, PAGE_SIZE, cs->cpus_allowed);
-+	count = cpulist_scnprintf(page, PAGE_SIZE, pmask);
- 	mutex_unlock(&callback_mutex);
- 
- 	return count;
- }
- 
--static size_t cpuset_sprintf_memlist(char *page, struct cpuset *cs)
-+static size_t cpuset_sprintf_memlist(char *page, nodemask_t mask)
- {
- 	size_t count;
- 
- 	mutex_lock(&callback_mutex);
--	count = nodelist_scnprintf(page, PAGE_SIZE, cs->mems_allowed);
-+	count = nodelist_scnprintf(page, PAGE_SIZE, mask);
- 	mutex_unlock(&callback_mutex);
- 
- 	return count;
-@@ -1771,10 +1773,16 @@ static ssize_t cpuset_common_file_read(struct cgroup_subsys_state *css,
- 
- 	switch (type) {
- 	case FILE_CPULIST:
--		s += cpuset_sprintf_cpulist(s, cs);
-+		s += cpuset_sprintf_cpulist(s, cs->cpus_allowed);
- 		break;
- 	case FILE_MEMLIST:
--		s += cpuset_sprintf_memlist(s, cs);
-+		s += cpuset_sprintf_memlist(s, cs->mems_allowed);
-+		break;
-+	case FILE_EFFECTIVE_CPULIST:
-+		s += cpuset_sprintf_cpulist(s, cs->real_cpus_allowed);
-+		break;
-+	case FILE_EFFECTIVE_MEMLIST:
-+		s += cpuset_sprintf_memlist(s, cs->real_mems_allowed);
- 		break;
- 	default:
- 		retval = -EINVAL;
-@@ -1849,6 +1857,14 @@ static struct cftype files[] = {
- 	},
- 
- 	{
-+		.name = "effective_cpus",
-+		.flags = CFTYPE_SANE,
-+		.read = cpuset_common_file_read,
-+		.max_write_len = (100U + 6 * NR_CPUS),
-+		.private = FILE_EFFECTIVE_CPULIST,
-+	},
-+
-+	{
- 		.name = "mems",
- 		.read = cpuset_common_file_read,
- 		.write_string = cpuset_write_resmask,
-@@ -1857,6 +1873,14 @@ static struct cftype files[] = {
- 	},
- 
- 	{
-+		.name = "effective_mems",
-+		.flags = CFTYPE_SANE,
-+		.read = cpuset_common_file_read,
-+		.max_write_len = (100U + 6 * MAX_NUMNODES),
-+		.private = FILE_EFFECTIVE_MEMLIST,
-+	},
-+
-+	{
- 		.name = "cpu_exclusive",
- 		.read_u64 = cpuset_read_u64,
- 		.write_u64 = cpuset_write_u64,
+ 	err = register_candev(dev);
 -- 
-1.8.0.2
+1.7.1
+
+
