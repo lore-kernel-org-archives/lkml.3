@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab3HUXm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 19:42:56 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7314 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752369Ab3HUXmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 19:42:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,930,1367996400"; 
-   d="scan'208";a="349875276"
-From: Andi Kleen <andi@firstfloor.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Xen-devel@lists.xen.org,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with existing use
-References: <5214C524.1050900@citrix.com>
-	<dc8456d1-a89a-44c0-bebb-83cb0526230e@email.android.com>
-	<20130821141926.GT18673@moon>
-	<CA+55aFyk6s1t92HJ5rxKZQk6dTfszmhdXz+S=MqUmM-CbMo+DQ@mail.gmail.com>
-	<20130821230557.GD18673@moon>
-Date: Wed, 21 Aug 2013 16:42:53 -0700
-In-Reply-To: <20130821230557.GD18673@moon> (Cyrill Gorcunov's message of "Thu,
-	22 Aug 2013 03:05:57 +0400")
-Message-ID: <87wqnehapu.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753340Ab3HUXoo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 19:44:44 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:38720 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267Ab3HUXon (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 19:44:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <52154BF9.1060704@wwwdotorg.org>
+References: <1376751410-14560-1-git-send-email-linus.walleij@linaro.org>
+	<52126EDE.5060000@wwwdotorg.org>
+	<CACRpkdasWurMctYTMZCHS+fwhvmnREaQD1vN54QYpMToTuFjsg@mail.gmail.com>
+	<52154BF9.1060704@wwwdotorg.org>
+Date: Thu, 22 Aug 2013 01:44:42 +0200
+Message-ID: <CACRpkdbOd+16L7w5VFJi2bdnwh94gLv3hR=qE+_ao9HrNOFfPw@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: queue GPIO operations instead of defering
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Lars Poeschel <poeschel@lemonage.de>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyrill Gorcunov <gorcunov@gmail.com> writes:
+On Thu, Aug 22, 2013 at 1:23 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+
+> Shouldn't this simply be fixed inside whichever driver is performing
+> circular operations, rather than leaving the driver performing circular
+> operations, and attemping to make the subsystems support something that
+> can't be supported?
+
+It was part of that series, but I thought about it and saw that
+it'd be nice if the GPIO probing would not have to defer
+due to the pin controller not being up yet anyway.
+
+I'll just reword the subject like that... like some nice
+optimization.
+
+Actually I think we should be able to register GPIO ranges
+before the backing pin controller is up as well for the
+same reason, letting such things queue up will make
+the boot more optimal in some cases and get people
+away from playing around with initcall levels.
+
+>> This is what the other patch we're discussing is doing.
+>> The one that harvests and requests interrupt GPIO's when
+>> a gpiochip is added...
 >
-> Hi all, I worked on patch which would not touch PSE bit for dirty page
-> tracking and the result is not that good:
->
->  - 2level pages now always page dirty if page is swapped in and out, because
->    there is no space left in PTE (other than PSE bit)
+> It would have been good to mention the two patches were related, or did
+> I just miss that?
 
-Maybe just don't support soft dirty for 2 level page tables?
+In the first posting it was. I need to refine the motivation
+per above instead.
 
-2 level page tables should be really on the way out anyways, as they
-have severe limits and do not support NX. With 3 levels there is enough
-space.
+> So that's another reason for me to object to that other patch. If that
+> whole process was triggered inside the IRQ controller implementation,
+> which is logically part of the GPIO controller implementation for the
+> same HW, the call direction would also be GPIO -> pinctrl or IRQ -> GPIO
+> -> pinctrl, and hence have no circular issues.
 
--Andi
+Hm not quite following, but it was not triggered from the IRQ
+controller. It was triggered from the gpiolib-of.c trying to
+do gpio_request() and gpio_set_input() right after registering
+a GPIO controller. (Which should be possible, it's a bug in
+its own right that this is not possible on the Nomadik driver...)
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+Yours,
+Linus Walleij
