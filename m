@@ -1,140 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab3HUSpu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 14:45:50 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38833 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab3HUSpt (ORCPT
+	id S1752729Ab3HUStP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 14:49:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25651 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab3HUStO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 14:45:49 -0400
-Message-ID: <52150AD9.3040808@wwwdotorg.org>
-Date: Wed, 21 Aug 2013 12:45:45 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Sonic Zhang <sonic.adi@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: Re: [PATCH 1/3 v3] pinctrl: ADI PIN control driver for the GPIO controller
- on bf54x and bf60x.
-References: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
-In-Reply-To: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Aug 2013 14:49:14 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=fnHqrKAB9ZkA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=eifdOL8937gA:10 a=SgEL8TLxAAAA:8 a=qpEwVkA7H1VTCZIQyN0A:9 a=CjuIK1q_8ugA:10 a=CCVnAHeEpQsA:10 a=ltoAtzfyQ3MA:10 a=AxwtKzeeziMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 21 Aug 2013 14:49:12 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz, hare@suse.de
+Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed
+ on any cpu
+Message-ID: <20130821144912.1b96c962@gandalf.local.home>
+In-Reply-To: <1377072512-7986-3-git-send-email-jack@suse.cz>
+References: <1377072512-7986-1-git-send-email-jack@suse.cz>
+	<1377072512-7986-3-git-send-email-jack@suse.cz>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2013 12:30 AM, Sonic Zhang wrote:
-> From: Sonic Zhang <sonic.zhang@analog.com>
-> 
-> The new ADI GPIO2 controller was introduced since the BF548 and BF60x
-> processors. It differs a lot from the old one on BF5xx processors. So,
-> create a pinctrl driver under the pinctrl framework.
+On Wed, 21 Aug 2013 10:08:30 +0200
+Jan Kara <jack@suse.cz> wrote:
 
->  drivers/pinctrl/Kconfig                    |   17 +
->  drivers/pinctrl/Makefile                   |    3 +
->  drivers/pinctrl/pinctrl-adi2-bf54x.c       |  572 +++++++++++
->  drivers/pinctrl/pinctrl-adi2-bf60x.c       |  454 +++++++++
+  
+>  struct irq_work {
+>  	unsigned long flags;
+> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+> index 55fcce6..446cd81 100644
+> --- a/kernel/irq_work.c
+> +++ b/kernel/irq_work.c
+> @@ -22,6 +22,9 @@
+>  static DEFINE_PER_CPU(struct llist_head, irq_work_list);
+>  static DEFINE_PER_CPU(int, irq_work_raised);
+>  
+> +/* List of irq-work any CPU can pick up */
+> +static LLIST_HEAD(unbound_irq_work_list);
+> +
+>  /*
+>   * Claim the entry so that no one else will poke at it.
+>   */
+> @@ -70,12 +73,16 @@ void irq_work_queue(struct irq_work *work)
+>  	/* Queue the entry and raise the IPI if needed. */
+>  	preempt_disable();
+>  
+> -	llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+> +	if (!(work->flags & __IRQ_WORK_UNBOUND))
+> +		llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+> +	else
+> +		llist_add(&work->llnode, &unbound_irq_work_list);
 
-Those files look reasonable.
 
->  drivers/pinctrl/pinctrl-adi2.c             | 1501 ++++++++++++++++++++++++++++
->  drivers/pinctrl/pinctrl-adi2.h             |   75 ++
->  include/linux/platform_data/pinctrl-adi2.h |   40 +
+Just for better readability I would have:
 
-> diff --git a/drivers/pinctrl/pinctrl-adi2.c b/drivers/pinctrl/pinctrl-adi2.c
+	if (work->flags & __IRQ_WORK_UNBOUND)
+		llist_add(&work->llnode, &unbound_irq_work_list);
+	else
+		llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
 
-> +/**
-> + * struct gpio_reserve_map - a GPIO map structure containing the
-> + * reservation status of each PIN.
-> + *
-> + * @owner: who request the reservation
-> + * @rsv_gpio: if this pin is reserved as GPIO
-> + * @rsv_int: if this pin is reserved as interrupt
-> + * @rsv_peri: if this pin is reserved as part of a peripheral device
-> + */
-> +struct gpio_reserve_map {
-> +	unsigned char owner[RESOURCE_LABEL_SIZE];
-> +	bool rsv_gpio;
-> +	bool rsv_int;
-> +	bool rsv_peri;
-> +};
-
-Why is that needed; don't the pinctrl/GPIO cores already know which
-pinctrl pins and which GPIOs are used, and for what?
-
-> +#if defined(CONFIG_DEBUG_FS)
-> +static inline unsigned short get_gpio_dir(struct gpio_port *port,
-> ...
-
-Why aren't the existing GPIO/pinctrl subsystem debugfs files enough?
-
-> +static int adi_pinmux_request(struct pinctrl_dev *pctldev, unsigned pin)
-...
-> +	/* If a pin can be muxed as either GPIO or peripheral, make
-> +	 * sure it is not already a GPIO pin when we request it.
+>  
+>  	/*
+>  	 * If the work is not "lazy" or the tick is stopped, raise the irq
+>  	 * work interrupt (if supported by the arch), otherwise, just wait
+> -	 * for the next tick.
+> +	 * for the next tick. We do this even for unbound work to make sure
+> +	 * *some* CPU will be doing the work.
+>  	 */
+>  	if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
+>  		if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
+> @@ -100,28 +107,11 @@ bool irq_work_needs_cpu(void)
+>  	return true;
+>  }
+>  
+> -static void __irq_work_run(void)
+> +static void process_irq_work_list(struct llist_node *llnode)
+>  {
+>  	unsigned long flags;
+>  	struct irq_work *work;
+> -	struct llist_head *this_list;
+> -	struct llist_node *llnode;
+> -
+> -
+> -	/*
+> -	 * Reset the "raised" state right before we check the list because
+> -	 * an NMI may enqueue after we find the list empty from the runner.
+> -	 */
+> -	__this_cpu_write(irq_work_raised, 0);
+> -	barrier();
+>  
+> -	this_list = &__get_cpu_var(irq_work_list);
+> -	if (llist_empty(this_list))
+> -		return;
+> -
+> -	BUG_ON(!irqs_disabled());
+> -
+> -	llnode = llist_del_all(this_list);
+>  	while (llnode != NULL) {
+>  		work = llist_entry(llnode, struct irq_work, llnode);
+>  
+> @@ -146,6 +136,27 @@ static void __irq_work_run(void)
+>  	}
+>  }
+>  
+> +static void __irq_work_run(void)
+> +{
+> +	struct llist_head *this_list;
+> +
+> +	/*
+> +	 * Reset the "raised" state right before we check the list because
+> +	 * an NMI may enqueue after we find the list empty from the runner.
 > +	 */
-> +	if (port->rsvmap[offset].rsv_gpio) {
-> +		if (system_state == SYSTEM_BOOTING)
-> +			dump_stack();
-> +		dev_err(pctldev->dev,
-> +		       "%s: Peripheral PIN %d is already reserved as GPIO by %s!\n",
-> +		       __func__, pin, get_label(port, offset));
-> +		spin_unlock_irqrestore(&port->lock, flags);
-> +		return -EBUSY;
-> +	}
-
-Yes, this definitely warrants some more explanation. It looks odd. What
-is "system_state"?
-
-> +static int adi_gpio_probe(struct platform_device *pdev)
-...
-> +	/* Add gpio pin range */
-> +	snprintf(pinctrl_devname, RESOURCE_LABEL_SIZE, "pinctrl-adi2.%d",
-> +		pdata->pinctrl_id);
-> +	pinctrl_devname[RESOURCE_LABEL_SIZE - 1] = 0;
-> +	ret = gpiochip_add_pin_range(&port->chip, pinctrl_devname,
-> +		0, pdata->port_pin_base, port->width);
-
-This looks like platform data is providing the GPIO <-> pinctrl pin ID
-mapping, or at least part of it. Surely that mapping is fixed by the HW
-design, and hence isn't something platform data should influence. Do the
-files pinctrl-adi2-bf*.c not contain complete information about each HW
-configuration for some reason?
-
-> +static struct platform_driver adi_pinctrl_driver = {
-> +	.probe		= adi_pinctrl_probe,
-> +	.remove		= adi_pinctrl_remove,
-> +	.driver		= {
-> +		.name	= DRIVER_NAME,
-> +	},
-> +};
+> +	__this_cpu_write(irq_work_raised, 0);
+> +	barrier();
 > +
-> +static struct platform_driver adi_gpio_pint_driver = {
-> +	.probe		= adi_gpio_pint_probe,
-> +	.remove		= adi_gpio_pint_remove,
-> +	.driver		= {
-> +		.name	= "adi-gpio-pint",
-> +	},
-> +};
+> +	this_list = &__get_cpu_var(irq_work_list);
+> +	if (llist_empty(this_list) && llist_empty(&unbound_irq_work_list))
+> +		return;
 > +
-> +static struct platform_driver adi_gpio_driver = {
-> +	.probe		= adi_gpio_probe,
-> +	.remove		= adi_gpio_remove,
-> +	.driver		= {
-> +		.name	= "adi-gpio",
-> +	},
-> +};
+> +	BUG_ON(!irqs_disabled());
+> +
+> +	process_irq_work_list(llist_del_all(this_list));
+> +	process_irq_work_list(llist_del_all(&unbound_irq_work_list));
 
-Hmmm. Is there one HW block that controls GPIOs and pinctrl, or are
-there separate HW blocks?
+OK, I'm being a bit of an micro optimization freak here, but...
 
-If there's one HW block, why not have just one driver?
+How about moving the list_empty() and BUG_ON into the
+process_irq_work_list() call.
 
-If there are separate HW blocks, then having separate GPIO and pinctrl
-drivers seems like it would make sense.
+That is,
+
+	if (list_empty(llnode))
+		return;
+
+	BUG_ON(!irqs_disabled());
+
+That way we avoid the double xchg() that is done with the two calls to
+llist_del_all().
+
+-- Steve
+
+
+
+> +}
+> +
+>  /*
+>   * Run the irq_work entries on this cpu. Requires to be ran from hardirq
+>   * context with local IRQs disabled.
+
