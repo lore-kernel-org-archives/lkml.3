@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab3HUNJo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 09:09:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36223 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463Ab3HUNJn (ORCPT
+	id S1751602Ab3HUNMx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 09:12:53 -0400
+Received: from mout.gmx.net ([212.227.15.15]:58138 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751463Ab3HUNMw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 09:09:43 -0400
-Date: Wed, 21 Aug 2013 15:09:42 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Hogan <james.hogan@imgtec.com>
-cc: linux-metag@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] irq-imgpdc: add ImgTec PDC irqchip driver
-In-Reply-To: <1375101860-6657-1-git-send-email-james.hogan@imgtec.com>
-Message-ID: <alpine.DEB.2.02.1308211508580.4089@ionos.tec.linutronix.de>
-References: <1375101860-6657-1-git-send-email-james.hogan@imgtec.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 21 Aug 2013 09:12:52 -0400
+From: Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: PaX Team <pageexec@freemail.hu>, Behan Webster <behanw@converseincode.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [TRIVIAL] Remove braces in drivers/scsi/in2000.h to fix build for clang. No functional change otherwise.
+Date: Wed, 21 Aug 2013 15:11:33 +0200
+Message-ID: <4059776.Z90q7kXsSC@aragorn.auenland.lan>
+User-Agent: KMail/4.11 (Linux/3.7.10-1.16-default; KDE/4.11.0; x86_64; ; )
+In-Reply-To: <2050670.KsM0dPm3or@aragorn.auenland.lan>
+References: <1377033546-19475-1-git-send-email-dl9pf@gmx.de> <20130821065018.GB9043@infradead.org> <2050670.KsM0dPm3or@aragorn.auenland.lan>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V03:K0:b5AZX/pittW9YzsEVpB4v8REOCG91INFmfMaC+IGcXcp3uQ+PJL
+ 3ksh6HB6avca972tDOa7sGhsyf0Y7xw4wntBPVqXSshj4Yz21i7oSx9ZCytvBoiVjpxlJea
+ D/RHv+Pca4ECKSfmPSM3NZUbb0xM2KDsek8q2+IeDShWOqz59hwWJiltVIiRgSNMwYkhSOa
+ xa9nbxWFC+EY+dg4Nz9kA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Jul 2013, James Hogan wrote:
-
-> Add irqchip driver for the ImgTec PowerDown Controller (PDC) as found in
-> the TZ1090. The PDC has a number of general system wakeup (SysWake)
-> interrupts (which would for example be connected to a power button or an
-> external peripheral), and a number of peripheral interrupts which can
-> also wake the system but are connected straight to specific low-power
-> peripherals (such as RTC or Infrared). It has a single interrupt output
-> for SysWakes, and individual interrupt outputs for each peripheral.
+On Wednesday 21 August 2013 09:26:14 Jan-Simon Möller wrote:
+> > > Description:
+> > >   Clang chokes on the notation "insw (%%dx)" but works for "insw %%dx"
+> > >   (outsw likewise); GNU as accepts both forms.
+> > > 
+> > > Signed-off-by: Jan-Simon M??ller <dl9pf@gmx.de>
+> > 
+> > I think the right fix is to simply kill the FAST_READ_IO/FAST_WRITE_IO
+> > defines and their associated inline assembly entirely.
 > 
-> The driver demuxes the SysWake interrupt line, and passes the peripheral
-> interrupts straight through. It also handles the set_wake interrupt
-> operation to enable/disable the appropriate wake event bits.
-> 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: linux-metag@vger.kernel.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: devicetree-discuss@lists.ozlabs.org
-> ---
-> Thomas: I'd appreciate your ack if this driver looks okay to you now,
-> then I'm happy to take it through the metag arch tree for v3.12
-> (although you're welcome to take it through tip if you prefer).
+> No objection ;) .
+@Christoph Hellwig:
+Do you take care of removing it then ?
 
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-
-Please take it through your tree. It has no dependencies on my stuff.
- 
+BR,
+JS
