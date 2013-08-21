@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab3HUXHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 19:07:32 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:37066 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab3HUXHb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 19:07:31 -0400
+	id S1753166Ab3HUXJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 19:09:58 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:54061 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752589Ab3HUXJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 19:09:57 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/14] cpufreq: create & use cpufreq_generic_init() routine
+Date: Thu, 22 Aug 2013 01:20:34 +0200
+Message-ID: <1493410.kWm56FEZ0a@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <cover.1377093938.git.viresh.kumar@linaro.org>
+References: <cover.1377093938.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <52126EDE.5060000@wwwdotorg.org>
-References: <1376751410-14560-1-git-send-email-linus.walleij@linaro.org>
-	<52126EDE.5060000@wwwdotorg.org>
-Date: Thu, 22 Aug 2013 01:07:30 +0200
-Message-ID: <CACRpkdasWurMctYTMZCHS+fwhvmnREaQD1vN54QYpMToTuFjsg@mail.gmail.com>
-Subject: Re: [PATCH v2] pinctrl: queue GPIO operations instead of defering
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Lars Poeschel <poeschel@lemonage.de>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 9:15 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 08/17/2013 08:56 AM, Linus Walleij wrote:
+On Wednesday, August 21, 2013 08:12:19 PM Viresh Kumar wrote:
+> Many CPUFreq drivers for SMP system (where all cores share same clock lines), do
+> similar stuff in their ->init() part.
+> 
+> This patch creates a generic routine in cpufreq core which can be used by these
+> so that we can remove some redundant code. And later part of patchset makes
+> other drivers use this infrastructure.
+> 
+> Many drivers which weren't setting policy->cpus haven't been updated as they
+> might have separate clocks for CPUs and setting all CPUs in policy->cpus may
+> corrupt them..
+> 
+> This is Sixth part of my cleanup work for CPUFreq, first five are (And
+> obviously its rebased over them):
 
->> and the pin controller need the GPIO driver to be ready.
->
-> Why does that happen?
+OK, so the plan for merging this will be that we'll put 1 into linux-next
+and add 2 to it after a few days etc. to give people a chance to test one
+set of changes before going to the next one.
 
-The pin controller call back into the GPIO-side controller
-functions by utilizing the GPIO ranges.
-(Maybe the code is silly, I dunno, check drivers/pinctrl/pinctrl-nomadik.c)
+> 1: cpufreq: Introduce cpufreq_table_validate_and_show()
+> https://lkml.org/lkml/2013/8/8/263
 
->> This also happens if
->> pin controllers and GPIO controllers compiled as modules
->> are inserted in a certain order.
->
-> Shouldn't deferred probe resolve that just fine, assuming there are no
-> circular dependencies?
+So perhaps we can *try* to push the above for 3.12 if it doesn't breaks
+stuff left and right.
 
-The above leads to circular dependencies so that is what I'm
-trying to fix with this.
+Can you please resend it with all of the ACKs collected so far?
 
->> On the Nomadik we get this situation with the pinctrl
->> driver when moving to requesting GPIOs off the gpiochip
->> right after it has been added,
->
-> So, the pinctrl driver calls gpio_request()? Surely the solution is
-> simply not to do that?
+Thanks,
+Rafael
 
-This is what the other patch we're discussing is doing.
-The one that harvests and requests interrupt GPIO's when
-a gpiochip is added...
-
-Yours,
-Linus Walleij
