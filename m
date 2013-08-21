@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab3HUNWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 09:22:19 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:49803 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab3HUNWS (ORCPT
+	id S1751928Ab3HUNXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 09:23:08 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:44531 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3HUNXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 09:22:18 -0400
-Date: Wed, 21 Aug 2013 09:22:14 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH 02/11] cpuset: add cs->real_cpus_allowed and
- cs->real_mems_allowed
-Message-ID: <20130821132214.GC19286@mtj.dyndns.org>
-References: <52148F52.0@huawei.com>
- <52148F6F.4070507@huawei.com>
+	Wed, 21 Aug 2013 09:23:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52148F6F.4070507@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130821124722.GB17748@b29396-Latitude-E6410>
+References: <1376564133-11286-1-git-send-email-b29396@freescale.com>
+	<520CCB70.8090908@gmail.com>
+	<20130821124722.GB17748@b29396-Latitude-E6410>
+Date: Wed, 21 Aug 2013 08:23:05 -0500
+Message-ID: <CAL_JsqLa1RkL0MaOCbjYbuQW7+8EKqX8RMfypN=i5UTKaF47=A@mail.gmail.com>
+Subject: Re: [PATCH 0/3] of: add update device node status via cmdline feature
+From: Rob Herring <robherring2@gmail.com>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, rob@landley.net,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 05:59:11PM +0800, Li Zefan wrote:
-> We're going to have separate user-configured masks and effective ones.
-> 
-> At last configured masks can only be changed by writing cpuset.cpus
+On Wed, Aug 21, 2013 at 7:47 AM, Dong Aisheng <b29396@freescale.com> wrote:
+> On Thu, Aug 15, 2013 at 07:37:04AM -0500, Rob Herring wrote:
+>> On 08/15/2013 05:55 AM, Dong Aisheng wrote:
+>> > We meet some boards having a lot of pin conflicts between different devices,
+>> > only one of them can be enabled to run at one time.
+>> >
+>> > e.g. imx6q sabreauto board, i2c, spi, weim, flexcan, uart and etc involved
+>> > with pin conflict.
+>> >
+>> > Instead of changing dts manually or adding a lot dts files according to
+>> > different device availability, we provide feature to dynamically update the
+>> > device node status via command line, then those devices involved with
+>> > pin conflict can be enabled or disabled dynamically.
+>> >
+>> > It's conveniently to use and can save a lot dts board files, also can
+>> > permenantly fix the pin conflicts issue.
+>>
+>> This doesn't scale either with updating of lots devices or when the next
+>> person comes along and wants to edit another property.
+>>
+>
+> I'm not sure about other property.
+> But we update it did cause by the real requirement, not arbitrary.
+> Or we can try to find another better way to avoid it.
+>
+>> This is something u-boot is perfectly capable of handling and updating
+>> status is something lots of boards already do.
+>>
+>
+> How does uboot handle this according to our needs?
+> Also dynamically update the device node status with uboot command?
+> Can you help point out an example for me to check?
+>
 
-I suppose you mean "eventually" by "at last"?
+Here's an example adding a status property with u-boot commands:
 
-> and cpuset.mems, and they won't be restricted by parent cpuset. While
-> effective masks reflect cpu/memory hotplug and hierachical restriction.
-> 
-> This patch adds and initializes the effective masks. The effective
-> masks of the top cpuset is the same with configured masks, and a child
-> cpuset inherites its parent's effective masks.
-> 
-> This won't introduce behavior change.
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> ---
->  kernel/cpuset.c | 57 ++++++++++++++++++++++++++++++++++++++++++++++-----------
->  1 file changed, 46 insertions(+), 11 deletions(-)
-> 
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index 70ab3fd..404fea5 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -81,8 +81,14 @@ struct cpuset {
->  	struct cgroup_subsys_state css;
->  
->  	unsigned long flags;		/* "unsigned long" so bitops work */
-> -	cpumask_var_t cpus_allowed;	/* CPUs allowed to tasks in cpuset */
-> -	nodemask_t mems_allowed;	/* Memory Nodes allowed to tasks */
-> +
-> +	/* user-configured CPUs and Memory Nodes allow to tasks */
-> +	cpumask_var_t cpus_allowed;
-> +	nodemask_t mems_allowed;
-> +
-> +	/* effective CPUs and Memory Nodes allow to tasks */
-> +	cpumask_var_t real_cpus_allowed;
-> +	nodemask_t real_mems_allowed;
+Highbank #fdt print /soc/ethernet
+ethernet@fff50000 {
+        compatible = "calxeda,hb-xgmac";
+        reg = <0xfff50000 0x00001000>;
+        interrupts = <0x00000000 0x0000004d 0x00000004 0x00000000
+0x0000004e 0x00000004 0x00000000 0x0000004f 0x00000004>;
+        dma-coherent;
+};
+Highbank #fdt set /soc/ethernet status okay
+Highbank #fdt print /soc/ethernet
+ethernet@fff50000 {
+        status = "okay";
+        compatible = "calxeda,hb-xgmac";
+        reg = <0xfff50000 0x00001000>;
+        interrupts = <0x00000000 0x0000004d 0x00000004 0x00000000
+0x0000004e 0x00000004 0x00000000 0x0000004f 0x00000004>;
+        dma-coherent;
+};
 
-Can we stick to the term "effective"?  If it's too long, we can drop
-the "allowed" postfix, which is pretty superflous.  effective_cpus and
-effective_mems should work, right?  For local vars, ecpus and emems
-should do.
-
-Thanks.
-
--- 
-tejun
+Rob
