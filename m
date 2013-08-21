@@ -1,69 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab3HUJic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 05:38:32 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:63375 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab3HUJi3 (ORCPT
+	id S1751742Ab3HUJpj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 05:45:39 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:40091 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab3HUJph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 05:38:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130812024556.GB29956@sanechka.spb.ru>
-References: <20130812024556.GB29956@sanechka.spb.ru>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Wed, 21 Aug 2013 10:38:08 +0100
-X-Google-Sender-Auth: a3cVbjciwB60peiApRjZaLJGcJM
-Message-ID: <CAHkRjk4y06puTL_Gq5RbpoV+kpEp+k32z5aq3HpEu9u3qsS_Aw@mail.gmail.com>
-Subject: Re: kmemleak in apei_res_add
-To: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>
-Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>
-Content-Type: text/plain; charset=KOI8-R
+	Wed, 21 Aug 2013 05:45:37 -0400
+X-AuditID: cbfee68e-b7f276d000002279-b3-52148c3f080d
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Vinod Koul'" <vinod.koul@intel.com>
+Cc: "'Dan Williams'" <djbw@fb.com>, linux-kernel@vger.kernel.org,
+        "'Simon Horman'" <horms+renesas@verge.net.au>,
+        "'Guennadi Liakhovetski'" <g.liakhovetski@gmx.de>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] dma: sh: remove unnecessary platform_set_drvdata()
+Date: Wed, 21 Aug 2013 18:45:35 +0900
+Message-id: <002801ce9e53$2f63b1e0$8e2b15a0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6eUy9M4qfpJa1qQgCgMBLck+jjLQ==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t8zA137HpEgg+Utehab+x+wWbzfOI/J
+	4sLbD2wWlxdeYrW4vGsOm8XLvv0sDmweE5vfsXt8+BjnsXjPSyaPvi2rGD3m/PzG4vF5k1wA
+	WxSXTUpqTmZZapG+XQJXxvI7/5gLGnkqevadYW9gbOHqYuTkkBAwkZi9s5cFwhaTuHBvPVsX
+	IxeHkMAyRolfvedZYIpOnehmhUhMZ5RYfKeTGcL5xShxevZTsCo2ATWJL18Os3cxcnCICKhL
+	LL0uA1LDLHCMUeL4hsVsIDXCAs4S1/b/YgWpYRFQlZjxMgAkzCtgK7FxTScThC0o8WPyPbCR
+	zAJaEut3HmeCsOUlNq95ywzSKgE0/tFfXZCwiICexMoTx9kgSkQk9r14xwiyVkLgGrvEs9/n
+	GUESLAICEt8mH2KB6JWV2HSAGeIvSYmDK26wTGAUm4Vk8ywkm2ch2TwLyYoFjCyrGEVTC5IL
+	ipPSi4z0ihNzi0vz0vWS83M3MUJisW8H480D1ocYk4HWT2SWEk3OB8ZyXkm8obGZkYWpiamx
+	kbmlGWnCSuK8ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYnaV+tmy8I3yFTe1zrKN+
+	iqmvyUv/J7p9ClKHJH49Pe0+Re73u68Xyp+7r98Yup0pSvv2pr+q2+61Bl39t9Bfu+LunH1S
+	a7c3Tzod9iSV7cv76nKXxCrNRUc4trhfbHsxcXbr4kcVQaYbA7e9XyBze2PUpzda8//WLfDp
+	Yl3Aofwye9IJjfMbFJVYijMSDbWYi4oTARkLMJbbAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t9jQV37HpEgg10vNC029z9gs3i/cR6T
+	xYW3H9gsLi+8xGpxedccNouXfftZHNg8Jja/Y/f48DHOY/Gel0wefVtWMXrM+fmNxePzJrkA
+	tqgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoDOU
+	FMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBnL7/xjLmjkqejZd4a9gbGF
+	q4uRk0NCwETi1IluVghbTOLCvfVsXYxcHEIC0xklFt/pZIZwfjFKnJ79lAWkik1ATeLLl8Ps
+	XYwcHCIC6hJLr8uA1DALHGOUOL5hMRtIjbCAs8S1/b9YQWpYBFQlZrwMAAnzCthKbFzTyQRh
+	C0r8mHwPbCSzgJbE+p3HmSBseYnNa94yg7RKAI1/9FcXJCwioCex8sRxNogSEYl9L94xTmAU
+	mIVk0iwkk2YhmTQLScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMGR/kxqB+PKBotD
+	jAIcjEo8vBeURYKEWBPLiitzDzFKcDArifAuqgYK8aYkVlalFuXHF5XmpBYfYkwG+nMis5Ro
+	cj4wCeWVxBsam5gZWRqZWRiZmJuTJqwkznug1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA2P0k8kM
+	G0r5Iz4d93PKLvVjyV+6s/LYRdnVh749b7G8qLrwFPN2SeVdH7dKC7ZdSfAq4z+cZHDQ+/m/
+	5+Uz14s0uEr0TfwZrV0mutlwZdctk+CDjWEqL/eLTnFJ0vi9ZZurJVvomvTWjMRlB+bXtNTG
+	e16u4rv8T+P2s5vaCvV5B97Pt/+Q91iJpTgj0VCLuag4EQBPrL/jOAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 August 2013 03:45, Alexandra N. Kossovsky
-<Alexandra.Kossovsky@oktetlabs.ru> wrote:
-> When running 3.10.3 with kmemleak enabled, I see following warnings from
-> kmemleak:
->
-> unreferenced object 0xffff88024d2219a0 (size 32):
->   comm "swapper/0", pid 1, jiffies 4294894532 (age 26865.180s)
->   hex dump (first 32 bytes):
->     58 de 0c 73 02 88 ff ff 58 de 0c 73 02 88 ff ff  X..s....X..s....
->     18 50 fd 7d 00 00 00 00 3f 50 fd 7d 00 00 00 00  .P.}....?P.}....
->   backtrace:
->     [<ffffffff813ddf40>] kmemleak_alloc+0x21/0x3e
->     [<ffffffff8111cb99>] kmemleak_alloc_recursive.constprop.58+0x16/0x18
->     [<ffffffff8111efac>] kmem_cache_alloc_trace+0xe6/0x12f
->     [<ffffffff81278f0e>] apei_res_add+0xb9/0xe8
->     [<ffffffff81278faa>] collect_res_callback+0x6d/0x7c
->     [<ffffffff812788ed>] apei_exec_for_each_entry+0x78/0x93
->     [<ffffffff8127891d>] apei_exec_collect_resources+0x15/0x17
->     [<ffffffff81b010e5>] erst_init+0x278/0x2a3
->     [<ffffffff810020b5>] do_one_initcall+0x7b/0x116
->     [<ffffffff81ac9ee7>] kernel_init_freeable+0x13f/0x1cc
->     [<ffffffff813db19f>] kernel_init+0x9/0xd6
->     [<ffffffff813fe5bc>] ret_from_fork+0x7c/0xb0
->     [<ffffffffffffffff>] 0xffffffffffffffff
+The driver core clears the driver data to NULL after device_release
+or on probe failure. Thus, it is not needed to manually clear the
+device driver data to NULL.
 
-Are there any "APEI:" errors in the kernel log? It could be some
-freeing missing on an error path.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/dma/sh/shdma.c  |    3 ---
+ drivers/dma/sh/sudmac.c |    2 --
+ 2 files changed, 5 deletions(-)
 
-apei_res_add() allocates struct apei_res objects and places them on
-the erst_resources.{iomem,ioport} list heads as given by erst_init().
-The erst_resources is just a local variable on the erst_init() stack,
-hence kmemleak doesn't have any trace of the allocated objects.
-
-It looks like erst_init() calls apei_resources_request() which should
-merge the local erst_resources list heads with the global
-apei_resources_all but for whatever reason, this or any of the
-previous calls in erst_init() fail and we don't get the merging. Some
-of the goto err_fini in this function should probably be err_release.
-I cc'ed Huang as the driver author.
-
+diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
+index 211e2f1..208de0f 100644
+--- a/drivers/dma/sh/shdma.c
++++ b/drivers/dma/sh/shdma.c
+@@ -873,7 +873,6 @@ rst_err:
+ 	pm_runtime_put(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+ 
+-	platform_set_drvdata(pdev, NULL);
+ 	shdma_cleanup(&shdev->shdma_dev);
+ eshdma:
+ 	if (dmars)
+@@ -917,8 +916,6 @@ static int sh_dmae_remove(struct platform_device *pdev)
+ 		iounmap(shdev->dmars);
+ 	iounmap(shdev->chan_reg);
+ 
+-	platform_set_drvdata(pdev, NULL);
+-
+ 	synchronize_rcu();
+ 	kfree(shdev);
+ 
+diff --git a/drivers/dma/sh/sudmac.c b/drivers/dma/sh/sudmac.c
+index c494417..23fffc8 100644
+--- a/drivers/dma/sh/sudmac.c
++++ b/drivers/dma/sh/sudmac.c
+@@ -393,7 +393,6 @@ static int sudmac_probe(struct platform_device *pdev)
+ chan_probe_err:
+ 	sudmac_chan_remove(su_dev);
+ 
+-	platform_set_drvdata(pdev, NULL);
+ 	shdma_cleanup(&su_dev->shdma_dev);
+ 
+ 	return err;
+@@ -407,7 +406,6 @@ static int sudmac_remove(struct platform_device *pdev)
+ 	dma_async_device_unregister(dma_dev);
+ 	sudmac_chan_remove(su_dev);
+ 	shdma_cleanup(&su_dev->shdma_dev);
+-	platform_set_drvdata(pdev, NULL);
+ 
+ 	return 0;
+ }
 -- 
-Catalin
+1.7.10.4
+
+
