@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab3HUNVe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 09:21:34 -0400
-Received: from smtp1-1.goneo.de ([212.90.139.81]:33759 "EHLO smtp1-1.goneo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751492Ab3HUNVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 09:21:32 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -2.714
-From: Lars Poeschel <poeschel@lemonage.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v2] RFC: interrupt consistency check for OF GPIO IRQs
-Date: Wed, 21 Aug 2013 15:21:21 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
-        mark.rutland@arm.com, ian.campbell@citrix.com, galak@codeaurora.org,
-        pawel.moll@arm.com
-References: <1376387195-27469-1-git-send-email-larsi@wh2.tu-dresden.de> <9241298.URG9CVQFmF@flatron> <5212737A.1030904@wwwdotorg.org>
-In-Reply-To: <5212737A.1030904@wwwdotorg.org>
+	id S1751887Ab3HUNWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 09:22:19 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:49803 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab3HUNWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 09:22:18 -0400
+Date: Wed, 21 Aug 2013 09:22:14 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH 02/11] cpuset: add cs->real_cpus_allowed and
+ cs->real_mems_allowed
+Message-ID: <20130821132214.GC19286@mtj.dyndns.org>
+References: <52148F52.0@huawei.com>
+ <52148F6F.4070507@huawei.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308211521.21129.poeschel@lemonage.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52148F6F.4070507@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 August 2013 at 21:35:22, Stephen Warren wrote:
-> On 08/17/2013 03:59 AM, Tomasz Figa wrote:
-> > [Ccing DT maintainers, as they may have some ideas as well]
-> > 
-> > On Saturday 17 of August 2013 02:16:11 Linus Walleij wrote:
-> >> On Thu, Aug 15, 2013 at 11:53 AM, Tomasz Figa <tomasz.figa@gmail.com>  
-wrote:
-> ...
+On Wed, Aug 21, 2013 at 05:59:11PM +0800, Li Zefan wrote:
+> We're going to have separate user-configured masks and effective ones.
 > 
-> >>> This is the biggest problem of this patch. It assumes that there is
-> >>> only a single and shared GPIO/interrupt specification scheme, which
-> >>> might not be true.
-> >>> 
-> >>> First of all, almost all interrupt bindings have an extra,
-> >>> semi-generic
-> >>> flags field as last cell in the specifier. Now there can be more
-> >>> than one>
-> >>> 
-> >>> cell used to index GPIOs and interrupts, for example:
-> >>>         interrupts = <1 3 8>
-> >>> 
-> >>> which could mean: bank 1, pin 3, low level triggered.
-> >> 
-> >> You are right, but:
-> >> Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-> >> Specifies how to handle the one-celled and two-celled versions.
-> >> 
-> >> And nothing else is specified. So it's not overly complex.
-> > 
-> > The documentation states that:
-> > 	It is the responsibility of the interrupt controller's binding to
-> > 	define the length and format of the interrupt specifier.
-> > 
-> > Then two _example_ formats follow, preceded by following statement:
-> > 	The following two variants are commonly used:
-> > I already know a variant which uses three (Exynos combiner) and four
-> > (S3C24xx interrupt controller) cells. They are not pin controllers,
-> > but you can't stop anyone from adopting similar or even more complex
-> > specifiers formats for their hardware, especially when it matches
-> > more closely the interrupt/pin layout used in their hardware.
+> At last configured masks can only be changed by writing cpuset.cpus
+
+I suppose you mean "eventually" by "at last"?
+
+> and cpuset.mems, and they won't be restricted by parent cpuset. While
+> effective masks reflect cpu/memory hotplug and hierachical restriction.
 > 
-> Yes, the binding doc interrupts.txt mentioned above does not specify
-> *the* one-/two-cell format, but *a* common/possible one- and two-cell
-> format. There's no strict reason that all interrupt controllers have to
-> use those exact formats. The only way to parse interrupt specifiers is
-> to ask the driver for the the interrupt controller code to parse the
-> property.
+> This patch adds and initializes the effective masks. The effective
+> masks of the top cpuset is the same with configured masks, and a child
+> cpuset inherites its parent's effective masks.
+> 
+> This won't introduce behavior change.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> ---
+>  kernel/cpuset.c | 57 ++++++++++++++++++++++++++++++++++++++++++++++-----------
+>  1 file changed, 46 insertions(+), 11 deletions(-)
+> 
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index 70ab3fd..404fea5 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -81,8 +81,14 @@ struct cpuset {
+>  	struct cgroup_subsys_state css;
+>  
+>  	unsigned long flags;		/* "unsigned long" so bitops work */
+> -	cpumask_var_t cpus_allowed;	/* CPUs allowed to tasks in cpuset */
+> -	nodemask_t mems_allowed;	/* Memory Nodes allowed to tasks */
+> +
+> +	/* user-configured CPUs and Memory Nodes allow to tasks */
+> +	cpumask_var_t cpus_allowed;
+> +	nodemask_t mems_allowed;
+> +
+> +	/* effective CPUs and Memory Nodes allow to tasks */
+> +	cpumask_var_t real_cpus_allowed;
+> +	nodemask_t real_mems_allowed;
 
-I agree with you. I also understand the interrupts.txt binding doc as it 
-lists only a common/possible cell format, but it's purpose is not to 
-restrict it to this.
+Can we stick to the term "effective"?  If it's too long, we can drop
+the "allowed" postfix, which is pretty superflous.  effective_cpus and
+effective_mems should work, right?  For local vars, ecpus and emems
+should do.
 
-I send an updated patch, that uses the drivers xlate function to parse the 
-interrupt property in a few minutes.
+Thanks.
 
-Thanks for clarifying this,
-Lars
+-- 
+tejun
