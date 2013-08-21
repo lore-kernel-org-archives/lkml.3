@@ -1,128 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab3HUNH2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 09:07:28 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:47784 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751528Ab3HUNHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 09:07:24 -0400
-Message-ID: <1377090364.15070.13.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH v4 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
- for DWC3 core
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Kumar Gala <galak@codeaurora.org>, "balbi@ti.com" <balbi@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "idos@codeaurora.org" <idos@codeaurora.org>,
-        "mgautam@codeaurora.org" <mgautam@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Paul Zimmerman <paul.zimmerman@synopsys.com>
-Date: Wed, 21 Aug 2013 16:06:04 +0300
-In-Reply-To: <1377018092.31445.42.camel@hornet>
-References: <1376992565-22292-1-git-send-email-iivanov@mm-sol.com>
-	 <1376992565-22292-3-git-send-email-iivanov@mm-sol.com>
-	 <20130820122907.GU26587@radagast>
-	 <1377005543.26268.22.camel@iivanov-dev.int.mm-sol.com>
-	 <20130820133712.GC26587@radagast>
-	 <1377007751.26268.27.camel@iivanov-dev.int.mm-sol.com>
-	 <20130820143319.GG26587@radagast>
-	 <1377010458.26268.30.camel@iivanov-dev.int.mm-sol.com>
-	 <8691FDFE-326E-4198-838A-202D9EC988E1@codeaurora.org>
-	 <1377011163.31445.30.camel@hornet> <1377018092.31445.42.camel@hornet>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1751790Ab3HUNJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 09:09:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36223 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463Ab3HUNJn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 09:09:43 -0400
+Date: Wed, 21 Aug 2013 15:09:42 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Hogan <james.hogan@imgtec.com>
+cc: linux-metag@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] irq-imgpdc: add ImgTec PDC irqchip driver
+In-Reply-To: <1375101860-6657-1-git-send-email-james.hogan@imgtec.com>
+Message-ID: <alpine.DEB.2.02.1308211508580.4089@ionos.tec.linutronix.de>
+References: <1375101860-6657-1-git-send-email-james.hogan@imgtec.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-20 at 18:01 +0100, Pawel Moll wrote: 
-> On Tue, 2013-08-20 at 16:06 +0100, Pawel Moll wrote:
-> > On Tue, 2013-08-20 at 16:01 +0100, Kumar Gala wrote:
-> > > On Aug 20, 2013, at 9:54 AM, Ivan T. Ivanov wrote:
-> > > 
-> > > > 
-> > > > Hi, 
-> > > > 
-> > > > On Tue, 2013-08-20 at 09:33 -0500, Felipe Balbi wrote: 
-> > > >> On Tue, Aug 20, 2013 at 05:09:11PM +0300, Ivan T. Ivanov wrote:
-> > > >>> Hi,
-> > > >>> 
-> > > >>> On Tue, 2013-08-20 at 08:37 -0500, Felipe Balbi wrote: 
-> > > >>>> Hi,
-> > > >>>> 
-> > > >>>> On Tue, Aug 20, 2013 at 04:32:23PM +0300, Ivan T. Ivanov wrote:
-> > > >>>>>> On Tue, Aug 20, 2013 at 12:56:04PM +0300, Ivan T. Ivanov wrote:
-> > > >>>>>>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > > >>>>>>> 
-> > > >>>>>>> These drivers handles control and configuration of the HS
-> > > >>>>>>> and SS USB PHY transceivers. They are part of the driver
-> > > >>>>>>> which manage Synopsys DesignWare USB3 controller stack
-> > > >>>>>>> inside Qualcomm SoC's.
-> > > >>>>>>> 
-> > > >>>>>>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > > >>>>>>> ---
-> > > >>>>>>> drivers/usb/phy/Kconfig           |   11 ++
-> > > >>>>>>> drivers/usb/phy/Makefile          |    2 +
-> > > >>>>>>> drivers/usb/phy/phy-msm-dwc3-hs.c |  327 ++++++++++++++++++++++++++++++++
-> > > >>>>>>> drivers/usb/phy/phy-msm-dwc3-ss.c |  374 +++++++++++++++++++++++++++++++++++++
-> > > >>>>>> 
-> > > >>>>>> please rename these PHY drivers, they have nothing to do with DWC3. PHYs
-> > > >>>>>> don't care about the USB controller.
-> > > >>>>> 
-> > > >>>>> I think they are SNPS DesignWare PHY's, additionally
-> > > >>>>> wrapped with Qualcomm logic. I could substitute "dwc3"
-> > > >>>>> with just "dw", which will be more correct.
-> > > >>>> 
-> > > >>>> alright, thank you. Let's add Paul to the loop since he might have very
-> > > >>>> good insight in the synopsys PHYs.
-> > > >>>> 
-> > > >>>> mental note: if any other platform shows up with Synopsys PHY, ask them
-> > > >>>> to use this driver instead :-)
-> > > >>> 
-> > > >>> I really doubt that this will bi possible. Control of the PHY's is
-> > > >>> not directly trough ULPI, UTMI or PIPE3 interfaces, but trough
-> > > >>> QSCRATCH registers, which of course is highly Qualcomm specific.
-> > > >> 
-> > > >> isn't it a memory mapped IP ? doesn't synopsys provide their own set of
-> > > >> registers ?
-> > > > 
-> > > > From what I see it is not directly mapped. How QSCRATCH write and
-> > > > reads transactions are translated to DW IP is unclear to me.
-> > > 
-> > > 
-> > > I think the question is how does SW access them?
-> > 
-> > I afraid the answer may be: "it depends on the SOC". In my past I had to
-> > initialize a (SATA) PHY by implementing a software JTAG state machine,
-> > as the PHY's registers were not memory mapped *at all*. And the IP
-> > itself came from Synopsys, Cadence or yet another EDA company...
+On Mon, 29 Jul 2013, James Hogan wrote:
+
+> Add irqchip driver for the ImgTec PowerDown Controller (PDC) as found in
+> the TZ1090. The PDC has a number of general system wakeup (SysWake)
+> interrupts (which would for example be connected to a power button or an
+> external peripheral), and a number of peripheral interrupts which can
+> also wake the system but are connected straight to specific low-power
+> peripherals (such as RTC or Infrared). It has a single interrupt output
+> for SysWakes, and individual interrupt outputs for each peripheral.
 > 
-> Having said all that... If the PHY's spec at least defined layout of the
-> registers in question and driver was using regmap API to talk to the
-> device (initially regmap-mmio), it has some chances to become universal.
-> The SOCs designed like "my" one would have to provide a custom regmap
-> implementation.
-
-Sound reasonable. Unfortunately I don't have PHY's IP spec. 
-
-Regards,
-Ivan
-
+> The driver demuxes the SysWake interrupt line, and passes the peripheral
+> interrupts straight through. It also handles the set_wake interrupt
+> operation to enable/disable the appropriate wake event bits.
 > 
-> Paweł
-> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: linux-metag@vger.kernel.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: devicetree-discuss@lists.ozlabs.org
+> ---
+> Thomas: I'd appreciate your ack if this driver looks okay to you now,
+> then I'm happy to take it through the metag arch tree for v3.12
+> (although you're welcome to take it through tip if you prefer).
 
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 
+Please take it through your tree. It has no dependencies on my stuff.
+ 
