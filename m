@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab3HUGY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 02:24:29 -0400
-Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:56310
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752063Ab3HUGY2 (ORCPT
+	id S1752281Ab3HUGYy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 02:24:54 -0400
+Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:8158
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752260Ab3HUGYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 02:24:28 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+	Wed, 21 Aug 2013 02:24:53 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
 X-SpamScore: 1
 X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h129fi1155h)
 X-FB-DOMAIN-IP-MATCH: fail
@@ -19,9 +19,9 @@ To: Linus Walleij <linus.walleij@linaro.org>,
 CC: LKML <linux-kernel@vger.kernel.org>,
         <adi-buildroot-devel@lists.sourceforge.net>,
         Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 2/3 v3] blackfin: gpio: Remove none gpio lib code.
-Date: Wed, 21 Aug 2013 14:30:06 +0800
-Message-ID: <1377066607-19061-2-git-send-email-sonic.adi@gmail.com>
+Subject: [PATCH 3/3 v3] blackfin: pinctrl-adi2: Enable PINCTRL framework for BF54x and BF60x.
+Date: Wed, 21 Aug 2013 14:30:07 +0800
+Message-ID: <1377066607-19061-3-git-send-email-sonic.adi@gmail.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
 References: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
@@ -34,297 +34,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sonic Zhang <sonic.zhang@analog.com>
 
-- Remove non gpio lib code from blackfin architecture.
-- Limit the lagecy blackfin gpio driver to bf5xx processors only.
-- Remove unused definition of the pint power functions.
+- Remove unused macro MAX_RESOURCES
+- Override blackfin legacy peripheral pinmux request and free APIs by
+devm_pinctrl_get_select_default() to init the peripheral portmux setting.
+
+v2-chagnes:
+- Move pinctrl soc data out of blackfin arch folder.
 
 Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 ---
- arch/blackfin/Kconfig            |   7 ++
- arch/blackfin/include/asm/gpio.h | 157 +++++----------------------------------
- arch/blackfin/kernel/Makefile    |   3 +-
- 3 files changed, 29 insertions(+), 138 deletions(-)
+ arch/blackfin/Kconfig                           |  4 ++++
+ arch/blackfin/include/asm/portmux.h             | 19 +++++++++++++++++--
+ arch/blackfin/mach-bf548/include/mach/portmux.h |  2 --
+ arch/blackfin/mach-bf609/include/mach/portmux.h |  2 --
+ 4 files changed, 21 insertions(+), 6 deletions(-)
 
 diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-index a117652..9eff25b 100644
+index 9eff25b..ed7157f 100644
 --- a/arch/blackfin/Kconfig
 +++ b/arch/blackfin/Kconfig
-@@ -52,6 +52,9 @@ config GENERIC_BUG
- config ZONE_DMA
+@@ -324,6 +324,10 @@ config GPIO_ADI
  	def_bool y
+ 	depends on (BF51x || BF52x || BF53x || BF538 || BF539 || BF561)
  
-+config GENERIC_GPIO
++config PINCTRL
 +	def_bool y
-+
- config FORCE_MAX_ZONEORDER
- 	int
- 	default "14"
-@@ -317,6 +320,10 @@ config BF53x
- 	depends on (BF531 || BF532 || BF533 || BF534 || BF536 || BF537)
- 	default y
- 
-+config GPIO_ADI
-+	def_bool y
-+	depends on (BF51x || BF52x || BF53x || BF538 || BF539 || BF561)
++	depends on BF54x || BF60x
 +
  config MEM_MT48LC64M4A2FB_7E
  	bool
  	depends on (BFIN533_STAMP)
-diff --git a/arch/blackfin/include/asm/gpio.h b/arch/blackfin/include/asm/gpio.h
-index 98d0133..99d338c 100644
---- a/arch/blackfin/include/asm/gpio.h
-+++ b/arch/blackfin/include/asm/gpio.h
-@@ -25,8 +25,12 @@
+diff --git a/arch/blackfin/include/asm/portmux.h b/arch/blackfin/include/asm/portmux.h
+index 9b1e2c3..7aa2043 100644
+--- a/arch/blackfin/include/asm/portmux.h
++++ b/arch/blackfin/include/asm/portmux.h
+@@ -17,14 +17,29 @@
+ #define P_MAYSHARE	0x2000
+ #define P_DONTCARE	0x1000
  
- #ifndef __ASSEMBLY__
- 
-+#ifndef CONFIG_PINCTRL
-+
- #include <linux/compiler.h>
--#include <linux/gpio.h>
-+#include <asm/blackfin.h>
-+#include <asm/portmux.h>
+-
++#ifdef CONFIG_PINCTRL
 +#include <asm/irq_handler.h>
- 
- /***********************************************************
- *
-@@ -45,7 +49,6 @@
- * MODIFICATION HISTORY :
- **************************************************************/
- 
--#if !BFIN_GPIO_PINT
- void set_gpio_dir(unsigned, unsigned short);
- void set_gpio_inen(unsigned, unsigned short);
- void set_gpio_polar(unsigned, unsigned short);
-@@ -115,7 +118,6 @@ struct gpio_port_t {
- 	unsigned short dummy16;
- 	unsigned short inen;
- };
--#endif
- 
- #ifdef BFIN_SPECIAL_GPIO_BANKS
- void bfin_special_gpio_free(unsigned gpio);
-@@ -127,25 +129,21 @@ void bfin_special_gpio_pm_hibernate_suspend(void);
- #endif
- 
- #ifdef CONFIG_PM
--int bfin_pm_standby_ctrl(unsigned ctrl);
-+void bfin_gpio_pm_hibernate_restore(void);
-+void bfin_gpio_pm_hibernate_suspend(void);
-+int bfin_gpio_pm_wakeup_ctrl(unsigned gpio, unsigned ctrl);
-+int bfin_gpio_pm_standby_ctrl(unsigned ctrl);
- 
- static inline int bfin_pm_standby_setup(void)
- {
--	return bfin_pm_standby_ctrl(1);
-+	return bfin_gpio_pm_standby_ctrl(1);
- }
- 
- static inline void bfin_pm_standby_restore(void)
- {
--	bfin_pm_standby_ctrl(0);
-+	bfin_gpio_pm_standby_ctrl(0);
- }
- 
--void bfin_gpio_pm_hibernate_restore(void);
--void bfin_gpio_pm_hibernate_suspend(void);
--void bfin_pint_suspend(void);
--void bfin_pint_resume(void);
--
--# if !BFIN_GPIO_PINT
--int gpio_pm_wakeup_ctrl(unsigned gpio, unsigned ctrl);
- 
- struct gpio_port_s {
- 	unsigned short data;
-@@ -161,7 +159,6 @@ struct gpio_port_s {
- 	unsigned short reserved;
- 	unsigned short mux;
- };
--# endif
- #endif /*CONFIG_PM*/
- 
- /***********************************************************
-@@ -178,36 +175,29 @@ struct gpio_port_s {
- *************************************************************
- * MODIFICATION HISTORY :
- **************************************************************/
--
--int bfin_gpio_request(unsigned gpio, const char *label);
--void bfin_gpio_free(unsigned gpio);
- int bfin_gpio_irq_request(unsigned gpio, const char *label);
- void bfin_gpio_irq_free(unsigned gpio);
--int bfin_gpio_direction_input(unsigned gpio);
--int bfin_gpio_direction_output(unsigned gpio, int value);
--int bfin_gpio_get_value(unsigned gpio);
--void bfin_gpio_set_value(unsigned gpio, int value);
-+void bfin_gpio_irq_prepare(unsigned gpio);
 +
-+static inline int irq_to_gpio(unsigned irq)
-+{
-+	return irq - GPIO_IRQ_BASE;
-+}
-+#endif /* CONFIG_PINCTRL */
++#define gpio_pint_regs bfin_pint_regs
++#define adi_internal_set_wake bfin_internal_set_wake
++
++#define peripheral_request(per, label) 0
++#define peripheral_free(per)
++#define peripheral_request_list(per, label) \
++	(pdev ? (IS_ERR(devm_pinctrl_get_select_default(&pdev->dev)) \
++	? -EINVAL : 0) : 0)
++#define peripheral_free_list(per)
++#else
+ int peripheral_request(unsigned short per, const char *label);
+ void peripheral_free(unsigned short per);
+ int peripheral_request_list(const unsigned short per[], const char *label);
+ void peripheral_free_list(const unsigned short per[]);
++#endif
  
- #include <asm/irq.h>
- #include <asm/errno.h>
+-#include <asm/gpio.h>
++#include <linux/err.h>
++#include <linux/pinctrl/pinctrl.h>
+ #include <mach/portmux.h>
++#include <linux/gpio.h>
  
--#ifdef CONFIG_GPIOLIB
- #include <asm-generic/gpio.h>		/* cansleep wrappers */
+ #ifndef P_SPORT2_TFS
+ #define P_SPORT2_TFS P_UNDEF
+diff --git a/arch/blackfin/mach-bf548/include/mach/portmux.h b/arch/blackfin/mach-bf548/include/mach/portmux.h
+index e222462..d9f8632 100644
+--- a/arch/blackfin/mach-bf548/include/mach/portmux.h
++++ b/arch/blackfin/mach-bf548/include/mach/portmux.h
+@@ -7,8 +7,6 @@
+ #ifndef _MACH_PORTMUX_H_
+ #define _MACH_PORTMUX_H_
  
- static inline int gpio_get_value(unsigned int gpio)
- {
--	if (gpio < MAX_BLACKFIN_GPIOS)
--		return bfin_gpio_get_value(gpio);
--	else
--		return __gpio_get_value(gpio);
-+	return __gpio_get_value(gpio);
- }
+-#define MAX_RESOURCES	MAX_BLACKFIN_GPIOS
+-
+ #define P_SPORT2_TFS	(P_DEFINED | P_IDENT(GPIO_PA0) | P_FUNCT(0))
+ #define P_SPORT2_DTSEC	(P_DEFINED | P_IDENT(GPIO_PA1) | P_FUNCT(0))
+ #define P_SPORT2_DTPRI	(P_DEFINED | P_IDENT(GPIO_PA2) | P_FUNCT(0))
+diff --git a/arch/blackfin/mach-bf609/include/mach/portmux.h b/arch/blackfin/mach-bf609/include/mach/portmux.h
+index 2e1a51c..fe34191 100644
+--- a/arch/blackfin/mach-bf609/include/mach/portmux.h
++++ b/arch/blackfin/mach-bf609/include/mach/portmux.h
+@@ -7,8 +7,6 @@
+ #ifndef _MACH_PORTMUX_H_
+ #define _MACH_PORTMUX_H_
  
- static inline void gpio_set_value(unsigned int gpio, int value)
- {
--	if (gpio < MAX_BLACKFIN_GPIOS)
--		bfin_gpio_set_value(gpio, value);
--	else
--		__gpio_set_value(gpio, value);
-+	__gpio_set_value(gpio, value);
- }
- 
- static inline int gpio_cansleep(unsigned int gpio)
-@@ -219,113 +209,6 @@ static inline int gpio_to_irq(unsigned gpio)
- {
- 	return __gpio_to_irq(gpio);
- }
+-#define MAX_RESOURCES	MAX_BLACKFIN_GPIOS
 -
--#else /* !CONFIG_GPIOLIB */
--
--static inline int gpio_request(unsigned gpio, const char *label)
--{
--	return bfin_gpio_request(gpio, label);
--}
--
--static inline void gpio_free(unsigned gpio)
--{
--	return bfin_gpio_free(gpio);
--}
--
--static inline int gpio_direction_input(unsigned gpio)
--{
--	return bfin_gpio_direction_input(gpio);
--}
--
--static inline int gpio_direction_output(unsigned gpio, int value)
--{
--	return bfin_gpio_direction_output(gpio, value);
--}
--
--static inline int gpio_set_debounce(unsigned gpio, unsigned debounce)
--{
--	return -EINVAL;
--}
--
--static inline int gpio_request_one(unsigned gpio, unsigned long flags, const char *label)
--{
--	int err;
--
--	err = bfin_gpio_request(gpio, label);
--	if (err)
--		return err;
--
--	if (flags & GPIOF_DIR_IN)
--		err = bfin_gpio_direction_input(gpio);
--	else
--		err = bfin_gpio_direction_output(gpio,
--			(flags & GPIOF_INIT_HIGH) ? 1 : 0);
--
--	if (err)
--		bfin_gpio_free(gpio);
--
--	return err;
--}
--
--static inline int gpio_request_array(const struct gpio *array, size_t num)
--{
--	int i, err;
--
--	for (i = 0; i < num; i++, array++) {
--		err = gpio_request_one(array->gpio, array->flags, array->label);
--		if (err)
--			goto err_free;
--	}
--	return 0;
--
--err_free:
--	while (i--)
--		bfin_gpio_free((--array)->gpio);
--	return err;
--}
--
--static inline void gpio_free_array(const struct gpio *array, size_t num)
--{
--	while (num--)
--		bfin_gpio_free((array++)->gpio);
--}
--
--static inline int __gpio_get_value(unsigned gpio)
--{
--	return bfin_gpio_get_value(gpio);
--}
--
--static inline void __gpio_set_value(unsigned gpio, int value)
--{
--	return bfin_gpio_set_value(gpio, value);
--}
--
--static inline int gpio_get_value(unsigned gpio)
--{
--	return __gpio_get_value(gpio);
--}
--
--static inline void gpio_set_value(unsigned gpio, int value)
--{
--	return __gpio_set_value(gpio, value);
--}
--
--static inline int gpio_to_irq(unsigned gpio)
--{
--	if (likely(gpio < MAX_BLACKFIN_GPIOS))
--		return gpio + GPIO_IRQ_BASE;
--
--	return -EINVAL;
--}
--
--#include <asm-generic/gpio.h>		/* cansleep wrappers */
--#endif	/* !CONFIG_GPIOLIB */
--
--static inline int irq_to_gpio(unsigned irq)
--{
--	return (irq - GPIO_IRQ_BASE);
--}
--
- #endif /* __ASSEMBLY__ */
- 
- #endif /* __ARCH_BLACKFIN_GPIO_H__ */
-diff --git a/arch/blackfin/kernel/Makefile b/arch/blackfin/kernel/Makefile
-index 735f24e..703dc7c 100644
---- a/arch/blackfin/kernel/Makefile
-+++ b/arch/blackfin/kernel/Makefile
-@@ -7,7 +7,7 @@ extra-y := vmlinux.lds
- obj-y := \
- 	entry.o process.o bfin_ksyms.o ptrace.o setup.o signal.o \
- 	sys_bfin.o traps.o irqchip.o dma-mapping.o flat.o \
--	fixed_code.o reboot.o bfin_gpio.o bfin_dma.o \
-+	fixed_code.o reboot.o bfin_dma.o \
- 	exception.o dumpstack.o
- 
- ifeq ($(CONFIG_GENERIC_CLOCKEVENTS),y)
-@@ -16,6 +16,7 @@ else
-     obj-y += time.o
- endif
- 
-+obj-$(CONFIG_GPIO_ADI)               += bfin_gpio.o
- obj-$(CONFIG_DYNAMIC_FTRACE)         += ftrace.o
- obj-$(CONFIG_FUNCTION_TRACER)        += ftrace-entry.o
- obj-$(CONFIG_FUNCTION_GRAPH_TRACER)  += ftrace.o
+ /* EMAC RMII Port Mux */
+ #define P_MII0_MDC	(P_DEFINED | P_IDENT(GPIO_PC6) | P_FUNCT(0))
+ #define P_MII0_MDIO	(P_DEFINED | P_IDENT(GPIO_PC7) | P_FUNCT(0))
 -- 
 1.8.2.3
 
