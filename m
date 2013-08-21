@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab3HUOXs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:23:48 -0400
-Received: from protonic.xs4all.nl ([213.84.116.84]:18763 "EHLO
-	protonic.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab3HUOXr (ORCPT
+	id S1752237Ab3HUOYP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:24:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58243 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725Ab3HUOYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:23:47 -0400
-Date: Wed, 21 Aug 2013 16:24:00 +0200
-From: David Jander <david.jander@protonic.nl>
-To: Mark Brown <broonie@kernel.org>
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: regmap: bugfix in regcache-rbtree.c
-Message-ID: <20130821162400.66c5b52e@archvile>
-In-Reply-To: <20130821140816.GC26118@sirena.org.uk>
-References: <1377090155-3443-1-git-send-email-david@protonic.nl>
-	<20130821151423.70c38fb3@archvile>
-	<20130821140816.GC26118@sirena.org.uk>
-Organization: Protonic Holland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Aug 2013 10:24:11 -0400
+Date: Wed, 21 Aug 2013 16:23:56 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20130821142356.GC31370@twins.programming.kicks-ass.net>
+References: <521313D8.9080500@lab.ntt.co.jp>
+ <20130820084405.GC3258@twins.programming.kicks-ass.net>
+ <52138BE9.5090005@linux.intel.com>
+ <20130820160146.GG3258@twins.programming.kicks-ass.net>
+ <20130820163312.GA17957@redhat.com>
+ <20130820175429.GI3258@twins.programming.kicks-ass.net>
+ <20130820182553.GB22287@redhat.com>
+ <20130821083130.GM3258@twins.programming.kicks-ass.net>
+ <20130821113551.GA1472@redhat.com>
+ <20130821123311.GA31370@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130821123311.GA31370@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Aug 2013 15:08:16 +0100
-Mark Brown <broonie@kernel.org> wrote:
-
-> On Wed, Aug 21, 2013 at 03:14:23PM +0200, David Jander wrote:
+On Wed, Aug 21, 2013 at 02:33:11PM +0200, Peter Zijlstra wrote:
+> On Wed, Aug 21, 2013 at 01:35:51PM +0200, Oleg Nesterov wrote:
+> > On 08/21, Peter Zijlstra wrote:
 > 
-> > Here's the explanation:
+> > > Yes its the right rq, but the wrong time.
+> > 
+> > Hmm. Just in case, it is not that I think this patch really makes sense,
+> > but I'd like to understand why do you think it is wrong.
+>  
+> > But it is not "after it switches out", it is after it switched back.
 > 
-> > 1. If a driver initializes a regmap with a RB-tree cache, and starts
-> > writing to registers in some arbitrary order, you might get overlapping
-> > rbnodes: Suppose I have this rb-tree (a real case I happen to have):
+> D'uh I was being particularly dense it seems :/
 > 
-> > # cat /sys/kernel/debug/regmap/1-000a/rbtree
-> > 2-19 (24)
-> > 4-1b (24)
+> Yes I think it is correct. You're now trading two atomic ops on a
+> different cacheline than rq->lock for one atomic op on the rq->lock.
 > 
-> Like I say this isn't supposed to be the case in the first place, those
-> two nodes should be being merged - what we need to understand is where
-> the overlapping nodes came from.
+> Might be a win, esp. since hopefully there's a fair chance its the same
+> runqueue.
 
-As I said in my last e-mail just a few seconds ago, it does happen when:
+The other consideration is that this adds two branches to the normal
+schedule path. I really don't know what the regular ratio between
+schedule() and io_schedule() is -- and I suspect it can very much depend
+on workload -- but it might be a net loss due to that, even if it makes
+io_schedule() 'lots' cheaper.
 
-1. 4-1b is cached and 2-19 isn't yet.
 
-2. A write access to register 2 occurs.
-
-Hope this helps.
-
-Best regards,
-
--- 
-David Jander
-Protonic Holland.
