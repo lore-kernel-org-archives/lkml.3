@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539Ab3HUISC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 04:18:02 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:38382 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab3HUISA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 04:18:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1370521041-32318-22-git-send-email-lee.jones@linaro.org>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
-	<1370521041-32318-22-git-send-email-lee.jones@linaro.org>
-Date: Wed, 21 Aug 2013 10:17:59 +0200
-Message-ID: <CACRpkdY2KOxX=oA7i9GUnzpwRKiK2rXqTBPVpg+zW082f2TJdg@mail.gmail.com>
-Subject: Re: [PATCH 21/33] clk: ux500: Add Device Tree support for the PRCC
- Kernel clock
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751596Ab3HUITx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 04:19:53 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751381Ab3HUITv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 04:19:51 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-arch@vger.kernel.org
+Cc: mmarek@suse.cz, geert@linux-m68k.org, ralf@linux-mips.org,
+        lethal@linux-sh.org, jdike@addtoit.com, gxt@mprc.pku.edu.cn,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net
+Subject: [RFC] Get rid of SUBARCH
+Date: Wed, 21 Aug 2013 10:19:24 +0200
+Message-Id: <1377073172-3662-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 6, 2013 at 2:17 PM, Lee Jones <lee.jones@linaro.org> wrote:
+This series is an attempt to remove the SUBARCH make parameter.
+It as introduced at the times of Linux 2.5 for UML to tell the UML
+build system what the real architecture is.
 
-> This patch enables clocks to be specified from Device Tree via phandles
-> to the "prcc-kernel-clock" node.
->
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-(...)
->  static struct clk *prcmu_clk[PRCMU_NUM_CLKS];
->  static struct clk *prcc_pclk[(PRCC_NUM_PERIPH_CLUSTERS + 1) * PRCC_PERIPHS_PER_CLUSTER];
-> +static struct clk *prcc_kclk[(PRCC_NUM_PERIPH_CLUSTERS + 1) * PRCC_PERIPHS_PER_CLUSTER];
->
->  #define PRCC_SHOW(clk, base, bit) \
->         clk[(base * PRCC_PERIPHS_PER_CLUSTER) + bit]
-> @@ -540,110 +541,136 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
->         clk = clk_reg_prcc_kclk("p1_uart0_kclk", "uartclk",
->                         clkrst1_base, BIT(0), CLK_SET_RATE_GATE);
->         clk_register_clkdev(clk, NULL, "uart0");
-> +       PRCC_KCLK_STORE(clk, 1, 0);
->
->         clk = clk_reg_prcc_kclk("p1_uart1_kclk", "uartclk",
->                         clkrst1_base, BIT(1), CLK_SET_RATE_GATE);
->         clk_register_clkdev(clk, NULL, "uart1");
-> +       PRCC_KCLK_STORE(clk, 1, 1);
+But we actually don't need SUBARCH, we can store this information
+in the .config file.
+i386_defconfig will produce a kernel for x86, and x86_64_defconfig
+for x86_64. There is no need to specify SUBARCH.
+With this patchset applied you can build UML always with "make linux ARCH=um"
+and it will produce the an image for the architecture specified in your .config.
+Currenlty "make linux ARCH=um" will alter your .config to match the detected SUBARCH
+whith sucks and causes problems on automated build systems.
 
-(etc)
+The series touches also m68k, sh, mips and unicore32.
+These architectures magically select a cross compiler if ARCH != SUBARCH.
+Do really need that behavior?
 
-On device tree boots, clk_register_clkdev() is obviously pointless,
-as you're later deleting the AUXDATA connecting that device name
-to the clock.
+[PATCH 1/8] um: Create defconfigs for i386 and x86_64
+[PATCH 2/8] um: Do not use SUBARCH
+[PATCH 3/8] um: Remove old defconfig
+[PATCH 4/8] m68k: Do not use SUBARCH
+[PATCH 5/8] sh: Do not use SUBARCH
+[PATCH 6/8] mips: Do not use SUBARCH
+[PATCH 7/8] unicore32: Do not use SUBARCH
+[PATCH 8/8] Makefile: Remove SUBARCH
 
-This should not be called at all on the DT boot path.
-
-However this looks cluttered as well:
-
-if (dt_probe)
-  clk_register_clkdev(clk, NULL, "uart0");
-else
-  PRCC_KCLK_STORE(clk, 1, 0);
-
-Isn't it possible to fork a function u8500_clk_init_dt() to add all the
-clocks in the DT probe path and keep this function
-u8500_clk_init() as it is?
-
-Yours,
-Linus Walleij
+Thanks,
+//richard
