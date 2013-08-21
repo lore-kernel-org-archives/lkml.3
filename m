@@ -1,71 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab3HUKRb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 06:17:31 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36797 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab3HUKRV (ORCPT
+	id S1752577Ab3HUKR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 06:17:59 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:27852 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab3HUKR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 06:17:21 -0400
-Message-ID: <52149387.4060007@pengutronix.de>
-Date: Wed, 21 Aug 2013 12:16:39 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+	Wed, 21 Aug 2013 06:17:57 -0400
+Message-ID: <52148FFC.4080701@huawei.com>
+Date: Wed, 21 Aug 2013 18:01:32 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Libo Chen <libo.chen@huawei.com>
-CC: wg@grandegger.com, davem@davemloft.net, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lizefan@huawei.com
-Subject: Re: [PATCH 1/2] net: can: at91_can: use platform_set_drvdata()
-References: <1377080103-33872-1-git-send-email-libo.chen@huawei.com>
-In-Reply-To: <1377080103-33872-1-git-send-email-libo.chen@huawei.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="MmrCVucN58Sg5sl5tHS3ufIQgJPw84An7"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: [PATCH 11/11] cpuset: export effective masks to userspace
+References: <52148F52.0@huawei.com>
+In-Reply-To: <52148F52.0@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---MmrCVucN58Sg5sl5tHS3ufIQgJPw84An7
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+cpuset.cpus and cpuset.mems are the configured masks, and we need
+to export effective masks to userspace, so users know the real
+cpus_allowed and mems_allowed that apply to the tasks in a cpuset.
 
-On 08/21/2013 12:15 PM, Libo Chen wrote:
-> Use the wrapper functions for getting and setting the driver data using=
+cpuset.effective_cpus and cpuset.effective_mems will be created for
+sane_behavior only.
 
-> platform_device instead of using dev_set_drvdata() with &pdev->dev,
-> so we can directly pass a struct platform_device.
->=20
-> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cpuset.c | 36 ++++++++++++++++++++++++++++++------
+ 1 file changed, 30 insertions(+), 6 deletions(-)
 
-tnx, applied.
-
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---MmrCVucN58Sg5sl5tHS3ufIQgJPw84An7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlIUk4cACgkQjTAFq1RaXHOa2gCcDah9fhIKLkT2x09Z3UvnnzlQ
-A48An1o+9xjAdA/sp+RZffnzuruNLuP1
-=HP9z
------END PGP SIGNATURE-----
-
---MmrCVucN58Sg5sl5tHS3ufIQgJPw84An7--
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index c302979..a4f3483 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1583,6 +1583,8 @@ typedef enum {
+ 	FILE_MEMORY_MIGRATE,
+ 	FILE_CPULIST,
+ 	FILE_MEMLIST,
++	FILE_EFFECTIVE_CPULIST,
++	FILE_EFFECTIVE_MEMLIST,
+ 	FILE_CPU_EXCLUSIVE,
+ 	FILE_MEM_EXCLUSIVE,
+ 	FILE_MEM_HARDWALL,
+@@ -1731,23 +1733,23 @@ out_unlock:
+  * across a page fault.
+  */
+ 
+-static size_t cpuset_sprintf_cpulist(char *page, struct cpuset *cs)
++static size_t cpuset_sprintf_cpulist(char *page, struct cpumask *pmask)
+ {
+ 	size_t count;
+ 
+ 	mutex_lock(&callback_mutex);
+-	count = cpulist_scnprintf(page, PAGE_SIZE, cs->cpus_allowed);
++	count = cpulist_scnprintf(page, PAGE_SIZE, pmask);
+ 	mutex_unlock(&callback_mutex);
+ 
+ 	return count;
+ }
+ 
+-static size_t cpuset_sprintf_memlist(char *page, struct cpuset *cs)
++static size_t cpuset_sprintf_memlist(char *page, nodemask_t mask)
+ {
+ 	size_t count;
+ 
+ 	mutex_lock(&callback_mutex);
+-	count = nodelist_scnprintf(page, PAGE_SIZE, cs->mems_allowed);
++	count = nodelist_scnprintf(page, PAGE_SIZE, mask);
+ 	mutex_unlock(&callback_mutex);
+ 
+ 	return count;
+@@ -1771,10 +1773,16 @@ static ssize_t cpuset_common_file_read(struct cgroup_subsys_state *css,
+ 
+ 	switch (type) {
+ 	case FILE_CPULIST:
+-		s += cpuset_sprintf_cpulist(s, cs);
++		s += cpuset_sprintf_cpulist(s, cs->cpus_allowed);
+ 		break;
+ 	case FILE_MEMLIST:
+-		s += cpuset_sprintf_memlist(s, cs);
++		s += cpuset_sprintf_memlist(s, cs->mems_allowed);
++		break;
++	case FILE_EFFECTIVE_CPULIST:
++		s += cpuset_sprintf_cpulist(s, cs->real_cpus_allowed);
++		break;
++	case FILE_EFFECTIVE_MEMLIST:
++		s += cpuset_sprintf_memlist(s, cs->real_mems_allowed);
+ 		break;
+ 	default:
+ 		retval = -EINVAL;
+@@ -1849,6 +1857,14 @@ static struct cftype files[] = {
+ 	},
+ 
+ 	{
++		.name = "effective_cpus",
++		.flags = CFTYPE_SANE,
++		.read = cpuset_common_file_read,
++		.max_write_len = (100U + 6 * NR_CPUS),
++		.private = FILE_EFFECTIVE_CPULIST,
++	},
++
++	{
+ 		.name = "mems",
+ 		.read = cpuset_common_file_read,
+ 		.write_string = cpuset_write_resmask,
+@@ -1857,6 +1873,14 @@ static struct cftype files[] = {
+ 	},
+ 
+ 	{
++		.name = "effective_mems",
++		.flags = CFTYPE_SANE,
++		.read = cpuset_common_file_read,
++		.max_write_len = (100U + 6 * MAX_NUMNODES),
++		.private = FILE_EFFECTIVE_MEMLIST,
++	},
++
++	{
+ 		.name = "cpu_exclusive",
+ 		.read_u64 = cpuset_read_u64,
+ 		.write_u64 = cpuset_write_u64,
+-- 
+1.8.0.2
