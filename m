@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab3HUP7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:59:38 -0400
-Received: from forward14.mail.yandex.net ([95.108.130.92]:48987 "EHLO
-	forward14.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab3HUP7f (ORCPT
+	id S1752505Ab3HUP7s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:59:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37631 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab3HUP7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:59:35 -0400
-X-Greylist: delayed 479 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Aug 2013 11:59:34 EDT
-From: Alexander Fyodorov <halcy@yandex.ru>
-To: Waiman Long <waiman.long@hp.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <52142D6C.6000400@hp.com>
-References: <15321377012704@web8h.yandex.ru> <52142D6C.6000400@hp.com>
-Subject: Re: [PATCH RFC v2 1/2] qspinlock: Introducing a 4-byte queue spinlock implementation
+	Wed, 21 Aug 2013 11:59:46 -0400
+Date: Wed, 21 Aug 2013 17:59:45 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Clark Williams <clark.williams@gmail.com>
+Subject: Re: [PATCH RT 0/3] hwlat-detector: Have it actually find hardware
+ latency
+Message-ID: <20130821155945.GC16913@linutronix.de>
+References: <20130819213324.405942342@goodmis.org>
 MIME-Version: 1.0
-Message-Id: <336901377100289@web16f.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 21 Aug 2013 19:51:29 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130819213324.405942342@goodmis.org>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-21.08.2013, 07:01, "Waiman Long" <waiman.long@hp.com>:
-> On 08/20/2013 11:31 AM, Alexander Fyodorov wrote:
->> Isn't a race possible if another thread acquires the spinlock in the window 
->> between setting lock->locked to 0 and issuing smp_wmb()? Writes from
->> the critical section from our thread might be delayed behind the write to
->> lock->locked if the corresponding cache bank is busy.
+* Steven Rostedt | 2013-08-19 17:33:24 [-0400]:
+
+>Thi patch series fixes up hwlat-detector to check the entire path
+>of time for a latency being hit, instead of the quick check between
+>two time stamps.
 >
-> The purpose of smp_wmb() is to make sure that content in the cache will
-> be flushed out to the memory in case the cache coherency protocol cannot
-> guarantee a single view of memory content on all processor.
-
-Linux kernel does not support architectures without cache coherency, and while using memory barriers just for flushing write buffers ASAP on cache-coherent processors might benefit performance on some architectures it will hurt performance on others. So it must not be done in architecture-independent code.
-
-> In other
-> word, smp_wmb() is used to make other processors see that the lock has
-> been freed ASAP. If another processor see that before smp_wmb(), it will
-> be even better as the latency is reduced. As the lock holder is the only
-> one that can release the lock, there is no race condition here.
-
-No, I was talking about the window between freeing lock and issuing smp_wmb(). What I meant is:
-1) A = 0
-2) CPU0 locks the spinlock protecting A.
-3) CPU0 writes 1 to A, but the write gets stalled because the corresponding cache bank is busy.
-4) CPU0 calls spin_unlock() and sets lock->locked to 0.
-
-If CPU1 does a spin_lock() right now, it will succeed (since lock->locked == 0). But the write to A hasn't reached cache yet, so CPU1 will see A == 0.
-
-More examples on this are in Documentation/memory-barriers.txt
-
-> That is a legitimate question. I don't think it is a problem on x86 as
-> the x86 spinlock code doesn't do a full mb() in the lock and unlock
-> paths.
-
-It does because "lock" prefix implies a full memory barrier.
-
-> The smp_mb() will be conditionalized depending on the ARCH_QSPINLOCK
-> setting. The smp_wmb() may not be needed, but a compiler barrier should
-> still be there.
-
-Do you mean because of inline? That shouldn't be a problem because smp_mb() prohibits compiler from doing any optimizations across the barrier (thanks to the "volatile" keyword).
-
-More on this in Documentation/memory-barriers.txt
-
->> šAlso I don't understand why there are so many uses of ACCESS_ONCE()
->> macro. It does not guarantee memory ordering with regard to other CPUs,
->> so probably most of the uses can be removed (with exception of
->> lock_is_contended(), where it prohibits gcc from optimizing the loop away).
+>It also uses the trace_local_clock() if available, which is much lighter
+>weight than ktime_get() which might produce false positives. As
+>the trace clock is used to detect irq latencies, it's suitable for
+>hardware latency.
 >
-> All the lock/unlock code can be inlined and we don't know what the
-> compiler will do to optimize code. The ACCESS_ONCE() macro is used to
-> make sure that the compiler won't optimize away the actual fetch or
-> write of the memory. Even if the compiler won't optimize away the memory
-> access, adding the ACCESS_ONCE() macro won't have any extra overhead. So
-> a more liberal use of it won't hurt performance.
+>Finally, stop machine is removed and the test is run by a single thread.
 
-If compiler optimized memory access away it would be a bug. And I'm not so sure about overhead... For example, on some VLIW architectures ACCESS_ONCE() might prohibit compiler from mixing other instructions to the unlock.
+Applied, thanks.
+
+Sebastian
