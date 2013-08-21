@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab3HUJIk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 05:08:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36631 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751552Ab3HUJIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 05:08:39 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <BEC9F67575FA1E429CA7CF5AE9BE3634012ED68C@SHSMSX104.ccr.corp.intel.com>
-References: <1377049949.18357.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <20130821072940.GB27495@gmail.com> <69b80c44-3245-4393-b6e9-4d8a7f3d3c66@email.android.com> <BEC9F67575FA1E429CA7CF5AE9BE3634012ED68C@SHSMSX104.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: RE: [PATCH] reboot: perform warm/cold reset correctly for CF9 type
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 21 Aug 2013 11:07:48 +0200
-To: "Li, Fei" <fei.li@intel.com>, Ingo Molnar <mingo@kernel.org>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "holt@sgi.com" <holt@sgi.com>,
-        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <7233d29e-ea01-4eb6-8018-b9c8e3730a30@email.android.com>
+	id S1751901Ab3HUJKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 05:10:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33198 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab3HUJKv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 05:10:51 -0400
+Date: Wed, 21 Aug 2013 19:10:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dingtianhong <dingtianhong@huawei.com>
+Subject: linux-next: build warning after merge of the net-next tree
+Message-Id: <20130821191041.712893827d8000c6dca8781b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__21_Aug_2013_19_10_41_+1000_c3p1jnvZtg5x9nId"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The thing is that the existing "warm" and "cold" means something different, I believe (skip post vs do post.)  It is possible it just works, but it would be good to know which platforms or works on.
+--Signature=_Wed__21_Aug_2013_19_10_41_+1000_c3p1jnvZtg5x9nId
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Also, why do you need the cf9 boot method at all?  All current systems * should * use the ACPI method.
+Hi all,
 
-"Li, Fei" <fei.li@intel.com> wrote:
->> Careful.  This is a very different definition of warm vs cold boot
->used elsewhere.
->
->We have tested both warm and cold reboot on our x86 platform, and it
->works well.
->Besides with commit, the expected warm and reboot type can be specified
->through
->command line.
->
->> >Looks good, but please introduce a reboot_val intermediate
->> >variable instead of duplicating that ugly line-broken
->> >construct twice.
->
->Accepted and will update it in later version. 
->
->> >
->> >Thanks,
->> >
->> >	Ingo
->> 
->
->Thanks,
->Fei
+After merging the net-next tree, today's linux-next build (i386 defconfig
+and probably others) produced this warning:
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+net/ipv6/addrconf.c: In function 'addrconf_notify':
+net/ipv6/addrconf.c:2793:22: warning: 'link_dev' may be used uninitialized =
+in this function [-Wuninitialized]
+net/ipv6/addrconf.c:2802:21: note: 'link_dev' was declared here
+
+Introduced by commit df8372ca747f ("ipv6: fix checkpatch errors in
+net/ipv6/addrconf.c").  It looks like here are some missing braces.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__21_Aug_2013_19_10_41_+1000_c3p1jnvZtg5x9nId
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSFIQVAAoJEECxmPOUX5FETKYQAIErDSAQH+9sRRrWTIQ3+Xf/
+Ly0wtF6nNI5S3GB7oW29NisHnRlppv++wumdwFXES2EdZppyx4c6N+0zOhVk7E3c
+FXpMt5XsgPbanHmZAR/5LwSPl5CGmHBUFig5H70pBFWKJZll+AzZXMC+Dm5gOAyO
+LxG5vvepPiNe5/HBdGBip+mva1enx7Y4Kzvp746LoAbCMEtGoi4HIe6/Ud8MngWN
+EZTFetd0o47eylTk/QKakDRPDWxBsNr3Z8DhqjAkwkekJRYxTy/5koy5EX2qq17u
+cV80RdqIKErzQ3bZ4HEj6V2PHnWB1JRs4ghEnfwHtmihESlYvNkJFerr0KiN2+hb
+gXe0PxhtjqKN3wlCU2KlehwFtHAhdIoT52YND8/pExiSekKmCSJSXfBBTPymBAUy
+mCFmVr4Cpl4X2L+rPCplbgJO1BTh72GoTuP64bH+9siT/mHq6ucbiztU5Fy5zpzs
+cGbFJfjRDJrgCG+N70c5e2h4g8GlHcc9MiwZFfWoegCKA10rpReEZfJmnuPNQ2bP
+FbKM7LUR6xJA2PKG+tlt/0x6HjKJy4R0+wzwQ2bu3o2bI59Crz4icULUD98fUB3A
+JPyq+akGy42eAH4d2EvyACLCFoMt0pXFKFIjobmS1RctoOkBwlsnfyRu5gaW8EwD
+nv1wvHzdP9nZzeu7TUxR
+=9D5A
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__21_Aug_2013_19_10_41_+1000_c3p1jnvZtg5x9nId--
