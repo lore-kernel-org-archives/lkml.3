@@ -1,63 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab3HUJrc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 05:47:32 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:34596 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928Ab3HUJra (ORCPT
+	id S1752046Ab3HUJuM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 05:50:12 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50495 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab3HUJuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 05:47:30 -0400
-Date: Wed, 21 Aug 2013 11:47:20 +0200
-From: Richard GENOUD <richard.genoud@gmail.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Stefan Roese <sr@denx.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: sun4i_handle_irq: WARNING at net/ipv4/tcp_input.c:2711
- tcp_fastretrans_alert
-Message-ID: <20130821094432.GA28249@lnx-rg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Aug 2013 05:50:08 -0400
+Message-ID: <1377078598.2709.25.camel@ThinkPad-T5421>
+Subject: [RFC PATCH next]module: Fix mod->mkobj.kobj potentially freed too
+ early
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: linux-next list <linux-next@vger.kernel.org>
+Cc: rusty@rustcorp.com.au, LKML <linux-kernel@vger.kernel.org>,
+        rmk+kernel@arm.linux.org.uk, gregkh@linuxfoundation.org
+Date: Wed, 21 Aug 2013 17:49:58 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082109-2000-0000-0000-00000D66B842
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime, Stephan
+DEBUG_KOBJECT_RELEASE helps to find the issue attached below.
 
-I just realise that, *sometimes*, I have some warnings on my cubieboard
-(6 since the 22 of july, and the board is runnning 24/24).
-It has happened also on 3.10 + emac patches.
-Here it is:
-[27224.060000] ------------[ cut here ]------------
-[27224.070000] WARNING: CPU: 0 PID: 0 at net/ipv4/tcp_input.c:2711 tcp_fastretrans_alert+0x717/0x734()
-[27224.080000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.11.0-rc6-00010-g54f11ec #8
-[27224.080000] [<c000f231>] (unwind_backtrace+0x1/0x98) from [<c000e2b7>] (show_stack+0xb/0xc)
-[27224.090000] [<c000e2b7>] (show_stack+0xb/0xc) from [<c0013cd3>] (warn_slowpath_common+0x43/0x5c)
-[27224.100000] [<c0013cd3>] (warn_slowpath_common+0x43/0x5c) from [<c0013d6d>] (warn_slowpath_null+0x11/0x14)
-[27224.110000] [<c0013d6d>] (warn_slowpath_null+0x11/0x14) from [<c015eadf>] (tcp_fastretrans_alert+0x717/0x734)
-[27224.120000] [<c015eadf>] (tcp_fastretrans_alert+0x717/0x734) from [<c015f32b>] (tcp_ack+0x6af/0x984)
-[27224.130000] [<c015f32b>] (tcp_ack+0x6af/0x984) from [<c015fcab>] (tcp_rcv_established+0x93/0x3ec)
-[27224.140000] [<c015fcab>] (tcp_rcv_established+0x93/0x3ec) from [<c0165621>] (tcp_v4_do_rcv+0xa1/0x160)
-[27224.150000] [<c0165621>] (tcp_v4_do_rcv+0xa1/0x160) from [<c0167129>] (tcp_v4_rcv+0x4e9/0x500)
-[27224.160000] [<c0167129>] (tcp_v4_rcv+0x4e9/0x500) from [<c015025d>] (ip_local_deliver_finish+0x79/0x180)
-[27224.170000] [<c015025d>] (ip_local_deliver_finish+0x79/0x180) from [<c01500a1>] (ip_rcv_finish+0xc9/0x20c)
-[27224.180000] [<c01500a1>] (ip_rcv_finish+0xc9/0x20c) from [<c0129493>] (__netif_receive_skb_core+0x287/0x3dc)
-[27224.190000] [<c0129493>] (__netif_receive_skb_core+0x287/0x3dc) from [<c0129a8b>] (process_backlog+0x5b/0xd0)
-[27224.200000] [<c0129a8b>] (process_backlog+0x5b/0xd0) from [<c012bc6f>] (net_rx_action+0x5f/0xe8)
-[27224.200000] [<c012bc6f>] (net_rx_action+0x5f/0xe8) from [<c0015fc9>] (__do_softirq+0x91/0x134)
-[27224.210000] [<c0015fc9>] (__do_softirq+0x91/0x134) from [<c0016251>] (irq_exit+0x59/0x80)
-[27224.220000] [<c0016251>] (irq_exit+0x59/0x80) from [<c000d00d>] (handle_IRQ+0x21/0x54)
-[27224.230000] [<c000d00d>] (handle_IRQ+0x21/0x54) from [<c00083ef>] (sun4i_handle_irq+0x1f/0x30)
-[27224.240000] [<c00083ef>] (sun4i_handle_irq+0x1f/0x30) from [<c000ea1b>] (__irq_svc+0x3b/0x5c)
-[27224.250000] Exception stack(0xc0287f70 to 0xc0287fb8)
-[27224.250000] 7f60:                                     00000000 00000000 00000000 00000000
-[27224.260000] 7f80: c0286000 c02ad7fd 00000001 c02ad7fd c028e084 413fc082 00000000 00000000
-[27224.270000] 7fa0: 01000000 c0287fb8 c000d115 c000d116 40000033 ffffffff
-[27224.270000] [<c000ea1b>] (__irq_svc+0x3b/0x5c) from [<c000d116>] (arch_cpu_idle+0x16/0x1c)
-[27224.280000] [<c000d116>] (arch_cpu_idle+0x16/0x1c) from [<c002e69d>] (cpu_startup_entry+0x35/0xa0)
-[27224.290000] [<c002e69d>] (cpu_startup_entry+0x35/0xa0) from [<c026f75f>] (start_kernel+0x1af/0x1f0)
-[27224.300000] ---[ end trace 15641276e08fba8a ]---
+After some investigation, it seems the reason is:
+The mod->mkobj.kobj(ffffffffa01600d0 below) is freed together with mod
+itself in free_module(). However, its children still hold references to
+it, as the delay caused by DEBUG_KOBJECT_RELEASE. So when the
+child(holders below) tries to decrease the reference count to its parent
+in kobject_del(), BUG happens as it tries to access already freed memory.
 
-Best regards,
-Richard
+This patch tries to fix it by waiting for the mod->mkobj.kobj to be
+really released in the module removing process (and some error code
+paths).
+
+[ 1844.175287] kobject: 'holders' (ffff88007c1f1600): kobject_release, parent ffffffffa01600d0 (delayed)
+[ 1844.178991] kobject: 'notes' (ffff8800370b2a00): kobject_release, parent ffffffffa01600d0 (delayed)
+[ 1845.180118] kobject: 'holders' (ffff88007c1f1600): kobject_cleanup, parent ffffffffa01600d0
+[ 1845.182130] kobject: 'holders' (ffff88007c1f1600): auto cleanup kobject_del
+[ 1845.184120] BUG: unable to handle kernel paging request at ffffffffa01601d0
+[ 1845.185026] IP: [<ffffffff812cda81>] kobject_put+0x11/0x60
+[ 1845.185026] PGD 1a13067 PUD 1a14063 PMD 7bd30067 PTE 0
+[ 1845.185026] Oops: 0000 [#1] PREEMPT 
+[ 1845.185026] Modules linked in: xfs libcrc32c [last unloaded: kprobe_example]
+[ 1845.185026] CPU: 0 PID: 18 Comm: kworker/0:1 Tainted: G           O 3.11.0-rc6-next-20130819+ #1
+[ 1845.185026] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[ 1845.185026] Workqueue: events kobject_delayed_cleanup
+[ 1845.185026] task: ffff88007ca51f00 ti: ffff88007ca5c000 task.ti: ffff88007ca5c000
+[ 1845.185026] RIP: 0010:[<ffffffff812cda81>]  [<ffffffff812cda81>] kobject_put+0x11/0x60
+[ 1845.185026] RSP: 0018:ffff88007ca5dd08  EFLAGS: 00010282
+[ 1845.185026] RAX: 0000000000002000 RBX: ffffffffa01600d0 RCX: ffffffff8177d638
+[ 1845.185026] RDX: ffff88007ca5dc18 RSI: 0000000000000000 RDI: ffffffffa01600d0
+[ 1845.185026] RBP: ffff88007ca5dd18 R08: ffffffff824e9810 R09: ffffffffffffffff
+[ 1845.185026] R10: ffff8800ffffffff R11: dead4ead00000001 R12: ffffffff81a95040
+[ 1845.185026] R13: ffff88007b27a960 R14: ffff88007c1f1600 R15: 0000000000000000
+[ 1845.185026] FS:  0000000000000000(0000) GS:ffffffff81a23000(0000) knlGS:0000000000000000
+[ 1845.185026] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1845.185026] CR2: ffffffffa01601d0 CR3: 0000000037207000 CR4: 00000000000006b0
+[ 1845.185026] Stack:
+[ 1845.185026]  ffff88007c1f1600 ffff88007c1f1600 ffff88007ca5dd38 ffffffff812cdb7e
+[ 1845.185026]  0000000000000000 ffff88007c1f1640 ffff88007ca5dd68 ffffffff812cdbfe
+[ 1845.185026]  ffff88007c974800 ffff88007c1f1640 ffff88007ff61a00 0000000000000000
+[ 1845.185026] Call Trace:
+[ 1845.185026]  [<ffffffff812cdb7e>] kobject_del+0x2e/0x40
+[ 1845.185026]  [<ffffffff812cdbfe>] kobject_delayed_cleanup+0x6e/0x1d0
+[ 1845.185026]  [<ffffffff81063a45>] process_one_work+0x1e5/0x670
+[ 1845.185026]  [<ffffffff810639e3>] ? process_one_work+0x183/0x670
+[ 1845.185026]  [<ffffffff810642b3>] worker_thread+0x113/0x370
+[ 1845.185026]  [<ffffffff810641a0>] ? rescuer_thread+0x290/0x290
+[ 1845.185026]  [<ffffffff8106bfba>] kthread+0xda/0xe0
+[ 1845.185026]  [<ffffffff814ff0f0>] ? _raw_spin_unlock_irq+0x30/0x60
+[ 1845.185026]  [<ffffffff8106bee0>] ? kthread_create_on_node+0x130/0x130
+[ 1845.185026]  [<ffffffff8150751a>] ret_from_fork+0x7a/0xb0
+[ 1845.185026]  [<ffffffff8106bee0>] ? kthread_create_on_node+0x130/0x130
+[ 1845.185026] Code: 81 48 c7 c7 28 95 ad 81 31 c0 e8 9b da 01 00 e9 4f ff ff ff 66 0f 1f 44 00 00 55 48 89 e5 53 48 89 fb 48 83 ec 08 48 85 ff 74 1d <f6> 87 00 01 00 00 01 74 1e 48 8d 7b 38 83 6b 38 01 0f 94 c0 84 
+[ 1845.185026] RIP  [<ffffffff812cda81>] kobject_put+0x11/0x60
+[ 1845.185026]  RSP <ffff88007ca5dd08>
+[ 1845.185026] CR2: ffffffffa01601d0
+[ 1845.185026] ---[ end trace 49a70afd109f5653 ]---
+
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+---
+ include/linux/module.h |  1 +
+ kernel/module.c        | 14 +++++++++++---
+ kernel/params.c        |  7 +++++++
+ 3 files changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 504035f..05f2447 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -42,6 +42,7 @@ struct module_kobject {
+ 	struct module *mod;
+ 	struct kobject *drivers_dir;
+ 	struct module_param_attrs *mp;
++	struct completion *kobj_completion;
+ };
+ 
+ struct module_attribute {
+diff --git a/kernel/module.c b/kernel/module.c
+index 2069158..b5e2baa 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1611,6 +1611,14 @@ static void module_remove_modinfo_attrs(struct module *mod)
+ 	kfree(mod->modinfo_attrs);
+ }
+ 
++static void mod_kobject_put(struct module *mod)
++{
++	DECLARE_COMPLETION_ONSTACK(c);
++	mod->mkobj.kobj_completion = &c;
++	kobject_put(&mod->mkobj.kobj);
++	wait_for_completion(&c);
++}
++
+ static int mod_sysfs_init(struct module *mod)
+ {
+ 	int err;
+@@ -1638,7 +1646,7 @@ static int mod_sysfs_init(struct module *mod)
+ 	err = kobject_init_and_add(&mod->mkobj.kobj, &module_ktype, NULL,
+ 				   "%s", mod->name);
+ 	if (err)
+-		kobject_put(&mod->mkobj.kobj);
++		mod_kobject_put(mod);
+ 
+ 	/* delay uevent until full sysfs population */
+ out:
+@@ -1682,7 +1690,7 @@ out_unreg_param:
+ out_unreg_holders:
+ 	kobject_put(mod->holders_dir);
+ out_unreg:
+-	kobject_put(&mod->mkobj.kobj);
++	mod_kobject_put(mod);
+ out:
+ 	return err;
+ }
+@@ -1691,7 +1699,7 @@ static void mod_sysfs_fini(struct module *mod)
+ {
+ 	remove_notes_attrs(mod);
+ 	remove_sect_attrs(mod);
+-	kobject_put(&mod->mkobj.kobj);
++	mod_kobject_put(mod);
+ }
+ 
+ #else /* !CONFIG_SYSFS */
+diff --git a/kernel/params.c b/kernel/params.c
+index 1f228a3..b8cab65 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -912,7 +912,14 @@ static const struct kset_uevent_ops module_uevent_ops = {
+ struct kset *module_kset;
+ int module_sysfs_initialized;
+ 
++static void module_kobj_release(struct kobject *kobj)
++{
++	struct module_kobject *mk = to_module_kobject(kobj);
++	complete(mk->kobj_completion);
++}
++
+ struct kobj_type module_ktype = {
++	.release   =	module_kobj_release,
+ 	.sysfs_ops =	&module_sysfs_ops,
+ };
+ 
+
+
