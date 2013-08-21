@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab3HUSwj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 14:52:39 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58322 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab3HUSwi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 14:52:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [RFC 02/17] ARM: call clk_of_init from time_init
-Date: Wed, 21 Aug 2013 20:51:46 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <201308202244.56782.arnd@arndb.de> <5213D853.7070102@wwwdotorg.org>
-In-Reply-To: <5213D853.7070102@wwwdotorg.org>
+	id S1752789Ab3HUSxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 14:53:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37919 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752502Ab3HUSxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 14:53:19 -0400
+Date: Wed, 21 Aug 2013 20:47:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "security@kernel.org" <security@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Willy Tarreau <w@1wt.eu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: Re: [PATCH] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
+Message-ID: <20130821184706.GA20591@redhat.com>
+References: <CALCETrXMQdjRyvP8RHOd5xjciurS7-hKUOExvkvQ1RWmdRdypA@mail.gmail.com> <0be9da18c0ca360773a397de3063d01019ff88d8.1377107508.git.luto@amacapital.net> <20130821182053.GA19624@redhat.com> <CALCETrXtJBDqkvO3mHxDrHL3whCWX_B-LAXOnue7r90nyyWY_A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308212051.46453.arnd@arndb.de>
-X-Provags-ID: V02:K0:fH+JgzeK6lIQy/m2jb2Z6a9u5FFInuDhbFu9GC2BYjF
- 9bLi84tyCtC+OBX/ZEd8R/g9Ai3UBA3cqom/W4TSJ7rXMjs4T9
- NG1bKfhoOjvp+IUF/ySEYmVn6myaaEjqxd2WPVlMcIEIKKrguq
- tTf10rcDviFIdnAFJfv1Y8Zg0ELEX2ZcGNOb8Fw2meyranIIBH
- wNagUbRhM+nSTHaf817iv5N4Kgm85hbeU+eaAO6E2sIZ6TiAne
- MQ1eE21E6+m0c/Wm45L+H+lEDsgLuZCTT39Sk06RASM+L+XsE0
- OTKI4kf1yCRikf5P2DHZMGmvSjzSlkzAR3fWswO0ZSQzKGcHRn
- zCN15FK985SCjsbkj2bM=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXtJBDqkvO3mHxDrHL3whCWX_B-LAXOnue7r90nyyWY_A@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 August 2013, Stephen Warren wrote:
-> On 08/20/2013 02:44 PM, Arnd Bergmann wrote:
-> > On Tuesday 20 August 2013, Stephen Warren wrote:
+On 08/21, Andy Lutomirski wrote:
+>
+> On Wed, Aug 21, 2013 at 11:20 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > Can't really comment the patch, just a nit:
+> >
+> > On 08/21, Andy Lutomirski wrote:
+> >>
+> >> +static bool may_flink(const struct path *path)
+> >> +{
+> >> +     bool ret;
+> >> +     struct inode *inode = path->dentry->d_inode;
+> >> +
+> >> +     /*
+> >> +      * This is racy: I_LINKABLE could be cleared between this check
+> >> +      * and the actual link operation.
+> >
+> > OK,
+> >
+> >> +     spin_lock(&inode->i_lock);
+> >> +     ret = !!(inode->i_state & I_LINKABLE);
+> >> +     spin_unlock(&inode->i_lock);
+> >
+> > so why do we need to take a lock ?
+> >
+>
+> We probably don't.  But other accesses to this field take that lock,
 
-> Hmm. This probably isn't too hard. I /think/ the only reason the clocks
-> are initialized early is:
-> 
-> * The PMC HW block is involved in the path of some interrupts (i.e. it
-> inverts, or not, the IRQ input pin dedicated to the PMIC).
-> 
-> * So, that part of the PMC must be initialized early so that the IRQ
-> polarity is correct.
-> 
-> * The PMC initialization is currently monolithic, and the PMC has some
-> clock inputs, so the init routine ends up calling of_clk_get_by_name(),
-> and hence clocks must be set up early too.
-> 
-> Perhaps if we just separate tegra_pmc_init() into two functions which
-> initialize different parts of the PMC, we can get rid of the
-> tegra_dt_init_irq() -> tegra_pmc_init() -> of_clk_get_by_name() call
-> path, and hence move Tegra's call to of_clk_init() to the typical place.
+Not if you only need to check ->i_lock,
 
-That sounds good to me, thanks for looking into it.
+> (In principle, someone could take the lock, write I_LINKABLE, clear
+> it, and unlock, and we'd get confused if we didn't take the lock
+> ourselves.)
 
-	Arnd
+Or it can be cleared right after we drop i_lock, I do not think there
+is any difference.
+
+But OK, I won't argue.
+
+Oleg.
+
