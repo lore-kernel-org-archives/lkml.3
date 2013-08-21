@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab3HUWiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 18:38:06 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:35720 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab3HUWiE (ORCPT
+	id S1753121Ab3HUWkv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 18:40:51 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58095 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab3HUWku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 18:38:04 -0400
-Message-ID: <1377124595.10300.594.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Date: Wed, 21 Aug 2013 16:36:35 -0600
-In-Reply-To: <20130821204041.GC2436@htj.dyndns.org>
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <20130821130647.GB19286@mtj.dyndns.org> <5214D60A.2090309@gmail.com>
-	 <20130821153639.GA17432@htj.dyndns.org>
-	 <1377113503.10300.492.camel@misato.fc.hp.com>
-	 <20130821195410.GA2436@htj.dyndns.org>
-	 <1377116968.10300.514.camel@misato.fc.hp.com>
-	 <20130821204041.GC2436@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Wed, 21 Aug 2013 18:40:50 -0400
+Message-ID: <521541EE.4010303@wwwdotorg.org>
+Date: Wed, 21 Aug 2013 16:40:46 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: hongbo.zhang@freescale.com
+CC: vinod.koul@intel.com, djbw@fb.com, leoli@freescale.com,
+        scottwood@freescale.com, linuxppc-dev@lists.ozlabs.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 2/3] DMA: Freescale: Add new 8-channel DMA engine device
+ tree nodes
+References: <1375094944-3343-1-git-send-email-hongbo.zhang@freescale.com> <1375094944-3343-3-git-send-email-hongbo.zhang@freescale.com>
+In-Reply-To: <1375094944-3343-3-git-send-email-hongbo.zhang@freescale.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tejun,
+On 07/29/2013 04:49 AM, hongbo.zhang@freescale.com wrote:
+> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch adds
+> the device tree nodes for them.
 
-On Wed, 2013-08-21 at 16:40 -0400, Tejun Heo wrote:
-> On Wed, Aug 21, 2013 at 02:29:28PM -0600, Toshi Kani wrote:
-> > Platforms vendors (which care Linux) need to support the existing Linux
-> > features.  This means that they have to implement legacy interfaces on
-> > x86 until the kernel supports an alternative method.  For instance, some
-> > platforms are legacy-free and do not have legacy COM ports.  These ACPI
-> > tables were defined so that non-legacy COM ports can be described and
-> > informed to the OS.  Without this support, such platforms may have to
-> > emulate the legacy COM ports for Linux, or drop Linux support.
-> 
-> Are you seriously saying that vendors are gonna drop linux support for
-> lacking ACPI earlyprintk support?  Please...
+> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/dma.txt b/Documentation/devicetree/bindings/powerpc/fsl/dma.txt
 
-earlyprintk is an example of the issues.  The point is that vendors are
-required to support legacy stuff for Linux.
+> +** Freescale Elo3 DMA Controller
+> +   This is EloPlus controller with 8 channels, used in Freescale Txxx and Bxxx
+> +   series chips, such as t1040, t4240, b4860.
+> +
+> +Required properties:
+> +
+> +- compatible        : must include "fsl,elo3-dma"
 
-> Please take a look at the existing earlyprintk code and how compact
-> and self-contained they are.  If you want to add ACPI earlyprintk, do
-> similar stuff.  Forget about firmware blob override from initrd or
-> ACPICA.  Just implement the bare minimum to get the thing working.  Do
-> not add dependency to large body of code from earlyboot.  It's a bad
-> idea through and through.
+This should probably list all the SoC-specific compatible values too.
 
-I am not saying that ACPI earlyprintk must be available at exactly the
-same point.  How early it can reasonably be is a subject of discussion.
+> +- ranges            : describes the mapping between the address space of the
+> +                      DMA channels and the address space of the DMA controller
 
-> > I think the kernel boot-up sequence should be designed in such a way
-> > that can support legacy-free and/or NUMA platforms properly.
-> 
-> Blanket statements like the above don't mean much.  There are many
-> separate stages of boot and you're talking about one of the very first
-> stages where we traditionally have always depended upon only the very
-> bare minimum of the platform both in hardware itself and configuration
-> information.  We've been doing that for *very* good reasons.  If you
-> screw up there, it's mighty tricky to figure out what went wrong
-> especially on the machines that you can't physically kick.  You're now
-> suggesting to add whole ACPI parsing including overloading from initrd
-> into that stage with pretty weak rationale.
+Oh, so looking at the example, this is simply about being able to write
+the reg value in the child nodes more easily without having to write out
+the full based address of the controller in each child node.
 
-I agree that ACPI is rather complicated stuff.  But in my experience,
-the majority complication comes from ACPI namespace and methods, not
-from ACPI tables.  Do you really think ACPI table init is that risky?  I
-consider ACPI tables are part of the minimum config info, esp. for
-legacy-free platforms.
+I don't think the binding document should require this; all the binding
+document should care about is that the child nodes have a valid reg
+value. Whether that reg value is <0x100100 0x80> without a ranges in the
+top-level DMA nor or whether that reg value is <0x0 0x80> with a ranges
+value in the top-level DMA node isn't something that the binding should
+specify. Either way will work equally without affecting a driver for the
+DMA controller; the parsing of reg with/without a ranges property is
+more of a core part of DT than anything to do with this binding.
 
-> Seriously, if you want ACPI based earlyprintk, implement it in a
-> discrete minimal code which is easy to verify and won't get affected
-> when the rest of ACPI machinery is updated.  We really don't want
-> earlyboot to fail because someone screwed up ACPI or initrd handling.
+> +- DMA channel nodes:
+> +        - compatible        : must include "fsl,eloplus-dma-channel"
 
-earlyprintk is just another example to this SRAT issue.  The local page
-table is yet another example.  My hope here is for us to be able to
-utilize ACPI tables properly without hitting this kind of ordering
-issues again and again, which requires considerable time & effort to
-address.
+Why do the channel nodes even need a compatible value? Presumably the
+driver for the top-level DMA node will scan these dma-channel nodes to
+extract the information it needs and will simply assume that all these
+nodes are DMA channel nodes rather than something else? I suppose this
+doesn't hurt, it just seems unnecessary unless you foresee other child
+nodes types existing in the future and hence a need to differentiate
+different types of nodes.
 
-Thanks,
--Toshi
+> +        - reg               : <registers mapping for channel>
+> +        - interrupts        : <interrupt mapping for DMA channel IRQ>
 
+s/interrupts/specifier/
 
+> +Example:
+> +dma@100300 {
+> +	#address-cells = <1>;
+> +	#size-cells = <1>;
+
+Those weren't mentioned in the required properties list above. Perhaps
+they're considered such a core part of DT functionality that it's not
+necessary, yet some other binding documents do include these properties
+in the list of required properties.
