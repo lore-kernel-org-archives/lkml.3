@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab3HUOXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:23:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40126 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab3HUOXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752189Ab3HUOXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:23:48 -0400
+Received: from protonic.xs4all.nl ([213.84.116.84]:18763 "EHLO
+	protonic.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3HUOXr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 Aug 2013 10:23:47 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130821141223.GS18673@moon>
-References: <5214C524.1050900@citrix.com> <20130821141223.GS18673@moon>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with existing use
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 21 Aug 2013 16:22:44 +0200
-To: Cyrill Gorcunov <gorcunov@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Xen-devel@lists.xen.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>
-Message-ID: <035dc4d7-10e0-4e15-bdb4-3e353b271fe4@email.android.com>
+Date: Wed, 21 Aug 2013 16:24:00 +0200
+From: David Jander <david.jander@protonic.nl>
+To: Mark Brown <broonie@kernel.org>
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: regmap: bugfix in regcache-rbtree.c
+Message-ID: <20130821162400.66c5b52e@archvile>
+In-Reply-To: <20130821140816.GC26118@sirena.org.uk>
+References: <1377090155-3443-1-git-send-email-david@protonic.nl>
+	<20130821151423.70c38fb3@archvile>
+	<20130821140816.GC26118@sirena.org.uk>
+Organization: Protonic Holland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good question...
+On Wed, 21 Aug 2013 15:08:16 +0100
+Mark Brown <broonie@kernel.org> wrote:
 
-Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->On Wed, Aug 21, 2013 at 02:48:20PM +0100, David Vrabel wrote:
->> All,
->> 
->> 179ef71c (mm: save soft-dirty bits on swapped pages) introduces a new
->> PTE bit on x86 _PTE_SWP_SOFT_DIRTY which has the same value as
->_PTE_PSE
->> and _PTE_PAT.
->> 
->> With a Xen PV guest, the use of the _PTE_PAT will result in the page
->> having unexpected cachability which will introduce a range of subtle
->> performance and correctness issues.  Xen programs the entry 4 in the
->PAT
->> table with WC so a page that was previously WB will end up as WC.
->> 
->
->David, could you please explain, Xen keeps and analyze _PTE_PAT bit
->for ptes which are not present?
+> On Wed, Aug 21, 2013 at 03:14:23PM +0200, David Jander wrote:
+> 
+> > Here's the explanation:
+> 
+> > 1. If a driver initializes a regmap with a RB-tree cache, and starts
+> > writing to registers in some arbitrary order, you might get overlapping
+> > rbnodes: Suppose I have this rb-tree (a real case I happen to have):
+> 
+> > # cat /sys/kernel/debug/regmap/1-000a/rbtree
+> > 2-19 (24)
+> > 4-1b (24)
+> 
+> Like I say this isn't supposed to be the case in the first place, those
+> two nodes should be being merged - what we need to understand is where
+> the overlapping nodes came from.
+
+As I said in my last e-mail just a few seconds ago, it does happen when:
+
+1. 4-1b is cached and 2-19 isn't yet.
+
+2. A write access to register 2 occurs.
+
+Hope this helps.
+
+Best regards,
 
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+David Jander
+Protonic Holland.
