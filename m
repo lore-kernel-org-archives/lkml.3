@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab3HUUtN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 16:49:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37157 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752787Ab3HUUtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 16:49:12 -0400
-Date: Wed, 21 Aug 2013 16:49:01 -0400
-From: Dave Jones <davej@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: unused swap offset / bad page map.
-Message-ID: <20130821204901.GA19802@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20130807055157.GA32278@redhat.com>
- <CAJd=RBCJv7=Qj6dPW2Ha=nq6JctnK3r7wYCAZTm=REVOZUNowg@mail.gmail.com>
- <20130807153030.GA25515@redhat.com>
- <CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com>
- <20130819231836.GD14369@redhat.com>
- <CAJd=RBA-UZmSTxNX63Vni+UPZBHwP4tvzE_qp1ZaHBqcNG7Fcw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBA-UZmSTxNX63Vni+UPZBHwP4tvzE_qp1ZaHBqcNG7Fcw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752983Ab3HUUtt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 16:49:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35465 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752907Ab3HUUtr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 16:49:47 -0400
+Date: Wed, 21 Aug 2013 13:49:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] idr: Use this_cpu_ptr() for percpu_ida
+Message-Id: <20130821134945.16b32c045e28272c5b0ba610@linux-foundation.org>
+In-Reply-To: <00000140a14ae6bb-f0fca267-cdd6-4039-8c6b-f715999a83c5-000000@email.amazonses.com>
+References: <1375896905-6074-1-git-send-email-kmo@daterainc.com>
+	<1375896905-6074-5-git-send-email-kmo@daterainc.com>
+	<0000014059ec4c34-1bb53d48-c9ee-4e71-81b8-253026431c5c-000000@email.amazonses.com>
+	<20130807183345.GA11612@kmo-pixel>
+	<000001405a4b39ef-0715410a-5061-41e9-9414-86559f16570d-000000@email.amazonses.com>
+	<20130807195733.GB11612@kmo-pixel>
+	<000001405e5776ba-bcc96088-b5e8-4abe-b98e-2e9d7d9b112b-000000@email.amazonses.com>
+	<1377033546.32763.4.camel@haakon3.risingtidesystems.com>
+	<00000140a14ae6bb-f0fca267-cdd6-4039-8c6b-f715999a83c5-000000@email.amazonses.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 12:39:05PM +0800, Hillf Danton wrote:
- > On Tue, Aug 20, 2013 at 7:18 AM, Dave Jones <davej@redhat.com> wrote:
- > 
- > --- a/mm/memory.c Wed Aug  7 16:29:34 2013
- > +++ b/mm/memory.c Tue Aug 20 11:13:06 2013
- > @@ -933,8 +933,10 @@ again:
- >   if (progress >= 32) {
- >   progress = 0;
- >   if (need_resched() ||
- > -    spin_needbreak(src_ptl) || spin_needbreak(dst_ptl))
- > +    spin_needbreak(src_ptl) || spin_needbreak(dst_ptl)) {
- > +     BUG_ON(entry.val);
- >   break;
- > + }
- >   }
- >   if (pte_none(*src_pte)) {
- >   progress++;
+On Wed, 21 Aug 2013 14:32:55 +0000 Christoph Lameter <cl@linux.com> wrote:
 
-didn't hit the bug_on, but got a bunch of 
+> On Tue, 20 Aug 2013, Nicholas A. Bellinger wrote:
+> 
+> > On Thu, 2013-08-08 at 14:32 +0000, Christoph Lameter wrote:
+> > > On Wed, 7 Aug 2013, Kent Overstreet wrote:
+> > >
+> > > > One thing that was bugging me - I was never able to figure out for sure
+> > > > if smp_processor_id() returns a number in the range [0, nr_cpu_ids), at
+> > > > least I couldn't find where it was documented - could you tell me if
+> > > > that's true?
+> > >
+> > > I always assumed that it was in the range 0 ... nr_cpu_ids - 1 and that is
+> > > the assumption under which the kernel code was written. Things would break
+> > > horribly if smp_process_id would return nr_cpu_ids or higher.
+> > >
+> >
+> > Hi guys,
+> >
+> > Just a heads up that I've put Kent's standalone percpu-ida patch (with
+> > Christoph's recommend changes) into target-pending/for-next here:
+> >
+> > https://git.kernel.org/cgit/linux/kernel/git/nab/target-pending.git/commit/?h=for-next&id=47bd524a5b3eb6429b058b8b562b45329ab2c9e7
+> >
+> > I've got a number of target patches that depend on this code for v3.12,
+> > and a delay on this particular piece would be painful to endure..
+> >
+> > Sooo, please yell loudly if there is an objection to percpu-ida merge as
+> > a completely standalone item, that does not effect any existing ida
+> > code.
+> 
+> Well the performance is still going to be limited due to the spinlock in
+> the percpu handling. You do not need the spinlock. Once preempt is off you
+> should have exclusive access to the per cpu data.
 
-[  424.077993] swap_free: Unused swap offset entry 000187d5
-[  439.377194] swap_free: Unused swap offset entry 000187e7
-[  441.998411] swap_free: Unused swap offset entry 000187ee
-[  446.956551] swap_free: Unused swap offset entry 0000245f
-
-	Dave
-
+The lock is needed so that one cpu can steal tags from another cpu's cache.
+See (the needlessly inlined!) steal_tags().
