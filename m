@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab3HUOWB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:22:01 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:40386 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab3HUOV7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:21:59 -0400
-Date: Wed, 21 Aug 2013 10:21:55 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH 00/11] cpuset: separate configured masks and effective
- masks
-Message-ID: <20130821142155.GL19286@mtj.dyndns.org>
-References: <52148F52.0@huawei.com>
+	id S1752160Ab3HUOW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:22:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40111 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751536Ab3HUOW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 10:22:56 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130821141926.GT18673@moon>
+References: <5214C524.1050900@citrix.com> <dc8456d1-a89a-44c0-bebb-83cb0526230e@email.android.com> <20130821141926.GT18673@moon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52148F52.0@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with existing use
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 21 Aug 2013 16:22:21 +0200
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Xen-devel@lists.xen.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>
+Message-ID: <4455be44-7daf-41f0-add6-087cf992868f@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
+OK now I'm confused.  I guess I shouldn't comment while on vacation and cache cold on everything.
 
-On Wed, Aug 21, 2013 at 05:58:42PM +0800, Li Zefan wrote:
-> This patcheset introduces behavior changes, but only if you mount cgroupfs
-> with sane_behavior option:
-> 
-> - We introduce new interfaces cpuset.effective_cpus and cpuset.effective_mems,
->   while cpuset.cpus and cpuset.mems will be configured masks.
-> 
-> - The configured masks can be changed by writing cpuset.cpus/mems only. They
->   won't be changed when hotplug happens.
-> 
-> - Users can config cpus and mems without restrictions from the parent cpuset.
->   effective masks will enforce the hierarchical behavior.
-> 
-> - Users can also config cpus and mems to have already offlined CPU/nodes.
-> 
-> - When a CPU/node is onlined, it will be brought back to the effective masks
->   if it's in the configured masks.
-> 
-> - We build sched domains based on effective cpumask but not configured cpumask.
-
-Overall, it looks great.  Thank you so much for doing this.  Most of
-my reviews are concerned with patch descriptions and documentation.  I
-wish they showed clearer what are changed how and why that doesn't
-affect !sane behaviors.
-
-Thanks!
+Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>On Wed, Aug 21, 2013 at 04:11:25PM +0200, H. Peter Anvin wrote:
+>>
+>> Eep.  This should be reverted, indeed.  This isn't a manifest bug on
+>!Xen but we
+>> have gotten requests for WT support which would mean adding in the
+>PAT but again.
+>
+>Please no, letme fix it. That's what I'm having in mind: don't use pse
+>bit in swap
+>entry but always mark page read from swap as dirty one (it's better
+>than having
+>no tracker at all and  will be the case on old machines with 32bit ptes
+>only).
 
 -- 
-tejun
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
