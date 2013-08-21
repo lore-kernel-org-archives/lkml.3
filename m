@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab3HUUzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 16:55:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38243 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab3HUUzt (ORCPT
+	id S1752923Ab3HUU6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 16:58:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35556 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab3HUU6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 16:55:49 -0400
-Message-ID: <52152948.6080302@infradead.org>
-Date: Wed, 21 Aug 2013 13:55:36 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Libin <huawei.libin@huawei.com>
-CC: tj@kernel.org, linux-kernel@vger.kernel.org, wangyijing@huawei.com,
-        guohanjun@huawei.com
-Subject: Re: [PATCH v2 3/3] workqueue: Correct/Drop references to gcwq in
- Documentation
-References: <1377046241-18516-1-git-send-email-huawei.libin@huawei.com> <1377046241-18516-4-git-send-email-huawei.libin@huawei.com>
-In-Reply-To: <1377046241-18516-4-git-send-email-huawei.libin@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Aug 2013 16:58:23 -0400
+Date: Wed, 21 Aug 2013 13:58:21 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, NeilBrown <neilb@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm, fs: avoid page allocation beyond i_size on read
+Message-Id: <20130821135821.fc8f5a2551a28c9ce9c4b049@linux-foundation.org>
+In-Reply-To: <1377103332.2738.37.camel@menhir>
+References: <1377099441-2224-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1377100012.2738.28.camel@menhir>
+	<20130821160817.940D3E0090@blue.fi.intel.com>
+	<1377103332.2738.37.camel@menhir>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/13 17:50, Libin wrote:
-> No functional changes. This patch fixes the post gcwq comments in
-> Documentation/workqueue.txt.
+On Wed, 21 Aug 2013 17:42:12 +0100 Steven Whitehouse <swhiteho@redhat.com> wrote:
+
+> > I don't think the change is harmful. The worst case scenario is race with
+> > write or truncate, but it's valid to return EOF in this case.
+> > 
+> > What scenario do you have in mind?
+> > 
 > 
-> Signed-off-by: Libin <huawei.libin@huawei.com>
-> ---
->  Documentation/workqueue.txt | 72 ++++++++++++++++++++++-----------------------
->  1 file changed, 36 insertions(+), 36 deletions(-)
+> 1. File open on node A
+> 2. Someone updates it on node B by extending the file
+> 3. Someone reads the file on node A beyond end of original file size,
+> but within end of new file size as updated by node B. Without the patch
+> this works, with it, it will fail. The reason being the i_size would not
+> be up to date until after readpage(s) has been called.
 > 
-> diff --git a/Documentation/workqueue.txt b/Documentation/workqueue.txt
-> index a6ab4b6..5e65b1c 100644
-> --- a/Documentation/workqueue.txt
-> +++ b/Documentation/workqueue.txt
-> @@ -85,16 +85,16 @@ workqueue.
->  Special purpose threads, called worker threads, execute the functions
->  off of the queue, one after the other.  If no work is queued, the
->  worker threads become idle.  These worker threads are managed in so
-> -called thread-pools.
-> +called worker-pools.
->  
->  The cmwq design differentiates between the user-facing workqueues that
->  subsystems and drivers queue work items on and the backend mechanism
-> -which manages thread-pools and processes the queued work items.
-> +which manages worker-pools and processes the queued work items.
->  
-> -The backend is called gcwq.  There is one gcwq for each possible CPU
-> -and one gcwq to serve work items queued on unbound workqueues.  Each
-> -gcwq has two thread-pools - one for normal work items and the other
-> -for high priority ones.
-> +There are two worker-pools, one for normal work items and the other
-> +for high priority ones, for each possible CPU and some extra worker-pools
-> +to serve work items queued on unbound workqueues - the number of these
-> +baking pools is dynamic.
+> I think this is likely to be an issue for any distributed fs using
+> do_generic_file_read(), although it would certainly affect GFS2, since
+> the locking is done at page cache level,
 
-   backing ?
+Boy, that's rather subtle.  I'm surprised that the generic filemap.c
+stuff works at all in that sort of scenario.
 
->  
->  Subsystems and drivers can create and queue work items through special
->  workqueue API functions as they see fit. They can influence some
+Can we put the i_size check down in the no_cached_page block?  afaict
+that will solve the problem without breaking GFS2 and is more
+efficient?
 
-
-
--- 
-~Randy
