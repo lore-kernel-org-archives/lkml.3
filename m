@@ -1,136 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab3HUPJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:09:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42967 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752335Ab3HUPJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:09:26 -0400
-Date: Wed, 21 Aug 2013 11:09:16 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, Mikulas Patocka <mpatocka@redhat.com>,
-        "Alasdair G. Kergon" <agk@redhat.com>
-Subject: [PATCH] math64: New separate div64_u64_rem helper
-Message-ID: <20130821150916.GA11431@redhat.com>
-References: <1376078164-23147-1-git-send-email-snitzer@redhat.com>
- <20130820070045.GA1665@redhat.com>
- <20130820080910.GA11072@gmail.com>
- <20130820192508.GA4799@redhat.com>
- <20130821072122.GA27360@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821072122.GA27360@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752432Ab3HUPJr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:09:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8052 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab3HUPJp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 11:09:45 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=DtbtDvHGLq0A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pDL76QfPkxEA:10 a=pGLkceISAAAA:8 a=Ikd4Dj_1AAAA:8 a=OwFa8-9HDxm41Ajb3IwA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=B7-YBXcGuVcA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 21 Aug 2013 11:09:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiejing Zhang <kzjeef@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Eric Miao <emiao@nvidia.com>,
+        Jiejing Zhang <jiejzhang@nvidia.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] ftrace: add tgid information in task switch event.
+Message-ID: <20130821110944.32bdf03a@gandalf.local.home>
+In-Reply-To: <1377097520-24898-1-git-send-email-jasozhang@nvidia.com>
+References: <1377097520-24898-1-git-send-email-jasozhang@nvidia.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f792685006274a850e6cc0ea9ade275ccdfc90bc ("math64: New
-div64_u64_rem helper") implemented div64_u64 in terms of div64_u64_rem.
-But div64_u64_rem was removed because it slowed down div64_u64 (and
-there were no other users of div64_u64_rem).
+This patch needs to be decided by Peter.
 
-Device Mapper's I/O statistics support has a need for div64_u64_rem;
-reintroduce this helper as a separate method that doesn't slow down
-div64_u64, especially on 32-bit systems.
+Also, the subject should not read "ftrace:" it should have "sched:" as
+tracepoints are the property of the subsystem they exist in, not the
+tracing facility itself, as it's not just ftrace that uses tracepoints.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair Kergon <agk@redhat.com>
----
- include/linux/math64.h |   13 +++++++++++++
- lib/div64.c            |   40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 53 insertions(+), 0 deletions(-)
+-- Steve
 
-diff --git a/include/linux/math64.h b/include/linux/math64.h
-index 2913b86..69ed5f5 100644
---- a/include/linux/math64.h
-+++ b/include/linux/math64.h
-@@ -31,6 +31,15 @@ static inline s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder)
- }
- 
- /**
-+ * div64_u64_rem - unsigned 64bit divide with 64bit divisor and remainder
-+ */
-+static inline u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
-+{
-+	*remainder = dividend % divisor;
-+	return dividend / divisor;
-+}
-+
-+/**
-  * div64_u64 - unsigned 64bit divide with 64bit divisor
-  */
- static inline u64 div64_u64(u64 dividend, u64 divisor)
-@@ -63,6 +72,10 @@ static inline u64 div_u64_rem(u64 dividend, u32 divisor, u32 *remainder)
- extern s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder);
- #endif
- 
-+#ifndef div64_u64_rem
-+extern u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder);
-+#endif
-+
- #ifndef div64_u64
- extern u64 div64_u64(u64 dividend, u64 divisor);
- #endif
-diff --git a/lib/div64.c b/lib/div64.c
-index a163b6c..4382ad7 100644
---- a/lib/div64.c
-+++ b/lib/div64.c
-@@ -79,6 +79,46 @@ EXPORT_SYMBOL(div_s64_rem);
- #endif
- 
- /**
-+ * div64_u64_rem - unsigned 64bit divide with 64bit divisor and remainder
-+ * @dividend:	64bit dividend
-+ * @divisor:	64bit divisor
-+ * @remainder:  64bit remainder
-+ *
-+ * This implementation is a comparable to algorithm used by div64_u64.
-+ * But this operation, which includes math for calculating the remainder,
-+ * is kept distinct to avoid slowing down the div64_u64 operation on 32bit
-+ * systems.
-+ */
-+#ifndef div64_u64_rem
-+u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
-+{
-+	u32 high = divisor >> 32;
-+	u64 quot;
-+
-+	if (high == 0) {
-+		u32 rem32;
-+		quot = div_u64_rem(dividend, divisor, &rem32);
-+		*remainder = rem32;
-+	} else {
-+		int n = 1 + fls(high);
-+		quot = div_u64(dividend >> n, divisor >> n);
-+
-+		if (quot != 0)
-+			quot--;
-+
-+		*remainder = dividend - quot * divisor;
-+		if (*remainder >= divisor) {
-+			quot++;
-+			*remainder -= divisor;
-+		}
-+	}
-+
-+	return quot;
-+}
-+EXPORT_SYMBOL(div64_u64_rem);
-+#endif
-+
-+/**
-  * div64_u64 - unsigned 64bit divide with 64bit divisor
-  * @dividend:	64bit dividend
-  * @divisor:	64bit divisor
--- 
-1.7.4.4
+
+On Wed, 21 Aug 2013 15:05:20 +0000
+Jiejing Zhang <kzjeef@gmail.com> wrote:
+
+> From: Jiejing Zhang <jiejzhang@nvidia.com>
+> 
+> ftrace only report pid in task switch event, which is
+> actually thread ID in user space view, the comm of
+> the thread will be like "Thread-1", "Compiler", etc
+> in android system, it's useful if we can add tgid
+> information in ftrace event to find out the process
+> id, and the process id's comm will help us to figure
+> out the application, which was useful on data analysis
+> tools.
+> 
+> Change-Id: Ia99f58a56d691d770b3beb2f76de0351e6194a4a
+> Signed-off-by: Jiejing Zhang <jiejzhang@nvidia.com>
+> ---
+>  include/trace/events/sched.h | 13 +++++++++----
+>  1 file changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+> index e5586ca..3fbcddb 100644
+> --- a/include/trace/events/sched.h
+> +++ b/include/trace/events/sched.h
+> @@ -124,32 +124,37 @@ TRACE_EVENT(sched_switch,
+>  	TP_STRUCT__entry(
+>  		__array(	char,	prev_comm,	TASK_COMM_LEN	)
+>  		__field(	pid_t,	prev_pid			)
+> +		__field(	pid_t,	prev_tgid			)
+>  		__field(	int,	prev_prio			)
+>  		__field(	long,	prev_state			)
+>  		__array(	char,	next_comm,	TASK_COMM_LEN	)
+>  		__field(	pid_t,	next_pid			)
+> +		__field(	pid_t,	next_tgid			)
+>  		__field(	int,	next_prio			)
+>  	),
+>  
+>  	TP_fast_assign(
+>  		memcpy(__entry->next_comm, next->comm, TASK_COMM_LEN);
+>  		__entry->prev_pid	= prev->pid;
+> +		__entry->prev_tgid	= prev->tgid;
+>  		__entry->prev_prio	= prev->prio;
+>  		__entry->prev_state	= __trace_sched_switch_state(prev);
+>  		memcpy(__entry->prev_comm, prev->comm, TASK_COMM_LEN);
+>  		__entry->next_pid	= next->pid;
+> +		__entry->next_tgid	= next->tgid;
+>  		__entry->next_prio	= next->prio;
+>  	),
+>  
+> -	TP_printk("prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d",
+> -		__entry->prev_comm, __entry->prev_pid, __entry->prev_prio,
+> +	TP_printk("prev_comm=%s prev_pid=%d prev_tgid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_tgid=%d next_prio=%d",
+> +		__entry->prev_comm, __entry->prev_pid,
+> +		__entry->prev_tgid,  __entry->prev_prio,
+>  		__entry->prev_state & (TASK_STATE_MAX-1) ?
+> -		  __print_flags(__entry->prev_state & (TASK_STATE_MAX-1), "|",
+> +		__print_flags(__entry->prev_state & (TASK_STATE_MAX-1), "|",
+>  				{ 1, "S"} , { 2, "D" }, { 4, "T" }, { 8, "t" },
+>  				{ 16, "Z" }, { 32, "X" }, { 64, "x" },
+>  				{ 128, "K" }, { 256, "W" }, { 512, "P" }) : "R",
+>  		__entry->prev_state & TASK_STATE_MAX ? "+" : "",
+> -		__entry->next_comm, __entry->next_pid, __entry->next_prio)
+> +		__entry->next_comm, __entry->next_pid, __entry->next_tgid, __entry->next_prio)
+>  );
+>  
+>  /*
 
