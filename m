@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab3HUQKN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 12:10:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46601 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab3HUQKL (ORCPT
+	id S1752151Ab3HUQLF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 12:11:05 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59537 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab3HUQLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 12:10:11 -0400
-Message-ID: <5214E65F.50101@wwwdotorg.org>
-Date: Wed, 21 Aug 2013 10:10:07 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 21 Aug 2013 12:11:03 -0400
+Date: Wed, 21 Aug 2013 17:10:57 +0100
+From: Mark Brown <broonie@kernel.org>
+To: David Jander <david@protonic.nl>
+Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130821161057.GG26118@sirena.org.uk>
+References: <1377099442-13884-1-git-send-email-david@protonic.nl>
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, devicetree@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-Subject: Re: [Device-tree] mailing list responsiveness and discoverability
-References: <CAN8TOE_8f_vhCAhRaBGXk9=F8=-2YtY5eSNgypSuxiL5z-B-=Q@mail.gmail.com>
-In-Reply-To: <CAN8TOE_8f_vhCAhRaBGXk9=F8=-2YtY5eSNgypSuxiL5z-B-=Q@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1XWsVB21DFCvn2e8"
+Content-Disposition: inline
+In-Reply-To: <1377099442-13884-1-git-send-email-david@protonic.nl>
+X-Cookie: Your step will soil many countries.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V2] drivers: regmap: regcache-rbtree.c: Fix overlapping
+ rbnodes.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 08:25 PM, Brian Norris wrote:
-> Hello device tree maintainers,
-> 
-> I (sub)maintain the Linux MTD subsystem and hang out on the
-> linux-mtd@infradead.org mailing list. I have been seeing an increasing
-> number of submissions that involve device-tree changes. Many of these
-> changes are ill thought out and may even cause ABI breakage.
-> 
-> According to discussions I've seen on LKML, you want to see better
-> bindings merged into the kernel, and you want to maintain more control
-> over the acceptance of bindings in general. However, I see a few
-> problems that have inhibited this.
-> 
-> (1) Mailing list change: it just so happens that you recently moved
-> your mailing list to @vger.kernel.org. Some people are still CC'ing
-> the old one (if they CC any DT list at all). I'm not sure what can be
-> done about this, exactly. Perhaps a forwarding rule + a warning
-> response would have been better for a transition period, rather than
-> just shutting down and rejecting from the old one.
 
-Indeed.
+--1XWsVB21DFCvn2e8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> (2) Responsiveness: when we finally do CC devicetree@vger.kernel.org,
-> I don't see much feedback, even for those which (when I get around to
-> reviewing them myself) look like they have obvious issues that
-> device-tree maintainers should care about.
+On Wed, Aug 21, 2013 at 05:37:22PM +0200, David Jander wrote:
+> Avoid overlapping register regions by making the initial blklen of a new
+> node 1. If a register write occurs to a yet uncached register, that is
+> lower than but near an existing node's base_reg, a new node is created
+> and it's blklen is set to an arbitrary value (sizeof(*rbnode)). That may
+> cause this node to overlap with another node. Those nodes should be merged,
+> but this merge doesn't happen yet, so this patch at least makes the initial
+> blklen small enough to avoid hitting the wrong node, which may otherwise
+> lead to severe breakage.
 
-The problem here is that the mail volume is extremely high. Even keeping
-up with the content that I'm explicitly CC'd on is difficult, let alone
-the stuff that goes to the list that doesn't CC the binding maintainers.
+Applied, thanks.
+
+--1XWsVB21DFCvn2e8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSFOaOAAoJELSic+t+oim9mHcP/3eWwtgZZUL2kfsRsErIEXJz
+eoLRHAjPqM45XaM1/X8SzJHrxoSu57nqRx68joWq5sb17gwVgOoiVGD8yyPVC/On
+9vRscIV8UfWFn4siQOipFJme9koBs+EtwgC2GRXux/fBMyxrefjKvGj8kEOvL6lZ
++o6THne28x2Cat2EvxOOw9F3WxtwqzSIhVZb3jF2TXYTGUz5Ld6/xFhHyIfOgvuT
+yJBKe9H6wtUOMTKaKQ12yQpdvvFW/fvXRex+nbSpcMmcjThat+MyhlE4pKS/yj7h
+ih4OpcnDYJ4mY6eKdJEvfQycBdpmY6OQ7+sL69mG72vFnQcWGUOvftQ0PHmGiAM9
+iP5H/s2YN5B9tjhcGICrFt1YFJmtx8kT6XNItWHbGurZIc9A//mM8UOvAZ8K33UD
+AQKL6EZhSQcYWLXyOASCSS9UcRH/K8UQsro4SrEWRFp3aL7nHtA67OL0xxEsh+ue
+hHfYoqUV8pcyA981V1iIDBdVwfF0devsxKxa00lJv6Gcg/igZz30x9RcduYKzNwj
+KPQCglspk/6giJfJUWczzwctAQ53cDkEbjureSDrrmn/aYt0zrREr/f4UIRBzX8S
+/lqYExS7RygLT4wKYmLhVtvzkgUPYpdooc5chp/MTegO1dak4rONmXbzb6To99Td
+CueOCEmxjou3++l8yCTm
+=+/RU
+-----END PGP SIGNATURE-----
+
+--1XWsVB21DFCvn2e8--
