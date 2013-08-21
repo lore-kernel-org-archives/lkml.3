@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab3HUW7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 18:59:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35497 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752644Ab3HUW7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 18:59:19 -0400
-Date: Thu, 22 Aug 2013 00:59:15 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        mhocko@suse.cz, hare@suse.de, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 0/4 v6] Avoid softlockups in console_unlock()
-Message-ID: <20130821225915.GA16653@quack.suse.cz>
-References: <1377072512-7986-1-git-send-email-jack@suse.cz>
- <20130821142723.5fd8c0b0062b35ee83a68dcc@linux-foundation.org>
+	id S1753154Ab3HUXAR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 19:00:17 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:55023 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab3HUXAO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 19:00:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821142723.5fd8c0b0062b35ee83a68dcc@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201308211521.21129.poeschel@lemonage.de>
+References: <1376387195-27469-1-git-send-email-larsi@wh2.tu-dresden.de>
+	<9241298.URG9CVQFmF@flatron>
+	<5212737A.1030904@wwwdotorg.org>
+	<201308211521.21129.poeschel@lemonage.de>
+Date: Thu, 22 Aug 2013 01:00:14 +0200
+Message-ID: <CACRpkdZLZv7LA8rN-MyUaB9jYMyxb1Sw0LyqFHUAec1GnHzE+g@mail.gmail.com>
+Subject: Re: [PATCH v2] RFC: interrupt consistency check for OF GPIO IRQs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lars Poeschel <poeschel@lemonage.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, galak@codeaurora.org,
+        Pawel Moll <pawel.moll@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 21-08-13 14:27:23, Andrew Morton wrote:
-> On Wed, 21 Aug 2013 10:08:28 +0200 Jan Kara <jack@suse.cz> wrote:
-> 
-> > These patches avoid softlockups when a CPU gets caught in console_unlock() for
-> > a long time during heavy printing from other CPU. As is discussed in patch 3/4
-> > it isn't enough to just silence the watchdog because if CPU spends too long in
-> > console_unlock() also RCU will complain, other CPUs can be blocked waiting for
-> > printing CPU to process IPI, and even disk can be offlined because commands
-> > couldn't be delivered to it for too long.
-> > 
-> > This patch series solves the problem by stopping printing in console_unlock()
-> > after 1000 characters and the printing is postponed to irq work. To avoid
-> > hogging a single CPU (irq work gets processed on the same CPU where it was
-> > queued so it doesn't really help to reduce the printing load on that CPU) we
-> > introduce a new type of lazy irq work - IRQ_WORK_UNBOUND - which can be
-> > processed by any CPU.
-> 
-> I still hate the patchset :(
-> 
-> Remind us why we need this?  Whose kernel is spewing so much logging and
-> why?
-  We have customers (quite a few of them actually) which have machines with
-lots of SCSI disks attached (due to multipath etc.) and during boot when
-these disks are discovered and partitions set up quite some printing
-happens - multiplied by the number of devices (1000+) it is too much for a
-serial console to handle quickly enough. So these machines aren't able to
-boot with serial console enabled.
+On Wed, Aug 21, 2013 at 3:21 PM, Lars Poeschel <poeschel@lemonage.de> wrote:
+> On Monday 19 August 2013 at 21:35:22, Stephen Warren wrote:
+>> On 08/17/2013 03:59 AM, Tomasz Figa wrote:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>> > Then two _example_ formats follow, preceded by following statement:
+>> >     The following two variants are commonly used:
+>> > I already know a variant which uses three (Exynos combiner) and four
+>> > (S3C24xx interrupt controller) cells. They are not pin controllers,
+>> > but you can't stop anyone from adopting similar or even more complex
+>> > specifiers formats for their hardware, especially when it matches
+>> > more closely the interrupt/pin layout used in their hardware.
+>>
+>> Yes, the binding doc interrupts.txt mentioned above does not specify
+>> *the* one-/two-cell format, but *a* common/possible one- and two-cell
+>> format. There's no strict reason that all interrupt controllers have to
+>> use those exact formats. The only way to parse interrupt specifiers is
+>> to ask the driver for the the interrupt controller code to parse the
+>> property.
+>
+> I agree with you. I also understand the interrupts.txt binding doc as it
+> lists only a common/possible cell format, but it's purpose is not to
+> restrict it to this.
+>
+> I send an updated patch, that uses the drivers xlate function to parse the
+> interrupt property in a few minutes.
+
+Thanks that you take this on a spin, I've been busy...
+
+(I also agree with the other comments here, let's see if we can
+figure this out!)
+
+Yours,
+Linus Walleij
