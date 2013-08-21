@@ -1,120 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab3HUUZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 16:25:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35260 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab3HUUYo (ORCPT
+	id S1752780Ab3HUUa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 16:30:59 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:30715 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab3HUUa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 16:24:44 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Evgeniy Polyakov <zbr@ioremap.net>
-Subject: [PATCH 2/2] w1: use default attribute groups for w1 slave devices
-Date: Wed, 21 Aug 2013 13:24:33 -0700
-Message-Id: <1377116673-31216-2-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <1377116673-31216-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1377116673-31216-1-git-send-email-gregkh@linuxfoundation.org>
+	Wed, 21 Aug 2013 16:30:57 -0400
+Message-ID: <1377116968.10300.514.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Date: Wed, 21 Aug 2013 14:29:28 -0600
+In-Reply-To: <20130821195410.GA2436@htj.dyndns.org>
+References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <20130821130647.GB19286@mtj.dyndns.org> <5214D60A.2090309@gmail.com>
+	 <20130821153639.GA17432@htj.dyndns.org>
+	 <1377113503.10300.492.camel@misato.fc.hp.com>
+	 <20130821195410.GA2436@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we have 2 sysfs files for the w1 slave devices, let the driver core
-create / destroy them automatically by setting the default attribute
-group for them, saving code and housekeeping logic.
+Hello Tejun,
 
-Cc: Evgeniy Polyakov <zbr@ioremap.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/w1/w1.c | 38 +++++++++++---------------------------
- 1 file changed, 11 insertions(+), 27 deletions(-)
+On Wed, 2013-08-21 at 15:54 -0400, Tejun Heo wrote:
+> On Wed, Aug 21, 2013 at 01:31:43PM -0600, Toshi Kani wrote:
+> > Well, there is reason why we have earlyprintk feature today.  So, let's
+> > not debate on this feature now.  There was previous attempt to support
+> 
+> Are you saying the existing earlyprintk automatically justifies
+> addition of more complex mechanism?  The added complex of course
+> should be traded off against the benefits of gaining ACPI based early
+> boot.  You aren't gonna suggest implementing netconsole based
+> earlyprintk, right?
 
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index 3c798db0..52b6c2f0 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -96,14 +96,15 @@ static void w1_slave_release(struct device *dev)
- 	complete(&sl->released);
- }
- 
--static ssize_t w1_slave_read_name(struct device *dev, struct device_attribute *attr, char *buf)
-+static ssize_t name_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
- 	struct w1_slave *sl = dev_to_w1_slave(dev);
- 
- 	return sprintf(buf, "%s\n", sl->name);
- }
-+static DEVICE_ATTR_RO(name);
- 
--static ssize_t w1_slave_read_id(struct device *dev,
-+static ssize_t id_show(struct device *dev,
- 	struct device_attribute *attr, char *buf)
- {
- 	struct w1_slave *sl = dev_to_w1_slave(dev);
-@@ -112,11 +113,14 @@ static ssize_t w1_slave_read_id(struct device *dev,
- 	memcpy(buf, (u8 *)&sl->reg_num, count);
- 	return count;
- }
-+static DEVICE_ATTR_RO(id);
- 
--static struct device_attribute w1_slave_attr_name =
--	__ATTR(name, S_IRUGO, w1_slave_read_name, NULL);
--static struct device_attribute w1_slave_attr_id =
--	__ATTR(id, S_IRUGO, w1_slave_read_id, NULL);
-+static struct attribute *w1_slave_attrs[] = {
-+	&dev_attr_name.attr,
-+	&dev_attr_id.attr,
-+	NULL,
-+};
-+ATTRIBUTE_GROUPS(w1_slave);
- 
- /* Default family */
- 
-@@ -610,25 +614,6 @@ static int w1_bus_notify(struct notifier_block *nb, unsigned long action,
- 
- 	switch (action) {
- 	case BUS_NOTIFY_ADD_DEVICE:
--		/* Create our sysfs files before userspace is told about it */
--		/* Create "name" entry */
--		err = device_create_file(&sl->dev, &w1_slave_attr_name);
--		if (err < 0) {
--			dev_err(&sl->dev,
--				"sysfs file creation for [%s] failed. err=%d\n",
--				dev_name(&sl->dev), err);
--			return err;
--		}
--
--		/* Create "id" entry */
--		err = device_create_file(&sl->dev, &w1_slave_attr_id);
--		if (err < 0) {
--			dev_err(&sl->dev,
--				"sysfs file creation for [%s] failed. err=%d\n",
--				dev_name(&sl->dev), err);
--			return err;
--		}
--
- 		/* if the family driver needs to initialize something... */
- 		if (sl->family->fops && sl->family->fops->add_slave &&
- 		    ((err = sl->family->fops->add_slave(sl)) < 0)) {
-@@ -643,8 +628,6 @@ static int w1_bus_notify(struct notifier_block *nb, unsigned long action,
- 		/* Remove our sysfs files */
- 		if (sl->family->fops && sl->family->fops->remove_slave)
- 			sl->family->fops->remove_slave(sl);
--		device_remove_file(&sl->dev, &w1_slave_attr_id);
--		device_remove_file(&sl->dev, &w1_slave_attr_name);
- 		break;
- 	}
- 	return 0;
-@@ -662,6 +645,7 @@ static int __w1_attach_slave_device(struct w1_slave *sl)
- 	sl->dev.driver = &w1_slave_driver;
- 	sl->dev.bus = &w1_bus_type;
- 	sl->dev.release = &w1_slave_release;
-+	sl->dev.groups = w1_slave_groups;
- 
- 	dev_set_name(&sl->dev, "%02x-%012llx",
- 		 (unsigned int) sl->reg_num.family,
--- 
-1.8.3.rc0.20.gb99dd2e
+Platforms vendors (which care Linux) need to support the existing Linux
+features.  This means that they have to implement legacy interfaces on
+x86 until the kernel supports an alternative method.  For instance, some
+platforms are legacy-free and do not have legacy COM ports.  These ACPI
+tables were defined so that non-legacy COM ports can be described and
+informed to the OS.  Without this support, such platforms may have to
+emulate the legacy COM ports for Linux, or drop Linux support.
+
+> > this feature with ACPI tables below.  As described, it had the same
+> > ordering issue.
+> > 
+> > https://lkml.org/lkml/2012/10/8/498
+> > 
+> > There is a basic problem that when we try to use ACPI tables that
+> > extends or replaces legacy interfaces (ex. SRAT extending e820), we hit
+> > this ordering issue because ACPI is not available as early as the legacy
+> > interfaces.
+> 
+> Do we even want ACPI parsing and all that that early?  Parsing SRAT
+> early doesn't buy us much and I'm not sure whether adding ACPI
+> earlyprintk would increase or decrease debuggability during earlyboot.
+> It adds whole lot more code paths where things can go wrong while the
+> basic execution environment is unstable.  Why do that?
+
+I think the kernel boot-up sequence should be designed in such a way
+that can support legacy-free and/or NUMA platforms properly.
+
+Thanks,
+-Toshi
+
 
