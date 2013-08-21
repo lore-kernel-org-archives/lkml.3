@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520Ab3HUII3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 04:08:29 -0400
-Received: from mga14.intel.com ([143.182.124.37]:61603 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090Ab3HUII0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 04:08:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,926,1367996400"; 
-   d="scan'208";a="349434623"
-From: "Li, Fei" <fei.li@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "holt@sgi.com" <holt@sgi.com>,
-        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li, Fei" <fei.li@intel.com>
-Subject: RE: [PATCH] reboot: perform warm/cold reset correctly for CF9 type
-Thread-Topic: [PATCH] reboot: perform warm/cold reset correctly for CF9 type
-Thread-Index: AQHOnkAyupFWw/TFQUeMMS/7isOBqpmevtGAgACNFwA=
-Date: Wed, 21 Aug 2013 08:08:23 +0000
-Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE3634012ED68C@SHSMSX104.ccr.corp.intel.com>
-References: <1377049949.18357.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <20130821072940.GB27495@gmail.com>
- <69b80c44-3245-4393-b6e9-4d8a7f3d3c66@email.android.com>
-In-Reply-To: <69b80c44-3245-4393-b6e9-4d8a7f3d3c66@email.android.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1751566Ab3HUIIl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 04:08:41 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:52348 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531Ab3HUIIh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 04:08:37 -0400
 MIME-Version: 1.0
+In-Reply-To: <1370521041-32318-29-git-send-email-lee.jones@linaro.org>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+	<1370521041-32318-29-git-send-email-lee.jones@linaro.org>
+Date: Wed, 21 Aug 2013 10:08:36 +0200
+Message-ID: <CACRpkdYE7SgJiacneBq=cZ=7dAO2x3sBscFW075cDODxesYUWA@mail.gmail.com>
+Subject: Re: [PATCH 28/33] ARM: ux500: Remove AUXDATA relating to MSP (Audio)
+ clock-name bindings
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7L88Yc3020851
 
-> Careful.  This is a very different definition of warm vs cold boot used elsewhere.
+On Thu, Jun 6, 2013 at 2:17 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-We have tested both warm and cold reboot on our x86 platform, and it works well.
-Besides with commit, the expected warm and reboot type can be specified through
-command line.
+> @@ -232,15 +232,6 @@ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+>         /* Requires device name bindings. */
+>         OF_DEV_AUXDATA("stericsson,db8500-pinctrl", U8500_PRCMU_BASE,
+>                 "pinctrl-db8500", NULL),
+> -       /* Requires clock name and DMA bindings. */
 
-> >Looks good, but please introduce a reboot_val intermediate
-> >variable instead of duplicating that ugly line-broken
-> >construct twice.
+The comment is just wrong.
 
-Accepted and will update it in later version. 
+> -       OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80123000,
+> -               "ux500-msp-i2s.0", &msp0_platform_data),
 
-> >
-> >Thanks,
-> >
-> >	Ingo
-> 
+Look, it also adds &msp0_platform_data, which is vital.
 
-Thanks,
-Fei
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Result after boot:
+ALSA device list:
+  No soundcards found.
+
+Before the patch set we had audio and I kind of liked it :-)
+
+I think you're able to set the device name as NULL though so
+we only add this platform data, try it out.
+
+Yours,
+Linus Walleij
