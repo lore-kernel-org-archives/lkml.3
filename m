@@ -1,107 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab3HUPks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:40:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116Ab3HUPkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:40:45 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/3] HID: do not init input reports for Win 8 multitouch devices
-Date: Wed, 21 Aug 2013 17:40:20 +0200
-Message-Id: <1377099620-23947-4-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1377099620-23947-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1377099620-23947-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1752442Ab3HUPlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:41:05 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:45111 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab3HUPlC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 11:41:02 -0400
+Date: Wed, 21 Aug 2013 18:39:57 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: [sched next] overflowed cpu time for kernel threads in
+ /proc/PID/stat
+Message-ID: <20130821153957.GA2969@swordfish.minsk.epam.com>
+References: <20130820111426.GA27828@swordfish.datadirectnet.com>
+ <20130820151509.GA17441@somewhere>
+ <20130820153549.GB2315@swordfish.minsk.epam.com>
+ <20130820154257.GD17441@somewhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820154257.GD17441@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some multitouch screens do not like to be polled for input reports.
-However, the Win8 spec says that all touches should be sent during
-each report, making the initialization of reports unnecessary.
-The Win7 spec is less precise, so do not use this for those devices.
+On (08/20/13 17:42), Frederic Weisbecker wrote:
+> On Tue, Aug 20, 2013 at 06:35:50PM +0300, Sergey Senozhatsky wrote:
+> > On (08/20/13 17:15), Frederic Weisbecker wrote:
+> > > On Tue, Aug 20, 2013 at 02:14:26PM +0300, Sergey Senozhatsky wrote:
+> > > Hello,
+> > > 
+> > > Please upload your config.
+> > > 
+> > > I'm adding Stanislaw in Cc in case it relates to cputime scaling.
+> > >
+> > 
+> > please find attached.
+> > 
+> > 	-ss
+> 
+> > #
+> > # CPU/Task time and stats accounting
+> > #
+> > CONFIG_VIRT_CPU_ACCOUNTING=y
+> > CONFIG_VIRT_CPU_ACCOUNTING_GEN=y
+> 
+> So it happens with full dynticks cputime accounting.
+> How reproducable is this? Does it always happen?
+> Does it happen with CONFIG_TICK_CPU_ACCOUNTING as well? (you'll
+> need to deactivate full dynticks.)
 
-Add the quirk HID_QUIRK_NO_INIT_INPUT_REPORTS so that we do not have to
-introduce a quirk for each problematic device. This quirk makes the driver
-behave the same way the Win 8 does. It actually retrieves the features,
-but not the inputs.
+in cputime_adjust() `stime' is greater than `rtime', so `utime = rtime - stime'
+sets wrong value.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
-
-no changes in v2
-
- drivers/hid/hid-multitouch.c  | 12 ++++++++++++
- drivers/hid/usbhid/hid-core.c | 11 ++++++++---
- include/linux/hid.h           |  1 +
- 3 files changed, 21 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index c28ef86..ac28f08 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -951,6 +951,18 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	hdev->quirks |= HID_QUIRK_MULTI_INPUT;
- 	hdev->quirks |= HID_QUIRK_NO_EMPTY_INPUT;
- 
-+	/*
-+	 * Handle special quirks for Windows 8 certified devices.
-+	 */
-+	if (id->group == HID_GROUP_MULTITOUCH_WIN_8)
-+		/*
-+		 * Some multitouch screens do not like to be polled for input
-+		 * reports. Fortunately, the Win8 spec says that all touches
-+		 * should be sent during each report, making the initialization
-+		 * of input reports unnecessary.
-+		 */
-+		hdev->quirks |= HID_QUIRK_NO_INIT_INPUT_REPORTS;
-+
- 	td = devm_kzalloc(&hdev->dev, sizeof(struct mt_device), GFP_KERNEL);
- 	if (!td) {
- 		dev_err(&hdev->dev, "cannot allocate multitouch data\n");
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index bd38cdf..44df131 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -750,12 +750,17 @@ void usbhid_init_reports(struct hid_device *hid)
- {
- 	struct hid_report *report;
- 	struct usbhid_device *usbhid = hid->driver_data;
-+	struct hid_report_enum *report_enum;
- 	int err, ret;
- 
--	list_for_each_entry(report, &hid->report_enum[HID_INPUT_REPORT].report_list, list)
--		usbhid_submit_report(hid, report, USB_DIR_IN);
-+	if (!(hid->quirks & HID_QUIRK_NO_INIT_INPUT_REPORTS)) {
-+		report_enum = &hid->report_enum[HID_INPUT_REPORT];
-+		list_for_each_entry(report, &report_enum->report_list, list)
-+			usbhid_submit_report(hid, report, USB_DIR_IN);
-+	}
- 
--	list_for_each_entry(report, &hid->report_enum[HID_FEATURE_REPORT].report_list, list)
-+	report_enum = &hid->report_enum[HID_FEATURE_REPORT];
-+	list_for_each_entry(report, &report_enum->report_list, list)
- 		usbhid_submit_report(hid, report, USB_DIR_IN);
- 
- 	err = 0;
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 45b7f3f..654627d 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -283,6 +283,7 @@ struct hid_item {
- #define HID_QUIRK_MULTI_INPUT			0x00000040
- #define HID_QUIRK_HIDINPUT_FORCE		0x00000080
- #define HID_QUIRK_NO_EMPTY_INPUT		0x00000100
-+#define HID_QUIRK_NO_INIT_INPUT_REPORTS		0x00000200
- #define HID_QUIRK_SKIP_OUTPUT_REPORTS		0x00010000
- #define HID_QUIRK_FULLSPEED_INTERVAL		0x10000000
- #define HID_QUIRK_NO_INIT_REPORTS		0x20000000
--- 
-1.8.3.1
-
+	-ss
