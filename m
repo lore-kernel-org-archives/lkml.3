@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab3HUGhI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 02:37:08 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42615 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab3HUGhE (ORCPT
+	id S1752375Ab3HUGsU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 02:48:20 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41288 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab3HUGsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 02:37:04 -0400
-Date: Tue, 20 Aug 2013 23:37:02 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: "Nicholas A. Bellinger" <nab@daterainc.com>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>
-Subject: Re: [PATCH 9/9] tcm_qla2xxx: Add special case for COMPARE_AND_WRITE
- data_direction
-Message-ID: <20130821063702.GI25506@infradead.org>
-References: <1377029280-19144-1-git-send-email-nab@daterainc.com>
- <1377029280-19144-10-git-send-email-nab@daterainc.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377029280-19144-10-git-send-email-nab@daterainc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 21 Aug 2013 02:48:12 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>
+Subject: [PATCH v2 4/5] ARM: dts: msm: Update uartdm compatible strings
+Date: Tue, 20 Aug 2013 23:48:05 -0700
+Message-Id: <1377067686-31957-5-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.4.rc3.2.g2c2b664
+In-Reply-To: <1377067686-31957-1-git-send-email-sboyd@codeaurora.org>
+References: <1377067686-31957-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 08:08:00PM +0000, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@daterainc.com>
-> 
-> Add a special case for COMPARE_AND_WRITE for the reverse data direction
-> mapping used for pci_map_sg() + friends.
+Let's follow the ratified DT binding and use uartdm instead of
+hsuart. This does break backwards compatibility but this
+shouldn't be a problem because the uart driver isn't probing on
+these devices without adding clock support (which isn't merged so
+far).
 
-A low level driver is an even worse place to hardcode a specific cdb
-opcode.  As written before this should be done by a flag on the command.
+Cc: David Brown <davidb@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/boot/dts/msm8660-surf.dts | 2 +-
+ arch/arm/boot/dts/msm8960-cdp.dts  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Also it might make sense to lift this helper to get a dma direction from
-a command into common code.
+diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
+index cdc010e..386d428 100644
+--- a/arch/arm/boot/dts/msm8660-surf.dts
++++ b/arch/arm/boot/dts/msm8660-surf.dts
+@@ -38,7 +38,7 @@
+ 	};
+ 
+ 	serial@19c40000 {
+-		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
++		compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
+ 		reg = <0x19c40000 0x1000>,
+ 		      <0x19c00000 0x1000>;
+ 		interrupts = <0 195 0x0>;
+diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+index db2060c..532050b 100644
+--- a/arch/arm/boot/dts/msm8960-cdp.dts
++++ b/arch/arm/boot/dts/msm8960-cdp.dts
+@@ -38,7 +38,7 @@
+ 	};
+ 
+ 	serial@16440000 {
+-		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
++		compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
+ 		reg = <0x16440000 0x1000>,
+ 		      <0x16400000 0x1000>;
+ 		interrupts = <0 154 0x0>;
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
