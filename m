@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab3HUJv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 05:51:59 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:16649 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab3HUJv5 (ORCPT
+	id S1752147Ab3HUJw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 05:52:59 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:27040 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab3HUJw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 05:51:57 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-ca-52148dbcf516
+	Wed, 21 Aug 2013 05:52:57 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-93-52148df89ad6
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Vinod Koul'" <vinod.koul@intel.com>
 Cc: "'Dan Williams'" <djbw@fb.com>, linux-kernel@vger.kernel.org,
@@ -16,40 +16,47 @@ Cc: "'Dan Williams'" <djbw@fb.com>, linux-kernel@vger.kernel.org,
         "'Fabio Estevam'" <fabio.estevam@freescale.com>,
         "'Shawn Guo'" <shawn.guo@linaro.org>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] dma: sh: remove unnecessary platform_set_drvdata()
-Date: Wed, 21 Aug 2013 18:51:56 +0900
-Message-id: <003001ce9e54$12595950$370c0bf0$%han@samsung.com>
+Subject: [PATCH] dma: ipu: remove unnecessary platform_set_drvdata()
+Date: Wed, 21 Aug 2013 18:52:54 +0900
+Message-id: <003101ce9e54$35dc8910$a1959b30$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6eVBJCjqGwerJCRDunQU2+zBWtCg==
+Thread-index: Ac6eVC7vkufHJSRuRVymIniUZAlp9g==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t8zI909vSJBBufWyFj0Nk1nstjc/4DN
-	YlaXrsXlhZdYLS7vmsNm8XTdEmaLl337WRzYPSY2v2P3+He4n8lj8Z6XTB53ru1h85h3MtCj
-	b8sqRo/Pm+QC2KO4bFJSczLLUov07RK4Mpbf+cdc0MhT0bPvDHsDYwtXFyMHh4SAicSaq4Zd
-	jJxAppjEhXvr2boYuTiEBJYxSjRum8UEkTCRmPb6MTtEYjqjxK7pS6GcX4wSn56dZwOpYhNQ
-	k/jy5TA7yFQRAXWJpddlQGqYBWYwSRxrPs8CUiMs4Cxxbf8vVhCbRUBV4vq0H4wgNq+ArcSn
-	py9YIWxBiR+T74HVMwtoSazfeZwJwpaX2LzmLTPE1eoSj/7qgoRFBPQkDi36AVUiIrHvxTtG
-	kL0SAvfYJS71bIfaJSDxbfIhFoheWYlNB5ghHpOUOLjiBssERrFZSDbPQrJ5FpLNs5CsWMDI
-	sopRNLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjJDr7dzDePWB9iDEZaP1EZinR5HxgdOeVxBsa
-	mxlZmJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgTHw1Qdhju0M
-	jSk7Jp/bLFqadvTUJkmeDaIzFs3ZyK4aabRbw+FHgqePkVZlIZNPIq/ib3Z+uxld5TVrDp7P
-	v/s59thJJT6Lj29v8sjs23f/w07f0w37b1Ux5N640neh5cK7vc8b7sVfNX11wHXxrse1lw3X
-	9pU94NAOYjZ++uZLd4/BHtF4azElluKMREMt5qLiRACJ1fQB5AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPKsWRmVeSWpSXmKPExsVy+t9jQd09vSJBBtO6JCx6m6YzWWzuf8Bm
+x-cr-hashedpuzzle: CuoK G3jq JGoB QAly Q2JF ST8/ UPh+ ZhSc iP9T qn9Z 0193 4RFs
+ 98TA /KJ4 AAhNLg==
+ AA/41A==;7;YQBuAGQAcgBpAHkALgBzAGgAZQB2AGMAaABlAG4AawBvAEAAbABpAG4AdQB4AC4AaQBuAHQAZQBsAC4AYwBvAG0AOwBkAGoAYgB3AEAAZgBiAC4AYwBvAG0AOwBmAGEAYgBpAG8ALgBlAHMAdABlAHYAYQBtAEAAZgByAGUAZQBzAGMAYQBsAGUALgBjAG8AbQA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcwBoAGEAdwBuAC4AZwB1AG8AQABsAGkAbgBhAHIAbwAuAG8AcgBnADsAdgBpAG4AbwBkAC4AawBvAHUAbABAAGkAbgB0AGUAbAAuAGMAbwBtAA==;Sosha1_v1;7;{F7057801-33A0-4274-A5A7-EEB128C82307};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Wed,
+ 21 Aug 2013 09:52:44
+ GMT;WwBQAEEAVABDAEgAXQAgAGQAbQBhADoAIABpAHAAdQA6ACAAcgBlAG0AbwB2AGUAIAB1AG4AbgBlAGMAZQBzAHMAYQByAHkAIABwAGwAYQB0AGYAbwByAG0AXwBzAGUAdABfAGQAcgB2AGQAYQB0AGEAKAApAA==
+x-cr-puzzleid: {F7057801-33A0-4274-A5A7-EEB128C82307}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t8zI90fvSJBBr3HWCx6m6YzWWzuf8Bm
 	MatL1+LywkusFpd3zWGzeLpuCbPFy779LA7sHhOb37F7/Dvcz+SxeM9LJo871/awecw7GejR
-	t2UVo8fnTXIB7FENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkou
-	PgG6bpk5QPcoKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnrGDOW3/nHXNDI
-	U9Gz7wx7A2MLVxcjJ4eEgInEtNeP2SFsMYkL99azdTFycQgJTGeU2DV9KTuE84tR4tOz82wg
-	VWwCahJfvhwGSnBwiAioSyy9LgNSwywwg0niWPN5FpAaYQFniWv7f7GC2CwCqhLXp/1gBLF5
-	BWwlPj19wQphC0r8mHwPrJ5ZQEti/c7jTBC2vMTmNW+ZQeZLAM1/9FcXJCwioCdxaNEPqBIR
-	iX0v3jFOYBSYhWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwdH/
-	THoH46oGi0OMAhyMSjy8F5RFgoRYE8uKK3MPMUpwMCuJ8C6qBgrxpiRWVqUW5ccXleakFh9i
-	TAZ6dCKzlGhyPjAx5ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMH
-	p1QDo/2P04luE7/4mRw2ylBZ7bZeuLig86unkNbS3Ml9jI5qGv+LHEOUZsU7ZH7t3/9Mi591
-	z7WvDs/dLhUo/rpXJfrIRnniQbN9YV1H7hw0FtAwszr9g3nLsW8Hp9Zm5Dy4G7fyetzMUIs5
-	Hib9v9jZ0/e1bjum3fu76XT38V8+D84l771srzT3thJLcUaioRZzUXEiAP9DQvZCAwAA
+	t2UVo8fnTXIB7FFcNimpOZllqUX6dglcGQ9fX2Qu2Mta0XHuDEsD41GWLkZODgkBE4nVU9az
+	QdhiEhfugdhcHEICyxgler+3sXYxcoAVTZwTBBGfzijx5sVhJgjnF6PExgfP2EG62QTUJL58
+	OcwO0iAioC6x9LoMSA2zwAwmiWPN58G2CQu4SGzs6GUFsVkEVCV2fNnJBGLzCthK/OmYwgJh
+	C0r8mHwPzGYW0JJYv/M4E4QtL7F5zVtmiIPUJR791YVYpSfR/jUfokJEYt+Ld4wgayUErrBJ
+	NL/+xAjxmKnE1mv3oRI/2SX2rrjKBnGDgMS3yYdYIGbKSmw6wAxRLylxcMUNlgmMErOQXDQL
+	yUWzkFw0C8nuBYwsqxhFUwuSC4qT0otM9YoTc4tL89L1kvNzNzFConniDsb7B6wPMSYDrZ/I
+	LCWanA9MBnkl8YbGZkYWpiamxkbmlmakCSuJ86q3WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi
+	4JRqYIxuk+pccdu6be/0hMlbHwj09vtEKFXkzVLK0z6ZNOGnZ8aRDaor12pHzD6x0vz0pH2X
+	4tdniYkrRqauEEhQ6Pu2XEVLX9LOKlj/1YY8fzvbb7PuzXhla87203mj3c+ulDafX4LlE1We
+	rxFL8s89d+GNxp3Xa2eFCjKEu2+d5fPGqMVU/eiOOiWW4oxEQy3mouJEABTmmmb8AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t9jQd0fvSJBBku0LHqbpjNZbO5/wGYx
+	q0vX4vLCS6wWl3fNYbN4um4Js8XLvv0sDuweE5vfsXv8O9zP5LF4z0smjzvX9rB5zDsZ6NG3
+	ZRWjx+dNcgHsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+
+	AbpumTlA5ygplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYMx6+vshcsJe1
+	ouPcGZYGxqMsXYwcHBICJhIT5wR1MXICmWISF+6tZ+ti5OIQEpjOKPHmxWEmCOcXo8TGB8/Y
+	QarYBNQkvnw5zA7SLCKgLrH0ugxIDbPADCaJY83nWUBqhAVcJDZ29LKC2CwCqhI7vuxkArF5
+	BWwl/nRMYYGwBSV+TL4HZjMLaEms33mcCcKWl9i85i0zxHHqEo/+6kKs0pNo/5oPUSEise/F
+	O0aQtRICV9gkml9/YoR4wFRi67X7jBMYhWYh2TALyYZZSDbMQjJrASPLKkbR1ILkguKk9FxD
+	veLE3OLSvHS95PzcTYzgRPFMagfjygaLQ4wCHIxKPLwXlEWChFgTy4orcw8xSnAwK4nwLqoG
+	CvGmJFZWpRblxxeV5qQWH2JMBgbARGYp0eR8YBLLK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1
+	oJBAemJJanZqakFqEcwWJg5OqQbG7e8aHnb5Fl6Z8PDaq8ecAUezwkqZtLgCstelhmiWSX70
+	vO59f/qhW2u8+StEDzzfcejktycZLFVs8VNefC5vE8nsOiB2M6LUpn5Zz2/bI6G82q3vpqtq
+	798zKfPlOzOHMvNPh2ya/h38+NrXv+EFV2g255zI59bhLNxsAr1HAoK0Lt7+8aVEiaU4I9FQ
+	i7moOBEA8DrZWFgDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -63,47 +70,17 @@ device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/dma/sh/shdma.c  |    3 ---
- drivers/dma/sh/sudmac.c |    2 --
- 2 files changed, 5 deletions(-)
+ drivers/dma/ipu/ipu_idmac.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
-index 211e2f1..208de0f 100644
---- a/drivers/dma/sh/shdma.c
-+++ b/drivers/dma/sh/shdma.c
-@@ -873,7 +873,6 @@ rst_err:
- 	pm_runtime_put(&pdev->dev);
- 	pm_runtime_disable(&pdev->dev);
- 
--	platform_set_drvdata(pdev, NULL);
- 	shdma_cleanup(&shdev->shdma_dev);
- eshdma:
- 	if (dmars)
-@@ -917,8 +916,6 @@ static int sh_dmae_remove(struct platform_device *pdev)
- 		iounmap(shdev->dmars);
- 	iounmap(shdev->chan_reg);
- 
--	platform_set_drvdata(pdev, NULL);
--
- 	synchronize_rcu();
- 	kfree(shdev);
- 
-diff --git a/drivers/dma/sh/sudmac.c b/drivers/dma/sh/sudmac.c
-index c494417..23fffc8 100644
---- a/drivers/dma/sh/sudmac.c
-+++ b/drivers/dma/sh/sudmac.c
-@@ -393,7 +393,6 @@ static int sudmac_probe(struct platform_device *pdev)
- chan_probe_err:
- 	sudmac_chan_remove(su_dev);
- 
--	platform_set_drvdata(pdev, NULL);
- 	shdma_cleanup(&su_dev->shdma_dev);
- 
- 	return err;
-@@ -407,7 +406,6 @@ static int sudmac_remove(struct platform_device *pdev)
- 	dma_async_device_unregister(dma_dev);
- 	sudmac_chan_remove(su_dev);
- 	shdma_cleanup(&su_dev->shdma_dev);
+diff --git a/drivers/dma/ipu/ipu_idmac.c b/drivers/dma/ipu/ipu_idmac.c
+index 608d4a2..cb9c0bc 100644
+--- a/drivers/dma/ipu/ipu_idmac.c
++++ b/drivers/dma/ipu/ipu_idmac.c
+@@ -1764,7 +1764,6 @@ static int ipu_remove(struct platform_device *pdev)
+ 	iounmap(ipu->reg_ic);
+ 	iounmap(ipu->reg_ipu);
+ 	tasklet_kill(&ipu->tasklet);
 -	platform_set_drvdata(pdev, NULL);
  
  	return 0;
