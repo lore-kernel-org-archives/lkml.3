@@ -1,123 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab3HUOse (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:48:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375Ab3HUOsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:48:31 -0400
-Date: Wed, 21 Aug 2013 10:48:28 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: device-mapper development <dm-devel@redhat.com>
-cc: Mike Snitzer <snitzer@redhat.com>, Alasdair Kergon <agk@redhat.com>,
-        Joe Jin <joe.jin@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [dm-devel] [PATCH v2] dm ioctl: allow change device target type
- to error
-In-Reply-To: <5214CC25.1070307@oracle.com>
-Message-ID: <alpine.LRH.2.02.1308211041180.10797@file01.intranet.prod.int.rdu2.redhat.com>
-References: <5214CC25.1070307@oracle.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751846Ab3HUOxn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:53:43 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:36017 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab3HUOxm convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
+	Wed, 21 Aug 2013 10:53:42 -0400
+Message-Id: <5214F09002000078000ED5C3@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 21 Aug 2013 15:53:36 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "David Vrabel" <david.vrabel@citrix.com>,
+        "Cyrill Gorcunov" <gorcunov@gmail.com>
+Cc: "Andy Lutomirski" <luto@amacapital.net>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        <Xen-devel@lists.xen.org>,
+        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Pavel Emelyanov" <xemul@parallels.com>,
+        "Ingo Molnar" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts
+ with existing use
+References: <5214C524.1050900@citrix.com> <20130821141223.GS18673@moon>
+In-Reply-To: <20130821141223.GS18673@moon>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 21 Aug 2013, Joe Jin wrote:
-
-> commit a5664da "dm ioctl: make bio or request based device type immutable"
-> prevented "dmsetup wape_table" change the target type to "error".
-
-That commit a5664da is there for a reason (it is not possible to change 
-bio-based device to request-based and vice versa) and I don't really see 
-how this patch is supposed to work.
-
-If there are bios that are in flight and that already passed through 
-blk_queue_bio, and you change the device from request-based to bio-based, 
-what are you going to do with them? - The patch doesn't do anything about 
-it.
-
-A better approach would be to create a new request-based target "error-rq" 
-and change the multipath target to "error-rq" target. That way, you don't 
-have to change device type from request based to bio based.
-
-Mikulas
-
-> -v2: setup md->queue even target type is "error".
+>>> On 21.08.13 at 16:12, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Wed, Aug 21, 2013 at 02:48:20PM +0100, David Vrabel wrote:
+>> All,
+>> 
+>> 179ef71c (mm: save soft-dirty bits on swapped pages) introduces a new
+>> PTE bit on x86 _PTE_SWP_SOFT_DIRTY which has the same value as _PTE_PSE
+>> and _PTE_PAT.
+>> 
+>> With a Xen PV guest, the use of the _PTE_PAT will result in the page
+>> having unexpected cachability which will introduce a range of subtle
+>> performance and correctness issues.  Xen programs the entry 4 in the PAT
+>> table with WC so a page that was previously WB will end up as WC.
+>> 
 > 
-> Signed-off-by: Joe Jin <joe.jin@oracle.com>
-> ---
->  drivers/md/dm-ioctl.c |  4 ++++
->  drivers/md/dm-table.c | 12 ++++++++++++
->  drivers/md/dm.h       |  1 +
->  3 files changed, 17 insertions(+)
-> 
-> diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
-> index f1b7586..2a9b63d 100644
-> --- a/drivers/md/dm-ioctl.c
-> +++ b/drivers/md/dm-ioctl.c
-> @@ -1280,6 +1280,9 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
->  		goto out;
->  	}
->  
-> +	if (dm_is_error_target(t))
-> +		goto error_target;
-> +
->  	/* Protect md->type and md->queue against concurrent table loads. */
->  	dm_lock_md_type(md);
->  	if (dm_get_md_type(md) == DM_TYPE_NONE)
-> @@ -1293,6 +1296,7 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
->  		goto out;
->  	}
->  
-> +error_target:
->  	/* setup md->queue to reflect md's type (may block) */
->  	r = dm_setup_md_queue(md);
->  	if (r) {
-> diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-> index f221812..27be46a 100644
-> --- a/drivers/md/dm-table.c
-> +++ b/drivers/md/dm-table.c
-> @@ -184,6 +184,18 @@ static int alloc_targets(struct dm_table *t, unsigned int num)
->  	return 0;
->  }
->  
-> +bool dm_is_error_target(struct dm_table *t)
-> +{
-> +	unsigned i;
-> +
-> +	for (i = 0; i < t->num_targets; i++) {
-> +		struct dm_target *tgt = t->targets + i;
-> +		if (strcmp(tgt->type->name, "error") == 0)
-> +			return true;
-> +	}
-> +	return false;
-> +}
-> +
->  int dm_table_create(struct dm_table **result, fmode_t mode,
->  		    unsigned num_targets, struct mapped_device *md)
->  {
-> diff --git a/drivers/md/dm.h b/drivers/md/dm.h
-> index 45b97da..c7bceeb 100644
-> --- a/drivers/md/dm.h
-> +++ b/drivers/md/dm.h
-> @@ -69,6 +69,7 @@ unsigned dm_table_get_type(struct dm_table *t);
->  struct target_type *dm_table_get_immutable_target_type(struct dm_table *t);
->  bool dm_table_request_based(struct dm_table *t);
->  bool dm_table_supports_discards(struct dm_table *t);
-> +bool dm_is_error_target(struct dm_table *t);
->  int dm_table_alloc_md_mempools(struct dm_table *t);
->  void dm_table_free_md_mempools(struct dm_table *t);
->  struct dm_md_mempools *dm_table_get_md_mempools(struct dm_table *t);
-> -- 
-> 1.8.3.1
-> 
-> --
-> dm-devel mailing list
-> dm-devel@redhat.com
-> https://www.redhat.com/mailman/listinfo/dm-devel
-> 
+> David, could you please explain, Xen keeps and analyze _PTE_PAT bit
+> for ptes which are not present?
+
+No, the problem isn't with not-present PTEs (i.e. swap entries),
+but with present ones - the same bit (7) is being used for both,
+according to this comment:
+
+/*
+ * Tracking soft dirty bit when a page goes to a swap is tricky.
+ * We need a bit which can be stored in pte _and_ not conflict
+ * with swap entry format. On x86 bits 6 and 7 are *not* involved
+ * into swap entry computation, but bit 6 is used for nonlinear
+ * file mapping, so we borrow bit 7 for soft dirty tracking.
+ */
+
+Or are you telling me that the comment is misleading (at least me),
+and this applies only to not-present PTEs? And even then - where
+would the value of the original PAT bit be stored while swapped
+out (or is it impossible - now and forever - for WC pages to get
+swapped)?
+
+Jan
+
