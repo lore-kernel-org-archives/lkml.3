@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab3HUHY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 03:24:28 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:40040 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab3HUHY0 (ORCPT
+	id S1752361Ab3HUH0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 03:26:46 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:44086 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab3HUH0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 03:24:26 -0400
-Message-ID: <1377070267.32763.26.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH 9/9] tcm_qla2xxx: Add special case for COMPARE_AND_WRITE
- data_direction
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>
-Date: Wed, 21 Aug 2013 00:31:07 -0700
-In-Reply-To: <20130821063702.GI25506@infradead.org>
-References: <1377029280-19144-1-git-send-email-nab@daterainc.com>
-	 <1377029280-19144-10-git-send-email-nab@daterainc.com>
-	 <20130821063702.GI25506@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Aug 2013 03:26:44 -0400
+Date: Wed, 21 Aug 2013 09:26:40 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Kconfig: Remove hotplug enable hints in CONFIG_KEXEC
+ help texts
+Message-ID: <20130821072640.GA27495@gmail.com>
+References: <1377027483-17025-1-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377027483-17025-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-20 at 23:37 -0700, Christoph Hellwig wrote:
-> On Tue, Aug 20, 2013 at 08:08:00PM +0000, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@daterainc.com>
-> > 
-> > Add a special case for COMPARE_AND_WRITE for the reverse data direction
-> > mapping used for pci_map_sg() + friends.
+
+* Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+
+> commit 40b313608ad4ea655addd2ec6cdd106477ae8e15 ("Finally eradicate
+> CONFIG_HOTPLUG") removed remaining references to CONFIG_HOTPLUG, but missed
+> a few plain English references in the CONFIG_KEXEC help texts.
 > 
-> A low level driver is an even worse place to hardcode a specific cdb
-> opcode.  As written before this should be done by a flag on the command.
+> Remove them, too.
 > 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+>  arch/arm/Kconfig     |    3 +--
+>  arch/ia64/Kconfig    |    6 +++---
+>  arch/mips/Kconfig    |    6 +++---
+>  arch/powerpc/Kconfig |    6 +++---
+>  arch/sh/Kconfig      |    6 +++---
+>  arch/x86/Kconfig     |    6 +++---
+>  6 files changed, 16 insertions(+), 17 deletions(-)
+[...]
+>  	bool "kernel crash dumps (EXPERIMENTAL)"
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index b32ebf9..6ace5de 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1627,9 +1627,9 @@ config KEXEC
+>  
+>  	  It is an ongoing process to be certain the hardware in a machine
+>  	  is properly shutdown, so do not be surprised if this code does not
+> -	  initially work for you.  It may help to enable device hotplugging
+> -	  support.  As of this writing the exact hardware interface is
+> -	  strongly in flux, so no good recommendation can be made.
+> +	  initially work for you.  As of this writing the exact hardware
+> +	  interface is strongly in flux, so no good recommendation can be
+> +	  made.
+>  
+>  config CRASH_DUMP
+>  	bool "kernel crash dumps"
 
-Which means adding another COMPARE_AND_WRITE specific flag to
-se_cmd_flags_Table, as the SCF_COMPARE_AND_WRITE_POST is ony set after
-the comparsion of the verify instance data is complete..
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
-Is it really worth having two se_cmd_flags for COMPARE_AND_WRITE..?
+Thanks,
 
-> Also it might make sense to lift this helper to get a dma direction from
-> a command into common code.
-> 
-
-Mmm, perhaps.  I don't recall of the top of my head why tcm_qla2xxx
-actually needed to reverse it's dma direction (I'm sure that Roland
-knows, CC'ed), but IIRC it was a tcm_qla2xxx specific thing..?
-
---nab
-
+	Ingo
