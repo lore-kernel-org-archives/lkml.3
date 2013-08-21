@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab3HUNXI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 09:23:08 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:44531 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab3HUNXH (ORCPT
+	id S1751962Ab3HUNYv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 09:24:51 -0400
+Received: from protonic.xs4all.nl ([213.84.116.84]:17668 "EHLO
+	protonic.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab3HUNYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 09:23:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130821124722.GB17748@b29396-Latitude-E6410>
-References: <1376564133-11286-1-git-send-email-b29396@freescale.com>
-	<520CCB70.8090908@gmail.com>
-	<20130821124722.GB17748@b29396-Latitude-E6410>
-Date: Wed, 21 Aug 2013 08:23:05 -0500
-Message-ID: <CAL_JsqLa1RkL0MaOCbjYbuQW7+8EKqX8RMfypN=i5UTKaF47=A@mail.gmail.com>
-Subject: Re: [PATCH 0/3] of: add update device node status via cmdline feature
-From: Rob Herring <robherring2@gmail.com>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, rob@landley.net,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Aug 2013 09:24:50 -0400
+X-Greylist: delayed 1325 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Aug 2013 09:24:49 EDT
+From: David Jander <david@protonic.nl>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        David Jander <david@protonic.nl>
+Subject: [PATCH] drivers: regmap: bugfix in regcache-rbtree.c
+Date: Wed, 21 Aug 2013 15:02:35 +0200
+Message-Id: <1377090155-3443-1-git-send-email-david@protonic.nl>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 7:47 AM, Dong Aisheng <b29396@freescale.com> wrote:
-> On Thu, Aug 15, 2013 at 07:37:04AM -0500, Rob Herring wrote:
->> On 08/15/2013 05:55 AM, Dong Aisheng wrote:
->> > We meet some boards having a lot of pin conflicts between different devices,
->> > only one of them can be enabled to run at one time.
->> >
->> > e.g. imx6q sabreauto board, i2c, spi, weim, flexcan, uart and etc involved
->> > with pin conflict.
->> >
->> > Instead of changing dts manually or adding a lot dts files according to
->> > different device availability, we provide feature to dynamically update the
->> > device node status via command line, then those devices involved with
->> > pin conflict can be enabled or disabled dynamically.
->> >
->> > It's conveniently to use and can save a lot dts board files, also can
->> > permenantly fix the pin conflicts issue.
->>
->> This doesn't scale either with updating of lots devices or when the next
->> person comes along and wants to edit another property.
->>
->
-> I'm not sure about other property.
-> But we update it did cause by the real requirement, not arbitrary.
-> Or we can try to find another better way to avoid it.
->
->> This is something u-boot is perfectly capable of handling and updating
->> status is something lots of boards already do.
->>
->
-> How does uboot handle this according to our needs?
-> Also dynamically update the device node status with uboot command?
-> Can you help point out an example for me to check?
->
+The functionality of rbtree_ctx->cached_rbnode is broken. Remove it to
+avoid hitting the wrong rbnode when locating a register.
+rbnode register ranges can overlap, which is not a problem as long as
+every lookup for a register returns the same rbnode. Therefor we need
+to start searching from the top of the rb-tree _always_.
 
-Here's an example adding a status property with u-boot commands:
+Signed-off-by: David Jander <david@protonic.nl>
+---
+ drivers/base/regmap/regcache-rbtree.c | 13 -------------
+ 1 file changed, 13 deletions(-)
 
-Highbank #fdt print /soc/ethernet
-ethernet@fff50000 {
-        compatible = "calxeda,hb-xgmac";
-        reg = <0xfff50000 0x00001000>;
-        interrupts = <0x00000000 0x0000004d 0x00000004 0x00000000
-0x0000004e 0x00000004 0x00000000 0x0000004f 0x00000004>;
-        dma-coherent;
-};
-Highbank #fdt set /soc/ethernet status okay
-Highbank #fdt print /soc/ethernet
-ethernet@fff50000 {
-        status = "okay";
-        compatible = "calxeda,hb-xgmac";
-        reg = <0xfff50000 0x00001000>;
-        interrupts = <0x00000000 0x0000004d 0x00000004 0x00000000
-0x0000004e 0x00000004 0x00000000 0x0000004f 0x00000004>;
-        dma-coherent;
-};
+diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
+index 5c1435c..2f9783f 100644
+--- a/drivers/base/regmap/regcache-rbtree.c
++++ b/drivers/base/regmap/regcache-rbtree.c
+@@ -35,7 +35,6 @@ struct regcache_rbtree_node {
+ 
+ struct regcache_rbtree_ctx {
+ 	struct rb_root root;
+-	struct regcache_rbtree_node *cached_rbnode;
+ };
+ 
+ static inline void regcache_rbtree_get_base_top_reg(
+@@ -68,21 +67,12 @@ static struct regcache_rbtree_node *regcache_rbtree_lookup(struct regmap *map,
+ 	struct regcache_rbtree_node *rbnode;
+ 	unsigned int base_reg, top_reg;
+ 
+-	rbnode = rbtree_ctx->cached_rbnode;
+-	if (rbnode) {
+-		regcache_rbtree_get_base_top_reg(map, rbnode, &base_reg,
+-						 &top_reg);
+-		if (reg >= base_reg && reg <= top_reg)
+-			return rbnode;
+-	}
+-
+ 	node = rbtree_ctx->root.rb_node;
+ 	while (node) {
+ 		rbnode = container_of(node, struct regcache_rbtree_node, node);
+ 		regcache_rbtree_get_base_top_reg(map, rbnode, &base_reg,
+ 						 &top_reg);
+ 		if (reg >= base_reg && reg <= top_reg) {
+-			rbtree_ctx->cached_rbnode = rbnode;
+ 			return rbnode;
+ 		} else if (reg > top_reg) {
+ 			node = node->rb_right;
+@@ -209,7 +199,6 @@ static int regcache_rbtree_init(struct regmap *map)
+ 
+ 	rbtree_ctx = map->cache;
+ 	rbtree_ctx->root = RB_ROOT;
+-	rbtree_ctx->cached_rbnode = NULL;
+ 
+ 	for (i = 0; i < map->num_reg_defaults; i++) {
+ 		ret = regcache_rbtree_write(map,
+@@ -392,7 +381,6 @@ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
+ 								      value);
+ 				if (ret)
+ 					return ret;
+-				rbtree_ctx->cached_rbnode = rbnode_tmp;
+ 				return 0;
+ 			}
+ 		}
+@@ -406,7 +394,6 @@ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
+ 		regcache_rbtree_set_register(map, rbnode,
+ 					     reg - rbnode->base_reg, value);
+ 		regcache_rbtree_insert(map, &rbtree_ctx->root, rbnode);
+-		rbtree_ctx->cached_rbnode = rbnode;
+ 	}
+ 
+ 	return 0;
+-- 
+1.8.1.2
 
-Rob
