@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab3HUOoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:44:08 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:39123 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab3HUOoC (ORCPT
+	id S1752518Ab3HUOoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:44:12 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:64490 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485Ab3HUOoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:44:02 -0400
+	Wed, 21 Aug 2013 10:44:09 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 11/14] cpufreq: s5pv210: use cpufreq_generic_init() routine
-Date: Wed, 21 Aug 2013 20:12:30 +0530
-Message-Id: <f34014dbefc4e4fbd01052648ff3a4ba67920311.1377093938.git.viresh.kumar@linaro.org>
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH 12/14] cpufreq: sa11x0: use cpufreq_generic_init() routine
+Date: Wed, 21 Aug 2013 20:12:31 +0530
+Message-Id: <d7f068a850aa335ad8041f977373cfcdf1d109f7.1377093938.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1377093938.git.viresh.kumar@linaro.org>
 References: <cover.1377093938.git.viresh.kumar@linaro.org>
@@ -28,27 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use generic cpufreq_generic_init() routine instead of replicating the same code
 here.
 
-Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Russell King <linux@arm.linux.org.uk>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/s5pv210-cpufreq.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/cpufreq/sa1100-cpufreq.c | 6 +-----
+ drivers/cpufreq/sa1110-cpufreq.c | 6 +-----
+ 2 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/cpufreq/s5pv210-cpufreq.c b/drivers/cpufreq/s5pv210-cpufreq.c
-index efa1080..e3973da 100644
---- a/drivers/cpufreq/s5pv210-cpufreq.c
-+++ b/drivers/cpufreq/s5pv210-cpufreq.c
-@@ -511,9 +511,7 @@ static int __init s5pv210_cpu_init(struct cpufreq_policy *policy)
- 	s5pv210_dram_conf[1].refresh = (__raw_readl(S5P_VA_DMC1 + 0x30) * 1000);
- 	s5pv210_dram_conf[1].freq = clk_get_rate(dmc1_clk);
+diff --git a/drivers/cpufreq/sa1100-cpufreq.c b/drivers/cpufreq/sa1100-cpufreq.c
+index a89c47b..623da74 100644
+--- a/drivers/cpufreq/sa1100-cpufreq.c
++++ b/drivers/cpufreq/sa1100-cpufreq.c
+@@ -197,11 +197,7 @@ static int sa1100_target(struct cpufreq_policy *policy, unsigned int ppcr)
  
--	policy->cpuinfo.transition_latency = 40000;
+ static int __init sa1100_cpu_init(struct cpufreq_policy *policy)
+ {
+-	if (policy->cpu != 0)
+-		return -EINVAL;
+-	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
 -
--	return cpufreq_table_validate_and_show(policy, s5pv210_freq_table);
-+	return cpufreq_generic_init(policy, s5pv210_freq_table, 40000);
+-	return cpufreq_table_validate_and_show(policy, sa11x0_freq_table);
++	return cpufreq_generic_init(policy, sa11x0_freq_table, CPUFREQ_ETERNAL);
+ }
  
- out_dmc1:
- 	clk_put(dmc0_clk);
+ static struct cpufreq_driver sa1100_driver __refdata = {
+diff --git a/drivers/cpufreq/sa1110-cpufreq.c b/drivers/cpufreq/sa1110-cpufreq.c
+index 0e52e80..2c2b2e6 100644
+--- a/drivers/cpufreq/sa1110-cpufreq.c
++++ b/drivers/cpufreq/sa1110-cpufreq.c
+@@ -306,11 +306,7 @@ static int sa1110_target(struct cpufreq_policy *policy, unsigned int ppcr)
+ 
+ static int __init sa1110_cpu_init(struct cpufreq_policy *policy)
+ {
+-	if (policy->cpu != 0)
+-		return -EINVAL;
+-	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
+-
+-	return cpufreq_table_validate_and_show(policy, sa11x0_freq_table);
++	return cpufreq_generic_init(policy, sa11x0_freq_table, CPUFREQ_ETERNAL);
+ }
+ 
+ /* sa1110_driver needs __refdata because it must remain after init registers
 -- 
 1.7.12.rc2.18.g61b472e
 
