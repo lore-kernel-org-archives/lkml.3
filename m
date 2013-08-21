@@ -1,18 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab3HUKrD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 06:47:03 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:28038 "EHLO song.cn.fujitsu.com"
+	id S1752036Ab3HUKsI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 06:48:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:41228 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751876Ab3HUKq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 06:46:59 -0400
+	id S1751450Ab3HUKsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 06:48:06 -0400
 X-IronPort-AV: E=Sophos;i="4.89,927,1367942400"; 
-   d="scan'208";a="8261681"
-Message-ID: <5214998F.200@cn.fujitsu.com>
-Date: Wed, 21 Aug 2013 18:42:23 +0800
+   d="scan'208";a="8261331"
 From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
 To: konrad.wilk@oracle.com, robert.moore@intel.com, lv.zheng@intel.com,
         rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -22,133 +18,200 @@ To: konrad.wilk@oracle.com, robert.moore@intel.com, lv.zheng@intel.com,
         mina86@mina86.com, gong.chen@linux.intel.com,
         vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        Toshi Kani <toshi.kani@hp.com>, "Luck, Tony" <tony.luck@intel.com>
-CC: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH 6/8] x86, acpi: Make acpi_initrd_override() available with va or pa.
+Date: Wed, 21 Aug 2013 18:15:41 +0800
+Message-Id: <1377080143-28455-7-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/21 18:41:54,
+ 2013/08/21 18:15:16,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/21 18:41:56,
-	Serialize complete at 2013/08/21 18:41:56
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+ 2013/08/21 18:15:18,
+	Serialize complete at 2013/08/21 18:15:18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+We are using the same trick in previous patch.
 
-This patch-set has not been fully tested. I sent them first for you
-to review. Please comment if we can agree on this solution.
+Introduce a "bool is_phys" to acpi_initrd_override(). When it
+is true, convert all golbal variables va to pa, so that we can
+access them on 32bit before paging is enabled.
 
-Thanks.:)
+NOTE: Do not call printk() on 32bit before paging is enabled
+      because it will use global variables.
 
-On 08/21/2013 06:15 PM, Tang Chen wrote:
-> This patch-set aims to move acpi_initrd_override() earlier on x86.
-> Some of the patches are from Yinghai's patch-set:
-> https://lkml.org/lkml/2013/6/14/561
->
-> The difference between this patch-set and Yinghai's original patch-set are:
-> 1. This patch-set doesn't split acpi_initrd_override(), but call it as a
->     whole operation at early time.
-> 2. Allocate memory from BRK to store override tables.
->     (This idea is also from Yinghai.)
->
->
-> [Current state]
->
-> The current Linux kernel will initialize acpi tables like the following:
->
-> 1. Find all acpi override table provided by users in initrd.
->     (Linux allows users to override acpi tables in firmware, by specifying
->     their own tables in initrd.)
->
-> 2. Use acpica code to initialize acpi global root table list and install all
->     tables into it. If any override tables exists, use it to override the one
->     provided by firmware.
->
-> Then others can parse these tables and get useful info.
->
-> Both of the two steps happen after direct mapping page tables are setup.
->
-> [Issues]
->
-> In the current Linux kernel, the initialization of acpi tables is too late for
-> new functionalities.
->
-> We have some issues about this:
->
-> * For memory hotplug, we need ACPI SRAT at early time to be aware of which memory
->    ranges are hotpluggable, and prevent bootmem allocator from allocating memory
->    for the kernel. (Kernel pages cannot be hotplugged because )
->
-> * As suggested by Yinghai Lu<yinghai@kernel.org>, we should allocate page tables
->    in local node. This also needs SRAT before direct mapping page tables are setup.
->
-> * As mentioned by Toshi Kani<toshi.kani@hp.com>, ACPI SCPR/DBGP/DBG2 tables
->    allow the OS to initialize serial console/debug ports at early boot time. The
->    earlier it can be initialized, the better this feature will be.  These tables
->    are not currently used by Linux due to a licensing issue, but it could be
->    addressed some time soon.
->
->
-> [What are we doing]
->
-> We are trying to initialize acip tables as early as possible. But Linux kernel
-> allows users to override acpi tables by specifying their own tables in initrd.
-> So we have to do acpi_initrd_override() earlier first.
->
->
-> [About this patch-set]
->
-> This patch-set aims to move acpi_initrd_override() as early as possible on x86.
-> As suggested by Yinghai, we are trying to do it like this:
->
-> On 32bit: do it in head_32.S, before paging is enabled. In this case, we can
->            access initrd with physical address without page tables.
->
-> On 64bit: do it in head_64.c, after paging is enabled but before direct mapping
->            is setup.
->
-> And also, acpi_initrd_override() needs to allocate memory for override tables.
-> But at such an early time, there is no memory allocator works. So the basic idea
-> from Yinghai is to use BRK. We will extend BRK 256KB in this patch-set.
->
->
-> Tang Chen (6):
->    x86, acpi: Move table_sigs[] to stack.
->    x86, acpi, brk: Extend BRK 256KB to store acpi override tables.
->    x86, brk: Make extend_brk() available with va/pa.
->    x86, acpi: Make acpi_initrd_override() available with va or pa.
->    x86, acpi, brk: Make early_alloc_acpi_override_tables_buf() available
->      with va/pa.
->    x86, acpi: Do acpi_initrd_override() earlier in head_32.S/head64.c.
->
-> Yinghai Lu (2):
->    x86: Make get_ramdisk_{image|size}() global.
->    x86, microcode: Use get_ramdisk_{image|size}() in microcode handling.
->
->   arch/x86/include/asm/dmi.h              |    2 +-
->   arch/x86/include/asm/setup.h            |   11 +++-
->   arch/x86/kernel/head64.c                |    4 +
->   arch/x86/kernel/head_32.S               |    4 +
->   arch/x86/kernel/microcode_intel_early.c |    8 +-
->   arch/x86/kernel/setup.c                 |   93 ++++++++++++++++------
->   arch/x86/mm/init.c                      |    2 +-
->   arch/x86/xen/enlighten.c                |    2 +-
->   arch/x86/xen/mmu.c                      |    6 +-
->   arch/x86/xen/p2m.c                      |   27 ++++---
->   drivers/acpi/osl.c                      |  130 ++++++++++++++++++++-----------
->   include/linux/acpi.h                    |    5 +-
->   12 files changed, 196 insertions(+), 98 deletions(-)
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
->
+Originally-From: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/kernel/setup.c |    3 +-
+ drivers/acpi/osl.c      |   68 ++++++++++++++++++++++++++++++++++------------
+ include/linux/acpi.h    |    4 +-
+ 3 files changed, 54 insertions(+), 21 deletions(-)
+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index a189909..1290ea7 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1133,7 +1133,8 @@ void __init setup_arch(char **cmdline_p)
+ 	reserve_initrd();
+ 
+ #if defined(CONFIG_ACPI) && defined(CONFIG_BLK_DEV_INITRD)
+-	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
++	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start,
++			     false);
+ #endif
+ 
+ 	reserve_crashkernel();
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index dff7fcc..ccdb5a6 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -566,7 +566,19 @@ void __init early_alloc_acpi_override_tables_buf(void)
+ 					   PAGE_SIZE, false));
+ }
+ 
+-void __init acpi_initrd_override(void *data, size_t size)
++/**
++ * acpi_initrd_override - Initialize acpi_tables_addr with acpi override tables
++ * @data: cpio file address (va or pa)
++ * @size: size of cpio file
++ * @is_phys: true if @data is pa, false otherwise
++ *
++ * This function will find all acpi override tables provided by initrd, and
++ * store the addresses in acpi_tables_addr.
++ *
++ * This function could be called before paging is enabled. Before paging is
++ * enabled, caller should use physical address, and set @is_phys as true.
++ */
++void __init acpi_initrd_override(void *data, size_t size, bool is_phys)
+ {
+ 	int sig, no, table_nr = 0, total_offset = 0;
+ 	long offset = 0;
+@@ -586,10 +598,17 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 		ACPI_SIG_UEFI, ACPI_SIG_WAET, ACPI_SIG_WDAT, ACPI_SIG_WDDT,
+ 		ACPI_SIG_WDRT, ACPI_SIG_DSDT, ACPI_SIG_FADT, ACPI_SIG_PSDT,
+ 		ACPI_SIG_RSDT, ACPI_SIG_XSDT, ACPI_SIG_SSDT, NULL };
++	u64 *acpi_tables_addr_p = &acpi_tables_addr;
++	int *all_tables_size_p = &all_tables_size;
+ 
+ 	if (data == NULL || size == 0)
+ 		return;
+ 
++	if (is_phys) {
++		acpi_tables_addr_p = (u64 *)__pa_nodebug(&acpi_tables_addr);
++		all_tables_size_p = (int *)__pa_nodebug(&all_tables_size);
++	}
++
+ 	for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
+ 		file = find_cpio_data(cpio_path, data, size, &offset);
+ 		if (!file.data)
+@@ -599,8 +618,9 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 		size -= offset;
+ 
+ 		if (file.size < sizeof(struct acpi_table_header)) {
+-			pr_err("ACPI OVERRIDE: Table smaller than ACPI header [%s%s]\n",
+-				cpio_path, file.name);
++			if (!is_phys)
++				pr_err("ACPI OVERRIDE: Table smaller than ACPI header [%s%s]\n",
++					cpio_path, file.name);
+ 			continue;
+ 		}
+ 
+@@ -611,36 +631,48 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 				break;
+ 
+ 		if (!table_sigs[sig]) {
+-			pr_err("ACPI OVERRIDE: Unknown signature [%s%s]\n",
+-				cpio_path, file.name);
++			if (!is_phys)
++				pr_err("ACPI OVERRIDE: Unknown signature [%s%s]\n",
++					cpio_path, file.name);
+ 			continue;
+ 		}
+ 		if (file.size != table->length) {
+-			pr_err("ACPI OVERRIDE: File length does not match table length [%s%s]\n",
+-				cpio_path, file.name);
++			if (!is_phys)
++				pr_err("ACPI OVERRIDE: File length does not match table length [%s%s]\n",
++					cpio_path, file.name);
+ 			continue;
+ 		}
+ 		if (acpi_table_checksum(file.data, table->length)) {
+-			pr_err("ACPI OVERRIDE: Bad table checksum [%s%s]\n",
+-				cpio_path, file.name);
++			if (!is_phys)
++				pr_err("ACPI OVERRIDE: Bad table checksum [%s%s]\n",
++					cpio_path, file.name);
+ 			continue;
+ 		}
+ 
+-		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
+-			table->signature, cpio_path, file.name, table->length);
++		if (!is_phys)
++			pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
++				table->signature, cpio_path,
++				file.name, table->length);
+ 
+ 		/*
+ 		 * If the override tables in cpio file exceeds the BRK buffer,
+ 		 * ignore the current table and go for the next one.
+ 		 */
+-		all_tables_size += table->length;
+-		if (all_tables_size > ACPI_OVERRIDE_TABLES_SIZE) {
+-			pr_warning("ACPI OVERRIDE: ACPI override tables exceeds buffer size."
+-				   " Ignoring table %4.4s\n", table->signature);
+-			all_tables_size -= table->length;
++		*all_tables_size_p += table->length;
++		if (*all_tables_size_p > ACPI_OVERRIDE_TABLES_SIZE) {
++			if (!is_phys)
++				pr_warning("ACPI OVERRIDE: ACPI override tables exceeds buffer size."
++					   " Ignoring table %4.4s\n",
++					   table->signature);
++			*all_tables_size_p -= table->length;
+ 			continue;
+ 		}
+ 
++		/*
++		 * file.data is the offset of the table in initrd. If @data is
++		 * pa, then we find pa. If @data is va, then we find va. No need
++		 * to convert.
++		 */
+ 		early_initrd_files[table_nr].data = file.data;
+ 		early_initrd_files[table_nr].size = file.size;
+ 		table_nr++;
+@@ -648,8 +680,8 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	if (table_nr == 0)
+ 		return;
+ 
+-	p = __va(acpi_tables_addr);
+-
++	p = is_phys ? (char *)(*acpi_tables_addr_p) :
++		      (char *)__va(*acpi_tables_addr_p);
+ 	for (no = 0; no < table_nr; no++) {
+ 		memcpy(p + total_offset, early_initrd_files[no].data,
+ 		       early_initrd_files[no].size);
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 381579e..af4da51 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -80,10 +80,10 @@ typedef int (*acpi_tbl_entry_handler)(struct acpi_subtable_header *header,
+ 				      const unsigned long end);
+ 
+ #ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
+-void acpi_initrd_override(void *data, size_t size);
++void acpi_initrd_override(void *data, size_t size, bool is_phys);
+ void early_alloc_acpi_override_tables_buf(void);
+ #else
+-static inline void acpi_initrd_override(void *data, size_t size)
++static inline void acpi_initrd_override(void *data, size_t size, bool is_phys)
+ {
+ }
+ #endif
+-- 
+1.7.1
+
