@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab3HUBsy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 21:48:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13362 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429Ab3HUBsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 21:48:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,924,1367996400"; 
-   d="scan'208";a="365897258"
-Subject: [PATCH] LMK: Optimize lowmem_shrink
-From: Leon Ma <xindong.ma@intel.com>
-To: gregkh@linuxfoundation.org, ccross@android.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com
-Cc: xindong.ma@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Aug 2013 09:41:05 +0800
-Message-ID: <1377049265.22148.7.camel@leonma-sh>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751936Ab3HUBuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 21:50:14 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:55590 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab3HUBuM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 21:50:12 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r7L1kXQT012680, This message is accepted by code: ctloc85258
+From: <wei_wang@realsil.com.cn>
+To: <cjb@laptop.org>, <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH 3/3] mmc:memstick:rtsx: Modify copyright comments
+Date: Wed, 21 Aug 2013 09:46:27 +0800
+Message-ID: <71887e184199dd874a908b396440c992bad98f73.1377049122.git.wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1377049122.git.wei_wang@realsil.com.cn>
+References: <cover.1377049122.git.wei_wang@realsil.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Leon Ma <xindong.ma@intel.com>
-Date: Mon, 19 Aug 2013 14:22:38 +0800
-Subject: [PATCH] LMK: Optimize lowmem_shrink.
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-By comparing with selected_oom_score_adj instead of min_score_adj,
-we may do less calculation.
+Update copyright date, and remove author address.
 
-Signed-off-by: Leon Ma <xindong.ma@intel.com>
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 ---
- drivers/staging/android/lowmemorykiller.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+ drivers/memstick/host/rtsx_pci_ms.c |    3 +--
+ drivers/mmc/host/rtsx_pci_sdmmc.c   |    3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-index f6c05c9..cb944c5 100644
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -126,7 +126,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 			return 0;
- 		}
- 		oom_score_adj = p->signal->oom_score_adj;
--		if (oom_score_adj < min_score_adj) {
-+		if (oom_score_adj < selected_oom_score_adj) {
- 			task_unlock(p);
- 			continue;
- 		}
-@@ -134,13 +134,9 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 		task_unlock(p);
- 		if (tasksize <= 0)
- 			continue;
--		if (selected) {
--			if (oom_score_adj < selected_oom_score_adj)
--				continue;
--			if (oom_score_adj == selected_oom_score_adj &&
--			    tasksize <= selected_tasksize)
--				continue;
--		}
-+		if (selected && oom_score_adj == selected_oom_score_adj &&
-+			tasksize <= selected_tasksize)
-+			continue;
- 		selected = p;
- 		selected_tasksize = tasksize;
- 		selected_oom_score_adj = oom_score_adj;
+diff --git a/drivers/memstick/host/rtsx_pci_ms.c b/drivers/memstick/host/rtsx_pci_ms.c
+index 64a779c..cf8bd72 100644
+--- a/drivers/memstick/host/rtsx_pci_ms.c
++++ b/drivers/memstick/host/rtsx_pci_ms.c
+@@ -1,6 +1,6 @@
+ /* Realtek PCI-Express Memstick Card Interface driver
+  *
+- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -17,7 +17,6 @@
+  *
+  * Author:
+  *   Wei WANG <wei_wang@realsil.com.cn>
+- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
+  */
+ 
+ #include <linux/module.h>
+diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+index 0fefe4e..375a880e 100644
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -1,6 +1,6 @@
+ /* Realtek PCI-Express SD/MMC Card Interface driver
+  *
+- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -17,7 +17,6 @@
+  *
+  * Author:
+  *   Wei WANG <wei_wang@realsil.com.cn>
+- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
+  */
+ 
+ #include <linux/module.h>
 -- 
-1.7.4.1
-
-
+1.7.9.5
 
