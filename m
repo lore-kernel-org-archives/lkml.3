@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025Ab3HUPA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:00:59 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:42464 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab3HUPA4 (ORCPT
+	id S1752049Ab3HUPDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:03:19 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19630 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3HUPDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:00:56 -0400
-Message-ID: <5214D60A.2090309@gmail.com>
-Date: Wed, 21 Aug 2013 23:00:26 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Wed, 21 Aug 2013 11:03:18 -0400
+Date: Wed, 21 Aug 2013 11:03:11 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: axboe@kernel.dx, linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com
+Subject: [GIT PULL] (xen) stable/for-jens-3.12 for Linux 3.12 merge window.
+Message-ID: <20130821150311.GB21743@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com> <20130821130647.GB19286@mtj.dyndns.org>
-In-Reply-To: <20130821130647.GB19286@mtj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i9LlY+UWpKt15+FH"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi tejun,
 
-On 08/21/2013 09:06 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Aug 21, 2013 at 06:15:35PM +0800, Tang Chen wrote:
->> [What are we doing]
->>
->> We are trying to initialize acip tables as early as possible. But Linux kernel
->> allows users to override acpi tables by specifying their own tables in initrd.
->> So we have to do acpi_initrd_override() earlier first.
-> 
-> So, are we now back to making SRAT info as early as possible?  What
-> happened to just co-locating early allocations close to kernel image?
-> What'd be the benefit of doing this over that?
+--i9LlY+UWpKt15+FH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We know you are trying to give the direction to make the change more natural and
-robust and very thankful for your comments. We have taken your comments and suggestions
-about co-locating early allocations close to kernel image into consideration, but
-still we found that not that easy.
 
-In current boot order, before we get the SRAT, we have a big consumer of early
-allocations: we are setting up the page table in top-down (The idea was proposed by HPA,
-Link: https://lkml.org/lkml/2012/10/4/701). That said, this kind of page table
-setup will make the page tables as high as possible in memory, since memory at low 
-addresses is precious (for stupid DMA devices, for things like  kexec/kdump, and so on.)
+Hey Jens,
 
-So if we are trying to make early allocations close to kernel image, we should
-rewrite the way we are setting up page table totally. That is not a easy thing
-to do.
+Please git pull the following branch for your 3.12 tree:
 
-As for the benefits of the patchset, just as Tang said in this patch,
+ git pull  git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable=
+/for-jens-3.12
 
-* For memory hotplug, we need ACPI SRAT at early time to be aware of which memory
-  ranges are hotpluggable, and tell the kernel to try to stay away from hotpluggable
-  nodes.
+It has two fixes to the xen-blkfront driver - both deal with the indirect
+requests and make better usage of the persistent grants.
 
-This one is the current requirement of us but may be very helpful for future change:
+Please pull
 
-* As suggested by Yinghai, we should allocate page tables in local node. This also
-  needs SRAT before direct mapping page tables are setup.
+=20
+drivers/block/xen-blkfront.c | 44 ++++++++++++++++++++++++++++++++++++-----=
+---
+ 1 file changed, 36 insertions(+), 8 deletions(-)
 
-* As mentioned by Toshi Kani <toshi.kani@hp.com>, ACPI SCPR/DBGP/DBG2 tables
-  allow the OS to initialize serial console/debug ports at early boot time. The
-  earlier it can be initialized, the better this feature will be.  These tables
-  are not currently used by Linux due to a licensing issue, but it could be
-  addressed some time soon.
+Roger Pau Monne (2):
+      xen-blkfront: revoke foreign access for grants not mapped by the back=
+end
+      xen-blkfront: improve aproximation of required grants per request
 
-So we decided to firstly make ACPI override earlier and use BRK (this is obviously
-near the kernel image range) to store the found ACPI tables.
 
--- 
-Thanks.
-Zhang Yanfei
+--i9LlY+UWpKt15+FH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQEcBAEBAgAGBQJSFNarAAoJEFjIrFwIi8fJT3AIANG8QLMT1qnE86TuKHi4WbW/
+ibMHfM6IYcGO/ydx0LJG+kWSc01yQ7kHhAYxxe5BsX/Fzf5rvOZO5JQrWU01GZ5Z
+G4iswfp97/rgG1Ej+niOu1pfXJbW2LPeZ9YHRhlUbxKbcfgqQAk9kM0A6RschXY6
+jOHjKftYqTL4YlGUKxKJsn89gZRi4JNa+F4gchWHnKC61mE308wZv3POXQZpLVjg
+wmzbvvQQfJSENahKPul/f6HL6rDweFt0YtT51TjS/D0UK8xa7hpQPly9N4270KaS
+o9DzpXx68+3t8AuUN0TcOpu7/C5JvhVvSd6XmPyyNjiERB9g1dLCf/JNARCMzSg=
+=zBHF
+-----END PGP SIGNATURE-----
+
+--i9LlY+UWpKt15+FH--
