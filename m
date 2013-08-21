@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab3HUSvJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 14:51:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43869 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752245Ab3HUSvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 14:51:07 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130821181733.GC3814@moon>
-References: <5214C524.1050900@citrix.com> <20130821141223.GS18673@moon> <5214F09002000078000ED5C3@nat28.tlf.novell.com> <20130821154238.GV18673@moon> <521500E102000078000ED65C@nat28.tlf.novell.com> <20130821161946.GW18673@moon> <5214F128.1000901@citrix.com> <20130821172547.GY18673@moon> <20130821181733.GC3814@moon>
+	id S1752538Ab3HUSwj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 14:52:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58322 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab3HUSwi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 14:52:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [RFC 02/17] ARM: call clk_of_init from time_init
+Date: Wed, 21 Aug 2013 20:51:46 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <201308202244.56782.arnd@arndb.de> <5213D853.7070102@wwwdotorg.org>
+In-Reply-To: <5213D853.7070102@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with existing use
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 21 Aug 2013 20:50:26 +0200
-To: Cyrill Gorcunov <gorcunov@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>
-CC: Jan Beulich <JBeulich@suse.com>, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Xen-devel@lists.xen.org, Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <4fec3e5b-695c-438b-ad6d-55ca50becc4c@email.android.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308212051.46453.arnd@arndb.de>
+X-Provags-ID: V02:K0:fH+JgzeK6lIQy/m2jb2Z6a9u5FFInuDhbFu9GC2BYjF
+ 9bLi84tyCtC+OBX/ZEd8R/g9Ai3UBA3cqom/W4TSJ7rXMjs4T9
+ NG1bKfhoOjvp+IUF/ySEYmVn6myaaEjqxd2WPVlMcIEIKKrguq
+ tTf10rcDviFIdnAFJfv1Y8Zg0ELEX2ZcGNOb8Fw2meyranIIBH
+ wNagUbRhM+nSTHaf817iv5N4Kgm85hbeU+eaAO6E2sIZ6TiAne
+ MQ1eE21E6+m0c/Wm45L+H+lEDsgLuZCTT39Sk06RASM+L+XsE0
+ OTKI4kf1yCRikf5P2DHZMGmvSjzSlkzAR3fWswO0ZSQzKGcHRn
+ zCN15FK985SCjsbkj2bM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-But is there a manifest bug or not?  What is the deal with Xen?
+On Tuesday 20 August 2013, Stephen Warren wrote:
+> On 08/20/2013 02:44 PM, Arnd Bergmann wrote:
+> > On Tuesday 20 August 2013, Stephen Warren wrote:
 
-Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->On Wed, Aug 21, 2013 at 09:25:47PM +0400, Cyrill Gorcunov wrote:
->> > 
->> > However, I do find the use of PTE bits in this way somewhat
->fragile.
->> > What other potential corner cases might still remain that will
->require
->> > further games with PTE bits?
->> 
->>   OK, so this is not a bug finally. The problem is that 2 level pte
->is
->> quite small and 7th bit is the only one spare I can use for soft
->dirty
->> tracking when page get swapped out. And swap engine is very depending
->> on pte being non-present, so we are on a safe side.
->
->To make it clear: I'm working on patch that won't use pse bit for dirty
->page tracking, just give some time to cook it and test.
+> Hmm. This probably isn't too hard. I /think/ the only reason the clocks
+> are initialized early is:
+> 
+> * The PMC HW block is involved in the path of some interrupts (i.e. it
+> inverts, or not, the IRQ input pin dedicated to the PMIC).
+> 
+> * So, that part of the PMC must be initialized early so that the IRQ
+> polarity is correct.
+> 
+> * The PMC initialization is currently monolithic, and the PMC has some
+> clock inputs, so the init routine ends up calling of_clk_get_by_name(),
+> and hence clocks must be set up early too.
+> 
+> Perhaps if we just separate tegra_pmc_init() into two functions which
+> initialize different parts of the PMC, we can get rid of the
+> tegra_dt_init_irq() -> tegra_pmc_init() -> of_clk_get_by_name() call
+> path, and hence move Tegra's call to of_clk_init() to the typical place.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+That sounds good to me, thanks for looking into it.
+
+	Arnd
