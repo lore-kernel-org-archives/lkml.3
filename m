@@ -1,111 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571Ab3HULmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 07:42:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62539 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428Ab3HULma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 07:42:30 -0400
-Date: Wed, 21 Aug 2013 13:35:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
-	<fernando_b1@lab.ntt.co.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-Message-ID: <20130821113551.GA1472@redhat.com>
-References: <20130816164626.GH24210@somewhere> <20130819111026.GE24092@twins.programming.kicks-ass.net> <521313D8.9080500@lab.ntt.co.jp> <20130820084405.GC3258@twins.programming.kicks-ass.net> <52138BE9.5090005@linux.intel.com> <20130820160146.GG3258@twins.programming.kicks-ass.net> <20130820163312.GA17957@redhat.com> <20130820175429.GI3258@twins.programming.kicks-ass.net> <20130820182553.GB22287@redhat.com> <20130821083130.GM3258@twins.programming.kicks-ass.net>
+	id S1751627Ab3HULqJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 07:46:09 -0400
+Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:60366 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751522Ab3HULqH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 07:46:07 -0400
+Date: Wed, 21 Aug 2013 13:28:21 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Wenyou Yang <wenyou.yang@atmel.com>, Bo Shen <voice.shen@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH 0/3] ARM: at91/DT: enable SPI for more SoCs
+Message-ID: <20130821112821.GC18627@ns203013.ovh.net>
+References: <cover.1372069834.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130821083130.GM3258@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <cover.1372069834.git.nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 11828985897226840940
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21, Peter Zijlstra wrote:
->
-> On Tue, Aug 20, 2013 at 08:25:53PM +0200, Oleg Nesterov wrote:
-> > On 08/20, Peter Zijlstra wrote:
-> > >
-> > > On Tue, Aug 20, 2013 at 06:33:12PM +0200, Oleg Nesterov wrote:
->
-> > > > +		if (unlikely(prev->in_iowait)) {
-> > > > +			raw_spin_lock_irq(&rq->lock);
-> > > > +			rq->nr_iowait--;
-> > > > +			raw_spin_unlock_irq(&rq->lock);
-> > > > +		}
-> > >
-> > > This seems like the wrong place, this is where you return from
-> > > schedule() running another task,
-> >
-> > Yes, but prev is current, and rq should be "correct" for
-> > rq->nr_iowait-- ?
->
-> Yes its the right rq, but the wrong time.
+On 12:35 Mon 24 Jun     , Nicolas Ferre wrote:
+> This little series is for enabling the support of SPI on at91sam9n12 and
+> sama5d3 families.
 
-Hmm. Just in case, it is not that I think this patch really makes sense,
-but I'd like to understand why do you think it is wrong.
+on all
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-> > This local var should be equal to its value when this task called
-> > context_switch() in the past.
-> >
-> > Like any other variable, like "rq = raw_rq()" in io_schedule().
-> >
-> > > not where the task you just send to
-> > > sleep wakes up.
-> >
-> > sure, but currently io_schedule() does the same.
->
-> No it doesn't. It only does the decrement when the task is woken back
-> up. Not right after it switches out.
-
-But it is not "after it switches out", it is after it switched back.
-
-Lets ignore the locking,
-
-	if (prev->in_iowait)
-		rq->nr_iowait++;
-
-	context_switch(prev, next);
-
-	if (prev->in_iowait)
-		rq->nr_iowait--;
-
->From the task_struct's (current's) pov prev/rq are the same, before or
-after context_switch().
-
-But from the CPU's pov they differ. And ignoring more details on UP the
-code above is equivalent to
-
-	if (prev->in_iowait)
-		rq->nr_iowait++;
-
-	if (next->in_iowait)
-		rq->nr_iowait--;
-
-	context_switch(prev, next);
-
-No?
-
-Yes, need_resched()/preemption can trigger more inc/dec's than io_schedule()
-does, but I don't think this was your concern.
-
-> > Btw. Whatever we do, can't we unify io_schedule/io_schedule_timeout?
->
-> I suppose we could, a timeout of MAX_SCHEDULE_TIMEOUT will act like a
-> regular schedule, but it gets all the overhead of doing
-> schedule_timeout(). So I don't think its a win.
-
-Well, the only overhead is "if(to == MAX_SCHEDULE_TIMEOUT)" at the start.
-I don't think it makes sense to copy-and-paste the identical code to
-avoid it. But please ignore, this is really minor and off-topic.
-
-Oleg.
-
+Best Regards,
+J.
+> 
+> Nicolas Ferre (3):
+>   ARM: at91/DT: fix SPI compatibility string
+>   ARM: at91/DT: sama5d3: add SPI DMA client infos
+>   ARM: at91/DT: at91sam9n12: add SPI DMA client infos
+> 
+>  arch/arm/boot/dts/at91sam9n12.dtsi |  6 ++++++
+>  arch/arm/boot/dts/sama5d3.dtsi     | 10 ++++++++--
+>  2 files changed, 14 insertions(+), 2 deletions(-)
+> 
+> -- 
+> 1.8.2.2
+> 
