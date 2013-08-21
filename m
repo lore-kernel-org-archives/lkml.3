@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab3HUVy3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 17:54:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40613 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751624Ab3HUVy2 (ORCPT
+	id S1752844Ab3HUWCm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 18:02:42 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:50829 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413Ab3HUWCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 17:54:28 -0400
-Date: Wed, 21 Aug 2013 23:54:24 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCHv3 5/9] pinctrl: sunxi: Fix inconsistent indentation
-Message-ID: <20130821215424.GA2970@lukather>
-References: <1375610330-18185-1-git-send-email-maxime.ripard@free-electrons.com>
- <1375610330-18185-6-git-send-email-maxime.ripard@free-electrons.com>
- <CACRpkdb0-Ue3aRT8ohHVMUU3RmeL4D0ZDR6pB-OBb0p+2Anw9Q@mail.gmail.com>
+	Wed, 21 Aug 2013 18:02:40 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdb0-Ue3aRT8ohHVMUU3RmeL4D0ZDR6pB-OBb0p+2Anw9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <344239800.bDEkDg48ZQ@avalon>
+References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org>
+	<CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com>
+	<CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com>
+	<344239800.bDEkDg48ZQ@avalon>
+Date: Thu, 22 Aug 2013 00:02:39 +0200
+Message-ID: <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com>
+Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 20, 2013 at 12:04 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> On Wednesday 31 July 2013 01:44:53 Linus Walleij wrote:
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> I don't see how sharing works here, or how another user, i.e. another one
+>> than the user wanting to recieve the IRQ, can validly request such a line?
+>> What would the usecase for that valid request be?
+>
+> When the GPIO is wired to a status signal (such as an MMC card detect signal)
+> the driver might want to read the state of the signal independently of the
+> interrupt handler.
 
-On Wed, Aug 21, 2013 at 11:49:58PM +0200, Linus Walleij wrote:
-> On Sun, Aug 4, 2013 at 11:58 AM, Maxime Ripard
-> <maxime.ripard@free-electrons.com> wrote:
->=20
-> > Some pin functions in the array were not indented like the other
-> > functions in this array. Fix this.
-> >
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > Cc: Linus Walleij <linus.walleij@linaro.org>
->=20
-> Patch applied.
->=20
-> Since the reply mentions that you want me to apply it I
-> did so.
->=20
-> And I assume you want to take the two others so I
-> applied those as well.
->=20
-> The thing that made it take time was partly that it
-> was part of a multi-patch set and I couldn't figure out
-> how that was going to be merged and as there were
-> comments on the other patches in the set I assume
-> the whole thing will be respun.
->=20
-> But whatever, I applied these three patches now,
-> tell me if there are more of them.
+That is true. But for such a complex usecase I think it's reasonable that
+we only specify the GPIO in the device tree, and the driver utilizing the
+IRQ need to take that and perform gpio_to_irq() on it, and then it still
+works to use it both ways.
 
-Great, thanks! :)
+>> Basically I believe these two things need to be exclusive in the DT world:
+>>
+>> A: request_irq(a resource passed from "interrupts");
+>>      -> core implicitly performs gpio_request()
+>>          gpio_direction_input()
+>>
+>> B: gpio_request(a resource passed from "gpios");
+>>      gpio_direction_input()
+>>      request_irq(gpio_to_irq())
+>>
+>> Never both. And IIUC that was what happened in the OMAP case.
+>
+> Isn't the core issue that we can translate a GPIO number to an IRQ number, but
+> not the other way around ? If that could be done, we could request the GPIO
+> and configure it as an input when the IRQ is requested.
 
-Maxime
+That is true. It would be easier if all GPIO drivers has an irqchip and
+and irqdomain, then we could implement irq_to_gpio() properly in gpiolib
+and this would not be a problem. Alas, not all do.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+But I also think that the DT contains (as demonstrated by the patch)
+all information about what interrupts and GPIOs may conflict, so I
+also see this as something of a consistency check, but it could go
+in either way.
 
---pf9I7BMVVzbSWLtt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSFTcQAAoJEBx+YmzsjxAg7fEP/0WO4YxKR3xtJFaMO6uwAnkf
-BgX+sOy/xOlwNwkW+B2JJu92sB/ZIJ/C+xIxiSHqU1nS5bzJ8WB+grgNmJYwnNJH
-cdm8Wu47fVoGDyjCbfw/EEFDT9DwWKHn2CV35dDXR72twQsIMJEku+2tkJtWrP5M
-1V4PRGRMQj155NjO2ptHnx/TGijVb7Ks/ZycNrgRxBoYfO2gszy+iPL8rIF70mPu
-ylpK3IGLnm/hULZ+FAnyWXMwITklLlek0oCBkvhO5NLsLK/f4eTXtac5UpCj4rlq
-BFueFS4+5Y3nNP1UdgsNm2ROf2Zt+MjYeZm5AkvKcnluZmRNTfb/j5FQNrR85o9D
-2thw0XeYWy1d1kh0L8zxqLBCp+M5kvf5sNouAFQt4l6dqy+tJKI0DYTmU1f8+n0I
-iBDm9pG4XXLkWV4tji5JY2hZRzP3uFb8Ka0WvZ9Ediro4WzHj4eHofKGcL01PcK1
-Kg8xG7K041KqHLTSmmjCX1VWEVLFm9FfKU6/TLZk9z/LmL2TEZ7KTzz/UZGEOFDt
-2yHbGbymf6ZwUmnDclmDQ2oBrjF9C8CBGuEJkpcpvEtQ5cAgYH5gxX5w0g0zwGyk
-ZFqi2Rezw+zDX7xhQm+YHQ4NfEv5eZoKQIZvCTJy2XkKsfEUXB12Eahdb6fAmL8L
-+QuTULzKTlY5+Fo+mZk6
-=2aQa
------END PGP SIGNATURE-----
-
---pf9I7BMVVzbSWLtt--
+Yours,
+Linus Walleij
