@@ -1,391 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab3HUOsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:48:21 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:35870 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab3HUOsT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:48:19 -0400
-Date: Wed, 21 Aug 2013 16:48:16 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@kernel.org, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/4] perf, tools: Add perf stat --transaction v3
-Message-ID: <20130821144816.GD19750@two.firstfloor.org>
-References: <1376505267-8902-1-git-send-email-andi@firstfloor.org>
- <1376505267-8902-5-git-send-email-andi@firstfloor.org>
- <20130815132637.GE1861@ghostprotocols.net>
- <20130815142925.GG19750@two.firstfloor.org>
- <20130815150150.GB1940@ghostprotocols.net>
- <20130815164203.GJ19750@two.firstfloor.org>
- <20130821131525.GB21880@ghostprotocols.net>
+	id S1752662Ab3HUOse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:48:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752375Ab3HUOsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 10:48:31 -0400
+Date: Wed, 21 Aug 2013 10:48:28 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: device-mapper development <dm-devel@redhat.com>
+cc: Mike Snitzer <snitzer@redhat.com>, Alasdair Kergon <agk@redhat.com>,
+        Joe Jin <joe.jin@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [dm-devel] [PATCH v2] dm ioctl: allow change device target type
+ to error
+In-Reply-To: <5214CC25.1070307@oracle.com>
+Message-ID: <alpine.LRH.2.02.1308211041180.10797@file01.intranet.prod.int.rdu2.redhat.com>
+References: <5214CC25.1070307@oracle.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821131525.GB21880@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 10:15:25AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Aug 15, 2013 at 06:42:03PM +0200, Andi Kleen escreveu:
-> > 
-> > Here's an updated patch.
->  
-> > perf, tools: Add perf stat --transaction v4
-> > @@ -1419,6 +1559,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
-> >  		     "aggregate counts per processor socket", AGGR_SOCKET),
-> >  	OPT_SET_UINT(0, "per-core", &aggr_mode,
-> >  		     "aggregate counts per physical processor core", AGGR_CORE),
-> > +	OPT_BOOLEAN('T', "transaction", &transaction_run,
-> > +		    "hardware transaction statistics"),
-> >  	OPT_END()
+
+
+On Wed, 21 Aug 2013, Joe Jin wrote:
+
+> commit a5664da "dm ioctl: make bio or request based device type immutable"
+> prevented "dmsetup wape_table" change the target type to "error".
+
+That commit a5664da is there for a reason (it is not possible to change 
+bio-based device to request-based and vice versa) and I don't really see 
+how this patch is supposed to work.
+
+If there are bios that are in flight and that already passed through 
+blk_queue_bio, and you change the device from request-based to bio-based, 
+what are you going to do with them? - The patch doesn't do anything about 
+it.
+
+A better approach would be to create a new request-based target "error-rq" 
+and change the multipath target to "error-rq" target. That way, you don't 
+have to change device type from request based to bio based.
+
+Mikulas
+
+> -v2: setup md->queue even target type is "error".
 > 
-> Clashes with another patch, from you, that is in Ingo's perf/core as
-> well, that adds -D, so the above hunk doesn't apply:
-
-I moved the new option to the beginning to avoid this problem
-
----
-
-perf, tools: Add perf stat --transaction v5
-
-Add support to perf stat to print the basic transactional execution statistics:
-Total cycles, Cycles in Transaction, Cycles in aborted transsactions
-using the in_tx and in_tx_checkpoint qualifiers.
-Transaction Starts and Elision Starts, to compute the average transaction
-length.
-
-This is a reasonable overview over the success of the transactions.
-
-Enable with a new --transaction / -T option.
-
-This requires measuring these events in a group, since they depend on each
-other.
-
-This is implemented by using TM sysfs events exported by the kernel
-
-v2: Only print the extended statistics when the option is enabled.
-This avoids negative output when the user specifies the -T events
-in separate groups.
-v3: Port to latest tree
-v4: Remove merge error. Avoid linear walks for comparisons. Check
-transaction_run earlier. Minor fixes.
-v5: Move option to avoid conflict. Improve description.
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-stat.txt |   5 ++
- tools/perf/builtin-stat.c              | 144 ++++++++++++++++++++++++++++++++-
- tools/perf/util/evsel.h                |   6 ++
- tools/perf/util/pmu.c                  |  16 ++++
- tools/perf/util/pmu.h                  |   1 +
- 5 files changed, 171 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 2fe87fb..40bc65a 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -132,6 +132,11 @@ is a useful mode to detect imbalance between physical cores.  To enable this mod
- use --per-core in addition to -a. (system-wide).  The output includes the
- core number and the number of online logical processors on that physical processor.
- 
-+-T::
-+--transaction::
-+
-+Print statistics of transactional execution if supported.
-+
- EXAMPLES
- --------
- 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 352fbd7..6bd90e4 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -46,6 +46,7 @@
- #include "util/util.h"
- #include "util/parse-options.h"
- #include "util/parse-events.h"
-+#include "util/pmu.h"
- #include "util/event.h"
- #include "util/evlist.h"
- #include "util/evsel.h"
-@@ -70,6 +71,41 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
- static void print_counter(struct perf_evsel *counter, char *prefix);
- static void print_aggr(char *prefix);
- 
-+/* Default events used for perf stat -T */
-+static const char * const transaction_attrs[] = {
-+	"task-clock",
-+	"{"
-+	"instructions,"
-+	"cycles,"
-+	"cpu/cycles-t/,"
-+	"cpu/tx-start/,"
-+	"cpu/el-start/,"
-+	"cpu/cycles-ct/"
-+	"}"
-+};
-+
-+/* More limited version when the CPU does not have all events. */
-+static const char * const transaction_limited_attrs[] = {
-+	"task-clock",
-+	"{"
-+	"instructions,"
-+	"cycles,"
-+	"cpu/cycles-t/,"
-+	"cpu/tx-start/"
-+	"}"
-+};
-+
-+/* must match transaction_attrs and the beginning limited_attrs */
-+enum {
-+	T_TASK_CLOCK,
-+	T_INSTRUCTIONS,
-+	T_CYCLES,
-+	T_CYCLES_IN_TX,
-+	T_TRANSACTION_START,
-+	T_ELISION_START,
-+	T_CYCLES_IN_TX_CP,
-+};
-+
- static struct perf_evlist	*evsel_list;
- 
- static struct perf_target	target = {
-@@ -90,6 +126,7 @@ static enum aggr_mode		aggr_mode			= AGGR_GLOBAL;
- static volatile pid_t		child_pid			= -1;
- static bool			null_run			=  false;
- static int			detailed_run			=  0;
-+static bool			transaction_run;
- static bool			big_num				=  true;
- static int			big_num_opt			=  -1;
- static const char		*csv_sep			= NULL;
-@@ -213,7 +250,10 @@ static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
- static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
-+static struct stats runtime_cycles_in_tx_stats[MAX_NR_CPUS];
- static struct stats walltime_nsecs_stats;
-+static struct stats runtime_transaction_stats[MAX_NR_CPUS];
-+static struct stats runtime_elision_stats[MAX_NR_CPUS];
- 
- static void perf_stat__reset_stats(struct perf_evlist *evlist)
- {
-@@ -235,6 +275,11 @@ static void perf_stat__reset_stats(struct perf_evlist *evlist)
- 	memset(runtime_ll_cache_stats, 0, sizeof(runtime_ll_cache_stats));
- 	memset(runtime_itlb_cache_stats, 0, sizeof(runtime_itlb_cache_stats));
- 	memset(runtime_dtlb_cache_stats, 0, sizeof(runtime_dtlb_cache_stats));
-+	memset(runtime_cycles_in_tx_stats, 0,
-+			sizeof(runtime_cycles_in_tx_stats));
-+	memset(runtime_transaction_stats, 0,
-+		sizeof(runtime_transaction_stats));
-+	memset(runtime_elision_stats, 0, sizeof(runtime_elision_stats));
- 	memset(&walltime_nsecs_stats, 0, sizeof(walltime_nsecs_stats));
- }
- 
-@@ -272,6 +317,29 @@ static inline int nsec_counter(struct perf_evsel *evsel)
- 	return 0;
- }
- 
-+static struct perf_evsel *nth_evsel(int n)
-+{
-+	static struct perf_evsel **array;
-+	static int array_len;
-+	struct perf_evsel *ev;
-+	int j;
-+
-+	/* Assumes this only called when evsel_list does not change anymore. */
-+	if (!array) {
-+		list_for_each_entry(ev, &evsel_list->entries, node)
-+			array_len++;
-+		array = malloc(array_len * sizeof(void *));
-+		if (!array)
-+			exit(ENOMEM);
-+		j = 0;
-+		list_for_each_entry(ev, &evsel_list->entries, node)
-+			array[j++] = ev;
-+	}
-+	if (n < array_len)
-+		return array[n];
-+	return NULL;
-+}
-+
- /*
-  * Update various tracking values we maintain to print
-  * more semantic information such as miss/hit ratios,
-@@ -283,6 +351,15 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
- 		update_stats(&runtime_nsecs_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
- 		update_stats(&runtime_cycles_stats[0], count[0]);
-+	else if (transaction_run &&
-+		 perf_evsel__cmp(counter, nth_evsel(T_CYCLES_IN_TX)))
-+		update_stats(&runtime_cycles_in_tx_stats[0], count[0]);
-+	else if (transaction_run &&
-+		 perf_evsel__cmp(counter, nth_evsel(T_TRANSACTION_START)))
-+		update_stats(&runtime_transaction_stats[0], count[0]);
-+	else if (transaction_run &&
-+		 perf_evsel__cmp(counter, nth_evsel(T_ELISION_START)))
-+		update_stats(&runtime_elision_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_FRONTEND))
- 		update_stats(&runtime_stalled_cycles_front_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_BACKEND))
-@@ -807,7 +884,7 @@ static void print_ll_cache_misses(int cpu,
- 
- static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- {
--	double total, ratio = 0.0;
-+	double total, ratio = 0.0, total2;
- 	const char *fmt;
- 
- 	if (csv_output)
-@@ -903,6 +980,43 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- 			ratio = 1.0 * avg / total;
- 
- 		fprintf(output, " # %8.3f GHz                    ", ratio);
-+	} else if (transaction_run &&
-+		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX))) {
-+		total = avg_stats(&runtime_cycles_stats[cpu]);
-+		if (total)
-+			fprintf(output,
-+				" #   %5.2f%% transactional cycles   ",
-+				100.0 * (avg / total));
-+	} else if (transaction_run &&
-+		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX_CP))) {
-+		total = avg_stats(&runtime_cycles_stats[cpu]);
-+		total2 = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
-+		if (total2 < avg)
-+			total2 = avg;
-+		if (total)
-+			fprintf(output,
-+				" #   %5.2f%% aborted cycles         ",
-+				100.0 * ((total2-avg) / total));
-+	} else if (transaction_run &&
-+		   perf_evsel__cmp(evsel, nth_evsel(T_TRANSACTION_START)) &&
-+		   avg > 0 &&
-+		   runtime_cycles_in_tx_stats[cpu].n != 0) {
-+		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
-+
-+		if (total)
-+			ratio = total / avg;
-+
-+		fprintf(output, " # %8.0f cycles / transaction   ", ratio);
-+	} else if (transaction_run &&
-+		   perf_evsel__cmp(evsel, nth_evsel(T_ELISION_START)) &&
-+		   avg > 0 &&
-+		   runtime_cycles_in_tx_stats[cpu].n != 0) {
-+		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
-+
-+		if (total)
-+			ratio = total / avg;
-+
-+		fprintf(output, " # %8.0f cycles / elision       ", ratio);
- 	} else if (runtime_nsecs_stats[cpu].n != 0) {
- 		char unit = 'M';
- 
-@@ -1216,6 +1330,16 @@ static int perf_stat_init_aggr_mode(void)
- 	return 0;
- }
- 
-+static int setup_events(const char * const *attrs, unsigned len)
-+{
-+	unsigned i;
-+
-+	for (i = 0; i < len; i++) {
-+		if (parse_events(evsel_list, attrs[i]))
-+			return -1;
-+	}
-+	return 0;
-+}
- 
- /*
-  * Add default attributes, if there were no attributes specified or
-@@ -1334,6 +1458,22 @@ static int add_default_attributes(void)
- 	if (null_run)
- 		return 0;
- 
-+	if (transaction_run) {
-+		int err;
-+		if (pmu_have_event("cpu", "cycles-ct") &&
-+		    pmu_have_event("cpu", "el-start"))
-+			err = setup_events(transaction_attrs,
-+					ARRAY_SIZE(transaction_attrs));
-+		else
-+			err = setup_events(transaction_limited_attrs,
-+				 ARRAY_SIZE(transaction_limited_attrs));
-+		if (err < 0) {
-+			fprintf(stderr, "Cannot set up transaction events\n");
-+			return -1;
-+		}
-+		return 0;
-+	}
-+
- 	if (!evsel_list->nr_entries) {
- 		if (perf_evlist__add_default_attrs(evsel_list, default_attrs) < 0)
- 			return -1;
-@@ -1368,6 +1508,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 	int output_fd = 0;
- 	const char *output_name	= NULL;
- 	const struct option options[] = {
-+	OPT_BOOLEAN('T', "transaction", &transaction_run,
-+		    "hardware transaction statistics"),
- 	OPT_CALLBACK('e', "event", &evsel_list, "event",
- 		     "event selector. use 'perf list' to list available events",
- 		     parse_events_option),
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 3f156cc..2f3dc86 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -180,6 +180,12 @@ static inline bool perf_evsel__match2(struct perf_evsel *e1,
- 	       (e1->attr.config == e2->attr.config);
- }
- 
-+#define perf_evsel__cmp(a, b)			\
-+	((a) &&					\
-+	 (b) &&					\
-+	 (a)->attr.type == (b)->attr.type &&	\
-+	 (a)->attr.config == (b)->attr.config)
-+
- int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
- 			      int cpu, int thread, bool scale);
- 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index bc9d806..64362fe 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -637,3 +637,19 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 		printf("\n");
- 	free(aliases);
- }
-+
-+bool pmu_have_event(const char *pname, const char *name)
-+{
-+	struct perf_pmu *pmu;
-+	struct perf_pmu_alias *alias;
-+
-+	pmu = NULL;
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
-+		if (strcmp(pname, pmu->name))
-+			continue;
-+		list_for_each_entry(alias, &pmu->aliases, list)
-+			if (!strcmp(alias->name, name))
-+				return true;
-+	}
-+	return false;
-+}
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 6b2cbe2..1179b26 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -42,6 +42,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
- struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
- 
- void print_pmu_events(const char *event_glob, bool name_only);
-+bool pmu_have_event(const char *pname, const char *name);
- 
- int perf_pmu__test(void);
- #endif /* __PMU_H */
--- 
-1.8.3.1
-
+> Signed-off-by: Joe Jin <joe.jin@oracle.com>
+> ---
+>  drivers/md/dm-ioctl.c |  4 ++++
+>  drivers/md/dm-table.c | 12 ++++++++++++
+>  drivers/md/dm.h       |  1 +
+>  3 files changed, 17 insertions(+)
+> 
+> diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
+> index f1b7586..2a9b63d 100644
+> --- a/drivers/md/dm-ioctl.c
+> +++ b/drivers/md/dm-ioctl.c
+> @@ -1280,6 +1280,9 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
+>  		goto out;
+>  	}
+>  
+> +	if (dm_is_error_target(t))
+> +		goto error_target;
+> +
+>  	/* Protect md->type and md->queue against concurrent table loads. */
+>  	dm_lock_md_type(md);
+>  	if (dm_get_md_type(md) == DM_TYPE_NONE)
+> @@ -1293,6 +1296,7 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
+>  		goto out;
+>  	}
+>  
+> +error_target:
+>  	/* setup md->queue to reflect md's type (may block) */
+>  	r = dm_setup_md_queue(md);
+>  	if (r) {
+> diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+> index f221812..27be46a 100644
+> --- a/drivers/md/dm-table.c
+> +++ b/drivers/md/dm-table.c
+> @@ -184,6 +184,18 @@ static int alloc_targets(struct dm_table *t, unsigned int num)
+>  	return 0;
+>  }
+>  
+> +bool dm_is_error_target(struct dm_table *t)
+> +{
+> +	unsigned i;
+> +
+> +	for (i = 0; i < t->num_targets; i++) {
+> +		struct dm_target *tgt = t->targets + i;
+> +		if (strcmp(tgt->type->name, "error") == 0)
+> +			return true;
+> +	}
+> +	return false;
+> +}
+> +
+>  int dm_table_create(struct dm_table **result, fmode_t mode,
+>  		    unsigned num_targets, struct mapped_device *md)
+>  {
+> diff --git a/drivers/md/dm.h b/drivers/md/dm.h
+> index 45b97da..c7bceeb 100644
+> --- a/drivers/md/dm.h
+> +++ b/drivers/md/dm.h
+> @@ -69,6 +69,7 @@ unsigned dm_table_get_type(struct dm_table *t);
+>  struct target_type *dm_table_get_immutable_target_type(struct dm_table *t);
+>  bool dm_table_request_based(struct dm_table *t);
+>  bool dm_table_supports_discards(struct dm_table *t);
+> +bool dm_is_error_target(struct dm_table *t);
+>  int dm_table_alloc_md_mempools(struct dm_table *t);
+>  void dm_table_free_md_mempools(struct dm_table *t);
+>  struct dm_md_mempools *dm_table_get_md_mempools(struct dm_table *t);
+> -- 
+> 1.8.3.1
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
+> 
