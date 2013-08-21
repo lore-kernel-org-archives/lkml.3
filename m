@@ -1,83 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab3HUOpj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:45:39 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47088 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab3HUOpF (ORCPT
+	id S1752623Ab3HUOq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:46:56 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:17631 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599Ab3HUOqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:45:05 -0400
-Date: Wed, 21 Aug 2013 15:44:42 +0100
-From: Mark Brown <broonie@kernel.org>
-To: David Jander <david.jander@protonic.nl>
-Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130821144442.GD26118@sirena.org.uk>
-References: <1377090155-3443-1-git-send-email-david@protonic.nl>
- <20130821133200.GB26118@sirena.org.uk>
- <20130821162143.42ca91de@archvile>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DrWhICOqskFTAXiy"
-Content-Disposition: inline
-In-Reply-To: <20130821162143.42ca91de@archvile>
-X-Cookie: Your step will soil many countries.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] drivers: regmap: bugfix in regcache-rbtree.c
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 21 Aug 2013 10:46:52 -0400
+X-AuditID: cbfec7f5-b7f5f6d00000105f-76-5214d2d9cb1c
+Message-id: <5214D2D8.7010106@samsung.com>
+Date: Wed, 21 Aug 2013 16:46:48 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-media@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH V2] i2c: move of helpers into the core
+References: <1377092832-3417-1-git-send-email-wsa@the-dreams.de>
+In-reply-to: <1377092832-3417-1-git-send-email-wsa@the-dreams.de>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t/xq7o3L4kEGRzdYWNx7lYDq8X8I+dY
+	LZbv62e02PT4GqvFwrYlLBYdf78wWlzeNYfNomfDVlaL2Uv6WSxmnN/HZNH5ZRabxe/v/1gt
+	Vp6YxezA6zFnWhOLx+Yl9R7nZyxk9Dh56gmLx+dNcgGsUVw2Kak5mWWpRfp2CVwZ99edZilo
+	1quYv2cNcwPjSqUuRk4OCQETiU9tG9khbDGJC/fWs3UxcnEICSxllJg1/wILhPOJUeJ093MW
+	kCpeAS2Jb1dnMoLYLAKqEr9P9IDZbAKGEr1H+8BsUYEAicVLzrFD1AtK/Jh8D6xXREBFonP9
+	f7ChzAJtzBLH+o8zgSSEBawkTv4FWc0BtM1BomNuAEiYU8BRYuGbQ2AzmQV0JPa3TmODsOUl
+	Nq95yzyBUWAWkhWzkJTNQlK2gJF5FaNoamlyQXFSeq6RXnFibnFpXrpecn7uJkZIhHzdwbj0
+	mNUhRgEORiUe3gs7RYKEWBPLiitzDzFKcDArifAWngQK8aYkVlalFuXHF5XmpBYfYmTi4JRq
+	YJzHmco2W+3Z47BDJx/Ok0xWXitcl7Gi4mxi38/650f4Nd5bzm+95fIucJfpjFcPee+Wn5N9
+	e6Nd6//kdQsMH7SF9f6VfXBb7mPunbXO74xLHIt366pzNAe8uqFpInbC7r3Q8/QHZ87wVwXv
+	E5KfcL/s5oPHAcXr3fO/2G/eHJw02at87dS5Yj1KLMUZiYZazEXFiQBBqkhHbgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/21/2013 03:47 PM, Wolfram Sang wrote:
+> I2C of helpers used to live in of_i2c.c but experience (from SPI) shows
+> that it is much cleaner to have this in the core. This also removes a
+> circular dependency between the helpers and the core, and so we can
+> finally register child nodes in the core instead of doing this manually
+> in each driver. So, fix the drivers and documentation, too.
+> 
+> Acked-by: Sylwester Nawrocki <s.nawrocki@amsung.com>
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
---DrWhICOqskFTAXiy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+With this patch there are still couple of of_i2c.h header file
+inclusions:
 
-On Wed, Aug 21, 2013 at 04:21:43PM +0200, David Jander wrote:
+$ git grep of_i2c.h
+arch/powerpc/platforms/44x/warp.c:#include <linux/of_i2c.h>
+drivers/gpu/drm/tilcdc/tilcdc_slave.c:#include <linux/of_i2c.h>
+drivers/gpu/drm/tilcdc/tilcdc_tfp410.c:#include <linux/of_i2c.h>
+drivers/gpu/host1x/drm/output.c:#include <linux/of_i2c.h>
+drivers/media/platform/exynos4-is/fimc-is.c:#include <linux/of_i2c.h>
+drivers/media/platform/exynos4-is/media-dev.c:#include <linux/of_i2c.h>
+drivers/staging/imx-drm/imx-tve.c:#include <linux/of_i2c.h>
+sound/soc/fsl/imx-sgtl5000.c:#include <linux/of_i2c.h>
+sound/soc/fsl/imx-wm8962.c:#include <linux/of_i2c.h>
 
-> I hope you can explain to me how regcache_rbtree_node_alloc() is supposed to
-> work, because I start to think that something in there is broken...
-> Specially the code at line 323 strikes me:
 
-> 	if (!rbnode->blklen) {
-> 		rbnode->blklen = sizeof(*rbnode);
-> 		rbnode->base_reg = reg;
-> 	}
+Please include also this chunk, without it I'm getting build errors.
 
-That's intended to avoid creating lots of tiny blocks.  I think this bit
-is actually OK but what should be happening here is that the collision
-gets noticed when we try to insert the block and we at least constrain
-the size of the new block if not merge it with the old one immediately
-after (which is obvioulsy better).
+--------------8<---------------------
+diff --git a/drivers/media/platform/exynos4-is/fimc-is-i2c.c
+b/drivers/media/platform/exynos4-is/fimc-is-i2c.c
+index ca07b48..e38e9dc 100644
+--- a/drivers/media/platform/exynos4-is/fimc-is-i2c.c
++++ b/drivers/media/platform/exynos4-is/fimc-is-i2c.c
+@@ -11,6 +11,7 @@
+  */
 
-As a bug fix setting blklen to be a single register ought to avoid
-triggering problems though it will be less efficient - does that work
-for you?  Doing the merging is going to be too much for a fix.
+ #include <linux/clk.h>
++#include <linux/i2c.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+diff --git a/drivers/media/platform/exynos4-is/fimc-is.c
+b/drivers/media/platform/exynos4-is/fimc-is.c
+index 6743ae3..63e4f1d 100644
+--- a/drivers/media/platform/exynos4-is/fimc-is.c
++++ b/drivers/media/platform/exynos4-is/fimc-is.c
+@@ -21,7 +21,6 @@
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-#include <linux/of_i2c.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_address.h>
+ #include <linux/of_platform.h>
+diff --git a/drivers/media/platform/exynos4-is/media-dev.c
+b/drivers/media/platform/exynos4-is/media-dev.c
+index c10dee2..00e5f91 100644
+--- a/drivers/media/platform/exynos4-is/media-dev.c
++++ b/drivers/media/platform/exynos4-is/media-dev.c
+@@ -22,7 +22,6 @@
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ #include <linux/of_device.h>
+-#include <linux/of_i2c.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/types.h>
+--------------8<---------------------
 
---DrWhICOqskFTAXiy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> ---
+> 
+> V1 -> V2: * Add #else branch to #if CONFIG_OF
+> 	  * EXPORT_SYMBOLs got attached to wrong functions
+> 	  * cosmetic change (of -> OF)
+> 	  * properly based on 3.11-rc4
+> 
+>  Documentation/acpi/enumeration.txt              |    1 -
+>  drivers/i2c/busses/i2c-at91.c                   |    3 -
+>  drivers/i2c/busses/i2c-cpm.c                    |    6 --
+>  drivers/i2c/busses/i2c-davinci.c                |    2 -
+>  drivers/i2c/busses/i2c-designware-platdrv.c     |    2 -
+>  drivers/i2c/busses/i2c-gpio.c                   |    3 -
+>  drivers/i2c/busses/i2c-i801.c                   |    2 -
+>  drivers/i2c/busses/i2c-ibm_iic.c                |    4 -
+>  drivers/i2c/busses/i2c-imx.c                    |    3 -
+>  drivers/i2c/busses/i2c-mpc.c                    |    2 -
+>  drivers/i2c/busses/i2c-mv64xxx.c                |    3 -
+>  drivers/i2c/busses/i2c-mxs.c                    |    3 -
+>  drivers/i2c/busses/i2c-nomadik.c                |    3 -
+>  drivers/i2c/busses/i2c-ocores.c                 |    3 -
+>  drivers/i2c/busses/i2c-octeon.c                 |    3 -
+>  drivers/i2c/busses/i2c-omap.c                   |    3 -
+>  drivers/i2c/busses/i2c-pnx.c                    |    3 -
+>  drivers/i2c/busses/i2c-powermac.c               |    9 +-
+>  drivers/i2c/busses/i2c-pxa.c                    |    2 -
+>  drivers/i2c/busses/i2c-s3c2410.c                |    2 -
+>  drivers/i2c/busses/i2c-sh_mobile.c              |    2 -
+>  drivers/i2c/busses/i2c-sirf.c                   |    3 -
+>  drivers/i2c/busses/i2c-stu300.c                 |    2 -
+>  drivers/i2c/busses/i2c-tegra.c                  |    3 -
+>  drivers/i2c/busses/i2c-versatile.c              |    2 -
+>  drivers/i2c/busses/i2c-wmt.c                    |    3 -
+>  drivers/i2c/busses/i2c-xiic.c                   |    3 -
+>  drivers/i2c/i2c-core.c                          |  109 +++++++++++++++++++++-
+>  drivers/i2c/i2c-mux.c                           |    3 -
+>  drivers/i2c/muxes/i2c-arb-gpio-challenge.c      |    1 -
+>  drivers/i2c/muxes/i2c-mux-gpio.c                |    1 -
+>  drivers/i2c/muxes/i2c-mux-pinctrl.c             |    1 -
+>  drivers/media/platform/exynos4-is/fimc-is-i2c.c |    3 -
+>  drivers/of/Kconfig                              |    6 --
+>  drivers/of/Makefile                             |    1 -
+>  drivers/of/of_i2c.c                             |  114 -----------------------
+>  include/linux/i2c.h                             |   20 ++++
+>  include/linux/of_i2c.h                          |   46 ---------
+>  38 files changed, 132 insertions(+), 253 deletions(-)
+>  delete mode 100644 drivers/of/of_i2c.c
+>  delete mode 100644 include/linux/of_i2c.h
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+I've tested this patch on Exynos4412 SoC based board, so this covers
+i2c-s3c2410 and fimc-is-i2c. Compiled with CONFIG_OF enabled.
 
-iQIcBAEBAgAGBQJSFNJXAAoJELSic+t+oim97HMP/AxP037GmxMF+/uGPKXl/Bgj
-IJRjWWGZ+1SCoS3wjjbhvbLrVtEBz6sI8rfWn4RepbXKvDrIVYmI94lXVSaiiLYF
-9hm6IixSmky1098OSgxbM0xeGK1tlbvJW4csQOEfmR5QQtrkG0JwsgUN0KZHu5aA
-pOez7vevfdohW7jPsObNwf3QQf1CRHqPzh4qHb+XS0nBRAHMRdIs5qmuF7Pu+PYe
-+lgNHr6MubBW1zPrNsKbG6PvmU2QjOox9GWkpO/VFSbmHL8aVyN46zgTdpFZ5NoW
-otcKyqLfdUU1PW1PPrvAA0VCuSeZZxD/I50JURY/fYtt1Ja6Atigh4hd3fLX79qD
-W4JEm7j8Is8UGGfkdJHXx0CPsaBNutOhUQeMn7uH7qTXypzxhZj0kLbRkK15zLUA
-DcMBCspA36Y+mGo3kh8SPWoqW8QxFk8zQPQq7P0gu8AIpF4msGWRphq1Gk+inEzP
-V/7miEfUtjB3B64Q+MjRq3wboS7mxZ++NUjt6J2+XeMJtIKXkAMub0hRZd+a1Ru7
-PGLNq6mNkfVcmNUkaP3chBUSeFrVqV7fbh7awPegkXbM4q/ZMsWN7pYdJUfy/+F4
-4fglmyyRwHY1L0Mi6GJ/+5I/6bSV1niReyteRKjALr5lDmW00jBuTU186RJ8i/HR
-Erj2jX5juPTD4u8BshjW
-=maZP
------END PGP SIGNATURE-----
+I guess after removing all remaining occurrences of
+#include <linux/of_i2c.h> you could add:
 
---DrWhICOqskFTAXiy--
+Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+
+--
+Thanks,
+Sylwester
+
