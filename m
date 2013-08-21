@@ -1,115 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab3HUWqh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 18:46:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36057 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab3HUWpZ (ORCPT
+	id S1753346Ab3HUWqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 18:46:49 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:56875 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab3HUWqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 18:45:25 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Evgeniy Polyakov <zbr@ioremap.net>,
-        Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: [PATCH 10/11] w1: slaves: w1_ds2760: convert to use w1_family_ops.groups
-Date: Wed, 21 Aug 2013 15:45:04 -0700
-Message-Id: <1377125105-25388-10-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <1377125105-25388-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1377125105-25388-1-git-send-email-gregkh@linuxfoundation.org>
+	Wed, 21 Aug 2013 18:46:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130821101448.GJ29850@lee--X1>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+	<1370521041-32318-22-git-send-email-lee.jones@linaro.org>
+	<CACRpkdY2KOxX=oA7i9GUnzpwRKiK2rXqTBPVpg+zW082f2TJdg@mail.gmail.com>
+	<20130821101448.GJ29850@lee--X1>
+Date: Thu, 22 Aug 2013 00:46:47 +0200
+Message-ID: <CACRpkdYjvFTJAUL6xKxjkVd_v=DHHRkswoB_eq0Npqj5Sw23KQ@mail.gmail.com>
+Subject: Re: [PATCH 21/33] clk: ux500: Add Device Tree support for the PRCC
+ Kernel clock
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves the sysfs file creation/removal to the w1 core by using the
-.groups field, saving code in the slave driver.
+On Wed, Aug 21, 2013 at 12:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Wed, 21 Aug 2013, Linus Walleij wrote:
 
-Cc: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/w1/slaves/w1_ds2760.c | 35 ++++++++++++++++++-----------------
- 1 file changed, 18 insertions(+), 17 deletions(-)
+>> Isn't it possible to fork a function u8500_clk_init_dt() to add all the
+>> clocks in the DT probe path and keep this function
+>> u8500_clk_init() as it is?
+>
+> Yes, we probably could do that, but as we're ripping out ATAG booting
+> support from the ux500 platform, I'll just remove the
+> clk_register_clkdev()s during the process.
 
-diff --git a/drivers/w1/slaves/w1_ds2760.c b/drivers/w1/slaves/w1_ds2760.c
-index 93719d25..65f90dcc 100644
---- a/drivers/w1/slaves/w1_ds2760.c
-+++ b/drivers/w1/slaves/w1_ds2760.c
-@@ -97,21 +97,28 @@ int w1_ds2760_recall_eeprom(struct device *dev, int addr)
- 	return w1_ds2760_eeprom_cmd(dev, addr, W1_DS2760_RECALL_DATA);
- }
- 
--static ssize_t w1_ds2760_read_bin(struct file *filp, struct kobject *kobj,
--				  struct bin_attribute *bin_attr,
--				  char *buf, loff_t off, size_t count)
-+static ssize_t w1_slave_read(struct file *filp, struct kobject *kobj,
-+			     struct bin_attribute *bin_attr, char *buf,
-+			     loff_t off, size_t count)
- {
- 	struct device *dev = container_of(kobj, struct device, kobj);
- 	return w1_ds2760_read(dev, buf, off, count);
- }
- 
--static struct bin_attribute w1_ds2760_bin_attr = {
--	.attr = {
--		.name = "w1_slave",
--		.mode = S_IRUGO,
--	},
--	.size = DS2760_DATA_SIZE,
--	.read = w1_ds2760_read_bin,
-+static BIN_ATTR_RO(w1_slave, DS2760_DATA_SIZE);
-+
-+static struct bin_attribute *w1_ds2760_bin_attrs[] = {
-+	&bin_attr_w1_slave,
-+	NULL,
-+};
-+
-+static const struct attribute_group w1_ds2760_group = {
-+	.bin_attrs = w1_ds2760_bin_attrs,
-+};
-+
-+static const struct attribute_group *w1_ds2760_groups[] = {
-+	&w1_ds2760_group,
-+	NULL,
- };
- 
- static DEFINE_IDA(bat_ida);
-@@ -139,16 +146,10 @@ static int w1_ds2760_add_slave(struct w1_slave *sl)
- 	if (ret)
- 		goto pdev_add_failed;
- 
--	ret = sysfs_create_bin_file(&sl->dev.kobj, &w1_ds2760_bin_attr);
--	if (ret)
--		goto bin_attr_failed;
--
- 	dev_set_drvdata(&sl->dev, pdev);
- 
- 	goto success;
- 
--bin_attr_failed:
--	platform_device_del(pdev);
- pdev_add_failed:
- 	platform_device_put(pdev);
- pdev_alloc_failed:
-@@ -165,12 +166,12 @@ static void w1_ds2760_remove_slave(struct w1_slave *sl)
- 
- 	platform_device_unregister(pdev);
- 	ida_simple_remove(&bat_ida, id);
--	sysfs_remove_bin_file(&sl->dev.kobj, &w1_ds2760_bin_attr);
- }
- 
- static struct w1_family_ops w1_ds2760_fops = {
- 	.add_slave    = w1_ds2760_add_slave,
- 	.remove_slave = w1_ds2760_remove_slave,
-+	.groups       = w1_ds2760_groups,
- };
- 
- static struct w1_family w1_ds2760_family = {
--- 
-1.8.3.rc0.20.gb99dd2e
+I really do not like the approach of uglifying something and then
+beautifying it later... I prefer each step in isolation to be good
+looking, or you will be confused when traversing the history.
 
+Yours,
+Linus Walleij
