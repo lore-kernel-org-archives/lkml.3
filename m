@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751641Ab3HUNGy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 09:06:54 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:53490 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463Ab3HUNGw (ORCPT
+	id S1751968Ab3HUNHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 09:07:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36689 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab3HUNHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 09:06:52 -0400
-Date: Wed, 21 Aug 2013 09:06:47 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: konrad.wilk@oracle.com, robert.moore@intel.com, lv.zheng@intel.com,
-        rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-Message-ID: <20130821130647.GB19286@mtj.dyndns.org>
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
+	Wed, 21 Aug 2013 09:07:09 -0400
+Message-ID: <5214BB6C.3060903@ti.com>
+Date: Wed, 21 Aug 2013 18:36:52 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: <balbi@ti.com>, <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <grant.likely@linaro.org>,
+        <rob@landley.net>, <ian.campbell@citrix.com>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <rob.herring@calxeda.com>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <bcousson@baylibre.com>
+Subject: Re: [PATCH 1/2] extcon: extcon-dra7xx: Add extcon driver for USB
+ ID detection
+References: <1376648029-30659-1-git-send-email-george.cherian@ti.com> <1376648029-30659-2-git-send-email-george.cherian@ti.com> <52127284.6030506@wwwdotorg.org> <521312CC.8060003@ti.com> <52139F0F.6090507@wwwdotorg.org>
+In-Reply-To: <52139F0F.6090507@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Stephen,
 
-On Wed, Aug 21, 2013 at 06:15:35PM +0800, Tang Chen wrote:
-> [What are we doing]
-> 
-> We are trying to initialize acip tables as early as possible. But Linux kernel
-> allows users to override acpi tables by specifying their own tables in initrd.
-> So we have to do acpi_initrd_override() earlier first.
+On 8/20/2013 10:23 PM, Stephen Warren wrote:
+>> >ID pins are connected to pcf8575, and the pcf8575's interrupt line is
+>> >inturn connected to
+>> >gpio bank6 pin 11, we use this gpio interrupt to detect the ID pin change.
+> In that case, the PCF8575 node needs to be a GPIO controller and an IRQ
+> controller, as does the driver for the PCF8575. This binding should have
+> a single entry in the gpios property, and the driver can call
+> gpio_to_irq() on that so it knows which IRQ to request.
 
-So, are we now back to making SRAT info as early as possible?  What
-happened to just co-locating early allocations close to kernel image?
-What'd be the benefit of doing this over that?
+You meant some thing like this?
 
-Thanks.
+        pcf_usb: pcf8575@21 {
+                 compatible = "ti,pcf8575";
+                 reg = <0x21>;
+                 gpio-controller;
+                 #gpio-cells = <2>;
+                 interrupt-parent = <&gpio6>;
+                 interrupts = <11 2>;
+                 interrupt-controller;
+                 #interrupt-cells = <2>;
+         };
+
+	 usb_vid_gpio {
+                 compatible = "ti,dra7xx-usb";
+                 gpios = <&pcf_usb 1 0>;
+              
+         };
+
 
 -- 
-tejun
+-George
+
