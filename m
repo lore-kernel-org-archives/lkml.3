@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab3HUATk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 20:19:40 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:48979 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab3HUATj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 20:19:39 -0400
-Date: Tue, 20 Aug 2013 19:19:37 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v3 trivial 0/7] Miscellaneous Trivialities
-To: Michael Witten <mfwitten@gmail.com>
-Cc: Jiri Kosina <trivial@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
-In-Reply-To: <6a1db75a9ce0483b94e4c6b2989e547b-mfwitten@gmail.com> (from
-	mfwitten@gmail.com on Tue Aug 20 17:27:53 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1377044377.2737.87@driftwood>
+	id S1751976Ab3HUAUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 20:20:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55874 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751471Ab3HUAUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 20:20:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,923,1367996400"; 
+   d="scan'208";a="390573751"
+From: Josh Triplett <josh@joshtriplett.org>
+To: linux-kernel@vger.kernel.org
+Cc: Len Brown <len.brown@intel.com>,
+        Mark Asselstine <mark.asselstine@windriver.com>,
+        Mike Frysinger <vapier@chromium.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH v2 0/8] turbostat: Build fixes, 32-bit support, and cleanups
+Date: Tue, 20 Aug 2013 17:20:11 -0700
+Message-Id: <1377044419-15045-1-git-send-email-josh@joshtriplett.org>
+X-Mailer: git-send-email 1.8.4.rc3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 05:27:53 PM, Michael Witten wrote:
-> On Tue, 20 Aug 2013 16:20:02 -0500, Rob Landley wrote:
-> > On 08/20/2013 11:02:42 AM, Michael Witten wrote:
-> >> I've been sitting on some trivial patches for a while, and I'd just
-> >> like to get them out of the way.
-> >>
-> >> Here is the series:
-> >>
-> >>   [1] Docs: Kconfig: For readability, offset modifiers with commas
-> >>   [2] Docs: Kconfig: Use consistent whitespace indentation
-> >>   [3] Docs: Kconfig: Clean up the radiotap documentation
-> >
-> > Not a single worthwhile change in any of those three.
-> >
-> > Excuse me:
-> >
-> > Not a single, worthwhile change, in any of those three.
-> 
-> Actually, your second attempt doesn't use commas properly.
+This patch series includes build fixes, warning fixes, and cleanups discovered
+while adding turbostat to ChromeOS.
 
-Sorry, forgot the <shatner> tags. (Or possibly <sarcasm>.)
+The first and third patches should go into stable, and I've CCed them
+accordingly.
 
-> In any case, this is *trivial*, miscellaneous work. I do not pretend
-> to be making a major contribution; this is why I sent these patches  
-> `To:'
-> 
->   Jiri Kosina <TRIVIAL@kernel.org>
-> 
-> Other people are included as some kind of courtesy, and also so that
-> any change that is actually non-trivial might be caught (as with the
-> `hotplug' patch).
+The first patch unbreaks the turbostat build on systems
+with older versions of kernel headers.
 
-If you were modifying the vfs would you cc the VFS maintainer as a  
-"courtesy" too?
+The third patch is required to build on 32-bit x86.
 
-> >>   [4] Docs: Kconfig: `devlopers' -> `developers'
-> >
-> > Sure, a typo, why not.
-> 
-> When does a series of *trivial* changes become worthwhile? What's  
-> wrong
-> with making refinements when it costs nothing? Must one always hide
-> trivial alterations inside something more substantial?
+The second and fourth patches fix warnings.
 
-Because some people actually read the commit logs and changes that  
-don't do anything add noise for no benefit? (Your fourth change was a  
-single typo fix. The previous three changes _combined_ were less  
-valuable than that single typo fix. Hence asking if we really needed  
-three separate commits to accomplish something that didn't actually  
-need to be done in the first place.)
+Patches 5-7 are code cleanups, and the last patch adds turbostat itself to
+.gitignore.
 
-> All right. I get it; you personally don't give a damn. I certainly
-> don't hold that against you. However, there *are* people who *do*
-> care about such refinements, and a nasty, condescending email
-> isn't going to alter our behavior.
+Josh Triplett (8):
+  turbostat: Don't put unprocessed uapi headers in the include path
+  turbostat: Don't attempt to printf an off_t with %zx
+  turbostat: Use GCC's CPUID functions to support PIC
+  turbostat: Check return value of fscanf
+  turbostat: Add a helper to parse a single int out of a file
+  turbostat: Factor out common function to open file and exit on failure
+  turbostat: Clean up error handling; disambiguate error messages; use
+    err and errx
+  turbostat: Add a .gitignore to ignore the compiled turbostat binary
 
-Actually my objection is that it's not worth the churn in the commit  
-logs.
+ tools/power/x86/turbostat/.gitignore  |   1 +
+ tools/power/x86/turbostat/Makefile    |   2 +-
+ tools/power/x86/turbostat/turbostat.c | 210 +++++++++++++---------------------
+ 3 files changed, 82 insertions(+), 131 deletions(-)
+ create mode 100644 tools/power/x86/turbostat/.gitignore
 
-But yeah, why would a guy listed in MAINTAINERS as caring about the  
-Documentation directory pay attention to proposed changes to the  
-Documentation directory? Madness. I'll butt out now...
+-- 
+1.8.4.rc3
 
-Rob
