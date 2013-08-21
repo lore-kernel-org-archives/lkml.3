@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab3HUEQb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 00:16:31 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:39058 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab3HUEQa (ORCPT
+	id S1751996Ab3HUERU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 00:17:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34697 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591Ab3HUERT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 00:16:30 -0400
-X-Spam-Score: -101.0
-Message-ID: <52143EE0.3040604@asianux.com>
-Date: Wed, 21 Aug 2013 12:15:28 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: user_namespace: always set the return parameter
- 'new_cred' when call unshare_userns() successfully.
-References: <5212DA37.1090101@asianux.com> <20130820141032.GA4766@sergelap> <20130820143722.GA12953@redhat.com>
-In-Reply-To: <20130820143722.GA12953@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Aug 2013 00:17:19 -0400
+Date: Wed, 21 Aug 2013 14:17:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Masanari Iida <standby24x7@gmail.com>,
+        Manish Chopra <manish.chopra@qlogic.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the trivial tree with the net-next tree
+Message-Id: <20130821141715.a1b18a28965e341531775656@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__21_Aug_2013_14_17_15_+1000_Yu.tMxvqGDXj4q8M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 10:37 PM, Oleg Nesterov wrote:
-> On 08/20, Serge Hallyn wrote:
->>
->> Quoting Chen Gang (gang.chen@asianux.com):
->>> When unshare_userns() succeed, recommend to always set the return
->>> parameter which may be used by caller.
->>>
->>> The caller has rights to call it with 'new_cred' uninitialized, if
->>> succeed, the caller can assume the 'new_cred' has been initialized.
->>
->> But the only existing caller (sys_unshare) does in fact initialize it to
->> NULL.  So while this patch does no harm, is it necessary?
-> 
-> Agreed.
-> 
-> Plus, with this patch unshare_userns() becomes "inconsistent" compared
-> to other unshare_ helpers.
-> 
-> Oleg.
-> 
-> 
-> 
+--Signature=_Wed__21_Aug_2013_14_17_15_+1000_Yu.tMxvqGDXj4q8M
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmm... for static functions, they don't need, but for extern functions,
-recommend to do so.
+Hi Jiri,
 
+Today's linux-next merge of the trivial tree got a conflict in
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c between commit
+068a8d197e00 ("qlcnic: Replace poll mode mailbox interface with interrupt
+based mailbox interface") from the  tree and commit 0b1587b18bfe
+("treewide: Fix typo in printk") from the trivial tree.
 
-For "unshare_ helpers", I find 3 extern functions:
+I fixed it up (the former removed the line fixed by the latter, so I used
+that) and can carry the fix as necessary (no action is required).
 
-  unshare_files() which already set value.
-  unshare_userns() and unshare_nsproxy_namespaces() which not set.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-In my opinion, recommend to always set the return parameter when
-succeed, for the 2 left extern functions.
+--Signature=_Wed__21_Aug_2013_14_17_15_+1000_Yu.tMxvqGDXj4q8M
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Thanks.
--- 
-Chen Gang
+iQIcBAEBCAAGBQJSFD9LAAoJEECxmPOUX5FE6NIP/Rp0WZ+gNRLq4BTRU+bRk7Vu
+3A9p3UumTbDR+4O+8PE1NUVvu2mC29FXdVeZpKggzcS1J2dbc2j+3KpUGjS1yy3l
++AsW3MYFiRxO5+dM8k4BcGbcE8E+83bH9xCI/saHFR7VoV8mod8BUQwLoqkKGTYW
+yJQdCsnYr3aEUbj+nJkOSO97iY83qUangtERX37gxATLguER+Wabtha0RZm/Tmio
+W7tIc7Suemwqcca4wGW9P/EvYPPaQSqceTP92YtgWQWOzSdO/Nzfpga1SrBvGha0
+Fp2EbyMQhpQVZK0G/dSqVuYDB0Ee1drLrhSSZDsT1BiAdKm6aeWGPNiXYBoyq2Ye
+DeOSOHD6wNxB5Rqdl5fQkMTDT6ivq2LVjonrDJAFqaNV2yBsJ3TlPVPSmIB+/wLA
+2ixeKE1nk3WoYuT9gu4mSh3tV1wTU/IoxAA3+VwKrOuOmWb+qpAv7mh4inDkhtBn
+4BK5PPSyeBzlOOfiwWDLO7jn5dx3ceg6t3ugudO9eZKNidy7waoheN27vPV8EO4t
+yUWTKG+Zmpris3AQV+R2ZJbcgNGGm1mwjBU4kTMOtK9hYeJXE/mCdSvHLrXwhV7i
+qzyCsnqAt7sIjmqh5MqINRUZxRtGR8KSOtqdfw4dNKBppx8B4LkrhFco/pIB1jxt
+vOFUYblOsORTtYHF7H6u
+=t1XW
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__21_Aug_2013_14_17_15_+1000_Yu.tMxvqGDXj4q8M--
