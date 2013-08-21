@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901Ab3HUJKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 05:10:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33198 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3HUJKv (ORCPT
+	id S1751954Ab3HUJLq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 05:11:46 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:18453 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab3HUJLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 05:10:51 -0400
-Date: Wed, 21 Aug 2013 19:10:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dingtianhong <dingtianhong@huawei.com>
-Subject: linux-next: build warning after merge of the net-next tree
-Message-Id: <20130821191041.712893827d8000c6dca8781b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__21_Aug_2013_19_10_41_+1000_c3p1jnvZtg5x9nId"
+	Wed, 21 Aug 2013 05:11:44 -0400
+X-AuditID: cbfee68e-b7f276d000002279-80-52148442a2ab
+From: Jingoo Han <jg1.han@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Jean Delvare'" <khali@linux-fr.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] block: swim: remove unnecessary platform_set_drvdata()
+Date: Wed, 21 Aug 2013 18:11:30 +0900
+Message-id: <001a01ce9e4e$6c580ab0$45082010$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6eTmwhCnrtHr4AR1GvFEFn8gnVtA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zA12nFpEgg3u7lC3mrF/DZnF54SVW
+	i8a/kRaXd81hc2DxODHjN4vHlYaTbB59W1YxenzeJBfAEsVlk5Kak1mWWqRvl8CVcfrNM7aC
+	a2wVLa8uszYwbmftYuTkkBAwkThx+xsbhC0mceHeeiCbi0NIYBmjRNeUo0wwRVeXNLFAJKYz
+	Slyb+YIVwvnFKPF4UScLSBWbgJrEly+H2UFsEQFdiVXPdzF3MXJwMAtkSzw4bQISFhZwl1hz
+	dQJYCYuAqsT3n3/AFvAK2Eo83fWIHcIWlPgx+R7YSGYBLYn1O48zQdjyEpvXvAUbKSGgLvHo
+	ry6IKSKgJ9F9sQiiQkRi34t3jCCXSQhsYpc43rCcFWKVgMS3yYdYIFplJTYdYIZ4S1Li4Iob
+	LBMYxWYhWTwLyeJZSBbPQrJiASPLKkbR1ILkguKk9CIjveLE3OLSvHS95PzcTYyQCOvbwXjz
+	gPUhxmSg9ROZpUST84ERmlcSb2hsZmRhamJqbGRuaUaasJI4r1qLdaCQQHpiSWp2ampBalF8
+	UWlOavEhRiYOTqkGxgpug8apJoHHXh0Vb/1irlRfeXB28SSW3mXnv4mZnGuZXXJoh9vhN+Jx
+	z+9x/LuyWnThzi9+SgXbWnsi9yllnpt2s5B1z885W1XOrtW7cN3w6mTGzNtLzHPlsoxP3lS/
+	Wd7g66U5TWxODfNG1mURR6ZobU1jS/n+UK7uSq1WT3WyA++NKZJX9ZRYijMSDbWYi4oTAWVu
+	mSbGAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQV2nFpEgg5NL5S3mrF/DZnF54SVW
+	i8a/kRaXd81hc2DxODHjN4vHlYaTbB59W1YxenzeJBfAEtXAaJORmpiSWqSQmpecn5KZl26r
+	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtFJJoSwxpxQoFJBYXKykb4dpQmiIm64F
+	TGOErm9IEFyPkQEaSFjHmHH6zTO2gmtsFS2vLrM2MG5n7WLk5JAQMJG4uqSJBcIWk7hwbz1b
+	FyMXh5DAdEaJazNfsEI4vxglHi/qBKtiE1CT+PLlMDuILSKgK7Hq+S7mLkYODmaBbIkHp01A
+	wsIC7hJrrk4AK2ERUJX4/vMPE4jNK2Ar8XTXI3YIW1Dix+R7YCOZBbQk1u88zgRhy0tsXvMW
+	bKSEgLrEo7+6IKaIgJ5E98UiiAoRiX0v3jFOYBSYhWTQLCSDZiEZNAtJywJGllWMoqkFyQXF
+	Sem5hnrFibnFpXnpesn5uZsYwfH7TGoH48oGi0OMAhyMSjy8F5RFgoRYE8uKK3MPMUpwMCuJ
+	8C6qBgrxpiRWVqUW5ccXleakFh9iTAb6cyKzlGhyPjC15JXEGxqbmBlZGplZGJmYm5MmrCTO
+	e6DVOlBIID2xJDU7NbUgtQhmCxMHp1QD4/HMLaJ7A24bCafc+b5+bt+T3al9PC6XYl+fMV3M
+	umfKBZ7nu03OhqnM/Lq37NO1xpT/2lqqftLH+LS/Wep2C+y00qp9v4PzqlnjnI4tqf4cBxI/
+	H0l5KjfhaYTpLlWFO2ZWScfMb57zdTVyNfr1ufKk3YTaTrZLVSeOPBT4ZxUYd+HbfZHWPiWW
+	4oxEQy3mouJEAGi2BaojAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__21_Aug_2013_19_10_41_+1000_c3p1jnvZtg5x9nId
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The driver core clears the driver data to NULL after device_release
+or on probe failure. Thus, it is not needed to manually clear the
+device driver data to NULL.
 
-Hi all,
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/block/swim.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-After merging the net-next tree, today's linux-next build (i386 defconfig
-and probably others) produced this warning:
+diff --git a/drivers/block/swim.c b/drivers/block/swim.c
+index 8ed6ccb..b02d53a 100644
+--- a/drivers/block/swim.c
++++ b/drivers/block/swim.c
+@@ -924,7 +924,6 @@ static int swim_probe(struct platform_device *dev)
+ 	return 0;
+ 
+ out_kfree:
+-	platform_set_drvdata(dev, NULL);
+ 	kfree(swd);
+ out_iounmap:
+ 	iounmap(swim_base);
+@@ -962,7 +961,6 @@ static int swim_remove(struct platform_device *dev)
+ 	if (res)
+ 		release_mem_region(res->start, resource_size(res));
+ 
+-	platform_set_drvdata(dev, NULL);
+ 	kfree(swd);
+ 
+ 	return 0;
+-- 
+1.7.10.4
 
-net/ipv6/addrconf.c: In function 'addrconf_notify':
-net/ipv6/addrconf.c:2793:22: warning: 'link_dev' may be used uninitialized =
-in this function [-Wuninitialized]
-net/ipv6/addrconf.c:2802:21: note: 'link_dev' was declared here
 
-Introduced by commit df8372ca747f ("ipv6: fix checkpatch errors in
-net/ipv6/addrconf.c").  It looks like here are some missing braces.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__21_Aug_2013_19_10_41_+1000_c3p1jnvZtg5x9nId
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSFIQVAAoJEECxmPOUX5FETKYQAIErDSAQH+9sRRrWTIQ3+Xf/
-Ly0wtF6nNI5S3GB7oW29NisHnRlppv++wumdwFXES2EdZppyx4c6N+0zOhVk7E3c
-FXpMt5XsgPbanHmZAR/5LwSPl5CGmHBUFig5H70pBFWKJZll+AzZXMC+Dm5gOAyO
-LxG5vvepPiNe5/HBdGBip+mva1enx7Y4Kzvp746LoAbCMEtGoi4HIe6/Ud8MngWN
-EZTFetd0o47eylTk/QKakDRPDWxBsNr3Z8DhqjAkwkekJRYxTy/5koy5EX2qq17u
-cV80RdqIKErzQ3bZ4HEj6V2PHnWB1JRs4ghEnfwHtmihESlYvNkJFerr0KiN2+hb
-gXe0PxhtjqKN3wlCU2KlehwFtHAhdIoT52YND8/pExiSekKmCSJSXfBBTPymBAUy
-mCFmVr4Cpl4X2L+rPCplbgJO1BTh72GoTuP64bH+9siT/mHq6ucbiztU5Fy5zpzs
-cGbFJfjRDJrgCG+N70c5e2h4g8GlHcc9MiwZFfWoegCKA10rpReEZfJmnuPNQ2bP
-FbKM7LUR6xJA2PKG+tlt/0x6HjKJy4R0+wzwQ2bu3o2bI59Crz4icULUD98fUB3A
-JPyq+akGy42eAH4d2EvyACLCFoMt0pXFKFIjobmS1RctoOkBwlsnfyRu5gaW8EwD
-nv1wvHzdP9nZzeu7TUxR
-=9D5A
------END PGP SIGNATURE-----
-
---Signature=_Wed__21_Aug_2013_19_10_41_+1000_c3p1jnvZtg5x9nId--
