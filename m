@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab3HUOza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:55:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21873 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751550Ab3HUOz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:55:28 -0400
-Subject: [PATCH v2] vfio-pci: Use fdget() rather than eventfd_fget()
-To: alex.williamson@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, viro@ZenIV.linux.org.uk
-Date: Wed, 21 Aug 2013 08:55:26 -0600
-Message-ID: <20130821145424.32748.17519.stgit@bling.home>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1752220Ab3HUOzv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:55:51 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:44952 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab3HUOzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 10:55:49 -0400
+From: Jiejing Zhang <kzjeef@gmail.com>
+To: teven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Cc: Eric Miao <emiao@nvidia.com>, Jiejing Zhang <jiejzhang@nvidia.com>
+Subject: [PATCH] ftrace: add tgid information in task switch event.
+Date: Wed, 21 Aug 2013 15:05:20 +0000
+Message-Id: <1377097520-24898-1-git-send-email-jasozhang@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-eventfd_fget() tests to see whether the file is an eventfd file, which
-we then immediately pass to eventfd_ctx_fileget(), which again tests
-whether the file is an eventfd file.  Simplify slightly by using
-fdget() so that we only test that we're looking at an eventfd once.
-fget() could also be used, but fdget() makes use of fget_light() for
-another slight optimization.
+From: Jiejing Zhang <jiejzhang@nvidia.com>
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+ftrace only report pid in task switch event, which is
+actually thread ID in user space view, the comm of
+the thread will be like "Thread-1", "Compiler", etc
+in android system, it's useful if we can add tgid
+information in ftrace event to find out the process
+id, and the process id's comm will help us to figure
+out the application, which was useful on data analysis
+tools.
+
+Change-Id: Ia99f58a56d691d770b3beb2f76de0351e6194a4a
+Signed-off-by: Jiejing Zhang <jiejzhang@nvidia.com>
 ---
+ include/trace/events/sched.h | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-v2: Use direct gotos in error path per Al Viro's comment
-
- drivers/vfio/pci/vfio_pci_intrs.c |   35 ++++++++++++++++-------------------
- 1 file changed, 16 insertions(+), 19 deletions(-)
-
-diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
-index 4bc704e..641bc87 100644
---- a/drivers/vfio/pci/vfio_pci_intrs.c
-+++ b/drivers/vfio/pci/vfio_pci_intrs.c
-@@ -130,8 +130,8 @@ static int virqfd_enable(struct vfio_pci_device *vdev,
- 			 void (*thread)(struct vfio_pci_device *, void *),
- 			 void *data, struct virqfd **pvirqfd, int fd)
- {
--	struct file *file = NULL;
--	struct eventfd_ctx *ctx = NULL;
-+	struct fd irqfd;
-+	struct eventfd_ctx *ctx;
- 	struct virqfd *virqfd;
- 	int ret = 0;
- 	unsigned int events;
-@@ -149,16 +149,16 @@ static int virqfd_enable(struct vfio_pci_device *vdev,
- 	INIT_WORK(&virqfd->shutdown, virqfd_shutdown);
- 	INIT_WORK(&virqfd->inject, virqfd_inject);
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index e5586ca..3fbcddb 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -124,32 +124,37 @@ TRACE_EVENT(sched_switch,
+ 	TP_STRUCT__entry(
+ 		__array(	char,	prev_comm,	TASK_COMM_LEN	)
+ 		__field(	pid_t,	prev_pid			)
++		__field(	pid_t,	prev_tgid			)
+ 		__field(	int,	prev_prio			)
+ 		__field(	long,	prev_state			)
+ 		__array(	char,	next_comm,	TASK_COMM_LEN	)
+ 		__field(	pid_t,	next_pid			)
++		__field(	pid_t,	next_tgid			)
+ 		__field(	int,	next_prio			)
+ 	),
  
--	file = eventfd_fget(fd);
--	if (IS_ERR(file)) {
--		ret = PTR_ERR(file);
--		goto fail;
-+	irqfd = fdget(fd);
-+	if (!irqfd.file) {
-+		ret = -EBADF;
-+		goto err_fd;
- 	}
+ 	TP_fast_assign(
+ 		memcpy(__entry->next_comm, next->comm, TASK_COMM_LEN);
+ 		__entry->prev_pid	= prev->pid;
++		__entry->prev_tgid	= prev->tgid;
+ 		__entry->prev_prio	= prev->prio;
+ 		__entry->prev_state	= __trace_sched_switch_state(prev);
+ 		memcpy(__entry->prev_comm, prev->comm, TASK_COMM_LEN);
+ 		__entry->next_pid	= next->pid;
++		__entry->next_tgid	= next->tgid;
+ 		__entry->next_prio	= next->prio;
+ 	),
  
--	ctx = eventfd_ctx_fileget(file);
-+	ctx = eventfd_ctx_fileget(irqfd.file);
- 	if (IS_ERR(ctx)) {
- 		ret = PTR_ERR(ctx);
--		goto fail;
-+		goto err_ctx;
- 	}
+-	TP_printk("prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d",
+-		__entry->prev_comm, __entry->prev_pid, __entry->prev_prio,
++	TP_printk("prev_comm=%s prev_pid=%d prev_tgid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_tgid=%d next_prio=%d",
++		__entry->prev_comm, __entry->prev_pid,
++		__entry->prev_tgid,  __entry->prev_prio,
+ 		__entry->prev_state & (TASK_STATE_MAX-1) ?
+-		  __print_flags(__entry->prev_state & (TASK_STATE_MAX-1), "|",
++		__print_flags(__entry->prev_state & (TASK_STATE_MAX-1), "|",
+ 				{ 1, "S"} , { 2, "D" }, { 4, "T" }, { 8, "t" },
+ 				{ 16, "Z" }, { 32, "X" }, { 64, "x" },
+ 				{ 128, "K" }, { 256, "W" }, { 512, "P" }) : "R",
+ 		__entry->prev_state & TASK_STATE_MAX ? "+" : "",
+-		__entry->next_comm, __entry->next_pid, __entry->next_prio)
++		__entry->next_comm, __entry->next_pid, __entry->next_tgid, __entry->next_prio)
+ );
  
- 	virqfd->eventfd = ctx;
-@@ -174,7 +174,7 @@ static int virqfd_enable(struct vfio_pci_device *vdev,
- 	if (*pvirqfd) {
- 		spin_unlock_irq(&vdev->irqlock);
- 		ret = -EBUSY;
--		goto fail;
-+		goto err_busy;
- 	}
- 	*pvirqfd = virqfd;
- 
-@@ -187,7 +187,7 @@ static int virqfd_enable(struct vfio_pci_device *vdev,
- 	init_waitqueue_func_entry(&virqfd->wait, virqfd_wakeup);
- 	init_poll_funcptr(&virqfd->pt, virqfd_ptable_queue_proc);
- 
--	events = file->f_op->poll(file, &virqfd->pt);
-+	events = irqfd.file->f_op->poll(irqfd.file, &virqfd->pt);
- 
- 	/*
- 	 * Check if there was an event already pending on the eventfd
-@@ -202,17 +202,14 @@ static int virqfd_enable(struct vfio_pci_device *vdev,
- 	 * Do not drop the file until the irqfd is fully initialized,
- 	 * otherwise we might race against the POLLHUP.
- 	 */
--	fput(file);
-+	fdput(irqfd);
- 
- 	return 0;
--
--fail:
--	if (ctx && !IS_ERR(ctx))
--		eventfd_ctx_put(ctx);
--
--	if (file && !IS_ERR(file))
--		fput(file);
--
-+err_busy:
-+	eventfd_ctx_put(ctx);
-+err_ctx:
-+	fdput(irqfd);
-+err_fd:
- 	kfree(virqfd);
- 
- 	return ret;
+ /*
+-- 
+1.8.1.5
 
