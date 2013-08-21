@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab3HUV0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 17:26:40 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:52270 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab3HUV0j (ORCPT
+	id S1752909Ab3HUV1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 17:27:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35723 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab3HUV1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 17:26:39 -0400
-Date: Wed, 21 Aug 2013 17:26:41 -0400
-From: Milosz Tanski <milosz@adfin.com>
-To: ceph-devel@vger.kernel.org
-Cc: sage@inktank.com, zheng.z.yan@intel.com, dhowells@redhat.com,
-        linux-cachefs@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: [PATCHv4 0/5] ceph: persistent caching with fscache
-Message-ID: <cover.1375999914.git.milosz@adfin.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Aug 2013 17:27:24 -0400
+Date: Wed, 21 Aug 2013 14:27:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz, hare@suse.de,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 0/4 v6] Avoid softlockups in console_unlock()
+Message-Id: <20130821142723.5fd8c0b0062b35ee83a68dcc@linux-foundation.org>
+In-Reply-To: <1377072512-7986-1-git-send-email-jack@suse.cz>
+References: <1377072512-7986-1-git-send-email-jack@suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This an updated version of the fscache support for the Ceph filesystem. What's
-changed since the last patchset:
+On Wed, 21 Aug 2013 10:08:28 +0200 Jan Kara <jack@suse.cz> wrote:
 
-1. Sparater the readpages refactor into it's own patches. These were already
-   accepted into the testing branch.
+> These patches avoid softlockups when a CPU gets caught in console_unlock() for
+> a long time during heavy printing from other CPU. As is discussed in patch 3/4
+> it isn't enough to just silence the watchdog because if CPU spends too long in
+> console_unlock() also RCU will complain, other CPUs can be blocked waiting for
+> printing CPU to process IPI, and even disk can be offlined because commands
+> couldn't be delivered to it for too long.
+> 
+> This patch series solves the problem by stopping printing in console_unlock()
+> after 1000 characters and the printing is postponed to irq work. To avoid
+> hogging a single CPU (irq work gets processed on the same CPU where it was
+> queued so it doesn't really help to reduce the printing load on that CPU) we
+> introduce a new type of lazy irq work - IRQ_WORK_UNBOUND - which can be
+> processed by any CPU.
 
-2. Tracked down the BUG in readahead cleanup code. We were returning with pages
-   marked as private_2 from readpages(). I added a simple convenience function
-   to the fscache netfs interface for cleaning up the page list at the end of
-   asop readpages(). I know other filesystems (NFS) have ran into that since
-   I've seen a few similar traces in Google search and the cachefs mailig list.
-   The second patch new make Ceph use this interface.
+I still hate the patchset :(
 
-I've been running this code (minus the BUG fix) on clients for a couple weeks
-with moderate 24/7 use without issues. At this point in time I feel like it's
-solid enough to go into the ceph kclient.
-
-Please pull the code from my repository:
-https://bitbucket.org/adfin/linux-fs.git branch: wip-ceph-fscache
-
-The first two patches I included were not written by me but were written by 
-Hongyi Jia. He implemented the cookie re-validation scheme into fscache core.
-
-Finally, I CCed a couple other mailing lists (fsdevel, nfs) because the new
-fscache_readpages_cancel() should be used by other filesystems to avoid the
-same problem.
-
-
-Hongyi Jia (2):
-  new cachefiles interface to check cache consistency
-  new fscache interface to check cache consistency
-
-Milosz Tanski (3):
-  ceph: use fscache as a local presisent cache
-  fscache: netfs function for cleanup post readpages
-  ceph: clean PgPrivate2 on returning from readpages
-
- fs/cachefiles/interface.c     |  19 +++
- fs/cachefiles/internal.h      |   1 +
- fs/cachefiles/xattr.c         |  39 ++++++
- fs/ceph/Kconfig               |   9 ++
- fs/ceph/Makefile              |   2 +
- fs/ceph/addr.c                |  39 +++++-
- fs/ceph/cache.c               | 311 ++++++++++++++++++++++++++++++++++++++++++
- fs/ceph/cache.h               | 130 ++++++++++++++++++
- fs/ceph/caps.c                |  19 ++-
- fs/ceph/file.c                |  17 +++
- fs/ceph/inode.c               |  66 ++++++++-
- fs/ceph/super.c               |  47 ++++++-
- fs/ceph/super.h               |  17 +++
- fs/fscache/cookie.c           |  22 +++
- fs/fscache/page.c             |  16 +++
- include/linux/fscache-cache.h |   4 +
- include/linux/fscache.h       |  39 ++++++
- 17 files changed, 785 insertions(+), 12 deletions(-)
- create mode 100644 fs/ceph/cache.c
- create mode 100644 fs/ceph/cache.h
-
--- 
-1.8.1.2
-
+Remind us why we need this?  Whose kernel is spewing so much logging and why?
