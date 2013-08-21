@@ -1,134 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab3HUQl2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 12:41:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62132 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541Ab3HUQl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 12:41:27 -0400
-Date: Wed, 21 Aug 2013 18:35:32 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Brad Spengler <spender@grsecurity.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Colin Walters <walters@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
-Message-ID: <20130821163532.GA15152@redhat.com>
-References: <20130819172524.GA22268@redhat.com> <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com> <20130819183319.GA24846@redhat.com> <CALCETrWrpNszRGCRRMLgiOopcSdDShB3Mck6gRPco=dAZeX3pQ@mail.gmail.com> <20130819184355.GA25362@redhat.com> <87siy4z1pf.fsf@xmission.com> <20130820184521.GA23293@redhat.com> <87li3ww0e6.fsf@xmission.com>
+	id S1752340Ab3HUQnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 12:43:09 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:33586 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab3HUQnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 12:43:07 -0400
+Date: Wed, 21 Aug 2013 20:42:59 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, David Vrabel <david.vrabel@citrix.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Xen-devel@lists.xen.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>
+Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with
+ existing use
+Message-ID: <20130821164259.GX18673@moon>
+References: <5214C524.1050900@citrix.com>
+ <dc8456d1-a89a-44c0-bebb-83cb0526230e@email.android.com>
+ <20130821141926.GT18673@moon>
+ <CA+55aFyk6s1t92HJ5rxKZQk6dTfszmhdXz+S=MqUmM-CbMo+DQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87li3ww0e6.fsf@xmission.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+55aFyk6s1t92HJ5rxKZQk6dTfszmhdXz+S=MqUmM-CbMo+DQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20, Eric W. Biederman wrote:
->
-> Oleg Nesterov <oleg@redhat.com> writes:
->
+On Wed, Aug 21, 2013 at 09:30:03AM -0700, Linus Torvalds wrote:
+> On Wed, Aug 21, 2013 at 7:19 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> > On Wed, Aug 21, 2013 at 04:11:25PM +0200, H. Peter Anvin wrote:
 > >>
-> >> The patch below also needs CLONE_SIGHAND.  You can't meaningfully share
-> >> signal handlers if you can't represent the pid in the siginfo.  pids and
-> >> signals are too interconnected.
+> >> Eep.  This should be reverted, indeed.  This isn't a manifest bug on !Xen but we
+> >> have gotten requests for WT support which would mean adding in the PAT but again.
 > >
-> > I don't really understand. If we allow to share ->mm (with this patch),
-> > why it is bad to share sighand_struct->action[] ? This only shares the
-> > pointers to the code which handles a signal.
->
-> Not the signal queues?   I guess it is only CLONE_THREAD that shares the
-> signal queues between tasks.
+> > Please no, letme fix it. That's what I'm having in mind: don't use pse bit in swap
+> > entry but always mark page read from swap as dirty one (it's better than having
+> > no tracker at all and  will be the case on old machines with 32bit ptes only).
+> 
+> Quite frankly, unless I see a patch later today that is
 
-Yes, and we should nack CLONE_THREAD anyway.
+I'll do my best to fix it, but I've not yet been shown where the problem
+happens. Neither I'm convinced if it is here at all. I'm asking David for details.
 
-> I believe that sharing just the signal handlers between tasks is also a
-> problem because while in principle you could distinguish the signals.
-> In practice it will require at least an extra system call to do so.
+> 
+>  (a) obvious
+>  (b) explains what is going on
+>  (c) tested
+> 
+> I will be reverting the whole soft-dirty mess. I thought the
+> bit-mapping games it played were already too complicated (the patch to
+> pgtable-2level.h in commit 41bb3476b361 just makes me want to barf and
+> came in very late, so I'm not positive about the whole soft-dirty mess
 
-I still do not think this is a problem. If nothing else they share
-the code, the fact that they also share the entry point for the signal
-handler is not relevant, I think. And they share it anyway until the
-child or parent does sigaction().
+This was not my invention on such encoding, I simply had no choise but
+follow existing scheme. Still there are cleanup patches in -mm tree which
+make code a way more readable (even former one, without soft-dirty bit).
 
-But this doesn't matter, we both agree that it would be better to deny
-CLONE_SIGHAND anyway.
-
-> So I am thinking something like the diff below.  CLONE_SIGHAND as in
-> theory you can figure out which task you are in and sort it out,
-> although I don't expect that to happen in practice.
-
-Well, I do not really mind. And I won't argue if you submit this patch.
-
-But can't we at least move this CLONE_NEWUSER to copy_process? closer
-to other clone_flags checks.
-
-As for your patch,
-
-
-> +	/* Dissallow unshare(CLONE_NEWPID) ; clone(CLONE_NEWPID).
-> +	 * That can result in a possibly empty parent pid namespace
-> +	 * which makes no sense.
-> +	 */
-> +	if ((clone_flags & CLONE_NEWPID) &&
-> +	    task_active_pid_ns(current) != current->nsproxy->pid_ns)
-> +		return ERR_PTR(-EINVAL);
-
-This looks unneeded... copy_pid_ns() should fail in this case, no?
-
-
-> +	if ((clone_flags & (CLONE_THREAD|CLONE_SIGHAND|CLONE_PARENT)) &&
-> ...
-> +		if (clone_flags & (CLONE_THREAD | CLONE_PARENT | CLONE_SIGHAND))
-
-This doesn't really matter, but CLONE_THREAD can be omitted.
-
-
-Still. Can't we make a single check? Like the initial patch I sent, but
-this one moves the check into copy_process() and checks CLONE_* first.
-Looks a bit simpler. And more understandable to me but this is subjective.
-
-But once again, I won't argue, it's up to you.
-
-Oleg.
-
---- x/kernel/fork.c
-+++ x/kernel/fork.c
-@@ -1173,12 +1173,13 @@ static struct task_struct *copy_process(
- 		return ERR_PTR(-EINVAL);
- 
- 	/*
--	 * If the new process will be in a different pid namespace
--	 * don't allow the creation of threads.
-+	 * --------------  COMMENT -----------------
- 	 */
--	if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
--	    (task_active_pid_ns(current) != current->nsproxy->pid_ns))
--		return ERR_PTR(-EINVAL);
-+	if (clone_flags & (CLONE_SIGHAND | CLONE_PARENT)) {
-+		if ((clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) ||
-+		    (task_active_pid_ns(current) != current->nsproxy->pid_ns))
-+			return -EINVAL;
-+	}
- 
- 	retval = security_task_create(clone_flags);
- 	if (retval)
-@@ -1575,15 +1576,6 @@ long do_fork(unsigned long clone_flags,
- 	long nr;
- 
- 	/*
--	 * Do some preliminary argument and permissions checking before we
--	 * actually start allocating stuff
--	 */
--	if (clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) {
--		if (clone_flags & (CLONE_THREAD|CLONE_PARENT))
--			return -EINVAL;
--	}
--
--	/*
- 	 * Determine whether and which event to report to ptracer.  When
- 	 * called from kernel_thread or CLONE_UNTRACED is explicitly
- 	 * requested, no event is reported; otherwise, report if the event
-
+> in the first place). I really am not at all inclined to want to play
+> games in this area any more. It's too damn late in the release window.
