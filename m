@@ -1,51 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab3HUWqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 18:46:49 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:56875 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab3HUWqs (ORCPT
+	id S1753238Ab3HUWpX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 18:45:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36035 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952Ab3HUWpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 18:46:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130821101448.GJ29850@lee--X1>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
-	<1370521041-32318-22-git-send-email-lee.jones@linaro.org>
-	<CACRpkdY2KOxX=oA7i9GUnzpwRKiK2rXqTBPVpg+zW082f2TJdg@mail.gmail.com>
-	<20130821101448.GJ29850@lee--X1>
-Date: Thu, 22 Aug 2013 00:46:47 +0200
-Message-ID: <CACRpkdYjvFTJAUL6xKxjkVd_v=DHHRkswoB_eq0Npqj5Sw23KQ@mail.gmail.com>
-Subject: Re: [PATCH 21/33] clk: ux500: Add Device Tree support for the PRCC
- Kernel clock
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 21 Aug 2013 18:45:22 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Evgeniy Polyakov <zbr@ioremap.net>,
+        Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
+Subject: [PATCH 06/11] w1: slaves: w1_ds2431: convert to use w1_family_ops.groups
+Date: Wed, 21 Aug 2013 15:45:00 -0700
+Message-Id: <1377125105-25388-6-git-send-email-gregkh@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <1377125105-25388-1-git-send-email-gregkh@linuxfoundation.org>
+References: <1377125105-25388-1-git-send-email-gregkh@linuxfoundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 12:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Wed, 21 Aug 2013, Linus Walleij wrote:
+This moves the sysfs file creation/removal to the w1 core by using the
+.groups field, saving code in the slave driver.
 
->> Isn't it possible to fork a function u8500_clk_init_dt() to add all the
->> clocks in the DT probe path and keep this function
->> u8500_clk_init() as it is?
->
-> Yes, we probably could do that, but as we're ripping out ATAG booting
-> support from the ux500 platform, I'll just remove the
-> clk_register_clkdev()s during the process.
+Cc: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/w1/slaves/w1_ds2431.c | 43 +++++++++++++++++++------------------------
+ 1 file changed, 19 insertions(+), 24 deletions(-)
 
-I really do not like the approach of uglifying something and then
-beautifying it later... I prefer each step in isolation to be good
-looking, or you will be confused when traversing the history.
+diff --git a/drivers/w1/slaves/w1_ds2431.c b/drivers/w1/slaves/w1_ds2431.c
+index cef8605e..9c4ff9d2 100644
+--- a/drivers/w1/slaves/w1_ds2431.c
++++ b/drivers/w1/slaves/w1_ds2431.c
+@@ -96,9 +96,9 @@ static int w1_f2d_readblock(struct w1_slave *sl, int off, int count, char *buf)
+ 	return -1;
+ }
+ 
+-static ssize_t w1_f2d_read_bin(struct file *filp, struct kobject *kobj,
+-			       struct bin_attribute *bin_attr,
+-			       char *buf, loff_t off, size_t count)
++static ssize_t eeprom_read(struct file *filp, struct kobject *kobj,
++			   struct bin_attribute *bin_attr, char *buf,
++			   loff_t off, size_t count)
+ {
+ 	struct w1_slave *sl = kobj_to_w1_slave(kobj);
+ 	int todo = count;
+@@ -202,9 +202,9 @@ retry:
+ 	return 0;
+ }
+ 
+-static ssize_t w1_f2d_write_bin(struct file *filp, struct kobject *kobj,
+-				struct bin_attribute *bin_attr,
+-				char *buf, loff_t off, size_t count)
++static ssize_t eeprom_write(struct file *filp, struct kobject *kobj,
++			    struct bin_attribute *bin_attr, char *buf,
++			    loff_t off, size_t count)
+ {
+ 	struct w1_slave *sl = kobj_to_w1_slave(kobj);
+ 	int addr, len;
+@@ -264,29 +264,24 @@ out_up:
+ 	return count;
+ }
+ 
+-static struct bin_attribute w1_f2d_bin_attr = {
+-	.attr = {
+-		.name = "eeprom",
+-		.mode = S_IRUGO | S_IWUSR,
+-	},
+-	.size = W1_F2D_EEPROM_SIZE,
+-	.read = w1_f2d_read_bin,
+-	.write = w1_f2d_write_bin,
++static BIN_ATTR_RW(eeprom, W1_F2D_EEPROM_SIZE);
++
++static struct bin_attribute *w1_f2d_bin_attrs[] = {
++	&bin_attr_eeprom,
++	NULL,
+ };
+ 
+-static int w1_f2d_add_slave(struct w1_slave *sl)
+-{
+-	return sysfs_create_bin_file(&sl->dev.kobj, &w1_f2d_bin_attr);
+-}
++static const struct attribute_group w1_f2d_group = {
++	.bin_attrs = w1_f2d_bin_attrs,
++};
+ 
+-static void w1_f2d_remove_slave(struct w1_slave *sl)
+-{
+-	sysfs_remove_bin_file(&sl->dev.kobj, &w1_f2d_bin_attr);
+-}
++static const struct attribute_group *w1_f2d_groups[] = {
++	&w1_f2d_group,
++	NULL,
++};
+ 
+ static struct w1_family_ops w1_f2d_fops = {
+-	.add_slave      = w1_f2d_add_slave,
+-	.remove_slave   = w1_f2d_remove_slave,
++	.groups		= w1_f2d_groups,
+ };
+ 
+ static struct w1_family w1_family_2d = {
+-- 
+1.8.3.rc0.20.gb99dd2e
 
-Yours,
-Linus Walleij
