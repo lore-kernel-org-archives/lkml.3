@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab3HUQEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 12:04:54 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44498 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab3HUQEw (ORCPT
+	id S1752184Ab3HUQFd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 12:05:33 -0400
+Received: from ms-gwomx02.so-net.ne.jp ([202.238.84.149]:29519 "EHLO
+	ms-gwomx02.so-net.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab3HUQFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 12:04:52 -0400
-Date: Wed, 21 Aug 2013 09:04:50 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>
-Subject: Re: [PATCH 9/9] tcm_qla2xxx: Add special case for COMPARE_AND_WRITE
- data_direction
-Message-ID: <20130821160450.GA30848@infradead.org>
-References: <1377029280-19144-1-git-send-email-nab@daterainc.com>
- <1377029280-19144-10-git-send-email-nab@daterainc.com>
- <20130821063702.GI25506@infradead.org>
- <1377070267.32763.26.camel@haakon3.risingtidesystems.com>
+	Wed, 21 Aug 2013 12:05:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377070267.32763.26.camel@haakon3.risingtidesystems.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Message-ID: <20130821160409.00002550.0762@u01.gate01.com>
+Date: Thu, 22 Aug 2013 01:04:09 +0900
+From: "gcb" <sksmyhole@u01.gate01.com>
+To: <info@uk.com>
+Reply-To: <gcb.foundation@postafiok.hu>
+Subject: 
+Content-Type: Text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+ORGANIZATION: gcb
+X-MAILER: Active! mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 12:31:07AM -0700, Nicholas A. Bellinger wrote:
-> Is it really worth having two se_cmd_flags for COMPARE_AND_WRITE..?
 
-Not leaking the abstraction into the driver is always worth the effort.
+My wife and I won the Euro Millions Lottery of 41 Million British Pounds and we have decided to donate 1.5 million British Pounds to 6 individuals worldwide as our own charity project. Your email address was among the emails which were submitted to us by the Google, Inc as a web user, which was used for the draw with an electronic balloting system your email address came out as the 4th lucky beneficiary world wide.
+To verify, please see our interview by visiting the web page below: http://www.dailymail.co.uk/news/article-2091124/EuroMillions-winners-Gareth-Catherine-Bull-scoop-41MILLION-lotto-jackpot.html
+Send the below information for urgent processing.
+Full Name:
+Mobile No:
+Age:
+Country:
+Send your response to
 
-But looking at the other patches I haven't reviewed yet I think the
-issue is more severe anyway, see my next reply.
+Congratulations once again,
+Best Regards,
+Gareth & Catherine Bull
+gcb.foundation@postafiok.hu
 
-> > Also it might make sense to lift this helper to get a dma direction from
-> > a command into common code.
-> > 
-> 
-> Mmm, perhaps.  I don't recall of the top of my head why tcm_qla2xxx
-> actually needed to reverse it's dma direction (I'm sure that Roland
-> knows, CC'ed), but IIRC it was a tcm_qla2xxx specific thing..?
-
-It's the same issue for any hardware driver that directly maps a
-se_cmd - the direction the target expects is reversed to what the
-driver expects, in addition any BIDI or other special meanings will
-need handling.
 
