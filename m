@@ -1,83 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab3HUKSu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 06:18:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:5135 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752509Ab3HUKSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 06:18:46 -0400
-X-IronPort-AV: E=Sophos;i="4.89,927,1367942400"; 
-   d="scan'208";a="8261328"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: konrad.wilk@oracle.com, robert.moore@intel.com, lv.zheng@intel.com,
-        rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH 2/8] x86, microcode: Use get_ramdisk_{image|size}() in microcode handling.
-Date: Wed, 21 Aug 2013 18:15:37 +0800
-Message-Id: <1377080143-28455-3-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/21 18:15:15,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/21 18:15:17,
-	Serialize complete at 2013/08/21 18:15:17
+	id S1752668Ab3HUKTc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 06:19:32 -0400
+Received: from iona.labri.fr ([147.210.8.143]:50289 "EHLO iona.labri.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752359Ab3HUKR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 06:17:58 -0400
+Message-ID: <521493DC.9000905@labri.fr>
+Date: Wed, 21 Aug 2013 12:18:04 +0200
+From: Martin Peres <martin.peres@labri.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
+CC: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: Re: nouveau: temperature on nv40 is unavailable since ad40d73ef533ab0ad16b4a1ab2f7870c1f8ab954
+References: <1836330.fGgIDqPTNA@pali> <201308150924.49518@pali> <520D547F.2060600@labri.fr> <1616575.x8rWiILC8l@pali>
+In-Reply-To: <1616575.x8rWiILC8l@pali>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
+On 16/08/2013 09:14, Pali Rohár wrote:
+> On Thursday 15 August 2013 18:21:51 Martin Peres wrote:
+>> On 15/08/2013 03:24, Pali Rohár wrote:
+>>> On Thursday 15 August 2013 04:07:24 Martin Peres wrote:
+>>>> On 14/08/2013 05:02, Pali Rohár wrote:
+>>>>> On Tuesday 13 August 2013 15:55:28 Martin Peres wrote:
+>>>>>> On 13/08/2013 09:53, Pali Rohár wrote:
+>>>>>>> On utorok, 13. augusta 2013 15:32:45 CEST, Martin Peres
+>>>>> wrote:
+>>>>>>>> On 13/08/2013 09:23, Pali Rohár wrote:
+>>>>>>>>> On Tuesday 13 August 2013 09:01:19 Martin Peres wrote:
+>>>>>>>>     ...
+>>>>>>>>
+>>>>>>>> You can check the temperature by running nvidia-settings.
+>>>>>>>> If you can't see the temperature in it, then nvidia
+>>>>>>>> doesn't support it on your card and
+>>>>>>>> I'm not sure we should :s
+>>>>>>>>
+>>>>>>>> Thanks for the vbios you sent me in private. For the
+>>>>>>>> others, the reason why he doesn't have temperature
+>>>>>>>> anymore is because his vbios lacks sensor calibration
+>>>>>>>> values.
+>>>>>>> In nvidia-settings tab "GPU 0 - (GeForce 6600 GT)" -->
+>>>>>>> "Thermal Settings" is:
+>>>>>>>
+>>>>>>> Thermal Sensor Information:
+>>>>>>> ID: 0
+>>>>>>> Target: GPU
+>>>>>>> Provider: GPU Internal
+>>>>>>> Temperature: 70 C (now)
+>>>>>>>
+>>>>>>> I looked in Windows program SpeedFan. It found Nvidia PCI
+>>>>>>> card and reported "GPU Temp" about 68-70 C. So it looks
+>>>>>>> like both nvidia driver and windows SpeedFan program
+>>>>>>> reading same values.
+>>>>>> Great, I'll cook you a patch in a bit and you'll see what
+>>>>>> the temperature is like. It won't be perfectly accurate
+>>>>>> but there is some kind of default for nvidia cards of this
+>>>>>> generation.
+>>>>> Ok, send me patch and I can try it if it will work and
+>>>>> report similar values as windows or nvidia driver.
+>>>> Sorry for the late answer.
+>>>>
+>>>> Please test this patch. Be aware that temperature with nouveau
+>>>> will be higher than with the blob.
+>>>> I only want to see if nouveau reports a temperature.
+>>>>
+>>>> The only way to be sure if the values are good-enough would be
+>>>> to use the blob and run:
+>>>> nvapeek 0x15b0
+>>>> Please send me the result along with the temperature reported
+>>>> by nvidia at the time of the peek.
+>>>>
+>>>> Martin
+>>>>
+>>>> PS: This patch has only be compile-tested, I don't have access
+>>>> to an nv4x right now.
+>>> Hello,
+>>>
+>>> now after patch nouveau report temperature:
+>>>
+>>> $ sensors
+>>> ...
+>>> nouveau-pci-0500
+>>> Adapter: PCI adapter
+>>> temp1:        +63.0°C  (high = +95.0°C, hyst =  +3.0°C)
+>>>
+>>>                          (crit = +145.0°C, hyst =  +2.0°C)
+>>>                          (emerg = +135.0°C, hyst =  +5.0°C)
+>> Ok, that was expected ;)
+>>
+>>> ...
+>>>
+>>> I found that nvidia binary driver has command line utility
+>>> nvidia-smi which report same temperature as X utility nvidia-
+>>> settings. So I will use nvidia-smi (if it is OK).
+>>>
+>>> And after reboot nvidia report another temperature value:
+>>>
+>>> $ nvidia-smi -q -d TEMPERATURE
+>>> ...
+>>> GPU 0000:05:00.0
+>>>
+>>>       Temperature
+>>>       
+>>>           Gpu                     : 70 C
+>>>
+>>> Immediately I called nvapeek command:
+>>>
+>>> $ nvapeek 0x15b0
+>>> 000015b0: 1000008e
+>>>
+>>> So value reported by nouveau is lower than value reported by
+>>> nvidia binary driver.
+>> As you didn't run nvapeek 15b0 when running nouveau it is hard to tell
+>> if it is due to
+>> calibration values or because the temperature was lower.
+>>
+> I run it and it always reported value 000000ff (also when temperature changed).
 
-Since we made get_ramdisk_{image|size}() global, use them when we want
-to access ramdisk.
+Seems like we may not calibrate the ADC correctly, this is weird.
+>
+>> Could you please read the temperature + peek 15b0 when running nouveau?
+>>
+>> Anyway, it is weird because I cannot find 70°C with 0x8e as an input
+>> temperature and with
+>> the current default values :o
+>>
+> My idea is that register does not contains temperature. Both nouveau and
+> nvidia driver when show different temperature it does not show different output
+> from "nvapeek 0x15b0".
+>
+> Now I started computer with nouveau driver. Temperature is incresing, but
+> nvapeek 0x15b0 is still same.
+>
+> So do you really needs other tests with nvapeek 0x15b0? Is that register
+> correct?
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Tested-by: Thomas Renninger <trenn@suse.de>
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/kernel/microcode_intel_early.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+I want you to be really sure that 15b0 doesn't change with temperature 
+ON THE
+PROPRIETARY driver. This is very serious if this is not the case.
 
-diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
-index 1575deb..4c58a1b 100644
---- a/arch/x86/kernel/microcode_intel_early.c
-+++ b/arch/x86/kernel/microcode_intel_early.c
-@@ -743,8 +743,8 @@ load_ucode_intel_bsp(void)
- 	struct boot_params *boot_params_p;
- 
- 	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
--	ramdisk_image = boot_params_p->hdr.ramdisk_image;
--	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image(boot_params_p);
-+	ramdisk_size  = get_ramdisk_size(boot_params_p);
- 	initrd_start_early = ramdisk_image;
- 	initrd_end_early = initrd_start_early + ramdisk_size;
- 
-@@ -753,8 +753,8 @@ load_ucode_intel_bsp(void)
- 		(unsigned long *)__pa_nodebug(&mc_saved_in_initrd),
- 		initrd_start_early, initrd_end_early, &uci);
- #else
--	ramdisk_image = boot_params.hdr.ramdisk_image;
--	ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image(&boot_params);
-+	ramdisk_size  = get_ramdisk_size(&boot_params);
- 	initrd_start_early = ramdisk_image + PAGE_OFFSET;
- 	initrd_end_early = initrd_start_early + ramdisk_size;
- 
--- 
-1.7.1
+If this is not the case, then you must have an i2c device from which the 
+blob is
+reading temperature and this device isn't detected by Nouveau.
 
