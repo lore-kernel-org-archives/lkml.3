@@ -1,213 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345Ab3HUJ5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 05:57:12 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:49580 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab3HUJ5K (ORCPT
+	id S1752390Ab3HUJ5u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 05:57:50 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48766 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab3HUJ5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 05:57:10 -0400
-Date: Wed, 21 Aug 2013 10:57:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] For mfd-next, then onto v3.12
-Message-ID: <20130821095704.GF29850@lee--X1>
+	Wed, 21 Aug 2013 05:57:48 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2 07/20] mm, hugetlb: unify region structure handling
+In-Reply-To: <1376040398-11212-8-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com> <1376040398-11212-8-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Wed, 21 Aug 2013 15:27:38 +0530
+Message-ID: <87k3jfgyct.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082109-5816-0000-0000-00000983DB4B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 5ae90d8e467e625e447000cb4335c4db973b1095:
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-  Linux 3.11-rc3 (2013-07-28 20:53:33 -0700)
+> Currently, to track a reserved and allocated region, we use two different
+> ways for MAP_SHARED and MAP_PRIVATE. For MAP_SHARED, we use
+> address_mapping's private_list and, for MAP_PRIVATE, we use a resv_map.
+> Now, we are preparing to change a coarse grained lock which protect
+> a region structure to fine grained lock, and this difference hinder it.
+> So, before changing it, unify region structure handling.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-are available in the git repository at:
+As mentioned earlier kref_put is confusing because we always have
+reference count == 1 , otherwise
 
-  git://git.linaro.org/people/ljones/mfd.git tags/mfd-lee-3.12-1
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-for you to fetch changes up to 8a105ca202b1a1061a24f1e980206cd2808e2f8b:
+>
+> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> index a3f868a..9bf2c4a 100644
+> --- a/fs/hugetlbfs/inode.c
+> +++ b/fs/hugetlbfs/inode.c
+> @@ -366,7 +366,12 @@ static void truncate_hugepages(struct inode *inode, loff_t lstart)
+>
+>  static void hugetlbfs_evict_inode(struct inode *inode)
+>  {
+> +	struct resv_map *resv_map;
+> +
+>  	truncate_hugepages(inode, 0);
+> +	resv_map = (struct resv_map *)inode->i_mapping->private_data;
+> +	if (resv_map)
+> +		kref_put(&resv_map->refs, resv_map_release);
+>  	clear_inode(inode);
+>  }
+>
+> @@ -468,6 +473,11 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb,
+>  					umode_t mode, dev_t dev)
+>  {
+>  	struct inode *inode;
+> +	struct resv_map *resv_map;
+> +
+> +	resv_map = resv_map_alloc();
+> +	if (!resv_map)
+> +		return NULL;
+>
+>  	inode = new_inode(sb);
+>  	if (inode) {
+> @@ -477,7 +487,7 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb,
+>  		inode->i_mapping->a_ops = &hugetlbfs_aops;
+>  		inode->i_mapping->backing_dev_info =&hugetlbfs_backing_dev_info;
+>  		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+> -		INIT_LIST_HEAD(&inode->i_mapping->private_list);
+> +		inode->i_mapping->private_data = resv_map;
+>  		info = HUGETLBFS_I(inode);
+>  		/*
+>  		 * The policy is initialized here even if we are creating a
+> @@ -507,7 +517,9 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb,
+>  			break;
+>  		}
+>  		lockdep_annotate_inode_mutex_key(inode);
+> -	}
+> +	} else
+> +		kref_put(&resv_map->refs, resv_map_release);
+> +
+>  	return inode;
+>  }
+>
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 6b4890f..2677c07 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -5,6 +5,8 @@
+>  #include <linux/fs.h>
+>  #include <linux/hugetlb_inline.h>
+>  #include <linux/cgroup.h>
+> +#include <linux/list.h>
+> +#include <linux/kref.h>
+>
+>  struct ctl_table;
+>  struct user_struct;
+> @@ -22,6 +24,13 @@ struct hugepage_subpool {
+>  	long max_hpages, used_hpages;
+>  };
+>
+> +struct resv_map {
+> +	struct kref refs;
+> +	struct list_head regions;
+> +};
+> +extern struct resv_map *resv_map_alloc(void);
+> +void resv_map_release(struct kref *ref);
+> +
+>  extern spinlock_t hugetlb_lock;
+>  extern int hugetlb_max_hstate __read_mostly;
+>  #define for_each_hstate(h) \
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 3f834f1..8751e2c 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -375,12 +375,7 @@ static void set_vma_private_data(struct vm_area_struct *vma,
+>  	vma->vm_private_data = (void *)value;
+>  }
+>
+> -struct resv_map {
+> -	struct kref refs;
+> -	struct list_head regions;
+> -};
+> -
+> -static struct resv_map *resv_map_alloc(void)
+> +struct resv_map *resv_map_alloc(void)
+>  {
+>  	struct resv_map *resv_map = kmalloc(sizeof(*resv_map), GFP_KERNEL);
+>  	if (!resv_map)
+> @@ -392,7 +387,7 @@ static struct resv_map *resv_map_alloc(void)
+>  	return resv_map;
+>  }
+>
+> -static void resv_map_release(struct kref *ref)
+> +void resv_map_release(struct kref *ref)
+>  {
+>  	struct resv_map *resv_map = container_of(ref, struct resv_map, refs);
+>
+> @@ -1092,8 +1087,9 @@ static long vma_needs_reservation(struct hstate *h,
+>
+>  	if (vma->vm_flags & VM_MAYSHARE) {
+>  		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+> -		return region_chg(&inode->i_mapping->private_list,
+> -							idx, idx + 1);
+> +		struct resv_map *resv = inode->i_mapping->private_data;
+> +
+> +		return region_chg(&resv->regions, idx, idx + 1);
+>
+>  	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
+>  		return 1;
+> @@ -1117,7 +1113,9 @@ static void vma_commit_reservation(struct hstate *h,
+>
+>  	if (vma->vm_flags & VM_MAYSHARE) {
+>  		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+> -		region_add(&inode->i_mapping->private_list, idx, idx + 1);
+> +		struct resv_map *resv = inode->i_mapping->private_data;
+> +
+> +		region_add(&resv->regions, idx, idx + 1);
+>
+>  	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
+>  		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+> @@ -3074,6 +3072,7 @@ int hugetlb_reserve_pages(struct inode *inode,
+>  	long ret, chg;
+>  	struct hstate *h = hstate_inode(inode);
+>  	struct hugepage_subpool *spool = subpool_inode(inode);
+> +	struct resv_map *resv_map;
+>
+>  	/*
+>  	 * Only apply hugepage reservation if asked. At fault time, an
+> @@ -3089,10 +3088,13 @@ int hugetlb_reserve_pages(struct inode *inode,
+>  	 * to reserve the full area even if read-only as mprotect() may be
+>  	 * called to make the mapping read-write. Assume !vma is a shm mapping
+>  	 */
+> -	if (!vma || vma->vm_flags & VM_MAYSHARE)
+> -		chg = region_chg(&inode->i_mapping->private_list, from, to);
+> -	else {
+> -		struct resv_map *resv_map = resv_map_alloc();
+> +	if (!vma || vma->vm_flags & VM_MAYSHARE) {
+> +		resv_map = inode->i_mapping->private_data;
+> +
+> +		chg = region_chg(&resv_map->regions, from, to);
+> +
+> +	} else {
+> +		resv_map = resv_map_alloc();
+>  		if (!resv_map)
+>  			return -ENOMEM;
+>
+> @@ -3135,7 +3137,7 @@ int hugetlb_reserve_pages(struct inode *inode,
+>  	 * else has to be done for private mappings here
+>  	 */
+>  	if (!vma || vma->vm_flags & VM_MAYSHARE)
+> -		region_add(&inode->i_mapping->private_list, from, to);
+> +		region_add(&resv_map->regions, from, to);
+>  	return 0;
+>  out_err:
+>  	if (vma)
+> @@ -3146,9 +3148,12 @@ out_err:
+>  void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
+>  {
+>  	struct hstate *h = hstate_inode(inode);
+> -	long chg = region_truncate(&inode->i_mapping->private_list, offset);
+> +	struct resv_map *resv_map = inode->i_mapping->private_data;
+> +	long chg = 0;
+>  	struct hugepage_subpool *spool = subpool_inode(inode);
+>
+> +	if (resv_map)
+> +		chg = region_truncate(&resv_map->regions, offset);
+>  	spin_lock(&inode->i_lock);
+>  	inode->i_blocks -= (blocks_per_huge_page(h) * freed);
+>  	spin_unlock(&inode->i_lock);
+> -- 
+> 1.7.9.5
 
-  mfd: pcf50633-adc: Use devm_*() functions (2013-08-20 09:27:35 +0100)
-
-----------------------------------------------------------------
-Hi Sam,
-
-These are the patches due for the MFD Next tree.
-
-If there are any dramas with them, please let me know.
-
-Kind regards,
-Lee
-
-----------------------------------------------------------------
-Alexander Shiyan (1):
-      mfd: syscon: Remove "base" field from private driver data
-
-Andrea Adami (2):
-      mfd: mcp: Add missing linux/device.h header
-      mfd: ucb1x00: Explicitely include linux/device.h
-
-Ankur Raina (2):
-      mfd: Fix for DA9055 driver initialization
-      mfd: Update DA9055 i2c device id name
-
-Benedikt Spranger (1):
-      mfd: core: Copy DMA mask and params from parent
-
-Bill Huang (1):
-      mfd: palmas: Add power off control
-
-Charles Keepax (5):
-      mfd: arizona: Move regulator disable to after marking cache only
-      mfd: wm5110: Mark register containing FLL gains as readable
-      mfd: wm5110: Add mic detect level registers
-      mfd: wm5110: Add missing Mic Detect 3 register into defaults
-      mfd: wm5110: Set FX_CTRL2 to volatile
-
-J Keerthy (1):
-      mfd: Add TPS659038 documentation under Palmas
-
-Jingoo Han (17):
-      mfd: Use dev_get_platdata()
-      mfd: max8997: Cast void pointer to data of max8997_pmic_dt_match
-      mfd: lpc_ich: Staticize struct 'lpc_chipset_info'
-      mfd: twl4030-power: Staticize local functions
-      mfd: menelaus: Use NULL instead of 0
-      MFD: ucb1x00-core: Add CONFIG_PM_SLEEP to suspend/resume
-      mfd: ab8500-gpadc: Add CONFIG_PM_RUNTIME to runtime_suspend/runtime_resume
-      mfd: ab8500-gpadc: Add CONFIG_PM_SLEEP to suspend/resume
-      mfd: pm8921: Include missing linux/module.h
-      mfd: pm8921: Remove unnecessary platform_set_drvdata()
-      mfd: pm8921: Use devm_*() functions
-      mfd: max8997: Use devm_*() functions
-      mfd: max8998: Use devm_*() functions
-      mfd: menelaus: Use devm_*() functions
-      mfd: tps65010: Use devm_*() functions
-      mfd: wl1273: Use devm_*() functions
-      mfd: pcf50633-adc: Use devm_*() functions
-
-Mark Brown (7):
-      mfd: sec: Add register cache for interrupt mask registers
-      mfd: wm8997: Make Kconfig prompt for WM8997 more consistent
-      mfd: wm8994: Remove unneeded check for JACKDET
-      mfd: wm8994: Remove check for active audio in runtime suspend
-      mfd: wm831x: Remove erronious bits per word set
-      mfd: stmpe: Staticise stmpe_of_probe()
-      mfd: tps65010: Use power efficient workqueue for power polling
-
-Michael Brunner (1):
-      mfd: Add support for COMe-bHL6 and COMe-cTH6 to Kontron PLD driver
-
-Patil, Rachna (2):
-      MFD: ti_tscadc: ADC Clock check not required
-      MFD: ti_tscadc: Disable TSC config registers in adc mode
-
-Peter Ujfalusi (3):
-      mfd: twl6040: Remove support for legacy (pdata) mode
-      mfd: twl6040: Cosmetic, parameter alignment change
-      mfd: twl6040: Cleanup in early error handling in probe function
-
-Yadwinder Singh Brar (3):
-      mfd: s2mps11: Add device tree support
-      mfd: s2mps11: Remove clocks from regulators list
-      mfd: sec: Add clock cell for s2mps11
-
-Zubair Lutfullah (2):
-      mfd: ti_am335x_tscadc: Fix spin lock and reg_cache
-      mfd: ti_am335x_tscadc: Update reg_cache variable in clr function
-
- Documentation/devicetree/bindings/mfd/palmas.txt            |   2 ++
- Documentation/devicetree/bindings/mfd/s2mps11.txt           | 109 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- Documentation/devicetree/bindings/regulator/palmas-pmic.txt |   5 +++++
- drivers/mfd/88pm800.c                                       |   2 +-
- drivers/mfd/88pm805.c                                       |   2 +-
- drivers/mfd/88pm860x-core.c                                 |   2 +-
- drivers/mfd/Kconfig                                         |   2 +-
- drivers/mfd/aat2870-core.c                                  |   2 +-
- drivers/mfd/ab3100-core.c                                   |   2 +-
- drivers/mfd/ab8500-gpadc.c                                  |   4 ++++
- drivers/mfd/adp5520.c                                       |   2 +-
- drivers/mfd/arizona-core.c                                  |   2 +-
- drivers/mfd/as3711.c                                        |   2 +-
- drivers/mfd/asic3.c                                         |   2 +-
- drivers/mfd/da903x.c                                        |   2 +-
- drivers/mfd/da9052-core.c                                   |   2 +-
- drivers/mfd/da9055-core.c                                   |   7 ++++++-
- drivers/mfd/da9055-i2c.c                                    |   2 +-
- drivers/mfd/dm355evm_msp.c                                  |   4 ++--
- drivers/mfd/ezx-pcap.c                                      |   6 +++---
- drivers/mfd/htc-egpio.c                                     |   2 +-
- drivers/mfd/htc-i2cpld.c                                    |  10 +++++-----
- drivers/mfd/htc-pasic3.c                                    |   2 +-
- drivers/mfd/intel_msic.c                                    |   4 ++--
- drivers/mfd/kempld-core.c                                   |  30 +++++++++++++++++++++++------
- drivers/mfd/lm3533-core.c                                   |   8 ++++----
- drivers/mfd/lp8788.c                                        |   2 +-
- drivers/mfd/lpc_ich.c                                       |   2 +-
- drivers/mfd/max77686.c                                      |   2 +-
- drivers/mfd/max77693.c                                      |   2 +-
- drivers/mfd/max8925-i2c.c                                   |   2 +-
- drivers/mfd/max8997.c                                       |  18 +++++++-----------
- drivers/mfd/max8998.c                                       |   7 +++----
- drivers/mfd/mcp-sa11x0.c                                    |   2 +-
- drivers/mfd/menelaus.c                                      |  22 +++++++++------------
- drivers/mfd/mfd-core.c                                      |   2 ++
- drivers/mfd/omap-usb-host.c                                 |   4 ++--
- drivers/mfd/palmas.c                                        |  33 ++++++++++++++++++++++++++++++--
- drivers/mfd/pcf50633-adc.c                                  |   3 +--
- drivers/mfd/pcf50633-core.c                                 |   2 +-
- drivers/mfd/pm8921-core.c                                   |  14 +++++---------
- drivers/mfd/rc5t583.c                                       |   2 +-
- drivers/mfd/sec-core.c                                      |  40 ++++++++++++++++++++++++++++++++++++--
- drivers/mfd/si476x-i2c.c                                    |   2 +-
- drivers/mfd/sm501.c                                         |   6 +++---
- drivers/mfd/sta2x11-mfd.c                                   |   4 ++--
- drivers/mfd/stmpe.c                                         |   3 ++-
- drivers/mfd/syscon.c                                        |   8 ++++----
- drivers/mfd/t7l66xb.c                                       |   8 ++++----
- drivers/mfd/tc3589x.c                                       |   2 +-
- drivers/mfd/tc6387xb.c                                      |   6 +++---
- drivers/mfd/tc6393xb.c                                      |   8 ++++----
- drivers/mfd/ti-ssp.c                                        |   2 +-
- drivers/mfd/ti_am335x_tscadc.c                              |  32 +++++++++++++++----------------
- drivers/mfd/tps6105x.c                                      |   2 +-
- drivers/mfd/tps65010.c                                      |  24 +++++++++++------------
- drivers/mfd/tps65090.c                                      |   2 +-
- drivers/mfd/tps6586x.c                                      |   2 +-
- drivers/mfd/tps65912-core.c                                 |   2 +-
- drivers/mfd/tps80031.c                                      |   2 +-
- drivers/mfd/twl-core.c                                      |   2 +-
- drivers/mfd/twl4030-audio.c                                 |   2 +-
- drivers/mfd/twl4030-madc.c                                  |   2 +-
- drivers/mfd/twl4030-power.c                                 |   8 ++++----
- drivers/mfd/twl6040.c                                       |  90 +++++++++++++++++++++++++++-----------------------------------------------------------
- drivers/mfd/ucb1400_core.c                                  |   2 +-
- drivers/mfd/ucb1x00-core.c                                  |   6 ++++--
- drivers/mfd/wl1273-core.c                                   |   8 ++------
- drivers/mfd/wm5110-tables.c                                 |  18 ++++++++++++++++++
- drivers/mfd/wm831x-core.c                                   |   2 +-
- drivers/mfd/wm831x-irq.c                                    |   2 +-
- drivers/mfd/wm831x-spi.c                                    |   1 -
- drivers/mfd/wm8350-i2c.c                                    |   3 ++-
- drivers/mfd/wm8400-core.c                                   |   2 +-
- drivers/mfd/wm8994-core.c                                   |  44 +-----------------------------------------
- drivers/mfd/wm8994-irq.c                                    |   2 +-
- include/linux/mfd/mcp.h                                     |   2 ++
- include/linux/mfd/palmas.h                                  |   1 +
- include/linux/mfd/samsung/s2mps11.h                         |   6 +-----
- include/linux/mfd/ti_am335x_tscadc.h                        |   1 -
- include/linux/mfd/twl6040.h                                 |   1 +
- include/linux/mfd/ucb1x00.h                                 |   1 +
- 82 files changed, 417 insertions(+), 282 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/s2mps11.txt
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
