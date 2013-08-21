@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401Ab3HURmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 13:42:53 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:54977 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab3HURmw (ORCPT
+	id S1752423Ab3HURpb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 13:45:31 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38545 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab3HURpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 13:42:52 -0400
-Message-ID: <1377107381.32763.56.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH] idr: Use this_cpu_ptr() for percpu_ida
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Jens Axboe <axboe@kernel.dk>
-Date: Wed, 21 Aug 2013 10:49:41 -0700
-In-Reply-To: <00000140a14ae6bb-f0fca267-cdd6-4039-8c6b-f715999a83c5-000000@email.amazonses.com>
-References: <1375896905-6074-1-git-send-email-kmo@daterainc.com>
-	 <1375896905-6074-5-git-send-email-kmo@daterainc.com>
-	 <0000014059ec4c34-1bb53d48-c9ee-4e71-81b8-253026431c5c-000000@email.amazonses.com>
-	 <20130807183345.GA11612@kmo-pixel>
-	 <000001405a4b39ef-0715410a-5061-41e9-9414-86559f16570d-000000@email.amazonses.com>
-	 <20130807195733.GB11612@kmo-pixel>
-	 <000001405e5776ba-bcc96088-b5e8-4abe-b98e-2e9d7d9b112b-000000@email.amazonses.com>
-	 <1377033546.32763.4.camel@haakon3.risingtidesystems.com>
-	 <00000140a14ae6bb-f0fca267-cdd6-4039-8c6b-f715999a83c5-000000@email.amazonses.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Wed, 21 Aug 2013 13:45:30 -0400
+Message-ID: <5214FCB6.4040200@wwwdotorg.org>
+Date: Wed, 21 Aug 2013 11:45:26 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Lars Poeschel <poeschel@lemonage.de>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2] pinctrl: queue GPIO operations instead of defering
+References: <1376751410-14560-1-git-send-email-linus.walleij@linaro.org> <52127035.7000909@wwwdotorg.org>
+In-Reply-To: <52127035.7000909@wwwdotorg.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-21 at 14:32 +0000, Christoph Lameter wrote:
-> On Tue, 20 Aug 2013, Nicholas A. Bellinger wrote:
+On 08/19/2013 01:21 PM, Stephen Warren wrote:
+> On 08/17/2013 08:56 AM, Linus Walleij wrote:
+>> We currently defer probing of the caller if a pinctrl GPIO
+>> request or direction setting comes in before the range mapping
+>> a certain GPIO to a certain pin controller is available.
+>>
+>> This can end up with a circular dependency: the GPIO driver
+>> needs the pin controller to be ready and the pin controller
+>> need the GPIO driver to be ready. This also happens if
+>> pin controllers and GPIO controllers compiled as modules
+>> are inserted in a certain order.
+>>
+>> To break this circular dependence, queue any GPIO
+>> operations coming to the framework until the range is ready,
+>> instead of deferring the probe of the caller.
 > 
-> > On Thu, 2013-08-08 at 14:32 +0000, Christoph Lameter wrote:
-> > > On Wed, 7 Aug 2013, Kent Overstreet wrote:
-> > >
-> > > > One thing that was bugging me - I was never able to figure out for sure
-> > > > if smp_processor_id() returns a number in the range [0, nr_cpu_ids), at
-> > > > least I couldn't find where it was documented - could you tell me if
-> > > > that's true?
-> > >
-> > > I always assumed that it was in the range 0 ... nr_cpu_ids - 1 and that is
-> > > the assumption under which the kernel code was written. Things would break
-> > > horribly if smp_process_id would return nr_cpu_ids or higher.
-> > >
-> >
-> > Hi guys,
-> >
-> > Just a heads up that I've put Kent's standalone percpu-ida patch (with
-> > Christoph's recommend changes) into target-pending/for-next here:
-> >
-> > https://git.kernel.org/cgit/linux/kernel/git/nab/target-pending.git/commit/?h=for-next&id=47bd524a5b3eb6429b058b8b562b45329ab2c9e7
-> >
-> > I've got a number of target patches that depend on this code for v3.12,
-> > and a delay on this particular piece would be painful to endure..
-> >
-> > Sooo, please yell loudly if there is an objection to percpu-ida merge as
-> > a completely standalone item, that does not effect any existing ida
-> > code.
-> 
-> Well the performance is still going to be limited due to the spinlock in
-> the percpu handling. You do not need the spinlock. Once preempt is off you
-> should have exclusive access to the per cpu data. This is already
-> exploited by idr_layer_alloc before the patch. Doing so is going to
-> reduce the code size of the patch significantly.
-> 
-> Please post the patch inline so that its easy to comment on it.
-> 
+> I just noticed that next-20130819 is failing on the Tegra114 Dalmore
+> board because of this patch. The kernel log is below. Reverting this
+> patch solves the problem
 
-Hi Christoph,
+Linus, any thoughts here?
 
-The latest version from Kent was posted last week here:
-
-http://marc.info/?l=linux-kernel&m=137669878117020&w=2
-
---nab
+>> [   12.427751] tegra114-pinctrl 70000868.pinmux: pin USB_VBUS_EN0 PN4 already requested by Tegra GPIOs:108; cannot claim for Tegra GPIOs:108
+>> [   12.440320] tegra114-pinctrl 70000868.pinmux: pin-108 (Tegra GPIOs:108) status -22
+>> [   12.447965] usb1_vbus: Failed to request enable GPIO108: -22
+>> [   12.454306] reg-fixed-voltage 3.regulator: Failed to register regulator: -22
+>> [   12.461508] reg-fixed-voltage: probe of 3.regulator failed with error -22
+>> [   12.469659] tegra114-pinctrl 70000868.pinmux: pin SPDIF_IN PK6 already requested by Tegra GPIOs:86; cannot claim for Tegra GPIOs:86
+>> [   12.481606] tegra114-pinctrl 70000868.pinmux: pin-86 (Tegra GPIOs:86) status -22
+>> [   12.489052] usb2_vbus: Failed to request enable GPIO86: -22
+>> [   12.495226] reg-fixed-voltage 4.regulator: Failed to register regulator: -22
+>> [   12.502449] reg-fixed-voltage: probe of 4.regulator failed with error -22
+>> [   12.510542] tegra114-pinctrl 70000868.pinmux: pin GMI_CLK PK1 already requested by Tegra GPIOs:81; cannot claim for Tegra GPIOs:81
+>> [   12.522403] tegra114-pinctrl 70000868.pinmux: pin-81 (Tegra GPIOs:81) status -22
+>> [   12.529896] vdd_hdmi_5v0: Failed to request enable GPIO81: -22
+>> [   12.536281] reg-fixed-voltage 5.regulator: Failed to register regulator: -22
+>> [   12.543465] reg-fixed-voltage: probe of 5.regulator failed with error -22
+>> [   12.552509] vdd_cam_1v8_reg: 1800 mV 
+>> [   12.558205] platform 7d008000.usb: Driver tegra-ehci requests probe deferral
+>> [   12.566600] platform 7d008000.usb-phy: Driver tegra-phy requests probe deferral
+>> [   12.577475] input: gpio-keys.2 as /devices/soc0/gpio-keys.2/input/input1
+>> [   12.588329] platform 7d008000.usb: Driver tegra-ehci requests probe deferral
+>> [   12.596967] platform 7d008000.usb-phy: Driver tegra-phy requests probe deferral
 
