@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab3HUOYP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:24:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58243 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725Ab3HUOYL (ORCPT
+	id S1752039Ab3HUOZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:25:59 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:44715 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751646Ab3HUOZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:24:11 -0400
-Date: Wed, 21 Aug 2013 16:23:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
-	<fernando_b1@lab.ntt.co.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-Message-ID: <20130821142356.GC31370@twins.programming.kicks-ass.net>
-References: <521313D8.9080500@lab.ntt.co.jp>
- <20130820084405.GC3258@twins.programming.kicks-ass.net>
- <52138BE9.5090005@linux.intel.com>
- <20130820160146.GG3258@twins.programming.kicks-ass.net>
- <20130820163312.GA17957@redhat.com>
- <20130820175429.GI3258@twins.programming.kicks-ass.net>
- <20130820182553.GB22287@redhat.com>
- <20130821083130.GM3258@twins.programming.kicks-ass.net>
- <20130821113551.GA1472@redhat.com>
- <20130821123311.GA31370@twins.programming.kicks-ass.net>
+	Wed, 21 Aug 2013 10:25:57 -0400
+Date: Wed, 21 Aug 2013 10:25:57 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>,
+        Daniel J Blueman <daniel@numascale-asia.com>
+Subject: Re: [PATCH 2/2] usb: fail on usb_hub_create_port_device() errors
+In-Reply-To: <20130821092515.GA3685@shrek.podlesie.net>
+Message-ID: <Pine.LNX.4.44L0.1308211024450.1297-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821123311.GA31370@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 02:33:11PM +0200, Peter Zijlstra wrote:
-> On Wed, Aug 21, 2013 at 01:35:51PM +0200, Oleg Nesterov wrote:
-> > On 08/21, Peter Zijlstra wrote:
-> 
-> > > Yes its the right rq, but the wrong time.
+On Wed, 21 Aug 2013, Krzysztof Mazur wrote:
+
+> > We should never have maxchild < bNbrPorts (unless maxchild is 0).  But 
+> > just in case we do, changing the code is a good idea.
 > > 
-> > Hmm. Just in case, it is not that I think this patch really makes sense,
-> > but I'd like to understand why do you think it is wrong.
+> > Besides, "hub->maxchild" is shorter and easier to read than
+> > "hub->descriptor->bNbrPorts".  :-)
+> > 
+> 
+> It's "hub->hdev->maxchild", but it's still shorter and
+> in many places it's just "hdev->maxchild" :)
+> 
+> I tested that with maxchild < bNbrPorts and there are no NULL pointer
+> dereferences anymore.
+> 
+> Krzysiek
+> -- >8 --
+> Subject: [PATCH 3/2] usb: don't use bNbrPorts after initialization
+> 
+> After successful initialization hub->descriptor->bNbrPorts and
+> hub->hdev->maxchild are equal, but using hub->hdev->maxchild is
+> preferred because that value is explicitly used for initialization
+> of hub->ports[].
+> 
+> Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+> ---
+>  drivers/usb/core/hub.c | 12 +++++-------
+>  1 file changed, 5 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index 292ffa8..86e353f 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -451,7 +451,7 @@ static void led_work (struct work_struct *work)
+>  	if (hdev->state != USB_STATE_CONFIGURED || hub->quiescing)
+>  		return;
 >  
-> > But it is not "after it switches out", it is after it switched back.
+> -	for (i = 0; i < hub->descriptor->bNbrPorts; i++) {
+> +	for (i = 0; i < hdev->maxchild; i++) {
+>  		unsigned	selector, mode;
+>  
+>  		/* 30%-50% duty cycle */
+> @@ -500,7 +500,7 @@ static void led_work (struct work_struct *work)
+>  	}
+>  	if (!changed && blinkenlights) {
+>  		cursor++;
+> -		cursor %= hub->descriptor->bNbrPorts;
+> +		cursor %= hdev->maxchild;
+>  		set_port_led(hub, cursor + 1, HUB_LED_GREEN);
+>  		hub->indicator[cursor] = INDICATOR_CYCLE;
+>  		changed++;
+> @@ -826,7 +826,7 @@ static unsigned hub_power_on(struct usb_hub *hub, bool do_delay)
+>  	else
+>  		dev_dbg(hub->intfdev, "trying to enable port power on "
+>  				"non-switchable hub\n");
+> -	for (port1 = 1; port1 <= hub->descriptor->bNbrPorts; port1++)
+> +	for (port1 = 1; port1 <= hub->hdev->maxchild; port1++)
+>  		if (hub->ports[port1 - 1]->power_is_on)
+>  			set_port_feature(hub->hdev, port1, USB_PORT_FEAT_POWER);
+>  		else
+> @@ -4655,9 +4655,7 @@ static void hub_events(void)
+>  		hub_dev = hub->intfdev;
+>  		intf = to_usb_interface(hub_dev);
+>  		dev_dbg(hub_dev, "state %d ports %d chg %04x evt %04x\n",
+> -				hdev->state, hub->descriptor
+> -					? hub->descriptor->bNbrPorts
+> -					: 0,
+> +				hdev->state, hdev->maxchild,
+>  				/* NOTE: expects max 15 ports... */
+>  				(u16) hub->change_bits[0],
+>  				(u16) hub->event_bits[0]);
+> @@ -4702,7 +4700,7 @@ static void hub_events(void)
+>  		}
+>  
+>  		/* deal with port status changes */
+> -		for (i = 1; i <= hub->descriptor->bNbrPorts; i++) {
+> +		for (i = 1; i <= hdev->maxchild; i++) {
+>  			if (test_bit(i, hub->busy_bits))
+>  				continue;
+>  			connect_change = test_bit(i, hub->change_bits);
 > 
-> D'uh I was being particularly dense it seems :/
-> 
-> Yes I think it is correct. You're now trading two atomic ops on a
-> different cacheline than rq->lock for one atomic op on the rq->lock.
-> 
-> Might be a win, esp. since hopefully there's a fair chance its the same
-> runqueue.
 
-The other consideration is that this adds two branches to the normal
-schedule path. I really don't know what the regular ratio between
-schedule() and io_schedule() is -- and I suspect it can very much depend
-on workload -- but it might be a net loss due to that, even if it makes
-io_schedule() 'lots' cheaper.
+This is good.  Combined with your other changes, it should fix all 
+the problems you described.  You can add my Acked-by to these patches 
+now.
 
+Alan Stern
 
