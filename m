@@ -1,68 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab3HUSn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 14:43:27 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:53819 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab3HUSn0 (ORCPT
+	id S1752676Ab3HUSpu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 14:45:50 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38833 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab3HUSpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 14:43:26 -0400
+	Wed, 21 Aug 2013 14:45:49 -0400
+Message-ID: <52150AD9.3040808@wwwdotorg.org>
+Date: Wed, 21 Aug 2013 12:45:45 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130821182053.GA19624@redhat.com>
-References: <CALCETrXMQdjRyvP8RHOd5xjciurS7-hKUOExvkvQ1RWmdRdypA@mail.gmail.com>
- <0be9da18c0ca360773a397de3063d01019ff88d8.1377107508.git.luto@amacapital.net> <20130821182053.GA19624@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 21 Aug 2013 11:43:05 -0700
-Message-ID: <CALCETrXtJBDqkvO3mHxDrHL3whCWX_B-LAXOnue7r90nyyWY_A@mail.gmail.com>
-Subject: Re: [PATCH] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Willy Tarreau <w@1wt.eu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>
+To: Sonic Zhang <sonic.adi@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: Re: [PATCH 1/3 v3] pinctrl: ADI PIN control driver for the GPIO controller
+ on bf54x and bf60x.
+References: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
+In-Reply-To: <1377066607-19061-1-git-send-email-sonic.adi@gmail.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 11:20 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Can't really comment the patch, just a nit:
->
-> On 08/21, Andy Lutomirski wrote:
->>
->> +static bool may_flink(const struct path *path)
->> +{
->> +     bool ret;
->> +     struct inode *inode = path->dentry->d_inode;
->> +
->> +     /*
->> +      * This is racy: I_LINKABLE could be cleared between this check
->> +      * and the actual link operation.
->
-> OK,
->
->> +     spin_lock(&inode->i_lock);
->> +     ret = !!(inode->i_state & I_LINKABLE);
->> +     spin_unlock(&inode->i_lock);
->
-> so why do we need to take a lock ?
->
+On 08/21/2013 12:30 AM, Sonic Zhang wrote:
+> From: Sonic Zhang <sonic.zhang@analog.com>
+> 
+> The new ADI GPIO2 controller was introduced since the BF548 and BF60x
+> processors. It differs a lot from the old one on BF5xx processors. So,
+> create a pinctrl driver under the pinctrl framework.
 
-We probably don't.  But other accesses to this field take that lock,
-so it seemed safer.
+>  drivers/pinctrl/Kconfig                    |   17 +
+>  drivers/pinctrl/Makefile                   |    3 +
+>  drivers/pinctrl/pinctrl-adi2-bf54x.c       |  572 +++++++++++
+>  drivers/pinctrl/pinctrl-adi2-bf60x.c       |  454 +++++++++
 
-(In principle, someone could take the lock, write I_LINKABLE, clear
-it, and unlock, and we'd get confused if we didn't take the lock
-ourselves.)
+Those files look reasonable.
 
-> Oleg.
->
+>  drivers/pinctrl/pinctrl-adi2.c             | 1501 ++++++++++++++++++++++++++++
+>  drivers/pinctrl/pinctrl-adi2.h             |   75 ++
+>  include/linux/platform_data/pinctrl-adi2.h |   40 +
 
+> diff --git a/drivers/pinctrl/pinctrl-adi2.c b/drivers/pinctrl/pinctrl-adi2.c
 
+> +/**
+> + * struct gpio_reserve_map - a GPIO map structure containing the
+> + * reservation status of each PIN.
+> + *
+> + * @owner: who request the reservation
+> + * @rsv_gpio: if this pin is reserved as GPIO
+> + * @rsv_int: if this pin is reserved as interrupt
+> + * @rsv_peri: if this pin is reserved as part of a peripheral device
+> + */
+> +struct gpio_reserve_map {
+> +	unsigned char owner[RESOURCE_LABEL_SIZE];
+> +	bool rsv_gpio;
+> +	bool rsv_int;
+> +	bool rsv_peri;
+> +};
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Why is that needed; don't the pinctrl/GPIO cores already know which
+pinctrl pins and which GPIOs are used, and for what?
+
+> +#if defined(CONFIG_DEBUG_FS)
+> +static inline unsigned short get_gpio_dir(struct gpio_port *port,
+> ...
+
+Why aren't the existing GPIO/pinctrl subsystem debugfs files enough?
+
+> +static int adi_pinmux_request(struct pinctrl_dev *pctldev, unsigned pin)
+...
+> +	/* If a pin can be muxed as either GPIO or peripheral, make
+> +	 * sure it is not already a GPIO pin when we request it.
+> +	 */
+> +	if (port->rsvmap[offset].rsv_gpio) {
+> +		if (system_state == SYSTEM_BOOTING)
+> +			dump_stack();
+> +		dev_err(pctldev->dev,
+> +		       "%s: Peripheral PIN %d is already reserved as GPIO by %s!\n",
+> +		       __func__, pin, get_label(port, offset));
+> +		spin_unlock_irqrestore(&port->lock, flags);
+> +		return -EBUSY;
+> +	}
+
+Yes, this definitely warrants some more explanation. It looks odd. What
+is "system_state"?
+
+> +static int adi_gpio_probe(struct platform_device *pdev)
+...
+> +	/* Add gpio pin range */
+> +	snprintf(pinctrl_devname, RESOURCE_LABEL_SIZE, "pinctrl-adi2.%d",
+> +		pdata->pinctrl_id);
+> +	pinctrl_devname[RESOURCE_LABEL_SIZE - 1] = 0;
+> +	ret = gpiochip_add_pin_range(&port->chip, pinctrl_devname,
+> +		0, pdata->port_pin_base, port->width);
+
+This looks like platform data is providing the GPIO <-> pinctrl pin ID
+mapping, or at least part of it. Surely that mapping is fixed by the HW
+design, and hence isn't something platform data should influence. Do the
+files pinctrl-adi2-bf*.c not contain complete information about each HW
+configuration for some reason?
+
+> +static struct platform_driver adi_pinctrl_driver = {
+> +	.probe		= adi_pinctrl_probe,
+> +	.remove		= adi_pinctrl_remove,
+> +	.driver		= {
+> +		.name	= DRIVER_NAME,
+> +	},
+> +};
+> +
+> +static struct platform_driver adi_gpio_pint_driver = {
+> +	.probe		= adi_gpio_pint_probe,
+> +	.remove		= adi_gpio_pint_remove,
+> +	.driver		= {
+> +		.name	= "adi-gpio-pint",
+> +	},
+> +};
+> +
+> +static struct platform_driver adi_gpio_driver = {
+> +	.probe		= adi_gpio_probe,
+> +	.remove		= adi_gpio_remove,
+> +	.driver		= {
+> +		.name	= "adi-gpio",
+> +	},
+> +};
+
+Hmmm. Is there one HW block that controls GPIOs and pinctrl, or are
+there separate HW blocks?
+
+If there's one HW block, why not have just one driver?
+
+If there are separate HW blocks, then having separate GPIO and pinctrl
+drivers seems like it would make sense.
