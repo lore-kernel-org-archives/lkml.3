@@ -1,217 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab3HUKsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 06:48:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41228 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab3HUKsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 06:48:06 -0400
-X-IronPort-AV: E=Sophos;i="4.89,927,1367942400"; 
-   d="scan'208";a="8261331"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: konrad.wilk@oracle.com, robert.moore@intel.com, lv.zheng@intel.com,
-        rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH 6/8] x86, acpi: Make acpi_initrd_override() available with va or pa.
-Date: Wed, 21 Aug 2013 18:15:41 +0800
-Message-Id: <1377080143-28455-7-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/21 18:15:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/21 18:15:18,
-	Serialize complete at 2013/08/21 18:15:18
+	id S1751748Ab3HUKta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 06:49:30 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:35176 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab3HUKt3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 06:49:29 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2 10/20] mm, hugetlb: remove resv_map_put()
+In-Reply-To: <1376040398-11212-11-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com> <1376040398-11212-11-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Wed, 21 Aug 2013 16:19:20 +0530
+Message-ID: <8761uzgvyn.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082110-8878-0000-0000-0000087C1D6B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are using the same trick in previous patch.
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-Introduce a "bool is_phys" to acpi_initrd_override(). When it
-is true, convert all golbal variables va to pa, so that we can
-access them on 32bit before paging is enabled.
+> In following patch, I change vma_resv_map() to return resv_map
+> for all case. This patch prepares it by removing resv_map_put() which
+> doesn't works properly with following change, because it works only for
+> HPAGE_RESV_OWNER's resv_map, not for all resv_maps.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 73034dd..869c3e0 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2212,15 +2212,6 @@ static void hugetlb_vm_op_open(struct vm_area_struct *vma)
+>  		kref_get(&resv->refs);
+>  }
+>
+> -static void resv_map_put(struct vm_area_struct *vma)
+> -{
+> -	struct resv_map *resv = vma_resv_map(vma);
+> -
+> -	if (!resv)
+> -		return;
+> -	kref_put(&resv->refs, resv_map_release);
+> -}
 
-NOTE: Do not call printk() on 32bit before paging is enabled
-      because it will use global variables.
+Why not have seperate functions to return vma_resv_map for
+HPAGE_RESV_OWNER and one for put ? That way we could have something like
 
-Originally-From: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/kernel/setup.c |    3 +-
- drivers/acpi/osl.c      |   68 ++++++++++++++++++++++++++++++++++------------
- include/linux/acpi.h    |    4 +-
- 3 files changed, 54 insertions(+), 21 deletions(-)
+resv_map_hpage_resv_owner_get()
+resv_map_hpge_resv_put() 
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index a189909..1290ea7 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1133,7 +1133,8 @@ void __init setup_arch(char **cmdline_p)
- 	reserve_initrd();
- 
- #if defined(CONFIG_ACPI) && defined(CONFIG_BLK_DEV_INITRD)
--	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
-+	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start,
-+			     false);
- #endif
- 
- 	reserve_crashkernel();
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index dff7fcc..ccdb5a6 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -566,7 +566,19 @@ void __init early_alloc_acpi_override_tables_buf(void)
- 					   PAGE_SIZE, false));
- }
- 
--void __init acpi_initrd_override(void *data, size_t size)
-+/**
-+ * acpi_initrd_override - Initialize acpi_tables_addr with acpi override tables
-+ * @data: cpio file address (va or pa)
-+ * @size: size of cpio file
-+ * @is_phys: true if @data is pa, false otherwise
-+ *
-+ * This function will find all acpi override tables provided by initrd, and
-+ * store the addresses in acpi_tables_addr.
-+ *
-+ * This function could be called before paging is enabled. Before paging is
-+ * enabled, caller should use physical address, and set @is_phys as true.
-+ */
-+void __init acpi_initrd_override(void *data, size_t size, bool is_phys)
- {
- 	int sig, no, table_nr = 0, total_offset = 0;
- 	long offset = 0;
-@@ -586,10 +598,17 @@ void __init acpi_initrd_override(void *data, size_t size)
- 		ACPI_SIG_UEFI, ACPI_SIG_WAET, ACPI_SIG_WDAT, ACPI_SIG_WDDT,
- 		ACPI_SIG_WDRT, ACPI_SIG_DSDT, ACPI_SIG_FADT, ACPI_SIG_PSDT,
- 		ACPI_SIG_RSDT, ACPI_SIG_XSDT, ACPI_SIG_SSDT, NULL };
-+	u64 *acpi_tables_addr_p = &acpi_tables_addr;
-+	int *all_tables_size_p = &all_tables_size;
- 
- 	if (data == NULL || size == 0)
- 		return;
- 
-+	if (is_phys) {
-+		acpi_tables_addr_p = (u64 *)__pa_nodebug(&acpi_tables_addr);
-+		all_tables_size_p = (int *)__pa_nodebug(&all_tables_size);
-+	}
-+
- 	for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
- 		file = find_cpio_data(cpio_path, data, size, &offset);
- 		if (!file.data)
-@@ -599,8 +618,9 @@ void __init acpi_initrd_override(void *data, size_t size)
- 		size -= offset;
- 
- 		if (file.size < sizeof(struct acpi_table_header)) {
--			pr_err("ACPI OVERRIDE: Table smaller than ACPI header [%s%s]\n",
--				cpio_path, file.name);
-+			if (!is_phys)
-+				pr_err("ACPI OVERRIDE: Table smaller than ACPI header [%s%s]\n",
-+					cpio_path, file.name);
- 			continue;
- 		}
- 
-@@ -611,36 +631,48 @@ void __init acpi_initrd_override(void *data, size_t size)
- 				break;
- 
- 		if (!table_sigs[sig]) {
--			pr_err("ACPI OVERRIDE: Unknown signature [%s%s]\n",
--				cpio_path, file.name);
-+			if (!is_phys)
-+				pr_err("ACPI OVERRIDE: Unknown signature [%s%s]\n",
-+					cpio_path, file.name);
- 			continue;
- 		}
- 		if (file.size != table->length) {
--			pr_err("ACPI OVERRIDE: File length does not match table length [%s%s]\n",
--				cpio_path, file.name);
-+			if (!is_phys)
-+				pr_err("ACPI OVERRIDE: File length does not match table length [%s%s]\n",
-+					cpio_path, file.name);
- 			continue;
- 		}
- 		if (acpi_table_checksum(file.data, table->length)) {
--			pr_err("ACPI OVERRIDE: Bad table checksum [%s%s]\n",
--				cpio_path, file.name);
-+			if (!is_phys)
-+				pr_err("ACPI OVERRIDE: Bad table checksum [%s%s]\n",
-+					cpio_path, file.name);
- 			continue;
- 		}
- 
--		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
--			table->signature, cpio_path, file.name, table->length);
-+		if (!is_phys)
-+			pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
-+				table->signature, cpio_path,
-+				file.name, table->length);
- 
- 		/*
- 		 * If the override tables in cpio file exceeds the BRK buffer,
- 		 * ignore the current table and go for the next one.
- 		 */
--		all_tables_size += table->length;
--		if (all_tables_size > ACPI_OVERRIDE_TABLES_SIZE) {
--			pr_warning("ACPI OVERRIDE: ACPI override tables exceeds buffer size."
--				   " Ignoring table %4.4s\n", table->signature);
--			all_tables_size -= table->length;
-+		*all_tables_size_p += table->length;
-+		if (*all_tables_size_p > ACPI_OVERRIDE_TABLES_SIZE) {
-+			if (!is_phys)
-+				pr_warning("ACPI OVERRIDE: ACPI override tables exceeds buffer size."
-+					   " Ignoring table %4.4s\n",
-+					   table->signature);
-+			*all_tables_size_p -= table->length;
- 			continue;
- 		}
- 
-+		/*
-+		 * file.data is the offset of the table in initrd. If @data is
-+		 * pa, then we find pa. If @data is va, then we find va. No need
-+		 * to convert.
-+		 */
- 		early_initrd_files[table_nr].data = file.data;
- 		early_initrd_files[table_nr].size = file.size;
- 		table_nr++;
-@@ -648,8 +680,8 @@ void __init acpi_initrd_override(void *data, size_t size)
- 	if (table_nr == 0)
- 		return;
- 
--	p = __va(acpi_tables_addr);
--
-+	p = is_phys ? (char *)(*acpi_tables_addr_p) :
-+		      (char *)__va(*acpi_tables_addr_p);
- 	for (no = 0; no < table_nr; no++) {
- 		memcpy(p + total_offset, early_initrd_files[no].data,
- 		       early_initrd_files[no].size);
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 381579e..af4da51 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -80,10 +80,10 @@ typedef int (*acpi_tbl_entry_handler)(struct acpi_subtable_header *header,
- 				      const unsigned long end);
- 
- #ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
--void acpi_initrd_override(void *data, size_t size);
-+void acpi_initrd_override(void *data, size_t size, bool is_phys);
- void early_alloc_acpi_override_tables_buf(void);
- #else
--static inline void acpi_initrd_override(void *data, size_t size)
-+static inline void acpi_initrd_override(void *data, size_t size, bool is_phys)
- {
- }
- #endif
--- 
-1.7.1
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+> -
+>  static void hugetlb_vm_op_close(struct vm_area_struct *vma)
+>  {
+>  	struct hstate *h = hstate_vma(vma);
+> @@ -2237,7 +2228,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
+>  		reserve = (end - start) -
+>  			region_count(resv, start, end);
+>
+> -		resv_map_put(vma);
+> +		kref_put(&resv->refs, resv_map_release);
+>
+>  		if (reserve) {
+>  			hugetlb_acct_memory(h, -reserve);
+> @@ -3164,8 +3155,8 @@ int hugetlb_reserve_pages(struct inode *inode,
+>  		region_add(resv_map, from, to);
+>  	return 0;
+>  out_err:
+> -	if (vma)
+> -		resv_map_put(vma);
+> +	if (vma && is_vma_resv_set(vma, HPAGE_RESV_OWNER))
+> +		kref_put(&resv_map->refs, resv_map_release);
+
+for this
+
+    if (alloc)
+           resv_map_hpage_resv_put();
+
+>  	return ret;
+>  }
+>
+> -- 
+> 1.7.9.5
 
