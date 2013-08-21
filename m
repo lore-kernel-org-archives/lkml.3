@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442Ab3HUPlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:41:05 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:45111 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab3HUPlC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:41:02 -0400
-Date: Wed, 21 Aug 2013 18:39:57 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: Re: [sched next] overflowed cpu time for kernel threads in
- /proc/PID/stat
-Message-ID: <20130821153957.GA2969@swordfish.minsk.epam.com>
-References: <20130820111426.GA27828@swordfish.datadirectnet.com>
- <20130820151509.GA17441@somewhere>
- <20130820153549.GB2315@swordfish.minsk.epam.com>
- <20130820154257.GD17441@somewhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130820154257.GD17441@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752299Ab3HUPkn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:40:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2756 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752171Ab3HUPkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 11:40:41 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/3] HID: Win 8 multitouch panels detection in core
+Date: Wed, 21 Aug 2013 17:40:17 +0200
+Message-Id: <1377099620-23947-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/20/13 17:42), Frederic Weisbecker wrote:
-> On Tue, Aug 20, 2013 at 06:35:50PM +0300, Sergey Senozhatsky wrote:
-> > On (08/20/13 17:15), Frederic Weisbecker wrote:
-> > > On Tue, Aug 20, 2013 at 02:14:26PM +0300, Sergey Senozhatsky wrote:
-> > > Hello,
-> > > 
-> > > Please upload your config.
-> > > 
-> > > I'm adding Stanislaw in Cc in case it relates to cputime scaling.
-> > >
-> > 
-> > please find attached.
-> > 
-> > 	-ss
-> 
-> > #
-> > # CPU/Task time and stats accounting
-> > #
-> > CONFIG_VIRT_CPU_ACCOUNTING=y
-> > CONFIG_VIRT_CPU_ACCOUNTING_GEN=y
-> 
-> So it happens with full dynticks cputime accounting.
-> How reproducable is this? Does it always happen?
-> Does it happen with CONFIG_TICK_CPU_ACCOUNTING as well? (you'll
-> need to deactivate full dynticks.)
+Hi guys,
 
-in cputime_adjust() `stime' is greater than `rtime', so `utime = rtime - stime'
-sets wrong value.
+this is the v2 of the rework of the pre-scanning of the hid report descriptors.
+This allows us to be able to detect Win 8 multitouch panels.
+I tried to take into account all of the previous reviews, and I think the patch
+series is in a better shape now.
 
-	-ss
+Alexander, Srinivas, could you please review/test patches 1/3 and 2/3 as they
+will both impact hid_sensor_hub detection now. From the report descriptors
+Alexander sent, I would say that it will work now, but it's always better to
+have different testers :)
+
+Cheers,
+Benjamin
+
+Changes in v2:
+- moved "flags" processing in patch 2/3
+- do not introduce parser->flags, but use hid->group as a temporary flag placeholder
+- hid_scan_report() is less verbose when errors are found in the descriptor
+- hid_scan_report() is tolerant to parsing errors
+- fixed usage_page handling in hid_scan_collection(), which fixes sensors detection
+- amended commit messages
+- #define and #undef HID_FLAG_* in hid-core.c instead of hid.h
+
+Benjamin Tissoires (3):
+  HID: Use hid_parser for pre-scanning the report descriptors
+  HID: detect Win 8 multitouch devices in core
+  HID: do not init input reports for Win 8 multitouch devices
+
+ drivers/hid/hid-core.c        | 143 ++++++++++++++++++++++++++++++------------
+ drivers/hid/hid-multitouch.c  |  36 +++++++----
+ drivers/hid/usbhid/hid-core.c |  11 +++-
+ include/linux/hid.h           |   2 +
+ 4 files changed, 137 insertions(+), 55 deletions(-)
+
+-- 
+1.8.3.1
+
