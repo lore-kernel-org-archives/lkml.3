@@ -1,283 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab3HUR4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 13:56:12 -0400
-Received: from mga14.intel.com ([143.182.124.37]:42315 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753180Ab3HUR4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 13:56:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,929,1367996400"; 
-   d="scan'208";a="349733164"
-Subject: Re: [PATCH v3 0/7] Enable Drivers for Intel MIC X100 Coprocessors.
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
-        Asias He <asias@redhat.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-In-Reply-To: <cover.1377104309.git.sudeep.dutt@intel.com>
-References: <cover.1377104309.git.sudeep.dutt@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Aug 2013 10:55:29 -0700
-Message-ID: <1377107729.23820.6.camel@blbiskey-desk1.amr.corp.intel.com>
+	id S1753272Ab3HUR6W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 13:58:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15931 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791Ab3HUR6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 13:58:19 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=roXeUe4e85gA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=JzSCUfRX3cwA:10 a=XyMNlIghAAAA:8 a=D1pviyP8qKv71XvsCqsA:9 a=CjuIK1q_8ugA:10 a=69vhMaErX6oAKDbg:21 a=Ktd2vMW4ndwQ1_58:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 21 Aug 2013 13:58:16 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jochen Striepe <jochen@tolot.escape.de>
+Cc: Willy Tarreau <w@1wt.eu>, Greg KH <gregkh@linuxfoundation.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>, lwn@lwn.net,
+        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Proposed stable release changes
+Message-ID: <20130821135816.41127e6f@gandalf.local.home>
+In-Reply-To: <20130821172327.GB2398@pompeji.miese-zwerge.org>
+References: <20130820224032.GA20491@kroah.com>
+	<CA+5PVA4s8D6Hkvj7c4Hpw6MOefZG4BEEWZjWb4XHW+k4n_sWjA@mail.gmail.com>
+	<20130820235700.GA7209@kroah.com>
+	<CA+5PVA4q1K9iS0-ppZKMM8QfKQZBHX8auEp+C=Y=gnSMCkbP2Q@mail.gmail.com>
+	<20130821004924.GA19098@kroah.com>
+	<20130821053836.GF16424@1wt.eu>
+	<20130821133713.GA16493@home.goodmis.org>
+	<20130821172327.GB2398@pompeji.miese-zwerge.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sincere apologies for the spam. This patches series got sent out 7 times
-by mistake due to script bug at my end. I will ensure this never happens
-again.
+On Wed, 21 Aug 2013 19:23:27 +0200
+Jochen Striepe <jochen@tolot.escape.de> wrote:
 
-Apologies again.
-Sudeep Dutt
+> ... people are very different. Many just update here and then, but
+> there are those who do update on most stable releases. Those are the
+> ones you get feedback and testing from, and I think you should encourage
+> them to update as soon as a new -stable kernel is released. Getting
+> regression fixes fast sounds like a good encouragement especially for
+> people interested in the -stable series. Keeping the number of
+> regressions low is the whole point of -stable, right?
 
-On Wed, 2013-08-21 at 10:52 -0700, Sudeep Dutt wrote:
-> ChangeLog:
-> =========
-> 
-> v2 => v3:
-> a) Patch 1 data structure cleanups, header file include cleanups,
->    IDA interface reuse and switching to device_create_with_groups(..)
->    as per feedback from Greg Kroah-Hartman.
-> b) Patch 7 signal documentation, sleep workaround removal and sysfs
->    access API cleanups as per feedback from Michael S. Tsirkin.
-> 
-> v1 => v2: @ http://lwn.net/Articles/563131/
-> a) License wording cleanup, sysfs ABI documentation, patch 1 refactoring
->    into 3 smaller patches and function renames, as per feedback from
->    Greg Kroah-Hartman.
-> b) Use VRINGH infrastructure for accessing virtio rings from the host
->    in patch 5, as per feedback from Michael S. Tsirkin.
-> 
-> v1: Initial post @ https://lwn.net/Articles/561314/
-> 
-> Description:
-> ============
-> 
-> An Intel MIC X100 device is a PCIe form factor add-in coprocessor
-> card based on the Intel Many Integrated Core (MIC) architecture
-> that runs a Linux OS. It is a PCIe endpoint in a platform and therefore
-> implements the three required standard address spaces i.e. configuration,
-> memory and I/O. The host OS loads a device driver as is typical for
-> PCIe devices. The card itself runs a bootstrap after reset that
-> transfers control to the card OS downloaded from the host driver.
-> The card OS as shipped by Intel is a Linux kernel with modifications
-> for the X100 devices.
-> 
-> Since it is a PCIe card, it does not have the ability to host hardware
-> devices for networking, storage and console. We provide these devices
-> on X100 coprocessors thus enabling a self-bootable equivalent environment
-> for applications. A key benefit of our solution is that it leverages
-> the standard virtio framework for network, disk and console devices,
-> though in our case the virtio framework is used across a PCIe bus.
-> 
-> Here is a block diagram of the various components described above. The
-> virtio backends are situated on the host rather than the card given better
-> single threaded performance for the host compared to MIC, the ability of
-> the host to initiate DMA's to/from the card using the MIC DMA engine and
-> the fact that the virtio block storage backend can only be on the host.
-> 
->        +----------+           |             +----------+
->        | Card OS  |           |             | Host OS  |
->        +----------+           |             +----------+
->                               |
-> +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
-> | Virtio| |Virtio  | |Virtio| | |Virtio   |  |Virtio  | |Virtio  |
-> | Net   | |Console | |Block | | |Net      |  |Console | |Block   |
-> | Driver| |Driver  | |Driver| | |backend  |  |backend | |backend |
-> +-------+ +--------+ +------+ | +---------+  +--------+ +--------+
->     |         |         |     |      |            |         |
->     |         |         |     |User  |            |         |
->     |         |         |     |------|------------|---------|-------
->     +-------------------+     |Kernel +--------------------------+
->               |               |       | Virtio over PCIe IOCTLs  |
->               |               |       +--------------------------+
->       +--------------+        |                   |
->       |Intel MIC     |        |            +---------------+
->       |Card Driver   |        |            |Intel MIC      |
->       +--------------+        |            |Host Driver    |
->               |               |            +---------------+
->               |               |                   |
->      +-------------------------------------------------------------+
->      |                                                             |
->      |                    PCIe Bus                                 |
->      +-------------------------------------------------------------+
-> 
-> The following series of patches are partitioned as follows:
-> 
-> Patch 1: This patch introduces the "Intel MIC Host Driver" in the block
-> diagram which does the following:
-> a) Initializes the Intel MIC X100 PCIe devices.
-> b) Provides sysfs entries for family and stepping information.
-> 
-> Patch 2: This patch enables the following features in the
-> "Intel MIC Host Driver" in the block diagram:
-> a) MSIx, MSI and legacy interrupt support.
-> b) System Memory Page Table(SMPT) support. SMPT enables system memory
->    access from the card. On X100 devices the host can program 32 SMPT
->    registers each capable of accessing 16GB of system memory
->    address space from X100 devices. The registers can thereby be used
->    to access a cumulative 512GB of system memory address space from
->    X100 devices at any point in time.
-> 
-> Patch 3: This patch enables the following features in the
-> "Intel MIC Host Driver" in the block diagram:
-> a) Boots and shuts down the card via sysfs entries.
-> b) Allocates and maps a device page for communication with the
->    card driver and updates the device page address via scratchpad
->    registers.
-> c) Provides sysfs entries for shutdown status, kernel command line,
->    firmware, ramdisk, bootmode and log buffer information.
-> 
-> Patch 4: This patch introduces the "Intel MIC Card Driver" in the block
-> diagram which does the following:
-> a) Initializes the Intel MIC X100 platform device and driver.
-> b) Sets up support to handle shutdown requests from the host.
-> c) Maps the device page after obtaining the device page address
->    from the scratchpad registers updated by the host.
-> d) Informs the host upon a card crash by registering a panic notifier.
-> e) Informs the host upon a poweroff/halt event.
-> 
-> Patch 5: This patch introduces the host "Virtio over PCIe" interface for
-> Intel MIC. It allows creating user space backends on the host and instantiating
-> virtio devices for them on the Intel MIC card. It uses the existing VRINGH
-> infrastructure in the kernel to access virtio rings from the host. A character
-> device per MIC is exposed with IOCTL, mmap and poll callbacks. This allows the
-> user space backend to:
-> (a) add/remove a virtio device via a device page.
-> (b) map (R/O) virtio rings and device page to user space.
-> (c) poll for availability of data.
-> (d) copy a descriptor or entire descriptor chain to/from the card.
-> (e) modify virtio configuration.
-> (f) handle virtio device reset.
-> The buffers are copied over using CPU copies for this initial patch
-> and host initiated MIC DMA support is planned for future patches.
-> The avail and desc virtio rings are in host memory and the used ring
-> is in card memory to maximize writes across PCIe for performance.
-> 
-> Patch 6: This patch introduces the card "Virtio over PCIe" interface for
-> Intel MIC. It allows virtio drivers on the card to communicate with their
-> user space backends on the host via a device page. Ring 3 apps on the host
-> can add, remove and configure virtio devices. A thin MIC specific
-> virtio_config_ops is implemented which is borrowed heavily from previous
-> similar implementations in lguest and s390 @
-> drivers/lguest/lguest_device.c
-> drivers/s390/kvm/kvm_virtio.c
-> 
-> Patch 7: This patch introduces a sample user space daemon which
-> implements the virtio device backends on the host. The daemon
-> creates/removes/configures virtio device backends by communicating with
-> the Intel MIC Host Driver. The virtio devices currently supported are
-> virtio net, virtio console and virtio block. Virtio net supports TSO/GSO.
-> The daemon also monitors card shutdown status and takes appropriate actions
-> like killing the virtio backends and resetting the card upon card shutdown
-> and crashes.
-> 
-> The patches have been compiled/validated against v3.11-rc5.
-> 
-> Ashutosh Dixit (2):
->   Intel MIC Host Driver Changes for Virtio Devices.
->   Intel MIC Card Driver Changes for Virtio Devices.
-> 
-> Caz Yokoyama (1):
->   Sample Implementation of Intel MIC User Space Daemon.
-> 
-> Dasaratharaman Chandramouli (1):
->   Intel MIC Host Driver Interrupt/SMPT support.
-> 
-> Sudeep Dutt (3):
->   Intel MIC Host Driver for X100 family.
->   Intel MIC Host Driver, card OS state management.
->   Intel MIC Card Driver for X100 family.
-> 
->  Documentation/ABI/testing/sysfs-class-mic.txt |  147 +++
->  Documentation/mic/mic_overview.txt            |   49 +
->  Documentation/mic/mpssd/.gitignore            |    1 +
->  Documentation/mic/mpssd/Makefile              |   19 +
->  Documentation/mic/mpssd/micctrl               |  173 +++
->  Documentation/mic/mpssd/mpss                  |  202 +++
->  Documentation/mic/mpssd/mpssd.c               | 1701 +++++++++++++++++++++++++
->  Documentation/mic/mpssd/mpssd.h               |  100 ++
->  Documentation/mic/mpssd/sysfs.c               |  102 ++
->  drivers/misc/Kconfig                          |    1 +
->  drivers/misc/Makefile                         |    1 +
->  drivers/misc/mic/Kconfig                      |   39 +
->  drivers/misc/mic/Makefile                     |    6 +
->  drivers/misc/mic/card/Makefile                |   11 +
->  drivers/misc/mic/card/mic_debugfs.c           |  130 ++
->  drivers/misc/mic/card/mic_device.c            |  306 +++++
->  drivers/misc/mic/card/mic_device.h            |  133 ++
->  drivers/misc/mic/card/mic_virtio.c            |  631 +++++++++
->  drivers/misc/mic/card/mic_virtio.h            |   77 ++
->  drivers/misc/mic/card/mic_x100.c              |  256 ++++
->  drivers/misc/mic/card/mic_x100.h              |   48 +
->  drivers/misc/mic/common/mic_device.h          |   51 +
->  drivers/misc/mic/host/Makefile                |   13 +
->  drivers/misc/mic/host/mic_boot.c              |  185 +++
->  drivers/misc/mic/host/mic_debugfs.c           |  496 +++++++
->  drivers/misc/mic/host/mic_device.h            |  300 +++++
->  drivers/misc/mic/host/mic_fops.c              |  221 ++++
->  drivers/misc/mic/host/mic_fops.h              |   32 +
->  drivers/misc/mic/host/mic_main.c              | 1098 ++++++++++++++++
->  drivers/misc/mic/host/mic_smpt.c              |  440 +++++++
->  drivers/misc/mic/host/mic_smpt.h              |   98 ++
->  drivers/misc/mic/host/mic_sysfs.c             |  468 +++++++
->  drivers/misc/mic/host/mic_virtio.c            |  704 ++++++++++
->  drivers/misc/mic/host/mic_virtio.h            |  138 ++
->  drivers/misc/mic/host/mic_x100.c              |  573 +++++++++
->  drivers/misc/mic/host/mic_x100.h              |   99 ++
->  include/uapi/linux/Kbuild                     |    2 +
->  include/uapi/linux/mic_common.h               |  238 ++++
->  include/uapi/linux/mic_ioctl.h                |   74 ++
->  39 files changed, 9363 insertions(+)
->  create mode 100644 Documentation/ABI/testing/sysfs-class-mic.txt
->  create mode 100644 Documentation/mic/mic_overview.txt
->  create mode 100644 Documentation/mic/mpssd/.gitignore
->  create mode 100644 Documentation/mic/mpssd/Makefile
->  create mode 100755 Documentation/mic/mpssd/micctrl
->  create mode 100755 Documentation/mic/mpssd/mpss
->  create mode 100644 Documentation/mic/mpssd/mpssd.c
->  create mode 100644 Documentation/mic/mpssd/mpssd.h
->  create mode 100644 Documentation/mic/mpssd/sysfs.c
->  create mode 100644 drivers/misc/mic/Kconfig
->  create mode 100644 drivers/misc/mic/Makefile
->  create mode 100644 drivers/misc/mic/card/Makefile
->  create mode 100644 drivers/misc/mic/card/mic_debugfs.c
->  create mode 100644 drivers/misc/mic/card/mic_device.c
->  create mode 100644 drivers/misc/mic/card/mic_device.h
->  create mode 100644 drivers/misc/mic/card/mic_virtio.c
->  create mode 100644 drivers/misc/mic/card/mic_virtio.h
->  create mode 100644 drivers/misc/mic/card/mic_x100.c
->  create mode 100644 drivers/misc/mic/card/mic_x100.h
->  create mode 100644 drivers/misc/mic/common/mic_device.h
->  create mode 100644 drivers/misc/mic/host/Makefile
->  create mode 100644 drivers/misc/mic/host/mic_boot.c
->  create mode 100644 drivers/misc/mic/host/mic_debugfs.c
->  create mode 100644 drivers/misc/mic/host/mic_device.h
->  create mode 100644 drivers/misc/mic/host/mic_fops.c
->  create mode 100644 drivers/misc/mic/host/mic_fops.h
->  create mode 100644 drivers/misc/mic/host/mic_main.c
->  create mode 100644 drivers/misc/mic/host/mic_smpt.c
->  create mode 100644 drivers/misc/mic/host/mic_smpt.h
->  create mode 100644 drivers/misc/mic/host/mic_sysfs.c
->  create mode 100644 drivers/misc/mic/host/mic_virtio.c
->  create mode 100644 drivers/misc/mic/host/mic_virtio.h
->  create mode 100644 drivers/misc/mic/host/mic_x100.c
->  create mode 100644 drivers/misc/mic/host/mic_x100.h
->  create mode 100644 include/uapi/linux/mic_common.h
->  create mode 100644 include/uapi/linux/mic_ioctl.h
-> 
+Yes, but its even worse when we add a new regression to fix the old one.
 
+Note, this will still encourage people to upgrade to stable, and the
+delay should be even more encouragement. The point of the delay is to
+catch regressions caused by fixes in mainline. We don't want that added
+regression to trickle into stable like it has a few times.
 
+As you say "Keeping the number of regressions low is the whole point of
+-stable". Yes it is. By the delay, it should help stable from getting
+as many regressions as it is today.
+
+> 
+> > Maybe people are rushing, but I don't update my main machines every
+> > stable release because I can't always afford the down time it causes me
+> > to do so.
+> 
+> On my server/router and on my desktop machine it's the same, those are
+> for daily work. But I have a netbook for playing around. :)
+
+Right, and after upgrading your server/router to a new stable, it will
+suck that it hits a new regression and you have to update again. A
+delay should help limit those occurrences even more.
+
+For netbook that you can play with the -rc candidates and if you hit a
+regression, report it, and go back to a more stable kernel.
+
+The point I'm making, we should be more reluctant in pulling patches
+into stable as quick as we are. A patch ideally should simmer in
+linux-next for a bit, then go into mainline. It should also simmer
+there for a bit before it goes into stable. Except for those very rare
+patches that can cause the system to easily crash, let an exploit
+happen, or corrupt data. Those do need to go into stable ASAP. But
+luckily, those are also rare and far between.
+
+-- Steve
