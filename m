@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab3HUFYr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 01:24:47 -0400
-Received: from 1wt.eu ([62.212.114.60]:35454 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751899Ab3HUFYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 01:24:46 -0400
-Date: Wed, 21 Aug 2013 07:24:24 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, lwn@lwn.net,
-        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Borislav Petkov <bp@alien8.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Proposed stable release changes
-Message-ID: <20130821052424.GE16424@1wt.eu>
-References: <20130820224032.GA20491@kroah.com> <20130820225815.GD16424@1wt.eu> <20130820231232.GB703@kroah.com>
-Mime-Version: 1.0
+	id S1752051Ab3HUFbr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 01:31:47 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:48305 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab3HUFbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 01:31:46 -0400
+Date: Wed, 21 Aug 2013 09:31:42 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Mel Gorman <mgorman@suse.de>, kosaki.motohiro@jp.fujitsu.com,
+        riel@redhat.com, hughd@google.com, xemul@parallels.com,
+        rientjes@google.com, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] mm: shmem: check the return value of mpol_to_str()
+Message-ID: <20130821053142.GQ18673@moon>
+References: <5212E8DF.5020209@asianux.com>
+ <20130820053036.GB18673@moon>
+ <52130194.4030903@asianux.com>
+ <20130820064730.GD18673@moon>
+ <52131F48.1030002@asianux.com>
+ <52132011.60501@asianux.com>
+ <52132432.3050308@asianux.com>
+ <20130820082516.GE18673@moon>
+ <52142422.9050209@asianux.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130820231232.GB703@kroah.com>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <52142422.9050209@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 04:12:32PM -0700, Greg KH wrote:
-> On Wed, Aug 21, 2013 at 12:58:15AM +0200, Willy Tarreau wrote:
-> > Hi Greg,
-> > 
-> > On Tue, Aug 20, 2013 at 03:40:32PM -0700, Greg KH wrote:
-> > > Hi all,
-> > > 
-> > > Given that I had to just revert a patch in the recent stable releases
-> > > that didn't get enough time to "bake" in Linus's tree (or in -next), I
-> > > figured it was worth discussing some possible changes with how "fast" I
-> > > pick up patches for stable releases.
-> > > 
-> > > So, how about this proposal:
-> > > 
-> > > - I will wait for a -rc to come out with the patch in it before putting
-> > >   it into a stable release, unless:
-> > > 	- the maintainer ACKs it, or sends it directly (like DaveM does
-> > > 	  for networking patches)
-> > > 	- I have seen enough discussion about a patch to show that it
-> > > 	  really does fix something / is good / doesn't cause problems.
-> > > 	- obviously safe, i.e. "add a device id" type thing.
-> > > 
-> > > Given that we have -rc releases every week, except for the initial -rc1
-> > > release, I don't think this will really cause any major delays.
-> > 
-> > In the last discussion you initiated on the subject, I proposed something
-> > even more conservative which was the same as above except instead of
-> > "wait for a -rc", it was "wait for rc1 after a full release containing
-> > the patch", unless one of the conditions you proposed, or another one
-> > which would be a tag "urgent" or something like this in the patch.
+On Wed, Aug 21, 2013 at 10:21:22AM +0800, Chen Gang wrote:
+> mpol_to_str() may fail, and not fill the buffer (e.g. -EINVAL), so need
+> check about it, or buffer may not be zero based, and next seq_printf()
+> will cause issue.
 > 
-> Waiting 3 months is too long, in my opinion, sorry.
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> Cc: Cyrill Gorcunov <gorcunov@gmail.com>
 
-I meant only for the non-important ones. Their authors will qualify the
-ones that are important and must not wait. The same way as now many patches
-are correctly tagged "cc: stable", I suspect that we could end up with maybe
-80% of patches tagged as "must not wait", and the remaining 20% would indeed
-wait up to 3 months, but if their authors think they should wait maybe we
-should trust them.
+Looks good to me, thanks!
 
-Willy
-
+Reviewed-by: Cyrill Gorcunov <gorcunov@gmail.com>
