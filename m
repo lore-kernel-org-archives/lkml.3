@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab3HUQri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 12:47:38 -0400
-Received: from na3sys010aog104.obsmtp.com ([74.125.245.76]:45282 "HELO
-	na3sys010aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752023Ab3HUQrf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 12:47:35 -0400
+	id S1752565Ab3HUQsK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 12:48:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5297 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751633Ab3HUQsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 12:48:09 -0400
+Date: Wed, 21 Aug 2013 18:41:46 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
+Message-ID: <20130821164146.GA15194@redhat.com>
+References: <20130820084405.GC3258@twins.programming.kicks-ass.net> <52138BE9.5090005@linux.intel.com> <20130820160146.GG3258@twins.programming.kicks-ass.net> <20130820163312.GA17957@redhat.com> <20130820175429.GI3258@twins.programming.kicks-ass.net> <20130820182553.GB22287@redhat.com> <20130821083130.GM3258@twins.programming.kicks-ass.net> <20130821113551.GA1472@redhat.com> <20130821123311.GA31370@twins.programming.kicks-ass.net> <20130821142356.GC31370@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <CAL1RGDVSrf6++PMdfnAZAUw=QX0VbQ9Wck+v=7ebfc-_FXJ_NA@mail.gmail.com>
-References: <1377029280-19144-1-git-send-email-nab@daterainc.com>
- <1377029280-19144-10-git-send-email-nab@daterainc.com> <CAL1RGDVSrf6++PMdfnAZAUw=QX0VbQ9Wck+v=7ebfc-_FXJ_NA@mail.gmail.com>
-From: Roland Dreier <roland@purestorage.com>
-Date: Wed, 21 Aug 2013 09:47:14 -0700
-Message-ID: <CAL1RGDViSg2GdSHU9GG0p0CeGN_dgkfBd9szNpFgF=GT7bFATA@mail.gmail.com>
-Subject: Re: [PATCH 9/9] tcm_qla2xxx: Add special case for COMPARE_AND_WRITE data_direction
-To: "Nicholas A. Bellinger" <nab@daterainc.com>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130821142356.GC31370@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 7:38 AM, Roland Dreier <roland@purestorage.com> wrote:
-> I don't understand this.  In fact the whole patch series looks quite
-> confused.  COMPARE AND WRITE is a normal Data-Out command, with no
-> requirement for special bidirectional handling or anything like that.
-> The only slightly unusual thing is that a CAW command with a NUMBER OF
-> LOGICAL BLOCKS equal to N will actually transfer 2*N worth of data --
-> one set of data for the compare operation and a second set to write if
-> the compare succeeds.  But just to be clear, the transfer of those 2*N
-> blocks happens as a single transfer during the Data-Out phase.
+On 08/21, Peter Zijlstra wrote:
+>
+> The other consideration is that this adds two branches to the normal
+> schedule path. I really don't know what the regular ratio between
+> schedule() and io_schedule() is -- and I suspect it can very much depend
+> on workload -- but it might be a net loss due to that, even if it makes
+> io_schedule() 'lots' cheaper.
 
-OK, I understand the patch set a bit better.  You're using the bidi
-infrastructure to have a place to stick the data that you internally
-read to implement the compare, but then you end up having places like
-this where you have to say, "oh it's not really a bidi command, it's
-just a compare and write."
+Yes, agreed. Please ignore it for now, I didn't try to actually suggest
+this change. And even if this is fine perfomance wise, this needs some
+benchmarking.
 
-Shouldn't there be a way to confine the COMPARE AND WRITE handling to
-the actual implementation of that command?  Or maybe make the bidi
-handling more generic so that this becomes clearer?
+Well. actually I have a vague feeling that _perhaps_ this change can
+help to solve other problems we are discussing, but I am not sure and
+right now I can't even explain the idea to me.
 
- - R.
+In short: please ignore ;)
+
+Oleg.
+
