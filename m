@@ -1,90 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab3HUVI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 17:08:56 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:46409 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab3HUVIy (ORCPT
+	id S1752612Ab3HUVKS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 17:10:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47161 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab3HUVKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 17:08:54 -0400
-Date: Wed, 21 Aug 2013 14:09:01 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] idr: Use this_cpu_ptr() for percpu_ida
-Message-ID: <20130821210901.GA4657@kmo-pixel>
-References: <20130807183345.GA11612@kmo-pixel>
- <000001405a4b39ef-0715410a-5061-41e9-9414-86559f16570d-000000@email.amazonses.com>
- <20130807195733.GB11612@kmo-pixel>
- <000001405e5776ba-bcc96088-b5e8-4abe-b98e-2e9d7d9b112b-000000@email.amazonses.com>
- <1377033546.32763.4.camel@haakon3.risingtidesystems.com>
- <20130820142956.1194d8c798abf53f884a1fb6@linux-foundation.org>
- <20130821020132.GA4051@kmo-pixel>
- <20130821020742.GA3495@htj.dyndns.org>
- <20130821023151.GC4051@kmo-pixel>
- <20130821115941.GA18617@mtj.dyndns.org>
+	Wed, 21 Aug 2013 17:10:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821115941.GA18617@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <520D44C5.6080205@ti.com>
+References: <51E83A4F.5080904@ti.com>
+	<CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com>
+	<51ED2385.60108@ti.com>
+	<51ED5C66.1010407@ti.com>
+	<51EFFBE1.4090505@ti.com>
+	<51F0031B.1050307@ti.com>
+	<51F00530.9090703@ti.com>
+	<51F02069.3050207@ti.com>
+	<51F0223E.4050008@ti.com>
+	<51F0240F.3050507@ti.com>
+	<20130813081003.GU7656@atomide.com>
+	<520A02BA.4090805@ti.com>
+	<CACRpkda+m82PYJsExLM6JLsLa8-bVhdvy_r_+-uKfVT2NG7Cbg@mail.gmail.com>
+	<520D398D.9040806@ti.com>
+	<CACRpkdYeo1y-HhftkRWgwyq8o-NVuJ978Uq+ON880LHhUxC=hg@mail.gmail.com>
+	<520D44C5.6080205@ti.com>
+Date: Wed, 21 Aug 2013 23:10:14 +0200
+Message-ID: <CACRpkdagSHxzV3=427O9iftNxM+N=w9aPds=iDvGQPoG3H-cWw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] misc: Add crossbar driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Sricharan R <r.sricharan@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Nishanth Menon <nm@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 07:59:41AM -0400, Tejun Heo wrote:
-> Hello, Kent.
-> 
-> On Tue, Aug 20, 2013 at 07:31:51PM -0700, Kent Overstreet wrote:
-> > All this for a performance improvement of 10x to 50x (or more), for the
-> > ida sizes I measured.
-> 
-> That's misleading, isn't it? 
+On Thu, Aug 15, 2013 at 11:14 PM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> On Thursday 15 August 2013 04:51 PM, Linus Walleij wrote:
+(...)
+>> Sorry I don't understand what thread that is... can you point me there?
+>> My previous statement on this issue what this:
+>> http://marc.info/?l=linux-kernel&m=137442541628641&w=2
+(...)
+>>> I don't see how you can make this happen with an irqchip
+>>> infrastructure.
+>>
+>> I think my post above describes this.
+>>
+> Sorry for being dumb but I don't think cascaded irqchip examples
+> like GPIO and cross-bars are same. If you take an example of
+> GPIO irqchip, it always have a physical connection even if it
+> is 1 IRQ line for (32 logical/sparse IRQs). That goes with
+> other MFD examples too.
+>
+> So may be I am still missing something in your proposal.
 
-It's comparing it to the existing version that actually exists, instead
-of comparing it to a hypothetical approach that doesn't exist yet. I
-don't see how that's misleading.
+Why does it matter if it is a GPIO or MFD or whatever?
+The point is that the IRQ line passes thru something else,
+and this we model as an irqdomain.
 
-> We should see large performance
-> improvements even without the large pages.  What matters more is the
-> leaf node performance for vast majority of cases and an extra radix
-> tree layer on top would cover most of whatever is left.  Whether to
-> use high order pages or not only affects the extreme niche use cases
-> and I don't think going for high order pages to micro optimize those
-> extreme use cases is the right trade off.
-> 
-> > So I could see your point if we were allocating gobs of vmalloc memory,
-> > or high order allocations big enough to realistically be problematic (I
-> > honestly don't think these will be) - but to me, this seems like a
-> > pretty reasonable tradeoff for those performance gains.
-> 
-> The trade off is made up as the bulk of the performance benefit can be
-> gained without resorting to high order allocations.
+Anyway here is a silicon cascaded IRQ chip:
+arch/arm/mach-versatile/core.c
+See versatile_init_irq():
 
-I'm more and more skeptical that that's true, and it's a given that it
-wouldn't be as fast.
+__vic_init(VA_VIC_BASE, IRQ_VIC_START, ~0, 0, np);
+(...)
+fpga_irq_init(VA_SIC_BASE, "SIC", IRQ_SIC_START,
+                IRQ_VICSOURCE31, PIC_VALID, np);
 
-> > (And the performance gains do substantially come from using more
-> > contiguous memory and treating the whole data structure as an array, and
-> > doing less pointer chasing/looping)
-> 
-> I really have hard time buying that.  Let's say you go with single
-> page leaf node and an extra single page layer on top.  How many IDs
-> are we talking about?  For the cases which are most performance
-> sensitive, this doesn't even matter a bit as percpu caching layer
-> would be on top anyway.  I really don't think the micro optimization
-> is called for at the cost of high order allocations from low level
-> tool library.
+The VIC in the versatile has the SIC cascaded from one of
+its IRQ lines. Both the VIC and SIC (fpga IRQ) are
+using irqdomains so the SIC spawns a child irqdomain
+from IRQ 31 (last IRQ) of the VIC.
 
-These "micro optimizations" mean either less pointer chasing or less
-branching in the _common_ case; you'd trade common case performance for
-avoiding ever doing higher order allocations (and 2 with COMPACTION=n
-and 4 with COMPACTION=y is not particularly high order!).
+The difference with a crossbar is that it can software-config
+which IRQ goes where, and does not have a callback
+to clear interrupts or anything like that, it just passes them
+thru. But it is best modeled as an irqdomain IMO.
 
-I don't buy that that's a good tradeoff. If you're convinced radix trees
-are the way to go and it can be done without much performance cost, why
-not code it up and show us?
+Yours,
+Linus Walleij
