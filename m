@@ -1,67 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab3HUToM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 15:44:12 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:40652 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab3HUToL (ORCPT
+	id S1752660Ab3HUTot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 15:44:49 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:34796 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab3HUTos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 15:44:11 -0400
-Date: Wed, 21 Aug 2013 21:43:57 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [ATTEND] oops.kernel.org prospect
-Message-ID: <20130821194357.GA22587@electric-eye.fr.zoreil.com>
-References: <20130819085405.GA22328@bandura.laptop>
- <20130819145505.GB15178@kroah.com>
- <20130819151643.GC19070@bandura.laptop>
- <20130819153939.GA23875@thunk.org>
- <20130819155202.GF19070@bandura.laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130819155202.GF19070@bandura.laptop>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Aug 2013 15:44:48 -0400
+From: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
+Cc: Andres Lagar-Cavilla <andres@lagarcavilla.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, boris.ostrovsky@oracle.com
+Subject: [PATCH v4] Xen: Fix retry calls into PRIVCMD_MMAPBATCH*.
+Date: Wed, 21 Aug 2013 19:44:32 +0000
+Message-Id: <1377114272-9995-1-git-send-email-andreslc@gridcentric.ca>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anton Arapov <anton@redhat.com> :
-[...]
-> Oh well,... I didn't have a time for this right now, nor project is
-> not exactly in the state I'm willing to show (mostly webui) 
+From: Andres Lagar-Cavilla <andres@lagarcavilla.org>
 
-I have sorted the r8169 oopses by kernel revision to start with the most
-recent kernels. I don't get why the r8169 driver appears in the
-"Caused by:" field when
-- the bug is about "scheduling while atomic: Xorg/3042/0×00000001"
-- the kernel is PDWO with fglrx
-- r8169 appears in the module list, nowhere else (not even the oops)
+When a foreign mapper attempts to map guest frames that are paged out,
+the mapper receives an ENOENT response and will have to try again
+while a helper process pages the target frame back in.
 
-I tried :
+Gating checks on PRIVCMD_MMAPBATCH* ioctl args were preventing retries
+of mapping calls.
 
-http://oops.kernel.org/browse-reports/?c=1&d=1&oopsclass=default&oopstype=default&distro=default&module=&driver=r8169&function=&file=&bugline=&kernel=&tainted=true&search=submit
+V2: Fixed autotranslated physmap mode breakage introduced by V1.
+V3: Enforce full range mapping for first ioctl call on a given VMA.
+V4: Shuffle logic to minimize page table walking.
 
-(0 answer if Stack, Registers or Disassembled code is added)
+Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+---
+ drivers/xen/privcmd.c |   63 +++++++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 53 insertions(+), 10 deletions(-)
 
-("tainted=true" while "Untainted only" was asked for, huh ?)
-
-The answers contains:
-
-http://oops.kernel.org/browse-reports/oops-detail/?id=29778
-
-and
-
-http://oops.kernel.org/browse-reports/oops-detail/?id=29856
-
-I can't even find the "r8169" word in those.
-
-Is it the currently expected behavior ?
-
+diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
+index f8e5dd7..f1b2462 100644
+--- a/drivers/xen/privcmd.c
++++ b/drivers/xen/privcmd.c
+@@ -43,9 +43,12 @@ MODULE_LICENSE("GPL");
+ 
+ #define PRIV_VMA_LOCKED ((void *)1)
+ 
+-#ifndef HAVE_ARCH_PRIVCMD_MMAP
+ static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma);
+-#endif
++
++static int privcmd_enforce_singleshot_mapping_granular(
++               struct vm_area_struct *vma,
++               unsigned long addr,
++               unsigned long nr_pages);
+ 
+ static long privcmd_ioctl_hypercall(void __user *udata)
+ {
+@@ -421,20 +424,34 @@ static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
+ 
+ 	vma = find_vma(mm, m.addr);
+ 	if (!vma ||
+-	    vma->vm_ops != &privcmd_vm_ops ||
+-	    (m.addr != vma->vm_start) ||
+-	    ((m.addr + (nr_pages << PAGE_SHIFT)) != vma->vm_end) ||
+-	    !privcmd_enforce_singleshot_mapping(vma)) {
+-		up_write(&mm->mmap_sem);
++	    vma->vm_ops != &privcmd_vm_ops) {
+ 		ret = -EINVAL;
++		up_write(&mm->mmap_sem);
+ 		goto out;
+ 	}
+-	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+-		ret = alloc_empty_pages(vma, m.num);
+-		if (ret < 0) {
++
++	/*
++	 * Use singleshot mapping to enforce first-time requirements. Must map the
++	 * whole VMA range, if ARM or x86-PVH must allocate balloon pages.
++	 */
++	if (privcmd_enforce_singleshot_mapping(vma)) {
++		if ((m.addr != vma->vm_start) ||
++		    ((m.addr + (nr_pages << PAGE_SHIFT)) != vma->vm_end) ||
++		    (xen_feature(XENFEAT_auto_translated_physmap) &&
++		     ((ret = alloc_empty_pages(vma, m.num)) < 0))) {
++			if (ret == 0)
++				ret = -EINVAL;
+ 			up_write(&mm->mmap_sem);
+ 			goto out;
+ 		}
++	} else {
++		if ((m.addr < vma->vm_start) ||
++		    ((m.addr + (nr_pages << PAGE_SHIFT)) > vma->vm_end) ||
++		    !privcmd_enforce_singleshot_mapping_granular(vma, m.addr, nr_pages)) {
++			up_write(&mm->mmap_sem);
++			ret = -EINVAL;
++			goto out;
++		}
+ 	}
+ 
+ 	state.domain        = m.dom;
+@@ -540,11 +557,37 @@ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
+ 	return 0;
+ }
+ 
++/*
++ * For asserting on a whole VMA. This is used by the legacy PRIVCMD_MMAP
++ * call, for MMAPBATCH* to ensure the first ioctl is called on the whole
++ * mapping range, and for autotranslated physmap mode to allocate the ballooned
++ * pages that back a mapping only once.
++ */
+ static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma)
+ {
+ 	return !cmpxchg(&vma->vm_private_data, NULL, PRIV_VMA_LOCKED);
+ }
+ 
++/*
++ * For MMAPBATCH*. This allows asserting the singleshot mapping
++ * on a per pfn/pte basis. Mapping calls that fail with ENOENT
++ * can be then retried until success.
++ */
++static int enforce_singleshot_mapping_fn(pte_t *pte, struct page *pmd_page,
++	                unsigned long addr, void *data)
++{
++	return pte_none(*pte) ? 0 : -EBUSY;
++}
++
++static int privcmd_enforce_singleshot_mapping_granular(
++	           struct vm_area_struct *vma,
++	           unsigned long addr,
++	           unsigned long nr_pages)
++{
++	return apply_to_page_range(vma->vm_mm, addr, nr_pages << PAGE_SHIFT,
++	              enforce_singleshot_mapping_fn, NULL) == 0;
++}
++
+ const struct file_operations xen_privcmd_fops = {
+ 	.owner = THIS_MODULE,
+ 	.unlocked_ioctl = privcmd_ioctl,
 -- 
-Ueimor
+1.7.1
+
