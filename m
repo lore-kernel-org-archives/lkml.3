@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab3HUP7s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:59:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37631 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab3HUP7q (ORCPT
+	id S1752143Ab3HUQCT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 12:02:19 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42330 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab3HUQCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:59:46 -0400
-Date: Wed, 21 Aug 2013 17:59:45 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Clark Williams <clark.williams@gmail.com>
-Subject: Re: [PATCH RT 0/3] hwlat-detector: Have it actually find hardware
- latency
-Message-ID: <20130821155945.GC16913@linutronix.de>
-References: <20130819213324.405942342@goodmis.org>
+	Wed, 21 Aug 2013 12:02:17 -0400
+Date: Wed, 21 Aug 2013 16:56:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dave Jones <davej@redhat.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Kees Cook <keescook@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit
+	mitigations
+Message-ID: <20130821155632.GO17845@n2100.arm.linux.org.uk>
+References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com> <20130730221435.GA22240@redhat.com> <20130730231120.GC30725@blackmetal.musicnaut.iki.fi> <20130730231533.GA26824@redhat.com> <20130730235834.GD30725@blackmetal.musicnaut.iki.fi> <20130731000444.GC1281@redhat.com> <20130731094012.GU24642@n2100.arm.linux.org.uk> <20130731142430.GA4545@redhat.com> <20130821152614.GN17845@n2100.arm.linux.org.uk> <20130821154355.GA20784@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130819213324.405942342@goodmis.org>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130821154355.GA20784@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt | 2013-08-19 17:33:24 [-0400]:
+On Wed, Aug 21, 2013 at 11:43:55AM -0400, Dave Jones wrote:
+> On Wed, Aug 21, 2013 at 04:26:14PM +0100, Russell King - ARM Linux wrote:
+>  > I've been running several iterations of it for a while (== up to 10 minutes
+>  > run time - which is normally about how long it takes to find the rather-too-
+>  > exposed kmalloc in sys_oabi_epoll_wait) and so far have seen no sign of any
+>  > page table corruption.
+> 
+> awesome. Guess it was a google specific issue then.
+> (Or something that got fixed post 3.4)
 
->Thi patch series fixes up hwlat-detector to check the entire path
->of time for a latency being hit, instead of the quick check between
->two time stamps.
->
->It also uses the trace_local_clock() if available, which is much lighter
->weight than ktime_get() which might produce false positives. As
->the trace clock is used to detect irq latencies, it's suitable for
->hardware latency.
->
->Finally, stop machine is removed and the test is run by a single thread.
+It's been running on this run for 38 minutes so far (having put a
+__GFP_NOWARN stopper in that kmalloc - which I think there needs to be
+a better solution.)
 
-Applied, thanks.
+What I have noticed is during the initialisation of the fd[] array, it
+sometimes hangs on a futex.  Killing trinity, removing all the files
+and restarting it seems to sort the problem out.  I'm not sure what's
+doing that - any ideas?  I couldn't find any evidence of another trinity
+thread doing anything with futexes.
 
-Sebastian
+>  > Were there any nonstandard platform
+>  > specific devices in /dev which that user could access - such as graphics
+>  > or video decoder devices which could be exposing big holes?
+> 
+> I'm not sure what google patched into that kernel altogether, so who knows..
+
+Unfortunately, it seems to be rather common if there's hardware GPU or
+video codecs to expose physical addresses to userspace which get passed
+around in closed source libraries and ultimately to GPU/video hardware.
+I would not be surprised if trinity was finding that and finding some
+way to get something to poke randomly in kernel memory.
+
+It seems also that the normal approach is to expose the device nodes in
+/dev to the world, effectively handing any userspace program the ability
+to:
+
+(a) a way to allocate from a pool of memory, and get its physical address
+(b) to be able to pass a physical address to hardware for DMA type operations
+(c) to initiate DMA on that hardware
+
+This is why closed source GPU/video stuff is Bad News(tm) for security.
+I'd strongly suggest keeping such platforms well away from any data
+anyone cares about keeping private and keeping them well isolated. :)
