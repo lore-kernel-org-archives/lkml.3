@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab3HUQnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 12:43:09 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:33586 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab3HUQnH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 12:43:07 -0400
-Date: Wed, 21 Aug 2013 20:42:59 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, David Vrabel <david.vrabel@citrix.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Xen-devel@lists.xen.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with
- existing use
-Message-ID: <20130821164259.GX18673@moon>
-References: <5214C524.1050900@citrix.com>
- <dc8456d1-a89a-44c0-bebb-83cb0526230e@email.android.com>
- <20130821141926.GT18673@moon>
- <CA+55aFyk6s1t92HJ5rxKZQk6dTfszmhdXz+S=MqUmM-CbMo+DQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyk6s1t92HJ5rxKZQk6dTfszmhdXz+S=MqUmM-CbMo+DQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752414Ab3HUQoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 12:44:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751750Ab3HUQoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 12:44:11 -0400
+Subject: Re: [PATCH] mm, fs: avoid page allocation beyond i_size on read
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, NeilBrown <neilb@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20130821160817.940D3E0090@blue.fi.intel.com>
+References: <1377099441-2224-1-git-send-email-kirill.shutemov@linux.intel.com>
+	 <1377100012.2738.28.camel@menhir>
+	 <20130821160817.940D3E0090@blue.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Wed, 21 Aug 2013 17:42:12 +0100
+Message-ID: <1377103332.2738.37.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 09:30:03AM -0700, Linus Torvalds wrote:
-> On Wed, Aug 21, 2013 at 7:19 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> > On Wed, Aug 21, 2013 at 04:11:25PM +0200, H. Peter Anvin wrote:
-> >>
-> >> Eep.  This should be reverted, indeed.  This isn't a manifest bug on !Xen but we
-> >> have gotten requests for WT support which would mean adding in the PAT but again.
-> >
-> > Please no, letme fix it. That's what I'm having in mind: don't use pse bit in swap
-> > entry but always mark page read from swap as dirty one (it's better than having
-> > no tracker at all and  will be the case on old machines with 32bit ptes only).
+Hi,
+
+On Wed, 2013-08-21 at 19:08 +0300, Kirill A. Shutemov wrote:
+> Steven Whitehouse wrote:
+> > Hi,
+> > 
+> > On Wed, 2013-08-21 at 18:37 +0300, Kirill A. Shutemov wrote:
+> > > I've noticed that we allocated unneeded page for cache on read beyond
+> > > i_size. Simple test case (I checked it on ramfs):
+> > > 
+> > > $ touch testfile
+> > > $ cat testfile
+> > > 
+> > > It triggers 'no_cached_page' code path in do_generic_file_read().
+> > > 
+> > > Looks like it's regression since commit a32ea1e. Let's fix it.
+> > > 
+> > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > > Acked-by: NeilBrown <neilb@suse.de>
+> > > ---
+> > >  mm/filemap.c | 4 ++++
+> > >  1 file changed, 4 insertions(+)
+> > > 
+> > > diff --git a/mm/filemap.c b/mm/filemap.c
+> > > index 1905f0e..b1a4d35 100644
+> > > --- a/mm/filemap.c
+> > > +++ b/mm/filemap.c
+> > > @@ -1163,6 +1163,10 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
+> > >  		loff_t isize;
+> > >  		unsigned long nr, ret;
+> > >  
+> > > +		isize = i_size_read(inode);
+> > > +		if (!isize || index > (isize - 1) >> PAGE_CACHE_SHIFT)
+> > > +			goto out;
+> > > +
+> > >  		cond_resched();
+> > >  find_page:
+> > >  		page = find_get_page(mapping, index);
+> > 
+> > Please don't do that... there is no reason to think that i_size will be
+> > correct at that moment. Why not just get readpage(s) to return the
+> > correct return code in that case?
 > 
-> Quite frankly, unless I see a patch later today that is
-
-I'll do my best to fix it, but I've not yet been shown where the problem
-happens. Neither I'm convinced if it is here at all. I'm asking David for details.
-
+> I work on THP for page cache. Allocation and clearing a huge page for
+> nothing is pretty expensive.
 > 
->  (a) obvious
->  (b) explains what is going on
->  (c) tested
+Hmm, thats true, but I wonder how often it is likely to happen...
+
+> I don't think the change is harmful. The worst case scenario is race with
+> write or truncate, but it's valid to return EOF in this case.
 > 
-> I will be reverting the whole soft-dirty mess. I thought the
-> bit-mapping games it played were already too complicated (the patch to
-> pgtable-2level.h in commit 41bb3476b361 just makes me want to barf and
-> came in very late, so I'm not positive about the whole soft-dirty mess
+> What scenario do you have in mind?
+> 
 
-This was not my invention on such encoding, I simply had no choise but
-follow existing scheme. Still there are cleanup patches in -mm tree which
-make code a way more readable (even former one, without soft-dirty bit).
+1. File open on node A
+2. Someone updates it on node B by extending the file
+3. Someone reads the file on node A beyond end of original file size,
+but within end of new file size as updated by node B. Without the patch
+this works, with it, it will fail. The reason being the i_size would not
+be up to date until after readpage(s) has been called.
 
-> in the first place). I really am not at all inclined to want to play
-> games in this area any more. It's too damn late in the release window.
+I think this is likely to be an issue for any distributed fs using
+do_generic_file_read(), although it would certainly affect GFS2, since
+the locking is done at page cache level,
+
+Steve.
+
+
