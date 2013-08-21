@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab3HUXgS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 19:36:18 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:35656 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab3HUXgP (ORCPT
+	id S1753150Ab3HUXjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 19:39:51 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:60188 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab3HUXju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 19:36:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <521548E3.6010703@wwwdotorg.org>
-References: <1377092334-770-1-git-send-email-larsi@wh2.tu-dresden.de>
-	<1507189.CRWvzVJqTV@flatron>
-	<521548E3.6010703@wwwdotorg.org>
-Date: Thu, 22 Aug 2013 01:36:15 +0200
-Message-ID: <CACRpkdYUeyVZcN1-jOzg0zo4eSJK1S+M5fJ0FcMsgwaPKW4Obw@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: interrupt consistency check for OF GPIO IRQs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Lars Poeschel <poeschel@lemonage.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+	Wed, 21 Aug 2013 19:39:50 -0400
+Date: Thu, 22 Aug 2013 00:39:42 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, galak@codeaurora.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Darren Hart <dvhart@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: ACPI vs Device Tree - moving forward
+Message-ID: <20130821233942.GA21502@srcf.ucam.org>
+References: <20130820192650.GA19470@srcf.ucam.org>
+ <CACRpkdaVz28gn-keUC4tTX+bdTKEV2ZrdHxshG=K3oM_NhvroA@mail.gmail.com>
+ <20130821160903.GA11908@srcf.ucam.org>
+ <6438184.2yT2NMB1CE@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6438184.2yT2NMB1CE@vostro.rjw.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 1:10 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-[Me]
->>> check if these in turn reference the interrupt-controller, and
->>> if they do, loop over the interrupts used by that child and
->>> perform gpio_request() and gpio_direction_input() on these,
->>> making them unreachable from the GPIO side.
->
-> What about bindings that require a GPIO to be specified, yet don't allow
-> an IRQ to be specified, and the driver internally does perform
-> gpio_to_irq() on it? I don't think one can detect that case.
+On Thu, Aug 22, 2013 at 01:11:14AM +0200, Rafael J. Wysocki wrote:
 
-This is still allowed. Consumers that prefer to have a GPIO
-passed and convert it to IRQ by that call can still do so,
-they will know what they're doing and will not cause the
-double-command situation that we're trying to solve.
+> Moreover, even if we are able to instruct everyone interested how to create
+> the requisite ACPI tables, there is the little problem of shipping them
+> somehow so that they actually can be used by the kernel that needs to be
+> addressed too.
 
-> Isn't it better to have the IRQ chip's .request() operation convert the
-> IRQ to a GPIO if relevant (which it can do since it has specific
-> knowledge of the HW) and take ownership of the GPIO at that level?
+I think the expectation in the ACPI ecosystem has to be that devices 
+ship their own ACPI tables. I can't see any benefit in using ACPI if the 
+aim is to just carry on shipping files with the kernel or install media 
+- in that case, just use DT.
 
-We tried this in the OMAP case, but apart from that the OMAP
-driver blew up so we had to revert the patches, it also means
-the same code needs to go into each and every driver
-instead of solving the dilemma centrally like this.
-
-> I vaguely recall seeing patches along those lines before, but there must
-> have been some other problem pointed out...
-
-You bet. It turns out these patches break the case which you
-just described above, whereas this patch does not.
-
-OMAP had drivers that used gpio_to_irq() *and* it had drivers
-that used the GPIO controller node as interrupt parent.
-So when they fixes .request() as per above, the latter started
-working properly whereas the former started breaking.
-
-Yours,
-Linus Walleij
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
