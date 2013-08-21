@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab3HUGsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 02:48:18 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:41276 "EHLO
+	id S1752323Ab3HUGsQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 02:48:16 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41270 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab3HUGsM (ORCPT
+	with ESMTP id S1752217Ab3HUGsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 02:48:12 -0400
+	Wed, 21 Aug 2013 02:48:11 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH v2 2/5] devicetree: serial: Document msm_serial bindings
-Date: Tue, 20 Aug 2013 23:48:03 -0700
-Message-Id: <1377067686-31957-3-git-send-email-sboyd@codeaurora.org>
+        David Brown <davidb@codeaurora.org>
+Subject: [PATCH v2 1/5] msm_serial: Switch clock consumer strings and simplify code
+Date: Tue, 20 Aug 2013 23:48:02 -0700
+Message-Id: <1377067686-31957-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.4.rc3.2.g2c2b664
 In-Reply-To: <1377067686-31957-1-git-send-email-sboyd@codeaurora.org>
 References: <1377067686-31957-1-git-send-email-sboyd@codeaurora.org>
@@ -22,113 +22,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The msm serial device bindings were added to the DTS files but
-never documented. Let's document them now and also fix things up
-so that it's clearer what hardware is supported. Instead of using
-hsuart (for high speed uart), let's use uartdm because that
-matches the actual name of the hardware. Also, let's add the
-version information in case we need to differentiate between
-different versions of the hardware in the future.
+In downstream kernel we've standardized the clock consumer names
+that MSM device drivers use. Replace the uart specific clock
+names in this driver with the more standard 'core' and 'iface'
+names. Also simplify the code by assuming that clk_prepare_enable
+and clk_disable_unprepare() will properly check for NULL pointers
+(it will because MSM uses the common clock framework).
 
 Cc: David Brown <davidb@codeaurora.org>
-Cc: <devicetree@vger.kernel.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- .../devicetree/bindings/serial/qcom,msm-uart.txt   | 25 +++++++++++
- .../devicetree/bindings/serial/qcom,msm-uartdm.txt | 52 ++++++++++++++++++++++
- 2 files changed, 77 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/serial/qcom,msm-uart.txt
- create mode 100644 Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
+ arch/arm/mach-msm/devices-msm7x00.c |  6 +++---
+ arch/arm/mach-msm/devices-msm7x30.c |  2 +-
+ arch/arm/mach-msm/devices-qsd8x50.c |  6 +++---
+ drivers/tty/serial/msm_serial.c     | 19 +++++--------------
+ 4 files changed, 12 insertions(+), 21 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/serial/qcom,msm-uart.txt b/Documentation/devicetree/bindings/serial/qcom,msm-uart.txt
-new file mode 100644
-index 0000000..ce8c901
---- /dev/null
-+++ b/Documentation/devicetree/bindings/serial/qcom,msm-uart.txt
-@@ -0,0 +1,25 @@
-+* MSM Serial UART
-+
-+The MSM serial UART hardware is designed for low-speed use cases where a
-+dma-engine isn't needed. From a software perspective it's mostly compatible
-+with the MSM serial UARTDM except that it only supports reading and writing one
-+character at a time.
-+
-+Required properties:
-+- compatible: Should contain "qcom,msm-uart"
-+- reg: Should contain UART register location and length.
-+- interrupts: Should contain UART interrupt.
-+- clocks: Should contain the core clock.
-+- clock-names: Should be "core".
-+
-+Example:
-+
-+A uart device at 0xa9c00000 with interrupt 11.
-+
-+serial@a9c00000 {
-+	compatible = "qcom,msm-uart";
-+	reg = <0xa9c00000 0x1000>;
-+	interrupts = <11>;
-+	clocks = <&uart_cxc>;
-+	clock-names = "core";
-+};
-diff --git a/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt b/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
-new file mode 100644
-index 0000000..1a4d681
---- /dev/null
-+++ b/Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
-@@ -0,0 +1,52 @@
-+* MSM Serial UARTDM
-+
-+The MSM serial UARTDM hardware is designed for high-speed use cases where the
-+transmit and/or receive channels can be offloaded to a dma-engine. From a
-+software perspective it's mostly compatible with the MSM serial UART except
-+that it supports reading and writing multiple characters at a time.
-+
-+Required properties:
-+- compatible: Should contain at least "qcom,msm-uartdm".
-+              A more specific property should be specified as follows depending
-+	      on the version:
-+		"qcom,msm-uartdm-v1.1"
-+		"qcom,msm-uartdm-v1.2"
-+		"qcom,msm-uartdm-v1.3"
-+		"qcom,msm-uartdm-v1.4"
-+- reg: Should contain UART register locations and lengths. The first
-+       register shall specify the main control registers. An optional second
-+       register location shall specify the GSBI control region.
-+- interrupts: Should contain UART interrupt.
-+- clocks: Should contain the core clock and the AHB clock.
-+- clock-names: Should be "core" for the core clock and "iface" for the
-+	       AHB clock.
-+
-+Optional properties:
-+- dmas: Should contain dma specifiers for transmit and receive channels
-+- dma-names: Should contain "tx" for transmit and "rx" for receive channels
-+
-+Examples:
-+
-+A uartdm v1.4 device with dma capabilities.
-+
-+serial@f991e000 {
-+	compatible = "qcom,msm-uartdm-v1.4", "qcom,msm-uartdm";
-+	reg = <0xf991e000 0x1000>;
-+	interrupts = <0 108 0x0>;
-+	clocks = <&blsp1_uart2_apps_cxc>, <&blsp1_ahb_cxc>;
-+	clock-names = "core", "iface";
-+	dmas = <&dma0 0>, <&dma0 1>;
-+	dma-names = "tx", "rx";
-+};
-+
-+A uartdm v1.3 device without dma capabilities and part of a GSBI complex. Note
-+that not all v1.3 hardware is part of a GSBI.
-+
-+serial@19c40000 {
-+	compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
-+	reg = <0x19c40000 0x1000>,
-+	      <0x19c00000 0x1000>;
-+	interrupts = <0 195 0x0>;
-+	clocks = <&gsbi5_uart_cxc>, <&gsbi5_ahb_cxc>;
-+	clock-names = "core", "iface";
-+};
+diff --git a/arch/arm/mach-msm/devices-msm7x00.c b/arch/arm/mach-msm/devices-msm7x00.c
+index 6d50fb9..d83404d 100644
+--- a/arch/arm/mach-msm/devices-msm7x00.c
++++ b/arch/arm/mach-msm/devices-msm7x00.c
+@@ -456,9 +456,9 @@ static struct clk_pcom_desc msm_clocks_7x01a[] = {
+ 	CLK_PCOM("tsif_ref_clk",	TSIF_REF_CLK,	NULL, 0),
+ 	CLK_PCOM("tv_dac_clk",	TV_DAC_CLK,	NULL, 0),
+ 	CLK_PCOM("tv_enc_clk",	TV_ENC_CLK,	NULL, 0),
+-	CLK_PCOM("uart_clk",	UART1_CLK,	"msm_serial.0", OFF),
+-	CLK_PCOM("uart_clk",	UART2_CLK,	"msm_serial.1", 0),
+-	CLK_PCOM("uart_clk",	UART3_CLK,	"msm_serial.2", OFF),
++	CLK_PCOM("core",	UART1_CLK,	"msm_serial.0", OFF),
++	CLK_PCOM("core",	UART2_CLK,	"msm_serial.1", 0),
++	CLK_PCOM("core",	UART3_CLK,	"msm_serial.2", OFF),
+ 	CLK_PCOM("uart1dm_clk",	UART1DM_CLK,	NULL, OFF),
+ 	CLK_PCOM("uart2dm_clk",	UART2DM_CLK,	NULL, 0),
+ 	CLK_PCOM("usb_hs_clk",	USB_HS_CLK,	"msm_hsusb", OFF),
+diff --git a/arch/arm/mach-msm/devices-msm7x30.c b/arch/arm/mach-msm/devices-msm7x30.c
+index d4db75a..14e2869 100644
+--- a/arch/arm/mach-msm/devices-msm7x30.c
++++ b/arch/arm/mach-msm/devices-msm7x30.c
+@@ -211,7 +211,7 @@ static struct clk_pcom_desc msm_clocks_7x30[] = {
+ 	CLK_PCOM("spi_pclk",	SPI_P_CLK,	NULL, 0),
+ 	CLK_PCOM("tv_dac_clk",	TV_DAC_CLK,	NULL, 0),
+ 	CLK_PCOM("tv_enc_clk",	TV_ENC_CLK,	NULL, 0),
+-	CLK_PCOM("uart_clk",	UART2_CLK,	"msm_serial.1", 0),
++	CLK_PCOM("core",	UART2_CLK,	"msm_serial.1", 0),
+ 	CLK_PCOM("usb_phy_clk",	USB_PHY_CLK,	NULL, 0),
+ 	CLK_PCOM("usb_hs_clk",		USB_HS_CLK,		NULL, OFF),
+ 	CLK_PCOM("usb_hs_pclk",		USB_HS_P_CLK,		NULL, OFF),
+diff --git a/arch/arm/mach-msm/devices-qsd8x50.c b/arch/arm/mach-msm/devices-qsd8x50.c
+index f551811..2ed89b2 100644
+--- a/arch/arm/mach-msm/devices-qsd8x50.c
++++ b/arch/arm/mach-msm/devices-qsd8x50.c
+@@ -358,9 +358,9 @@ static struct clk_pcom_desc msm_clocks_8x50[] = {
+ 	CLK_PCOM("tsif_ref_clk",	TSIF_REF_CLK,	NULL, 0),
+ 	CLK_PCOM("tv_dac_clk",	TV_DAC_CLK,	NULL, 0),
+ 	CLK_PCOM("tv_enc_clk",	TV_ENC_CLK,	NULL, 0),
+-	CLK_PCOM("uart_clk",	UART1_CLK,	NULL, OFF),
+-	CLK_PCOM("uart_clk",	UART2_CLK,	NULL, 0),
+-	CLK_PCOM("uart_clk",	UART3_CLK,	"msm_serial.2", OFF),
++	CLK_PCOM("core",	UART1_CLK,	NULL, OFF),
++	CLK_PCOM("core",	UART2_CLK,	NULL, 0),
++	CLK_PCOM("core",	UART3_CLK,	"msm_serial.2", OFF),
+ 	CLK_PCOM("uartdm_clk",	UART1DM_CLK,	NULL, OFF),
+ 	CLK_PCOM("uartdm_clk",	UART2DM_CLK,	NULL, 0),
+ 	CLK_PCOM("usb_hs_clk",	USB_HS_CLK,	NULL, OFF),
+diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+index 97642ec..23651cc 100644
+--- a/drivers/tty/serial/msm_serial.c
++++ b/drivers/tty/serial/msm_serial.c
+@@ -416,8 +416,7 @@ static void msm_init_clock(struct uart_port *port)
+ 	struct msm_port *msm_port = UART_TO_MSM(port);
+ 
+ 	clk_prepare_enable(msm_port->clk);
+-	if (!IS_ERR(msm_port->pclk))
+-		clk_prepare_enable(msm_port->pclk);
++	clk_prepare_enable(msm_port->pclk);
+ 	msm_serial_set_mnd_regs(port);
+ }
+ 
+@@ -693,13 +692,11 @@ static void msm_power(struct uart_port *port, unsigned int state,
+ 	switch (state) {
+ 	case 0:
+ 		clk_prepare_enable(msm_port->clk);
+-		if (!IS_ERR(msm_port->pclk))
+-			clk_prepare_enable(msm_port->pclk);
++		clk_prepare_enable(msm_port->pclk);
+ 		break;
+ 	case 3:
+ 		clk_disable_unprepare(msm_port->clk);
+-		if (!IS_ERR(msm_port->pclk))
+-			clk_disable_unprepare(msm_port->pclk);
++		clk_disable_unprepare(msm_port->pclk);
+ 		break;
+ 	default:
+ 		printk(KERN_ERR "msm_serial: Unknown PM state %d\n", state);
+@@ -887,18 +884,12 @@ static int __init msm_serial_probe(struct platform_device *pdev)
+ 	else
+ 		msm_port->is_uartdm = 0;
+ 
+-	if (msm_port->is_uartdm) {
+-		msm_port->clk = devm_clk_get(&pdev->dev, "gsbi_uart_clk");
+-		msm_port->pclk = devm_clk_get(&pdev->dev, "gsbi_pclk");
+-	} else {
+-		msm_port->clk = devm_clk_get(&pdev->dev, "uart_clk");
+-		msm_port->pclk = ERR_PTR(-ENOENT);
+-	}
+-
++	msm_port->clk = devm_clk_get(&pdev->dev, "core");
+ 	if (IS_ERR(msm_port->clk))
+ 		return PTR_ERR(msm_port->clk);
+ 
+ 	if (msm_port->is_uartdm) {
++		msm_port->pclk = devm_clk_get(&pdev->dev, "iface");
+ 		if (IS_ERR(msm_port->pclk))
+ 			return PTR_ERR(msm_port->pclk);
+ 
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
