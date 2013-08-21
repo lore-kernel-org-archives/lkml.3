@@ -1,135 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753Ab3HUBdj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 21:33:39 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:19664 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751413Ab3HUBdi (ORCPT
+	id S1751960Ab3HUBga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 21:36:30 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:63301 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab3HUBg3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 21:33:38 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ar8GAOMXFFJ5LJ62/2dsb2JhbABagwWDN7dnhUOBJhd0giQBAQQBJxMcFQ4FCwgDDgoJJQ8FJQMhExuHbwWtXBaQPweEFAOXZJFXgWGBTSo
-Date: Wed, 21 Aug 2013 11:33:32 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jan Kara <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@linux.intel.com>, xfs@oss.sgi.com,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH v3 3/5] mm: Notify filesystems when it's time to apply a
- deferred cmtime update
-Message-ID: <20130821013332.GQ6023@dastard>
-References: <20130820023615.GE6023@dastard>
- <CALCETrV-Toj-NGpmWnmoUbCwrMUXOSbjQdYsSVuTiH+2dEgPTQ@mail.gmail.com>
- <20130820040814.GH6023@dastard>
- <CALCETrWreWBwKdKS2w=fS+MwdaZv1eEsKjYo=P9eeXe7fZS6Jw@mail.gmail.com>
- <20130820160057.GC2862@quack.suse.cz>
- <CALCETrXotDRKV8FtLn3g_9g_yOVceHzKpwXMAH+w7tBZ1P2F7A@mail.gmail.com>
- <20130820214819.GK6023@dastard>
- <CALCETrXU3jm_R2SJbfgsM2COAuX_tRACQmuc7t7z5b2B+=kBgg@mail.gmail.com>
- <20130820224349.GM6023@dastard>
- <CALCETrVY2dhiAO_k9=mCL3_Tuyzr52tnKB57YteO_7PXJBmAHw@mail.gmail.com>
+	Tue, 20 Aug 2013 21:36:29 -0400
+Date: Tue, 20 Aug 2013 20:36:27 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: rfc: trivial patches and slow deaths?
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Kosina <jkosina@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors <kernel-janitors@vger.kernel.org>
+References: <1377043822.2737.86@driftwood>
+	<1377044556.2016.102.camel@joe-AO722>
+In-Reply-To: <1377044556.2016.102.camel@joe-AO722> (from joe@perches.com on
+	Tue Aug 20 19:22:36 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1377048987.2737.89@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <CALCETrVY2dhiAO_k9=mCL3_Tuyzr52tnKB57YteO_7PXJBmAHw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 05:47:10PM -0700, Andy Lutomirski wrote:
-> On Tue, Aug 20, 2013 at 3:43 PM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Tue, Aug 20, 2013 at 02:54:01PM -0700, Andy Lutomirski wrote:
-> >> On Tue, Aug 20, 2013 at 2:48 PM, Dave Chinner <david@fromorbit.com> wrote:
-> >> > On Tue, Aug 20, 2013 at 09:42:34AM -0700, Andy Lutomirski wrote:
-> >> >> On Tue, Aug 20, 2013 at 9:00 AM, Jan Kara <jack@suse.cz> wrote:
-> >> >> > On Mon 19-08-13 21:14:44, Andy Lutomirski wrote:
-> >> >> >> >> I could require ->writepages *and* ->flush_cmtime to handle the time
-> >> >> >> >> update, but that would complicate non-transactional filesystems.
-> >> >> >> >> Those filesystems should just flush cmtime at the end of writepages.
-> >> >> >> >
-> >> >> >> > do_writepages() is the wrong place to do such updates - we can get
-> >> >> >> > writeback directly through .writepage, so the time updates need to
-> >> >> >> > be in .writepage. That first .writepage call will clear the bit on
-> >> >> >> > the mapping, so it's only done on the first call to .writepage on
-> >> >> >> > the given mapping.
-> >> >> >>
-> >> >> >> Last time I checked, all the paths that actually needed the timestamp
-> >> >> >> update went through .writepages.  I'll double-check.
-> >> >> >   kswapd can call just .writepage to do the writeout so timestamp update
-> >> >> > should be handled there as well. Otherwise all pages in a mapping can be
-> >> >> > cleaned without timestamp being updated.
-> >> >>
-> >> >> OK, I'll fix that.
-> >> >>
-> >> >> >
-> >> >> > Which btw made me realize that even your scheme doesn't completely make
-> >> >> > sure timestamp is updated after mmap write - if you have pages 0 and 1, you
-> >> >> > write to both of them - CMTIME flag gets set. Then fsync_range(fd, 0, 4096)
-> >> >> > is called. We write the page 0, writeprotect it, update timestamps. But
-> >> >> > page 1 is still writeable so writes to it won't set CMTIME flag, neither
-> >> >> > update the timestamp... Not that I think this can be reasonably solved but
-> >> >> > it is a food for thought.
-> >> >>
-> >> >> This should already work.  AS_CMTIME is set when the pte goes from
-> >> >> dirty to clean, not when the pte goes from wp to writable.  So
-> >> >> whenever clear_page_dirty_for_io is called on page 1, AS_CMTIME will
-> >> >> be set and a subsequent writepages call will update the timestamp.
-> >> >
-> >> > Oh, I missed that - I thought you were setting AS_CMTIME during
-> >> > .page_mkwrite.
-> >> >
-> >> > Setting it in clear_page_dirty_for_io() is too late for filesystems
-> >> > to include it in their existing transactions during .writepage, (at
-> >> > least for XFs and ext4) because they do their delayed allocation
-> >> > transactions before changing page state....
-> >>
-> >> Couldn't it go between mpage_map_and_submit_extent and
-> >> ext4_journal_stop in ext4_writepages?
-> >
-> > Maybe - I'm not an ext4 expert - but even if you can make it work
-> > for ext4 in some way, that doesn't mean it is possible for any other
-> > filesystem to use the same method. You're adding code to generic,
-> > non-filesystem specific code paths and so the solutions need to be
-> > generic rather not tied to how a specific filesystem is implemented.
-> >
+On 08/20/2013 07:22:36 PM, Joe Perches wrote:
+> On Tue, 2013-08-20 at 19:10 -0500, Rob Landley wrote:
+> > The important question is does he want to handle patches that you're
+> > flipping out about not going in before the next merge window because
+> > they are SO IMPORTANT that the trivial tree must promote them out of
+> > sequence.
 > 
-> I don't see the problem for xfs or btrfs either.
+> You're misreading.  I see no flipping out here.
 > 
-> xfs uses generic_writepages, which already does the right thing.  (xfs
-> with my updated patches passes my tests.)  xfs_vm_writepage calls
-> xfs_start_page_writeback(..., 1, ...), so clear_page_dirty_for_io is
-> called.  At that point (I presume), it would still be possible to add
-> metadata to a transaction (assuming there's a transaction open -- I
-> don't have a clue here). 
+> I'm simply saying that obvious defects should be
+> corrected sooner rather than later.
+> 
+> I'm also saying that the trivial tree should
+> have some visibility about whether or not a
+> patch or series will be handled by the trivial
+> maintainer or not.
 
-That's my point - there isn't a transaction in XFS at this point,
-and so if we gather that flag from clear_page_dirty_for_io() we'd
-need a second transaction and therefore the optimisation you want
-filesystems to use to mitigate the additional overhead can't be done
-for all commonly used filesystems.
+I fetch his git and look at the log of the branch to see which of the  
+documentation patches I forwarded are there. That said, there's no  
+guarantee they'll go in from there because other maintainers often grab  
+them and put them in through their trees.
 
-> Even if this is too late, xfs_vm_writepage
-> could call page_mkwrite to for AS_CMTIME to be set if needed.
-> page_mkwrite will be fast if the page isn't mmapped.  What am I
-> missing?
+> Jiri has not responded to this point.
 
-That it leads to different behaviour for different filesystems.
+He did. Twice.
 
-i.e. page_mkwrite on page A sets the flag. writeback on a range that
-doesn't include page A occurs, sees the flag, clears it after
-updating the timestamp. Some time later writeback on page A occurs,
-no timestamp update occurs.
+> Silence about the status of patches that extends
+> for months is not good.
 
-The behaviour needs to be consistent across filesystems.
+He has a public git tree. It's listed in his MAINTAINERS entry. I've  
+found that if a patch isn't in there, he hasn't picked it up yet. (I've  
+been feeding Documentation patches through his tree, hence my interest  
+in this thread.)
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Rob
