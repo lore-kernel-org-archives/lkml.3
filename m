@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902Ab3HUK0D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 06:26:03 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:19094 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617Ab3HUK0B (ORCPT
+	id S1751447Ab3HUK11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 06:27:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39869 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab3HUK1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 06:26:01 -0400
-Message-ID: <521495CE.5040205@atmel.com>
-Date: Wed, 21 Aug 2013 12:26:22 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 21 Aug 2013 06:27:25 -0400
+Message-ID: <521495E5.7010109@oracle.com>
+Date: Wed, 21 Aug 2013 18:26:45 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Richard Genoud <richard.genoud@gmail.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Add sound in SAM9x5 DTS
-References: <1376310662-20003-1-git-send-email-richard.genoud@gmail.com>
-In-Reply-To: <1376310662-20003-1-git-send-email-richard.genoud@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Mel Gorman <mgorman@suse.de>, lliubbo@gmail.com
+Subject: Re: [PATCH v7 0/5] zram/zsmalloc promotion
+References: <1377065791-2959-1-git-send-email-minchan@kernel.org> <52148730.4000709@oracle.com>
+In-Reply-To: <52148730.4000709@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2013 14:30, Richard Genoud :
-> As the sam9x5-wm8731 machine driver has been merged, we have now to add
-> the device tree nodes...
-> And here they are !
->
-> (Based on next-20130812)
-> Tested on at91sam9g35-ek
->
-> [I didn't add the DT list, as far as there's no new binding, we don't
-> have to bother themi, right ?]
+On 08/21/2013 05:24 PM, Bob Liu wrote:
+> Hi Minchan,
+> 
+> On 08/21/2013 02:16 PM, Minchan Kim wrote:
+>> It's 7th trial of zram/zsmalloc promotion.
+>> I rewrote cover-letter totally based on previous discussion.
+>>
+>> The main reason to prevent zram promotion was no review of
+>> zsmalloc part while Jens, block maintainer, already acked
+>> zram part.
+>>
+>> At that time, zsmalloc was used for zram, zcache and zswap so
+>> everybody wanted to make it general and at last, Mel reviewed it
+>> when zswap was submitted to merge mainline a few month ago.
+>> Most of review was related to zswap writeback mechanism which
+>> can pageout compressed page in memory into real swap storage
+>> in runtime and the conclusion was that zsmalloc isn't good for
+>> zswap writeback so zswap borrowed zbud allocator from zcache to
+>> replace zsmalloc. The zbud is bad for memory compression ratio(2)
+>> but it's very predictable behavior because we can expect a zpage
+>> includes just two pages as maximum. Other reviews were not major. 
+>> http://lkml.indiana.edu/hypermail/linux/kernel/1304.1/04334.html
+>>
+>> Zcache doesn't use zsmalloc either so zsmalloc's user is only
+>> zram now so this patchset moves it into zsmalloc directory.
+>> Recently, Bob tried to move zsmalloc under mm directory to unify
+>> zram and zswap with adding pseudo block device in zswap(It's
+>> very weired to me) but he was simple ignoring zram's block device
+>> (a.k.a zram-blk) feature and considered only swap usecase of zram,
+>> in turn, it lose zram's good concept.
+>>
+> 
+> Yes, I didn't notice the feature that zram can be used as a normal block
+> device.
+> 
+> 
+>> Mel raised an another issue in v6, "maintainance headache".
+>> He claimed zswap and zram has a similar goal that is to compresss
+>> swap pages so if we promote zram, maintainance headache happens
+>> sometime by diverging implementaion between zswap and zram
+>> so that he want to unify zram and zswap. For it, he want zswap
+>> to implement pseudo block device like Bob did to emulate zram so
+>> zswap can have an advantage of writeback as well as zram's benefit.
+> 
+> If consider zram as a swap device only, I still think it's better to add
+> a pseudo block device to zswap and just disable the writeback of zswap.
+> 
+> But I have no idea of zram's block device feature.
+> 
 
-Yep!
-
-On the whole series:
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-Stacked on top of at91-3.12-dt
-
-Thanks a lot Richard!
-
-> Richard Genoud (4):
->    ARM: AT91: DTS: sam9x5: add SSC DMA parameters
->    ARM: AT91: DTS: sam9x5ek: add WM8731 codec
->    ARM: AT91: DTS: sam9x5ek: enable SSC
->    ARM: AT91: DTS: sam9x5ek: add sound configuration
->
->   arch/arm/boot/dts/at91sam9x5.dtsi   |    3 +++
->   arch/arm/boot/dts/at91sam9x5ek.dtsi |   24 ++++++++++++++++++++++++
->   2 files changed, 27 insertions(+)
->
-
+BTW: I think the original/main purpose that zram was introduced is for
+swapping. Is there any real users using zram as a normal block device
+instead of swap?
+For normal usage, maybe we can extend ramdisk with compression feature.
 
 -- 
-Nicolas Ferre
+Regards,
+-Bob
