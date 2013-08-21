@@ -1,113 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab3HUOZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:25:59 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:44715 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751646Ab3HUOZ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:25:57 -0400
-Date: Wed, 21 Aug 2013 10:25:57 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Krzysztof Mazur <krzysiek@podlesie.net>
-cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        Daniel J Blueman <daniel@numascale-asia.com>
-Subject: Re: [PATCH 2/2] usb: fail on usb_hub_create_port_device() errors
-In-Reply-To: <20130821092515.GA3685@shrek.podlesie.net>
-Message-ID: <Pine.LNX.4.44L0.1308211024450.1297-100000@iolanthe.rowland.org>
+	id S1752088Ab3HUO15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:27:57 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:2638 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751534Ab3HUO14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 10:27:56 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <5214CE5F.5010009@broadcom.com>
+Date: Wed, 21 Aug 2013 16:27:43 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US;
+ rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Josh Boyer" <jwboyer@fedoraproject.org>
+cc: "Felix Fietkau" <nbd@openwrt.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Tom Gundersen" <teg@jklm.no>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "Linux Wireless List" <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Johannes Berg" <johannes@sipsolutions.net>
+Subject: Re: [REGRESSION] 3.10.{6,7} crashes on network activity
+References: <CAG-2HqUXQeq=30EpGWmn6tkC=CP1W+=UZCVPTYhhE0WyU_C4nw@mail.gmail.com>
+ <20130820000336.GA15548@kroah.com>
+ <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com>
+ <20130820002822.GA18023@kroah.com> <5212F6E8.3090107@openwrt.org>
+ <52132589.5000306@broadcom.com>
+ <CA+5PVA7gvnfX2vnpxEGCgaAYXRvA=SME4SYZpTESqLsMkgSu=g@mail.gmail.com>
+ <52147FD2.9020401@broadcom.com>
+ <CA+5PVA5Wi=Xjrsb_Rh53A4NkWHe3h-gfs89dO6Zfb+6uh+G=dQ@mail.gmail.com>
+In-Reply-To: <CA+5PVA5Wi=Xjrsb_Rh53A4NkWHe3h-gfs89dO6Zfb+6uh+G=dQ@mail.gmail.com>
+X-WSS-ID: 7E0A12F331W86468204-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Aug 2013, Krzysztof Mazur wrote:
+On 08/21/13 14:38, Josh Boyer wrote:
+> On Wed, Aug 21, 2013 at 4:52 AM, Arend van Spriel<arend@broadcom.com>  wrote:
+>>>> Hi Felix,
+>>>>
+>>>> I have been diving into root causing why brcmsmac can not handle cck
+>>>> fallback rates, because it should. Maybe it is better to flag no cck
+>>>> support
+>>>> and only change brcmsmac.
+>>>
+>>>
+>>> We have a number of users hitting this in Fedora 18 and 19 now.  We're
+>>> tracking it with https://bugzilla.redhat.com/show_bug.cgi?id=998080
+>>> and I'm sure we can find people to test easily.
+>>
+>>
+>> There is already another one (possibly) dealing with the same issue:
+>>
+>> https://bugzilla.redhat.com/show_bug.cgi?id=989269
+>>
+>> One of them should probably be flagged as duplicate.
+>>
+>>
+>>> If you have a patch disabling cck in brcmsmac, I'd be happy to build a
+>>> kernel for people.  If that's going to be some time coming, perhaps
+>>> it's better to grab Felix's patch on a temporary basis?
+>>
+>>
+>> I think it is better to grab Felix's patch because as we both observed there
+>> is stuff missing in brcmsmac to deal with CCK rates and A-MPDU packet
+>> aggregation.
+>
+> OK, thanks.
+>
+> Felix, are you going to send that upstream?
 
-> > We should never have maxchild < bNbrPorts (unless maxchild is 0).  But 
-> > just in case we do, changing the code is a good idea.
-> > 
-> > Besides, "hub->maxchild" is shorter and easier to read than
-> > "hub->descriptor->bNbrPorts".  :-)
-> > 
-> 
-> It's "hub->hdev->maxchild", but it's still shorter and
-> in many places it's just "hdev->maxchild" :)
-> 
-> I tested that with maxchild < bNbrPorts and there are no NULL pointer
-> dereferences anymore.
-> 
-> Krzysiek
-> -- >8 --
-> Subject: [PATCH 3/2] usb: don't use bNbrPorts after initialization
-> 
-> After successful initialization hub->descriptor->bNbrPorts and
-> hub->hdev->maxchild are equal, but using hub->hdev->maxchild is
-> preferred because that value is explicitly used for initialization
-> of hub->ports[].
-> 
-> Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
-> ---
->  drivers/usb/core/hub.c | 12 +++++-------
->  1 file changed, 5 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index 292ffa8..86e353f 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -451,7 +451,7 @@ static void led_work (struct work_struct *work)
->  	if (hdev->state != USB_STATE_CONFIGURED || hub->quiescing)
->  		return;
->  
-> -	for (i = 0; i < hub->descriptor->bNbrPorts; i++) {
-> +	for (i = 0; i < hdev->maxchild; i++) {
->  		unsigned	selector, mode;
->  
->  		/* 30%-50% duty cycle */
-> @@ -500,7 +500,7 @@ static void led_work (struct work_struct *work)
->  	}
->  	if (!changed && blinkenlights) {
->  		cursor++;
-> -		cursor %= hub->descriptor->bNbrPorts;
-> +		cursor %= hdev->maxchild;
->  		set_port_led(hub, cursor + 1, HUB_LED_GREEN);
->  		hub->indicator[cursor] = INDICATOR_CYCLE;
->  		changed++;
-> @@ -826,7 +826,7 @@ static unsigned hub_power_on(struct usb_hub *hub, bool do_delay)
->  	else
->  		dev_dbg(hub->intfdev, "trying to enable port power on "
->  				"non-switchable hub\n");
-> -	for (port1 = 1; port1 <= hub->descriptor->bNbrPorts; port1++)
-> +	for (port1 = 1; port1 <= hub->hdev->maxchild; port1++)
->  		if (hub->ports[port1 - 1]->power_is_on)
->  			set_port_feature(hub->hdev, port1, USB_PORT_FEAT_POWER);
->  		else
-> @@ -4655,9 +4655,7 @@ static void hub_events(void)
->  		hub_dev = hub->intfdev;
->  		intf = to_usb_interface(hub_dev);
->  		dev_dbg(hub_dev, "state %d ports %d chg %04x evt %04x\n",
-> -				hdev->state, hub->descriptor
-> -					? hub->descriptor->bNbrPorts
-> -					: 0,
-> +				hdev->state, hdev->maxchild,
->  				/* NOTE: expects max 15 ports... */
->  				(u16) hub->change_bits[0],
->  				(u16) hub->event_bits[0]);
-> @@ -4702,7 +4700,7 @@ static void hub_events(void)
->  		}
->  
->  		/* deal with port status changes */
-> -		for (i = 1; i <= hub->descriptor->bNbrPorts; i++) {
-> +		for (i = 1; i <= hdev->maxchild; i++) {
->  			if (test_bit(i, hub->busy_bits))
->  				continue;
->  			connect_change = test_bit(i, hub->change_bits);
-> 
+It already has been sent: 
+http://mid.gmane.org/1377020634-27064-1-git-send-email-nbd@openwrt.org
 
-This is good.  Combined with your other changes, it should fix all 
-the problems you described.  You can add my Acked-by to these patches 
-now.
+Johannes has submitted it to John so it is getting there soon(ish).
 
-Alan Stern
+> josh
+
+Regards,
+Arend
+
+
 
