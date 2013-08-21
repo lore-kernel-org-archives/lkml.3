@@ -1,143 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab3HUIWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 04:22:52 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1671 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751529Ab3HUITw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 04:19:52 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-arch@vger.kernel.org
-Cc: mmarek@suse.cz, geert@linux-m68k.org, ralf@linux-mips.org,
-        lethal@linux-sh.org, jdike@addtoit.com, gxt@mprc.pku.edu.cn,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        Richard Weinberger <richard@nod.at>,
-        Ramkumar Ramachandra <artagnon@gmail.com>
-Subject: [PATCH 2/8] um: Do not use SUBARCH
-Date: Wed, 21 Aug 2013 10:19:26 +0200
-Message-Id: <1377073172-3662-3-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1377073172-3662-1-git-send-email-richard@nod.at>
-References: <1377073172-3662-1-git-send-email-richard@nod.at>
+	id S1751666Ab3HUI2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 04:28:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50458 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab3HUI2O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 04:28:14 -0400
+Date: Wed, 21 Aug 2013 10:28:01 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH RESEND 0/4] nohz: Fix racy sleeptime stats
+Message-ID: <20130821082801.GL3258@twins.programming.kicks-ass.net>
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com>
+ <20130820181500.GA22287@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820181500.GA22287@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From now on UML does no longer depend on SUBARCH and will
-never silently change CONFIG_64BIT.
+On Tue, Aug 20, 2013 at 08:15:00PM +0200, Oleg Nesterov wrote:
+> While at it.
+> 
+> I do not also understand the cpu_online() checks in fs/proc/stat.c.
+> 
+> OK, I agree, if cpu is offline it should not participate in cpu
+> summary. But if it goes offline, why it should switch from
+> ->iowait_sleeptime + cpustat[CPUTIME_IDLE] as it seen by /proc/stat?
+> 
+> This can be another source of "idle goes backward", no?
+> 
+> IOW. Ignoring the other problems we have, perhaps something like
+> below makes sense?
 
-"make defconfig ARCH=um" produces now a .config with is suitable
-for your host arch.
 
-"make i386_defconfig ARCH=um" replaces "make defconfig ARCH=um SUBARCH=i386"
-"and make x86_64_defconfig ARCH=um" replaces "make defconfig ARCH=um SUBARCH=x86_64"
+Agreed, however
 
-Finally a "make ARCH=um" will produce an UML as described in your .config and you
-don't have to worry about setting the correct SUBARCH.
+> 
+> +++ x/kernel/time/tick-sched.c
+> @@ -477,7 +477,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *l
+>  		update_ts_time_stats(cpu, ts, now, last_update_time);
+>  		idle = ts->idle_sleeptime;
+>  	} else {
+> -		if (ts->idle_active && !nr_iowait_cpu(cpu)) {
+> +		if (ts->idle_active && cpu_online(cpu) && !nr_iowait_cpu(cpu)) {
+>  			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+>  
+>  			idle = ktime_add(ts->idle_sleeptime, delta);
+> @@ -518,7 +518,7 @@ u64 get_cpu_iowait_time_us(int cpu, u64 
+>  		update_ts_time_stats(cpu, ts, now, last_update_time);
+>  		iowait = ts->iowait_sleeptime;
+>  	} else {
+> -		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+> +		if (ts->idle_active && cpu_online(cpu) && nr_iowait_cpu(cpu)) {
+>  			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+>  
+>  			iowait = ktime_add(ts->iowait_sleeptime, delta);
+> 
 
-This patch is based on: https://lkml.org/lkml/2013/7/4/396
-
-Cc: Ramkumar Ramachandra <artagnon@gmail.com>
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/Kconfig.common |  4 ----
- arch/um/Makefile       | 21 +++++++++++----------
- arch/x86/Makefile.um   |  2 +-
- arch/x86/um/Kconfig    |  6 +++---
- 4 files changed, 15 insertions(+), 18 deletions(-)
-
-diff --git a/arch/um/Kconfig.common b/arch/um/Kconfig.common
-index bceee66..a7ef0b4 100644
---- a/arch/um/Kconfig.common
-+++ b/arch/um/Kconfig.common
-@@ -58,7 +58,3 @@ config GENERIC_BUG
- config HZ
- 	int
- 	default 100
--
--config SUBARCH
--	string
--	option env="SUBARCH"
-diff --git a/arch/um/Makefile b/arch/um/Makefile
-index 133f7de..5bc7892 100644
---- a/arch/um/Makefile
-+++ b/arch/um/Makefile
-@@ -8,6 +8,8 @@
- 
- ARCH_DIR := arch/um
- OS := $(shell uname -s)
-+OS_ARCH := $(shell uname -m)
-+
- # We require bash because the vmlinux link and loader script cpp use bash
- # features.
- SHELL := /bin/bash
-@@ -20,15 +22,14 @@ core-y			+= $(ARCH_DIR)/kernel/		\
- 
- MODE_INCLUDE	+= -I$(srctree)/$(ARCH_DIR)/include/shared/skas
- 
--HEADER_ARCH 	:= $(SUBARCH)
--
--# Additional ARCH settings for x86
--ifeq ($(SUBARCH),i386)
--        HEADER_ARCH := x86
--endif
--ifeq ($(SUBARCH),x86_64)
--        HEADER_ARCH := x86
--	KBUILD_CFLAGS += -mcmodel=large
-+# Currently we support only i386 and x86_64, if you port UML to another arch
-+# add another if branch...
-+ifeq ($(OS_ARCH),x86_64)
-+	HEADER_ARCH := x86
-+	KBUILD_DEFCONFIG := x86_64_defconfig
-+else
-+	HEADER_ARCH := x86
-+	KBUILD_DEFCONFIG := i386_defconfig
- endif
- 
- HOST_DIR := arch/$(HEADER_ARCH)
-@@ -155,4 +156,4 @@ endef
- include/generated/user_constants.h: $(HOST_DIR)/um/user-offsets.s
- 	$(call filechk,gen-asm-offsets)
- 
--export SUBARCH USER_CFLAGS CFLAGS_NO_HARDENING OS DEV_NULL_PATH
-+export USER_CFLAGS CFLAGS_NO_HARDENING OS DEV_NULL_PATH
-diff --git a/arch/x86/Makefile.um b/arch/x86/Makefile.um
-index 36b62bc..91d088c 100644
---- a/arch/x86/Makefile.um
-+++ b/arch/x86/Makefile.um
-@@ -40,7 +40,7 @@ else
- 
- START := 0x60000000
- 
--KBUILD_CFLAGS += -fno-builtin -m64 
-+KBUILD_CFLAGS += -fno-builtin -m64 -mcmodel=large
- 
- CHECKFLAGS  += -m64 -D__x86_64__
- KBUILD_AFLAGS += -m64
-diff --git a/arch/x86/um/Kconfig b/arch/x86/um/Kconfig
-index 14ef8d1..bb6df67 100644
---- a/arch/x86/um/Kconfig
-+++ b/arch/x86/um/Kconfig
-@@ -1,4 +1,4 @@
--mainmenu "User Mode Linux/$SUBARCH $KERNELVERSION Kernel Configuration"
-+mainmenu "User Mode Linux $KERNELVERSION Kernel Configuration"
- 
- source "arch/um/Kconfig.common"
- 
-@@ -15,8 +15,8 @@ config UML_X86
- 	select GENERIC_FIND_FIRST_BIT
- 
- config 64BIT
--	bool "64-bit kernel" if SUBARCH = "x86"
--	default SUBARCH != "i386"
-+	bool "64-bit kernel"
-+	default n
- 
- config X86_32
- 	def_bool !64BIT
--- 
-1.8.1.4
-
+That's still mighty odd, but I guess that's in part due to the whacky
+semantics. We could simply transfer any open nr_iowait to the cpu
+doing the hotplug and then we have offline cpus that have nr_iowait == 0
+and the above becomes simpler again.
