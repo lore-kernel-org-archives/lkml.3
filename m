@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab3HUH0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 03:26:46 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:44086 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab3HUH0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 03:26:44 -0400
-Date: Wed, 21 Aug 2013 09:26:40 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Kconfig: Remove hotplug enable hints in CONFIG_KEXEC
- help texts
-Message-ID: <20130821072640.GA27495@gmail.com>
-References: <1377027483-17025-1-git-send-email-geert@linux-m68k.org>
+	id S1752461Ab3HUH1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 03:27:31 -0400
+Received: from mout.gmx.net ([212.227.17.20]:56101 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752258Ab3HUH13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 03:27:29 -0400
+From: Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: PaX Team <pageexec@freemail.hu>, Behan Webster <behanw@converseincode.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [TRIVIAL] Remove braces in drivers/scsi/in2000.h to fix build for clang. No functional change otherwise.
+Date: Wed, 21 Aug 2013 09:26:14 +0200
+Message-ID: <2050670.KsM0dPm3or@aragorn.auenland.lan>
+User-Agent: KMail/4.10.5 (Linux/3.7.10-1.16-default; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130821065018.GB9043@infradead.org>
+References: <1377033546-19475-1-git-send-email-dl9pf@gmx.de> <20130821065018.GB9043@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377027483-17025-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:tZZqj6dEqXmJKD5ThR0+gh42zBoQW9Q7BnNm7uSWgSYHpT0shtQ
+ MEsJHs4NIS93ghxxllgQGdBkcoh9cRdB2Zmb61ZuGRUV3zGFrJb3dKTY8zKUxb274sRhhea
+ CstQaJ4mvbwB3L6SV5NT3A2Y3ijbMAeYQyjAy7+DJYdAwOMPaFH8JtnxpV8gq84Ui1isdsx
+ eoOjNemwV/qWS6U9MELaw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-
-> commit 40b313608ad4ea655addd2ec6cdd106477ae8e15 ("Finally eradicate
-> CONFIG_HOTPLUG") removed remaining references to CONFIG_HOTPLUG, but missed
-> a few plain English references in the CONFIG_KEXEC help texts.
+> > 
+> > Description:
+> >   Clang chokes on the notation "insw (%%dx)" but works for "insw %%dx"
+> >   (outsw likewise); GNU as accepts both forms.
+> > 
+> > Signed-off-by: Jan-Simon M??ller <dl9pf@gmx.de>
 > 
-> Remove them, too.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  arch/arm/Kconfig     |    3 +--
->  arch/ia64/Kconfig    |    6 +++---
->  arch/mips/Kconfig    |    6 +++---
->  arch/powerpc/Kconfig |    6 +++---
->  arch/sh/Kconfig      |    6 +++---
->  arch/x86/Kconfig     |    6 +++---
->  6 files changed, 16 insertions(+), 17 deletions(-)
-[...]
->  	bool "kernel crash dumps (EXPERIMENTAL)"
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index b32ebf9..6ace5de 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1627,9 +1627,9 @@ config KEXEC
->  
->  	  It is an ongoing process to be certain the hardware in a machine
->  	  is properly shutdown, so do not be surprised if this code does not
-> -	  initially work for you.  It may help to enable device hotplugging
-> -	  support.  As of this writing the exact hardware interface is
-> -	  strongly in flux, so no good recommendation can be made.
-> +	  initially work for you.  As of this writing the exact hardware
-> +	  interface is strongly in flux, so no good recommendation can be
-> +	  made.
->  
->  config CRASH_DUMP
->  	bool "kernel crash dumps"
+> I think the right fix is to simply kill the FAST_READ_IO/FAST_WRITE_IO
+> defines and their associated inline assembly entirely.
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
-
-Thanks,
-
-	Ingo
+No objection ;) .
