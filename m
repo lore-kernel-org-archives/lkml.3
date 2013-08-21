@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab3HUOcX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 10:32:23 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47531 "EHLO arroyo.ext.ti.com"
+	id S1752287Ab3HUOcj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 10:32:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50368 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751694Ab3HUOcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 10:32:19 -0400
+	id S1752192Ab3HUOcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 10:32:22 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <bcousson@baylibre.com>, <tony@atomide.com>, <balbi@ti.com>
 CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
@@ -14,9 +14,9 @@ CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <devicetree@vger.kernel.org>, <kishon@ti.com>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
-Subject: [PATCH v3 3/5] arm: omap5: dts: add palmas-usb node
-Date: Wed, 21 Aug 2013 20:01:32 +0530
-Message-ID: <1377095494-15380-4-git-send-email-kishon@ti.com>
+Subject: [PATCH v3 1/5] arm: omap5: dts: fix reg property size
+Date: Wed, 21 Aug 2013 20:01:30 +0530
+Message-ID: <1377095494-15380-2-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1377095494-15380-1-git-send-email-kishon@ti.com>
 References: <1377095494-15380-1-git-send-email-kishon@ti.com>
@@ -28,64 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Felipe Balbi <balbi@ti.com>
 
-Without this node, there will be no palmas
-driver to notify dwc3 that a cable has
-been connected and, without that, dwc3
-will never initialize.
+USB3 block has a 64KiB space, another 64KiB is
+used for the wrapper.
 
-[ kishon@ti.com: added dt properties for enabling vbus/id interrupts and fixed
-vbus-supply value after SMPS10 is modeled as 2 regulators ]
+Without this change, resource_size() will get
+confused and driver won't probe because size
+will be negative.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- arch/arm/boot/dts/omap5-uevm.dts |   12 ++++++++++++
- arch/arm/boot/dts/omap5.dtsi     |    2 +-
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/omap5.dtsi |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
-index 65d7b60..2a3f363 100644
---- a/arch/arm/boot/dts/omap5-uevm.dts
-+++ b/arch/arm/boot/dts/omap5-uevm.dts
-@@ -272,6 +272,13 @@
- 		interrupt-controller;
- 		#interrupt-cells = <2>;
- 
-+		extcon_usb3: palmas_usb {
-+			compatible = "ti,palmas-usb-vid";
-+			ti,enable-vbus-detection;
-+			ti,enable-id-detection;
-+			ti,wakeup;
-+		};
-+
- 		palmas_pmic {
- 			compatible = "ti,palmas-pmic";
- 			interrupt-parent = <&palmas>;
-@@ -470,6 +477,11 @@
- 	phys = <0 &hsusb2_phy &hsusb3_phy>;
- };
- 
-+&usb3 {
-+	extcon = <&extcon_usb3>;
-+	vbus-supply = <&smps10_out1_reg>;
-+};
-+
- &mcspi1 {
- 
- };
 diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index 4e41409..1659246 100644
+index e643620..5c99f19 100644
 --- a/arch/arm/boot/dts/omap5.dtsi
 +++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -634,7 +634,7 @@
- 			ti,type = <2>;
- 		};
- 
--		omap_dwc3@4a020000 {
-+		usb3: omap_dwc3@4a020000 {
+@@ -637,7 +637,7 @@
+ 		omap_dwc3@4a020000 {
  			compatible = "ti,dwc3";
  			ti,hwmods = "usb_otg_ss";
- 			reg = <0x4a020000 0x10000>;
+-			reg = <0x4a020000 0x1000>;
++			reg = <0x4a020000 0x10000>;
+ 			interrupts = <GIC_SPI 93 IRQ_TYPE_LEVEL_HIGH>;
+ 			#address-cells = <1>;
+ 			#size-cells = <1>;
+@@ -645,7 +645,7 @@
+ 			ranges;
+ 			dwc3@4a030000 {
+ 				compatible = "synopsys,dwc3";
+-				reg = <0x4a030000 0x1000>;
++				reg = <0x4a030000 0x10000>;
+ 				interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_HIGH>;
+ 				usb-phy = <&usb2_phy>, <&usb3_phy>;
+ 				tx-fifo-resize;
 -- 
 1.7.10.4
 
