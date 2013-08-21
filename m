@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab3HUAUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 20:20:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55874 "EHLO mga09.intel.com"
+	id S1752025Ab3HUAUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 20:20:39 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56826 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751471Ab3HUAUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 20:20:32 -0400
+	id S1751637Ab3HUAUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Aug 2013 20:20:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,923,1367996400"; 
-   d="scan'208";a="390573751"
+   d="scan'208";a="390573786"
 From: Josh Triplett <josh@joshtriplett.org>
 To: linux-kernel@vger.kernel.org
 Cc: Len Brown <len.brown@intel.com>,
         Mark Asselstine <mark.asselstine@windriver.com>,
         Mike Frysinger <vapier@chromium.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH v2 0/8] turbostat: Build fixes, 32-bit support, and cleanups
-Date: Tue, 20 Aug 2013 17:20:11 -0700
-Message-Id: <1377044419-15045-1-git-send-email-josh@joshtriplett.org>
+        Josh Triplett <josh@joshtriplett.org>, stable@vger.kernel.org
+Subject: [PATCH v2 1/8] turbostat: Don't put unprocessed uapi headers in the include path
+Date: Tue, 20 Aug 2013 17:20:12 -0700
+Message-Id: <1377044419-15045-2-git-send-email-josh@joshtriplett.org>
 X-Mailer: git-send-email 1.8.4.rc3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1377044419-15045-1-git-send-email-josh@joshtriplett.org>
+References: <1377044419-15045-1-git-send-email-josh@joshtriplett.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series includes build fixes, warning fixes, and cleanups discovered
-while adding turbostat to ChromeOS.
+turbostat's Makefile puts arch/x86/include/uapi/ in the include path, so
+that it can include <asm/msr.h> from it.  It isn't in general safe to
+include even uapi headers directly from the kernel tree without
+processing them through scripts/headers_install.sh, but asm/msr.h
+happens to work.
 
-The first and third patches should go into stable, and I've CCed them
-accordingly.
+However, that include path can break with some versions of system
+headers, by overriding some system headers with the unprocessed versions
+directly from the kernel source.  For instance:
 
-The first patch unbreaks the turbostat build on systems
-with older versions of kernel headers.
+In file included from /build/x86-generic/usr/include/bits/sigcontext.h:28:0,
+                 from /build/x86-generic/usr/include/signal.h:339,
+                 from /build/x86-generic/usr/include/sys/wait.h:31,
+                 from turbostat.c:27:
+../../../../arch/x86/include/uapi/asm/sigcontext.h:4:28: fatal error: linux/compiler.h: No such file or directory
 
-The third patch is required to build on 32-bit x86.
+This occurs because the system bits/sigcontext.h on that build system
+includes <asm/sigcontext.h>, and asm/sigcontext.h in the kernel source
+includes <linux/compiler.h>, which scripts/headers_install.sh would have
+filtered out.
 
-The second and fourth patches fix warnings.
+Since turbostat really only wants a single header, just include that one
+header rather than putting an entire directory of kernel headers on the
+include path.
 
-Patches 5-7 are code cleanups, and the last patch adds turbostat itself to
-.gitignore.
+In the process, switch from msr.h to msr-index.h, since turbostat just
+wants the MSR numbers.
 
-Josh Triplett (8):
-  turbostat: Don't put unprocessed uapi headers in the include path
-  turbostat: Don't attempt to printf an off_t with %zx
-  turbostat: Use GCC's CPUID functions to support PIC
-  turbostat: Check return value of fscanf
-  turbostat: Add a helper to parse a single int out of a file
-  turbostat: Factor out common function to open file and exit on failure
-  turbostat: Clean up error handling; disambiguate error messages; use
-    err and errx
-  turbostat: Add a .gitignore to ignore the compiled turbostat binary
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Cc: stable@vger.kernel.org
+---
+ tools/power/x86/turbostat/Makefile    | 2 +-
+ tools/power/x86/turbostat/turbostat.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
- tools/power/x86/turbostat/.gitignore  |   1 +
- tools/power/x86/turbostat/Makefile    |   2 +-
- tools/power/x86/turbostat/turbostat.c | 210 +++++++++++++---------------------
- 3 files changed, 82 insertions(+), 131 deletions(-)
- create mode 100644 tools/power/x86/turbostat/.gitignore
-
+diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
+index f09641d..d1b3a36 100644
+--- a/tools/power/x86/turbostat/Makefile
++++ b/tools/power/x86/turbostat/Makefile
+@@ -5,7 +5,7 @@ DESTDIR		:=
+ 
+ turbostat : turbostat.c
+ CFLAGS +=	-Wall
+-CFLAGS +=	-I../../../../arch/x86/include/uapi/
++CFLAGS +=	-DMSRHEADER='"../../../../arch/x86/include/uapi/asm/msr-index.h"'
+ 
+ %: %.c
+ 	@mkdir -p $(BUILD_OUTPUT)
+diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
+index fe70207..5bf4a67 100644
+--- a/tools/power/x86/turbostat/turbostat.c
++++ b/tools/power/x86/turbostat/turbostat.c
+@@ -20,7 +20,7 @@
+  */
+ 
+ #define _GNU_SOURCE
+-#include <asm/msr.h>
++#include MSRHEADER
+ #include <stdio.h>
+ #include <unistd.h>
+ #include <sys/types.h>
 -- 
 1.8.4.rc3
 
