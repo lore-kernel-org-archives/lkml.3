@@ -1,135 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746Ab3HUIwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 04:52:51 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:1038 "EHLO mms2.broadcom.com"
+	id S1751735Ab3HUJIk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 05:08:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36631 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab3HUIws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 04:52:48 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <52147FD2.9020401@broadcom.com>
-Date: Wed, 21 Aug 2013 10:52:34 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
+	id S1751552Ab3HUJIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 05:08:39 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <BEC9F67575FA1E429CA7CF5AE9BE3634012ED68C@SHSMSX104.ccr.corp.intel.com>
+References: <1377049949.18357.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <20130821072940.GB27495@gmail.com> <69b80c44-3245-4393-b6e9-4d8a7f3d3c66@email.android.com> <BEC9F67575FA1E429CA7CF5AE9BE3634012ED68C@SHSMSX104.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: "Josh Boyer" <jwboyer@fedoraproject.org>
-cc: "Felix Fietkau" <nbd@openwrt.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Tom Gundersen" <teg@jklm.no>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Linux Wireless List" <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Johannes Berg" <johannes@sipsolutions.net>
-Subject: Re: [REGRESSION] 3.10.{6,7} crashes on network activity
-References: <CAG-2HqUXQeq=30EpGWmn6tkC=CP1W+=UZCVPTYhhE0WyU_C4nw@mail.gmail.com>
- <20130820000336.GA15548@kroah.com>
- <CAG-2HqUkxvtJNGx0UbZVfaBNvSY-OU+=anSSnroS3AfSR9H0SA@mail.gmail.com>
- <20130820002822.GA18023@kroah.com> <5212F6E8.3090107@openwrt.org>
- <52132589.5000306@broadcom.com>
- <CA+5PVA7gvnfX2vnpxEGCgaAYXRvA=SME4SYZpTESqLsMkgSu=g@mail.gmail.com>
-In-Reply-To: <CA+5PVA7gvnfX2vnpxEGCgaAYXRvA=SME4SYZpTESqLsMkgSu=g@mail.gmail.com>
-X-WSS-ID: 7E0AA1EA1R082747592-01-01
 Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: RE: [PATCH] reboot: perform warm/cold reset correctly for CF9 type
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 21 Aug 2013 11:07:48 +0200
+To: "Li, Fei" <fei.li@intel.com>, Ingo Molnar <mingo@kernel.org>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "holt@sgi.com" <holt@sgi.com>,
+        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <7233d29e-ea01-4eb6-8018-b9c8e3730a30@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2013 02:11 AM, Josh Boyer wrote:
-> On Tue, Aug 20, 2013 at 4:15 AM, Arend van Spriel <arend@broadcom.com> wrote:
->> On 08/20/2013 06:56 AM, Felix Fietkau wrote:
->>>
->>> On 2013-08-20 2:28 AM, Greg Kroah-Hartman wrote:
->>>>
->>>> On Tue, Aug 20, 2013 at 08:26:11AM +0800, Tom Gundersen wrote:
->>>>>
->>>>> On Tue, Aug 20, 2013 at 8:03 AM, Greg Kroah-Hartman
->>>>> <gregkh@linuxfoundation.org> wrote:
->>>>>>
->>>>>> On Tue, Aug 20, 2013 at 07:59:47AM +0800, Tom Gundersen wrote:
->>>>>>>
->>>>>>> Hi guys,
->>>>>>>
->>>>>>> Starting with 3.10.6 (and still present in .7) I get an oops on
->>>>>>> connecting to the network.
->>>>>>>
->>>>>>> The attached picture shows the oops. In case it does not reach the ML,
->>>>>>> the top of the call trace reads:
->>>>>>>
->>>>>>> brcms_c_compute_rtscts_dur
->>>>>>> brcms_c_ampdu_finalize
->>>>>>> ampdu_finalize
->>>>>>> dma_txfast
->>>>>>> brcms_c_txfifo
->>>>>>> brcms_c_sendpkt_mac80211
->>>>>>> brcms_ops_tx
->>>>>>> __ieee80211_tx
->>>>>>>
->>>>>>> I bisected the problem and the first bad commit is
->>>>>>>
->>>>>>> commit ef47a5e4f1aaf1d0e2e6875e34b2c9595897bef6
->>>>>>> Author: Felix Fietkau <nbd@openwrt.org>
->>>>>>> Date:   Fri Jun 28 21:04:35 2013 +0200
->>>>>>>
->>>>>>>       mac80211/minstrel_ht: fix cck rate sampling
->>>>>>>
->>>>>>>       commit 1cd158573951f737fbc878a35cb5eb47bf9af3d5 upstream.
->>>>>>>
->>>>>>> Reverting it on top of .7 fixes the problem.
->>>>>>>
->>>>>>> I had the same (I suppose) problem on mainline some time ago, but I
->>>>>>> have not bisected it, verified that the problem still occurs there, or
->>>>>>> checked if reverting the upstream patch fixes it. I'd be happy to do
->>>>>>> that if it would help though.
->>>>>>>
->>>>>>> Let me know if you need any more information.
->>>>>>
->>>>>>
->>>>>> Do you have this same problem with 3.11-rc6 as well?
->>>>>
->>>>>
->>>>> Yes, I just confirmed. I also confirmed that reverting the mainline
->>>>> commit on top of -rc6 fixes the problem.
->>>>
->>>>
->>>> Great, thanks.
->>>>
->>>> Felix and Johannes, any chance we can get this reverted in Linus tree
->>>> soon, and push that revert back to the 3.10 stable tree as well?
->>>
->>> I'd like to avoid a revert, since that will simply replace one set of
->>> issues with another. Let's limit the use of the feature that brcmsmac
->>> can't handle to drivers that are known to work with it. Tom, Please
->>> test this patch to see if it fixes your issue.
->>
->>
->> Hi Felix,
->>
->> I have been diving into root causing why brcmsmac can not handle cck
->> fallback rates, because it should. Maybe it is better to flag no cck support
->> and only change brcmsmac.
+The thing is that the existing "warm" and "cold" means something different, I believe (skip post vs do post.)  It is possible it just works, but it would be good to know which platforms or works on.
+
+Also, why do you need the cf9 boot method at all?  All current systems * should * use the ACPI method.
+
+"Li, Fei" <fei.li@intel.com> wrote:
+>> Careful.  This is a very different definition of warm vs cold boot
+>used elsewhere.
 >
-> We have a number of users hitting this in Fedora 18 and 19 now.  We're
-> tracking it with https://bugzilla.redhat.com/show_bug.cgi?id=998080
-> and I'm sure we can find people to test easily.
+>We have tested both warm and cold reboot on our x86 platform, and it
+>works well.
+>Besides with commit, the expected warm and reboot type can be specified
+>through
+>command line.
+>
+>> >Looks good, but please introduce a reboot_val intermediate
+>> >variable instead of duplicating that ugly line-broken
+>> >construct twice.
+>
+>Accepted and will update it in later version. 
+>
+>> >
+>> >Thanks,
+>> >
+>> >	Ingo
+>> 
+>
+>Thanks,
+>Fei
 
-There is already another one (possibly) dealing with the same issue:
-
-https://bugzilla.redhat.com/show_bug.cgi?id=989269
-
-One of them should probably be flagged as duplicate.
-
-> If you have a patch disabling cck in brcmsmac, I'd be happy to build a
-> kernel for people.  If that's going to be some time coming, perhaps
-> it's better to grab Felix's patch on a temporary basis?
-
-I think it is better to grab Felix's patch because as we both observed 
-there is stuff missing in brcmsmac to deal with CCK rates and A-MPDU 
-packet aggregation.
-
-Regards,
-Arend
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
