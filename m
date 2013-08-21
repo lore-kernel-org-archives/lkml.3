@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab3HUCFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Aug 2013 22:05:47 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:52455 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680Ab3HUCFq (ORCPT
+	id S1752034Ab3HUCHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Aug 2013 22:07:48 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:36036 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883Ab3HUCHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Aug 2013 22:05:46 -0400
-X-Spam-Score: -101.0
-Message-ID: <5214201C.6080008@asianux.com>
-Date: Wed, 21 Aug 2013 10:04:12 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 20 Aug 2013 22:07:46 -0400
+Date: Tue, 20 Aug 2013 22:07:42 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] idr: Use this_cpu_ptr() for percpu_ida
+Message-ID: <20130821020742.GA3495@htj.dyndns.org>
+References: <1375896905-6074-1-git-send-email-kmo@daterainc.com>
+ <1375896905-6074-5-git-send-email-kmo@daterainc.com>
+ <0000014059ec4c34-1bb53d48-c9ee-4e71-81b8-253026431c5c-000000@email.amazonses.com>
+ <20130807183345.GA11612@kmo-pixel>
+ <000001405a4b39ef-0715410a-5061-41e9-9414-86559f16570d-000000@email.amazonses.com>
+ <20130807195733.GB11612@kmo-pixel>
+ <000001405e5776ba-bcc96088-b5e8-4abe-b98e-2e9d7d9b112b-000000@email.amazonses.com>
+ <1377033546.32763.4.camel@haakon3.risingtidesystems.com>
+ <20130820142956.1194d8c798abf53f884a1fb6@linux-foundation.org>
+ <20130821020132.GA4051@kmo-pixel>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: jg1.han@samsung.com, khali@linux-fr.org, David.Woodhouse@intel.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/params.c: use scnprintf() instead of sprintf()
-References: <5212DFB0.8070902@asianux.com> <87siy4gan1.fsf@rustcorp.com.au>
-In-Reply-To: <87siy4gan1.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130821020132.GA4051@kmo-pixel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 02:05 PM, Rusty Russell wrote:
-> Chen Gang <gang.chen@asianux.com> writes:
-> 
->> For some strings (e.g. version string), they are permitted to be larger
->> than PAGE_SIZE (although meaningless), so recommend to use scnprintf()
->> instead of sprintf().
-> 
-> Applied.
-> 
+Hello, Kent.
+
+On Tue, Aug 20, 2013 at 07:01:32PM -0700, Kent Overstreet wrote:
+> I think Tejun and I might be at a bit of an impasse with the ida rewrite
+> itself, but I don't think there were any outstanding objections to the
+> percpu ida code itself - and this is a standalone version.
+
+The percpu ida code can be applied separately from the ida rewrite?
+
+> I was meaning to ask you Andrew, if you could take a look at the ida
+> discussion and lend your opinion - I don't think there's any _specific_
+> technical objections left to my ida code, and it's now on a more
+> philisophical "complexity vs. ..." level.
+
+Hmmm... the objection was pretty specific - don't depend on high-order
+or vmalloc allocations when it can be easily avoided by using proper
+radix tree.
 
 Thanks.
 
-> Thanks,
-> Rusty.
-> 
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> ---
->>  kernel/params.c |    7 ++++---
->>  1 files changed, 4 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/params.c b/kernel/params.c
->> index 1f228a3..4da300f 100644
->> --- a/kernel/params.c
->> +++ b/kernel/params.c
->> @@ -241,7 +241,8 @@ int parse_args(const char *doing,
->>  	}								\
->>  	int param_get_##name(char *buffer, const struct kernel_param *kp) \
->>  	{								\
->> -		return sprintf(buffer, format, *((type *)kp->arg));	\
->> +		return scnprintf(buffer, PAGE_SIZE, format,		\
->> +				*((type *)kp->arg));			\
->>  	}								\
->>  	struct kernel_param_ops param_ops_##name = {			\
->>  		.set = param_set_##name,				\
->> @@ -285,7 +286,7 @@ EXPORT_SYMBOL(param_set_charp);
->>  
->>  int param_get_charp(char *buffer, const struct kernel_param *kp)
->>  {
->> -	return sprintf(buffer, "%s", *((char **)kp->arg));
->> +	return scnprintf(buffer, PAGE_SIZE, "%s", *((char **)kp->arg));
->>  }
->>  EXPORT_SYMBOL(param_get_charp);
->>  
->> @@ -827,7 +828,7 @@ ssize_t __modver_version_show(struct module_attribute *mattr,
->>  	struct module_version_attribute *vattr =
->>  		container_of(mattr, struct module_version_attribute, mattr);
->>  
->> -	return sprintf(buf, "%s\n", vattr->version);
->> +	return scnprintf(buf, PAGE_SIZE, "%s\n", vattr->version);
->>  }
->>  
->>  extern const struct module_version_attribute *__start___modver[];
->> -- 
->> 1.7.7.6
-> 
-> 
-
-
 -- 
-Chen Gang
+tejun
