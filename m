@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab3HUPFP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 11:05:15 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:55174 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab3HUPFN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 11:05:13 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Richard Genoud <richard.genoud@gmail.com>,
-        <alexandre.belloni@free-electrons.com>, Bo Shen <voice.shen@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: device tree update for 3.12 #1
-Date: Wed, 21 Aug 2013 17:05:10 +0200
-Message-ID: <1377097510-14090-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	id S1752153Ab3HUPGI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 11:06:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40645 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752089Ab3HUPGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 11:06:05 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130821144258.GH2593@phenom.dumpdata.com>
+References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com> <1377080143-28455-6-git-send-email-tangchen@cn.fujitsu.com> <18d71946-6de9-4af2-a6a8-05fae51755af@email.android.com> <68a532f2-e468-4aea-b42b-a444ec079c3f@email.android.com> <20130821144258.GH2593@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 5/8] x86, brk: Make extend_brk() available with va/pa.
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 21 Aug 2013 17:04:21 +0200
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
+        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Message-ID: <025ad747-18b5-4d7a-8eea-9ba8a5b0d53c@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
 
-Here is the first pull request about DT on AT91 for 3.12.
-It is based on 3.11-rc5 as I saw that the branch is coming from this tag on
-your side.
 
-Thanks, best regards,
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>On Wed, Aug 21, 2013 at 02:35:36PM +0200, H. Peter Anvin wrote:
+>> Global symbols are inaccessible in physical mode.
+>
+>Even if they are embedded in the assembler code and use
+>GLOBAL(paging_enabled) ?
 
-The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
+Yes, because the address is different in physical mode.  Think about it.  You could do a *function* like:
 
-  Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
+paging_enabled:
+	mov (%esp),%edx
+	xor %eax,%eax
+	cmpl $PAGE_OFFSET,%edx
+	setae %al
+	ret
 
-are available in the git repository at:
+>> 
+>> This is incidentally yet another example of "PV/weird platform
+>violence", since in their absence it would be trivial to work around
+>this by using segmentation.
+>
+>I don't follow why it could not.
+>
+>Why can't there be a __pa_symbol(paging_enabled) that is used. Won't
+>that in effect allow you to check the contents of that 'global
+>constant' even when you don't have paging enabled?
 
-  git://github.com/at91linux/linux-at91.git tags/at91-dt
+Yes.  But not once paging has been turned on.
 
-for you to fetch changes up to 90d01929ad38259596371c78df8a9ecf37a7f815:
-
-  ARM: at91/dt: sam9x5ek: add sound configuration (2013-08-21 13:33:44 +0200)
-
-----------------------------------------------------------------
-More DT work on AT91:
-- sound support for at91sam9x5 family
-- at91sam9n12: touch button, i2c and gpio-keys
-- adding missing pinctrl-names to MCI on at91rm9200 and at91sam9260/9g20
-- adding ARM Performance Monitor Unit (PMU) on sama5d3
-
-----------------------------------------------------------------
-Alexandre Belloni (1):
-      ARM: at91: Add PMU support for sama5d3
-
-Jean-Christophe PLAGNIOL-VILLARD (3):
-      ARM: at91: at91sam9260: add missing pinctrl-names on mmc
-      ARM: at91: at91rm9200: set default mmc0 pinctrl-names
-      ARM: at91/dt: add at91rm9200 PQFP package version
-
-Richard Genoud (4):
-      ARM: at91/dt: sam9x5: add SSC DMA parameters
-      ARM: at91/dt: sam9x5ek: add WM8731 codec
-      ARM: at91/dt: sam9x5ek: enable SSC
-      ARM: at91/dt: sam9x5ek: add sound configuration
-
-voice (3):
-      ARM: at91: at91sam9n12: add pinctrl of TWI
-      ARM: at91: at91sam9n12: add qt1070 support
-      ARM: at91: at91sam9n12: correct pin number of gpio-key
-
- arch/arm/boot/dts/at91rm9200.dtsi      |  1 +
- arch/arm/boot/dts/at91rm9200_pqfp.dtsi | 17 +++++++++++++++++
- arch/arm/boot/dts/at91sam9260.dtsi     |  1 +
- arch/arm/boot/dts/at91sam9n12.dtsi     | 20 ++++++++++++++++++++
- arch/arm/boot/dts/at91sam9n12ek.dts    | 18 +++++++++++++++++-
- arch/arm/boot/dts/at91sam9x5.dtsi      |  3 +++
- arch/arm/boot/dts/at91sam9x5ek.dtsi    | 24 ++++++++++++++++++++++++
- arch/arm/boot/dts/sama5d3.dtsi         |  5 +++++
- 8 files changed, 88 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/at91rm9200_pqfp.dtsi
+>> >>As mentioned above, on 32bit before paging is enabled, we have to
+>> >>access variables
+>> >>with pa. So introduce a "bool is_phys" parameter to extend_brk(),
+>and
+>> >>convert va
+>> >>to pa is it is true.
+>> >
+>> >Could you do it differently? Meaning have a global symbol
+>> >(paging_enabled) which will be used by most of the functions you
+>> >changed in this patch and the next ones? It would naturally be
+>enabled
+>> >when paging is on and __va addresses can be used. 
+>> >
+>> >That could also be used in the printk case to do a BUG_ON before
+>paging
+>> >is enabled on 32bit. Or perhaps use a different code path to deal
+>with
+>> >using __pa address. 
+>> >
+>> >? 
 
 -- 
-Nicolas Ferre
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
