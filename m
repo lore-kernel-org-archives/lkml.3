@@ -1,131 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab3HUJYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 05:24:45 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:25126 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab3HUJYn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 05:24:43 -0400
-Message-ID: <52148730.4000709@oracle.com>
-Date: Wed, 21 Aug 2013 17:24:00 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1751996Ab3HUJZU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 05:25:20 -0400
+Received: from [216.32.180.188] ([216.32.180.188]:24767 "EHLO
+	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751944Ab3HUJZP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 05:25:15 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VS4(zz98dI1432I78fbmzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de097hz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
+From: Xiubo Li-B47053 <B47053@freescale.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Guo Shawn-R65073 <r65073@freescale.com>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Lu Jingchang-B35083 <B35083@freescale.com>
+Subject: RE: [PATCH 1/4] pwm: add freescale ftm pwm driver support
+Thread-Topic: [PATCH 1/4] pwm: add freescale ftm pwm driver support
+Thread-Index: AQHOnhwdSdSsv5GKTkyhA3muKUAEeJmfRjeAgAALZzA=
+Date: Wed, 21 Aug 2013 09:24:56 +0000
+Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F827D1C51@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com>
+ <1377054462-6283-2-git-send-email-Li.Xiubo@freescale.com>
+ <20130821073659.GN31036@pengutronix.de>
+In-Reply-To: <20130821073659.GN31036@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.56]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Mel Gorman <mgorman@suse.de>, lliubbo@gmail.com
-Subject: Re: [PATCH v7 0/5] zram/zsmalloc promotion
-References: <1377065791-2959-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1377065791-2959-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+TO Sascha,
 
-On 08/21/2013 02:16 PM, Minchan Kim wrote:
-> It's 7th trial of zram/zsmalloc promotion.
-> I rewrote cover-letter totally based on previous discussion.
-> 
-> The main reason to prevent zram promotion was no review of
-> zsmalloc part while Jens, block maintainer, already acked
-> zram part.
-> 
-> At that time, zsmalloc was used for zram, zcache and zswap so
-> everybody wanted to make it general and at last, Mel reviewed it
-> when zswap was submitted to merge mainline a few month ago.
-> Most of review was related to zswap writeback mechanism which
-> can pageout compressed page in memory into real swap storage
-> in runtime and the conclusion was that zsmalloc isn't good for
-> zswap writeback so zswap borrowed zbud allocator from zcache to
-> replace zsmalloc. The zbud is bad for memory compression ratio(2)
-> but it's very predictable behavior because we can expect a zpage
-> includes just two pages as maximum. Other reviews were not major. 
-> http://lkml.indiana.edu/hypermail/linux/kernel/1304.1/04334.html
-> 
-> Zcache doesn't use zsmalloc either so zsmalloc's user is only
-> zram now so this patchset moves it into zsmalloc directory.
-> Recently, Bob tried to move zsmalloc under mm directory to unify
-> zram and zswap with adding pseudo block device in zswap(It's
-> very weired to me) but he was simple ignoring zram's block device
-> (a.k.a zram-blk) feature and considered only swap usecase of zram,
-> in turn, it lose zram's good concept.
-> 
-
-Yes, I didn't notice the feature that zram can be used as a normal block
-device.
+Thanks very much for your comments.
 
 
-> Mel raised an another issue in v6, "maintainance headache".
-> He claimed zswap and zram has a similar goal that is to compresss
-> swap pages so if we promote zram, maintainance headache happens
-> sometime by diverging implementaion between zswap and zram
-> so that he want to unify zram and zswap. For it, he want zswap
-> to implement pseudo block device like Bob did to emulate zram so
-> zswap can have an advantage of writeback as well as zram's benefit.
-
-If consider zram as a swap device only, I still think it's better to add
-a pseudo block device to zswap and just disable the writeback of zswap.
-
-But I have no idea of zram's block device feature.
-
-> But I wonder frontswap-based zswap's writeback is really good
-> approach for writeback POV. I think that problem isn't only
-> specific for zswap. If we want to configure multiple swap hierarchy
-> with various speed device such as RAM, NVRAM, SSD, eMMC, NAS etc,
-> it would be a general problem. So we should think of more general
-> approach. At a glance, I can see two approach.
+> Subject: Re: [PATCH 1/4] pwm: add freescale ftm pwm driver support
 > 
-> First, VM could be aware of heterogeneous swap configuration
-> so it could aim for being able to configure cache hierarchy
-> among swap devices. It may need indirction layer on swap, which
-> was already talked about that way so VM can migrate a block from 
-> A to B easily. It will support various configuration with VM's
-> hints, maybe, in future.
-> http://lkml.indiana.edu/hypermail/linux/kernel/1203.3/03812.html
+> On Wed, Aug 21, 2013 at 11:07:39AM +0800, Xiubo Li wrote:
+> > +
+> > +#define FTM_CSC_BASE        0x0C
+> > +#define FTM_CSC(_CHANNEL) \
+> > +	(FTM_CSC_BASE + (_CHANNEL * 0x08))
 > 
-> Second, as more practical solution, we could use device mapper like
-> dm-cache(https://lwn.net/Articles/540996/), which makes it very
-> flexible. Now, it supports various configruation and cache policy
-> (block size, writeback/writethrough, LRU, MFU although MQ is merged
-> now) so it would be good fit for our purpose. Even, it can make zram
-> support writeback. I tested it following as following scenario
-> in KVM 4 CPU, 1G DRAM with background 800M memory hogger, which is
-> allocates random data up to 800M.
-> 
-> 1) zram swap disk 1G, untar kernel.tgz to tmpfs, build -j 4
->    Fail to untar due to shortage of memory space by tmpfs default size limit
-> 
-> 2) zram swap disk 1G, untar kernel.tgz to ext2 on zram-blk, build -j 4
->    OOM happens while building the kernel but it untar successfully
->    on ext2 based on zram-blk. The reason OOM happend is zram can not find
->    free pages from main memory to store swap out pages although empty
->    swap space is still enough.
-> 
-> 3) dm-cache swap disk 1G, untar kernel.tgz to ext2 on zram-blk, build -j 4
->    dmcache consists of zram-meta 10M, zram-cache 1G and real swap storage 1G
->    No OOM happens and successfully building done.
-> 
-> Above tests proves zram can support writeback into real swap storage
-> so that zram-cache can always have a free space. If necessary, we could
-> add new plugin in dm-cache. I see It's really flexible and well-layered
-> architecure so zram-blk's concept is good for us and it has lots of
-> potential to be enhanced by MM/FS/Block developers. 
+> I see this more and more in FSL code. This is unsafe! Consider what
+> happens when we call FTM_CSC(1 + 1). The result is certainly not what you
+> want.
 > 
 
-That's an exciting direction!
+Oh yes, I'll fix it in v2.
 
--- 
-Regards,
--Bob
+
+> > +
+> > +static int fsl_pwm_request_channel(struct pwm_chip *chip,
+> > +			       struct pwm_device *pwm)
+> > +{
+> > +	int ret = 0;
+> 
+> No need to initialize this variable.
+> 
+
+Yeah, I'll fix it in v2.
+
+
+> > +	ret = clk_prepare_enable(fpc->clk);
+> > +	if (ret) {
+> > +		dev_err(&fpc->pdev->dev,
+> > +				"failed to clk_prepare_enable "
+> > +				"ftm pwm module clock : %d\n",
+> > +				ret);
+> 
+> Just return ret. We do not need a message for each failed function in the
+> kernel.
+> 
+
+OK, I will remove it in v2.
+
+
+> > +static int fsl_updata_config(struct fsl_pwm_chip *fpc,
+> > +			     struct pwm_device *pwm)
+> > +{
+> > +	int i;
+> > +	unsigned long reg, cntin = FTM_CNTIN_VAL;
+> > +	struct pwm_chip *chip = &fpc->chip;
+> > +
+> > +	reg = readl(fpc->base + FTM_SC);
+> > +	reg &= ~(FTMSC_CPWMS);
+> > +	reg |= (fpc->cpwm ? FTMSC_CPWMS : 0x00);
+> > +	writel(reg, fpc->base + FTM_SC);
+> > +
+> > +	if (pwm && fpc->cpwm) {
+> > +		writel(fpc->fpwms[pwm->hwpwm].period_cycles / 2 + cntin,
+> > +				fpc->base + FTM_MOD);
+> > +		writel(fpc->fpwms[pwm->hwpwm].duty_cycles / 2 + cntin,
+> > +				fpc->base + FTM_CV(pwm->hwpwm));
+> > +	} else if (pwm) {
+> > +		writel(fpc->fpwms[pwm->hwpwm].period_cycles + cntin - 1,
+> > +				fpc->base + FTM_MOD);
+> > +		writel(fpc->fpwms[pwm->hwpwm].duty_cycles + cntin,
+> > +				fpc->base + FTM_CV(pwm->hwpwm));
+> > +	}
+> > +
+> > +	if (pwm)
+> > +		return 0;
+> > +
+> > +	for (i = 0; i < chip->npwm; i++) {
+> > +		if (!test_bit(PWMF_ENABLED, &chip->pwms[i].flags))
+> > +			continue;
+> > +		if (fpc->cpwm) {
+> > +			writel(fpc->fpwms[i].period_cycles / 2 + cntin,
+> > +					fpc->base + FTM_MOD);
+> > +			writel(fpc->fpwms[i].duty_cycles / 2 + cntin,
+> > +					fpc->base + FTM_CV(i));
+> > +		} else {
+> > +			writel(fpc->fpwms[i].period_cycles + cntin - 1,
+> > +					fpc->base + FTM_MOD);
+> > +			writel(fpc->fpwms[i].duty_cycles + cntin,
+> > +					fpc->base + FTM_CV(i));
+> > +		}
+> > +	}
+> > +
+> 
+> The behaviour of this function is completely different for pwm == NULL
+> and pwm != NULL. This indicates that it should really be two functions.
+> This probably makes the intention of this code much clearer.
+> 
+
+OK, I will split it into two functions in v2.
+
+
+> > +	period_cycles = fsl_rate_to_cycles(fpc, period_ns);
+> > +	if (period_cycles > 0xFFFF) {
+> > +		dev_warn(&fpc->pdev->dev,
+> > +				"required PWM period cycles(%lu) "
+> > +				"overflow 16-bits counter!\n",
+> > +				period_cycles);
+> > +		period_cycles = 0xFFFF;
+> 
+> If you can't fulfill the requirements you have to return an error. It's
+> the caller that needs to know the failure. The caller can't read read the
+> syslog.
+> 
+
+OK, I will fix it in v2.
+
+
+> > +static int fsl_pwm_enable_channel(struct pwm_chip *chip,
+> > +			      struct pwm_device *pwm)
+> > +{
+> > +	int ret;
+> > +	unsigned long reg;
+> > +	struct fsl_pwm_chip *fpc;
+> > +	struct pinctrl_state *pins_state;
+> > +	const char *statename;
+> > +
+> > +	fpc = to_fsl_chip(chip);
+> > +
+> > +	if (WARN_ON(!test_bit(PWMF_REQUESTED, &pwm->flags)))
+> > +		return -ESHUTDOWN;
+> > +
+> > +	statename = kasprintf(GFP_KERNEL, "en%d", pwm->hwpwm);
+> > +	pins_state = pinctrl_lookup_state(fpc->pinctrl,
+> > +			statename);
+> > +	/* enable pins to be muxed in and configured */
+> > +	if (!IS_ERR(pins_state)) {
+> > +		ret = pinctrl_select_state(fpc->pinctrl, pins_state);
+> > +		if (ret)
+> > +			dev_warn(&fpc->pdev->dev,
+> > +					"could not set default pins\n");
+> 
+> Why do you need to manipulate the pinctrl to en/disable a channel?
+> 
+
+This is because in Vybrid VF610 TOWER board, there are 4 leds, and each led's one point(diode's positive pole) is connected to 3.3V,
+and the other point is connected to pwm's one channel. When the 4 pinctrls are configured as enable at the same time, 
+the 4 pinctrls is low valtage, and the 4 leds will be lighted up as default, then when you enable/disable one led will effects others.
+
+These pinctrls are belong to pwm, and I don't think led or other customer could control them directly.
+So, here I authorize the 4 pinctrls to each channel controls.
+
+
+> > +static ssize_t fsl_pwm_cpwm_store(struct device *dev,
+> > +				  struct device_attribute *attr,
+> > +				  const char *buf,
+> > +				  size_t count)
+> > +{
+> > +	int ret;
+> > +	unsigned int val;
+> > +	struct fsl_pwm_chip *fpc;
+> > +
+> > +	fpc = dev_get_drvdata(dev);
+> > +
+> > +	ret = kstrtouint(buf, 0, &val);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	mutex_lock(&fpc->lock);
+> > +	if (!!(val) != !!(fpc->cpwm)) {
+> > +		fpc->cpwm = !!val;
+> > +		fsl_updata_config(fpc, NULL);
+> > +	}
+> > +	mutex_unlock(&fpc->lock);
+> > +
+> > +	return count;
+> > +}
+> 
+> What is this cpwm thingy?
+
+Up-down counting mode:
+CNTIN(a register) defines the starting value of the count and MOD(a register) defines the final value of the
+count. The value of CNTIN is loaded into the FTM counter, and the counter increments
+until the value of MOD is reached, at which point the counter is decremented until it
+returns to the value of CNTIN and the up-down counting restarts.
+
+
+> > +static int fsl_pwm_probe(struct platform_device *pdev) {
+> > +	int ret = 0;
+> > +	struct fsl_pwm_chip *fpc;
+> > +	struct resource *res;
+> > +
+> > +	fpc = devm_kzalloc(&pdev->dev, sizeof(*fpc), GFP_KERNEL);
+> > +	if (!fpc) {
+> > +		dev_err(&pdev->dev,
+> > +				"failed to allocate memory\n");
+> 
+> Drop this message. You'll never see it.
+
+OK, I will drop it in v2.
+
+> > +	fpc->chip.dev = &pdev->dev;
+> > +	fpc->chip.ops = &fsl_pwm_ops;
+> > +	fpc->chip.of_xlate = of_pwm_xlate_with_flags;
+> > +	fpc->chip.of_pwm_n_cells = 3;
+> > +	fpc->chip.base = -1;
+> > +
+> > +	ret = pwmchip_add(&fpc->chip);
+> > +	if (ret < 0) {
+> > +		dev_err(&pdev->dev,
+> > +				"failed to add ftm0 pwm chip %d\n",
+> > +				ret);
+> > +		return ret;
+> > +	}
+> 
+> You can only add the PWM when you grabbed all resources, not before this.
+> 
+
+Yeah, I will adjust it in v2.
+
+> > +
+> > +static int fsl_pwm_remove(struct platform_device *pdev) {
+> > +	struct fsl_pwm_chip *fpc;
+> > +
+> > +	fpc = platform_get_drvdata(pdev);
+> > +	if (fpc == NULL)
+> > +		return -ENODEV;
+> 
+> This won't happen.
+ 
+OK, I will drop it in v2.
+
+
+Thanks very much.
+
+---
+
+Best Regards,
+Xiubo Li
+
+
+
+
+
