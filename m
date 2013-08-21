@@ -1,97 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab3HUT0d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 15:26:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11945 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab3HUT0b (ORCPT
+	id S1752582Ab3HUTaO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 15:30:14 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:51464 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab3HUTaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 15:26:31 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=OUE5rmK-_tYA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=fBi3oY-DbjoA:10 a=QyXUC8HyAAAA:8 a=QCxB0KMVAXah00B4MXMA:9 a=CjuIK1q_8ugA:10 a=dGJ0OcVc7YAA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 21 Aug 2013 15:26:30 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Li Fei <fei.li@intel.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, rob@landley.net,
-        chuansheng.liu@intel.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] irq: add irq handler function name in ftrace
-Message-ID: <20130821152630.242bba48@gandalf.local.home>
-In-Reply-To: <1377056661.32321.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-References: <1377056661.32321.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Aug 2013 15:30:11 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: r65073@freescale.com, thierry.reding@gmail.com, grant.likely@linaro.org,
+        linux@arm.linux.org.uk, rob@landley.net, ian.campbell@citrix.com,
+        swarren@wwwdotorg.org, mark.rutland@arm.com, pawel.moll@arm.com,
+        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
+        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linus.walleij@linaro.org
+Subject: Re: [PATCH 4/4] Documentation: Add device tree bindings for Freescale FTM PWM
+Date: Wed, 21 Aug 2013 21:30:04 +0200
+Message-ID: <1473340.OXSHEp7d4P@flatron>
+User-Agent: KMail/4.11 (Linux/3.10.6-gentoo; KDE/4.11.0; x86_64; ; )
+In-Reply-To: <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com>
+References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com> <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+Hi Xiubo,
 
-Are you OK with this change?
+Please see my comments inline.
 
--- Steve
-
-
-On Wed, 21 Aug 2013 11:44:21 +0800
-Li Fei <fei.li@intel.com> wrote:
-
-> At present, irq handler function name is not printed out when
-> irq_handler_entry is added into trace event, which is inconvenient
-> for debugging.
-> In order to improve the debugging efficiency, print out the handler
-> function name in irq_handler_entry.
-> 
-> Signed-off-by: Li Fei <fei.li@intel.com>
-> Acked-by: Liu Chuansheng <chuansheng.liu@intel.com>
+On Wednesday 21 of August 2013 11:07:42 Xiubo Li wrote:
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 > ---
->  Documentation/trace/ftrace.txt |    8 ++++----
->  include/trace/events/irq.h     |    5 ++++-
->  2 files changed, 8 insertions(+), 5 deletions(-)
+>  .../devicetree/bindings/pwm/fsl-ftm-pwm.txt        | 52
+> ++++++++++++++++++++++ 1 file changed, 52 insertions(+)
+>  create mode 100644
+> Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
 > 
-> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-> index b937c6e..907ecbd 100644
-> --- a/Documentation/trace/ftrace.txt
-> +++ b/Documentation/trace/ftrace.txt
-> @@ -2701,10 +2701,10 @@ CPU:2 [LOST 11745 EVENTS]
->              bash-1998  [000] ..s2   138.733106: softirq_exit: vec=1 [action=TIMER]
->              bash-1998  [000] ..s2   138.733106: softirq_entry: vec=9 [action=RCU]
->              bash-1998  [000] ..s2   138.733109: softirq_exit: vec=9 [action=RCU]
-> -            sshd-1995  [001] d.h1   138.733278: irq_handler_entry: irq=21 name=uhci_hcd:usb4
-> -            sshd-1995  [001] d.h1   138.733280: irq_handler_exit: irq=21 ret=unhandled
-> -            sshd-1995  [001] d.h1   138.733281: irq_handler_entry: irq=21 name=eth0
-> -            sshd-1995  [001] d.h1   138.733283: irq_handler_exit: irq=21 ret=handled
-> +            kworker/0:2-161  [001] d.h1   138.733278: irq_handler_entry: irq=17 name=i2c-designware-pci-7 func=i2c_dw_isr
-> +            kworker/0:2-161  [001] d.h1   138.733280: irq_handler_exit: irq=17 ret=unhandled
-> +            kworker/0:2-161  [001] d.h1   138.733281: irq_handler_entry: irq=17 name=mmc0 func=sdhci_irq
-> +            kworker/0:2-161  [001] d.h1   138.733283: irq_handler_exit: irq=17 ret=handled
->  [...]
->  
->   # cat instances/zoot/trace
-> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-> index 1c09820..3497eb3 100644
-> --- a/include/trace/events/irq.h
-> +++ b/include/trace/events/irq.h
-> @@ -43,14 +43,17 @@ TRACE_EVENT(irq_handler_entry,
->  	TP_STRUCT__entry(
->  		__field(	int,	irq		)
->  		__string(	name,	action->name	)
-> +		__field(irq_handler_t, func)
->  	),
->  
->  	TP_fast_assign(
->  		__entry->irq = irq;
->  		__assign_str(name, action->name);
-> +		__entry->func = action->handler;
->  	),
->  
-> -	TP_printk("irq=%d name=%s", __entry->irq, __get_str(name))
-> +	TP_printk("irq=%d name=%s func=%pf",
-> +		__entry->irq, __get_str(name), __entry->func)
->  );
->  
->  /**
+> diff --git a/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+> b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt new file mode
+> 100644
+> index 0000000..698965b
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+> @@ -0,0 +1,52 @@
+> +Freescale FTM PWM controller
+> +
+> +Required properties:
+> +- compatible: should be "fsl,vf610-ftm-pwm"
+> +- reg: physical base address and length of the controller's registers
+> +- #pwm-cells: Should be 3. Number of cells being used to specify PWM
+> property.
+> +  First cell specifies the per-chip channel index of the PWM
+> to use, the 
+> +  second cell is the period in nanoseconds and bit 0 in
+> the third cell is 
+> +  used to encode the polarity of PWM output. Set bit
+> 0 of the third in PWM 
+> +  specifier to 1 for inverse polarity & set to 0
+> for normal polarity.
+
+If the meaning of flags cell is the same as in generic, default PWM 
+specifier format, then it should be noted here and generic PWM binding 
+documentation mentioned. 
+
+> +- fsl,pwm-clk-ps: the ftm0 pwm clock's prescaler,
+> divide-by 2^n(n = 0 ~ 7).
+
+Is it a hardware-specific property?
+
+> +- fsl,pwm-cpwm: Center-Aligned PWM (CPWM)
+> mode.
+
+Could you explain meaning of this property?
+
+> +- fsl,pwm-number: the number of PWM devices, and is must equal to the
+> number +  of "fsl,pwm-channels".
+
+This is redundant, because you can simply count how many entries have been 
+specified in fsl,pwm-channels.
+
+> +- fsl,pwm-channels: the channels' order which is be used for pwm in
+> ftm0 +  module, and they must be one or some of 0 ~ 7, because the ftm0
+> only has +  8 channels can be used.
+
+Could you explain meaning of this property more precisely? I'm interested 
+especially how is this related to the PWM IP block and boards.
+
+> +- for very channel, the revlatived the pinctrl should be at least two
+                           ^ typo?
+
+> state +  {"enN", "dsN"}, which "en" means "enable", "ds" means
+> "disable" and "N" +  means the order of the channel.
+
+I'd suggest a more readable naming convention, for example chN-active and 
+chN-idle. These words seem to be more common across existing bindings.
+
+Best regards,
+Tomasz
 
