@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab3HVHSv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:18:51 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:44356 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851Ab3HVHSt (ORCPT
+	id S1753875Ab3HVHTG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:19:06 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:16112 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815Ab3HVHSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:18:49 -0400
-Date: Thu, 22 Aug 2013 08:18:43 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 05/13] ARM: ux500: Apply a ste-* prefix onto snowball.dts
-Message-ID: <20130822071843.GA22023@lee--X1>
-References: <1374243229-8585-1-git-send-email-lee.jones@linaro.org>
- <1374243229-8585-6-git-send-email-lee.jones@linaro.org>
- <CAOesGMgd51g7WAkQu+ckT-=skKuMyj19nJkHxh+YmGSBhSL+Vg@mail.gmail.com>
- <CACRpkdasMSCfdhzrW+7kHM8UUxxQ5UMAcc5bOogc-9RwXE9RVg@mail.gmail.com>
- <CAOesGMgZYFgwAhVCc-ObnxcmGTLTM-Zk27Dh7r1_p646ULWHeg@mail.gmail.com>
+	Thu, 22 Aug 2013 03:18:51 -0400
+X-Spam-Score: -101.0
+Message-ID: <5215B319.3020908@asianux.com>
+Date: Thu, 22 Aug 2013 14:43:37 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOesGMgZYFgwAhVCc-ObnxcmGTLTM-Zk27Dh7r1_p646ULWHeg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steffen Klassert <steffen.klassert@secunet.com>
+CC: linux-crypto@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] kernel/padata.c: share code between CPU_ONLINE and CPU_DOWN_FAILED,
+ same to CPU_DOWN_PREPARE and CPU_UP_CANCELED
+References: <5212E5E4.8010408@asianux.com> <5212E61F.7010602@asianux.com> <20130822051122.GB26773@secunet.com> <5215A134.90607@asianux.com> <20130822060503.GC26773@secunet.com>
+In-Reply-To: <20130822060503.GC26773@secunet.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Aug 2013, Olof Johansson wrote:
+Share code between CPU_ONLINE and CPU_DOWN_FAILED, same to
+CPU_DOWN_PREPARE and CPU_UP_CANCELED.
 
-> On Wed, Aug 21, 2013 at 3:37 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Wed, Aug 21, 2013 at 2:31 AM, Olof Johansson <olof@lixom.net> wrote:
-> >
-> >>> diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/ste-snowball.dts
-> >>> similarity index 100%
-> >>> rename from arch/arm/boot/dts/snowball.dts
-> >>> rename to arch/arm/boot/dts/ste-snowball.dts
-> >>
-> >> Grmbl, grmbl, grmbl. This now breaks any script that knows to use
-> >> snowball.dtb. :(
-> >>
-> >> It's good to get the prefixes added, but it's annoying to have to deal
-> >> with both during an overlap period. Maybe generate both dtb filenames
-> >> for a while but rename the source?
-> >
-> > Hm I had the same problem but changed my Makefile
-> > (scripts are too simple for me) like this:
-> >
-> >  dtb            := $(build_dir)/arch/arm/boot/dts/ste-hrefv60plus.dtb
-> > +fallbackdtb    := $(build_dir)/arch/arm/boot/dts/hrefv60plus.dtb
-> > (...)
-> > -       cat $(dtb) >> $(output_dir)/zImage
-> > +       if [ -f arch/arm/boot/dts/hrefv60plus.dts ] ; then \
-> > +           cat $(fallbackdtb) >> $(output_dir)/zImage ; echo "fallback" ; \
-> > +       else \
-> > +           cat $(dtb) >> $(output_dir)/zImage ; \
-> > +       fi
-> 
-> Sure, working around it is trivial. I just did a:
->    -@cp $</arch/arm/boot/dts/ste-snowball.dtb $</arch/arm/boot/dts/snowball.dtb
-> 
-> But the point is that everybody needs to do something like that now,
-> which is unfortunate.
+It will fix 2 bugs:
 
-Well with only ~5 active users it's probably not that much of a big
-deal anyway, but I'm still interested to know what the alternative is?
+  "not check the return value of __padata_remove_cpu() and __padata_add_cpu()".
+  "need add 'break' between CPU_UP_CANCELED and CPU_DOWN_FAILED".
 
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ kernel/padata.c |   20 ++++----------------
+ 1 files changed, 4 insertions(+), 16 deletions(-)
+
+diff --git a/kernel/padata.c b/kernel/padata.c
+index 072f4ee..2f0037a 100644
+--- a/kernel/padata.c
++++ b/kernel/padata.c
+@@ -846,6 +846,8 @@ static int padata_cpu_callback(struct notifier_block *nfb,
+ 	switch (action) {
+ 	case CPU_ONLINE:
+ 	case CPU_ONLINE_FROZEN:
++	case CPU_DOWN_FAILED:
++	case CPU_DOWN_FAILED_FROZEN:
+ 		if (!pinst_has_cpu(pinst, cpu))
+ 			break;
+ 		mutex_lock(&pinst->lock);
+@@ -857,6 +859,8 @@ static int padata_cpu_callback(struct notifier_block *nfb,
+ 
+ 	case CPU_DOWN_PREPARE:
+ 	case CPU_DOWN_PREPARE_FROZEN:
++	case CPU_UP_CANCELED:
++	case CPU_UP_CANCELED_FROZEN:
+ 		if (!pinst_has_cpu(pinst, cpu))
+ 			break;
+ 		mutex_lock(&pinst->lock);
+@@ -865,22 +869,6 @@ static int padata_cpu_callback(struct notifier_block *nfb,
+ 		if (err)
+ 			return notifier_from_errno(err);
+ 		break;
+-
+-	case CPU_UP_CANCELED:
+-	case CPU_UP_CANCELED_FROZEN:
+-		if (!pinst_has_cpu(pinst, cpu))
+-			break;
+-		mutex_lock(&pinst->lock);
+-		__padata_remove_cpu(pinst, cpu);
+-		mutex_unlock(&pinst->lock);
+-
+-	case CPU_DOWN_FAILED:
+-	case CPU_DOWN_FAILED_FROZEN:
+-		if (!pinst_has_cpu(pinst, cpu))
+-			break;
+-		mutex_lock(&pinst->lock);
+-		__padata_add_cpu(pinst, cpu);
+-		mutex_unlock(&pinst->lock);
+ 	}
+ 
+ 	return NOTIFY_OK;
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.7.6
