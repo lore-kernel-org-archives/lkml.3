@@ -1,67 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab3HVSVj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 14:21:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62184 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753861Ab3HVSVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 14:21:31 -0400
-Date: Thu, 22 Aug 2013 20:15:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Brad Spengler <spender@grsecurity.net>,
-        Colin Walters <walters@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] fork: unify and tighten up
-	CLONE_NEWUSER/CLONE_NEWPID checks
-Message-ID: <20130822181536.GA22995@redhat.com>
-References: <20130822170939.GA20296@redhat.com> <20130822171004.GA20324@redhat.com> <CALCETrU9D59MqxPm2SNegPFH_+gpPfoQJkD2E2Q8zjJ94QhLDg@mail.gmail.com>
+	id S1754095Ab3HVSYZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 14:24:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44268 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753155Ab3HVSYY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 14:24:24 -0400
+Date: Thu, 22 Aug 2013 20:24:23 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.9-rt5
+Message-ID: <20130822182423.GA8685@linutronix.de>
+References: <20130822182127.GA7606@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CALCETrU9D59MqxPm2SNegPFH_+gpPfoQJkD2E2Q8zjJ94QhLDg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130822182127.GA7606@linutronix.de>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22, Andy Lutomirski wrote:
->
-> On Thu, Aug 22, 2013 at 10:10 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > do_fork() denies CLONE_THREAD | CLONE_PARENT if NEWUSER | NEWPID.
-> >
-> > Then later copy_process() denies CLONE_SIGHAND if the new process
-> > will be in a different pid namespace (task_active_pid_ns() doesn't
-> > match current->nsproxy->pid_ns).
-> >
-> > This looks confusing and inconsistent. CLONE_NEWPID is very similar
-> > to the case when ->pid_ns was already unshared, we want the same
-> > restrictions so copy_process() should also nack CLONE_PARENT.
-> >
-> > And it would be better to deny CLONE_NEWUSER && CLONE_SIGHAND as
-> > well just for consistency.
-> >
-> > Kill the "CLONE_NEWUSER | CLONE_NEWPID" check in do_fork() and
-> > change copy_process() to the same check along with nsproxy->pid_ns
-> > we already have.
->
-> Did the old code actually prevent clone(CLONE_PARENT | CLONE_NEWPID)?
-> The new code explicitly does, and that looks like a good thing.
+* Sebastian Andrzej Siewior | 2013-08-22 20:21:27 [+0200]:
 
+>Changes since v3.10.9-rt4
+>- swait fixes from Steven. It fixed the issues with CONFIG_RCU_NOCB_CPU
+>  where the system suddenly froze and RCU wasn't doing its job 
 
-Yes. Before this patch do_fork() did:
+Also a big thanks to Carsten Emde and Paul E. McKenney for finding and
+debugging the problem.
 
-	if (clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) {
-		if (clone_flags & (CLONE_THREAD|CLONE_PARENT))
-			return -EINVAL;
-	}
-
-however, let me repeat, CLONE_PARENT after unshare(CLONE_NEWPID) was
-allowed. With this patch CLONE_PARENT is nacked in both cases.
-
-Oleg.
-
+Sebastian
