@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab3HVT6G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 15:58:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:10850 "EHLO mga01.intel.com"
+	id S1754500Ab3HVT7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 15:59:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8380 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754293Ab3HVT6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 15:58:00 -0400
+	id S1754304Ab3HVT6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 15:58:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,935,1367996400"; 
-   d="scan'208";a="390541240"
+   d="scan'208";a="366995309"
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 To: rostedt@goodmis.org
 Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
         Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH v5 06/10] tracing: add 'enable_event' and 'disable_event' event trigger commands
-Date: Thu, 22 Aug 2013 14:57:39 -0500
-Message-Id: <82fd5fe8bc919c3574944a194b12729007de7f53.1377183739.git.tom.zanussi@linux.intel.com>
+Subject: [PATCH v5 09/10] tracing: add documentation for trace event triggers
+Date: Thu, 22 Aug 2013 14:57:42 -0500
+Message-Id: <fc3a6f587ac6be8af67194ecf93402271bda6fcc.1377183739.git.tom.zanussi@linux.intel.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <cover.1377183739.git.tom.zanussi@linux.intel.com>
 References: <cover.1377183739.git.tom.zanussi@linux.intel.com>
@@ -25,450 +25,229 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add 'enable_event' and 'disable_event' event_command commands.
-
-enable_event and disable_event event triggers are added by the user
-via these commands in a similar way and using practically the same
-syntax as the analagous 'enable_event' and 'disable_event' ftrace
-function commands, but instead of writing to the set_ftrace_filter
-file, the enable_event and disable_event triggers are written to the
-per-event 'trigger' files:
-
-    echo 'enable_event:system:event' > .../othersys/otherevent/trigger
-    echo 'disable_event:system:event' > .../othersys/otherevent/trigger
-
-The above commands will enable or disable the 'system:event' trace
-events whenever the othersys:otherevent events are hit.
-
-This also adds a 'count' version that limits the number of times the
-command will be invoked:
-
-    echo 'enable_event:system:event:N' > .../othersys/otherevent/trigger
-    echo 'disable_event:system:event:N' > .../othersys/otherevent/trigger
-
-Where N is the number of times the command will be invoked.
-
-The above commands will will enable or disable the 'system:event'
-trace events whenever the othersys:otherevent events are hit, but only
-N times.
-
-This also makes the find_event_file() helper function extern, since
-it's useful to use from other places, such as the event triggers code,
-so make it accessible.
+Provide a basic overview of trace event triggers and document the
+available trigger commands, along with a few simple examples.
 
 Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 ---
- include/linux/ftrace_event.h        |   1 +
- kernel/trace/trace_events.c         |   2 +-
- kernel/trace/trace_events_trigger.c | 364 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 366 insertions(+), 1 deletion(-)
+ Documentation/trace/events.txt | 207 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 207 insertions(+)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 548ff65..72cadbc 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -321,6 +321,7 @@ enum trigger_mode {
- 	TM_TRACE_ONOFF		= (1 << 0),
- 	TM_SNAPSHOT		= (1 << 1),
- 	TM_STACKTRACE		= (1 << 2),
-+	TM_EVENT_ENABLE		= (1 << 3),
- };
- 
- extern void destroy_preds(struct ftrace_event_call *call);
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index e31b8cc..0a1e29f 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -2014,7 +2014,7 @@ struct event_probe_data {
- 	bool				enable;
- };
- 
--static struct ftrace_event_file *
-+struct ftrace_event_file *
- find_event_file(struct trace_array *tr, const char *system,  const char *event)
- {
- 	struct ftrace_event_file *file;
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index 42c96de..94074d8 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -894,6 +894,358 @@ static __init void unregister_trigger_traceon_traceoff_cmds(void)
- 				 &trigger_cmd_mutex);
- }
- 
-+/* Avoid typos */
-+#define ENABLE_EVENT_STR	"enable_event"
-+#define DISABLE_EVENT_STR	"disable_event"
+diff --git a/Documentation/trace/events.txt b/Documentation/trace/events.txt
+index 37732a2..c94435d 100644
+--- a/Documentation/trace/events.txt
++++ b/Documentation/trace/events.txt
+@@ -287,3 +287,210 @@ their old filters):
+ prev_pid == 0
+ # cat sched_wakeup/filter
+ common_pid == 0
 +
-+static void
-+event_enable_trigger(void **_data)
-+{
-+	struct event_trigger_data **p = (struct event_trigger_data **)_data;
-+	struct event_trigger_data *data = *p;
++6. Event triggers
++=================
 +
-+	if (!data)
-+		return;
++Trace events can be made to conditionally invoke trigger 'commands'
++which can take various forms and are described in detail below;
++examples would be enabling or disabling other trace events or invoking
++a stack trace whenever the trace event is hit.  Whenever a trace event
++with attached triggers is invoked, the set of trigger commands
++associated with that event is invoked.  Any given trigger can
++additionally have an event filter of the same form as described in
++section 5 (Event filtering) associated with it - the command will only
++be invoked if the event being invoked passes the associated filter.
++If no filter is associated with the trigger, it always passes.
 +
-+	if (data->enable)
-+		clear_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &data->file->flags);
-+	else
-+		set_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &data->file->flags);
-+}
++Triggers are added to and removed from a particular event by writing
++trigger expressions to the 'trigger' file for the given event.
 +
-+static void
-+event_enable_count_trigger(void **_data)
-+{
-+	struct event_trigger_data **p = (struct event_trigger_data **)_data;
-+	struct event_trigger_data *data = *p;
++A given event can have any number of triggers associated with it,
++subject to any restrictions that individual commands may have in that
++regard.
 +
-+	if (!data)
-+		return;
++Event triggers are implemented on top of "soft" mode, which means that
++whenever a trace event has one or more triggers associated with it,
++the event is activated even if it isn't actually enabled, but is
++disabled in a "soft" mode.  That is, the tracepoint will be called,
++but just will not be traced, unless of course it's actually enabled.
++This scheme allows triggers to be invoked even for events that aren't
++enabled, and also allows the current event filter implementation to be
++used for conditionally invoking triggers.
 +
-+	if (!data->count)
-+		return;
++The syntax for event triggers is roughly based on the syntax for
++set_ftrace_filter 'ftrace filter commands' (see the 'Filter commands'
++section of Documentation/trace/ftrace.txt), but there are major
++differences and the implementation isn't currently tied to it in any
++way, so beware about making generalizations between the two.
 +
-+	/* Skip if the event is in a state we want to switch to */
-+	if (data->enable == !(data->file->flags & FTRACE_EVENT_FL_SOFT_DISABLED))
-+		return;
++6.1 Expression syntax
++---------------------
 +
-+	if (data->count != -1)
-+		(data->count)--;
++Triggers are added by echoing the command to the 'trigger' file:
 +
-+	event_enable_trigger(_data);
-+}
++  # echo 'command[:count] [if filter]' > trigger
 +
-+static int
-+event_enable_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
-+			   void *_data)
-+{
-+	struct event_trigger_data *data = _data;
++Triggers are removed by echoing the same command but starting with '!'
++to the 'trigger' file:
 +
-+	seq_printf(m, "%s:%s:%s",
-+		   data->enable ? ENABLE_EVENT_STR : DISABLE_EVENT_STR,
-+		   data->file->event_call->class->system,
-+		   data->file->event_call->name);
++  # echo '!command[:count] [if filter]' > trigger
 +
-+	if (data->count == -1)
-+		seq_puts(m, ":unlimited");
-+	else
-+		seq_printf(m, ":count=%ld", data->count);
++The [if filter] part isn't used in matching commands when removing, so
++leaving that off in a '!' command will accomplish the same thing as
++having it in.
 +
-+	if (data->filter_str)
-+		seq_printf(m, " if %s\n", data->filter_str);
-+	else
-+		seq_puts(m, "\n");
++The filter syntax is the same as that described in the 'Event
++filtering' section above.
 +
-+	return 0;
-+}
++For ease of use, writing to the trigger file using '>' currently just
++adds or removes a single trigger and there's no explicit '>>' support
++('>' actually behaves like '>>') or truncation support to remove all
++triggers (you have to use '!' for each one added.)
 +
-+static void
-+event_enable_trigger_free(struct event_trigger_ops *ops, void **_data)
-+{
-+	struct event_trigger_data **p = (struct event_trigger_data **)_data;
-+	struct event_trigger_data *data = *p;
++6.2 Supported trigger commands
++------------------------------
 +
-+	if (WARN_ON_ONCE(data->ref <= 0))
-+		return;
++The following commands are supported:
 +
-+	data->ref--;
-+	if (!data->ref) {
-+		/* Remove the SOFT_MODE flag */
-+		trace_event_enable_disable(data->file, 0, 1);
-+		module_put(data->file->event_call->mod);
-+		trigger_data_free(data);
-+	}
-+}
++- enable_event/disable_event
 +
-+static struct event_trigger_ops event_enable_trigger_ops = {
-+	.func			= event_enable_trigger,
-+	.print			= event_enable_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_enable_trigger_free,
-+};
++  These commands can enable or disable another trace event whenever
++  the triggering event is hit.  When these commands are registered,
++  the other trace event is activated, but disabled in a "soft" mode.
++  That is, the tracepoint will be called, but just will not be traced.
++  The event tracepoint stays in this mode as long as there's a trigger
++  in effect that can trigger it.
 +
-+static struct event_trigger_ops event_enable_count_trigger_ops = {
-+	.func			= event_enable_count_trigger,
-+	.print			= event_enable_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_enable_trigger_free,
-+};
++  For example, the following trigger causes kmalloc events to be
++  traced when a read system call is entered, and the :1 at the end
++  specifies that this enablement happens only once:
 +
-+static struct event_trigger_ops event_disable_trigger_ops = {
-+	.func			= event_enable_trigger,
-+	.print			= event_enable_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_enable_trigger_free,
-+};
++  # echo 'enable_event:kmem:kmalloc:1' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
 +
-+static struct event_trigger_ops event_disable_count_trigger_ops = {
-+	.func			= event_enable_count_trigger,
-+	.print			= event_enable_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_enable_trigger_free,
-+};
++  The following trigger causes kmalloc events to stop being traced
++  when a read system call exits.  This disablement happens on every
++  read system call exit:
 +
-+static int
-+event_enable_trigger_func(struct event_command *cmd_ops,
-+			  struct ftrace_event_file *file,
-+			  char *glob, char *cmd, char *param, int enabled)
-+{
-+	struct ftrace_event_file *event_enable_file;
-+	struct event_trigger_data *trigger_data;
-+	struct event_trigger_ops *trigger_ops;
-+	struct trace_array *tr = file->tr;
-+	const char *system;
-+	const char *event;
-+	char *trigger;
-+	char *number;
-+	bool enable;
-+	int ret;
++  # echo 'disable_event:kmem:kmalloc' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
 +
-+	if (!enabled)
-+		return -EINVAL;
++  The format is:
 +
-+	if (!param)
-+		return -EINVAL;
++      enable_event:<system>:<event>[:count]
++      disable_event:<system>:<event>[:count]
 +
-+	/* separate the trigger from the filter (s:e:n [if filter]) */
-+	trigger = strsep(&param, " \t");
-+	if (!trigger)
-+		return -EINVAL;
++  To remove the above commands:
 +
-+	system = strsep(&trigger, ":");
-+	if (!trigger)
-+		return -EINVAL;
++  # echo '!enable_event:kmem:kmalloc:1' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
 +
-+	event = strsep(&trigger, ":");
++  # echo '!disable_event:kmem:kmalloc' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
 +
-+	ret = -EINVAL;
-+	event_enable_file = find_event_file(tr, system, event);
-+	if (!event_enable_file)
-+		goto out;
++  Note that there can be any number of enable/disable_event triggers
++  per triggering event, but there can only be one trigger per
++  triggered event. e.g. sys_enter_read can have triggers enabling both
++  kmem:kmalloc and sched:sched_switch, but can't have two kmem:kmalloc
++  versions such as kmem:kmalloc and kmem:kmalloc:1 or 'kmem:kmalloc if
++  bytes_req == 256' and 'kmem:kmalloc if bytes_alloc == 256' (they
++  could be combined into a single filter on kmem:kmalloc though).
 +
-+	enable = strcmp(cmd, ENABLE_EVENT_STR) == 0;
++- stacktrace
 +
-+	trigger_ops = cmd_ops->get_trigger_ops(cmd, trigger);
++  This command dumps a stacktrace in the trace buffer whenever the
++  triggering event occurs.
 +
-+	ret = -ENOMEM;
-+	trigger_data = kzalloc(sizeof(*trigger_data), GFP_KERNEL);
-+	if (!trigger_data)
-+		goto out;
++  For example, the following trigger dumps a stacktrace every time the
++  kmalloc tracepoint is hit:
 +
-+	trigger_data->enable = enable;
-+	trigger_data->count = -1;
-+	trigger_data->file = event_enable_file;
-+	trigger_data->ops = trigger_ops;
-+	trigger_data->cmd_ops = cmd_ops;
-+	INIT_LIST_HEAD(&trigger_data->list);
-+	RCU_INIT_POINTER(trigger_data->filter, NULL);
++  # echo 'stacktrace' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
 +
-+	if (glob[0] == '!') {
-+		cmd_ops->unreg(glob+1, trigger_ops, trigger_data, file);
-+		kfree(trigger_data);
-+		ret = 0;
-+		goto out;
-+	}
++  The following trigger dumps a stacktrace the first 5 times a kmalloc
++  request happens with a size >= 64K
 +
-+	if (trigger) {
-+		number = strsep(&trigger, ":");
++  # echo 'stacktrace:5 if bytes_req >= 65536' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
 +
-+		ret = -EINVAL;
-+		if (!strlen(number))
-+			goto out_free;
++  The format is:
 +
-+		/*
-+		 * We use the callback data field (which is a pointer)
-+		 * as our counter.
-+		 */
-+		ret = kstrtoul(number, 0, &trigger_data->count);
-+		if (ret)
-+			goto out_free;
-+	}
++      stacktrace[:count]
 +
-+	if (!param) /* if param is non-empty, it's supposed to be a filter */
-+		goto out_reg;
++  To remove the above commands:
 +
-+	if (!cmd_ops->set_filter)
-+		goto out_reg;
++  # echo '!stacktrace' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
 +
-+	ret = cmd_ops->set_filter(param, trigger_data, file);
-+	if (ret < 0)
-+		goto out_free;
++  # echo '!stacktrace:5 if bytes_req >= 65536' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
 +
-+ out_reg:
-+	/* Don't let event modules unload while probe registered */
-+	ret = try_module_get(event_enable_file->event_call->mod);
-+	if (!ret) {
-+		ret = -EBUSY;
-+		goto out_free;
-+	}
++  The latter can also be removed more simply by the following (without
++  the filter):
 +
-+	ret = trace_event_enable_disable(event_enable_file, 1, 1);
-+	if (ret < 0)
-+		goto out_put;
-+	ret = cmd_ops->reg(glob, trigger_ops, trigger_data, file);
-+	/*
-+	 * The above returns on success the # of functions enabled,
-+	 * but if it didn't find any functions it returns zero.
-+	 * Consider no functions a failure too.
-+	 */
-+	if (!ret) {
-+		ret = -ENOENT;
-+		goto out_disable;
-+	} else if (ret < 0)
-+		goto out_disable;
-+	/* Just return zero, not the number of enabled functions */
-+	ret = 0;
-+ out:
-+	return ret;
++  # echo '!stacktrace:5' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
 +
-+ out_disable:
-+	trace_event_enable_disable(event_enable_file, 0, 1);
-+ out_put:
-+	module_put(event_enable_file->event_call->mod);
-+ out_free:
-+	kfree(trigger_data);
-+	goto out;
-+}
++  Note that there can be only one stacktrace trigger per triggering
++  event.
 +
-+static int event_enable_register_trigger(char *glob,
-+					 struct event_trigger_ops *ops,
-+					 void *trigger_data,
-+					 struct ftrace_event_file *file)
-+{
-+	struct event_trigger_data *data = trigger_data;
-+	struct event_trigger_data *test;
-+	int ret = 0;
++- snapshot
 +
-+	list_for_each_entry_rcu(test, &file->triggers, list) {
-+		if (test->file == data->file) {
-+			ret = -EEXIST;
-+			goto out;
-+		}
-+	}
++  This command causes a snapshot to be triggered whenever the
++  triggering event occurs.
 +
-+	if (data->ops->init) {
-+		ret = data->ops->init(data->ops, (void **)&data);
-+		if (ret < 0)
-+			goto out;
-+	}
++  The following command creates a snapshot every time a block request
++  queue is unplugged with a depth > 1.  If you were tracing a set of
++  events or functions at the time, the snapshot trace buffer would
++  capture those events when the trigger event occured:
 +
-+	list_add_rcu(&data->list, &file->triggers);
-+	ret++;
++  # echo 'snapshot if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
 +
-+	if (trace_event_trigger_enable_disable(file, 1) < 0) {
-+		list_del_rcu(&data->list);
-+		ret--;
-+	}
-+out:
-+	return ret;
-+}
++  To only snapshot once:
 +
-+static void event_enable_unregister_trigger(char *glob,
-+					    struct event_trigger_ops *ops,
-+					    void *trigger_data,
-+					    struct ftrace_event_file *file)
-+{
-+	struct event_trigger_data *test = trigger_data;
-+	struct event_trigger_data *data;
-+	bool unregistered = false;
++  # echo 'snapshot:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
 +
-+	list_for_each_entry_rcu(data, &file->triggers, list) {
-+		if (data->file == test->file) {
-+			unregistered = true;
-+			list_del_rcu(&data->list);
-+			trace_event_trigger_enable_disable(file, 0);
-+			break;
-+		}
-+	}
++  To remove the above commands:
 +
-+	if (unregistered && data->ops->free)
-+		data->ops->free(data->ops, (void **)&data);
-+}
++  # echo '!snapshot if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
 +
-+static struct event_trigger_ops *
-+event_enable_get_trigger_ops(char *cmd, char *param)
-+{
-+	struct event_trigger_ops *ops;
-+	bool enable;
++  # echo '!snapshot:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
 +
-+	enable = strcmp(cmd, ENABLE_EVENT_STR) == 0;
++  Note that there can be only one snapshot trigger per triggering
++  event.
 +
-+	if (enable)
-+		ops = param ? &event_enable_count_trigger_ops :
-+			&event_enable_trigger_ops;
-+	else
-+		ops = param ? &event_disable_count_trigger_ops :
-+			&event_disable_trigger_ops;
++- traceon/traceoff
 +
-+	return ops;
-+}
++  These commands turn tracing on and off when the specified events are
++  hit. The parameter determines how many times the tracing system is
++  turned on and off. If unspecified, there is no limit.
 +
-+static struct event_command trigger_enable_cmd = {
-+	.name			= ENABLE_EVENT_STR,
-+	.trigger_mode		= TM_EVENT_ENABLE,
-+	.func			= event_enable_trigger_func,
-+	.reg			= event_enable_register_trigger,
-+	.unreg			= event_enable_unregister_trigger,
-+	.get_trigger_ops	= event_enable_get_trigger_ops,
-+};
++  The following command turns tracing off the first time a block
++  request queue is unplugged with a depth > 1.  If you were tracing a
++  set of events or functions at the time, you could then examine the
++  trace buffer to see the sequence of events that led up to the
++  trigger event:
 +
-+static struct event_command trigger_disable_cmd = {
-+	.name			= DISABLE_EVENT_STR,
-+	.trigger_mode		= TM_EVENT_ENABLE,
-+	.func			= event_enable_trigger_func,
-+	.reg			= event_enable_register_trigger,
-+	.unreg			= event_enable_unregister_trigger,
-+	.get_trigger_ops	= event_enable_get_trigger_ops,
-+};
++  # echo 'traceoff:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
 +
-+static __init void unregister_trigger_enable_disable_cmds(void)
-+{
-+	unregister_event_command(&trigger_enable_cmd,
-+				 &trigger_commands,
-+				 &trigger_cmd_mutex);
-+	unregister_event_command(&trigger_disable_cmd,
-+				 &trigger_commands,
-+				 &trigger_cmd_mutex);
-+}
++  To always disable tracing when nr_rq  > 1 :
 +
-+static __init int register_trigger_enable_disable_cmds(void)
-+{
-+	int ret;
++  # echo 'traceoff if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
 +
-+	ret = register_event_command(&trigger_enable_cmd, &trigger_commands,
-+				     &trigger_cmd_mutex);
-+	if (WARN_ON(ret < 0))
-+		return ret;
-+	ret = register_event_command(&trigger_disable_cmd, &trigger_commands,
-+				     &trigger_cmd_mutex);
-+	if (WARN_ON(ret < 0))
-+		unregister_trigger_enable_disable_cmds();
++  To remove the above commands:
 +
-+	return ret;
-+}
++  # echo '!traceoff:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
 +
- static __init int register_trigger_traceon_traceoff_cmds(void)
- {
- 	int ret;
-@@ -939,5 +1291,17 @@ __init int register_trigger_cmds(void)
- 		return ret;
- 	}
- 
-+	ret = register_trigger_enable_disable_cmds();
-+	if (ret) {
-+		unregister_trigger_traceon_traceoff_cmds();
-+		unregister_event_command(&trigger_snapshot_cmd,
-+					 &trigger_commands,
-+					 &trigger_cmd_mutex);
-+		unregister_event_command(&trigger_stacktrace_cmd,
-+					 &trigger_commands,
-+					 &trigger_cmd_mutex);
-+		return ret;
-+	}
++  # echo '!traceoff if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
 +
- 	return 0;
- }
++  Note that there can be only one traceon or traceoff trigger per
++  triggering event.
 -- 
 1.7.11.4
 
