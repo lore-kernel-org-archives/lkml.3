@@ -1,152 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab3HVVtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 17:49:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22229 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754436Ab3HVVt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 17:49:29 -0400
-Message-ID: <1377208166.25163.31.camel@ul30vt.home>
-Subject: Re: [PATCH] pci: Add pci_walk_slot() interface
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 22 Aug 2013 15:49:26 -0600
-In-Reply-To: <CAErSpo5gUwm1nqME30DiUPOwhGfOttzjcvbtj-4aqSz4sLAcAg@mail.gmail.com>
-References: <20130819195917.9062.43580.stgit@bling.home>
-	 <CAErSpo5gUwm1nqME30DiUPOwhGfOttzjcvbtj-4aqSz4sLAcAg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754518Ab3HVVuN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 17:50:13 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:54974 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab3HVVuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 17:50:10 -0400
+X-IronPort-AV: E=Sophos;i="4.89,936,1367971200"; 
+   d="scan'208";a="44538407"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Rob Landley <rob@landley.net>, Jiri Kosina <jkosina@suse.cz>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Paul Bolle <pebolle@tiscali.nl>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH] Documentation/trace: Correcting and extending tracepoint documentation
+Date: Thu, 22 Aug 2013 22:49:31 +0100
+Message-ID: <1377208171-9004-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-22 at 15:34 -0600, Bjorn Helgaas wrote:
-> On Mon, Aug 19, 2013 at 2:04 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > We have a pci_walk_bus() interface, but it's exceptionally cumbersome
-> > for the callback function to figure out if the device is relevant if
-> > the caller is trying to walk all the devices in or below a slot.  Add
-> > a variant to walk only slot devices.
-> 
-> Is it really exceptionally cumbersome?  You can supply the top-level
-> slot in the userdata.  Can you then use something like this in the
-> callback?
-> 
->     bool dev_below_slot(struct pci_dev *dev, struct pci_slot *slot)
->     {
->         if (!dev)
->             return false;
->         if (dev->slot == slot)
->             return true;
->         return dev_below_slot(dev->bus->self, slot);
->     }
+The sample missed the moving of the header files into the events subdirectory.
+I've also extended it based on the existing headers, and mentioned the tiny
+but important role of CREATE_TRACE_POINTS.
 
-Maybe I should have said it's ugly and inefficient rather than
-cumbersome.  This feels like a backwards way to do it, but if you don't
-want a walk_slot interface, then it looks like this would work.  Thanks,
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+---
+ Documentation/trace/tracepoints.txt |   19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
 
-Alex
-
-
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> >
-> > This allows me to use pci_walk_bus() and pci_walk_slot() instead of
-> > rolling my own for iterating devices for bus/slot reset.  Please
-> > consider for 3.12 to go with the rest of the bus/slot infrastructure.
-> >
-> >  drivers/pci/bus.c   |   56 +++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/pci.h |    2 ++
-> >  2 files changed, 58 insertions(+)
-> >
-> > diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-> > index b1ff02a..316579a 100644
-> > --- a/drivers/pci/bus.c
-> > +++ b/drivers/pci/bus.c
-> > @@ -283,6 +283,62 @@ void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
-> >  }
-> >  EXPORT_SYMBOL_GPL(pci_walk_bus);
-> >
-> > +/** pci_walk_slot - walk devices in/under slot, calling callback.
-> > + *  @slot     slot whose devices should be walked
-> > + *  @cb       callback to be called for each device found
-> > + *  @userdata arbitrary pointer to be passed to callback.
-> > + *
-> > + *  Walk the given slot, including any bridged devices
-> > + *  on buses under this slot.  Call the provided callback
-> > + *  on each device found.
-> > + *
-> > + *  We check the return of @cb each time. If it returns anything
-> > + *  other than 0, we break out.
-> > + *
-> > + */
-> > +void pci_walk_slot(struct pci_slot *slot, int (*cb)(struct pci_dev *, void *),
-> > +                  void *userdata)
-> > +{
-> > +       struct pci_dev *dev;
-> > +       struct pci_bus *bus;
-> > +       struct list_head *next;
-> > +       int retval;
-> > +
-> > +       bus = slot->bus;
-> > +       down_read(&pci_bus_sem);
-> > +       next = slot->bus->devices.next;
-> > +       for (;;) {
-> > +               if (next == &bus->devices) {
-> > +                       /* end of this bus, go up or finish */
-> > +                       if (bus == slot->bus)
-> > +                               break;
-> > +                       next = bus->self->bus_list.next;
-> > +                       bus = bus->self->bus;
-> > +                       continue;
-> > +               }
-> > +               dev = list_entry(next, struct pci_dev, bus_list);
-> > +
-> > +               /* skip anything on the top level bus not in our slot */
-> > +               if (dev->bus == slot->bus && dev->slot != slot) {
-> > +                       next = dev->bus_list.next;
-> > +                       continue;
-> > +               }
-> > +
-> > +               if (dev->subordinate) {
-> > +                       /* this is a pci-pci bridge, do its devices next */
-> > +                       next = dev->subordinate->devices.next;
-> > +                       bus = dev->subordinate;
-> > +               } else
-> > +                       next = dev->bus_list.next;
-> > +
-> > +               retval = cb(dev, userdata);
-> > +               if (retval)
-> > +                       break;
-> > +       }
-> > +       up_read(&pci_bus_sem);
-> > +}
-> > +EXPORT_SYMBOL_GPL(pci_walk_slot);
-> > +
-> >  struct pci_bus *pci_bus_get(struct pci_bus *bus)
-> >  {
-> >         if (bus)
-> > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> > index daf40cd..cbb291b 100644
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -1087,6 +1087,8 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
-> >
-> >  void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
-> >                   void *userdata);
-> > +void pci_walk_slot(struct pci_slot *slot, int (*cb)(struct pci_dev *, void *),
-> > +                 void *userdata);
-> >  int pci_cfg_space_size_ext(struct pci_dev *dev);
-> >  int pci_cfg_space_size(struct pci_dev *dev);
-> >  unsigned char pci_bus_max_busnr(struct pci_bus *bus);
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+diff --git a/Documentation/trace/tracepoints.txt b/Documentation/trace/tracepoints.txt
+index da49437..e8e3c4b 100644
+--- a/Documentation/trace/tracepoints.txt
++++ b/Documentation/trace/tracepoints.txt
+@@ -40,7 +40,13 @@ Two elements are required for tracepoints :
+ 
+ In order to use tracepoints, you should include linux/tracepoint.h.
+ 
+-In include/trace/subsys.h :
++In include/trace/events/subsys.h :
++
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM subsys
++
++#if !defined(_TRACE_SUBSYS_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_SUBSYS_H
+ 
+ #include <linux/tracepoint.h>
+ 
+@@ -48,10 +54,16 @@ DECLARE_TRACE(subsys_eventname,
+ 	TP_PROTO(int firstarg, struct task_struct *p),
+ 	TP_ARGS(firstarg, p));
+ 
++#endif /* _TRACE_SUBSYS_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
++
+ In subsys/file.c (where the tracing statement must be added) :
+ 
+-#include <trace/subsys.h>
++#include <trace/events/subsys.h>
+ 
++#define CREATE_TRACE_POINTS
+ DEFINE_TRACE(subsys_eventname);
+ 
+ void somefct(void)
+@@ -72,6 +84,9 @@ Where :
+ - TP_ARGS(firstarg, p) are the parameters names, same as found in the
+   prototype.
+ 
++- if you use the header in multiple source files, #define CREATE_TRACE_POINTS
++  should appear only in one source file
++
+ Connecting a function (probe) to a tracepoint is done by providing a
+ probe (function to call) for the specific tracepoint through
+ register_trace_subsys_eventname().  Removing a probe is done through
+-- 
+1.7.9.5
 
