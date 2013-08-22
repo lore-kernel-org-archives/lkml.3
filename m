@@ -1,109 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab3HVFwS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 01:52:18 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:38879 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab3HVFwQ (ORCPT
+	id S1753547Ab3HVFxC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 01:53:02 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:48806 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab3HVFxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 01:52:16 -0400
-Message-ID: <5215A676.6040504@linux.vnet.ibm.com>
-Date: Thu, 22 Aug 2013 11:19:42 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 22 Aug 2013 01:53:00 -0400
+Date: Thu, 22 Aug 2013 07:52:54 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] kprobes: add new dma insn slot cache for s390
+Message-ID: <20130822055254.GA4293@osiris>
+References: <1377086465-6471-1-git-send-email-heiko.carstens@de.ibm.com>
+ <521575C2.7050504@hitachi.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: fweisbec@gmail.com, paul.gortmaker@windriver.com, paulus@samba.org,
-        shangw@linux.vnet.ibm.com, galak@kernel.crashing.org,
-        deepthi@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
-        linux-pm@vger.kernel.org, rostedt@goodmis.org, rjw@sisk.pl,
-        john.stultz@linaro.org, tglx@linutronix.de, chenhui.zhao@freescale.com,
-        michael@ellerman.id.au, r58472@freescale.com, geoff@infradead.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [RFC V2 PATCH 2/6] powerpc: Implement broadcast timer interrupt
- as an IPI message
-References: <20130814115311.5193.32212.stgit@preeti.in.ibm.com> <20130814115602.5193.60835.stgit@preeti.in.ibm.com> <1377141057.25016.265.camel@pasglop>
-In-Reply-To: <1377141057.25016.265.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521575C2.7050504@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082205-5816-0000-0000-0000098747D1
+x-cbid: 13082205-0542-0000-0000-0000063592B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben
+Hi Masami,
 
-On 08/22/2013 08:40 AM, Benjamin Herrenschmidt wrote:
-> On Wed, 2013-08-14 at 17:26 +0530, Preeti U Murthy wrote:
->> -static irqreturn_t unused_action(int irq, void *data)
->> +static irqreturn_t timer_action(int irq, void *data)
->>  {
->> -       /* This slot is unused and hence available for use, if needed
->> */
->> +       timer_interrupt();
->>         return IRQ_HANDLED;
->>  }
->>  
+> (2013/08/21 21:01), Heiko Carstens wrote:
+> > The current kpropes insn caches allocate memory areas for insn slots with
+> > module_alloc(). The assumption is that the kernel image and module area
+> > are both within the same +/- 2GB memory area.
+> > This however is not true for s390 where the kernel image resides within
+> > the first 2GB (DMA memory area), but the module area is far away in the
+> > vmalloc area, usually somewhere close below the 4TB area.
+> > 
+> > For new pc relative instructions s390 needs insn slots that are within
+> > +/- 2GB of each area. That way we can patch displacements of pc-relative
+> > instructions within the insn slots just like x86 and powerpc.
+> > 
+> > The module area works already with the normal insn slot allocator, however
+> > there is currently no way to get insn slots that are within the first 2GB
+> > on s390 (aka DMA area).
 > 
-> That means we'll do irq_enter/irq_exit twice no ? And things like
-> may_hard_irq_enable() are also already done by do_IRQ so you
-> don't need timer_interrupt() to do it again.
+> The reason why we allocate instruction buffers from module area is
+> to execute a piece of code on the buffer, which should be executable.
+> I'm not good for s390, is that allows kernel to execute the code
+> on such DMA buffer?
+
+Yes, the kernel image itself resides in DMA capable memory and it is all
+executable.
+
+> > Therefore this patch set introduces a third insn slot cache besides the
+> > normal insn and optinsn slot caches: the dmainsn slot cache. Slots can be
+> > allocated and freed with get_dmainsn_slot() and free_dmainsn_slot().
 > 
-> We probably are better off breaking timer_interrupt in two:
+> OK, but it seems that your patch introduced unneeded complexity. Perhaps,
+> you just have to introduce 2 weak functions to allocate/release such
+> executable and jump-able buffers, like below,
 > 
-> void __timer_interrupt(struct pt_regs * regs)
+> void * __weak arch_allocate_executable_page(void)
+> {
+> 	return module_alloc(PAGE_SIZE);
+> }
 > 
-> Does the current stuff between irq_enter and irq_exit, timer_interrupt
-> does the remaining around it and calls __timer_interrupt.
+> void __weak arch_free_executable_page(void *page)
+> {
+> 	module_free(NULL, page);
+> }
 > 
-> Then from timer_action, you call __timer_interrupt()
+> Thus, all you need to do is implementing dmaalloc() version of above
+> functions on s390. No kconfig, no ifdefs are needed. :)
 
-We actually tried out this approach. The implementation was have a
-set_dec(0) in the timer_action(). This would ensure that we actually do
-get a timer interrupt.
+Hm, I don't see how that can work, or maybe I just don't get your idea ;)
+Or maybe my intention was not clear? So let me try again:
 
-But the problem with either this approach or the one that you
-suggest,i.e. calling __timer_interrupt is in the following flow.
+If the to be probed instruction resides within the first 2GB of memory
+(aka DMA memory, aka kernel image) the insn slot must be within the first
+2GB as well, otherwise I can't patch pc-relative instructions.
 
-do_IRQ() -> irq_exit() -> tick_irq_exit() -> tick_nohz_irq_exit()
--> tick_nohz_stop_sched_tick()
+On the other hand if the to be probed instruction resides in a module
+(aka part of the vmalloc area), the insn slot must reside within the same
+2GB area as well.
 
-The problem lies in the function tick_nohz_stop_sched_tick(). This
-function checks for the next timer interrupt pending on this cpu, and
-programs the decrementer_next_event to the time of the next event, which
-is of course > now.
+Therefore I need to different insn slot caches, where the slots are either
+allocated with __get_free_page(GFP_KERNEL | GFP_DMA) (for the kernel image)
+or module_alloc(PAGE_SIZE) for modules.
 
-As a result when in the timer_action() above, we do call
-__timer_interrupt() or try to trigger a timer interrupt through
-set_dec(0), the condition  if(now >= *next_tb) in timer_interrupt() or
-__timer_interrupt() will fail, and will not call the timer interrupt
-event handler.
-
----> if (now >= *next_tb) {
-             *next_tb = ~(u64)0;
-             if (evt->event_handler)
-                evt->event_handler(evt);
-      } else {
-
-The broadcast IPI , is meant to make the target CPU of this IPI believe
-that it woke up from a timer interrupt, and not from an IPI. (The reason
-for this I will explain in the reply to the next patch). The target CPU
-should then ideally do what it would have done had it received a real
-timer interrupt, call the timer interrupt event handler.
-
-But due to the above code flow this does  not happen.
-Hence as the next patch PATCH 3/6 shows, we simply call the event
-handler of a timer interrupt without this explicit now >= *next_tb check.
-
-This problem arises only in the implementation of this patchset, because
-a timer interrupt is pseudo triggered from an IPI. So the effects of the
-IPI handler will be felt on the timer interrupt handler triggered from
-this IPI, like above.
-
-Regards
-Preeti U Murthy
+I can't have a single cache which satifies both areas.
 
