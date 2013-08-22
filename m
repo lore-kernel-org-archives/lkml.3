@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341Ab3HVIl6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:41:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751848Ab3HVIlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 04:41:55 -0400
-Date: Thu, 22 Aug 2013 10:41:48 +0200
-From: Jesper Dangaard Brouer <brouer@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: brouer@redhat.com, gregkh@linuxfoundation.org, stable@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Daniel Borkmann <dborkman@redhat.com>
-Subject: Re: ADSL/ATM linklayer tc shaping regression fix commits for stable
-Message-ID: <20130822104148.7e533422@redhat.com>
-In-Reply-To: <20130822.012348.1370012681436362922.davem@davemloft.net>
-References: <20130821140350.2b953007@redhat.com>
-	<20130821.112023.744177612387539958.davem@davemloft.net>
-	<20130822100426.39be319d@redhat.com>
-	<20130822.012348.1370012681436362922.davem@davemloft.net>
-Organization: Red Hat Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752521Ab3HVIm3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 04:42:29 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42400 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439Ab3HVIm0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 04:42:26 -0400
+Date: Thu, 22 Aug 2013 09:42:05 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Darren Etheridge <darren.etheridge@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/8] drm/i2c: tda998x: prepare for video input
+	configuration
+Message-ID: <20130822084205.GE6617@n2100.arm.linux.org.uk>
+References: <20130821202646.47af66a5@armhf> <20130821223605.GA6617@n2100.arm.linux.org.uk> <20130822085313.2e8b1ae6@armhf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130822085313.2e8b1ae6@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Aug 2013 01:23:48 -0700 (PDT)
-David Miller <davem@davemloft.net> wrote:
-
-> From: Jesper Dangaard Brouer <brouer@redhat.com>
-> Date: Thu, 22 Aug 2013 10:04:26 +0200
+On Thu, Aug 22, 2013 at 08:53:13AM +0200, Jean-Francois Moine wrote:
+> On Wed, 21 Aug 2013 23:36:05 +0100
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 > 
-> > So, for future reference:
+> > > AFAIK, the TI boards have no "pin-swapped", nor has the Cubox (there is
+> > > no need to set the bit CFG_GRA_SWAPRB of the register LCD_SPU_DMA_CTRL0
+> > > of the Dove lcd for RGB or YUV formats).
+> > > 
+> > > Which board needs a special VIP configuration?  
 > > 
-> > Stable patches for the networking tree, I should:
-> > 1) check http://patchwork.ozlabs.org/bundle/davem/stable/?state=*
-> >    to see if my patch is already on your stable queue
-> > 2) if not, ask you and cc netdev@vger.kernel.org
-> > 3) you will handle the interaction with Greg and stable@vger.kernel.org
+> > If you run the NXP driver, and then run this driver, things get messed
+> > up - which has already been covered months ago when this patch was first
+> > brought up.
 > > 
-> > Correct?
+> > It's there to ensure that the TDA998x is correctly configured no matter
+> > what it's previous state is, and prevent the thing being fragile as hell.
 > 
-> Yes, and that's how it's been with the networking for years.
+> The NXP driver will never go to the mainline, so, I don't see the
+> problem. If you want to use it to test some other drivers, you should
+> better patch it instead of adding useless code in the TDA998x driver.
 
-Yes, and in the future, documentation of this will be available here:
- Documentation/networking/netdev-FAQ.txt
-
-Right now is only available via net-next:
- https://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/tree/Documentation/networking/netdev-FAQ.txt
-or
- https://lwn.net/Articles/559211/
-
-Guess, we should add a pointer to this new doc from
-Documentation/stable_kernel_rules.txt once it hits Linus'es tree.
-
-Now I cannot find any more ways to spell-it-out, for people searching google ;-)
--- 
-Best regards,
-  Jesper Dangaard Brouer
-  MSc.CS, Sr. Network Kernel Developer at Red Hat
-  Author of http://www.iptv-analyzer.org
-  LinkedIn: http://www.linkedin.com/in/brouer
+Sorry, you're wrong.
