@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3HVRow (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 13:44:52 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:35274 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818Ab3HVRov (ORCPT
+	id S1754024Ab3HVRpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 13:45:19 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:45582 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab3HVRpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 13:44:51 -0400
-Date: Thu, 22 Aug 2013 10:44:47 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [for-next][PATCH 1/5] tracing: Add __tracepoint_string() to
- export string pointers
-Message-ID: <20130822174447.GH29406@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130822163225.773134216@goodmis.org>
- <20130822163420.190373748@goodmis.org>
- <20130822170623.GF29406@linux.vnet.ibm.com>
- <20130822132753.0acb93a4@gandalf.local.home>
+	Thu, 22 Aug 2013 13:45:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130822132753.0acb93a4@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082217-1542-0000-0000-000000BBFC3D
+In-Reply-To: <1367960849.23964.YahooMailNeo@web140002.mail.bf1.yahoo.com>
+References: <1367700969.8582.YahooMailNeo@web140004.mail.bf1.yahoo.com>
+ <CAErSpo4C3-WH6_GOnmz1TgKsD3SyNGQYeU8Cj0=_+c+9K2yS+A@mail.gmail.com> <1367960849.23964.YahooMailNeo@web140002.mail.bf1.yahoo.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 22 Aug 2013 11:44:54 -0600
+Message-ID: <CAErSpo6O+7jv2KPXm3U1syG+2T2MbWqNfHBt=eTYe-72ACTKAg@mail.gmail.com>
+Subject: Re: 3.9.0 dmesg reports that my NIC is hanging
+To: John <da_audiophile@yahoo.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 01:27:53PM -0400, Steven Rostedt wrote:
-> On Thu, 22 Aug 2013 10:06:23 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > On Thu, Aug 22, 2013 at 12:32:26PM -0400, Steven Rostedt wrote:
-> > > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> > > 
-> 
-> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > 
-> > Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Since you and I are both using the same commit, I wont be able to
-> modify it to add you ack. :-/
+On Tue, May 7, 2013 at 3:07 PM, John <da_audiophile@yahoo.com> wrote:
+>
+>
+>
+>
+> ----- Original Message -----
+>> From: Bjorn Helgaas <bhelgaas@google.com>
+>> To: John <da_audiophile@yahoo.com>
+>> Cc: lkml <linux-kernel@vger.kernel.org>; Jeff Kirsher <jeffrey.t.kirsher@intel.com>; "e1000-devel@lists.sourceforge.net" <e1000-devel@lists.sourceforge.net>
+>> Sent: Monday, May 6, 2013 1:29 PM
+>> Subject: Re: 3.9.0 dmesg reports that my NIC is hanging
+>>
+>> [+cc Jeff, e1000-devel (from MAINTAINERS)]
+>>
+>> On Sat, May 4, 2013 at 1:56 PM, John <da_audiophile@yahoo.com> wrote:
+>>>  After upgrading to the official Arch Linux 3.9-2 kernel package, dmesg
+>> reports that my NIC is hanging:
+>>>
+>>>  [    5.955720] e1000e 0000:00:19.0 eno1: changing MTU from 1500 to 4000
+>>>  [    8.464507] e1000e 0000:00:19.0 eno1: Detected Hardware Unit Hang:
+>>>    TDH                  <0>
+>>>    TDT                  <2>
+>>>    next_to_use          <2>
+>>>    next_to_clean        <0>
+>>>  buffer_info[next_to_clean]:
+>>>    time_stamp           <fffea787>
+>>>    next_to_watch        <0>
+>>>    jiffies              <fffeaa30>
+>>>    next_to_watch.status <0>
+>>>  MAC Status             <40080080>
+>>>  PHY Status             <7949>
+>>>  PHY 1000BASE-T Status  <0>
+>>>  PHY Extended Status    <3000>
+>>>  PCI Status             <10>
+>>>
+>>>  Not too sure what else to post.  I am not subscribed to lkml so please cc
+>> my email in your reply.
+>>>
+>>>
+>>>  Link to complete dmesg: http://pastebin.com/zRBajGrY
+>>>  Seems similar to: bugzilla.redhat.com/show_bug.cgi?id=785806
+>>
+>> It sounds like this is a regression, so it might be useful to know
+>> what the newest working kernel was, and maybe a dmesg log from it as
+>> well, though I don't see any obvious clues in the 3.9.0-2-ARCH dmesg
+>> you collected.
+>>
+>> Bjorn
+>
+>
+> Thank you for the reply, Bjorn.  3.8.11-1-ARCH works just fine for me.  Here is the dmesg from 3.8.11-1-ARCH per your request: http://pastebin.com/cUHwrQfq
 
-I would rather not rebase, so happy without my ack added!  ;-)
+Sorry this thread died.  Did this ever get resolved?
 
-							Thanx, Paul
+If not, can you collect "lspci -vv" output for the whole system on
+both the working kernel and the failing one?
 
+There are reports of similar symptoms at [1] and [2].  I can't tell
+yet if you're seeing the same problem, but for [1], booting with
+"pci=pcie_bus_peer2peer" was a workaround.
+
+Bjorn
+
+[1] http://lkml.kernel.org/r/509B5038.8090304@oracle.com [2012-11-08]
+[2] http://lkml.kernel.org/r/4FFA9B96.6040901@oracle.com [2012-07-09]
