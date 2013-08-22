@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab3HVJXK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 05:23:10 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:37322 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251Ab3HVJXH (ORCPT
+	id S1752585Ab3HVJZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 05:25:20 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:34807 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3HVJZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 05:23:07 -0400
-Date: Thu, 22 Aug 2013 10:23:01 +0100
+	Thu, 22 Aug 2013 05:25:17 -0400
+Date: Thu, 22 Aug 2013 10:25:12 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
- DBX500 DT
-Message-ID: <20130822092301.GC22023@lee--X1>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
- <1370521041-32318-10-git-send-email-lee.jones@linaro.org>
- <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Florian Lobmaier <florian.lobmaier@ams.com>, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com
+Subject: Re: [PATCH 4/4] mfd: as3722: introduce regmap support
+Message-ID: <20130822092512.GD22023@lee--X1>
+References: <1376997210-32631-1-git-send-email-florian.lobmaier@ams.com>
+ <1376997210-32631-5-git-send-email-florian.lobmaier@ams.com>
+ <20130820120800.GN23699@lee--X1>
+ <20130821182851.GJ26118@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
+In-Reply-To: <20130821182851.GJ26118@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Aug 2013, Linus Walleij wrote:
+On Wed, 21 Aug 2013, Mark Brown wrote:
 
-> On Thu, Jun 6, 2013 at 2:16 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Tue, Aug 20, 2013 at 01:08:00PM +0100, Lee Jones wrote:
+> > On Tue, 20 Aug 2013, Florian Lobmaier wrote:
 > 
-> > +++ b/arch/arm/boot/dts/dbx5x0.dtsi
-> > @@ -572,6 +572,8 @@
-> >                         v-i2c-supply = <&db8500_vape_reg>;
-> >
-> >                         clock-frequency = <400000>;
-> > +                       clocks = <&prcc_kclk 3 3>, <&prcc_pclk 3 3>;
-> > +                       clock-names = "nmk-i2c.0", "apb_pclk";
+> > > Signed-off-by: Florian Lobmaier <florian.lobmaier@ams.com>
+> > > ---
+> > >  drivers/mfd/as3722-regmap.c |  417 +++++++++++++++++++++++++++++++++++++++++++
+> > >  1 files changed, 417 insertions(+), 0 deletions(-)
+> > >  create mode 100644 drivers/mfd/as3722-regmap.c
 > 
-> To avoid confusing the clock name "nmk-i2c.0" with the device
-> name in Linux of that device instance, can we use a name such
-> that it is clear that this is not a dev_name match?
+> > I'll leave the review of this file to Mark, but it should be added
+> > either when you start calling the functions, or at least before they
+> > are used, or else the preceding commits won't build. This would cause
+> > someone a major headache if their bisect landed in the middle of your
+> > patches.
+> 
+> Mark wasn't CCed and only happened to notice this on the list...  might
+> be worth checking!
 
-Once we've settled the other thread, I'll look into renaming this
-something less Linuxy.
-
-> "i2c0" works just fine as name I think?
-
-Sure.
+We knew you'd get round to it at one point. :)
 
 -- 
 Lee Jones
