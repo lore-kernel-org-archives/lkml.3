@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab3HVI5Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:57:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47463 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751892Ab3HVI5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 04:57:23 -0400
-Date: Thu, 22 Aug 2013 10:57:21 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, lwn@lwn.net,
-        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Proposed stable release changes
-Message-ID: <20130822085721.GA16792@nazgul.tnic>
-References: <20130820224032.GA20491@kroah.com>
- <521504D7.7090204@wwwdotorg.org>
- <CA+55aFxMkQoJAJd2=XyJu0NX2dG3mX=obx=YL6YXatLg4S=-Vw@mail.gmail.com>
- <20130821200034.GA10671@nazgul.tnic>
- <CA+8MBbKxcQCq8XdYakG5Dg8F_G8NunQjca-TyZbn4q0v3okaqw@mail.gmail.com>
+	id S1752477Ab3HVI7C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 04:59:02 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:48011 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab3HVI67 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 04:58:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbKxcQCq8XdYakG5Dg8F_G8NunQjca-TyZbn4q0v3okaqw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130819160425.088015040@infradead.org>
+References: <20130819160058.539049611@infradead.org> <20130819160425.088015040@infradead.org>
+From: Paul Turner <pjt@google.com>
+Date: Thu, 22 Aug 2013 01:58:28 -0700
+Message-ID: <CAPM31R+2pH9-g6O5EKi1FfgiRjKxAMiN6UW3VO=FpUq463Ji3Q@mail.gmail.com>
+Subject: Re: [PATCH 01/10] sched: Remove one division operation in find_busiest_queue()
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Lei Wen <leiwen@marvell.com>,
+        Joonsoo Kim <js1304@gmail.com>, Rik van Riel <riel@surriel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 01:54:01PM -0700, Tony Luck wrote:
-> On Wed, Aug 21, 2013 at 1:00 PM, Borislav Petkov <bp@alien8.de> wrote:
-> > We don't want to run daily snapshots of your tree though, right? Only
-> > -rcs because the daily states are kinda arbitrary and they can be broken
-> > in various ways. Or are we at a point in time where we can amend that
-> > rule?
-> 
-> If *nobody* runs daily snapshots - then problems just sit latent all week until
-> the -rc is released and people start testing. Doesn't sound optimal.
-> 
-> Running daily git snapshots can be "exciting" during the merge window. But
-> I rarely see problems running a random build after -rc1.  If you are still
-> running that ancient 3.11-rc6 released on Sunday - then you are missing out
-> on 28 commits worth of goodness since then :-)
+On Mon, Aug 19, 2013 at 9:00 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> Remove one division operation in find_busiest_queue() by using
+> crosswise multiplication:
+>
+>         wl_i / power_i > wl_j / power_j :=
+>         wl_i * power_j > wl_j * power_i
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> [peterz: expanded changelog]
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/r/1375778203-31343-2-git-send-email-iamjoonsoo.kim@lge.com
+> ---
+>  kernel/sched/fair.c |    9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
+>
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -5018,7 +5018,7 @@ static struct rq *find_busiest_queue(str
+>                                      struct sched_group *group)
+>  {
+>         struct rq *busiest = NULL, *rq;
+> -       unsigned long max_load = 0;
+> +       unsigned long busiest_load = 0, busiest_power = SCHED_POWER_SCALE;
 
-Damn, I'm such a l0z3r!
+Initializing this to SCHED_POWER_SCALE assigns a meaning that isn't
+really there.  How about just 1?
+
+>         int i;
+>
+>         for_each_cpu(i, sched_group_cpus(group)) {
+> @@ -5049,10 +5049,9 @@ static struct rq *find_busiest_queue(str
+>                  * the load can be moved away from the cpu that is potentially
+>                  * running at a lower capacity.
+>                  */
+> -               wl = (wl * SCHED_POWER_SCALE) / power;
+> -
+> -               if (wl > max_load) {
+> -                       max_load = wl;
+
+A comment wouldn't hurt here.
+
+> +               if (wl * busiest_power > busiest_load * power) {
+> +                       busiest_load = wl;
+> +                       busiest_power = power;
+>                         busiest = rq;
+>                 }
+>         }
+>
+>
