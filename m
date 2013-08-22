@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab3HVMnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 08:43:08 -0400
-Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:43435 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753311Ab3HVMnG (ORCPT
+	id S1753464Ab3HVMoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 08:44:19 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:49784 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab3HVMoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 08:43:06 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: "David S. Miller" <davem@davemloft.net>, Mark Brown <broonie@kernel.org>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: [RFC PATCH] phylib: mdio: handle register/unregister/register sequence
-Date: Thu, 22 Aug 2013 14:34:43 +0200
-Message-Id: <1377174883-10643-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 22 Aug 2013 08:44:18 -0400
+MIME-Version: 1.0
 In-Reply-To: <1377174836-10569-1-git-send-email-b.brezillon@overkiz.com>
 References: <1377174836-10569-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 388435468395575333
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrgeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrgeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Thu, 22 Aug 2013 13:43:37 +0100
+Message-ID: <CAGVrzcaByva=8xiswcsW1B8G4dL=jY0RdaHKzNqaT_0Lrwbprg@mail.gmail.com>
+Subject: Re: [RFC PATCH] phylib: mdio: handle register/unregister/register sequence
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Mark Brown <broonie@kernel.org>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current implementation does not accept this sequence on a given mdio
-bus: register/unregister/register.
+Hello Boris,
 
-The device core framework complain about already initialized kobject
-struct:
+2013/8/22 Boris BREZILLON <b.brezillon@overkiz.com>:
+> Hello,
+>
+> This patch is a proposal to support the register/unregister/register
+> sequence on a given mdio bus.
+>
+> I use the register/unregister/register sequence to add a fallback when the
+> of_mdiobus_register (this function calls mdiobus_register with phy_mask
+> set to ~0) does not register any phy device (because the device tree does
+> not define any phy).
+> In this case I call mdiobus_unregister and then call mdiobus_register with
+> a phy_mask set to 0 to trigger a full mdio bus scan.
+>
+> I'm not sure this is the right way to do it (this is why I added RFC in the
+> subject).
+>
+> Could someone help me figuring out what I should use to implement my fallback ?
+>
+> 1) use the register/unregister/register sequence
+> 2) reimplement the "for (i = 0; i < PHY_MAX_ADDR; i++)" mdiobus_scan loop
 
-"kobject (df9e9848): tried to init an initialized object, something is
-seriously wrong."
-
-This patch replaces the device_register call with device_add in
-mdiobus_register and move the device struct initialization in the
-mdiobus_alloc_size function.
-Thus the device struct is only initialized once.
-
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/net/phy/mdio_bus.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-index dc92097..a256de3 100644
---- a/drivers/net/phy/mdio_bus.c
-+++ b/drivers/net/phy/mdio_bus.c
-@@ -68,6 +68,8 @@ struct mii_bus *mdiobus_alloc_size(size_t size)
- 			bus->priv = (void *)bus + aligned_size;
- 	}
- 
-+	device_initialize(&bus->dev);
-+
- 	return bus;
- }
- EXPORT_SYMBOL(mdiobus_alloc_size);
-@@ -151,7 +153,7 @@ int mdiobus_register(struct mii_bus *bus)
- 	bus->dev.groups = NULL;
- 	dev_set_name(&bus->dev, "%s", bus->id);
- 
--	err = device_register(&bus->dev);
-+	err = device_add(&bus->dev);
- 	if (err) {
- 		pr_err("mii_bus %s failed to register\n", bus->id);
- 		return -EINVAL;
-@@ -195,12 +197,12 @@ void mdiobus_unregister(struct mii_bus *bus)
- 	BUG_ON(bus->state != MDIOBUS_REGISTERED);
- 	bus->state = MDIOBUS_UNREGISTERED;
- 
--	device_del(&bus->dev);
- 	for (i = 0; i < PHY_MAX_ADDR; i++) {
- 		if (bus->phy_map[i])
- 			device_unregister(&bus->phy_map[i]->dev);
- 		bus->phy_map[i] = NULL;
- 	}
-+	device_del(&bus->dev);
- }
- EXPORT_SYMBOL(mdiobus_unregister);
- 
+I think solution 2 is nicer, in that case, would it be enough in your
+case to export a function called mdiobus_scan()? You could call at a
+time you know PHY devices have a chance of having been probed?
 -- 
-1.7.9.5
-
+Florian
