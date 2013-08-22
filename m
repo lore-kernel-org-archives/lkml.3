@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab3HVUZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 16:25:46 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:59762 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422Ab3HVUZl (ORCPT
+	id S1754053Ab3HVUZu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 16:25:50 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:58356 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207Ab3HVUZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 16:25:41 -0400
+	Thu, 22 Aug 2013 16:25:47 -0400
 From: Max Filippov <jcmvbkbc@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Sam Ravnborg <sam@ravnborg.org>, Guenter Roeck <linux@roeck-us.net>,
-        Max Filippov <jcmvbkbc@gmail.com>, Chris Zankel <chris@zankel.net>,
-        linux-xtensa@linux-xtensa.org
-Subject: [PATCH v2 1/5] xtensa: don't use echo -e needlessly
-Date: Fri, 23 Aug 2013 00:25:21 +0400
-Message-Id: <1377203125-22934-2-git-send-email-jcmvbkbc@gmail.com>
+        Max Filippov <jcmvbkbc@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH v2 5/5] tools/perf/perf-archive.sh: replace echo -e with printf
+Date: Fri, 23 Aug 2013 00:25:25 +0400
+Message-Id: <1377203125-22934-6-git-send-email-jcmvbkbc@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1377203125-22934-1-git-send-email-jcmvbkbc@gmail.com>
 References: <1377203125-22934-1-git-send-email-jcmvbkbc@gmail.com>
@@ -22,49 +24,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--e is not needed to output strings without escape sequences. This breaks
-big endian FSF build when the shell is dash, because its builtin echo
-doesn't understand '-e' switch and outputs it in the echoed string.
+-e is a non-standard echo option, echo output is
+implementation-dependent when it is used. Replace echo -e
+with printf as suggested by POSIX echo manual.
 
-Cc: Chris Zankel <chris@zankel.net>
-Cc: linux-xtensa@linux-xtensa.org
-Reported-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 ---
- arch/xtensa/Makefile      |    4 ++--
- arch/xtensa/boot/Makefile |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/perf-archive.sh |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/xtensa/Makefile b/arch/xtensa/Makefile
-index 136224b..81250ec 100644
---- a/arch/xtensa/Makefile
-+++ b/arch/xtensa/Makefile
-@@ -55,10 +55,10 @@ ifneq ($(CONFIG_LD_NO_RELAX),)
- LDFLAGS := --no-relax
- endif
+diff --git a/tools/perf/perf-archive.sh b/tools/perf/perf-archive.sh
+index e919306..8db9a24 100644
+--- a/tools/perf/perf-archive.sh
++++ b/tools/perf/perf-archive.sh
+@@ -41,7 +41,7 @@ done
  
--ifeq ($(shell echo -e __XTENSA_EB__ | $(CC) -E - | grep -v "\#"),1)
-+ifeq ($(shell echo __XTENSA_EB__ | $(CC) -E - | grep -v "\#"),1)
- CHECKFLAGS += -D__XTENSA_EB__
- endif
--ifeq ($(shell echo -e __XTENSA_EL__ | $(CC) -E - | grep -v "\#"),1)
-+ifeq ($(shell echo __XTENSA_EL__ | $(CC) -E - | grep -v "\#"),1)
- CHECKFLAGS += -D__XTENSA_EL__
- endif
- 
-diff --git a/arch/xtensa/boot/Makefile b/arch/xtensa/boot/Makefile
-index 64ffc4b..ca20a89 100644
---- a/arch/xtensa/boot/Makefile
-+++ b/arch/xtensa/boot/Makefile
-@@ -12,7 +12,7 @@
- KBUILD_CFLAGS	+= -fno-builtin -Iarch/$(ARCH)/boot/include
- HOSTFLAGS	+= -Iarch/$(ARCH)/boot/include
- 
--BIG_ENDIAN	:= $(shell echo -e __XTENSA_EB__ | $(CC) -E - | grep -v "\#")
-+BIG_ENDIAN	:= $(shell echo __XTENSA_EB__ | $(CC) -E - | grep -v "\#")
- 
- export ccflags-y
- export BIG_ENDIAN
+ tar cjf $PERF_DATA.tar.bz2 -C $PERF_BUILDID_DIR -T $MANIFEST
+ rm $MANIFEST $BUILDIDS || true
+-echo -e "Now please run:\n"
+-echo -e "$ tar xvf $PERF_DATA.tar.bz2 -C ~/.debug\n"
++printf "Now please run:\n\n"
++printf "$ tar xvf $PERF_DATA.tar.bz2 -C ~/.debug\n\n"
+ echo "wherever you need to run 'perf report' on."
+ exit 0
 -- 
 1.7.7.6
 
