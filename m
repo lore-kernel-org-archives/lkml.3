@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3HVQZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:25:57 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:49375 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015Ab3HVQZz (ORCPT
+	id S1753540Ab3HVQeY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:34:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3327 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab3HVQeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:25:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAD=FV=WVFGwG7KGBritORUMvWUVH19uaoMLyQufnL5D-Rd76Ww@mail.gmail.com>
-References: <1373470926-19314-1-git-send-email-dianders@chromium.org>
-	<1375825071-20922-1-git-send-email-dianders@chromium.org>
-	<1375825071-20922-2-git-send-email-dianders@chromium.org>
-	<001801ce9504$d9976ab0$8cc64010$%jun@samsung.com>
-	<CAD=FV=VmtoxnRzjsKF1rVTwvkJRAxKGUvNZHAEwuWaeVokzSZA@mail.gmail.com>
-	<000c01ce972b$9ba23590$d2e6a0b0$%jun@samsung.com>
-	<CAD=FV=WVFGwG7KGBritORUMvWUVH19uaoMLyQufnL5D-Rd76Ww@mail.gmail.com>
-Date: Thu, 22 Aug 2013 09:25:54 -0700
-X-Google-Sender-Auth: ysVe8TYg-BVoYVJ-0kJnPXUPCe8
-Message-ID: <CAD=FV=VdmRnE+2mOQU19JG7V8Dh5PwXn=-SS_=+4Db1uijcuuw@mail.gmail.com>
-Subject: Re: [PATCH v4 1/4] mmc: dw_mmc: Invalidate cache of current_speed
- after suspend/resume
-From: Doug Anderson <dianders@chromium.org>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        Olof Johansson <olof@lixom.net>, James Hogan <james.hogan@imgtec.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Aug 2013 12:34:21 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=z4I01019TLYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Vu_iWteS_ssA:10 a=i0EeH86SAAAA:8 a=VwQbUJbxAAAA:8 a=PHpoTpGJIJKG0C60QpcA:9 a=hPjdaMEvmhQA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130822163420.330586243@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 22 Aug 2013 12:32:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [for-next][PATCH 2/5] tracing/syscalls: Annotate raw_init function with __init
+References: <20130822163225.773134216@goodmis.org>
+Content-Disposition: inline; filename=0001-tracing-syscalls-Annotate-raw_init-function-with-__i.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seungwon,
+From: Li Zefan <lizefan@huawei.com>
 
-On Wed, Aug 21, 2013 at 5:54 PM, Doug Anderson <dianders@chromium.org> wrote:
->> Doug, your analysis is right.
->> But, let me suggest another approach.
->> After step #1, core layer actually call mmc_power_off because slot is empthy(get_cd() is '0').
->> Then, set_ios is requested with 'ios->clock'.
->> However, because current implementation doesn't update current_speed in case ios->clock is '0'.
->> It causes current_speed has invalid clock rate in resume of dw-mmc.
->>
->> So, if we can update slot->clock properly, it will be fixed.
->>
->> -static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
->> +static void dw_mci_setup_bus(struct dw_mci_slot *slot)
->>  {
->>         struct dw_mci *host = slot->host;
->>         u32 div;
->>         u32 clk_en_a;
->>
->> -       if (slot->clock != host->current_speed || force_clkinit) {
->> +       if (slot->clock && (slot->clock != host->current_speed)) {
->>
->>
->> @@ -807,13 +807,11 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
->>
->>         mci_writel(slot->host, UHS_REG, regs);
->>
->> -       if (ios->clock) {
->> -               /*
->> -                * Use mirror of ios->clock to prevent race with mmc
->> -                * core ios update when finding the minimum.
->> -                */
->> -               slot->clock = ios->clock;
->> -       }
->> +       /*
->> +        * Use mirror of ios->clock to prevent race with mmc
->> +        * core ios update when finding the minimum.
->> +        */
->> +       slot->clock = ios->clock;
->
-> So this scares me a little bit but you're correct that it's probably
-> the right thing.  Mostly it scares me to remove code that someone
-> clearly added on purpose without understanding why they originally
-> added it and why that reason is not valid (or is no longer valid due
-> to other changes).
+init_syscall_trace() can only be called during kernel bootup only, so we can
+mark it and the functions it calls as __init.
 
-OK, I posted up a new patch series.  Hopefully this looks good to you.
- I did a suspend/resume stress test last night on our chromeos-3.8
-branch and things worked well.
+Link: http://lkml.kernel.org/r/51528E89.6080508@huawei.com
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_syscalls.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 8fd0365..559329d 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -200,8 +200,8 @@ extern char *__bad_type_size(void);
+ 		#type, #name, offsetof(typeof(trace), name),		\
+ 		sizeof(trace.name), is_signed_type(type)
+ 
+-static
+-int  __set_enter_print_fmt(struct syscall_metadata *entry, char *buf, int len)
++static int __init
++__set_enter_print_fmt(struct syscall_metadata *entry, char *buf, int len)
+ {
+ 	int i;
+ 	int pos = 0;
+@@ -228,7 +228,7 @@ int  __set_enter_print_fmt(struct syscall_metadata *entry, char *buf, int len)
+ 	return pos;
+ }
+ 
+-static int set_syscall_print_fmt(struct ftrace_event_call *call)
++static int __init set_syscall_print_fmt(struct ftrace_event_call *call)
+ {
+ 	char *print_fmt;
+ 	int len;
+@@ -253,7 +253,7 @@ static int set_syscall_print_fmt(struct ftrace_event_call *call)
+ 	return 0;
+ }
+ 
+-static void free_syscall_print_fmt(struct ftrace_event_call *call)
++static void __init free_syscall_print_fmt(struct ftrace_event_call *call)
+ {
+ 	struct syscall_metadata *entry = call->data;
+ 
+@@ -459,7 +459,7 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
+ 	mutex_unlock(&syscall_trace_lock);
+ }
+ 
+-static int init_syscall_trace(struct ftrace_event_call *call)
++static int __init init_syscall_trace(struct ftrace_event_call *call)
+ {
+ 	int id;
+ 	int num;
+-- 
+1.7.10.4
 
 
-> I've come up with a new patch that's a little bit more than just your
-> patch.  It actually does something in the case of a zero clock (it
-> turns the clock off).  My patch seems to work OK on my 3.8 branch but
-> I want to do a little more testing tomorrow.  ...but booting on ToT
-> linux seems broken now on the ARM chromebook (it fails in several
-> different ways and sometimes works).  Sigh.
-
-Somehow this morning ToT linux (same revision) was working much better
-on exynos5250-snow.  I was able to boot reliably and even
-suspend/resume reliably.  I think there may be a few niggling issues
-that we'll have to track down before too long, though...
-
--Doug
