@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab3HVHsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:48:14 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:41804 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab3HVHsM (ORCPT
+	id S1753943Ab3HVHtO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:49:14 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:41589 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753622Ab3HVHtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:48:12 -0400
-Message-ID: <5215C233.9060907@linux.vnet.ibm.com>
-Date: Thu, 22 Aug 2013 15:48:03 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: open list <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 00/11] sched/cleanup: scheduler related cleanup and refine
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082207-9574-0000-0000-000009490452
+	Thu, 22 Aug 2013 03:49:13 -0400
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH] iscsi-target: Fix ImmediateData=Yes failure regression in >= v3.10
+Date: Thu, 22 Aug 2013 07:33:24 +0000
+Message-Id: <1377156804-12717-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set will cleanup and refine the code related to scheduler and
-save few lines.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Rough tested (random benchmark) with latest tip/master on a desktop.
+This patch addresses a regression bug within ImmediateData=Yes failure
+handling that ends up triggering an OOPs within >= v3.10 iscsi-target
+code.
 
-Michael Wang (11):
-	[PATCH 01/11] sched/cleanup: remove the extra line in init_sched_fair_class()
-	[PATCH 02/11] sched/cleanup: remove the extra parm of alloc_thread_info_node()
-	[PATCH 03/11] sched/cleanup: remove the extra parm of copy_flags()
-	[PATCH 04/11] sched/cleanup: refine rt_policy()
-	[PATCH 05/11] sched/cleanup: remove the extra parm of wakeup_gran()
-	[PATCH 06/11] sched/cleanup: refine __setup_irq()
-	[PATCH 07/11] sched/cleanup: remove the extra parm of irq_set_thread_affinity()
-	[PATCH 08/11] sched/cleanup: remove the extra parm of sched_clock_idle_wakeup_event()
-	[PATCH 09/11] sched/cleanup: remove the extra parm of tick_nohz_start_idle()
-	[PATCH 10/11] sched/cleanup: remove the extra parm of retrigger_next_event()
-	[PATCH 11/11] sched/cleanup: remove the extra parm of find_new_ilb()
+The problem occurs when iscsit_process_scsi_cmd() does the call to
+target_put_sess_cmd(), and once again in iscsit_get_immediate_data()
+that is triggered during two different cases:
+
+ - When iscsit_sequence_cmd() returns CMDSN_LOWER_THAN_EXP, for which
+   the descriptor state will already have been set to ISTATE_REMOVE
+   by iscsit_sequence_cmd(), and
+ - When iscsi_cmd->sense_reason is set, for which iscsit_execute_cmd()
+   will have already called transport_send_check_condition_and_sense()
+   to queue the exception response.
+
+It changes iscsit_process_scsi_cmd() to drop the early call, and makes
+iscsit_get_immediate_data() call target_put_sess_cmd() from a single
+location after dumping the immediate data for the failed command.
+
+The regression was initially introduced in commit:
+
+commit 561bf15892375597ee59d473a704a3e634c4f311
+Author: Nicholas Bellinger <nab@linux-iscsi.org>
+Date:   Wed Jul 3 03:58:58 2013 -0700
+
+    iscsi-target: Fix iscsit_sequence_cmd reject handling for iser
+
+Cc: stable@vger.kernel.org # 3.10+
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- b/arch/x86/kernel/tsc.c         |    2 +-
- b/drivers/acpi/processor_idle.c |    4 ++--
- b/include/linux/sched.h         |    7 ++-----
- b/kernel/fork.c                 |    8 +++-----
- b/kernel/hrtimer.c              |    8 ++++----
- b/kernel/irq/internals.h        |    2 +-
- b/kernel/irq/manage.c           |    6 ++----
- b/kernel/irq/migration.c        |    2 +-
- b/kernel/sched/clock.c          |    2 +-
- b/kernel/sched/fair.c           |    1 -
- b/kernel/sched/sched.h          |    4 +---
- b/kernel/time/tick-sched.c      |    2 +-
- kernel/fork.c                   |    4 ++--
- kernel/irq/manage.c             |    7 +++----
- kernel/sched/fair.c             |    8 ++++----
- kernel/time/tick-sched.c        |    4 ++--
- 16 files changed, 30 insertions(+), 41 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index f73da43..8fd359c 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1086,7 +1086,6 @@ int iscsit_process_scsi_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+ 		if (cmd->reject_reason)
+ 			return 0;
+ 
+-		target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+ 		return 1;
+ 	}
+ 	/*
+@@ -1124,14 +1123,10 @@ after_immediate_data:
+ 		 */
+ 		cmdsn_ret = iscsit_sequence_cmd(cmd->conn, cmd,
+ 					(unsigned char *)hdr, hdr->cmdsn);
+-		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER) {
++		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
+ 			return -1;
+-		} else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
+-			target_put_sess_cmd(conn->sess->se_sess, &cmd->se_cmd);
+-			return 0;
+-		}
+ 
+-		if (cmd->sense_reason) {
++		if (cmd->sense_reason || cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
+ 			int rc;
+ 
+ 			rc = iscsit_dump_data_payload(cmd->conn,
+-- 
+1.7.2.5
 
