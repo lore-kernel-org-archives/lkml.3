@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab3HVKO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 06:14:29 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:58835 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab3HVKO2 (ORCPT
+	id S1752969Ab3HVKPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 06:15:46 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:32994 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752902Ab3HVKPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 06:14:28 -0400
-Message-ID: <5215E499.3060403@atmel.com>
-Date: Thu, 22 Aug 2013 12:14:49 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 22 Aug 2013 06:15:44 -0400
+Date: Thu, 22 Aug 2013 11:15:16 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130822101516.GZ26118@sirena.org.uk>
+References: <1376902316-18520-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1376902316-18520-6-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-To: Bo Shen <voice.shen@atmel.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] arm: atmel: enable kernel uncompress info output
-References: <1372922202-28606-1-git-send-email-voice.shen@atmel.com>
-In-Reply-To: <1372922202-28606-1-git-send-email-voice.shen@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1ozVqH6bFr/3sC51"
+Content-Disposition: inline
+In-Reply-To: <1376902316-18520-6-git-send-email-Julia.Lawall@lip6.fr>
+X-Cookie: Your step will soil many countries.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 5/6] regulator: ti-abb: simplify
+ platform_get_resource_byname/devm_ioremap_resource
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2013 09:16, Bo Shen :
-> this patch set enable kernel uncompress info output
->    - sama5d3
->    - at91sam9n12
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+--1ozVqH6bFr/3sC51
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Whole series integrated in at91-3.12-soc branch.
+On Mon, Aug 19, 2013 at 10:51:55AM +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>=20
+> Remove unneeded error handling on the result of a call to
+> platform_get_resource_byname when the value is passed to devm_ioremap_res=
+ource.
 
-Thanks, bye,
+Applied, thanks.
 
->
-> without this patch set, it won't show following information
-> ---8>---
-> Uncompressing Linux... done, booting the kernel.
-> ---<8---
->
->
-> Bo Shen (4):
->    arm: atmel: sama5: add definition for usart base address
->    arm: atmel: include sama5d3.h into hardware.h
->    arm: atmel: sama5: enable kernel uncompress info output
->    arm: atmel: sam9n12: enable kernel uncompress info output
->
->   arch/arm/mach-at91/include/mach/hardware.h   |    1 +
->   arch/arm/mach-at91/include/mach/sama5d3.h    |    8 ++++++++
->   arch/arm/mach-at91/include/mach/uncompress.h |   13 +++++++++++++
->   3 files changed, 22 insertions(+)
->
+--1ozVqH6bFr/3sC51
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
--- 
-Nicolas Ferre
+iQIcBAEBAgAGBQJSFeSxAAoJELSic+t+oim9UYcQAIvEKGo4Au36PHdBri/AWDFP
+ABSu+lrEju4vBHXwuKdbYVbP2nfB9Scr87Sw+boCqCZD+6MU/2pnHPS/ou9mpLOV
+XQqDKcX547OpO4cyK0vhx2y9/5gbYq9IQMGZ5O7D25djGCts+Fk4INc6G3UYkp9q
+iEoWAivQw3iS+KZ2xdaWLgr6m6DVhtt9r8nbuQ2N5hAZpfktaVdE51Tpnr0BgyUH
+rRhIuzU9FHMGMNq3XCjBWYYM24oNUL0HA+mSFwiKJSrE3xcmebd0hPJSbV+nIVih
+uuTwPrph+58wKFuFlnWNXAtui7ScDiSQCmdb/JNYnd22iLVBfRlIwgY3B1UTtsBo
+XEgREKis0pBUpoBg1azt8LTKLvbDpmEC+a9H0av7y6A+gNBBGomj+etW29EjSepQ
+5ditARUcU6w2IASxxdUR3vzZENHhXhXs9bkQhqIq+qf8qYJ1m5Q9dYfnd5Y0mGYJ
+Ms3zEHZ0nKF1GzCvLdQNACeHpCWvLWZeoMJg8MNWJC6TbdvItAaWDV+LN0MNPV4O
+6qniH21PaG15GMA79A4iZ3ErjLsjoquXLum8B2feTP6/e2h5Vh0LuaLfXTYkR5GL
+M3GDqod0jaRF5Tm9ULFjtCcTsadZCbEzo9UROL/f5mi0AkeUoshHoUD7h6M+aqsi
+Ca/R3JnP8oBIQDjjh0OQ
+=rClA
+-----END PGP SIGNATURE-----
+
+--1ozVqH6bFr/3sC51--
