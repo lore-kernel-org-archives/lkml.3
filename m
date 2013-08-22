@@ -1,120 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab3HVSZO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 14:25:14 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:44669 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754083Ab3HVSZM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 14:25:12 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 14:25:11 EDT
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Asus F5RL laptop unable to resume from S3 because of radeon module
-Date: Thu, 22 Aug 2013 20:18:00 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Alex Deucher <alexander.deucher@amd.com>
+	id S1754071Ab3HVS2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 14:28:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16681 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753419Ab3HVS2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 14:28:07 -0400
+Date: Thu, 22 Aug 2013 20:22:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        Colin Walters <walters@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] pidns: fix vfork() after unshare(CLONE_NEWPID)
+Message-ID: <20130822182213.GB22995@redhat.com>
+References: <20130822170939.GA20296@redhat.com> <20130822170958.GA20314@redhat.com> <CALCETrUGd-+Z4tWF3uJa18eKgK+GcMaOp0Jm4dtQm7E=wz1NMg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201308222018.00905.linux@rainbow-software.org>
+In-Reply-To: <CALCETrUGd-+Z4tWF3uJa18eKgK+GcMaOp0Jm4dtQm7E=wz1NMg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-resume from suspend-to-RAM (S3) on Asus F5RL laptop does not work.
-According to many reports found by Google, it was always been that and there
-is no fix or workaround.
+On 08/22, Andy Lutomirski wrote:
+>
+> On Thu, Aug 22, 2013 at 10:09 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > 8382fcac "pidns: Outlaw thread creation after unshare(CLONE_NEWPID)"
+> > nacks CLONE_VM if the forking process unshared pid_ns, this obviously
+> > breaks vfork:
+> >
+> >         int main(void)
+> >         {
+> >                 assert(unshare(CLONE_NEWUSER | CLONE_NEWPID) == 0);
+> >                 assert(vfork() >= 0);
+> >                 _exit(0);
+> >                 return 0;
+> >         }
+> >
+> > fails without this patch.
+> >
+> > Change this check to use CLONE_SIGHAND instead. This also forbids
+> > CLONE_THREAD automatically, and this is what the comment implies.
+> >
+> > We could probably even drop CLONE_SIGHAND and use CLONE_THREAD,
+> > but it would be safer to not do this. The current check denies
+> > CLONE_SIGHAND implicitely and there is no reason to change this.
+>
+> Acked-by: Andy Lutomirski <luto@amacapital.net>
 
-Did some tests:
+Thanks Andy for taking a look.
 
-radeon module loaded (usual state):
-After "echo mem>/sys/power/state", the laptop suspends correctly (power LED
-blinks). When power button is pressed, power LED goes on and that's all.
-No more activity, machine is frozen completely.
+> > --- a/kernel/fork.c
+> > +++ b/kernel/fork.c
+> > @@ -1173,10 +1173,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+> >                 return ERR_PTR(-EINVAL);
+> >
+> >         /*
+> > -        * If the new process will be in a different pid namespace
+> > -        * don't allow the creation of threads.
+> > +        * If the new process will be in a different pid namespace don't
+> > +        * allow the creation of threads, or share the signal handlers.
+>
+> ...how about "If the new process will be in a different pid namespace,
+> don't allow it to share a thread group or signal handlers with the
+> parent"?
 
-radeon module not loaded at all:
-Laptop resumes correctly (keyboard LED work, network works), only the LCD is
-blank (obviously). Loading radeon module now initializes the card properly:
-LCD goes on and console works.
+Agreed... But in this case I do not how 3/3 should explain CLONE_PARENT,
+it adds "or share the parent" into this comment.
 
-radeon module loaded (but fbcon module not loaded) and then unloaded:
-Machine freezes the same way as when the module is loaded.
+OK, I'll wait for other comments, then try to update this comment somehow
+and send v2.
 
-So it looks like the radeon module does some initialization that prevents
-resume from working.
+Perhaps "... with the forking task" would be fine?
 
-Hibernation works fine.
+Thanks.
 
-Any ideas what to test or how to debug this?
+Oleg.
 
-Details:
-01:05.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] RC410M [Mobility Radeon Xpress 200M] [1002:5a62] (prog-if 00 
-[VGA controller])
-        Subsystem: ASUSTeK Computer Inc. Device [1043:1402]
-        Flags: bus master, 66MHz, medium devsel, latency 64, IRQ 10
-        Memory at c0000000 (32-bit, prefetchable) [size=256M]
-        I/O ports at 9800 [size=256]
-        Memory at fa8f0000 (32-bit, non-prefetchable) [size=64K]
-        Expansion ROM at fa8c0000 [disabled] [size=128K]
-        Capabilities: [50] Power Management version 2
-        Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
-        Kernel driver in use: radeon
-
-[    4.836009] [drm] radeon kernel modesetting enabled.
-[    4.837169] [drm] initializing kernel modesetting (RS400 0x1002:0x5A62 0x1043:0x1402).
-[    4.837251] [drm] register mmio base: 0xFA8F0000
-[    4.837302] [drm] register mmio size: 65536
-[    4.837570] [drm] Generation 2 PCI interface, using max accessible memory
-[    4.837653] radeon 0000:01:05.0: VRAM: 128M 0x0000000078000000 - 0x000000007FFFFFFF (128M used)
-[    4.837714] radeon 0000:01:05.0: GTT: 512M 0x0000000080000000 - 0x000000009FFFFFFF
-[    4.837787] [drm] Detected VRAM RAM=128M, BAR=256M
-[    4.837839] [drm] RAM width 128bits DDR
-[    4.839854] [TTM] Zone  kernel: Available graphics memory: 444588 kiB
-[    4.839907] [TTM] Zone highmem: Available graphics memory: 972784 kiB
-[    4.839959] [TTM] Initializing pool allocator
-[    4.840042] [drm] radeon: 128M of VRAM memory ready
-[    4.840094] [drm] radeon: 512M of GTT memory ready.
-[    4.840160] [drm] GART: num cpu pages 131072, num gpu pages 131072
-[    4.866905] [drm] radeon: 2 quad pipes, 1 z pipes initialized.
-[    4.872945] [drm] PCIE GART of 512M enabled (table at 0x0000000035A00000).
-[    4.873213] radeon 0000:01:05.0: WB enabled
-[    4.873301] radeon 0000:01:05.0: fence driver on ring 0 use gpu addr 0x0000000080000000 and cpu addr 0xf592c000
-[    4.874929] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[    4.874988] [drm] Driver supports precise vblank timestamp query.
-[    4.875055] [drm] radeon: irq initialized.
-[    4.875119] [drm] Loading R300 Microcode
-[    4.962083] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-[    5.088150] ohci-pci: OHCI PCI platform driver
-[    5.141799] [drm] radeon: ring at 0x0000000080001000
-[    5.141883] [drm] ring test succeeded in 2 usecs
-[    5.142064] spurious 8259A interrupt: IRQ7.
-[    5.142073] [drm] ib test succeeded in 0 usecs
-[    5.142317] [drm] Panel ID String: LPL
-[    5.142370] [drm] Panel Size 1280x800
-[    5.166305] [drm] radeon legacy LVDS backlight initialized
-[    5.166358] [drm] Radeon Display Connectors
-[    5.166408] [drm] Connector 0:
-[    5.166458] [drm]   VGA-1
-[    5.166509] [drm]   DDC: 0x68 0x68 0x68 0x68 0x68 0x68 0x68 0x68
-[    5.166560] [drm]   Encoders:
-[    5.166610] [drm]     CRT1: INTERNAL_DAC2
-[    5.166660] [drm] Connector 1:
-[    5.166710] [drm]   LVDS-1
-[    5.166760] [drm]   DDC: 0x198 0x198 0x19c 0x19c 0x1a0 0x1a0 0x1a4 0x1a4
-[    5.166812] [drm]   Encoders:
-[    5.166862] [drm]     LCD1: INTERNAL_LVDS
-[    5.426968] [drm] fb mappable at 0xC0040000
-[    5.427026] [drm] vram apper at 0xC0000000
-[    5.427076] [drm] size 4096000
-[    5.427126] [drm] fb depth is 24
-[    5.427176] [drm]    pitch is 5120
-[    5.427388] radeon 0000:01:05.0: fb0: radeondrmfb frame buffer device
-[    5.427442] radeon 0000:01:05.0: registered panic notifier
-[    5.427501] [drm] Initialized radeon 2.34.0 20080528 for 0000:01:05.0 on minor 0
-
--- 
-Ondrej Zary
