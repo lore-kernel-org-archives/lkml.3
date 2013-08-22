@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab3HVE4B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 00:56:01 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58190 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752928Ab3HVEz7 (ORCPT
+	id S1753430Ab3HVFDh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 01:03:37 -0400
+Received: from 75-148-32-185-Colorado.hfc.comcastbusiness.net ([75.148.32.185]:44960
+	"EHLO mail.scrye.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059Ab3HVFDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 00:55:59 -0400
-Date: Thu, 22 Aug 2013 14:55:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-arch@vger.kernel.org, mmarek@suse.cz, geert@linux-m68k.org,
-        ralf@linux-mips.org, lethal@linux-sh.org, jdike@addtoit.com,
-        gxt@mprc.pku.edu.cn, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Ramkumar Ramachandra <artagnon@gmail.com>
-Subject: Re: [PATCH 1/8] um: Create defconfigs for i386 and x86_64
-Message-Id: <20130822145549.7d2de2bd1209fdc850df3198@canb.auug.org.au>
-In-Reply-To: <1377073172-3662-2-git-send-email-richard@nod.at>
-References: <1377073172-3662-1-git-send-email-richard@nod.at>
-	<1377073172-3662-2-git-send-email-richard@nod.at>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__22_Aug_2013_14_55_49_+1000_BCiP2jO/bmXN.v6F"
+	Thu, 22 Aug 2013 01:03:36 -0400
+X-Greylist: delayed 494 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 01:03:36 EDT
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysfs: add sysfs_create/remove_groups()
+From: Anthony Foiani <tkil@scrye.com>
+Reply-To: Anthony Foiani <tkil@scrye.com>
+X-Attribution: Tony
+References: <20130821203506.GA1663@kroah.com> <5215254B.7000000@infradead.org>
+	<20130821204750.GB4546@kroah.com>
+Date: Wed, 21 Aug 2013 22:55:19 -0600
+In-Reply-To: <20130821204750.GB4546@kroah.com> (Greg Kroah-Hartman's message of "Wed\, 21 Aug 2013 13\:47\:50 -0700")
+Message-ID: <g38q2l3yg.fsf@dworkin.scrye.com>
+User-Agent: Gnus/5.101 (Gnus v5.10.10) XEmacs/21.5-b33 (linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__22_Aug_2013_14_55_49_+1000_BCiP2jO/bmXN.v6F
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
 
-Hi Richard,
+> + * sysfs_create_groups - given a directory kobject, create a bunch of attribute groups
+> + * @kobj:	The kobject to create the group on
+> + * @groups:	The attribute groups to create, NULL terminated
+> + *
+> + * This function creates a bunch of attribute groups.  If an error occurs when
+> + * creating a group, all previously created groups will be removed, unwinding
+> + * everything back to the original state when this function was called.
+> + * It will explicitly warn and error if any of the attribute files being
+> + * created already exist.
+> + *
+> + * Returns 0 on success or error code from sysfs_create_groups on error.
 
-On Wed, 21 Aug 2013 10:19:25 +0200 Richard Weinberger <richard@nod.at> wrot=
-e:
->
-> Instead of having one defconfig for both i386 and x86_64
-> we have now two.
-> This is the first step to get rid of SUBARCH.
->=20
-> This patch is based on: https://lkml.org/lkml/2013/7/4/396
->=20
-> Cc: Ramkumar Ramachandra <artagnon@gmail.com>
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  arch/um/configs/i386_defconfig   | 954 +++++++++++++++++++++++++++++++++=
-++++++
->  arch/um/configs/x86_64_defconfig | 943 +++++++++++++++++++++++++++++++++=
-+++++
->  2 files changed, 1897 insertions(+)
->  create mode 100644 arch/um/configs/i386_defconfig
->  create mode 100644 arch/um/configs/x86_64_defconfig
+"... from sysfs_create_group on error"
+                       ^^^^^ (note singular, not plural)
 
-Can these still work if put through "make savedefconfig" like other
-architectures defconfig files?  I did a test and they produce files that
-are only 74-75 lines long and the resulting files produced the
-same .config when used in place of their originals.  But I only did that
-test on an X86_64 host, so I just don't know if there is some strangeness
-of um that would stop us using them.
+Otherwise it's a bit of a tautology...
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Maybe rename to "sysfs_(create|remove)_multiple_groups" (or
+..._many_groups) to avoid this kind of one-char difference?
 
---Signature=_Thu__22_Aug_2013_14_55_49_+1000_BCiP2jO/bmXN.v6F
-Content-Type: application/pgp-signature
+> + * sysfs_remove_groups - remove a list of groups
+> + *
+> + * kobj:	The kobject for the groups to be removed from
+> + * groups:	NULL terminated list of groups to be removed
+> + *
+> + * If groups is not NULL, the all groups will be removed from the kobject
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+"If groups is not NULL, remove listed groups from the kobject"
 
-iQIcBAEBCAAGBQJSFZnVAAoJEECxmPOUX5FECykQAKVdAw7YgUXXddRw5aV5pmAy
-NbV0hO6Ier1fY06b+DTdFHXEokRtDxQBqLzxS3DjjQK4c8qjyiwpdJOu7PM//wxv
-NRKtSrI1S6idf0bJJ+Z4n9t+FxlE41bxusf7/mUt6E4s8HFwYvGgpZ8/QUuPLGqY
-mocdz9cxpqfJehtiC8zG7BBH/Lw+y3LyXf12Eyjq0IH41qPICl+sX0D0M/tRCdhI
-gr2lGiq/N8KbtT86RnMI1n82D3JlM6wFgjt7OTozNgeHnYFOrW82LDWQFfstWuqg
-D4X2sGShjq1T6dKXDTtAKAE/BsmQ75UVSCfCJz2HV92KUH/heBs0g2uU2gnGREv/
-5dSRMCsSeRaKPOZCUQR3gll43u/Es90algPNEPQc3fwpataeQu0qeZxGrDm+6j48
-Qt9P20WJVWd/yF8QRsM0IwgFXuHJQdzvHz4dm6NJdRNRCgllT/rL3AjkcnUmD/jV
-uSXGD+WHgky45KIL3jofpZNNmllUn3KLJJN8AS45oZqBWoIRRAQv19287SnMUNav
-kq0ThN7zXMV5bS2xb1t1CHnL5ir/6xoVow8P/d+0To6vQFJhGjlnm2YwXDx0qRqs
-aNPVSiS+STbr915+8jObTSLF9zqEpXgw14B6uL0Zn+tnlMXYKy/CvO66iM9qdutj
-qQDs44nuuEim20i4E0EX
-=mHOY
------END PGP SIGNATURE-----
+(I also played around with using pointer arithmetic instead of array
+accesses for these two functions; it cut a few lines of code, but not
+enough to bother, I don't think.)
 
---Signature=_Thu__22_Aug_2013_14_55_49_+1000_BCiP2jO/bmXN.v6F--
+Thanks,
+Tony
