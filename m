@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab3HVDdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 23:33:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2062 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753397Ab3HVDdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 23:33:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,932,1367996400"; 
-   d="scan'208";a="285147240"
-From: "Li, Fei" <fei.li@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "holt@sgi.com" <holt@sgi.com>,
-        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] reboot: perform warm/cold reset correctly for CF9 type
-Thread-Topic: [PATCH] reboot: perform warm/cold reset correctly for CF9 type
-Thread-Index: AQHOnkAyupFWw/TFQUeMMS/7isOBqpmevtGAgACNFwD//41LAIABqn5w
-Date: Thu, 22 Aug 2013 03:32:40 +0000
-Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE3634012EDD40@SHSMSX104.ccr.corp.intel.com>
-References: <1377049949.18357.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <20130821072940.GB27495@gmail.com>
- <69b80c44-3245-4393-b6e9-4d8a7f3d3c66@email.android.com>
- <BEC9F67575FA1E429CA7CF5AE9BE3634012ED68C@SHSMSX104.ccr.corp.intel.com>
- <7233d29e-ea01-4eb6-8018-b9c8e3730a30@email.android.com>
-In-Reply-To: <7233d29e-ea01-4eb6-8018-b9c8e3730a30@email.android.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753229Ab3HVDlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 23:41:05 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:41237 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab3HVDlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 23:41:03 -0400
 MIME-Version: 1.0
+X-Originating-IP: [218.164.101.24]
+In-Reply-To: <CACRpkdauvk4Gw_k6TaYSH32nA66M_MHHksx6ESrqYx1PetWdug@mail.gmail.com>
+References: <1376877989.10251.2.camel@phoenix>
+	<1376878066.10251.4.camel@phoenix>
+	<CACRpkdauvk4Gw_k6TaYSH32nA66M_MHHksx6ESrqYx1PetWdug@mail.gmail.com>
+Date: Thu, 22 Aug 2013 11:41:02 +0800
+Message-ID: <CAFRkauCc4jnsEhdX_MrS39xO4Nuh6m7eaaMPzYCf2OyZstNaOQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pinctrl: core: Add proper mutex lock in pinctrl_request_gpio
+From: Axel Lin <axel.lin@ingics.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Patrice Chotard <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7M3XF26027753
 
-> Subject: RE: [PATCH] reboot: perform warm/cold reset correctly for CF9 type
-> 
-> The thing is that the existing "warm" and "cold" means something different, I
-> believe (skip post vs do post.)  It is possible it just works, but it would be good to
-> know which platforms or works on.
-> 
-> Also, why do you need the cf9 boot method at all?  All current systems * should
-> * use the ACPI method.
-> 
+2013/8/22 Linus Walleij <linus.walleij@linaro.org>:
+> On Mon, Aug 19, 2013 at 4:07 AM, Axel Lin <axel.lin@ingics.com> wrote:
+>
+>> This one is missed in commit 42fed7ba "pinctrl: move subsystem mutex to
+>> pinctrl_dev struct".
+>
+> I think this was never there.
 
-In fact, ACPI method also implements reset by writing RESET_VALUE into RESET_REG
-port. In our platform, it also uses port 0xCF9. The difference between cold and wart reset
-is whether power cycle is involved or not. After all, this is another topic.
+I think it was protected by the global pinctrl_mutex in v3.9, you can check the
+source code here:
+https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/drivers/pinctrl/core.c?id=refs/tags/v3.9.11
 
->From the source code, CF9 boot method are still used by some apple MAC and dell
-platforms if I understand correctly.
+However, commit 42fed7ba44 "pinctrl: move subsystem mutex to
+pinctrl_dev struct" then
+adds mutex_lock(&pinctrldev_list_mutex); but forgot to add
+mutex_lock(&pctldev->mutex);
+here although it adds mutex_lock(&pctldev->mutex) in pinctrl_free_gpio().
+The mutex_lock(&pinctrldev_list_mutex) is then moved into
+pinctrl_get_device_gpio_range()
+and pinctrl_ready_for_gpio_range() by commit 44d5f7b "pinctrl: sink
+pinctrldev_list_mutex".
 
-Back to our patch, if you really concern the effect of cold reboot 0x0E to current existed
-platforms, we can set the default value of reboot_mode as REBOOT_WARM.
+>
+>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>> ---
+>>  drivers/pinctrl/core.c | 4 ++++
+>>  1 file changed, 4 insertions(+)
+>>
+>> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+>> index 53c40d9..92f86ab 100644
+>> --- a/drivers/pinctrl/core.c
+>> +++ b/drivers/pinctrl/core.c
+>> @@ -562,11 +562,15 @@ int pinctrl_request_gpio(unsigned gpio)
+>>                 return ret;
+>>         }
+>>
+>> +       mutex_lock(&pctldev->mutex);
+>> +
+>>         /* Convert to the pin controllers number space */
+>>         pin = gpio_to_pin(range, gpio);
+>>
+>>         ret = pinmux_request_gpio(pctldev, range, pin, gpio);
+>>
+>> +       mutex_unlock(&pctldev->mutex);
+>> +
+>>         return ret;
+>
+> What is this protecting against?
+>
+> I'm not sure I follow this so better ask.
 
-Does it make sense?
+I think this fixes the race between pin_free() and pin_request() calls.
+(Well, I don't have a h/w to test at this moment.)
+It protects accessing the members of pctldev->desc.
+(e.g. update desc->mux_usecount, desc->gpio_owner, desc->mux_owner, etc)
+Current code grabs pctldev->mutex before calling pinmux_free_gpio(),
+but did not grab the mutex while calling pinmux_request_gpio().
 
-Thanks,
-Fei
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Regards,
+Axel
