@@ -1,213 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab3HVUAN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 16:00:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:10850 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754251Ab3HVT55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 15:57:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,935,1367996400"; 
-   d="scan'208";a="390541222"
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: rostedt@goodmis.org
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH v5 04/10] tracing: add 'snapshot' event trigger command
-Date: Thu, 22 Aug 2013 14:57:37 -0500
-Message-Id: <412f9bdf0f460d3ca5d4c12286e1daacd86c9c12.1377183739.git.tom.zanussi@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <cover.1377183739.git.tom.zanussi@linux.intel.com>
-References: <cover.1377183739.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <cover.1377183739.git.tom.zanussi@linux.intel.com>
-References: <cover.1377183739.git.tom.zanussi@linux.intel.com>
+	id S1754534Ab3HVUA1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 16:00:27 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:32780 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab3HVUAX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 16:00:23 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Subject: Re: Asus F5RL laptop unable to resume from S3 because of radeon module
+Date: Thu, 22 Aug 2013 22:00:05 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
+References: <201308222018.00905.linux@rainbow-software.org> <A3397C8B8B789E45844E7EC5DEAD89D02E5B6501@satlexdag05.amd.com>
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02E5B6501@satlexdag05.amd.com>
+X-KMail-QuotePrefix: > 
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201308222200.05891.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add 'snapshot' ftrace_func_command.  snapshot event triggers are added
-by the user via this command in a similar way and using practically
-the same syntax as the analogous 'snapshot' ftrace function command,
-but instead of writing to the set_ftrace_filter file, the snapshot
-event trigger is written to the per-event 'trigger' files:
+On Thursday 22 August 2013 21:49:41 Deucher, Alexander wrote:
+> > -----Original Message-----
+> > From: Ondrej Zary [mailto:linux@rainbow-software.org]
+> > Sent: Thursday, August 22, 2013 2:18 PM
+> > To: Kernel development list
+> > Cc: Deucher, Alexander
+> > Subject: Asus F5RL laptop unable to resume from S3 because of radeon
+> > module
+> >
+> > Hello,
+> > resume from suspend-to-RAM (S3) on Asus F5RL laptop does not work.
+> > According to many reports found by Google, it was always been that and
+> > there
+> > is no fix or workaround.
+>
+> Make sure your kernel has this patch:
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=c
+>ef1d00cd56f600121ad121875655ad410a001b8
 
-    echo 'snapshot' > .../somesys/someevent/trigger
+Just tried latest git (3.11-rc6+) and the problem persists.
 
-The above command will turn on snapshots for someevent i.e. whenever
-someevent is hit, a snapshot will be done.
+> Alex
+>
+> > Did some tests:
+> >
+> > radeon module loaded (usual state):
+> > After "echo mem>/sys/power/state", the laptop suspends correctly (power
+> > LED
+> > blinks). When power button is pressed, power LED goes on and that's all.
+> > No more activity, machine is frozen completely.
+> >
+> > radeon module not loaded at all:
+> > Laptop resumes correctly (keyboard LED work, network works), only the LCD
+> > is
+> > blank (obviously). Loading radeon module now initializes the card
+> > properly: LCD goes on and console works.
+> >
+> > radeon module loaded (but fbcon module not loaded) and then unloaded:
+> > Machine freezes the same way as when the module is loaded.
+> >
+> > So it looks like the radeon module does some initialization that prevents
+> > resume from working.
+> >
+> > Hibernation works fine.
+> >
+> > Any ideas what to test or how to debug this?
+> >
+> > Details:
+> > 01:05.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc.
+> > [AMD/ATI] RC410M [Mobility Radeon Xpress 200M] [1002:5a62] (prog-if 00
+> > [VGA controller])
+> >         Subsystem: ASUSTeK Computer Inc. Device [1043:1402]
+> >         Flags: bus master, 66MHz, medium devsel, latency 64, IRQ 10
+> >         Memory at c0000000 (32-bit, prefetchable) [size=256M]
+> >         I/O ports at 9800 [size=256]
+> >         Memory at fa8f0000 (32-bit, non-prefetchable) [size=64K]
+> >         Expansion ROM at fa8c0000 [disabled] [size=128K]
+> >         Capabilities: [50] Power Management version 2
+> >         Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
+> >         Kernel driver in use: radeon
+> >
+> > [    4.836009] [drm] radeon kernel modesetting enabled.
+> > [    4.837169] [drm] initializing kernel modesetting (RS400 0x1002:0x5A62
+> > 0x1043:0x1402).
+> > [    4.837251] [drm] register mmio base: 0xFA8F0000
+> > [    4.837302] [drm] register mmio size: 65536
+> > [    4.837570] [drm] Generation 2 PCI interface, using max accessible
+> > memory [    4.837653] radeon 0000:01:05.0: VRAM: 128M 0x0000000078000000
+> > - 0x000000007FFFFFFF (128M used)
+> > [    4.837714] radeon 0000:01:05.0: GTT: 512M 0x0000000080000000 -
+> > 0x000000009FFFFFFF
+> > [    4.837787] [drm] Detected VRAM RAM=128M, BAR=256M
+> > [    4.837839] [drm] RAM width 128bits DDR
+> > [    4.839854] [TTM] Zone  kernel: Available graphics memory: 444588 kiB
+> > [    4.839907] [TTM] Zone highmem: Available graphics memory: 972784 kiB
+> > [    4.839959] [TTM] Initializing pool allocator
+> > [    4.840042] [drm] radeon: 128M of VRAM memory ready
+> > [    4.840094] [drm] radeon: 512M of GTT memory ready.
+> > [    4.840160] [drm] GART: num cpu pages 131072, num gpu pages 131072
+> > [    4.866905] [drm] radeon: 2 quad pipes, 1 z pipes initialized.
+> > [    4.872945] [drm] PCIE GART of 512M enabled (table at
+> > 0x0000000035A00000).
+> > [    4.873213] radeon 0000:01:05.0: WB enabled
+> > [    4.873301] radeon 0000:01:05.0: fence driver on ring 0 use gpu addr
+> > 0x0000000080000000 and cpu addr 0xf592c000
+> > [    4.874929] [drm] Supports vblank timestamp caching Rev 1
+> > (10.10.2010). [    4.874988] [drm] Driver supports precise vblank
+> > timestamp query. [    4.875055] [drm] radeon: irq initialized.
+> > [    4.875119] [drm] Loading R300 Microcode
+> > [    4.962083] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+> > [    5.088150] ohci-pci: OHCI PCI platform driver
+> > [    5.141799] [drm] radeon: ring at 0x0000000080001000
+> > [    5.141883] [drm] ring test succeeded in 2 usecs
+> > [    5.142064] spurious 8259A interrupt: IRQ7.
+> > [    5.142073] [drm] ib test succeeded in 0 usecs
+> > [    5.142317] [drm] Panel ID String: LPL
+> > [    5.142370] [drm] Panel Size 1280x800
+> > [    5.166305] [drm] radeon legacy LVDS backlight initialized
+> > [    5.166358] [drm] Radeon Display Connectors
+> > [    5.166408] [drm] Connector 0:
+> > [    5.166458] [drm]   VGA-1
+> > [    5.166509] [drm]   DDC: 0x68 0x68 0x68 0x68 0x68 0x68 0x68 0x68
+> > [    5.166560] [drm]   Encoders:
+> > [    5.166610] [drm]     CRT1: INTERNAL_DAC2
+> > [    5.166660] [drm] Connector 1:
+> > [    5.166710] [drm]   LVDS-1
+> > [    5.166760] [drm]   DDC: 0x198 0x198 0x19c 0x19c 0x1a0 0x1a0 0x1a4
+> > 0x1a4 [    5.166812] [drm]   Encoders:
+> > [    5.166862] [drm]     LCD1: INTERNAL_LVDS
+> > [    5.426968] [drm] fb mappable at 0xC0040000
+> > [    5.427026] [drm] vram apper at 0xC0000000
+> > [    5.427076] [drm] size 4096000
+> > [    5.427126] [drm] fb depth is 24
+> > [    5.427176] [drm]    pitch is 5120
+> > [    5.427388] radeon 0000:01:05.0: fb0: radeondrmfb frame buffer device
+> > [    5.427442] radeon 0000:01:05.0: registered panic notifier
+> > [    5.427501] [drm] Initialized radeon 2.34.0 20080528 for 0000:01:05.0
+> > on minor 0
+> >
+> > --
+> > Ondrej Zary
 
-This also adds a 'count' version that limits the number of times the
-command will be invoked:
 
-    echo 'snapshot:N' > .../somesys/someevent/trigger
-
-Where N is the number of times the command will be invoked.
-
-The above command will snapshot N times for someevent i.e. whenever
-someevent is hit N times, a snapshot will be done.
-
-Also adds a new ftrace_alloc_snapshot() function - the ftrace snapshot
-command defines code that allocates a snapshot, which would be nice to
-be able to reuse, which this does.
-
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
----
- include/linux/ftrace_event.h        |  1 +
- kernel/trace/trace.c                |  9 ++++
- kernel/trace/trace.h                |  1 +
- kernel/trace/trace_events_trigger.c | 89 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 100 insertions(+)
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index ec50e53..f3af6ed 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -319,6 +319,7 @@ struct ftrace_event_file {
- enum trigger_mode {
- 	TM_NONE			= (0),
- 	TM_TRACE_ONOFF		= (1 << 0),
-+	TM_SNAPSHOT		= (1 << 1),
- };
- 
- extern void destroy_preds(struct ftrace_event_call *call);
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 496f94d..5a61dbe 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5358,6 +5358,15 @@ static const struct file_operations tracing_dyn_info_fops = {
- };
- #endif /* CONFIG_DYNAMIC_FTRACE */
- 
-+#if defined(CONFIG_TRACER_SNAPSHOT)
-+int ftrace_alloc_snapshot(void)
-+{
-+	return alloc_snapshot(&global_trace);
-+}
-+#else
-+int ftrace_alloc_snapshot(void) { return -ENOSYS; }
-+#endif
-+
- #if defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE)
- static void
- ftrace_snapshot(unsigned long ip, unsigned long parent_ip, void **data)
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index c2afd79..578a38e 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -1193,6 +1193,7 @@ struct event_command {
- 
- extern int trace_event_enable_disable(struct ftrace_event_file *file,
- 				      int enable, int soft_disable);
-+extern int ftrace_alloc_snapshot(void);
- 
- extern const char *__start___trace_bprintk_fmt[];
- extern const char *__stop___trace_bprintk_fmt[];
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index d5a10ed..342a6dc 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -712,6 +712,87 @@ static struct event_command trigger_traceoff_cmd = {
- 	.get_trigger_ops	= onoff_get_trigger_ops,
- };
- 
-+static void
-+snapshot_trigger(void **_data)
-+{
-+	struct event_trigger_data **p = (struct event_trigger_data **)_data;
-+	struct event_trigger_data *data = *p;
-+
-+	if (!data)
-+		return;
-+
-+	tracing_snapshot();
-+}
-+
-+static void
-+snapshot_count_trigger(void **_data)
-+{
-+	struct event_trigger_data **p = (struct event_trigger_data **)_data;
-+	struct event_trigger_data *data = *p;
-+
-+	if (!data)
-+		return;
-+
-+	if (!data->count)
-+		return;
-+
-+	if (data->count != -1)
-+		(data->count)--;
-+
-+	snapshot_trigger(_data);
-+}
-+
-+static int
-+register_snapshot_trigger(char *glob, struct event_trigger_ops *ops,
-+			  void *data, struct ftrace_event_file *file)
-+{
-+	int ret = register_trigger(glob, ops, data, file);
-+
-+	if (ret > 0)
-+		ftrace_alloc_snapshot();
-+
-+	return ret;
-+}
-+
-+static int
-+snapshot_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
-+		       void *_data)
-+{
-+	struct event_trigger_data *data = _data;
-+
-+	return event_trigger_print("snapshot", m, (void *)data->count,
-+				   data->filter_str);
-+}
-+
-+static struct event_trigger_ops snapshot_trigger_ops = {
-+	.func			= snapshot_trigger,
-+	.print			= snapshot_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops snapshot_count_trigger_ops = {
-+	.func			= snapshot_count_trigger,
-+	.print			= snapshot_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops *
-+snapshot_get_trigger_ops(char *cmd, char *param)
-+{
-+	return param ? &snapshot_count_trigger_ops : &snapshot_trigger_ops;
-+}
-+
-+static struct event_command trigger_snapshot_cmd = {
-+	.name			= "snapshot",
-+	.trigger_mode		= TM_SNAPSHOT,
-+	.func			= event_trigger_callback,
-+	.reg			= register_snapshot_trigger,
-+	.unreg			= unregister_trigger,
-+	.get_trigger_ops	= snapshot_get_trigger_ops,
-+};
-+
- static __init void unregister_trigger_traceon_traceoff_cmds(void)
- {
- 	unregister_event_command(&trigger_traceon_cmd,
-@@ -748,5 +829,13 @@ __init int register_trigger_cmds(void)
- 		return ret;
- 	}
- 
-+	ret = register_event_command(&trigger_snapshot_cmd,
-+				     &trigger_commands,
-+				     &trigger_cmd_mutex);
-+	if (WARN_ON(ret < 0)) {
-+		unregister_trigger_traceon_traceoff_cmds();
-+		return ret;
-+	}
-+
- 	return 0;
- }
 -- 
-1.7.11.4
-
+Ondrej Zary
