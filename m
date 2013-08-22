@@ -1,78 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab3HVIIM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:08:12 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:39679 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab3HVIIF (ORCPT
+	id S1753376Ab3HVIVK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 04:21:10 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33212 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3HVIVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 04:08:05 -0400
-Message-ID: <5215C6D6.3030309@linux.vnet.ibm.com>
-Date: Thu, 22 Aug 2013 16:07:50 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Thu, 22 Aug 2013 04:21:07 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5215C9B3.4090608@jp.fujitsu.com>
+Date: Thu, 22 Aug 2013 17:20:03 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: open list <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        x86@kernel.org, linux-acpi@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        John Stultz <john.stultz@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Feng Tang <feng.tang@intel.com>
-Subject: Re: [PATCH 08/11] sched/cleanup: remove the extra parm of sched_clock_idle_wakeup_event()
-References: <5215C233.9060907@linux.vnet.ibm.com> <5215C484.5010407@linux.vnet.ibm.com>
-In-Reply-To: <5215C484.5010407@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Hansen <dave@sr71.net>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 7/7] drivers: base: refactor add_memory_section() to add_memory_block()
+References: <1377018783-26756-1-git-send-email-sjenning@linux.vnet.ibm.com> <1377018783-26756-7-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1377018783-26756-7-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082207-9574-0000-0000-0000094918B9
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2013 03:57 PM, Michael wang wrote:
-> Parm 'delta_ns' has not been used, remove it to make code clean.
-[snip]
->  
-> -extern void sched_clock_idle_sleep_event(void);
-> -extern void sched_clock_idle_wakeup_event(u64 delta_ns);
-
-Also remove the extra declaration here.
-
-Regards,
-Michael Wang
-
-> -
->  #ifdef CONFIG_HOTPLUG_CPU
->  extern void idle_task_exit(void);
->  #else
-> diff --git a/kernel/sched/clock.c b/kernel/sched/clock.c
-> index c3ae144..d111c58 100644
-> --- a/kernel/sched/clock.c
-> +++ b/kernel/sched/clock.c
-> @@ -294,7 +294,7 @@ EXPORT_SYMBOL_GPL(sched_clock_idle_sleep_event);
->  /*
->   * We just idled delta nanoseconds (called with irqs disabled):
->   */
-> -void sched_clock_idle_wakeup_event(u64 delta_ns)
-> +void sched_clock_idle_wakeup_event(void)
->  {
->  	if (timekeeping_suspended)
->  		return;
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 3612fc7..4b24d9e 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -433,7 +433,7 @@ static void tick_nohz_stop_idle(int cpu, ktime_t now)
->  	update_ts_time_stats(cpu, ts, now, NULL);
->  	ts->idle_active = 0;
->  
-> -	sched_clock_idle_wakeup_event(0);
-> +	sched_clock_idle_wakeup_event();
->  }
->  
->  static ktime_t tick_nohz_start_idle(int cpu, struct tick_sched *ts)
+(2013/08/21 2:13), Seth Jennings wrote:
+> Right now memory_dev_init() maintains the memory block pointer
+> between iterations of add_memory_section().  This is nasty.
 > 
+> This patch refactors add_memory_section() to become add_memory_block().
+> The refactoring pulls the section scanning out of memory_dev_init()
+> and simplifies the signature.
+> 
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> ---
+>   drivers/base/memory.c | 48 +++++++++++++++++++++---------------------------
+>   1 file changed, 21 insertions(+), 27 deletions(-)
+> 
+> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+> index 7d9d3bc..021283a 100644
+> --- a/drivers/base/memory.c
+> +++ b/drivers/base/memory.c
+> @@ -602,32 +602,31 @@ static int init_memory_block(struct memory_block **memory,
+>   	return ret;
+>   }
+>   
+> -static int add_memory_section(struct mem_section *section,
+> -			struct memory_block **mem_p)
+> +static int add_memory_block(int base_section_nr)
+>   {
+> -	struct memory_block *mem = NULL;
+> -	int scn_nr = __section_nr(section);
+> -	int ret = 0;
+> -
+> -	if (mem_p && *mem_p) {
+> -		if (scn_nr >= (*mem_p)->start_section_nr &&
+> -		    scn_nr <= (*mem_p)->end_section_nr) {
+> -			mem = *mem_p;
+> -		}
+> -	}
+> +	struct memory_block *mem;
+> +	int i, ret, section_count = 0, section_nr;
+>   
+> -	if (mem)
+> -		mem->section_count++;
+> -	else {
+> -		ret = init_memory_block(&mem, section, MEM_ONLINE);
+> -		/* store memory_block pointer for next loop */
+> -		if (!ret && mem_p)
+> -			*mem_p = mem;
+> +	for (i = base_section_nr;
+> +	     (i < base_section_nr + sections_per_block) && i < NR_MEM_SECTIONS;
+> +	     i++) {
+> +		if (!present_section_nr(i))
+> +			continue;
+> +		if (section_count == 0)
+> +			section_nr = i;
+> +		section_count++;
+>   	}
+>   
+> -	return ret;
+> +	if (section_count == 0)
+> +		return 0;
+> +	ret = init_memory_block(&mem, __nr_to_section(section_nr), MEM_ONLINE);
+> +	if (ret)
+> +		return ret;
+> +	mem->section_count = section_count;
+> +	return 0;
+>   }
+>   
+> +
+>   /*
+>    * need an interface for the VM to add new memory regions,
+>    * but without onlining it.
+> @@ -733,7 +732,6 @@ int __init memory_dev_init(void)
+>   	int ret;
+>   	int err;
+>   	unsigned long block_sz;
+> -	struct memory_block *mem = NULL;
+>   
+>   	ret = subsys_system_register(&memory_subsys, memory_root_attr_groups);
+>   	if (ret)
+> @@ -747,12 +745,8 @@ int __init memory_dev_init(void)
+>   	 * during boot and have been initialized
+>   	 */
+>   	mutex_lock(&mem_sysfs_mutex);
+> -	for (i = 0; i < NR_MEM_SECTIONS; i++) {
+> -		if (!present_section_nr(i))
+> -			continue;
+> -		/* don't need to reuse memory_block if only one per block */
+> -		err = add_memory_section(__nr_to_section(i),
+> -				 (sections_per_block == 1) ? NULL : &mem);
+> +	for (i = 0; i < NR_MEM_SECTIONS; i += sections_per_block) {
+
+Why do you remove present_setcion_nr() check?
+
+> +		err = add_memory_block(i);
+>   		if (!ret)
+
+Thanks,
+Yasuaki Ishimatasu
+
+>   			ret = err;
+>   	}
+> 
+
 
