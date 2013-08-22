@@ -1,44 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab3HVFEI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 01:04:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60762 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752734Ab3HVFEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 01:04:05 -0400
-Message-ID: <1377147828.8703.13.camel@cr0>
-Subject: Re: [Patch net-next v3 9/9] selinux: use generic union inet_addr
-From: Cong Wang <amwang@redhat.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        james.l.morris@oracle.com, sds@tycho.nsa.gov, eparis@parisplace.org,
-        pmoore@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Date: Thu, 22 Aug 2013 13:03:48 +0800
-In-Reply-To: <52137CFF.70601@schaufler-ca.com>
-References: <1376907278-26377-1-git-send-email-amwang@redhat.com>
-	  <1376907278-26377-10-git-send-email-amwang@redhat.com>
-	  <52127336.3080209@schaufler-ca.com>
-	  <20130819.125026.636442915180863272.davem@davemloft.net>
-	  <5212915F.20905@schaufler-ca.com> <1377003677.13412.5.camel@cr0>
-	 <52137CFF.70601@schaufler-ca.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753508Ab3HVFFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 01:05:20 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:51785 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415Ab3HVFFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 01:05:18 -0400
+Date: Wed, 21 Aug 2013 22:05:17 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: dhowells@redhat.com, Milosz Tanski <milosz@adfin.com>
+cc: ceph-devel@vger.kernel.org, zheng.z.yan@intel.com,
+        linux-cachefs@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCHv4 0/5] ceph: persistent caching with fscache
+In-Reply-To: <cover.1375999914.git.milosz@adfin.com>
+Message-ID: <alpine.DEB.2.00.1308212203320.1479@cobra.newdream.net>
+References: <cover.1375999914.git.milosz@adfin.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-20 at 07:28 -0700, Casey Schaufler wrote:
+Hi Milosz,
+
+I've pulled this into the ceph testing branch to make sure it holds up 
+in qa.
+
+David, are the fscache patches here ready for the next merge window?  Do 
+you have a preference for whose tree they go through?
+
+Thanks!
+sage
+
+
+On Wed, 21 Aug 2013, Milosz Tanski wrote:
+
+> This an updated version of the fscache support for the Ceph filesystem. What's
+> changed since the last patchset:
 > 
-> I do use and enjoy all of these implementations! Thank you
-> for the fine implementations. In the end, if you're maintaining
-> the code it's your call. I question change that does not have
-> an obvious purpose because statistically every 10th change has
-> a bug. 
-
-Sure, feel free to add more.
-
-And please reject all new code >=10 changes in the future too... I give
-up, you win. :-)
-
+> 1. Sparater the readpages refactor into it's own patches. These were already
+>    accepted into the testing branch.
+> 
+> 2. Tracked down the BUG in readahead cleanup code. We were returning with pages
+>    marked as private_2 from readpages(). I added a simple convenience function
+>    to the fscache netfs interface for cleaning up the page list at the end of
+>    asop readpages(). I know other filesystems (NFS) have ran into that since
+>    I've seen a few similar traces in Google search and the cachefs mailig list.
+>    The second patch new make Ceph use this interface.
+> 
+> I've been running this code (minus the BUG fix) on clients for a couple weeks
+> with moderate 24/7 use without issues. At this point in time I feel like it's
+> solid enough to go into the ceph kclient.
+> 
+> Please pull the code from my repository:
+> https://bitbucket.org/adfin/linux-fs.git branch: wip-ceph-fscache
+> 
+> The first two patches I included were not written by me but were written by 
+> Hongyi Jia. He implemented the cookie re-validation scheme into fscache core.
+> 
+> Finally, I CCed a couple other mailing lists (fsdevel, nfs) because the new
+> fscache_readpages_cancel() should be used by other filesystems to avoid the
+> same problem.
+> 
+> 
+> Hongyi Jia (2):
+>   new cachefiles interface to check cache consistency
+>   new fscache interface to check cache consistency
+> 
+> Milosz Tanski (3):
+>   ceph: use fscache as a local presisent cache
+>   fscache: netfs function for cleanup post readpages
+>   ceph: clean PgPrivate2 on returning from readpages
+> 
+>  fs/cachefiles/interface.c     |  19 +++
+>  fs/cachefiles/internal.h      |   1 +
+>  fs/cachefiles/xattr.c         |  39 ++++++
+>  fs/ceph/Kconfig               |   9 ++
+>  fs/ceph/Makefile              |   2 +
+>  fs/ceph/addr.c                |  39 +++++-
+>  fs/ceph/cache.c               | 311 ++++++++++++++++++++++++++++++++++++++++++
+>  fs/ceph/cache.h               | 130 ++++++++++++++++++
+>  fs/ceph/caps.c                |  19 ++-
+>  fs/ceph/file.c                |  17 +++
+>  fs/ceph/inode.c               |  66 ++++++++-
+>  fs/ceph/super.c               |  47 ++++++-
+>  fs/ceph/super.h               |  17 +++
+>  fs/fscache/cookie.c           |  22 +++
+>  fs/fscache/page.c             |  16 +++
+>  include/linux/fscache-cache.h |   4 +
+>  include/linux/fscache.h       |  39 ++++++
+>  17 files changed, 785 insertions(+), 12 deletions(-)
+>  create mode 100644 fs/ceph/cache.c
+>  create mode 100644 fs/ceph/cache.h
+> 
+> -- 
+> 1.8.1.2
+> 
+> 
