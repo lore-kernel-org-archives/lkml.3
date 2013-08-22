@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab3HVUK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 16:10:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194Ab3HVUK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 16:10:56 -0400
-Date: Thu, 22 Aug 2013 16:10:53 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>, dm-devel@redhat.com, agk@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] dm ioctl: allow change device target type to error
-Message-ID: <20130822201052.GA22556@redhat.com>
-References: <5214CC25.1070307@oracle.com>
- <alpine.LRH.2.02.1308211041180.10797@file01.intranet.prod.int.rdu2.redhat.com>
- <20130821150547.GA10987@redhat.com>
- <52157A08.7080701@oracle.com>
+	id S1754350Ab3HVULD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 16:11:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35293 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263Ab3HVUK7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 16:10:59 -0400
+Message-ID: <5216704F.60007@wwwdotorg.org>
+Date: Thu, 22 Aug 2013 14:10:55 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52157A08.7080701@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christian Ruppert <christian.ruppert@abilis.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/4] pinmux: Add TB10x pinmux driver
+References: <20130618092516.GC18663@ab42.lan> <1371547751-13873-2-git-send-email-christian.ruppert@abilis.com> <CACRpkdZvcF3agP=hK6J6hZn-Sx2Mw=P4dR2Mwzo+NoLxtMkbQg@mail.gmail.com> <20130805115118.GF20936@ab42.lan> <CACRpkdaXqHHF5oDsWSCyhzUOurrxfLhS40=csGJFT8fK4WkA4A@mail.gmail.com> <20130821155751.GB3046@ab42.lan>
+In-Reply-To: <20130821155751.GB3046@ab42.lan>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21 2013 at 10:40pm -0400,
-Joe Jin <joe.jin@oracle.com> wrote:
-
-> On 08/21/13 23:06, Mike Snitzer wrote:
-> > On Wed, Aug 21 2013 at 10:48am -0400,
-> > Mikulas Patocka <mpatocka@redhat.com> wrote:
-> > 
-> >>
-> >>
-> >> On Wed, 21 Aug 2013, Joe Jin wrote:
-> >>
-> >>> commit a5664da "dm ioctl: make bio or request based device type immutable"
-> >>> prevented "dmsetup wape_table" change the target type to "error".
-> >>
-> >> That commit a5664da is there for a reason (it is not possible to change 
-> >> bio-based device to request-based and vice versa) and I don't really see 
-> >> how this patch is supposed to work.
-> >>
-> >> If there are bios that are in flight and that already passed through 
-> >> blk_queue_bio, and you change the device from request-based to bio-based, 
-> >> what are you going to do with them? - The patch doesn't do anything about 
-> >> it.
-> >>
-> >> A better approach would be to create a new request-based target "error-rq" 
-> >> and change the multipath target to "error-rq" target. That way, you don't 
-> >> have to change device type from request based to bio based.
-> > 
-> > My thoughts _exactly_.  This patch is very confused.
-> > 
-> > Joe, what are you looking to be able to do?  Switch a dm-multipath
-> > device to error?  Or allowing switching a target that has
-> > DM_TARGET_IMMUTABLE flag set to be switched to error target?
-> > 
-> > The latter restriction was introduced with commit 36a0456fb ("dm table:
-> > add immutable feature").
+On 08/21/2013 09:57 AM, Christian Ruppert wrote:
+> On Wed, Aug 14, 2013 at 06:53:56PM +0200, Linus Walleij wrote:
+>> On Mon, Aug 5, 2013 at 1:51 PM, Christian Ruppert
+>> <christian.ruppert@abilis.com> wrote:
+>>> [Me]
+>>>> I don't see any of the port concept creeping into the device tree
+>>>> in this version and that is how I think it should be kept:
+>>>> the "port" particulars is a thing for the driver and not the
+>>>> device tree.
+...
+>>> In the driver under discussion, pin groups are defined for every
+>>> "interface" to make sure that interfaces can be requested in an
+>>> orthogonal way by different modules and modules don't have to be "aware"
+>>> of which interfaces are grouped into which port (and which other modules
+>>> request which other interfaces). A request either succeeds or fails.
+>>> Resource management (which interfaces can be mapped simultaneously) is
+>>> done inside the pinctrl driver.
+>>
+>> OK
 > 
-> Hi Mike,
+> This actually looks 100% coherent with Documentation/pinctrl.txt. But
+> then I don't understand Stephen's request to introduce the concept of
+> "ports" in the device tree. IMHO ports are a hardware limitation which
+> should be managed inside the pinctrl driver and if possible not leak
+> out of it. Also (as stated above), the concept of "ports" does not even
+> exist in the pinmux framework so why introduce it for DT?
 > 
-> So far dmsetup support wipe_table:
-> https://bugzilla.redhat.com/show_bug.cgi?id=742607
-> As description in the bug Doc Text, "This could be useful, for example, 
-> if a long-running process keeps a device open after it has finished using
-> it and you need to release the underlying devices before that process exits."
-> 
-> After apply the commit, wipe_table no long works.
+> I might have thoroughly misunderstood you here, Stephen. Please be
+> patient with me and explain once more.
 
-Well, it never _really_ worked even before that commit because it was
-switching from request-based to bio-based.  Some queued requests
-could've easily slipped through the cracks.
-
-But I now understand what it is you want to be able to do.
+I don't think I asked for ports to be represented in DT. Do you have
+more context?
