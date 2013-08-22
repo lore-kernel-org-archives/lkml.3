@@ -1,70 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab3HVFLx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 01:11:53 -0400
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:42801 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714Ab3HVFLv convert rfc822-to-8bit (ORCPT
+	id S1753513Ab3HVFMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 01:12:12 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:44621 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588Ab3HVFKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 01:11:51 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Julius Werner <jwerner@chromium.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Benson Leung <bleung@chromium.org>, Felipe Balbi <balbi@ti.com>,
-        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>
-Subject: RE: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support for
- platform xHCs
-Thread-Topic: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support
- for platform xHCs
-Thread-Index: AQHOnfwYI9Np33Plqkq7vUNbfD4u75mgdUEAgAAzMICAADKpAIAAPKeA//+VVhA=
-Date: Thu, 22 Aug 2013 05:11:49 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458DEC6BC@US01WEMBX2.internal.synopsys.com>
-References: <1377040909-18428-1-git-send-email-jwerner@chromium.org>
-	<20130821184042.GC3577@xanatos>
-	<CAODwPW8tCFaykJnatyweJ96UzntRVNmo3WU1UYXw9nwp2bq_Ow@mail.gmail.com>
-	<20130822004514.GB19747@xanatos>
- <CAODwPW99gLBtNQD=UyPq9DqY0TtNubR_7e+FymkfO5u2+et++Q@mail.gmail.com>
-In-Reply-To: <CAODwPW99gLBtNQD=UyPq9DqY0TtNubR_7e+FymkfO5u2+et++Q@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 22 Aug 2013 01:10:25 -0400
+From: "Nicholas A. Bellinger" <nab@daterainc.com>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Martin Petersen <martin.petersen@oracle.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Roland Dreier <roland@purestorage.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Nicholas Bellinger <nab@daterainc.com>
+Subject: [PATCH-v2 09/12] target: Add MAXIMUM COMPARE AND WRITE LENGTH in Block Limits VPD
+Date: Thu, 22 Aug 2013 04:54:07 +0000
+Message-Id: <1377147250-10125-10-git-send-email-nab@daterainc.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1377147250-10125-1-git-send-email-nab@daterainc.com>
+References: <1377147250-10125-1-git-send-email-nab@daterainc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Julius Werner
-> Sent: Wednesday, August 21, 2013 9:22 PM
-> 
-> > You need the USB 2.0 spec errata from 2011-11 that describes the changes
-> > made for BESL as well.  It's in the USB2-LPM-Errata-final.pdf and
-> > USB2_LinkPowerMangement_ECN[final].pdf files in this zip file:
-> >
-> > http://www.usb.org/developers/docs/usb_20_070113.zip
-> >
-> > I agree though, it's all a confusing mess for documentation on USB 2.0
-> > Link PM.
-> 
-> Thanks, I hadn't found that first one yet. Do you also have a link for
-> the updated XHCI specification or a separate erratum document
-> describing the PORTHLPMC register referenced in the BESL patches (they
-> don't exist on DWC3, but I'm still curious)?
+From: Nicholas Bellinger <nab@daterainc.com>
 
-Just to set the record straight :)
+This patch adds the MAXIMUM COMPARE AND WRITE LENGTH bit, currently
+hardcoded to a single logical block (NoLB=1) within the Block Limits
+VPD in spc_emulate_evpd_b0().
 
-The PORTHLPMC registers do exist on DWC3, starting with the 1.90a version
-of the core or thereabouts. They only supported the HIRD flavor of LPM,
-though. Only fairly recently has support for BESL been added, around
-version 2.41a or so.
+Also add emulate_caw device attribute in configfs (enabled by default)
+to allow the exposure of this bit to be disabled, if necessary.
 
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Martin Petersen <martin.petersen@oracle.com>
+Cc: Chris Mason <chris.mason@fusionio.com>
+Cc: James Bottomley <JBottomley@Parallels.com>
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
+---
+ drivers/target/target_core_configfs.c |    4 ++++
+ drivers/target/target_core_device.c   |   14 ++++++++++++++
+ drivers/target/target_core_internal.h |    1 +
+ drivers/target/target_core_spc.c      |    5 +++++
+ include/target/target_core_base.h     |    3 +++
+ 5 files changed, 27 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
+index f67a9af..24517d4 100644
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -636,6 +636,9 @@ SE_DEV_ATTR(emulate_tpu, S_IRUGO | S_IWUSR);
+ DEF_DEV_ATTRIB(emulate_tpws);
+ SE_DEV_ATTR(emulate_tpws, S_IRUGO | S_IWUSR);
+ 
++DEF_DEV_ATTRIB(emulate_caw);
++SE_DEV_ATTR(emulate_caw, S_IRUGO | S_IWUSR);
++
+ DEF_DEV_ATTRIB(enforce_pr_isids);
+ SE_DEV_ATTR(enforce_pr_isids, S_IRUGO | S_IWUSR);
+ 
+@@ -693,6 +696,7 @@ static struct configfs_attribute *target_core_dev_attrib_attrs[] = {
+ 	&target_core_dev_attrib_emulate_tas.attr,
+ 	&target_core_dev_attrib_emulate_tpu.attr,
+ 	&target_core_dev_attrib_emulate_tpws.attr,
++	&target_core_dev_attrib_emulate_caw.attr,
+ 	&target_core_dev_attrib_enforce_pr_isids.attr,
+ 	&target_core_dev_attrib_is_nonrot.attr,
+ 	&target_core_dev_attrib_emulate_rest_reord.attr,
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index 8f4142f..0b5f868 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -890,6 +890,19 @@ int se_dev_set_emulate_tpws(struct se_device *dev, int flag)
+ 	return 0;
+ }
+ 
++int se_dev_set_emulate_caw(struct se_device *dev, int flag)
++{
++	if (flag != 0 && flag != 1) {
++		pr_err("Illegal value %d\n", flag);
++		return -EINVAL;
++	}
++	dev->dev_attrib.emulate_caw = flag;
++	pr_debug("dev[%p]: SE Device CompareAndWrite (AtomicTestandSet): %d\n",
++		 dev, flag);
++
++	return 0;
++}
++
+ int se_dev_set_enforce_pr_isids(struct se_device *dev, int flag)
+ {
+ 	if ((flag != 0) && (flag != 1)) {
+@@ -1423,6 +1436,7 @@ struct se_device *target_alloc_device(struct se_hba *hba, const char *name)
+ 	dev->dev_attrib.emulate_tas = DA_EMULATE_TAS;
+ 	dev->dev_attrib.emulate_tpu = DA_EMULATE_TPU;
+ 	dev->dev_attrib.emulate_tpws = DA_EMULATE_TPWS;
++	dev->dev_attrib.emulate_caw = DA_EMULATE_CAW;
+ 	dev->dev_attrib.enforce_pr_isids = DA_ENFORCE_PR_ISIDS;
+ 	dev->dev_attrib.is_nonrot = DA_IS_NONROT;
+ 	dev->dev_attrib.emulate_rest_reord = DA_EMULATE_REST_REORD;
+diff --git a/drivers/target/target_core_internal.h b/drivers/target/target_core_internal.h
+index 18d49df..805ceb4 100644
+--- a/drivers/target/target_core_internal.h
++++ b/drivers/target/target_core_internal.h
+@@ -33,6 +33,7 @@ int	se_dev_set_emulate_ua_intlck_ctrl(struct se_device *, int);
+ int	se_dev_set_emulate_tas(struct se_device *, int);
+ int	se_dev_set_emulate_tpu(struct se_device *, int);
+ int	se_dev_set_emulate_tpws(struct se_device *, int);
++int	se_dev_set_emulate_caw(struct se_device *, int);
+ int	se_dev_set_enforce_pr_isids(struct se_device *, int);
+ int	se_dev_set_is_nonrot(struct se_device *, int);
+ int	se_dev_set_emulate_rest_reord(struct se_device *dev, int);
+diff --git a/drivers/target/target_core_spc.c b/drivers/target/target_core_spc.c
+index 4cb667d..ed7077a 100644
+--- a/drivers/target/target_core_spc.c
++++ b/drivers/target/target_core_spc.c
+@@ -457,6 +457,11 @@ spc_emulate_evpd_b0(struct se_cmd *cmd, unsigned char *buf)
+ 
+ 	/* Set WSNZ to 1 */
+ 	buf[4] = 0x01;
++	/*
++	 * Set MAXIMUM COMPARE AND WRITE LENGTH
++	 */
++	if (dev->dev_attrib.emulate_caw)
++		buf[5] = 0x01;
+ 
+ 	/*
+ 	 * Set OPTIMAL TRANSFER LENGTH GRANULARITY
+diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
+index eb439e7..53eea33 100644
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -97,6 +97,8 @@
+  * block/blk-lib.c:blkdev_issue_discard()
+  */
+ #define DA_EMULATE_TPWS				0
++/* Emulation for CompareAndWrite (AtomicTestandSet) by default */
++#define DA_EMULATE_CAW				1
+ /* No Emulation for PSCSI by default */
+ #define DA_EMULATE_ALUA				0
+ /* Enforce SCSI Initiator Port TransportID with 'ISID' for PR */
+@@ -602,6 +604,7 @@ struct se_dev_attrib {
+ 	int		emulate_tas;
+ 	int		emulate_tpu;
+ 	int		emulate_tpws;
++	int		emulate_caw;
+ 	int		enforce_pr_isids;
+ 	int		is_nonrot;
+ 	int		emulate_rest_reord;
 -- 
-Paul
+1.7.2.5
 
