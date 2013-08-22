@@ -1,88 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab3HVSFm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 14:05:42 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:33530 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753932Ab3HVSFl (ORCPT
+	id S1754075Ab3HVSGP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 14:06:15 -0400
+Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:37234 "EHLO
+	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753932Ab3HVSGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 14:05:41 -0400
+	Thu, 22 Aug 2013 14:06:14 -0400
+X-Greylist: delayed 855 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 14:06:14 EDT
+Date: Thu, 22 Aug 2013 17:51:58 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/16] slab: remove nodeid in struct slab
+In-Reply-To: <1377161065-30552-5-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <00000140a7277e81-d259fd75-0dcb-4bef-9e32-d615800201a6-000000@email.amazonses.com>
+References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com> <1377161065-30552-5-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130822171001.GA20321@redhat.com>
-References: <20130822170939.GA20296@redhat.com> <20130822171001.GA20321@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 22 Aug 2013 11:05:21 -0700
-Message-ID: <CALCETrUjZYBsZKnkJXbHF40Y3qcXy0YxT0jNfrh5ksDg=kn4Ug@mail.gmail.com>
-Subject: Re: [PATCH 2/3] pidns: kill the unnecessary CLONE_NEWPID in copy_process()
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Brad Spengler <spender@grsecurity.net>,
-        Colin Walters <walters@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.08.22-54.240.9.46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 10:10 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> 8382fcac "pidns: Outlaw thread creation after unshare(CLONE_NEWPID)"
-> nacks CLONE_NEWPID if the forking process unshared pid_ns. This is
-> correct but unnecessary, copy_pid_ns() does the same check.
->
-> Test-case (needs root or CLONE_NEWUSER should be added):
->
->         static int child(void *arg)
->         {
->                 return 0;
->         }
->
->         static char stack[16 * 1024];
->
->         int main(void)
->         {
->                 pid_t pid;
->
->                 assert(unshare(CLONE_NEWPID) == 0);
->
->                 pid = clone(child, stack + sizeof(stack) / 2,
->                                 CLONE_NEWPID | SIGCHLD, NULL);
->                 assert(pid < 0 && errno == EINVAL);
->
->                 return 0;
->         }
->
-> clone(CLONE_NEWPID) correctly fails with or without this change.
+On Thu, 22 Aug 2013, Joonsoo Kim wrote:
 
-Acked-by: Andy Lutomirski <luto@amacapital.net>
-
+> @@ -1099,8 +1098,7 @@ static void drain_alien_cache(struct kmem_cache *cachep,
 >
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/fork.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 86f5376..8d56338 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -1176,7 +1176,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->          * If the new process will be in a different pid namespace don't
->          * allow the creation of threads, or share the signal handlers.
->          */
-> -       if ((clone_flags & (CLONE_SIGHAND | CLONE_NEWPID)) &&
-> +       if ((clone_flags & CLONE_SIGHAND) &&
->             (task_active_pid_ns(current) != current->nsproxy->pid_ns))
->                 return ERR_PTR(-EINVAL);
->
-> --
-> 1.5.5.1
->
+>  static inline int cache_free_alien(struct kmem_cache *cachep, void *objp)
+>  {
+> -	struct slab *slabp = virt_to_slab(objp);
+> -	int nodeid = slabp->nodeid;
+> +	int nodeid = page_to_nid(virt_to_page(objp));
+>  	struct kmem_cache_node *n;
+>  	struct array_cache *alien = NULL;
+>  	int node;
 
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+virt_to_page is a relatively expensive operation. How does this affect
+performance?
