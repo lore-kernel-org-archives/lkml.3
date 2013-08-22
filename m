@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab3HVI7C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:59:02 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:48011 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab3HVI67 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 04:58:59 -0400
+	id S1752599Ab3HVJBQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 05:01:16 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:55013 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752247Ab3HVJBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 05:01:15 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Axel Lin <axel.lin@ingics.com>
+Subject: Re: [PATCH] pinctrl: rockchip: Simplify for loop iteration
+Date: Thu, 22 Aug 2013 11:01:09 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+References: <1377052130.20078.0.camel@phoenix>
+In-Reply-To: <1377052130.20078.0.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <20130819160425.088015040@infradead.org>
-References: <20130819160058.539049611@infradead.org> <20130819160425.088015040@infradead.org>
-From: Paul Turner <pjt@google.com>
-Date: Thu, 22 Aug 2013 01:58:28 -0700
-Message-ID: <CAPM31R+2pH9-g6O5EKi1FfgiRjKxAMiN6UW3VO=FpUq463Ji3Q@mail.gmail.com>
-Subject: Re: [PATCH 01/10] sched: Remove one division operation in find_busiest_queue()
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>, Lei Wen <leiwen@marvell.com>,
-        Joonsoo Kim <js1304@gmail.com>, Rik van Riel <riel@surriel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308221101.10749.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 9:00 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> Remove one division operation in find_busiest_queue() by using
-> crosswise multiplication:
->
->         wl_i / power_i > wl_j / power_j :=
->         wl_i * power_j > wl_j * power_i
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> [peterz: expanded changelog]
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/1375778203-31343-2-git-send-email-iamjoonsoo.kim@lge.com
+Am Mittwoch, 21. August 2013, 04:28:50 schrieb Axel Lin:
+> Just return once a match found makes the code simpler and shorter.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+
+as I'm a bit late for an Ack it seems, I can only offer a thanks for making 
+this nicer :-)
+
+
+Heiko
+
+
 > ---
->  kernel/sched/fair.c |    9 ++++-----
->  1 file changed, 4 insertions(+), 5 deletions(-)
->
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5018,7 +5018,7 @@ static struct rq *find_busiest_queue(str
->                                      struct sched_group *group)
+>  drivers/pinctrl/pinctrl-rockchip.c | 21 ++++++---------------
+>  1 file changed, 6 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-rockchip.c
+> b/drivers/pinctrl/pinctrl-rockchip.c index c22457d..64ad0c0 100644
+> --- a/drivers/pinctrl/pinctrl-rockchip.c
+> +++ b/drivers/pinctrl/pinctrl-rockchip.c
+> @@ -167,18 +167,14 @@ static const inline struct rockchip_pin_group
+> *pinctrl_name_to_group( const struct rockchip_pinctrl *info,
+>  					const char *name)
 >  {
->         struct rq *busiest = NULL, *rq;
-> -       unsigned long max_load = 0;
-> +       unsigned long busiest_load = 0, busiest_power = SCHED_POWER_SCALE;
-
-Initializing this to SCHED_POWER_SCALE assigns a meaning that isn't
-really there.  How about just 1?
-
->         int i;
->
->         for_each_cpu(i, sched_group_cpus(group)) {
-> @@ -5049,10 +5049,9 @@ static struct rq *find_busiest_queue(str
->                  * the load can be moved away from the cpu that is potentially
->                  * running at a lower capacity.
->                  */
-> -               wl = (wl * SCHED_POWER_SCALE) / power;
+> -	const struct rockchip_pin_group *grp = NULL;
+>  	int i;
+> 
+>  	for (i = 0; i < info->ngroups; i++) {
+> -		if (strcmp(info->groups[i].name, name))
+> -			continue;
 > -
-> -               if (wl > max_load) {
-> -                       max_load = wl;
+> -		grp = &info->groups[i];
+> -		break;
+> +		if (!strcmp(info->groups[i].name, name))
+> +			return &info->groups[i];
+>  	}
+> 
+> -	return grp;
+> +	return NULL;
+>  }
+> 
+>  /*
+> @@ -204,17 +200,12 @@ static struct rockchip_pin_bank *bank_num_to_bank(
+>  	struct rockchip_pin_bank *b = info->ctrl->pin_banks;
+>  	int i;
+> 
+> -	for (i = 0; i < info->ctrl->nr_banks; i++) {
+> +	for (i = 0; i < info->ctrl->nr_banks; i++, b++) {
+>  		if (b->bank_num == num)
+> -			break;
+> -
+> -		b++;
+> +			return b;
+>  	}
+> 
+> -	if (b->bank_num != num)
+> -		return ERR_PTR(-EINVAL);
+> -
+> -	return b;
+> +	return ERR_PTR(-EINVAL);
+>  }
+> 
+>  /*
 
-A comment wouldn't hurt here.
-
-> +               if (wl * busiest_power > busiest_load * power) {
-> +                       busiest_load = wl;
-> +                       busiest_power = power;
->                         busiest = rq;
->                 }
->         }
->
->
