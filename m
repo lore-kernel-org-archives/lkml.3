@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab3HVUyS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 16:54:18 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:63844 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab3HVUyQ (ORCPT
+	id S1754368Ab3HVUz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 16:55:28 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:62803 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753054Ab3HVUzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 16:54:16 -0400
+	Thu, 22 Aug 2013 16:55:25 -0400
+Message-ID: <52167AB8.4060206@gmail.com>
+Date: Thu, 22 Aug 2013 13:55:20 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXXxRksU-YTY8WFJzeET9cWsPKo_=6e9RD=F+TS7xVMyQ@mail.gmail.com>
-References: <b121a1082bf3365fda22a131782147c169c969f5.1377112282.git.luto@amacapital.net>
-	<CA+55aFzXNU-eJ7KeZyv5YYKKtm8iorG-o3QtD7NXx0GTzuH+Bw@mail.gmail.com>
-	<20130822185317.GI31117@1wt.eu>
-	<CALCETrWYeNXhEDY7S9XLD6L0wOZu8iPVO6LN3A_797hLHfBzAw@mail.gmail.com>
-	<CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com>
-	<CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com>
-	<20130822201530.GL31117@1wt.eu>
-	<CALCETrXX--FWeoDMOTYNDOWkTKcWk=LcGs2oY7CQ9GU63CMLRg@mail.gmail.com>
-	<CA+55aFzR71kJOOVzHKKaXW2Ph7wb6ivtVHPeR49PPcqpiCfPsA@mail.gmail.com>
-	<CALCETrXXxRksU-YTY8WFJzeET9cWsPKo_=6e9RD=F+TS7xVMyQ@mail.gmail.com>
-Date: Thu, 22 Aug 2013 13:54:15 -0700
-X-Google-Sender-Auth: 90VJmWONhFCnN9JmcquNbldJn3g
-Message-ID: <CA+55aFxqdV6CQ8UWkB1Z7HUB9GmRH4Jpw_UmmFqDqG01_DmsWw@mail.gmail.com>
-Subject: Re: [PATCH v2] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Willy Tarreau <w@1wt.eu>, "security@kernel.org" <security@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>
-Content-Type: text/plain; charset=UTF-8
+To: Rob Landley <rob@landley.net>, Richard Weinberger <richard@nod.at>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, Sam Ravnborg <sam@ravnborg.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
+Subject: Re: [RFC] Get rid of SUBARCH
+References: <1377073172-3662-1-git-send-email-richard@nod.at>        <CAMuHMdWk-EPTNmPB1O1+F7YVQLjhQsFJznYwA3t6UCGUU1T9PQ@mail.gmail.com>        <20130821195157.GA18191@merkur.ravnborg.org>        <CAMuHMdWqwQxxky7UDnh-oxN13C-sxfnxKVBuBz1GU_RtJvbf3A@mail.gmail.com> <1377204069.2737.108@driftwood>
+In-Reply-To: <1377204069.2737.108@driftwood>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 1:48 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+On 08/22/2013 01:41 PM, Rob Landley wrote:
+> On 08/22/2013 07:58:26 AM, Geert Uytterhoeven wrote:
+>> On Wed, Aug 21, 2013 at 9:51 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+>> >> > The series touches also m68k, sh, mips and unicore32.
+>> >> > These architectures magically select a cross compiler if ARCH !=
+>> SUBARCH.
+>> >> > Do really need that behavior?
+>> >>
+>> >> This does remove functionality.
+>> >> It allows to build a kernel using e.g. "make ARCH=m68k".
+>> >>
+>> >> Perhaps this can be moved to generic code? Most (not all!)
+>> cross-toolchains
+>> >> are called $ARCH-{unknown-,}linux{,-gnu}.
+>> >> Exceptions are e.g. am33_2.0-linux and bfin-uclinux.
+>> >
+>> > Today you can specify CROSS_COMPILE in Kconfig.
+>> > With this we should be able to remove these hacks.
+>>
+>> The correct CROSS_COMPILE value depends on the host environment, not
+>> on the target configuration.
 >
-> Sure.  But aren't they always last?
+> Actually it depends on _both_.
+>
 
-What do you mean? I'd say that the /proc lookup is always *innermost*.
-Which means that it certainly cannot bail out, since there are many
-levels of nesting outside of it.
+I think the important issue is not the exact dependencies of the value 
+of CROSS_COMPILE, but rather that it varies enough that automatically 
+choosing a value based on SUBARCH often gives the wrong result.
 
-> With the current code structure, trying to enforce some kind of
-> security restriction in the middle of lookup seems really unpleasant.
+Removing SUBARCH and setting CROSS_COMPILE either from the make command 
+line (or environment) or the config file, is a good idea because it 
+simplifies the build system, makes things clearer, and yields more 
+predictable results.
 
-If it's conditional (ie "linkat behaves differently from openat"), it
-certainly means that we'd have to pass in that info in annoying ways.
+David Daney
 
-But having unconditional rules like "you can only follow the proc link
-if you have CAP_SEARCH _or_ you match the file->f_cred" doesn't sound
-too painful.
-
-              Linus
