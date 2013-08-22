@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab3HVUWR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 16:22:17 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:45796 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab3HVUWO (ORCPT
+	id S1754496Ab3HVUWj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 16:22:39 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:54356 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753471Ab3HVUWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 16:22:14 -0400
-Date: Thu, 22 Aug 2013 21:22:12 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: platform-driver-x86@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT] x86 platform driver fixes for 3.11
-Message-ID: <20130822202212.GA8602@srcf.ucam.org>
+	Thu, 22 Aug 2013 16:22:38 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20130822201530.GL31117@1wt.eu>
+References: <b121a1082bf3365fda22a131782147c169c969f5.1377112282.git.luto@amacapital.net>
+ <CA+55aFzXNU-eJ7KeZyv5YYKKtm8iorG-o3QtD7NXx0GTzuH+Bw@mail.gmail.com>
+ <20130822185317.GI31117@1wt.eu> <CALCETrWYeNXhEDY7S9XLD6L0wOZu8iPVO6LN3A_797hLHfBzAw@mail.gmail.com>
+ <CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com>
+ <CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com> <20130822201530.GL31117@1wt.eu>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 22 Aug 2013 13:22:17 -0700
+Message-ID: <CALCETrXX--FWeoDMOTYNDOWkTKcWk=LcGs2oY7CQ9GU63CMLRg@mail.gmail.com>
+Subject: Re: [PATCH v2] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
+To: Willy Tarreau <w@1wt.eu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "security@kernel.org" <security@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 22, 2013 at 1:15 PM, Willy Tarreau <w@1wt.eu> wrote:
+> On Thu, Aug 22, 2013 at 01:10:43PM -0700, Andy Lutomirski wrote:
+>> What's the point of nd_jump_link anyway?  The only way I can think of
+>> for a magic symlink in /proc to point to another symlink is to open a
+>> symlink with O_PATH | O_NOFOLLOW.  Actually trying to use the
+>> resulting link in /proc results in -ELOOP.  (Even just trying to open
+>> a normal symlink with O_NOFOLLOW and without O_PATH results in
+>> -ELOOP.)
+>
+> It's not only that, it also supports sockets and pipes that you can access
+> via /proc/pid/fd and not via a real symlink which would try to open eg
+> "pipe:[23456]" instead of the real file. So you can't get rid of it
+> without breaking existing apps (starting with your shell for which
+> /dev/stdin is a link to /proc/self/fd/0 for example).
+>
 
---ew6BAiZeqk4r7MaW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Let me rephrase that: why do we allow these types of lookup to recurse
+like normal symlinks?  I'm proposing that these links immediately
+terminate lookup and return back to user_path_at_empty, which can, in
+turn, do an extra check to see if the inode that was found is one of
+these magic inodes (or checks to see if nd_jump_link was called).
+user_path_at_empty could then enforce LOOKUP_EMPTY-list restrictions
+(or the caller could).
 
-Let's try this again. Simple reversion of a patch that's still breaking=20
-some systems (I'll try to figure out what the right fix is for 3.12) and=20
-a couple of trivial fixes for sony-laptop.
-
-The following changes since commit 50e37ccea06ca8846ceb60dbfbe056012c60d71b:
-
-  Merge branch 'for-3.11-fixes' of git://git.kernel.org/pub/scm/linux/kerne=
-l/git/tj/cgroup (2013-08-18 08:51:28 -0700)
-
-are available in the git repository at:
-
-
-  git://cavan.codon.org.uk/platform-drivers-x86.git linux-next
-
-for you to fetch changes up to 41c8bd1c75ef8e8566eca6b1c7bc273bc282f495:
-
-  Revert "hp-wmi: Enable hotkeys on some systems" (2013-08-18 13:23:31 -040=
-0)
-
-----------------------------------------------------------------
-Daniel Serpell (1):
-      sony-laptop: Fix reporting of gfx_switch_status
-
-Matthew Garrett (1):
-      Revert "hp-wmi: Enable hotkeys on some systems"
-
-Wei Yongjun (1):
-      sony-laptop: return a negative error code in sonypi_compat_init()
-
- drivers/platform/x86/hp-wmi.c      | 16 ----------------
- drivers/platform/x86/sony-laptop.c |  8 ++++++--
- 2 files changed, 6 insertions(+), 18 deletions(-)
-
---=20
-Matthew Garrett | mjg59@srcf.ucam.org
-
---ew6BAiZeqk4r7MaW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlIWcvQACgkQ7Hkv8l1YiTuJQQCePjNSjM6GJAGayAY/yjhPypeo
-B7AAn1m/svD4P0y+j2yg1uuk8n+yhFwV
-=Ibb/
------END PGP SIGNATURE-----
-
---ew6BAiZeqk4r7MaW--
+--Andy
