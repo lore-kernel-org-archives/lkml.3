@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab3HVFMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 01:12:42 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:58184 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753560Ab3HVFKU (ORCPT
+	id S1753821Ab3HVFNL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 01:13:11 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:56995 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537Ab3HVFKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 01:10:20 -0400
+	Thu, 22 Aug 2013 01:10:14 -0400
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: lkml <linux-kernel@vger.kernel.org>,
@@ -18,9 +18,9 @@ Cc: lkml <linux-kernel@vger.kernel.org>,
         James Bottomley <JBottomley@Parallels.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Nicholas Bellinger <nab@daterainc.com>
-Subject: [PATCH-v2 07/12] target: Add transport_reset_sgl_orig() for COMPARE_AND_WRITE
-Date: Thu, 22 Aug 2013 04:54:05 +0000
-Message-Id: <1377147250-10125-8-git-send-email-nab@daterainc.com>
+Subject: [PATCH-v2 05/12] target: Convert se_cmd->t_bidi_data_sg checks to use SCF_BIDI
+Date: Thu, 22 Aug 2013 04:54:03 +0000
+Message-Id: <1377147250-10125-6-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1377147250-10125-1-git-send-email-nab@daterainc.com>
 References: <1377147250-10125-1-git-send-email-nab@daterainc.com>
@@ -30,13 +30,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@daterainc.com>
 
-After COMPARE_AND_WRITE completes it's comparision, the WRITE
-payload SGLs head expect to be updated to point from the verify
-instance of user data, to the write instance of user data.
-
-So for this special case, add transport_reset_sgl_orig() usage
-within transport_free_pages() and add se_cmd->t_data_[sg,nents]_orig
-members to save the original assignments.
+Stop keying off se_cmd->t_bidi_data_sg within transport_complete_qf()
++ target_complete_ok_work(), and just use SCF_BIDI instead.
 
 Cc: Christoph Hellwig <hch@lst.de>
 Cc: Hannes Reinecke <hare@suse.de>
@@ -46,59 +41,31 @@ Cc: James Bottomley <JBottomley@Parallels.com>
 Cc: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
 ---
- drivers/target/target_core_transport.c |   21 ++++++++++++++++++++-
- include/target/target_core_base.h      |    2 ++
- 2 files changed, 22 insertions(+), 1 deletions(-)
+ drivers/target/target_core_transport.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 967dac7..5236a80 100644
+index 3d3dc97..781859e 100644
 --- a/drivers/target/target_core_transport.c
 +++ b/drivers/target/target_core_transport.c
-@@ -1992,10 +1992,29 @@ static inline void transport_free_sgl(struct scatterlist *sgl, int nents)
- 	kfree(sgl);
- }
- 
-+static inline void transport_reset_sgl_orig(struct se_cmd *cmd)
-+{
-+	/*
-+	 * Check for saved t_data_sg that may be used for COMPARE_AND_WRITE
-+	 * emulation, and free + reset pointers if necessary..
-+	 */
-+	if (!cmd->t_data_sg_orig)
-+		return;
-+
-+	kfree(cmd->t_data_sg);
-+	cmd->t_data_sg = cmd->t_data_sg_orig;
-+	cmd->t_data_sg_orig = NULL;
-+	cmd->t_data_nents = cmd->t_data_nents_orig;
-+	cmd->t_data_nents_orig = 0;
-+}
-+
- static inline void transport_free_pages(struct se_cmd *cmd)
- {
--	if (cmd->se_cmd_flags & SCF_PASSTHROUGH_SG_TO_MEM_NOALLOC)
-+	if (cmd->se_cmd_flags & SCF_PASSTHROUGH_SG_TO_MEM_NOALLOC) {
-+		transport_reset_sgl_orig(cmd);
- 		return;
-+	}
-+	transport_reset_sgl_orig(cmd);
- 
- 	transport_free_sgl(cmd->t_data_sg, cmd->t_data_nents);
- 	cmd->t_data_sg = NULL;
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index 0c3f47f..eb439e7 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -478,7 +478,9 @@ struct se_cmd {
- 	struct work_struct	work;
- 
- 	struct scatterlist	*t_data_sg;
-+	struct scatterlist	*t_data_sg_orig;
- 	unsigned int		t_data_nents;
-+	unsigned int		t_data_nents_orig;
- 	void			*t_data_vmap;
- 	struct scatterlist	*t_bidi_data_sg;
- 	unsigned int		t_bidi_data_nents;
+@@ -1832,7 +1832,7 @@ static void transport_complete_qf(struct se_cmd *cmd)
+ 		ret = cmd->se_tfo->queue_data_in(cmd);
+ 		break;
+ 	case DMA_TO_DEVICE:
+-		if (cmd->t_bidi_data_sg) {
++		if (cmd->se_cmd_flags & SCF_BIDI) {
+ 			ret = cmd->se_tfo->queue_data_in(cmd);
+ 			if (ret < 0)
+ 				break;
+@@ -1947,7 +1947,7 @@ static void target_complete_ok_work(struct work_struct *work)
+ 		/*
+ 		 * Check if we need to send READ payload for BIDI-COMMAND
+ 		 */
+-		if (cmd->t_bidi_data_sg) {
++		if (cmd->se_cmd_flags & SCF_BIDI) {
+ 			spin_lock(&cmd->se_lun->lun_sep_lock);
+ 			if (cmd->se_lun->lun_sep) {
+ 				cmd->se_lun->lun_sep->sep_stats.tx_data_octets +=
 -- 
 1.7.2.5
 
