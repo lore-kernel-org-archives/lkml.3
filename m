@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab3HVSfl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 14:35:41 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:52879 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766Ab3HVSfj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 14:35:39 -0400
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <lenb@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: [RESEND/PATCH] acpi: video: remove unused code
-Date: Thu, 22 Aug 2013 13:31:11 -0500
-Message-Id: <1377196271-20427-1-git-send-email-felipe.contreras@gmail.com>
-X-Mailer: git-send-email 1.8.3.269.g65753d8
+	id S1754119Ab3HVSis (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 14:38:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50871 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753419Ab3HVSir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 14:38:47 -0400
+Date: Thu, 22 Aug 2013 20:32:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        Colin Walters <walters@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] fork: unify and tighten up
+	CLONE_NEWUSER/CLONE_NEWPID checks
+Message-ID: <20130822183250.GA23769@redhat.com>
+References: <20130822170939.GA20296@redhat.com> <20130822171004.GA20324@redhat.com> <CALCETrU9D59MqxPm2SNegPFH_+gpPfoQJkD2E2Q8zjJ94QhLDg@mail.gmail.com> <20130822181536.GA22995@redhat.com> <CALCETrW3gnXjUqvm-jNZq6k_qSnTN5=VNRCp+gNC+t2YtBBMYQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrW3gnXjUqvm-jNZq6k_qSnTN5=VNRCp+gNC+t2YtBBMYQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-_BCM_use_index and _BCL_use_index are never used and probably never will.
+On 08/22, Andy Lutomirski wrote:
+>
+> On Thu, Aug 22, 2013 at 11:15 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > Yes. Before this patch do_fork() did:
+> >
+> >         if (clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) {
+> >                 if (clone_flags & (CLONE_THREAD|CLONE_PARENT))
+> >                         return -EINVAL;
+> >         }
+> >
+> > however, let me repeat, CLONE_PARENT after unshare(CLONE_NEWPID) was
+> > allowed. With this patch CLONE_PARENT is nacked in both cases.
+>
+> Is this -stable-worthy?
 
-Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
----
- drivers/acpi/video.c | 12 ------------
- 1 file changed, 12 deletions(-)
+Honestly, I do not know. I do not want to abuse -stable, and I will
+sleep better if this patch won't go into the stable trees ;)
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index e1284b8..e6be27e 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -185,8 +185,6 @@ struct acpi_video_device_cap {
- struct acpi_video_brightness_flags {
- 	u8 _BCL_no_ac_battery_levels:1;	/* no AC/Battery levels in _BCL */
- 	u8 _BCL_reversed:1;		/* _BCL package is in a reversed order*/
--	u8 _BCL_use_index:1;		/* levels in _BCL are index values */
--	u8 _BCM_use_index:1;		/* input of _BCM is an index value */
- 	u8 _BQC_use_index:1;		/* _BQC returns an index value */
- };
- 
-@@ -806,16 +804,6 @@ acpi_video_init_brightness(struct acpi_video_device *device)
- 	br->count = count;
- 	device->brightness = br;
- 
--	/* Check the input/output of _BQC/_BCL/_BCM */
--	if ((max_level < 100) && (max_level <= (count - 2)))
--		br->flags._BCL_use_index = 1;
--
--	/*
--	 * _BCM is always consistent with _BCL,
--	 * at least for all the laptops we have ever seen.
--	 */
--	br->flags._BCM_use_index = br->flags._BCL_use_index;
--
- 	/* _BQC uses INDEX while _BCL uses VALUE in some laptops */
- 	br->curr = level = max_level;
- 
--- 
-1.8.3.269.g65753d8
+OTOH, I think that at least 1/3 is probably -stable material... Since
+I am going to send v2, I would not mind to add stable@vger.kernel.org
+if both you and Eric agree.
+
+Oleg.
 
