@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab3HVGvw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 02:51:52 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:61292 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543Ab3HVGvv (ORCPT
+	id S1753800Ab3HVGxF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 02:53:05 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:59190 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753579Ab3HVGxD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 02:51:51 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-f8-5215b504e8c6
-Date: Thu, 22 Aug 2013 15:51:56 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v2 06/20] mm, hugetlb: return a reserved page to a
- reserved pool if failed
-Message-ID: <20130822065156.GB13415@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1376040398-11212-7-git-send-email-iamjoonsoo.kim@lge.com>
- <87mwobgyii.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87mwobgyii.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 22 Aug 2013 02:53:03 -0400
+Date: Thu, 22 Aug 2013 08:53:13 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Darren Etheridge <darren.etheridge@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/8] drm/i2c: tda998x: prepare for video input
+ configuration
+Message-ID: <20130822085313.2e8b1ae6@armhf>
+In-Reply-To: <20130821223605.GA6617@n2100.arm.linux.org.uk>
+References: <20130821202646.47af66a5@armhf>
+	<20130821223605.GA6617@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 03:24:13PM +0530, Aneesh Kumar K.V wrote:
-> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
-> 
-> > If we fail with a reserved page, just calling put_page() is not sufficient,
-> > because put_page() invoke free_huge_page() at last step and it doesn't
-> > know whether a page comes from a reserved pool or not. So it doesn't do
-> > anything related to reserved count. This makes reserve count lower
-> > than how we need, because reserve count already decrease in
-> > dequeue_huge_page_vma(). This patch fix this situation.
-> 
-> You may want to document you are using PagePrivate for tracking
-> reservation and why it is ok to that.
+On Wed, 21 Aug 2013 23:36:05 +0100
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-Okay! I will do it in next spin.
+> > AFAIK, the TI boards have no "pin-swapped", nor has the Cubox (there is
+> > no need to set the bit CFG_GRA_SWAPRB of the register LCD_SPU_DMA_CTRL0
+> > of the Dove lcd for RGB or YUV formats).
+> > 
+> > Which board needs a special VIP configuration?  
+> 
+> If you run the NXP driver, and then run this driver, things get messed
+> up - which has already been covered months ago when this patch was first
+> brought up.
+> 
+> It's there to ensure that the TDA998x is correctly configured no matter
+> what it's previous state is, and prevent the thing being fragile as hell.
 
-Thanks.
+The NXP driver will never go to the mainline, so, I don't see the
+problem. If you want to use it to test some other drivers, you should
+better patch it instead of adding useless code in the TDA998x driver.
+
+> No, reset doesn't restore its settings, only a power cycle does.
+
+Sorry, all VIP control registers may be changed at any time and the
+change appears immediately (thank you for the /sys i2c_read/write).
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
