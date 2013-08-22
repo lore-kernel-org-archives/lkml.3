@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab3HVR7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 13:59:39 -0400
-Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:41667 "EHLO
-	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753515Ab3HVR7i (ORCPT
+	id S1754067Ab3HVSAV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 14:00:21 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:48081 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753610Ab3HVSAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 13:59:38 -0400
-Date: Thu, 22 Aug 2013 14:00:51 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Robert Richter <rric@kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH v3 08/12] perf, persistent: Exposing persistent events
- using sysfs
-In-Reply-To: <1377180807-12758-9-git-send-email-rric@kernel.org>
-Message-ID: <alpine.DEB.2.02.1308221344500.26486@pianoman.cluster.toy>
-References: <1377180807-12758-1-git-send-email-rric@kernel.org> <1377180807-12758-9-git-send-email-rric@kernel.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 22 Aug 2013 14:00:19 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020202.52165189.013B,ss=1,re=0.000,fgs=0
+In-Reply-To: <20130822170958.GA20314@redhat.com>
+References: <20130822170939.GA20296@redhat.com> <20130822170958.GA20314@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 22 Aug 2013 10:59:58 -0700
+Message-ID: <CALCETrUGd-+Z4tWF3uJa18eKgK+GcMaOp0Jm4dtQm7E=wz1NMg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] pidns: fix vfork() after unshare(CLONE_NEWPID)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        Colin Walters <walters@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Aug 2013, Robert Richter wrote:
+On Thu, Aug 22, 2013 at 10:09 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> 8382fcac "pidns: Outlaw thread creation after unshare(CLONE_NEWPID)"
+> nacks CLONE_VM if the forking process unshared pid_ns, this obviously
+> breaks vfork:
+>
+>         int main(void)
+>         {
+>                 assert(unshare(CLONE_NEWUSER | CLONE_NEWPID) == 0);
+>                 assert(vfork() >= 0);
+>                 _exit(0);
+>                 return 0;
+>         }
+>
+> fails without this patch.
+>
+> Change this check to use CLONE_SIGHAND instead. This also forbids
+> CLONE_THREAD automatically, and this is what the comment implies.
+>
+> We could probably even drop CLONE_SIGHAND and use CLONE_THREAD,
+> but it would be safer to not do this. The current check denies
+> CLONE_SIGHAND implicitely and there is no reason to change this.
 
-> From: Robert Richter <robert.richter@linaro.org>
-> 
-> Expose persistent events in the system to userland using sysfs. Perf
-> tools are able to read existing pmu events from sysfs. Now we use a
-> persistent pmu as an event container containing all registered
-> persistent events of the system. This patch adds dynamically
-> registration of persistent events to sysfs. E.g. something like this:
-> 
->  /sys/bus/event_source/devices/persistent/events/mce_record:persistent,config=106
->  /sys/bus/event_source/devices/persistent/format/persistent:attr5:23
+Acked-by: Andy Lutomirski <luto@amacapital.net>
 
-...
+although...
 
-> @@ -15,6 +16,26 @@ Contact:	Jiri Olsa <jolsa@redhat.com>
->  			attr2 = 'config:0-7'
->  			attr3 = 'config:12-35'
->  
-> -		Example: 'config1:1,6-10,44'
-> -		Defines contents of attribute that occupies bits 1,6-10,44 of
-> -		perf_event_attr::config1.
-> +		Syntax			Description
-> +
-> +		config[012]*:<bits>	Each attribute of this group
-> +					defines the 'hardware' bitmask
-> +					we want to export, so that
-> +					userspace can deal with sane
-> +					name/value pairs.
-> +
-> +		attr<index>:<bits>	Set any field of the event
-> +					attribute. The index is a
-> +					decimal number that specifies
-> +					the u64 value to be set within
-> +					struct perf_event_attr.
+>
+> Reported-by: Colin Walters <walters@redhat.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/fork.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index e23bb19..86f5376 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1173,10 +1173,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>                 return ERR_PTR(-EINVAL);
+>
+>         /*
+> -        * If the new process will be in a different pid namespace
+> -        * don't allow the creation of threads.
+> +        * If the new process will be in a different pid namespace don't
+> +        * allow the creation of threads, or share the signal handlers.
 
-Ugh this is ugly.  You might also want to specify that the "index"
-value starts at 0 which threw me for a bit when I was trying to figure
-out what was going on.  You might also want to clarify the previous
-part of the document which uses "attr" to mean something else.
+...how about "If the new process will be in a different pid namespace,
+don't allow it to share a thread group or signal handlers with the
+parent"?
 
-Is this endian clean?  Will attr5:23 point to the same bit on a big-endian 
-machine as on little-endian?
-
-If we're going to have to have an ugly interface like this we might
-as well do something more human readable, since anything that parses this 
-is going to have to rebuild the struct perf_event_attr by hand anyway
-(unless you propose people blindly set bits at offsets using pointer math
-which just sounds like a bad idea).
-
-For example, just give up and let someone specify the actual field name
-like "persistent" and have the tools handle that. 
-
-/sys/bus/event_source/devices/persistent/events/mce_record
-   persistent,config=106
-
-/sys/bus/event_source/devices/persistent/format/persistent
-    attr_persistent
-
-That way you could also add things like
-/sys/bus/event_source/devices/persistent/format/precise_ip
-    attr_precise_ip:0-1
-  
-Although I still think exposing the full huge attr stuct via sysfs is just 
-silly.  Isn't there some better way?  I'm not aware of any other syscall
-that exports things like this.
-
-Vince
+--Andy
