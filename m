@@ -1,56 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab3HVR5J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 13:57:09 -0400
-Received: from phoenix3.szarvasnet.hu ([87.101.127.16]:35781 "EHLO
-	mail.szarvasnet.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753879Ab3HVR5H (ORCPT
+	id S1753879Ab3HVR6W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 13:58:22 -0400
+Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:55883 "EHLO
+	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753016Ab3HVR6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 13:57:07 -0400
-X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 13:57:07 EDT
-Message-ID: <52164F54.2070209@openwrt.org>
-Date: Thu, 22 Aug 2013 19:50:12 +0200
-From: Gabor Juhos <juhosg@openwrt.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 22 Aug 2013 13:58:21 -0400
+X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 13:58:21 EDT
+Date: Thu, 22 Aug 2013 17:53:00 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/16] slab: remove cachep in struct slab_rcu
+In-Reply-To: <1377161065-30552-6-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <00000140a72870a6-f7c87696-ecbc-432c-9f41-93f414c0c623-000000@email.amazonses.com>
+References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com> <1377161065-30552-6-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Ralf Baechle <ralf@linux-mips.org>, kernel-janitors@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] MIPS: ath79: simplify platform_get_resource_byname/devm_ioremap_resource
-References: <1376902316-18520-1-git-send-email-Julia.Lawall@lip6.fr> <1376902316-18520-7-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1376902316-18520-7-git-send-email-Julia.Lawall@lip6.fr>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.08.22-54.240.9.58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013.08.19. 10:51 keltezéssel, Julia Lawall írta:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Remove unneeded error handling on the result of a call to
-> platform_get_resource_byname when the value is passed to devm_ioremap_resource.
-> 
-> A simplified version of the semantic patch that makes this change is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression pdev,res,e,e1;
-> expression ret != 0;
-> identifier l;
-> @@
-> 
->   res = platform_get_resource_byname(...);
-> - if (res == NULL) { ... \(goto l;\|return ret;\) }
->   e = devm_ioremap_resource(e1, res);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu, 22 Aug 2013, Joonsoo Kim wrote:
 
-Acked-by: Gabor Juhos <juhosg@openwrt.org>
+> We can get cachep using page in struct slab_rcu, so remove it.
 
-Thanks!
-
--Gabor
+Ok but this means that we need to touch struct page. Additional cacheline
+in cache footprint.
