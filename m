@@ -1,123 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab3HVPe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 11:34:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64434 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab3HVPey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 11:34:54 -0400
-Subject: Re: [PATCH] mm, fs: avoid page allocation beyond i_size on read
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>, NeilBrown <neilb@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <20130822151614.2F11DE0090@blue.fi.intel.com>
-References: <1377099441-2224-1-git-send-email-kirill.shutemov@linux.intel.com>
-	 <1377100012.2738.28.camel@menhir>
-	 <20130821160817.940D3E0090@blue.fi.intel.com>
-	 <1377103332.2738.37.camel@menhir>
-	 <20130821135821.fc8f5a2551a28c9ce9c4b049@linux-foundation.org>
-	 <1377163725.2720.18.camel@menhir>
-	 <20130822130527.71C0AE0090@blue.fi.intel.com>
-	 <1377178420.2720.51.camel@menhir>
-	 <20130822143041.EC9F1E0090@blue.fi.intel.com>
-	 <1377183565.2720.72.camel@menhir>
-	 <20130822151614.2F11DE0090@blue.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Thu, 22 Aug 2013 16:34:55 +0100
-Message-ID: <1377185695.2720.79.camel@menhir>
-Mime-Version: 1.0
+	id S1753235Ab3HVPif (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 11:38:35 -0400
+Received: from 20.mo3.mail-out.ovh.net ([178.33.47.94]:42058 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752372Ab3HVPie (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 11:38:34 -0400
+Message-ID: <52163076.2010501@overkiz.com>
+Date: Thu, 22 Aug 2013 17:38:30 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "David S. Miller" <davem@davemloft.net>, Mark Brown <broonie@kernel.org>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [RFC PATCH] phylib: mdio: handle register/unregister/register
+ sequence
+References: <1377174836-10569-1-git-send-email-b.brezillon@overkiz.com> <20130822152757.GA23163@kroah.com>
+In-Reply-To: <20130822152757.GA23163@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 3492260036265605238
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrgeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrgeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 22/08/2013 17:27, Greg Kroah-Hartman wrote:
+> On Thu, Aug 22, 2013 at 02:33:56PM +0200, Boris BREZILLON wrote:
+>> Hello,
+>>
+>> This patch is a proposal to support the register/unregister/register
+>> sequence on a given mdio bus.
+>>
+>> I use the register/unregister/register sequence to add a fallback when the
+>> of_mdiobus_register (this function calls mdiobus_register with phy_mask
+>> set to ~0) does not register any phy device (because the device tree does
+>> not define any phy).
+>> In this case I call mdiobus_unregister and then call mdiobus_register with
+>> a phy_mask set to 0 to trigger a full mdio bus scan.
+>>
+>> I'm not sure this is the right way to do it (this is why I added RFC in the
+>> subject).
+>>
+>> Could someone help me figuring out what I should use to implement my fallback ?
+>>
+>> 1) use the register/unregister/register sequence
+> That will not work.  Well, you might think it would work, but then
+> things randomly start breaking later on.  Try it with the
+> KOBJECT_DELAYED_DESTROY build option in linux-next, and watch things go
+> "boom" :)
+>
+> The rule is, you should never register a kobject/struct device that you
+> have previously unregistered before, as you really don't know if
+> unregistering has finished or not.
 
-On Thu, 2013-08-22 at 18:16 +0300, Kirill A. Shutemov wrote:
-> Steven Whitehouse wrote:
-> > Hi,
-> > 
-> > On Thu, 2013-08-22 at 17:30 +0300, Kirill A. Shutemov wrote:
-> > [snip]
-> > > > Andrew's proposed solution makes sense to me, and is probably the
-> > > > easiest way to solve this.
-> > > 
-> > > Move check to no_cached_page?
-> > Yes
-> > 
-> > > I don't see how it makes any difference for
-> > > page cache miss case: we anyway exclude ->readpage() if it's beyond local
-> > > i_size.
-> > > And for cache hit local i_size will be most likely cover locally cached
-> > > pages.
-> > The difference is that as the function is currently written, you cannot
-> > get to no_cached_page without first calling page_cache_sync_readahead(),
-> > i.e. ->readpages() so that i_size will have been updated, even if
-> > ->readpages() doesn't return any read-ahead pages.
-> > 
-> > I guess that it is not very obvious that a call to ->readpages is hidden
-> > in page_cache_sync_readahead() but that is the path that should in the
-> > common case provide the pages from the fs, rather than the ->readpage
-> > call thats further down do_generic_file_read()
-> 
-> I've checked the codepath before and to me it looks like ->readpages()
-> will not be called beyond i_size. Codepath is:
-> 
-> page_cache_sync_readahead()
->  ondemand_readahead()
->   __do_page_cache_readahead()
->    read_pages()
->     mapping->a_ops->readpages()
-> 
-> But if you check __do_page_cache_readahead():
-> 
-> 152 static int
-> 153 __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
-> 154                         pgoff_t offset, unsigned long nr_to_read,
-> 155                         unsigned long lookahead_size)
-> 156 {
-> ...
-> 163         loff_t isize = i_size_read(inode);
-> 164
-> 165         if (isize == 0)
-> 166                 goto out;
-> 167
-> 168         end_index = ((isize - 1) >> PAGE_CACHE_SHIFT);
-> ...
-> 173         for (page_idx = 0; page_idx < nr_to_read; page_idx++) {
-> 174                 pgoff_t page_offset = offset + page_idx;
-> 175
-> 176                 if (page_offset > end_index)
-> 177                         break;
-> ...
-> 193         }
-> ...
-> 200         if (ret)
-> 201                 read_pages(mapping, filp, &page_pool, ret);
-> 202         BUG_ON(!list_empty(&page_pool));
-> 203 out:
-> 204         return ret;
-> 205 }
-> 
-> Do I miss something?
-> 
+Thanks for your answer.
 
-Hrm. It looks like that Andrew's proposal is not going to work then :(
-
-The trouble is that readahead has broken silently in this one case,
-since the net result of the readahead not going ahead at this point, is
-that ->readpage will be called later on. So in the cases where it
-matters (i.e. i_size updated remotely), we'd probably not have noticed
-it before as the read will still return successfully.
-
-That is real problem though... so maybe this isn't as easy as I'd first
-thought,
-
-Steve.
-
+>
+> sorry,
+>
+> greg k-h
 
