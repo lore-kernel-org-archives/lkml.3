@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab3HVHR4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:17:56 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:42505 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab3HVHRz (ORCPT
+	id S1753849Ab3HVHSk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:18:40 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:16113 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815Ab3HVHSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:17:55 -0400
-From: Mike Turquette <mturquette@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH] clk: handle NULL struct clk gracefully
-Date: Thu, 22 Aug 2013 00:17:47 -0700
-Message-Id: <1377155867-15552-1-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 22 Aug 2013 03:18:39 -0400
+X-Spam-Score: -101.0
+Message-ID: <5215ACAA.3020708@asianux.com>
+Date: Thu, 22 Aug 2013 14:16:10 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Steffen Klassert <steffen.klassert@secunet.com>
+CC: linux-crypto@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/padata.c: always check the return value of __padata_remove_cpu()
+ and __padata_add_cpu()
+References: <5212E5E4.8010408@asianux.com> <5212E61F.7010602@asianux.com> <20130822051122.GB26773@secunet.com> <5215A134.90607@asianux.com> <20130822060503.GC26773@secunet.com>
+In-Reply-To: <20130822060503.GC26773@secunet.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At some point changes to clk_set_rate and clk_set_parent introduced a
-bug whereby NULL struct clk pointers were treated as an error. This is
-in violation of the API in include/linux/clk.h. Reintroduce graceful
-handling of NULL clk's by bailing from clk_set_rate and clk_set_parent
-with return codes of zero.
+On 08/22/2013 02:05 PM, Steffen Klassert wrote:
+> On Thu, Aug 22, 2013 at 01:27:16PM +0800, Chen Gang wrote:
+>> On 08/22/2013 01:11 PM, Steffen Klassert wrote:
+>>> On Tue, Aug 20, 2013 at 11:44:31AM +0800, Chen Gang wrote:
+>>>>
+>>>> If this patch is correct, better to let CPU_ONLINE and CPU_DOWN_FAILED
+>>>> share the same code.
+>>>>
+>>>> And do we need a comment "/* fall through */" between CPU_UP_CANCELED
+>>>> and CPU_DOWN_FAILED (or it is another bug, need a 'break' statement) ?
+>>>>
+>>>> At last, also better to let CPU_DOWN_PREPARE and CPU_UP_CANCELED share
+>>>> the same code (if need a 'break'), or share the most of code (if "fall
+>>>> through").
+>>>>
+>>>
+>>> CPU_ONLINE and CPU_DOWN_FAILED can share the code. Same is true for
+>>> CPU_DOWN_PREPARE and CPU_UP_CANCELED.
+>>>
+>>> Thanks!
+>>>
+>>>
+>>
+>> Thank you too.
+>>
+>> And need I send another patch for it ?
+>>
+>> Or just make by yourself (and better to mark me as Reported-by). :-)
+>>
+> 
+> You found the problem, feel free to send a patch.
+> 
+> 
 
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
----
- drivers/clk/clk.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+Thanks, I will send patch v2 for it.
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index bc02037..7c43762 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1428,6 +1428,9 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
- 	struct clk *top, *fail_clk;
- 	int ret = 0;
- 
-+	if (!clk)
-+		return 0;
-+
- 	/* prevent racing with updates to the clock topology */
- 	clk_prepare_lock();
- 
-@@ -1567,7 +1570,10 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 	u8 p_index = 0;
- 	unsigned long p_rate = 0;
- 
--	if (!clk || !clk->ops)
-+	if (!clk)
-+		return 0;
-+
-+	if (!clk->ops)
- 		return -EINVAL;
- 
- 	/* verify ops for for multi-parent clks */
 -- 
-1.8.1.2
-
+Chen Gang
