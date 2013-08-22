@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab3HVUGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 16:06:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34423 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754005Ab3HVUGO (ORCPT
+	id S1754336Ab3HVUHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 16:07:22 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:58549 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab3HVUHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 16:06:14 -0400
-Date: Thu, 22 Aug 2013 22:05:55 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        John Johansen <john.johansen@canonical.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Kentaro Takeda <takedakn@nttdata.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
- task->pid and task->tgid
-Message-ID: <20130822200555.GN31370@twins.programming.kicks-ass.net>
-References: <cover.1377032086.git.rgb@redhat.com>
- <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
+	Thu, 22 Aug 2013 16:07:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+From: Corey <corey@x64.co>
+Date: Thu, 22 Aug 2013 16:06:59 -0400
+X-Google-Sender-Auth: 82MqGBsfD5OOKrslRcUg8US_rhY
+Message-ID: <CAEi9g3Ef-Ny5UjZJpYpX5XPeY42yAinh_fCKPTF+gEWHrqp2_g@mail.gmail.com>
+Subject: Hanging ps output after crash
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 05:32:03PM -0400, Richard Guy Briggs wrote:
-> This stops these four task helper functions from using the deprecated and
-> error-prone task->pid and task->tgid.
-> 
-> (informed by ebiederman's ea5a4d01)
-> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  include/linux/sched.h |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 8e69807..46e739d 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1579,7 +1579,7 @@ static inline int pid_alive(struct task_struct *p)
->   */
->  static inline int is_global_init(struct task_struct *tsk)
->  {
-> -	return tsk->pid == 1;
-> +	return task_pid_nr(tsk) == 1;
->  }
->  
->  extern struct pid *cad_pid;
-> @@ -1930,7 +1930,7 @@ extern struct task_struct *idle_task(int cpu);
->   */
->  static inline bool is_idle_task(const struct task_struct *p)
->  {
-> -	return p->pid == 0;
-> +	return task_pid(p) == &init_struct_pid;
->  }
->  extern struct task_struct *curr_task(int cpu);
->  extern void set_curr_task(int cpu, struct task_struct *p);
+Hello mailing list,
 
-Why would you ever want to do this? It just makes these tests more
-expensive for no gain what so ff'ing ever.
+Earlier today I had Eclipse/Tomcat crash and thereafter I was unable
+to use ps or other process utilities. Specifically, the output of ps,
+top, w, and so on would hang and I was unable to terminate the
+process. `ps` (with no arguments) and `pstree` remained working,
+however. After some discussion in my distro-specific IRC channel,
+someone suggested I should reach out to this mailing list.
+
+I am using Arch Linux on kernel 3.10.7-1-ARCH SMP PREEMPT x86_64
+
+Here is the output of `strace ps aux`: http://pastebin.com/jaFCN3YL
+(large text file)
+
+And the output of /proc/<pid>/stack:
+[<ffffffff81279a64>] call_rwsem_down_read_failed+0x14/0x30
+[<ffffffff8114cdb2>] __access_remote_vm+0x42/0x1c0
+[<ffffffff8114d240>] access_process_vm+0x50/0x70
+[<ffffffff811f069a>] proc_pid_cmdline+0x8a/0x120
+[<ffffffff811ef57f>] proc_info_read+0x8f/0xe0
+[<ffffffff8118b148>] vfs_read+0x98/0x170
+[<ffffffff8118bc39>] SyS_read+0x49/0xa0
+[<ffffffff814cfaef>] tracesys+0xe1/0xe6
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+When I tried to reboot, the system crashed. As I had no good way to
+collect the contents of the dump, I took a few pictures (the
+widescreen necessitated two pictures, though I doubt the latter is of
+much use) and hosted them on imgur: http://imgur.com/a/cqfOH.
+
+I hope this information is suitable and that I have not posted here in
+error. Please keep in mind that I am not subscribed to this mailing
+list.
+
+Thanks,
+
+Corey
