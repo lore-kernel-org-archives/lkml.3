@@ -1,139 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab3HVIVK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:21:10 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33212 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3HVIVH (ORCPT
+	id S1753843Ab3HVIXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 04:23:53 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:42758 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab3HVIXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 04:21:07 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <5215C9B3.4090608@jp.fujitsu.com>
-Date: Thu, 22 Aug 2013 17:20:03 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Hansen <dave@sr71.net>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 7/7] drivers: base: refactor add_memory_section() to add_memory_block()
-References: <1377018783-26756-1-git-send-email-sjenning@linux.vnet.ibm.com> <1377018783-26756-7-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1377018783-26756-7-git-send-email-sjenning@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+	Thu, 22 Aug 2013 04:23:51 -0400
+Date: Thu, 22 Aug 2013 01:23:48 -0700 (PDT)
+Message-Id: <20130822.012348.1370012681436362922.davem@davemloft.net>
+To: brouer@redhat.com
+Cc: gregkh@linuxfoundation.org, stable@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: ADSL/ATM linklayer tc shaping regression fix commits for stable
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130822100426.39be319d@redhat.com>
+References: <20130821140350.2b953007@redhat.com>
+	<20130821.112023.744177612387539958.davem@davemloft.net>
+	<20130822100426.39be319d@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 22 Aug 2013 01:23:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/21 2:13), Seth Jennings wrote:
-> Right now memory_dev_init() maintains the memory block pointer
-> between iterations of add_memory_section().  This is nasty.
+From: Jesper Dangaard Brouer <brouer@redhat.com>
+Date: Thu, 22 Aug 2013 10:04:26 +0200
+
+> So, for future reference:
 > 
-> This patch refactors add_memory_section() to become add_memory_block().
-> The refactoring pulls the section scanning out of memory_dev_init()
-> and simplifies the signature.
+> Stable patches for the networking tree, I should:
+> 1) check http://patchwork.ozlabs.org/bundle/davem/stable/?state=*
+>    to see if my patch is already on your stable queue
+> 2) if not, ask you and cc netdev@vger.kernel.org
+> 3) you will handle the interaction with Greg and stable@vger.kernel.org
 > 
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> ---
->   drivers/base/memory.c | 48 +++++++++++++++++++++---------------------------
->   1 file changed, 21 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index 7d9d3bc..021283a 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -602,32 +602,31 @@ static int init_memory_block(struct memory_block **memory,
->   	return ret;
->   }
->   
-> -static int add_memory_section(struct mem_section *section,
-> -			struct memory_block **mem_p)
-> +static int add_memory_block(int base_section_nr)
->   {
-> -	struct memory_block *mem = NULL;
-> -	int scn_nr = __section_nr(section);
-> -	int ret = 0;
-> -
-> -	if (mem_p && *mem_p) {
-> -		if (scn_nr >= (*mem_p)->start_section_nr &&
-> -		    scn_nr <= (*mem_p)->end_section_nr) {
-> -			mem = *mem_p;
-> -		}
-> -	}
-> +	struct memory_block *mem;
-> +	int i, ret, section_count = 0, section_nr;
->   
-> -	if (mem)
-> -		mem->section_count++;
-> -	else {
-> -		ret = init_memory_block(&mem, section, MEM_ONLINE);
-> -		/* store memory_block pointer for next loop */
-> -		if (!ret && mem_p)
-> -			*mem_p = mem;
-> +	for (i = base_section_nr;
-> +	     (i < base_section_nr + sections_per_block) && i < NR_MEM_SECTIONS;
-> +	     i++) {
-> +		if (!present_section_nr(i))
-> +			continue;
-> +		if (section_count == 0)
-> +			section_nr = i;
-> +		section_count++;
->   	}
->   
-> -	return ret;
-> +	if (section_count == 0)
-> +		return 0;
-> +	ret = init_memory_block(&mem, __nr_to_section(section_nr), MEM_ONLINE);
-> +	if (ret)
-> +		return ret;
-> +	mem->section_count = section_count;
-> +	return 0;
->   }
->   
-> +
->   /*
->    * need an interface for the VM to add new memory regions,
->    * but without onlining it.
-> @@ -733,7 +732,6 @@ int __init memory_dev_init(void)
->   	int ret;
->   	int err;
->   	unsigned long block_sz;
-> -	struct memory_block *mem = NULL;
->   
->   	ret = subsys_system_register(&memory_subsys, memory_root_attr_groups);
->   	if (ret)
-> @@ -747,12 +745,8 @@ int __init memory_dev_init(void)
->   	 * during boot and have been initialized
->   	 */
->   	mutex_lock(&mem_sysfs_mutex);
-> -	for (i = 0; i < NR_MEM_SECTIONS; i++) {
-> -		if (!present_section_nr(i))
-> -			continue;
-> -		/* don't need to reuse memory_block if only one per block */
-> -		err = add_memory_section(__nr_to_section(i),
-> -				 (sections_per_block == 1) ? NULL : &mem);
-> +	for (i = 0; i < NR_MEM_SECTIONS; i += sections_per_block) {
+> Correct?
 
-Why do you remove present_setcion_nr() check?
-
-> +		err = add_memory_block(i);
->   		if (!ret)
-
-Thanks,
-Yasuaki Ishimatasu
-
->   			ret = err;
->   	}
-> 
-
+Yes, and that's how it's been with the networking for years.
 
