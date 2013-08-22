@@ -1,118 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab3HVPmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 11:42:32 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:13770 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab3HVPma (ORCPT
+	id S1753521Ab3HVPqW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 11:46:22 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:51699 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291Ab3HVPqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 11:42:30 -0400
-X-RZG-AUTH: :OWgLVUixa/orYEjgByCmMbha6U0z52RK4bWh2OMAPZQEUTlT26YiWoSHOD/OB9OcJQ==
-X-RZG-CLASS-ID: mo00
-Date: Thu, 22 Aug 2013 17:41:21 +0200
-From: Udo Steinberg <udo@hypervisor.org>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Network Mailing List <netdev@vger.kernel.org>
-Subject: Null pointer dereference in nl80211_set_reg
-Message-ID: <20130822174121.18441b7f@x220>
-Reply-To: udo@hypervisor.org
-X-Mailer: X-Mailer 5.0 Gold
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/t2LusJ15ll.IBpE23RKUUHG"; protocol="application/pgp-signature"
+	Thu, 22 Aug 2013 11:46:20 -0400
+From: Steffen Maier <maier@linux.vnet.ibm.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-scsi@vger.kernel.org, linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        stable@vger.kernel.org.#2.6.35+,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND 1/3] zfcp: fix lock imbalance by reworking request queue locking
+Date: Thu, 22 Aug 2013 17:45:36 +0200
+Message-Id: <1377186338-35344-2-git-send-email-maier@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <1377186338-35344-1-git-send-email-maier@linux.vnet.ibm.com>
+References: <1377099366.2011.23.camel@dabdike.int.hansenpartnership.com>
+ <1377186338-35344-1-git-send-email-maier@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082215-0342-0000-0000-0000060B4A26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/t2LusJ15ll.IBpE23RKUUHG
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 
-Hi all,
+This patch adds wait_event_interruptible_lock_irq_timeout(), which is a
+straight-forward descendant of wait_event_interruptible_timeout() and
+wait_event_interruptible_lock_irq().
 
-I'm running Linux 3.10.7 and have encountered the following NULL pointer
-dereference. So far it has only occurred once, so I cannot reproduce the
-circumstances that cause the problem.
+The zfcp driver used to call wait_event_interruptible_timeout()
+in combination with some intricate and error-prone locking. Using
+wait_event_interruptible_lock_irq_timeout() as a replacement
+nicely cleans up that locking.
 
-Please keep me on CC: as I'm not subscribed to LKML.
+This rework removes a situation that resulted in a locking imbalance
+in zfcp_qdio_sbal_get():
 
-Cheers,
-Udo
+BUG: workqueue leaked lock or atomic: events/1/0xffffff00/10
+    last function: zfcp_fc_wka_port_offline+0x0/0xa0 [zfcp]
 
-cfg80211: Calling CRDA for country: DE
-cfg80211: Regulatory domain changed to country: DE
-cfg80211:   (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eir=
-p)
-cfg80211:   (2400000 KHz - 2483500 KHz @ 40000 KHz), (N/A, 2000 mBm)
-cfg80211:   (5150000 KHz - 5350000 KHz @ 40000 KHz), (N/A, 2000 mBm)
-cfg80211:   (5470000 KHz - 5725000 KHz @ 40000 KHz), (N/A, 2698 mBm)
-wlan0: Limiting TX power to 18 (20 - 2) dBm as advertised by 00:24:6c:2b:18=
-:22
-wlan0: authenticate with 00:24:6c:2b:17:32
-wlan0: send auth to 00:24:6c:2b:17:32 (try 1/3)
-cfg80211: Calling CRDA to update world regulatory domain
-wlan0: authenticated
-wlan0: waiting for beacon from 00:24:6c:2b:17:32
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff8140d989>] nl80211_set_reg+0xcc/0x1ff
-PGD 20177e067 PUD 2127c6067 PMD 0=20
-Oops: 0000 [#1] PREEMPT SMP=20
-CPU: 2 PID: 2465 Comm: crda Not tainted 3.10.7 #1
-Hardware name: LENOVO 4290W4H/4290W4H, BIOS 8DET69WW (1.39 ) 07/18/2013
-task: ffff880214ecd040 ti: ffff880212764000 task.ti: ffff880212764000
-RIP: 0010:[<ffffffff8140d989>]  [<ffffffff8140d989>] nl80211_set_reg+0xcc/0=
-x1ff
-RSP: 0018:ffff880212765ab8  EFLAGS: 00010246
-RAX: 0000000000000000 RBX: ffff880214f8f6c0 RCX: 0000000000000000
-RDX: ffff88021d002348 RSI: 0000000000000012 RDI: 0000000000000000
-RBP: ffff880214f8f6c0 R08: ffff880214f8f6c0 R09: ffff880214413014
-R10: 0001000800000034 R11: 0002000800000180 R12: 0000000000000000
-R13: ffff880212765b28 R14: ffff880214413014 R15: ffff880214413000
-FS:  00007fa95007b740(0000) GS:ffff88021e280000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000000 CR3: 00000001f649f000 CR4: 00000000000407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Stack:
- 0000000000000000 ffff88021441301c 0000000000000108 ffff880215560000
- 00000000000000b4 ffffffff811945d7 ffffffff8167ca80 ffffffff8185b6c0
- ffffffff8185ab58 ffff880215560000 ffff880214eb9ec0 0000000000000004
-Call Trace:
- [<ffffffff811945d7>] ? nla_parse+0x8b/0xb4
- [<ffffffff813beda3>] ? genl_rcv_msg+0x1be/0x230
- [<ffffffff813bebe5>] ? genl_unlock_all+0x11/0x11
- [<ffffffff813bea1e>] ? netlink_rcv_skb+0x40/0x89
- [<ffffffff8139ec22>] ? __kmalloc_reserve.isra.31+0x1e/0x56
- [<ffffffff813beb9e>] ? genl_rcv+0x1f/0x2c
- [<ffffffff813bd960>] ? netlink_unicast+0xe5/0x16b
- [<ffffffff813bdf7a>] ? netlink_sendmsg+0x275/0x2b6
- [<ffffffff81399926>] ? sock_sendmsg+0x6d/0x80
- [<ffffffff81087ece>] ? __alloc_pages_nodemask+0xe9/0x773
- [<ffffffff810829b5>] ? find_get_page+0x6b/0x73
- [<ffffffff81399ab6>] ? ___sys_sendmsg+0x17d/0x1f4
- [<ffffffff8109b90f>] ? handle_pte_fault+0x125/0x687
- [<ffffffff81020585>] ? __do_page_fault+0x2cd/0x3b9
- [<ffffffff8100a3b7>] ? syscall_trace_leave+0xe0/0xe9
- [<ffffffff8139aa60>] ? __sys_sendmsg+0x39/0x5a
- [<ffffffff8145bf89>] ? tracesys+0xd0/0xd5
-Code: 8a 46 04 88 43 14 41 8a 46 05 88 43 15 e8 4b b5 ff ff 84 c0 74 04 44 =
-88 63 16 49 8b 45 20 48 89 dd 45 31 e4 48 8b 80 10 01 00 00 <44> 0f b7 30 4=
-c 8d 68 04 41 83 ee 04 41 83 fe 03 0f 8e c1 00 00=20
-RIP  [<ffffffff8140d989>] nl80211_set_reg+0xcc/0x1ff
- RSP <ffff880212765ab8>
-CR2: 0000000000000000
----[ end trace 2ba935cb5e4d0137 ]---
+It was introduced by commit c2af7545aaff3495d9bf9a7608c52f0af86fb194
+"[SCSI] zfcp: Do not wait for SBALs on stopped queue", which had a new
+code path related to ZFCP_STATUS_ADAPTER_QDIOUP that took an early exit
+without a required lock being held. The problem occured when a
+special, non-SCSI I/O request was being submitted in process context,
+when the adapter's queues had been torn down. In this case the bug
+surfaced when the Fibre Channel port connection for a well-known address
+was closed during a concurrent adapter shut-down procedure, which is a
+rare constellation.
 
---Sig_/t2LusJ15ll.IBpE23RKUUHG
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+This patch also fixes these warnings from the sparse tool (make C=1):
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+drivers/s390/scsi/zfcp_qdio.c:224:12: warning: context imbalance in
+ 'zfcp_qdio_sbal_check' - wrong count at exit
+drivers/s390/scsi/zfcp_qdio.c:244:5: warning: context imbalance in
+ 'zfcp_qdio_sbal_get' - unexpected unlock
 
-iEYEARECAAYFAlIWMSIACgkQnhRzXSM7nSknaQCfbL7czABEk59BTcEDdm0RpNgM
-0LAAnjgeiKhc/9T7L6bTuQZpCK8OAu1A
-=sR76
------END PGP SIGNATURE-----
+Last but not least, we get rid of that crappy lock-unlock-lock
+sequence at the beginning of the critical section.
 
---Sig_/t2LusJ15ll.IBpE23RKUUHG--
+It is okay to call zfcp_erp_adapter_reopen() with req_q_lock held.
+
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Cc: stable@vger.kernel.org #2.6.35+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+---
+ drivers/s390/scsi/zfcp_qdio.c |    8 +----
+ include/linux/wait.h          |   57 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 6 deletions(-)
+
+--- a/drivers/s390/scsi/zfcp_qdio.c
++++ b/drivers/s390/scsi/zfcp_qdio.c
+@@ -224,11 +224,9 @@ int zfcp_qdio_sbals_from_sg(struct zfcp_
+ 
+ static int zfcp_qdio_sbal_check(struct zfcp_qdio *qdio)
+ {
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	if (atomic_read(&qdio->req_q_free) ||
+ 	    !(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return 1;
+-	spin_unlock_irq(&qdio->req_q_lock);
+ 	return 0;
+ }
+ 
+@@ -246,9 +244,8 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio
+ {
+ 	long ret;
+ 
+-	spin_unlock_irq(&qdio->req_q_lock);
+-	ret = wait_event_interruptible_timeout(qdio->req_q_wq,
+-			       zfcp_qdio_sbal_check(qdio), 5 * HZ);
++	ret = wait_event_interruptible_lock_irq_timeout(qdio->req_q_wq,
++		       zfcp_qdio_sbal_check(qdio), qdio->req_q_lock, 5 * HZ);
+ 
+ 	if (!(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return -EIO;
+@@ -262,7 +259,6 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio
+ 		zfcp_erp_adapter_reopen(qdio->adapter, 0, "qdsbg_1");
+ 	}
+ 
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	return -EIO;
+ }
+ 
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -811,6 +811,63 @@ do {									\
+ 	__ret;								\
+ })
+ 
++#define __wait_event_interruptible_lock_irq_timeout(wq, condition,	\
++						    lock, ret)		\
++do {									\
++	DEFINE_WAIT(__wait);						\
++									\
++	for (;;) {							\
++		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
++		if (condition)						\
++			break;						\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			break;						\
++		}							\
++		spin_unlock_irq(&lock);					\
++		ret = schedule_timeout(ret);				\
++		spin_lock_irq(&lock);					\
++		if (!ret)						\
++			break;						\
++	}								\
++	finish_wait(&wq, &__wait);					\
++} while (0)
++
++/**
++ * wait_event_interruptible_lock_irq_timeout - sleep until a condition gets true or a timeout elapses.
++ *		The condition is checked under the lock. This is expected
++ *		to be called with the lock taken.
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @lock: a locked spinlock_t, which will be released before schedule()
++ *	  and reacquired afterwards.
++ * @timeout: timeout, in jiffies
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or signal is received. The @condition is
++ * checked each time the waitqueue @wq is woken up.
++ *
++ * wake_up() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * This is supposed to be called while holding the lock. The lock is
++ * dropped before going to sleep and is reacquired afterwards.
++ *
++ * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
++ * was interrupted by a signal, and the remaining jiffies otherwise
++ * if the condition evaluated to true before the timeout elapsed.
++ */
++#define wait_event_interruptible_lock_irq_timeout(wq, condition, lock,	\
++						  timeout)		\
++({									\
++	int __ret = timeout;						\
++									\
++	if (!(condition))						\
++		__wait_event_interruptible_lock_irq_timeout(		\
++					wq, condition, lock, __ret);	\
++	__ret;								\
++})
++
+ 
+ /*
+  * These are the old interfaces to sleep waiting for an event.
+
