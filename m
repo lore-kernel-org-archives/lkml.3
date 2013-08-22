@@ -1,111 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab3HVGcv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 02:32:51 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:60952 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab3HVGcs (ORCPT
+	id S1753604Ab3HVGhC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 02:37:02 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:64136 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396Ab3HVGhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 02:32:48 -0400
+	Thu, 22 Aug 2013 02:37:00 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-ea-5215b18b2b9c
+Date: Thu, 22 Aug 2013 15:37:33 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Xen-devel@lists.xen.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>
+Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with
+ existing use
+Message-ID: <20130822063733.GG4665@bbox>
+References: <5214C524.1050900@citrix.com>
+ <dc8456d1-a89a-44c0-bebb-83cb0526230e@email.android.com>
+ <20130821141926.GT18673@moon>
+ <CA+55aFyk6s1t92HJ5rxKZQk6dTfszmhdXz+S=MqUmM-CbMo+DQ@mail.gmail.com>
+ <20130821230557.GD18673@moon>
+ <87wqnehapu.fsf@tassilo.jf.intel.com>
+ <20130822054919.GF18673@moon>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130821212012.GH26909@phenom.ffwll.local>
-References: <CA+icZUUkS-UptLRM1CfcaHH=8UD-ZaHbXr8wFkA+YKyk-rPjvg@mail.gmail.com>
-	<20130821134441.GE26909@phenom.ffwll.local>
-	<CA+icZUVLau7AgZvcnWKjx=tc4WeuJ3qEH7qQta+YLKDmxk6QvA@mail.gmail.com>
-	<20130821212012.GH26909@phenom.ffwll.local>
-Date: Thu, 22 Aug 2013 08:32:47 +0200
-Message-ID: <CA+icZUUoZ3WRNChLJ8vfP_MxJhTu2annkWCmB8jnqOxNKSEtOg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 21 [ screen corruption in graphical mode ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Sedat Dilek <sedat.dilek@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130822054919.GF18673@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 11:20 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Wed, Aug 21, 2013 at 08:11:27PM +0200, Sedat Dilek wrote:
->> On Wed, Aug 21, 2013 at 3:44 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
->> > On Wed, Aug 21, 2013 at 12:35:08PM +0200, Sedat Dilek wrote:
->> >> On Wed, Aug 21, 2013 at 11:21 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> >> > Hi all,
->> >> >
->> >> > There will be no linux-next trees on Aug 23 or 26.
->> >> >
->> >> > Changes since 20130820:
->> >> >
->> >> > New tree: aio-direct
->> >> >
->> >> > Removed tree: xilinx (at maintainer's request)
->> >> >
->> >> > The xfs tree still had its build failure for which I reverted a commit.
->> >> >
->> >> > The trivial tree gained conflicts against the crypto, net-next and
->> >> > wireless trees.
->> >> >
->> >> > The aio tree gained conflicts against the aio-direct tree.
->> >> >
->> >> > The akpm-current tree gained conflicts against the modules and aio-direct
->> >> > trees.
->> >> >
->> >> > ----------------------------------------------------------------------------
->> >> >
->> >>
->> >> Hi,
->> >>
->> >> I still have this issue with next-20130821 and "Linux v3.11-rc6 plus
->> >> drm-intel-nightly on top"
->> >> Any new development on this?
->> >> Patches?
->> >
->> > Tbh I'm at a loss what we could try above&beyond what Chris has already
->> > tried out.
->> >
->> >> Currently, I have two workarounds:
->> >>
->> >> [1] Revert this commit:
->> >>
->> >> commit 5456fe3882812aba251886e36fe55bfefb8e8829
->> >> "drm/i915: Allocate LLC ringbuffers from stolen"
->> >
->> > Since with a rather decent chance the next testing cycle I'll do this
->> > friday will be the last chunk of features for 3.12 I'll probably drop the
->> > above patch from my queue and we can try again in 3.13.
->> >
->>
->> Inspired by [1] I have switched from UXA to SNA...
->> ...and applied "[PATCH] drm/i915: Cleaning up the relocate entry
->> function" on top of next-20130821...
->> ...and can NOT see the screen corruptions anymore.
->>
->> Can you explain that?
->
-> If the relocate cleanup patch [1] is indeed required, then I can't explain
-> this at all. Can you please double-check that this is really it, and that
-> it's not the uxa->sna switch?
->
+Hello Cyrill,
 
-It's independent of the applied patch.
-My problem goes away with SNA but still exists with UXA.
+On Thu, Aug 22, 2013 at 09:49:19AM +0400, Cyrill Gorcunov wrote:
+> On Wed, Aug 21, 2013 at 04:42:53PM -0700, Andi Kleen wrote:
+> > Cyrill Gorcunov <gorcunov@gmail.com> writes:
+> > >
+> > > Hi all, I worked on patch which would not touch PSE bit for dirty page
+> > > tracking and the result is not that good:
+> > >
+> > >  - 2level pages now always page dirty if page is swapped in and out, because
+> > >    there is no space left in PTE (other than PSE bit)
+> > 
+> > Maybe just don't support soft dirty for 2 level page tables?
+> > 
+> > 2 level page tables should be really on the way out anyways, as they
+> > have severe limits and do not support NX. With 3 levels there is enough
+> > space.
+> 
+> Look, good thing is that 7th bit also available on the 4level pages
+> (ie x86-64) without additional code modification, that's why I picked
+> it in first place. I prepared the patch locally which doesn't use
+> pse bit for tracking but it only makes code more complex.
 
-As said in my previous analysis... switching back to Ubuntu's graphics
-did not show the symptoms, too.
+I'm not sure you read this thread.
+http://comments.gmane.org/gmane.linux.kernel.mm/101756
+In summary, I'd like to use it to track sub-ranges of some processes.
 
-It's interesting to see, it is a problem of the intel-ddx.
+I already had a time to investigate and it enhanced our workload x2 on ARM
+so I'd like to expand the concept for more general purpose.
 
-Anyway, SNA seems here to be approx. 20% faster in gtkperf-0.40, so I
-will use it.
-
-I am open and willing to test any patches you will provide.
-Please, let me know.
+For it, arch-specific stuff would be hurdle for port.
+So, I support your non-arch-specific solutions.
+Just FYI. Such future plan shouldn't force you.
 
 Thanks.
 
-- Sedat -
+-- 
+Kind regards,
+Minchan Kim
