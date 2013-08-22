@@ -1,104 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab3HVQv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:51:26 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:50633 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552Ab3HVQvY convert rfc822-to-8bit (ORCPT
+	id S1754012Ab3HVQvf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:51:35 -0400
+Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:44667 "EHLO
+	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753552Ab3HVQvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:51:24 -0400
-Message-ID: <521641A6.2070503@arm.com>
-Date: Thu, 22 Aug 2013 17:51:50 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 22 Aug 2013 12:51:33 -0400
+X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 12:51:33 EDT
+Date: Thu, 22 Aug 2013 16:44:09 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] idr: Use this_cpu_ptr() for percpu_ida
+In-Reply-To: <20130821134945.16b32c045e28272c5b0ba610@linux-foundation.org>
+Message-ID: <00000140a6e964d2-03ac778f-13ff-415d-bbfa-93cb2fddcaa5-000000@email.amazonses.com>
+References: <1375896905-6074-1-git-send-email-kmo@daterainc.com> <1375896905-6074-5-git-send-email-kmo@daterainc.com> <0000014059ec4c34-1bb53d48-c9ee-4e71-81b8-253026431c5c-000000@email.amazonses.com> <20130807183345.GA11612@kmo-pixel>
+ <000001405a4b39ef-0715410a-5061-41e9-9414-86559f16570d-000000@email.amazonses.com> <20130807195733.GB11612@kmo-pixel> <000001405e5776ba-bcc96088-b5e8-4abe-b98e-2e9d7d9b112b-000000@email.amazonses.com> <1377033546.32763.4.camel@haakon3.risingtidesystems.com>
+ <00000140a14ae6bb-f0fca267-cdd6-4039-8c6b-f715999a83c5-000000@email.amazonses.com> <20130821134945.16b32c045e28272c5b0ba610@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jonas Bonn <jonas@southpole.se>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Michal Simek <monstr@monstr.eu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-Subject: Re: [RFC PATCH v2 3/4] powerpc: refactor of_get_cpu_node to support
- other architectures
-References: <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376674791-28244-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376674791-28244-2-git-send-email-Sudeep.KarkadaNagesha@arm.com> <2032060.4bgTKOdEX2@flatron> <1376777376.25016.11.camel@pasglop> <20130819101922.GI3719@e106331-lin.cambridge.arm.com> <5212177C.8000709@gmail.com> <521223FA.5050903@arm.com> <20130822135930.GC23152@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130822135930.GC23152@e106331-lin.cambridge.arm.com>
-X-OriginalArrivalTime: 22 Aug 2013 16:51:19.0869 (UTC) FILETIME=[D370F6D0:01CE9F57]
-X-MC-Unique: 113082217512205701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.08.22-54.240.9.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/08/13 14:59, Mark Rutland wrote:
-> On Mon, Aug 19, 2013 at 02:56:10PM +0100, Sudeep KarkadaNagesha wrote:
->> On 19/08/13 14:02, Rob Herring wrote:
->>> On 08/19/2013 05:19 AM, Mark Rutland wrote:
->>>> On Sat, Aug 17, 2013 at 11:09:36PM +0100, Benjamin Herrenschmidt wrote:
->>>>> On Sat, 2013-08-17 at 12:50 +0200, Tomasz Figa wrote:
->>>>>> I wonder how would this handle uniprocessor ARM (pre-v7) cores, for
->>>>>> which 
->>>>>> the updated bindings[1] define #address-cells = <0> and so no reg 
->>>>>> property.
->>>>>>
->>>>>> [1] - http://thread.gmane.org/gmane.linux.ports.arm.kernel/260795
->>>>>
->>>>> Why did you do that in the binding ? That sounds like looking to create
->>>>> problems ... 
->>>>>
->>>>> Traditionally, UP setups just used "0" as the "reg" property on other
->>>>> architectures, why do differently ?
->>>>
->>>> The decision was taken because we defined our reg property to refer to
->>>> the MPIDR register's Aff{2,1,0} bitfields, and on UP cores before v7
->>>> there's no MPIDR register at all. Given there can only be a single CPU
->>>> in that case, describing a register that wasn't present didn't seem
->>>> necessary or helpful.
->>>
->>> What exactly reg represents is up to the binding definition, but it
->>> still should be present IMO. I don't see any issue with it being
->>> different for pre-v7.
->>>
->> Yes it's better to have 'reg' with value 0 than not having it.
->> Otherwise this generic of_get_cpu_node implementation would need some
->> _hack_ to handle that case.
-> 
-> I'm not sure that having some code to handle a difference in standard
-> between two architectures is a hack. If anything, I'd argue encoding a
-> reg of 0 that corresponds to a nonexistent MPIDR value (given that's
-> what the reg property is defined to map to on ARM) is more of a hack ;)
-> 
-Agreed. But I am more confused.
+On Wed, 21 Aug 2013, Andrew Morton wrote:
 
-1. This raises another question as how much do we follow from ePAPR
-standard. ePAPR marks the reg property in /cpu as required.
-Does that mean we must have all the properties marked as required to be
-present in DT ? On the contrary timebase/clock-frequency is some thing
-that can be found dynamically and need not be present but they are
-marked as required too.
+> The lock is needed so that one cpu can steal tags from another cpu's cache.
+> See (the needlessly inlined!) steal_tags().
 
-> I'm not averse to having a reg value of 0 for this case, but given that
-> there are existing devicetrees without it, requiring a reg property will
-> break compatibility with them.
-> 
-
-2. What exactly does backward compatibility has to cover ? This can't be
-considered as breaking of the binding definition. In continuation to the
-above argument that reg property is required, do we need to cover this
-as it's clearly a case of missing required property(this holds only if
-reg is required always).
-
-Regards,
-Sudeep
+Stealing tags could also be done via IPIs or some other things.
 
