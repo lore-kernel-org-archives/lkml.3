@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab3HVLDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 07:03:23 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:57940 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab3HVLDT (ORCPT
+	id S1753455Ab3HVLDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 07:03:35 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:39308 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753304Ab3HVLDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 07:03:19 -0400
+	Thu, 22 Aug 2013 07:03:30 -0400
 From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
@@ -25,9 +25,9 @@ Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
         Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
         "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [PATCH 01/18] asymmetric keys: add interface and skeleton for implement signature generation
-Date: Thu, 22 Aug 2013 19:01:40 +0800
-Message-Id: <1377169317-5959-2-git-send-email-jlee@suse.com>
+Subject: [PATCH 02/18] asymmetric keys: implement EMSA_PKCS1-v1_5-ENCODE in rsa
+Date: Thu, 22 Aug 2013 19:01:41 +0800
+Message-Id: <1377169317-5959-3-git-send-email-jlee@suse.com>
 X-Mailer: git-send-email 1.6.0.2
 In-Reply-To: <1377169317-5959-1-git-send-email-jlee@suse.com>
 References: <1377169317-5959-1-git-send-email-jlee@suse.com>
@@ -35,255 +35,217 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add generate_signature interface on signature.c, asymmetric-subtype and
-rsa.c for prepare to implement signature generation.
+Implement EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2] in rsa.c. It's the
+first step of signature generation operation (RSASSA-PKCS1-v1_5-SIGN).
+
+This patch is temporary set emLen to pks->k, and temporary set EM to
+pks->S for debugging. We will replace the above values to real signature
+after implement RSASP1.
 
 Reviewed-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 ---
- crypto/asymmetric_keys/private_key.h |   29 +++++++++++++++++++++++++++++
- crypto/asymmetric_keys/public_key.c  |   31 +++++++++++++++++++++++++++++++
- crypto/asymmetric_keys/rsa.c         |   22 ++++++++++++++++++++++
- crypto/asymmetric_keys/signature.c   |   28 ++++++++++++++++++++++++++++
- include/crypto/public_key.h          |   25 +++++++++++++++++++++++++
- include/keys/asymmetric-subtype.h    |    6 ++++++
- 6 files changed, 141 insertions(+), 0 deletions(-)
- create mode 100644 crypto/asymmetric_keys/private_key.h
+ crypto/asymmetric_keys/rsa.c |  158 +++++++++++++++++++++++++++++++++++++++++-
+ include/crypto/public_key.h  |    2 +
+ 2 files changed, 158 insertions(+), 2 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/private_key.h b/crypto/asymmetric_keys/private_key.h
-new file mode 100644
-index 0000000..c022eee
---- /dev/null
-+++ b/crypto/asymmetric_keys/private_key.h
-@@ -0,0 +1,29 @@
-+/* Private key algorithm internals
-+ *
-+ * Copyright (C) 2013 SUSE Linux Products GmbH. All rights reserved.
-+ * Written by Chun-Yi Lee (jlee@suse.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#include <crypto/public_key.h>
-+
-+extern struct asymmetric_key_subtype private_key_subtype;
-+
-+/*
-+ * Private key algorithm definition.
-+ */
-+struct private_key_algorithm {
-+	const char	*name;
-+	u8		n_pub_mpi;	/* Number of MPIs in public key */
-+	u8		n_sec_mpi;	/* Number of MPIs in secret key */
-+	u8		n_sig_mpi;	/* Number of MPIs in a signature */
-+	struct public_key_signature* (*generate_signature)(
-+		const struct private_key *key, u8 *M,
-+		enum pkey_hash_algo hash_algo, const bool hash);
-+};
-+
-+extern const struct private_key_algorithm RSA_private_key_algorithm;
-diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index cb2e291..97ff932 100644
---- a/crypto/asymmetric_keys/public_key.c
-+++ b/crypto/asymmetric_keys/public_key.c
-@@ -19,6 +19,7 @@
- #include <linux/seq_file.h>
- #include <keys/asymmetric-subtype.h>
- #include "public_key.h"
-+#include "private_key.h"
- 
- MODULE_LICENSE("GPL");
- 
-@@ -96,6 +97,24 @@ static int public_key_verify_signature(const struct key *key,
- }
- 
- /*
-+ * Generate a signature using a private key.
-+ */
-+static struct public_key_signature *private_key_generate_signature(
-+		const struct key *key, u8 *M, enum pkey_hash_algo hash_algo,
-+		const bool hash)
-+{
-+	const struct private_key *pk = key->payload.data;
-+
-+	pr_info("private_key_generate_signature start");
-+
-+	if (!pk->algo->generate_signature)
-+		return ERR_PTR(-ENOTSUPP);
-+
-+	return pk->algo->generate_signature(pk, M, hash_algo, hash);
-+
-+}
-+
-+/*
-  * Public key algorithm asymmetric key subtype
-  */
- struct asymmetric_key_subtype public_key_subtype = {
-@@ -106,3 +125,15 @@ struct asymmetric_key_subtype public_key_subtype = {
- 	.verify_signature	= public_key_verify_signature,
- };
- EXPORT_SYMBOL_GPL(public_key_subtype);
-+
-+/*
-+ * Private key algorithm asymmetric key subtype
-+ */
-+struct asymmetric_key_subtype private_key_subtype = {
-+	.owner                  = THIS_MODULE,
-+	.name                   = "private_key",
-+	.describe               = public_key_describe,
-+	.destroy                = public_key_destroy,
-+	.generate_signature     = private_key_generate_signature,
-+};
-+EXPORT_SYMBOL_GPL(private_key_subtype);
 diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
-index 4a6a069..95aab83 100644
+index 95aab83..6996ff7 100644
 --- a/crypto/asymmetric_keys/rsa.c
 +++ b/crypto/asymmetric_keys/rsa.c
-@@ -14,6 +14,7 @@
+@@ -13,6 +13,7 @@
+ #include <linux/module.h>
  #include <linux/kernel.h>
  #include <linux/slab.h>
++#include <crypto/hash.h>
  #include "public_key.h"
-+#include "private_key.h"
+ #include "private_key.h"
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("RSA Public Key Algorithm");
-@@ -267,6 +268,18 @@ error:
- 	return ret;
+@@ -152,6 +153,125 @@ static int RSA_I2OSP(MPI x, size_t xLen, u8 **_X)
  }
  
-+/*
-+ * Perform the generation step [RFC3447 sec 8.2.1].
+ /*
++ * EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2]
++ * @M: message to be signed, and octet string
++ * @emLen: intended length in octets of the encoded message
++ * @hash_algo: hash function (option)
++ * @hash: true means hash M, otherwise M is digest
++ * @EM: encoded message, an octet string of length emLen
 + */
-+static struct public_key_signature *RSA_generate_signature(
-+		const struct private_key *key, u8 *M,
-+		enum pkey_hash_algo hash_algo, const bool hash)
++static int EMSA_PKCS1_v1_5_ENCODE(const u8 *M, size_t emLen,
++		enum pkey_hash_algo hash_algo, const bool hash,
++		u8 **_EM, struct public_key_signature *pks)
 +{
-+	pr_info("RSA_generate_signature start");
++	u8 *digest;
++	struct crypto_shash *tfm;
++	struct shash_desc *desc;
++	size_t digest_size, desc_size;
++	size_t tLen;
++	u8 *T, *PS, *EM;
++	int i, ret;
++
++	pr_info("EMSA_PKCS1_v1_5_ENCODE start\n");
++
++	if (!RSA_ASN1_templates[hash_algo].data)
++		ret = -ENOTSUPP;
++	else
++		pks->pkey_hash_algo = hash_algo;
++
++	/* 1) Apply the hash function to the message M to produce a hash value H */
++	tfm = crypto_alloc_shash(pkey_hash_algo[hash_algo], 0, 0);
++	if (IS_ERR(tfm))
++		return (PTR_ERR(tfm) == -ENOENT) ? -ENOPKG : PTR_ERR(tfm);
++
++	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
++	digest_size = crypto_shash_digestsize(tfm);
++
++	ret = -ENOMEM;
++
++	digest = kzalloc(digest_size + desc_size, GFP_KERNEL);
++	if (!digest)
++		goto error_digest;
++	pks->digest = digest;
++	pks->digest_size = digest_size;
++
++	if (hash) {
++		desc = (void *) digest + digest_size;
++		desc->tfm = tfm;
++		desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
++
++		ret = crypto_shash_init(desc);
++		if (ret < 0)
++			goto error_shash;
++		ret = crypto_shash_finup(desc, M, sizeof(M), pks->digest);
++		if (ret < 0)
++			goto error_shash;
++	} else {
++		memcpy(pks->digest, M, pks->digest_size);
++		pks->digest_size = digest_size;
++	}
++	crypto_free_shash(tfm);
++
++	/* 2) Encode the algorithm ID for the hash function and the hash value into
++	 * an ASN.1 value of type DigestInfo with the DER. Let T be the DER encoding of
++	 * the DigestInfo value and let tLen be the length in octets of T.
++	 */
++	tLen = RSA_ASN1_templates[hash_algo].size + pks->digest_size;
++	T = kmalloc(tLen, GFP_KERNEL);
++	if (!T)
++		goto error_T;
++
++	memcpy(T, RSA_ASN1_templates[hash_algo].data, RSA_ASN1_templates[hash_algo].size);
++	memcpy(T + RSA_ASN1_templates[hash_algo].size, pks->digest, pks->digest_size);
++
++	/* 3) check If emLen < tLen + 11, output "intended encoded message length too short" */
++	if (emLen < tLen + 11) {
++		ret = EINVAL;
++		goto error_emLen;
++	}
++
++	/* 4) Generate an octet string PS consisting of emLen - tLen - 3 octets with 0xff. */
++	PS = kmalloc(emLen - tLen - 3, GFP_KERNEL);
++	if (!PS)
++		goto error_P;
++
++	for (i = 0; i < (emLen - tLen - 3); i++)
++		PS[i] = 0xff;
++
++	/* 5) Concatenate PS, the DER encoding T, and other padding to form the encoded
++	 * message EM as EM = 0x00 || 0x01 || PS || 0x00 || T
++	 */
++	EM = kmalloc(3 + emLen - tLen - 3 + tLen, GFP_KERNEL);
++	if (!EM)
++		goto error_EM;
++
++	EM[0] = 0x00;
++	EM[1] = 0x01;
++	memcpy(EM + 2, PS, emLen - tLen - 3);
++	EM[2 + emLen - tLen - 3] = 0x00;
++	memcpy(EM + 2 + emLen - tLen - 3 + 1, T, tLen);
++
++	*_EM = EM;
++
++	kfree(PS);
++	kfree(T);
 +
 +	return 0;
++
++error_EM:
++	kfree(PS);
++error_P:
++error_emLen:
++	kfree(T);
++error_T:
++error_shash:
++	kfree(digest);
++error_digest:
++	crypto_free_shash(tfm);
++	return ret;
 +}
 +
- const struct public_key_algorithm RSA_public_key_algorithm = {
- 	.name		= "RSA",
- 	.n_pub_mpi	= 2,
-@@ -275,3 +288,12 @@ const struct public_key_algorithm RSA_public_key_algorithm = {
- 	.verify_signature = RSA_verify_signature,
- };
- EXPORT_SYMBOL_GPL(RSA_public_key_algorithm);
++/*
+  * Perform the RSA signature verification.
+  * @H: Value of hash of data and metadata
+  * @EM: The computed signature value
+@@ -275,9 +395,43 @@ static struct public_key_signature *RSA_generate_signature(
+ 		const struct private_key *key, u8 *M,
+ 		enum pkey_hash_algo hash_algo, const bool hash)
+ {
+-	pr_info("RSA_generate_signature start");
++	struct public_key_signature *pks;
++	u8 *EM = NULL;
++	size_t emLen;
++	int ret;
+ 
+-	return 0;
++	pr_info("RSA_generate_signature start\n");
 +
-+const struct private_key_algorithm RSA_private_key_algorithm = {
-+	.name           = "RSA",
-+	.n_pub_mpi      = 2,
-+	.n_sec_mpi      = 3,
-+	.n_sig_mpi      = 1,
-+	.generate_signature = RSA_generate_signature,
-+};
-+EXPORT_SYMBOL_GPL(RSA_private_key_algorithm);
-diff --git a/crypto/asymmetric_keys/signature.c b/crypto/asymmetric_keys/signature.c
-index 50b3f88..a1bf6be 100644
---- a/crypto/asymmetric_keys/signature.c
-+++ b/crypto/asymmetric_keys/signature.c
-@@ -47,3 +47,31 @@ int verify_signature(const struct key *key,
- 	return ret;
++	ret = -ENOMEM;
++	pks = kzalloc(sizeof(*pks), GFP_KERNEL);
++	if (!pks)
++		goto error_no_pks;
++
++	/* 1): EMSA-PKCS1-v1_5 encoding: */
++	/* Use the private key modulus size to be EM length */
++	emLen = mpi_get_nbits(key->rsa.n);
++	emLen = (emLen + 7) / 8;
++
++	ret = EMSA_PKCS1_v1_5_ENCODE(M, emLen, hash_algo, hash, &EM, pks);
++	if (ret < 0)
++		goto error_v1_5_encode;
++
++	/* TODO 2): m = OS2IP (EM) */
++
++	/* TODO 3): s = RSASP1 (K, m) */
++
++	/* TODO 4): S = I2OSP (s, k) */
++
++	/* TODO: signature S to a u8* S or set to sig->rsa.s? */
++	pks->S = EM;		/* TODO: temporary set S to EM */
++
++	return pks;
++
++error_v1_5_encode:
++	kfree(pks);
++error_no_pks:
++	pr_info("<==%s() = %d\n", __func__, ret);
++	return ERR_PTR(ret);
  }
- EXPORT_SYMBOL_GPL(verify_signature);
-+
-+/**
-+ * generate_signature - Initiate the use of an asymmetric key to generate a signature
-+ * @key: The asymmetric key to generate against
-+ * @M: The message to be signed, or a hash result. Dependent on the hash parameter
-+ * @hash_algo: The hash algorithm to generate digest
-+ * @hash: true means M is a original mesagse, false means M is a hash result
-+ *
-+ * Returns public_key-signature if successful or else an error.
-+ */
-+struct public_key_signature *generate_signature(const struct key *key, u8 *M,
-+		enum pkey_hash_algo hash_algo, const bool hash)
-+{
-+	const struct asymmetric_key_subtype *subtype;
-+
-+	pr_info("==>%s()\n", __func__);
-+
-+	if (key->type != &key_type_asymmetric)
-+		return ERR_PTR(-EINVAL);
-+	subtype = asymmetric_key_subtype(key);
-+	if (!subtype || !key->payload.data)
-+		return ERR_PTR(-EINVAL);
-+	if (!subtype->generate_signature)
-+		return ERR_PTR(-ENOTSUPP);
-+
-+	return subtype->generate_signature(key, M, hash_algo, hash);
-+}
-+EXPORT_SYMBOL_GPL(generate_signature);
+ 
+ const struct public_key_algorithm RSA_public_key_algorithm = {
 diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
-index f5b0224..d44b29f 100644
+index d44b29f..1cdf457 100644
 --- a/include/crypto/public_key.h
 +++ b/include/crypto/public_key.h
-@@ -79,6 +79,29 @@ struct public_key {
- 	};
- };
- 
-+struct private_key {
-+	const struct private_key_algorithm *algo;
-+	u8      capabilities;
-+	enum pkey_id_type id_type:8;
-+	union {
-+		MPI     mpi[5];
-+		struct {
-+			MPI     p;      /* DSA prime */
-+			MPI     q;      /* DSA group order */
-+			MPI     g;      /* DSA group generator */
-+			MPI     y;      /* DSA public-key value = g^x mod p */
-+			MPI     x;      /* DSA secret exponent (if present) */
-+		} dsa;
-+		struct {
-+			MPI     n;      /* RSA public modulus */
-+			MPI     e;      /* RSA public encryption exponent */
-+			MPI     d;      /* RSA secret encryption exponent (if present) */
-+			MPI     p;      /* RSA secret prime (if present) */
-+			MPI     q;      /* RSA secret prime (if present) */
-+		} rsa;
-+	};
-+};
-+
- extern void public_key_destroy(void *payload);
- 
- /*
-@@ -104,5 +127,7 @@ struct public_key_signature {
- struct key;
- extern int verify_signature(const struct key *key,
- 			    const struct public_key_signature *sig);
-+extern struct public_key_signature *generate_signature(const struct key *key,
-+			u8 *M, enum pkey_hash_algo hash_algo, const bool hash);
- 
- #endif /* _LINUX_PUBLIC_KEY_H */
-diff --git a/include/keys/asymmetric-subtype.h b/include/keys/asymmetric-subtype.h
-index 4b840e8..af79939 100644
---- a/include/keys/asymmetric-subtype.h
-+++ b/include/keys/asymmetric-subtype.h
-@@ -18,6 +18,7 @@
- #include <keys/asymmetric-type.h>
- 
- struct public_key_signature;
-+enum pkey_hash_algo;
- 
- /*
-  * Keys of this type declare a subtype that indicates the handlers and
-@@ -37,6 +38,11 @@ struct asymmetric_key_subtype {
- 	/* Verify the signature on a key of this subtype (optional) */
- 	int (*verify_signature)(const struct key *key,
- 				const struct public_key_signature *sig);
-+
-+	/* Generate the signature by key of this subtype (optional) */
-+	struct public_key_signature* (*generate_signature)
-+		(const struct key *key, u8 *M, enum pkey_hash_algo hash_algo,
-+		 const bool hash);
- };
- 
- /**
+@@ -110,6 +110,8 @@ extern void public_key_destroy(void *payload);
+ struct public_key_signature {
+ 	u8 *digest;
+ 	u8 digest_size;			/* Number of bytes in digest */
++	u8 *S;				/* signature S of length k octets */
++	size_t k;			/* length k of signature S */
+ 	u8 nr_mpi;			/* Occupancy of mpi[] */
+ 	enum pkey_hash_algo pkey_hash_algo : 8;
+ 	union {
 -- 
 1.6.4.2
 
