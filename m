@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab3HVS7d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 14:59:33 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:56454 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753935Ab3HVS7c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 14:59:32 -0400
-Date: Thu, 22 Aug 2013 14:59:29 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        Javi Merino <javi.merino@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] irqchip: gic: Don't complain in gic_get_cpumask() if UP
- system
-In-Reply-To: <20130822184312.GE23960@codeaurora.org>
-Message-ID: <alpine.LFD.2.03.1308221458320.14472@syhkavp.arg>
-References: <1373067573-29946-1-git-send-email-sboyd@codeaurora.org> <20130712111322.GC3213@e102654-lin.cambridge.arm.com> <20130712121023.GB27430@codeaurora.org> <51E71249.4050200@codeaurora.org> <alpine.LFD.2.03.1307171830170.14924@syhkavp.arg>
- <51E71C78.6080604@codeaurora.org> <alpine.LFD.2.03.1307171849180.14924@syhkavp.arg> <51E7236D.3010700@codeaurora.org> <20130822184312.GE23960@codeaurora.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	id S1754154Ab3HVTB6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 15:01:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7902 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753006Ab3HVTB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 15:01:57 -0400
+Date: Thu, 22 Aug 2013 20:56:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, security@kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/2] Rename nsproxy.pid_ns to
+	nsproxy.pid_ns_for_children
+Message-ID: <20130822185605.GA24890@redhat.com>
+References: <cover.1377196394.git.luto@amacapital.net> <a5db0606160dbd1412828be0d91a4a115a84abf6.1377196394.git.luto@amacapital.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <a5db0606160dbd1412828be0d91a4a115a84abf6.1377196394.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Aug 2013, Stephen Boyd wrote:
+On 08/22, Andy Lutomirski wrote:
+>
+> nsproxy.pid_ns is *not* the task's pid namespace.  The name should clarify
+> that.
+>
+> This makes it more obvious that setns on a pid namespace is weird --
+> it won't change the pid namespace shown in procfs.
+>
+> ...
+>
+> + * The pid namespace is an exception -- it's accessed using
+> + * task_active_pid_ns.  The pid namespace here is the
+> + * namespace that children will use.
+> + *
+>   * 'count' is the number of tasks holding a reference.
+>   * The count for each namespace, then, will be the number
+>   * of nsproxies pointing to it, not the number of tasks.
+> @@ -27,7 +31,7 @@ struct nsproxy {
+>  	struct uts_namespace *uts_ns;
+>  	struct ipc_namespace *ipc_ns;
+>  	struct mnt_namespace *mnt_ns;
+> -	struct pid_namespace *pid_ns;
+> +	struct pid_namespace *pid_ns_for_children;
+>  	struct net 	     *net_ns;
 
-> On 07/17, Stephen Boyd wrote:
-> > On 07/17/13 15:53, Nicolas Pitre wrote:
-> > > On Wed, 17 Jul 2013, Stephen Boyd wrote:
-> > >
-> > >> On 07/17/13 15:34, Nicolas Pitre wrote:
-> > >>> On Wed, 17 Jul 2013, Stephen Boyd wrote:
-> > >>>
-> > >>>> On 07/12/13 05:10, Stephen Boyd wrote:
-> > >>>>> On 07/12, Javi Merino wrote:
-> > >>>>>> I agree, we should drop the check.  It's annoying in uniprocessors and
-> > >>>>>> unlikely to be found in the real world unless your gic entry in the dt
-> > >>>>>> is wrong.
-> > >>> And that's a likely outcome in the real world.
-> > >>>
-> > >>>>> Ok. How about this?
-> > >>>> Any comments?
-> > >>> What about this instead:
-> > >> Unfortunately arm64 doesn't have SMP_ON_UP. 
-> > > And why does that matter?
-> > 
-> > Because the gic driver is compiled on both arm and arm64? I suppose we
-> > could define is_smp() to 1 on arm64 but its probably better to rely on
-> > generic kernel things instead of arch specific functions.
-> > 
-> > >
-> > >> It sounds like you preferred the first patch using num_possible_cpus()
-> > > Probably, yes.  I didn't follow the early conversation though.
-> > 
-> > This was the first patch:
-> > 
-> > ---8<----
-> > 
-> > diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> > index 19ceaa6..589c760 100644
-> > --- a/drivers/irqchip/irq-gic.c
-> > +++ b/drivers/irqchip/irq-gic.c
-> > @@ -368,7 +368,7 @@ static u8 gic_get_cpumask(struct gic_chip_data *gic)
-> >  			break;
-> >  	}
-> >  
-> > -	if (!mask)
-> > +	if (!mask && num_possible_cpus() > 1)
-> >  		pr_crit("GIC CPU mask not found - kernel will fail to boot.\n");
-> >  
-> >  	return mask;
-> 
-> Can one of these two patches be picked up?
+Personally I agree. ->pid_ns is "strange" and it makes sense to
+document and make clear the fact that it became the implicit
+argument for clone().
 
-Sure.  Just send it to RMK's patch system with my ACK.
+Oleg.
 
-
-Nicolas
