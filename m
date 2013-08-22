@@ -1,81 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab3HVRGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 13:06:47 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34417 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab3HVRGp (ORCPT
+	id S1753887Ab3HVRHU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 13:07:20 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:35752 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab3HVRGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 13:06:45 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, srinivas.kandagatla@st.com,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>
-Subject: [PATCH 2/2] clockevents: Prefer clockevents that don't suffer from FEAT_C3_STOP
-Date: Thu, 22 Aug 2013 10:06:41 -0700
-Message-Id: <1377191201-14696-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.rc3.2.g2c2b664
-In-Reply-To: <1377191201-14696-1-git-send-email-sboyd@codeaurora.org>
-References: <52138784.7050703@linaro.org>
- <1377191201-14696-1-git-send-email-sboyd@codeaurora.org>
+	Thu, 22 Aug 2013 13:06:46 -0400
+Date: Thu, 22 Aug 2013 10:06:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [for-next][PATCH 1/5] tracing: Add __tracepoint_string() to
+ export string pointers
+Message-ID: <20130822170623.GF29406@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130822163225.773134216@goodmis.org>
+ <20130822163420.190373748@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130822163420.190373748@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082217-1542-0000-0000-000000BBB4D6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some ARM systems there are two sets of per-cpu timers: the TWD
-timers and the global timers. The TWD timers are rated at 350 and
-the global timers are rated at 300 but the TWD timers suffer from
-FEAT_C3_STOP while the arm global timers don't. The tick device
-selection logic doesn't consider the FEAT_C3_STOP flag so we'll
-always end up with the TWD as the tick device although we don't
-want that.
+On Thu, Aug 22, 2013 at 12:32:26PM -0400, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> There are several tracepoints (mostly in RCU), that reference a string
+> pointer and uses the print format of "%s" to display the string that
+> exists in the kernel, instead of copying the actual string to the
+> ring buffer (saves time and ring buffer space).
+> 
+> But this has an issue with userspace tools that read the binary buffers
+> that has the address of the string but has no access to what the string
+> itself is. The end result is just output that looks like:
+> 
+>  rcu_dyntick:          ffffffff818adeaa 1 0
+>  rcu_dyntick:          ffffffff818adeb5 0 140000000000000
+>  rcu_dyntick:          ffffffff818adeb5 0 140000000000000
+>  rcu_utilization:      ffffffff8184333b
+>  rcu_utilization:      ffffffff8184333b
+> 
+> The above is pretty useless when read by the userspace tools. Ideally
+> we would want something that looks like this:
+> 
+>  rcu_dyntick:          Start 1 0
+>  rcu_dyntick:          End 0 140000000000000
+>  rcu_dyntick:          Start 140000000000000 0
+>  rcu_callback:         rcu_preempt rhp=0xffff880037aff710 func=put_cred_rcu 0/4
+>  rcu_callback:         rcu_preempt rhp=0xffff880078961980 func=file_free_rcu 0/5
+>  rcu_dyntick:          End 0 1
+> 
+> The trace_printk() which also only stores the address of the string
+> format instead of recording the string into the buffer itself, exports
+> the mapping of kernel addresses to format strings via the printk_format
+> file in the debugfs tracing directory.
+> 
+> The tracepoint strings can use this same method and output the format
+> to the same file and the userspace tools will be able to decipher
+> the address without any modification.
+> 
+> The tracepoint strings need its own section to save the strings because
+> the trace_printk section will cause the trace_printk() buffers to be
+> allocated if anything exists within the section. trace_printk() is only
+> used for debugging and should never exist in the kernel, we can not use
+> the trace_printk sections.
+> 
+> Add a new tracepoint_str section that will also be examined by the output
+> of the printk_format file.
+> 
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Extend the preference logic to take the FEAT_C3_STOP flag into
-account and always prefer tick devices that don't suffer from
-FEAT_C3_STOP even if their rating is lower than tick devices that
-do suffer from FEAT_C3_STOP. This will remove the need to do any
-broadcasting on such ARM systems.
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- kernel/time/tick-common.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 64522ec..3ae437d 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -244,12 +244,22 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
- 			return false;
- 	}
- 
-+	if (!curdev)
-+		return true;
-+
-+	/* Always prefer a tick device that doesn't suffer from FEAT_C3STOP */
-+	if (!(newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
-+			(curdev->features & CLOCK_EVT_FEAT_C3STOP))
-+		return true;
-+	if ((newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
-+			!(curdev->features & CLOCK_EVT_FEAT_C3STOP))
-+		return false;
-+
- 	/*
- 	 * Use the higher rated one, but prefer a CPU local device with a lower
- 	 * rating than a non-CPU local device
- 	 */
--	return !curdev ||
--		newdev->rating > curdev->rating ||
-+       return newdev->rating > curdev->rating ||
- 	       !cpumask_equal(curdev->cpumask, newdev->cpumask);
- }
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> ---
+>  include/asm-generic/vmlinux.lds.h |    7 ++++++-
+>  include/linux/ftrace_event.h      |   34 ++++++++++++++++++++++++++++++++++
+>  kernel/trace/trace.h              |    3 +++
+>  kernel/trace/trace_printk.c       |   19 +++++++++++++++++++
+>  4 files changed, 62 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+> index 69732d2..83e2c31 100644
+> --- a/include/asm-generic/vmlinux.lds.h
+> +++ b/include/asm-generic/vmlinux.lds.h
+> @@ -122,8 +122,12 @@
+>  #define TRACE_PRINTKS() VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
+>  			 *(__trace_printk_fmt) /* Trace_printk fmt' pointer */ \
+>  			 VMLINUX_SYMBOL(__stop___trace_bprintk_fmt) = .;
+> +#define TRACEPOINT_STR() VMLINUX_SYMBOL(__start___tracepoint_str) = .;	\
+> +			 *(__tracepoint_str) /* Trace_printk fmt' pointer */ \
+> +			 VMLINUX_SYMBOL(__stop___tracepoint_str) = .;
+>  #else
+>  #define TRACE_PRINTKS()
+> +#define TRACEPOINT_STR()
+>  #endif
+> 
+>  #ifdef CONFIG_FTRACE_SYSCALLS
+> @@ -190,7 +194,8 @@
+>  	VMLINUX_SYMBOL(__stop___verbose) = .;				\
+>  	LIKELY_PROFILE()		       				\
+>  	BRANCH_PROFILE()						\
+> -	TRACE_PRINTKS()
+> +	TRACE_PRINTKS()							\
+> +	TRACEPOINT_STR()
+> 
+>  /*
+>   * Data section helpers
+> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> index 4372658..81af18a 100644
+> --- a/include/linux/ftrace_event.h
+> +++ b/include/linux/ftrace_event.h
+> @@ -357,6 +357,40 @@ do {									\
+>  		__trace_printk(ip, fmt, ##args);			\
+>  } while (0)
+> 
+> +/**
+> + * tracepoint_string - register constant persistent string to trace system
+> + * @str - a constant persistent string that will be referenced in tracepoints
+> + *
+> + * If constant strings are being used in tracepoints, it is faster and
+> + * more efficient to just save the pointer to the string and reference
+> + * that with a printf "%s" instead of saving the string in the ring buffer
+> + * and wasting space and time.
+> + *
+> + * The problem with the above approach is that userspace tools that read
+> + * the binary output of the trace buffers do not have access to the string.
+> + * Instead they just show the address of the string which is not very
+> + * useful to users.
+> + *
+> + * With tracepoint_string(), the string will be registered to the tracing
+> + * system and exported to userspace via the debugfs/tracing/printk_formats
+> + * file that maps the string address to the string text. This way userspace
+> + * tools that read the binary buffers have a way to map the pointers to
+> + * the ASCII strings they represent.
+> + *
+> + * The @str used must be a constant string and persistent as it would not
+> + * make sense to show a string that no longer exists. But it is still fine
+> + * to be used with modules, because when modules are unloaded, if they
+> + * had tracepoints, the ring buffers are cleared too. As long as the string
+> + * does not change during the life of the module, it is fine to use
+> + * tracepoint_string() within a module.
+> + */
+> +#define tracepoint_string(str)						\
+> +	({								\
+> +		static const char *___tp_str __tracepoint_string = str; \
+> +		___tp_str;						\
+> +	})
+> +#define __tracepoint_string	__attribute__((section("__tracepoint_str")))
+> +
+>  #ifdef CONFIG_PERF_EVENTS
+>  struct perf_event;
+> 
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 4a4f6e1..ba321f1 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -1022,6 +1022,9 @@ extern struct list_head ftrace_events;
+>  extern const char *__start___trace_bprintk_fmt[];
+>  extern const char *__stop___trace_bprintk_fmt[];
+> 
+> +extern const char *__start___tracepoint_str[];
+> +extern const char *__stop___tracepoint_str[];
+> +
+>  void trace_printk_init_buffers(void);
+>  void trace_printk_start_comm(void);
+>  int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
+> diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
+> index a9077c1..2900817 100644
+> --- a/kernel/trace/trace_printk.c
+> +++ b/kernel/trace/trace_printk.c
+> @@ -244,12 +244,31 @@ static const char **find_next(void *v, loff_t *pos)
+>  {
+>  	const char **fmt = v;
+>  	int start_index;
+> +	int last_index;
+> 
+>  	start_index = __stop___trace_bprintk_fmt - __start___trace_bprintk_fmt;
+> 
+>  	if (*pos < start_index)
+>  		return __start___trace_bprintk_fmt + *pos;
+> 
+> +	/*
+> +	 * The __tracepoint_str section is treated the same as the
+> +	 * __trace_printk_fmt section. The difference is that the
+> +	 * __trace_printk_fmt section should only be used by trace_printk()
+> +	 * in a debugging environment, as if anything exists in that section
+> +	 * the trace_prink() helper buffers are allocated, which would just
+> +	 * waste space in a production environment.
+> +	 *
+> +	 * The __tracepoint_str sections on the other hand are used by
+> +	 * tracepoints which need to map pointers to their strings to
+> +	 * the ASCII text for userspace.
+> +	 */
+> +	last_index = start_index;
+> +	start_index = __stop___tracepoint_str - __start___tracepoint_str;
+> +
+> +	if (*pos < last_index + start_index)
+> +		return __start___tracepoint_str + (*pos - last_index);
+> +
+>  	return find_next_mod_format(start_index, v, fmt, pos);
+>  }
+> 
+> -- 
+> 1.7.10.4
+> 
+> 
 
