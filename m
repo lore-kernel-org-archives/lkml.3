@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab3HVNDm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 09:03:42 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:55277 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab3HVNDl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 09:03:41 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] tracing: store entry->next_cpu to trace records in trace_ctxwake_bin()
-Date: Thu, 22 Aug 2013 20:59:39 +0800
-Message-Id: <1377176379-27908-1-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1752919Ab3HVNFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 09:05:49 -0400
+Received: from mga14.intel.com ([143.182.124.37]:25472 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752255Ab3HVNFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 09:05:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,934,1367996400"; 
+   d="scan'208";a="350144138"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, NeilBrown <neilb@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <1377163725.2720.18.camel@menhir>
+References: <1377099441-2224-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1377100012.2738.28.camel@menhir>
+ <20130821160817.940D3E0090@blue.fi.intel.com>
+ <1377103332.2738.37.camel@menhir>
+ <20130821135821.fc8f5a2551a28c9ce9c4b049@linux-foundation.org>
+ <1377163725.2720.18.camel@menhir>
+Subject: Re: [PATCH] mm, fs: avoid page allocation beyond i_size on read
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130822130527.71C0AE0090@blue.fi.intel.com>
+Date: Thu, 22 Aug 2013 16:05:27 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+Steven Whitehouse wrote:
+> Hi,
+> 
+> On Wed, 2013-08-21 at 13:58 -0700, Andrew Morton wrote:
+> > On Wed, 21 Aug 2013 17:42:12 +0100 Steven Whitehouse <swhiteho@redhat.com> wrote:
+> > 
+> > > > I don't think the change is harmful. The worst case scenario is race with
+> > > > write or truncate, but it's valid to return EOF in this case.
+> > > > 
+> > > > What scenario do you have in mind?
+> > > > 
+> > > 
+> > > 1. File open on node A
+> > > 2. Someone updates it on node B by extending the file
+> > > 3. Someone reads the file on node A beyond end of original file size,
+> > > but within end of new file size as updated by node B. Without the patch
+> > > this works, with it, it will fail. The reason being the i_size would not
+> > > be up to date until after readpage(s) has been called.
 
-Function trace_ctxwake_bin() misses ctx_switch_entry->next_cpu field,
-so user will get stale value for "next_cpu".
+CC: +linux-fsdevel@
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org
----
- kernel/trace/trace_output.c | 1 +
- 1 file changed, 1 insertion(+)
+So in this case node A will see the file like it was never touched by
+node B. It's okay, if new i_size will eventually reach node A.
 
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 34e7cba..201eb76 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -1157,6 +1157,7 @@ static enum print_line_t trace_ctxwake_bin(struct trace_iterator *iter,
- 	SEQ_PUT_FIELD_RET(s, field->prev_pid);
- 	SEQ_PUT_FIELD_RET(s, field->prev_prio);
- 	SEQ_PUT_FIELD_RET(s, field->prev_state);
-+	SEQ_PUT_FIELD_RET(s, field->next_cpu);
- 	SEQ_PUT_FIELD_RET(s, field->next_pid);
- 	SEQ_PUT_FIELD_RET(s, field->next_prio);
- 	SEQ_PUT_FIELD_RET(s, field->next_state);
+Is ->readpage() the only way to get i_size updated on node A or it will be
+eventually updated without it?
+
+If it's the only way, we need add a explicit way to initiate i_size sync
+between nodes on read. Probably, distributed filesystems should provide own
+->aio_read() which deal i_size as the filesystem need.
+
+> > > I think this is likely to be an issue for any distributed fs using
+> > > do_generic_file_read(), although it would certainly affect GFS2, since
+> > > the locking is done at page cache level,
+> > 
+> > Boy, that's rather subtle.  I'm surprised that the generic filemap.c
+> > stuff works at all in that sort of scenario.
+> > 
+> > Can we put the i_size check down in the no_cached_page block?  afaict
+> > that will solve the problem without breaking GFS2 and is more
+> > efficient?
+> > 
+> 
+> Well I think is even more subtle, since it relies on ->readpages
+> updating the file size, even if it has failed to actually read the
+> required pages :-) Having said that, we do rely on ->readpages updating
+> the inode size elsewhere in this function, as per the block comment
+> immediately following the page_ok label. 
+
+That i_size recheck was invented to cover different use case: read vs.
+truncate race. Userspace should not see truncate-caused zeros in buffer.
+It's not to prevent file extending vs. read() race. This usually harmless:
+data is consistent.
+
 -- 
-1.8.1.2
-
+ Kirill A. Shutemov
