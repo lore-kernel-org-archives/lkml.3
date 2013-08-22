@@ -1,191 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab3HVPqW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 11:46:22 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:51699 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab3HVPqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 11:46:20 -0400
-From: Steffen Maier <maier@linux.vnet.ibm.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-scsi@vger.kernel.org, linux-s390@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
-        stable@vger.kernel.org.#2.6.35+,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND 1/3] zfcp: fix lock imbalance by reworking request queue locking
-Date: Thu, 22 Aug 2013 17:45:36 +0200
-Message-Id: <1377186338-35344-2-git-send-email-maier@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <1377186338-35344-1-git-send-email-maier@linux.vnet.ibm.com>
-References: <1377099366.2011.23.camel@dabdike.int.hansenpartnership.com>
- <1377186338-35344-1-git-send-email-maier@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082215-0342-0000-0000-0000060B4A26
+	id S1753327Ab3HVPwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 11:52:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18679 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752976Ab3HVPwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 11:52:54 -0400
+Date: Thu, 22 Aug 2013 11:51:32 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        gong.chen@linux.intel.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <1377186692-rqporagm-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1377164907-24801-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1377164907-24801-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/6] mm/hwpoison: fix lose PG_dirty flag for errors on
+ mlocked pages
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <1377164907-24801-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Hi Wanpeng,
 
-This patch adds wait_event_interruptible_lock_irq_timeout(), which is a
-straight-forward descendant of wait_event_interruptible_timeout() and
-wait_event_interruptible_lock_irq().
+On Thu, Aug 22, 2013 at 05:48:22PM +0800, Wanpeng Li wrote:
+> memory_failure() store the page flag of the error page before doing unmap, 
+> and (only) if the first check with page flags at the time decided the error 
+> page is unknown, it do the second check with the stored page flag since 
+> memory_failure() does unmapping of the error pages before doing page_action(). 
+> This unmapping changes the page state, especially page_remove_rmap() (called 
+> from try_to_unmap_one()) clears PG_mlocked, so page_action() can't catch 
+> mlocked pages after that. 
+> 
+> However, memory_failure() can't handle memory errors on dirty mlocked pages 
+> correctly. try_to_unmap_one will move the dirty bit from pte to the physical 
+> page, the second check lose it since it check the stored page flag. This patch 
+> fix it by restore PG_dirty flag to stored page flag if the page is dirty.
 
-The zfcp driver used to call wait_event_interruptible_timeout()
-in combination with some intricate and error-prone locking. Using
-wait_event_interruptible_lock_irq_timeout() as a replacement
-nicely cleans up that locking.
+Right. And I'm guessing that the discrepancy between pte_dirty and PageDirty
+can happen on the situations rather than mlocked pages.
+Anyway, using both of page flags before and after unmapping looks right to me.
 
-This rework removes a situation that resulted in a locking imbalance
-in zfcp_qdio_sbal_get():
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-BUG: workqueue leaked lock or atomic: events/1/0xffffff00/10
-    last function: zfcp_fc_wka_port_offline+0x0/0xa0 [zfcp]
 
-It was introduced by commit c2af7545aaff3495d9bf9a7608c52f0af86fb194
-"[SCSI] zfcp: Do not wait for SBALs on stopped queue", which had a new
-code path related to ZFCP_STATUS_ADAPTER_QDIOUP that took an early exit
-without a required lock being held. The problem occured when a
-special, non-SCSI I/O request was being submitted in process context,
-when the adapter's queues had been torn down. In this case the bug
-surfaced when the Fibre Channel port connection for a well-known address
-was closed during a concurrent adapter shut-down procedure, which is a
-rare constellation.
-
-This patch also fixes these warnings from the sparse tool (make C=1):
-
-drivers/s390/scsi/zfcp_qdio.c:224:12: warning: context imbalance in
- 'zfcp_qdio_sbal_check' - wrong count at exit
-drivers/s390/scsi/zfcp_qdio.c:244:5: warning: context imbalance in
- 'zfcp_qdio_sbal_get' - unexpected unlock
-
-Last but not least, we get rid of that crappy lock-unlock-lock
-sequence at the beginning of the critical section.
-
-It is okay to call zfcp_erp_adapter_reopen() with req_q_lock held.
-
-Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Cc: stable@vger.kernel.org #2.6.35+
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
----
- drivers/s390/scsi/zfcp_qdio.c |    8 +----
- include/linux/wait.h          |   57 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 59 insertions(+), 6 deletions(-)
-
---- a/drivers/s390/scsi/zfcp_qdio.c
-+++ b/drivers/s390/scsi/zfcp_qdio.c
-@@ -224,11 +224,9 @@ int zfcp_qdio_sbals_from_sg(struct zfcp_
- 
- static int zfcp_qdio_sbal_check(struct zfcp_qdio *qdio)
- {
--	spin_lock_irq(&qdio->req_q_lock);
- 	if (atomic_read(&qdio->req_q_free) ||
- 	    !(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
- 		return 1;
--	spin_unlock_irq(&qdio->req_q_lock);
- 	return 0;
- }
- 
-@@ -246,9 +244,8 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio
- {
- 	long ret;
- 
--	spin_unlock_irq(&qdio->req_q_lock);
--	ret = wait_event_interruptible_timeout(qdio->req_q_wq,
--			       zfcp_qdio_sbal_check(qdio), 5 * HZ);
-+	ret = wait_event_interruptible_lock_irq_timeout(qdio->req_q_wq,
-+		       zfcp_qdio_sbal_check(qdio), qdio->req_q_lock, 5 * HZ);
- 
- 	if (!(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
- 		return -EIO;
-@@ -262,7 +259,6 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio
- 		zfcp_erp_adapter_reopen(qdio->adapter, 0, "qdsbg_1");
- 	}
- 
--	spin_lock_irq(&qdio->req_q_lock);
- 	return -EIO;
- }
- 
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -811,6 +811,63 @@ do {									\
- 	__ret;								\
- })
- 
-+#define __wait_event_interruptible_lock_irq_timeout(wq, condition,	\
-+						    lock, ret)		\
-+do {									\
-+	DEFINE_WAIT(__wait);						\
-+									\
-+	for (;;) {							\
-+		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
-+		if (condition)						\
-+			break;						\
-+		if (signal_pending(current)) {				\
-+			ret = -ERESTARTSYS;				\
-+			break;						\
-+		}							\
-+		spin_unlock_irq(&lock);					\
-+		ret = schedule_timeout(ret);				\
-+		spin_lock_irq(&lock);					\
-+		if (!ret)						\
-+			break;						\
-+	}								\
-+	finish_wait(&wq, &__wait);					\
-+} while (0)
-+
-+/**
-+ * wait_event_interruptible_lock_irq_timeout - sleep until a condition gets true or a timeout elapses.
-+ *		The condition is checked under the lock. This is expected
-+ *		to be called with the lock taken.
-+ * @wq: the waitqueue to wait on
-+ * @condition: a C expression for the event to wait for
-+ * @lock: a locked spinlock_t, which will be released before schedule()
-+ *	  and reacquired afterwards.
-+ * @timeout: timeout, in jiffies
-+ *
-+ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
-+ * @condition evaluates to true or signal is received. The @condition is
-+ * checked each time the waitqueue @wq is woken up.
-+ *
-+ * wake_up() has to be called after changing any variable that could
-+ * change the result of the wait condition.
-+ *
-+ * This is supposed to be called while holding the lock. The lock is
-+ * dropped before going to sleep and is reacquired afterwards.
-+ *
-+ * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
-+ * was interrupted by a signal, and the remaining jiffies otherwise
-+ * if the condition evaluated to true before the timeout elapsed.
-+ */
-+#define wait_event_interruptible_lock_irq_timeout(wq, condition, lock,	\
-+						  timeout)		\
-+({									\
-+	int __ret = timeout;						\
-+									\
-+	if (!(condition))						\
-+		__wait_event_interruptible_lock_irq_timeout(		\
-+					wq, condition, lock, __ret);	\
-+	__ret;								\
-+})
-+
- 
- /*
-  * These are the old interfaces to sleep waiting for an event.
-
+> Testcase:
+> 
+> #define _GNU_SOURCE
+> #include <stdlib.h>
+> #include <stdio.h>
+> #include <sys/mman.h>
+> #include <sys/types.h>
+> #include <errno.h>
+> 
+> #define PAGES_TO_TEST 2
+> #define PAGE_SIZE	4096
+> 
+> int main(void)
+> {
+> 	char *mem;
+> 	int i;
+> 
+> 	mem = mmap(NULL, PAGES_TO_TEST * PAGE_SIZE,
+> 			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_LOCKED, 0, 0);
+> 
+> 	for (i = 0; i < PAGES_TO_TEST; i++)
+> 		mem[i * PAGE_SIZE] = 'a';
+> 
+> 	if (madvise(mem, PAGES_TO_TEST * PAGE_SIZE, MADV_HWPOISON) == -1)
+> 		return -1;
+> 
+> 	return 0;
+> }
+> 
+> Before patch:
+> 
+> [  912.839247] Injecting memory failure for page 7dfb8 at 7f6b4e37b000
+> [  912.839257] MCE 0x7dfb8: clean mlocked LRU page recovery: Recovered
+> [  912.845550] MCE 0x7dfb8: clean mlocked LRU page still referenced by 1 users
+> [  912.852586] Injecting memory failure for page 7e6aa at 7f6b4e37c000
+> [  912.852594] MCE 0x7e6aa: clean mlocked LRU page recovery: Recovered
+> [  912.858936] MCE 0x7e6aa: clean mlocked LRU page still referenced by 1 users
+> 
+> After patch:
+> 
+> [  163.590225] Injecting memory failure for page 91bc2f at 7f9f5b0e5000
+> [  163.590264] MCE 0x91bc2f: dirty mlocked LRU page recovery: Recovered
+> [  163.596680] MCE 0x91bc2f: dirty mlocked LRU page still referenced by 1 users
+> [  163.603831] Injecting memory failure for page 91cdd3 at 7f9f5b0e6000
+> [  163.603852] MCE 0x91cdd3: dirty mlocked LRU page recovery: Recovered
+> [  163.610305] MCE 0x91cdd3: dirty mlocked LRU page still referenced by 1 users
+> 
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> ---
+>  mm/memory-failure.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> index bee58d8..e156084 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -1206,6 +1206,9 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+>  	for (ps = error_states;; ps++)
+>  		if ((p->flags & ps->mask) == ps->res)
+>  			break;
+> +
+> +	page_flags |= (p->flags & (1UL << PG_dirty));
+> +
+>  	if (!ps->mask)
+>  		for (ps = error_states;; ps++)
+>  			if ((page_flags & ps->mask) == ps->res)
+> -- 
+> 1.7.7.6
+>
