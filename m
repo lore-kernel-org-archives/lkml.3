@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab3HVHce (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:32:34 -0400
-Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:25313
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753195Ab3HVHcb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:32:31 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Xiubo Li-B47053 <B47053@freescale.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Tomasz Figa <tomasz.figa@gmail.com>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Subject: RE: [PATCH 4/4] Documentation: Add device tree bindings for
- Freescale FTM PWM
-Thread-Topic: [PATCH 4/4] Documentation: Add device tree bindings for
- Freescale FTM PWM
-Thread-Index: AQHOnhwezjS9uM7qaEqpBdTwwEdnOZmgDXMAgABm0CCAAFCAAIAADBjQ
-Date: Thu, 22 Aug 2013 07:32:25 +0000
-Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F827D241A@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com>
- <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com>
- <1473340.OXSHEp7d4P@flatron>
- <1DD289F6464F0949A2FCA5AA6DC23F827D2244@039-SN2MPN1-013.039d.mgd.msft.net>
- <20130822062610.GR31036@pengutronix.de>
-In-Reply-To: <20130822062610.GR31036@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.56]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753856Ab3HVHdD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:33:03 -0400
+Received: from mail-ph.de-nserver.de ([85.158.179.214]:44931 "EHLO
+	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753642Ab3HVHdB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 03:33:01 -0400
+X-Fcrdns: No
+Message-ID: <5215BEA4.6040101@profihost.ag>
+Date: Thu, 22 Aug 2013 09:32:52 +0200
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Kent Overstreet <kmo@daterainc.com>
+CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-bcache@vger.kernel.org
+Subject: Re: bcache: Fix a writeback performance regression
+References: <520C788A.1060208@profihost.ag> <520DFAB4.1050402@profihost.ag> <52114614.4070509@profihost.ag> <20130819222718.GA32104@kmo-pixel> <52132243.8050803@profihost.ag> <521323D1.1070503@profihost.ag> <20130821234715.GA4630@moria.home.lan> <5215A130.9080508@profihost.ag> <20130822054336.GA14935@kmo-pixel> <5215A8A8.90900@profihost.ag> <20130822060215.GB14935@kmo-pixel>
+In-Reply-To: <20130822060215.GB14935@kmo-pixel>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+great!
 
-> > > Could you explain meaning of this property more precisely? I'm
-> > > interested especially how is this related to the PWM IP block and
-> boards.
-> > >
-> >
-> > Yes.
-> > There are 8 channels most. While the pinctrls of 4th and 5th channels
-> > could be used by uart's Rx and Tx, then these 2 channels won't be used
-> > for pwm output, so there will be 6 channels available by the pwm.
-> > Thus, the pwm chip will register only 6 pwms(6 channels)
-> > most("fsl,pwm-channel-orders = {0 1 2 3 6 7}").And also the "fsl,pwm-
-> > channel-number" will be 6.
+Everything seems to work fine now! Except read_dirty always going to
+negative values after a reboot.
+
+Stefan
+
+Am 22.08.2013 08:02, schrieb Kent Overstreet:
+> On Thu, Aug 22, 2013 at 07:59:04AM +0200, Stefan Priebe wrote:
+>>
+>>> schedule_timeout() is not the same as
+>>> schedule_timeout_interruptible().
+>>
+>> just search and replace? So i can try on my own.
 > 
-> If the chip has eight PWMs I would register all of them. If some of them
-> are not routed out by the pinmux then just nothing happens if you use
-> them. In a sane devicetree they won't be referenced anyway when they are
-> not routed out of the SoC.
+> The one in read_dirty(), line ~330
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-
-Yes, that's perfect well.
-
-I will do it in v2.
-
-Thanks very much.
---
-Best Regards,
-Xiubo
-
