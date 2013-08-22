@@ -1,141 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab3HVAmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 20:42:20 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55261 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab3HVAmS (ORCPT
+	id S1753240Ab3HVAnX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 20:43:23 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:1061 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752678Ab3HVAnW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 20:42:18 -0400
-X-AuditID: 9c930179-b7c0bae0000040ac-cd-52155e68aa3e
-Date: Thu, 22 Aug 2013 09:42:50 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Mel Gorman <mgorman@suse.de>, lliubbo@gmail.com
-Subject: Re: [PATCH v7 0/5] zram/zsmalloc promotion
-Message-ID: <20130822004250.GB4665@bbox>
-References: <1377065791-2959-1-git-send-email-minchan@kernel.org>
- <52148730.4000709@oracle.com>
+	Wed, 21 Aug 2013 20:43:22 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+From: "Sherman Yin" <syin@broadcom.com>
+To: "Linus Walleij" <linus.walleij@linaro.org>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "matt.porter@linaro.org" <matt.porter@linaro.org>,
+        "Christian Daudt" <csd@broadcom.com>,
+        "Markus Mayer" <mmayer@broadcom.com>,
+        "James Hogan" <james.hogan@imgtec.com>
+Subject: RE: [PATCH] pinctrl: Pass all configs to driver on
+ pin_config_set()
+Thread-Topic: [PATCH] pinctrl: Pass all configs to driver on
+ pin_config_set()
+Thread-Index: AQHOmgj9JDWSFPXUuUqlaxMrv7HnmJmguMIA//+yQ0A=
+Date: Thu, 22 Aug 2013 00:43:10 +0000
+Message-ID: <051069C10411E24D9749790C498526FA1BDD9D27@SJEXCHMB12.corp.ad.broadcom.com>
+References: <1376606573-15093-1-git-send-email-syin@broadcom.com>
+ <CACRpkdaUacAbLd+i4Y=DXv=aSaUwBSz6-icPV9SVjxZkUjheww@mail.gmail.com>
+In-Reply-To: <CACRpkdaUacAbLd+i4Y=DXv=aSaUwBSz6-icPV9SVjxZkUjheww@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52148730.4000709@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-WSS-ID: 7E0B83B72L876757561-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bob,
+Hi Linus,
 
-On Wed, Aug 21, 2013 at 05:24:00PM +0800, Bob Liu wrote:
-> Hi Minchan,
-> 
-> On 08/21/2013 02:16 PM, Minchan Kim wrote:
-> > It's 7th trial of zram/zsmalloc promotion.
-> > I rewrote cover-letter totally based on previous discussion.
-> > 
-> > The main reason to prevent zram promotion was no review of
-> > zsmalloc part while Jens, block maintainer, already acked
-> > zram part.
-> > 
-> > At that time, zsmalloc was used for zram, zcache and zswap so
-> > everybody wanted to make it general and at last, Mel reviewed it
-> > when zswap was submitted to merge mainline a few month ago.
-> > Most of review was related to zswap writeback mechanism which
-> > can pageout compressed page in memory into real swap storage
-> > in runtime and the conclusion was that zsmalloc isn't good for
-> > zswap writeback so zswap borrowed zbud allocator from zcache to
-> > replace zsmalloc. The zbud is bad for memory compression ratio(2)
-> > but it's very predictable behavior because we can expect a zpage
-> > includes just two pages as maximum. Other reviews were not major. 
-> > http://lkml.indiana.edu/hypermail/linux/kernel/1304.1/04334.html
-> > 
-> > Zcache doesn't use zsmalloc either so zsmalloc's user is only
-> > zram now so this patchset moves it into zsmalloc directory.
-> > Recently, Bob tried to move zsmalloc under mm directory to unify
-> > zram and zswap with adding pseudo block device in zswap(It's
-> > very weired to me) but he was simple ignoring zram's block device
-> > (a.k.a zram-blk) feature and considered only swap usecase of zram,
-> > in turn, it lose zram's good concept.
-> > 
-> 
-> Yes, I didn't notice the feature that zram can be used as a normal block
-> device.
-> 
-> 
-> > Mel raised an another issue in v6, "maintainance headache".
-> > He claimed zswap and zram has a similar goal that is to compresss
-> > swap pages so if we promote zram, maintainance headache happens
-> > sometime by diverging implementaion between zswap and zram
-> > so that he want to unify zram and zswap. For it, he want zswap
-> > to implement pseudo block device like Bob did to emulate zram so
-> > zswap can have an advantage of writeback as well as zram's benefit.
-> 
-> If consider zram as a swap device only, I still think it's better to add
-> a pseudo block device to zswap and just disable the writeback of zswap.
+>Right now this does not apply to my "devel" branch, so I'd like you
+>to rebase on that right now. (This is what will go into v3.12).
+>
+>This is also late in the development cycle so I believe this is going to
+>be v3.13 material unless there are more release candidates.
+>
+>You can also hold on until after the v3.12 merge window and then
+>rebase it and we'll merge it as a first patch in the v3.13 development
+>cycle.
+>
+>What do you say?
 
-Why do you think zswap is better?
+You mean the "devel" branch in this tree, right?  Please let me know 
+if you're talking about another tree/branch.
 
-> 
-> But I have no idea of zram's block device feature.
-> 
-> > But I wonder frontswap-based zswap's writeback is really good
-> > approach for writeback POV. I think that problem isn't only
-> > specific for zswap. If we want to configure multiple swap hierarchy
-> > with various speed device such as RAM, NVRAM, SSD, eMMC, NAS etc,
-> > it would be a general problem. So we should think of more general
-> > approach. At a glance, I can see two approach.
-> > 
-> > First, VM could be aware of heterogeneous swap configuration
-> > so it could aim for being able to configure cache hierarchy
-> > among swap devices. It may need indirction layer on swap, which
-> > was already talked about that way so VM can migrate a block from 
-> > A to B easily. It will support various configuration with VM's
-> > hints, maybe, in future.
-> > http://lkml.indiana.edu/hypermail/linux/kernel/1203.3/03812.html
-> > 
-> > Second, as more practical solution, we could use device mapper like
-> > dm-cache(https://lwn.net/Articles/540996/), which makes it very
-> > flexible. Now, it supports various configruation and cache policy
-> > (block size, writeback/writethrough, LRU, MFU although MQ is merged
-> > now) so it would be good fit for our purpose. Even, it can make zram
-> > support writeback. I tested it following as following scenario
-> > in KVM 4 CPU, 1G DRAM with background 800M memory hogger, which is
-> > allocates random data up to 800M.
-> > 
-> > 1) zram swap disk 1G, untar kernel.tgz to tmpfs, build -j 4
-> >    Fail to untar due to shortage of memory space by tmpfs default size limit
-> > 
-> > 2) zram swap disk 1G, untar kernel.tgz to ext2 on zram-blk, build -j 4
-> >    OOM happens while building the kernel but it untar successfully
-> >    on ext2 based on zram-blk. The reason OOM happend is zram can not find
-> >    free pages from main memory to store swap out pages although empty
-> >    swap space is still enough.
-> > 
-> > 3) dm-cache swap disk 1G, untar kernel.tgz to ext2 on zram-blk, build -j 4
-> >    dmcache consists of zram-meta 10M, zram-cache 1G and real swap storage 1G
-> >    No OOM happens and successfully building done.
-> > 
-> > Above tests proves zram can support writeback into real swap storage
-> > so that zram-cache can always have a free space. If necessary, we could
-> > add new plugin in dm-cache. I see It's really flexible and well-layered
-> > architecure so zram-blk's concept is good for us and it has lots of
-> > potential to be enhanced by MM/FS/Block developers. 
-> > 
-> 
-> That's an exciting direction!
+git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
+
+I cherry-picked my commit on top of devel, and there was just a simple
+conflict in pinctrl-sunxi.c.  It's easy enough to fix, so I'll send out v2 
+that's based on "devel" instead of rc6 anyway.  I can just do another
+rebase after v3.12 merge window if needed. 
 
 Thanks!
+Sherman
 
--- 
-Kind regards,
-Minchan Kim
+
+
+
