@@ -1,200 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab3HVN3J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 09:29:09 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:39205 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752674Ab3HVN3G (ORCPT
+	id S1753228Ab3HVN3T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 09:29:19 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:35780 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753176Ab3HVN3P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 09:29:06 -0400
+	Thu, 22 Aug 2013 09:29:15 -0400
+Message-ID: <52161245.3080404@arm.com>
+Date: Thu, 22 Aug 2013 14:29:41 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1376189294-32022-29-git-send-email-yinghai@kernel.org>
-References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
-	<1376189294-32022-29-git-send-email-yinghai@kernel.org>
-Date: Thu, 22 Aug 2013 21:29:04 +0800
-Message-ID: <CANVTcTYhSfU+Su9s1B+mTTBfgsZgqvQxHiTsLck1zT_vg1Cs4g@mail.gmail.com>
-Subject: Re: [PATCH v4 28/28] PCI, x86, ACPI: get ioapic address from acpi device
-From: rui wang <ruiv.wang@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Subject: Re: [PATCH v4 03/19] powerpc: refactor of_get_cpu_node to support
+ other architectures
+References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>  <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>  <1376991021-12160-4-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1377152143.25016.289.camel@pasglop>
+In-Reply-To: <1377152143.25016.289.camel@pasglop>
+X-OriginalArrivalTime: 22 Aug 2013 13:29:11.0164 (UTC) FILETIME=[962B73C0:01CE9F3B]
+X-MC-Unique: 113082214291300501
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/11/13, Yinghai Lu <yinghai@kernel.org> wrote:
-> Some ioapic controllers do not show up on pci config space,
-> or pci device is there but no bar is used and is set by firmware in
-> other non standard registers.
->
-> We can get ioapic address from ACPI0009's _CRS.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/pci/ioapic.c | 86
-> +++++++++++++++++++++++++++++++++++++++++++---------
->  1 file changed, 71 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
-> index 60351b2..41f7c69 100644
-> --- a/drivers/pci/ioapic.c
-> +++ b/drivers/pci/ioapic.c
-> @@ -32,6 +32,36 @@ struct acpi_pci_ioapic {
->  static LIST_HEAD(ioapic_list);
->  static DEFINE_MUTEX(ioapic_list_lock);
->
-> +static acpi_status setup_res(struct acpi_resource *acpi_res, void *data)
-> +{
-> +	struct resource *res;
-> +	struct acpi_resource_address64 addr;
-> +	acpi_status status;
-> +	unsigned long flags;
-> +	u64 start, end;
-> +
-> +	status = acpi_resource_to_address64(acpi_res, &addr);
+On 22/08/13 07:15, Benjamin Herrenschmidt wrote:
+> On Tue, 2013-08-20 at 10:30 +0100, Sudeep KarkadaNagesha wrote:
+>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+>>
+>> Currently different drivers requiring to access cpu device node are
+>> parsing the device tree themselves. Since the ordering in the DT need
+>> not match the logical cpu ordering, the parsing logic needs to consider
+>> that. However, this has resulted in lots of code duplication and in some
+>> cases even incorrect logic.
+>>
+>> It's better to consolidate them by adding support for getting cpu
+>> device node for a given logical cpu index in DT core library. However
+>> logical to physical index mapping can be architecture specific.
+>>
+>> PowerPC has it's own implementation to get the cpu node for a given
+>> logical index.
+>>
+>> This patch refactors the current implementation of of_get_cpu_node.
+>> This in preparation to move the implementation to DT core library.
+>> It separates out the logical to physical mapping so that a default
+>> matching of the physical id to the logical cpu index can be added
+>> when moved to common code. Architecture specific code can override it.
+> 
+> So the patch unfortunately collides with other changes in powerpc -next,
+> though it's not a huge deal and not hard to fixup, but expect Linus
+> to tick unless we sort it out some other way.
+> 
+> Appart from that, it's fine, builds on all my test configs and doesn't
+> seem to negatively impact things as far as I can tell so far...
+> 
+> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> 
 
-The above function fails on my machine because it does not handle
-Memory32Fixed resources. Is the following _CRS declaration allowed for
-IOAPIC?
+Hi Ben,
 
-            Device (APIC)
-            {
-                Name (_HID, "ACPI0009")  // _HID: Hardware ID
-                Name (_CRS, ResourceTemplate ()  // _CRS: Current
-Resource Settings
-                {
-                    Memory32Fixed (ReadOnly,
-                        0xFEC01000,         // Address Base
-                        0x00001000,         // Address Length
-                        )
-                })
-                Method(_GSB) {
-                        return (0x18)
-                }
-            }
+Thanks a lot for testing and ACK.
+I will check with Rafael about these (trivial) conflicts.
+
+Regards,
+Sudeep
 
 
-Thanks
-Rui
-
-> +	if (!ACPI_SUCCESS(status))
-> +		return AE_OK;
-> +
-> +	if (addr.resource_type == ACPI_MEMORY_RANGE) {
-> +		if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
-> +			return AE_OK;
-> +		flags = IORESOURCE_MEM;
-> +	} else
-> +		return AE_OK;
-> +
-> +	start = addr.minimum + addr.translation_offset;
-> +	end = addr.maximum + addr.translation_offset;
-> +
-> +	res = data;
-> +	res->flags = flags;
-> +	res->start = start;
-> +	res->end = end;
-> +
-> +	return AE_OK;
-> +}
-> +
->  static void handle_ioapic_add(acpi_handle handle, struct pci_dev **pdev,
->  				 u32 *pgsi_base)
->  {
-> @@ -54,33 +84,56 @@ static void handle_ioapic_add(acpi_handle handle, struct
-> pci_dev **pdev,
->  		return;
->
->  	dev = acpi_get_pci_dev(handle);
-> -	if (!dev)
-> -		return;
-> +	if (!dev || !pci_resource_len(dev, 0)) {
-> +		struct acpi_device_info *info;
-> +		char *hid = NULL;
-> +
-> +		status = acpi_get_object_info(handle, &info);
-> +		if (ACPI_FAILURE(status))
-> +			goto exit_put;
-> +		if (info->valid & ACPI_VALID_HID)
-> +			hid = info->hardware_id.string;
-> +		if (!hid || strcmp(hid, "ACPI0009")) {
-> +			kfree(info);
-> +			goto exit_put;
-> +		}
-> +		kfree(info);
-> +		memset(res, 0, sizeof(*res));
-> +		acpi_walk_resources(handle, METHOD_NAME__CRS, setup_res, res);
-> +		if (!res->flags)
-> +			goto exit_put;
-> +	}
->
->  	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
->
->  	gsi_base = gsb;
->  	type = "IOxAPIC";
-> +	if (dev) {
-> +		ret = pci_enable_device(dev);
-> +		if (ret < 0)
-> +			goto exit_put;
->
-> -	ret = pci_enable_device(dev);
-> -	if (ret < 0)
-> -		goto exit_put;
-> -
-> -	pci_set_master(dev);
-> +		pci_set_master(dev);
->
-> -	if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
-> -		type = "IOAPIC";
-> +		if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
-> +			type = "IOAPIC";
->
-> -	if (pci_request_region(dev, 0, type))
-> -		goto exit_disable;
-> +		if (pci_resource_len(dev, 0)) {
-> +			if (pci_request_region(dev, 0, type))
-> +				goto exit_disable;
->
-> -	res = &dev->resource[0];
-> +			res = &dev->resource[0];
-> +		}
-> +	}
->
-> -	if (acpi_register_ioapic(handle, res->start, gsi_base))
-> -		goto exit_release;
-> +	if (acpi_register_ioapic(handle, res->start, gsi_base)) {
-> +		if (dev)
-> +			goto exit_release;
-> +		return;
-> +	}
->
->  	pr_info("%s %s %s at %pR, GSI %u\n",
-> -		dev_name(&dev->dev), objname, type,
-> +		dev ? dev_name(&dev->dev) : "", objname, type,
->  		res, gsi_base);
->
->  	*pdev = dev;
-> @@ -100,6 +153,9 @@ static void handle_ioapic_remove(acpi_handle handle,
-> struct pci_dev *dev,
->  {
->  	acpi_unregister_ioapic(handle, gsi_base);
->
-> +	if (!dev)
-> +		return;
-> +
->  	pci_release_region(dev, 0);
->  	pci_disable_device(dev);
->  	pci_dev_put(dev);
-> --
-> 1.8.1.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
