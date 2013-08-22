@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab3HVHww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:52:52 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:43352 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab3HVHwq (ORCPT
+	id S1754000Ab3HVHxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:53:32 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:49918 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753853Ab3HVHxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:52:46 -0400
-Message-ID: <5215C345.9040309@linux.vnet.ibm.com>
-Date: Thu, 22 Aug 2013 15:52:37 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Thu, 22 Aug 2013 03:53:30 -0400
 MIME-Version: 1.0
-To: open list <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: [PATCH 03/11] sched/cleanup: remove the extra parm of copy_flags()
-References: <5215C233.9060907@linux.vnet.ibm.com>
-In-Reply-To: <5215C233.9060907@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082207-2000-0000-0000-00000D6A002C
+In-Reply-To: <201308220947.29715.poeschel@lemonage.de>
+References: <201308211719.57748.poeschel@lemonage.de> <5214FBA8.5000603@wwwdotorg.org>
+ <201308220947.29715.poeschel@lemonage.de>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Thu, 22 Aug 2013 08:52:49 +0100
+Message-ID: <CAGVrzcZ2bOxJxxheNXkQ9x1TLOeQW1UzbFz5sc6=Gg6Cv+2Q_Q@mail.gmail.com>
+Subject: Re: [PATCH] of: add vendor prefix for Microchip Technology Inc
+To: Lars Poeschel <poeschel@lemonage.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parm 'clone_flags' has not been used, remove it to make code clean.
+Hello,
 
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- kernel/fork.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+2013/8/22 Lars Poeschel <poeschel@lemonage.de>:
+> On Wednesday 21 August 2013 at 19:40:56, Stephen Warren wrote:
+>> On 08/21/2013 09:19 AM, Lars Poeschel wrote:
+>> > Trivial patch to add Microchip Technology Inc. to the list
+>> > of devicetree vendor prefixes, as it is already used in
+>> > Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+>>
+>> Oh dear. Perhaps it can be legacy-ified...
+>>
+>> > diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> >
+>> > +mcp        Microchip Technology Inc.
+>>
+>> If I saw "mcp," in a *.dts file, I wouldn't immediately think
+>> "Microchip".
+>>
+>> Their stock ticker appears to be MCHP, so I'd suggest either "mchp" or
+>> "microchip" instead; that latter being my personal preference.
+>
+> Any other opinions?
+> If there are other voices who don't like it, we can change it. There is no
+> in-tree dts file using this yet.
+> How can a renaming be done? Would that involve changing the drivers (and
+> module) name too? Or do we have the difference between "mcp" in the drivers
+> name and "microchip" for device tree properties? In the latter case, I'd
+> vote against it - if anyone cares. ;-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 457945f..3c2d8fd 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1070,7 +1070,7 @@ static int copy_signal(unsigned long clone_flags, struct task_struct *tsk)
- 	return 0;
- }
- 
--static void copy_flags(unsigned long clone_flags, struct task_struct *p)
-+static void copy_flags(struct task_struct *p)
- {
- 	unsigned long new_flags = p->flags;
- 
-@@ -1223,7 +1223,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 
- 	p->did_exec = 0;
- 	delayacct_tsk_init(p);	/* Must remain after dup_task_struct() */
--	copy_flags(clone_flags, p);
-+	copy_flags(p);
- 	INIT_LIST_HEAD(&p->children);
- 	INIT_LIST_HEAD(&p->sibling);
- 	rcu_copy_process(p);
+We have recently had an interesting debate for the Broadcom vendor
+prefix, so in light of this debate, I would go for the full name
+directly and use "microchip". That said, this does not necessarily
+mean that drivers containing "mcp" in their files/filenames must also
+be renamed.
 -- 
-1.7.9.5
-
+Florian
