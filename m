@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab3HVTPX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 15:15:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2317 "EHLO mx1.redhat.com"
+	id S1754033Ab3HVTWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 15:22:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40075 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753189Ab3HVTPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 15:15:21 -0400
-Date: Thu, 22 Aug 2013 21:08:48 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        John Johansen <john.johansen@canonical.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kentaro Takeda <takedakn@nttdata.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
-	task->pid and task->tgid
-Message-ID: <20130822190848.GA25053@redhat.com>
-References: <cover.1377032086.git.rgb@redhat.com> <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753393Ab3HVTWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 15:22:12 -0400
+Date: Thu, 22 Aug 2013 15:20:47 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>, Andi Kleen <andi@firstfloor.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        gong.chen@linux.intel.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <1377199247-2kdx6aoc-mutt-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH] hwpoison: always unset MIGRATE_ISOLATE before returning from
+ soft_offline_page()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mutt-References: <1377198365-3xic0o2q-mutt-n-horiguchi@ah.jp.nec.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20, Richard Guy Briggs wrote:
->
->  static inline int is_global_init(struct task_struct *tsk)
->  {
-> -	return tsk->pid == 1;
-> +	return task_pid_nr(tsk) == 1;
->  }
+Soft offline code expects that MIGRATE_ISOLATE is set on the target page
+only during soft offlining work. But currenly it doesn't work as expected
+when get_any_page() fails and returns negative value. In the result, end
+users can have unexpectedly isolated pages. This patch just fixes it.
 
-Probably it would be better to simply kill it. Almost every usage is
-wrong.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ mm/memory-failure.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
->  static inline bool is_idle_task(const struct task_struct *p)
->  {
-> -	return p->pid == 0;
-> +	return task_pid(p) == &init_struct_pid;
->  }
-
-hmm. there should be a simpler check for this...
-
->  static inline int has_group_leader_pid(struct task_struct *p)
->  {
-> -	return p->pid == p->tgid;
-> +	return task_pid(p) == task_tgid(p);
->  }
->  
->  static inline
->  int same_thread_group(struct task_struct *p1, struct task_struct *p2)
->  {
-> -	return p1->tgid == p2->tgid;
-> +	return task_tgid(p1) == task_tgid(p2);
-
-This is suboptinal. See the attached
-include-linux-schedh-dont-use-task-pid-tgid-in-same_thread_group-has_group_leader_pid.patch
-from -mm below.
-
-Oleg.
-
-
---- a/include/linux/sched.h~include-linux-schedh-dont-use-task-pid-tgid-in-same_thread_group-has_group_leader_pid
-+++ a/include/linux/sched.h
-@@ -2179,15 +2179,15 @@ static inline bool thread_group_leader(s
-  * all we care about is that we have a task with the appropriate
-  * pid, we don't actually care if we have the right task.
-  */
--static inline int has_group_leader_pid(struct task_struct *p)
-+static inline bool has_group_leader_pid(struct task_struct *p)
- {
--	return p->pid == p->tgid;
-+	return task_pid(p) == p->signal->leader_pid;
- }
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index af6f61c..1cb3b7d 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1550,7 +1550,7 @@ int soft_offline_page(struct page *page, int flags)
  
- static inline
--int same_thread_group(struct task_struct *p1, struct task_struct *p2)
-+bool same_thread_group(struct task_struct *p1, struct task_struct *p2)
- {
--	return p1->tgid == p2->tgid;
-+	return p1->signal == p2->signal;
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
+-		return ret;
++		goto unset;
+ 	if (ret) { /* for in-use pages */
+ 		if (PageHuge(page))
+ 			ret = soft_offline_huge_page(page, flags);
+@@ -1567,6 +1567,7 @@ int soft_offline_page(struct page *page, int flags)
+ 			atomic_long_inc(&num_poisoned_pages);
+ 		}
+ 	}
++unset:
+ 	unset_migratetype_isolate(page, MIGRATE_MOVABLE);
+ 	return ret;
  }
- 
- static inline struct task_struct *next_thread(const struct task_struct *p)
-
+-- 
+1.8.3.1
