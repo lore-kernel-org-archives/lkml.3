@@ -1,133 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab3HVVro (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 17:47:44 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:36662 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab3HVVrn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 17:47:43 -0400
-X-IronPort-AV: E=Sophos;i="4.89,936,1367971200"; 
-   d="scan'208";a="44537798"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>,
-        <virtualization@lists.linux-foundation.org>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH] tracing/events: Add bounce tracing to swiotbl-xen
-Date: Thu, 22 Aug 2013 22:47:28 +0100
-Message-ID: <1377208048-8963-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+	id S1754485Ab3HVVtb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 17:49:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22229 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754436Ab3HVVt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 17:49:29 -0400
+Message-ID: <1377208166.25163.31.camel@ul30vt.home>
+Subject: Re: [PATCH] pci: Add pci_walk_slot() interface
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 22 Aug 2013 15:49:26 -0600
+In-Reply-To: <CAErSpo5gUwm1nqME30DiUPOwhGfOttzjcvbtj-4aqSz4sLAcAg@mail.gmail.com>
+References: <20130819195917.9062.43580.stgit@bling.home>
+	 <CAErSpo5gUwm1nqME30DiUPOwhGfOttzjcvbtj-4aqSz4sLAcAg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ftrace is currently not able to detect when SWIOTLB has to do double buffering
-under Xen. You can only see it indirectly in function_graph, when
-xen_swiotlb_map_page() doesn't stop after range_straddles_page_boundary(), but
-calls spinlock functions, memcpy() and xen_phys_to_bus() as well. This patch
-introduces the swiotlb-xen:bounced event, which also prints out the following
-informations to help you find out why bouncing happened:
+On Thu, 2013-08-22 at 15:34 -0600, Bjorn Helgaas wrote:
+> On Mon, Aug 19, 2013 at 2:04 PM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> > We have a pci_walk_bus() interface, but it's exceptionally cumbersome
+> > for the callback function to figure out if the device is relevant if
+> > the caller is trying to walk all the devices in or below a slot.  Add
+> > a variant to walk only slot devices.
+> 
+> Is it really exceptionally cumbersome?  You can supply the top-level
+> slot in the userdata.  Can you then use something like this in the
+> callback?
+> 
+>     bool dev_below_slot(struct pci_dev *dev, struct pci_slot *slot)
+>     {
+>         if (!dev)
+>             return false;
+>         if (dev->slot == slot)
+>             return true;
+>         return dev_below_slot(dev->bus->self, slot);
+>     }
 
-dev_name: 0000:08:00.0 dma_mask=ffffffffffffffff dev_addr=9149f000 size=32768
-swiotlb_force=0
+Maybe I should have said it's ugly and inefficient rather than
+cumbersome.  This feels like a backwards way to do it, but if you don't
+want a walk_slot interface, then it looks like this would work.  Thanks,
 
-If (dev_addr + size + 1) > dma_mask, the buffer is out of the device's DMA
-range. If swiotlb_force == 1, you should really change the kernel parameters.
-Otherwise, the buffer is not contiguous in mfn space.
+Alex
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- drivers/xen/swiotlb-xen.c          |    7 ++++++
- include/trace/events/swiotlb-xen.h |   46 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 53 insertions(+)
- create mode 100644 include/trace/events/swiotlb-xen.h
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index aadffcf..f08440d 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -42,6 +42,10 @@
- #include <xen/page.h>
- #include <xen/xen-ops.h>
- #include <xen/hvc-console.h>
-+
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/swiotlb-xen.h>
-+
- /*
-  * Used to do a quick range check in swiotlb_tbl_unmap_single and
-  * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
-@@ -358,6 +362,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 	/*
- 	 * Oh well, have to allocate and map a bounce buffer.
- 	 */
-+
-+	trace_bounced(dev, dev_addr, size, swiotlb_force);
-+
- 	map = swiotlb_tbl_map_single(dev, start_dma_addr, phys, size, dir);
- 	if (map == SWIOTLB_MAP_ERROR)
- 		return DMA_ERROR_CODE;
-diff --git a/include/trace/events/swiotlb-xen.h b/include/trace/events/swiotlb-xen.h
-new file mode 100644
-index 0000000..cbe2dca
---- /dev/null
-+++ b/include/trace/events/swiotlb-xen.h
-@@ -0,0 +1,46 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM swiotlb-xen
-+
-+#if !defined(_TRACE_SWIOTLBXEN_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_SWIOTLBXEN_H
-+
-+#include <linux/tracepoint.h>
-+
-+TRACE_EVENT(bounced,
-+
-+	TP_PROTO(struct device *dev,
-+		 dma_addr_t dev_addr,
-+		 size_t size,
-+		 int swiotlb_force),
-+
-+	TP_ARGS(dev, dev_addr, size, swiotlb_force),
-+
-+	TP_STRUCT__entry(
-+		__string(	dev_name,	dev_name(dev)	)
-+		__field(	u64,	dma_mask		)
-+		__field(	dma_addr_t,	dev_addr	)
-+		__field(	size_t,	size			)
-+		__field(	int,	swiotlb_force		)
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(dev_name, dev_name(dev));
-+		__entry->dma_mask = (dev->dma_mask ? *dev->dma_mask : 0);
-+		__entry->dev_addr = dev_addr;
-+		__entry->size = size;
-+		__entry->swiotlb_force = swiotlb_force;
-+	),
-+
-+	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
-+		"size=%zu swiotlb_force=%x",
-+		__get_str(dev_name),
-+		__entry->dma_mask,
-+		(unsigned long long)__entry->dev_addr,
-+		__entry->size,
-+		__entry->swiotlb_force )
-+);
-+
-+#endif /*  _TRACE_IRQ_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
--- 
-1.7.9.5
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> >
+> > This allows me to use pci_walk_bus() and pci_walk_slot() instead of
+> > rolling my own for iterating devices for bus/slot reset.  Please
+> > consider for 3.12 to go with the rest of the bus/slot infrastructure.
+> >
+> >  drivers/pci/bus.c   |   56 +++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/pci.h |    2 ++
+> >  2 files changed, 58 insertions(+)
+> >
+> > diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+> > index b1ff02a..316579a 100644
+> > --- a/drivers/pci/bus.c
+> > +++ b/drivers/pci/bus.c
+> > @@ -283,6 +283,62 @@ void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
+> >  }
+> >  EXPORT_SYMBOL_GPL(pci_walk_bus);
+> >
+> > +/** pci_walk_slot - walk devices in/under slot, calling callback.
+> > + *  @slot     slot whose devices should be walked
+> > + *  @cb       callback to be called for each device found
+> > + *  @userdata arbitrary pointer to be passed to callback.
+> > + *
+> > + *  Walk the given slot, including any bridged devices
+> > + *  on buses under this slot.  Call the provided callback
+> > + *  on each device found.
+> > + *
+> > + *  We check the return of @cb each time. If it returns anything
+> > + *  other than 0, we break out.
+> > + *
+> > + */
+> > +void pci_walk_slot(struct pci_slot *slot, int (*cb)(struct pci_dev *, void *),
+> > +                  void *userdata)
+> > +{
+> > +       struct pci_dev *dev;
+> > +       struct pci_bus *bus;
+> > +       struct list_head *next;
+> > +       int retval;
+> > +
+> > +       bus = slot->bus;
+> > +       down_read(&pci_bus_sem);
+> > +       next = slot->bus->devices.next;
+> > +       for (;;) {
+> > +               if (next == &bus->devices) {
+> > +                       /* end of this bus, go up or finish */
+> > +                       if (bus == slot->bus)
+> > +                               break;
+> > +                       next = bus->self->bus_list.next;
+> > +                       bus = bus->self->bus;
+> > +                       continue;
+> > +               }
+> > +               dev = list_entry(next, struct pci_dev, bus_list);
+> > +
+> > +               /* skip anything on the top level bus not in our slot */
+> > +               if (dev->bus == slot->bus && dev->slot != slot) {
+> > +                       next = dev->bus_list.next;
+> > +                       continue;
+> > +               }
+> > +
+> > +               if (dev->subordinate) {
+> > +                       /* this is a pci-pci bridge, do its devices next */
+> > +                       next = dev->subordinate->devices.next;
+> > +                       bus = dev->subordinate;
+> > +               } else
+> > +                       next = dev->bus_list.next;
+> > +
+> > +               retval = cb(dev, userdata);
+> > +               if (retval)
+> > +                       break;
+> > +       }
+> > +       up_read(&pci_bus_sem);
+> > +}
+> > +EXPORT_SYMBOL_GPL(pci_walk_slot);
+> > +
+> >  struct pci_bus *pci_bus_get(struct pci_bus *bus)
+> >  {
+> >         if (bus)
+> > diff --git a/include/linux/pci.h b/include/linux/pci.h
+> > index daf40cd..cbb291b 100644
+> > --- a/include/linux/pci.h
+> > +++ b/include/linux/pci.h
+> > @@ -1087,6 +1087,8 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
+> >
+> >  void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
+> >                   void *userdata);
+> > +void pci_walk_slot(struct pci_slot *slot, int (*cb)(struct pci_dev *, void *),
+> > +                 void *userdata);
+> >  int pci_cfg_space_size_ext(struct pci_dev *dev);
+> >  int pci_cfg_space_size(struct pci_dev *dev);
+> >  unsigned char pci_bus_max_busnr(struct pci_bus *bus);
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
