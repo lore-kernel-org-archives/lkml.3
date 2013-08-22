@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308Ab3HVJMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 05:12:03 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53977 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3HVJMB (ORCPT
+	id S1752378Ab3HVJRm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 05:17:42 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:56894 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892Ab3HVJRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 05:12:01 -0400
-Message-ID: <5215D540.9020309@linux.vnet.ibm.com>
-Date: Thu, 22 Aug 2013 14:39:20 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 22 Aug 2013 05:17:40 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-48-5215d7323981
+Date: Thu, 22 Aug 2013 18:17:47 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v2 12/20] mm, hugetlb: remove vma_has_reserves()
+Message-ID: <20130822091747.GA22605@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1376040398-11212-13-git-send-email-iamjoonsoo.kim@lge.com>
+ <87siy215e1.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: fweisbec@gmail.com, paul.gortmaker@windriver.com, paulus@samba.org,
-        shangw@linux.vnet.ibm.com, galak@kernel.crashing.org,
-        deepthi@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
-        linux-pm@vger.kernel.org, rostedt@goodmis.org, rjw@sisk.pl,
-        john.stultz@linaro.org, tglx@linutronix.de, chenhui.zhao@freescale.com,
-        michael@ellerman.id.au, r58472@freescale.com, geoff@infradead.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [RFC V2 PATCH 4/6] cpuidle/ppc: Add longnap state to the idle
- states on powernv
-References: <20130814115311.5193.32212.stgit@preeti.in.ibm.com> <20130814115623.5193.36974.stgit@preeti.in.ibm.com> <1377142130.25016.273.camel@pasglop>
-In-Reply-To: <1377142130.25016.273.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082208-0260-0000-0000-00000381227A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87siy215e1.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
-
-On 08/22/2013 08:58 AM, Benjamin Herrenschmidt wrote:
-> On Wed, 2013-08-14 at 17:26 +0530, Preeti U Murthy wrote:
->> This patch hooks into the existing broadcast framework along with the support
->> that this patchset introduces for ppc, and the cpuidle driver backend
->> for powernv(posted out by Deepthi Dharwar:https://lkml.org/lkml/2013/7/23/128)
->> to add sleep state as one of the deep idle states, in which the decrementer
->> is switched off.
->>
->> However in this patch, we only emulate sleep by going into a state which does
->> a nap with the decrementer interrupts disabled, termed as longnap. This enables
->> focus on the timer broadcast framework for ppc in this series of patches ,
->> which is required as a first step to enable sleep on ppc.
+On Thu, Aug 22, 2013 at 02:14:38PM +0530, Aneesh Kumar K.V wrote:
+> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 > 
-> This is only for debug / proof of concept right ? We should use a real
-> sleep here.
+> > vma_has_reserves() can be substituted by using return value of
+> > vma_needs_reservation(). If chg returned by vma_needs_reservation()
+> > is 0, it means that vma has reserves. Otherwise, it means that vma don't
+> > have reserves and need a hugepage outside of reserve pool. This definition
+> > is perfectly same as vma_has_reserves(), so remove vma_has_reserves().
+> >
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 > 
-> If we need to know whether the FW supports it (PORE etc...) we shall add
-> a device-tree property from the FW to indicate that fact.
+> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-We also need the sleep support right? The context management, I mean.
-Yes it is a debug patch, so as to first ensure that we have the hook up
-to the broadcast framework done right.
+Thanks.
 
-Regards
-Preeti U Murthy
+> > @@ -580,8 +547,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+> >  	 * have no page reserves. This check ensures that reservations are
+> >  	 * not "stolen". The child may still get SIGKILLed
+> >  	 */
+> > -	if (!vma_has_reserves(vma, chg) &&
+> > -			h->free_huge_pages - h->resv_huge_pages == 0)
+> > +	if (chg && h->free_huge_pages - h->resv_huge_pages == 0)
+> >  		return NULL;
+> >
+> >  	/* If reserves cannot be used, ensure enough pages are in the pool */
+> > @@ -600,7 +566,7 @@ retry_cpuset:
+> >  			if (page) {
+> >  				if (avoid_reserve)
+> >  					break;
+> > -				if (!vma_has_reserves(vma, chg))
+> > +				if (chg)
+> >  					break;
+> >
+> >  				SetPagePrivate(page);
+> 
+> Can you add a comment above both the place to explain why checking chg
+> is good enough ?
 
+Yes, I can. But it will be changed to use_reserve in patch 13 and it
+represent it's meaning perfectly. So commeting may be useless.
+
+Thanks.
+
+> 
+> -aneesh
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
