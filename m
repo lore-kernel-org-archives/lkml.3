@@ -1,66 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab3HVGlr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 02:41:47 -0400
-Received: from relay.parallels.com ([195.214.232.42]:34101 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab3HVGlp (ORCPT
+	id S1753713Ab3HVGnU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 02:43:20 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:1825 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239Ab3HVGnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 02:41:45 -0400
-Message-ID: <5215B2A2.6090705@parallels.com>
-Date: Thu, 22 Aug 2013 10:41:38 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Thu, 22 Aug 2013 02:43:18 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 21 Aug 2013 23:41:01 -0700
+From: Richard Zhao <rizhao@nvidia.com>
+To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <vinod.koul@intel.com>, <djbw@fb.com>, <swarren@wwwdotorg.org>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <devicetree@vger.kernel.org>, Richard Zhao <rizhao@nvidia.com>
+Subject: [PATCH v2] DMA: add help function to check whether dma controller registered
+Date: Thu, 22 Aug 2013 14:43:00 +0800
+Message-ID: <1377153781-18006-1-git-send-email-rizhao@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1375423458-6868-1-git-send-email-rizhao@nvidia.com>
+References: <1375423458-6868-1-git-send-email-rizhao@nvidia.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>, <Xen-devel@lists.xen.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <dhillf@gmail.com>
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with
- existing use
-References: <5214F09002000078000ED5C3@nat28.tlf.novell.com> <20130821154238.GV18673@moon> <521500E102000078000ED65C@nat28.tlf.novell.com> <20130821161946.GW18673@moon> <5214F128.1000901@citrix.com> <20130821172547.GY18673@moon> <20130821181733.GC3814@moon> <4fec3e5b-695c-438b-ad6d-55ca50becc4c@email.android.com> <20130821190307.GB18673@moon> <CA+55aFw_tWio_ABFUocNHU+_RKe-27U9_=4ATfp3-vSWVZkdug@mail.gmail.com> <20130822005115.GA1188@redhat.com>
-In-Reply-To: <20130822005115.GA1188@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [89.169.95.100]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2013 04:51 AM, Dave Jones wrote:
-> On Wed, Aug 21, 2013 at 04:04:54PM -0700, Linus Torvalds wrote:
->  > On Wed, Aug 21, 2013 at 12:03 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->  > >
->  > > I personally don't see bug here because
->  > >
->  > >  - this swapped page soft dirty bit is set for non-present entries only,
->  > >    never for present ones, just at moment we form swap pte entry
->  > >
->  > >  - i don't find any code which would test for this bit directly without
->  > >    is_swap_pte call
->  > 
->  > Ok, having gone through the places that use swp_*soft_dirty(), I have
->  > to agree. Afaik, it's only ever used on a swap-entry that has (by
->  > definition) the P bit clear. So with or without Xen, I don't see how
->  > it can make any difference.
->  > 
->  > David/Konrad - did you actually see any issues, or was this just from
->  > (mis)reading the code?
-> 
-> Could this explain what I'm seeing in another thread ?
-> https://lkml.org/lkml/2013/8/7/27
+DMA client device driver usually needs to know at probe time whether
+dma controller has been registered to deffer probe. So add a help
+function of_dma_check_controller.
 
-Was it caught with CONFIG_MEM_SOFT_DIRTY on or off? In the latter case all new 
-bits manipulations are no-op and couldn't cause this.
+DMA request channel functions can also used to check it, but they
+are usually called at open() time.
 
-> 	Dave
+Signed-off-by: Richard Zhao <rizhao@nvidia.com>
+---
+ drivers/dma/of-dma.c   | 39 +++++++++++++++++++++++++++++++++++++++
+ include/linux/of_dma.h |  6 ++++++
+ 2 files changed, 45 insertions(+)
 
-Thanks,
-Pavel
+diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
+index 8cd5f3f..0063ddf 100644
+--- a/drivers/dma/of-dma.c
++++ b/drivers/dma/of-dma.c
+@@ -189,6 +189,45 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
+ }
+ 
+ /**
++ * of_dma_check_controller - Check whether dma controller registered
++ * @dev:	pointer to client device structure
++ * @name:	slave channel name
++ */
++int of_dma_check_controller(struct device *dev, const char *name)
++{
++	struct device_node *np = dev->of_node;
++	struct of_phandle_args dma_spec;
++	struct of_dma *ofdma = NULL;
++	int count, i, ret = 0;
++
++	if (!np || !name)
++		return -EINVAL;
++
++	count = of_property_count_strings(np, "dma-names");
++	if (count < 0) {
++		dev_err(dev, "dma-names property missing or empty\n");
++		return -EINVAL;
++	}
++
++	for (i = 0; i < count; i++) {
++		ret = of_dma_match_channel(np, name, i, &dma_spec);
++		if (ret)
++			continue;
++
++		mutex_lock(&of_dma_lock);
++		ofdma = of_dma_find_controller(&dma_spec);
++		mutex_unlock(&of_dma_lock);
++		of_node_put(dma_spec.np);
++		if (!ofdma)
++			ret = -EPROBE_DEFER;
++		break;
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(of_dma_check_controller);
++
++/**
+  * of_dma_simple_xlate - Simple DMA engine translation function
+  * @dma_spec:	pointer to DMA specifier as found in the device tree
+  * @of_dma:	pointer to DMA controller data
+diff --git a/include/linux/of_dma.h b/include/linux/of_dma.h
+index ae36298..bc7195f 100644
+--- a/include/linux/of_dma.h
++++ b/include/linux/of_dma.h
+@@ -39,6 +39,7 @@ extern int of_dma_controller_register(struct device_node *np,
+ extern void of_dma_controller_free(struct device_node *np);
+ extern struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
+ 						     const char *name);
++extern int of_dma_check_controller(struct device *dev, const char *name);
+ extern struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
+ 		struct of_dma *ofdma);
+ #else
+@@ -60,6 +61,11 @@ static inline struct dma_chan *of_dma_request_slave_channel(struct device_node *
+ 	return NULL;
+ }
+ 
++static inline int of_dma_check_controller(struct device *dev, const char *name)
++{
++	return 0;
++}
++
+ static inline struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
+ 		struct of_dma *ofdma)
+ {
+-- 
+1.8.1.5
+
