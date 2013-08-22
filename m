@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab3HVUPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 16:15:42 -0400
-Received: from 1wt.eu ([62.212.114.60]:35558 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab3HVUPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 16:15:41 -0400
-Date: Thu, 22 Aug 2013 22:15:30 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>
-Subject: Re: [PATCH v2] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
-Message-ID: <20130822201530.GL31117@1wt.eu>
-References: <b121a1082bf3365fda22a131782147c169c969f5.1377112282.git.luto@amacapital.net> <CA+55aFzXNU-eJ7KeZyv5YYKKtm8iorG-o3QtD7NXx0GTzuH+Bw@mail.gmail.com> <20130822185317.GI31117@1wt.eu> <CALCETrWYeNXhEDY7S9XLD6L0wOZu8iPVO6LN3A_797hLHfBzAw@mail.gmail.com> <CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com> <CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com>
-Mime-Version: 1.0
+	id S1754320Ab3HVURR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 16:17:17 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45667 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab3HVURQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 16:17:16 -0400
+Date: Thu, 22 Aug 2013 21:17:14 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: platform-driver-x86@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT] x86 platform driver fixes for 3.11
+Message-ID: <20130822201714.GA8450@srcf.ucam.org>
+References: <20130820124549.GA12264@srcf.ucam.org>
+ <CA+55aFwANvF5yKF+ZDCTGM+v0JFVnAEk0oSTCAB=9nA5s3cRDg@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <CA+55aFwANvF5yKF+ZDCTGM+v0JFVnAEk0oSTCAB=9nA5s3cRDg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 01:10:43PM -0700, Andy Lutomirski wrote:
-> What's the point of nd_jump_link anyway?  The only way I can think of
-> for a magic symlink in /proc to point to another symlink is to open a
-> symlink with O_PATH | O_NOFOLLOW.  Actually trying to use the
-> resulting link in /proc results in -ELOOP.  (Even just trying to open
-> a normal symlink with O_NOFOLLOW and without O_PATH results in
-> -ELOOP.)
+On Thu, Aug 22, 2013 at 01:04:55PM -0700, Linus Torvalds wrote:
+> On Tue, Aug 20, 2013 at 5:45 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> >
+> >   ssh://cavan.codon.org.uk/srv/git/platform-drivers-x86.git linux-next
+> 
+> That is not a valid address. At least not unless you also post your
+> ssh password and user information.
 
-It's not only that, it also supports sockets and pipes that you can access
-via /proc/pid/fd and not via a real symlink which would try to open eg
-"pipe:[23456]" instead of the real file. So you can't get rid of it
-without breaking existing apps (starting with your shell for which
-/dev/stdin is a link to /proc/self/fd/0 for example).
+You mean you're not in league with the NSA? Sorry, this has been one 
+long week of brutal incompetence on my part.
 
-Willy
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
