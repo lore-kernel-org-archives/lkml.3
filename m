@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab3HVQua (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:50:30 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:49204 "EHLO
+	id S1753981Ab3HVQv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:51:26 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:50633 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab3HVQu3 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753552Ab3HVQvY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:50:29 -0400
-Message-ID: <1377190224.2626.7.camel@hornet>
-Subject: Re: [PATCH v3 2/5] ARM: dts: add reference voltage property for MXS
- LRADC
-From: Pawel Moll <pawel.moll@arm.com>
-To: Hector Palacios <hector.palacios@digi.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        "marex@denx.de" <marex@denx.de>,
+	Thu, 22 Aug 2013 12:51:24 -0400
+Message-ID: <521641A6.2070503@arm.com>
+Date: Thu, 22 Aug 2013 17:51:50 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jonas Bonn <jonas@southpole.se>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Michal Simek <monstr@monstr.eu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
         "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Date: Thu, 22 Aug 2013 17:50:24 +0100
-In-Reply-To: <5215C64D.3040004@digi.com>
-References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com>
-	 <1374501843-19651-3-git-send-email-hector.palacios@digi.com>
-	 <520AA3CD.1040008@kernel.org> <1376491467.18617.41.camel@hornet>
-	 <52153B8E.7050309@free-electrons.com> <5215C64D.3040004@digi.com>
-X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 22 Aug 2013 16:50:24.0652 (UTC) FILETIME=[B28784C0:01CE9F57]
-X-MC-Unique: 113082217502700401
-Content-Type: text/plain; charset=UTF-8
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
+Subject: Re: [RFC PATCH v2 3/4] powerpc: refactor of_get_cpu_node to support
+ other architectures
+References: <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376674791-28244-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376674791-28244-2-git-send-email-Sudeep.KarkadaNagesha@arm.com> <2032060.4bgTKOdEX2@flatron> <1376777376.25016.11.camel@pasglop> <20130819101922.GI3719@e106331-lin.cambridge.arm.com> <5212177C.8000709@gmail.com> <521223FA.5050903@arm.com> <20130822135930.GC23152@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130822135930.GC23152@e106331-lin.cambridge.arm.com>
+X-OriginalArrivalTime: 22 Aug 2013 16:51:19.0869 (UTC) FILETIME=[D370F6D0:01CE9F57]
+X-MC-Unique: 113082217512205701
+Content-Type: text/plain; charset=WINDOWS-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-22 at 09:05 +0100, Hector Palacios wrote:
-> This was what I originally submitted but it then looked like it would better fit in 
-> the DeviceTree. The spear-adc seemed to use a similar approach:
+On 22/08/13 14:59, Mark Rutland wrote:
+> On Mon, Aug 19, 2013 at 02:56:10PM +0100, Sudeep KarkadaNagesha wrote:
+>> On 19/08/13 14:02, Rob Herring wrote:
+>>> On 08/19/2013 05:19 AM, Mark Rutland wrote:
+>>>> On Sat, Aug 17, 2013 at 11:09:36PM +0100, Benjamin Herrenschmidt wrote:
+>>>>> On Sat, 2013-08-17 at 12:50 +0200, Tomasz Figa wrote:
+>>>>>> I wonder how would this handle uniprocessor ARM (pre-v7) cores, for
+>>>>>> which 
+>>>>>> the updated bindings[1] define #address-cells = <0> and so no reg 
+>>>>>> property.
+>>>>>>
+>>>>>> [1] - http://thread.gmane.org/gmane.linux.ports.arm.kernel/260795
+>>>>>
+>>>>> Why did you do that in the binding ? That sounds like looking to create
+>>>>> problems ... 
+>>>>>
+>>>>> Traditionally, UP setups just used "0" as the "reg" property on other
+>>>>> architectures, why do differently ?
+>>>>
+>>>> The decision was taken because we defined our reg property to refer to
+>>>> the MPIDR register's Aff{2,1,0} bitfields, and on UP cores before v7
+>>>> there's no MPIDR register at all. Given there can only be a single CPU
+>>>> in that case, describing a register that wasn't present didn't seem
+>>>> necessary or helpful.
+>>>
+>>> What exactly reg represents is up to the binding definition, but it
+>>> still should be present IMO. I don't see any issue with it being
+>>> different for pre-v7.
+>>>
+>> Yes it's better to have 'reg' with value 0 than not having it.
+>> Otherwise this generic of_get_cpu_node implementation would need some
+>> _hack_ to handle that case.
+> 
+> I'm not sure that having some code to handle a difference in standard
+> between two architectures is a hack. If anything, I'd argue encoding a
+> reg of 0 that corresponds to a nonexistent MPIDR value (given that's
+> what the reg property is defined to map to on ARM) is more of a hack ;)
+> 
+Agreed. But I am more confused.
 
-I'm not sure if it's the best example... I much more prefer the AD7303's
-way:
+1. This raises another question as how much do we follow from ePAPR
+standard. ePAPR marks the reg property in /cpu as required.
+Does that mean we must have all the properties marked as required to be
+present in DT ? On the contrary timebase/clock-frequency is some thing
+that can be found dynamically and need not be present but they are
+marked as required too.
 
-Documentation/devicetree/bindings/iio/dac/ad7303.txt
+> I'm not averse to having a reg value of 0 for this case, but given that
+> there are existing devicetrees without it, requiring a reg property will
+> break compatibility with them.
+> 
 
-Optional properties:
-        - REF-supply: Phandle to the external reference voltage supply. This should
-          only be set if there is an external reference voltage connected to the REF
-          pin. If the property is not set Vdd/2 is used as the reference voltage.
+2. What exactly does backward compatibility has to cover ? This can't be
+considered as breaking of the binding definition. In continuation to the
+above argument that reg property is required, do we need to cover this
+as it's clearly a case of missing required property(this holds only if
+reg is required always).
 
-Paweł
-
+Regards,
+Sudeep
 
