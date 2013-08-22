@@ -1,875 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab3HVK5A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 06:57:00 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:47384 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698Ab3HVK46 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 06:56:58 -0400
-X-AuditID: cbfee61b-b7efe6d000007b11-28-5215ee7833fe
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Cc: linux-pm@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, michael@ellerman.id.au,
-        benh@kernel.crashing.org, daniel.lezcano@linaro.org,
-        dongsheng.wang@freescale.com, rjw@sisk.pl, scottwood@freescale.com,
-        srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com
-Subject: Re: [PATCH V4 3/5] powerpc/cpuidle: Generic powerpc backend cpuidle
- driver.
-Date: Thu, 22 Aug 2013 12:56:44 +0200
-Message-id: <1510785.gFaG8Cehp1@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-45-generic; KDE/4.8.5; i686; ; )
-In-reply-to: <20130822053026.23277.8122.stgit@deepthi.in.ibm.com>
-References: <20130822052938.23277.67621.stgit@deepthi.in.ibm.com>
- <20130822053026.23277.8122.stgit@deepthi.in.ibm.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=utf-8
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42I5/e+xgG7FO9Egg3kPJC0+NLUyW8z7LGux
-	vjHfYvHEH8wWl3fNYbO4+PEni8Xv7/9YLS5PWslkcfLWZCaL/oW9TBZ/m38wWVz+ep3ZouXj
-	eiYHXo9FLxtYPP4d7mfy6HnTwupx59oeNo8HhzazeEy+sZzR4/yMhYwejxa3MHp83iQXwBnF
-	ZZOSmpNZllqkb5fAlXFlbztbwYcdjBWLX7QwNzBenczYxcjJISFgIrH991EWCFtM4sK99Wxd
-	jFwcQgKLGCV2zZjGAuG0MEk8mtwG1sEmYCUxsX0VmC0iYCAxf81PVpAiZoHrTBInj/1nA0kI
-	C4RJfOl9BFbEIqAq8fbkYbA4r4CmxKOp/8DiogKuEucW/QDawMHBKeAoceC2AUhYSKBC4saL
-	I1DlghI/Jt8Du45ZQF5i3/6prCDlzALqElOm5E5gFJiFpGoWkqpZCFULGJlXMYqmFiQXFCel
-	5xrpFSfmFpfmpesl5+duYgTH0TPpHYyrGiwOMQpwMCrx8F7YKRIkxJpYVlyZe4hRgoNZSYTX
-	7pFokBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC6YklqdmpqQWpRTBZJg5OqQZGAc3q
-	KTbOcTmzfFT4ufcbvLNec/2t1uKdJ09/qt4mY1Bn43PsSFJljMlJZzmm1yz69wrfbPdY6T/d
-	uvwKd/zGnRPviQQ+PHk/2VUkgSnTf4P37bfXly125mPrV9v78ufUTId9/1YdUyld2Nd5ZrW+
-	8K7ok6adN+aVnLe9n7lAmYsvwXumyYqNSizFGYmGWsxFxYkA85Q1S58CAAA=
+	id S1752936Ab3HVK7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 06:59:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55938 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752667Ab3HVK7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 06:59:08 -0400
+Date: Thu, 22 Aug 2013 12:58:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Balbir Singh <bsingharora@gmail.com>,
+        Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH v5] Soft limit rework
+Message-ID: <20130822105856.GA21529@dhcp22.suse.cz>
+References: <1371557387-22434-1-git-send-email-mhocko@suse.cz>
+ <20130819163512.GB712@cmpxchg.org>
+ <20130820091414.GC31552@dhcp22.suse.cz>
+ <20130820141339.GA31419@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820141339.GA31419@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[I am mostly offline for the whole week with very limitted internet
+access so it will get longer for me to respond to emails. Sorry about
+that]
 
-Hi,
-
-On Thursday, August 22, 2013 11:00:29 AM Deepthi Dharwar wrote:
-> This patch involves moving the current pseries_idle backend driver code
-> from pseries/processor_idle.c to drivers/cpuidle/cpuidle-powerpc.c,
-> and making the backend code generic enough to be able to extend this
-> driver code for both powernv and pseries.
+On Tue 20-08-13 10:13:39, Johannes Weiner wrote:
+> On Tue, Aug 20, 2013 at 11:14:14AM +0200, Michal Hocko wrote:
+> > On Mon 19-08-13 12:35:12, Johannes Weiner wrote:
+> > > On Tue, Jun 18, 2013 at 02:09:39PM +0200, Michal Hocko wrote:
+> > > > Hi,
+> > > > 
+> > > > This is the fifth version of the patchset.
+> > > > 
+> > > > Summary of versions:
+> > > > The first version has been posted here: http://permalink.gmane.org/gmane.linux.kernel.mm/97973
+> > > > (lkml wasn't CCed at the time so I cannot find it in lwn.net
+> > > > archives). There were no major objections. 
+> > > 
+> > > Except there are.
+> > 
+> > Good to know that late... It would have been much more helpful to have
+> > such a principal feedback few months ago (this work is here since early
+> > Jun).
 > 
-> It enables the support for pseries platform, such that going forward the same code
-> with minimal efforts can be re-used for a common driver on powernv
-> and can be further extended to support cpuidle idle state mgmt for the rest
-> of the powerpc platforms in the future. This removes a lot of code duplicacy,
-> making the code elegant.
+> I NAKed this "integrate into reclaim but still make soft reclaim an
+> extra pass" idea the first time Ying submitted it.
 
-This patch mixes the code movement with the actual code changes which is
-not a good practice as it makes review more difficult and is generally bad
-from the long term maintainance POV.
+There was a general agreement about this approach at LSF AFAIR. So it is
+really surprising hearing that from you _now_
 
-Please split this patch on code movement and code changes parts.
+I do not remember the details of your previous NAK but I do remember you
+liked the series I posted before the conference. I am willing to change
+details (e.g. move big vmscan part into memcg) but I do insist on having
+soft reclaim integrated to the regular reclaim.
 
-V4 of this patch now also seems to contain changes which I posted on
-Tuesday as a part of dev->state_count removal patchset:
+> And no, the soft limit discussions have been going on since I first
+> submitted a rewrite as part of the reclaim integration series in
+> mid-2011.
 
-http://permalink.gmane.org/gmane.linux.power-management.general/37392
-http://permalink.gmane.org/gmane.linux.power-management.general/37393
+Which makes the whole story even more sad :/
 
-so some work probably got duplicated. :(
+> We have been going back and forth on whether soft limits should behave
+> as guarantees and *protect* from reclaim.  But I thought we had since
+> agreed that implementing guarantees should be a separate effort and as
+> far as I'm concerned there is no justification for all this added code
+> just to prevent reclaiming non-excess when there is excess around.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+The patchset is absolutely not about guarantees anymore. It is more
+about making the current soft limit reclaim more natural. E.g. not doing
+prio-0 scans.
 
-> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-> ---
->  arch/powerpc/include/asm/paca.h                 |   23 +
->  arch/powerpc/include/asm/processor.h            |    2 
->  arch/powerpc/platforms/pseries/Kconfig          |    9 -
->  arch/powerpc/platforms/pseries/Makefile         |    1 
->  arch/powerpc/platforms/pseries/processor_idle.c |  360 -----------------------
->  drivers/cpuidle/Kconfig                         |    7 
->  drivers/cpuidle/Makefile                        |    2 
->  drivers/cpuidle/cpuidle-powerpc.c               |  304 +++++++++++++++++++
->  8 files changed, 337 insertions(+), 371 deletions(-)
->  delete mode 100644 arch/powerpc/platforms/pseries/processor_idle.c
->  create mode 100644 drivers/cpuidle/cpuidle-powerpc.c
+The side effect that the isolation works better in the result is just a
+bonus. And I have to admit I like that bonus.
+
+> > > > My primary test case was a parallel kernel build with 2 groups (make
+> > > > is running with -j4 with a distribution .config in a separate cgroup
+> > > > without any hard limit) on a 8 CPU machine booted with 1GB memory.  I
+> > > > was mostly interested in 2 setups. Default - no soft limit set and - and
+> > > > 0 soft limit set to both groups.
+> > > > The first one should tell us whether the rework regresses the default
+> > > > behavior while the second one should show us improvements in an extreme
+> > > > case where both workloads are always over the soft limit.
+> > > 
+> > > Two kernel builds with 1G of memory means that reclaim is purely
+> > > trimming the cache every once in a while.  Changes in memory pressure
+> > > are not measurable up to a certain point, because whether you trim old
+> > > cache or not does not affect the build jobs.
+> > > 
+> > > Also you tested the no-softlimit case and an extreme soft limit case.
+> > > Where are the common soft limit cases?
+> > 
+> > v5.1 had some more tests. I have added soft limitted stream IO resp. kbuild vs
+> > unlimitted mem_eater loads. Have you checked those?
 > 
-> diff --git a/arch/powerpc/include/asm/paca.h b/arch/powerpc/include/asm/paca.h
-> index 77c91e7..7bd83ff 100644
-> --- a/arch/powerpc/include/asm/paca.h
-> +++ b/arch/powerpc/include/asm/paca.h
-> @@ -175,6 +175,29 @@ extern void setup_paca(struct paca_struct *new_paca);
->  extern void allocate_pacas(void);
->  extern void free_unused_pacas(void);
->  
-> +#ifdef CONFIG_PPC_BOOK3S
-> +#define get_lppaca_is_shared_proc()  get_paca()->lppaca_ptr->shared_proc
-> +static inline void set_lppaca_idle(u8  idle)
-> +{
-> +	get_paca()->lppaca_ptr->idle = idle;
-> +}
-> +
-> +static inline void add_lppaca_wait_state(u64 cycles)
-> +{
-> +	get_paca()->lppaca_ptr->wait_state_cycles += cycles;
-> +}
-> +
-> +static inline void set_lppaca_donate_dedicated_cpu(u8 value)
-> +{
-> +	get_paca()->lppaca_ptr->donate_dedicated_cpu = value;
-> +}
-> +#else
-> +#define get_lppaca_is_shared_proc()	-1
-> +static inline void set_lppaca_idle(u8 idle) { }
-> +static inline void  add_lppaca_wait_state(u64 cycles) { }
-> +static inline void  set_lppaca_donate_dedicated_cpu(u8 value) { }
-> +#endif
-> +
->  #else /* CONFIG_PPC64 */
->  
->  static inline void allocate_pacas(void) { };
-> diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
-> index e378ccc..5f57c56 100644
-> --- a/arch/powerpc/include/asm/processor.h
-> +++ b/arch/powerpc/include/asm/processor.h
-> @@ -430,7 +430,7 @@ enum idle_boot_override {IDLE_NO_OVERRIDE = 0, IDLE_POWERSAVE_OFF};
->  extern int powersave_nap;	/* set if nap mode can be used in idle loop */
->  extern void power7_nap(void);
->  
-> -#ifdef CONFIG_PSERIES_IDLE
-> +#ifdef CONFIG_CPU_IDLE_POWERPC
->  extern void update_smt_snooze_delay(int cpu, int residency);
->  #else
->  static inline void update_smt_snooze_delay(int cpu, int residency) {}
-> diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
-> index 62b4f80..bb59bb0 100644
-> --- a/arch/powerpc/platforms/pseries/Kconfig
-> +++ b/arch/powerpc/platforms/pseries/Kconfig
-> @@ -119,12 +119,3 @@ config DTL
->  	  which are accessible through a debugfs file.
->  
->  	  Say N if you are unsure.
-> -
-> -config PSERIES_IDLE
-> -	bool "Cpuidle driver for pSeries platforms"
-> -	depends on CPU_IDLE
-> -	depends on PPC_PSERIES
-> -	default y
-> -	help
-> -	  Select this option to enable processor idle state management
-> -	  through cpuidle subsystem.
-> diff --git a/arch/powerpc/platforms/pseries/Makefile b/arch/powerpc/platforms/pseries/Makefile
-> index 8ae0103..4b22379 100644
-> --- a/arch/powerpc/platforms/pseries/Makefile
-> +++ b/arch/powerpc/platforms/pseries/Makefile
-> @@ -21,7 +21,6 @@ obj-$(CONFIG_HCALL_STATS)	+= hvCall_inst.o
->  obj-$(CONFIG_CMM)		+= cmm.o
->  obj-$(CONFIG_DTL)		+= dtl.o
->  obj-$(CONFIG_IO_EVENT_IRQ)	+= io_event_irq.o
-> -obj-$(CONFIG_PSERIES_IDLE)	+= processor_idle.o
->  
->  ifeq ($(CONFIG_PPC_PSERIES),y)
->  obj-$(CONFIG_SUSPEND)		+= suspend.o
-> diff --git a/arch/powerpc/platforms/pseries/processor_idle.c b/arch/powerpc/platforms/pseries/processor_idle.c
-> deleted file mode 100644
-> index c905b99..0000000
-> --- a/arch/powerpc/platforms/pseries/processor_idle.c
-> +++ /dev/null
-> @@ -1,360 +0,0 @@
-> -/*
-> - *  processor_idle - idle state cpuidle driver.
-> - *  Adapted from drivers/idle/intel_idle.c and
-> - *  drivers/acpi/processor_idle.c
-> - *
-> - */
-> -
-> -#include <linux/kernel.h>
-> -#include <linux/module.h>
-> -#include <linux/init.h>
-> -#include <linux/moduleparam.h>
-> -#include <linux/cpuidle.h>
-> -#include <linux/cpu.h>
-> -#include <linux/notifier.h>
-> -
-> -#include <asm/paca.h>
-> -#include <asm/reg.h>
-> -#include <asm/machdep.h>
-> -#include <asm/firmware.h>
-> -#include <asm/runlatch.h>
-> -#include <asm/plpar_wrappers.h>
-> -
-> -struct cpuidle_driver pseries_idle_driver = {
-> -	.name             = "pseries_idle",
-> -	.owner            = THIS_MODULE,
-> -};
-> -
-> -#define MAX_IDLE_STATE_COUNT	2
-> -
-> -static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
-> -static struct cpuidle_device __percpu *pseries_cpuidle_devices;
-> -static struct cpuidle_state *cpuidle_state_table;
-> -
-> -static inline void idle_loop_prolog(unsigned long *in_purr)
-> -{
-> -	*in_purr = mfspr(SPRN_PURR);
-> -	/*
-> -	 * Indicate to the HV that we are idle. Now would be
-> -	 * a good time to find other work to dispatch.
-> -	 */
-> -	get_lppaca()->idle = 1;
-> -}
-> -
-> -static inline void idle_loop_epilog(unsigned long in_purr)
-> -{
-> -	get_lppaca()->wait_state_cycles += mfspr(SPRN_PURR) - in_purr;
-> -	get_lppaca()->idle = 0;
-> -}
-> -
-> -static int snooze_loop(struct cpuidle_device *dev,
-> -			struct cpuidle_driver *drv,
-> -			int index)
-> -{
-> -	unsigned long in_purr;
-> -	int cpu = dev->cpu;
-> -
-> -	idle_loop_prolog(&in_purr);
-> -	local_irq_enable();
-> -	set_thread_flag(TIF_POLLING_NRFLAG);
-> -
-> -	while ((!need_resched()) && cpu_online(cpu)) {
-> -		ppc64_runlatch_off();
-> -		HMT_low();
-> -		HMT_very_low();
-> -	}
-> -
-> -	HMT_medium();
-> -	clear_thread_flag(TIF_POLLING_NRFLAG);
-> -	smp_mb();
-> -
-> -	idle_loop_epilog(in_purr);
-> -
-> -	return index;
-> -}
-> -
-> -static void check_and_cede_processor(void)
-> -{
-> -	/*
-> -	 * Ensure our interrupt state is properly tracked,
-> -	 * also checks if no interrupt has occurred while we
-> -	 * were soft-disabled
-> -	 */
-> -	if (prep_irq_for_idle()) {
-> -		cede_processor();
-> -#ifdef CONFIG_TRACE_IRQFLAGS
-> -		/* Ensure that H_CEDE returns with IRQs on */
-> -		if (WARN_ON(!(mfmsr() & MSR_EE)))
-> -			__hard_irq_enable();
-> -#endif
-> -	}
-> -}
-> -
-> -static int dedicated_cede_loop(struct cpuidle_device *dev,
-> -				struct cpuidle_driver *drv,
-> -				int index)
-> -{
-> -	unsigned long in_purr;
-> -
-> -	idle_loop_prolog(&in_purr);
-> -	get_lppaca()->donate_dedicated_cpu = 1;
-> -
-> -	ppc64_runlatch_off();
-> -	HMT_medium();
-> -	check_and_cede_processor();
-> -
-> -	get_lppaca()->donate_dedicated_cpu = 0;
-> -
-> -	idle_loop_epilog(in_purr);
-> -
-> -	return index;
-> -}
-> -
-> -static int shared_cede_loop(struct cpuidle_device *dev,
-> -			struct cpuidle_driver *drv,
-> -			int index)
-> -{
-> -	unsigned long in_purr;
-> -
-> -	idle_loop_prolog(&in_purr);
-> -
-> -	/*
-> -	 * Yield the processor to the hypervisor.  We return if
-> -	 * an external interrupt occurs (which are driven prior
-> -	 * to returning here) or if a prod occurs from another
-> -	 * processor. When returning here, external interrupts
-> -	 * are enabled.
-> -	 */
-> -	check_and_cede_processor();
-> -
-> -	idle_loop_epilog(in_purr);
-> -
-> -	return index;
-> -}
-> -
-> -/*
-> - * States for dedicated partition case.
-> - */
-> -static struct cpuidle_state dedicated_states[MAX_IDLE_STATE_COUNT] = {
-> -	{ /* Snooze */
-> -		.name = "snooze",
-> -		.desc = "snooze",
-> -		.flags = CPUIDLE_FLAG_TIME_VALID,
-> -		.exit_latency = 0,
-> -		.target_residency = 0,
-> -		.enter = &snooze_loop },
-> -	{ /* CEDE */
-> -		.name = "CEDE",
-> -		.desc = "CEDE",
-> -		.flags = CPUIDLE_FLAG_TIME_VALID,
-> -		.exit_latency = 10,
-> -		.target_residency = 100,
-> -		.enter = &dedicated_cede_loop },
-> -};
-> -
-> -/*
-> - * States for shared partition case.
-> - */
-> -static struct cpuidle_state shared_states[MAX_IDLE_STATE_COUNT] = {
-> -	{ /* Shared Cede */
-> -		.name = "Shared Cede",
-> -		.desc = "Shared Cede",
-> -		.flags = CPUIDLE_FLAG_TIME_VALID,
-> -		.exit_latency = 0,
-> -		.target_residency = 0,
-> -		.enter = &shared_cede_loop },
-> -};
-> -
-> -void update_smt_snooze_delay(int cpu, int residency)
-> -{
-> -	struct cpuidle_driver *drv = cpuidle_get_driver();
-> -	struct cpuidle_device *dev = per_cpu(cpuidle_devices, cpu);
-> -
-> -	if (cpuidle_state_table != dedicated_states)
-> -		return;
-> -
-> -	if (residency < 0) {
-> -		/* Disable the Nap state on that cpu */
-> -		if (dev)
-> -			dev->states_usage[1].disable = 1;
-> -	} else
-> -		if (drv)
-> -			drv->states[1].target_residency = residency;
-> -}
-> -
-> -static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
-> -			unsigned long action, void *hcpu)
-> -{
-> -	int hotcpu = (unsigned long)hcpu;
-> -	struct cpuidle_device *dev =
-> -			per_cpu_ptr(pseries_cpuidle_devices, hotcpu);
-> -
-> -	if (dev && cpuidle_get_driver()) {
-> -		switch (action) {
-> -		case CPU_ONLINE:
-> -		case CPU_ONLINE_FROZEN:
-> -			cpuidle_pause_and_lock();
-> -			cpuidle_enable_device(dev);
-> -			cpuidle_resume_and_unlock();
-> -			break;
-> -
-> -		case CPU_DEAD:
-> -		case CPU_DEAD_FROZEN:
-> -			cpuidle_pause_and_lock();
-> -			cpuidle_disable_device(dev);
-> -			cpuidle_resume_and_unlock();
-> -			break;
-> -
-> -		default:
-> -			return NOTIFY_DONE;
-> -		}
-> -	}
-> -	return NOTIFY_OK;
-> -}
-> -
-> -static struct notifier_block setup_hotplug_notifier = {
-> -	.notifier_call = pseries_cpuidle_add_cpu_notifier,
-> -};
-> -
-> -/*
-> - * pseries_cpuidle_driver_init()
-> - */
-> -static int pseries_cpuidle_driver_init(void)
-> -{
-> -	int idle_state;
-> -	struct cpuidle_driver *drv = &pseries_idle_driver;
-> -
-> -	drv->state_count = 0;
-> -
-> -	for (idle_state = 0; idle_state < MAX_IDLE_STATE_COUNT; ++idle_state) {
-> -
-> -		if (idle_state > max_idle_state)
-> -			break;
-> -
-> -		/* is the state not enabled? */
-> -		if (cpuidle_state_table[idle_state].enter == NULL)
-> -			continue;
-> -
-> -		drv->states[drv->state_count] =	/* structure copy */
-> -			cpuidle_state_table[idle_state];
-> -
-> -		drv->state_count += 1;
-> -	}
-> -
-> -	return 0;
-> -}
-> -
-> -/* pseries_idle_devices_uninit(void)
-> - * unregister cpuidle devices and de-allocate memory
-> - */
-> -static void pseries_idle_devices_uninit(void)
-> -{
-> -	int i;
-> -	struct cpuidle_device *dev;
-> -
-> -	for_each_possible_cpu(i) {
-> -		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
-> -		cpuidle_unregister_device(dev);
-> -	}
-> -
-> -	free_percpu(pseries_cpuidle_devices);
-> -	return;
-> -}
-> -
-> -/* pseries_idle_devices_init()
-> - * allocate, initialize and register cpuidle device
-> - */
-> -static int pseries_idle_devices_init(void)
-> -{
-> -	int i;
-> -	struct cpuidle_driver *drv = &pseries_idle_driver;
-> -	struct cpuidle_device *dev;
-> -
-> -	pseries_cpuidle_devices = alloc_percpu(struct cpuidle_device);
-> -	if (pseries_cpuidle_devices == NULL)
-> -		return -ENOMEM;
-> -
-> -	for_each_possible_cpu(i) {
-> -		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
-> -		dev->state_count = drv->state_count;
-> -		dev->cpu = i;
-> -		if (cpuidle_register_device(dev)) {
-> -			printk(KERN_DEBUG \
-> -				"cpuidle_register_device %d failed!\n", i);
-> -			return -EIO;
-> -		}
-> -	}
-> -
-> -	return 0;
-> -}
-> -
-> -/*
-> - * pseries_idle_probe()
-> - * Choose state table for shared versus dedicated partition
-> - */
-> -static int pseries_idle_probe(void)
-> -{
-> -
-> -	if (!firmware_has_feature(FW_FEATURE_SPLPAR))
-> -		return -ENODEV;
-> -
-> -	if (cpuidle_disable != IDLE_NO_OVERRIDE)
-> -		return -ENODEV;
-> -
-> -	if (max_idle_state == 0) {
-> -		printk(KERN_DEBUG "pseries processor idle disabled.\n");
-> -		return -EPERM;
-> -	}
-> -
-> -	if (get_lppaca()->shared_proc)
-> -		cpuidle_state_table = shared_states;
-> -	else
-> -		cpuidle_state_table = dedicated_states;
-> -
-> -	return 0;
-> -}
-> -
-> -static int __init pseries_processor_idle_init(void)
-> -{
-> -	int retval;
-> -
-> -	retval = pseries_idle_probe();
-> -	if (retval)
-> -		return retval;
-> -
-> -	pseries_cpuidle_driver_init();
-> -	retval = cpuidle_register_driver(&pseries_idle_driver);
-> -	if (retval) {
-> -		printk(KERN_DEBUG "Registration of pseries driver failed.\n");
-> -		return retval;
-> -	}
-> -
-> -	retval = pseries_idle_devices_init();
-> -	if (retval) {
-> -		pseries_idle_devices_uninit();
-> -		cpuidle_unregister_driver(&pseries_idle_driver);
-> -		return retval;
-> -	}
-> -
-> -	register_cpu_notifier(&setup_hotplug_notifier);
-> -	printk(KERN_DEBUG "pseries_idle_driver registered\n");
-> -
-> -	return 0;
-> -}
-> -
-> -static void __exit pseries_processor_idle_exit(void)
-> -{
-> -
-> -	unregister_cpu_notifier(&setup_hotplug_notifier);
-> -	pseries_idle_devices_uninit();
-> -	cpuidle_unregister_driver(&pseries_idle_driver);
-> -
-> -	return;
-> -}
-> -
-> -module_init(pseries_processor_idle_init);
-> -module_exit(pseries_processor_idle_exit);
-> -
-> -MODULE_AUTHOR("Deepthi Dharwar <deepthi@linux.vnet.ibm.com>");
-> -MODULE_DESCRIPTION("Cpuidle driver for POWER");
-> -MODULE_LICENSE("GPL");
-> diff --git a/drivers/cpuidle/Kconfig b/drivers/cpuidle/Kconfig
-> index 0e2cd5c..53ce03d 100644
-> --- a/drivers/cpuidle/Kconfig
-> +++ b/drivers/cpuidle/Kconfig
-> @@ -42,6 +42,13 @@ config CPU_IDLE_ZYNQ
->  	help
->  	  Select this to enable cpuidle on Xilinx Zynq processors.
->  
-> +config CPU_IDLE_POWERPC
-> +	bool "CPU Idle driver for POWERPC platforms"
-> +	depends on PPC_PSERIES || PPC_POWERNV
-> +	default y
-> +        help
-> +          Select this option to enable processor idle state management
-> +	  for POWERPC platform.
->  endif
->  
->  config ARCH_NEEDS_CPU_IDLE_COUPLED
-> diff --git a/drivers/cpuidle/Makefile b/drivers/cpuidle/Makefile
-> index 8767a7b..d12e205 100644
-> --- a/drivers/cpuidle/Makefile
-> +++ b/drivers/cpuidle/Makefile
-> @@ -8,3 +8,5 @@ obj-$(CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED) += coupled.o
->  obj-$(CONFIG_CPU_IDLE_CALXEDA) += cpuidle-calxeda.o
->  obj-$(CONFIG_ARCH_KIRKWOOD) += cpuidle-kirkwood.o
->  obj-$(CONFIG_CPU_IDLE_ZYNQ) += cpuidle-zynq.o
-> +
-> +obj-$(CONFIG_CPU_IDLE_POWERPC) += cpuidle-powerpc.o
-> diff --git a/drivers/cpuidle/cpuidle-powerpc.c b/drivers/cpuidle/cpuidle-powerpc.c
-> new file mode 100644
-> index 0000000..3662aba
-> --- /dev/null
-> +++ b/drivers/cpuidle/cpuidle-powerpc.c
-> @@ -0,0 +1,304 @@
-> +/*
-> + *  processor_idle - idle state cpuidle driver.
-> + *  Adapted from drivers/idle/intel_idle.c and
-> + *  drivers/acpi/processor_idle.c
-> + *
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/moduleparam.h>
-> +#include <linux/cpuidle.h>
-> +#include <linux/cpu.h>
-> +#include <linux/notifier.h>
-> +
-> +#include <asm/paca.h>
-> +#include <asm/reg.h>
-> +#include <asm/machdep.h>
-> +#include <asm/firmware.h>
-> +#include <asm/runlatch.h>
-> +#include <asm/plpar_wrappers.h>
-> +
-> +struct cpuidle_driver powerpc_idle_driver = {
-> +	.name             = "powerpc_idle",
-> +	.owner            = THIS_MODULE,
-> +};
-> +
-> +#define MAX_IDLE_STATE_COUNT	2
-> +
-> +static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
-> +static struct cpuidle_state *cpuidle_state_table;
-> +
-> +static inline void idle_loop_prolog(unsigned long *in_purr)
-> +{
-> +	*in_purr = mfspr(SPRN_PURR);
-> +	/*
-> +	 * Indicate to the HV that we are idle. Now would be
-> +	 * a good time to find other work to dispatch.
-> +	 */
-> +	set_lppaca_idle(1);
-> +}
-> +
-> +static inline void idle_loop_epilog(unsigned long in_purr)
-> +{
-> +	add_lppaca_wait_state(mfspr(SPRN_PURR) - in_purr);
-> +	set_lppaca_idle(0);
-> +}
-> +
-> +static int snooze_loop(struct cpuidle_device *dev,
-> +			struct cpuidle_driver *drv,
-> +			int index)
-> +{
-> +	unsigned long in_purr;
-> +
-> +	idle_loop_prolog(&in_purr);
-> +	local_irq_enable();
-> +	set_thread_flag(TIF_POLLING_NRFLAG);
-> +
-> +	while (!need_resched()) {
-> +		ppc64_runlatch_off();
-> +		HMT_low();
-> +		HMT_very_low();
-> +	}
-> +
-> +	HMT_medium();
-> +	clear_thread_flag(TIF_POLLING_NRFLAG);
-> +	smp_mb();
-> +
-> +	idle_loop_epilog(in_purr);
-> +
-> +	return index;
-> +}
-> +
-> +static void check_and_cede_processor(void)
-> +{
-> +	/*
-> +	 * Ensure our interrupt state is properly tracked,
-> +	 * also checks if no interrupt has occurred while we
-> +	 * were soft-disabled
-> +	 */
-> +	if (prep_irq_for_idle()) {
-> +		cede_processor();
-> +#ifdef CONFIG_TRACE_IRQFLAGS
-> +		/* Ensure that H_CEDE returns with IRQs on */
-> +		if (WARN_ON(!(mfmsr() & MSR_EE)))
-> +			__hard_irq_enable();
-> +#endif
-> +	}
-> +}
-> +
-> +static int dedicated_cede_loop(struct cpuidle_device *dev,
-> +				struct cpuidle_driver *drv,
-> +				int index)
-> +{
-> +	unsigned long in_purr;
-> +
-> +	idle_loop_prolog(&in_purr);
-> +	set_lppaca_donate_dedicated_cpu(1);
-> +
-> +	ppc64_runlatch_off();
-> +	HMT_medium();
-> +	check_and_cede_processor();
-> +
-> +	set_lppaca_donate_dedicated_cpu(0);
-> +	idle_loop_epilog(in_purr);
-> +
-> +	return index;
-> +}
-> +
-> +static int shared_cede_loop(struct cpuidle_device *dev,
-> +			struct cpuidle_driver *drv,
-> +			int index)
-> +{
-> +	unsigned long in_purr;
-> +
-> +	idle_loop_prolog(&in_purr);
-> +
-> +	/*
-> +	 * Yield the processor to the hypervisor.  We return if
-> +	 * an external interrupt occurs (which are driven prior
-> +	 * to returning here) or if a prod occurs from another
-> +	 * processor. When returning here, external interrupts
-> +	 * are enabled.
-> +	 */
-> +	check_and_cede_processor();
-> +
-> +	idle_loop_epilog(in_purr);
-> +
-> +	return index;
-> +}
-> +
-> +/*
-> + * States for dedicated partition case.
-> + */
-> +static struct cpuidle_state dedicated_states[MAX_IDLE_STATE_COUNT] = {
-> +	{ /* Snooze */
-> +		.name = "snooze",
-> +		.desc = "snooze",
-> +		.flags = CPUIDLE_FLAG_TIME_VALID,
-> +		.exit_latency = 0,
-> +		.target_residency = 0,
-> +		.enter = &snooze_loop },
-> +	{ /* CEDE */
-> +		.name = "CEDE",
-> +		.desc = "CEDE",
-> +		.flags = CPUIDLE_FLAG_TIME_VALID,
-> +		.exit_latency = 10,
-> +		.target_residency = 100,
-> +		.enter = &dedicated_cede_loop },
-> +};
-> +
-> +/*
-> + * States for shared partition case.
-> + */
-> +static struct cpuidle_state shared_states[MAX_IDLE_STATE_COUNT] = {
-> +	{ /* Shared Cede */
-> +		.name = "Shared Cede",
-> +		.desc = "Shared Cede",
-> +		.flags = CPUIDLE_FLAG_TIME_VALID,
-> +		.exit_latency = 0,
-> +		.target_residency = 0,
-> +		.enter = &shared_cede_loop },
-> +};
-> +
-> +void update_smt_snooze_delay(int cpu, int residency)
-> +{
-> +	struct cpuidle_driver *drv = cpuidle_get_driver();
-> +	struct cpuidle_device *dev = per_cpu(cpuidle_devices, cpu);
-> +
-> +	if (cpuidle_state_table != dedicated_states)
-> +		return;
-> +
-> +	if (residency < 0) {
-> +		/* Disable the Nap state on that cpu */
-> +		if (dev)
-> +			dev->states_usage[1].disable = 1;
-> +	} else
-> +		if (drv)
-> +			drv->states[1].target_residency = residency;
-> +}
-> +
-> +static int powerpc_cpuidle_add_cpu_notifier(struct notifier_block *n,
-> +			unsigned long action, void *hcpu)
-> +{
-> +	int hotcpu = (unsigned long)hcpu;
-> +	struct cpuidle_device *dev =
-> +			per_cpu_ptr(cpuidle_devices, hotcpu);
-> +
-> +	if (dev && cpuidle_get_driver()) {
-> +		switch (action) {
-> +		case CPU_ONLINE:
-> +		case CPU_ONLINE_FROZEN:
-> +			cpuidle_pause_and_lock();
-> +			cpuidle_enable_device(dev);
-> +			cpuidle_resume_and_unlock();
-> +			break;
-> +
-> +		case CPU_DEAD:
-> +		case CPU_DEAD_FROZEN:
-> +			cpuidle_pause_and_lock();
-> +			cpuidle_disable_device(dev);
-> +			cpuidle_resume_and_unlock();
-> +			break;
-> +
-> +		default:
-> +			return NOTIFY_DONE;
-> +		}
-> +	}
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block setup_hotplug_notifier = {
-> +	.notifier_call = powerpc_cpuidle_add_cpu_notifier,
-> +};
-> +
-> +/*
-> + * powerpc_cpuidle_driver_init()
-> + */
-> +static int powerpc_cpuidle_driver_init(void)
-> +{
-> +	int idle_state;
-> +	struct cpuidle_driver *drv = &powerpc_idle_driver;
-> +
-> +	drv->state_count = 0;
-> +
-> +	for (idle_state = 0; idle_state < MAX_IDLE_STATE_COUNT; ++idle_state) {
-> +
-> +		if (idle_state > max_idle_state)
-> +			break;
-> +
-> +		/* is the state not enabled? */
-> +		if (cpuidle_state_table[idle_state].enter == NULL)
-> +			continue;
-> +
-> +		drv->states[drv->state_count] =	/* structure copy */
-> +			cpuidle_state_table[idle_state];
-> +
-> +		drv->state_count += 1;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + * powerpc_idle_probe()
-> + * Choose state table for shared versus dedicated partition
-> + */
-> +static int powerpc_idle_probe(void)
-> +{
-> +
-> +	if (cpuidle_disable != IDLE_NO_OVERRIDE)
-> +		return -ENODEV;
-> +
-> +	if (max_idle_state == 0) {
-> +		printk(KERN_DEBUG "powerpc processor idle disabled.\n");
-> +		return -EPERM;
-> +	}
-> +
-> +	if (firmware_has_feature(FW_FEATURE_SPLPAR)) {
-> +		if (get_lppaca_is_shared_proc() == 1)
-> +			cpuidle_state_table = shared_states;
-> +		else if (get_lppaca_is_shared_proc() == 0)
-> +			cpuidle_state_table = dedicated_states;
-> +	} else
-> +		return -ENODEV;
-> +
-> +	return 0;
-> +}
-> +
-> +static int __init powerpc_processor_idle_init(void)
-> +{
-> +	int retval;
-> +
-> +	retval = powerpc_idle_probe();
-> +	if (retval)
-> +		return retval;
-> +
-> +	powerpc_cpuidle_driver_init();
-> +	retval = cpuidle_register(&powerpc_idle_driver, NULL);
-> +	if (retval) {
-> +		printk(KERN_DEBUG "Registration of powerpc driver failed.\n");
-> +		return retval;
-> +	}
-> +
-> +	register_cpu_notifier(&setup_hotplug_notifier);
-> +	printk(KERN_DEBUG "powerpc_idle_driver registered\n");
-> +
-> +	return 0;
-> +}
-> +
-> +static void __exit powerpc_processor_idle_exit(void)
-> +{
-> +
-> +	unregister_cpu_notifier(&setup_hotplug_notifier);
-> +	cpuidle_unregister(&powerpc_idle_driver);
-> +	return;
-> +}
-> +
-> +module_init(powerpc_processor_idle_init);
-> +module_exit(powerpc_processor_idle_exit);
-> +
-> +MODULE_AUTHOR("Deepthi Dharwar <deepthi@linux.vnet.ibm.com>");
-> +MODULE_DESCRIPTION("Cpuidle driver for powerpc");
-> +MODULE_LICENSE("GPL");
+> Another 0-limit test?  If you declare every single page a cgroup has
+> as being in excess of what it should have, how does reclaiming them
+> aggressively constitute bad behavior?
 
+My testing simply tries to compare the behavior before and after the
+patchset. And points out that the current soft reclaim is really
+aggressive and it doesn't have to act like that.
+
+> > [...]
+> > > > So to wrap this up. The series is still doing good and improves the soft
+> > > > limit.
+> > > 
+> > > The soft limit tree is a bunch of isolated code that's completely
+> > > straight-forward.  This is replaced by convoluted memcg iterators,
+> > > convoluted lruvec shrinkers, spreading even more memcg callbacks with
+> > > questionable semantics into already complicated generic reclaim code.
+> > 
+> > I was trying to keep the convolution into vmscan as small as possible.
+> > Maybe it can get reduced even more. I will think about it.
+> > 
+> > Predicate for memcg iterator has been added to address your concern
+> > about a potential regression with too many groups. And that looked like
+> > the least convoluting solution.
+> 
+> I suggested improving the 1st pass by propagating soft limit excess
+> through the res counters.  They are the hierarchical book keepers.  I
+> even send you patches to do this.  I don't understand why you
+> propagate soft limit excess in struct mem_cgroup and use this
+> ridiculous check_events thing to update them.  We already have the
+> per-cpu charge caches (stock) and uncharge caches to batch res_counter
+> updates.
+> 
+> Anyway, this would be a replacement for the current tree structure to
+> quickly find memcgs in excess. 
+
+Yes and I do not insist on having this per-memcg counter. I took this
+way to keep this memcg specific thing withing memcg code and do not
+pollute generic cgroup code which doesn't care about this property at
+all.
+
+> It has nothing to do with integrating it into vmscan.c.
+
+agreed
+
+> > > This series considerably worsens readability and maintainability of
+> > > both the generic reclaim code as well as the memcg counterpart of it.
+> > 
+> > I am really surprised that you are coming with this concerns that late.
+> > This code has been posted quite some ago, hasn't it? We have even had
+> > that "calm" discussion with Tejun about predicates and you were silent
+> > at the time.
+> 
+> I apologize that I was not more responsive in previous submissions,
+> this is mainly because it was hard to context switch while I was
+> focussed on the allocator fairness / thrash detection patches.
+
+Come on, Johannes! We were sitting in the same room at LSF when there
+was a general agreement about the patchset because "It is a general
+improvement and further changes might happen on top of it". You didn't
+say a word you didn't like it and consider the integration as a bad
+idea.
+
+> But you are surprised that I still object to something that I have
+> been objecting to from day one?  What exactly has changed?
+> 
+> > > The point of naturalizing the memcg code is to reduce data structures
+> > > and redundancy and to break open opaque interfaces like "do soft
+> > > reclaim and report back".  But you didn't actually reduce complexity,
+> > > you added even more opaque callbacks (should_soft_reclaim?
+> > > soft_reclaim_eligible?).  You didn't integrate soft limit into generic
+> > > reclaim code, you just made the soft limit API more complicated.
+> > 
+> > I can certainly think about simplifications. But it would be nicer if
+> > you were more specific on the "more complicated" part. The soft reclaim
+> > is a natural part of the reclaim now. Which I find as an improvement.
+> > "Do some memcg magic and get back was" a bad idea IMO.
+> 
+> It depends.  Doing memcg reclaim in generic code made sense because
+> the global data structure went and the generic code absolutely had to
+> know about memcg iteration.
+> 
+> Soft limit reclaim is something else.  If it were just a modifier of
+> the existing memcg reclaim loop, I would still put it in vmscan.c for
+> simplicity reasons.
+> 
+> But your separate soft limit reclaim pass adds quite some complication
+> to the generic code and there is no good reason for it.
+
+Does it? The whole decision is hidden within the predicate so the main
+loop doesn't have to care at all. If we ever go with another limit for
+the guarantee it would simply use a different predicate to select the
+right group.
+
+> The naming does not help to make it very natural to vmscan.c, either.
+> __shrink_zone() should be shrink_lruvecs(),
+> mem_cgroup_soft_reclaim_eligible() should be
+> mem_cgroup_soft_limit_exceeded() or something like that.
+
+I am certainly open to change naming.
+
+> SKIP_TREE should not be a kernel-wide name for anything.
+
+That would require to move the looping code inside memcg. It is question
+whether that would help readability. I do not insist on doing the memcg
+loop inside vmscan, though.
+
+> Also note that we have
+> since moved on to make lruvec the shared structure and try to steer
+> away from using memcgs outside of memcontrol.c, so I'm not really fond
+> of tying more generic code to struct mem_cgroup.
+> 
+> > Hiding the soft limit decisions into the iterators as a searching
+> > criteria doesn't sound as a totally bad idea to me. Soft limit is an
+> > additional criteria who to reclaim, isn't it?
+> 
+> Arguably it's a criteria of /how/ to reclaim any given memcg.  Making
+> it about pre-selecting memcgs is a totally different beast.
+> 
+> > Well, I could have open coded it but that would mean a more code into
+> > vmscan or getting back to "call some memcg magic and get back to me".
+> 
+> Either way sounds preferrable to having vmscan.c do a lot of things it
+> does not understand.
+> 
+> > > And, as I mentioned repeatedly in previous submissions, your benchmark
+> > > numbers don't actually say anything useful about this change.
+> > 
+> > I would really welcome suggestions for improvements. I have tried "The
+> > most interesting test case would be how it behaves if some groups are
+> > over the soft limits while others are not." with v5.1 where I had
+> > memeater unlimited and kbuild resp. stream IO being limited.
+> 
+> The workload seems better but the limit configuration is still very
+> dubious.
+> 
+> I just don't understand what your benchmarks are trying to express.
+> If you set a soft limit of 0 you declare all memory is optional but
+> then you go ahead and complain that the workload in there is
+> thrashing.  WTF?
+
+As I've already said the primary motivation was to check before and
+after state and as you can see we can do better... Although you might
+find soft_limit=0 setting artificial this setting is the easiest way to
+tell that such a group is the number one candidate for reclaim.
+
+We have users who would like to do backups or some temporary actions to
+not disturb the main workload. So stream-io resp. kbuild vs. mem_eater
+is simulating such a use case.
+
+> Kernelbuilds are not really good candidates for soft limit usage in
+> the first place, because they have a small set of heavily used pages
+> and a lot of used-once cache.
+
+It still produces the sufficient memory pressure to disturb other
+groups.
+
+> The core workingset is anything but
+> optional and you could just set the hard limit to clip all that
+> needless cache because it does not change performance whether it's
+> available or not.  Same exact thing goes for IO streamers and their
+> subset of dirty/writeback pages.
+> 
+> > > I'm against merging this upstream at this point.
+> > 
+> > Can we at least find some middle ground here? The way how the current
+> > soft limit is done is a disaster. Ditching the whole series sounds like
+> > a step back to me.
+> 
+> I'm worried about memcg madness spreading.  Memcg code is nowhere near
+> kernel core code standards and I'm really reluctant to have it spread
+> into something as delicate as vmscan.c for no good reason at all.
+> 
+> If you claim the soft limit implementation is a disaster, I would have
+> expected a real life workload to back this up but all I've seen are
+> synthetic tests with no apparent significance to reality.
+> 
+> So, no, I don't buy the "let's just do SOMETHING here" argument.
+> 
+> Let's figure out what the hell is wrong, back it up, find a solution
+> and verify it against the test case.
+
+It is basically prio-0 thing that is the disaster. And I was quite
+explicit about that. 
+
+> Memcg/cgroup code is full of overengineered solutions to problems that
+> don't exist.  It's insane and it has to stop.
+
+This code is getting rid of a big part of that over-engineering! I do
+agree there is a lot of room improvements but, hey, that is always the
+case.
+
+-- 
+Michal Hocko
+SUSE Labs
