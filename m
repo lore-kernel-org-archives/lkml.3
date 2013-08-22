@@ -1,115 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab3HVQlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:41:09 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:39827 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880Ab3HVQlH convert rfc822-to-8bit (ORCPT
+	id S1754047Ab3HVQmP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:42:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29510 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab3HVQmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:41:07 -0400
-Message-ID: <1377189662.2626.4.camel@hornet>
-Subject: Re: [PATCH v3 2/5] ARM: dts: add reference voltage property for MXS
- LRADC
-From: Pawel Moll <pawel.moll@arm.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        Hector Palacios <hector.palacios@digi.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        "marex@denx.de" <marex@denx.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Date: Thu, 22 Aug 2013 17:41:02 +0100
-In-Reply-To: <52153B8E.7050309@free-electrons.com>
-References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com>
-	 <1374501843-19651-3-git-send-email-hector.palacios@digi.com>
-	 <520AA3CD.1040008@kernel.org> <1376491467.18617.41.camel@hornet>
-	 <52153B8E.7050309@free-electrons.com>
-X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
+	Thu, 22 Aug 2013 12:42:14 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=2pwTbst9ur4A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6iCyjPme-SgA:10 a=3nbZYyFuAAAA:8 a=57SyGIRnAAAA:8 a=wsL-10SuGl1287m0-QQA:9 a=CjuIK1q_8ugA:10 a=EvKJbDF4Ut8A:10 a=TIV7c6GJmisA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Thu, 22 Aug 2013 12:42:12 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a
+ ring buffer
+Message-ID: <20130822124212.328c09c7@gandalf.local.home>
+In-Reply-To: <5204BCE6.2070102@hitachi.com>
+References: <1376037909-17797-1-git-send-email-namhyung@kernel.org>
+	<1376037909-17797-11-git-send-email-namhyung@kernel.org>
+	<5204BCE6.2070102@hitachi.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-OriginalArrivalTime: 22 Aug 2013 16:41:02.0651 (UTC) FILETIME=[638CF8B0:01CE9F56]
-X-MC-Unique: 113082217410401801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 09 Aug 2013 18:56:54 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-On Wed, 2013-08-21 at 23:13 +0100, Alexandre Belloni wrote:
-> You are not so wrong. There is indeed actually only one reference
-> voltage (and that is 1.85V). But, before feeding the voltage to the ADC
-> channels, you sometimes have a divider. Then, after the channel muxing,
-> you can add a by 2 divider.
+> (2013/08/09 17:45), Namhyung Kim wrote:
+> > From: Namhyung Kim <namhyung.kim@lge.com>
+> > 
+> > Fetching from user space should be done in a non-atomic context.  So
+> > use a temporary buffer and copy its content to the ring buffer
+> > atomically.
+> > 
+> > While at it, use __get_data_size() and store_trace_args() to reduce
+> > code duplication.
 > 
-> Mandatory ascii art:
+> I just concern using kmalloc() in the event handler. For fetching user
+> memory which can be swapped out, that is true. But most of the cases,
+> we can presume that it exists on the physical memory.
 > 
->             +-----+
->             |     |
->    +-ch1--->|     |
->             |     |
->             |     |
->             |     |     +-----+
->    +-ch2--->|     |     |     |
->             | MUX |++-->| ADC +----------->
->      ch3    |     | |   |     |
->     +----+  |     | |   +-----+
->     |    |  |     | |      |
->   +-> :4 +->|     | |  +---+--+
->     |    |  |     | |  |      |
->     +----+  |     | +->|  :2  |
->             +-----+    |      |
->                        +------+
-> 
->
-> So, from my point of view, the divider that is before the mux (the by 4
-> divider on channel 3 on my drawing) is not part of the the ADC, it is
-> not fixed by that IP. And indeed, that changed between the i.mx23 and
-> i.mx28 while the IP is the same.
-
-Let me a couple of additional questions, hope you don't mind:
-
-1. Is the channel defined as: input *and* the reference voltage? Or,
-does the mux switch both of them at the same time?
-
-2. Is the mux controlled (so the channel selected) by a control register
-"integral" to the ADC?
-
-3. Is the reference voltage generated "inside" the SOC? Or does it come
-from an external source?
-
-4. How is the "LRADC" IP actually documented? Does the spec clearly say
-that it has 8 voltage reference inputs?
-
-> So, the two solutions you suggest are:
-> 1/ using a fixed-regulator phandle per channel
-> 2/ hard-coding the dividers in the driver using the compatible string to
-> know which divider is on which channel.
-> 
-> I feel that solution 2 is less future proof but at the same time, I
-> don't believe we will see that IP in another chip in the future.
-
-If we were to follow the spirit of "how is it wired" to the letter, you
-should really use 8 supplies, but I appreciate that it can be
-troublesome (or maybe not? it's just 2 dtsi files after all ;-). So
-maybe, as the compatible values explicitly mention the SOC names, you
-just want to hardcode the voltage levels in the driver itself (probably
-as data for the match array)? This of course assume that the reference
-source is internal. Shortly speaking - I believe that you should have
-phandles to regulators or nothing at all there :-) A de-facto-constant
-list of SOC-specific numbers seems the worst option.
-
-Thanks!
-
-Pawel
-
-Paweł
 
 
+What about creating a per cpu buffer when uprobes are registered, and
+delete them when they are finished? Basically what trace_printk() does
+if it detects that there are users of trace_printk() in the kernel.
+Note, it does not deallocate them when finished, as it is never
+finished until reboot ;-)
 
+-- Steve
