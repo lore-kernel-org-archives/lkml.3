@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab3HVR2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 13:28:47 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58343 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753291Ab3HVR2q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 13:28:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mike Turquette <mturquette@linaro.org>
-Subject: Re: [RFC 02/17] ARM: call clk_of_init from time_init
-Date: Thu, 22 Aug 2013 19:28:10 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <201308212054.10417.arnd@arndb.de> <20130822072524.8231.37219@quantum>
-In-Reply-To: <20130822072524.8231.37219@quantum>
+	id S1754019Ab3HVRaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 13:30:21 -0400
+Received: from frisell.zx2c4.com ([192.95.5.64]:59647 "EHLO frisell.zx2c4.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753787Ab3HVRaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 13:30:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=zx2c4.com; h=mime-version
+	:in-reply-to:references:date:message-id:subject:from:to:cc
+	:content-type; q=dns; s=mail; b=kmlbE2q7uc+8nhOSWfiq+0HVPa4AKCev
+	+IwvIcL3oEd5GJSQZ2naeaKk1J5HhIcHBMRjBTYJt68kzN5zYawBADfmGfhkdk5A
+	QRcnNnmk6agmHmPnD8yEMV7erGLOmoHNk2hrJIRzGdNESiit+W1CN2ZUvJPahdh3
+	UOttbtA4CcA=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308221928.10852.arnd@arndb.de>
-X-Provags-ID: V02:K0:cAhpPzNe5dVnSaYrWuO3CiKjWDpX6V//ptMidFURNG8
- J6i8AZ26hrZxmd07B1Dg9t6uv40tY9JxsIpA45qe0GOCvAS+o2
- aOpQ6PBhA0zSoPeiXkGz7tyoWzBYduqnxsKlicsoPmQMDKTPSz
- iTwCT2FRnlv1TCntqfJoV3n8kTWKJ0wltYyVsfncVLjX1kgY//
- alsnOTcqYqJd6nXpZL1lOeXPBKiWVti3o9AvtCqFfZKnAj8xNa
- 2KZylTxdtrIYBr61V1z8puGdmST8ix2uiaCY8Hz8eDCRmmvOAR
- UW1RkeZiXC18DoqbrOj/2NK11LDLfWcKaUP4zWoASnniDJ9vCP
- PETmLfHT8t+iD1SON3cU=
+In-Reply-To: <20130822153900.GA2878@srcf.ucam.org>
+References: <1377180132-4933-1-git-send-email-Jason@zx2c4.com>
+	<1377180132-4933-3-git-send-email-Jason@zx2c4.com>
+	<20130822153900.GA2878@srcf.ucam.org>
+Date: Thu, 22 Aug 2013 19:29:56 +0200
+Message-ID: <CAHmME9rHX=3UrFEERkGs0AvGuvoSJYKz35qsMaith4zSDzQTxg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] thinkpad_acpi: Wire unused micmute LED to capslock
+From: "Jason A. Donenfeld" <Jason@zx2c4.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-acpi@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mjg@redhat.com, rjw@sisk.pl,
+        len.brown@intel.com, dtor@insightbb.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 22 August 2013, Mike Turquette wrote:
-> Some timers need to know their clock rate for the timer setup. This
-> could be hard-coded (e.g. for some timer driven from a fixed 32Khz
-> source) but it could also be from a clock capable of different rates
-> that needs to be calculated.
-> 
-> I remember discussing the early clock init stuff for OMAP and there was
-> an idea to not rely on the clock framework for timer init and just do
-> some raw reads and compute the clock rate that way. Using the framework
-> would be better of course.
-> 
+On Thu, Aug 22, 2013 at 5:39 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> I think there's a risk of user confusion here, in that it's now possible
+> for the mic mute light to be lit despite the internal microphone still
+> being active. That seems like surprising behaviour.
 
-Just to be clear: I think we should initialize all clocks before timers,
-just not any earlier like Tegra does.
+Yeah, that is a legitimate concern. Patches 1/3 [1] and 2/3 [2]
+clearly make sense, as they're generic and don't really suggest any
+new behavior.
 
-	Arnd
+But setting this behavior here as the default could indeed be a bit
+unexpected. I think it's fair to reject this patch (3/3), but accept
+the first two. Tweakers who have the same early boot caps-lock LED
+needs as me can simply put this in their initramfs after 1/3 and 2/3
+are applied:
+
+# echo caps-lock >
+/sys/devices/platform/thinkpad_acpi/leds/tpacpi\:\:micmute/trigger
+
+Jason
+
+[1] https://lkml.org/lkml/2013/8/22/310
+[2] https://lkml.org/lkml/2013/8/22/313
