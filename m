@@ -1,126 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab3HVIvQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:51:16 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:55113 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab3HVIoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 04:44:23 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-58-5215cf62c1f1
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
+	id S1752338Ab3HVI5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 04:57:25 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47463 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751892Ab3HVI5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 04:57:23 -0400
+Date: Thu, 22 Aug 2013 10:57:21 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 09/16] slab: use __GFP_COMP flag for allocating slab pages
-Date: Thu, 22 Aug 2013 17:44:18 +0900
-Message-Id: <1377161065-30552-10-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+        stable <stable@vger.kernel.org>, lwn@lwn.net,
+        Guenter Roeck <linux@roeck-us.net>, Hugh Dickins <hughd@google.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Proposed stable release changes
+Message-ID: <20130822085721.GA16792@nazgul.tnic>
+References: <20130820224032.GA20491@kroah.com>
+ <521504D7.7090204@wwwdotorg.org>
+ <CA+55aFxMkQoJAJd2=XyJu0NX2dG3mX=obx=YL6YXatLg4S=-Vw@mail.gmail.com>
+ <20130821200034.GA10671@nazgul.tnic>
+ <CA+8MBbKxcQCq8XdYakG5Dg8F_G8NunQjca-TyZbn4q0v3okaqw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+8MBbKxcQCq8XdYakG5Dg8F_G8NunQjca-TyZbn4q0v3okaqw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we use 'struct page' of first page as 'struct slab', there is no
-advantage not to use __GFP_COMP. So use __GFP_COMP flag for all the cases.
+On Wed, Aug 21, 2013 at 01:54:01PM -0700, Tony Luck wrote:
+> On Wed, Aug 21, 2013 at 1:00 PM, Borislav Petkov <bp@alien8.de> wrote:
+> > We don't want to run daily snapshots of your tree though, right? Only
+> > -rcs because the daily states are kinda arbitrary and they can be broken
+> > in various ways. Or are we at a point in time where we can amend that
+> > rule?
+> 
+> If *nobody* runs daily snapshots - then problems just sit latent all week until
+> the -rc is released and people start testing. Doesn't sound optimal.
+> 
+> Running daily git snapshots can be "exciting" during the merge window. But
+> I rarely see problems running a random build after -rc1.  If you are still
+> running that ancient 3.11-rc6 released on Sunday - then you are missing out
+> on 28 commits worth of goodness since then :-)
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/mm/slab.c b/mm/slab.c
-index ee03eba..855f481 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1712,15 +1712,6 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
- {
- 	struct page *page;
- 	int nr_pages;
--	int i;
--
--#ifndef CONFIG_MMU
--	/*
--	 * Nommu uses slab's for process anonymous memory allocations, and thus
--	 * requires __GFP_COMP to properly refcount higher order allocations
--	 */
--	flags |= __GFP_COMP;
--#endif
- 
- 	flags |= cachep->allocflags;
- 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
-@@ -1744,12 +1735,9 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
- 	else
- 		add_zone_page_state(page_zone(page),
- 			NR_SLAB_UNRECLAIMABLE, nr_pages);
--	for (i = 0; i < nr_pages; i++) {
--		__SetPageSlab(page + i);
--
--		if (page->pfmemalloc)
--			SetPageSlabPfmemalloc(page);
--	}
-+	__SetPageSlab(page);
-+	if (page->pfmemalloc)
-+		SetPageSlabPfmemalloc(page);
- 	memcg_bind_pages(cachep, cachep->gfporder);
- 
- 	if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
-@@ -1769,8 +1757,7 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
-  */
- static void kmem_freepages(struct kmem_cache *cachep, struct page *page)
- {
--	unsigned long i = (1 << cachep->gfporder);
--	const unsigned long nr_freed = i;
-+	const unsigned long nr_freed = (1 << cachep->gfporder);
- 
- 	kmemcheck_free_shadow(page, cachep->gfporder);
- 
-@@ -1781,12 +1768,9 @@ static void kmem_freepages(struct kmem_cache *cachep, struct page *page)
- 		sub_zone_page_state(page_zone(page),
- 				NR_SLAB_UNRECLAIMABLE, nr_freed);
- 
-+	BUG_ON(!PageSlab(page));
- 	__ClearPageSlabPfmemalloc(page);
--	while (i--) {
--		BUG_ON(!PageSlab(page));
--		__ClearPageSlab(page);
--		page++;
--	}
-+	__ClearPageSlab(page);
- 
- 	memcg_release_pages(cachep, cachep->gfporder);
- 	if (current->reclaim_state)
-@@ -2350,7 +2334,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 	cachep->colour = left_over / cachep->colour_off;
- 	cachep->slab_size = slab_size;
- 	cachep->flags = flags;
--	cachep->allocflags = 0;
-+	cachep->allocflags = __GFP_COMP;
- 	if (CONFIG_ZONE_DMA_FLAG && (flags & SLAB_CACHE_DMA))
- 		cachep->allocflags |= GFP_DMA;
- 	cachep->size = size;
-@@ -2717,17 +2701,8 @@ static void slab_put_obj(struct kmem_cache *cachep, struct slab *slabp,
- static void slab_map_pages(struct kmem_cache *cache, struct slab *slab,
- 			   struct page *page)
- {
--	int nr_pages;
--
--	nr_pages = 1;
--	if (likely(!PageCompound(page)))
--		nr_pages <<= cache->gfporder;
--
--	do {
--		page->slab_cache = cache;
--		page->slab_page = slab;
--		page++;
--	} while (--nr_pages);
-+	page->slab_cache = cache;
-+	page->slab_page = slab;
- }
- 
- /*
--- 
-1.7.9.5
-
+Damn, I'm such a l0z3r!
