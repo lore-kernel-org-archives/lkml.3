@@ -1,111 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab3HVGqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 02:46:46 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:38858 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753289Ab3HVGqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 02:46:44 -0400
-X-Greylist: delayed 338 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 02:46:44 EDT
-Date: Thu, 22 Aug 2013 09:43:21 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-To: Drunkard Zhang <gongfan193@gmail.com>
-cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: ipvsadm: One-packet scheduling with UDP service is unstable
-In-Reply-To: <CAJiejCQPa7V703RwOeWPpbQMJQvfswRn+pvTKFmNdeU05RU3SQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1308220925340.1727@ja.ssi.bg>
-References: <CAJiejCQPa7V703RwOeWPpbQMJQvfswRn+pvTKFmNdeU05RU3SQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753729Ab3HVGud (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 02:50:33 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63870 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab3HVGuc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 02:50:32 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-7e-5215b4b63ad3
+Date: Thu, 22 Aug 2013 15:50:38 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v2 03/20] mm, hugetlb: fix subpool accounting handling
+Message-ID: <20130822065038.GA13415@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1376040398-11212-4-git-send-email-iamjoonsoo.kim@lge.com>
+ <87vc2zgzpn.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vc2zgzpn.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Aneesh.
 
-	Hello,
+First of all, thank you for review!
 
-On Tue, 20 Aug 2013, Drunkard Zhang wrote:
-
-> Need help here, thank you for replying :-)
+On Wed, Aug 21, 2013 at 02:58:20PM +0530, Aneesh Kumar K.V wrote:
+> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 > 
-> I'm setting up a syslog cluster based on IPVS, all UDP datagrams sent
-> from firewall with fixed source IP and fixed source port, so
-> pseudo-random balancing based on client IP and port won't working. And
-> it seems that keepalived is not supporting One-packet scheduling
-> option, so I did some hacks on it after keepalived started:
+> > If we alloc hugepage with avoid_reserve, we don't dequeue reserved one.
+> > So, we should check subpool counter when avoid_reserve.
+> > This patch implement it.
 > 
-> 1. dump LVS rules with ipvsadm -S -n > rules-vs3;
-> 2. add --ops option;
-> 3. restore LVS rules with ipvsadm-restore < rules-vs3;
-> 4. dump the running LVS rules with ipvsadm -S -n
+> Can you explain this better ? ie, if we don't have a reservation in the
+> area chg != 0. So why look at avoid_reserve. 
+
+We don't consider avoid_reserve when chg != 0.
+Look at following code.
+
++       if (chg || avoid_reserve)
++               if (hugepage_subpool_get_pages(spool, 1))
+
+It means that if chg != 0, we skip to check avoid_reserve.
+
 > 
-> So, I got two problems here:
+> Also the code will become if you did
 > 
-> 1. Dumped rules in step 4 above is not usable anymore, the double-dash
-> in --ops lost, so I can't restore rule with this dump anymore. This
-> must be a bug.
+> if (!chg && avoid_reserve)
+>    chg = 1;
 > 
-> 2. The --ops option is not working sometimes you applied the rules,
-> and in most of times the --ops just not working. To make it work, just
-> 'ipvsadm-restore < rules-vs3' for plenty of times until it's working.
-> I haven't find the patterns make it work yet. This is lucky, I can't
-> get it work on second host at all.
-> 
-> The "not working" above means the UDP datagrams from one source IP is
-> sticked to one realserver, it doesn't distribute to other realservers
-> which --ops designed for.
+> and then rest of the code will be able to handle the case.
 
-	Can you try with recent ipvsadm from git:
 
-git clone git://git.kernel.org/pub/scm/utils/kernel/ipvsadm/ipvsadm.git
+We still pass avoid_reserve to dequeue_huge_page_vma() and check avoid_reserve
+there, so maintaining avoid_reserve and checking it separately is better
+to understand a logic. And it doesn't matter at all since I eventually unify
+these in patch 13.
 
-	I see related commit that will print -o for
-the OPS feature:
-
-===
-commit 6a03100c189d00e3a8235215392465b5b877ba8f
-Author: Krzysztof Gajdemski <songo@debian.org.pl>
-Date:   Thu Mar 21 11:40:06 2013 +0100
-
-    ipvsadm: Fix wrong format of -o option in FMT_RULE listing
-
-    'ipvsadm -S' listed one-packet scheduling option in wrong format
-    ('ops' instead of '--ops' or '-o') preventing any service with OPS
-    feature from restoring using 'ipvsadm -R'.  Now we use '-o' which
-    works well with save/restore commands.
-
-    Signed-off-by: Krzysztof Gajdemski <songo@debian.org.pl>
-    Signed-off-by: Simon Horman <horms@verge.net.au>
-===
-
-	Let me know if you still have any problems with OPS.
-Sending to lvs-devel@vger.kernel.org and
-lvs-users@linuxvirtualserver.org should be enough for
-ipvsadm related discussions.
-
-> So I wondering if there's some CONFIG_* options that ipvs needs, or
-> recent development broke the code?
-
-	No kernel options should be related to OPS. I assume
-you are not using the SH scheduler. Make sure the OPS mode
-is properly applied to the virtual service, check for "ops"
-in the configuration:
-
-cat /proc/net/ip_vs
-
-> Do I need to attach kernel config file?
-
-	No
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
+Thanks.
