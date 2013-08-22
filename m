@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab3HVJss (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 05:48:48 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:48676 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038Ab3HVJso (ORCPT
+	id S1752739Ab3HVJsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 05:48:50 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:35788 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689Ab3HVJss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 05:48:44 -0400
+	Thu, 22 Aug 2013 05:48:48 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
@@ -14,96 +14,82 @@ Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
         Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH 1/6] mm/hwpoison: fix lose PG_dirty flag for errors on mlocked pages
-Date: Thu, 22 Aug 2013 17:48:22 +0800
-Message-Id: <1377164907-24801-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH 6/6] mm/hwpoison: centralize set PG_hwpoison flag and increase num_poisoned_pages
+Date: Thu, 22 Aug 2013 17:48:27 +0800
+Message-Id: <1377164907-24801-6-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1377164907-24801-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1377164907-24801-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082209-9574-0000-0000-00000949772E
+x-cbid: 13082209-5490-0000-0000-00000406A153
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memory_failure() store the page flag of the error page before doing unmap, 
-and (only) if the first check with page flags at the time decided the error 
-page is unknown, it do the second check with the stored page flag since 
-memory_failure() does unmapping of the error pages before doing page_action(). 
-This unmapping changes the page state, especially page_remove_rmap() (called 
-from try_to_unmap_one()) clears PG_mlocked, so page_action() can't catch 
-mlocked pages after that. 
-
-However, memory_failure() can't handle memory errors on dirty mlocked pages 
-correctly. try_to_unmap_one will move the dirty bit from pte to the physical 
-page, the second check lose it since it check the stored page flag. This patch 
-fix it by restore PG_dirty flag to stored page flag if the page is dirty.
-
-Testcase:
-
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <errno.h>
-
-#define PAGES_TO_TEST 2
-#define PAGE_SIZE	4096
-
-int main(void)
-{
-	char *mem;
-	int i;
-
-	mem = mmap(NULL, PAGES_TO_TEST * PAGE_SIZE,
-			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_LOCKED, 0, 0);
-
-	for (i = 0; i < PAGES_TO_TEST; i++)
-		mem[i * PAGE_SIZE] = 'a';
-
-	if (madvise(mem, PAGES_TO_TEST * PAGE_SIZE, MADV_HWPOISON) == -1)
-		return -1;
-
-	return 0;
-}
-
-Before patch:
-
-[  912.839247] Injecting memory failure for page 7dfb8 at 7f6b4e37b000
-[  912.839257] MCE 0x7dfb8: clean mlocked LRU page recovery: Recovered
-[  912.845550] MCE 0x7dfb8: clean mlocked LRU page still referenced by 1 users
-[  912.852586] Injecting memory failure for page 7e6aa at 7f6b4e37c000
-[  912.852594] MCE 0x7e6aa: clean mlocked LRU page recovery: Recovered
-[  912.858936] MCE 0x7e6aa: clean mlocked LRU page still referenced by 1 users
-
-After patch:
-
-[  163.590225] Injecting memory failure for page 91bc2f at 7f9f5b0e5000
-[  163.590264] MCE 0x91bc2f: dirty mlocked LRU page recovery: Recovered
-[  163.596680] MCE 0x91bc2f: dirty mlocked LRU page still referenced by 1 users
-[  163.603831] Injecting memory failure for page 91cdd3 at 7f9f5b0e6000
-[  163.603852] MCE 0x91cdd3: dirty mlocked LRU page recovery: Recovered
-[  163.610305] MCE 0x91cdd3: dirty mlocked LRU page still referenced by 1 users
+soft_offline_page will invoke __soft_offline_page for in-use normal pages 
+and soft_offline_huge_page for in-use hugetlbfs pages. Both of them will 
+done the same effort as for soft offline free pages set PG_hwpoison, increase 
+num_poisoned_pages etc, this patch centralize do them in soft_offline_page.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- mm/memory-failure.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ mm/memory-failure.c | 16 ++++------------
+ 1 file changed, 4 insertions(+), 12 deletions(-)
 
 diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index bee58d8..e156084 100644
+index 0a52571..3226de1 100644
 --- a/mm/memory-failure.c
 +++ b/mm/memory-failure.c
-@@ -1206,6 +1206,9 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
- 	for (ps = error_states;; ps++)
- 		if ((p->flags & ps->mask) == ps->res)
- 			break;
+@@ -1486,15 +1486,9 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
+ 				MIGRATE_SYNC);
+ 	put_page(hpage);
+-	if (ret) {
++	if (ret)
+ 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 			pfn, ret, page->flags);
+-	} else {
+-		set_page_hwpoison_huge_page(hpage);
+-		dequeue_hwpoisoned_huge_page(hpage);
+-		atomic_long_add(1 << compound_order(hpage),
+-				&num_poisoned_pages);
+-	}
+ 	return ret;
+ }
+ 
+@@ -1530,8 +1524,6 @@ static int __soft_offline_page(struct page *page, int flags)
+ 	if (ret == 1) {
+ 		put_page(page);
+ 		pr_info("soft_offline: %#lx: invalidated\n", pfn);
+-		SetPageHWPoison(page);
+-		atomic_long_inc(&num_poisoned_pages);
+ 		return 0;
+ 	}
+ 
+@@ -1572,11 +1564,9 @@ static int __soft_offline_page(struct page *page, int flags)
+ 				lru_add_drain_all();
+ 			if (!is_free_buddy_page(page))
+ 				drain_all_pages();
+-			SetPageHWPoison(page);
+ 			if (!is_free_buddy_page(page))
+ 				pr_info("soft offline: %#lx: page leaked\n",
+ 					pfn);
+-			atomic_long_inc(&num_poisoned_pages);
+ 		}
+ 	} else {
+ 		pr_info("soft offline: %#lx: isolation failed: %d, page count %d, type %lx\n",
+@@ -1633,7 +1623,9 @@ int soft_offline_page(struct page *page, int flags)
+ 			ret = soft_offline_huge_page(page, flags);
+ 		else
+ 			ret = __soft_offline_page(page, flags);
+-	} else { /* for free pages */
++	}
 +
-+	page_flags |= (p->flags & (1UL << PG_dirty));
-+
- 	if (!ps->mask)
- 		for (ps = error_states;; ps++)
- 			if ((page_flags & ps->mask) == ps->res)
++	if (!ret) {
+ 		if (PageHuge(page)) {
+ 			set_page_hwpoison_huge_page(hpage);
+ 			dequeue_hwpoisoned_huge_page(hpage);
 -- 
-1.7.7.6
+1.8.1.2
 
