@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab3HVQwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:52:41 -0400
-Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:52534 "EHLO
-	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753787Ab3HVQwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:52:40 -0400
-X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 12:52:40 EDT
-Date: Thu, 22 Aug 2013 16:47:25 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/16] slab: overload struct slab over struct page to
- reduce memory usage
-In-Reply-To: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <00000140a6ec66e5-a4d245c0-76b6-4a8b-9cf0-d941ca9e08b0-000000@email.amazonses.com>
-References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754078Ab3HVQwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:52:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47257 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753787Ab3HVQwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 12:52:54 -0400
+Date: Thu, 22 Aug 2013 18:47:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Brad Spengler <spender@grsecurity.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin Walters <walters@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
+Message-ID: <20130822164703.GA19196@redhat.com>
+References: <20130819172524.GA22268@redhat.com> <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com> <20130819183319.GA24846@redhat.com> <CALCETrWrpNszRGCRRMLgiOopcSdDShB3Mck6gRPco=dAZeX3pQ@mail.gmail.com> <20130819184355.GA25362@redhat.com> <87siy4z1pf.fsf@xmission.com> <20130820184521.GA23293@redhat.com> <87li3ww0e6.fsf@xmission.com> <20130821163532.GA15152@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.08.22-54.240.9.58
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130821163532.GA15152@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Aug 2013, Joonsoo Kim wrote:
+On 08/21, Oleg Nesterov wrote:
+>
+> Still. Can't we make a single check? Like the initial patch I sent, but
+> this one moves the check into copy_process() and checks CLONE_* first.
+> Looks a bit simpler. And more understandable to me but this is subjective.
 
-> And this patchset change a management method of free objects of a slab.
-> Current free objects management method of the slab is weird, because
-> it touch random position of the array of kmem_bufctl_t when we try to
-> get free object. See following example.
+Seriously. CLONE_NEWPID and task_active_pid_ns() != nsproxy->pid_ns are
+the same thing in this respect. Let me send the patches for review, I
+decided to split this change.
 
-The ordering is intentional so that the most cache hot objects are removed
-first.
+> --- x/kernel/fork.c
+> +++ x/kernel/fork.c
+> @@ -1173,12 +1173,13 @@ static struct task_struct *copy_process(
+>  		return ERR_PTR(-EINVAL);
+>  
+>  	/*
+> -	 * If the new process will be in a different pid namespace
+> -	 * don't allow the creation of threads.
+> +	 * --------------  COMMENT -----------------
+>  	 */
+> -	if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
+> -	    (task_active_pid_ns(current) != current->nsproxy->pid_ns))
+> -		return ERR_PTR(-EINVAL);
+> +	if (clone_flags & (CLONE_SIGHAND | CLONE_PARENT)) {
+> +		if ((clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) ||
+> +		    (task_active_pid_ns(current) != current->nsproxy->pid_ns))
+> +			return -EINVAL;
+                                ^^^^^^
 
-> To get free objects, we access this array with following pattern.
-> 6 -> 3 -> 7 -> 2 -> 5 -> 4 -> 0 -> 1 -> END
+should be ERR_PTR(-EINVAL)
 
-Because that is the inverse order of the objects being freed.
+Oleg.
 
-The cache hot effect may not be that significant since per cpu and per
-node queues have been aded on top. So maybe we do not be so cache aware
-anymore when actually touching struct slab.
