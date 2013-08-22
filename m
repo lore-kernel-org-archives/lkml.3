@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab3HVH72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:59:28 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:55240 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443Ab3HVH71 (ORCPT
+	id S1754077Ab3HVH74 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:59:56 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:45840 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab3HVH7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:59:27 -0400
-Message-ID: <5215C4D8.4040403@linux.vnet.ibm.com>
-Date: Thu, 22 Aug 2013 15:59:20 +0800
+	Thu, 22 Aug 2013 03:59:55 -0400
+Message-ID: <5215C4F1.1070908@linux.vnet.ibm.com>
+Date: Thu, 22 Aug 2013 15:59:45 +0800
 From: Michael wang <wangyun@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: open list <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 10/11] sched/cleanup: remove the extra parm of retrigger_next_event()
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 11/11] sched/cleanup: remove the extra parm of find_new_ilb()
 References: <5215C233.9060907@linux.vnet.ibm.com>
 In-Reply-To: <5215C233.9060907@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082207-4790-0000-0000-000009EB6835
+x-cbid: 13082207-2674-0000-0000-00000A55C462
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parm 'arg' has not been used, remove it to make code clean.
+Parm 'call_cpu' has not been used, remove it to make code clean.
 
-CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Ingo Molnar <mingo@redhat.com>
 CC: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 ---
- kernel/hrtimer.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched/fair.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 383319b..1abca37 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -678,7 +678,7 @@ static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-  *
-  * Called with interrupts disabled via on_each_cpu()
-  */
--static void retrigger_next_event(void *arg)
-+static void retrigger_next_event(void)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 05643d6..29ac8dd 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5454,7 +5454,7 @@ static struct {
+ 	unsigned long next_balance;     /* in jiffy units */
+ } nohz ____cacheline_aligned;
+ 
+-static inline int find_new_ilb(int call_cpu)
++static inline int find_new_ilb(void)
  {
- 	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
+ 	int ilb = cpumask_first(nohz.idle_cpus_mask);
  
-@@ -717,7 +717,7 @@ static int hrtimer_switch_to_hres(void)
+@@ -5475,7 +5475,7 @@ static void nohz_balancer_kick(int cpu)
  
- 	tick_setup_sched_timer();
- 	/* "Retrigger" the interrupt to get things going */
--	retrigger_next_event(NULL);
-+	retrigger_next_event();
- 	local_irq_restore(flags);
- 	return 1;
- }
-@@ -751,7 +751,7 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
- 	return 0;
- }
- static inline void hrtimer_init_hres(struct hrtimer_cpu_base *base) { }
--static inline void retrigger_next_event(void *arg) { }
-+static inline void retrigger_next_event(void) { }
+ 	nohz.next_balance++;
  
- #endif /* CONFIG_HIGH_RES_TIMERS */
+-	ilb_cpu = find_new_ilb(cpu);
++	ilb_cpu = find_new_ilb();
  
-@@ -787,7 +787,7 @@ void hrtimers_resume(void)
- 		  KERN_INFO "hrtimers_resume() called with IRQs enabled!");
- 
- 	/* Retrigger on the local CPU */
--	retrigger_next_event(NULL);
-+	retrigger_next_event();
- 	/* And schedule a retrigger for all others */
- 	clock_was_set_delayed();
- }
+ 	if (ilb_cpu >= nr_cpu_ids)
+ 		return;
 -- 
 1.7.9.5
 
