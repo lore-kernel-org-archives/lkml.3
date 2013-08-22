@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab3HVRyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 13:54:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44505 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429Ab3HVRyg (ORCPT
+	id S1754031Ab3HVR5J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 13:57:09 -0400
+Received: from phoenix3.szarvasnet.hu ([87.101.127.16]:35781 "EHLO
+	mail.szarvasnet.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753879Ab3HVR5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 13:54:36 -0400
-Date: Thu, 22 Aug 2013 10:54:35 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] w1: use default attribute groups for w1 slave devices
-Message-ID: <20130822175435.GA13305@kroah.com>
-References: <1377116673-31216-1-git-send-email-gregkh@linuxfoundation.org>
- <1377116673-31216-2-git-send-email-gregkh@linuxfoundation.org>
- <267801377129759@web1d.yandex.ru>
+	Thu, 22 Aug 2013 13:57:07 -0400
+X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 13:57:07 EDT
+Message-ID: <52164F54.2070209@openwrt.org>
+Date: Thu, 22 Aug 2013 19:50:12 +0200
+From: Gabor Juhos <juhosg@openwrt.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <267801377129759@web1d.yandex.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Ralf Baechle <ralf@linux-mips.org>, kernel-janitors@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] MIPS: ath79: simplify platform_get_resource_byname/devm_ioremap_resource
+References: <1376902316-18520-1-git-send-email-Julia.Lawall@lip6.fr> <1376902316-18520-7-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1376902316-18520-7-git-send-email-Julia.Lawall@lip6.fr>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 04:02:39AM +0400, Evgeniy Polyakov wrote:
-> hi Greg
+2013.08.19. 10:51 keltezéssel, Julia Lawall írta:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> 22.08.2013, 00:24, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>:
-> > As we have 2 sysfs files for the w1 slave devices, let the driver core
-> > create / destroy them automatically by setting the default attribute
-> > group for them, saving code and housekeeping logic.
-> >
-> > Cc: Evgeniy Polyakov <zbr@ioremap.net>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Remove unneeded error handling on the result of a call to
+> platform_get_resource_byname when the value is passed to devm_ioremap_resource.
 > 
-> Both patches look good, thanks a lot
-> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+> A simplified version of the semantic patch that makes this change is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression pdev,res,e,e1;
+> expression ret != 0;
+> identifier l;
+> @@
+> 
+>   res = platform_get_resource_byname(...);
+> - if (res == NULL) { ... \(goto l;\|return ret;\) }
+>   e = devm_ioremap_resource(e1, res);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Great, thanks for the review.
+Acked-by: Gabor Juhos <juhosg@openwrt.org>
 
-greg k-h
+Thanks!
+
+-Gabor
