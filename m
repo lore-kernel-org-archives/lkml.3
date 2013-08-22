@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab3HVQvp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:51:45 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:50879 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab3HVQvm convert rfc822-to-8bit (ORCPT
+	id S1754065Ab3HVQwl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:52:41 -0400
+Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:52534 "EHLO
+	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753787Ab3HVQwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:51:42 -0400
-Message-ID: <1377190299.2626.9.camel@hornet>
-Subject: Re: [PATCH v3 2/5] ARM: dts: add reference voltage property for MXS
- LRADC
-From: Pawel Moll <pawel.moll@arm.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Hector Palacios <hector.palacios@digi.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        "marex@denx.de" <marex@denx.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Date: Thu, 22 Aug 2013 17:51:39 +0100
-In-Reply-To: <df6d000d-c918-48ec-958c-c8529ae1b75f@email.android.com>
-References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com>
-	 <1374501843-19651-3-git-send-email-hector.palacios@digi.com>
-	 <520AA3CD.1040008@kernel.org> <1376491467.18617.41.camel@hornet>
-	 <52153B8E.7050309@free-electrons.com>
-	 <df6d000d-c918-48ec-958c-c8529ae1b75f@email.android.com>
-X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 22 Aug 2013 16:51:39.0165 (UTC) FILETIME=[DEF14CD0:01CE9F57]
-X-MC-Unique: 113082217514100201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Aug 2013 12:52:40 -0400
+X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 12:52:40 EDT
+Date: Thu, 22 Aug 2013 16:47:25 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/16] slab: overload struct slab over struct page to
+ reduce memory usage
+In-Reply-To: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <00000140a6ec66e5-a4d245c0-76b6-4a8b-9cf0-d941ca9e08b0-000000@email.amazonses.com>
+References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.08.22-54.240.9.58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-22 at 07:17 +0100, Jonathan Cameron wrote:
-> I would favour option 2 though some of the discussions going on at the moment about
-> bindings might result in a generic description of this and any other bits of
->  analog front end.
+On Thu, 22 Aug 2013, Joonsoo Kim wrote:
 
-Any link to this discussion? devicetree@vger.kernel.org doesn't seem to
-be involved (of course I may have simply missed the thread ;-)
+> And this patchset change a management method of free objects of a slab.
+> Current free objects management method of the slab is weird, because
+> it touch random position of the array of kmem_bufctl_t when we try to
+> get free object. See following example.
 
-Paweł
+The ordering is intentional so that the most cache hot objects are removed
+first.
 
+> To get free objects, we access this array with following pattern.
+> 6 -> 3 -> 7 -> 2 -> 5 -> 4 -> 0 -> 1 -> END
 
+Because that is the inverse order of the objects being freed.
+
+The cache hot effect may not be that significant since per cpu and per
+node queues have been aded on top. So maybe we do not be so cache aware
+anymore when actually touching struct slab.
