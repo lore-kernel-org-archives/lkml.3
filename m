@@ -1,123 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab3HVBF1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 21:05:27 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:32782 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839Ab3HVBF0 (ORCPT
+	id S1753246Ab3HVBJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 21:09:21 -0400
+Received: from smtp07.smtpout.orange.fr ([80.12.242.129]:20978 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab3HVBJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 21:05:26 -0400
+	Wed, 21 Aug 2013 21:09:19 -0400
+Message-ID: <521564B7.10902@laposte.net>
+Date: Thu, 22 Aug 2013 03:09:11 +0200
+From: Yann Cantin <yann.cantin@laposte.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1377133329.12003.9.camel@joe-AO722>
-References: <1377132262-15744-1-git-send-email-zwu.kernel@gmail.com>
-	<1377133329.12003.9.camel@joe-AO722>
-Date: Thu, 22 Aug 2013 09:05:25 +0800
-Message-ID: <CAEH94Lhh11+zFHsRNDXoyxQfndxDRMcVvLnZDXQLw5cyaavUJw@mail.gmail.com>
-Subject: Re: [PATCH] scsi: fix the build warning
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-scsi@vger.kernel.org, James Bottomley <jbottomley@parallels.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Oliver Neukum <oliver@neukum.org>
+CC: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        dmitry.torokhov@gmail.com, jkosina@suse.cz, rob@landley.net,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 2/2] input: misc: New USB eBeam input driver
+References: <1376684743-25047-1-git-send-email-yann.cantin@laposte.net>  <1376684743-25047-3-git-send-email-yann.cantin@laposte.net> <1377062750.1797.9.camel@linux-fkkt.site>
+In-Reply-To: <1377062750.1797.9.camel@linux-fkkt.site>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI,
+Hi,
 
-If you'd like, you should draft one patch for this warning.
+All issues addressed. Just a point :
 
-On Thu, Aug 22, 2013 at 9:02 AM, Joe Perches <joe@perches.com> wrote:
-> On Thu, 2013-08-22 at 08:44 +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->>   Initialize csum variable to fix the build warning.
+>> +
+>> +	/* input final setup */
+>> +	ebeam_setup_input(ebeam, input_dev);
+>> +
+>> +	err = input_register_device(ebeam->input);
+>> +	if (err) {
+>> +		dev_dbg(&intf->dev,
+>> +			"%s - input_register_device failed, err: %d\n",
+>> +			__func__, err);
+>> +		goto out_free_urb;
+>> +	}
+>> +
+>> +	/* usb final setup */
+>> +	usb_set_intfdata(intf, ebeam);
+>> +
+>> +	/* sysfs setup */
+>> +	err = sysfs_create_group(&intf->dev.kobj, &ebeam_attr_group);
+>> +	if (err) {
+>> +		dev_dbg(&intf->dev,
+>> +			"%s - cannot create sysfs group, err: %d\n",
+>> +			__func__, err);
+>> +		goto out_unregister_input;
+>> +	}
 >
-> Maybe it'd be better to change the variable
-> scsi_debug_guard type to bool?
->
-> Something like:
-> ---
->  drivers/scsi/scsi_debug.c | 22 +++++++---------------
->  1 file changed, 7 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-> index cb4fefa..58375c3 100644
-> --- a/drivers/scsi/scsi_debug.c
-> +++ b/drivers/scsi/scsi_debug.c
-> @@ -97,7 +97,7 @@ static const char * scsi_debug_version_date = "20100324";
->  #define DEF_D_SENSE   0
->  #define DEF_EVERY_NTH   0
->  #define DEF_FAKE_RW    0
-> -#define DEF_GUARD 0
-> +#define DEF_GUARD false
->  #define DEF_LBPU 0
->  #define DEF_LBPWS 0
->  #define DEF_LBPWS10 0
-> @@ -169,7 +169,7 @@ static int scsi_debug_dix = DEF_DIX;
->  static int scsi_debug_dsense = DEF_D_SENSE;
->  static int scsi_debug_every_nth = DEF_EVERY_NTH;
->  static int scsi_debug_fake_rw = DEF_FAKE_RW;
-> -static int scsi_debug_guard = DEF_GUARD;
-> +static bool scsi_debug_guard = DEF_GUARD;
->  static int scsi_debug_lowest_aligned = DEF_LOWEST_ALIGNED;
->  static int scsi_debug_max_luns = DEF_MAX_LUNS;
->  static int scsi_debug_max_queue = SCSI_DEBUG_CANQUEUE;
-> @@ -1735,14 +1735,11 @@ static u16 dif_compute_csum(const void *buf, int len)
->  {
->         u16 csum;
->
-> -       switch (scsi_debug_guard) {
-> -       case 1:
-> +       if (scsi_debug_guard)
->                 csum = ip_compute_csum(buf, len);
-> -               break;
-> -       case 0:
-> +       else
->                 csum = cpu_to_be16(crc_t10dif(buf, len));
-> -               break;
-> -       }
-> +
->         return csum;
->  }
->
-> @@ -2736,7 +2733,7 @@ module_param_named(dix, scsi_debug_dix, int, S_IRUGO);
->  module_param_named(dsense, scsi_debug_dsense, int, S_IRUGO | S_IWUSR);
->  module_param_named(every_nth, scsi_debug_every_nth, int, S_IRUGO | S_IWUSR);
->  module_param_named(fake_rw, scsi_debug_fake_rw, int, S_IRUGO | S_IWUSR);
-> -module_param_named(guard, scsi_debug_guard, int, S_IRUGO);
-> +module_param_named(guard, scsi_debug_guard, bool, S_IRUGO);
->  module_param_named(lbpu, scsi_debug_lbpu, int, S_IRUGO);
->  module_param_named(lbpws, scsi_debug_lbpws, int, S_IRUGO);
->  module_param_named(lbpws10, scsi_debug_lbpws10, int, S_IRUGO);
-> @@ -3312,11 +3309,6 @@ static int __init scsi_debug_init(void)
->                 return -EINVAL;
->         }
->
-> -       if (scsi_debug_guard > 1) {
-> -               printk(KERN_ERR "scsi_debug_init: guard must be 0 or 1\n");
-> -               return -EINVAL;
-> -       }
-> -
->         if (scsi_debug_ato > 1) {
->                 printk(KERN_ERR "scsi_debug_init: ato must be 0 or 1\n");
->                 return -EINVAL;
-> @@ -4028,7 +4020,7 @@ static int sdebug_driver_probe(struct device * dev)
->                (host_prot & SHOST_DIX_TYPE2_PROTECTION) ? " DIX2" : "",
->                (host_prot & SHOST_DIX_TYPE3_PROTECTION) ? " DIX3" : "");
->
-> -       if (scsi_debug_guard == 1)
-> +       if (scsi_debug_guard)
->                 scsi_host_set_guard(hpnt, SHOST_DIX_GUARD_IP);
->         else
->                 scsi_host_set_guard(hpnt, SHOST_DIX_GUARD_CRC);
->
->
+> This is not nice. User space may react to a new input device of this
+> type by setting up the calibration. But the sysfs files may be created
+> after that. You should invert the order.
+
+Switch done. Could you please double check the goto out-* cleanup, i've spotted
+a missing usb_set_intfdata(intf, NULL), perhaps there's others missing steps :
+
+static int ebeam_probe(struct usb_interface *intf,
+		       const struct usb_device_id *id)
+{
+	struct ebeam_device *ebeam;
+	struct input_dev *input_dev;
+	struct usb_endpoint_descriptor *endpoint;
+	struct usb_device *udev = interface_to_usbdev(intf);
+	int err = -ENOMEM;
+
+	endpoint = ebeam_get_input_endpoint(intf->cur_altsetting);
+	if (!endpoint)
+		return -ENXIO;
+
+	ebeam = kzalloc(sizeof(struct ebeam_device), GFP_KERNEL);
+	input_dev = input_allocate_device();
+	if (!ebeam || !input_dev)
+		goto out_free;
+
+	ebeam_init_settings(ebeam);
+
+	ebeam->data = usb_alloc_coherent(udev, REPT_SIZE,
+					 GFP_KERNEL, &ebeam->data_dma);
+	if (!ebeam->data)
+		goto out_free;
+
+	ebeam->irq = usb_alloc_urb(0, GFP_KERNEL);
+	if (!ebeam->irq) {
+		dev_dbg(&intf->dev,
+			"%s - usb_alloc_urb failed: ebeam->irq\n", __func__);
+		goto out_free_buffers;
+	}
+
+	ebeam->interface = intf;
+	ebeam->input = input_dev;
+
+	/* setup name */
+	snprintf(ebeam->name, sizeof(ebeam->name),
+		 "USB eBeam %04x:%04x",
+		 le16_to_cpu(udev->descriptor.idVendor),
+		 le16_to_cpu(udev->descriptor.idProduct));
+
+	if (udev->manufacturer || udev->product) {
+		strlcat(ebeam->name,
+			" (",
+			sizeof(ebeam->name));
+
+		if (udev->manufacturer)
+			strlcat(ebeam->name,
+				udev->manufacturer,
+				sizeof(ebeam->name));
+
+		if (udev->product) {
+			if (udev->manufacturer)
+				strlcat(ebeam->name,
+					" ",
+					sizeof(ebeam->name));
+			strlcat(ebeam->name,
+				udev->product,
+				sizeof(ebeam->name));
+		}
+
+		if (strlcat(ebeam->name, ")", sizeof(ebeam->name))
+			>= sizeof(ebeam->name)) {
+			/* overflowed, closing ) anyway */
+			ebeam->name[sizeof(ebeam->name)-2] = ')';
+		}
+	}
+
+	/* usb tree */
+	usb_make_path(udev, ebeam->phys, sizeof(ebeam->phys));
+	strlcat(ebeam->phys, "/input0", sizeof(ebeam->phys));
+
+	/* input setup */
+	input_dev->name = ebeam->name;
+	input_dev->phys = ebeam->phys;
+	usb_to_input_id(udev, &input_dev->id);
+	input_dev->dev.parent = &intf->dev;
+
+	input_set_drvdata(input_dev, ebeam);
+
+	input_dev->open = ebeam_open;
+	input_dev->close = ebeam_close;
+
+	/* usb urb setup */
+	if (usb_endpoint_type(endpoint) == USB_ENDPOINT_XFER_INT)
+		usb_fill_int_urb(ebeam->irq, udev,
+			usb_rcvintpipe(udev, endpoint->bEndpointAddress),
+			ebeam->data, REPT_SIZE,
+			ebeam_irq, ebeam, endpoint->bInterval);
+	else
+		usb_fill_bulk_urb(ebeam->irq, udev,
+			usb_rcvbulkpipe(udev, endpoint->bEndpointAddress),
+			ebeam->data, REPT_SIZE,
+			ebeam_irq, ebeam);
+
+	ebeam->irq->dev = udev;
+	ebeam->irq->transfer_dma = ebeam->data_dma;
+	ebeam->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+
+	/* usb final setup */
+	usb_set_intfdata(intf, ebeam);
+
+	/* sysfs setup */
+	err = sysfs_create_group(&intf->dev.kobj, &ebeam_attr_group);
+	if (err) {
+		dev_dbg(&intf->dev,
+			"%s - cannot create sysfs group, err: %d\n",
+			__func__, err);
+		goto out_free_usb;
+	}
+
+	/* input final setup */
+	ebeam_setup_input(ebeam, input_dev);
+
+	err = input_register_device(ebeam->input);
+	if (err) {
+		dev_dbg(&intf->dev,
+			"%s - input_register_device failed, err: %d\n",
+			__func__, err);
+		goto out_remove_sysfs;
+	}
+
+	return 0;
+
+out_remove_sysfs:
+	sysfs_remove_group(&intf->dev.kobj, &ebeam_attr_group);
+out_free_usb:
+	usb_set_intfdata(intf, NULL);
+	usb_free_urb(ebeam->irq);
+out_free_buffers:
+	ebeam_free_buffers(udev, ebeam);
+out_free:
+	input_free_device(input_dev);
+	kfree(ebeam);
+	return err;
+}
 
 
+Thanks,
 
--- 
-Regards,
-
-Zhi Yong Wu
+--
+Yann Cantin
+A4FEB47F
+--
