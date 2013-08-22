@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab3HVUfi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 16:35:38 -0400
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:45432 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489Ab3HVUfg (ORCPT
+	id S1754319Ab3HVUg6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 16:36:58 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42123 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848Ab3HVUg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 16:35:36 -0400
-Date: Thu, 22 Aug 2013 16:35:29 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-Message-ID: <20130822203529.GE3490@mtj.dyndns.org>
-References: <1377113503.10300.492.camel@misato.fc.hp.com>
- <20130821195410.GA2436@htj.dyndns.org>
- <1377116968.10300.514.camel@misato.fc.hp.com>
- <20130821204041.GC2436@htj.dyndns.org>
- <1377124595.10300.594.camel@misato.fc.hp.com>
- <20130822033234.GA2413@htj.dyndns.org>
- <1377186729.10300.643.camel@misato.fc.hp.com>
- <20130822183130.GA3490@mtj.dyndns.org>
- <1377202292.10300.693.camel@misato.fc.hp.com>
- <20130822202158.GD3490@mtj.dyndns.org>
+	Thu, 22 Aug 2013 16:36:56 -0400
+Message-ID: <52167665.90602@wwwdotorg.org>
+Date: Thu, 22 Aug 2013 14:36:53 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130822202158.GD3490@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Zhao <rizhao@nvidia.com>
+CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, vinod.koul@intel.com,
+        djbw@fb.com, grant.likely@linaro.org, rob.herring@calxeda.com,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2] DMA: add help function to check whether dma controller
+ registered
+References: <1375423458-6868-1-git-send-email-rizhao@nvidia.com> <1377153781-18006-1-git-send-email-rizhao@nvidia.com>
+In-Reply-To: <1377153781-18006-1-git-send-email-rizhao@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bit of addition.
+On 08/22/2013 12:43 AM, Richard Zhao wrote:
+> DMA client device driver usually needs to know at probe time whether
+> dma controller has been registered to deffer probe. So add a help
+> function of_dma_check_controller.
+> 
+> DMA request channel functions can also used to check it, but they
+> are usually called at open() time.
 
-On Thu, Aug 22, 2013 at 04:21:58PM -0400, Tejun Heo wrote:
-> That works if such half solution eventually leads to the full
-> solution.  This is just a distraction.  You are already too late in
-> the boot sequence.  It doesn't even qualify as a half solution.  It's
-> like obsessing about a speck on your shirt without your trousers on.
-> If you want to solve this, do that from a place where it actually is
-> solvable.
+This new function is almost identical to the existing
+of_dma_request_slave_channel(). Surely the code should be shared?
 
-Seriously, what's the end game here?  How do you guys see this
-eventually reaching full solution?  If you don't see that and this
-kinda-sorta-working solution is fine, then that's fine too but we
-aren't gonna make a lot of invasive changes for that.  If you can at
-least envision the full solution, please try to fit this effort into
-the bigger picture.
-
-In all possible solutions that I can think of, there needs to be
-earlier handling of SRAT informtaion before the kernel proper starts
-executing be that either the actual bootloader or earlier kernel
-serving as kexec host.  If a proper solution needs such processing
-earlier anyway, it can set up things so that either the default
-booting behavior doesn't harm hotpluggability or feed the necessary
-information to the kernel.  In both cases, doing ACPI super early in
-the booting kernel doesn't buy us anything.
-
-So, then, what the hell are we doing here with all these relocations,
-careful double execution of the same code from different execution
-contexts, worrying about initrd firmware override even before the
-kernel page table is set up?  If we're doing all those to just make
-the temporary half-assed-anyway solution minutely better, that's just
-plain stupid.
-
-Thanks.
-
--- 
-tejun
+But that said, I don't see any need for a new function; why can't
+drivers simply call of_dma_request_slave_channel() at probe time; from
+what I can see, that function doesn't actually request the channel, but
+rather simply looks it up, just like this one. The only difference is
+that of_dma_xlate() is also called, but that's just doing some data
+transformation, not actually recording channel ownership.
