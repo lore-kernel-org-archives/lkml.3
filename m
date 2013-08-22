@@ -1,61 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab3HVQwz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:52:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47257 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753787Ab3HVQwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:52:54 -0400
-Date: Thu, 22 Aug 2013 18:47:03 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Brad Spengler <spender@grsecurity.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Colin Walters <walters@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: PATCH? fix unshare(NEWPID) && vfork()
-Message-ID: <20130822164703.GA19196@redhat.com>
-References: <20130819172524.GA22268@redhat.com> <CALCETrW+dEwR38ERQhx25-aw1dhsCE6X+9BQZJhusO88aUxN1A@mail.gmail.com> <20130819183319.GA24846@redhat.com> <CALCETrWrpNszRGCRRMLgiOopcSdDShB3Mck6gRPco=dAZeX3pQ@mail.gmail.com> <20130819184355.GA25362@redhat.com> <87siy4z1pf.fsf@xmission.com> <20130820184521.GA23293@redhat.com> <87li3ww0e6.fsf@xmission.com> <20130821163532.GA15152@redhat.com>
+	id S1754082Ab3HVQxs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:53:48 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:62433 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595Ab3HVQxq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 12:53:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130821163532.GA15152@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1377186876-57291-2-git-send-email-tmac@hp.com>
+References: <1374108934-50550-1-git-send-email-tmac@hp.com>
+	<1377186876-57291-1-git-send-email-tmac@hp.com>
+	<1377186876-57291-2-git-send-email-tmac@hp.com>
+Date: Thu, 22 Aug 2013 09:53:45 -0700
+X-Google-Sender-Auth: yCuGgI6f8CqUgWhiACrAWjgbPRg
+Message-ID: <CA+55aFze8ZC0YP+TdwDFRPpa=BqUhY25RhEJb6c9pkCk2CZfVA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] mbcache: decoupling the locking of local from
+ global data
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: T Makphaibulchoke <tmac@hp.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21, Oleg Nesterov wrote:
+On Thu, Aug 22, 2013 at 8:54 AM, T Makphaibulchoke <tmac@hp.com> wrote:
 >
-> Still. Can't we make a single check? Like the initial patch I sent, but
-> this one moves the check into copy_process() and checks CLONE_* first.
-> Looks a bit simpler. And more understandable to me but this is subjective.
+> +#define        MB_LOCK_HASH_CHAIN(hash_head)   hlist_bl_lock(hash_head)
+> +#define        MB_UNLOCK_HASH_CHAIN(hash_head) hlist_bl_unlock(hash_head)
+> +#ifdef MB_CACHE_DEBUG
+> +#define        MB_LOCK_BLOCK_HASH(ce) do {
 
-Seriously. CLONE_NEWPID and task_active_pid_ns() != nsproxy->pid_ns are
-the same thing in this respect. Let me send the patches for review, I
-decided to split this change.
+Please don't do these ugly and pointless preprocessor macro expanders
+that hide what the actual operation is.
 
-> --- x/kernel/fork.c
-> +++ x/kernel/fork.c
-> @@ -1173,12 +1173,13 @@ static struct task_struct *copy_process(
->  		return ERR_PTR(-EINVAL);
->  
->  	/*
-> -	 * If the new process will be in a different pid namespace
-> -	 * don't allow the creation of threads.
-> +	 * --------------  COMMENT -----------------
->  	 */
-> -	if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
-> -	    (task_active_pid_ns(current) != current->nsproxy->pid_ns))
-> -		return ERR_PTR(-EINVAL);
-> +	if (clone_flags & (CLONE_SIGHAND | CLONE_PARENT)) {
-> +		if ((clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) ||
-> +		    (task_active_pid_ns(current) != current->nsproxy->pid_ns))
-> +			return -EINVAL;
-                                ^^^^^^
+The DEBUG case seems to be just for your own testing anyway, so even
+that shouldn't exist in the merged version.
 
-should be ERR_PTR(-EINVAL)
+> +#define        MAX_LOCK_RETRY  1024
+> +
+> +static inline int __mb_cache_lock_entry_block_hash(struct mb_cache_entry *ce)
+> +{
+> +       int nretry = 0;
+> +       struct hlist_bl_head *block_hash_p = ce->e_block_hash_p;
+> +
+> +       do {
+> +               MB_LOCK_HASH_CHAIN(block_hash_p);
+> +               if (ce->e_block_hash_p == block_hash_p)
+> +                       return 0;
+> +               MB_UNLOCK_HASH_CHAIN(block_hash_p);
+> +               block_hash_p = ce->e_block_hash_p;
+> +       } while (++nretry < MAX_LOCK_RETRY);
+> +       return -1;
+> +}
 
-Oleg.
+And this is really ugly. Again it's also then hidden behind the ugly macro.
 
+First off, the thousand-time retry seems completely excessive. Does it
+actually need any retry AT ALL? If the hash entry changes, either you
+should retry forever, or if you feel that can result in livelocks
+(fair enough) and you need a fallback case to a bigger lock, then why
+not just do the fallback immediately?
+
+More importantly, regardless of that retry issue, this seems to be
+abstracted at the wrong level, resulting in every single user of this
+repeating the same complex and hard-to-understand incantation:
+
+> +               if (MB_LOCK_ENTRY_BLOCK_HASH(ce)) {
+> +                       spin_lock(&mb_cache_spinlock);
+> +                       list_add_tail(&ce->e_lru_list, &mb_cache_lru_list);
+> +                       spin_unlock(&mb_cache_spinlock);
+> +                       continue;
+> +               }
+..
+> +               if (MB_LOCK_ENTRY_BLOCK_HASH(ce)) {
+> +                       spin_lock(&mb_cache_spinlock);
+> +                       list_add_tail(&ce->e_lru_list, &mb_cache_lru_list);
+> +                       spin_unlock(&mb_cache_spinlock);
+> +                       continue;
+> +               }
+..
+> +                               if (MB_LOCK_ENTRY_BLOCK_HASH(ce)) {
+> +                                       spin_lock(&mb_cache_spinlock);
+> +                                       list_add_tail(&ce->e_lru_list,
+> +                                               &mb_cache_lru_list);
+> +                                       continue;
+> +                               }
+
+where the only difference is that the last one doesn't unlock
+afterwards because it runs in a loop with that LRU list lock held.
+Ugh.
+
+The locking logic also isn't explained anywhere, making the
+hard-to-read code even harder to read.
+
+             Linus
