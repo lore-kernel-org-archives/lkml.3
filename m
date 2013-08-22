@@ -1,208 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab3HVBJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 21:09:21 -0400
-Received: from smtp07.smtpout.orange.fr ([80.12.242.129]:20978 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab3HVBJT (ORCPT
+	id S1753302Ab3HVBLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 21:11:07 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43701 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab3HVBLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 21:09:19 -0400
-Message-ID: <521564B7.10902@laposte.net>
-Date: Thu, 22 Aug 2013 03:09:11 +0200
-From: Yann Cantin <yann.cantin@laposte.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Wed, 21 Aug 2013 21:11:05 -0400
+X-AuditID: 9c93016f-b7cf0ae00000518f-f9-5215652683f1
+Date: Thu, 22 Aug 2013 10:11:36 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Bob Liu <bob.liu@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Mel Gorman <mgorman@suse.de>, lliubbo@gmail.com
+Subject: Re: [PATCH v7 0/5] zram/zsmalloc promotion
+Message-ID: <20130822011136.GC4665@bbox>
+References: <1377065791-2959-1-git-send-email-minchan@kernel.org>
+ <52148730.4000709@oracle.com>
+ <521495E5.7010109@oracle.com>
 MIME-Version: 1.0
-To: Oliver Neukum <oliver@neukum.org>
-CC: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        dmitry.torokhov@gmail.com, jkosina@suse.cz, rob@landley.net,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH 2/2] input: misc: New USB eBeam input driver
-References: <1376684743-25047-1-git-send-email-yann.cantin@laposte.net>  <1376684743-25047-3-git-send-email-yann.cantin@laposte.net> <1377062750.1797.9.camel@linux-fkkt.site>
-In-Reply-To: <1377062750.1797.9.camel@linux-fkkt.site>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521495E5.7010109@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Aug 21, 2013 at 06:26:45PM +0800, Bob Liu wrote:
+> On 08/21/2013 05:24 PM, Bob Liu wrote:
+> > Hi Minchan,
+> > 
+> > On 08/21/2013 02:16 PM, Minchan Kim wrote:
+> >> It's 7th trial of zram/zsmalloc promotion.
+> >> I rewrote cover-letter totally based on previous discussion.
+> >>
+> >> The main reason to prevent zram promotion was no review of
+> >> zsmalloc part while Jens, block maintainer, already acked
+> >> zram part.
+> >>
+> >> At that time, zsmalloc was used for zram, zcache and zswap so
+> >> everybody wanted to make it general and at last, Mel reviewed it
+> >> when zswap was submitted to merge mainline a few month ago.
+> >> Most of review was related to zswap writeback mechanism which
+> >> can pageout compressed page in memory into real swap storage
+> >> in runtime and the conclusion was that zsmalloc isn't good for
+> >> zswap writeback so zswap borrowed zbud allocator from zcache to
+> >> replace zsmalloc. The zbud is bad for memory compression ratio(2)
+> >> but it's very predictable behavior because we can expect a zpage
+> >> includes just two pages as maximum. Other reviews were not major. 
+> >> http://lkml.indiana.edu/hypermail/linux/kernel/1304.1/04334.html
+> >>
+> >> Zcache doesn't use zsmalloc either so zsmalloc's user is only
+> >> zram now so this patchset moves it into zsmalloc directory.
+> >> Recently, Bob tried to move zsmalloc under mm directory to unify
+> >> zram and zswap with adding pseudo block device in zswap(It's
+> >> very weired to me) but he was simple ignoring zram's block device
+> >> (a.k.a zram-blk) feature and considered only swap usecase of zram,
+> >> in turn, it lose zram's good concept.
+> >>
+> > 
+> > Yes, I didn't notice the feature that zram can be used as a normal block
+> > device.
+> > 
+> > 
+> >> Mel raised an another issue in v6, "maintainance headache".
+> >> He claimed zswap and zram has a similar goal that is to compresss
+> >> swap pages so if we promote zram, maintainance headache happens
+> >> sometime by diverging implementaion between zswap and zram
+> >> so that he want to unify zram and zswap. For it, he want zswap
+> >> to implement pseudo block device like Bob did to emulate zram so
+> >> zswap can have an advantage of writeback as well as zram's benefit.
+> > 
+> > If consider zram as a swap device only, I still think it's better to add
+> > a pseudo block device to zswap and just disable the writeback of zswap.
+> > 
+> > But I have no idea of zram's block device feature.
+> > 
+> 
+> BTW: I think the original/main purpose that zram was introduced is for
+> swapping. Is there any real users using zram as a normal block device
 
-All issues addressed. Just a point :
+I don't know but when I read http://lwn.net/Articles/334649/, it aimed
+for compressing page caches as well as swap pages but it made widespread
+hooks in core (I guess that's why zcache had a birth later by Nitin and Dan)
+so reviewers guided him to support anon pages only to merge it.
+And at that time, it was a specific virtual block device for only supporting
+swap. AFAIRC, akpm suggested to make it general block device so other party
+can have a benefit.
 
->> +
->> +	/* input final setup */
->> +	ebeam_setup_input(ebeam, input_dev);
->> +
->> +	err = input_register_device(ebeam->input);
->> +	if (err) {
->> +		dev_dbg(&intf->dev,
->> +			"%s - input_register_device failed, err: %d\n",
->> +			__func__, err);
->> +		goto out_free_urb;
->> +	}
->> +
->> +	/* usb final setup */
->> +	usb_set_intfdata(intf, ebeam);
->> +
->> +	/* sysfs setup */
->> +	err = sysfs_create_group(&intf->dev.kobj, &ebeam_attr_group);
->> +	if (err) {
->> +		dev_dbg(&intf->dev,
->> +			"%s - cannot create sysfs group, err: %d\n",
->> +			__func__, err);
->> +		goto out_unregister_input;
->> +	}
->
-> This is not nice. User space may react to a new input device of this
-> type by setting up the calibration. But the sysfs files may be created
-> after that. You should invert the order.
+You can type "zram tmp" in google and will find many article related
+to use zram as tmp and I have been received some questions/reports
+from anonymous guys by private mail. And Jorome, Redhat guy, has
+contributed that part like partial I/O.
 
-Switch done. Could you please double check the goto out-* cleanup, i've spotted
-a missing usb_set_intfdata(intf, NULL), perhaps there's others missing steps :
+> instead of swap?
+> For normal usage, maybe we can extend ramdisk with compression feature.
 
-static int ebeam_probe(struct usb_interface *intf,
-		       const struct usb_device_id *id)
-{
-	struct ebeam_device *ebeam;
-	struct input_dev *input_dev;
-	struct usb_endpoint_descriptor *endpoint;
-	struct usb_device *udev = interface_to_usbdev(intf);
-	int err = -ENOMEM;
+Maybe, but I don't see any advantage. The ramdisk is really simple
+and there is no part to share zram code. Morever, zram have a potential
+to extend other features like asynchronous, defragmentation, and
+multiple compressor. I don't want to make simple ramdisk bloating and
+complicated so every distro could enable it.
 
-	endpoint = ebeam_get_input_endpoint(intf->cur_altsetting);
-	if (!endpoint)
-		return -ENXIO;
+Another thing is device name in linux is rather straightforward to
+understand like "dd if=/dev/zero of=/dev/null" but if we support
+compression feature of ramdisk, "dd if=/dev/ram0 of=/dev/ram1"?
+Which is compression ramdisk? How could normal user can identify it?
 
-	ebeam = kzalloc(sizeof(struct ebeam_device), GFP_KERNEL);
-	input_dev = input_allocate_device();
-	if (!ebeam || !input_dev)
-		goto out_free;
+I think there is no benefit.
 
-	ebeam_init_settings(ebeam);
+> 
+> -- 
+> Regards,
+> -Bob
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-	ebeam->data = usb_alloc_coherent(udev, REPT_SIZE,
-					 GFP_KERNEL, &ebeam->data_dma);
-	if (!ebeam->data)
-		goto out_free;
-
-	ebeam->irq = usb_alloc_urb(0, GFP_KERNEL);
-	if (!ebeam->irq) {
-		dev_dbg(&intf->dev,
-			"%s - usb_alloc_urb failed: ebeam->irq\n", __func__);
-		goto out_free_buffers;
-	}
-
-	ebeam->interface = intf;
-	ebeam->input = input_dev;
-
-	/* setup name */
-	snprintf(ebeam->name, sizeof(ebeam->name),
-		 "USB eBeam %04x:%04x",
-		 le16_to_cpu(udev->descriptor.idVendor),
-		 le16_to_cpu(udev->descriptor.idProduct));
-
-	if (udev->manufacturer || udev->product) {
-		strlcat(ebeam->name,
-			" (",
-			sizeof(ebeam->name));
-
-		if (udev->manufacturer)
-			strlcat(ebeam->name,
-				udev->manufacturer,
-				sizeof(ebeam->name));
-
-		if (udev->product) {
-			if (udev->manufacturer)
-				strlcat(ebeam->name,
-					" ",
-					sizeof(ebeam->name));
-			strlcat(ebeam->name,
-				udev->product,
-				sizeof(ebeam->name));
-		}
-
-		if (strlcat(ebeam->name, ")", sizeof(ebeam->name))
-			>= sizeof(ebeam->name)) {
-			/* overflowed, closing ) anyway */
-			ebeam->name[sizeof(ebeam->name)-2] = ')';
-		}
-	}
-
-	/* usb tree */
-	usb_make_path(udev, ebeam->phys, sizeof(ebeam->phys));
-	strlcat(ebeam->phys, "/input0", sizeof(ebeam->phys));
-
-	/* input setup */
-	input_dev->name = ebeam->name;
-	input_dev->phys = ebeam->phys;
-	usb_to_input_id(udev, &input_dev->id);
-	input_dev->dev.parent = &intf->dev;
-
-	input_set_drvdata(input_dev, ebeam);
-
-	input_dev->open = ebeam_open;
-	input_dev->close = ebeam_close;
-
-	/* usb urb setup */
-	if (usb_endpoint_type(endpoint) == USB_ENDPOINT_XFER_INT)
-		usb_fill_int_urb(ebeam->irq, udev,
-			usb_rcvintpipe(udev, endpoint->bEndpointAddress),
-			ebeam->data, REPT_SIZE,
-			ebeam_irq, ebeam, endpoint->bInterval);
-	else
-		usb_fill_bulk_urb(ebeam->irq, udev,
-			usb_rcvbulkpipe(udev, endpoint->bEndpointAddress),
-			ebeam->data, REPT_SIZE,
-			ebeam_irq, ebeam);
-
-	ebeam->irq->dev = udev;
-	ebeam->irq->transfer_dma = ebeam->data_dma;
-	ebeam->irq->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
-
-	/* usb final setup */
-	usb_set_intfdata(intf, ebeam);
-
-	/* sysfs setup */
-	err = sysfs_create_group(&intf->dev.kobj, &ebeam_attr_group);
-	if (err) {
-		dev_dbg(&intf->dev,
-			"%s - cannot create sysfs group, err: %d\n",
-			__func__, err);
-		goto out_free_usb;
-	}
-
-	/* input final setup */
-	ebeam_setup_input(ebeam, input_dev);
-
-	err = input_register_device(ebeam->input);
-	if (err) {
-		dev_dbg(&intf->dev,
-			"%s - input_register_device failed, err: %d\n",
-			__func__, err);
-		goto out_remove_sysfs;
-	}
-
-	return 0;
-
-out_remove_sysfs:
-	sysfs_remove_group(&intf->dev.kobj, &ebeam_attr_group);
-out_free_usb:
-	usb_set_intfdata(intf, NULL);
-	usb_free_urb(ebeam->irq);
-out_free_buffers:
-	ebeam_free_buffers(udev, ebeam);
-out_free:
-	input_free_device(input_dev);
-	kfree(ebeam);
-	return err;
-}
-
-
-Thanks,
-
---
-Yann Cantin
-A4FEB47F
---
+-- 
+Kind regards,
+Minchan Kim
