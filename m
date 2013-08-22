@@ -1,106 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab3HVSLS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 14:11:18 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:59304 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534Ab3HVSLR (ORCPT
+	id S1754016Ab3HVSQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 14:16:48 -0400
+Received: from smtpauth05h.mfg.siteprotect.com ([64.26.60.146]:57668 "EHLO
+	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753853Ab3HVSQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 14:11:17 -0400
+	Thu, 22 Aug 2013 14:16:47 -0400
+Date: Thu, 22 Aug 2013 14:18:06 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Robert Richter <rric@kernel.org>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Robert Richter <robert.richter@linaro.org>,
+        Vince Weaver <vincent.weaver@maine.edu>
+Subject: Re: [PATCH v3 12/12] [RFC] perf, persistent: ioctl functions to
+ control persistency
+In-Reply-To: <1377180807-12758-13-git-send-email-rric@kernel.org>
+Message-ID: <alpine.DEB.2.02.1308221404090.26486@pianoman.cluster.toy>
+References: <1377180807-12758-1-git-send-email-rric@kernel.org> <1377180807-12758-13-git-send-email-rric@kernel.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130822171004.GA20324@redhat.com>
-References: <20130822170939.GA20296@redhat.com> <20130822171004.GA20324@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 22 Aug 2013 11:10:56 -0700
-Message-ID: <CALCETrU9D59MqxPm2SNegPFH_+gpPfoQJkD2E2Q8zjJ94QhLDg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] fork: unify and tighten up CLONE_NEWUSER/CLONE_NEWPID checks
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Brad Spengler <spender@grsecurity.net>,
-        Colin Walters <walters@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020203.5216558E.025D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 10:10 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> do_fork() denies CLONE_THREAD | CLONE_PARENT if NEWUSER | NEWPID.
->
-> Then later copy_process() denies CLONE_SIGHAND if the new process
-> will be in a different pid namespace (task_active_pid_ns() doesn't
-> match current->nsproxy->pid_ns).
->
-> This looks confusing and inconsistent. CLONE_NEWPID is very similar
-> to the case when ->pid_ns was already unshared, we want the same
-> restrictions so copy_process() should also nack CLONE_PARENT.
->
-> And it would be better to deny CLONE_NEWUSER && CLONE_SIGHAND as
-> well just for consistency.
->
-> Kill the "CLONE_NEWUSER | CLONE_NEWPID" check in do_fork() and
-> change copy_process() to the same check along with nsproxy->pid_ns
-> we already have.
+On Thu, 22 Aug 2013, Robert Richter wrote:
 
-Did the old code actually prevent clone(CLONE_PARENT | CLONE_NEWPID)?
-The new code explicitly does, and that looks like a good thing.
-
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/fork.c |   22 ++++++++--------------
->  1 files changed, 8 insertions(+), 14 deletions(-)
->
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 8d56338..fae2ff7 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -1173,12 +1173,15 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->                 return ERR_PTR(-EINVAL);
->
->         /*
-> -        * If the new process will be in a different pid namespace don't
-> -        * allow the creation of threads, or share the signal handlers.
-> +        * If the new process will be in a different pid or user namespace
-> +        * don't allow the creation of threads, or share the signal handlers,
-> +        * or share the parent.
->          */
-> -       if ((clone_flags & CLONE_SIGHAND) &&
-> -           (task_active_pid_ns(current) != current->nsproxy->pid_ns))
-> -               return ERR_PTR(-EINVAL);
-> +       if (clone_flags & (CLONE_SIGHAND | CLONE_PARENT)) {
-> +               if ((clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) ||
-> +                   (task_active_pid_ns(current) != current->nsproxy->pid_ns))
-> +                       return ERR_PTR(-EINVAL);
-> +       }
->
->         retval = security_task_create(clone_flags);
->         if (retval)
-> @@ -1575,15 +1578,6 @@ long do_fork(unsigned long clone_flags,
->         long nr;
->
->         /*
-> -        * Do some preliminary argument and permissions checking before we
-> -        * actually start allocating stuff
-> -        */
-> -       if (clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) {
-> -               if (clone_flags & (CLONE_THREAD|CLONE_PARENT))
-> -                       return -EINVAL;
-> -       }
-> -
-> -       /*
->          * Determine whether and which event to report to ptracer.  When
->          * called from kernel_thread or CLONE_UNTRACED is explicitly
->          * requested, no event is reported; otherwise, report if the event
-> --
-> 1.5.5.1
->
+> From: Robert Richter <robert.richter@linaro.org>
+> 
+> Implementing ioctl functions to control persistent events. There are
+> functions to detach or attach an event to or from a process. The
+> PERF_EVENT_IOC_DETACH ioctl call makes an event persistent. After
+> closing the event's fd it runs then in the background of the system
+> without the need of a controlling process. The perf_event_open()
+> syscall can be used to reopen the event by any process. The
+> PERF_EVENT_IOC_ATTACH ioctl attaches the event again so that it is
+> removed after closing the event's fd.
 
 
+> PERF_EVENT_IOC_ATTACH (Since Linux 3.xx)
+> PERF_EVENT_IOC_DETACH (Since Linux 3.xx)
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+I think these aren't very good names for the ioctls.  Maybe something
+like
+  PERF_EVENT_IOC_MAKE_PERSISTENT
+  PERF_EVENT_IOC_UNPERSIST
+I know that last one's not a real word but I can't think of what the 
+proper term would be.  Maybe
+  PERF_EVENT_IOC_RELEASE_PERSISTENT
+  PERF_EVENT_IOC_RECLAIM_PERSISTENT
+
+> This is for Linux man-pages:
+
+Thanks, though you're missing out by not learning all about troff 
+formatting.
+
+>     type ...
+> 
+>         PERF_TYPE_PERSISTENT (Since Linux 3.xx)
+> 
+>             This indicates a persistent event. There is a unique
+>             identifier for each persistent event that needs to be
+>             specified in the event's attribute config field.
+>             Persistent events are listed under:
+> 
+>               /sys/bus/event_source/devices/persistent/
+
+Wait, so the first time you create a persistent event you do *not*
+set type PERF_TYPE_PERSISTENT?  You only do that if you're
+"attaching" to an exisiting event?  You might want to clarify that.
+
+>     persistent: (Since Linux 3.xx)
+> 
+>         Put event into persistent state after opening. After closing
+>         the event's fd the event is persistent in the system and
+>         continues to run.
+
+will there be some sort of tool that will let you kill runaway persistent 
+events?  Or will you have to manually perf_event_open() / iotcl() them
+by hand somehow?
+
+>         PERF_EVENT_IOC_DETACH (Since Linux 3.xx)
+> 
+>             Detach the event specified by the file descriptor from the
+>             process and make it persistent in the system. After
+>             closing the fd the event will continue to run. An unique
+>             identifier for the persistent event is returned or an
+>             error otherwise. The following allows to connect to the
+>             event again:
+
+You might want to re-order things so it's clear you get the unique ID
+at ioctl time and not after the close happens.
+
+>         PERF_EVENT_IOC_ATTACH (Since Linux 3.xx)
+> 
+>             Attach the event specified by the file descriptor to the
+>             current process. The event is no longer persistent in the
+>             system and will be removed after all users disconnected
+>             from the event. Thus, if there are no other users the
+>             event will be closed too after closing its file
+>             descriptor, the event then no longer exists.
+
+Vince
