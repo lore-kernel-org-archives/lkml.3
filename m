@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab3HVTG6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 15:06:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62659 "EHLO mx1.redhat.com"
+	id S1754225Ab3HVTKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 15:10:16 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4412 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753763Ab3HVTG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 15:06:57 -0400
-Date: Thu, 22 Aug 2013 15:06:05 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        gong.chen@linux.intel.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1377198365-3xic0o2q-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1377164907-24801-4-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1377164907-24801-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1377164907-24801-4-git-send-email-liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH 4/6] mm/hwpoison: don't set migration type twice to avoid
- hold heavy contend zone->lock
-Mime-Version: 1.0
+	id S1753629Ab3HVTKM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 15:10:12 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+From: "Graham Williams" <gwilli@broadcom.com>
+To: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+cc: "balbi@ti.com" <balbi@ti.com>
+Subject: [PATCH] usb: acm gadget: Null termintate strings table
+Thread-Topic: [PATCH] usb: acm gadget: Null termintate strings table
+Thread-Index: Ac6dJLBQSWtbP9R/T7+KqH9QOzs72ACRkxhQ
+Date: Thu, 22 Aug 2013 19:10:04 +0000
+Message-ID: <063828A851006E448B735F1021E028962ACE5A03@SJEXCHMB09.corp.ad.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
+MIME-Version: 1.0
+X-WSS-ID: 7E0880212L877048375-01-01
 Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1377164907-24801-4-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+ charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 05:48:25PM +0800, Wanpeng Li wrote:
-> Set pageblock migration type will hold zone->lock which is heavy contended 
-> in system to avoid race. However, soft offline page will set pageblock 
-> migration type twice during get page if the page is in used, not hugetlbfs 
-> page and not on lru list. There is unnecessary to set the pageblock migration
-> type and hold heavy contended zone->lock again if the first round get page 
-> have already set the pageblock to right migration type.
+The gadget strings table should be null terminated.
+usb_gadget_get_string() loops through the table
+expecting a null at the end of the list.
 
-Can we use get_pageblock_migratetype() outside zone->lock?
+Signed-off-by: Graham <gwilli@broadcom.com>
+---
+drivers/usb/gadget/f_acm.c | 1 +
+1 file changed, 1 insertion(+)
 
-There are surely some users which call this function outside
-zone->lock like free_hot_cold_pages(), __free_pages, etc.,
-but I think that there's a race window where migratetype is
-updated just after get_pageblock_migratetype() check.
+diff --git a/drivers/usb/gadget/f_acm.c b/drivers/usb/gadget/f_acm.c
+index 4b7e33e..ab1065a 100644
+--- a/drivers/usb/gadget/f_acm.c
++++ b/drivers/usb/gadget/f_acm.c
+@@ -285,6 +285,7 @@ static struct usb_string acm_string_defs[] = {
+        [ACM_CTRL_IDX].s = "CDC Abstract Control Model (ACM)",
+        [ACM_DATA_IDX].s = "CDC ACM Data",
+        [ACM_IAD_IDX ].s = "CDC Serial",
++       {  } /* end of list */
+};
 
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
->  mm/memory-failure.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index 6bfd51e..3bfb45f 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -1413,7 +1413,8 @@ static int __get_any_page(struct page *p, unsigned long pfn, int flags)
->  	 * was free. This flag should be kept set until the source page
->  	 * is freed and PG_hwpoison on it is set.
->  	 */
-> -	set_migratetype_isolate(p, true);
-> +	if (get_pageblock_migratetype(p) == MIGRATE_ISOLATE)
+static struct usb_gadget_strings acm_string_table = {
+--
+1.8.0.1
 
-You meant '!=', right?
 
-Thanks,
-Naoya Horiguchi
-
-> +		set_migratetype_isolate(p, true);
->  	/*
->  	 * When the target page is a free hugepage, just remove it
->  	 * from free hugepage list.
-> -- 
-> 1.8.1.2
->
