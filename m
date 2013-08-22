@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab3HVCkR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 22:40:17 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:21311 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208Ab3HVCkQ (ORCPT
+	id S1752545Ab3HVCra (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 22:47:30 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:62589 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031Ab3HVCr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 22:40:16 -0400
-Message-ID: <52157A08.7080701@oracle.com>
-Date: Thu, 22 Aug 2013 10:40:08 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Wed, 21 Aug 2013 22:47:29 -0400
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: Mikulas Patocka <mpatocka@redhat.com>, dm-devel@redhat.com, agk@redhat.com,
+Date: Thu, 22 Aug 2013 10:47:27 +0800
+Message-ID: <CAPgLHd8+CD8iNZ4d7OJgc-jqd4ObgLnE0WmkGM5S98Q1TtTROQ@mail.gmail.com>
+Subject: [PATCH -next] mm/page_alloc.c: remove duplicated include from page_alloc.c
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: akpm@linux-foundation.org, mgorman@suse.de, jiang.liu@huawei.com,
+        cody@linux.vnet.ibm.com, minchan@kernel.org
+Cc: yongjun_wei@trendmicro.com.cn, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] dm ioctl: allow change device target type to error
-References: <5214CC25.1070307@oracle.com> <alpine.LRH.2.02.1308211041180.10797@file01.intranet.prod.int.rdu2.redhat.com> <20130821150547.GA10987@redhat.com>
-In-Reply-To: <20130821150547.GA10987@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/13 23:06, Mike Snitzer wrote:
-> On Wed, Aug 21 2013 at 10:48am -0400,
-> Mikulas Patocka <mpatocka@redhat.com> wrote:
-> 
->>
->>
->> On Wed, 21 Aug 2013, Joe Jin wrote:
->>
->>> commit a5664da "dm ioctl: make bio or request based device type immutable"
->>> prevented "dmsetup wape_table" change the target type to "error".
->>
->> That commit a5664da is there for a reason (it is not possible to change 
->> bio-based device to request-based and vice versa) and I don't really see 
->> how this patch is supposed to work.
->>
->> If there are bios that are in flight and that already passed through 
->> blk_queue_bio, and you change the device from request-based to bio-based, 
->> what are you going to do with them? - The patch doesn't do anything about 
->> it.
->>
->> A better approach would be to create a new request-based target "error-rq" 
->> and change the multipath target to "error-rq" target. That way, you don't 
->> have to change device type from request based to bio based.
-> 
-> My thoughts _exactly_.  This patch is very confused.
-> 
-> Joe, what are you looking to be able to do?  Switch a dm-multipath
-> device to error?  Or allowing switching a target that has
-> DM_TARGET_IMMUTABLE flag set to be switched to error target?
-> 
-> The latter restriction was introduced with commit 36a0456fb ("dm table:
-> add immutable feature").
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Hi Mike,
+Remove duplicated include.
 
-So far dmsetup support wipe_table:
-https://bugzilla.redhat.com/show_bug.cgi?id=742607
-As description in the bug Doc Text, "This could be useful, for example, 
-if a long-running process keeps a device open after it has finished using
-it and you need to release the underlying devices before that process exits."
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ mm/page_alloc.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-After apply the commit, wipe_table no long works.
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index efb2ffa..4751901 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -60,7 +60,6 @@
+ #include <linux/page-debug-flags.h>
+ #include <linux/hugetlb.h>
+ #include <linux/sched/rt.h>
+-#include <linux/hugetlb.h>
+ 
+ #include <asm/sections.h>
+ #include <asm/tlbflush.h>
 
-Thanks,
-Joe
