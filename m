@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466Ab3HUXxl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 19:53:41 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39173 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753309Ab3HUXxj (ORCPT
+	id S1753231Ab3HVADK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 20:03:10 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:60464 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab3HVADI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 19:53:39 -0400
-Date: Thu, 22 Aug 2013 09:53:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the aio tree
-Message-Id: <20130822095329.212e1bde8fcd3515284819a1@canb.auug.org.au>
-In-Reply-To: <5214E23B.9060608@oracle.com>
-References: <20130821174522.3af60c89647476d2aab5f47c@canb.auug.org.au>
-	<5214E23B.9060608@oracle.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__22_Aug_2013_09_53_29_+1000_/=5GuMAT1M_7Uaaf"
+	Wed, 21 Aug 2013 20:03:08 -0400
+Date: Thu, 22 Aug 2013 01:03:06 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Darren Hart <dvhart@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: ACPI vs Device Tree - moving forward
+Message-ID: <20130822000306.GA21785@srcf.ucam.org>
+References: <20130820192650.GA19470@srcf.ucam.org>
+ <6438184.2yT2NMB1CE@vostro.rjw.lan>
+ <20130821233942.GA21502@srcf.ucam.org>
+ <1810269.JOHnJ0H7P9@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1810269.JOHnJ0H7P9@vostro.rjw.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__22_Aug_2013_09_53_29_+1000_/=5GuMAT1M_7Uaaf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 22, 2013 at 02:02:29AM +0200, Rafael J. Wysocki wrote:
 
-Hi Dave,
+> And now the practice appears to be that vendors actually ship some ACPI
+> tables with their systems, but those ACPI tables do not contain information
+> needed to enumerate all devices.  On the other hand, it is known what the
+> DT bindings for the missing part should be.  How can we address this?
 
-On Wed, 21 Aug 2013 10:52:27 -0500 Dave Kleikamp <dave.kleikamp@oracle.com>=
- wrote:
->
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->=20
-> There's another problem after the merge. Now that buf is passed into
-> aio_run_iocb(), ki_iter is no longer needed. It's not getting
-> initialized and causes an oops.
->=20
-> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+On ARM? I know that this is true on x86, but that's because x86 vendors 
+have never intended i2c hardware monitoring devices be driven by a 
+general purpoes OS - they're there for the benefit of the firmware, not 
+anything above that.
 
-OK, thanks, this will be applied to the aio tree merge today.
+> Next, say we have a driver written with DT bindings in mind and there's
+> an ACPI-based system with identical hardware, although wired up slightly
+> differently.  Say that all of the information needed by that driver is
+> there in the ACPI tables (Q: How the vendor is supposed to know what
+> information the driver expects?).  Who is supposed to take care of updating
+> the driver to be able to use ACPI in addition to DTs?
 
-> - ---
+Ideally we have a consistent in-kernel representation of this 
+information and drivers don't need to care about whether it came from DT 
+or ACPI, but like I said, that's going to be tricky.
 
-BTW, your GPG clearsigning corrupts patches.  You can clearsign them
-using the --not-dash-escaped option to gpg (I think).  I fixed this up.
+> I don't honestly think that the "ask vendors to ship their systems with correct
+> ACPI tables" approach will take us anywhere.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+It's worked well enough on x86. If hardware vendors don't actually test 
+that their hardware is able to boot the OS it's intended to run then 
+there's very little we can do about that - and the worst case outcome is 
+that people just ignore the shipped ACPI and use FDT.
 
---Signature=_Thu__22_Aug_2013_09_53_29_+1000_/=5GuMAT1M_7Uaaf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSFVL9AAoJEECxmPOUX5FEnugQAJdIqAWZuP+7TOTaZNSfwyLT
-aSKcljV3sRN0BsI+Hsx2xVI35dR2HASlWz2I6uD5sXoJqZ9JC5631e0XkkCFW18i
-pcys24kXzv1qlH7e76FGC1sf+4Kql+AYQ8aEMzScyNqFVuwzWZL4cZJME8sGT3zq
-1KPwwAlalmixCOqs8YSYCiPYSgjQhCCev/yYku+j/WUxeSHeKR2Vh90eiHImbrjJ
-nSzg8QZbu7QTAYPCZohyPeVeuGcfoM9zvH1KYQ7CfIE7Q2ObvExapPuGgeOJZZtu
-tmtSXyjEyJ+1i0hv3/mAuWQ0rViK8vtg0jauuyOh/kBJLiZlMYJ77qJRCWpZAUYH
-yzK6zTwY01458+k8FFGf09xS39Ne4+EuCQYbukbxvM/S8igJf60gFO7fvB2GZFqc
-9YQY8HlVSu/sqZt77HxpbrI6Wt8OQ/vNzoyrRcrty4b66Kqdg/ZAH1rD16rAg3O3
-gPy20Lrr3lh25tChRenGQrr/SB4scD9JgyTbO4QHdhf8Euh9tcowrwnAzXT6uLjT
-EGWpvMB/Sqq/BMuxLR0f9YoNBiDQKVLf7udpLo6xpaQKPMzvD/wlKZ2FUAOGkOtp
-vfcyrOmrUJsQsho0fuO8t0AExBGtGG64L/SJQJAL94lvNm5g/pkkwcTpHLEwUAGg
-63MaeaIOxk2nx1AFqGgN
-=Svum
------END PGP SIGNATURE-----
-
---Signature=_Thu__22_Aug_2013_09_53_29_+1000_/=5GuMAT1M_7Uaaf--
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
