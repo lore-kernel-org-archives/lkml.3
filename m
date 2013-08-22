@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab3HVLFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 07:05:08 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:51270 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab3HVLFG (ORCPT
+	id S1753994Ab3HVLI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 07:08:56 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:51340 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab3HVLIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 07:05:06 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v2 12/20] mm, hugetlb: remove vma_has_reserves()
-In-Reply-To: <20130822091747.GA22605@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com> <1376040398-11212-13-git-send-email-iamjoonsoo.kim@lge.com> <87siy215e1.fsf@linux.vnet.ibm.com> <20130822091747.GA22605@lge.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 22 Aug 2013 16:34:22 +0530
-Message-ID: <87mwoa0yx5.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082210-6102-0000-0000-0000040E95A7
+	Thu, 22 Aug 2013 07:08:54 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] mn10300: Truncate base in do_div()
+Date: Thu, 22 Aug 2013 13:08:47 +0200
+Message-Id: <1377169727-17743-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+Explicitly truncate the second operand of do_div() to 32 bits to guard
+against bogus code calling it with a 64-bit divisor.
 
-> On Thu, Aug 22, 2013 at 02:14:38PM +0530, Aneesh Kumar K.V wrote:
->> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
->> 
->> > vma_has_reserves() can be substituted by using return value of
->> > vma_needs_reservation(). If chg returned by vma_needs_reservation()
->> > is 0, it means that vma has reserves. Otherwise, it means that vma don't
->> > have reserves and need a hugepage outside of reserve pool. This definition
->> > is perfectly same as vma_has_reserves(), so remove vma_has_reserves().
->> >
->> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> 
->> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->
-> Thanks.
->
->> > @@ -580,8 +547,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
->> >  	 * have no page reserves. This check ensures that reservations are
->> >  	 * not "stolen". The child may still get SIGKILLed
->> >  	 */
->> > -	if (!vma_has_reserves(vma, chg) &&
->> > -			h->free_huge_pages - h->resv_huge_pages == 0)
->> > +	if (chg && h->free_huge_pages - h->resv_huge_pages == 0)
->> >  		return NULL;
->> >
->> >  	/* If reserves cannot be used, ensure enough pages are in the pool */
->> > @@ -600,7 +566,7 @@ retry_cpuset:
->> >  			if (page) {
->> >  				if (avoid_reserve)
->> >  					break;
->> > -				if (!vma_has_reserves(vma, chg))
->> > +				if (chg)
->> >  					break;
->> >
->> >  				SetPagePrivate(page);
->> 
->> Can you add a comment above both the place to explain why checking chg
->> is good enough ?
->
-> Yes, I can. But it will be changed to use_reserve in patch 13 and it
-> represent it's meaning perfectly. So commeting may be useless.
+Based on commit ea077b1b96e073eac5c3c5590529e964767fc5f7 ("m68k: Truncate
+base in do_div()")
 
-That should be ok, because having a comment in this patch helps in
-understanding the patch better, even though you are removing that
-later. 
+While it doesn't really hurt on little-endian mn10300, unlike on m68k,
+mn10300 was the only remaining architecture not doing this.
 
--aneesh
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+Compile-tested only.
+
+ arch/mn10300/include/asm/div64.h |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/arch/mn10300/include/asm/div64.h b/arch/mn10300/include/asm/div64.h
+index 503efab..ff69f34 100644
+--- a/arch/mn10300/include/asm/div64.h
++++ b/arch/mn10300/include/asm/div64.h
+@@ -36,12 +36,13 @@ extern void ____unhandled_size_in_do_div___(void);
+ #define do_div(n, base)							\
+ ({									\
+ 	unsigned __rem = 0;						\
++	unsigned __base = (base);					\
+ 	if (sizeof(n) <= 4) {						\
+ 		asm("mov	%1,mdr	\n"				\
+ 		    "divu	%2,%0	\n"				\
+ 		    "mov	mdr,%1	\n"				\
+ 		    : "+r"(n), "=d"(__rem)				\
+-		    : "r"(base), "1"(__rem)				\
++		    : "r"(__base), "1"(__rem)				\
+ 		    : CLOBBER_MDR_CC					\
+ 		    );							\
+ 	} else if (sizeof(n) <= 8) {					\
+@@ -52,14 +53,14 @@ extern void ____unhandled_size_in_do_div___(void);
+ 		__quot.l = n;						\
+ 		asm("mov	%0,mdr	\n"	/* MDR = 0 */		\
+ 		    "divu	%3,%1	\n"				\
+-		    /* __quot.MSL = __div.MSL / base, */		\
+-		    /* MDR = MDR:__div.MSL % base */			\
++		    /* __quot.MSL = __div.MSL / __base, */		\
++		    /* MDR = MDR:__div.MSL % __base */			\
+ 		    "divu	%3,%2	\n"				\
+-		    /* __quot.LSL = MDR:__div.LSL / base, */		\
+-		    /* MDR = MDR:__div.LSL % base */			\
++		    /* __quot.LSL = MDR:__div.LSL / __base, */		\
++		    /* MDR = MDR:__div.LSL % __base */			\
+ 		    "mov	mdr,%0	\n"				\
+ 		    : "=d"(__rem), "=r"(__quot.w[1]), "=r"(__quot.w[0])	\
+-		    : "r"(base), "0"(__rem), "1"(__quot.w[1]),		\
++		    : "r"(__base), "0"(__rem), "1"(__quot.w[1]),	\
+ 		      "2"(__quot.w[0])					\
+ 		    : CLOBBER_MDR_CC					\
+ 		    );							\
+-- 
+1.7.9.5
 
