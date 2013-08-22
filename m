@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab3HVJtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 05:49:31 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43049 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab3HVJsq (ORCPT
+	id S1753022Ab3HVJu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 05:50:58 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54197 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab3HVJuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 05:48:46 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH 4/6] mm/hwpoison: don't set migration type twice to avoid hold heavy contend zone->lock
-Date: Thu, 22 Aug 2013 17:48:25 +0800
-Message-Id: <1377164907-24801-4-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1377164907-24801-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1377164907-24801-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082209-0260-0000-0000-000003812E2A
+	Thu, 22 Aug 2013 05:50:55 -0400
+Date: Thu, 22 Aug 2013 10:50:25 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: eric.y.miao@gmail.com, linux@arm.linux.org.uk, haojian.zhuang@gmail.com,
+        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20130822095025.GR26118@sirena.org.uk>
+References: <CAPgLHd9Eey5pbDjQmSquHvJY4zpDBDtp9brzWn-s5P6kaKmvpQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HywJcj55HbA57jnN"
+Content-Disposition: inline
+In-Reply-To: <CAPgLHd9Eey5pbDjQmSquHvJY4zpDBDtp9brzWn-s5P6kaKmvpQ@mail.gmail.com>
+X-Cookie: Your step will soil many countries.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH -next] ASoC: mmp-pcm: remove duplicated include from
+ mmp-pcm.c
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set pageblock migration type will hold zone->lock which is heavy contended 
-in system to avoid race. However, soft offline page will set pageblock 
-migration type twice during get page if the page is in used, not hugetlbfs 
-page and not on lru list. There is unnecessary to set the pageblock migration
-type and hold heavy contended zone->lock again if the first round get page 
-have already set the pageblock to right migration type.
 
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- mm/memory-failure.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+--HywJcj55HbA57jnN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 6bfd51e..3bfb45f 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1413,7 +1413,8 @@ static int __get_any_page(struct page *p, unsigned long pfn, int flags)
- 	 * was free. This flag should be kept set until the source page
- 	 * is freed and PG_hwpoison on it is set.
- 	 */
--	set_migratetype_isolate(p, true);
-+	if (get_pageblock_migratetype(p) == MIGRATE_ISOLATE)
-+		set_migratetype_isolate(p, true);
- 	/*
- 	 * When the target page is a free hugepage, just remove it
- 	 * from free hugepage list.
--- 
-1.8.1.2
+On Thu, Aug 22, 2013 at 10:37:20AM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>=20
+> Remove duplicated include.
 
+Sorry, I already applied a patch for this which I saw first (though
+yours was actually sent sooner).  Thanks.
+
+--HywJcj55HbA57jnN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSFd7eAAoJELSic+t+oim9/IUP/A4srfKOEgUtfhcfDKlV/nGj
++ztlHqVM0Dw9HalcqT30hhhwaI4D57xbntxY8Qxvj3HmvvtUXoEij7DA1/IjUsXm
+nC5j/7ymDLv+p6tnvkBrP3QSmTR5ndfFj+DILDZ4b9MbEbfitzNWMyV51BctCaX9
+3ldXg+XeoN+geO+aKlz3u9l7KrAlrBz663MOhLjug4pHjhhtfhv5kJyB5z1fWviW
+Ooyywn90kZdOyoCNuzPdByhOS2LYqHdNKZLZDk+r75f+a+38eDZZJfJQ6X+arXmP
+ak/ZnFSOl4XoX3G80QM490hvnyKemMoXSH62upCvDqOjyCvsT/QMBIrLRz6710pI
+y4MaCjv/I1WKHQqpyWSlRTL2uAcFQ8vRtWUN+kOxjd13CiYCkwXZUXd0YOiKIJNe
+OQ8aI6IdOj7Als19tqcz14YIcXcsGIddynN6Cy2Z7jR87D+9H+TFfsChSUGQf1hN
+RHVmIJhcf8DRAuYl1/t2/2wJPFQYUtmEa5RTS4dwItLs1kqo0Zr6wJmDaCQ4O2F5
+Eq7BbYLyTs/9MWvkHiKY29pRjSDyOHsuvqWWGYdxqDl2KijTZriK/+PjwF4vJgb9
+aSML7NImdSRq0Q1PplyY4c2Gtw49jICWy3vtXL26YlVOKED9bSNHlhUKAHUk6fXt
+lvNWmoEi4i5FoZ208r2u
+=bcH2
+-----END PGP SIGNATURE-----
+
+--HywJcj55HbA57jnN--
