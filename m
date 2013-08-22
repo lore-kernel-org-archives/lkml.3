@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab3HVGud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 02:50:33 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63870 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab3HVGuc (ORCPT
+	id S1753765Ab3HVGvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 02:51:52 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:61292 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543Ab3HVGvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 02:50:32 -0400
-X-AuditID: 9c930197-b7b44ae00000347f-7e-5215b4b63ad3
-Date: Thu, 22 Aug 2013 15:50:38 +0900
+	Thu, 22 Aug 2013 02:51:51 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-f8-5215b504e8c6
+Date: Thu, 22 Aug 2013 15:51:56 +0900
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
@@ -20,55 +20,35 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v2 03/20] mm, hugetlb: fix subpool accounting handling
-Message-ID: <20130822065038.GA13415@lge.com>
+Subject: Re: [PATCH v2 06/20] mm, hugetlb: return a reserved page to a
+ reserved pool if failed
+Message-ID: <20130822065156.GB13415@lge.com>
 References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1376040398-11212-4-git-send-email-iamjoonsoo.kim@lge.com>
- <87vc2zgzpn.fsf@linux.vnet.ibm.com>
+ <1376040398-11212-7-git-send-email-iamjoonsoo.kim@lge.com>
+ <87mwobgyii.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87vc2zgzpn.fsf@linux.vnet.ibm.com>
+In-Reply-To: <87mwobgyii.fsf@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Aneesh.
-
-First of all, thank you for review!
-
-On Wed, Aug 21, 2013 at 02:58:20PM +0530, Aneesh Kumar K.V wrote:
+On Wed, Aug 21, 2013 at 03:24:13PM +0530, Aneesh Kumar K.V wrote:
 > Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 > 
-> > If we alloc hugepage with avoid_reserve, we don't dequeue reserved one.
-> > So, we should check subpool counter when avoid_reserve.
-> > This patch implement it.
+> > If we fail with a reserved page, just calling put_page() is not sufficient,
+> > because put_page() invoke free_huge_page() at last step and it doesn't
+> > know whether a page comes from a reserved pool or not. So it doesn't do
+> > anything related to reserved count. This makes reserve count lower
+> > than how we need, because reserve count already decrease in
+> > dequeue_huge_page_vma(). This patch fix this situation.
 > 
-> Can you explain this better ? ie, if we don't have a reservation in the
-> area chg != 0. So why look at avoid_reserve. 
+> You may want to document you are using PagePrivate for tracking
+> reservation and why it is ok to that.
 
-We don't consider avoid_reserve when chg != 0.
-Look at following code.
-
-+       if (chg || avoid_reserve)
-+               if (hugepage_subpool_get_pages(spool, 1))
-
-It means that if chg != 0, we skip to check avoid_reserve.
-
-> 
-> Also the code will become if you did
-> 
-> if (!chg && avoid_reserve)
->    chg = 1;
-> 
-> and then rest of the code will be able to handle the case.
-
-
-We still pass avoid_reserve to dequeue_huge_page_vma() and check avoid_reserve
-there, so maintaining avoid_reserve and checking it separately is better
-to understand a logic. And it doesn't matter at all since I eventually unify
-these in patch 13.
+Okay! I will do it in next spin.
 
 Thanks.
