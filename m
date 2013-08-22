@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab3HVNVX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 09:21:23 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:43855 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab3HVNVW convert rfc822-to-8bit (ORCPT
+	id S1752836Ab3HVNWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 09:22:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44135 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752663Ab3HVNWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 09:21:22 -0400
+	Thu, 22 Aug 2013 09:22:16 -0400
+Date: Thu, 22 Aug 2013 10:22:08 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: jason@lakedaemon.net, andrew@lunn.ch, gregory.clement@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, mturquette@linaro.org,
+        sebastian.hesselbarth@gmail.com, linus.walleij@linaro.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] pinctrl: mvebu: add missing iounmap
+Message-ID: <20130822132207.GA27167@localhost>
+References: <1377175611-4241-1-git-send-email-jszhang@marvell.com>
+ <1377175611-4241-5-git-send-email-jszhang@marvell.com>
 MIME-Version: 1.0
-Date: Thu, 22 Aug 2013 18:51:21 +0530
-Message-ID: <CAHbNUh0voFRBMfTT3gZwF1t7FKpJp+VD6xw8RCS=-rx36cZvfw@mail.gmail.com>
-Subject: Build failure in drivers/pinctrl/pictrl-imx.c
-From: Tushar Behera <tushar.behera@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1377175611-4241-5-git-send-email-jszhang@marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Jisheng,
 
-With 'allyesconfig' on next-20130822, we are getting a build failure here.
+On Thu, Aug 22, 2013 at 08:46:51PM +0800, Jisheng Zhang wrote:
+> Add missing iounmap to prove error path and remove path
+> 
+> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> ---
+>  drivers/pinctrl/mvebu/pinctrl-mvebu.c | 24 +++++++++++++++++-------
+>  1 file changed, 17 insertions(+), 7 deletions(-)
 
-I am not sure about the fix, hence only reporting the issue here.
-
-drivers/pinctrl/pinctrl-imx.c: In function ‘imx_pinctrl_parse_groups’:
-drivers/pinctrl/pinctrl-imx.c:35:5: error: incompatible types when
-assigning to type ‘int’ from type ‘struct imx_pin’
-   j = p[i];    \
-     ^
-drivers/pinctrl/pinctrl-imx.c:504:2: note: in expansion of macro ‘IMX_PMX_DUMP’
-  IMX_PMX_DUMP(info, grp->pins, grp->mux_mode, grp->configs, grp->npins);
-  ^
-drivers/pinctrl/pinctrl-imx.c:504:35: error: ‘struct imx_pin_group’
-has no member named ‘mux_mode’
-  IMX_PMX_DUMP(info, grp->pins, grp->mux_mode, grp->configs, grp->npins);
-                                   ^
-drivers/pinctrl/pinctrl-imx.c:38:4: note: in definition of macro ‘IMX_PMX_DUMP’
-    m[i], c[i]);   \
-    ^
-drivers/pinctrl/pinctrl-imx.c:504:50: error: ‘struct imx_pin_group’
-has no member named ‘configs’
-  IMX_PMX_DUMP(info, grp->pins, grp->mux_mode, grp->configs, grp->npins);
-                                                  ^
-drivers/pinctrl/pinctrl-imx.c:38:10: note: in definition of macro ‘IMX_PMX_DUMP’
-    m[i], c[i]);   \
-          ^
-make[2]: *** [drivers/pinctrl/pinctrl-imx.o] Error 1
-make[1]: *** [drivers/pinctrl] Error 2
-make: *** [drivers] Error 2
-
+How about using devm_ioremap_resource() instead?
 
 -- 
-Tushar Behera
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
