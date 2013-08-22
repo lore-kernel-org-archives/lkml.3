@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab3HVIoa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:44:30 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:46116 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752230Ab3HVIoU (ORCPT
+	id S1753005Ab3HVIrI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 04:47:08 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:63436 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab3HVIrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 04:44:20 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-50-5215cf62c2df
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 03/16] slab: remove colouroff in struct slab
-Date: Thu, 22 Aug 2013 17:44:12 +0900
-Message-Id: <1377161065-30552-4-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 22 Aug 2013 04:47:05 -0400
+From: Liu Ping Fan <kernelfans@gmail.com>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kevin Hao <haokexin@gmail.com>
+Subject: [PATCH] x86: ioapic needs check attr when programmed more than once
+Date: Thu, 22 Aug 2013 16:46:37 +0800
+Message-Id: <1377161197-3175-1-git-send-email-pingfank@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now there is no user colouroff, so remove it.
+When programming ioapic pinX more than once, current code
+does not check whether the later attr (trigger&polarity) is the
+same as the former or not. This causes a broken semantic.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Fix it by reporting -EBUSY, when attr is different.
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 180f532..d9f81a0 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -219,7 +219,6 @@ struct slab {
- 	union {
- 		struct {
- 			struct list_head list;
--			unsigned long colouroff;
- 			void *s_mem;		/* including colour offset */
- 			unsigned int inuse;	/* num of objs active in slab */
- 			kmem_bufctl_t free;
-@@ -2624,7 +2623,6 @@ static struct slab *alloc_slabmgmt(struct kmem_cache *cachep,
- 		colour_off += cachep->slab_size;
+Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+---
+ arch/x86/kernel/acpi/boot.c    | 5 ++++-
+ arch/x86/kernel/apic/io_apic.c | 7 ++++++-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 230c8ea..9ef2ce9 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -1113,6 +1113,7 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+ 	int ioapic;
+ 	int ioapic_pin;
+ 	struct io_apic_irq_attr irq_attr;
++	int ret;
+ 
+ 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+ 		return gsi;
+@@ -1142,7 +1143,9 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+ 	set_io_apic_irq_attr(&irq_attr, ioapic, ioapic_pin,
+ 			     trigger == ACPI_EDGE_SENSITIVE ? 0 : 1,
+ 			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
+-	io_apic_set_pci_routing(dev, gsi_to_irq(gsi), &irq_attr);
++	ret = io_apic_set_pci_routing(dev, gsi_to_irq(gsi), &irq_attr);
++	if (ret < 0)
++		gsi = INT_MIN;
+ 
+ 	return gsi;
+ }
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 9ed796c..ce31d902 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3375,12 +3375,17 @@ int io_apic_setup_irq_pin_once(unsigned int irq, int node,
+ {
+ 	unsigned int ioapic_idx = attr->ioapic, pin = attr->ioapic_pin;
+ 	int ret;
++	struct IO_APIC_route_entry orig;
+ 
+ 	/* Avoid redundant programming */
+ 	if (test_bit(pin, ioapics[ioapic_idx].pin_programmed)) {
+ 		pr_debug("Pin %d-%d already programmed\n",
+ 			 mpc_ioapic_id(ioapic_idx), pin);
+-		return 0;
++		orig = ioapic_read_entry(attr->ioapic, pin);
++		if (attr->trigger == orig.trigger &&
++			attr->polarity == orig.polarity)
++			return 0;
++		return -EBUSY;
  	}
- 	slabp->inuse = 0;
--	slabp->colouroff = colour_off;
- 	slabp->s_mem = addr + colour_off;
- 	slabp->nodeid = nodeid;
- 	slabp->free = 0;
+ 	ret = io_apic_setup_irq_pin(irq, node, attr);
+ 	if (!ret)
 -- 
-1.7.9.5
+1.8.1.4
 
