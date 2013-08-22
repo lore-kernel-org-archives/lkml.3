@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab3HVVTW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 17:19:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44024 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366Ab3HVVTV (ORCPT
+	id S1754181Ab3HVVVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 17:21:22 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:64319 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753429Ab3HVVVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 17:19:21 -0400
-Date: Thu, 22 Aug 2013 23:19:12 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
- DBX500 DT
-Message-ID: <20130822211912.GE31036@pengutronix.de>
-Mail-Followup-To: Lee Jones <lee.jones@linaro.org>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Linus Walleij <linus.walleij@linaro.org>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Linus WALLEIJ <linus.walleij@stericsson.com>,
-	Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
- <1370521041-32318-10-git-send-email-lee.jones@linaro.org>
- <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
- <20130820093034.GL31036@pengutronix.de>
- <20130822133730.GB23152@e106331-lin.cambridge.arm.com>
- <20130822141900.GB17154@lee--X1>
- <20130822151723.GE23152@e106331-lin.cambridge.arm.com>
- <20130822154116.GC17154@lee--X1>
+	Thu, 22 Aug 2013 17:21:18 -0400
+Date: Thu, 22 Aug 2013 17:21:11 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+Message-ID: <20130822212111.GF3490@mtj.dyndns.org>
+References: <20130821195410.GA2436@htj.dyndns.org>
+ <1377116968.10300.514.camel@misato.fc.hp.com>
+ <20130821204041.GC2436@htj.dyndns.org>
+ <1377124595.10300.594.camel@misato.fc.hp.com>
+ <20130822033234.GA2413@htj.dyndns.org>
+ <1377186729.10300.643.camel@misato.fc.hp.com>
+ <20130822183130.GA3490@mtj.dyndns.org>
+ <1377202292.10300.693.camel@misato.fc.hp.com>
+ <20130822202158.GD3490@mtj.dyndns.org>
+ <1377205598.10300.715.camel@misato.fc.hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130822154116.GC17154@lee--X1>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 23:10:49 up 23 days,  6:15, 32 users,  load average: 0.03, 0.04,
- 0.05
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1377205598.10300.715.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 04:41:16PM +0100, Lee Jones wrote:
-> 
-> When most of the other clocks that we deal with are being requested,
-> they rely on being index zero:
-> 
->   drivers/i2c/busses/i2c-nomadik.c: dev->clk = clk_get(&adev->dev, NULL);
+Hello, Toshi.
 
-Once a device has more than a single clock all clocks should have a
-connection id. clk_get(dev, NULL) should only be used for single clock
-devices. Look at drivers/clk/clkdev.c, there's some fuzzy matching
-involved when you pass NULL as connection id.
+On Thu, Aug 22, 2013 at 03:06:38PM -0600, Toshi Kani wrote:
+> Since some node(s) won't be ejectable, this solution is reasonable as
+> the first step.  I do not think it is a distraction.  I view your
 
-Sascha
+But does this contribute to reaching the next step?  If so, how?
+I can't see how and that's why I said this was a distraction.
+
+> suggestion as a distraction of supporting local page tables, though.
+
+Hmmm...
+
+> Local page table and memory hotplug are two separate things.  That is,
+> local page tables can be supported on all NUMA platforms without hotplug
+> support.  Are you sure huge mapping will solve everything for all types
+> of applications, and therefore local page tables won't be needed at all?
+
+When you throw around terms like "all" and "at all", you can't reach
+rational discussion about engineering trade-offs.  I was asking you
+whether it was reasonable to do per-node page table when most machines
+support huge page mappings which makes the whole thing rather
+pointless.  Of course there will be some niche cases where this might
+not be optimal but do you think that would be enough to justify the
+added complexity and churn?  If you think so, can you please
+elaborate?
+
+> When someone changes the page table init code, who will test it with the
+> special allocation code?
+
+What are you worrying about?  Are you saying that allocating page
+table towards top or bottom of memory would be more disruptive and
+difficult to debug than pulling in ACPI init and SRAT information into
+the process?  Am I missing something here?
+
+Thanks.
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+tejun
