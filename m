@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab3HVCZH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Aug 2013 22:25:07 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56561 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752242Ab3HVCZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Aug 2013 22:25:05 -0400
-Message-ID: <1377138303.12003.25.camel@joe-AO722>
-Subject: Re: [PATCH] scsi: fix the build warning
-From: Joe Perches <joe@perches.com>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-scsi@vger.kernel.org, James Bottomley <jbottomley@parallels.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>, akinobu.mita@gmail.com
-Date: Wed, 21 Aug 2013 19:25:03 -0700
-In-Reply-To: <CAEH94LgyGt=WZ=6oP1vgx826ULO_f_p89PMMzYiRq5Uf9gycQA@mail.gmail.com>
-References: <1377132262-15744-1-git-send-email-zwu.kernel@gmail.com>
-	 <1377133329.12003.9.camel@joe-AO722>
-	 <CAEH94Lhh11+zFHsRNDXoyxQfndxDRMcVvLnZDXQLw5cyaavUJw@mail.gmail.com>
-	 <1377134271.12003.15.camel@joe-AO722> <yq1ppt68qk9.fsf@sermon.lab.mkp.net>
-	 <1377136559.12003.18.camel@joe-AO722>
-	 <CAEH94LgyGt=WZ=6oP1vgx826ULO_f_p89PMMzYiRq5Uf9gycQA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753103Ab3HVCaV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Aug 2013 22:30:21 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:39760 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183Ab3HVCaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Aug 2013 22:30:18 -0400
+From: Enrico Mioso <mrkiko.rs@gmail.com>
+To: gregkh@linuxfoundation.org, oliver@neukum.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Enrico Mioso <mrkiko.rs@gmail.com>
+Subject: [PATCH RESEND net-next V2 0/3] huawei_cdc_ncm introduction
+Date: Thu, 22 Aug 2013 04:30:38 +0200
+Message-Id: <1377138641-2765-1-git-send-email-mrkiko.rs@gmail.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <mrkiko.rs@gmail.com>
+References: <mrkiko.rs@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-22 at 09:59 +0800, Zhi Yong Wu wrote:
-> On Thu, Aug 22, 2013 at 9:55 AM, Joe Perches <joe@perches.com> wrote:
-> > On Wed, 2013-08-21 at 21:25 -0400, Martin K. Petersen wrote:
-> >> >>>>> "Joe" == Joe Perches <joe@perches.com> writes:
-> >>
-> >> Joe> I don't get this build warning in the first place and I think the
-> >> Joe> scsi_debug file is quite old and probably doesn't need to be
-> >> Joe> changed at all.
-> >>
-> >> guard isn't a boolean, it selects the checksum algorithm used.
-> >
-> > OK, maybe this then...
-> > ---
-> >  drivers/scsi/scsi_debug.c | 2 +-
-> >  1 file changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-> > index cb4fefa..6fc2831 100644
-> > --- a/drivers/scsi/scsi_debug.c
-> > +++ b/drivers/scsi/scsi_debug.c
-> > @@ -3312,7 +3312,7 @@ static int __init scsi_debug_init(void)
-> >                 return -EINVAL;
-> >         }
-> >
-> > -       if (scsi_debug_guard > 1) {
-> > +       if (scsi_debug_guard < 0 || scsi_debug_guard > 1) {
-> I don't think that it can fix that issue.
 
-No, it doesn't fix any compile warning.  Your patch, if
-it's needed, would still apply.
+These patches are all related to the new huawei_cdc_ncm driver, supporting 
+devices that use the NCM protocol as a transport layer for other protocols. 
+this is the case of the Huawei E3131 3G modem.
+Thanks should go to bjorn and others who helped me with patience.
 
-This patch suggestion fixes an issue where debug_guard
-could be set to a negative value.
+Enrico Mioso (3):
+  net: cdc_ncm: Export cdc_ncm_{tx,rx}_fixup functions for re-use
+  net: huawei_cdc_ncm: Introduce the
+  net: cdc_ncm: remove non-standard NCM device IDs
 
-I didn't sign it, it's up to Martin or I suppose James
-to actually want it done.
+ drivers/net/usb/Kconfig     |   11 +++++++++++
+ drivers/net/usb/Makefile    |    1 +
+ drivers/net/usb/cdc_ncm.c   |   17 ++++-------------
+ include/linux/usb/cdc_ncm.h |    3 +++
+ 4 files changed, 19 insertions(+), 13 deletions(-)
 
-cheers, Joe
+-- 
+This version includes mainly cosmetic fixes related to patches.
+1.7.10.4
 
