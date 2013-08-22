@@ -1,73 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab3HVUz2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 16:55:28 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:62803 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054Ab3HVUzZ (ORCPT
+	id S1754434Ab3HVU4W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 16:56:22 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:38574 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754303Ab3HVU4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 16:55:25 -0400
-Message-ID: <52167AB8.4060206@gmail.com>
-Date: Thu, 22 Aug 2013 13:55:20 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 22 Aug 2013 16:56:21 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Subject: Re: Asus F5RL laptop unable to resume from S3 because of radeon module
+Date: Thu, 22 Aug 2013 22:56:03 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
+References: <201308222018.00905.linux@rainbow-software.org> <201308222200.05891.linux@rainbow-software.org> <A3397C8B8B789E45844E7EC5DEAD89D02E5B6549@satlexdag05.amd.com>
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02E5B6549@satlexdag05.amd.com>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>, Richard Weinberger <richard@nod.at>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, Sam Ravnborg <sam@ravnborg.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: [RFC] Get rid of SUBARCH
-References: <1377073172-3662-1-git-send-email-richard@nod.at>        <CAMuHMdWk-EPTNmPB1O1+F7YVQLjhQsFJznYwA3t6UCGUU1T9PQ@mail.gmail.com>        <20130821195157.GA18191@merkur.ravnborg.org>        <CAMuHMdWqwQxxky7UDnh-oxN13C-sxfnxKVBuBz1GU_RtJvbf3A@mail.gmail.com> <1377204069.2737.108@driftwood>
-In-Reply-To: <1377204069.2737.108@driftwood>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201308222256.03830.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2013 01:41 PM, Rob Landley wrote:
-> On 08/22/2013 07:58:26 AM, Geert Uytterhoeven wrote:
->> On Wed, Aug 21, 2013 at 9:51 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
->> >> > The series touches also m68k, sh, mips and unicore32.
->> >> > These architectures magically select a cross compiler if ARCH !=
->> SUBARCH.
->> >> > Do really need that behavior?
->> >>
->> >> This does remove functionality.
->> >> It allows to build a kernel using e.g. "make ARCH=m68k".
->> >>
->> >> Perhaps this can be moved to generic code? Most (not all!)
->> cross-toolchains
->> >> are called $ARCH-{unknown-,}linux{,-gnu}.
->> >> Exceptions are e.g. am33_2.0-linux and bfin-uclinux.
->> >
->> > Today you can specify CROSS_COMPILE in Kconfig.
->> > With this we should be able to remove these hacks.
->>
->> The correct CROSS_COMPILE value depends on the host environment, not
->> on the target configuration.
+On Thursday 22 August 2013 22:24:17 Deucher, Alexander wrote:
+> > -----Original Message-----
+> > From: Ondrej Zary [mailto:linux@rainbow-software.org]
+> > Sent: Thursday, August 22, 2013 4:00 PM
+> > To: Deucher, Alexander
+> > Cc: Kernel development list
+> > Subject: Re: Asus F5RL laptop unable to resume from S3 because of radeon
+> > module
+> >
+> > On Thursday 22 August 2013 21:49:41 Deucher, Alexander wrote:
+> > > > -----Original Message-----
+> > > > From: Ondrej Zary [mailto:linux@rainbow-software.org]
+> > > > Sent: Thursday, August 22, 2013 2:18 PM
+> > > > To: Kernel development list
+> > > > Cc: Deucher, Alexander
+> > > > Subject: Asus F5RL laptop unable to resume from S3 because of radeon
+> > > > module
+> > > >
+> > > > Hello,
+> > > > resume from suspend-to-RAM (S3) on Asus F5RL laptop does not work.
+> > > > According to many reports found by Google, it was always been that
+> > > > and there
+> > > > is no fix or workaround.
+> > >
+> > > Make sure your kernel has this patch:
+> > > http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?
+> > >id=c ef1d00cd56f600121ad121875655ad410a001b8
+> >
+> > Just tried latest git (3.11-rc6+) and the problem persists.
 >
-> Actually it depends on _both_.
+> You might try adding a quirk for your system in radeon_combios_asic_init()
+> in radeon_combios.c.  You can try something like this for testing:
 >
+> diff --git a/drivers/gpu/drm/radeon/radeon_combios.c
+> b/drivers/gpu/drm/radeon/radeon_combios.c index 68ce360..0419a2c 100644
+> --- a/drivers/gpu/drm/radeon/radeon_combios.c
+> +++ b/drivers/gpu/drm/radeon/radeon_combios.c
+> @@ -3398,6 +3398,8 @@ void radeon_combios_asic_init(struct drm_device *dev)
+>             rdev->pdev->subsystem_device == 0x30ae)
+>                 return;
+>
+> +       return;
+> +
+>         /* DYN CLK 1 */
+>         table = combios_get_table_offset(dev, COMBIOS_DYN_CLK_1_TABLE);
+>         if (table)
+>
+> If that doesn't work, you'll probably have to track down where it's hanging
+> during resume, or compare registers before and after resume to see if it's
+> some particular state that's causing a problem.
 
-I think the important issue is not the exact dependencies of the value 
-of CROSS_COMPILE, but rather that it varies enough that automatically 
-choosing a value based on SUBARCH often gives the wrong result.
+No change.
 
-Removing SUBARCH and setting CROSS_COMPILE either from the make command 
-line (or environment) or the config file, is a good idea because it 
-simplifies the build system, makes things clearer, and yields more 
-predictable results.
+Inserted "return -1;" before radeon_device_init() to 
+radeon_driver_load_kms() - driver fails to load and resume works.
+Moved it (and changed to "r = -1; goto out;") a bit down before 
+radeon_modeset_init() - driver fails to load and resume stopped working.
 
-David Daney
 
+> Alex
+>
+> > > Alex
+> > >
+> > > > Did some tests:
+> > > >
+> > > > radeon module loaded (usual state):
+> > > > After "echo mem>/sys/power/state", the laptop suspends correctly
+> >
+> > (power
+> >
+> > > > LED
+> > > > blinks). When power button is pressed, power LED goes on and that's
+> > > > all. No more activity, machine is frozen completely.
+> > > >
+> > > > radeon module not loaded at all:
+> > > > Laptop resumes correctly (keyboard LED work, network works), only the
+> >
+> > LCD
+> >
+> > > > is
+> > > > blank (obviously). Loading radeon module now initializes the card
+> > > > properly: LCD goes on and console works.
+> > > >
+> > > > radeon module loaded (but fbcon module not loaded) and then
+> >
+> > unloaded:
+> > > > Machine freezes the same way as when the module is loaded.
+> > > >
+> > > > So it looks like the radeon module does some initialization that
+> > > > prevents resume from working.
+> > > >
+> > > > Hibernation works fine.
+> > > >
+> > > > Any ideas what to test or how to debug this?
+> > > >
+> > > > Details:
+> > > > 01:05.0 VGA compatible controller [0300]: Advanced Micro Devices,
+> > > > Inc. [AMD/ATI] RC410M [Mobility Radeon Xpress 200M] [1002:5a62]
+> > > > (prog-if
+> >
+> > 00
+> >
+> > > > [VGA controller])
+> > > >         Subsystem: ASUSTeK Computer Inc. Device [1043:1402]
+> > > >         Flags: bus master, 66MHz, medium devsel, latency 64, IRQ 10
+> > > >         Memory at c0000000 (32-bit, prefetchable) [size=256M]
+> > > >         I/O ports at 9800 [size=256]
+> > > >         Memory at fa8f0000 (32-bit, non-prefetchable) [size=64K]
+> > > >         Expansion ROM at fa8c0000 [disabled] [size=128K]
+> > > >         Capabilities: [50] Power Management version 2
+> > > >         Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
+> > > >         Kernel driver in use: radeon
+> > > >
+> > > > [    4.836009] [drm] radeon kernel modesetting enabled.
+> > > > [    4.837169] [drm] initializing kernel modesetting (RS400
+> > > > 0x1002:0x5A62 0x1043:0x1402).
+> > > > [    4.837251] [drm] register mmio base: 0xFA8F0000
+> > > > [    4.837302] [drm] register mmio size: 65536
+> > > > [    4.837570] [drm] Generation 2 PCI interface, using max accessible
+> > > > memory [    4.837653] radeon 0000:01:05.0: VRAM: 128M
+> >
+> > 0x0000000078000000
+> >
+> > > > - 0x000000007FFFFFFF (128M used)
+> > > > [    4.837714] radeon 0000:01:05.0: GTT: 512M 0x0000000080000000 -
+> > > > 0x000000009FFFFFFF
+> > > > [    4.837787] [drm] Detected VRAM RAM=128M, BAR=256M
+> > > > [    4.837839] [drm] RAM width 128bits DDR
+> > > > [    4.839854] [TTM] Zone  kernel: Available graphics memory: 444588
+> > > > kiB [    4.839907] [TTM] Zone highmem: Available graphics memory:
+> > > > 972784
+> >
+> > kiB
+> >
+> > > > [    4.839959] [TTM] Initializing pool allocator
+> > > > [    4.840042] [drm] radeon: 128M of VRAM memory ready
+> > > > [    4.840094] [drm] radeon: 512M of GTT memory ready.
+> > > > [    4.840160] [drm] GART: num cpu pages 131072, num gpu pages 131072
+> > > > [    4.866905] [drm] radeon: 2 quad pipes, 1 z pipes initialized.
+> > > > [    4.872945] [drm] PCIE GART of 512M enabled (table at
+> > > > 0x0000000035A00000).
+> > > > [    4.873213] radeon 0000:01:05.0: WB enabled
+> > > > [    4.873301] radeon 0000:01:05.0: fence driver on ring 0 use gpu
+> > > > addr 0x0000000080000000 and cpu addr 0xf592c000
+> > > > [    4.874929] [drm] Supports vblank timestamp caching Rev 1
+> > > > (10.10.2010). [    4.874988] [drm] Driver supports precise vblank
+> > > > timestamp query. [    4.875055] [drm] radeon: irq initialized.
+> > > > [    4.875119] [drm] Loading R300 Microcode
+> > > > [    4.962083] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+> > > > [    5.088150] ohci-pci: OHCI PCI platform driver
+> > > > [    5.141799] [drm] radeon: ring at 0x0000000080001000
+> > > > [    5.141883] [drm] ring test succeeded in 2 usecs
+> > > > [    5.142064] spurious 8259A interrupt: IRQ7.
+> > > > [    5.142073] [drm] ib test succeeded in 0 usecs
+> > > > [    5.142317] [drm] Panel ID String: LPL
+> > > > [    5.142370] [drm] Panel Size 1280x800
+> > > > [    5.166305] [drm] radeon legacy LVDS backlight initialized
+> > > > [    5.166358] [drm] Radeon Display Connectors
+> > > > [    5.166408] [drm] Connector 0:
+> > > > [    5.166458] [drm]   VGA-1
+> > > > [    5.166509] [drm]   DDC: 0x68 0x68 0x68 0x68 0x68 0x68 0x68 0x68
+> > > > [    5.166560] [drm]   Encoders:
+> > > > [    5.166610] [drm]     CRT1: INTERNAL_DAC2
+> > > > [    5.166660] [drm] Connector 1:
+> > > > [    5.166710] [drm]   LVDS-1
+> > > > [    5.166760] [drm]   DDC: 0x198 0x198 0x19c 0x19c 0x1a0 0x1a0 0x1a4
+> > > > 0x1a4 [    5.166812] [drm]   Encoders:
+> > > > [    5.166862] [drm]     LCD1: INTERNAL_LVDS
+> > > > [    5.426968] [drm] fb mappable at 0xC0040000
+> > > > [    5.427026] [drm] vram apper at 0xC0000000
+> > > > [    5.427076] [drm] size 4096000
+> > > > [    5.427126] [drm] fb depth is 24
+> > > > [    5.427176] [drm]    pitch is 5120
+> > > > [    5.427388] radeon 0000:01:05.0: fb0: radeondrmfb frame buffer
+> > > > device [    5.427442] radeon 0000:01:05.0: registered panic notifier
+> > > > [    5.427501] [drm] Initialized radeon 2.34.0 20080528 for
+> > > > 0000:01:05.0 on minor 0
+> > > >
+> > > > --
+> > > > Ondrej Zary
+> >
+> > --
+> > Ondrej Zary
+
+
+-- 
+Ondrej Zary
