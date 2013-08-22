@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab3HVHDJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:03:09 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:40725 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab3HVHDI (ORCPT
+	id S1753796Ab3HVHEW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:04:22 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:34304 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753637Ab3HVHEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:03:08 -0400
-Date: Thu, 22 Aug 2013 11:03:05 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Xen-devel@lists.xen.org, Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with
- existing use
-Message-ID: <20130822070305.GH18673@moon>
-References: <5214C524.1050900@citrix.com>
- <20130821141223.GS18673@moon>
- <5214F09002000078000ED5C3@nat28.tlf.novell.com>
- <20130821154238.GV18673@moon>
- <521500E102000078000ED65C@nat28.tlf.novell.com>
- <20130821161946.GW18673@moon>
- <5215D23A02000078000ED7FC@nat28.tlf.novell.com>
+	Thu, 22 Aug 2013 03:04:21 -0400
+Date: Thu, 22 Aug 2013 00:03:40 -0700
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ARM: SoC fixes for 3.11-rc
+Message-ID: <20130822070340.GA8608@quad.lixom.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5215D23A02000078000ED7FC@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 07:56:26AM +0100, Jan Beulich wrote:
-> >>> On 21.08.13 at 18:19, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> > On Wed, Aug 21, 2013 at 05:03:13PM +0100, Jan Beulich wrote:
-> >> > 
-> >> > Only to non-present ptes, as far as I know.
-> >> 
-> >> That's not really any guarantee. And the accessor functions also
-> >> don't check that they'd be used on non-present PTEs only.
-> > 
-> > Wait. This _PAGE_SWP_SOFT_DIRTY bit (which is in real PSE bit) assigned
-> > in only one place -- in try_to_unmap_one(). The PTE get non-present then
-> > and consists of swap entry format. I don't see any accessor to such entry
-> > without testing if it's swap entry or pte-none. What I'm missing?
-> 
-> Fact is that this
-> 
-> static inline pte_t pte_swp_mksoft_dirty(pte_t pte)
-> {
-> 	return pte_set_flags(pte, _PAGE_SWP_SOFT_DIRTY);
-> }
-> 
-> has no checking whatsoever that the PTE being modified is a
-> non-present one, not even in any of the debugging modes. It
-> would be a different thing if the above acted on a swp_entry_t.
-> 
-> The fact that there currently may be just a single call site (where
-> the caller guarantees the non-present state) is no guarantee that
-> in the future another one won't appear, and then result in very
-> hard to debug problems.
+Hi Linus,
 
-Ok, how about this?
+The following changes since commit 1154f858ab5cd3c5facde7cb9ac31c889eb780a8:
 
-static inline pte_t pte_swp_mksoft_dirty(pte_t pte)
-{
-	BUG_ON(pte_present(pte));
-	return pte_set_flags(pte, _PAGE_SWP_SOFT_DIRTY);
-}
+  MAINTAINERS: add TI Keystone ARM platform (2013-08-07 10:30:29 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+
+for you to fetch changes up to 30ca2226bea6f0db519dc53381b893cd66cb5b66:
+
+  ARM: tegra: always enable USB VBUS regulators (2013-08-21 21:36:19 -0700)
+
+----------------------------------------------------------------
+ARM: SoC fixes for 3.11-rc
+
+A handful of fixes for 3.11 are still trickling in. These are:
+- A couple of fixes for older OMAP platforms
+- Another few fixes for at91 (lateish due to European summer vacations)
+- A late-found problem with USB on Tegra, fix is to keep VBUS regulator
+  on at all times
+- One fix for Exynos 5440 dealing with CPU detection
+- One MAINTAINERS update
+
+----------------------------------------------------------------
+Aaro Koskinen (1):
+      ARM: OMAP: rx51: change musb mode to OTG
+
+Benoit Cousson (1):
+      MAINTAINERS: Update email address for Benoit Cousson
+
+Boris BREZILLON (1):
+      ARM: at91: add missing uart clocks DT entries
+
+Daniel Mack (1):
+      ARM: OMAP2: fix musb usage for n8x0
+
+Kukjin Kim (1):
+      ARM: SAMSUNG: fix to support for missing cpu specific map_io
+
+Nicolas Ferre (2):
+      ARM: at91/DT: at91sam9x5ek: fix USB host property to enable port C
+      ARM: at91/DT: fix at91sam9n12ek memory node
+
+Olof Johansson (2):
+      Merge tag 'samsung-fixes-2' of git://git.kernel.org/.../kgene/linux-samsung into fixes
+      Merge tag 'at91-fixes' of git://github.com/at91linux/linux-at91 into fixes
+
+Sekhar Nori (1):
+      ARM: davinci: nand: specify ecc strength
+
+Stephen Warren (1):
+      ARM: tegra: always enable USB VBUS regulators
+
+ MAINTAINERS                                 | 6 +++---
+ arch/arm/boot/dts/at91sam9n12ek.dts         | 4 ++--
+ arch/arm/boot/dts/at91sam9x5ek.dtsi         | 5 +++--
+ arch/arm/boot/dts/tegra20-seaboard.dts      | 2 ++
+ arch/arm/boot/dts/tegra20-trimslice.dts     | 2 ++
+ arch/arm/boot/dts/tegra20-whistler.dts      | 4 ++++
+ arch/arm/mach-at91/at91sam9x5.c             | 2 ++
+ arch/arm/mach-davinci/board-dm355-leopard.c | 1 +
+ arch/arm/mach-davinci/board-dm644x-evm.c    | 1 +
+ arch/arm/mach-davinci/board-dm646x-evm.c    | 1 +
+ arch/arm/mach-davinci/board-neuros-osd2.c   | 1 +
+ arch/arm/mach-omap2/board-n8x0.c            | 4 ----
+ arch/arm/mach-omap2/board-rx51.c            | 2 +-
+ arch/arm/mach-omap2/usb-musb.c              | 5 +----
+ arch/arm/plat-samsung/init.c                | 5 +++--
+ 15 files changed, 27 insertions(+), 18 deletions(-)
