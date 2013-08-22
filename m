@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab3HVGCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 02:02:09 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:45126 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338Ab3HVGCH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 02:02:07 -0400
-Date: Wed, 21 Aug 2013 23:02:15 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Stefan Priebe <s.priebe@profihost.ag>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org
-Subject: Re: bcache: Fix a writeback performance regression
-Message-ID: <20130822060215.GB14935@kmo-pixel>
-References: <520C788A.1060208@profihost.ag>
- <520DFAB4.1050402@profihost.ag>
- <52114614.4070509@profihost.ag>
- <20130819222718.GA32104@kmo-pixel>
- <52132243.8050803@profihost.ag>
- <521323D1.1070503@profihost.ag>
- <20130821234715.GA4630@moria.home.lan>
- <5215A130.9080508@profihost.ag>
- <20130822054336.GA14935@kmo-pixel>
- <5215A8A8.90900@profihost.ag>
+	id S1753525Ab3HVGFI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 02:05:08 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:42152 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753059Ab3HVGFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 02:05:06 -0400
+Date: Thu, 22 Aug 2013 08:05:03 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: linux-crypto@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/padata.c: always check the return value of
+ __padata_remove_cpu() and __padata_add_cpu()
+Message-ID: <20130822060503.GC26773@secunet.com>
+References: <5212E5E4.8010408@asianux.com>
+ <5212E61F.7010602@asianux.com>
+ <20130822051122.GB26773@secunet.com>
+ <5215A134.90607@asianux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5215A8A8.90900@profihost.ag>
+In-Reply-To: <5215A134.90607@asianux.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 22 Aug 2013 06:05:03.0760 (UTC) FILETIME=[8B144900:01CE9EFD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 07:59:04AM +0200, Stefan Priebe wrote:
+On Thu, Aug 22, 2013 at 01:27:16PM +0800, Chen Gang wrote:
+> On 08/22/2013 01:11 PM, Steffen Klassert wrote:
+> > On Tue, Aug 20, 2013 at 11:44:31AM +0800, Chen Gang wrote:
+> >>
+> >> If this patch is correct, better to let CPU_ONLINE and CPU_DOWN_FAILED
+> >> share the same code.
+> >>
+> >> And do we need a comment "/* fall through */" between CPU_UP_CANCELED
+> >> and CPU_DOWN_FAILED (or it is another bug, need a 'break' statement) ?
+> >>
+> >> At last, also better to let CPU_DOWN_PREPARE and CPU_UP_CANCELED share
+> >> the same code (if need a 'break'), or share the most of code (if "fall
+> >> through").
+> >>
+> > 
+> > CPU_ONLINE and CPU_DOWN_FAILED can share the code. Same is true for
+> > CPU_DOWN_PREPARE and CPU_UP_CANCELED.
+> > 
+> > Thanks!
+> > 
+> > 
 > 
-> >schedule_timeout() is not the same as
-> >schedule_timeout_interruptible().
+> Thank you too.
 > 
-> just search and replace? So i can try on my own.
+> And need I send another patch for it ?
+> 
+> Or just make by yourself (and better to mark me as Reported-by). :-)
+> 
 
-The one in read_dirty(), line ~330
+You found the problem, feel free to send a patch.
