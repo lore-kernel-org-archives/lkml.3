@@ -1,282 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab3HVQfN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:35:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24138 "EHLO
+	id S1753929Ab3HVQfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:35:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8416 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab3HVQeW (ORCPT
+	with ESMTP id S1753051Ab3HVQeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:34:22 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=k_e3pDTibPgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=KOk3MvMldSgA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=RLoQmpYfAAAA:8 a=y2eCTN-h7zFfK6B0x2MA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=fXSdFxVoPP8A:10 a=_xe8Oq-P-xYK-SQU:21 a=zfWUGb8uZcTE3p2B:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Thu, 22 Aug 2013 12:34:21 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=5JiLV5BdmL4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=kkNRMbCVdw8A:10 a=VnNF1IyMAAAA:8 a=6YoDTMQ24hlwulc7F-gA:9 a=jeBq3FmKZ4MA:10 a=112KCApwnQhSBISL:21 a=Xw1ij397zh3I7ja2:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130822163420.472968340@goodmis.org>
+Message-Id: <20130822163420.190373748@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 22 Aug 2013 12:32:28 -0400
+Date: Thu, 22 Aug 2013 12:32:26 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [for-next][PATCH 3/5] tracing: Kill trace_create_file_ops() and friends
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [for-next][PATCH 1/5] tracing: Add __tracepoint_string() to export string pointers
 References: <20130822163225.773134216@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Kill-trace_create_file_ops-and-friends.patch
+Content-Disposition: inline; filename=0000-tracing-Add-__tracepoint_string-to-export-string-poi.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-trace_create_file_ops() allocates the copy of id/filter/format/enable
-file_operations to set "f_op->owner = mod" for fops_get().
+There are several tracepoints (mostly in RCU), that reference a string
+pointer and uses the print format of "%s" to display the string that
+exists in the kernel, instead of copying the actual string to the
+ring buffer (saves time and ring buffer space).
 
-However after the recent changes there is no reason to prevent rmmod
-even if one of these files is opened. A file operation can do nothing
-but fail after remove_event_file_dir() clears ->i_private for every
-file removed by trace_module_remove_events().
+But this has an issue with userspace tools that read the binary buffers
+that has the address of the string but has no access to what the string
+itself is. The end result is just output that looks like:
 
-Kill "struct ftrace_module_file_ops" and fix the compilation errors.
+ rcu_dyntick:          ffffffff818adeaa 1 0
+ rcu_dyntick:          ffffffff818adeb5 0 140000000000000
+ rcu_dyntick:          ffffffff818adeb5 0 140000000000000
+ rcu_utilization:      ffffffff8184333b
+ rcu_utilization:      ffffffff8184333b
 
-Link: http://lkml.kernel.org/r/20130731173132.GA31033@redhat.com
+The above is pretty useless when read by the userspace tools. Ideally
+we would want something that looks like this:
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+ rcu_dyntick:          Start 1 0
+ rcu_dyntick:          End 0 140000000000000
+ rcu_dyntick:          Start 140000000000000 0
+ rcu_callback:         rcu_preempt rhp=0xffff880037aff710 func=put_cred_rcu 0/4
+ rcu_callback:         rcu_preempt rhp=0xffff880078961980 func=file_free_rcu 0/5
+ rcu_dyntick:          End 0 1
+
+The trace_printk() which also only stores the address of the string
+format instead of recording the string into the buffer itself, exports
+the mapping of kernel addresses to format strings via the printk_format
+file in the debugfs tracing directory.
+
+The tracepoint strings can use this same method and output the format
+to the same file and the userspace tools will be able to decipher
+the address without any modification.
+
+The tracepoint strings need its own section to save the strings because
+the trace_printk section will cause the trace_printk() buffers to be
+allocated if anything exists within the section. trace_printk() is only
+used for debugging and should never exist in the kernel, we can not use
+the trace_printk sections.
+
+Add a new tracepoint_str section that will also be examined by the output
+of the printk_format file.
+
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_events.c |  153 +++----------------------------------------
- 1 file changed, 9 insertions(+), 144 deletions(-)
+ include/asm-generic/vmlinux.lds.h |    7 ++++++-
+ include/linux/ftrace_event.h      |   34 ++++++++++++++++++++++++++++++++++
+ kernel/trace/trace.h              |    3 +++
+ kernel/trace/trace_printk.c       |   19 +++++++++++++++++++
+ 4 files changed, 62 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 29a7ebc..2ec8273 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1683,8 +1683,7 @@ __trace_early_add_new_event(struct ftrace_event_call *call,
- }
- 
- struct ftrace_module_file_ops;
--static void __add_event_to_tracers(struct ftrace_event_call *call,
--				   struct ftrace_module_file_ops *file_ops);
-+static void __add_event_to_tracers(struct ftrace_event_call *call);
- 
- /* Add an additional event_call dynamically */
- int trace_add_event_call(struct ftrace_event_call *call)
-@@ -1695,7 +1694,7 @@ int trace_add_event_call(struct ftrace_event_call *call)
- 
- 	ret = __register_event(call, NULL);
- 	if (ret >= 0)
--		__add_event_to_tracers(call, NULL);
-+		__add_event_to_tracers(call);
- 
- 	mutex_unlock(&event_mutex);
- 	mutex_unlock(&trace_types_lock);
-@@ -1769,100 +1768,21 @@ int trace_remove_event_call(struct ftrace_event_call *call)
- 
- #ifdef CONFIG_MODULES
- 
--static LIST_HEAD(ftrace_module_file_list);
--
--/*
-- * Modules must own their file_operations to keep up with
-- * reference counting.
-- */
--struct ftrace_module_file_ops {
--	struct list_head		list;
--	struct module			*mod;
--	struct file_operations		id;
--	struct file_operations		enable;
--	struct file_operations		format;
--	struct file_operations		filter;
--};
--
--static struct ftrace_module_file_ops *
--find_ftrace_file_ops(struct ftrace_module_file_ops *file_ops, struct module *mod)
--{
--	/*
--	 * As event_calls are added in groups by module,
--	 * when we find one file_ops, we don't need to search for
--	 * each call in that module, as the rest should be the
--	 * same. Only search for a new one if the last one did
--	 * not match.
--	 */
--	if (file_ops && mod == file_ops->mod)
--		return file_ops;
--
--	list_for_each_entry(file_ops, &ftrace_module_file_list, list) {
--		if (file_ops->mod == mod)
--			return file_ops;
--	}
--	return NULL;
--}
--
--static struct ftrace_module_file_ops *
--trace_create_file_ops(struct module *mod)
--{
--	struct ftrace_module_file_ops *file_ops;
--
--	/*
--	 * This is a bit of a PITA. To allow for correct reference
--	 * counting, modules must "own" their file_operations.
--	 * To do this, we allocate the file operations that will be
--	 * used in the event directory.
--	 */
--
--	file_ops = kmalloc(sizeof(*file_ops), GFP_KERNEL);
--	if (!file_ops)
--		return NULL;
--
--	file_ops->mod = mod;
--
--	file_ops->id = ftrace_event_id_fops;
--	file_ops->id.owner = mod;
--
--	file_ops->enable = ftrace_enable_fops;
--	file_ops->enable.owner = mod;
--
--	file_ops->filter = ftrace_event_filter_fops;
--	file_ops->filter.owner = mod;
--
--	file_ops->format = ftrace_event_format_fops;
--	file_ops->format.owner = mod;
--
--	list_add(&file_ops->list, &ftrace_module_file_list);
--
--	return file_ops;
--}
--
- static void trace_module_add_events(struct module *mod)
- {
--	struct ftrace_module_file_ops *file_ops = NULL;
- 	struct ftrace_event_call **call, **start, **end;
- 
- 	start = mod->trace_events;
- 	end = mod->trace_events + mod->num_trace_events;
- 
--	if (start == end)
--		return;
--
--	file_ops = trace_create_file_ops(mod);
--	if (!file_ops)
--		return;
--
- 	for_each_event(call, start, end) {
- 		__register_event(*call, mod);
--		__add_event_to_tracers(*call, file_ops);
-+		__add_event_to_tracers(*call);
- 	}
- }
- 
- static void trace_module_remove_events(struct module *mod)
- {
--	struct ftrace_module_file_ops *file_ops;
- 	struct ftrace_event_call *call, *p;
- 	bool clear_trace = false;
- 
-@@ -1874,16 +1794,6 @@ static void trace_module_remove_events(struct module *mod)
- 			__trace_remove_event_call(call);
- 		}
- 	}
--
--	/* Now free the file_operations */
--	list_for_each_entry(file_ops, &ftrace_module_file_list, list) {
--		if (file_ops->mod == mod)
--			break;
--	}
--	if (&file_ops->list != &ftrace_module_file_list) {
--		list_del(&file_ops->list);
--		kfree(file_ops);
--	}
- 	up_write(&trace_event_sem);
- 
- 	/*
-@@ -1919,62 +1829,22 @@ static int trace_module_notify(struct notifier_block *self,
- 	return 0;
- }
- 
--static int
--__trace_add_new_mod_event(struct ftrace_event_call *call,
--			  struct trace_array *tr,
--			  struct ftrace_module_file_ops *file_ops)
--{
--	return __trace_add_new_event(call, tr,
--				     &file_ops->id, &file_ops->enable,
--				     &file_ops->filter, &file_ops->format);
--}
--
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 69732d2..83e2c31 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -122,8 +122,12 @@
+ #define TRACE_PRINTKS() VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
+ 			 *(__trace_printk_fmt) /* Trace_printk fmt' pointer */ \
+ 			 VMLINUX_SYMBOL(__stop___trace_bprintk_fmt) = .;
++#define TRACEPOINT_STR() VMLINUX_SYMBOL(__start___tracepoint_str) = .;	\
++			 *(__tracepoint_str) /* Trace_printk fmt' pointer */ \
++			 VMLINUX_SYMBOL(__stop___tracepoint_str) = .;
  #else
--static inline struct ftrace_module_file_ops *
--find_ftrace_file_ops(struct ftrace_module_file_ops *file_ops, struct module *mod)
--{
--	return NULL;
--}
- static inline int trace_module_notify(struct notifier_block *self,
- 				      unsigned long val, void *data)
+ #define TRACE_PRINTKS()
++#define TRACEPOINT_STR()
+ #endif
+ 
+ #ifdef CONFIG_FTRACE_SYSCALLS
+@@ -190,7 +194,8 @@
+ 	VMLINUX_SYMBOL(__stop___verbose) = .;				\
+ 	LIKELY_PROFILE()		       				\
+ 	BRANCH_PROFILE()						\
+-	TRACE_PRINTKS()
++	TRACE_PRINTKS()							\
++	TRACEPOINT_STR()
+ 
+ /*
+  * Data section helpers
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 4372658..81af18a 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -357,6 +357,40 @@ do {									\
+ 		__trace_printk(ip, fmt, ##args);			\
+ } while (0)
+ 
++/**
++ * tracepoint_string - register constant persistent string to trace system
++ * @str - a constant persistent string that will be referenced in tracepoints
++ *
++ * If constant strings are being used in tracepoints, it is faster and
++ * more efficient to just save the pointer to the string and reference
++ * that with a printf "%s" instead of saving the string in the ring buffer
++ * and wasting space and time.
++ *
++ * The problem with the above approach is that userspace tools that read
++ * the binary output of the trace buffers do not have access to the string.
++ * Instead they just show the address of the string which is not very
++ * useful to users.
++ *
++ * With tracepoint_string(), the string will be registered to the tracing
++ * system and exported to userspace via the debugfs/tracing/printk_formats
++ * file that maps the string address to the string text. This way userspace
++ * tools that read the binary buffers have a way to map the pointers to
++ * the ASCII strings they represent.
++ *
++ * The @str used must be a constant string and persistent as it would not
++ * make sense to show a string that no longer exists. But it is still fine
++ * to be used with modules, because when modules are unloaded, if they
++ * had tracepoints, the ring buffers are cleared too. As long as the string
++ * does not change during the life of the module, it is fine to use
++ * tracepoint_string() within a module.
++ */
++#define tracepoint_string(str)						\
++	({								\
++		static const char *___tp_str __tracepoint_string = str; \
++		___tp_str;						\
++	})
++#define __tracepoint_string	__attribute__((section("__tracepoint_str")))
++
+ #ifdef CONFIG_PERF_EVENTS
+ struct perf_event;
+ 
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 4a4f6e1..ba321f1 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -1022,6 +1022,9 @@ extern struct list_head ftrace_events;
+ extern const char *__start___trace_bprintk_fmt[];
+ extern const char *__stop___trace_bprintk_fmt[];
+ 
++extern const char *__start___tracepoint_str[];
++extern const char *__stop___tracepoint_str[];
++
+ void trace_printk_init_buffers(void);
+ void trace_printk_start_comm(void);
+ int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
+diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
+index a9077c1..2900817 100644
+--- a/kernel/trace/trace_printk.c
++++ b/kernel/trace/trace_printk.c
+@@ -244,12 +244,31 @@ static const char **find_next(void *v, loff_t *pos)
  {
- 	return 0;
- }
--static inline int
--__trace_add_new_mod_event(struct ftrace_event_call *call,
--			  struct trace_array *tr,
--			  struct ftrace_module_file_ops *file_ops)
--{
--	return -ENODEV;
--}
- #endif /* CONFIG_MODULES */
+ 	const char **fmt = v;
+ 	int start_index;
++	int last_index;
  
- /* Create a new event directory structure for a trace directory. */
- static void
- __trace_add_event_dirs(struct trace_array *tr)
- {
--	struct ftrace_module_file_ops *file_ops = NULL;
- 	struct ftrace_event_call *call;
- 	int ret;
+ 	start_index = __stop___trace_bprintk_fmt - __start___trace_bprintk_fmt;
  
- 	list_for_each_entry(call, &ftrace_events, list) {
--		if (call->mod) {
--			/*
--			 * Directories for events by modules need to
--			 * keep module ref counts when opened (as we don't
--			 * want the module to disappear when reading one
--			 * of these files). The file_ops keep account of
--			 * the module ref count.
--			 */
--			file_ops = find_ftrace_file_ops(file_ops, call->mod);
--			if (!file_ops)
--				continue; /* Warn? */
--			ret = __trace_add_new_mod_event(call, tr, file_ops);
--			if (ret < 0)
--				pr_warning("Could not create directory for event %s\n",
--					   call->name);
--			continue;
--		}
- 		ret = __trace_add_new_event(call, tr,
- 					    &ftrace_event_id_fops,
- 					    &ftrace_enable_fops,
-@@ -2332,21 +2202,16 @@ __trace_remove_event_dirs(struct trace_array *tr)
- 		remove_event_file_dir(file);
- }
+ 	if (*pos < start_index)
+ 		return __start___trace_bprintk_fmt + *pos;
  
--static void
--__add_event_to_tracers(struct ftrace_event_call *call,
--		       struct ftrace_module_file_ops *file_ops)
-+static void __add_event_to_tracers(struct ftrace_event_call *call)
- {
- 	struct trace_array *tr;
- 
- 	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
--		if (file_ops)
--			__trace_add_new_mod_event(call, tr, file_ops);
--		else
--			__trace_add_new_event(call, tr,
--					      &ftrace_event_id_fops,
--					      &ftrace_enable_fops,
--					      &ftrace_event_filter_fops,
--					      &ftrace_event_format_fops);
-+		__trace_add_new_event(call, tr,
-+				      &ftrace_event_id_fops,
-+				      &ftrace_enable_fops,
-+				      &ftrace_event_filter_fops,
-+				      &ftrace_event_format_fops);
- 	}
++	/*
++	 * The __tracepoint_str section is treated the same as the
++	 * __trace_printk_fmt section. The difference is that the
++	 * __trace_printk_fmt section should only be used by trace_printk()
++	 * in a debugging environment, as if anything exists in that section
++	 * the trace_prink() helper buffers are allocated, which would just
++	 * waste space in a production environment.
++	 *
++	 * The __tracepoint_str sections on the other hand are used by
++	 * tracepoints which need to map pointers to their strings to
++	 * the ASCII text for userspace.
++	 */
++	last_index = start_index;
++	start_index = __stop___tracepoint_str - __start___tracepoint_str;
++
++	if (*pos < last_index + start_index)
++		return __start___tracepoint_str + (*pos - last_index);
++
+ 	return find_next_mod_format(start_index, v, fmt, pos);
  }
  
 -- 
