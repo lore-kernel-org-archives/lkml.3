@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab3HVUZu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 16:25:50 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:58356 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207Ab3HVUZr (ORCPT
+	id S1754536Ab3HVU0I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 16:26:08 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:46330 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab3HVUZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 16:25:47 -0400
+	Thu, 22 Aug 2013 16:25:46 -0400
 From: Max Filippov <jcmvbkbc@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Sam Ravnborg <sam@ravnborg.org>, Guenter Roeck <linux@roeck-us.net>,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH v2 5/5] tools/perf/perf-archive.sh: replace echo -e with printf
-Date: Fri, 23 Aug 2013 00:25:25 +0400
-Message-Id: <1377203125-22934-6-git-send-email-jcmvbkbc@gmail.com>
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH v2 4/5] scripts/checkkconfigsymbols.sh: replace echo -e with printf
+Date: Fri, 23 Aug 2013 00:25:24 +0400
+Message-Id: <1377203125-22934-5-git-send-email-jcmvbkbc@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1377203125-22934-1-git-send-email-jcmvbkbc@gmail.com>
 References: <1377203125-22934-1-git-send-email-jcmvbkbc@gmail.com>
@@ -28,29 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 implementation-dependent when it is used. Replace echo -e
 with printf as suggested by POSIX echo manual.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 ---
- tools/perf/perf-archive.sh |    4 ++--
+ scripts/checkkconfigsymbols.sh |    4 ++--
  1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/perf-archive.sh b/tools/perf/perf-archive.sh
-index e919306..8db9a24 100644
---- a/tools/perf/perf-archive.sh
-+++ b/tools/perf/perf-archive.sh
-@@ -41,7 +41,7 @@ done
+diff --git a/scripts/checkkconfigsymbols.sh b/scripts/checkkconfigsymbols.sh
+index 2ca49bb..ccb3391 100755
+--- a/scripts/checkkconfigsymbols.sh
++++ b/scripts/checkkconfigsymbols.sh
+@@ -9,7 +9,7 @@ paths="$@"
+ # Doing this once at the beginning saves a lot of time, on a cache-hot tree.
+ Kconfigs="`find . -name 'Kconfig' -o -name 'Kconfig*[^~]'`"
  
- tar cjf $PERF_DATA.tar.bz2 -C $PERF_BUILDID_DIR -T $MANIFEST
- rm $MANIFEST $BUILDIDS || true
--echo -e "Now please run:\n"
--echo -e "$ tar xvf $PERF_DATA.tar.bz2 -C ~/.debug\n"
-+printf "Now please run:\n\n"
-+printf "$ tar xvf $PERF_DATA.tar.bz2 -C ~/.debug\n\n"
- echo "wherever you need to run 'perf report' on."
- exit 0
+-/bin/echo -e "File list \tundefined symbol used"
++printf "File list \tundefined symbol used\n"
+ find $paths -name '*.[chS]' -o -name 'Makefile' -o -name 'Makefile*[^~]'| while read i
+ do
+ 	# Output the bare Kconfig variable and the filename; the _MODULE part at
+@@ -54,6 +54,6 @@ while read symb files; do
+ 	# beyond the purpose of this script.
+ 	symb_bare=`echo $symb | sed -e 's/_MODULE//'`
+ 	if ! grep -q "\<$symb_bare\>" $Kconfigs; then
+-		/bin/echo -e "$files: \t$symb"
++		printf "$files: \t$symb\n"
+ 	fi
+ done|sort
 -- 
 1.7.7.6
 
