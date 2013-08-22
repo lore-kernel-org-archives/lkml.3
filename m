@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab3HVQhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:37:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22676 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab3HVQhP (ORCPT
+	id S1753895Ab3HVQjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:39:14 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:23559 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086Ab3HVQjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:37:15 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=gPhQW-MqCHAA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=g0UHv3CdosEA:10 a=9AzMRrQhAAAA:8 a=gkbvocDIl5Lr0wzoPMQA:9 a=CjuIK1q_8ugA:10 a=SxxB86fLhQ4A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Thu, 22 Aug 2013 12:37:14 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tony Lu <zlu@tilera.com>
-Cc: <linux-kernel@vger.kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] tile: support ftrace on tilegx
-Message-ID: <20130822123714.2611671a@gandalf.local.home>
-In-Reply-To: <2c9c68a646dd67eb51d89d878966c08941efa055.1376076465.git.cmetcalf@tilera.com>
-References: <2c9c68a646dd67eb51d89d878966c08941efa055.1376076465.git.cmetcalf@tilera.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Aug 2013 12:39:13 -0400
+From: Rupesh Gujare <rupesh.gujare@atmel.com>
+To: <devel@linuxdriverproject.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/4] ozwpan: staging: Fix crash for race condition.
+Date: Thu, 22 Aug 2013 17:38:48 +0100
+Message-ID: <1377189531-24950-1-git-send-email-rupesh.gujare@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Aug 2013 13:26:09 -0400
-Tony Lu <zlu@tilera.com> wrote:
+Do not allocate a port to new device or process URB when its status is
+yet to be read. This avoids race condition when USB core read hub
+status a bit late, while new device tries to acquire port.
 
+Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
+---
+ drivers/staging/ozwpan/ozhcd.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-> diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
-> index 858966a..a674fd5 100755
-> --- a/scripts/recordmcount.pl
-> +++ b/scripts/recordmcount.pl
-> @@ -364,6 +364,10 @@ if ($arch eq "x86_64") {
->  } elsif ($arch eq "blackfin") {
->      $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s__mcount\$";
->      $mcount_adjust = -4;
-> +} elsif ($arch eq "tilegx") {
-> +    $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s__mcount\$";
-> +    $type = ".quad";
-> +    $alignment = 8;
->  } else {
->      die "Arch $arch is not supported with CONFIG_FTRACE_MCOUNT_RECORD";
->  }
+diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
+index 2b67107..4682d78 100644
+--- a/drivers/staging/ozwpan/ozhcd.c
++++ b/drivers/staging/ozwpan/ozhcd.c
+@@ -685,7 +685,7 @@ struct oz_port *oz_hcd_pd_arrived(void *hpd)
+ 		struct oz_port *port = &ozhcd->ports[i];
+ 
+ 		spin_lock(&port->port_lock);
+-		if (!(port->flags & OZ_PORT_F_PRESENT)) {
++		if (!(port->flags & (OZ_PORT_F_PRESENT | OZ_PORT_F_CHANGED))) {
+ 			oz_acquire_port(port, hpd);
+ 			spin_unlock(&port->port_lock);
+ 			break;
+@@ -1818,7 +1818,8 @@ static int oz_hcd_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
+ 	port =  &ozhcd->ports[port_ix];
+ 	if (port == NULL)
+ 		return -EPIPE;
+-	if ((port->flags & OZ_PORT_F_PRESENT) == 0) {
++	if (!(port->flags & OZ_PORT_F_PRESENT) ||
++				(port->flags & OZ_PORT_F_CHANGED)) {
+ 		oz_dbg(ON, "Refusing URB port_ix = %d devnum = %d\n",
+ 		       port_ix, urb->dev->devnum);
+ 		return -EPIPE;
+-- 
+1.7.9.5
 
-
-If you want faster build times, you may want to update recordmcount.c,
-and then add HAVE_C_RECORDMCOUNT
-
--- Steve
