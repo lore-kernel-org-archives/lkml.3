@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab3HVTWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 15:22:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753393Ab3HVTWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 15:22:12 -0400
-Date: Thu, 22 Aug 2013 15:20:47 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>, Andi Kleen <andi@firstfloor.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        gong.chen@linux.intel.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1377199247-2kdx6aoc-mutt-n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH] hwpoison: always unset MIGRATE_ISOLATE before returning from
- soft_offline_page()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1377198365-3xic0o2q-mutt-n-horiguchi@ah.jp.nec.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1754087Ab3HVTYA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 15:24:00 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:40745 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393Ab3HVTX7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 15:23:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrWYeNXhEDY7S9XLD6L0wOZu8iPVO6LN3A_797hLHfBzAw@mail.gmail.com>
+References: <b121a1082bf3365fda22a131782147c169c969f5.1377112282.git.luto@amacapital.net>
+	<CA+55aFzXNU-eJ7KeZyv5YYKKtm8iorG-o3QtD7NXx0GTzuH+Bw@mail.gmail.com>
+	<20130822185317.GI31117@1wt.eu>
+	<CALCETrWYeNXhEDY7S9XLD6L0wOZu8iPVO6LN3A_797hLHfBzAw@mail.gmail.com>
+Date: Thu, 22 Aug 2013 12:23:58 -0700
+X-Google-Sender-Auth: 0V_jhroZ3O9hkyR2ExE9QbcrooM
+Message-ID: <CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com>
+Subject: Re: [PATCH v2] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Willy Tarreau <w@1wt.eu>, "security@kernel.org" <security@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Soft offline code expects that MIGRATE_ISOLATE is set on the target page
-only during soft offlining work. But currenly it doesn't work as expected
-when get_any_page() fails and returns negative value. In the result, end
-users can have unexpectedly isolated pages. This patch just fixes it.
+On Thu, Aug 22, 2013 at 12:05 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> Does this work for the procfs case?  As far as I understand it (which
+> isn't saying much), it goes through the symlink-following path.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- mm/memory-failure.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Right. The /proc case is still separate, and we really should do
+something about that too. But again, I don't think I_LINKABLE is the
+thing to use there either. We probably should tighten up the magic
+/proc follow-link a lot.
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index af6f61c..1cb3b7d 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1550,7 +1550,7 @@ int soft_offline_page(struct page *page, int flags)
- 
- 	ret = get_any_page(page, pfn, flags);
- 	if (ret < 0)
--		return ret;
-+		goto unset;
- 	if (ret) { /* for in-use pages */
- 		if (PageHuge(page))
- 			ret = soft_offline_huge_page(page, flags);
-@@ -1567,6 +1567,7 @@ int soft_offline_page(struct page *page, int flags)
- 			atomic_long_inc(&num_poisoned_pages);
- 		}
- 	}
-+unset:
- 	unset_migratetype_isolate(page, MIGRATE_MOVABLE);
- 	return ret;
- }
--- 
-1.8.3.1
+> What if we added another field to struct nameidata that's indicates
+> what restrictions need to be enforced when following magical symlinks
+> and then enforcing them when nd_jump_link gets used.  (There are only
+> two of these, both in procfs.)
+
+Yes, I think that might be just the kind of thing to do. Except some
+tightening could well be quite regardless of any extra flags.
+
+            Linus
