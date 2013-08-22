@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab3HVOOw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 10:14:52 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:32824 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362Ab3HVOOu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753364Ab3HVOOu (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 22 Aug 2013 10:14:50 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:65054 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753304Ab3HVOOr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 10:14:47 -0400
 From: Robert Richter <rric@kernel.org>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         linux-kernel@vger.kernel.org,
         Robert Richter <robert.richter@linaro.org>,
         Robert Richter <rric@kernel.org>
-Subject: [PATCH v3 09/12] perf, persistent: Use unique event ids
-Date: Thu, 22 Aug 2013 16:13:24 +0200
-Message-Id: <1377180807-12758-10-git-send-email-rric@kernel.org>
+Subject: [PATCH v3 07/12] perf, persistent: Implementing a persistent pmu
+Date: Thu, 22 Aug 2013 16:13:22 +0200
+Message-Id: <1377180807-12758-8-git-send-email-rric@kernel.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1377180807-12758-1-git-send-email-rric@kernel.org>
 References: <1377180807-12758-1-git-send-email-rric@kernel.org>
@@ -27,104 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robert Richter <robert.richter@linaro.org>
 
-Tracepoints have a unique attr.config value. But, this is not
-sufficient to support all event types. For this we need to generate
-unique event ids.
+We want to use the kernel's pmu design to later expose persistent
+events via sysfs to userland. Initially implement a persistent pmu.
+
+The format syntax is introduced allowing to set bits anywhere in
+struct perf_event_attr. This is used in this case to set the
+persistent flag (attr5:23). The syntax is attr<num> where num is the
+index of the u64 array in struct perf_event_attr. Otherwise syntax is
+same as for config<num>.
+
+Patches that implement this functionality for perf tools are sent in a
+separate patchset.
 
 Signed-off-by: Robert Richter <robert.richter@linaro.org>
 Signed-off-by: Robert Richter <rric@kernel.org>
 ---
- kernel/events/persistent.c | 40 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 38 insertions(+), 2 deletions(-)
+ kernel/events/persistent.c | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
 diff --git a/kernel/events/persistent.c b/kernel/events/persistent.c
-index aca1e98..f23270b 100644
+index 926654f..ede95ab 100644
 --- a/kernel/events/persistent.c
 +++ b/kernel/events/persistent.c
-@@ -1,6 +1,7 @@
- #include <linux/slab.h>
- #include <linux/perf_event.h>
- #include <linux/ftrace_event.h>
-+#include <linux/idr.h>
- 
- #include "internal.h"
- 
-@@ -13,10 +14,37 @@ struct pevent {
+@@ -12,6 +12,7 @@ struct pevent {
  	int		id;
  };
  
-+static struct idr event_idr;
-+static struct mutex event_lock;
- static struct pmu persistent_pmu;
++static struct pmu persistent_pmu;
  static DEFINE_PER_CPU(struct list_head, pevents);
  static DEFINE_PER_CPU(struct mutex, pevents_lock);
  
-+static inline struct pevent *find_event(int id)
+@@ -210,10 +211,43 @@ int perf_get_persistent_event_fd(int cpu, int id)
+ 	return event_fd;
+ }
+ 
++PMU_FORMAT_ATTR(persistent, "attr5:23");
++
++static struct attribute *persistent_format_attrs[] = {
++	&format_attr_persistent.attr,
++	NULL,
++};
++
++static struct attribute_group persistent_format_group = {
++	.name = "format",
++	.attrs = persistent_format_attrs,
++};
++
++static const struct attribute_group *persistent_attr_groups[] = {
++	&persistent_format_group,
++	NULL,
++};
++
++static int persistent_pmu_init(struct perf_event *event)
 +{
-+	struct pevent *pevent;
-+	rcu_read_lock();
-+	pevent = idr_find(&event_idr, id);
-+	rcu_read_lock();
-+	return pevent;
++	if (persistent_pmu.type != event->attr.type)
++		return -ENOENT;
++
++	/* Not a persistent event. */
++	return -EFAULT;
 +}
 +
-+static inline int get_event_id(struct pevent *pevent)
-+{
-+	int event_id;
-+	mutex_lock(&event_lock);
-+	event_id = idr_alloc(&event_idr, pevent, 1, INT_MAX, GFP_KERNEL);
-+	mutex_unlock(&event_lock);
-+	return event_id;
-+}
++static struct pmu persistent_pmu = {
++	.event_init	= persistent_pmu_init,
++	.attr_groups	= persistent_attr_groups,
++};
 +
-+static inline void put_event_id(int id)
-+{
-+	mutex_lock(&event_lock);
-+	idr_remove(&event_idr, id);
-+	mutex_unlock(&event_lock);
-+}
-+
- /* Must be protected with pevents_lock. */
- static struct perf_event *__pevent_find(int cpu, int id)
- {
-@@ -128,13 +156,16 @@ persistent_open(char *name, struct perf_event_attr *attr, int nr_pages)
- 	struct pevent *pevent;
- 	char id_buf[32];
- 	int cpu;
--	int ret = 0;
-+	int ret;
- 
- 	pevent = kzalloc(sizeof(*pevent), GFP_KERNEL);
- 	if (!pevent)
- 		return -ENOMEM;
- 
--	pevent->id = attr->config;
-+	ret = get_event_id(pevent);
-+	if (ret < 0)
-+		goto fail;
-+	pevent->id = ret;
- 
- 	if (!name) {
- 		snprintf(id_buf, sizeof(id_buf), "%d", pevent->id);
-@@ -163,6 +194,9 @@ persistent_open(char *name, struct perf_event_attr *attr, int nr_pages)
- fail:
- 	for_each_possible_cpu(cpu)
- 		persistent_event_close(cpu, pevent);
-+
-+	if (pevent->id)
-+		put_event_id(pevent->id);
- 	kfree(pevent->name);
- 	kfree(pevent);
- 
-@@ -306,6 +340,8 @@ void __init perf_register_persistent(void)
+ void __init perf_register_persistent(void)
  {
  	int cpu;
  
-+	idr_init(&event_idr);
-+	mutex_init(&event_lock);
- 	perf_pmu_register(&persistent_pmu, "persistent", PERF_TYPE_PERSISTENT);
- 
++	perf_pmu_register(&persistent_pmu, "persistent", PERF_TYPE_PERSISTENT);
++
  	for_each_possible_cpu(cpu) {
+ 		INIT_LIST_HEAD(&per_cpu(pevents, cpu));
+ 		mutex_init(&per_cpu(pevents_lock, cpu));
 -- 
 1.8.3.2
 
