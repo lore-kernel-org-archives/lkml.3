@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3HVLGl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 07:06:41 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:48585 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134Ab3HVLGf (ORCPT
+	id S1753975Ab3HVLGv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 07:06:51 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:33432 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134Ab3HVLGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 07:06:35 -0400
+	Thu, 22 Aug 2013 07:06:47 -0400
 From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
@@ -25,9 +25,9 @@ Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
         Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
         "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [PATCH 17/18] Hibernate: introduced SNAPSHOT_SIG_HASH config for select hash algorithm
-Date: Thu, 22 Aug 2013 19:01:56 +0800
-Message-Id: <1377169317-5959-18-git-send-email-jlee@suse.com>
+Subject: [PATCH 18/18] Hibernate: notify bootloader regenerate key-pair for snapshot verification
+Date: Thu, 22 Aug 2013 19:01:57 +0800
+Message-Id: <1377169317-5959-19-git-send-email-jlee@suse.com>
 X-Mailer: git-send-email 1.6.0.2
 In-Reply-To: <1377169317-5959-1-git-send-email-jlee@suse.com>
 References: <1377169317-5959-1-git-send-email-jlee@suse.com>
@@ -35,148 +35,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduced SNAPSHOT_SIG_HASH config for user to select which
-hash algorithm will be used during signature generation of snapshot.
+This patch introduced SNAPSHOT_REGEN_KEYS kernel config, enable this
+option let kernel notify booloader (e.g. shim) to regenerate key-pair of
+snapshot verification for each hibernate.
 
-v2:
-Add define check of oCONFIG_SNAPSHOT_VERIFICATION in snapshot.c before
-declare pkey_hash().
+Kernel loaded S4 sign key in efi stub, so the private key forward from
+efi bootloader to kernel in UEFI secure environment. Regenerate key-pair
+for each hibernate will gain more security but it hurt the lifetime of
+EFI flash memory.
 
-Reviewed-by: Jiri Kosina <jkosina@suse.cz>
+Kernel write an non-volatile runtime efi variable, the name is
+GenS4Key-fe141863-c070-478e-b8a3-878a5dc9ef21, to notify efi bootloader
+regenerate key-pair for next hibernate cycle.
+
+Userland hibernate tool can write GenS4Key at runtime, kernel will
+respect the value but not overwrite it when S4. This mechanism let
+userland tool can also notify bootloader to regenerate key-pair through
+GenS4Key flag.
+
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
 Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 ---
- kernel/power/Kconfig    |   46 ++++++++++++++++++++++++++++++++++++++++++++++
- kernel/power/snapshot.c |   27 ++++++++++++++++++++++-----
- 2 files changed, 68 insertions(+), 5 deletions(-)
+ kernel/power/Kconfig          |   15 +++++++++++++++
+ kernel/power/hibernate_keys.c |   39 +++++++++++++++++++++++++++++++++++++++
+ kernel/power/power.h          |    2 ++
+ kernel/power/snapshot.c       |    3 +++
+ 4 files changed, 59 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index b592d88..79b34fa 100644
+index 79b34fa..63bda98 100644
 --- a/kernel/power/Kconfig
 +++ b/kernel/power/Kconfig
-@@ -78,6 +78,52 @@ config SNAPSHOT_VERIFICATION
+@@ -78,6 +78,21 @@ config SNAPSHOT_VERIFICATION
  	  dependent on UEFI environment. EFI bootloader should generate the
  	  key-pair.
  
-+choice
-+	prompt "Which hash algorithm should snapshot be signed with?"
++config SNAPSHOT_REGEN_KEYS
++	bool "Regenerate key-pair for each snapshot verification"
 +        depends on SNAPSHOT_VERIFICATION
-+        help
-+          This determines which sort of hashing algorithm will be used during
-+          signature generation of snapshot. This algorithm _must_ be built into
-+	  the kernel directly so that signature verification can take place.
-+	  It is not possible to load a signed snapshot containing the algorithm
-+	  to check the signature on that module.
++	help
++	  Enabled this option let kernel notify booloader (e.g. shim) to
++	  regenerate key-pair of snapshot verification for each hibernate.
++	  Linux kernel write an non-volatile runtime EFI variable, the name
++	  is GenS4Key-fe141863-c070-478e-b8a3-878a5dc9ef21, to notify EFI
++	  bootloader regenerate key-pair for next hibernate cycle.
 +
-+config SNAPSHOT_SIG_SHA1
-+        bool "Sign modules with SHA-1"
-+        select CRYPTO_SHA1
-+	select CRYPTO_SHA1_SSSE3 if X86_64
++	  Userland hibernate tool can write GenS4Key at runtime then kernel
++	  will respect the value but not overwrite it when S4. This mechanism
++	  let userland tool can also notify bootloader to regenerate key-pair
++	  through GenS4Key flag.
 +
-+config SNAPSHOT_SIG_SHA224
-+        bool "Sign modules with SHA-224"
-+        select CRYPTO_SHA256
-+	select CRYPTO_SHA256_SSSE3 if X86_64
+ choice
+ 	prompt "Which hash algorithm should snapshot be signed with?"
+         depends on SNAPSHOT_VERIFICATION
+diff --git a/kernel/power/hibernate_keys.c b/kernel/power/hibernate_keys.c
+index 1bc5976..60d3e73 100644
+--- a/kernel/power/hibernate_keys.c
++++ b/kernel/power/hibernate_keys.c
+@@ -7,6 +7,8 @@
+ 
+ #include "power.h"
+ 
++static efi_char16_t efi_gens4key_name[9] = { 'G', 'e', 'n', 'S', '4', 'K', 'e', 'y', 0 };
 +
-+config SNAPSHOT_SIG_SHA256
-+        bool "Sign modules with SHA-256"
-+        select CRYPTO_SHA256
-+	select CRYPTO_SHA256_SSSE3 if X86_64
+ static void *skey_data;
+ static void *skey_data_buf;
+ static unsigned long skey_dsize;
+@@ -273,6 +275,42 @@ size_t get_key_length(const struct key *key)
+ 	return len;
+ }
+ 
++void set_key_regen_flag(void)
++{
++#ifdef CONFIG_SNAPSHOT_REGEN_KEYS
++	unsigned long datasize;
++	u8 gens4key;
++	efi_status_t status;
 +
-+config SNAPSHOT_SIG_SHA384
-+        bool "Sign modules with SHA-384"
-+        select CRYPTO_SHA512
-+	select CRYPTO_SHA512_SSSE3 if X86_64
++	/* existing flag may set by userland, respect but not overwrite it */
++	datasize = 0;
++	status = efi.get_variable(efi_gens4key_name, &EFI_HIBERNATE_GUID,
++				  NULL, &datasize, NULL);
++	if (status == EFI_BUFFER_TOO_SMALL)
++		return;
 +
-+config SNAPSHOT_SIG_SHA512
-+        bool "Sign modules with SHA-512"
-+        select CRYPTO_SHA512
-+	select CRYPTO_SHA512_SSSE3 if X86_64
++	/* set flag of key-pair regeneration */
++	gens4key = 1;
++	status = efi.set_variable(efi_gens4key_name, &EFI_HIBERNATE_GUID,
++				  EFI_VARIABLE_NON_VOLATILE |
++				  EFI_VARIABLE_BOOTSERVICE_ACCESS |
++				  EFI_VARIABLE_RUNTIME_ACCESS,
++				  1, (void *)&gens4key);
++	if (status)
++		pr_err("PM: Set GenS4Key flag fail: 0x%lx\n", status);
++#endif
++}
 +
-+endchoice
++static void clean_key_regen_flag(void)
++{
++	/* clean flag of key-pair regeneration */
++	efi.set_variable(efi_gens4key_name, &EFI_HIBERNATE_GUID,
++			 EFI_VARIABLE_NON_VOLATILE |
++			 EFI_VARIABLE_BOOTSERVICE_ACCESS |
++			 EFI_VARIABLE_RUNTIME_ACCESS,
++			 0, NULL);
++}
 +
-+config SNAPSHOT_SIG_HASH
-+        string
-+        depends on SNAPSHOT_VERIFICATION
-+        default "sha1" if SNAPSHOT_SIG_SHA1
-+        default "sha224" if SNAPSHOT_SIG_SHA224
-+        default "sha256" if SNAPSHOT_SIG_SHA256
-+        default "sha384" if SNAPSHOT_SIG_SHA384
-+        default "sha512" if SNAPSHOT_SIG_SHA512
-+
- config PM_STD_PARTITION
- 	string "Default resume partition"
- 	depends on HIBERNATION
+ static int __init init_sign_key_data(void)
+ {
+ 	skey_data = (void *)get_zeroed_page(GFP_KERNEL);
+@@ -283,6 +321,7 @@ static int __init init_sign_key_data(void)
+ 		efi_erase_s4_skey_data();
+ 		pr_info("PM: Load s4 sign key from EFI\n");
+ 	}
++	clean_key_regen_flag();
+ 
+ 	return 0;
+ }
+diff --git a/kernel/power/power.h b/kernel/power/power.h
+index 84e0b06..3fcde36 100644
+--- a/kernel/power/power.h
++++ b/kernel/power/power.h
+@@ -181,6 +181,7 @@ extern void restore_sign_key_data(void);
+ extern bool swsusp_page_is_sign_key(struct page *page);
+ extern unsigned long get_skey_data_buf_pfn(void);
+ extern void clone_skey_data(void *page_addr);
++extern void set_key_regen_flag(void);
+ #else /* !CONFIG_SUSPEND */
+ static inline void restore_sign_key_data(void) {}
+ static inline bool swsusp_page_is_sign_key(struct page *page)
+@@ -191,6 +192,7 @@ static inline unsigned long get_skey_data_buf_pfn(void)
+ {
+ 	return 0;
+ }
++static inline void set_key_regen_flag(void) {}
+ #endif /* !CONFIG_SNAPSHOT_VERIFICATION */
+ 
+ /* kernel/power/block_io.c */
 diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-index b9c6a8a..f02e351 100644
+index f02e351..12174ff 100644
 --- a/kernel/power/snapshot.c
 +++ b/kernel/power/snapshot.c
-@@ -1042,12 +1042,29 @@ static inline void copy_data_page(unsigned long dst_pfn, unsigned long src_pfn)
+@@ -1769,6 +1769,9 @@ asmlinkage int swsusp_save(void)
+ 	printk(KERN_INFO "PM: Hibernation image created (%d pages copied)\n",
+ 		nr_pages);
+ 
++	/* set regenerate key flag */
++	set_key_regen_flag();
++
+ 	return 0;
  }
- #endif /* CONFIG_HIGHMEM */
  
--#define SNAPSHOT_HASH "sha256"
-+#ifdef CONFIG_SNAPSHOT_VERIFICATION
-+static const char *snapshot_hash = CONFIG_SNAPSHOT_SIG_HASH;
-+
-+static int pkey_hash(void)
-+{
-+	int i, ret;
-+
-+	ret = -1;
-+	for (i = 0; i < PKEY_HASH__LAST; i++) {
-+		if (!strcmp(pkey_hash_algo[i], snapshot_hash)) {
-+			ret = i;
-+			break;
-+		}
-+	}
-+
-+	return ret;
-+}
- 
- /*
-  * Signature of snapshot for check.
-  */
- static u8 signature[SIG_LENG];
-+#endif
- 
- static int
- copy_data_pages(struct memory_bitmap *copy_bm, struct memory_bitmap *orig_bm)
-@@ -1068,7 +1085,7 @@ copy_data_pages(struct memory_bitmap *copy_bm, struct memory_bitmap *orig_bm)
- 
- 	ret = -ENOMEM;
- 	if (!capable(CAP_COMPROMISE_KERNEL)) {
--		tfm = crypto_alloc_shash(SNAPSHOT_HASH, 0, 0);
-+		tfm = crypto_alloc_shash(snapshot_hash, 0, 0);
- 		if (IS_ERR(tfm)) {
- 			pr_err("IS_ERR(tfm): %ld", PTR_ERR(tfm));
- 			return PTR_ERR(tfm);
-@@ -1145,7 +1162,7 @@ copy_data_pages(struct memory_bitmap *copy_bm, struct memory_bitmap *orig_bm)
- 		goto error_key;
- 	}
- 
--	pks = generate_signature(s4_sign_key, digest, PKEY_HASH_SHA256, false);
-+	pks = generate_signature(s4_sign_key, digest, pkey_hash(), false);
- 	if (IS_ERR(pks)) {
- 		pr_err("Generate signature fail: %lx", PTR_ERR(pks));
- 		ret = PTR_ERR(pks);
-@@ -2499,7 +2516,7 @@ int snapshot_verify_signature(u8 *digest, size_t digest_size)
- 		pr_err("PM: Allocate public key signature fail!");
- 		return -ENOMEM;
- 	}
--	pks->pkey_hash_algo = PKEY_HASH_SHA256;
-+	pks->pkey_hash_algo = pkey_hash();
- 	pks->digest = digest;
- 	pks->digest_size = digest_size;
- 
-@@ -2547,7 +2564,7 @@ int snapshot_image_verify(void)
- 	if (!h_buf)
- 		return 0;
- 
--	tfm = crypto_alloc_shash(SNAPSHOT_HASH, 0, 0);
-+	tfm = crypto_alloc_shash(snapshot_hash, 0, 0);
- 	if (IS_ERR(tfm)) {
- 		pr_err("IS_ERR(tfm): %ld", PTR_ERR(tfm));
- 		return PTR_ERR(tfm);
 -- 
 1.6.4.2
 
