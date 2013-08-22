@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab3HVHxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:53:32 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:49918 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853Ab3HVHxa (ORCPT
+	id S1754004Ab3HVHyI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:54:08 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:41324 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462Ab3HVHyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:53:30 -0400
+	Thu, 22 Aug 2013 03:54:06 -0400
+Message-ID: <5215C396.4000400@linux.vnet.ibm.com>
+Date: Thu, 22 Aug 2013 15:53:58 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <201308220947.29715.poeschel@lemonage.de>
-References: <201308211719.57748.poeschel@lemonage.de> <5214FBA8.5000603@wwwdotorg.org>
- <201308220947.29715.poeschel@lemonage.de>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Thu, 22 Aug 2013 08:52:49 +0100
-Message-ID: <CAGVrzcZ2bOxJxxheNXkQ9x1TLOeQW1UzbFz5sc6=Gg6Cv+2Q_Q@mail.gmail.com>
-Subject: Re: [PATCH] of: add vendor prefix for Microchip Technology Inc
-To: Lars Poeschel <poeschel@lemonage.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: open list <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 04/11] sched/cleanup: refine rt_policy()
+References: <5215C233.9060907@linux.vnet.ibm.com>
+In-Reply-To: <5215C233.9060907@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082207-9574-0000-0000-000009490927
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Refine the rt_policy() to save few lines.
 
-2013/8/22 Lars Poeschel <poeschel@lemonage.de>:
-> On Wednesday 21 August 2013 at 19:40:56, Stephen Warren wrote:
->> On 08/21/2013 09:19 AM, Lars Poeschel wrote:
->> > Trivial patch to add Microchip Technology Inc. to the list
->> > of devicetree vendor prefixes, as it is already used in
->> > Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
->>
->> Oh dear. Perhaps it can be legacy-ified...
->>
->> > diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
->> >
->> > +mcp        Microchip Technology Inc.
->>
->> If I saw "mcp," in a *.dts file, I wouldn't immediately think
->> "Microchip".
->>
->> Their stock ticker appears to be MCHP, so I'd suggest either "mchp" or
->> "microchip" instead; that latter being my personal preference.
->
-> Any other opinions?
-> If there are other voices who don't like it, we can change it. There is no
-> in-tree dts file using this yet.
-> How can a renaming be done? Would that involve changing the drivers (and
-> module) name too? Or do we have the difference between "mcp" in the drivers
-> name and "microchip" for device tree properties? In the latter case, I'd
-> vote against it - if anyone cares. ;-)
+CC: Ingo Molnar <mingo@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ kernel/sched/sched.h |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-We have recently had an interesting debate for the Broadcom vendor
-prefix, so in light of this debate, I would go for the full name
-directly and use "microchip". That said, this does not necessarily
-mean that drivers containing "mcp" in their files/filenames must also
-be renamed.
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 4c1cb80..b557f39 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -82,9 +82,7 @@ extern void update_cpu_load_active(struct rq *this_rq);
+ 
+ static inline int rt_policy(int policy)
+ {
+-	if (policy == SCHED_FIFO || policy == SCHED_RR)
+-		return 1;
+-	return 0;
++	return policy == SCHED_FIFO || policy == SCHED_RR;
+ }
+ 
+ static inline int task_has_rt_policy(struct task_struct *p)
 -- 
-Florian
+1.7.9.5
+
