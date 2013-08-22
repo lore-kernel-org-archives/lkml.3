@@ -1,124 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab3HVVHV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 17:07:21 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51730 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054Ab3HVVHU (ORCPT
+	id S1754349Ab3HVVIJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 17:08:09 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:5871 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab3HVVIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 17:07:20 -0400
-Message-ID: <52167D5C.3040705@ti.com>
-Date: Thu, 22 Aug 2013 17:06:36 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, <srinivas.kandagatla@st.com>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        S?ren Brinkmann <soren.brinkmann@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] clockevents: Prefer clockevents that don't suffer
- from FEAT_C3_STOP
-References: <52138784.7050703@linaro.org> <1377191201-14696-1-git-send-email-sboyd@codeaurora.org> <1377191201-14696-2-git-send-email-sboyd@codeaurora.org> <52164B5B.5010902@ti.com> <52164CF5.20705@codeaurora.org> <52164EEE.9070707@ti.com> <20130822183105.GD23960@codeaurora.org>
-In-Reply-To: <20130822183105.GD23960@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Thu, 22 Aug 2013 17:08:07 -0400
+Message-ID: <1377205598.10300.715.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Date: Thu, 22 Aug 2013 15:06:38 -0600
+In-Reply-To: <20130822202158.GD3490@mtj.dyndns.org>
+References: <20130821153639.GA17432@htj.dyndns.org>
+	 <1377113503.10300.492.camel@misato.fc.hp.com>
+	 <20130821195410.GA2436@htj.dyndns.org>
+	 <1377116968.10300.514.camel@misato.fc.hp.com>
+	 <20130821204041.GC2436@htj.dyndns.org>
+	 <1377124595.10300.594.camel@misato.fc.hp.com>
+	 <20130822033234.GA2413@htj.dyndns.org>
+	 <1377186729.10300.643.camel@misato.fc.hp.com>
+	 <20130822183130.GA3490@mtj.dyndns.org>
+	 <1377202292.10300.693.camel@misato.fc.hp.com>
+	 <20130822202158.GD3490@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 22 August 2013 02:31 PM, Stephen Boyd wrote:
-> On 08/22, Santosh Shilimkar wrote:
->> On Thursday 22 August 2013 01:40 PM, Stephen Boyd wrote:
->>> On 08/22/13 10:33, Santosh Shilimkar wrote:
->>>> On Thursday 22 August 2013 01:06 PM, Stephen Boyd wrote:
->>>>> On some ARM systems there are two sets of per-cpu timers: the TWD
->>>>> timers and the global timers. The TWD timers are rated at 350 and
->>>>> the global timers are rated at 300 but the TWD timers suffer from
->>>>> FEAT_C3_STOP while the arm global timers don't. The tick device
->>>>> selection logic doesn't consider the FEAT_C3_STOP flag so we'll
->>>>> always end up with the TWD as the tick device although we don't
->>>>> want that.
->>>>>
->>>>> Extend the preference logic to take the FEAT_C3_STOP flag into
->>>>> account and always prefer tick devices that don't suffer from
->>>>> FEAT_C3_STOP even if their rating is lower than tick devices that
->>>>> do suffer from FEAT_C3_STOP. This will remove the need to do any
->>>>> broadcasting on such ARM systems.
->>>>>
->>>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->>>>> ---
->>>>>  kernel/time/tick-common.c | 14 ++++++++++++--
->>>>>  1 file changed, 12 insertions(+), 2 deletions(-)
->>>>>
->>>>> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
->>>>> index 64522ec..3ae437d 100644
->>>>> --- a/kernel/time/tick-common.c
->>>>> +++ b/kernel/time/tick-common.c
->>>>> @@ -244,12 +244,22 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
->>>>>  			return false;
->>>>>  	}
->>>>>  
->>>>> +	if (!curdev)
->>>>> +		return true;
->>>>> +
->>>>> +	/* Always prefer a tick device that doesn't suffer from FEAT_C3STOP */
->>>>> +	if (!(newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
->>>>> +			(curdev->features & CLOCK_EVT_FEAT_C3STOP))
->>>>> +		return true;
->>>>> +	if ((newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
->>>>> +			!(curdev->features & CLOCK_EVT_FEAT_C3STOP))
->>>>> +		return false;
->>>>> +
->>>> I don't think preferring the clock-event which doesn't suffer
->>>> from FEAT_C3STOP is a good idea if the quality of the time source
->>>> is not same. Generally the global timers are slow and far away from
->>>> CPU(cycle cost). So as long as we don't get impacted because of low power
->>>> states, the tick should run out of local timers which are faster access
->>>> as well as high resolution.
->>>>
->>>
->>> Fair enough. I have no data either way to convince anyone that this is a
->>> good or bad idea so this patch should have probably been an RFC. Are you
->>> hinting at something like switching to a per-cpu timer that doesn't
->>> suffer from FEAT_C3_STOP when a CPU goes into a deep idle state?
->>> Interesting idea but I think I'll leave that to someone else if they
->>> really care to do that.
->>>
->> If the per-CPU timer don't suffer from C3_STOP, there is no need to
->> switch at all and the per CPU tick continue to runs on CPU local
->> timers. We need to switch to a broadcast device(no affected by C3_STOP)
->> only for the cases where the per-CPU timer wakeup don't work in CPU
->> low power states.
->>
->> Are we talking about a hardware where one of the CPU from a cluster
->> has a local timer which is not affected by C3_STOP where as rest
->> of the CPU local timers are ? If yes, it must be crazy hardware and
->> we should not care too much about that.
+On Thu, 2013-08-22 at 16:21 -0400, Tejun Heo wrote:
+> On Thu, Aug 22, 2013 at 02:11:32PM -0600, Toshi Kani wrote:
+> > It's too late for the kernel image itself, but it prevents allocating
+> > kernel memory from movable ranges after that.  I'd say it solves a half
+> > of the issue this time.
 > 
-> We're talking about a device with the TWD and the arm global
-> timers where each CPU has a TWD and an arm global timer and the
-> TWD stops during deep idle but the global timer doesn't.
-> Put another way, two timers per CPU where one doesn't work all
-> the time.
+> That works if such half solution eventually leads to the full
+> solution.  This is just a distraction.  You are already too late in
+> the boot sequence.  It doesn't even qualify as a half solution.  It's
+> like obsessing about a speck on your shirt without your trousers on.
+> If you want to solve this, do that from a place where it actually is
+> solvable.
+
+Since some node(s) won't be ejectable, this solution is reasonable as
+the first step.  I do not think it is a distraction.  I view your
+suggestion as a distraction of supporting local page tables, though.
+
+> > > > Also, how do you support local page tables without pursing SRAT early?
+> > > 
+> > > Does it even matter with huge mappings?  It's gonna be contained in a
+> > > single page anyway, right?
+> > 
+> > Are the huge mappings always used?  We cannot force user programs to use
+> > huge pages, can we?
 > 
-This global timer is really not global timer then since its
-per CPU. So in this case, you don't need to use TWD's and
-hence no need of broadcast. You should rather not register the
-TWD's since you have better per-CPU timer which is alive in
-the low power states as well and hence that should be registered
-as a per CPU clock-event. If the current ARM timer code
-doesn't support this, it should be enhanced to be able to
-achieve above.
+> Everything is a trade-off.  Should we do all this just to support the
+> off chance someone tries to use memory hotplug on a machine which
+> doesn't support huge mapping when virtually all CPUs on market
+> supports it?
 
-Regards,
-Santosh
+Local page table and memory hotplug are two separate things.  That is,
+local page tables can be supported on all NUMA platforms without hotplug
+support.  Are you sure huge mapping will solve everything for all types
+of applications, and therefore local page tables won't be needed at all?
 
+> > As for the maintainability, I am far more concerned with your suggestion
+> > of having a separate page table init code when SRAT is used.  This kind
+> > of divergence is a recipe of breakage.
+> 
+> I don't buy that.  The only thing which needs to change is the
+> directionality of allocation and we probably don't even need to do
+> that if huge mapping is in use.
 
+When someone changes the page table init code, who will test it with the
+special allocation code?
 
-
+Thanks,
+-Toshi
 
