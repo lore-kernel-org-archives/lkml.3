@@ -1,205 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab3HVU1M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 16:27:12 -0400
-Received: from [213.199.154.189] ([213.199.154.189]:4366 "EHLO
-	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753210Ab3HVU1J convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 16:27:09 -0400
-X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zcb8kz98dI9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de096h8275dh1de097hz2dh839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h1155h)
-X-WSS-ID: 0MRY8KD-08-0AU-02
-X-M-MSG: 
-From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-To: Ondrej Zary <linux@rainbow-software.org>
-CC: Kernel development list <linux-kernel@vger.kernel.org>
-Subject: RE: Asus F5RL laptop unable to resume from S3 because of radeon
- module
-Thread-Topic: Asus F5RL laptop unable to resume from S3 because of radeon
- module
-Thread-Index: AQHOn2QJDWs/tyYIKkSonwrb64q0hpmhogFQgABGqID//8BGwA==
-Date: Thu, 22 Aug 2013 20:24:17 +0000
-Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D02E5B6549@satlexdag05.amd.com>
-References: <201308222018.00905.linux@rainbow-software.org>
- <A3397C8B8B789E45844E7EC5DEAD89D02E5B6501@satlexdag05.amd.com>
- <201308222200.05891.linux@rainbow-software.org>
-In-Reply-To: <201308222200.05891.linux@rainbow-software.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.224.12.22]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754207Ab3HVUfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 16:35:38 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:45432 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752489Ab3HVUfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 16:35:36 -0400
+Date: Thu, 22 Aug 2013 16:35:29 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+Message-ID: <20130822203529.GE3490@mtj.dyndns.org>
+References: <1377113503.10300.492.camel@misato.fc.hp.com>
+ <20130821195410.GA2436@htj.dyndns.org>
+ <1377116968.10300.514.camel@misato.fc.hp.com>
+ <20130821204041.GC2436@htj.dyndns.org>
+ <1377124595.10300.594.camel@misato.fc.hp.com>
+ <20130822033234.GA2413@htj.dyndns.org>
+ <1377186729.10300.643.camel@misato.fc.hp.com>
+ <20130822183130.GA3490@mtj.dyndns.org>
+ <1377202292.10300.693.camel@misato.fc.hp.com>
+ <20130822202158.GD3490@mtj.dyndns.org>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130822202158.GD3490@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Ondrej Zary [mailto:linux@rainbow-software.org]
-> Sent: Thursday, August 22, 2013 4:00 PM
-> To: Deucher, Alexander
-> Cc: Kernel development list
-> Subject: Re: Asus F5RL laptop unable to resume from S3 because of radeon
-> module
-> 
-> On Thursday 22 August 2013 21:49:41 Deucher, Alexander wrote:
-> > > -----Original Message-----
-> > > From: Ondrej Zary [mailto:linux@rainbow-software.org]
-> > > Sent: Thursday, August 22, 2013 2:18 PM
-> > > To: Kernel development list
-> > > Cc: Deucher, Alexander
-> > > Subject: Asus F5RL laptop unable to resume from S3 because of radeon
-> > > module
-> > >
-> > > Hello,
-> > > resume from suspend-to-RAM (S3) on Asus F5RL laptop does not work.
-> > > According to many reports found by Google, it was always been that and
-> > > there
-> > > is no fix or workaround.
-> >
-> > Make sure your kernel has this patch:
-> > http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=c
-> >ef1d00cd56f600121ad121875655ad410a001b8
-> 
-> Just tried latest git (3.11-rc6+) and the problem persists.
-> 
+A bit of addition.
 
-You might try adding a quirk for your system in radeon_combios_asic_init() in radeon_combios.c.  You can try something like this for testing:
+On Thu, Aug 22, 2013 at 04:21:58PM -0400, Tejun Heo wrote:
+> That works if such half solution eventually leads to the full
+> solution.  This is just a distraction.  You are already too late in
+> the boot sequence.  It doesn't even qualify as a half solution.  It's
+> like obsessing about a speck on your shirt without your trousers on.
+> If you want to solve this, do that from a place where it actually is
+> solvable.
 
-diff --git a/drivers/gpu/drm/radeon/radeon_combios.c b/drivers/gpu/drm/radeon/radeon_combios.c
-index 68ce360..0419a2c 100644
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -3398,6 +3398,8 @@ void radeon_combios_asic_init(struct drm_device *dev)
-            rdev->pdev->subsystem_device == 0x30ae)
-                return;
+Seriously, what's the end game here?  How do you guys see this
+eventually reaching full solution?  If you don't see that and this
+kinda-sorta-working solution is fine, then that's fine too but we
+aren't gonna make a lot of invasive changes for that.  If you can at
+least envision the full solution, please try to fit this effort into
+the bigger picture.
 
-+       return;
-+
-        /* DYN CLK 1 */
-        table = combios_get_table_offset(dev, COMBIOS_DYN_CLK_1_TABLE);
-        if (table)
+In all possible solutions that I can think of, there needs to be
+earlier handling of SRAT informtaion before the kernel proper starts
+executing be that either the actual bootloader or earlier kernel
+serving as kexec host.  If a proper solution needs such processing
+earlier anyway, it can set up things so that either the default
+booting behavior doesn't harm hotpluggability or feed the necessary
+information to the kernel.  In both cases, doing ACPI super early in
+the booting kernel doesn't buy us anything.
 
-If that doesn't work, you'll probably have to track down where it's hanging during resume, or compare registers before and after resume to see if it's some particular state that's causing a problem.
+So, then, what the hell are we doing here with all these relocations,
+careful double execution of the same code from different execution
+contexts, worrying about initrd firmware override even before the
+kernel page table is set up?  If we're doing all those to just make
+the temporary half-assed-anyway solution minutely better, that's just
+plain stupid.
 
-Alex
+Thanks.
 
-
-> > Alex
-> >
-> > > Did some tests:
-> > >
-> > > radeon module loaded (usual state):
-> > > After "echo mem>/sys/power/state", the laptop suspends correctly
-> (power
-> > > LED
-> > > blinks). When power button is pressed, power LED goes on and that's all.
-> > > No more activity, machine is frozen completely.
-> > >
-> > > radeon module not loaded at all:
-> > > Laptop resumes correctly (keyboard LED work, network works), only the
-> LCD
-> > > is
-> > > blank (obviously). Loading radeon module now initializes the card
-> > > properly: LCD goes on and console works.
-> > >
-> > > radeon module loaded (but fbcon module not loaded) and then
-> unloaded:
-> > > Machine freezes the same way as when the module is loaded.
-> > >
-> > > So it looks like the radeon module does some initialization that prevents
-> > > resume from working.
-> > >
-> > > Hibernation works fine.
-> > >
-> > > Any ideas what to test or how to debug this?
-> > >
-> > > Details:
-> > > 01:05.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc.
-> > > [AMD/ATI] RC410M [Mobility Radeon Xpress 200M] [1002:5a62] (prog-if
-> 00
-> > > [VGA controller])
-> > >         Subsystem: ASUSTeK Computer Inc. Device [1043:1402]
-> > >         Flags: bus master, 66MHz, medium devsel, latency 64, IRQ 10
-> > >         Memory at c0000000 (32-bit, prefetchable) [size=256M]
-> > >         I/O ports at 9800 [size=256]
-> > >         Memory at fa8f0000 (32-bit, non-prefetchable) [size=64K]
-> > >         Expansion ROM at fa8c0000 [disabled] [size=128K]
-> > >         Capabilities: [50] Power Management version 2
-> > >         Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
-> > >         Kernel driver in use: radeon
-> > >
-> > > [    4.836009] [drm] radeon kernel modesetting enabled.
-> > > [    4.837169] [drm] initializing kernel modesetting (RS400 0x1002:0x5A62
-> > > 0x1043:0x1402).
-> > > [    4.837251] [drm] register mmio base: 0xFA8F0000
-> > > [    4.837302] [drm] register mmio size: 65536
-> > > [    4.837570] [drm] Generation 2 PCI interface, using max accessible
-> > > memory [    4.837653] radeon 0000:01:05.0: VRAM: 128M
-> 0x0000000078000000
-> > > - 0x000000007FFFFFFF (128M used)
-> > > [    4.837714] radeon 0000:01:05.0: GTT: 512M 0x0000000080000000 -
-> > > 0x000000009FFFFFFF
-> > > [    4.837787] [drm] Detected VRAM RAM=128M, BAR=256M
-> > > [    4.837839] [drm] RAM width 128bits DDR
-> > > [    4.839854] [TTM] Zone  kernel: Available graphics memory: 444588 kiB
-> > > [    4.839907] [TTM] Zone highmem: Available graphics memory: 972784
-> kiB
-> > > [    4.839959] [TTM] Initializing pool allocator
-> > > [    4.840042] [drm] radeon: 128M of VRAM memory ready
-> > > [    4.840094] [drm] radeon: 512M of GTT memory ready.
-> > > [    4.840160] [drm] GART: num cpu pages 131072, num gpu pages 131072
-> > > [    4.866905] [drm] radeon: 2 quad pipes, 1 z pipes initialized.
-> > > [    4.872945] [drm] PCIE GART of 512M enabled (table at
-> > > 0x0000000035A00000).
-> > > [    4.873213] radeon 0000:01:05.0: WB enabled
-> > > [    4.873301] radeon 0000:01:05.0: fence driver on ring 0 use gpu addr
-> > > 0x0000000080000000 and cpu addr 0xf592c000
-> > > [    4.874929] [drm] Supports vblank timestamp caching Rev 1
-> > > (10.10.2010). [    4.874988] [drm] Driver supports precise vblank
-> > > timestamp query. [    4.875055] [drm] radeon: irq initialized.
-> > > [    4.875119] [drm] Loading R300 Microcode
-> > > [    4.962083] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-> > > [    5.088150] ohci-pci: OHCI PCI platform driver
-> > > [    5.141799] [drm] radeon: ring at 0x0000000080001000
-> > > [    5.141883] [drm] ring test succeeded in 2 usecs
-> > > [    5.142064] spurious 8259A interrupt: IRQ7.
-> > > [    5.142073] [drm] ib test succeeded in 0 usecs
-> > > [    5.142317] [drm] Panel ID String: LPL
-> > > [    5.142370] [drm] Panel Size 1280x800
-> > > [    5.166305] [drm] radeon legacy LVDS backlight initialized
-> > > [    5.166358] [drm] Radeon Display Connectors
-> > > [    5.166408] [drm] Connector 0:
-> > > [    5.166458] [drm]   VGA-1
-> > > [    5.166509] [drm]   DDC: 0x68 0x68 0x68 0x68 0x68 0x68 0x68 0x68
-> > > [    5.166560] [drm]   Encoders:
-> > > [    5.166610] [drm]     CRT1: INTERNAL_DAC2
-> > > [    5.166660] [drm] Connector 1:
-> > > [    5.166710] [drm]   LVDS-1
-> > > [    5.166760] [drm]   DDC: 0x198 0x198 0x19c 0x19c 0x1a0 0x1a0 0x1a4
-> > > 0x1a4 [    5.166812] [drm]   Encoders:
-> > > [    5.166862] [drm]     LCD1: INTERNAL_LVDS
-> > > [    5.426968] [drm] fb mappable at 0xC0040000
-> > > [    5.427026] [drm] vram apper at 0xC0000000
-> > > [    5.427076] [drm] size 4096000
-> > > [    5.427126] [drm] fb depth is 24
-> > > [    5.427176] [drm]    pitch is 5120
-> > > [    5.427388] radeon 0000:01:05.0: fb0: radeondrmfb frame buffer device
-> > > [    5.427442] radeon 0000:01:05.0: registered panic notifier
-> > > [    5.427501] [drm] Initialized radeon 2.34.0 20080528 for 0000:01:05.0
-> > > on minor 0
-> > >
-> > > --
-> > > Ondrej Zary
-> 
-> 
-> --
-> Ondrej Zary
-
-
+-- 
+tejun
