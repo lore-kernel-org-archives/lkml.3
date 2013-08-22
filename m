@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab3HVQeY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:34:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3327 "EHLO
+	id S1753649Ab3HVQeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:34:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24138 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab3HVQeV (ORCPT
+	with ESMTP id S1753385Ab3HVQeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:34:21 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=z4I01019TLYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Vu_iWteS_ssA:10 a=i0EeH86SAAAA:8 a=VwQbUJbxAAAA:8 a=PHpoTpGJIJKG0C60QpcA:9 a=hPjdaMEvmhQA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Thu, 22 Aug 2013 12:34:23 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=Cyz2jNeh5BAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=90aJUKrJnroA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=vMqKpMRR5qK3lec0e8oA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=mJGE7TPqQJF6mCZ_:21 a=-bcsu2J0MmDZN6ih:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130822163420.330586243@goodmis.org>
+Message-Id: <20130822163420.780574157@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 22 Aug 2013 12:32:27 -0400
+Date: Thu, 22 Aug 2013 12:32:30 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [for-next][PATCH 2/5] tracing/syscalls: Annotate raw_init function with __init
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [for-next][PATCH 5/5] tracing: Kill the !CONFIG_MODULES code in trace_events.c
 References: <20130822163225.773134216@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-syscalls-Annotate-raw_init-function-with-__i.patch
+Content-Disposition: inline; filename=0004-tracing-Kill-the-CONFIG_MODULES-code-in-trace_events.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizefan@huawei.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-init_syscall_trace() can only be called during kernel bootup only, so we can
-mark it and the functions it calls as __init.
+Move trace_module_nb under CONFIG_MODULES and kill the dummy
+trace_module_notify(). Imho it doesn't make sense to define
+"struct notifier_block" and its .notifier_call just to avoid
+"ifdef" in event_trace_init(), and all other !CONFIG_MODULES
+code has already gone away.
 
-Link: http://lkml.kernel.org/r/51528E89.6080508@huawei.com
+Link: http://lkml.kernel.org/r/20130731173137.GA31043@redhat.com
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_syscalls.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ kernel/trace/trace_events.c |   18 ++++++------------
+ 1 file changed, 6 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 8fd0365..559329d 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -200,8 +200,8 @@ extern char *__bad_type_size(void);
- 		#type, #name, offsetof(typeof(trace), name),		\
- 		sizeof(trace.name), is_signed_type(type)
- 
--static
--int  __set_enter_print_fmt(struct syscall_metadata *entry, char *buf, int len)
-+static int __init
-+__set_enter_print_fmt(struct syscall_metadata *entry, char *buf, int len)
- {
- 	int i;
- 	int pos = 0;
-@@ -228,7 +228,7 @@ int  __set_enter_print_fmt(struct syscall_metadata *entry, char *buf, int len)
- 	return pos;
- }
- 
--static int set_syscall_print_fmt(struct ftrace_event_call *call)
-+static int __init set_syscall_print_fmt(struct ftrace_event_call *call)
- {
- 	char *print_fmt;
- 	int len;
-@@ -253,7 +253,7 @@ static int set_syscall_print_fmt(struct ftrace_event_call *call)
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 4e706a0..368a4d5 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1820,12 +1820,10 @@ static int trace_module_notify(struct notifier_block *self,
  	return 0;
  }
  
--static void free_syscall_print_fmt(struct ftrace_event_call *call)
-+static void __init free_syscall_print_fmt(struct ftrace_event_call *call)
- {
- 	struct syscall_metadata *entry = call->data;
+-#else
+-static inline int trace_module_notify(struct notifier_block *self,
+-				      unsigned long val, void *data)
+-{
+-	return 0;
+-}
++static struct notifier_block trace_module_nb = {
++	.notifier_call = trace_module_notify,
++	.priority = 0,
++};
+ #endif /* CONFIG_MODULES */
  
-@@ -459,7 +459,7 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
- 	mutex_unlock(&syscall_trace_lock);
+ /* Create a new event directory structure for a trace directory. */
+@@ -2193,11 +2191,6 @@ static void __add_event_to_tracers(struct ftrace_event_call *call)
+ 		__trace_add_new_event(call, tr);
  }
  
--static int init_syscall_trace(struct ftrace_event_call *call)
-+static int __init init_syscall_trace(struct ftrace_event_call *call)
- {
- 	int id;
- 	int num;
+-static struct notifier_block trace_module_nb = {
+-	.notifier_call = trace_module_notify,
+-	.priority = 0,
+-};
+-
+ extern struct ftrace_event_call *__start_ftrace_events[];
+ extern struct ftrace_event_call *__stop_ftrace_events[];
+ 
+@@ -2402,10 +2395,11 @@ static __init int event_trace_init(void)
+ 	if (ret)
+ 		return ret;
+ 
++#ifdef CONFIG_MODULES
+ 	ret = register_module_notifier(&trace_module_nb);
+ 	if (ret)
+ 		pr_warning("Failed to register trace events module notifier\n");
+-
++#endif
+ 	return 0;
+ }
+ early_initcall(event_trace_memsetup);
 -- 
 1.7.10.4
 
