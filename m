@@ -1,110 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab3HVLed (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 07:34:33 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50515 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753312Ab3HVLe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 07:34:29 -0400
-Message-ID: <5215F6F6.9060703@ti.com>
-Date: Thu, 22 Aug 2013 17:03:10 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1753502Ab3HVLis (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 07:38:48 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:45295 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226Ab3HVLiq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 07:38:46 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Nishanth Menon <nm@ti.com>,
+In-Reply-To: <1374361670-3214-1-git-send-email-andrea.adami@gmail.com>
+References: <1374361670-3214-1-git-send-email-andrea.adami@gmail.com>
+Date: Thu, 22 Aug 2013 13:38:42 +0200
+Message-ID: <CAAQYJAsfc61um70=gM0v06c0X=FSd_9J6geB07auEbRgE9B_eA@mail.gmail.com>
+Subject: Re: [PATCH] pxa: sharpsl_param: fix invalid memory access in sharpsl_save_param()
+From: Andrea Adami <andrea.adami@gmail.com>
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-References: <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com> <51ED2385.60108@ti.com> <51ED5C66.1010407@ti.com> <51EFFBE1.4090505@ti.com> <51F0031B.1050307@ti.com> <51F00530.9090703@ti.com> <51F02069.3050207@ti.com> <51F0223E.4050008@ti.com> <51F0240F.3050507@ti.com> <20130813081003.GU7656@atomide.com> <520A02BA.4090805@ti.com> <CACRpkda+m82PYJsExLM6JLsLa8-bVhdvy_r_+-uKfVT2NG7Cbg@mail.gmail.com> <520D398D.9040806@ti.com> <CACRpkdYeo1y-HhftkRWgwyq8o-NVuJ978Uq+ON880LHhUxC=hg@mail.gmail.com> <520D44C5.6080205@ti.com> <CACRpkdagSHxzV3=427O9iftNxM+N=w9aPds=iDvGQPoG3H-cWw@mail.gmail.com>
-In-Reply-To: <CACRpkdagSHxzV3=427O9iftNxM+N=w9aPds=iDvGQPoG3H-cWw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+        Marko Katic <dromede@gmail.com>, Will Deacon <will.deacon@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+I'm bumping this after one month.
+Will, I put you in copy because you did some observations about the
+patch last time and you seemingly committe the change which broke boot
+of sharpsl devices.
 
-On Thursday 22 August 2013 02:40 AM, Linus Walleij wrote:
-> On Thu, Aug 15, 2013 at 11:14 PM, Santosh Shilimkar
-> <santosh.shilimkar@ti.com> wrote:
->> On Thursday 15 August 2013 04:51 PM, Linus Walleij wrote:
-> (...)
->>> Sorry I don't understand what thread that is... can you point me there?
->>> My previous statement on this issue what this:
->>> http://marc.info/?l=linux-kernel&m=137442541628641&w=2
-> (...)
->>>> I don't see how you can make this happen with an irqchip
->>>> infrastructure.
->>> I think my post above describes this.
->>>
->> Sorry for being dumb but I don't think cascaded irqchip examples
->> like GPIO and cross-bars are same. If you take an example of
->> GPIO irqchip, it always have a physical connection even if it
->> is 1 IRQ line for (32 logical/sparse IRQs). That goes with
->> other MFD examples too.
->>
->> So may be I am still missing something in your proposal.
-> Why does it matter if it is a GPIO or MFD or whatever?
-> The point is that the IRQ line passes thru something else,
-> and this we model as an irqdomain.
->
-> Anyway here is a silicon cascaded IRQ chip:
-> arch/arm/mach-versatile/core.c
-> See versatile_init_irq():
->
-> __vic_init(VA_VIC_BASE, IRQ_VIC_START, ~0, 0, np);
-> (...)
-> fpga_irq_init(VA_SIC_BASE, "SIC", IRQ_SIC_START,
->                 IRQ_VICSOURCE31, PIC_VALID, np);
->
-> The VIC in the versatile has the SIC cascaded from one of
-> its IRQ lines. Both the VIC and SIC (fpga IRQ) are
-> using irqdomains so the SIC spawns a child irqdomain
-> from IRQ 31 (last IRQ) of the VIC.
- Ok, this is a typical example of irqchip cascaded.
-> The difference with a crossbar is that it can software-config
-> which IRQ goes where, and does not have a callback
-> to clear interrupts or anything like that, it just passes them
-> thru. But it is best modeled as an irqdomain IMO.
-We can model crossbar as irqchip and gic as its interrupt parent
-and peripherals to have crossbar as interrupt-parent.
-   
- peripherals will do request_irq(crossbar_number)
-              |
-              |
- crossbar_unmask()
-              |
-              |
- maps crossbar number<->  to interrupt number and
- calls request_irq(int_no, crossbar_handler,..)
+Is there something wrong with it?
 
- 
- crossbar_handler(interrupt number)
-            |
-            |
- get crossbar number from interrupt number
-            |
-            |
- handle_irq(crossbar_domain(crossbar number))
-                                                                             
+Thanks
 
-So this means a extra dummy handler.
-Also the concern is by modelling it as irqchip, we will have
-to find a different solution for DMA crossbar.
-
-Regards,
- Sricharan
+Andrea
 
 
+Was:
+
+Devices that call sharpsl_save_param() will hang on boot due to
+a memcpy call that uses physical addresses that are no longer
+valid. This is caused by the following commit:
+
+commit 72662e01088394577be4a3f14da94cf87bea2591
+Author: Will Deacon <will.deacon at arm.com>
+Date:   Wed Nov 23 12:03:27 2011 +0000
+
+ARM: head.S: only include __turn_mmu_on in the initial identity mapping
+
+
+
+
+---------- Forwarded message ----------
+From: Andrea Adami <andrea.adami@gmail.com>
+Date: Sun, Jul 21, 2013 at 1:07 AM
+Subject: [PATCH] pxa: sharpsl_param: fix invalid memory access in
+sharpsl_save_param()
+To: linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+linux-kernel@vger.kernel.org, Marko Katic <dromede@gmail.com>
+
+
+From: Marko Katic <dromede@gmail.com>
+
+Unbreak kernel boot (tested with kexecboot)
+
+Patch was sent twice upstrream:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2012-December/137284.html
+Devices that call sharpsl_save_param() will hang on boot due to
+a memcpy call that uses a physical address that is no longer * accessible. Fix
+his by converting the physical address into a virtual one.
+
+Signed-off-by: Marko Katic <dromede@gmail.com>
+[andrea.adami@gmail.com: checkpatch.pl dislikes void * param_start]
+Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
+---
+ arch/arm/common/sharpsl_param.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/common/sharpsl_param.c b/arch/arm/common/sharpsl_param.c
+index d56c932..b70b13a 100644
+--- a/arch/arm/common/sharpsl_param.c
++++ b/arch/arm/common/sharpsl_param.c
+@@ -14,6 +14,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/string.h>
++#include <asm/memory.h>
+ #include <asm/mach/sharpsl_param.h>
+
+ /*
+@@ -41,7 +42,8 @@ EXPORT_SYMBOL(sharpsl_param);
+
+ void sharpsl_save_param(void)
+ {
+-       memcpy(&sharpsl_param, (void *)PARAM_BASE, sizeof(struct
+sharpsl_param_info));
++       void *param_start = phys_to_virt(PARAM_BASE);
++       memcpy(&sharpsl_param, param_start, sizeof(struct sharpsl_param_info));
+
+        if (sharpsl_param.comadj_keyword != COMADJ_MAGIC)
+                sharpsl_param.comadj=-1;
+--
+1.8.1.5
