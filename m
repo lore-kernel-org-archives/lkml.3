@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab3HVRTX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 13:19:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53753 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753571Ab3HVRTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 13:19:21 -0400
-Subject: [PATCH] vfio: Add O_CLOEXEC flag to vfio device fd
-To: alex.williamson@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: aik@ozlabs.ru, benh@kernel.crashing.org, ydroneaud@opteya.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Thu, 22 Aug 2013 11:19:10 -0600
-Message-ID: <20130822171744.1297.13711.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1753798Ab3HVRXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 13:23:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44130 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753254Ab3HVRXE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 13:23:04 -0400
+Date: Thu, 22 Aug 2013 10:23:02 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [RFC/RFT 00/33] Add new staging driver for RTL8188EU
+Message-ID: <20130822172302.GA23442@kroah.com>
+References: <1377142455-9204-1-git-send-email-Larry.Finger@lwfinger.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377142455-9204-1-git-send-email-Larry.Finger@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the default O_CLOEXEC flag for device file descriptors.  This is
-generally considered a safer option as it allows the user a race free
-option to decide whether file descriptors are inherited across exec,
-with the default avoiding file descriptor leaks.
+On Wed, Aug 21, 2013 at 10:33:42PM -0500, Larry Finger wrote:
+> Initially, the only Linux driver for the RTL8188EU chips incorporated
+> in devices such as the TP-Link TL-WN725N was one sent to me privately
+> by the Realtek engineers with permission to submit it to the Linux kernel.
+> Not only did it have limited availability, this version fails to build on
+> kernels 3.10 and newer.
+> 
+> As an initial step, I fixed the Realtek version to build on all kernels,
+> and submitted that code to http://github.com/lwfinger/rtl8188eu.git.
+> This fixed the build and availability problems; however, the problems
+> associated with building an out-of-kernel driver remain. During the past
+> few months, I converted the code into a form suitable for Linux, and
+> pushed those changes to that repo. I now believe it is time to submit
+> it to drivers/staging.
+> 
+> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 
-Reported-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/vfio/vfio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Looks good enough to me, now applied, thanks for doing this work!
 
-diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-index 75c16cc..1eab4ac 100644
---- a/drivers/vfio/vfio.c
-+++ b/drivers/vfio/vfio.c
-@@ -1109,7 +1109,7 @@ static int vfio_group_get_device_fd(struct vfio_group *group, char *buf)
- 		 * We can't use anon_inode_getfd() because we need to modify
- 		 * the f_mode flags directly to allow more than just ioctls
- 		 */
--		ret = get_unused_fd_flags(0);
-+		ret = get_unused_fd_flags(O_CLOEXEC);
- 		if (ret < 0) {
- 			device->ops->release(device->device_data);
- 			break;
-
+greg k-h
