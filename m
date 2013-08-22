@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab3HVKCj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 06:02:39 -0400
-Received: from [218.98.37.177] ([218.98.37.177]:4181 "EHLO mail.chntyx.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751969Ab3HVKCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 06:02:38 -0400
-X-Greylist: delayed 2410 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 06:02:37 EDT
-X-Spam-Processed: mail.chntyx.com, Thu, 22 Aug 2013 17:21:16 +0800
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: info162@mx162.cententlighting.com
-X-MDRemoteIP: 60.210.228.189
-X-Return-Path: info162@mx162.cententlighting.com
-X-Envelope-From: info162@mx162.cententlighting.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Date: Thu, 22 Aug 2013 17:21:08 +0800
-From: "Dwcgko" <sales@menjiechem.com>
-Reply-To: sales@menjiechem.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: ATTN:HI----supply fumed silica----menjie chemicals
-Message-ID: <201308221721081876802@mx162.cententlighting.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1752736Ab3HVKEn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 06:04:43 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41581 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab3HVKEm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 06:04:42 -0400
+Date: Thu, 22 Aug 2013 11:04:18 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: David Jander <david.jander@protonic.nl>, linux-kernel@vger.kernel.org
+Message-ID: <20130822100418.GU26118@sirena.org.uk>
+References: <1377090155-3443-1-git-send-email-david@protonic.nl>
+ <20130821133200.GB26118@sirena.org.uk>
+ <20130821162143.42ca91de@archvile>
+ <20130821144442.GD26118@sirena.org.uk>
+ <20130821170846.66b5b1d5@archvile>
+ <20130821152823.GE26118@sirena.org.uk>
+ <20130821170345.GA15347@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8EXHJdkEfksMlRxO"
+Content-Disposition: inline
+In-Reply-To: <20130821170345.GA15347@opensource.wolfsonmicro.com>
+X-Cookie: Your step will soil many countries.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] drivers: regmap: bugfix in regcache-rbtree.c
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7MA2jEP029893
 
-Dear Sir or Madam: 
-      Good Day! Glad to learn you`re on the market of fumed silica products.
-        We are a professional manufacturers of hydrophilic fumed silica products with many years experience,  now our featured products are: 
-Hydrophilic fumed silica : fumed silica (SiO2): A150 /200 /380
-     If you are interesting in any of our products, pls contact me, i will send you more details of the products for your reference!
-Best regards
-David tan
-Sales?Depart. Manager
-skype:tjyf512
-tel/fax:86 536 8980651
-company: Weifang Menjie Chemical Co.,Ltd
-Website: http://menjie.en.alibaba.com/
-                www.menjiechem.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+--8EXHJdkEfksMlRxO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, Aug 21, 2013 at 06:03:45PM +0100, Dimitris Papastamos wrote:
+
+> Once I have some free time I will look into implementing block
+> merges.
+
+That'd be great, thanks.
+
+--8EXHJdkEfksMlRxO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSFeIfAAoJELSic+t+oim9riIQAJMICX5wHscy1X8adEqVvPvl
+FWbFML6xb9lghwvHlvL0b2Y0q7Iurralkl8FchMs0mYeeIqhdhieICZNF25hic6G
+PrZrOy6lOWnxlBQ9ivBjewHlFYnEHPquQW8CNkVRVZcicNUUkpRS+rxI6I1Bjzv7
+Vgdmt0uH6PzbhN6wwucePcVfq5NNhici4iJEG4686/52tBXl2ssQu9KL4Uumt4mY
+INrDDrlaIGJNpVOGiY3WCiXNzUCjj68XLIVgX9ugMtTsYTp+8jqDx3uuk+/stdBV
+It5g5zLYr0er6X0KTmpX3dwWcFRXqXJ2rCDUmjw3O2RNxCuPHVqFXtHA17ZxwsM+
+iahBwKASEiYJIkHnIcuW3DIkHe1KV5mhNscaiHjddFGEfrqBPD6JvFGqf2EZBU44
+1fpYpSnFVpsbPpeFZ3Eim0tAV16MC1o25Ob0JbPpStruqlcooU9vJo5SNRuwNIHQ
+pVCnkmNvIbZOKaMuHtWZpUN/PZTR8ekKmcrnCK8odYfJFjh3ItkNtoGieCXF9AB0
+/Wbt8Vv9zhe967pSO7TB2UmhRVom+2oGak4ET/k6NeYqSQiCEh51ikxvGf+6N6Om
+nuz3FwPWEkMudyjzKcK5S7t3MTwrZQm2zh544sLc5zgxJsmjDeeDxi4IlN1OUjDm
+OtLP8Fa1HVmgIDAgvRAF
+=8XCR
+-----END PGP SIGNATURE-----
+
+--8EXHJdkEfksMlRxO--
