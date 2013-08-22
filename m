@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab3HVVfm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 17:35:42 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:4687 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754436Ab3HVVfk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 17:35:40 -0400
-Message-ID: <52162F4C.3090205@hp.com>
-Date: Thu, 22 Aug 2013 15:33:32 +0000
-From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1754176Ab3HVVoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 17:44:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57102 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753431Ab3HVVoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 17:44:20 -0400
+Date: Thu, 22 Aug 2013 17:43:47 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org
+Cc: Eric Paris <eparis@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
+ task->pid and task->tgid
+Message-ID: <20130822214347.GB21110@madcap2.tricolour.ca>
+References: <cover.1377032086.git.rgb@redhat.com>
+ <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
+ <20130822200555.GN31370@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: T Makphaibulchoke <tmac@hp.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>
-Subject: Re: [PATCH v2 1/2] mbcache: decoupling the locking of local from
- global data
-References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1377186876-57291-1-git-send-email-tmac@hp.com> <1377186876-57291-2-git-send-email-tmac@hp.com> <CA+55aFze8ZC0YP+TdwDFRPpa=BqUhY25RhEJb6c9pkCk2CZfVA@mail.gmail.com>
-In-Reply-To: <CA+55aFze8ZC0YP+TdwDFRPpa=BqUhY25RhEJb6c9pkCk2CZfVA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130822200555.GN31370@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the comments.
-
-On 08/22/2013 04:53 PM, Linus Torvalds wrote:
+On Thu, Aug 22, 2013 at 10:05:55PM +0200, Peter Zijlstra wrote:
+> On Tue, Aug 20, 2013 at 05:32:03PM -0400, Richard Guy Briggs wrote:
+> > This stops these four task helper functions from using the deprecated and
+> > error-prone task->pid and task->tgid.
+> > 
+> > (informed by ebiederman's ea5a4d01)
+> > Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > ---
+> >  include/linux/sched.h |    8 ++++----
+> >  1 files changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > index 8e69807..46e739d 100644
+> > --- a/include/linux/sched.h
+> > +++ b/include/linux/sched.h
+> > @@ -1579,7 +1579,7 @@ static inline int pid_alive(struct task_struct *p)
+> >   */
+> >  static inline int is_global_init(struct task_struct *tsk)
+> >  {
+> > -	return tsk->pid == 1;
+> > +	return task_pid_nr(tsk) == 1;
+> >  }
+> >  
+> >  extern struct pid *cad_pid;
+> > @@ -1930,7 +1930,7 @@ extern struct task_struct *idle_task(int cpu);
+> >   */
+> >  static inline bool is_idle_task(const struct task_struct *p)
+> >  {
+> > -	return p->pid == 0;
+> > +	return task_pid(p) == &init_struct_pid;
+> >  }
+> >  extern struct task_struct *curr_task(int cpu);
+> >  extern void set_curr_task(int cpu, struct task_struct *p);
 > 
-> Please don't do these ugly and pointless preprocessor macro expanders
-> that hide what the actual operation is.
-> 
-> The DEBUG case seems to be just for your own testing anyway, so even
-> that shouldn't exist in the merged version.
-> 
+> Why would you ever want to do this? It just makes these tests more
+> expensive for no gain what so ff'ing ever.
 
-Sorry, will clean them all up.
+Backups are generally considered a good idea, but in this case, I'd
+quote:
+	"A man with one watch knows what time it is. A man with two is
+	never certain."
 
-> 
-> And this is really ugly. Again it's also then hidden behind the ugly macro.
-> 
-> First off, the thousand-time retry seems completely excessive. Does it
-> actually need any retry AT ALL? If the hash entry changes, either you
-> should retry forever, or if you feel that can result in livelocks
-> (fair enough) and you need a fallback case to a bigger lock, then why
-> not just do the fallback immediately?
-> 
-> More importantly, regardless of that retry issue, this seems to be
-> abstracted at the wrong level, resulting in every single user of this
-> repeating the same complex and hard-to-understand incantation:
-> 
-
-Looks like this is a misjudgement on my part.  There is really no need to guard against mb_cache_entry from moving to a different hash chain, as the shrinking and allocation function already protecting against each other thorugh mb_cache_spinlock.  The retry is not needed.
-
-> 
-> where the only difference is that the last one doesn't unlock
-> afterwards because it runs in a loop with that LRU list lock held.
-> Ugh.
-
-Followed the above logic, all these pieces of code are also not necessary and could be just a simple unhash, as the original.
-
-> 
-> The locking logic also isn't explained anywhere, making the
-> hard-to-read code even harder to read.
+Reminds me of the twist of a phrase frequently seen in the US gov:
+	"Government Duplicity, Do Not Propagate"   ;-)
 
 
-Will add comment, explaining the locking logic.
+Can you suggest a safe way to live with this duplicity?
 
-> 
->              Linus
-> 
 
-Thanks,
-Mak.
+- RGB
 
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer
+Kernel Security
+AMER ENG Base Operating Systems
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635
+Internal: (81) 32635
+Alt: +1.613.693.0684x3545
