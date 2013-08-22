@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab3HVQTW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:19:22 -0400
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:35053 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367Ab3HVQTT (ORCPT
+	id S1753636Ab3HVQWS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:22:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43771 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803Ab3HVQWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:19:19 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Doug Anderson <dianders@chromium.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v6 0/3] mmc: dw_mmc: fixes for suspend/resume on exynos
-Date: Thu, 22 Aug 2013 09:19:05 -0700
-Message-Id: <1377188348-3418-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
+	Thu, 22 Aug 2013 12:22:17 -0400
+Date: Thu, 22 Aug 2013 09:22:15 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Anthony Foiani <tkil@scrye.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysfs: add sysfs_create/remove_groups()
+Message-ID: <20130822162215.GA29922@kroah.com>
+References: <20130821203506.GA1663@kroah.com>
+ <5215254B.7000000@infradead.org>
+ <20130821204750.GB4546@kroah.com>
+ <g38q2l3yg.fsf@dworkin.scrye.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <g38q2l3yg.fsf@dworkin.scrye.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patches addresses some suspend/resume problems with
-dw_mmc on exynos platforms, espeically exynos5420.  This patchset was
-tested on the current ToT Chromeos 3.8 tree (which has lots of
-backports from 3.10/3.11) and on ToT Linux (v3.11-rc6).  I have
-confirmed basic booting and that SD cards work across suspend/resume
-(both if they are plugged in and if they are not plugged in).
+On Wed, Aug 21, 2013 at 10:55:19PM -0600, Anthony Foiani wrote:
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+> 
+> > + * sysfs_create_groups - given a directory kobject, create a bunch of attribute groups
+> > + * @kobj:	The kobject to create the group on
+> > + * @groups:	The attribute groups to create, NULL terminated
+> > + *
+> > + * This function creates a bunch of attribute groups.  If an error occurs when
+> > + * creating a group, all previously created groups will be removed, unwinding
+> > + * everything back to the original state when this function was called.
+> > + * It will explicitly warn and error if any of the attribute files being
+> > + * created already exist.
+> > + *
+> > + * Returns 0 on success or error code from sysfs_create_groups on error.
+> 
+> "... from sysfs_create_group on error"
+>                        ^^^^^ (note singular, not plural)
+> 
+> Otherwise it's a bit of a tautology...
 
-I have received confirmation from Samsung that the problem solved for
-exynos5420 is a silicon errata and that this is a good fix.
+Ah, thanks, will fix that up.
 
-Changes in v6:
-- Took out TODO comment copied from main platform code.
-- Replaces previous pathes that ensured saving/restoring clocks.
+> Maybe rename to "sysfs_(create|remove)_multiple_groups" (or
+> ..._many_groups) to avoid this kind of one-char difference?
 
-Changes in v5:
-- Cleaned up dw_mci_exynos_resume_noirq() comment as per Seungwon.
-- Don't memcpy dev_pm_ops structure, define a new one.
+Nah, terse is good :)
 
-Changes in v4:
-- Take Seungwon's suggestion and don't add any dw_mmc-pltfm code.
+> > + * sysfs_remove_groups - remove a list of groups
+> > + *
+> > + * kobj:	The kobject for the groups to be removed from
+> > + * groups:	NULL terminated list of groups to be removed
+> > + *
+> > + * If groups is not NULL, the all groups will be removed from the kobject
+> 
+> "If groups is not NULL, remove listed groups from the kobject"
 
-Changes in v3:
-- Add freeze/thaw and poweroff/restore noirq entries.
+Nice, will go fix it up now, thanks.
 
-Changes in v2:
-- Use suspend_noirq as per James Hogan.
+> (I also played around with using pointer arithmetic instead of array
+> accesses for these two functions; it cut a few lines of code, but not
+> enough to bother, I don't think.)
 
-Doug Anderson (3):
-  mmc: dw_mmc: Add exynos resume_noirq callback to clear WAKEUP_INT
-  mmc: dw_mmc: Honor requests to set the clock to 0 (turn off clock)
-  mmc: dw_mmc: Set timeout to max upon resume
+Yeah, it's better to not be "tricky" so that others can review the code
+easier, and the end result would be the same.
 
- drivers/mmc/host/dw_mmc-exynos.c | 53 +++++++++++++++++++++++++++++++++++++++-
- drivers/mmc/host/dw_mmc.c        | 24 ++++++++++--------
- 2 files changed, 66 insertions(+), 11 deletions(-)
+thanks for the review.
 
--- 
-1.8.3
-
+greg k-h
