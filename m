@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab3HVOXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 10:23:50 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42442 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752416Ab3HVOXs (ORCPT
+	id S1753239Ab3HVO1Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 10:27:16 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:55694 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab3HVO1O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 10:23:48 -0400
-Date: Thu, 22 Aug 2013 15:23:39 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@redhat.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: Linking failure on linux-next with arm allyesconfig
-Message-ID: <20130822142339.GI6617@n2100.arm.linux.org.uk>
-References: <CAHbNUh2MXZhg7L8BN9ds17rmg8ueo6d8CJhRMgy6fK-xn7qRoQ@mail.gmail.com>
+	Thu, 22 Aug 2013 10:27:14 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Joe Perches <joe@perches.com>, Zhi Yong Wu <zwu.kernel@gmail.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        "Paul Bolle" <pebolle@tiscali.nl>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Subject: Re: [PATCH] scsi: fix the build warning
+Thread-Topic: [PATCH] scsi: fix the build warning
+Thread-Index: AQHOntZ6aPBXIB1fJk2u5Yl6j9wNrZmhod0AgAAdKoA=
+Date: Thu, 22 Aug 2013 14:27:07 +0000
+Message-ID: <1377181627.2009.2.camel@dabdike.int.hansenpartnership.com>
+References: <1377132262-15744-1-git-send-email-zwu.kernel@gmail.com>
+	 <1377133329.12003.9.camel@joe-AO722>
+	 <CAEH94Lhh11+zFHsRNDXoyxQfndxDRMcVvLnZDXQLw5cyaavUJw@mail.gmail.com>
+	 <1377134271.12003.15.camel@joe-AO722> <yq1ppt68qk9.fsf@sermon.lab.mkp.net>
+	 <CAC5umyjHqqNnS_LAP_bfU0zs52JbuAYr9jLwDhgaQ7TmrACUHA@mail.gmail.com>
+In-Reply-To: <CAC5umyjHqqNnS_LAP_bfU0zs52JbuAYr9jLwDhgaQ7TmrACUHA@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.17.213.192]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <DBB14323A0DE6049A4B6245ABACF6117@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHbNUh2MXZhg7L8BN9ds17rmg8ueo6d8CJhRMgy6fK-xn7qRoQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not sure why you're sending this to ARM people as I don't believe we
-are the ones responsible for this breakage, neither have we had any
-visibility of this breakage coming up.
-
->From what I can see, the mainline state is that we reference user_exit
-when CONTEXT_TRACKING is enabled, and kernel/context_tracking.c is
-built also when this symbol is enabled, and that file provides
-user_exit() and user_entry().
-
-If these two functions have been removed without our knowledge, it is
-because someone is not following correct procedure when making changes
-to the kernel source.  Using grep to find users of the symbols that
-they're removing for example, and copying those who may be affected by
-those changes with the patch etc.
-
-If you are going to be spending time running build tests and reporting
-breakage, can you also please spend the time to diagnose the cause of
-the breakage so you can target your reports a little better.  Thanks.
-
-On Thu, Aug 22, 2013 at 07:38:15PM +0530, Tushar Behera wrote:
-> Hi,
+On Thu, 2013-08-22 at 21:42 +0900, Akinobu Mita wrote:
+> 2013/8/22 Martin K. Petersen <martin.petersen@oracle.com>:
+> >>>>>> "Joe" == Joe Perches <joe@perches.com> writes:
+> >
+> > Joe> I don't get this build warning in the first place and I think the
+> > Joe> scsi_debug file is quite old and probably doesn't need to be
+> > Joe> changed at all.
+> >
+> > guard isn't a boolean, it selects the checksum algorithm used.
+> >
+> > Also, I believe Akinobu's recent reorganization of this code in question
+> > fixed the warning.
 > 
-> With ARCH=arm 'allyesconfig' on next-20130822, following linking error
-> is observed.
-> 
-> arch/arm/kernel/built-in.o: In function `ret_fast_syscall':
-> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-common.S:42:
-> undefined reference to `user_enter'
-> arch/arm/kernel/built-in.o: In function `no_work_pending':
-> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-common.S:77:
-> undefined reference to `user_enter'
-> arch/arm/kernel/built-in.o: In function `vector_swi':
-> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-common.S:376:
-> undefined reference to `user_exit'
-> arch/arm/kernel/built-in.o: In function `__dabt_usr':
-> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-armv.S:365:
-> undefined reference to `user_exit'
-> arch/arm/kernel/built-in.o: In function `__irq_usr':
-> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-armv.S:375:
-> undefined reference to `user_exit'
-> arch/arm/kernel/built-in.o: In function `__und_usr':
-> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-armv.S:388:
-> undefined reference to `user_exit'
-> arch/arm/kernel/built-in.o: In function `__pabt_usr':
-> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-armv.S:662:
-> undefined reference to `user_exit'
-> 
-> -- 
-> Tushar Behera
+> Unfortunately, this warning isn't fixed in linux-next, either.
+> Paul Bolle also sent a patch that fixes the same warning in a little
+> bit different way.
+
+Well, it is and it isn't.  Whether you see the warning seems to depend
+on how gcc was built.  My take is that an impossible default case just
+to keep some versions of gcc quiet is a bit pointless.
+
+James
+
