@@ -1,119 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab3HVGnU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 02:43:20 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:1825 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab3HVGnS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 02:43:18 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 21 Aug 2013 23:41:01 -0700
-From: Richard Zhao <rizhao@nvidia.com>
-To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <vinod.koul@intel.com>, <djbw@fb.com>, <swarren@wwwdotorg.org>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree@vger.kernel.org>, Richard Zhao <rizhao@nvidia.com>
-Subject: [PATCH v2] DMA: add help function to check whether dma controller registered
-Date: Thu, 22 Aug 2013 14:43:00 +0800
-Message-ID: <1377153781-18006-1-git-send-email-rizhao@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1375423458-6868-1-git-send-email-rizhao@nvidia.com>
-References: <1375423458-6868-1-git-send-email-rizhao@nvidia.com>
+	id S1753667Ab3HVGqq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 02:46:46 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:38858 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753289Ab3HVGqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 02:46:44 -0400
+X-Greylist: delayed 338 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 02:46:44 EDT
+Date: Thu, 22 Aug 2013 09:43:21 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: Drunkard Zhang <gongfan193@gmail.com>
+cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: ipvsadm: One-packet scheduling with UDP service is unstable
+In-Reply-To: <CAJiejCQPa7V703RwOeWPpbQMJQvfswRn+pvTKFmNdeU05RU3SQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1308220925340.1727@ja.ssi.bg>
+References: <CAJiejCQPa7V703RwOeWPpbQMJQvfswRn+pvTKFmNdeU05RU3SQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMA client device driver usually needs to know at probe time whether
-dma controller has been registered to deffer probe. So add a help
-function of_dma_check_controller.
 
-DMA request channel functions can also used to check it, but they
-are usually called at open() time.
+	Hello,
 
-Signed-off-by: Richard Zhao <rizhao@nvidia.com>
----
- drivers/dma/of-dma.c   | 39 +++++++++++++++++++++++++++++++++++++++
- include/linux/of_dma.h |  6 ++++++
- 2 files changed, 45 insertions(+)
+On Tue, 20 Aug 2013, Drunkard Zhang wrote:
 
-diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-index 8cd5f3f..0063ddf 100644
---- a/drivers/dma/of-dma.c
-+++ b/drivers/dma/of-dma.c
-@@ -189,6 +189,45 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
- }
- 
- /**
-+ * of_dma_check_controller - Check whether dma controller registered
-+ * @dev:	pointer to client device structure
-+ * @name:	slave channel name
-+ */
-+int of_dma_check_controller(struct device *dev, const char *name)
-+{
-+	struct device_node *np = dev->of_node;
-+	struct of_phandle_args dma_spec;
-+	struct of_dma *ofdma = NULL;
-+	int count, i, ret = 0;
-+
-+	if (!np || !name)
-+		return -EINVAL;
-+
-+	count = of_property_count_strings(np, "dma-names");
-+	if (count < 0) {
-+		dev_err(dev, "dma-names property missing or empty\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < count; i++) {
-+		ret = of_dma_match_channel(np, name, i, &dma_spec);
-+		if (ret)
-+			continue;
-+
-+		mutex_lock(&of_dma_lock);
-+		ofdma = of_dma_find_controller(&dma_spec);
-+		mutex_unlock(&of_dma_lock);
-+		of_node_put(dma_spec.np);
-+		if (!ofdma)
-+			ret = -EPROBE_DEFER;
-+		break;
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(of_dma_check_controller);
-+
-+/**
-  * of_dma_simple_xlate - Simple DMA engine translation function
-  * @dma_spec:	pointer to DMA specifier as found in the device tree
-  * @of_dma:	pointer to DMA controller data
-diff --git a/include/linux/of_dma.h b/include/linux/of_dma.h
-index ae36298..bc7195f 100644
---- a/include/linux/of_dma.h
-+++ b/include/linux/of_dma.h
-@@ -39,6 +39,7 @@ extern int of_dma_controller_register(struct device_node *np,
- extern void of_dma_controller_free(struct device_node *np);
- extern struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
- 						     const char *name);
-+extern int of_dma_check_controller(struct device *dev, const char *name);
- extern struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
- 		struct of_dma *ofdma);
- #else
-@@ -60,6 +61,11 @@ static inline struct dma_chan *of_dma_request_slave_channel(struct device_node *
- 	return NULL;
- }
- 
-+static inline int of_dma_check_controller(struct device *dev, const char *name)
-+{
-+	return 0;
-+}
-+
- static inline struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
- 		struct of_dma *ofdma)
- {
--- 
-1.8.1.5
+> Need help here, thank you for replying :-)
+> 
+> I'm setting up a syslog cluster based on IPVS, all UDP datagrams sent
+> from firewall with fixed source IP and fixed source port, so
+> pseudo-random balancing based on client IP and port won't working. And
+> it seems that keepalived is not supporting One-packet scheduling
+> option, so I did some hacks on it after keepalived started:
+> 
+> 1. dump LVS rules with ipvsadm -S -n > rules-vs3;
+> 2. add --ops option;
+> 3. restore LVS rules with ipvsadm-restore < rules-vs3;
+> 4. dump the running LVS rules with ipvsadm -S -n
+> 
+> So, I got two problems here:
+> 
+> 1. Dumped rules in step 4 above is not usable anymore, the double-dash
+> in --ops lost, so I can't restore rule with this dump anymore. This
+> must be a bug.
+> 
+> 2. The --ops option is not working sometimes you applied the rules,
+> and in most of times the --ops just not working. To make it work, just
+> 'ipvsadm-restore < rules-vs3' for plenty of times until it's working.
+> I haven't find the patterns make it work yet. This is lucky, I can't
+> get it work on second host at all.
+> 
+> The "not working" above means the UDP datagrams from one source IP is
+> sticked to one realserver, it doesn't distribute to other realservers
+> which --ops designed for.
 
+	Can you try with recent ipvsadm from git:
+
+git clone git://git.kernel.org/pub/scm/utils/kernel/ipvsadm/ipvsadm.git
+
+	I see related commit that will print -o for
+the OPS feature:
+
+===
+commit 6a03100c189d00e3a8235215392465b5b877ba8f
+Author: Krzysztof Gajdemski <songo@debian.org.pl>
+Date:   Thu Mar 21 11:40:06 2013 +0100
+
+    ipvsadm: Fix wrong format of -o option in FMT_RULE listing
+
+    'ipvsadm -S' listed one-packet scheduling option in wrong format
+    ('ops' instead of '--ops' or '-o') preventing any service with OPS
+    feature from restoring using 'ipvsadm -R'.  Now we use '-o' which
+    works well with save/restore commands.
+
+    Signed-off-by: Krzysztof Gajdemski <songo@debian.org.pl>
+    Signed-off-by: Simon Horman <horms@verge.net.au>
+===
+
+	Let me know if you still have any problems with OPS.
+Sending to lvs-devel@vger.kernel.org and
+lvs-users@linuxvirtualserver.org should be enough for
+ipvsadm related discussions.
+
+> So I wondering if there's some CONFIG_* options that ipvs needs, or
+> recent development broke the code?
+
+	No kernel options should be related to OPS. I assume
+you are not using the SH scheduler. Make sure the OPS mode
+is properly applied to the virtual service, check for "ops"
+in the configuration:
+
+cat /proc/net/ip_vs
+
+> Do I need to attach kernel config file?
+
+	No
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
