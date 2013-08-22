@@ -1,83 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab3HVIod (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:44:33 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:57101 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab3HVIoT (ORCPT
+	id S1752858Ab3HVIo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 04:44:56 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:45598 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab3HVIow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 04:44:19 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-4b-5215cf62773b
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 00/16] slab: overload struct slab over struct page to reduce memory usage
-Date: Thu, 22 Aug 2013 17:44:09 +0900
-Message-Id: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 22 Aug 2013 04:44:52 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2 12/20] mm, hugetlb: remove vma_has_reserves()
+In-Reply-To: <1376040398-11212-13-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com> <1376040398-11212-13-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Thu, 22 Aug 2013 14:14:38 +0530
+Message-ID: <87siy215e1.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082208-1396-0000-0000-00000370A875
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is two main topics in this patchset. One is to reduce memory usage
-and the other is to change a management method of free objects of a slab.
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-The SLAB allocate a struct slab for each slab. The size of this structure
-except bufctl array is 40 bytes on 64 bits machine. We can reduce memory
-waste and cache footprint if we overload struct slab over struct page.
+> vma_has_reserves() can be substituted by using return value of
+> vma_needs_reservation(). If chg returned by vma_needs_reservation()
+> is 0, it means that vma has reserves. Otherwise, it means that vma don't
+> have reserves and need a hugepage outside of reserve pool. This definition
+> is perfectly same as vma_has_reserves(), so remove vma_has_reserves().
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-And this patchset change a management method of free objects of a slab.
-Current free objects management method of the slab is weird, because
-it touch random position of the array of kmem_bufctl_t when we try to
-get free object. See following example.
-    
-struct slab's free = 6
-kmem_bufctl_t array: 1 END 5 7 0 4 3 2
-    
-To get free objects, we access this array with following pattern.
-6 -> 3 -> 7 -> 2 -> 5 -> 4 -> 0 -> 1 -> END
-    
-If we have many objects, this array would be larger and be not in the same
-cache line. It is not good for performance.
-    
-We can do same thing through more easy way, like as the stack.
-This patchset implement it and remove complex code for above algorithm.
-This makes slab code much cleaner.
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-This patchset is based on v3.11-rc6, but tested on v3.10.
+>
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index e6c0c77..22ceb04 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -473,39 +473,6 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
+>  		vma->vm_private_data = (void *)0;
+>  }
+>
+> -/* Returns true if the VMA has associated reserve pages */
+> -static int vma_has_reserves(struct vm_area_struct *vma, long chg)
+> -{
+> -	if (vma->vm_flags & VM_NORESERVE) {
+> -		/*
+> -		 * This address is already reserved by other process(chg == 0),
+> -		 * so, we should decreament reserved count. Without
+> -		 * decreamenting, reserve count is remained after releasing
+> -		 * inode, because this allocated page will go into page cache
+> -		 * and is regarded as coming from reserved pool in releasing
+> -		 * step. Currently, we don't have any other solution to deal
+> -		 * with this situation properly, so add work-around here.
+> -		 */
+> -		if (vma->vm_flags & VM_MAYSHARE && chg == 0)
+> -			return 1;
+> -		else
+> -			return 0;
+> -	}
+> -
+> -	/* Shared mappings always use reserves */
+> -	if (vma->vm_flags & VM_MAYSHARE)
+> -		return 1;
+> -
+> -	/*
+> -	 * Only the process that called mmap() has reserves for
+> -	 * private mappings.
+> -	 */
+> -	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER))
+> -		return 1;
+> -
+> -	return 0;
+> -}
+> -
+>  static void copy_gigantic_page(struct page *dst, struct page *src)
+>  {
+>  	int i;
+> @@ -580,8 +547,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+>  	 * have no page reserves. This check ensures that reservations are
+>  	 * not "stolen". The child may still get SIGKILLed
+>  	 */
+> -	if (!vma_has_reserves(vma, chg) &&
+> -			h->free_huge_pages - h->resv_huge_pages == 0)
+> +	if (chg && h->free_huge_pages - h->resv_huge_pages == 0)
+>  		return NULL;
+>
+>  	/* If reserves cannot be used, ensure enough pages are in the pool */
+> @@ -600,7 +566,7 @@ retry_cpuset:
+>  			if (page) {
+>  				if (avoid_reserve)
+>  					break;
+> -				if (!vma_has_reserves(vma, chg))
+> +				if (chg)
+>  					break;
+>
+>  				SetPagePrivate(page);
 
-Thanks.
+Can you add a comment above both the place to explain why checking chg
+is good enough ?
 
-Joonsoo Kim (16):
-  slab: correct pfmemalloc check
-  slab: change return type of kmem_getpages() to struct page
-  slab: remove colouroff in struct slab
-  slab: remove nodeid in struct slab
-  slab: remove cachep in struct slab_rcu
-  slab: put forward freeing slab management object
-  slab: overloading the RCU head over the LRU for RCU free
-  slab: use well-defined macro, virt_to_slab()
-  slab: use __GFP_COMP flag for allocating slab pages
-  slab: change the management method of free objects of the slab
-  slab: remove kmem_bufctl_t
-  slab: remove SLAB_LIMIT
-  slab: replace free and inuse in struct slab with newly introduced
-    active
-  slab: use struct page for slab management
-  slab: remove useless statement for checking pfmemalloc
-  slab: rename slab_bufctl to slab_freelist
-
- include/linux/mm_types.h |   21 +-
- include/linux/slab.h     |    9 +-
- include/linux/slab_def.h |    4 +-
- mm/slab.c                |  563 ++++++++++++++++++----------------------------
- 4 files changed, 237 insertions(+), 360 deletions(-)
-
--- 
-1.7.9.5
+-aneesh
 
