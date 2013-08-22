@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab3HVHTG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:19:06 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:16112 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab3HVHSv (ORCPT
+	id S1753878Ab3HVHWE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:22:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51034 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab3HVHWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:18:51 -0400
-X-Spam-Score: -101.0
-Message-ID: <5215B319.3020908@asianux.com>
-Date: Thu, 22 Aug 2013 14:43:37 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 22 Aug 2013 03:22:02 -0400
+Date: Thu, 22 Aug 2013 00:21:46 -0700
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-eb86b5fd505cb97743d84226140cf247d91a2f03@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1377115662-4865-1-git-send-email-andi@firstfloor.org>
+References: <1377115662-4865-1-git-send-email-andi@firstfloor.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asmlinkage] x86/asmlinkage:
+  Fix warning in xen asmlinkage change
+Git-Commit-ID: eb86b5fd505cb97743d84226140cf247d91a2f03
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Steffen Klassert <steffen.klassert@secunet.com>
-CC: linux-crypto@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] kernel/padata.c: share code between CPU_ONLINE and CPU_DOWN_FAILED,
- same to CPU_DOWN_PREPARE and CPU_UP_CANCELED
-References: <5212E5E4.8010408@asianux.com> <5212E61F.7010602@asianux.com> <20130822051122.GB26773@secunet.com> <5215A134.90607@asianux.com> <20130822060503.GC26773@secunet.com>
-In-Reply-To: <20130822060503.GC26773@secunet.com>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 22 Aug 2013 00:21:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Share code between CPU_ONLINE and CPU_DOWN_FAILED, same to
-CPU_DOWN_PREPARE and CPU_UP_CANCELED.
+Commit-ID:  eb86b5fd505cb97743d84226140cf247d91a2f03
+Gitweb:     http://git.kernel.org/tip/eb86b5fd505cb97743d84226140cf247d91a2f03
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Wed, 21 Aug 2013 13:07:42 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 22 Aug 2013 09:17:19 +0200
 
-It will fix 2 bugs:
+x86/asmlinkage: Fix warning in xen asmlinkage change
 
-  "not check the return value of __padata_remove_cpu() and __padata_add_cpu()".
-  "need add 'break' between CPU_UP_CANCELED and CPU_DOWN_FAILED".
+Current code uses asmlinkage for functions without arguments.
+This adds an implicit regparm(0) which creates a warning
+when assigning the function to pointers.
 
+Use __visible for the functions without arguments.
+This avoids having to add regparm(0) to function pointers.
+Since they have no arguments it does not make any difference.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1377115662-4865-1-git-send-email-andi@firstfloor.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/padata.c |   20 ++++----------------
- 1 files changed, 4 insertions(+), 16 deletions(-)
+ arch/x86/xen/xen-ops.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/padata.c b/kernel/padata.c
-index 072f4ee..2f0037a 100644
---- a/kernel/padata.c
-+++ b/kernel/padata.c
-@@ -846,6 +846,8 @@ static int padata_cpu_callback(struct notifier_block *nfb,
- 	switch (action) {
- 	case CPU_ONLINE:
- 	case CPU_ONLINE_FROZEN:
-+	case CPU_DOWN_FAILED:
-+	case CPU_DOWN_FAILED_FROZEN:
- 		if (!pinst_has_cpu(pinst, cpu))
- 			break;
- 		mutex_lock(&pinst->lock);
-@@ -857,6 +859,8 @@ static int padata_cpu_callback(struct notifier_block *nfb,
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index d380213..95f8c61 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -105,7 +105,7 @@ static inline void __init xen_init_apic(void)
+ /* Declare an asm function, along with symbols needed to make it
+    inlineable */
+ #define DECL_ASM(ret, name, ...)		\
+-	asmlinkage ret name(__VA_ARGS__);	\
++	__visible ret name(__VA_ARGS__);	\
+ 	extern char name##_end[] __visible;	\
+ 	extern char name##_reloc[] __visible
  
- 	case CPU_DOWN_PREPARE:
- 	case CPU_DOWN_PREPARE_FROZEN:
-+	case CPU_UP_CANCELED:
-+	case CPU_UP_CANCELED_FROZEN:
- 		if (!pinst_has_cpu(pinst, cpu))
- 			break;
- 		mutex_lock(&pinst->lock);
-@@ -865,22 +869,6 @@ static int padata_cpu_callback(struct notifier_block *nfb,
- 		if (err)
- 			return notifier_from_errno(err);
- 		break;
--
--	case CPU_UP_CANCELED:
--	case CPU_UP_CANCELED_FROZEN:
--		if (!pinst_has_cpu(pinst, cpu))
--			break;
--		mutex_lock(&pinst->lock);
--		__padata_remove_cpu(pinst, cpu);
--		mutex_unlock(&pinst->lock);
--
--	case CPU_DOWN_FAILED:
--	case CPU_DOWN_FAILED_FROZEN:
--		if (!pinst_has_cpu(pinst, cpu))
--			break;
--		mutex_lock(&pinst->lock);
--		__padata_add_cpu(pinst, cpu);
--		mutex_unlock(&pinst->lock);
- 	}
+@@ -115,11 +115,11 @@ DECL_ASM(unsigned long, xen_save_fl_direct, void);
+ DECL_ASM(void, xen_restore_fl_direct, unsigned long);
  
- 	return NOTIFY_OK;
--- 
-1.7.7.6
+ /* These are not functions, and cannot be called normally */
+-asmlinkage void xen_iret(void);
+-asmlinkage void xen_sysexit(void);
+-asmlinkage void xen_sysret32(void);
+-asmlinkage void xen_sysret64(void);
+-asmlinkage void xen_adjust_exception_frame(void);
++__visible void xen_iret(void);
++__visible void xen_sysexit(void);
++__visible void xen_sysret32(void);
++__visible void xen_sysret64(void);
++__visible void xen_adjust_exception_frame(void);
+ 
+ extern int xen_panic_handler_init(void);
+ 
