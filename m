@@ -1,104 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab3HVPxk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 11:53:40 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:30419 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab3HVPxh (ORCPT
+	id S1753871Ab3HVPzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 11:55:05 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:9480 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291Ab3HVPzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 11:53:37 -0400
-Message-ID: <1377186729.10300.643.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Date: Thu, 22 Aug 2013 09:52:09 -0600
-In-Reply-To: <20130822033234.GA2413@htj.dyndns.org>
-References: <1377080143-28455-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <20130821130647.GB19286@mtj.dyndns.org> <5214D60A.2090309@gmail.com>
-	 <20130821153639.GA17432@htj.dyndns.org>
-	 <1377113503.10300.492.camel@misato.fc.hp.com>
-	 <20130821195410.GA2436@htj.dyndns.org>
-	 <1377116968.10300.514.camel@misato.fc.hp.com>
-	 <20130821204041.GC2436@htj.dyndns.org>
-	 <1377124595.10300.594.camel@misato.fc.hp.com>
-	 <20130822033234.GA2413@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Aug 2013 11:55:03 -0400
+From: T Makphaibulchoke <tmac@hp.com>
+To: tytso@mit.edu, adilger.kernel@dilger.ca, viro@zeniv.linux.org.uk,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Cc: aswin@hp.com, torvalds@linux-foundation.org,
+        T Makphaibulchoke <tmac@hp.com>
+Subject: [PATCH v2 0/2] ext4: increase mbcache scalability
+Date: Thu, 22 Aug 2013 09:54:34 -0600
+Message-Id: <1377186876-57291-1-git-send-email-tmac@hp.com>
+X-Mailer: git-send-email 1.7.11.3
+In-Reply-To: <1374108934-50550-1-git-send-email-tmac@hp.com>
+References: <1374108934-50550-1-git-send-email-tmac@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tejun,
+The patch consists of two parts.  The first part introduces higher degree of
+parallelism to the usages of the mb_cache and mb_cache_entries and impacts
+all ext filesystems.
 
-On Wed, 2013-08-21 at 23:32 -0400, Tejun Heo wrote:
-> On Wed, Aug 21, 2013 at 04:36:35PM -0600, Toshi Kani wrote:
-> > I agree that ACPI is rather complicated stuff.  But in my experience,
-> > the majority complication comes from ACPI namespace and methods, not
-> > from ACPI tables.  Do you really think ACPI table init is that risky?  I
-> > consider ACPI tables are part of the minimum config info, esp. for
-> > legacy-free platforms.
-> 
-> It's just that we're talking about the very first stage of boot.  We
-> really don't do much there and pulling in ACPI code into that stage is
-> a lot by comparison.  If that's gonna happen, it needs pretty strong
-> justification.
+The second part of the patch further increases the scalablity of an ext4
+filesystem by having each ext4 fielsystem allocate and use its own private
+mbcache structure, instead of sharing a single mcache structures across all
+ext4 filesystems
 
-It moves up the ACPI table init code, which itself is simple.  And ACPI
-tables are defined to be pursed at early boot-time, which is why they
-exist in addition to ACPI namespace/methods.  They are similar to EFI
-memory table.  Firmware publishes tables in one way or the other.
+Here are some of the benchmark results with the changes. 
 
-I understand that you are concerned about stability of the ACPI stuff,
-which I think is a valid point, but most of (if not all) of the
-ACPI-related issues come from ACPI namespace/methods, which is a very
-different thing.  Please do not mix up those two.  The ACPI
-namespace/methods stuff remains the same and continues to be initialized
-at very late in the boot sequence.
+On a 90 core machine:
 
-What's making the patchset complicated is acpi_initrd_override(), which
-is intended for developers and allows overwriting ACPI bits at their own
-risk.  This feature won't be used by regular users. 
+Here are the performance improvements in some of the aim7 workloads,
 
-> > earlyprintk is just another example to this SRAT issue.  The local page
-> > table is yet another example.  My hope here is for us to be able to
-> > utilize ACPI tables properly without hitting this kind of ordering
-> > issues again and again, which requires considerable time & effort to
-> > address.
-> 
-> So, the two things brought up at this point are early parsing of SRAT,
-> which can't really solve the problem at hand anyway, 
+---------------------------
+|             | % increase |
+---------------------------
+| alltests    |     11.85  |
+---------------------------
+| custom      |     14.42  |
+---------------------------
+| fserver     |     21.36  |  
+---------------------------
+| new_dbase   |      5.59 |  
+---------------------------
+| new_fserver |     21.45  |  
+---------------------------
+| shared      |     12.84  |  
+---------------------------
+For Swingbench dss workload, with 16 GB database,
 
-If you are referring the issue of kernel image location, it is a
-limitation in the current implementation, not a technical limitation.  I
-know other OS that supports movable memory and puts the kernel image
-into a movable memory with SRAT by changing the bootloader.
+-------------------------------------------------------------------------------
+| Users        | 100  | 200  | 300  | 400  | 500  | 600  | 700  | 800  | 900  |
+-------------------------------------------------------------------------------
+| % imprvoment | 8.46 | 8.00 | 7.35 | -.313| 1.09 | 0.69 | 0.30 | 2.18 | 5.23 |
+-------------------------------------------------------------------------------
+| % imprvoment |45.66 |47.62 |34.54 |25.15 |15.29 | 3.38 | -8.7 |-4.98 |-7.86 |
+| without using|      |      |      |      |      |      |      |      |      |
+| shared memory|      |      |      |      |      |      |      |      |      |
+-------------------------------------------------------------------------------
+For SPECjbb2013, composite run,
 
-Also, how do you support local page tables without pursing SRAT early?
+--------------------------------------------
+|               | max-jOPS | critical-jOPS |
+--------------------------------------------
+| % improvement |   5.99   |     N/A       |
+--------------------------------------------
 
-> and earlyprintk
-> which should be implemented in minimal way which is not activated
-> unless specifically enabled with earlyprintk boot param.  Neither
-> seems to justify pulling in full ACPI into early boot, right?
 
-Initializing page tables on large systems may take a long time, and I do
-think that earlyprink needs to be available before that point.
+On an 80 core machine:
 
-Thanks,
--Toshi
+The aim7's results for most of the workloads turn out to the same.
+
+Here are the results of Swingbench dss workload,
+
+-------------------------------------------------------------------------------
+| Users        | 100  | 200  | 300  | 400  | 500  | 600  | 700  | 800  | 900  |
+-------------------------------------------------------------------------------
+| % imprvoment |-1.79 | 0.37 | 1.36 | 0.08 | 1.66 | 2.09 | 1.16 | 1.48 | 1.92 |
+-------------------------------------------------------------------------------
+
+The changes have been tested with ext4 xfstests to verify that no regression
+has been introduced. 
+
+Changed in v2:
+	- New performance data
+	- New diff summary
+
+T Makphaibulchoke (2):
+  mbcache: decoupling the locking of local from global data
+  ext4: each filesystem creates and uses its own mc_cache
+
+ fs/ext4/ext4.h          |   1 +
+ fs/ext4/super.c         |  24 ++--
+ fs/ext4/xattr.c         |  51 +++++----
+ fs/ext4/xattr.h         |   6 +-
+ fs/mbcache.c            | 293 +++++++++++++++++++++++++++++++++++-------------
+ include/linux/mbcache.h |  10 +-
+ 6 files changed, 269 insertions(+), 116 deletions(-)
+
+-- 
+1.7.11.3
 
