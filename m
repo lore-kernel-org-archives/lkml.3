@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab3HVHZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:25:29 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:58096 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911Ab3HVHZ2 convert rfc822-to-8bit (ORCPT
+	id S1753890Ab3HVHZu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:25:50 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61289 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab3HVHZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:25:28 -0400
-Content-Type: text/plain; charset="utf-8"
+	Thu, 22 Aug 2013 03:25:49 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-80-5215bcfb96cc
+Date: Thu, 22 Aug 2013 16:25:55 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v2 11/20] mm, hugetlb: make vma_resv_map() works for all
+ mapping type
+Message-ID: <20130822072555.GG13415@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1376040398-11212-12-git-send-email-iamjoonsoo.kim@lge.com>
+ <878uzvgwi7.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Arnd Bergmann <arnd@arndb.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <201308212054.10417.arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <5213C90F.9010407@wwwdotorg.org> <5213CF58.50703@gmail.com>
- <201308212054.10417.arnd@arndb.de>
-Message-ID: <20130822072524.8231.37219@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [RFC 02/17] ARM: call clk_of_init from time_init
-Date: Thu, 22 Aug 2013 00:25:24 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878uzvgwi7.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Arnd Bergmann (2013-08-21 11:54:10)
-> On Tuesday 20 August 2013, Sebastian Hesselbarth wrote:
-> > Perhaps Tegra is the common case but other SoC haven't dug deep enough?
-> > IMHO from a HW point-of-view clocks are really among the essential
-> > things that need to be running before you can do anything useful.
-> > 
-> > Just consider boot loaders that run fine without irqs but don't without
-> > clocks (even if just represented by API). Maybe you are right, and we
-> > should call of_clk_init(NULL) as early as possible. That would also
-> > eliminate patch 1/17 as you suggest.
+On Wed, Aug 21, 2013 at 04:07:36PM +0530, Aneesh Kumar K.V wrote:
+> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 > 
-> Timers and interrupts are also things that are required really early,
-> and from my experience they tend to be needed earlier than clock
-> management. Obviously you need some clocks to be enabled in order
-> to do anything (including interrupt handling), but those clocks tend
-> to be enabled in the boot loader, so we don't have to worry about
-> reprogramming them this early.
+> > Util now, we get a resv_map by two ways according to each mapping type.
+> > This makes code dirty and unreadable. So unfiying it.
+> >
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index 869c3e0..e6c0c77 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -421,13 +421,24 @@ void resv_map_release(struct kref *ref)
+> >  	kfree(resv_map);
+> >  }
+> >
+> > +static inline struct resv_map *inode_resv_map(struct inode *inode)
+> > +{
+> > +	return inode->i_mapping->private_data;
+> > +}
+> 
+> it would be nice to get have another function that will return resv_map
+> only if we have HPAGE_RESV_OWNER. So that we could use that in
+> hugetlb_vm_op_open/close. ? Otherwise 
 
-Some timers need to know their clock rate for the timer setup. This
-could be hard-coded (e.g. for some timer driven from a fixed 32Khz
-source) but it could also be from a clock capable of different rates
-that needs to be calculated.
-
-I remember discussing the early clock init stuff for OMAP and there was
-an idea to not rely on the clock framework for timer init and just do
-some raw reads and compute the clock rate that way. Using the framework
-would be better of course.
-
-Regards,
-Mike
+It is answered in previous reply.
 
 > 
->         Arnd
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+Thanks.
+
