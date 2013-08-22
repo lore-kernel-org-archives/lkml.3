@@ -1,115 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3HVSbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 14:31:09 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39698 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753939Ab3HVSbH (ORCPT
+	id S1754147Ab3HVSbn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 14:31:43 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:37688 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753885Ab3HVSbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 14:31:07 -0400
-Date: Thu, 22 Aug 2013 11:31:05 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, srinivas.kandagatla@st.com,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        S?ren Brinkmann <soren.brinkmann@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] clockevents: Prefer clockevents that don't suffer
- from FEAT_C3_STOP
-Message-ID: <20130822183105.GD23960@codeaurora.org>
-References: <52138784.7050703@linaro.org>
- <1377191201-14696-1-git-send-email-sboyd@codeaurora.org>
- <1377191201-14696-2-git-send-email-sboyd@codeaurora.org>
- <52164B5B.5010902@ti.com>
- <52164CF5.20705@codeaurora.org>
- <52164EEE.9070707@ti.com>
+	Thu, 22 Aug 2013 14:31:39 -0400
+Date: Thu, 22 Aug 2013 14:31:30 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+Message-ID: <20130822183130.GA3490@mtj.dyndns.org>
+References: <20130821130647.GB19286@mtj.dyndns.org>
+ <5214D60A.2090309@gmail.com>
+ <20130821153639.GA17432@htj.dyndns.org>
+ <1377113503.10300.492.camel@misato.fc.hp.com>
+ <20130821195410.GA2436@htj.dyndns.org>
+ <1377116968.10300.514.camel@misato.fc.hp.com>
+ <20130821204041.GC2436@htj.dyndns.org>
+ <1377124595.10300.594.camel@misato.fc.hp.com>
+ <20130822033234.GA2413@htj.dyndns.org>
+ <1377186729.10300.643.camel@misato.fc.hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52164EEE.9070707@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1377186729.10300.643.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22, Santosh Shilimkar wrote:
-> On Thursday 22 August 2013 01:40 PM, Stephen Boyd wrote:
-> > On 08/22/13 10:33, Santosh Shilimkar wrote:
-> >> On Thursday 22 August 2013 01:06 PM, Stephen Boyd wrote:
-> >>> On some ARM systems there are two sets of per-cpu timers: the TWD
-> >>> timers and the global timers. The TWD timers are rated at 350 and
-> >>> the global timers are rated at 300 but the TWD timers suffer from
-> >>> FEAT_C3_STOP while the arm global timers don't. The tick device
-> >>> selection logic doesn't consider the FEAT_C3_STOP flag so we'll
-> >>> always end up with the TWD as the tick device although we don't
-> >>> want that.
-> >>>
-> >>> Extend the preference logic to take the FEAT_C3_STOP flag into
-> >>> account and always prefer tick devices that don't suffer from
-> >>> FEAT_C3_STOP even if their rating is lower than tick devices that
-> >>> do suffer from FEAT_C3_STOP. This will remove the need to do any
-> >>> broadcasting on such ARM systems.
-> >>>
-> >>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> >>> ---
-> >>>  kernel/time/tick-common.c | 14 ++++++++++++--
-> >>>  1 file changed, 12 insertions(+), 2 deletions(-)
-> >>>
-> >>> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-> >>> index 64522ec..3ae437d 100644
-> >>> --- a/kernel/time/tick-common.c
-> >>> +++ b/kernel/time/tick-common.c
-> >>> @@ -244,12 +244,22 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
-> >>>  			return false;
-> >>>  	}
-> >>>  
-> >>> +	if (!curdev)
-> >>> +		return true;
-> >>> +
-> >>> +	/* Always prefer a tick device that doesn't suffer from FEAT_C3STOP */
-> >>> +	if (!(newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
-> >>> +			(curdev->features & CLOCK_EVT_FEAT_C3STOP))
-> >>> +		return true;
-> >>> +	if ((newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
-> >>> +			!(curdev->features & CLOCK_EVT_FEAT_C3STOP))
-> >>> +		return false;
-> >>> +
-> >> I don't think preferring the clock-event which doesn't suffer
-> >> from FEAT_C3STOP is a good idea if the quality of the time source
-> >> is not same. Generally the global timers are slow and far away from
-> >> CPU(cycle cost). So as long as we don't get impacted because of low power
-> >> states, the tick should run out of local timers which are faster access
-> >> as well as high resolution.
-> >>
-> > 
-> > Fair enough. I have no data either way to convince anyone that this is a
-> > good or bad idea so this patch should have probably been an RFC. Are you
-> > hinting at something like switching to a per-cpu timer that doesn't
-> > suffer from FEAT_C3_STOP when a CPU goes into a deep idle state?
-> > Interesting idea but I think I'll leave that to someone else if they
-> > really care to do that.
-> > 
-> If the per-CPU timer don't suffer from C3_STOP, there is no need to
-> switch at all and the per CPU tick continue to runs on CPU local
-> timers. We need to switch to a broadcast device(no affected by C3_STOP)
-> only for the cases where the per-CPU timer wakeup don't work in CPU
-> low power states.
-> 
-> Are we talking about a hardware where one of the CPU from a cluster
-> has a local timer which is not affected by C3_STOP where as rest
-> of the CPU local timers are ? If yes, it must be crazy hardware and
-> we should not care too much about that.
+Hello,
 
-We're talking about a device with the TWD and the arm global
-timers where each CPU has a TWD and an arm global timer and the
-TWD stops during deep idle but the global timer doesn't.
-Put another way, two timers per CPU where one doesn't work all
-the time.
+On Thu, Aug 22, 2013 at 09:52:09AM -0600, Toshi Kani wrote:
+> I understand that you are concerned about stability of the ACPI stuff,
+> which I think is a valid point, but most of (if not all) of the
+> ACPI-related issues come from ACPI namespace/methods, which is a very
+> different thing.  Please do not mix up those two.  The ACPI
+
+I have no objection to implementing self-conftained earlyprintk
+support.  If that's all you want to do, please go ahead but do not
+pull in initrd override or ACPICA into it.
+
+> namespace/methods stuff remains the same and continues to be initialized
+> at very late in the boot sequence.
+> 
+> What's making the patchset complicated is acpi_initrd_override(), which
+> is intended for developers and allows overwriting ACPI bits at their own
+> risk.  This feature won't be used by regular users. 
+
+Yeah, please forget about that in earlyboot.  It doesn't make any
+sense to fiddle with initrd that early during boot.
+
+> If you are referring the issue of kernel image location, it is a
+> limitation in the current implementation, not a technical limitation.  I
+> know other OS that supports movable memory and puts the kernel image
+> into a movable memory with SRAT by changing the bootloader.
+
+I'm not saying that problem shouldn't be solved.  I'm saying what you
+guys are pushing doesn't help solving it at all.  It's too late in the
+boot process.  It needs to be handled either by bootloader or earlier
+kernel kexecing the actual one and super-early SRAT doens't help at
+all in either case, so what's the point of pulling ACPI code in when
+it doesn't contribute to solving the problem properly?
+
+> Also, how do you support local page tables without pursing SRAT early?
+
+Does it even matter with huge mappings?  It's gonna be contained in a
+single page anyway, right?
+
+> Initializing page tables on large systems may take a long time, and I do
+> think that earlyprink needs to be available before that point.
+
+Yeah, sure, implement it in *minimal* way which doesn't affect
+anything if not explicitly enabled by kernel param like other
+earlyprintks.  It doens't make any sense to add dependency to acpi
+from early boot for that.
+
+Thanks.
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+tejun
