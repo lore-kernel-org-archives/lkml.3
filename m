@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab3HVMuv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 08:50:51 -0400
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:54834 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab3HVMty (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 08:49:54 -0400
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        Krzysztof Mazur <krzysiek@podlesie.net>
-Subject: [PATCH v3 2/3] usb: fail on usb_hub_create_port_device() errors
-Date: Thu, 22 Aug 2013 14:49:39 +0200
-Message-Id: <1377175780-10611-3-git-send-email-krzysiek@podlesie.net>
-X-Mailer: git-send-email 1.8.4.rc4.527.g303b16c
-In-Reply-To: <1377175780-10611-1-git-send-email-krzysiek@podlesie.net>
-References: <1377175780-10611-1-git-send-email-krzysiek@podlesie.net>
+	id S1753808Ab3HVMvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 08:51:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32723 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753771Ab3HVMve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 08:51:34 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/3] HID: Win 8 multitouch panels detection in core
+Date: Thu, 22 Aug 2013 14:51:06 +0200
+Message-Id: <1377175869-5336-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ignoring usb_hub_create_port_device() errors cause later NULL pointer
-deference when uninitialized hub->ports[i] entries are dereferenced
-after port memory allocation error.
+Hi guys,
 
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/core/hub.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+this is the v3 of this patch series.
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index affed11..292ffa8 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1557,10 +1557,15 @@ static int hub_configure(struct usb_hub *hub,
- 	if (hub->has_indicators && blinkenlights)
- 		hub->indicator [0] = INDICATOR_CYCLE;
- 
--	for (i = 0; i < hdev->maxchild; i++)
--		if (usb_hub_create_port_device(hub, i + 1) < 0)
-+	for (i = 0; i < hdev->maxchild; i++) {
-+		ret = usb_hub_create_port_device(hub, i + 1);
-+		if (ret < 0) {
- 			dev_err(hub->intfdev,
- 				"couldn't create port%d device.\n", i + 1);
-+			hdev->maxchild = i;
-+			goto fail_keep_maxchild;
-+		}
-+	}
- 
- 	usb_hub_adjust_deviceremovable(hdev, hub->descriptor);
- 
-@@ -1569,6 +1574,7 @@ static int hub_configure(struct usb_hub *hub,
- 
- fail:
- 	hdev->maxchild = 0;
-+fail_keep_maxchild:
- 	dev_err (hub_dev, "config failed, %s (err %d)\n",
- 			message, ret);
- 	/* hub_disconnect() frees urb and descriptor */
+Srinivas, I still did not added your tested-by as I made minors modifications of
+the patches 1 and 2. Now only the patch 1 will impact sensor_hub, and patch 2
+will not impact this. Maybe just wait for Henrik to put his "Reviewed-by" before
+giving one last test.
+
+Cheers,
+Benjamin
+
+Changes in v3:
+- remove one remnant duplicate message
+- amended commit messages
+- re-add initializer of hid->group (set to HID_GROUP_GENERIC)
+- removed ugly #define #undef :)
+- add back scan_flags in hid_parser
+- simpler post processing of Win 8 certified multitouch panels
+
+Changes in v2:
+- moved "flags" processing in patch 2/3
+- do not introduce parser->flags, but use hid->group as a temporary flag placeholder
+- hid_scan_report() is less verbose when errors are found in the descriptor
+- hid_scan_report() is tolerant to parsing errors
+- fixed usage_page handling in hid_scan_collection(), which fixes sensors detection
+- amended commit messages
+- #define and #undef HID_FLAG_* in hid-core.c instead of hid.h
+
+Benjamin Tissoires (3):
+  HID: Use hid_parser for pre-scanning the report descriptors
+  HID: detect Win 8 multitouch devices in core
+  HID: do not init input reports for Win 8 multitouch devices
+
+ drivers/hid/hid-core.c        | 118 ++++++++++++++++++++++++++++--------------
+ drivers/hid/hid-multitouch.c  |  36 ++++++++-----
+ drivers/hid/usbhid/hid-core.c |  11 ++--
+ include/linux/hid.h           |   5 ++
+ 4 files changed, 116 insertions(+), 54 deletions(-)
+
 -- 
-1.8.4.rc4.527.g303b16c
+1.8.3.1
 
