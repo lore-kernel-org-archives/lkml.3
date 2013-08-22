@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab3HVHSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:18:40 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:16113 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab3HVHSj (ORCPT
+	id S1753866Ab3HVHSv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:18:51 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:44356 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851Ab3HVHSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:18:39 -0400
-X-Spam-Score: -101.0
-Message-ID: <5215ACAA.3020708@asianux.com>
-Date: Thu, 22 Aug 2013 14:16:10 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 22 Aug 2013 03:18:49 -0400
+Date: Thu, 22 Aug 2013 08:18:43 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 05/13] ARM: ux500: Apply a ste-* prefix onto snowball.dts
+Message-ID: <20130822071843.GA22023@lee--X1>
+References: <1374243229-8585-1-git-send-email-lee.jones@linaro.org>
+ <1374243229-8585-6-git-send-email-lee.jones@linaro.org>
+ <CAOesGMgd51g7WAkQu+ckT-=skKuMyj19nJkHxh+YmGSBhSL+Vg@mail.gmail.com>
+ <CACRpkdasMSCfdhzrW+7kHM8UUxxQ5UMAcc5bOogc-9RwXE9RVg@mail.gmail.com>
+ <CAOesGMgZYFgwAhVCc-ObnxcmGTLTM-Zk27Dh7r1_p646ULWHeg@mail.gmail.com>
 MIME-Version: 1.0
-To: Steffen Klassert <steffen.klassert@secunet.com>
-CC: linux-crypto@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/padata.c: always check the return value of __padata_remove_cpu()
- and __padata_add_cpu()
-References: <5212E5E4.8010408@asianux.com> <5212E61F.7010602@asianux.com> <20130822051122.GB26773@secunet.com> <5215A134.90607@asianux.com> <20130822060503.GC26773@secunet.com>
-In-Reply-To: <20130822060503.GC26773@secunet.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOesGMgZYFgwAhVCc-ObnxcmGTLTM-Zk27Dh7r1_p646ULWHeg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2013 02:05 PM, Steffen Klassert wrote:
-> On Thu, Aug 22, 2013 at 01:27:16PM +0800, Chen Gang wrote:
->> On 08/22/2013 01:11 PM, Steffen Klassert wrote:
->>> On Tue, Aug 20, 2013 at 11:44:31AM +0800, Chen Gang wrote:
->>>>
->>>> If this patch is correct, better to let CPU_ONLINE and CPU_DOWN_FAILED
->>>> share the same code.
->>>>
->>>> And do we need a comment "/* fall through */" between CPU_UP_CANCELED
->>>> and CPU_DOWN_FAILED (or it is another bug, need a 'break' statement) ?
->>>>
->>>> At last, also better to let CPU_DOWN_PREPARE and CPU_UP_CANCELED share
->>>> the same code (if need a 'break'), or share the most of code (if "fall
->>>> through").
->>>>
->>>
->>> CPU_ONLINE and CPU_DOWN_FAILED can share the code. Same is true for
->>> CPU_DOWN_PREPARE and CPU_UP_CANCELED.
->>>
->>> Thanks!
->>>
->>>
->>
->> Thank you too.
->>
->> And need I send another patch for it ?
->>
->> Or just make by yourself (and better to mark me as Reported-by). :-)
->>
-> 
-> You found the problem, feel free to send a patch.
-> 
-> 
+On Wed, 21 Aug 2013, Olof Johansson wrote:
 
-Thanks, I will send patch v2 for it.
+> On Wed, Aug 21, 2013 at 3:37 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > On Wed, Aug 21, 2013 at 2:31 AM, Olof Johansson <olof@lixom.net> wrote:
+> >
+> >>> diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/ste-snowball.dts
+> >>> similarity index 100%
+> >>> rename from arch/arm/boot/dts/snowball.dts
+> >>> rename to arch/arm/boot/dts/ste-snowball.dts
+> >>
+> >> Grmbl, grmbl, grmbl. This now breaks any script that knows to use
+> >> snowball.dtb. :(
+> >>
+> >> It's good to get the prefixes added, but it's annoying to have to deal
+> >> with both during an overlap period. Maybe generate both dtb filenames
+> >> for a while but rename the source?
+> >
+> > Hm I had the same problem but changed my Makefile
+> > (scripts are too simple for me) like this:
+> >
+> >  dtb            := $(build_dir)/arch/arm/boot/dts/ste-hrefv60plus.dtb
+> > +fallbackdtb    := $(build_dir)/arch/arm/boot/dts/hrefv60plus.dtb
+> > (...)
+> > -       cat $(dtb) >> $(output_dir)/zImage
+> > +       if [ -f arch/arm/boot/dts/hrefv60plus.dts ] ; then \
+> > +           cat $(fallbackdtb) >> $(output_dir)/zImage ; echo "fallback" ; \
+> > +       else \
+> > +           cat $(dtb) >> $(output_dir)/zImage ; \
+> > +       fi
+> 
+> Sure, working around it is trivial. I just did a:
+>    -@cp $</arch/arm/boot/dts/ste-snowball.dtb $</arch/arm/boot/dts/snowball.dtb
+> 
+> But the point is that everybody needs to do something like that now,
+> which is unfortunate.
+
+Well with only ~5 active users it's probably not that much of a big
+deal anyway, but I'm still interested to know what the alternative is?
 
 -- 
-Chen Gang
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
