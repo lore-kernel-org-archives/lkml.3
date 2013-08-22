@@ -1,59 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab3HVQEv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:04:51 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:46930 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771Ab3HVQEt (ORCPT
+	id S1753921Ab3HVQFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:05:18 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43734 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752976Ab3HVQFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:04:49 -0400
-Message-ID: <1377187485.1703.43.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: Null pointer dereference in nl80211_set_reg
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: <udo@hypervisor.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Linux Network Mailing List" <netdev@vger.kernel.org>
-Date: Thu, 22 Aug 2013 17:04:45 +0100
-In-Reply-To: <20130822174121.18441b7f@x220>
-References: <20130822174121.18441b7f@x220>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Thu, 22 Aug 2013 12:05:16 -0400
+Date: Thu, 22 Aug 2013 17:04:43 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
+ DBX500 DT
+Message-ID: <20130822160443.GG23152@e106331-lin.cambridge.arm.com>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+ <1370521041-32318-10-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
+ <20130820093034.GL31036@pengutronix.de>
+ <20130822133730.GB23152@e106331-lin.cambridge.arm.com>
+ <20130822141900.GB17154@lee--X1>
+ <20130822151723.GE23152@e106331-lin.cambridge.arm.com>
+ <20130822154116.GC17154@lee--X1>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20096.005
-X-TM-AS-Result: No--17.275500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130822154116.GC17154@lee--X1>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-22 at 17:41 +0200, Udo Steinberg wrote:
-> Hi all,
+On Thu, Aug 22, 2013 at 04:41:16PM +0100, Lee Jones wrote:
+> On Thu, 22 Aug 2013, Mark Rutland wrote:
 > 
-> I'm running Linux 3.10.7 and have encountered the following NULL pointer
-> dereference. So far it has only occurred once, so I cannot reproduce the
-> circumstances that cause the problem.
+> > On Thu, Aug 22, 2013 at 03:19:00PM +0100, Lee Jones wrote:
+> > > On Thu, 22 Aug 2013, Mark Rutland wrote:
+> > > 
+> > > > On Tue, Aug 20, 2013 at 10:30:34AM +0100, Sascha Hauer wrote:
+> > > > > On Tue, Aug 20, 2013 at 11:11:19AM +0200, Linus Walleij wrote:
+> > > > > > On Thu, Jun 6, 2013 at 2:16 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> > > > > > 
+> > > > > > > +++ b/arch/arm/boot/dts/dbx5x0.dtsi
+> > > > > > > @@ -572,6 +572,8 @@
+> > > > > > >                         v-i2c-supply = <&db8500_vape_reg>;
+> > > > > > >
+> > > > > > >                         clock-frequency = <400000>;
+> > > > > > > +                       clocks = <&prcc_kclk 3 3>, <&prcc_pclk 3 3>;
+> > > > > > > +                       clock-names = "nmk-i2c.0", "apb_pclk";
+> > > > > 
+> > > > > Why do most clocks in this series have the instance number in the clock
+> > > > > names? This looks very wrong to me.
+> > > > 
+> > > > +1. The clock names should be the input names to the unit, they
+> > > > shouldn't vary per instance.
+> > > 
+> > > So I just had a quick look, and it looks like they each have their own
+> > > clock:
+> > > 
+> > > 	clk = clk_reg_prcc_kclk("p1_i2c1_kclk", "i2cclk",
+> > > 			clkrst1_base, BIT(2), CLK_SET_RATE_GATE);
+> > > 	clk = clk_reg_prcc_kclk("p1_i2c2_kclk", "i2cclk",
+> > > 			clkrst1_base, BIT(6), CLK_SET_RATE_GATE);
+> > > 	clk = clk_reg_prcc_kclk("p2_i2c3_kclk", "i2cclk",
+> > > 			clkrst2_base, BIT(0), CLK_SET_RATE_GATE);
+> > > 	clk_register_clkdev(clk, NULL, "nmk-i2c.3");
+> > >         
+> > >         /* etc */
+> > > 
+> > > When using the names in Device Tree it doesn't actually matter what
+> > > you call the first clock. You can call it "fred" if you wanted and it
+> > > would still work, but in light of the naming conventions above and the
+> > > fact that each clock can all be controlled independently, do we still
+> > > want to use the name of the parent clock i.e. i2cclk?
+> > 
+> > Sorry, I don't follow.
+> > 
+> > 
+> > The name should be the name of the clock _input_ on the block described,
+> > as should be listed in documentation for the i2c block. The name should
+> > not vary with instance, and the name should not (necessarily) match the
+> > _output_ of the provider. Surely there's documentation for the i2c block
+> > that gives a name for the clock input(s)?
 > 
-> Please keep me on CC: as I'm not subscribed to LKML.
-[...]
+> It's okay, I've fixed the patches.
 
-Probably fixed by:
+Ok.
 
-commit c319d50bfcf678c2857038276d9fab3c6646f3bf
-Author: Johannes Berg <johannes.berg@intel.com>
-Date:   Tue Jul 30 22:34:28 2013 +0200
+> 
+> Linus, branch fixed-up and pushed.
+> 
+> > On a related note, I see that this doesn't follow the primecell clock
+> > bindings, which seem to rely on "apb_pclk" being first in the list. I
+> > see that other primecell device bindings don't follow that in dts or
+> > drivers, so I'm not sure how to fix that brokenness.
+> 
+> To which bindings do you refer? After taking a *quick* look, I see it
+> being the other way around. Whenever the "apb_pclk" is requested, it
+> is done so by name:
+> 
+>   drivers/amba/bus.c: struct clk *pclk = clk_get(&pcdev->dev, "apb_pclk");
+> 
+> So when clk_get() calls of_clk_get_by_name(), the clock-name index is
+> returned correctly by of_property_match_string(), which then passes
+> that index through of_clk_get() and does the right thing.
+> 
+> When most of the other clocks that we deal with are being requested,
+> they rely on being index zero:
+> 
+>   drivers/i2c/busses/i2c-nomadik.c: dev->clk = clk_get(&adev->dev, NULL);
+> 
+> At the moment this works for us, so I don't think we need to go
+> around populating the name params, but we might have to if this falls
+> apart in some way (probably likely if you 'fixed' whatever brokenness
+> you're wanting to fix ;-) )
 
-    nl80211: fix another nl80211_fam.attrbuf race
+The brokenness here is that the binding document states one thing, and
+drivers do precisely the opposite.
 
-which went into 3.10.8.
+Documentation/devicetree/bindings/arm/primecell.txt states:
 
-Ben.
+- clocks : From common clock binding. First clock is phandle to clock for apb
+	pclk. Additional clocks are optional and specific to those peripherals.
+- clock-names : From common clock binding. Shall be "apb_pclk" for first clock.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Yet as you've pointed out above we don't care which index apb_pblk is,
+but do for the other clock, which we get at index 0 (where the binding
+doc states apb_pclk should be).
 
+If all users are doing that currently, it's possible to fix up the
+binding document. If not, then it's a mess that can't be corrected...
+
+Thanks,
+Mark.
