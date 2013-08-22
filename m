@@ -1,41 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab3HVSFF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 14:05:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44539 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab3HVSFE (ORCPT
+	id S1754010Ab3HVSFm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 14:05:42 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:33530 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753932Ab3HVSFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 14:05:04 -0400
-Date: Thu, 22 Aug 2013 11:05:03 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: =?utf-8?B?0KDRg9GB0YLQsNGE0LAg0JTQttCw0LzRg9GA0LDRhdC80LXRgtC+0LI=?= 
-	<drustafa@yandex.ru>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/11] w1: add attribute groups to struct w1_family_ops
-Message-ID: <20130822180503.GA19753@kroah.com>
-References: <1377125105-25388-1-git-send-email-gregkh@linuxfoundation.org>
- <267911377129904@web1d.yandex.ru>
+	Thu, 22 Aug 2013 14:05:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <267911377129904@web1d.yandex.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130822171001.GA20321@redhat.com>
+References: <20130822170939.GA20296@redhat.com> <20130822171001.GA20321@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 22 Aug 2013 11:05:21 -0700
+Message-ID: <CALCETrUjZYBsZKnkJXbHF40Y3qcXy0YxT0jNfrh5ksDg=kn4Ug@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pidns: kill the unnecessary CLONE_NEWPID in copy_process()
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        Colin Walters <walters@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 04:05:04AM +0400, Рустафа Джамурахметов wrote:
-> Hi
-> 
-> 22.08.2013, 02:45, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>:
-> > This lets w1 slave drivers declare an attribute group, and not have to
-> > create/destroy sysfs files directly.  All w1 slave drivers will be fixed
-> > to use this field up in follow-on patches to this one.
-> 
-> Sounds reasonble, saves fair amount of code in w1 drivers
+On Thu, Aug 22, 2013 at 10:10 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> 8382fcac "pidns: Outlaw thread creation after unshare(CLONE_NEWPID)"
+> nacks CLONE_NEWPID if the forking process unshared pid_ns. This is
+> correct but unnecessary, copy_pid_ns() does the same check.
+>
+> Test-case (needs root or CLONE_NEWUSER should be added):
+>
+>         static int child(void *arg)
+>         {
+>                 return 0;
+>         }
+>
+>         static char stack[16 * 1024];
+>
+>         int main(void)
+>         {
+>                 pid_t pid;
+>
+>                 assert(unshare(CLONE_NEWPID) == 0);
+>
+>                 pid = clone(child, stack + sizeof(stack) / 2,
+>                                 CLONE_NEWPID | SIGCHLD, NULL);
+>                 assert(pid < 0 && errno == EINVAL);
+>
+>                 return 0;
+>         }
+>
+> clone(CLONE_NEWPID) correctly fails with or without this change.
 
-Thanks for reviewing it.
+Acked-by: Andy Lutomirski <luto@amacapital.net>
 
-greg k-h
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/fork.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 86f5376..8d56338 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1176,7 +1176,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>          * If the new process will be in a different pid namespace don't
+>          * allow the creation of threads, or share the signal handlers.
+>          */
+> -       if ((clone_flags & (CLONE_SIGHAND | CLONE_NEWPID)) &&
+> +       if ((clone_flags & CLONE_SIGHAND) &&
+>             (task_active_pid_ns(current) != current->nsproxy->pid_ns))
+>                 return ERR_PTR(-EINVAL);
+>
+> --
+> 1.5.5.1
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
