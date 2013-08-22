@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab3HVOTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 10:19:09 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:62195 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865Ab3HVOTH (ORCPT
+	id S1753146Ab3HVOXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 10:23:50 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42442 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab3HVOXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 10:19:07 -0400
-Date: Thu, 22 Aug 2013 15:19:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
+	Thu, 22 Aug 2013 10:23:48 -0400
+Date: Thu, 22 Aug 2013 15:23:39 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@redhat.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
- DBX500 DT
-Message-ID: <20130822141900.GB17154@lee--X1>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
- <1370521041-32318-10-git-send-email-lee.jones@linaro.org>
- <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
- <20130820093034.GL31036@pengutronix.de>
- <20130822133730.GB23152@e106331-lin.cambridge.arm.com>
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: Linking failure on linux-next with arm allyesconfig
+Message-ID: <20130822142339.GI6617@n2100.arm.linux.org.uk>
+References: <CAHbNUh2MXZhg7L8BN9ds17rmg8ueo6d8CJhRMgy6fK-xn7qRoQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130822133730.GB23152@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAHbNUh2MXZhg7L8BN9ds17rmg8ueo6d8CJhRMgy6fK-xn7qRoQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Aug 2013, Mark Rutland wrote:
+I'm not sure why you're sending this to ARM people as I don't believe we
+are the ones responsible for this breakage, neither have we had any
+visibility of this breakage coming up.
 
-> On Tue, Aug 20, 2013 at 10:30:34AM +0100, Sascha Hauer wrote:
-> > On Tue, Aug 20, 2013 at 11:11:19AM +0200, Linus Walleij wrote:
-> > > On Thu, Jun 6, 2013 at 2:16 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> > > 
-> > > > +++ b/arch/arm/boot/dts/dbx5x0.dtsi
-> > > > @@ -572,6 +572,8 @@
-> > > >                         v-i2c-supply = <&db8500_vape_reg>;
-> > > >
-> > > >                         clock-frequency = <400000>;
-> > > > +                       clocks = <&prcc_kclk 3 3>, <&prcc_pclk 3 3>;
-> > > > +                       clock-names = "nmk-i2c.0", "apb_pclk";
-> > 
-> > Why do most clocks in this series have the instance number in the clock
-> > names? This looks very wrong to me.
+>From what I can see, the mainline state is that we reference user_exit
+when CONTEXT_TRACKING is enabled, and kernel/context_tracking.c is
+built also when this symbol is enabled, and that file provides
+user_exit() and user_entry().
+
+If these two functions have been removed without our knowledge, it is
+because someone is not following correct procedure when making changes
+to the kernel source.  Using grep to find users of the symbols that
+they're removing for example, and copying those who may be affected by
+those changes with the patch etc.
+
+If you are going to be spending time running build tests and reporting
+breakage, can you also please spend the time to diagnose the cause of
+the breakage so you can target your reports a little better.  Thanks.
+
+On Thu, Aug 22, 2013 at 07:38:15PM +0530, Tushar Behera wrote:
+> Hi,
 > 
-> +1. The clock names should be the input names to the unit, they
-> shouldn't vary per instance.
-
-So I just had a quick look, and it looks like they each have their own
-clock:
-
-	clk = clk_reg_prcc_kclk("p1_i2c1_kclk", "i2cclk",
-			clkrst1_base, BIT(2), CLK_SET_RATE_GATE);
-	clk = clk_reg_prcc_kclk("p1_i2c2_kclk", "i2cclk",
-			clkrst1_base, BIT(6), CLK_SET_RATE_GATE);
-	clk = clk_reg_prcc_kclk("p2_i2c3_kclk", "i2cclk",
-			clkrst2_base, BIT(0), CLK_SET_RATE_GATE);
-	clk_register_clkdev(clk, NULL, "nmk-i2c.3");
-        
-        /* etc */
-
-When using the names in Device Tree it doesn't actually matter what
-you call the first clock. You can call it "fred" if you wanted and it
-would still work, but in light of the naming conventions above and the
-fact that each clock can all be controlled independently, do we still
-want to use the name of the parent clock i.e. i2cclk?
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> With ARCH=arm 'allyesconfig' on next-20130822, following linking error
+> is observed.
+> 
+> arch/arm/kernel/built-in.o: In function `ret_fast_syscall':
+> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-common.S:42:
+> undefined reference to `user_enter'
+> arch/arm/kernel/built-in.o: In function `no_work_pending':
+> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-common.S:77:
+> undefined reference to `user_enter'
+> arch/arm/kernel/built-in.o: In function `vector_swi':
+> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-common.S:376:
+> undefined reference to `user_exit'
+> arch/arm/kernel/built-in.o: In function `__dabt_usr':
+> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-armv.S:365:
+> undefined reference to `user_exit'
+> arch/arm/kernel/built-in.o: In function `__irq_usr':
+> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-armv.S:375:
+> undefined reference to `user_exit'
+> arch/arm/kernel/built-in.o: In function `__und_usr':
+> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-armv.S:388:
+> undefined reference to `user_exit'
+> arch/arm/kernel/built-in.o: In function `__pabt_usr':
+> /home/tushar/work/lt_devel/staging-tree/linux-next/arch/arm/kernel/entry-armv.S:662:
+> undefined reference to `user_exit'
+> 
+> -- 
+> Tushar Behera
