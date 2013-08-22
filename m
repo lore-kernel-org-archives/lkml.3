@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab3HVMwA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 08:52:00 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:57739 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753803Ab3HVMv6 (ORCPT
+	id S1753868Ab3HVMwK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 08:52:10 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:51075 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753803Ab3HVMwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 08:51:58 -0400
+	Thu, 22 Aug 2013 08:52:08 -0400
 From: Jisheng Zhang <jszhang@marvell.com>
 To: <jszhang@marvell.com>, <jason@lakedaemon.net>, <andrew@lunn.ch>,
         <gregory.clement@free-electrons.com>,
@@ -15,9 +15,9 @@ To: <jszhang@marvell.com>, <jason@lakedaemon.net>, <andrew@lunn.ch>,
         <sebastian.hesselbarth@gmail.com>, <linus.walleij@linaro.org>
 CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/4] arm: mvebu: add missing of_node_put() to fix reference leak
-Date: Thu, 22 Aug 2013 20:46:48 +0800
-Message-ID: <1377175611-4241-2-git-send-email-jszhang@marvell.com>
+Subject: [PATCH 4/4] pinctrl: mvebu: add missing iounmap
+Date: Thu, 22 Aug 2013 20:46:51 +0800
+Message-ID: <1377175611-4241-5-git-send-email-jszhang@marvell.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1377175611-4241-1-git-send-email-jszhang@marvell.com>
 References: <1377175611-4241-1-git-send-email-jszhang@marvell.com>
@@ -27,94 +27,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_node_put to properly decrement the refcount when we are
-done using a given node.
+Add missing iounmap to prove error path and remove path
 
 Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 ---
- arch/arm/mach-mvebu/armada-370-xp.c     | 1 +
- arch/arm/mach-mvebu/coherency.c         | 8 +++++++-
- arch/arm/mach-mvebu/platsmp.c           | 1 +
- arch/arm/mach-mvebu/pmsu.c              | 1 +
- arch/arm/mach-mvebu/system-controller.c | 1 +
- 5 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/pinctrl/mvebu/pinctrl-mvebu.c | 24 +++++++++++++++++-------
+ 1 file changed, 17 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
-index 97cbb80..8a1ae83 100644
---- a/arch/arm/mach-mvebu/armada-370-xp.c
-+++ b/arch/arm/mach-mvebu/armada-370-xp.c
-@@ -64,6 +64,7 @@ static void __init armada_370_xp_mbus_init(void)
- 			ARMADA_370_XP_MBUS_WINS_SIZE,
- 			of_translate_address(dn, &sdram_wins_offs),
- 			ARMADA_370_XP_SDRAM_WINS_SIZE);
-+	of_node_put(dn);
- }
- 
- static void __init armada_370_xp_timer_and_clk_init(void)
-diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
-index 4c24303..58adf2f 100644
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -140,6 +140,7 @@ int __init coherency_init(void)
- 		coherency_base = of_iomap(np, 0);
- 		coherency_cpu_base = of_iomap(np, 1);
- 		set_cpu_coherent(cpu_logical_map(smp_processor_id()), 0);
-+		of_node_put(np);
+diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.c b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
+index bb7ddb1..d1ac6b7 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-mvebu.c
++++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
+@@ -601,7 +601,8 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
+ 			GFP_KERNEL);
+ 	if (!pctl) {
+ 		dev_err(&pdev->dev, "unable to alloc driver\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto bail_out;
  	}
  
- 	return 0;
-@@ -147,9 +148,14 @@ int __init coherency_init(void)
+ 	pctl->desc.name = dev_name(&pdev->dev);
+@@ -631,7 +632,8 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
+ 		if (ctrl->mpp_get || ctrl->mpp_set) {
+ 			if (!ctrl->name || !ctrl->mpp_get || !ctrl->mpp_set) {
+ 				dev_err(&pdev->dev, "wrong soc control info\n");
+-				return -EINVAL;
++				ret = -EINVAL;
++				goto bail_out;
+ 			}
+ 			pctl->num_groups += 1;
+ 			continue;
+@@ -641,7 +643,8 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
+ 		names = devm_kzalloc(&pdev->dev, ctrl->npins * 8, GFP_KERNEL);
+ 		if (!names) {
+ 			dev_err(&pdev->dev, "failed to alloc mpp names\n");
+-			return -ENOMEM;
++			ret = -ENOMEM;
++			goto bail_out;
+ 		}
+ 		for (k = 0; k < ctrl->npins; k++)
+ 			sprintf(names + 8*k, "mpp%d", ctrl->pid+k);
+@@ -653,7 +656,8 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
+ 			     sizeof(struct pinctrl_pin_desc), GFP_KERNEL);
+ 	if (!pdesc) {
+ 		dev_err(&pdev->dev, "failed to alloc pinctrl pins\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto bail_out;
+ 	}
  
- static int __init coherency_late_init(void)
+ 	for (n = 0; n < pctl->desc.npins; n++)
+@@ -664,7 +668,8 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
+ 			     sizeof(struct mvebu_pinctrl_group), GFP_KERNEL);
+ 	if (!pctl->groups) {
+ 		dev_err(&pdev->dev, "failed to alloc pinctrl groups\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto bail_out;
+ 	}
+ 
+ 	/* assign mpp controls to groups */
+@@ -735,13 +740,14 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
+ 	ret = mvebu_pinctrl_build_functions(pdev, pctl);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "unable to build functions\n");
+-		return ret;
++		goto bail_out;
+ 	}
+ 
+ 	pctl->pctldev = pinctrl_register(&pctl->desc, &pdev->dev, pctl);
+ 	if (!pctl->pctldev) {
+ 		dev_err(&pdev->dev, "unable to register pinctrl driver\n");
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto bail_out;
+ 	}
+ 
+ 	dev_info(&pdev->dev, "registered pinctrl driver\n");
+@@ -751,11 +757,15 @@ int mvebu_pinctrl_probe(struct platform_device *pdev)
+ 		pinctrl_add_gpio_range(pctl->pctldev, &soc->gpioranges[n]);
+ 
+ 	return 0;
++bail_out:
++	iounmap(base);
++	return ret;
+ }
+ 
+ int mvebu_pinctrl_remove(struct platform_device *pdev)
  {
--	if (of_find_matching_node(NULL, of_coherency_table))
-+	struct device_node *np;
-+
-+	np = of_find_matching_node(NULL, of_coherency_table);
-+	if (np) {
- 		bus_register_notifier(&platform_bus_type,
- 				      &mvebu_hwcc_platform_nb);
-+		of_node_put(np);
-+	}
+ 	struct mvebu_pinctrl *pctl = platform_get_drvdata(pdev);
++	iounmap(pctl->base);
+ 	pinctrl_unregister(pctl->pctldev);
  	return 0;
  }
- 
-diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
-index ce81d30..e7edb82 100644
---- a/arch/arm/mach-mvebu/platsmp.c
-+++ b/arch/arm/mach-mvebu/platsmp.c
-@@ -95,6 +95,7 @@ static void __init armada_xp_smp_init_cpus(void)
- 		panic("No 'cpus' node found\n");
- 
- 	ncores = of_get_child_count(np);
-+	of_node_put(np);
- 	if (ncores == 0 || ncores > ARMADA_XP_MAX_CPUS)
- 		panic("Invalid number of CPUs in DT\n");
- 
-diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
-index 3cc4bef..27fc4f0 100644
---- a/arch/arm/mach-mvebu/pmsu.c
-+++ b/arch/arm/mach-mvebu/pmsu.c
-@@ -67,6 +67,7 @@ int __init armada_370_xp_pmsu_init(void)
- 		pr_info("Initializing Power Management Service Unit\n");
- 		pmsu_mp_base = of_iomap(np, 0);
- 		pmsu_reset_base = of_iomap(np, 1);
-+		of_node_put(np);
- 	}
- 
- 	return 0;
-diff --git a/arch/arm/mach-mvebu/system-controller.c b/arch/arm/mach-mvebu/system-controller.c
-index f875124..5175083c 100644
---- a/arch/arm/mach-mvebu/system-controller.c
-+++ b/arch/arm/mach-mvebu/system-controller.c
-@@ -98,6 +98,7 @@ static int __init mvebu_system_controller_init(void)
- 		BUG_ON(!match);
- 		system_controller_base = of_iomap(np, 0);
- 		mvebu_sc = (struct mvebu_system_controller *)match->data;
-+		of_node_put(np);
- 	}
- 
- 	return 0;
 -- 
 1.8.4.rc3
 
