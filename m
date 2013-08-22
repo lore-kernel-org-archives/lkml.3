@@ -1,104 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab3HVQxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:53:48 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:62433 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab3HVQxq (ORCPT
+	id S1753754Ab3HVQ43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:56:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59355 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab3HVQ42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:53:46 -0400
+	Thu, 22 Aug 2013 12:56:28 -0400
+Message-ID: <521642A8.2020103@kernel.dk>
+Date: Thu, 22 Aug 2013 10:56:08 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1377186876-57291-2-git-send-email-tmac@hp.com>
-References: <1374108934-50550-1-git-send-email-tmac@hp.com>
-	<1377186876-57291-1-git-send-email-tmac@hp.com>
-	<1377186876-57291-2-git-send-email-tmac@hp.com>
-Date: Thu, 22 Aug 2013 09:53:45 -0700
-X-Google-Sender-Auth: yCuGgI6f8CqUgWhiACrAWjgbPRg
-Message-ID: <CA+55aFze8ZC0YP+TdwDFRPpa=BqUhY25RhEJb6c9pkCk2CZfVA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] mbcache: decoupling the locking of local from
- global data
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: T Makphaibulchoke <tmac@hp.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>
-Content-Type: text/plain; charset=UTF-8
+To: Christoph Lameter <cl@linux.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] idr: Use this_cpu_ptr() for percpu_ida
+References: <1375896905-6074-1-git-send-email-kmo@daterainc.com> <1375896905-6074-5-git-send-email-kmo@daterainc.com> <0000014059ec4c34-1bb53d48-c9ee-4e71-81b8-253026431c5c-000000@email.amazonses.com> <20130807183345.GA11612@kmo-pixel> <000001405a4b39ef-0715410a-5061-41e9-9414-86559f16570d-000000@email.amazonses.com> <20130807195733.GB11612@kmo-pixel> <000001405e5776ba-bcc96088-b5e8-4abe-b98e-2e9d7d9b112b-000000@email.amazonses.com> <1377033546.32763.4.camel@haakon3.risingtidesystems.com> <00000140a14ae6bb-f0fca267-cdd6-4039-8c6b-f715999a83c5-000000@email.amazonses.com> <20130821134945.16b32c045e28272c5b0ba610@linux-foundation.org> <00000140a6e964d2-03ac778f-13ff-415d-bbfa-93cb2fddcaa5-000000@email.amazonses.com>
+In-Reply-To: <00000140a6e964d2-03ac778f-13ff-415d-bbfa-93cb2fddcaa5-000000@email.amazonses.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 8:54 AM, T Makphaibulchoke <tmac@hp.com> wrote:
->
-> +#define        MB_LOCK_HASH_CHAIN(hash_head)   hlist_bl_lock(hash_head)
-> +#define        MB_UNLOCK_HASH_CHAIN(hash_head) hlist_bl_unlock(hash_head)
-> +#ifdef MB_CACHE_DEBUG
-> +#define        MB_LOCK_BLOCK_HASH(ce) do {
+On 08/22/2013 10:44 AM, Christoph Lameter wrote:
+> On Wed, 21 Aug 2013, Andrew Morton wrote:
+> 
+>> The lock is needed so that one cpu can steal tags from another cpu's cache.
+>> See (the needlessly inlined!) steal_tags().
+> 
+> Stealing tags could also be done via IPIs or some other things.
 
-Please don't do these ugly and pointless preprocessor macro expanders
-that hide what the actual operation is.
+That is actually the approach I took for blk-mq tagging. But that isn't
+free either. I think it pretty much boils down to how much stealing you
+expect. If the tag space is sufficiently large, you would not expect a
+lot of stealing. And then it doesn't really matter if you use a lock or
+an IPI, since it's the rare case - the lock cacheline isn't going to be
+shared across processors anyway. The ticket locks aren't exactly free on
+their own, however, so that cost is still paid. But I'd be surprised if
+it was much of an issue.
 
-The DEBUG case seems to be just for your own testing anyway, so even
-that shouldn't exist in the merged version.
+If the tag space isn't large enough (common case), then yes, it matters
+a lot what kind of mechanism is used. It's on my TODO to compare the two
+under realistic scenarios and see how they fare.
 
-> +#define        MAX_LOCK_RETRY  1024
-> +
-> +static inline int __mb_cache_lock_entry_block_hash(struct mb_cache_entry *ce)
-> +{
-> +       int nretry = 0;
-> +       struct hlist_bl_head *block_hash_p = ce->e_block_hash_p;
-> +
-> +       do {
-> +               MB_LOCK_HASH_CHAIN(block_hash_p);
-> +               if (ce->e_block_hash_p == block_hash_p)
-> +                       return 0;
-> +               MB_UNLOCK_HASH_CHAIN(block_hash_p);
-> +               block_hash_p = ce->e_block_hash_p;
-> +       } while (++nretry < MAX_LOCK_RETRY);
-> +       return -1;
-> +}
+-- 
+Jens Axboe
 
-And this is really ugly. Again it's also then hidden behind the ugly macro.
-
-First off, the thousand-time retry seems completely excessive. Does it
-actually need any retry AT ALL? If the hash entry changes, either you
-should retry forever, or if you feel that can result in livelocks
-(fair enough) and you need a fallback case to a bigger lock, then why
-not just do the fallback immediately?
-
-More importantly, regardless of that retry issue, this seems to be
-abstracted at the wrong level, resulting in every single user of this
-repeating the same complex and hard-to-understand incantation:
-
-> +               if (MB_LOCK_ENTRY_BLOCK_HASH(ce)) {
-> +                       spin_lock(&mb_cache_spinlock);
-> +                       list_add_tail(&ce->e_lru_list, &mb_cache_lru_list);
-> +                       spin_unlock(&mb_cache_spinlock);
-> +                       continue;
-> +               }
-..
-> +               if (MB_LOCK_ENTRY_BLOCK_HASH(ce)) {
-> +                       spin_lock(&mb_cache_spinlock);
-> +                       list_add_tail(&ce->e_lru_list, &mb_cache_lru_list);
-> +                       spin_unlock(&mb_cache_spinlock);
-> +                       continue;
-> +               }
-..
-> +                               if (MB_LOCK_ENTRY_BLOCK_HASH(ce)) {
-> +                                       spin_lock(&mb_cache_spinlock);
-> +                                       list_add_tail(&ce->e_lru_list,
-> +                                               &mb_cache_lru_list);
-> +                                       continue;
-> +                               }
-
-where the only difference is that the last one doesn't unlock
-afterwards because it runs in a loop with that LRU list lock held.
-Ugh.
-
-The locking logic also isn't explained anywhere, making the
-hard-to-read code even harder to read.
-
-             Linus
