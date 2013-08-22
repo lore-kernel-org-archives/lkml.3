@@ -1,129 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab3HVKMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 06:12:05 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:53982 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752123Ab3HVKME (ORCPT
+	id S1752675Ab3HVKNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 06:13:47 -0400
+Received: from relay.parallels.com ([195.214.232.42]:40321 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab3HVKNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 06:12:04 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "ccross@android.com" <ccross@android.com>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 22 Aug 2013 03:11:04 -0700
-Subject: RE: [PATCH] cpuidle: coupled: fix dead loop corner case
-Thread-Topic: [PATCH] cpuidle: coupled: fix dead loop corner case
-Thread-Index: Ac6doHSZuq4gka2oScWx0QXqlc+SPwBft8cA
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE3DBD2B9800@SC-VEXCH4.marvell.com>
-References: <1376975864-31487-1-git-send-email-zhangwm@marvell.com>
- <26502976.vPDNddhvVv@vostro.rjw.lan>
-In-Reply-To: <26502976.vPDNddhvVv@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Thu, 22 Aug 2013 06:13:45 -0400
+Message-ID: <5215E4B7.3020003@parallels.com>
+Date: Thu, 22 Aug 2013 14:15:19 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <riel@redhat.com>, <jack@suse.cz>, <dev@parallels.com>,
+        <miklos@szeredi.hu>, <fuse-devel@lists.sourceforge.net>,
+        <xemul@parallels.com>, <linux-kernel@vger.kernel.org>,
+        <jbottomley@parallels.com>, <linux-mm@kvack.org>,
+        <viro@zeniv.linux.org.uk>, <linux-fsdevel@vger.kernel.org>,
+        <fengguang.wu@intel.com>, <devel@openvz.org>, <mgorman@suse.de>
+Subject: Re: [PATCH] mm: strictlimit feature -v4
+References: <20130821135427.20334.79477.stgit@maximpc.sw.ru> <20130821133804.87ca602dd864df712e67342a@linux-foundation.org>
+In-Reply-To: <20130821133804.87ca602dd864df712e67342a@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7MACG61029950
 
-Daniel & Colin,
+08/22/2013 12:38 AM, Andrew Morton Ð¿Ð¸ÑˆÐµÑ‚:
+> On Wed, 21 Aug 2013 17:56:32 +0400 Maxim Patlasov<mpatlasov@parallels.com>  wrote:
+>
+>> The feature prevents mistrusted filesystems to grow a large number of dirty
+>> pages before throttling. For such filesystems balance_dirty_pages always
+>> check bdi counters against bdi limits. I.e. even if global "nr_dirty" is under
+>> "freerun", it's not allowed to skip bdi checks. The only use case for now is
+>> fuse: it sets bdi max_ratio to 1% by default and system administrators are
+>> supposed to expect that this limit won't be exceeded.
+>>
+>> The feature is on if a BDI is marked by BDI_CAP_STRICTLIMIT flag.
+>> A filesystem may set the flag when it initializes its BDI.
+> Now I think about it, I don't really understand the need for this
+> feature.  Can you please go into some detail about the problematic
+> scenarios and why they need fixing?  Including an expanded descritopn
+> of the term "mistrusted filesystem"?
 
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: 2013å¹´8æœˆ20æ—¥ 20:37
-> To: Neil Zhang; Daniel Lezcano
-> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] cpuidle: coupled: fix dead loop corner case
-> 
-> On Tuesday, August 20, 2013 01:17:44 PM Neil Zhang wrote:
-> > There is a corener case when no peripheral irqs route to secondary
-> > cores.
-> > Let's take dual core system for example, the sequence is as following:
-> >
-> > 		Core 0			        Core1
-> > 1.			           set waiting bit and enter waiting loop
-> > 2. set waiting bit and poke core1
-> > 3. 				   clear poke in irq and enter safe state
-> > 4. set ready bit and enter ready loop
-> >
-> > Since there is no peripheral irq route to core 1, so it will stay in
-> > safe state forever, and core 0 will dead loop in the following code.
-> > 	while (!cpuidle_coupled_cpus_ready(coupled)) {
-> > 		/* Check if any other cpus bailed out of idle. */
-> > 		if (!cpuidle_coupled_cpus_waiting(coupled))
-> > 	}
-> >
-> > The solution is don't let secondary core enter safe state when it has
-> > already handled the poke interrupt.
-> >
-> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-> > Reviewed-by: Fangsuo Wu <fswu@marvell.com>
-> 
-> Daniel, can you please have a look at this?
-> 
-> Rafael
-> 
+Saying "mistrusted filesystem" I meant FUSE mount created by 
+unprivileged user. Userspace fuse library provides suid binary 
+"fusermount". Here is an excerpt from its man-page:
 
-What's your opinion?
-Thanks.
+ > Filesystem in Userspace (FUSE) is a simple interface for userspace pro-
+ > grams to export a virtual filesystem to the Linux kernel. It also aims
+ > to provide a secure method for non privileged users to create and mount
+ > their own filesystem implementations.
+ >
+ > fusermount is a program to mount and unmount FUSE filesystems.
 
-> 
-> > ---
-> >  drivers/cpuidle/coupled.c |    7 +++++++
-> >  1 files changed, 7 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-> > index 2a297f8..a37c718 100644
-> > --- a/drivers/cpuidle/coupled.c
-> > +++ b/drivers/cpuidle/coupled.c
-> > @@ -119,6 +119,7 @@ struct cpuidle_coupled {
-> >  #define CPUIDLE_COUPLED_NOT_IDLE	(-1)
-> >
-> >  static DEFINE_MUTEX(cpuidle_coupled_lock);
-> > +static DEFINE_PER_CPU(bool, poke_sync);
-> >  static DEFINE_PER_CPU(struct call_single_data,
-> > cpuidle_coupled_poke_cb);
-> >
-> >  /*
-> > @@ -295,6 +296,7 @@ static void cpuidle_coupled_poked(void *info)  {
-> >  	int cpu = (unsigned long)info;
-> >  	cpumask_clear_cpu(cpu, &cpuidle_coupled_poked_mask);
-> > +	__this_cpu_write(poke_sync, true);
-> >  }
-> >
-> >  /**
-> > @@ -473,6 +475,7 @@ retry:
-> >  	 * allowed for a single cpu.
-> >  	 */
-> >  	while (!cpuidle_coupled_cpus_waiting(coupled)) {
-> > +		__this_cpu_write(poke_sync, false);
-> >  		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
-> >  			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
-> >  			goto out;
-> > @@ -483,6 +486,10 @@ retry:
-> >  			goto out;
-> >  		}
-> >
-> > +		if (cpuidle_coupled_cpus_waiting(coupled)
-> > +			&& __this_cpu_read(poke_sync))
-> > +			break;
-> > +
-> >  		entered_state = cpuidle_enter_state(dev, drv,
-> >  			dev->safe_state_index);
-> >  	}
-> >
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+I'm citing it here to emphasize the fact that running buggy or 
+malevolent filesystem implementation is not pure theoretical. Every time 
+you have fuse library properly installed, any user can compile and mount 
+its own filesystem implementation.
 
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+The problematic scenario comes from the fact that nobody pays attention 
+to the NR_WRITEBACK_TEMP counter (i.e. number of pages under fuse 
+writeback). The implementation of fuse writeback releases original page 
+(by calling end_page_writeback) almost immediately. A fuse request 
+queued for real processing bears a copy of original page. Hence, if 
+userspace fuse daemon doesn't finalize write requests in timely manner, 
+an aggressive mmap writer can pollute virtually all memory by those 
+temporary fuse page copies. They are carefully accounted in 
+NR_WRITEBACK_TEMP, but nobody cares.
+
+To make further explanations shorter, let me use "NR_WRITEBACK_TEMP 
+problem" as a shortcut for "a possibility of uncontrolled grow of amount 
+of RAM consumed by temporary pages allocated by kernel fuse to process 
+writeback".
+
+> Is this some theoretical happens-in-the-lab thing, or are real world
+> users actually hurting due to the lack of this feature?
+
+The problem was very easy to reproduce. There is a trivial example 
+filesystem implementation in fuse userspace distribution: fusexmp_fh.c. 
+I added "sleep(1);" to the write methods, then recompiled and mounted 
+it. Then created a huge file on the mount point and run a simple program 
+which mmap-ed the file to a memory region, then wrote a data to the 
+region. An hour later I observed almost all RAM consumed by fuse 
+writeback. Since then some unrelated changes in kernel fuse made it more 
+difficult to reproduce, but it is still possible now.
+
+Putting this theoretical happens-in-the-lab thing aside, there is 
+another thing that really hurts real world (FUSE) users. This is 
+write-through page cache policy FUSE currently uses. I.e. handling 
+write(2), kernel fuse populates page cache and flushes user data to the 
+server synchronously. This is excessively suboptimal. Pavel Emelyanov's 
+patches ("writeback cache policy") solve the problem, but they also make 
+resolving NR_WRITEBACK_TEMP problem absolutely necessary. Otherwise, 
+simply copying a huge file to a fuse mount would result in memory 
+starvation. Miklos, the maintainer of FUSE, believes strictlimit feature 
+the way to go.
+
+And eventually putting FUSE topics aside, there is one more use-case for 
+strictlimit feature. Using a slow USB stick (mass storage) in a machine 
+with huge amount of RAM installed is a well-known pain. Let's make 
+simple computations. Assuming 64GB of RAM installed, existing 
+implementation of balance_dirty_pages will start throttling only after 
+9.6GB of RAM becomes dirty (freerun == 15% of total RAM). So, the 
+command "cp 9GB_file /media/my-usb-storage/" may return in a few 
+seconds, but subsequent "umount /media/my-usb-storage/" will take more 
+than two hours if effective throughput of the storage is, to say, 1MB/sec.
+
+After inclusion of strictlimit feature, it will be trivial to add a knob 
+(e.g. /sys/devices/virtual/bdi/x:y/strictlimit) to enable it on demand. 
+Manually or via udev rule. May be I'm wrong, but it seems to be quite a 
+natural desire to limit the amount of dirty memory for some devices we 
+are not fully trust (in the sense of sustainable throughput).
+
+> I think I'll apply it to -mm for now to get a bit of testing, but would
+> very much like it if Fengguang could find time to review the
+> implementation, please.
+Great! Fengguang, please...
+
+Thanks,
+Maxim
