@@ -1,71 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab3HVTqG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 15:46:06 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:54510 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754013Ab3HVTqE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 15:46:04 -0400
-Date: Thu, 22 Aug 2013 15:45:55 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: Toshi Kani <toshi.kani@hp.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        konrad.wilk@oracle.com, robert.moore@intel.com, lv.zheng@intel.com,
-        rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-Message-ID: <20130822194555.GC3490@mtj.dyndns.org>
-References: <20130821153639.GA17432@htj.dyndns.org>
- <1377113503.10300.492.camel@misato.fc.hp.com>
- <20130821195410.GA2436@htj.dyndns.org>
- <1377116968.10300.514.camel@misato.fc.hp.com>
- <20130821204041.GC2436@htj.dyndns.org>
- <1377124595.10300.594.camel@misato.fc.hp.com>
- <20130822033234.GA2413@htj.dyndns.org>
- <1377186729.10300.643.camel@misato.fc.hp.com>
- <20130822183130.GA3490@mtj.dyndns.org>
- <52166909.6080104@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52166909.6080104@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754194Ab3HVTse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 15:48:34 -0400
+Received: from mga14.intel.com ([143.182.124.37]:1579 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753935Ab3HVTsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 15:48:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,935,1367996400"; 
+   d="scan'208";a="350321679"
+Message-ID: <1377200911.1620.88.camel@empanada>
+Subject: Re: [PATCH v4 00/11] tracing: trace event triggers
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>
+Date: Thu, 22 Aug 2013 14:48:31 -0500
+In-Reply-To: <5202FC4B.7040106@hitachi.com>
+References: <cover.1375111640.git.tom.zanussi@linux.intel.com>
+	 <5202FC4B.7040106@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Masami,
 
-On Fri, Aug 23, 2013 at 03:39:53AM +0800, Zhang Yanfei wrote:
-> What do you mean by "earlyboot"? And also in your previous mail, I am also
-> a little confused by what you said "the very first stage of boot". Does
-> this mean the stage we are in head_32 or head64.c?
+Just getting back to this after returning from vacation - I'll be
+sending an update to this patchset addressing your comments shortly...
 
-Mostly referring to the state where we don't have basic environment
-set up yet including page tables.
+On Thu, 2013-08-08 at 11:02 +0900, Masami Hiramatsu wrote:
+> Hi,
+> 
+> (2013/07/30 1:40), Tom Zanussi wrote:
+> > Hi,
+> > 
+> > This is v4 of the trace event triggers patchset, addressing more
+> > comments from Masami Hiramatsu (thanks for the review and comments).
+> > 
+> > One of Masami's comments was on event_trigger_regex_open's use of
+> > inode->i_private and that the same problem was being worked on by Oleg
+> > Nesterov in other places.  That still seems to be the case, but in
+> > order to address that, this patchset is built on top of the current
+> > linux-trace/for-next but also including v2 of Oleg Nesterov's tracing:
+> > open/delete fixes (but with v3 of the 6/6 patch). 
+> 
+> Does this patchset supports multibuffer? It seems that setting a
+> trigger in an event of an instance affects the default event, but not
+> the instance's event.
 
-> If so, could we just do something just as Yinghai did before, that is, Split
-> acpi_override into 2 parts: find and copy. And in "earlyboot", we just do
-> the find, and I think that is less of risk. Or we can just do ACPI override
-> earlier in setup_arch(), not pulling this process that early during boot?
+You're right of course - I went through the trouble of fixing up the
+event filters to better support multibuffer, but neglected the
+triggers. :-(   But as you point out in a later comment, the fix is
+simple and I've updated the patchset to do that..
 
-But *WHY*?  It doesn't really buy us anything substantial.  What are
-you trying to achieve here?  "Making ACPI info available early" can't
-be a goal in itself and the two benefits cited in this thread seem
-pretty dubious to me.  Why are you guys trying to push this
-convolution when it doesn't bring any substantial gain?
+> e.g.
+> 
+> # mkdir instances/hoge
+> # echo 'enable_event:mce:mce_record' > instances/hoge/events/syscalls/sys_enter_symlink/trigger
+> # cat instances/hoge/events/syscalls/sys_enter_symlink/enable
+> 0*
+> # cat instances/hoge/events/mce/mce_record/enable
+> 0
+> # cat events/mce/mce_record/enable
+> 0*
+> # ln -sf /dev/null /tmp
+> # cat instances/hoge/events/mce/mce_record/enable
+> 0
+> # cat events/mce/mce_record/enable
+> 1*
+> 
+> This looks odd, I expected enabling mce/mce_record under instances/hoge.
+> 
+> And, there is a bug of ftrace itself (not introduced by this series) I've found.
+> After the above operation, we can delete the instance "hoge", but the soft-mode
+> flag of mce_record is not cleared, even though there is no trigger referring
+> the event.
+> 
+> # rmdir instances/hoge
+> # cat events/mce/mce_record/enable
+> 1*
+> 
+> This is because the ftrace actually failed to remove(disable) the event trigger
+> associated with the instance when doing rmdir, but it just removed that interface.
+> 
+> > v4:
+> >  - made some changes to the soft-disable for syscall patch, according
+> >    to Masami's suggestions.  Actually, since there's now an array of
+> >    ftrace_files for syscalls that can serve the same purpose, the
+> >    enabled_enter/exit_syscalls bit arrays became redundant and were
+> >    removed.
+> >  - moved all the remaining common functions out of the
+> >    traceon/traceoff patch and into the basic trigger framework patch
+> >    and added comments to all the common functions.
+> >  - extensively commented the event_trigger_ops and event_command ops.
+> >  - made the register/unregister_command functions __init.  Since that
+> >    code was originally inspired by similar ftrace code, a new patch
+> >    was added to do the same thing for the register/unregister of the
+> >    ftrace commands (patch 10/11).
+> >  - fixed the event_trigger_regex_open i_private problem noted by
+> >    Masami that's currently being addressed by Oleg Nesterov's fixes
+> >    for this.  Note that that patchset also affects patch 8/11 (update
+> >    filters for multi-buffer, since it touches event filters as well).
+> >    Patch 11/11 depends on that patchset and also moves
+> >    event_file_data() to trace.h.b
+> 
+> OK, but I think the last 2 patches should be merged to 2/11 as updates.
+> 
 
-Thanks.
+I did merge the last patch into the new series, but left 10/11 separate
+because it really is just a cleanup independent of the trigger code.
 
--- 
-tejun
+> And also, could you rebase your patches on trace/for-next branch?
+> Since that branch includes most of the latest fixes, it is better to
+> review with it.
+> 
+
+Sure, but since now everything in for-next is in rc6, I've rebased on
+rc6...
+
+Thanks for all your comments,
+
+Tom
+
+> Thank you,
+> 
+
+
