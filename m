@@ -1,115 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab3HVVO4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 17:14:56 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:62287 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab3HVVOy (ORCPT
+	id S1754163Ab3HVVTW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 17:19:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44024 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366Ab3HVVTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 17:14:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <51FF527F.7080904@oracle.com>
-References: <51FF527F.7080904@oracle.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 22 Aug 2013 15:14:34 -0600
-Message-ID: <CAErSpo5JCpJ0=vcTAwjz4VjZ4imBJxM8TP9RWrmiee3VQnjY=w@mail.gmail.com>
-Subject: Re: [PATCH 2/3 v2] Refactor msi/msix restore code Part2
-To: zhenzhong.duan@oracle.com
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	Thu, 22 Aug 2013 17:19:21 -0400
+Date: Thu, 22 Aug 2013 23:19:12 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Feng Jin <joe.jin@oracle.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
+ DBX500 DT
+Message-ID: <20130822211912.GE31036@pengutronix.de>
+Mail-Followup-To: Lee Jones <lee.jones@linaro.org>,
+	Mark Rutland <mark.rutland@arm.com>,
+	Linus Walleij <linus.walleij@linaro.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Arnd Bergmann <arnd@arndb.de>,
+	Linus WALLEIJ <linus.walleij@stericsson.com>,
+	Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+ <1370521041-32318-10-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
+ <20130820093034.GL31036@pengutronix.de>
+ <20130822133730.GB23152@e106331-lin.cambridge.arm.com>
+ <20130822141900.GB17154@lee--X1>
+ <20130822151723.GE23152@e106331-lin.cambridge.arm.com>
+ <20130822154116.GC17154@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130822154116.GC17154@lee--X1>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 23:10:49 up 23 days,  6:15, 32 users,  load average: 0.03, 0.04,
+ 0.05
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 5, 2013 at 1:21 AM, Zhenzhong Duan
-<zhenzhong.duan@oracle.com> wrote:
-> xen_initdom_restore_msi_irqs trigger a hypercall to restore addr/data/mask
-> in dom0. It's better to do the same in default_restore_msi_irqs for baremetal.
->
-> Move restore of mask in default_restore_msi_irqs, this could avoid mask
-> restored twice in dom0, and the logic for baremetal keep same.
->
-> First mask restore is in xen_initdom_restore_msi_irqs->PHYSDEVOP_restore_msi,
-> Second restore is __pci_restore_msix_state->msix_mask_irq.
->
-> Mask bits are under full control of xen, and the entry->masked in dom0 kernel
-> is invalid. restore an invalid value to mask register could mask the msix
-> interrupt.
->
-> Without fix, qlcnic driver calling pci_reset_function will lost interrupt
-> in dom0.
+On Thu, Aug 22, 2013 at 04:41:16PM +0100, Lee Jones wrote:
+> 
+> When most of the other clocks that we deal with are being requested,
+> they rely on being index zero:
+> 
+>   drivers/i2c/busses/i2c-nomadik.c: dev->clk = clk_get(&adev->dev, NULL);
 
-Konrad, this changelog still doesn't make any sense to me, but if you
-ack this, I guess I can apply it.
+Once a device has more than a single clock all clocks should have a
+connection id. clk_get(dev, NULL) should only be used for single clock
+devices. Look at drivers/clk/clkdev.c, there's some fuzzy matching
+involved when you pass NULL as connection id.
 
-I guess there are also:
+Sascha
 
-  Jul 24  [PATCH 1/3] Refactor msi/msix restore code Part1
-  Jul 30  [PATCH 3/3 v2] Update x86_msi.restore_msi_irqs API param
-
-and all three should be applied as a series?
-
-> Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> ---
->  drivers/pci/msi.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index 87223ae..922fb49 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -216,6 +216,8 @@ void unmask_msi_irq(struct irq_data *data)
->  #ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
->  void default_restore_msi_irqs(struct pci_dev *dev, int irq)
->  {
-> +       int pos;
-> +       u16 control;
->         struct msi_desc *entry;
->
->         entry = NULL;
-> @@ -228,8 +230,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
->                 entry = irq_get_msi_desc(irq);
->         }
->
-> -       if (entry)
-> +       if (entry) {
->                 write_msi_msg(irq, &entry->msg);
-> +               if (dev->msix_enabled) {
-> +                       msix_mask_irq(entry, entry->masked);
-> +                       readl(entry->mask_base);
-> +               } else {
-> +                       pos = entry->msi_attrib.pos;
-> +                       pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
-> +                                            &control);
-> +                       msi_mask_irq(entry, msi_capable_mask(control),
-> +                                    entry->masked);
-> +               }
-> +       }
->  }
->  #endif
->
-> @@ -406,7 +419,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
->         arch_restore_msi_irqs(dev, dev->irq);
->
->         pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
-> -       msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
->         control &= ~PCI_MSI_FLAGS_QSIZE;
->         control |= (entry->msi_attrib.multiple << 4) | PCI_MSI_FLAGS_ENABLE;
->         pci_write_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, control);
-> @@ -430,7 +442,6 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
->
->         list_for_each_entry(entry, &dev->msi_list, list) {
->                 arch_restore_msi_irqs(dev, entry->irq);
-> -               msix_mask_irq(entry, entry->masked);
->         }
->
->         control &= ~PCI_MSIX_FLAGS_MASKALL;
-> --
-> 1.7.3
->
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
