@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab3HVVwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 17:52:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46549 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab3HVVwd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 17:52:33 -0400
-Date: Thu, 22 Aug 2013 14:52:32 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Kamal Mostafa <kamal@canonical.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: Re: [3.10][3.8][3.5] ARM: Fix FIQ code on VIVT CPUs (was Re: [PATCH
- 076/133] ARM: update FIQ support for relocation of vectors)
-Message-ID: <20130822215232.GC28717@kroah.com>
-References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
- <1376692475-28413-77-git-send-email-kamal@canonical.com>
- <20130818210952.GI3067@blackmetal.musicnaut.iki.fi>
- <1376928143.18111.12.camel@fourier>
- <20130819160740.GS23006@n2100.arm.linux.org.uk>
+	id S1754494Ab3HVVx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 17:53:27 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:55849 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754105Ab3HVVxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 17:53:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Zoran Markovic <zoran.markovic@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Benoit Goby <benoit@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Colin Cross <ccross@android.com>, Todd Poynor <toddpoynor@google.com>,
+        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [RFC PATCHv3] drivers: power: Detect device suspend/resume lockup and log event in pstore.
+Date: Fri, 23 Aug 2013 00:04:02 +0200
+Message-ID: <3196266.rMZQj4Yosc@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAME+o4=uNFDjz8yFJEQR8P4dwki4U0iBv-FrixTA_TFxWctDSA@mail.gmail.com>
+References: <1375216733-6740-1-git-send-email-zoran.markovic@linaro.org> <CAME+o4=uNFDjz8yFJEQR8P4dwki4U0iBv-FrixTA_TFxWctDSA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130819160740.GS23006@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 05:07:41PM +0100, Russell King - ARM Linux wrote:
-> On Mon, Aug 19, 2013 at 09:02:23AM -0700, Kamal Mostafa wrote:
-> > Thanks Aaro.  I'll apply "2ba85e7 ARM: Fix FIQ code on VIVT CPUs" to
-> > 3.8-stable.
-> > 
-> > Greg KH and Luis Henriques:  Heads up!  3.10-stable and 3.5-stable also
-> > need 2ba85e7 but it isn't marked cc: stable.
-> 
-> There's others from that branch which are probably also needed but I want
-> them to sit in -rc for a bit before I request them to move into the stable
-> trees - in case anyone finds anything more from the security fixes a while
-> back.
+On Thursday, August 22, 2013 10:16:59 AM Zoran Markovic wrote:
+> Rafael,
+> I haven't seen any other proposals/alternatives on how to do this. Is
+> there anything else we should do to get this upstream? I believe this
+> is a valuable debug feature for Android and it now explicitly depends
+> on pstore...
 
-Ok, I'll hold off on applying this one until you say it is good to go.
+I haven't had a lot of time to look at this recently, sorry.
 
-thanks,
+It doesn't look too bad from a quick look, but there's a couple of things
+I don't like in it still (relatively minor).
 
-greg k-h
+I'll have a deeper look at it over the weekend (if nothing distracts me).
+
+Thanks,
+Rafael
+
