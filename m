@@ -1,154 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab3HVGSE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 02:18:04 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:59818 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab3HVGSC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 02:18:02 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <52153B8E.7050309@free-electrons.com>
-References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com> <1374501843-19651-3-git-send-email-hector.palacios@digi.com> <520AA3CD.1040008@kernel.org> <1376491467.18617.41.camel@hornet> <52153B8E.7050309@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v3 2/5] ARM: dts: add reference voltage property for MXS LRADC
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Thu, 22 Aug 2013 07:17:46 +0100
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Pawel Moll <pawel.moll@arm.com>
-CC: Hector Palacios <hector.palacios@digi.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        "marex@denx.de" <marex@denx.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Message-ID: <df6d000d-c918-48ec-958c-c8529ae1b75f@email.android.com>
+	id S1753529Ab3HVGWC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 02:22:02 -0400
+Received: from gate.crashing.org ([63.228.1.57]:40280 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753195Ab3HVGV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 02:21:59 -0400
+Message-ID: <1377152143.25016.289.camel@pasglop>
+Subject: Re: [PATCH v4 03/19] powerpc: refactor of_get_cpu_node to support
+ other architectures
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Date: Thu, 22 Aug 2013 16:15:43 +1000
+In-Reply-To: <1376991021-12160-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+	 <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+	 <1376991021-12160-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry accidental HTML message hence resend
+On Tue, 2013-08-20 at 10:30 +0100, Sudeep KarkadaNagesha wrote:
+> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> 
+> Currently different drivers requiring to access cpu device node are
+> parsing the device tree themselves. Since the ordering in the DT need
+> not match the logical cpu ordering, the parsing logic needs to consider
+> that. However, this has resulted in lots of code duplication and in some
+> cases even incorrect logic.
+> 
+> It's better to consolidate them by adding support for getting cpu
+> device node for a given logical cpu index in DT core library. However
+> logical to physical index mapping can be architecture specific.
+> 
+> PowerPC has it's own implementation to get the cpu node for a given
+> logical index.
+> 
+> This patch refactors the current implementation of of_get_cpu_node.
+> This in preparation to move the implementation to DT core library.
+> It separates out the logical to physical mapping so that a default
+> matching of the physical id to the logical cpu index can be added
+> when moved to common code. Architecture specific code can override it.
 
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
->Hi Pawel,
->
->On 14/08/2013 16:44, Pawel Moll wrote:
->> On Tue, 2013-08-13 at 22:23 +0100, Jonathan Cameron wrote:
->>> On 07/22/13 15:04, Hector Palacios wrote:
->>>> Some LRADC channels have fixed pre-dividers so they can measure
->>>> different voltages at full scale. The reference voltage allows to
->>>> expose a scaling attribute through the IIO sysfs so that a user can
->>>> compute the real voltage out of a measured sample value.
->>>>
->>>> diff --git
->a/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt
->b/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt
->>>> index 4688205..6ec485c 100644
->>>> ---
->a/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt
->>>> +++
->b/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt
->>>> @@ -1,9 +1,12 @@
->>>>  * Freescale i.MX28 LRADC device driver
->>>>  
->>>>  Required properties:
->>>> -- compatible: Should be "fsl,imx28-lradc"
->>>> +- compatible: "fsl,imx28-lradc", "fsl,imx23-lradc"
->>>>  - reg: Address and length of the register set for the device
->>>>  - interrupts: Should contain the LRADC interrupts
->>>> +- fsl,vref: Reference voltage (in mV) for each LRADC channel. This
->is the
->>>> +	    maximum voltage that can be measured at full scale in each
->channel
->>>> +	    considering fixed pre-dividers.
->> 
->> So, let me try to rephrase what I read above.
->> 
->> There's an ADC with X channels. And there's a reference voltage
->source
->> (one?). Now, each of the ADC channels have a (different?) voltage
->> divider, taking the voltage from the reference source and feeding it
->to
->> the ADC comparator. How much am I wrong?
->> 
->
->You are not so wrong. There is indeed actually only one reference
->voltage (and that is 1.85V). But, before feeding the voltage to the ADC
->channels, you sometimes have a divider. Then, after the channel muxing,
->you can add a by 2 divider.
->
->Mandatory ascii art:
->
->            +-----+
->            |     |
->   +-ch1--->|     |
->            |     |
->            |     |
->            |     |     +-----+
->   +-ch2--->|     |     |     |
->            | MUX |++-->| ADC +----------->
->     ch3    |     | |   |     |
->    +----+  |     | |   +-----+
->    |    |  |     | |      |
->  +-> :4 +->|     | |  +---+--+
->    |    |  |     | |  |      |
->    +----+  |     | +->|  :2  |
->            +-----+    |      |
->                       +------+
->
->
->> If I'm not wrong at all, I'd say that the reference source could be
->> described as a standard fixed regulator
->> (Documentation/devicetree/bindings/regulator/fixed-regulator.txt) and
->> the ADC node should have some king of "reference-supply" phandle to
->the
->> regulator node. Now, if the dividers factors are *really* fixed, the
->> driver could know about them and calculate the effective reference
->> voltage on its own, couldn't it?
->> 
->> Let me repeat the "DT standard disclaimer": the tree, in general,
->should
->> describe the way components are *wired up*, not much more.
->> 
->
->So, from my point of view, the divider that is before the mux (the by 4
->divider on channel 3 on my drawing) is not part of the the ADC, it is
->not fixed by that IP. And indeed, that changed between the i.mx23 and
->i.mx28 while the IP is the same.
->
->So, the two solutions you suggest are:
->1/ using a fixed-regulator phandle per channel
->2/ hard-coding the dividers in the driver using the compatible string
->to
->know which divider is on which channel.
->
->I feel that solution 2 is less future proof but at the same time, I
->don't believe we will see that IP in another chip in the future.
->
->Are my explanations clear enough to take a decision ?
->
->-- 
->Alexandre Belloni, Free Electrons
->Embedded Linux, Kernel and Android engineering
->http://free-electrons.com
->--
->To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+So the patch unfortunately collides with other changes in powerpc -next,
+though it's not a huge deal and not hard to fixup, but expect Linus
+to tick unless we sort it out some other way.
 
-I would favour option 2 though some of the discussions going on at the moment about
-bindings might result in a generic description of this and any other bits of
- analog front end.
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Appart from that, it's fine, builds on all my test configs and doesn't
+seem to negatively impact things as far as I can tell so far...
+
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> ---
+>  arch/powerpc/kernel/prom.c | 76 ++++++++++++++++++++++++++++------------------
+>  1 file changed, 47 insertions(+), 29 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+> index eb23ac9..f7b8c0b 100644
+> --- a/arch/powerpc/kernel/prom.c
+> +++ b/arch/powerpc/kernel/prom.c
+> @@ -865,45 +865,63 @@ static int __init prom_reconfig_setup(void)
+>  __initcall(prom_reconfig_setup);
+>  #endif
+>  
+> +bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
+> +{
+> +	return (int)phys_id == get_hard_smp_processor_id(cpu);
+> +}
+> +
+> +static bool __of_find_n_match_cpu_property(struct device_node *cpun,
+> +			const char *prop_name, int cpu, unsigned int *thread)
+> +{
+> +	const __be32 *cell;
+> +	int ac, prop_len, tid;
+> +	u64 hwid;
+> +
+> +	ac = of_n_addr_cells(cpun);
+> +	cell = of_get_property(cpun, prop_name, &prop_len);
+> +	if (!cell)
+> +		return false;
+> +	prop_len /= sizeof(*cell);
+> +	for (tid = 0; tid < prop_len; tid++) {
+> +		hwid = of_read_number(cell, ac);
+> +		if (arch_match_cpu_phys_id(cpu, hwid)) {
+> +			if (thread)
+> +				*thread = tid;
+> +			return true;
+> +		}
+> +		cell += ac;
+> +	}
+> +	return false;
+> +}
+> +
+>  /* Find the device node for a given logical cpu number, also returns the cpu
+>   * local thread number (index in ibm,interrupt-server#s) if relevant and
+>   * asked for (non NULL)
+>   */
+>  struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
+>  {
+> -	int hardid;
+> -	struct device_node *np;
+> +	struct device_node *cpun, *cpus;
+>  
+> -	hardid = get_hard_smp_processor_id(cpu);
+> +	cpus = of_find_node_by_path("/cpus");
+> +	if (!cpus) {
+> +		pr_warn("Missing cpus node, bailing out\n");
+> +		return NULL;
+> +	}
+>  
+> -	for_each_node_by_type(np, "cpu") {
+> -		const u32 *intserv;
+> -		unsigned int plen, t;
+> +	for_each_child_of_node(cpus, cpun) {
+> +		if (of_node_cmp(cpun->type, "cpu"))
+> +			continue;
+>  
+> -		/* Check for ibm,ppc-interrupt-server#s. If it doesn't exist
+> -		 * fallback to "reg" property and assume no threads
+> +		/* Check for non-standard "ibm,ppc-interrupt-server#s" property
+> +		 * for thread ids on PowerPC. If it doesn't exist fallback to
+> +		 * standard "reg" property.
+>  		 */
+> -		intserv = of_get_property(np, "ibm,ppc-interrupt-server#s",
+> -				&plen);
+> -		if (intserv == NULL) {
+> -			const u32 *reg = of_get_property(np, "reg", NULL);
+> -			if (reg == NULL)
+> -				continue;
+> -			if (*reg == hardid) {
+> -				if (thread)
+> -					*thread = 0;
+> -				return np;
+> -			}
+> -		} else {
+> -			plen /= sizeof(u32);
+> -			for (t = 0; t < plen; t++) {
+> -				if (hardid == intserv[t]) {
+> -					if (thread)
+> -						*thread = t;
+> -					return np;
+> -				}
+> -			}
+> -		}
+> +		if (__of_find_n_match_cpu_property(cpun,
+> +				"ibm,ppc-interrupt-server#s", cpu, thread))
+> +			return cpun;
+> +
+> +		if (__of_find_n_match_cpu_property(cpun, "reg", cpu, thread))
+> +			return cpun;
+>  	}
+>  	return NULL;
+>  }
+
+
