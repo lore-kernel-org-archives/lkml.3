@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab3HVNiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 09:38:09 -0400
-Received: from 10.mo3.mail-out.ovh.net ([87.98.165.232]:52434 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752256Ab3HVNiH (ORCPT
+	id S1752955Ab3HVNiV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 09:38:21 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41370 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752256Ab3HVNiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 09:38:07 -0400
-X-Greylist: delayed 1500 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 09:38:07 EDT
-Message-ID: <52160EA9.4060801@overkiz.com>
-Date: Thu, 22 Aug 2013 15:14:17 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 22 Aug 2013 09:38:17 -0400
+Date: Thu, 22 Aug 2013 14:37:31 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
+ DBX500 DT
+Message-ID: <20130822133730.GB23152@e106331-lin.cambridge.arm.com>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+ <1370521041-32318-10-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
+ <20130820093034.GL31036@pengutronix.de>
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-CC: "David S. Miller" <davem@davemloft.net>, Mark Brown <broonie@kernel.org>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [RFC PATCH] phylib: mdio: handle register/unregister/register
- sequence
-References: <1377174836-10569-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1377174836-10569-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 1056657064239396985
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -85
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrgeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -85
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrgeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130820093034.GL31036@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/08/2013 14:33, Boris BREZILLON wrote:
-> Hello,
->
-> This patch is a proposal to support the register/unregister/register
-> sequence on a given mdio bus.
+On Tue, Aug 20, 2013 at 10:30:34AM +0100, Sascha Hauer wrote:
+> On Tue, Aug 20, 2013 at 11:11:19AM +0200, Linus Walleij wrote:
+> > On Thu, Jun 6, 2013 at 2:16 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> > 
+> > > +++ b/arch/arm/boot/dts/dbx5x0.dtsi
+> > > @@ -572,6 +572,8 @@
+> > >                         v-i2c-supply = <&db8500_vape_reg>;
+> > >
+> > >                         clock-frequency = <400000>;
+> > > +                       clocks = <&prcc_kclk 3 3>, <&prcc_pclk 3 3>;
+> > > +                       clock-names = "nmk-i2c.0", "apb_pclk";
+> 
+> Why do most clocks in this series have the instance number in the clock
+> names? This looks very wrong to me.
 
-I forgot to ask, if this limitation was made on purpose ?
-In other terms: no one should ever try to register, unregister and 
-register again
-a given mii_bus structure.
++1. The clock names should be the input names to the unit, they
+shouldn't vary per instance.
 
->
-> I use the register/unregister/register sequence to add a fallback when the
-> of_mdiobus_register (this function calls mdiobus_register with phy_mask
-> set to ~0) does not register any phy device (because the device tree does
-> not define any phy).
-> In this case I call mdiobus_unregister and then call mdiobus_register with
-> a phy_mask set to 0 to trigger a full mdio bus scan.
->
-> I'm not sure this is the right way to do it (this is why I added RFC in the
-> subject).
->
-> Could someone help me figuring out what I should use to implement my fallback ?
->
-> 1) use the register/unregister/register sequence
-> 2) reimplement the "for (i = 0; i < PHY_MAX_ADDR; i++)" mdiobus_scan loop
->
-> Thanks.
->
-> Best Regards,
-> Boris
->
-> Boris BREZILLON (1):
->    phylib: mdio: handle register/unregister/register sequence
->
->   drivers/net/phy/mdio_bus.c |    6 ++++--
->   1 file changed, 4 insertions(+), 2 deletions(-)
->
-
+Mark.
