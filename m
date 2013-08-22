@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab3HVMwh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 08:52:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30879 "EHLO mx1.redhat.com"
+	id S1753922Ab3HVMwg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 08:52:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33153 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753774Ab3HVMvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753779Ab3HVMvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Aug 2013 08:51:36 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
@@ -13,171 +13,169 @@ To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Alexander Holler <holler@ahsoftware.de>,
         Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/3] HID: Use hid_parser for pre-scanning the report descriptors
-Date: Thu, 22 Aug 2013 14:51:07 +0200
-Message-Id: <1377175869-5336-2-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v3 2/3] HID: detect Win 8 multitouch devices in core
+Date: Thu, 22 Aug 2013 14:51:08 +0200
+Message-Id: <1377175869-5336-3-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1377175869-5336-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1377175869-5336-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Win 8 detection is sufficiently complex to warrant use of the full
-parser code, in spite of the inferred memory usage. Therefore, we can use
-the existing HID parser in hid-core for hid_scan_report() by re-using the
-code from hid_open_report(). hid_parser_global, hid_parser_local and
-hid_parser_reserved does not have any side effects. We just need to
-reimplement the MAIN_ITEM callback to have a proper parsing without side
-effects.
+Detecting Win 8 multitouch devices in core allows us to set quirks
+before the device is parsed through hid_hw_start().
+It also simplifies the detection of those devices in hid-multitouch and
+makes the handling of those devices cleaner.
+
+As Win 8 multitouch panels are in the group multitouch and rely on a
+special feature to be detected, this patch adds a bitfield in the parser.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
 
 changes in v3:
-- remove one remnant duplicate message
+- removed ugly #define #undef :)
+- add back scan_flags in hid_parser
+- simpler post processing of Win 8 certified multitouch panels
 - amended commit message
-- re-add initializer of hid->group (set to HID_GROUP_GENERIC)
 
 changes in v2:
-- moved "flags" processing in patch 2/3 (so use hid->group in this patch)
-- hid_scan_report() is less verbose when errors are found in the descriptor
-- hid_scan_report() is tolerant to parsing errors
-- fixed usage_page handling in hid_scan_collection(), which fixes sensors detection
+- moved "flags" processing here
+- do not introduce parser->flags, but use hid->group as a temporary flag placeholder
+- #define and #undef HID_FLAG_* in hid-core.c instead of hid.h
 - amended commit message
 
- drivers/hid/hid-core.c | 102 +++++++++++++++++++++++++++++++------------------
- 1 file changed, 64 insertions(+), 38 deletions(-)
+ drivers/hid/hid-core.c       | 16 ++++++++++++++++
+ drivers/hid/hid-multitouch.c | 24 +++++++++++-------------
+ include/linux/hid.h          |  4 ++++
+ 3 files changed, 31 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 3efe19f..9fc1220 100644
+index 9fc1220..db99900 100644
 --- a/drivers/hid/hid-core.c
 +++ b/drivers/hid/hid-core.c
-@@ -677,12 +677,52 @@ static u8 *fetch_item(__u8 *start, __u8 *end, struct hid_item *item)
- 	return NULL;
- }
- 
--static void hid_scan_usage(struct hid_device *hid, u32 usage)
-+static void hid_scan_input_usage(struct hid_parser *parser, u32 usage)
- {
-+	struct hid_device *hid = parser->device;
-+
- 	if (usage == HID_DG_CONTACTID)
+@@ -685,6 +685,13 @@ static void hid_scan_input_usage(struct hid_parser *parser, u32 usage)
  		hid->group = HID_GROUP_MULTITOUCH;
  }
  
-+static void hid_scan_collection(struct hid_parser *parser, unsigned type)
++static void hid_scan_feature_usage(struct hid_parser *parser, u32 usage)
 +{
-+	struct hid_device *hid = parser->device;
-+
-+	if (((parser->global.usage_page << 16) == HID_UP_SENSOR) &&
-+	    type == HID_COLLECTION_PHYSICAL)
-+		hid->group = HID_GROUP_SENSOR_HUB;
++	if (usage == 0xff0000c5 && parser->global.report_count == 256 &&
++	    parser->global.report_size == 8)
++		parser->scan_flags |= HID_SCAN_FLAG_MT_WIN_8;
 +}
 +
-+static int hid_scan_main(struct hid_parser *parser, struct hid_item *item)
-+{
-+	__u32 data;
-+	int i;
-+
-+	data = item_udata(item);
-+
-+	switch (item->tag) {
-+	case HID_MAIN_ITEM_TAG_BEGIN_COLLECTION:
-+		hid_scan_collection(parser, data & 0xff);
-+		break;
-+	case HID_MAIN_ITEM_TAG_END_COLLECTION:
-+		break;
-+	case HID_MAIN_ITEM_TAG_INPUT:
-+		for (i = 0; i < parser->local.usage_index; i++)
-+			hid_scan_input_usage(parser, parser->local.usage[i]);
-+		break;
-+	case HID_MAIN_ITEM_TAG_OUTPUT:
-+		break;
-+	case HID_MAIN_ITEM_TAG_FEATURE:
-+		break;
-+	}
-+
-+	/* Reset the local parser environment */
-+	memset(&parser->local, 0, sizeof(parser->local));
-+
-+	return 0;
-+}
-+
- /*
-  * Scan a report descriptor before the device is added to the bus.
-  * Sets device groups and other properties that determine what driver
-@@ -690,48 +730,34 @@ static void hid_scan_usage(struct hid_device *hid, u32 usage)
-  */
- static int hid_scan_report(struct hid_device *hid)
+ static void hid_scan_collection(struct hid_parser *parser, unsigned type)
  {
--	unsigned int page = 0, delim = 0;
-+	struct hid_parser *parser;
-+	struct hid_item item;
- 	__u8 *start = hid->dev_rdesc;
- 	__u8 *end = start + hid->dev_rsize;
--	unsigned int u, u_min = 0, u_max = 0;
--	struct hid_item item;
-+	static int (*dispatch_type[])(struct hid_parser *parser,
-+				      struct hid_item *item) = {
-+		hid_scan_main,
-+		hid_parser_global,
-+		hid_parser_local,
-+		hid_parser_reserved
-+	};
-+
-+	parser = vzalloc(sizeof(struct hid_parser));
-+	if (!parser)
-+		return -ENOMEM;
+ 	struct hid_device *hid = parser->device;
+@@ -714,6 +721,8 @@ static int hid_scan_main(struct hid_parser *parser, struct hid_item *item)
+ 	case HID_MAIN_ITEM_TAG_OUTPUT:
+ 		break;
+ 	case HID_MAIN_ITEM_TAG_FEATURE:
++		for (i = 0; i < parser->local.usage_index; i++)
++			hid_scan_feature_usage(parser, parser->local.usage[i]);
+ 		break;
+ 	}
  
-+	parser->device = hid;
- 	hid->group = HID_GROUP_GENERIC;
--	while ((start = fetch_item(start, end, &item)) != NULL) {
--		if (item.format != HID_ITEM_FORMAT_SHORT)
--			return -EINVAL;
--		if (item.type == HID_ITEM_TYPE_GLOBAL) {
--			if (item.tag == HID_GLOBAL_ITEM_TAG_USAGE_PAGE)
--				page = item_udata(&item) << 16;
--		} else if (item.type == HID_ITEM_TYPE_LOCAL) {
--			if (delim > 1)
--				break;
--			u = item_udata(&item);
--			if (item.size <= 2)
--				u += page;
--			switch (item.tag) {
--			case HID_LOCAL_ITEM_TAG_DELIMITER:
--				delim += !!u;
--				break;
--			case HID_LOCAL_ITEM_TAG_USAGE:
--				hid_scan_usage(hid, u);
--				break;
--			case HID_LOCAL_ITEM_TAG_USAGE_MINIMUM:
--				u_min = u;
--				break;
--			case HID_LOCAL_ITEM_TAG_USAGE_MAXIMUM:
--				u_max = u;
--				for (u = u_min; u <= u_max; u++)
--					hid_scan_usage(hid, u);
--				break;
--			}
--		} else if (page == HID_UP_SENSOR &&
--			item.type == HID_ITEM_TYPE_MAIN &&
--			item.tag == HID_MAIN_ITEM_TAG_BEGIN_COLLECTION &&
--			(item_udata(&item) & 0xff) == HID_COLLECTION_PHYSICAL)
--			hid->group = HID_GROUP_SENSOR_HUB;
--	}
+@@ -757,6 +766,13 @@ static int hid_scan_report(struct hid_device *hid)
+ 	while ((start = fetch_item(start, end, &item)) != NULL)
+ 		dispatch_type[item.type](parser, &item);
  
 +	/*
-+	 * The parsing is simpler than the one in hid_open_report() as we should
-+	 * be robust against hid errors. Those errors will be raised by
-+	 * hid_open_report() anyway.
++	 * Handle special flags set during scanning.
 +	 */
-+	while ((start = fetch_item(start, end, &item)) != NULL)
-+		dispatch_type[item.type](parser, &item);
++	if ((parser->scan_flags & HID_SCAN_FLAG_MT_WIN_8) &&
++	    (hid->group == HID_GROUP_MULTITOUCH))
++		hid->group = HID_GROUP_MULTITOUCH_WIN_8;
 +
-+	vfree(parser);
+ 	vfree(parser);
  	return 0;
  }
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 0fe00e2..c28ef86 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -133,6 +133,7 @@ static void mt_post_parse(struct mt_device *td);
+ #define MT_CLS_NSMU				0x000a
+ #define MT_CLS_DUAL_CONTACT_NUMBER		0x0010
+ #define MT_CLS_DUAL_CONTACT_ID			0x0011
++#define MT_CLS_WIN_8				0x0012
  
+ /* vendor specific classes */
+ #define MT_CLS_3M				0x0101
+@@ -205,6 +206,11 @@ static struct mt_class mt_classes[] = {
+ 			MT_QUIRK_CONTACT_CNT_ACCURATE |
+ 			MT_QUIRK_SLOT_IS_CONTACTID,
+ 		.maxcontacts = 2 },
++	{ .name = MT_CLS_WIN_8,
++		.quirks = MT_QUIRK_ALWAYS_VALID |
++			MT_QUIRK_IGNORE_DUPLICATES |
++			MT_QUIRK_HOVERING |
++			MT_QUIRK_CONTACT_CNT_ACCURATE },
+ 
+ 	/*
+ 	 * vendor specific classes
+@@ -332,19 +338,6 @@ static void mt_feature_mapping(struct hid_device *hdev,
+ 			td->maxcontacts = td->mtclass.maxcontacts;
+ 
+ 		break;
+-	case 0xff0000c5:
+-		if (field->report_count == 256 && field->report_size == 8) {
+-			/* Win 8 devices need special quirks */
+-			__s32 *quirks = &td->mtclass.quirks;
+-			*quirks |= MT_QUIRK_ALWAYS_VALID;
+-			*quirks |= MT_QUIRK_IGNORE_DUPLICATES;
+-			*quirks |= MT_QUIRK_HOVERING;
+-			*quirks |= MT_QUIRK_CONTACT_CNT_ACCURATE;
+-			*quirks &= ~MT_QUIRK_NOT_SEEN_MEANS_UP;
+-			*quirks &= ~MT_QUIRK_VALID_IS_INRANGE;
+-			*quirks &= ~MT_QUIRK_VALID_IS_CONFIDENCE;
+-		}
+-		break;
+ 	}
+ }
+ 
+@@ -1346,6 +1339,11 @@ static const struct hid_device_id mt_devices[] = {
+ 
+ 	/* Generic MT device */
+ 	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_MULTITOUCH, HID_ANY_ID, HID_ANY_ID) },
++
++	/* Generic Win 8 certified MT device */
++	{  .driver_data = MT_CLS_WIN_8,
++		HID_DEVICE(HID_BUS_ANY, HID_GROUP_MULTITOUCH_WIN_8,
++			HID_ANY_ID, HID_ANY_ID) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, mt_devices);
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index 5a4e789..24f1197 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -295,6 +295,7 @@ struct hid_item {
+ #define HID_GROUP_GENERIC			0x0001
+ #define HID_GROUP_MULTITOUCH			0x0002
+ #define HID_GROUP_SENSOR_HUB			0x0003
++#define HID_GROUP_MULTITOUCH_WIN_8		0x0004
+ 
+ /*
+  * This is the global environment of the parser. This information is
+@@ -533,6 +534,8 @@ static inline void hid_set_drvdata(struct hid_device *hdev, void *data)
+ #define HID_GLOBAL_STACK_SIZE 4
+ #define HID_COLLECTION_STACK_SIZE 4
+ 
++#define HID_SCAN_FLAG_MT_WIN_8			0x00000001
++
+ struct hid_parser {
+ 	struct hid_global     global;
+ 	struct hid_global     global_stack[HID_GLOBAL_STACK_SIZE];
+@@ -541,6 +544,7 @@ struct hid_parser {
+ 	unsigned              collection_stack[HID_COLLECTION_STACK_SIZE];
+ 	unsigned              collection_stack_ptr;
+ 	struct hid_device    *device;
++	unsigned              scan_flags;
+ };
+ 
+ struct hid_class_descriptor {
 -- 
 1.8.3.1
 
