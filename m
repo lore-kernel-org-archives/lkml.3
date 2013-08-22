@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3HVS3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 14:29:34 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:33832 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab3HVS3d (ORCPT
+	id S1754133Ab3HVSaO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 14:30:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51267 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753419Ab3HVSaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 14:29:33 -0400
+	Thu, 22 Aug 2013 14:30:12 -0400
+Date: Thu, 22 Aug 2013 14:28:27 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2013-08-21
+Message-ID: <20130822182827.GE1967@tuxdriver.com>
+References: <20130821161218.GH14645@joana>
 MIME-Version: 1.0
-In-Reply-To: <20130822181536.GA22995@redhat.com>
-References: <20130822170939.GA20296@redhat.com> <20130822171004.GA20324@redhat.com>
- <CALCETrU9D59MqxPm2SNegPFH_+gpPfoQJkD2E2Q8zjJ94QhLDg@mail.gmail.com> <20130822181536.GA22995@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 22 Aug 2013 11:29:12 -0700
-Message-ID: <CALCETrW3gnXjUqvm-jNZq6k_qSnTN5=VNRCp+gNC+t2YtBBMYQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] fork: unify and tighten up CLONE_NEWUSER/CLONE_NEWPID checks
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Brad Spengler <spender@grsecurity.net>,
-        Colin Walters <walters@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130821161218.GH14645@joana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 11:15 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 08/22, Andy Lutomirski wrote:
->>
->> On Thu, Aug 22, 2013 at 10:10 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> > do_fork() denies CLONE_THREAD | CLONE_PARENT if NEWUSER | NEWPID.
->> >
->> > Then later copy_process() denies CLONE_SIGHAND if the new process
->> > will be in a different pid namespace (task_active_pid_ns() doesn't
->> > match current->nsproxy->pid_ns).
->> >
->> > This looks confusing and inconsistent. CLONE_NEWPID is very similar
->> > to the case when ->pid_ns was already unshared, we want the same
->> > restrictions so copy_process() should also nack CLONE_PARENT.
->> >
->> > And it would be better to deny CLONE_NEWUSER && CLONE_SIGHAND as
->> > well just for consistency.
->> >
->> > Kill the "CLONE_NEWUSER | CLONE_NEWPID" check in do_fork() and
->> > change copy_process() to the same check along with nsproxy->pid_ns
->> > we already have.
->>
->> Did the old code actually prevent clone(CLONE_PARENT | CLONE_NEWPID)?
->> The new code explicitly does, and that looks like a good thing.
->
->
-> Yes. Before this patch do_fork() did:
->
->         if (clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) {
->                 if (clone_flags & (CLONE_THREAD|CLONE_PARENT))
->                         return -EINVAL;
->         }
->
-> however, let me repeat, CLONE_PARENT after unshare(CLONE_NEWPID) was
-> allowed. With this patch CLONE_PARENT is nacked in both cases.
->
+On Wed, Aug 21, 2013 at 06:12:18PM +0200, Gustavo Padovan wrote:
+> Hi John,
+> 
+> Patches to 3.12, here we have:
+> 
+> * implementation of a proper tty_port for RFCOMM devices, this fixes some
+> issues people were seeing lately in the kernel.
+> * Add voice_setting option for SCO, it is used for SCO Codec selection
+> * bugfixes, small improvements and clean ups
+> 
+> Please pull, Thanks.
+> 
+> 	Gustavo
+> 
+> --
+> The following changes since commit 72bb2f2678878dd4a758e628957f29ce28000d88:
+> 
+>   bgmac: make bgmac depend on bcm47xx (2013-07-24 11:05:19 -0400)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next master
+> 
+> for you to fetch changes up to 2dea632f9acad076370fe871d4ccc93868621403:
+> 
+>   Bluetooth: Add SCO connection fallback (2013-08-21 16:47:13 +0200)
 
-Is this -stable-worthy?
-
---Andy
-
-
-> Oleg.
->
-
-
+Pulling now...
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
