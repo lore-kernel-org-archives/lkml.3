@@ -1,159 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab3HVOas (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 10:30:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:43419 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752416Ab3HVOar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 10:30:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,934,1367996400"; 
-   d="scan'208";a="384937775"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>, NeilBrown <neilb@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <1377178420.2720.51.camel@menhir>
-References: <1377099441-2224-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1377100012.2738.28.camel@menhir>
- <20130821160817.940D3E0090@blue.fi.intel.com>
- <1377103332.2738.37.camel@menhir>
- <20130821135821.fc8f5a2551a28c9ce9c4b049@linux-foundation.org>
- <1377163725.2720.18.camel@menhir>
- <20130822130527.71C0AE0090@blue.fi.intel.com>
- <1377178420.2720.51.camel@menhir>
-Subject: Re: [PATCH] mm, fs: avoid page allocation beyond i_size on read
+	id S1753145Ab3HVOee (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 10:34:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13781 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab3HVOed (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 10:34:33 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=xQuigt2pMRoA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Jp2RfDP34KgA:10 a=pGLkceISAAAA:8 a=rTFHTZTkU5hEDNBjRBcA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Thu, 22 Aug 2013 10:34:31 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Lai Jiangshan <eag0628@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 5/8] rcu: eliminate deadlock for rcu read site
+Message-ID: <20130822103431.7abc09ab@gandalf.local.home>
+In-Reply-To: <CACvQF51-oAGkdxwku+orKSQ=SZd1A4saXzkrgcRGi+KnZUZYxQ@mail.gmail.com>
+References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
+	<1375871104-10688-6-git-send-email-laijs@cn.fujitsu.com>
+	<20130808204020.GA31127@linux.vnet.ibm.com>
+	<5205B6FF.7060502@cn.fujitsu.com>
+	<20130812135309.GF27162@twins.programming.kicks-ass.net>
+	<20130812101008.27048d83@gandalf.local.home>
+	<CACvQF51-oAGkdxwku+orKSQ=SZd1A4saXzkrgcRGi+KnZUZYxQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130822143041.EC9F1E0090@blue.fi.intel.com>
-Date: Thu, 22 Aug 2013 17:30:41 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Whitehouse wrote:
-> Hi,
-> 
-> On Thu, 2013-08-22 at 16:05 +0300, Kirill A. Shutemov wrote:
-> > Steven Whitehouse wrote:
-> > > Hi,
-> > > 
-> > > On Wed, 2013-08-21 at 13:58 -0700, Andrew Morton wrote:
-> > > > On Wed, 21 Aug 2013 17:42:12 +0100 Steven Whitehouse <swhiteho@redhat.com> wrote:
-> > > > 
-> > > > > > I don't think the change is harmful. The worst case scenario is race with
-> > > > > > write or truncate, but it's valid to return EOF in this case.
-> > > > > > 
-> > > > > > What scenario do you have in mind?
-> > > > > > 
-> > > > > 
-> > > > > 1. File open on node A
-> > > > > 2. Someone updates it on node B by extending the file
-> > > > > 3. Someone reads the file on node A beyond end of original file size,
-> > > > > but within end of new file size as updated by node B. Without the patch
-> > > > > this works, with it, it will fail. The reason being the i_size would not
-> > > > > be up to date until after readpage(s) has been called.
-> > 
-> > CC: +linux-fsdevel@
-> > 
-> > So in this case node A will see the file like it was never touched by
-> > node B. It's okay, if new i_size will eventually reach node A.
-> > 
-> > Is ->readpage() the only way to get i_size updated on node A or it will be
-> > eventually updated without it?
-> > 
-> It will be updated by anything which takes a glock in the gfs2 case.
-> Note that ->readpage() is not a very frequently used aop. For any
-> filesystem with ->readpages() this should cover almost all calls to the
-> fs for reading, with ->readpage() only used for some corner cases. So
-> from a performance point of view, it is ->readpages() which matters
-> most.
-> 
-> There is no time based updating of the inode information - it relies
-> entirely upon the locking/cache control provided by the glock layer.
-> 
-> > If it's the only way, we need add a explicit way to initiate i_size sync
-> > between nodes on read. Probably, distributed filesystems should provide own
-> > ->aio_read() which deal i_size as the filesystem need.
-> > 
-> I'd rather not do that, if we can avoid it. The current system has been
-> carefully designed so that all the cluster fs knowledge can be hidden in
-> the layer below the page cache. That means for a read which can be
-> satisfied from just the page cache, cluster filesystems are the same
-> speed as local file systems, since it is the same code path. Only when a
-> page doesn't exist in the cache do we need to take cluster locks in
-> order to check the file size, etc.
-> 
-> Taking cluster locks can be expensive, since in the worst case it can
-> involve both the local glock and dlm state machines, and remote dlm and
-> glock state machines, network communication, and waiting for disk i/o
-> and log flushes on (a) remote node(s).
-> 
-> Andrew's proposed solution makes sense to me, and is probably the
-> easiest way to solve this.
+On Thu, 22 Aug 2013 22:23:09 +0800
+Lai Jiangshan <eag0628@gmail.com> wrote:
 
-Move check to no_cached_page? I don't see how it makes any difference for
-page cache miss case: we anyway exclude ->readpage() if it's beyond local
-i_size.
-And for cache hit local i_size will be most likely cover locally cached
-pages.
 
-Should we introduce an aop which can be called before i_size check in
-no_cached_page path to refresh local i_size?
-
-> > > > > I think this is likely to be an issue for any distributed fs using
-> > > > > do_generic_file_read(), although it would certainly affect GFS2, since
-> > > > > the locking is done at page cache level,
-> > > > 
-> > > > Boy, that's rather subtle.  I'm surprised that the generic filemap.c
-> > > > stuff works at all in that sort of scenario.
-> > > > 
-> > > > Can we put the i_size check down in the no_cached_page block?  afaict
-> > > > that will solve the problem without breaking GFS2 and is more
-> > > > efficient?
-> > > > 
-> > > 
-> > > Well I think is even more subtle, since it relies on ->readpages
-> > > updating the file size, even if it has failed to actually read the
-> > > required pages :-) Having said that, we do rely on ->readpages updating
-> > > the inode size elsewhere in this function, as per the block comment
-> > > immediately following the page_ok label. 
-> > 
-> > That i_size recheck was invented to cover different use case: read vs.
-> > truncate race. Userspace should not see truncate-caused zeros in buffer.
-> > It's not to prevent file extending vs. read() race. This usually harmless:
-> > data is consistent.
-> > 
+> > By making it a irq-safe lock, we need to disable interrupts every time
+> > it is taken, which means the entire pi-chain walk in
+> > rt_mutex_adjust_prio_chain() will pretty much be with interrupts
+> > disabled.
 > 
-> Yes, it is a different use case, but the same issue applies that without
-> a prior call to ->readpage() or ->readpages() then i_size may not be
-> correct.
-
-I believe it's correct, but stale. I think it makes difference in the
-context. Use stale value for read vs. write race is okay, but not for read
-vs. truncate.
-
-Will i_size be set to correct value on the first file open (struct inode
-creation)?
-
-> The comment mentions that there needs to be an uptodate page in
-> existence in order for i_size to be valid, and that is, at least in the
-> GFS2 case, an equivalent condition since it implies that ->readpage() or
-> ->readpages() must have been called since the address space was last
-> invalidated (or alternatively that the page was populated from a local
-> write, but the effect is the same)
 > 
-> This is only true though, since GFS2 does its locking/caching on a
-> per-inode basis - it someone wanted to implement a filesystem which
-> worked on a per-page (for example) basis then the uptodate page criteria
-> would not necessarily mean that the i_size was also uptodate.
+> I didn't catch your meaning.
+> rt_mutex_adjust_prio_chain() is called without wait_lock held.
+> current C.S. of wait_lock are really short.
 > 
-> I hope that helps clarify things a bit,
-> 
-> Steve.
 
--- 
- Kirill A. Shutemov
+There is quite a bit of overhead to enable and disable interrupts. If
+we are doing this in a very fast path, it's going to slow down -rt even
+more.
+
+It would be really nice to avoid making wait_lock be irq safe.
+
+-- Steve
