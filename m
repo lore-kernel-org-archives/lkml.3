@@ -1,58 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab3HVQRR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:17:17 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:58365 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752230Ab3HVQRQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:17:16 -0400
-Date: Thu, 22 Aug 2013 17:16:14 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "Leizhen (ThunderTown, Euler)" <thunder.leizhen@huawei.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>, Huxinwei <huxinwei@huawei.com>,
-        "Liujiang (Gerry)" <jiang.liu@huawei.com>,
-        Lizefan <lizefan@huawei.com>
-Subject: Re: [BUG] ARM64: Create 4K page size mmu memory map at init time
- will trigger exception.
-Message-ID: <20130822161614.GE1352@arm.com>
-References: <BFAC7FA8F7636E45AB9ECBAC17346F3434557683@SZXEML508-MBS.china.huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BFAC7FA8F7636E45AB9ECBAC17346F3434557683@SZXEML508-MBS.china.huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753523Ab3HVQSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:18:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59880 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752771Ab3HVQSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 12:18:13 -0400
+Message-ID: <1377188240.25163.23.camel@ul30vt.home>
+Subject: Re: [PATCH 2/2] powerpc/iommu: check dev->iommu_group before remove
+ a device from iommu_group
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Wei Yang <weiyang@linux.vnet.ibm.com>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, benh@au1.ibm.com, paulus@au1.ibm.com
+Date: Thu, 22 Aug 2013 10:17:20 -0600
+In-Reply-To: <20130822154107.GC7393@weiyang.vnet.ibm.com>
+References: <1376647687-20550-1-git-send-email-weiyang@linux.vnet.ibm.com>
+	 <1376647687-20550-3-git-send-email-weiyang@linux.vnet.ibm.com>
+	 <520DFBC8.4040509@ozlabs.ru> <20130819012945.GA8342@weiyang.vnet.ibm.com>
+	 <52117765.7010205@ozlabs.ru> <20130819015538.GB8342@weiyang.vnet.ibm.com>
+	 <5215BC76.10105@ozlabs.ru> <20130822075237.GA14479@weiyang.vnet.ibm.com>
+	 <1377185303.25163.13.camel@ul30vt.home>
+	 <20130822154107.GC7393@weiyang.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 04:35:29AM +0100, Leizhen (ThunderTown, Euler) wrote:
-> This problem is on ARM64. When CONFIG_ARM64_64K_PAGES is not opened, the memory
-> map size can be 2M(section) and 4K(PAGE). First, OS will create map for pgd
-> (level 1 table) and level 2 table which in swapper_pg_dir. Then, OS register
-> mem block into memblock.memory according to memory node in fdt, like memory@0,
-> and create map in setup_arch-->paging_init. If all mem block start address and
-> size is integral multiple of 2M, there is no problem, because we will create 2M
-> section size map whose entries locate in level 2 table. But if it is not
-> integral multiple of 2M, we should create level 3 table, which granule is 4K.
-> Now, current implementtion is call early_alloc-->memblock_alloc to alloc memory
-> for level 3 table. This function will find a 4K free memory which locate in
-> memblock.memory tail(high address), but paging_init is create map from low
-> address to high address, so new alloced memory is not mapped, write page talbe
-> entry to it will trigger exception.
+On Thu, 2013-08-22 at 23:41 +0800, Wei Yang wrote:
+> On Thu, Aug 22, 2013 at 09:28:23AM -0600, Alex Williamson wrote:
+> >On Thu, 2013-08-22 at 15:52 +0800, Wei Yang wrote:
+> >> On Thu, Aug 22, 2013 at 05:23:34PM +1000, Alexey Kardashevskiy wrote:
+> >> >On 08/19/2013 11:55 AM, Wei Yang wrote:
+> >> >> On Mon, Aug 19, 2013 at 11:39:49AM +1000, Alexey Kardashevskiy wrote:
+> >> >>> On 08/19/2013 11:29 AM, Wei Yang wrote:
+> >> >>>> On Fri, Aug 16, 2013 at 08:15:36PM +1000, Alexey Kardashevskiy wrote:
+> >> >>>>> On 08/16/2013 08:08 PM, Wei Yang wrote:
+> >> >>>>>> ---
+> >> >>>>>>  arch/powerpc/kernel/iommu.c |    3 ++-
+> >> >>>>>>  1 files changed, 2 insertions(+), 1 deletions(-)
+> >> >>>>>>
+> >> >>>>>> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+> >> >>>>>> index b20ff17..5abf7c3 100644
+> >> >>>>>> --- a/arch/powerpc/kernel/iommu.c
+> >> >>>>>> +++ b/arch/powerpc/kernel/iommu.c
+> >> >>>>>> @@ -1149,7 +1149,8 @@ static int iommu_bus_notifier(struct notifier_block *nb,
+> >> >>>>>>  	case BUS_NOTIFY_ADD_DEVICE:
+> >> >>>>>>  		return iommu_add_device(dev);
+> >> >>>>>>  	case BUS_NOTIFY_DEL_DEVICE:
+> >> >>>>>> -		iommu_del_device(dev);
+> >> >>>>>> +		if (dev->iommu_group)
+> >> >>>>>> +			iommu_del_device(dev);
+> >> >>>>>>  		return 0;
+> >> >>>>>>  	default:
+> >> >>>>>>  		return 0;
+> >> >>>>>>
+> >> >>>>>
+> >> >>>>> This one seems redundant, no?
+> >> >>>>
+> >> >>>> Sorry for the late.
+> >> >>>>
+> >> >>>> Yes, these two patches have the same purpose to guard the system, while in two
+> >> >>>> different places.  One is in powernv platform, the other is in the generic iommu 
+> >> >>>> driver.
+> >> >>>>
+> >> >>>> The one in powernv platform is used to correct the original logic.
+> >> >>>>
+> >> >>>> The one in generic iommu driver is to keep system safe in case other platform to
+> >> >>>> call iommu_group_remove_device() without the check.
+> >> >>>
+> >> >>>
+> >> >>> But I am moving bus notifier to powernv code (posted a patch last week,
+> >> >>> otherwise Freescale's IOMMU conflicted) so this won't be the case.
+> >> >> 
+> >> >> Yes, I see the patch.
+> >> >> 
+> >> >> This means other platforms, besides powernv, will check the dev->iommu_group
+> >> >> before remove the device? This would be a convention?
+> >> >> 
+> >> >> If this is the case, the second patch is enough. We don't need to check it in
+> >> >> generic iommu driver.
+> >> >> 
+> >> >> Since I am not very familiar with the code convention, I post these two
+> >> >> patches together. This doesn't mean I need to push both of them. Your comments
+> >> >> are welcome, lets me understand which one is more suitable in this case.
+> >> >
+> >> >
+> >> >Ok. So. I included the check in the bus notifier which I moved to powernv
+> >> >platform, I guess I'll repost the series soon.
+> >> 
+> >> Thanks, this check will guard the powernv platform.
+> >> 
+> >> >
+> >> >Good luck with pushing the fix for drivers/iommu/iommu.c :)
+> >> >
+> >> 
+> >> Alex,
+> >> 
+> >> Sorry for not including you in the very beginning, which may spend you more
+> >> efforts to track previous mails in this thread.
+> >> 
+> >> Do you think it is reasonable to check the dev->iommu_group in
+> >> iommu_group_remove_device()? Or we can count on the bus notifier to check it?
+> >> 
+> >> Welcome your suggestions~
+> >
+> >I don't really see the point of patch 1/2. iommu_group_remove_device()
+> >is specifically to remove a device from an iommu_group, so why would you
+> >call it on a device that's not part of an iommu_group.  If you want to
+> >avoid testing dev->iommu_group, then implement the .remove_device
+> >callback rather than using the notifier.  Thanks,
+> >
+> 
+> You mean the .remove_device like intel_iommu_remove_device()? 
+> 
+> Hmm... this function didn't check the dev->iommu_group and just call
+> iommu_group_remove_device(). I see this guard is put in iommu_bus_notifier(), 
+> which will check dev->iommu_group before invoke .remove_device.
+> 
+> Let me explain the case to triger the problem a little. 
+> 
+> On some platform, like powernv, we implement another bus notifier when devices
+> are added or removed in the system. Like Alexey mentioned, he missed the check
+> for dev->iommu_group in the notifier before removing it from iommu_group. This
+> trigger the crash.
+> 
+> So do you think it is reasonable to guard the kernel in
+> iommu_group_remove_device(), or we give the platform developers the
+> responsibility to check the dev->iommu_group before calling it?
 
-I see how this can happen. There is a memblock_set_current_limit to
-PGDIR_SIZE (1GB, we have a pre-allocated pmd) and in my tests I had at
-least 1GB of RAM which got mapped first and didn't have this problem.
-I'll come up with a patch tomorrow.
+I don't see it as we need either patch 1/2 or patch 2/2.  We absolutely
+need some form of patch 2/2.  Patch 1/2 isn't necessarily bad, but it
+facilitates sloppy usage.  The iommu driver shouldn't be calling
+iommu_group_remove_device() on arbitrary devices that may or may not be
+part of an iommu_group.  Perhaps patch 1/2 should be:
 
--- 
-Catalin
+if (WARN_ON(!group))
+	return;
 
-P.S. Please try to send plain-text (rather than HTML) emails only, with
-nicely wrapped lines. Thanks.
+Thanks,
+
+Alex
+
