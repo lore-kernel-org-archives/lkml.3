@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab3HVHWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 03:22:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51034 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634Ab3HVHWC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 03:22:02 -0400
-Date: Thu, 22 Aug 2013 00:21:46 -0700
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-eb86b5fd505cb97743d84226140cf247d91a2f03@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        ak@linux.intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ak@linux.intel.com, tglx@linutronix.de
-In-Reply-To: <1377115662-4865-1-git-send-email-andi@firstfloor.org>
-References: <1377115662-4865-1-git-send-email-andi@firstfloor.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asmlinkage] x86/asmlinkage:
-  Fix warning in xen asmlinkage change
-Git-Commit-ID: eb86b5fd505cb97743d84226140cf247d91a2f03
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753888Ab3HVHWv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 03:22:51 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53473 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753658Ab3HVHWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 03:22:49 -0400
+Date: Thu, 22 Aug 2013 09:20:41 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        Vlastimil Babka <vbabka@suse.cz>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/9] mm + fs: prepare for non-page entries in page cache
+ radix trees
+Message-ID: <20130822072041.GA26749@cmpxchg.org>
+References: <1376767883-4411-1-git-send-email-hannes@cmpxchg.org>
+ <1376767883-4411-5-git-send-email-hannes@cmpxchg.org>
+ <20130820135910.6e6da048131bc841404906be@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 22 Aug 2013 00:21:52 -0700 (PDT)
+In-Reply-To: <20130820135910.6e6da048131bc841404906be@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eb86b5fd505cb97743d84226140cf247d91a2f03
-Gitweb:     http://git.kernel.org/tip/eb86b5fd505cb97743d84226140cf247d91a2f03
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Wed, 21 Aug 2013 13:07:42 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 22 Aug 2013 09:17:19 +0200
+On Tue, Aug 20, 2013 at 01:59:10PM -0700, Andrew Morton wrote:
+> On Sat, 17 Aug 2013 15:31:18 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > shmem mappings already contain exceptional entries where swap slot
+> > information is remembered.
+> > 
+> > To be able to store eviction information for regular page cache,
+> > prepare every site dealing with the radix trees directly to handle
+> > entries other than pages.
+> > 
+> > The common lookup functions will filter out non-page entries and
+> > return NULL for page cache holes, just as before.  But provide a raw
+> > version of the API which returns non-page entries as well, and switch
+> > shmem over to use it.
+> > 
+> >
+> > ...
+> >
+> > -/**
+> > - * find_get_page - find and get a page reference
+> > - * @mapping: the address_space to search
+> > - * @offset: the page index
+> > - *
+> > - * Is there a pagecache struct page at the given (mapping, offset) tuple?
+> > - * If yes, increment its refcount and return it; if no, return NULL.
+> > - */
+> > -struct page *find_get_page(struct address_space *mapping, pgoff_t offset)
+> > +struct page *__find_get_page(struct address_space *mapping, pgoff_t offset)
+> >  {
+> >  	void **pagep;
+> >  	struct page *page;
+> > @@ -812,24 +828,31 @@ out:
+> >  
+> >  	return page;
+> >  }
+> > -EXPORT_SYMBOL(find_get_page);
+> > +EXPORT_SYMBOL(__find_get_page);
+> 
+> Deleting the interface documentation for a global, exported-to-modules
+> function was a bit rude.
+> 
+> And it does need documentation, to tell people that it can return the
+> non-pages.
 
-x86/asmlinkage: Fix warning in xen asmlinkage change
+I didn't really delete documentation as much as moving it to the new
+find_get_page() definition (the above is a rename).  But yeah, I
+should probably add some documentation to the new function as well.
 
-Current code uses asmlinkage for functions without arguments.
-This adds an implicit regparm(0) which creates a warning
-when assigning the function to pointers.
+> Does it have the same handling of non-pages as __find_get_pages()?  It
+> had better, given the naming!
 
-Use __visible for the functions without arguments.
-This avoids having to add regparm(0) to function pointers.
-Since they have no arguments it does not make any difference.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1377115662-4865-1-git-send-email-andi@firstfloor.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/xen/xen-ops.h | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index d380213..95f8c61 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -105,7 +105,7 @@ static inline void __init xen_init_apic(void)
- /* Declare an asm function, along with symbols needed to make it
-    inlineable */
- #define DECL_ASM(ret, name, ...)		\
--	asmlinkage ret name(__VA_ARGS__);	\
-+	__visible ret name(__VA_ARGS__);	\
- 	extern char name##_end[] __visible;	\
- 	extern char name##_reloc[] __visible
- 
-@@ -115,11 +115,11 @@ DECL_ASM(unsigned long, xen_save_fl_direct, void);
- DECL_ASM(void, xen_restore_fl_direct, unsigned long);
- 
- /* These are not functions, and cannot be called normally */
--asmlinkage void xen_iret(void);
--asmlinkage void xen_sysexit(void);
--asmlinkage void xen_sysret32(void);
--asmlinkage void xen_sysret64(void);
--asmlinkage void xen_adjust_exception_frame(void);
-+__visible void xen_iret(void);
-+__visible void xen_sysexit(void);
-+__visible void xen_sysret32(void);
-+__visible void xen_sysret64(void);
-+__visible void xen_adjust_exception_frame(void);
- 
- extern int xen_panic_handler_init(void);
- 
+Yes, the only difference is single vs. multi lookup.  The underscore
+versions may return non-pages, the traditional interface filters them.
