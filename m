@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab3HVV13 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 17:27:29 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:55815 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab3HVV12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 17:27:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [RESEND/PATCH] acpi: video: remove unused code
-Date: Thu, 22 Aug 2013 23:38:01 +0200
-Message-ID: <1808554.Og9bqVFP8Z@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1377196271-20427-1-git-send-email-felipe.contreras@gmail.com>
-References: <1377196271-20427-1-git-send-email-felipe.contreras@gmail.com>
+	id S1754277Ab3HVVdK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 17:33:10 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:63719 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985Ab3HVVdH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 17:33:07 -0400
+Date: Thu, 22 Aug 2013 16:32:55 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [RFC] Get rid of SUBARCH
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
+In-Reply-To: <52167AB8.4060206@gmail.com> (from ddaney.cavm@gmail.com on Thu
+	Aug 22 15:55:20 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1377207175.2737.113@driftwood>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 22, 2013 01:31:11 PM Felipe Contreras wrote:
-> _BCM_use_index and _BCL_use_index are never used and probably never will.
+On 08/22/2013 03:55:20 PM, David Daney wrote:
+> On 08/22/2013 01:41 PM, Rob Landley wrote:
+>> On 08/22/2013 07:58:26 AM, Geert Uytterhoeven wrote:
+>>> On Wed, Aug 21, 2013 at 9:51 PM, Sam Ravnborg <sam@ravnborg.org>  
+>>> wrote:
+>>> >> > The series touches also m68k, sh, mips and unicore32.
+>>> >> > These architectures magically select a cross compiler if ARCH  
+>>> !=
+>>> SUBARCH.
+>>> >> > Do really need that behavior?
+>>> >>
+>>> >> This does remove functionality.
+>>> >> It allows to build a kernel using e.g. "make ARCH=m68k".
+>>> >>
+>>> >> Perhaps this can be moved to generic code? Most (not all!)
+>>> cross-toolchains
+>>> >> are called $ARCH-{unknown-,}linux{,-gnu}.
+>>> >> Exceptions are e.g. am33_2.0-linux and bfin-uclinux.
+>>> >
+>>> > Today you can specify CROSS_COMPILE in Kconfig.
+>>> > With this we should be able to remove these hacks.
+>>> 
+>>> The correct CROSS_COMPILE value depends on the host environment, not
+>>> on the target configuration.
+>> 
+>> Actually it depends on _both_.
+>> 
 > 
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-
-I have this patch in the linux-next branch, although under a different subject.
-
-Thanks,
-Rafael
-
-
-> ---
->  drivers/acpi/video.c | 12 ------------
->  1 file changed, 12 deletions(-)
+> I think the important issue is not the exact dependencies of the  
+> value of CROSS_COMPILE, but rather that it varies enough that  
+> automatically choosing a value based on SUBARCH often gives the wrong  
+> result.
 > 
-> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> index e1284b8..e6be27e 100644
-> --- a/drivers/acpi/video.c
-> +++ b/drivers/acpi/video.c
-> @@ -185,8 +185,6 @@ struct acpi_video_device_cap {
->  struct acpi_video_brightness_flags {
->  	u8 _BCL_no_ac_battery_levels:1;	/* no AC/Battery levels in _BCL */
->  	u8 _BCL_reversed:1;		/* _BCL package is in a reversed order*/
-> -	u8 _BCL_use_index:1;		/* levels in _BCL are index values */
-> -	u8 _BCM_use_index:1;		/* input of _BCM is an index value */
->  	u8 _BQC_use_index:1;		/* _BQC returns an index value */
->  };
->  
-> @@ -806,16 +804,6 @@ acpi_video_init_brightness(struct acpi_video_device *device)
->  	br->count = count;
->  	device->brightness = br;
->  
-> -	/* Check the input/output of _BQC/_BCL/_BCM */
-> -	if ((max_level < 100) && (max_level <= (count - 2)))
-> -		br->flags._BCL_use_index = 1;
-> -
-> -	/*
-> -	 * _BCM is always consistent with _BCL,
-> -	 * at least for all the laptops we have ever seen.
-> -	 */
-> -	br->flags._BCM_use_index = br->flags._BCL_use_index;
-> -
->  	/* _BQC uses INDEX while _BCL uses VALUE in some laptops */
->  	br->curr = level = max_level;
->  
+> Removing SUBARCH and setting CROSS_COMPILE either from the make  
+> command line (or environment) or the config file, is a good idea  
+> because it simplifies the build system, makes things clearer, and  
+> yields more predictable results.
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> David Daney
+
+Agreed. Expecting the build to guess the right $CROSS_COMPILE is like  
+expecting it to guess the right $PATH. It should be specified, not  
+heuristically probed.
+
+Rob
