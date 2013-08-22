@@ -1,155 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab3HVIbn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:31:43 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56603 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab3HVIbl (ORCPT
+	id S1752221Ab3HVIcD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 04:32:03 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:33761 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab3HVIcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 04:31:41 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <5215CC40.5060406@jp.fujitsu.com>
-Date: Thu, 22 Aug 2013 17:30:56 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 22 Aug 2013 04:32:00 -0400
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Hansen <dave@sr71.net>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 7/7] drivers: base: refactor add_memory_section() to add_memory_block()
-References: <1377018783-26756-1-git-send-email-sjenning@linux.vnet.ibm.com> <1377018783-26756-7-git-send-email-sjenning@linux.vnet.ibm.com> <5215C9B3.4090608@jp.fujitsu.com>
-In-Reply-To: <5215C9B3.4090608@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+In-Reply-To: <20130821181555.GA3851@polaris.bitmath.org>
+References: <1377099620-23947-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1377099620-23947-2-git-send-email-benjamin.tissoires@redhat.com>
+	<20130821181555.GA3851@polaris.bitmath.org>
+Date: Thu, 22 Aug 2013 10:31:57 +0200
+Message-ID: <CAN+gG=Ft=wer1GAiR9W8z7xjujRuqh13co35X-eA2PpSppCZRA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] HID: Use hid_parser for pre-scanning the report descriptors
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/22 17:20), Yasuaki Ishimatsu wrote:
-> (2013/08/21 2:13), Seth Jennings wrote:
->> Right now memory_dev_init() maintains the memory block pointer
->> between iterations of add_memory_section().  This is nasty.
+Hi Henrik,
+
+On Wed, Aug 21, 2013 at 8:15 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Benjamin,
+>
+> this looks pretty good to me, just a few nitpicks below.
+>
+>> hid_scan_report() implements its own HID report descriptor parsing. It is
+>> going to be really bad with the detection of Win 8 certified touchscreen,
+>> as this detection relies on a special feature and on the report_size and
+>> report_count fields.
+>
+> How about 'The Win 8 detection is sufficiently complex to warrant use
+> of the full parser code, in spite of the inferred memory
+> usage. Therefore...'
+>
+
+Sure. Will change in v3.
+
 >>
->> This patch refactors add_memory_section() to become add_memory_block().
->> The refactoring pulls the section scanning out of memory_dev_init()
->> and simplifies the signature.
+>> We can use the existing HID parser in hid-core for hid_scan_report()
+>> by re-using the code from hid_open_report(). hid_parser_global,
+>> hid_parser_local and hid_parser_reserved does not have any side effects.
+>> We just need to reimplement the MAIN_ITEM callback to have a proper
+>> parsing without side effects.
 >>
->> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 >> ---
->>    drivers/base/memory.c | 48 +++++++++++++++++++++---------------------------
->>    1 file changed, 21 insertions(+), 27 deletions(-)
 >>
->> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
->> index 7d9d3bc..021283a 100644
->> --- a/drivers/base/memory.c
->> +++ b/drivers/base/memory.c
->> @@ -602,32 +602,31 @@ static int init_memory_block(struct memory_block **memory,
->>    	return ret;
->>    }
->>    
->> -static int add_memory_section(struct mem_section *section,
->> -			struct memory_block **mem_p)
->> +static int add_memory_block(int base_section_nr)
->>    {
->> -	struct memory_block *mem = NULL;
->> -	int scn_nr = __section_nr(section);
->> -	int ret = 0;
->> -
->> -	if (mem_p && *mem_p) {
->> -		if (scn_nr >= (*mem_p)->start_section_nr &&
->> -		    scn_nr <= (*mem_p)->end_section_nr) {
->> -			mem = *mem_p;
->> -		}
->> -	}
->> +	struct memory_block *mem;
->> +	int i, ret, section_count = 0, section_nr;
->>    
->> -	if (mem)
->> -		mem->section_count++;
->> -	else {
->> -		ret = init_memory_block(&mem, section, MEM_ONLINE);
->> -		/* store memory_block pointer for next loop */
->> -		if (!ret && mem_p)
->> -			*mem_p = mem;
->> +	for (i = base_section_nr;
->> +	     (i < base_section_nr + sections_per_block) && i < NR_MEM_SECTIONS;
->> +	     i++) {
->> +		if (!present_section_nr(i))
->> +			continue;
->> +		if (section_count == 0)
->> +			section_nr = i;
->> +		section_count++;
->>    	}
->>    
->> -	return ret;
->> +	if (section_count == 0)
->> +		return 0;
->> +	ret = init_memory_block(&mem, __nr_to_section(section_nr), MEM_ONLINE);
->> +	if (ret)
->> +		return ret;
->> +	mem->section_count = section_count;
->> +	return 0;
->>    }
->>    
+>> changes in v2:
+>> - moved "flags" processing in patch 2/3 (so use hid->group in this patch)
+>> - hid_scan_report() is less verbose when errors are found in the descriptor
+>> - hid_scan_report() is tolerant to parsing errors
+>> - fixed usage_page handling in hid_scan_collection(), which fixes sensors detection
+>> - amended commit message
+>>
+>>  drivers/hid/hid-core.c | 106 +++++++++++++++++++++++++++++++------------------
+>>  1 file changed, 67 insertions(+), 39 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+>> index 3efe19f..e072b15 100644
+>> --- a/drivers/hid/hid-core.c
+>> +++ b/drivers/hid/hid-core.c
+>> @@ -677,12 +677,55 @@ static u8 *fetch_item(__u8 *start, __u8 *end, struct hid_item *item)
+>>       return NULL;
+>>  }
+>>
+>> -static void hid_scan_usage(struct hid_device *hid, u32 usage)
+>> +static void hid_scan_input_usage(struct hid_parser *parser, u32 usage)
+>>  {
+>> +     struct hid_device *hid = parser->device;
 >> +
->>    /*
->>     * need an interface for the VM to add new memory regions,
->>     * but without onlining it.
->> @@ -733,7 +732,6 @@ int __init memory_dev_init(void)
->>    	int ret;
->>    	int err;
->>    	unsigned long block_sz;
->> -	struct memory_block *mem = NULL;
->>    
->>    	ret = subsys_system_register(&memory_subsys, memory_root_attr_groups);
->>    	if (ret)
->> @@ -747,12 +745,8 @@ int __init memory_dev_init(void)
->>    	 * during boot and have been initialized
->>    	 */
->>    	mutex_lock(&mem_sysfs_mutex);
->> -	for (i = 0; i < NR_MEM_SECTIONS; i++) {
->> -		if (!present_section_nr(i))
->> -			continue;
->> -		/* don't need to reuse memory_block if only one per block */
->> -		err = add_memory_section(__nr_to_section(i),
->> -				 (sections_per_block == 1) ? NULL : &mem);
->> +	for (i = 0; i < NR_MEM_SECTIONS; i += sections_per_block) {
-> 
-> Why do you remove present_setcion_nr() check?
-
-Sorry for the noise. I understood.
-The check was moved into add_memory_section(). So it was removed.
-
-Thanks,
-Yasuaki Ishimatsu
-
-> 
->> +		err = add_memory_block(i);
->>    		if (!ret)
-> 
-> Thanks,
-> Yasuaki Ishimatasu
-> 
->>    			ret = err;
->>    	}
+>>       if (usage == HID_DG_CONTACTID)
+>>               hid->group = HID_GROUP_MULTITOUCH;
+>>  }
 >>
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+>> +static void hid_scan_collection(struct hid_parser *parser, unsigned type)
+>> +{
+>> +     struct hid_device *hid = parser->device;
+>> +
+>> +     if (((parser->global.usage_page << 16) == HID_UP_SENSOR) &&
+>> +         type == HID_COLLECTION_PHYSICAL)
+>> +             hid->group = HID_GROUP_SENSOR_HUB;
+>> +}
+>> +
+>> +static int hid_scan_main(struct hid_parser *parser, struct hid_item *item)
+>> +{
+>> +     __u32 data;
+>> +     int i;
+>> +
+>> +     data = item_udata(item);
+>> +
+>> +     switch (item->tag) {
+>> +     case HID_MAIN_ITEM_TAG_BEGIN_COLLECTION:
+>> +             hid_scan_collection(parser, data & 0xff);
+>> +             break;
+>> +     case HID_MAIN_ITEM_TAG_END_COLLECTION:
+>> +             break;
+>> +     case HID_MAIN_ITEM_TAG_INPUT:
+>> +             for (i = 0; i < parser->local.usage_index; i++)
+>> +                     hid_scan_input_usage(parser, parser->local.usage[i]);
+>> +             break;
+>> +     case HID_MAIN_ITEM_TAG_OUTPUT:
+>> +             break;
+>> +     case HID_MAIN_ITEM_TAG_FEATURE:
+>> +             break;
+>> +     default:
+>> +             hid_err(parser->device, "unknown main item tag 0x%x\n",
+>> +                     item->tag);
+>
+> Looks this this message is a duplicate as well.
 
+oops, forgot to remove it :)
 
+Cheers,
+Benjamin
+
+>
+>> +     }
+>> +
+>> +     /* Reset the local parser environment */
+>> +     memset(&parser->local, 0, sizeof(parser->local));
+>> +
+>> +     return 0;
+>> +}
+>> +
+>>  /*
+>>   * Scan a report descriptor before the device is added to the bus.
+>>   * Sets device groups and other properties that determine what driver
+>> @@ -690,48 +733,33 @@ static void hid_scan_usage(struct hid_device *hid, u32 usage)
+>>   */
+>>  static int hid_scan_report(struct hid_device *hid)
+>>  {
+>> -     unsigned int page = 0, delim = 0;
+>> +     struct hid_parser *parser;
+>> +     struct hid_item item;
+>>       __u8 *start = hid->dev_rdesc;
+>>       __u8 *end = start + hid->dev_rsize;
+>> -     unsigned int u, u_min = 0, u_max = 0;
+>> -     struct hid_item item;
+>> +     static int (*dispatch_type[])(struct hid_parser *parser,
+>> +                                   struct hid_item *item) = {
+>> +             hid_scan_main,
+>> +             hid_parser_global,
+>> +             hid_parser_local,
+>> +             hid_parser_reserved
+>> +     };
+>>
+>> -     hid->group = HID_GROUP_GENERIC;
+>> -     while ((start = fetch_item(start, end, &item)) != NULL) {
+>> -             if (item.format != HID_ITEM_FORMAT_SHORT)
+>> -                     return -EINVAL;
+>> -             if (item.type == HID_ITEM_TYPE_GLOBAL) {
+>> -                     if (item.tag == HID_GLOBAL_ITEM_TAG_USAGE_PAGE)
+>> -                             page = item_udata(&item) << 16;
+>> -             } else if (item.type == HID_ITEM_TYPE_LOCAL) {
+>> -                     if (delim > 1)
+>> -                             break;
+>> -                     u = item_udata(&item);
+>> -                     if (item.size <= 2)
+>> -                             u += page;
+>> -                     switch (item.tag) {
+>> -                     case HID_LOCAL_ITEM_TAG_DELIMITER:
+>> -                             delim += !!u;
+>> -                             break;
+>> -                     case HID_LOCAL_ITEM_TAG_USAGE:
+>> -                             hid_scan_usage(hid, u);
+>> -                             break;
+>> -                     case HID_LOCAL_ITEM_TAG_USAGE_MINIMUM:
+>> -                             u_min = u;
+>> -                             break;
+>> -                     case HID_LOCAL_ITEM_TAG_USAGE_MAXIMUM:
+>> -                             u_max = u;
+>> -                             for (u = u_min; u <= u_max; u++)
+>> -                                     hid_scan_usage(hid, u);
+>> -                             break;
+>> -                     }
+>> -             } else if (page == HID_UP_SENSOR &&
+>> -                     item.type == HID_ITEM_TYPE_MAIN &&
+>> -                     item.tag == HID_MAIN_ITEM_TAG_BEGIN_COLLECTION &&
+>> -                     (item_udata(&item) & 0xff) == HID_COLLECTION_PHYSICAL)
+>> -                     hid->group = HID_GROUP_SENSOR_HUB;
+>> -     }
+>> +     parser = vzalloc(sizeof(struct hid_parser));
+>> +     if (!parser)
+>> +             return -ENOMEM;
+>> +
+>> +     parser->device = hid;
+>> +
+>> +     /*
+>> +      * The parsing is simpler than the one in hid_open_report() as we should
+>> +      * be robust against hid errors. Those errors will be raised by
+>> +      * hid_open_report() anyway.
+>> +      */
+>> +     while ((start = fetch_item(start, end, &item)) != NULL)
+>> +             dispatch_type[item.type](parser, &item);
+>>
+>> +     vfree(parser);
+>>       return 0;
+>>  }
+>>
+>> --
+>> 1.8.3.1
+>>
+>
+> Thanks,
+> Henrik
