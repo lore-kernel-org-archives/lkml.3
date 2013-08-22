@@ -1,61 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab3HVKUm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 06:20:42 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:56021 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab3HVKUk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 06:20:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130822100008.2669b0d9@armhf>
-References: <20130820120105.55a4c0ce@armhf> <CACxGe6vNKoi47-R3H2sYUhGuX5Lh0nokWaj6Bzw2zv2U0_Wgsg@mail.gmail.com>
- <20130822100008.2669b0d9@armhf>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Thu, 22 Aug 2013 11:20:19 +0100
-X-Google-Sender-Auth: 3cH-_hwMq4IWv4ngj2YOq2XXn5k
-Message-ID: <CACxGe6thGuf2uYD=s0K9=SdoVQmOLYOKVcsXt6wAmxpUjiUFpA@mail.gmail.com>
-Subject: Re: [PATCH] of: reduce the number of PROBE_DEFERs
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752755Ab3HVKZC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 06:25:02 -0400
+Received: from m12-17.163.com ([220.181.12.17]:60002 "EHLO m12-17.163.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752125Ab3HVKY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 06:24:59 -0400
+Date: Thu, 22 Aug 2013 17:23:23 +0800
+From: "=?utf-8?B?bGl1anVubGlhbmdfbGps?=" <liujunliang_ljl@163.com>
+To: "=?utf-8?B?Sm9lIFBlcmNoZXM=?=" <joe@perches.com>,
+        "=?utf-8?B?aG9ybXM=?=" <horms@verge.net.au>,
+        "=?utf-8?B?ZGF2ZW0=?=" <davem@davemloft.net>
+Cc: "=?utf-8?B?RnJhbmNvaXMgUm9taWV1?=" <romieu@fr.zoreil.com>,
+        "=?utf-8?B?Z3JlZ2to?=" <gregkh@suse.de>,
+        "=?utf-8?B?c3VuaGVjaGVuZw==?=" <sunhecheng@vip.126.com>,
+        "=?utf-8?B?bGludXgtdXNi?=" <linux-usb@vger.kernel.org>,
+        "=?utf-8?B?bmV0ZGV2?=" <netdev@vger.kernel.org>,
+        "=?utf-8?B?bGludXgta2VybmVs?=" <linux-kernel@vger.kernel.org>
+References: <201308201841116403992@163.com>,
+ <20130820204606.GB26241@electric-eye.fr.zoreil.com>,
+ <1377032302.2016.75.camel@joe-AO722>,
+ <201308211807295009698@163.com>
+Subject: =?utf-8?B?UmU6IFJlOiBSZTogW1BBVENILVNSOTcwMF0gTWVyZ2UgVVNCIDEuMSBFdGhlcm5ldCBBZGFwdGVyIFNSOTcwMERldmljZURyaXZlciBpbnRvIHRoZSBMaW51eCBLZXJuZWw=?=
+Message-ID: <201308221723223905126@163.com>
+X-mailer: Foxmail 6, 15, 201, 22 [cn]
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
+X-CM-TRANSID: EcCowEAZE0qJ2BVSzFslAQ--.199S2
+X-Coremail-Antispam: 1Uf129KBjvJXoWxXFWUJr4DJr13uFyDJF1DZFb_yoW5Jw47pF
+	WYgFyayF40gF1xZry8Zw1UWa4Fvw1rKasrCryDKasYvF98Ars5Ca40g34UXF15C3yfGF4r
+	ZF4Y9r9xuF4UZ37anT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
+	9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07jrJ5rUUUUU=
+X-CM-SenderInfo: xolxy3pqolt0hjboyzi6rwjhhfrp/1tbiqwuBX1EAE0Z-PAAAs5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7MAP84Z030029
 
-On Thu, Aug 22, 2013 at 9:00 AM, Jean-Francois Moine <moinejf@free.fr> wrote:
-> On Tue, 20 Aug 2013 11:13:24 +0100
-> Grant Likely <grant.likely@linaro.org> wrote:
->
->> On Tue, Aug 20, 2013 at 11:01 AM, Jean-Francois Moine <moinejf@free.fr> wrote:
->> > This patch populates the platform from the device tree into two steps:
->> > the first step creates the nodes that are referenced by a phandle,
->> > the second step creates the other nodes.
->> >
->> > This permits to reduce the number of PROBE_DEFERs.
->> >
->> > Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
->> > ---
->> > A better way to reduce probe deferral could be sorting the nodes
->> > according to their phandle level in the DT blob at compilation time ...
->>
->> Have you got measurements or statistics that show this making a
->> difference? I suspect you'll find for boot time it will have little to
->> no affect since the device driver probe order is more closely related
->> to the kernel link order than the order that devices were registered.
->
-> With the device tree and most drivers as modules, the kernel link order
-> does not matter.
->
-> I admit that the gain may be small: I just get none or just one probe
-> deferral instead of 3 on my cubox with this patch.
+Dear all :
 
-If you've only got 3 probe deferrals, then is this really an issue
-worth complicating the code over? I'd like to see a more significant
-impact before taking this step.
+		Thanks all of you about your attentions and suggestions, and I think firstly I should read the documentations carefully.
 
-g.
+		and then commiting the patch. 
+
+		Thanks all of you for your help and welcome all of you to come to china.
+
+		Thanks again.
+
+
+
+2013-08-22 
+
+
+
+liujunliang_ljl 
+
+
+
+Âèë‰ª∂‰∫∫Ôºö Joe Perches 
+ÂèëÈÄÅÊó∂Èó¥Ôºö 2013-08-21  19:34:10 
+Êî∂‰ª∂‰∫∫Ôºö liujunliang_ljl 
+ÊäÑÈÄÅÔºö Francois Romieu; gregkh; sunhecheng; linux-usb; netdev; linux-kernel 
+‰∏ªÈ¢òÔºö Re: Re: [PATCH-SR9700] Merge USB 1.1 Ethernet Adapter SR9700DeviceDriver into the Linux Kernel 
+ 
+On Wed, 2013-08-21 at 18:07 +0800, liujunliang_ljl wrote:
+>  Thanks a lot and I have been fixed all the problems mentioned above. please check the following patch and thanks again. 
+Just trivial comments below:
+> diff --git a/drivers/net/usb/sr9700.c b/drivers/net/usb/sr9700.c
+[]
+> +static void sr_write_reg_async(struct usbnet *dev, u8 reg, u8 value)
+> +{
+> + usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
+> + value, reg, NULL, 0);
+> +}
+> +
+> +static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg, __le16 *value)
+> +{
+[]
+> + netdev_dbg(dev->net, "read shared %d 0x%02x returned 0x%04x, %d\n",
+> +        phy, reg, *value, ret);
+You have a lot of code that uses inconsistent
+indentation.  Code in drivers/net and drivers/usb/net
+generally prefers to use alignment to parenthesis for
+multi-line statements
+The first could use
+usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
+       value, reg, NULL, 0);
+and the second
+netdev_dbg(dev->net, "read shared %d 0x%02x returned 0x%04x, %d\n",
+   phy, reg, *value, ret);
+Maximal use of 8 space indentation tabs followed by
+minimal spaces.
+There are many of these above.
+> +static int sr9700_get_eeprom(struct net_device *net, struct ethtool_eeprom *eeprom, u8 *data)
+[]
+> + for (i = 0; i < eeprom->len / 2; i++)
+> + ret = sr_read_eeprom_word(dev, eeprom->offset / 2 + i, &ebuf[i]);
+One too many tabs for the second line, a few of these...
+[]
+> +static int sr_mdio_read(struct net_device *netdev, int phy_id, int loc)
+[]
+> + if (rc == 1)
+> + return le16_to_cpu(res) | BMSR_LSTATUS;
+> + else
+> + return le16_to_cpu(res) & ~BMSR_LSTATUS;
+The code below the returns here is unreachable.
+> +
+> + netdev_dbg(dev->net,
+> +        "sr_mdio_read() phy_id=0x%02x, loc=0x%02x, returns=0x%04x\n",
+> +        phy_id, loc, le16_to_cpu(res));
+> +
+> + return le16_to_cpu(res);
+> +}
+You might try to use scripts/checkpatch.pl --strict if you
+care about these.  It should flag most of these coding
+style inconsistencies.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
