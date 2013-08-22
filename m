@@ -1,257 +1,529 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab3HVFye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 01:54:34 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:46158 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540Ab3HVFx2 (ORCPT
+	id S1753489Ab3HVF7I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 01:59:08 -0400
+Received: from mail-ph.de-nserver.de ([85.158.179.214]:53788 "EHLO
+	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160Ab3HVF7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 01:53:28 -0400
-From: Mike Turquette <mturquette@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Matt Sealey <neko@bakuhatsu.net>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Tero Kristo <t-kristo@ti.com>,
-        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
-        devicetree@vger.kernel.org, Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v4 3/5] clk: dt: binding for basic multiplexer clock
-Date: Wed, 21 Aug 2013 22:53:11 -0700
-Message-Id: <1377150793-27864-4-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1377150793-27864-1-git-send-email-mturquette@linaro.org>
-References: <1377150793-27864-1-git-send-email-mturquette@linaro.org>
+	Thu, 22 Aug 2013 01:59:06 -0400
+X-Fcrdns: No
+Message-ID: <5215A8A8.90900@profihost.ag>
+Date: Thu, 22 Aug 2013 07:59:04 +0200
+From: Stefan Priebe <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Kent Overstreet <kmo@daterainc.com>
+CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-bcache@vger.kernel.org
+Subject: Re: bcache: Fix a writeback performance regression
+References: <20130814225904.GA6427@kmo-pixel> <520C788A.1060208@profihost.ag> <520DFAB4.1050402@profihost.ag> <52114614.4070509@profihost.ag> <20130819222718.GA32104@kmo-pixel> <52132243.8050803@profihost.ag> <521323D1.1070503@profihost.ag> <20130821234715.GA4630@moria.home.lan> <5215A130.9080508@profihost.ag> <20130822054336.GA14935@kmo-pixel>
+In-Reply-To: <20130822054336.GA14935@kmo-pixel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device Tree binding for the basic clock multiplexer, plus the setup
-function to register the clock.  Based on the existing fixed-clock
-binding.
 
-Includes minor beautification of clk-provider.h where some whitespace is
-added and of_fixed_factor_clock_setup is relocated to maintain a
-consistent style.
+ >schedule_timeout() is not the same as
+ >schedule_timeout_interruptible().
 
-Tero Kristo contributed helpful bug fixes to this patch.
+just search and replace? So i can try on my own.
 
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
-Tested-by: Heiko Stuebner <heiko@sntech.de>
-Reviewed-by: Heiko Stuebner <heiko@sntech.de>
----
-Changes since v3:
-* replaced underscores with dashes in DT property names
-* bail from of clock setup function early if of_iomap fails
-* removed unecessary explict cast
+Stefan
 
- .../devicetree/bindings/clock/mux-clock.txt        | 79 ++++++++++++++++++++++
- drivers/clk/clk-mux.c                              | 68 ++++++++++++++++++-
- include/linux/clk-provider.h                       |  5 +-
- 3 files changed, 150 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/mux-clock.txt
-
-diff --git a/Documentation/devicetree/bindings/clock/mux-clock.txt b/Documentation/devicetree/bindings/clock/mux-clock.txt
-new file mode 100644
-index 0000000..21eb3b3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/mux-clock.txt
-@@ -0,0 +1,79 @@
-+Binding for simple mux clock.
-+
-+This binding uses the common clock binding[1].  It assumes a
-+register-mapped multiplexer with multiple input clock signals or
-+parents, one of which can be selected as output.  This clock does not
-+gate or adjust the parent rate via a divider or multiplier.
-+
-+By default the "clocks" property lists the parents in the same order
-+as they are programmed into the regster.  E.g:
-+
-+	clocks = <&foo_clock>, <&bar_clock>, <&baz_clock>;
-+
-+results in programming the register as follows:
-+
-+register value		selected parent clock
-+0			foo_clock
-+1			bar_clock
-+2			baz_clock
-+
-+Some clock controller IPs do not allow a value of zero to be programmed
-+into the register, instead indexing begins at 1.  The optional property
-+"index-starts-at-one" modified the scheme as follows:
-+
-+register value		selected clock parent
-+1			foo_clock
-+2			bar_clock
-+3			baz_clock
-+
-+Additionally an optional table of bit and parent pairs may be supplied
-+like so:
-+
-+	table = <&foo_clock 0x0>, <&bar_clock, 0x2>, <&baz_clock, 0x4>;
-+
-+where the first value in the pair is the parent clock and the second
-+value is the bitfield to be programmed into the register.
-+
-+The binding must provide the register to control the mux and the mask
-+for the corresponding control bits.  Optionally the number of bits to
-+shift that mask if necessary.  If the shift value is missing it is the
-+same as supplying a zero shift.
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible : shall be "mux-clock".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : link phandles of parent clocks
-+- reg : base address for register controlling adjustable mux
-+- bit-mask : arbitrary bitmask for programming the adjustable mux
-+
-+Optional properties:
-+- clock-output-names : From common clock binding.
-+- table : array of integer pairs defining parents & bitfield values
-+- bit-shift : number of bits to shift the bit-mask, defaults to
-+  (ffs(mask) - 1) if not present
-+- index-starts-at-one : valid input select programming starts at 1, not
-+  zero
-+- hiword-mask : lower half of the register programs the mux, upper half
-+  of the register indicates bits that were updated in the lower half
-+
-+Examples:
-+	clock: clock@4a008100 {
-+		compatible = "mux-clock";
-+		#clock-cells = <0>;
-+		clocks = <&clock_foo>, <&clock_bar>, <&clock_baz>;
-+		reg = <0x4a008100 0x4>
-+		mask = <0x3>;
-+		index-starts-at-one;
-+	};
-+
-+	clock: clock@4a008100 {
-+		#clock-cells = <0>;
-+		compatible = "mux-clock";
-+		clocks = <&clock_foo>, <&clock_bar>, <&clock_baz>;
-+		reg = <0x4a008100 0x4>;
-+		mask = <0x3>;
-+		shift = <0>;
-+		table = <&clock_foo 1>, <&clock_bar 2>, <&clock_baz 3>;
-+	};
-diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
-index 0811633..9292253 100644
---- a/drivers/clk/clk-mux.c
-+++ b/drivers/clk/clk-mux.c
-@@ -1,7 +1,7 @@
- /*
-  * Copyright (C) 2011 Sascha Hauer, Pengutronix <s.hauer@pengutronix.de>
-  * Copyright (C) 2011 Richard Zhao, Linaro <richard.zhao@linaro.org>
-- * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
-+ * Copyright (C) 2011-2013 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -16,6 +16,8 @@
- #include <linux/slab.h>
- #include <linux/io.h>
- #include <linux/err.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
- 
- /*
-  * DOC: basic adjustable multiplexer clock that cannot gate
-@@ -177,3 +179,67 @@ struct clk *clk_register_mux(struct device *dev, const char *name,
- 				      NULL, lock);
- }
- EXPORT_SYMBOL_GPL(clk_register_mux);
-+
-+#ifdef CONFIG_OF
-+/**
-+ * of_mux_clk_setup() - Setup function for simple mux rate clock
-+ */
-+void of_mux_clk_setup(struct device_node *node)
-+{
-+	struct clk *clk;
-+	const char *clk_name = node->name;
-+	void __iomem *reg;
-+	int num_parents;
-+	const char **parent_names;
-+	int i;
-+	u8 clk_mux_flags = 0;
-+	u32 mask = 0;
-+	u32 shift = 0;
-+
-+	of_property_read_string(node, "clock-output-names", &clk_name);
-+
-+	num_parents = of_clk_get_parent_count(node);
-+	if (num_parents < 1) {
-+		pr_err("%s: mux-clock %s must have parent(s)\n",
-+				__func__, node->name);
-+		return;
-+	}
-+
-+	parent_names = kzalloc((sizeof(char*) * num_parents),
-+			GFP_KERNEL);
-+
-+	for (i = 0; i < num_parents; i++)
-+		parent_names[i] = of_clk_get_parent_name(node, i);
-+
-+	reg = of_iomap(node, 0);
-+	if (!reg) {
-+		pr_err("%s: no memory mapped for property reg\n", __func__);
-+		return;
-+	}
-+
-+	if (of_property_read_u32(node, "bit-mask", &mask)) {
-+		pr_err("%s: missing bit-mask property for %s\n", __func__, node->name);
-+		return;
-+	}
-+
-+	if (of_property_read_u32(node, "bit-shift", &shift)) {
-+		shift = __ffs(mask);
-+		pr_debug("%s: bit-shift property defaults to 0x%x for %s\n",
-+				__func__, shift, node->name);
-+	}
-+
-+	if (of_property_read_bool(node, "index-starts-at-one"))
-+		clk_mux_flags |= CLK_MUX_INDEX_ONE;
-+
-+	if (of_property_read_bool(node, "hiword-mask"))
-+		clk_mux_flags |= CLK_MUX_HIWORD_MASK;
-+
-+	clk = clk_register_mux_table(NULL, clk_name, parent_names, num_parents,
-+			0, reg, shift, mask, clk_mux_flags, NULL, NULL);
-+
-+	if (!IS_ERR(clk))
-+		of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+}
-+EXPORT_SYMBOL_GPL(of_mux_clk_setup);
-+CLK_OF_DECLARE(mux_clk, "mux-clock", of_mux_clk_setup);
-+#endif
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 5497739..e019212 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -350,7 +350,7 @@ struct clk *clk_register_mux_table(struct device *dev, const char *name,
- 		void __iomem *reg, u8 shift, u32 mask,
- 		u8 clk_mux_flags, u32 *table, spinlock_t *lock);
- 
--void of_fixed_factor_clk_setup(struct device_node *node);
-+void of_mux_clk_setup(struct device_node *node);
- 
- /**
-  * struct clk_fixed_factor - fixed multiplier and divider clock
-@@ -371,10 +371,13 @@ struct clk_fixed_factor {
- };
- 
- extern struct clk_ops clk_fixed_factor_ops;
-+
- struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		unsigned int mult, unsigned int div);
- 
-+void of_fixed_factor_clk_setup(struct device_node *node);
-+
- /***
-  * struct clk_composite - aggregate clock of mux, divider and gate clocks
-  *
--- 
-1.8.1.2
-
+Am 22.08.2013 07:43, schrieb Kent Overstreet:
+> On Thu, Aug 22, 2013 at 07:27:12AM +0200, Stefan Priebe wrote:
+>> today i had this one:
+>
+> Heh, I finally tracked it down earlier today. Turned out to be a rather
+> embarassing bug... schedule_timeout() is not the same as
+> schedule_timeout_interruptible().
+>
+> I'll get the fix out in the morning, for the moment an easy workaround
+> is to set writeback_percent to 0.
+>
+>>
+>> 2013-08-22 06:28:55     [<ffffffff815247f4>] schedule+0x24/0x70
+>> 2013-08-22 06:28:55     [<ffffffff815248c7>] io_schedule+0x87/0xd0
+>> 2013-08-22 06:28:55     [<ffffffff810e6099>] sleep_on_page+0x9/0x10
+>> 2013-08-22 06:28:55     [<ffffffff81522dc7>] __wait_on_bit+0x57/0x80
+>> 2013-08-22 06:28:55     [<ffffffff810e5bbc>] ? find_get_pages_tag+0xcc/0x180
+>> 2013-08-22 06:28:55     [<ffffffff810e62ae>] wait_on_page_bit+0x6e/0x80
+>> 2013-08-22 06:28:55     [<ffffffff81070af0>] ?
+>> autoremove_wake_function+0x40/0x40
+>> 2013-08-22 06:28:55     [<ffffffff810f2660>] ? pagevec_lookup_tag+0x20/0x30
+>> 2013-08-22 06:28:55     [<ffffffff810e67ef>]
+>> filemap_fdatawait_range+0x10f/0x1b0
+>> 2013-08-22 06:28:55     [<ffffffff810e69b0>]
+>> filemap_write_and_wait_range+0x90/0xa0
+>> 2013-08-22 06:28:55     [<ffffffff811ef9c3>] xfs_file_fsync+0x63/0x1e0
+>> 2013-08-22 06:28:55     [<ffffffff8116d7c3>] vfs_fsync_range+0x23/0x30
+>> 2013-08-22 06:28:55     [<ffffffff8116d7e7>] vfs_fsync+0x17/0x20
+>> 2013-08-22 06:28:55     [<ffffffff8116da1c>] do_fsync+0x3c/0x60
+>> 2013-08-22 06:28:55     [<ffffffff8116da4e>] SyS_fdatasync+0xe/0x20
+>> 2013-08-22 06:28:55     [<ffffffff81526a92>] system_call_fastpath+0x16/0x1b
+>> 2013-08-22 06:28:54     [<ffffffff815247f4>] schedule+0x24/0x70
+>> 2013-08-22 06:28:54     [<ffffffff815248c7>] io_schedule+0x87/0xd0
+>> 2013-08-22 06:28:54     [<ffffffff810e6099>] sleep_on_page+0x9/0x10
+>> 2013-08-22 06:28:54     [<ffffffff81522dc7>] __wait_on_bit+0x57/0x80
+>> 2013-08-22 06:28:54     [<ffffffff810e5bbc>] ? find_get_pages_tag+0xcc/0x180
+>> 2013-08-22 06:28:54     [<ffffffff810e62ae>] wait_on_page_bit+0x6e/0x80
+>> 2013-08-22 06:28:54     [<ffffffff81070af0>] ?
+>> autoremove_wake_function+0x40/0x40
+>> 2013-08-22 06:28:54     [<ffffffff810f2660>] ? pagevec_lookup_tag+0x20/0x30
+>> 2013-08-22 06:28:54     [<ffffffff810e67ef>]
+>> filemap_fdatawait_range+0x10f/0x1b0
+>> 2013-08-22 06:28:54     [<ffffffff810e69b0>]
+>> filemap_write_and_wait_range+0x90/0xa0
+>> 2013-08-22 06:28:54     [<ffffffff811ef9c3>] xfs_file_fsync+0x63/0x1e0
+>> 2013-08-22 06:28:54     [<ffffffff8116d7c3>] vfs_fsync_range+0x23/0x30
+>> 2013-08-22 06:28:54     [<ffffffff8116d7e7>] vfs_fsync+0x17/0x20
+>> 2013-08-22 06:28:54     [<ffffffff8116da1c>] do_fsync+0x3c/0x60
+>> 2013-08-22 06:28:54     [<ffffffff8116da6b>] SyS_fsync+0xb/0x10
+>> 2013-08-22 06:28:54     [<ffffffff81526a92>] system_call_fastpath+0x16/0x1b
+>> 2013-08-22 06:28:54     INFO: task ceph-osd:3520 blocked for more
+>> than 120 seconds.
+>> 2013-08-22 06:28:54     "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> 2013-08-22 06:28:54     ceph-osd D ffffffff8160f760 0 3520 1 0x00000004
+>> 2013-08-22 06:28:54     ffff880c381d5c78 0000000000000086
+>> ffff880c381d5fd8 0000000000012c80
+>> 2013-08-22 06:28:54     ffff880c381d4010 0000000000012c80
+>> 0000000000012c80 0000000000012c80
+>> 2013-08-22 06:28:54     ffff880c381d5fd8 0000000000012c80
+>> ffff880c39100000 ffff880c48dd0000
+>> 2013-08-22 06:28:54     Call Trace:
+>> 2013-08-22 06:28:54     [<ffffffff810e6090>] ? __lock_page+0x70/0x70
+>> 2013-08-22 06:28:53     [<ffffffff810e5bbc>] ? find_get_pages_tag+0xcc/0x180
+>> 2013-08-22 06:28:53     [<ffffffff810e62ae>] wait_on_page_bit+0x6e/0x80
+>> 2013-08-22 06:28:53     [<ffffffff81070af0>] ?
+>> autoremove_wake_function+0x40/0x40
+>> 2013-08-22 06:28:53     [<ffffffff810f2660>] ? pagevec_lookup_tag+0x20/0x30
+>> 2013-08-22 06:28:53     [<ffffffff810e67ef>]
+>> filemap_fdatawait_range+0x10f/0x1b0
+>> 2013-08-22 06:28:53     [<ffffffff815247f4>] ? schedule+0x24/0x70
+>> 2013-08-22 06:28:53     [<ffffffff81522b3d>] ? schedule_timeout+0x16d/0x200
+>> 2013-08-22 06:28:53     [<ffffffff81068e9a>] ?
+>> __queue_delayed_work+0xaa/0x1a0
+>> 2013-08-22 06:28:53     [<ffffffff81068cf9>] ?
+>> try_to_grab_pending+0x109/0x190
+>> 2013-08-22 06:28:53     [<ffffffff810e68b3>] filemap_fdatawait+0x23/0x30
+>> 2013-08-22 06:28:53     [<ffffffff81166e35>] wait_sb_inodes+0xb5/0x110
+>> 2013-08-22 06:28:53     [<ffffffff81167a1c>] sync_inodes_sb+0x9c/0xd0
+>> 2013-08-22 06:28:53     [<ffffffff8116dc66>] __sync_filesystem+0x16/0x50
+>> 2013-08-22 06:28:53     [<ffffffff8116dce3>] sync_filesystem+0x43/0x60
+>> 2013-08-22 06:28:53     [<ffffffff8116dd50>] SyS_syncfs+0x50/0x90
+>> 2013-08-22 06:28:53     [<ffffffff81526a92>] system_call_fastpath+0x16/0x1b
+>> 2013-08-22 06:28:53     INFO: task ceph-osd:3516 blocked for more
+>> than 120 seconds.
+>> 2013-08-22 06:28:53     "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> 2013-08-22 06:28:53     ceph-osd D ffffffff8160f760 0 3516 1 0x00000004
+>> 2013-08-22 06:28:53     ffff880c383d3c78 0000000000000086
+>> ffff880c383d3fd8 0000000000012c80
+>> 2013-08-22 06:28:53     ffff880c383d2010 0000000000012c80
+>> 0000000000012c80 0000000000012c80
+>> 2013-08-22 06:28:53     ffff880c383d3fd8 0000000000012c80
+>> ffff880c428018e0 ffff880c48dd0000
+>> 2013-08-22 06:28:53     Call Trace:
+>> 2013-08-22 06:28:53     [<ffffffff810e6090>] ? __lock_page+0x70/0x70
+>> 2013-08-22 06:28:52     [<ffffffff81219983>] ? xfs_bmbt_get_all+0x13/0x20
+>> 2013-08-22 06:28:52     [<ffffffff81208a14>] xfs_attr_set_int+0x3a4/0x4f0
+>> 2013-08-22 06:28:52     [<ffffffff81208be1>] xfs_attr_set+0x81/0x90
+>> 2013-08-22 06:28:52     [<ffffffff81201462>] xfs_xattr_set+0x42/0x60
+>> 2013-08-22 06:28:52     [<ffffffff8116257b>] generic_setxattr+0x9b/0xb0
+>> 2013-08-22 06:28:52     [<ffffffff8116376f>] __vfs_setxattr_noperm+0x5f/0xe0
+>> 2013-08-22 06:28:52     [<ffffffff811638a4>] vfs_setxattr+0xb4/0xc0
+>> 2013-08-22 06:28:52     [<ffffffff8116396e>] setxattr+0xbe/0x200
+>> 2013-08-22 06:28:52     [<ffffffff81143261>] ? __sb_start_write+0x71/0x110
+>> 2013-08-22 06:28:52     [<ffffffff8115ce51>] ?
+>> __mnt_want_write_file+0x61/0x80
+>> 2013-08-22 06:28:52     [<ffffffff81163b56>] SyS_fsetxattr+0xa6/0xc0
+>> 2013-08-22 06:28:52     [<ffffffff81526a92>] system_call_fastpath+0x16/0x1b
+>> 2013-08-22 06:28:52     INFO: task ceph-osd:3508 blocked for more
+>> than 120 seconds.
+>> 2013-08-22 06:28:52     "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> 2013-08-22 06:28:52     ceph-osd D ffffffff8160f760 0 3508 1 0x00000004
+>> 2013-08-22 06:28:52     ffff880c2c1bfc28 0000000000000086
+>> ffff880c2c1bffd8 0000000000012c80
+>> 2013-08-22 06:28:52     ffff880c2c1be010 0000000000012c80
+>> 0000000000012c80 0000000000012c80
+>> 2013-08-22 06:28:52     ffff880c2c1bffd8 0000000000012c80
+>> ffff880c43eae380 ffff880c48dd4aa0
+>> 2013-08-22 06:28:52     Call Trace:
+>> 2013-08-22 06:28:52     [<ffffffff810e6090>] ? __lock_page+0x70/0x70
+>> 2013-08-22 06:28:52     [<ffffffff815247f4>] schedule+0x24/0x70
+>> 2013-08-22 06:28:52     [<ffffffff815248c7>] io_schedule+0x87/0xd0
+>> 2013-08-22 06:28:52     [<ffffffff810e6099>] sleep_on_page+0x9/0x10
+>> 2013-08-22 06:28:52     [<ffffffff81522dc7>] __wait_on_bit+0x57/0x80
+>> 2013-08-22 06:28:51     [<ffffffff81526a92>] system_call_fastpath+0x16/0x1b
+>> 2013-08-22 06:28:51     INFO: task ceph-osd:3467 blocked for more
+>> than 120 seconds.
+>> 2013-08-22 06:28:51     "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> 2013-08-22 06:28:51     ceph-osd D ffffffff8160f760 0 3467 1 0x00000004
+>> 2013-08-22 06:28:51     ffff880c375657e8 0000000000000086
+>> ffff880c37565fd8 0000000000012c80
+>> 2013-08-22 06:28:51     ffff880c37564010 0000000000012c80
+>> 0000000000012c80 0000000000012c80
+>> 2013-08-22 06:28:51     ffff880c37565fd8 0000000000012c80
+>> ffff880c3850caa0 ffff880c48dd4aa0
+>> 2013-08-22 06:28:51     Call Trace:
+>> 2013-08-22 06:28:51     [<ffffffff81245efe>] ? xlog_bdstrat+0x1e/0x60
+>> 2013-08-22 06:28:51     [<ffffffff815247f4>] schedule+0x24/0x70
+>> 2013-08-22 06:28:51     [<ffffffff81522b3d>] schedule_timeout+0x16d/0x200
+>> 2013-08-22 06:28:51     [<ffffffff8124653d>] ? xlog_sync+0x2ed/0x490
+>> 2013-08-22 06:28:51     [<ffffffff81523b7a>] __down+0x6a/0xa0
+>> 2013-08-22 06:28:51     [<ffffffff811eb747>] ? _xfs_buf_find+0x107/0x290
+>> 2013-08-22 06:28:51     [<ffffffff810757ac>] down+0x3c/0x50
+>> 2013-08-22 06:28:51     [<ffffffff811eb070>] xfs_buf_lock+0x40/0xe0
+>> 2013-08-22 06:28:51     [<ffffffff811eb747>] _xfs_buf_find+0x107/0x290
+>> 2013-08-22 06:28:51     [<ffffffff811ebb1f>] xfs_buf_get_map+0x2f/0x180
+>> 2013-08-22 06:28:51     [<ffffffff8124dc68>]
+>> xfs_trans_get_buf_map+0xc8/0x160
+>> 2013-08-22 06:28:51     [<ffffffff81224093>] xfs_da_get_buf+0xb3/0xe0
+>> 2013-08-22 06:28:51     [<ffffffff81209b20>]
+>> xfs_attr3_leaf_to_node+0xb0/0x240
+>> 2013-08-22 06:28:51     [<ffffffff8120d12b>] ?
+>> xfs_attr3_leaf_add+0x15b/0x1c0
+>> 2013-08-22 06:28:51     [<ffffffff8120843c>]
+>> xfs_attr_leaf_addname+0x14c/0x380
+>> 2013-08-22 06:28:51     [<ffffffff81243f68>] ? xfs_trans_add_item+0x28/0x70
+>> 2013-08-22 06:28:50     [<ffffffff810e8420>] ? mempool_alloc_slab+0x10/0x20
+>> 2013-08-22 06:28:50     [<ffffffff815239c2>] ? down_read+0x12/0x20
+>> 2013-08-22 06:28:50     [<ffffffffa010c38a>]
+>> request_write+0x8a/0x380 [bcache]
+>> 2013-08-22 06:28:50     [<ffffffffa010c8fb>]
+>> cached_dev_make_request+0x27b/0x350 [bcache]
+>> 2013-08-22 06:28:50     [<ffffffff81281982>] generic_make_request+0xc2/0x100
+>> 2013-08-22 06:28:50     [<ffffffff81281a27>] submit_bio+0x67/0x130
+>> 2013-08-22 06:28:50     [<ffffffff811e823f>] xfs_submit_ioend_bio+0x2f/0x40
+>> 2013-08-22 06:28:50     [<ffffffff811e8314>] xfs_submit_ioend+0xc4/0x130
+>> 2013-08-22 06:28:50     [<ffffffff811e98bb>] xfs_vm_writepage+0x2eb/0x590
+>> 2013-08-22 06:28:50     [<ffffffff810ef752>] __writepage+0x12/0x40
+>> 2013-08-22 06:28:50     [<ffffffff810f090b>] write_cache_pages+0x23b/0x4e0
+>> 2013-08-22 06:28:50     [<ffffffff81524437>] ? __schedule+0x3d7/0x6d0
+>> 2013-08-22 06:28:50     [<ffffffff810ef740>] ? set_page_dirty+0x60/0x60
+>> 2013-08-22 06:28:50     [<ffffffff810f0bfc>] generic_writepages+0x4c/0x70
+>> 2013-08-22 06:28:50     [<ffffffff811e810f>] xfs_vm_writepages+0x4f/0x60
+>> 2013-08-22 06:28:50     [<ffffffff810f0c3b>] do_writepages+0x1b/0x40
+>> 2013-08-22 06:28:50     [<ffffffff810e6911>]
+>> __filemap_fdatawrite_range+0x51/0x60
+>> 2013-08-22 06:28:50     [<ffffffff81097cf0>] ? futex_wake+0x110/0x120
+>> 2013-08-22 06:28:50     [<ffffffff810e699a>]
+>> filemap_write_and_wait_range+0x7a/0xa0
+>> 2013-08-22 06:28:50     [<ffffffff811ef9c3>] xfs_file_fsync+0x63/0x1e0
+>> 2013-08-22 06:28:50     [<ffffffff8116d7c3>] vfs_fsync_range+0x23/0x30
+>> 2013-08-22 06:28:50     [<ffffffff8116d7e7>] vfs_fsync+0x17/0x20
+>> 2013-08-22 06:28:50     [<ffffffff8116da1c>] do_fsync+0x3c/0x60
+>> 2013-08-22 06:28:50     [<ffffffff8116da4e>] SyS_fdatasync+0xe/0x20
+>> 2013-08-22 06:28:49     [<ffffffff810ef740>] ? set_page_dirty+0x60/0x60
+>> 2013-08-22 06:28:49     [<ffffffff810f0bfc>] generic_writepages+0x4c/0x70
+>> 2013-08-22 06:28:49     [<ffffffff811639a3>] ? setxattr+0xf3/0x200
+>> 2013-08-22 06:28:49     [<ffffffff811e810f>] xfs_vm_writepages+0x4f/0x60
+>> 2013-08-22 06:28:49     [<ffffffff810f0c3b>] do_writepages+0x1b/0x40
+>> 2013-08-22 06:28:49     [<ffffffff810e6911>]
+>> __filemap_fdatawrite_range+0x51/0x60
+>> 2013-08-22 06:28:49     [<ffffffff810e699a>]
+>> filemap_write_and_wait_range+0x7a/0xa0
+>> 2013-08-22 06:28:49     [<ffffffff811ef9c3>] xfs_file_fsync+0x63/0x1e0
+>> 2013-08-22 06:28:49     [<ffffffff8116d7c3>] vfs_fsync_range+0x23/0x30
+>> 2013-08-22 06:28:49     [<ffffffff8116d7e7>] vfs_fsync+0x17/0x20
+>> 2013-08-22 06:28:49     [<ffffffff8116da1c>] do_fsync+0x3c/0x60
+>> 2013-08-22 06:28:49     [<ffffffff8116da6b>] SyS_fsync+0xb/0x10
+>> 2013-08-22 06:28:49     [<ffffffff81526a92>] system_call_fastpath+0x16/0x1b
+>> 2013-08-22 06:28:49     INFO: task ceph-osd:3483 blocked for more
+>> than 120 seconds.
+>> 2013-08-22 06:28:49     "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> 2013-08-22 06:28:49     ceph-osd D ffffffff8160f760 0 3483 1 0x00000004
+>> 2013-08-22 06:28:49     ffff880c2c0d1910 0000000000000086
+>> ffff880c2c0d1fd8 0000000000012c80
+>> 2013-08-22 06:28:49     ffff880c2c0d0010 0000000000012c80
+>> 0000000000012c80 0000000000012c80
+>> 2013-08-22 06:28:49     ffff880c2c0d1fd8 0000000000012c80
+>> ffff880c3a14caa0 ffff880c48dd31c0
+>> 2013-08-22 06:28:49     Call Trace:
+>> 2013-08-22 06:28:49     [<ffffffff815247f4>] schedule+0x24/0x70
+>> 2013-08-22 06:28:49     [<ffffffff81525cfd>]
+>> rwsem_down_read_failed+0x9d/0xe5
+>> 2013-08-22 06:28:49     [<ffffffff812aa024>]
+>> call_rwsem_down_read_failed+0x14/0x30
+>> 2013-08-22 06:28:48     [<ffffffff81143261>] ? __sb_start_write+0x71/0x110
+>> 2013-08-22 06:28:48     [<ffffffff8115ce51>] ?
+>> __mnt_want_write_file+0x61/0x80
+>> 2013-08-22 06:28:48     [<ffffffff81163b56>] SyS_fsetxattr+0xa6/0xc0
+>> 2013-08-22 06:28:48     [<ffffffff81526a92>] system_call_fastpath+0x16/0x1b
+>> 2013-08-22 06:28:48     INFO: task ceph-osd:3482 blocked for more
+>> than 120 seconds.
+>> 2013-08-22 06:28:48     "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> 2013-08-22 06:28:48     ceph-osd D ffffffff8160f760 0 3482 1 0x00000004
+>> 2013-08-22 06:28:48     ffff880c2c0cf910 0000000000000086
+>> ffff880c2c0cffd8 0000000000012c80
+>> 2013-08-22 06:28:48     ffff880c2c0ce010 0000000000012c80
+>> 0000000000012c80 0000000000012c80
+>> 2013-08-22 06:28:48     ffff880c2c0cffd8 0000000000012c80
+>> ffff880c47768000 ffff880c48dd0000
+>> 2013-08-22 06:28:48     Call Trace:
+>> 2013-08-22 06:28:48     [<ffffffff815247f4>] schedule+0x24/0x70
+>> 2013-08-22 06:28:48     [<ffffffff81525cfd>]
+>> rwsem_down_read_failed+0x9d/0xe5
+>> 2013-08-22 06:28:48     [<ffffffff812aa024>]
+>> call_rwsem_down_read_failed+0x14/0x30
+>> 2013-08-22 06:28:48     [<ffffffff810e8420>] ? mempool_alloc_slab+0x10/0x20
+>> 2013-08-22 06:28:48     [<ffffffff815239c2>] ? down_read+0x12/0x20
+>> 2013-08-22 06:28:48     [<ffffffffa010c38a>]
+>> request_write+0x8a/0x380 [bcache]
+>> 2013-08-22 06:28:48     [<ffffffffa010c8fb>]
+>> cached_dev_make_request+0x27b/0x350 [bcache]
+>> 2013-08-22 06:28:48     [<ffffffff81281982>] generic_make_request+0xc2/0x100
+>> 2013-08-22 06:28:48     [<ffffffff81281a27>] submit_bio+0x67/0x130
+>> 2013-08-22 06:28:48     [<ffffffff811e823f>] xfs_submit_ioend_bio+0x2f/0x40
+>> 2013-08-22 06:28:48     [<ffffffff811e833e>] xfs_submit_ioend+0xee/0x130
+>> 2013-08-22 06:28:48     [<ffffffff811e98bb>] xfs_vm_writepage+0x2eb/0x590
+>> 2013-08-22 06:28:48     [<ffffffff810ef752>] __writepage+0x12/0x40
+>> 2013-08-22 06:28:48     [<ffffffff810f090b>] write_cache_pages+0x23b/0x4e0
+>> 2013-08-22 06:28:47     [<ffffffff812469b6>] _xfs_log_force+0x116/0x250
+>> 2013-08-22 06:28:47     [<ffffffff8124836a>] xfs_log_force+0x2a/0x90
+>> 2013-08-22 06:28:47     [<ffffffff811eb747>] ? _xfs_buf_find+0x107/0x290
+>> 2013-08-22 06:28:47     [<ffffffff811eb0a3>] xfs_buf_lock+0x73/0xe0
+>> 2013-08-22 06:28:47     [<ffffffff811eb747>] _xfs_buf_find+0x107/0x290
+>> 2013-08-22 06:28:47     [<ffffffff811ebb1f>] xfs_buf_get_map+0x2f/0x180
+>> 2013-08-22 06:28:47     [<ffffffff8124dc68>]
+>> xfs_trans_get_buf_map+0xc8/0x160
+>> 2013-08-22 06:28:47     [<ffffffff81224093>] xfs_da_get_buf+0xb3/0xe0
+>> 2013-08-22 06:28:47     [<ffffffff81209b20>]
+>> xfs_attr3_leaf_to_node+0xb0/0x240
+>> 2013-08-22 06:28:47     [<ffffffff8120d12b>] ?
+>> xfs_attr3_leaf_add+0x15b/0x1c0
+>> 2013-08-22 06:28:47     [<ffffffff8120843c>]
+>> xfs_attr_leaf_addname+0x14c/0x380
+>> 2013-08-22 06:28:47     [<ffffffff81243f68>] ? xfs_trans_add_item+0x28/0x70
+>> 2013-08-22 06:28:47     [<ffffffff81219983>] ? xfs_bmbt_get_all+0x13/0x20
+>> 2013-08-22 06:28:47     [<ffffffff81208a14>] xfs_attr_set_int+0x3a4/0x4f0
+>> 2013-08-22 06:28:47     [<ffffffff81208be1>] xfs_attr_set+0x81/0x90
+>> 2013-08-22 06:28:47     [<ffffffff81201462>] xfs_xattr_set+0x42/0x60
+>> 2013-08-22 06:28:47     [<ffffffff8116257b>] generic_setxattr+0x9b/0xb0
+>> 2013-08-22 06:28:47     [<ffffffff8116376f>] __vfs_setxattr_noperm+0x5f/0xe0
+>> 2013-08-22 06:28:47     [<ffffffff811638a4>] vfs_setxattr+0xb4/0xc0
+>> 2013-08-22 06:28:47     [<ffffffff8116396e>] setxattr+0xbe/0x200
+>> 2013-08-22 06:28:47     [<ffffffff811ec1ca>] xfs_buf_iorequest+0x4a/0xa0
+>> 2013-08-22 06:28:47     [<ffffffff81245efe>] xlog_bdstrat+0x1e/0x60
+>> 2013-08-22 06:28:47     [<ffffffff8124653d>] xlog_sync+0x2ed/0x490
+>> 2013-08-22 06:28:47     [<ffffffff8124686b>]
+>> xlog_state_release_iclog+0x8b/0xc0
+>> 2013-08-22 06:28:46     [<ffffffff8116dd50>] SyS_syncfs+0x50/0x90
+>> 2013-08-22 06:28:46     [<ffffffff81526a92>] system_call_fastpath+0x16/0x1b
+>> 2013-08-22 06:28:46     INFO: task ceph-osd:3481 blocked for more
+>> than 120 seconds.
+>> 2013-08-22 06:28:46     "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> 2013-08-22 06:28:46     ceph-osd D ffffffff8160f760 0 3481 1 0x00000004
+>> 2013-08-22 06:28:46     ffff880c2c0cd500 0000000000000086
+>> ffff880c2c0cdfd8 0000000000012c80
+>> 2013-08-22 06:28:46     ffff880c2c0cc010 0000000000012c80
+>> 0000000000012c80 0000000000012c80
+>> 2013-08-22 06:28:46     ffff880c2c0cdfd8 0000000000012c80
+>> ffff880c4776b1c0 ffff880c48dd4aa0
+>> 2013-08-22 06:28:46     Call Trace:
+>> 2013-08-22 06:28:46     [<ffffffff8124e5b6>] ? xfs_trans_brelse+0xb6/0x100
+>> 2013-08-22 06:28:46     [<ffffffff815247f4>] schedule+0x24/0x70
+>> 2013-08-22 06:28:46     [<ffffffff81525cfd>]
+>> rwsem_down_read_failed+0x9d/0xe5
+>> 2013-08-22 06:28:46     [<ffffffff812aa024>]
+>> call_rwsem_down_read_failed+0x14/0x30
+>> 2013-08-22 06:28:46     [<ffffffff810e8420>] ? mempool_alloc_slab+0x10/0x20
+>> 2013-08-22 06:28:46     [<ffffffff815239c2>] ? down_read+0x12/0x20
+>> 2013-08-22 06:28:46     [<ffffffffa010c38a>]
+>> request_write+0x8a/0x380 [bcache]
+>> 2013-08-22 06:28:46     [<ffffffffa010c8fb>]
+>> cached_dev_make_request+0x27b/0x350 [bcache]
+>> 2013-08-22 06:28:46     [<ffffffff81281982>] generic_make_request+0xc2/0x100
+>> 2013-08-22 06:28:46     [<ffffffff81281a27>] submit_bio+0x67/0x130
+>> 2013-08-22 06:28:46     [<ffffffff811eabf0>] xfs_buf_ioapply_map+0x180/0x1d0
+>> 2013-08-22 06:28:46     [<ffffffff811ead47>] _xfs_buf_ioapply+0x107/0x150
+>> 2013-08-22 06:28:46     [<ffffffff81245efe>] ? xlog_bdstrat+0x1e/0x60
+>> 2013-08-22 06:28:45     "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> 2013-08-22 06:28:45     ceph-osd D ffffffff8160f760 0 3462 1 0x00000004
+>> 2013-08-22 06:28:45     ffff880c375cdc28 0000000000000086
+>> ffff880c375cdfd8 0000000000012c80
+>> 2013-08-22 06:28:45     ffff880c375cc010 0000000000012c80
+>> 0000000000012c80 0000000000012c80
+>> 2013-08-22 06:28:45     ffff880c375cdfd8 0000000000012c80
+>> ffff880c46318000 ffff880c48dd6380
+>> 2013-08-22 06:28:45     Call Trace:
+>> 2013-08-22 06:28:45     [<ffffffff810e6090>] ? __lock_page+0x70/0x70
+>> 2013-08-22 06:28:45     [<ffffffff815247f4>] schedule+0x24/0x70
+>> 2013-08-22 06:28:45     [<ffffffff815248c7>] io_schedule+0x87/0xd0
+>> 2013-08-22 06:28:45     [<ffffffff810e6099>] sleep_on_page+0x9/0x10
+>> 2013-08-22 06:28:45     [<ffffffff81522dc7>] __wait_on_bit+0x57/0x80
+>> 2013-08-22 06:28:45     [<ffffffff810e5bbc>] ? find_get_pages_tag+0xcc/0x180
+>> 2013-08-22 06:28:45     [<ffffffff810e62ae>] wait_on_page_bit+0x6e/0x80
+>> 2013-08-22 06:28:45     [<ffffffff81070af0>] ?
+>> autoremove_wake_function+0x40/0x40
+>> 2013-08-22 06:28:45     [<ffffffff810f2660>] ? pagevec_lookup_tag+0x20/0x30
+>> 2013-08-22 06:28:45     [<ffffffff810e67ef>]
+>> filemap_fdatawait_range+0x10f/0x1b0
+>> 2013-08-22 06:28:45     [<ffffffff815247f4>] ? schedule+0x24/0x70
+>> 2013-08-22 06:28:45     [<ffffffff81522b3d>] ? schedule_timeout+0x16d/0x200
+>> 2013-08-22 06:28:45     [<ffffffff81068e9a>] ?
+>> __queue_delayed_work+0xaa/0x1a0
+>> 2013-08-22 06:28:45     [<ffffffff810e68b3>] filemap_fdatawait+0x23/0x30
+>> 2013-08-22 06:28:45     [<ffffffff81166e35>] wait_sb_inodes+0xb5/0x110
+>> 2013-08-22 06:28:45     [<ffffffff81167a1c>] sync_inodes_sb+0x9c/0xd0
+>> 2013-08-22 06:28:45     [<ffffffff8116dc66>] __sync_filesystem+0x16/0x50
+>> 2013-08-22 06:28:45     [<ffffffff8116dce3>] sync_filesystem+0x43/0x60
+>> 2013-08-22 06:28:44     [<ffffffffa010c8fb>]
+>> cached_dev_make_request+0x27b/0x350 [bcache]
+>> 2013-08-22 06:28:44     [<ffffffff81281982>] generic_make_request+0xc2/0x100
+>> 2013-08-22 06:28:44     [<ffffffff81281a27>] submit_bio+0x67/0x130
+>> 2013-08-22 06:28:44     [<ffffffff811e823f>] xfs_submit_ioend_bio+0x2f/0x40
+>> 2013-08-22 06:28:44     [<ffffffff811e833e>] xfs_submit_ioend+0xee/0x130
+>> 2013-08-22 06:28:44     [<ffffffff811e98bb>] xfs_vm_writepage+0x2eb/0x590
+>> 2013-08-22 06:28:44     [<ffffffff810ef752>] __writepage+0x12/0x40
+>> 2013-08-22 06:28:44     [<ffffffff810f090b>] write_cache_pages+0x23b/0x4e0
+>> 2013-08-22 06:28:44     [<ffffffff81524437>] ? __schedule+0x3d7/0x6d0
+>> 2013-08-22 06:28:44     [<ffffffff810ef740>] ? set_page_dirty+0x60/0x60
+>> 2013-08-22 06:28:44     [<ffffffff810f0bfc>] generic_writepages+0x4c/0x70
+>> 2013-08-22 06:28:44     [<ffffffff811e810f>] xfs_vm_writepages+0x4f/0x60
+>> 2013-08-22 06:28:44     [<ffffffff810f0c3b>] do_writepages+0x1b/0x40
+>> 2013-08-22 06:28:44     [<ffffffff810e6911>]
+>> __filemap_fdatawrite_range+0x51/0x60
+>> 2013-08-22 06:28:44     [<ffffffff81097cf0>] ? futex_wake+0x110/0x120
+>> 2013-08-22 06:28:44     [<ffffffff810e699a>]
+>> filemap_write_and_wait_range+0x7a/0xa0
+>> 2013-08-22 06:28:44     [<ffffffff811ef9c3>] xfs_file_fsync+0x63/0x1e0
+>> 2013-08-22 06:28:44     [<ffffffff8116d7c3>] vfs_fsync_range+0x23/0x30
+>> 2013-08-22 06:28:44     [<ffffffff8116d7e7>] vfs_fsync+0x17/0x20
+>> 2013-08-22 06:28:44     [<ffffffff8116da1c>] do_fsync+0x3c/0x60
+>> 2013-08-22 06:28:44     [<ffffffff8116da4e>] SyS_fdatasync+0xe/0x20
+>> 2013-08-22 06:28:44     [<ffffffff81526a92>] system_call_fastpath+0x16/0x1b
+>> 2013-08-22 06:28:44     INFO: task ceph-osd:3462 blocked for more
+>> than 120 seconds.
+>> 2013-08-22 06:28:43     INFO: task ceph-osd:24130 blocked for more
+>> than 120 seconds.
+>> 2013-08-22 06:28:43     "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> 2013-08-22 06:28:43     ceph-osd D ffffffff8160f760 0 24130 1 0x00000004
+>> 2013-08-22 06:28:43     ffff880c27fe98d8 0000000000000082
+>> ffff880c27fe9fd8 0000000000012c80
+>> 2013-08-22 06:28:43     ffff880c27fe8010 0000000000012c80
+>> 0000000000012c80 0000000000012c80
+>> 2013-08-22 06:28:43     ffff880c27fe9fd8 0000000000012c80
+>> ffff880c215e6380 ffff880c48decaa0
+>> 2013-08-22 06:28:43     Call Trace:
+>> 2013-08-22 06:28:43     [<ffffffff81170430>] ? __wait_on_buffer+0x30/0x30
+>> 2013-08-22 06:28:43     [<ffffffff815247f4>] schedule+0x24/0x70
+>> 2013-08-22 06:28:43     [<ffffffff815248c7>] io_schedule+0x87/0xd0
+>> 2013-08-22 06:28:43     [<ffffffff81170439>] sleep_on_buffer+0x9/0x10
+>> 2013-08-22 06:28:43     [<ffffffff81522dc7>] __wait_on_bit+0x57/0x80
+>> 2013-08-22 06:28:43     [<ffffffff81170430>] ? __wait_on_buffer+0x30/0x30
+>> 2013-08-22 06:28:43     [<ffffffff81522e63>]
+>> out_of_line_wait_on_bit+0x73/0x90
+>> 2013-08-22 06:28:43     [<ffffffff81070af0>] ?
+>> autoremove_wake_function+0x40/0x40
+>> 2013-08-22 06:28:43     [<ffffffff8116f64b>] ? submit_bh+0xb/0x10
+>> 2013-08-22 06:28:43     [<ffffffff81170426>] __wait_on_buffer+0x26/0x30
+>> 2013-08-22 06:28:43     [<ffffffff81172803>] __block_write_begin+0x383/0x530
+>> 2013-08-22 06:28:43     [<ffffffff811e9050>] ?
+>> xfs_get_blocks_direct+0x20/0x20
+>> 2013-08-22 06:28:43     [<ffffffff810e6d0f>] ?
+>> grab_cache_page_write_begin+0x9f/0xd0
+>> 2013-08-22 06:28:43     [<ffffffff811e802f>] xfs_vm_write_begin+0x5f/0xd0
+>> 2013-08-22 06:28:43     [<ffffffff810e55ba>]
+>> generic_perform_write+0xca/0x200
+>> 2013-08-22 06:28:43     [<ffffffff810e574f>]
+>> generic_file_buffered_write+0x5f/0x90
+>> 2013-08-22 06:28:43     [<ffffffff811f0275>]
+>> xfs_file_buffered_aio_write+0xf5/0x180
+>> 2013-08-22 06:28:43     [<ffffffff811f03ce>] xfs_file_aio_write+0xce/0x150
+>> 2013-08-22 06:28:43     [<ffffffff8114ac8d>] ? path_put+0x1d/0x30
+>> 2013-08-22 06:28:43     [<ffffffff81140788>] do_sync_readv_writev+0x68/0xa0
+>> 2013-08-22 06:28:43     [<ffffffff81142052>] do_readv_writev+0xf2/0x2e0
+>> 2013-08-22 06:28:43     [<ffffffff811f0300>] ?
+>> xfs_file_buffered_aio_write+0x180/0x180
+>> 2013-08-22 06:28:43     [<ffffffff811407c0>] ?
+>> do_sync_readv_writev+0xa0/0xa0
+>> 2013-08-22 06:28:43     [<ffffffff8114227e>] vfs_writev+0x3e/0x60
+>> 2013-08-22 06:28:43     [<ffffffff811423ca>] SyS_writev+0x5a/0xc0
+>> 2013-08-22 06:28:43     [<ffffffff811410d3>] ? SyS_lseek+0x53/0x80
+>> 2013-08-22 06:28:43     [<ffffffff81526a92>] system_call_fastpath+0x16/0x1b
+>> 2013-08-22 06:28:43     INFO: task ceph-osd:24134 blocked for more
+>> than 120 seconds.
+>> 2013-08-22 06:28:43     "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> 2013-08-22 06:28:43     ceph-osd D ffffffff8160f760 0 24134 1 0x00000004
+>> 2013-08-22 06:28:43     ffff880c23d31708 0000000000000082
+>> ffff880c23d31fd8 0000000000012c80
+>> 2013-08-22 06:28:43     ffff880c23d30010 0000000000012c80
+>> 0000000000012c80 0000000000012c80
+>> 2013-08-22 06:28:43     ffff880c23d31fd8 0000000000012c80
+>> ffff880c361e0000 ffff880c48dd4aa0
+>> 2013-08-22 06:28:43     Call Trace:
+>> 2013-08-22 06:28:43     [<ffffffff815247f4>] schedule+0x24/0x70
+>> 2013-08-22 06:28:43     [<ffffffff81524ae9>]
+>> schedule_preempt_disabled+0x9/0x10
+>> 2013-08-22 06:28:43     [<ffffffff81523664>]
+>> __mutex_lock_slowpath+0x194/0x240
+>> 2013-08-22 06:28:43     [<ffffffff81522e9e>] mutex_lock+0x1e/0x40
+>> 2013-08-22 06:28:43     [<ffffffffa00f891b>]
+>> bch_bucket_alloc_set+0x3b/0x80 [bcache]
+>> 2013-08-22 06:28:43     [<ffffffffa010ac1c>]
+>> bch_alloc_sectors+0x12c/0x4e0 [bcache]
+>> 2013-08-22 06:28:43     [<ffffffffa0104e15>] ?
+>> bch_generic_make_request_hack+0x25/0xc0 [bcache]
+>> 2013-08-22 06:28:43     [<ffffffffa0105013>] ?
+>> __bch_submit_bbio+0x73/0x80 [bcache]
+>> 2013-08-22 06:28:43     [<ffffffffa010bc98>]
+>> bch_insert_data_loop+0xf8/0x610 [bcache]
+>> 2013-08-22 06:28:43     [<ffffffffa010a335>] ?
+>> bch_get_congested+0x25/0x70 [bcache]
+>> 2013-08-22 06:28:43     [<ffffffffa010c1cd>]
+>> bch_insert_data+0x1d/0x20 [bcache]
+>> 2013-08-22 06:28:43     [<ffffffffa0116d13>] closure_queue+0x43/0x60
+>> [bcache]
+>> 2013-08-22 06:28:43     [<ffffffffa010c49e>]
+>> request_write+0x19e/0x380 [bcache]
+>>
+>> Am 22.08.2013 01:47, schrieb Kent Overstreet:
+>>> On Tue, Aug 20, 2013 at 10:07:45AM +0200, Stefan Priebe - Profihost AG wrote:
+>>>> Am 20.08.2013 10:01, schrieb Stefan Priebe - Profihost AG:
+>>>>> Am 20.08.2013 00:27, schrieb Kent Overstreet:
+>>>>>> On Mon, Aug 19, 2013 at 12:09:24AM +0200, Stefan Priebe wrote:
+>>>>>>>
+>>>>>>> Vanilla 3.10.7 + bcache: Fix a writeback performance regression
+>>>>>>>
+>>>>>>> http://pastebin.com/raw.php?i=LXZk4cMH
+>>>>>>
+>>>>>> Whoops, at first I thought this was the same bug as one I'd already been
+>>>>>> chasing down that had been a harmless bug - turns out I didn't look
+>>>>>> closely enough at the backtrace.
+>>>>>>
+>>>>>> What happened is background writeback is deadlocking, because for some
+>>>>>> reason the workqueue it's running out of is a singlethreaded workqueue,
+>>>>>> so as soon as it decides to queue enough writeback bios that it has to
+>>>>>> sleep on that semaphore (which often won't happen due to the PD
+>>>>>> controller based ratelimiting) - boom, deadlock.
+>>>>>>
+>>>>>> Here's the fixup patch I just tested and am applying:
+>>>>
+>>>> Oh i'm now seeing very high CPU spikes of kworker... i don't see if i
+>>>> remove bcache: Fix a writeback performance regression.
+>>>
+>>> Are you able to reproduce it? I'm not having any luck reproducing it...
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
