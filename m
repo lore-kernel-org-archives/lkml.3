@@ -1,101 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802Ab3HVRpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 13:45:52 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:35962 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab3HVRpu (ORCPT
+	id S1753892Ab3HVRtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 13:49:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41256 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab3HVRtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 13:45:50 -0400
-Message-ID: <52164E53.9000700@cogentembedded.com>
-Date: Thu, 22 Aug 2013 21:45:55 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 22 Aug 2013 13:49:08 -0400
+Message-ID: <52164EEE.9070707@ti.com>
+Date: Thu, 22 Aug 2013 13:48:30 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Rupesh Gujare <rupesh.gujare@atmel.com>
-CC: devel@linuxdriverproject.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH 4/4] staging: ozwpan: Create deferred work to destroy
- PD object.
-References: <1377189531-24950-1-git-send-email-rupesh.gujare@atmel.com> <1377189531-24950-4-git-send-email-rupesh.gujare@atmel.com>
-In-Reply-To: <1377189531-24950-4-git-send-email-rupesh.gujare@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, <srinivas.kandagatla@st.com>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        =?ISO-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] clockevents: Prefer clockevents that don't suffer
+ from FEAT_C3_STOP
+References: <52138784.7050703@linaro.org> <1377191201-14696-1-git-send-email-sboyd@codeaurora.org> <1377191201-14696-2-git-send-email-sboyd@codeaurora.org> <52164B5B.5010902@ti.com> <52164CF5.20705@codeaurora.org>
+In-Reply-To: <52164CF5.20705@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thursday 22 August 2013 01:40 PM, Stephen Boyd wrote:
+> On 08/22/13 10:33, Santosh Shilimkar wrote:
+>> On Thursday 22 August 2013 01:06 PM, Stephen Boyd wrote:
+>>> On some ARM systems there are two sets of per-cpu timers: the TWD
+>>> timers and the global timers. The TWD timers are rated at 350 and
+>>> the global timers are rated at 300 but the TWD timers suffer from
+>>> FEAT_C3_STOP while the arm global timers don't. The tick device
+>>> selection logic doesn't consider the FEAT_C3_STOP flag so we'll
+>>> always end up with the TWD as the tick device although we don't
+>>> want that.
+>>>
+>>> Extend the preference logic to take the FEAT_C3_STOP flag into
+>>> account and always prefer tick devices that don't suffer from
+>>> FEAT_C3_STOP even if their rating is lower than tick devices that
+>>> do suffer from FEAT_C3_STOP. This will remove the need to do any
+>>> broadcasting on such ARM systems.
+>>>
+>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>>> ---
+>>>  kernel/time/tick-common.c | 14 ++++++++++++--
+>>>  1 file changed, 12 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+>>> index 64522ec..3ae437d 100644
+>>> --- a/kernel/time/tick-common.c
+>>> +++ b/kernel/time/tick-common.c
+>>> @@ -244,12 +244,22 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
+>>>  			return false;
+>>>  	}
+>>>  
+>>> +	if (!curdev)
+>>> +		return true;
+>>> +
+>>> +	/* Always prefer a tick device that doesn't suffer from FEAT_C3STOP */
+>>> +	if (!(newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
+>>> +			(curdev->features & CLOCK_EVT_FEAT_C3STOP))
+>>> +		return true;
+>>> +	if ((newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
+>>> +			!(curdev->features & CLOCK_EVT_FEAT_C3STOP))
+>>> +		return false;
+>>> +
+>> I don't think preferring the clock-event which doesn't suffer
+>> from FEAT_C3STOP is a good idea if the quality of the time source
+>> is not same. Generally the global timers are slow and far away from
+>> CPU(cycle cost). So as long as we don't get impacted because of low power
+>> states, the tick should run out of local timers which are faster access
+>> as well as high resolution.
+>>
+> 
+> Fair enough. I have no data either way to convince anyone that this is a
+> good or bad idea so this patch should have probably been an RFC. Are you
+> hinting at something like switching to a per-cpu timer that doesn't
+> suffer from FEAT_C3_STOP when a CPU goes into a deep idle state?
+> Interesting idea but I think I'll leave that to someone else if they
+> really care to do that.
+> 
+If the per-CPU timer don't suffer from C3_STOP, there is no need to
+switch at all and the per CPU tick continue to runs on CPU local
+timers. We need to switch to a broadcast device(no affected by C3_STOP)
+only for the cases where the per-CPU timer wakeup don't work in CPU
+low power states.
 
-On 08/22/2013 08:38 PM, Rupesh Gujare wrote:
+Are we talking about a hardware where one of the CPU from a cluster
+has a local timer which is not affected by C3_STOP where as rest
+of the CPU local timers are ? If yes, it must be crazy hardware and
+we should not care too much about that.
 
-> Currently we call oz_pd_destroy() from softirq context, where we
-> try to destroy relevant data structures, as well we kill a tasklet
-> which always result in following kernel warning.
+Regards,
+Santosh
 
-> [12279.262194] Attempt to kill tasklet from interrupt
-> [12279.262202] Attempt to kill tasklet from interrupt
-
-> This patch defers deallocation of data structures to work queue.
-
-> Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
-> ---
->   drivers/staging/ozwpan/ozpd.c |   28 +++++++++++++++++++++++-----
->   drivers/staging/ozwpan/ozpd.h |    1 +
->   2 files changed, 24 insertions(+), 5 deletions(-)
-
-> diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
-> index 2514d79..06004c8 100644
-> --- a/drivers/staging/ozwpan/ozpd.c
-> +++ b/drivers/staging/ozwpan/ozpd.c
-[...]
-> @@ -259,6 +257,26 @@ void oz_pd_destroy(struct oz_pd *pd)
->   }
->
->   /*------------------------------------------------------------------------------
-> + * Context: softirq or Process
-> + */
-> +void oz_pd_destroy(struct oz_pd *pd)
-> +{
-> +	int ret;
-> +
-> +	if (hrtimer_active(&pd->timeout))
-> +		hrtimer_cancel(&pd->timeout);
-> +	if (hrtimer_active(&pd->heartbeat))
-> +		hrtimer_cancel(&pd->heartbeat);
-> +
-> +	memset(&pd->workitem, 0, sizeof(pd->workitem));
-> +	INIT_WORK(&pd->workitem, oz_pd_free);
-
-    Hm, memset(), then INIT_WORK()? Is memset() necessary?
-
-> +	ret = schedule_work(&pd->workitem);
-> +
-
-    Don't think empty line is needed here.
-
-> +	if (ret)
-> +		oz_pd_dbg(pd, ON, "failed to schedule workitem\n");
-> +}
-> +
-> +/*------------------------------------------------------------------------------
->    * Context: softirq-serialized
->    */
->   int oz_services_start(struct oz_pd *pd, u16 apps, int resume)
-> diff --git a/drivers/staging/ozwpan/ozpd.h b/drivers/staging/ozwpan/ozpd.h
-> index 996ef65..12c7129 100644
-> --- a/drivers/staging/ozwpan/ozpd.h
-> +++ b/drivers/staging/ozwpan/ozpd.h
-> @@ -99,6 +99,7 @@ struct oz_pd {
->   	u8      timeout_type;
->   	struct tasklet_struct   heartbeat_tasklet;
->   	struct tasklet_struct   timeout_tasklet;
-> +	struct work_struct workitem;
-
-    Er, other field names seem aligned, what about this one?
-
->   };
-
-WBR, Sergei
 
