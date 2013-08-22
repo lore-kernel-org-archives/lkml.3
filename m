@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab3HVIpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:45:25 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52728 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256Ab3HVIpW (ORCPT
+	id S1752758Ab3HVIoc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 04:44:32 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55113 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab3HVIoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 04:45:22 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <5215CF7F.5060109@jp.fujitsu.com>
-Date: Thu, 22 Aug 2013 17:44:47 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Hansen <dave@sr71.net>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
+	Thu, 22 Aug 2013 04:44:19 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-4c-5215cf6206fa
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 1/7] drivers: base: move mutex lock out of add_memory_section()
-References: <1377018783-26756-1-git-send-email-sjenning@linux.vnet.ibm.com> <20130820172445.GE4151@medulla.variantweb.net>
-In-Reply-To: <20130820172445.GE4151@medulla.variantweb.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/16] slab: correct pfmemalloc check
+Date: Thu, 22 Aug 2013 17:44:10 +0900
+Message-Id: <1377161065-30552-2-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/21 2:24), Seth Jennings wrote:
-> Gah! Forgot the cover letter.
->
-> This patchset just seeks to clean up and refactor some things in
-> memory.c for better understanding and possibly better performance due do
-> a decrease in mutex acquisitions and refcount churn at boot time.  No
-> functional change is intended by this set!
+We checked pfmemalloc by slab unit, not page unit. You can see this
+in is_slab_pfmemalloc(). So other pages don't need to be set/cleared
+pfmemalloc.
 
-All patches were
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Tested-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+And, therefore we should check pfmemalloc in page flag of first page,
+but current implementation don't do that. virt_to_head_page(obj) just
+return 'struct page' of that object, not one of first page, since the SLAB
+don't use __GFP_COMP when CONFIG_MMU. To get 'struct page' of first page,
+we first get a slab and try to get it via virt_to_head_page(slab->s_mem).
 
-Thanks,
-Yasuaki Ishimatsu
+Cc: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
->
-> Seth
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-
+diff --git a/mm/slab.c b/mm/slab.c
+index 8ccd296..d9eae39 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -930,7 +930,8 @@ static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ {
+ 	if (unlikely(pfmemalloc_active)) {
+ 		/* Some pfmemalloc slabs exist, check if this is one */
+-		struct page *page = virt_to_head_page(objp);
++		struct slab *slabp = virt_to_slab(objp);
++		struct page *page = virt_to_head_page(slabp->s_mem);
+ 		if (PageSlabPfmemalloc(page))
+ 			set_obj_pfmemalloc(&objp);
+ 	}
+@@ -1770,7 +1771,7 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ 		__SetPageSlab(page + i);
+ 
+ 		if (page->pfmemalloc)
+-			SetPageSlabPfmemalloc(page + i);
++			SetPageSlabPfmemalloc(page);
+ 	}
+ 	memcg_bind_pages(cachep, cachep->gfporder);
+ 
+@@ -1803,9 +1804,10 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+ 	else
+ 		sub_zone_page_state(page_zone(page),
+ 				NR_SLAB_UNRECLAIMABLE, nr_freed);
++
++	__ClearPageSlabPfmemalloc(page);
+ 	while (i--) {
+ 		BUG_ON(!PageSlab(page));
+-		__ClearPageSlabPfmemalloc(page);
+ 		__ClearPageSlab(page);
+ 		page++;
+ 	}
+-- 
+1.7.9.5
 
