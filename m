@@ -1,57 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab3HVPLx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 11:11:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56891 "EHLO mail.zytor.com"
+	id S1753445Ab3HVPQU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 11:16:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38270 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab3HVPLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 11:11:52 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1377183186-8407-3-git-send-email-jcmvbkbc@gmail.com>
-References: <1377183186-8407-1-git-send-email-jcmvbkbc@gmail.com> <1377183186-8407-3-git-send-email-jcmvbkbc@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 2/3] x86: don't use echo -e needlessly
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 22 Aug 2013 17:11:22 +0200
-To: Max Filippov <jcmvbkbc@gmail.com>, linux-kernel@vger.kernel.org
-CC: Sam Ravnborg <sam@ravnborg.org>, Guenter Roeck <linux@roeck-us.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Message-ID: <233f60e2-1706-42b0-8db1-13290fb7e459@email.android.com>
+	id S1752624Ab3HVPQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 11:16:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,934,1367996400"; 
+   d="scan'208";a="391640269"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, NeilBrown <neilb@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <1377183565.2720.72.camel@menhir>
+References: <1377099441-2224-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1377100012.2738.28.camel@menhir>
+ <20130821160817.940D3E0090@blue.fi.intel.com>
+ <1377103332.2738.37.camel@menhir>
+ <20130821135821.fc8f5a2551a28c9ce9c4b049@linux-foundation.org>
+ <1377163725.2720.18.camel@menhir>
+ <20130822130527.71C0AE0090@blue.fi.intel.com>
+ <1377178420.2720.51.camel@menhir>
+ <20130822143041.EC9F1E0090@blue.fi.intel.com>
+ <1377183565.2720.72.camel@menhir>
+Subject: Re: [PATCH] mm, fs: avoid page allocation beyond i_size on read
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130822151614.2F11DE0090@blue.fi.intel.com>
+Date: Thu, 22 Aug 2013 18:16:14 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can we drop the /bin/?
-
-Max Filippov <jcmvbkbc@gmail.com> wrote:
->-e is not needed to output strings without escape sequences.
->
->Cc: Thomas Gleixner <tglx@linutronix.de>
->Cc: Ingo Molnar <mingo@redhat.com>
->Cc: "H. Peter Anvin" <hpa@zytor.com>
->Cc: x86@kernel.org
->Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
->---
-> arch/x86/Makefile |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
->
->diff --git a/arch/x86/Makefile b/arch/x86/Makefile
->index 07639c6..7386e8a 100644
->--- a/arch/x86/Makefile
->+++ b/arch/x86/Makefile
->@@ -95,7 +95,7 @@ endif
+Steven Whitehouse wrote:
+> Hi,
 > 
-> ifdef CONFIG_X86_X32
-> 	x32_ld_ok := $(call try-run,\
->-			/bin/echo -e '1: .quad 1b' | \
->+			/bin/echo '1: .quad 1b' | \
-> 			$(CC) $(KBUILD_AFLAGS) -c -x assembler -o "$$TMP" - && \
-> 			$(OBJCOPY) -O elf32-x86-64 "$$TMP" "$$TMPO" && \
-> 			$(LD) -m elf32_x86_64 "$$TMPO" -o "$$TMP",y,n)
+> On Thu, 2013-08-22 at 17:30 +0300, Kirill A. Shutemov wrote:
+> [snip]
+> > > Andrew's proposed solution makes sense to me, and is probably the
+> > > easiest way to solve this.
+> > 
+> > Move check to no_cached_page?
+> Yes
+> 
+> > I don't see how it makes any difference for
+> > page cache miss case: we anyway exclude ->readpage() if it's beyond local
+> > i_size.
+> > And for cache hit local i_size will be most likely cover locally cached
+> > pages.
+> The difference is that as the function is currently written, you cannot
+> get to no_cached_page without first calling page_cache_sync_readahead(),
+> i.e. ->readpages() so that i_size will have been updated, even if
+> ->readpages() doesn't return any read-ahead pages.
+> 
+> I guess that it is not very obvious that a call to ->readpages is hidden
+> in page_cache_sync_readahead() but that is the path that should in the
+> common case provide the pages from the fs, rather than the ->readpage
+> call thats further down do_generic_file_read()
+
+I've checked the codepath before and to me it looks like ->readpages()
+will not be called beyond i_size. Codepath is:
+
+page_cache_sync_readahead()
+ ondemand_readahead()
+  __do_page_cache_readahead()
+   read_pages()
+    mapping->a_ops->readpages()
+
+But if you check __do_page_cache_readahead():
+
+152 static int
+153 __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
+154                         pgoff_t offset, unsigned long nr_to_read,
+155                         unsigned long lookahead_size)
+156 {
+...
+163         loff_t isize = i_size_read(inode);
+164
+165         if (isize == 0)
+166                 goto out;
+167
+168         end_index = ((isize - 1) >> PAGE_CACHE_SHIFT);
+...
+173         for (page_idx = 0; page_idx < nr_to_read; page_idx++) {
+174                 pgoff_t page_offset = offset + page_idx;
+175
+176                 if (page_offset > end_index)
+177                         break;
+...
+193         }
+...
+200         if (ret)
+201                 read_pages(mapping, filp, &page_pool, ret);
+202         BUG_ON(!list_empty(&page_pool));
+203 out:
+204         return ret;
+205 }
+
+Do I miss something?
 
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+ Kirill A. Shutemov
