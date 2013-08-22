@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab3HVOQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 10:16:53 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:61882 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab3HVOOp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 10:14:45 -0400
-From: Robert Richter <rric@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
-        Robert Richter <rric@kernel.org>
-Subject: [PATCH v3 06/12] mce, x86: Enable persistent events
-Date: Thu, 22 Aug 2013 16:13:21 +0200
-Message-Id: <1377180807-12758-7-git-send-email-rric@kernel.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1377180807-12758-1-git-send-email-rric@kernel.org>
-References: <1377180807-12758-1-git-send-email-rric@kernel.org>
+	id S1753680Ab3HVOQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 10:16:52 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:40564 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752873Ab3HVOOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 10:14:46 -0400
+Date: Thu, 22 Aug 2013 17:14:02 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: Drunkard Zhang <gongfan193@gmail.com>
+cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: ipvsadm: One-packet scheduling with UDP service is unstable
+In-Reply-To: <CAJiejCSdfBKC3c1dqya55R5T0VBCTm3qaM6nL-CY+H0o5hbwoA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1308221558160.2993@ja.ssi.bg>
+References: <CAJiejCQPa7V703RwOeWPpbQMJQvfswRn+pvTKFmNdeU05RU3SQ@mail.gmail.com> <alpine.LFD.2.00.1308220925340.1727@ja.ssi.bg> <CAJiejCSdfBKC3c1dqya55R5T0VBCTm3qaM6nL-CY+H0o5hbwoA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
 
-... for MCEs collection.
+	Hello,
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-[ rric: Fix build error for no-tracepoints configs ]
-[ rric: Return proper error code. ]
-[ rric: No error message if perf is disabled. ]
-Signed-off-by: Robert Richter <rric@kernel.org>
----
- arch/x86/kernel/cpu/mcheck/mce.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+On Thu, 22 Aug 2013, Drunkard Zhang wrote:
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 87a65c9..ffa227b 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1990,6 +1990,25 @@ int __init mcheck_init(void)
- 	return 0;
- }
- 
-+#ifdef CONFIG_EVENT_TRACING
-+
-+int __init mcheck_init_tp(void)
-+{
-+	int ret = perf_add_persistent_tp(&event_mce_record);
-+
-+	if (ret && ret != -ENOENT)
-+		pr_err("Error adding MCE persistent event: %d\n", ret);
-+
-+	return ret;
-+}
-+/*
-+ * We can't run earlier because persistent events uses anon_inode_getfile and
-+ * its anon_inode_mnt gets initialized as a fs_initcall.
-+ */
-+fs_initcall_sync(mcheck_init_tp);
-+
-+#endif /* CONFIG_EVENT_TRACING */
-+
- /*
-  * mce_syscore: PM support
-  */
--- 
-1.8.3.2
+> 2013/8/22 Julian Anastasov <ja@ssi.bg>:
+> >
+> >         No kernel options should be related to OPS. I assume
+> > you are not using the SH scheduler. Make sure the OPS mode
+> > is properly applied to the virtual service, check for "ops"
+> > in the configuration:
+> >
+> > cat /proc/net/ip_vs
+> 
+> Still no lucky here, ops is set in running config, but it's not like
+> that in real world.
+> 
+> vs3 ~ # cat /proc/net/ip_vs
+> IP Virtual Server version 1.2.1 (size=1024)
+> Prot LocalAddress:Port Scheduler Flags
+>   -> RemoteAddress:Port Forward Weight ActiveConn InActConn
+> UDP  96A46478:0202 wrr ops
 
+>   -> 96A46450:0202      Route   25     0          1
+
+	The OPS connections are accounted in InActConn
+for a very short period, they live up to 1 jiffie, eg. 10ms.
+Also, WRR should be reliable for OPS while other
+schedulers (eg. *LC) are not suitable.
+
+> And the traffic routed to each realserver didn't following weight I
+> set, it's routed pretty much one to one. I got 17 udp sources sending
+> to 16 different realservers, the others are bonding to another VIP.
+> 
+> Prot LocalAddress:Port                 CPS    InPPS   OutPPS    InBPS   OutBPS
+>   -> RemoteAddress:Port
+> UDP  x.x.x.120:514                 0    67622        0 12339373        0
+>   -> x.x.x.65:514                  0       29        0     2895        0
+>   -> x.x.x.66:514                  0      225        0    21850        0
+
+	Do you see the same problem with ipvsadm -Ln --stats ?
+ipvsadm -Z may be needed to zero the stats after restoring all
+rules. "Conns" counter in stats should be according to WRR
+weights, it shows the scheduler decisions.
+
+	In your rates listing CPS 0 is confusing, even for OPS.
+Is it from the new ipvsadm?
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
