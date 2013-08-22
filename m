@@ -1,145 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab3HVFUk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 01:20:40 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:40178 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380Ab3HVFUi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 01:20:38 -0400
-From: "Nicholas A. Bellinger" <nab@daterainc.com>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Nicholas Bellinger <nab@daterainc.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH] target/tcm_qla2xxx: Add/use target_reverse_dma_direction() in target_core_fabric.h
-Date: Thu, 22 Aug 2013 05:04:44 +0000
-Message-Id: <1377147884-10337-1-git-send-email-nab@daterainc.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1753487Ab3HVFYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 01:24:04 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33980 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752527Ab3HVFYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 01:24:01 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <bcousson@baylibre.com>, <swarren@wwwdotorg.org>, <tony@atomide.com>,
+        <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
+        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>, <kishon@ti.com>, <balbi@ti.com>
+Subject: [PATCH v3] extcon: palmas: Added a new compatible type *ti,palmas-usb-vid*
+Date: Thu, 22 Aug 2013 10:53:07 +0530
+Message-ID: <1377148987-21831-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@daterainc.com>
+The Palmas device contains only a USB VID detector, so added a
+compatible type *ti,palmas-usb-vid*. Didn't remove the existing compatible
+types for backward compatibility.
 
-Reversing the dma_data_direction for pci_map_sg() friends is useful
-for other drivers, so move it from tcm_qla2xxx into inline code
-within target_core_fabric.h.
-
-Also drop internal usage of equivlient in tcm_qla2xxx fabric code.
-
-Reported-by: Christoph Hellwig <hch@lst.de>
-Cc: Roland Dreier <roland@purestorage.com>
-Cc: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Cc: Chad Dupuis <chad.dupuis@qlogic.com>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/scsi/qla2xxx/tcm_qla2xxx.c  |   31 +++----------------------------
- include/target/target_core_fabric.h |   26 ++++++++++++++++++++++++++
- 2 files changed, 29 insertions(+), 28 deletions(-)
+Changes from [1]:
+* Since the old compatible values will be in 3.11 kernel, we shouldn't remove
+the old compatible values. So retain the old compatible values.
 
-diff --git a/drivers/scsi/qla2xxx/tcm_qla2xxx.c b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
-index 6a93a91..f790fca 100644
---- a/drivers/scsi/qla2xxx/tcm_qla2xxx.c
-+++ b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
-@@ -497,38 +497,13 @@ static u32 tcm_qla2xxx_sess_get_index(struct se_session *se_sess)
- 	return 0;
- }
+[1] -> http://www.spinics.net/lists/linux-omap/msg95843.html
+
+ Documentation/devicetree/bindings/extcon/extcon-palmas.txt |    3 ++-
+ drivers/extcon/extcon-palmas.c                             |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
+index 7dab6a8..dc5fab3 100644
+--- a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
++++ b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
+@@ -2,7 +2,8 @@ EXTCON FOR PALMAS/TWL CHIPS
  
--/*
-- * The LIO target core uses DMA_TO_DEVICE to mean that data is going
-- * to the target (eg handling a WRITE) and DMA_FROM_DEVICE to mean
-- * that data is coming from the target (eg handling a READ).  However,
-- * this is just the opposite of what we have to tell the DMA mapping
-- * layer -- eg when handling a READ, the HBA will have to DMA the data
-- * out of memory so it can send it to the initiator, which means we
-- * need to use DMA_TO_DEVICE when we map the data.
-- */
--static enum dma_data_direction tcm_qla2xxx_mapping_dir(struct se_cmd *se_cmd)
--{
--	if (se_cmd->se_cmd_flags & SCF_BIDI)
--		return DMA_BIDIRECTIONAL;
--
--	switch (se_cmd->data_direction) {
--	case DMA_TO_DEVICE:
--		return DMA_FROM_DEVICE;
--	case DMA_FROM_DEVICE:
--		return DMA_TO_DEVICE;
--	case DMA_NONE:
--	default:
--		return DMA_NONE;
--	}
--}
--
- static int tcm_qla2xxx_write_pending(struct se_cmd *se_cmd)
- {
- 	struct qla_tgt_cmd *cmd = container_of(se_cmd,
- 				struct qla_tgt_cmd, se_cmd);
+ PALMAS USB COMPARATOR
+ Required Properties:
+- - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb"
++ - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb" or
++   "ti,palmas-usb-vid".
  
- 	cmd->bufflen = se_cmd->data_length;
--	cmd->dma_data_direction = tcm_qla2xxx_mapping_dir(se_cmd);
-+	cmd->dma_data_direction = target_reverse_dma_direction(se_cmd);
+ Optional Properties:
+  - ti,wakeup : To enable the wakeup comparator in probe
+diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
+index 89fdd05..9672f31 100644
+--- a/drivers/extcon/extcon-palmas.c
++++ b/drivers/extcon/extcon-palmas.c
+@@ -268,6 +268,7 @@ static const struct dev_pm_ops palmas_pm_ops = {
  
- 	cmd->sg_cnt = se_cmd->t_data_nents;
- 	cmd->sg = se_cmd->t_data_sg;
-@@ -664,7 +639,7 @@ static int tcm_qla2xxx_queue_data_in(struct se_cmd *se_cmd)
- 				struct qla_tgt_cmd, se_cmd);
- 
- 	cmd->bufflen = se_cmd->data_length;
--	cmd->dma_data_direction = tcm_qla2xxx_mapping_dir(se_cmd);
-+	cmd->dma_data_direction = target_reverse_dma_direction(se_cmd);
- 	cmd->aborted = (se_cmd->transport_state & CMD_T_ABORTED);
- 
- 	cmd->sg_cnt = se_cmd->t_data_nents;
-@@ -688,7 +663,7 @@ static int tcm_qla2xxx_queue_status(struct se_cmd *se_cmd)
- 	cmd->sg = NULL;
- 	cmd->sg_cnt = 0;
- 	cmd->offset = 0;
--	cmd->dma_data_direction = tcm_qla2xxx_mapping_dir(se_cmd);
-+	cmd->dma_data_direction = target_reverse_dma_direction(se_cmd);
- 	cmd->aborted = (se_cmd->transport_state & CMD_T_ABORTED);
- 
- 	if (se_cmd->data_direction == DMA_FROM_DEVICE) {
-diff --git a/include/target/target_core_fabric.h b/include/target/target_core_fabric.h
-index 192eb52..882b650e 100644
---- a/include/target/target_core_fabric.h
-+++ b/include/target/target_core_fabric.h
-@@ -179,4 +179,30 @@ u32	iscsi_get_pr_transport_id_len(struct se_portal_group *, struct se_node_acl *
- char	*iscsi_parse_pr_out_transport_id(struct se_portal_group *, const char *,
- 		u32 *, char **);
- 
-+/*
-+ * The LIO target core uses DMA_TO_DEVICE to mean that data is going
-+ * to the target (eg handling a WRITE) and DMA_FROM_DEVICE to mean
-+ * that data is coming from the target (eg handling a READ).  However,
-+ * this is just the opposite of what we have to tell the DMA mapping
-+ * layer -- eg when handling a READ, the HBA will have to DMA the data
-+ * out of memory so it can send it to the initiator, which means we
-+ * need to use DMA_TO_DEVICE when we map the data.
-+ */
-+static inline enum dma_data_direction
-+target_reverse_dma_direction(struct se_cmd *se_cmd)
-+{
-+	if (se_cmd->se_cmd_flags & SCF_BIDI)
-+		return DMA_BIDIRECTIONAL;
-+
-+	switch (se_cmd->data_direction) {
-+	case DMA_TO_DEVICE:
-+		return DMA_FROM_DEVICE;
-+	case DMA_FROM_DEVICE:
-+		return DMA_TO_DEVICE;
-+	case DMA_NONE:
-+	default:
-+		return DMA_NONE;
-+	}
-+}
-+
- #endif /* TARGET_CORE_FABRICH */
+ static struct of_device_id of_palmas_match_tbl[] = {
+ 	{ .compatible = "ti,palmas-usb", },
++	{ .compatible = "ti,palmas-usb-vid", },
+ 	{ .compatible = "ti,twl6035-usb", },
+ 	{ /* end */ }
+ };
 -- 
 1.7.10.4
 
