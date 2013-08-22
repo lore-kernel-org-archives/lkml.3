@@ -1,66 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab3HVPed (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 11:34:33 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:37452 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752563Ab3HVPec (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 11:34:32 -0400
-X-Sasl-enc: CpDwbQc3CVlMlikOqfFzKbPEXPm4B8e4Q7fOfgwITibo 1377185670
-Date: Thu, 22 Aug 2013 08:36:25 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20130822153625.GA5354@kroah.com>
-References: <20130822153942.66d098b122092d6944186c53@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130822153942.66d098b122092d6944186c53@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753545Ab3HVPe4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 11:34:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752751Ab3HVPey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 11:34:54 -0400
+Subject: Re: [PATCH] mm, fs: avoid page allocation beyond i_size on read
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, NeilBrown <neilb@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <20130822151614.2F11DE0090@blue.fi.intel.com>
+References: <1377099441-2224-1-git-send-email-kirill.shutemov@linux.intel.com>
+	 <1377100012.2738.28.camel@menhir>
+	 <20130821160817.940D3E0090@blue.fi.intel.com>
+	 <1377103332.2738.37.camel@menhir>
+	 <20130821135821.fc8f5a2551a28c9ce9c4b049@linux-foundation.org>
+	 <1377163725.2720.18.camel@menhir>
+	 <20130822130527.71C0AE0090@blue.fi.intel.com>
+	 <1377178420.2720.51.camel@menhir>
+	 <20130822143041.EC9F1E0090@blue.fi.intel.com>
+	 <1377183565.2720.72.camel@menhir>
+	 <20130822151614.2F11DE0090@blue.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Thu, 22 Aug 2013 16:34:55 +0100
+Message-ID: <1377185695.2720.79.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 03:39:42PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+Hi,
+
+On Thu, 2013-08-22 at 18:16 +0300, Kirill A. Shutemov wrote:
+> Steven Whitehouse wrote:
+> > Hi,
+> > 
+> > On Thu, 2013-08-22 at 17:30 +0300, Kirill A. Shutemov wrote:
+> > [snip]
+> > > > Andrew's proposed solution makes sense to me, and is probably the
+> > > > easiest way to solve this.
+> > > 
+> > > Move check to no_cached_page?
+> > Yes
+> > 
+> > > I don't see how it makes any difference for
+> > > page cache miss case: we anyway exclude ->readpage() if it's beyond local
+> > > i_size.
+> > > And for cache hit local i_size will be most likely cover locally cached
+> > > pages.
+> > The difference is that as the function is currently written, you cannot
+> > get to no_cached_page without first calling page_cache_sync_readahead(),
+> > i.e. ->readpages() so that i_size will have been updated, even if
+> > ->readpages() doesn't return any read-ahead pages.
+> > 
+> > I guess that it is not very obvious that a call to ->readpages is hidden
+> > in page_cache_sync_readahead() but that is the path that should in the
+> > common case provide the pages from the fs, rather than the ->readpage
+> > call thats further down do_generic_file_read()
 > 
-> After merging the driver-core tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+> I've checked the codepath before and to me it looks like ->readpages()
+> will not be called beyond i_size. Codepath is:
 > 
-> In file included from include/linux/kobject.h:21:0,
->                  from include/linux/module.h:16,
->                  from drivers/acpi/bgrt.c:11:
-> drivers/acpi/bgrt.c: In function 'bgrt_init':
-> drivers/acpi/bgrt.c:89:23: error: 'image_attr' undeclared (first use in this function)
->   sysfs_bin_attr_init(&image_attr);
->                        ^
-> include/linux/sysfs.h:53:3: note: in definition of macro 'sysfs_attr_init'
->   (attr)->key = &__key;    \
->    ^
-> drivers/acpi/bgrt.c:89:2: note: in expansion of macro 'sysfs_bin_attr_init'
->   sysfs_bin_attr_init(&image_attr);
->   ^
-> drivers/acpi/bgrt.c:89:23: note: each undeclared identifier is reported only once for each function it appears in
->   sysfs_bin_attr_init(&image_attr);
->                        ^
-> include/linux/sysfs.h:53:3: note: in definition of macro 'sysfs_attr_init'
->   (attr)->key = &__key;    \
->    ^
-> drivers/acpi/bgrt.c:89:2: note: in expansion of macro 'sysfs_bin_attr_init'
->   sysfs_bin_attr_init(&image_attr);
->   ^
+> page_cache_sync_readahead()
+>  ondemand_readahead()
+>   __do_page_cache_readahead()
+>    read_pages()
+>     mapping->a_ops->readpages()
 > 
-> Presumably caused by commit 65f44679580d ("ACPI: bgrt: take advantage of
-> binary sysfs groups").
+> But if you check __do_page_cache_readahead():
+> 
+> 152 static int
+> 153 __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
+> 154                         pgoff_t offset, unsigned long nr_to_read,
+> 155                         unsigned long lookahead_size)
+> 156 {
+> ...
+> 163         loff_t isize = i_size_read(inode);
+> 164
+> 165         if (isize == 0)
+> 166                 goto out;
+> 167
+> 168         end_index = ((isize - 1) >> PAGE_CACHE_SHIFT);
+> ...
+> 173         for (page_idx = 0; page_idx < nr_to_read; page_idx++) {
+> 174                 pgoff_t page_offset = offset + page_idx;
+> 175
+> 176                 if (page_offset > end_index)
+> 177                         break;
+> ...
+> 193         }
+> ...
+> 200         if (ret)
+> 201                 read_pages(mapping, filp, &page_pool, ret);
+> 202         BUG_ON(!list_empty(&page_pool));
+> 203 out:
+> 204         return ret;
+> 205 }
+> 
+> Do I miss something?
+> 
 
-It's as if I never even built the patch I submitted, I have no idea what
-happened here, sorry about that.
+Hrm. It looks like that Andrew's proposal is not going to work then :(
 
-I've now fixed it up, it should be fine for the next linux-next release.
+The trouble is that readahead has broken silently in this one case,
+since the net result of the readahead not going ahead at this point, is
+that ->readpage will be called later on. So in the cases where it
+matters (i.e. i_size updated remotely), we'd probably not have noticed
+it before as the read will still return successfully.
 
-thanks,
+That is real problem though... so maybe this isn't as easy as I'd first
+thought,
 
-greg k-h
+Steve.
+
+
