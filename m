@@ -1,53 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab3HVQ43 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:56:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59355 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab3HVQ42 (ORCPT
+	id S1753870Ab3HVQ7D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:59:03 -0400
+Received: from smtp-out-251.synserver.de ([212.40.185.251]:1046 "EHLO
+	smtp-out-250.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753311Ab3HVQ7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:56:28 -0400
-Message-ID: <521642A8.2020103@kernel.dk>
-Date: Thu, 22 Aug 2013 10:56:08 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 22 Aug 2013 12:59:00 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 30638
+Message-ID: <521643A4.6080802@metafoo.de>
+Date: Thu, 22 Aug 2013 19:00:20 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] idr: Use this_cpu_ptr() for percpu_ida
-References: <1375896905-6074-1-git-send-email-kmo@daterainc.com> <1375896905-6074-5-git-send-email-kmo@daterainc.com> <0000014059ec4c34-1bb53d48-c9ee-4e71-81b8-253026431c5c-000000@email.amazonses.com> <20130807183345.GA11612@kmo-pixel> <000001405a4b39ef-0715410a-5061-41e9-9414-86559f16570d-000000@email.amazonses.com> <20130807195733.GB11612@kmo-pixel> <000001405e5776ba-bcc96088-b5e8-4abe-b98e-2e9d7d9b112b-000000@email.amazonses.com> <1377033546.32763.4.camel@haakon3.risingtidesystems.com> <00000140a14ae6bb-f0fca267-cdd6-4039-8c6b-f715999a83c5-000000@email.amazonses.com> <20130821134945.16b32c045e28272c5b0ba610@linux-foundation.org> <00000140a6e964d2-03ac778f-13ff-415d-bbfa-93cb2fddcaa5-000000@email.amazonses.com>
-In-Reply-To: <00000140a6e964d2-03ac778f-13ff-415d-bbfa-93cb2fddcaa5-000000@email.amazonses.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Pawel Moll <pawel.moll@arm.com>
+CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Hector Palacios <hector.palacios@digi.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        "marex@denx.de" <marex@denx.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: [PATCH v3 2/5] ARM: dts: add reference voltage property for MXS
+ LRADC
+References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com>  <1374501843-19651-3-git-send-email-hector.palacios@digi.com>  <520AA3CD.1040008@kernel.org> <1376491467.18617.41.camel@hornet>  <52153B8E.7050309@free-electrons.com> <1377189662.2626.4.camel@hornet>
+In-Reply-To: <1377189662.2626.4.camel@hornet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2013 10:44 AM, Christoph Lameter wrote:
-> On Wed, 21 Aug 2013, Andrew Morton wrote:
+On 08/22/2013 06:41 PM, Pawel Moll wrote:
 > 
->> The lock is needed so that one cpu can steal tags from another cpu's cache.
->> See (the needlessly inlined!) steal_tags().
+> On Wed, 2013-08-21 at 23:13 +0100, Alexandre Belloni wrote:
+>> You are not so wrong. There is indeed actually only one reference
+>> voltage (and that is 1.85V). But, before feeding the voltage to the ADC
+>> channels, you sometimes have a divider. Then, after the channel muxing,
+>> you can add a by 2 divider.
+>>
+>> Mandatory ascii art:
+>>
+>>             +-----+
+>>             |     |
+>>    +-ch1--->|     |
+>>             |     |
+>>             |     |
+>>             |     |     +-----+
+>>    +-ch2--->|     |     |     |
+>>             | MUX |++-->| ADC +----------->
+>>      ch3    |     | |   |     |
+>>     +----+  |     | |   +-----+
+>>     |    |  |     | |      |
+>>   +-> :4 +->|     | |  +---+--+
+>>     |    |  |     | |  |      |
+>>     +----+  |     | +->|  :2  |
+>>             +-----+    |      |
+>>                        +------+
+>>
+>>
+>> So, from my point of view, the divider that is before the mux (the by 4
+>> divider on channel 3 on my drawing) is not part of the the ADC, it is
+>> not fixed by that IP. And indeed, that changed between the i.mx23 and
+>> i.mx28 while the IP is the same.
 > 
-> Stealing tags could also be done via IPIs or some other things.
+> Let me a couple of additional questions, hope you don't mind:
+> 
+> 1. Is the channel defined as: input *and* the reference voltage? Or,
+> does the mux switch both of them at the same time?
+> 
+> 2. Is the mux controlled (so the channel selected) by a control register
+> "integral" to the ADC?
+> 
+> 3. Is the reference voltage generated "inside" the SOC? Or does it come
+> from an external source?
+> 
+> 4. How is the "LRADC" IP actually documented? Does the spec clearly say
+> that it has 8 voltage reference inputs?
 
-That is actually the approach I took for blk-mq tagging. But that isn't
-free either. I think it pretty much boils down to how much stealing you
-expect. If the tag space is sufficiently large, you would not expect a
-lot of stealing. And then it doesn't really matter if you use a lock or
-an IPI, since it's the rare case - the lock cacheline isn't going to be
-shared across processors anyway. The ticket locks aren't exactly free on
-their own, however, so that cost is still paid. But I'd be surprised if
-it was much of an issue.
+There is one internal vref always fixed to the same voltage (I think).
 
-If the tag space isn't large enough (common case), then yes, it matters
-a lot what kind of mechanism is used. It's on my TODO to compare the two
-under realistic scenarios and see how they fare.
+> 
+>> So, the two solutions you suggest are:
+>> 1/ using a fixed-regulator phandle per channel
+>> 2/ hard-coding the dividers in the driver using the compatible string to
+>> know which divider is on which channel.
+>>
+>> I feel that solution 2 is less future proof but at the same time, I
+>> don't believe we will see that IP in another chip in the future.
+> 
+> If we were to follow the spirit of "how is it wired" to the letter, you
+> should really use 8 supplies, but I appreciate that it can be
+> troublesome (or maybe not? it's just 2 dtsi files after all ;-). So
+> maybe, as the compatible values explicitly mention the SOC names, you
+> just want to hardcode the voltage levels in the driver itself (probably
+> as data for the match array)? This of course assume that the reference
+> source is internal. Shortly speaking - I believe that you should have
+> phandles to regulators or nothing at all there :-) A de-facto-constant
+> list of SOC-specific numbers seems the worst option.
 
--- 
-Jens Axboe
+The table is a list of virtual reference voltages, if you will so. The
+reference voltage is always the same, but some of the inputs have a voltage
+divider. From a mathematical point of view you get the same result if you
+either divide the input voltage, or multiply the reference voltage. That
+said in my opinion the best solution is still to put that table into the
+driver and not the devicetree.
 
+- Lars
