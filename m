@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab3HVKoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 06:44:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752457Ab3HVKoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 06:44:14 -0400
-Date: Thu, 22 Aug 2013 12:44:11 +0200
-From: Anton Arapov <anton@redhat.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [ATTEND] oops.kernel.org prospect
-Message-ID: <20130822104411.GA11714@bandura.laptop>
-References: <20130819085405.GA22328@bandura.laptop>
- <20130819145505.GB15178@kroah.com>
- <20130819151643.GC19070@bandura.laptop>
- <20130819153939.GA23875@thunk.org>
- <20130819155202.GF19070@bandura.laptop>
- <20130821194357.GA22587@electric-eye.fr.zoreil.com>
+	id S1752794Ab3HVKvU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 06:51:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50846 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab3HVKvT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 06:51:19 -0400
+Date: Thu, 22 Aug 2013 12:51:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        acme@redhat.com, jolsa@redhat.com, namhyung.kim@lge.com,
+        dsahern@gmail.com
+Subject: Re: [PATCH v2 2/2] perf tools: add attr->mmap2 support
+Message-ID: <20130822105109.GI31370@twins.programming.kicks-ass.net>
+References: <1377079825-19057-1-git-send-email-eranian@google.com>
+ <1377079825-19057-3-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130821194357.GA22587@electric-eye.fr.zoreil.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1377079825-19057-3-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 09:43:57PM +0200, Francois Romieu wrote:
-> Anton Arapov <anton@redhat.com> :
-> [...]
-> > Oh well,... I didn't have a time for this right now, nor project is
-> > not exactly in the state I'm willing to show (mostly webui) 
+On Wed, Aug 21, 2013 at 12:10:25PM +0200, Stephane Eranian wrote:
+> This patch adds support for the new PERF_RECORD_MMAP2
+> record type exposed by the kernel. This is an extended
+> PERF_RECORD_MMAP record. It adds for each file-backed
+> mapping the device major, minor number and the inode
+> number and generation. This triplet uniquely identifies
+> the source of a file-backed mapping. It can be used to
+> detect identical virtual mappings between processes, for
+> instance.
 > 
-> I have sorted the r8169 oopses by kernel revision to start with the most
-> recent kernels. I don't get why the r8169 driver appears in the
-> "Caused by:" field when
-> - the bug is about "scheduling while atomic: Xorg/3042/0×00000001"
-> - the kernel is PDWO with fglrx
-> - r8169 appears in the module list, nowhere else (not even the oops)
+> The patch will prefer MMAP2 over MMAP.
 > 
-> I tried :
-> http://oops.kernel.org/browse-reports/?c=1&d=1&oopsclass=default&oopstype=default&distro=default&module=&driver=r8169&function=&file=&bugline=&kernel=&tainted=true&search=submit
-> 
-> (0 answer if Stack, Registers or Disassembled code is added)
-> ("tainted=true" while "Untainted only" was asked for, huh ?)
-> 
-> The answers contains:
-> http://oops.kernel.org/browse-reports/oops-detail/?id=29778
-> and
-> http://oops.kernel.org/browse-reports/oops-detail/?id=29856
-> 
-> I can't even find the "r8169" word in those.
-> Is it the currently expected behavior ?
+> Signed-off-by: Stephane Eranian <eranian@google.com>
 
-Thanks for the report. I will check it.
-
-Anton.
+Acme, ACK?
