@@ -1,163 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab3HVIZl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:25:41 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:65008 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab3HVIZg (ORCPT
+	id S1752079Ab3HVIbn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 04:31:43 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56603 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab3HVIbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 04:25:36 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Xiubo Li-B47053 <B47053@freescale.com>
-Cc: Guo Shawn-R65073 <r65073@freescale.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Subject: Re: [PATCH 4/4] Documentation: Add device tree bindings for Freescale FTM PWM
-Date: Thu, 22 Aug 2013 10:25:30 +0200
-Message-ID: <1522215.zHEjdiga8V@flatron>
-User-Agent: KMail/4.11 (Linux/3.10.6-gentoo; KDE/4.11.0; x86_64; ; )
-In-Reply-To: <1DD289F6464F0949A2FCA5AA6DC23F827D2244@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com> <1473340.OXSHEp7d4P@flatron> <1DD289F6464F0949A2FCA5AA6DC23F827D2244@039-SN2MPN1-013.039d.mgd.msft.net>
+	Thu, 22 Aug 2013 04:31:41 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <5215CC40.5060406@jp.fujitsu.com>
+Date: Thu, 22 Aug 2013 17:30:56 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Hansen <dave@sr71.net>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 7/7] drivers: base: refactor add_memory_section() to add_memory_block()
+References: <1377018783-26756-1-git-send-email-sjenning@linux.vnet.ibm.com> <1377018783-26756-7-git-send-email-sjenning@linux.vnet.ibm.com> <5215C9B3.4090608@jp.fujitsu.com>
+In-Reply-To: <5215C9B3.4090608@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 22 of August 2013 02:55:42 Xiubo Li-B47053 wrote:
-> Hi Tomasz,
+(2013/08/22 17:20), Yasuaki Ishimatsu wrote:
+> (2013/08/21 2:13), Seth Jennings wrote:
+>> Right now memory_dev_init() maintains the memory block pointer
+>> between iterations of add_memory_section().  This is nasty.
+>>
+>> This patch refactors add_memory_section() to become add_memory_block().
+>> The refactoring pulls the section scanning out of memory_dev_init()
+>> and simplifies the signature.
+>>
+>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+>> ---
+>>    drivers/base/memory.c | 48 +++++++++++++++++++++---------------------------
+>>    1 file changed, 21 insertions(+), 27 deletions(-)
+>>
+>> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+>> index 7d9d3bc..021283a 100644
+>> --- a/drivers/base/memory.c
+>> +++ b/drivers/base/memory.c
+>> @@ -602,32 +602,31 @@ static int init_memory_block(struct memory_block **memory,
+>>    	return ret;
+>>    }
+>>    
+>> -static int add_memory_section(struct mem_section *section,
+>> -			struct memory_block **mem_p)
+>> +static int add_memory_block(int base_section_nr)
+>>    {
+>> -	struct memory_block *mem = NULL;
+>> -	int scn_nr = __section_nr(section);
+>> -	int ret = 0;
+>> -
+>> -	if (mem_p && *mem_p) {
+>> -		if (scn_nr >= (*mem_p)->start_section_nr &&
+>> -		    scn_nr <= (*mem_p)->end_section_nr) {
+>> -			mem = *mem_p;
+>> -		}
+>> -	}
+>> +	struct memory_block *mem;
+>> +	int i, ret, section_count = 0, section_nr;
+>>    
+>> -	if (mem)
+>> -		mem->section_count++;
+>> -	else {
+>> -		ret = init_memory_block(&mem, section, MEM_ONLINE);
+>> -		/* store memory_block pointer for next loop */
+>> -		if (!ret && mem_p)
+>> -			*mem_p = mem;
+>> +	for (i = base_section_nr;
+>> +	     (i < base_section_nr + sections_per_block) && i < NR_MEM_SECTIONS;
+>> +	     i++) {
+>> +		if (!present_section_nr(i))
+>> +			continue;
+>> +		if (section_count == 0)
+>> +			section_nr = i;
+>> +		section_count++;
+>>    	}
+>>    
+>> -	return ret;
+>> +	if (section_count == 0)
+>> +		return 0;
+>> +	ret = init_memory_block(&mem, __nr_to_section(section_nr), MEM_ONLINE);
+>> +	if (ret)
+>> +		return ret;
+>> +	mem->section_count = section_count;
+>> +	return 0;
+>>    }
+>>    
+>> +
+>>    /*
+>>     * need an interface for the VM to add new memory regions,
+>>     * but without onlining it.
+>> @@ -733,7 +732,6 @@ int __init memory_dev_init(void)
+>>    	int ret;
+>>    	int err;
+>>    	unsigned long block_sz;
+>> -	struct memory_block *mem = NULL;
+>>    
+>>    	ret = subsys_system_register(&memory_subsys, memory_root_attr_groups);
+>>    	if (ret)
+>> @@ -747,12 +745,8 @@ int __init memory_dev_init(void)
+>>    	 * during boot and have been initialized
+>>    	 */
+>>    	mutex_lock(&mem_sysfs_mutex);
+>> -	for (i = 0; i < NR_MEM_SECTIONS; i++) {
+>> -		if (!present_section_nr(i))
+>> -			continue;
+>> -		/* don't need to reuse memory_block if only one per block */
+>> -		err = add_memory_section(__nr_to_section(i),
+>> -				 (sections_per_block == 1) ? NULL : &mem);
+>> +	for (i = 0; i < NR_MEM_SECTIONS; i += sections_per_block) {
 > 
-> Thanks for your comments.
+> Why do you remove present_setcion_nr() check?
+
+Sorry for the noise. I understood.
+The check was moved into add_memory_section(). So it was removed.
+
+Thanks,
+Yasuaki Ishimatsu
+
 > 
-> > > +- #pwm-cells: Should be 3. Number of cells being used to specify
-> > > PWM
-> > > property.
-> > > +  First cell specifies the per-chip channel index of the PWM
-> > > to use, the
-> > > +  second cell is the period in nanoseconds and bit 0 in
-> > > the third cell is
-> > > +  used to encode the polarity of PWM output. Set bit
-> > > 0 of the third in PWM
-> > > +  specifier to 1 for inverse polarity & set to 0
-> > > for normal polarity.
-> > 
-> > If the meaning of flags cell is the same as in generic, default PWM
-> > specifier format, then it should be noted here and generic PWM binding
-> > documentation mentioned.
+>> +		err = add_memory_block(i);
+>>    		if (!ret)
 > 
-> OK, How about the following ?
-> - #pwm-cells: Should be 3. See pwm.txt in this directory for a
->   description of the cells format.
-
-I meant just the last cell, which stores flags, but actually this might be 
-a good idea, but with slightly extended description. Something among those 
-lines:
-
- - #pwm-cells: Should be 3. The default three cell format specified by 
-generic PWM bindings are used. Refer to the documentation of generic PWM 
-bindings for more information about the meaning of cells.
-
-> I will replace it in v2.
+> Thanks,
+> Yasuaki Ishimatasu
 > 
-> > > +- fsl,pwm-clk-ps: the ftm0 pwm clock's prescaler,
-> > > divide-by 2^n(n = 0 ~ 7).
-> > 
-> > Is it a hardware-specific property?
+>>    			ret = err;
+>>    	}
+>>
 > 
-> Yes, I will revise it in v2.
-
-I'd like to hear a bit more elaborate description of this property. What 
-are the factors that decide what value should be used here?
-
-> > > +- fsl,pwm-cpwm: Center-Aligned PWM (CPWM)
-> > > mode.
-> > 
-> > Could you explain meaning of this property?
 > 
-> Well, this feature will be removed from the pwm core in v2.
-
-OK.
-
-> > > +- fsl,pwm-number: the number of PWM devices, and is must equal to
-> > > the
-> > > number +  of "fsl,pwm-channels".
-> > 
-> > This is redundant, because you can simply count how many entries have
-> > been specified in fsl,pwm-channels.
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 > 
-> Yes, I will revise it in v2.
-> And this would be renamed to " fsl,pwm-channel-number", which can be
-> more Readable and understood.
 
-I meant that you don't need to specify how many entries other property has 
-in another property, because device tree provides information about sizes 
-of all properties. So, in parsing code, you would be able to simply get 
-the size of "fsl,pwm-channels" property in bytes, divide that by 
-sizeof(u32) and get the numer of cells specified.
-
-Also see below.
-
-> > > +- fsl,pwm-channels: the channels' order which is be used for pwm in
-> > > ftm0 +  module, and they must be one or some of 0 ~ 7, because the
-> > > ftm0 only has +  8 channels can be used.
-> > 
-> > Could you explain meaning of this property more precisely? I'm
-> > interested especially how is this related to the PWM IP block and
-> > boards.
-> Yes.
-> There are 8 channels most. While the pinctrls of 4th and 5th channels
-> could be used by uart's Rx and Tx, then these 2 channels won't be used
-> for pwm output, so there will be 6 channels available by the pwm.
-> Thus, the pwm chip will register only 6 pwms(6 channels)
-> most("fsl,pwm-channel-orders = {0 1 2 3 6 7}").And also the
-> "fsl,pwm-channel-number" will be 6.
-> 
-> If hasn't any other problems, I will revise It in v2.
-> And this will be renamed to "fsl,pwm-channel-orders", which can be more
-> readable and understood.
-
-As Sascha Hauer already suggested, you could get rid of both this and 
-"fsl,pwm-channel-number" properties and simply register all the channels. 
-This way you will have a deterministic 1:1 mapping of real hardware 
-channels to channels specified in device tree, which is definitely the way 
-to go.
-
-Now as a safety measure, you could simply move the specification of 
-pinctrl states from SoC family or SoC level dtsi file to board level dts, 
-where only pinctrl states of channels used by a particular board would be 
-specified, so nothing could break operation of other devices that share 
-pin muxes with remaining channels.
-
-> > > +- for very channel, the revlatived the pinctrl should be at least
-> > > two
-> > > 
-> >                            ^ typo?
-> > > 
-> > > state +  {"enN", "dsN"}, which "en" means "enable", "ds" means
-> > > "disable" and "N" +  means the order of the channel.
-> > 
-> > I'd suggest a more readable naming convention, for example chN-active
-> > and chN-idle. These words seem to be more common across existing
-> > bindings.
-> That's a good idea, I will think it over and revise it in v2.
-
-OK. Looking forward to v2 then. Thanks.
-
-Best regards,
-Tomasz
 
