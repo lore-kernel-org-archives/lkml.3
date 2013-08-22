@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab3HVQtZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:49:25 -0400
-Received: from mail-qe0-f74.google.com ([209.85.128.74]:38678 "EHLO
-	mail-qe0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388Ab3HVQtX (ORCPT
+	id S1753970Ab3HVQua (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:50:30 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49204 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab3HVQu3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:49:23 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v6 2/3] mmc: dw_mmc: Honor requests to set the clock to 0 (turn off clock)
-Date: Thu, 22 Aug 2013 09:19:07 -0700
-Message-Id: <1377188348-3418-3-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <1377188348-3418-1-git-send-email-dianders@chromium.org>
-References: <1377188348-3418-1-git-send-email-dianders@chromium.org>
+	Thu, 22 Aug 2013 12:50:29 -0400
+Message-ID: <1377190224.2626.7.camel@hornet>
+Subject: Re: [PATCH v3 2/5] ARM: dts: add reference voltage property for MXS
+ LRADC
+From: Pawel Moll <pawel.moll@arm.com>
+To: Hector Palacios <hector.palacios@digi.com>
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        "marex@denx.de" <marex@denx.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Date: Thu, 22 Aug 2013 17:50:24 +0100
+In-Reply-To: <5215C64D.3040004@digi.com>
+References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com>
+	 <1374501843-19651-3-git-send-email-hector.palacios@digi.com>
+	 <520AA3CD.1040008@kernel.org> <1376491467.18617.41.camel@hornet>
+	 <52153B8E.7050309@free-electrons.com> <5215C64D.3040004@digi.com>
+X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 22 Aug 2013 16:50:24.0652 (UTC) FILETIME=[B28784C0:01CE9F57]
+X-MC-Unique: 113082217502700401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously the dw_mmc driver would ignore any requests to disable the
-card's clock.  This doesn't seem like a good thing in general, but had
-one extra bad side effect in the following situtation:
-* mmc core would set clk to 400kHz at boot time while initting
-* mmc core would set clk to 0 since no card, but it would be ignored.
-* suspend to ram and resume; clocks in the dw_mmc IP block are now 0
-  but dw_mmc thinks that they're 400kHz (it ignored the set to 0).
-* insert card
-* mmc core would set clk to 400kHz which would be considered a no-op.
+On Thu, 2013-08-22 at 09:05 +0100, Hector Palacios wrote:
+> This was what I originally submitted but it then looked like it would better fit in 
+> the DeviceTree. The spear-adc seemed to use a similar approach:
 
-Note that if there is no card in the slot and we do a suspend/resume
-cycle, we _do_ still end up with differences in a dw_mmc register
-dump, but the differences are clock related and we've got the clock
-disabled both before and after, so this should be OK.
+I'm not sure if it's the best example... I much more prefer the AD7303's
+way:
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v6:
-- Replaces previous pathes that ensured saving/restoring clocks.
+Documentation/devicetree/bindings/iio/dac/ad7303.txt
 
- drivers/mmc/host/dw_mmc.c | 21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+Optional properties:
+        - REF-supply: Phandle to the external reference voltage supply. This should
+          only be set if there is an external reference voltage connected to the REF
+          pin. If the property is not set Vdd/2 is used as the reference voltage.
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index ee5f167..f6c7545 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -635,7 +635,11 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
- 	u32 div;
- 	u32 clk_en_a;
- 
--	if (slot->clock != host->current_speed || force_clkinit) {
-+	if (slot->clock == 0) {
-+		mci_writel(host, CLKENA, 0);
-+		mci_send_cmd(slot,
-+			     SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
-+	} else if (slot->clock != host->current_speed || force_clkinit) {
- 		div = host->bus_hz / slot->clock;
- 		if (host->bus_hz % slot->clock && host->bus_hz > slot->clock)
- 			/*
-@@ -675,9 +679,8 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
- 		/* inform CIU */
- 		mci_send_cmd(slot,
- 			     SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
--
--		host->current_speed = slot->clock;
- 	}
-+	host->current_speed = slot->clock;
- 
- 	/* Set the current slot bus width */
- 	mci_writel(host, CTYPE, (slot->ctype << slot->id));
-@@ -807,13 +810,11 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 
- 	mci_writel(slot->host, UHS_REG, regs);
- 
--	if (ios->clock) {
--		/*
--		 * Use mirror of ios->clock to prevent race with mmc
--		 * core ios update when finding the minimum.
--		 */
--		slot->clock = ios->clock;
--	}
-+	/*
-+	 * Use mirror of ios->clock to prevent race with mmc
-+	 * core ios update when finding the minimum.
-+	 */
-+	slot->clock = ios->clock;
- 
- 	if (drv_data && drv_data->set_ios)
- 		drv_data->set_ios(slot->host, ios);
--- 
-1.8.3
+Paweł
+
 
