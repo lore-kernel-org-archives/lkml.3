@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab3HVFtX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 01:49:23 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:63225 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753195Ab3HVFtV (ORCPT
+	id S1753509Ab3HVFwS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 01:52:18 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:38879 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab3HVFwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 01:49:21 -0400
-Date: Thu, 22 Aug 2013 09:49:19 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Xen-devel@lists.xen.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>
-Subject: Re: Regression: x86/mm: new _PTE_SWP_SOFT_DIRTY bit conflicts with
- existing use
-Message-ID: <20130822054919.GF18673@moon>
-References: <5214C524.1050900@citrix.com>
- <dc8456d1-a89a-44c0-bebb-83cb0526230e@email.android.com>
- <20130821141926.GT18673@moon>
- <CA+55aFyk6s1t92HJ5rxKZQk6dTfszmhdXz+S=MqUmM-CbMo+DQ@mail.gmail.com>
- <20130821230557.GD18673@moon>
- <87wqnehapu.fsf@tassilo.jf.intel.com>
+	Thu, 22 Aug 2013 01:52:16 -0400
+Message-ID: <5215A676.6040504@linux.vnet.ibm.com>
+Date: Thu, 22 Aug 2013 11:19:42 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wqnehapu.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: fweisbec@gmail.com, paul.gortmaker@windriver.com, paulus@samba.org,
+        shangw@linux.vnet.ibm.com, galak@kernel.crashing.org,
+        deepthi@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
+        linux-pm@vger.kernel.org, rostedt@goodmis.org, rjw@sisk.pl,
+        john.stultz@linaro.org, tglx@linutronix.de, chenhui.zhao@freescale.com,
+        michael@ellerman.id.au, r58472@freescale.com, geoff@infradead.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC V2 PATCH 2/6] powerpc: Implement broadcast timer interrupt
+ as an IPI message
+References: <20130814115311.5193.32212.stgit@preeti.in.ibm.com> <20130814115602.5193.60835.stgit@preeti.in.ibm.com> <1377141057.25016.265.camel@pasglop>
+In-Reply-To: <1377141057.25016.265.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082205-5816-0000-0000-0000098747D1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 04:42:53PM -0700, Andi Kleen wrote:
-> Cyrill Gorcunov <gorcunov@gmail.com> writes:
-> >
-> > Hi all, I worked on patch which would not touch PSE bit for dirty page
-> > tracking and the result is not that good:
-> >
-> >  - 2level pages now always page dirty if page is swapped in and out, because
-> >    there is no space left in PTE (other than PSE bit)
-> 
-> Maybe just don't support soft dirty for 2 level page tables?
-> 
-> 2 level page tables should be really on the way out anyways, as they
-> have severe limits and do not support NX. With 3 levels there is enough
-> space.
+Hi Ben
 
-Look, good thing is that 7th bit also available on the 4level pages
-(ie x86-64) without additional code modification, that's why I picked
-it in first place. I prepared the patch locally which doesn't use
-pse bit for tracking but it only makes code more complex.
+On 08/22/2013 08:40 AM, Benjamin Herrenschmidt wrote:
+> On Wed, 2013-08-14 at 17:26 +0530, Preeti U Murthy wrote:
+>> -static irqreturn_t unused_action(int irq, void *data)
+>> +static irqreturn_t timer_action(int irq, void *data)
+>>  {
+>> -       /* This slot is unused and hence available for use, if needed
+>> */
+>> +       timer_interrupt();
+>>         return IRQ_HANDLED;
+>>  }
+>>  
+> 
+> That means we'll do irq_enter/irq_exit twice no ? And things like
+> may_hard_irq_enable() are also already done by do_IRQ so you
+> don't need timer_interrupt() to do it again.
+> 
+> We probably are better off breaking timer_interrupt in two:
+> 
+> void __timer_interrupt(struct pt_regs * regs)
+> 
+> Does the current stuff between irq_enter and irq_exit, timer_interrupt
+> does the remaining around it and calls __timer_interrupt.
+> 
+> Then from timer_action, you call __timer_interrupt()
+
+We actually tried out this approach. The implementation was have a
+set_dec(0) in the timer_action(). This would ensure that we actually do
+get a timer interrupt.
+
+But the problem with either this approach or the one that you
+suggest,i.e. calling __timer_interrupt is in the following flow.
+
+do_IRQ() -> irq_exit() -> tick_irq_exit() -> tick_nohz_irq_exit()
+-> tick_nohz_stop_sched_tick()
+
+The problem lies in the function tick_nohz_stop_sched_tick(). This
+function checks for the next timer interrupt pending on this cpu, and
+programs the decrementer_next_event to the time of the next event, which
+is of course > now.
+
+As a result when in the timer_action() above, we do call
+__timer_interrupt() or try to trigger a timer interrupt through
+set_dec(0), the condition  if(now >= *next_tb) in timer_interrupt() or
+__timer_interrupt() will fail, and will not call the timer interrupt
+event handler.
+
+---> if (now >= *next_tb) {
+             *next_tb = ~(u64)0;
+             if (evt->event_handler)
+                evt->event_handler(evt);
+      } else {
+
+The broadcast IPI , is meant to make the target CPU of this IPI believe
+that it woke up from a timer interrupt, and not from an IPI. (The reason
+for this I will explain in the reply to the next patch). The target CPU
+should then ideally do what it would have done had it received a real
+timer interrupt, call the timer interrupt event handler.
+
+But due to the above code flow this does  not happen.
+Hence as the next patch PATCH 3/6 shows, we simply call the event
+handler of a timer interrupt without this explicit now >= *next_tb check.
+
+This problem arises only in the implementation of this patchset, because
+a timer interrupt is pseudo triggered from an IPI. So the effects of the
+IPI handler will be felt on the timer interrupt handler triggered from
+this IPI, like above.
+
+Regards
+Preeti U Murthy
+
