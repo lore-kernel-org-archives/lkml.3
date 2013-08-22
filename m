@@ -1,72 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab3HVKEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 06:04:43 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41581 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab3HVKEm (ORCPT
+	id S1752529Ab3HVKMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 06:12:05 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:53982 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752123Ab3HVKME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 06:04:42 -0400
-Date: Thu, 22 Aug 2013 11:04:18 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Cc: David Jander <david.jander@protonic.nl>, linux-kernel@vger.kernel.org
-Message-ID: <20130822100418.GU26118@sirena.org.uk>
-References: <1377090155-3443-1-git-send-email-david@protonic.nl>
- <20130821133200.GB26118@sirena.org.uk>
- <20130821162143.42ca91de@archvile>
- <20130821144442.GD26118@sirena.org.uk>
- <20130821170846.66b5b1d5@archvile>
- <20130821152823.GE26118@sirena.org.uk>
- <20130821170345.GA15347@opensource.wolfsonmicro.com>
+	Thu, 22 Aug 2013 06:12:04 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "ccross@android.com" <ccross@android.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 22 Aug 2013 03:11:04 -0700
+Subject: RE: [PATCH] cpuidle: coupled: fix dead loop corner case
+Thread-Topic: [PATCH] cpuidle: coupled: fix dead loop corner case
+Thread-Index: Ac6doHSZuq4gka2oScWx0QXqlc+SPwBft8cA
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE3DBD2B9800@SC-VEXCH4.marvell.com>
+References: <1376975864-31487-1-git-send-email-zhangwm@marvell.com>
+ <26502976.vPDNddhvVv@vostro.rjw.lan>
+In-Reply-To: <26502976.vPDNddhvVv@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8EXHJdkEfksMlRxO"
-Content-Disposition: inline
-In-Reply-To: <20130821170345.GA15347@opensource.wolfsonmicro.com>
-X-Cookie: Your step will soil many countries.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] drivers: regmap: bugfix in regcache-rbtree.c
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7MACG61029950
 
+Daniel & Colin,
 
---8EXHJdkEfksMlRxO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> -----Original Message-----
+> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+> Sent: 2013Âπ¥8Êúà20Êó• 20:37
+> To: Neil Zhang; Daniel Lezcano
+> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] cpuidle: coupled: fix dead loop corner case
+> 
+> On Tuesday, August 20, 2013 01:17:44 PM Neil Zhang wrote:
+> > There is a corener case when no peripheral irqs route to secondary
+> > cores.
+> > Let's take dual core system for example, the sequence is as following:
+> >
+> > 		Core 0			        Core1
+> > 1.			           set waiting bit and enter waiting loop
+> > 2. set waiting bit and poke core1
+> > 3. 				   clear poke in irq and enter safe state
+> > 4. set ready bit and enter ready loop
+> >
+> > Since there is no peripheral irq route to core 1, so it will stay in
+> > safe state forever, and core 0 will dead loop in the following code.
+> > 	while (!cpuidle_coupled_cpus_ready(coupled)) {
+> > 		/* Check if any other cpus bailed out of idle. */
+> > 		if (!cpuidle_coupled_cpus_waiting(coupled))
+> > 	}
+> >
+> > The solution is don't let secondary core enter safe state when it has
+> > already handled the poke interrupt.
+> >
+> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> > Reviewed-by: Fangsuo Wu <fswu@marvell.com>
+> 
+> Daniel, can you please have a look at this?
+> 
+> Rafael
+> 
 
-On Wed, Aug 21, 2013 at 06:03:45PM +0100, Dimitris Papastamos wrote:
+What's your opinion?
+Thanks.
 
-> Once I have some free time I will look into implementing block
-> merges.
+> 
+> > ---
+> >  drivers/cpuidle/coupled.c |    7 +++++++
+> >  1 files changed, 7 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+> > index 2a297f8..a37c718 100644
+> > --- a/drivers/cpuidle/coupled.c
+> > +++ b/drivers/cpuidle/coupled.c
+> > @@ -119,6 +119,7 @@ struct cpuidle_coupled {
+> >  #define CPUIDLE_COUPLED_NOT_IDLE	(-1)
+> >
+> >  static DEFINE_MUTEX(cpuidle_coupled_lock);
+> > +static DEFINE_PER_CPU(bool, poke_sync);
+> >  static DEFINE_PER_CPU(struct call_single_data,
+> > cpuidle_coupled_poke_cb);
+> >
+> >  /*
+> > @@ -295,6 +296,7 @@ static void cpuidle_coupled_poked(void *info)  {
+> >  	int cpu = (unsigned long)info;
+> >  	cpumask_clear_cpu(cpu, &cpuidle_coupled_poked_mask);
+> > +	__this_cpu_write(poke_sync, true);
+> >  }
+> >
+> >  /**
+> > @@ -473,6 +475,7 @@ retry:
+> >  	 * allowed for a single cpu.
+> >  	 */
+> >  	while (!cpuidle_coupled_cpus_waiting(coupled)) {
+> > +		__this_cpu_write(poke_sync, false);
+> >  		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
+> >  			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
+> >  			goto out;
+> > @@ -483,6 +486,10 @@ retry:
+> >  			goto out;
+> >  		}
+> >
+> > +		if (cpuidle_coupled_cpus_waiting(coupled)
+> > +			&& __this_cpu_read(poke_sync))
+> > +			break;
+> > +
+> >  		entered_state = cpuidle_enter_state(dev, drv,
+> >  			dev->safe_state_index);
+> >  	}
+> >
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
 
-That'd be great, thanks.
-
---8EXHJdkEfksMlRxO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSFeIfAAoJELSic+t+oim9riIQAJMICX5wHscy1X8adEqVvPvl
-FWbFML6xb9lghwvHlvL0b2Y0q7Iurralkl8FchMs0mYeeIqhdhieICZNF25hic6G
-PrZrOy6lOWnxlBQ9ivBjewHlFYnEHPquQW8CNkVRVZcicNUUkpRS+rxI6I1Bjzv7
-Vgdmt0uH6PzbhN6wwucePcVfq5NNhici4iJEG4686/52tBXl2ssQu9KL4Uumt4mY
-INrDDrlaIGJNpVOGiY3WCiXNzUCjj68XLIVgX9ugMtTsYTp+8jqDx3uuk+/stdBV
-It5g5zLYr0er6X0KTmpX3dwWcFRXqXJ2rCDUmjw3O2RNxCuPHVqFXtHA17ZxwsM+
-iahBwKASEiYJIkHnIcuW3DIkHe1KV5mhNscaiHjddFGEfrqBPD6JvFGqf2EZBU44
-1fpYpSnFVpsbPpeFZ3Eim0tAV16MC1o25Ob0JbPpStruqlcooU9vJo5SNRuwNIHQ
-pVCnkmNvIbZOKaMuHtWZpUN/PZTR8ekKmcrnCK8odYfJFjh3ItkNtoGieCXF9AB0
-/Wbt8Vv9zhe967pSO7TB2UmhRVom+2oGak4ET/k6NeYqSQiCEh51ikxvGf+6N6Om
-nuz3FwPWEkMudyjzKcK5S7t3MTwrZQm2zh544sLc5zgxJsmjDeeDxi4IlN1OUjDm
-OtLP8Fa1HVmgIDAgvRAF
-=8XCR
------END PGP SIGNATURE-----
-
---8EXHJdkEfksMlRxO--
+Best Regards,
+Neil Zhang
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
