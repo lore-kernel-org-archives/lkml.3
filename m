@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab3HVOpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 10:45:53 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:39731 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab3HVOpv convert rfc822-to-8bit (ORCPT
+	id S1753176Ab3HVOtr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 10:49:47 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:65149 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab3HVOtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 10:45:51 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "fdeslaur@gmail.com" <fdeslaur@gmail.com>,
-        "raphael.beamonte@gmail.com" <raphael.beamonte@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: RE: [RFC][PATCH] Introduce page fault tracepoint
-Thread-Topic: [RFC][PATCH] Introduce page fault tracepoint
-Thread-Index: AQHOjXd/Nr57tj4uokq9RJ5sBLQXp5mhrFyA///CJLA=
-Date: Thu, 22 Aug 2013 14:44:58 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D443E8E677@USINDEM103.corp.hds.com>
-References: <51F843B1.4050609@hds.com>
- <20130822101557.2a6efae0@gandalf.local.home>
-In-Reply-To: <20130822101557.2a6efae0@gandalf.local.home>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Aug 2013 10:49:46 -0400
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-08-22_06:2013-08-22,2013-08-22,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1308220088
+In-Reply-To: <1377181627.2009.2.camel@dabdike.int.hansenpartnership.com>
+References: <1377132262-15744-1-git-send-email-zwu.kernel@gmail.com>
+	<1377133329.12003.9.camel@joe-AO722>
+	<CAEH94Lhh11+zFHsRNDXoyxQfndxDRMcVvLnZDXQLw5cyaavUJw@mail.gmail.com>
+	<1377134271.12003.15.camel@joe-AO722>
+	<yq1ppt68qk9.fsf@sermon.lab.mkp.net>
+	<CAC5umyjHqqNnS_LAP_bfU0zs52JbuAYr9jLwDhgaQ7TmrACUHA@mail.gmail.com>
+	<1377181627.2009.2.camel@dabdike.int.hansenpartnership.com>
+Date: Thu, 22 Aug 2013 23:49:45 +0900
+Message-ID: <CAC5umyhVNcwu2k7wEND5DvxRGE+_tyWBNpWjVdQ9DRTyV2qCaw@mail.gmail.com>
+Subject: Re: [PATCH] scsi: fix the build warning
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: James Bottomley <jbottomley@parallels.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Joe Perches <joe@perches.com>, Zhi Yong Wu <zwu.kernel@gmail.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Printing the regs pointer is rather useless. This is specific for x86,
-> why not print the ip of where it happened and the faulting address
-> itself?
+2013/8/22 James Bottomley <jbottomley@parallels.com>:
+> On Thu, 2013-08-22 at 21:42 +0900, Akinobu Mita wrote:
+>> 2013/8/22 Martin K. Petersen <martin.petersen@oracle.com>:
+>> >>>>>> "Joe" == Joe Perches <joe@perches.com> writes:
+>> >
+>> > Joe> I don't get this build warning in the first place and I think the
+>> > Joe> scsi_debug file is quite old and probably doesn't need to be
+>> > Joe> changed at all.
+>> >
+>> > guard isn't a boolean, it selects the checksum algorithm used.
+>> >
+>> > Also, I believe Akinobu's recent reorganization of this code in question
+>> > fixed the warning.
+>>
+>> Unfortunately, this warning isn't fixed in linux-next, either.
+>> Paul Bolle also sent a patch that fixes the same warning in a little
+>> bit different way.
+>
+> Well, it is and it isn't.  Whether you see the warning seems to depend
+> on how gcc was built.  My take is that an impossible default case just
+> to keep some versions of gcc quiet is a bit pointless.
 
-Thank you for reviewing.
-I will change the regs pointer to ip.
-
-> Note, you only need to change the TP_printk() to do that. For
-> efficiency reasons, only pass in regs.
- 
-OK. Will change the TP_printk().
-
-Seiji
+As Joe said in the other reply, scsi_debug_guard could be a negative
+value (scsi_debug_guard > 1 is only prohibited).  So this warning
+does not seem a false positive.
