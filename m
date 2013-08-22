@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab3HVOtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 10:49:47 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:65149 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab3HVOtq (ORCPT
+	id S1753289Ab3HVOxR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 10:53:17 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:58749 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752663Ab3HVOxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 10:49:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1377181627.2009.2.camel@dabdike.int.hansenpartnership.com>
-References: <1377132262-15744-1-git-send-email-zwu.kernel@gmail.com>
-	<1377133329.12003.9.camel@joe-AO722>
-	<CAEH94Lhh11+zFHsRNDXoyxQfndxDRMcVvLnZDXQLw5cyaavUJw@mail.gmail.com>
-	<1377134271.12003.15.camel@joe-AO722>
-	<yq1ppt68qk9.fsf@sermon.lab.mkp.net>
-	<CAC5umyjHqqNnS_LAP_bfU0zs52JbuAYr9jLwDhgaQ7TmrACUHA@mail.gmail.com>
-	<1377181627.2009.2.camel@dabdike.int.hansenpartnership.com>
-Date: Thu, 22 Aug 2013 23:49:45 +0900
-Message-ID: <CAC5umyhVNcwu2k7wEND5DvxRGE+_tyWBNpWjVdQ9DRTyV2qCaw@mail.gmail.com>
-Subject: Re: [PATCH] scsi: fix the build warning
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: James Bottomley <jbottomley@parallels.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Joe Perches <joe@perches.com>, Zhi Yong Wu <zwu.kernel@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Douglas Gilbert <dgilbert@interlog.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Aug 2013 10:53:16 -0400
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sam Ravnborg <sam@ravnborg.org>, Guenter Roeck <linux@roeck-us.net>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 0/3] clean up echo -e usage
+Date: Thu, 22 Aug 2013 18:53:03 +0400
+Message-Id: <1377183186-8407-1-git-send-email-jcmvbkbc@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/8/22 James Bottomley <jbottomley@parallels.com>:
-> On Thu, 2013-08-22 at 21:42 +0900, Akinobu Mita wrote:
->> 2013/8/22 Martin K. Petersen <martin.petersen@oracle.com>:
->> >>>>>> "Joe" == Joe Perches <joe@perches.com> writes:
->> >
->> > Joe> I don't get this build warning in the first place and I think the
->> > Joe> scsi_debug file is quite old and probably doesn't need to be
->> > Joe> changed at all.
->> >
->> > guard isn't a boolean, it selects the checksum algorithm used.
->> >
->> > Also, I believe Akinobu's recent reorganization of this code in question
->> > fixed the warning.
->>
->> Unfortunately, this warning isn't fixed in linux-next, either.
->> Paul Bolle also sent a patch that fixes the same warning in a little
->> bit different way.
->
-> Well, it is and it isn't.  Whether you see the warning seems to depend
-> on how gcc was built.  My take is that an impossible default case just
-> to keep some versions of gcc quiet is a bit pointless.
+This series cleans up non-portable 'echo -e' usage.
+I haven't replaced all instances of 'echo -e' though:
+- those under Documentation don't affect build;
+- those that invoke echo by full path (/bin/echo) probably know what they do;
+- those that output user help don't affect build.
 
-As Joe said in the other reply, scsi_debug_guard could be a negative
-value (scsi_debug_guard > 1 is only prohibited).  So this warning
-does not seem a false positive.
+Max Filippov (3):
+  xtensa: don't use echo -e needlessly
+  x86: don't use echo -e needlessly
+  raid6/test: replace echo -e with printf
+
+ arch/x86/Makefile         |    2 +-
+ arch/xtensa/Makefile      |    4 ++--
+ arch/xtensa/boot/Makefile |    2 +-
+ lib/raid6/test/Makefile   |    2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
+
+-- 
+1.7.7.6
+
