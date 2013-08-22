@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab3HVFkL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 01:40:11 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:51847 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab3HVFkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 01:40:06 -0400
-Date: Thu, 22 Aug 2013 13:39:56 +0800
-From: larmbr <nasa4836@gmail.com>
-To: linux-mm@kvack.org
-Cc: mgorman@suse.de, riel@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mm/vmscan: make global_reclaim() inline
-Message-ID: <20130822053956.GA10795@larmbr-lcx>
+	id S1753564Ab3HVFmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 01:42:51 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:41845 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753239Ab3HVFmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 01:42:49 -0400
+X-Greylist: delayed 1885 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 01:42:49 EDT
+Date: Thu, 22 Aug 2013 07:11:22 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: linux-crypto@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/padata.c: always check the return value of
+ __padata_remove_cpu() and __padata_add_cpu()
+Message-ID: <20130822051122.GB26773@secunet.com>
+References: <5212E5E4.8010408@asianux.com>
+ <5212E61F.7010602@asianux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <5212E61F.7010602@asianux.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 22 Aug 2013 05:11:22.0725 (UTC) FILETIME=[0B315950:01CE9EF6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Though Gcc is likely to inline them, we should better
-explictly do it manually, and also, this serve to document 
-this fact.
+On Tue, Aug 20, 2013 at 11:44:31AM +0800, Chen Gang wrote:
+> 
+> If this patch is correct, better to let CPU_ONLINE and CPU_DOWN_FAILED
+> share the same code.
+> 
+> And do we need a comment "/* fall through */" between CPU_UP_CANCELED
+> and CPU_DOWN_FAILED (or it is another bug, need a 'break' statement) ?
+> 
+> At last, also better to let CPU_DOWN_PREPARE and CPU_UP_CANCELED share
+> the same code (if need a 'break'), or share the most of code (if "fall
+> through").
+> 
 
-Signed-off-by: Zhan Jianyu <nasa4836@gmail.com>
----
-mm/vmscan.c |    4 ++--
-1 file changed, 2 insertions(+), 2 deletions(-)
+CPU_ONLINE and CPU_DOWN_FAILED can share the code. Same is true for
+CPU_DOWN_PREPARE and CPU_UP_CANCELED.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 1de652d..1946d7d 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -135,12 +135,12 @@ static LIST_HEAD(shrinker_list);
- static DECLARE_RWSEM(shrinker_rwsem);
- 
- #ifdef CONFIG_MEMCG
--static bool global_reclaim(struct scan_control *sc)
-+static inline bool global_reclaim(struct scan_control *sc)
- {
- 	return !sc->target_mem_cgroup;
- }
- #else
--static bool global_reclaim(struct scan_control *sc)
-+static inline bool global_reclaim(struct scan_control *sc)
- {
- 	return true;
- }
+Thanks!
