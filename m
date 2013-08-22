@@ -1,324 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab3HVPzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 11:55:22 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:12954 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501Ab3HVPzR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 11:55:17 -0400
-From: T Makphaibulchoke <tmac@hp.com>
-To: tytso@mit.edu, adilger.kernel@dilger.ca, viro@zeniv.linux.org.uk,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Cc: aswin@hp.com, torvalds@linux-foundation.org,
-        T Makphaibulchoke <tmac@hp.com>
-Subject: [PATCH v2 2/2] ext4: each filesystem creates and uses its own mc_cache
-Date: Thu, 22 Aug 2013 09:54:36 -0600
-Message-Id: <1377186876-57291-3-git-send-email-tmac@hp.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1377186876-57291-1-git-send-email-tmac@hp.com>
-References: <1374108934-50550-1-git-send-email-tmac@hp.com>
- <1377186876-57291-1-git-send-email-tmac@hp.com>
+	id S1753632Ab3HVP6H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 11:58:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3144 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752230Ab3HVP6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 11:58:04 -0400
+Date: Thu, 22 Aug 2013 12:57:49 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, jolsa@redhat.com, namhyung.kim@lge.com,
+        dsahern@gmail.com
+Subject: Re: [PATCH v2 1/2] perf: add attr->mmap2 attribute to an event
+Message-ID: <20130822155749.GC6319@infradead.org>
+References: <1377079825-19057-1-git-send-email-eranian@google.com>
+ <1377079825-19057-2-git-send-email-eranian@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377079825-19057-2-git-send-email-eranian@google.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new interfaces to create and destory cache,
-ext4_xattr_create_cache() and ext4_xattr_destroy_cache(), and remove the cache
-creation and destory calls from ex4_init_xattr() and ext4_exitxattr() in
-fs/ext4/xattr.c.
-fs/ext4/super.c has been changed so that when a filesystem is mounted a
-cache is allocated and attched to its ext4_sb_info structure.
+Em Wed, Aug 21, 2013 at 12:10:24PM +0200, Stephane Eranian escreveu:
+> Adds a new PERF_RECORD_MMAP2 record type.
+> 
+> Used to request mmap records with more information about
+> the mapping, including device major, minor and the inode
+> number and generation for mappings associated with files
+> or shared memory segments. Works for code and data
+> (with attr->mmap_data set).
+> 
+> Existing PERF_RECORD_MMAP record is unmodified by this patch.
 
-Signed-off-by: T. Makphaibulchoke <tmac@hp.com>
----
- fs/ext4/ext4.h  |  1 +
- fs/ext4/super.c | 24 ++++++++++++++++--------
- fs/ext4/xattr.c | 51 ++++++++++++++++++++++++++++-----------------------
- fs/ext4/xattr.h |  6 +++---
- 4 files changed, 48 insertions(+), 34 deletions(-)
+So this is exactly what we get from PERF_RECORD_MMAP + a few other
+fields, right?
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index b577e45..70f2709 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1306,6 +1306,7 @@ struct ext4_sb_info {
- 	struct list_head s_es_lru;
- 	unsigned long s_es_last_sorted;
- 	struct percpu_counter s_extent_cache_cnt;
-+	struct mb_cache *s_mb_cache;
- 	spinlock_t s_es_lru_lock ____cacheline_aligned_in_smp;
- };
- 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 36b141e..3e7d338 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -59,6 +59,7 @@ static struct kset *ext4_kset;
- static struct ext4_lazy_init *ext4_li_info;
- static struct mutex ext4_li_mtx;
- static struct ext4_features *ext4_feat;
-+static int ext4_mballoc_ready;
- 
- static int ext4_load_journal(struct super_block *, struct ext4_super_block *,
- 			     unsigned long journal_devnum);
-@@ -828,6 +829,10 @@ static void ext4_put_super(struct super_block *sb)
- 		invalidate_bdev(sbi->journal_bdev);
- 		ext4_blkdev_remove(sbi);
- 	}
-+	if (sbi->s_mb_cache) {
-+		ext4_xattr_destroy_cache(sbi->s_mb_cache);
-+		sbi->s_mb_cache = NULL;
-+	}
- 	if (sbi->s_mmp_tsk)
- 		kthread_stop(sbi->s_mmp_tsk);
- 	sb->s_fs_info = NULL;
-@@ -3916,6 +3921,13 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	set_task_ioprio(sbi->s_journal->j_task, journal_ioprio);
- 
- 	sbi->s_journal->j_commit_callback = ext4_journal_commit_callback;
-+	if (ext4_mballoc_ready) {
-+		sbi->s_mb_cache = ext4_xattr_create_cache(sb->s_id);
-+		if (!sbi->s_mb_cache) {
-+			ext4_msg(sb, KERN_ERR, "Failed to create an mb_cache");
-+			goto failed_mount_wq;
-+		}
-+	}
- 
- 	/*
- 	 * The journal may have updated the bg summary counts, so we
-@@ -5428,11 +5440,9 @@ static int __init ext4_init_fs(void)
- 
- 	err = ext4_init_mballoc();
- 	if (err)
--		goto out3;
--
--	err = ext4_init_xattr();
--	if (err)
- 		goto out2;
-+	else
-+		ext4_mballoc_ready = 1;
- 	err = init_inodecache();
- 	if (err)
- 		goto out1;
-@@ -5448,10 +5458,9 @@ out:
- 	unregister_as_ext3();
- 	destroy_inodecache();
- out1:
--	ext4_exit_xattr();
--out2:
-+	ext4_mballoc_ready = 0;
- 	ext4_exit_mballoc();
--out3:
-+out2:
- 	ext4_exit_feat_adverts();
- out4:
- 	if (ext4_proc_root)
-@@ -5474,7 +5483,6 @@ static void __exit ext4_exit_fs(void)
- 	unregister_as_ext3();
- 	unregister_filesystem(&ext4_fs_type);
- 	destroy_inodecache();
--	ext4_exit_xattr();
- 	ext4_exit_mballoc();
- 	ext4_exit_feat_adverts();
- 	remove_proc_entry("fs/ext4", NULL);
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index c081e34..3e0ff31 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -81,7 +81,7 @@
- # define ea_bdebug(bh, fmt, ...)	no_printk(fmt, ##__VA_ARGS__)
- #endif
- 
--static void ext4_xattr_cache_insert(struct buffer_head *);
-+static void ext4_xattr_cache_insert(struct mb_cache *, struct buffer_head *);
- static struct buffer_head *ext4_xattr_cache_find(struct inode *,
- 						 struct ext4_xattr_header *,
- 						 struct mb_cache_entry **);
-@@ -90,8 +90,6 @@ static void ext4_xattr_rehash(struct ext4_xattr_header *,
- static int ext4_xattr_list(struct dentry *dentry, char *buffer,
- 			   size_t buffer_size);
- 
--static struct mb_cache *ext4_xattr_cache;
--
- static const struct xattr_handler *ext4_xattr_handler_map[] = {
- 	[EXT4_XATTR_INDEX_USER]		     = &ext4_xattr_user_handler,
- #ifdef CONFIG_EXT4_FS_POSIX_ACL
-@@ -117,6 +115,9 @@ const struct xattr_handler *ext4_xattr_handlers[] = {
- 	NULL
- };
- 
-+#define EXT4_GET_MB_CACHE(inode)	(((struct ext4_sb_info *) \
-+				inode->i_sb->s_fs_info)->s_mb_cache)
-+
- static __le32 ext4_xattr_block_csum(struct inode *inode,
- 				    sector_t block_nr,
- 				    struct ext4_xattr_header *hdr)
-@@ -265,6 +266,7 @@ ext4_xattr_block_get(struct inode *inode, int name_index, const char *name,
- 	struct ext4_xattr_entry *entry;
- 	size_t size;
- 	int error;
-+	struct mb_cache *ext4_mb_cache = EXT4_GET_MB_CACHE(inode);
- 
- 	ea_idebug(inode, "name=%d.%s, buffer=%p, buffer_size=%ld",
- 		  name_index, name, buffer, (long)buffer_size);
-@@ -286,7 +288,7 @@ bad_block:
- 		error = -EIO;
- 		goto cleanup;
- 	}
--	ext4_xattr_cache_insert(bh);
-+	ext4_xattr_cache_insert(ext4_mb_cache, bh);
- 	entry = BFIRST(bh);
- 	error = ext4_xattr_find_entry(&entry, name_index, name, bh->b_size, 1);
- 	if (error == -EIO)
-@@ -409,6 +411,7 @@ ext4_xattr_block_list(struct dentry *dentry, char *buffer, size_t buffer_size)
- 	struct inode *inode = dentry->d_inode;
- 	struct buffer_head *bh = NULL;
- 	int error;
-+	struct mb_cache *ext4_mb_cache = EXT4_GET_MB_CACHE(inode);
- 
- 	ea_idebug(inode, "buffer=%p, buffer_size=%ld",
- 		  buffer, (long)buffer_size);
-@@ -430,7 +433,7 @@ ext4_xattr_block_list(struct dentry *dentry, char *buffer, size_t buffer_size)
- 		error = -EIO;
- 		goto cleanup;
- 	}
--	ext4_xattr_cache_insert(bh);
-+	ext4_xattr_cache_insert(ext4_mb_cache, bh);
- 	error = ext4_xattr_list_entries(dentry, BFIRST(bh), buffer, buffer_size);
- 
- cleanup:
-@@ -526,8 +529,9 @@ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
- {
- 	struct mb_cache_entry *ce = NULL;
- 	int error = 0;
-+	struct mb_cache *ext4_mb_cache = EXT4_GET_MB_CACHE(inode);
- 
--	ce = mb_cache_entry_get(ext4_xattr_cache, bh->b_bdev, bh->b_blocknr);
-+	ce = mb_cache_entry_get(ext4_mb_cache, bh->b_bdev, bh->b_blocknr);
- 	error = ext4_journal_get_write_access(handle, bh);
- 	if (error)
- 		goto out;
-@@ -745,13 +749,14 @@ ext4_xattr_block_set(handle_t *handle, struct inode *inode,
- 	struct ext4_xattr_search *s = &bs->s;
- 	struct mb_cache_entry *ce = NULL;
- 	int error = 0;
-+	struct mb_cache *ext4_mb_cache = EXT4_GET_MB_CACHE(inode);
- 
- #define header(x) ((struct ext4_xattr_header *)(x))
- 
- 	if (i->value && i->value_len > sb->s_blocksize)
- 		return -ENOSPC;
- 	if (s->base) {
--		ce = mb_cache_entry_get(ext4_xattr_cache, bs->bh->b_bdev,
-+		ce = mb_cache_entry_get(ext4_mb_cache, bs->bh->b_bdev,
- 					bs->bh->b_blocknr);
- 		error = ext4_journal_get_write_access(handle, bs->bh);
- 		if (error)
-@@ -769,7 +774,8 @@ ext4_xattr_block_set(handle_t *handle, struct inode *inode,
- 				if (!IS_LAST_ENTRY(s->first))
- 					ext4_xattr_rehash(header(s->base),
- 							  s->here);
--				ext4_xattr_cache_insert(bs->bh);
-+				ext4_xattr_cache_insert(ext4_mb_cache,
-+					bs->bh);
- 			}
- 			unlock_buffer(bs->bh);
- 			if (error == -EIO)
-@@ -905,7 +911,7 @@ getblk_failed:
- 			memcpy(new_bh->b_data, s->base, new_bh->b_size);
- 			set_buffer_uptodate(new_bh);
- 			unlock_buffer(new_bh);
--			ext4_xattr_cache_insert(new_bh);
-+			ext4_xattr_cache_insert(ext4_mb_cache, new_bh);
- 			error = ext4_handle_dirty_xattr_block(handle,
- 							      inode, new_bh);
- 			if (error)
-@@ -1492,13 +1498,13 @@ ext4_xattr_put_super(struct super_block *sb)
-  * Returns 0, or a negative error number on failure.
-  */
- static void
--ext4_xattr_cache_insert(struct buffer_head *bh)
-+ext4_xattr_cache_insert(struct mb_cache *ext4_mb_cache, struct buffer_head *bh)
- {
- 	__u32 hash = le32_to_cpu(BHDR(bh)->h_hash);
- 	struct mb_cache_entry *ce;
- 	int error;
- 
--	ce = mb_cache_entry_alloc(ext4_xattr_cache, GFP_NOFS);
-+	ce = mb_cache_entry_alloc(ext4_mb_cache, GFP_NOFS);
- 	if (!ce) {
- 		ea_bdebug(bh, "out of memory");
- 		return;
-@@ -1570,12 +1576,13 @@ ext4_xattr_cache_find(struct inode *inode, struct ext4_xattr_header *header,
- {
- 	__u32 hash = le32_to_cpu(header->h_hash);
- 	struct mb_cache_entry *ce;
-+	struct mb_cache *ext4_mb_cache = EXT4_GET_MB_CACHE(inode);
- 
- 	if (!header->h_hash)
- 		return NULL;  /* never share */
- 	ea_idebug(inode, "looking for cached blocks [%x]", (int)hash);
- again:
--	ce = mb_cache_entry_find_first(ext4_xattr_cache, inode->i_sb->s_bdev,
-+	ce = mb_cache_entry_find_first(ext4_mb_cache, inode->i_sb->s_bdev,
- 				       hash);
- 	while (ce) {
- 		struct buffer_head *bh;
-@@ -1673,19 +1680,17 @@ static void ext4_xattr_rehash(struct ext4_xattr_header *header,
- 
- #undef BLOCK_HASH_SHIFT
- 
--int __init
--ext4_init_xattr(void)
-+#define	HASH_BUCKET_BITS	6
-+
-+struct mb_cache *
-+ext4_xattr_create_cache(char *name)
- {
--	ext4_xattr_cache = mb_cache_create("ext4_xattr", 6);
--	if (!ext4_xattr_cache)
--		return -ENOMEM;
--	return 0;
-+	return mb_cache_create(name, HASH_BUCKET_BITS);
- }
- 
--void
--ext4_exit_xattr(void)
-+void ext4_xattr_destroy_cache(struct mb_cache *cache)
- {
--	if (ext4_xattr_cache)
--		mb_cache_destroy(ext4_xattr_cache);
--	ext4_xattr_cache = NULL;
-+	if (cache)
-+		mb_cache_destroy(cache);
- }
-+
-diff --git a/fs/ext4/xattr.h b/fs/ext4/xattr.h
-index c767dbd..b930320 100644
---- a/fs/ext4/xattr.h
-+++ b/fs/ext4/xattr.h
-@@ -112,9 +112,6 @@ extern void ext4_xattr_put_super(struct super_block *);
- extern int ext4_expand_extra_isize_ea(struct inode *inode, int new_extra_isize,
- 			    struct ext4_inode *raw_inode, handle_t *handle);
- 
--extern int __init ext4_init_xattr(void);
--extern void ext4_exit_xattr(void);
--
- extern const struct xattr_handler *ext4_xattr_handlers[];
- 
- extern int ext4_xattr_ibody_find(struct inode *inode, struct ext4_xattr_info *i,
-@@ -126,6 +123,9 @@ extern int ext4_xattr_ibody_inline_set(handle_t *handle, struct inode *inode,
- 				       struct ext4_xattr_info *i,
- 				       struct ext4_xattr_ibody_find *is);
- 
-+extern struct mb_cache *ext4_xattr_create_cache(char *name);
-+extern void ext4_xattr_destroy_cache(struct mb_cache *);
-+
- #ifdef CONFIG_EXT4_FS_SECURITY
- extern int ext4_init_security(handle_t *handle, struct inode *inode,
- 			      struct inode *dir, const struct qstr *qstr);
--- 
-1.7.11.3
+I think we should take the opportunity and remove the fields that are
+in PERF_RECORD_MMAP but can be selectively asked for using
+->sample_id_all, i.e. we use sample_type to ask for:
 
+	PERF_SAMPLE_CPU
+	PERF_SAMPLE_STREAM_ID
+	PERF_SAMPLE_ID
+	PERF_SAMPLE_TIME
+	PERF_SAMPLE_TID
+
+That should not be present in the PERF_RECORD_MMAP2 fixed payload.
+
+This way we take the opportunity to compress the event by using an
+existing facility: attr.sample_id_all and attr.sample_type.
+
+But then this is "just" for the 8 bytes used for pid/tid, selectable via
+PERF_SAMPLE_TID, so up to peterz, if you think its not worth the
+complexity, Acked.
+
+- Arnaldo
+ 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+>  include/uapi/linux/perf_event.h |   24 +++++++++++++++++++-
+>  kernel/events/core.c            |   46 +++++++++++++++++++++++++++++++++++----
+>  2 files changed, 65 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+> index 62c25a2..5268f78 100644
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+> @@ -275,8 +275,9 @@ struct perf_event_attr {
+>  
+>  				exclude_callchain_kernel : 1, /* exclude kernel callchains */
+>  				exclude_callchain_user   : 1, /* exclude user callchains */
+> +				mmap2          :  1, /* include mmap with inode data     */
+>  
+> -				__reserved_1   : 41;
+> +				__reserved_1   : 40;
+>  
+>  	union {
+>  		__u32		wakeup_events;	  /* wakeup every n events */
+> @@ -638,6 +639,27 @@ enum perf_event_type {
+>  	 */
+>  	PERF_RECORD_SAMPLE			= 9,
+>  
+> +	/*
+> +	 * The MMAP2 records are an augmented version of MMAP, they add
+> +	 * maj, min, ino numbers to be used to uniquely identify each mapping
+> +	 *
+> +	 * struct {
+> +	 *	struct perf_event_header	header;
+> +	 *
+> +	 *	u32				pid, tid;
+> +	 *	u64				addr;
+> +	 *	u64				len;
+> +	 *	u64				pgoff;
+> +	 *	u32				maj;
+> +	 *	u32				min;
+> +	 *	u64				ino;
+> +	 *	u64				ino_generation;
+> +	 *	char				filename[];
+> +	 * 	struct sample_id		sample_id;
+> +	 * };
+> +	 */
+> +	PERF_RECORD_MMAP2			= 10,
+> +
+>  	PERF_RECORD_MAX,			/* non-ABI */
+>  };
+>  
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 928fae7..60a5bbd 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -4767,7 +4767,7 @@ next:
+>  /*
+>   * task tracking -- fork/exit
+>   *
+> - * enabled by: attr.comm | attr.mmap | attr.mmap_data | attr.task
+> + * enabled by: attr.comm | attr.mmap | attr.mmap2 | attr.mmap_data | attr.task
+>   */
+>  
+>  struct perf_task_event {
+> @@ -4787,8 +4787,9 @@ struct perf_task_event {
+>  
+>  static int perf_event_task_match(struct perf_event *event)
+>  {
+> -	return event->attr.comm || event->attr.mmap ||
+> -	       event->attr.mmap_data || event->attr.task;
+> +	return event->attr.comm  || event->attr.mmap ||
+> +	       event->attr.mmap2 || event->attr.mmap_data ||
+> +	       event->attr.task;
+>  }
+>  
+>  static void perf_event_task_output(struct perf_event *event,
+> @@ -4983,6 +4984,9 @@ struct perf_mmap_event {
+>  
+>  	const char		*file_name;
+>  	int			file_size;
+> +	int			maj, min;
+> +	u64			ino;
+> +	u64			ino_generation;
+>  
+>  	struct {
+>  		struct perf_event_header	header;
+> @@ -5003,7 +5007,7 @@ static int perf_event_mmap_match(struct perf_event *event,
+>  	int executable = vma->vm_flags & VM_EXEC;
+>  
+>  	return (!executable && event->attr.mmap_data) ||
+> -	       (executable && event->attr.mmap);
+> +	       (executable && (event->attr.mmap || event->attr.mmap2));
+>  }
+>  
+>  static void perf_event_mmap_output(struct perf_event *event,
+> @@ -5018,6 +5022,13 @@ static void perf_event_mmap_output(struct perf_event *event,
+>  	if (!perf_event_mmap_match(event, data))
+>  		return;
+>  
+> +	if (event->attr.mmap2) {
+> +		mmap_event->event_id.header.type = PERF_RECORD_MMAP2;
+> +		mmap_event->event_id.header.size += sizeof(mmap_event->maj);
+> +		mmap_event->event_id.header.size += sizeof(mmap_event->min);
+> +		mmap_event->event_id.header.size += sizeof(mmap_event->ino);
+> +	}
+> +
+>  	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
+>  	ret = perf_output_begin(&handle, event,
+>  				mmap_event->event_id.header.size);
+> @@ -5028,6 +5039,14 @@ static void perf_event_mmap_output(struct perf_event *event,
+>  	mmap_event->event_id.tid = perf_event_tid(event, current);
+>  
+>  	perf_output_put(&handle, mmap_event->event_id);
+> +
+> +	if (event->attr.mmap2) {
+> +		perf_output_put(&handle, mmap_event->maj);
+> +		perf_output_put(&handle, mmap_event->min);
+> +		perf_output_put(&handle, mmap_event->ino);
+> +		perf_output_put(&handle, mmap_event->ino_generation);
+> +	}
+> +
+>  	__output_copy(&handle, mmap_event->file_name,
+>  				   mmap_event->file_size);
+>  
+> @@ -5042,6 +5061,8 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+>  {
+>  	struct vm_area_struct *vma = mmap_event->vma;
+>  	struct file *file = vma->vm_file;
+> +	int maj = 0, min = 0;
+> +	u64 ino = 0, gen = 0;
+>  	unsigned int size;
+>  	char tmp[16];
+>  	char *buf = NULL;
+> @@ -5050,6 +5071,8 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+>  	memset(tmp, 0, sizeof(tmp));
+>  
+>  	if (file) {
+> +		struct inode *inode;
+> +		dev_t dev;
+>  		/*
+>  		 * d_path works from the end of the rb backwards, so we
+>  		 * need to add enough zero bytes after the string to handle
+> @@ -5065,6 +5088,13 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+>  			name = strncpy(tmp, "//toolong", sizeof(tmp));
+>  			goto got_name;
+>  		}
+> +		inode = file_inode(vma->vm_file);
+> +		dev = inode->i_sb->s_dev;
+> +		ino = inode->i_ino;
+> +		gen = inode->i_generation;
+> +		maj = MAJOR(dev);
+> +		min = MINOR(dev);
+> +
+>  	} else {
+>  		if (arch_vma_name(mmap_event->vma)) {
+>  			name = strncpy(tmp, arch_vma_name(mmap_event->vma),
+> @@ -5095,6 +5125,10 @@ got_name:
+>  
+>  	mmap_event->file_name = name;
+>  	mmap_event->file_size = size;
+> +	mmap_event->maj = maj;
+> +	mmap_event->min = min;
+> +	mmap_event->ino = ino;
+> +	mmap_event->ino_generation = gen;
+>  
+>  	if (!(vma->vm_flags & VM_EXEC))
+>  		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
+> @@ -5131,6 +5165,10 @@ void perf_event_mmap(struct vm_area_struct *vma)
+>  			.len    = vma->vm_end - vma->vm_start,
+>  			.pgoff  = (u64)vma->vm_pgoff << PAGE_SHIFT,
+>  		},
+> +		/* .maj (attr_mmap2 only) */
+> +		/* .min (attr_mmap2 only) */
+> +		/* .ino (attr_mmap2 only) */
+> +		/* .ino_generation (attr_mmap2 only) */
+>  	};
+>  
+>  	perf_event_mmap_event(&mmap_event);
+> -- 
+> 1.7.10.4
