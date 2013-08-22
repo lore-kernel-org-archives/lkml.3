@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab3HVIvR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 04:51:17 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:57101 "EHLO
+	id S1753287Ab3HVIvQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 04:51:16 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55113 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546Ab3HVIoX (ORCPT
+	with ESMTP id S1752553Ab3HVIoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Aug 2013 04:44:23 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-57-5215cf62a7b7
+X-AuditID: 9c93017d-b7cdfae0000026c0-58-5215cf62c1f1
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Pekka Enberg <penberg@kernel.org>
 Cc: Christoph Lameter <cl@linux.com>,
@@ -15,9 +15,9 @@ Cc: Christoph Lameter <cl@linux.com>,
         Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 08/16] slab: use well-defined macro, virt_to_slab()
-Date: Thu, 22 Aug 2013 17:44:17 +0900
-Message-Id: <1377161065-30552-9-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH 09/16] slab: use __GFP_COMP flag for allocating slab pages
+Date: Thu, 22 Aug 2013 17:44:18 +0900
+Message-Id: <1377161065-30552-10-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -26,42 +26,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is trivial change, just use well-defined macro.
+If we use 'struct page' of first page as 'struct slab', there is no
+advantage not to use __GFP_COMP. So use __GFP_COMP flag for all the cases.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
 diff --git a/mm/slab.c b/mm/slab.c
-index 9e98ee0..ee03eba 100644
+index ee03eba..855f481 100644
 --- a/mm/slab.c
 +++ b/mm/slab.c
-@@ -2853,7 +2853,6 @@ static inline void verify_redzone_free(struct kmem_cache *cache, void *obj)
- static void *cache_free_debugcheck(struct kmem_cache *cachep, void *objp,
- 				   unsigned long caller)
+@@ -1712,15 +1712,6 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
  {
--	struct page *page;
- 	unsigned int objnr;
- 	struct slab *slabp;
- 
-@@ -2861,9 +2860,7 @@ static void *cache_free_debugcheck(struct kmem_cache *cachep, void *objp,
- 
- 	objp -= obj_offset(cachep);
- 	kfree_debugcheck(objp);
--	page = virt_to_head_page(objp);
+ 	struct page *page;
+ 	int nr_pages;
+-	int i;
 -
--	slabp = page->slab_page;
-+	slabp = virt_to_slab(objp);
+-#ifndef CONFIG_MMU
+-	/*
+-	 * Nommu uses slab's for process anonymous memory allocations, and thus
+-	 * requires __GFP_COMP to properly refcount higher order allocations
+-	 */
+-	flags |= __GFP_COMP;
+-#endif
  
- 	if (cachep->flags & SLAB_RED_ZONE) {
- 		verify_redzone_free(cachep, objp);
-@@ -3075,7 +3072,7 @@ static void *cache_alloc_debugcheck_after(struct kmem_cache *cachep,
- 		struct slab *slabp;
- 		unsigned objnr;
+ 	flags |= cachep->allocflags;
+ 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+@@ -1744,12 +1735,9 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
+ 	else
+ 		add_zone_page_state(page_zone(page),
+ 			NR_SLAB_UNRECLAIMABLE, nr_pages);
+-	for (i = 0; i < nr_pages; i++) {
+-		__SetPageSlab(page + i);
+-
+-		if (page->pfmemalloc)
+-			SetPageSlabPfmemalloc(page);
+-	}
++	__SetPageSlab(page);
++	if (page->pfmemalloc)
++		SetPageSlabPfmemalloc(page);
+ 	memcg_bind_pages(cachep, cachep->gfporder);
  
--		slabp = virt_to_head_page(objp)->slab_page;
-+		slabp = virt_to_slab(objp);
- 		objnr = (unsigned)(objp - slabp->s_mem) / cachep->size;
- 		slab_bufctl(slabp)[objnr] = BUFCTL_ACTIVE;
- 	}
+ 	if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
+@@ -1769,8 +1757,7 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
+  */
+ static void kmem_freepages(struct kmem_cache *cachep, struct page *page)
+ {
+-	unsigned long i = (1 << cachep->gfporder);
+-	const unsigned long nr_freed = i;
++	const unsigned long nr_freed = (1 << cachep->gfporder);
+ 
+ 	kmemcheck_free_shadow(page, cachep->gfporder);
+ 
+@@ -1781,12 +1768,9 @@ static void kmem_freepages(struct kmem_cache *cachep, struct page *page)
+ 		sub_zone_page_state(page_zone(page),
+ 				NR_SLAB_UNRECLAIMABLE, nr_freed);
+ 
++	BUG_ON(!PageSlab(page));
+ 	__ClearPageSlabPfmemalloc(page);
+-	while (i--) {
+-		BUG_ON(!PageSlab(page));
+-		__ClearPageSlab(page);
+-		page++;
+-	}
++	__ClearPageSlab(page);
+ 
+ 	memcg_release_pages(cachep, cachep->gfporder);
+ 	if (current->reclaim_state)
+@@ -2350,7 +2334,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 	cachep->colour = left_over / cachep->colour_off;
+ 	cachep->slab_size = slab_size;
+ 	cachep->flags = flags;
+-	cachep->allocflags = 0;
++	cachep->allocflags = __GFP_COMP;
+ 	if (CONFIG_ZONE_DMA_FLAG && (flags & SLAB_CACHE_DMA))
+ 		cachep->allocflags |= GFP_DMA;
+ 	cachep->size = size;
+@@ -2717,17 +2701,8 @@ static void slab_put_obj(struct kmem_cache *cachep, struct slab *slabp,
+ static void slab_map_pages(struct kmem_cache *cache, struct slab *slab,
+ 			   struct page *page)
+ {
+-	int nr_pages;
+-
+-	nr_pages = 1;
+-	if (likely(!PageCompound(page)))
+-		nr_pages <<= cache->gfporder;
+-
+-	do {
+-		page->slab_cache = cache;
+-		page->slab_page = slab;
+-		page++;
+-	} while (--nr_pages);
++	page->slab_cache = cache;
++	page->slab_page = slab;
+ }
+ 
+ /*
 -- 
 1.7.9.5
 
