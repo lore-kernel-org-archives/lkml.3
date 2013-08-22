@@ -1,76 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3HVQWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 12:22:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43771 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803Ab3HVQWR (ORCPT
+	id S1753938Ab3HVQXJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 12:23:09 -0400
+Received: from 11.mo3.mail-out.ovh.net ([87.98.184.158]:42286 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752999Ab3HVQXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 12:22:17 -0400
-Date: Thu, 22 Aug 2013 09:22:15 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Anthony Foiani <tkil@scrye.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sysfs: add sysfs_create/remove_groups()
-Message-ID: <20130822162215.GA29922@kroah.com>
-References: <20130821203506.GA1663@kroah.com>
- <5215254B.7000000@infradead.org>
- <20130821204750.GB4546@kroah.com>
- <g38q2l3yg.fsf@dworkin.scrye.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <g38q2l3yg.fsf@dworkin.scrye.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 22 Aug 2013 12:23:07 -0400
+X-Greylist: delayed 899 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Aug 2013 12:23:07 EDT
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Florian Fainelli <f.fainelli@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: [PATCH 1/2] net/cadence/macb: add support for dt phy definition
+Date: Thu, 22 Aug 2013 17:57:28 +0200
+Message-Id: <1377187048-21944-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1377186980-21902-1-git-send-email-b.brezillon@overkiz.com>
+References: <1377186980-21902-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 3812860034966976620
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrgeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrgeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 10:55:19PM -0600, Anthony Foiani wrote:
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> 
-> > + * sysfs_create_groups - given a directory kobject, create a bunch of attribute groups
-> > + * @kobj:	The kobject to create the group on
-> > + * @groups:	The attribute groups to create, NULL terminated
-> > + *
-> > + * This function creates a bunch of attribute groups.  If an error occurs when
-> > + * creating a group, all previously created groups will be removed, unwinding
-> > + * everything back to the original state when this function was called.
-> > + * It will explicitly warn and error if any of the attribute files being
-> > + * created already exist.
-> > + *
-> > + * Returns 0 on success or error code from sysfs_create_groups on error.
-> 
-> "... from sysfs_create_group on error"
->                        ^^^^^ (note singular, not plural)
-> 
-> Otherwise it's a bit of a tautology...
+The macb driver only handle PHY description through platform_data
+(macb_platform_data).
+Thus, when using dt you cannot define phy properties like phy address or
+phy irq pin.
 
-Ah, thanks, will fix that up.
+This patch makes use of the of_mdiobus_register to add support for
+phy device definition using dt.
+A fallback to the autoscan procedure is added in case there is no phy
+devices defined in dt.
 
-> Maybe rename to "sysfs_(create|remove)_multiple_groups" (or
-> ..._many_groups) to avoid this kind of one-char difference?
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ drivers/net/ethernet/cadence/macb.c |   41 +++++++++++++++++++++++++++++------
+ 1 file changed, 34 insertions(+), 7 deletions(-)
 
-Nah, terse is good :)
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index e866608..fe06ab0 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -27,6 +27,7 @@
+ #include <linux/phy.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/of_mdio.h>
+ #include <linux/of_net.h>
+ #include <linux/pinctrl/consumer.h>
+ 
+@@ -314,6 +315,7 @@ static int macb_mii_probe(struct net_device *dev)
+ int macb_mii_init(struct macb *bp)
+ {
+ 	struct macb_platform_data *pdata;
++	struct device_node *np;
+ 	int err = -ENXIO, i;
+ 
+ 	/* Enable management port */
+@@ -335,21 +337,46 @@ int macb_mii_init(struct macb *bp)
+ 	bp->mii_bus->parent = &bp->dev->dev;
+ 	pdata = bp->pdev->dev.platform_data;
+ 
+-	if (pdata)
+-		bp->mii_bus->phy_mask = pdata->phy_mask;
+-
+ 	bp->mii_bus->irq = kmalloc(sizeof(int)*PHY_MAX_ADDR, GFP_KERNEL);
+ 	if (!bp->mii_bus->irq) {
+ 		err = -ENOMEM;
+ 		goto err_out_free_mdiobus;
+ 	}
+ 
+-	for (i = 0; i < PHY_MAX_ADDR; i++)
+-		bp->mii_bus->irq[i] = PHY_POLL;
+-
+ 	dev_set_drvdata(&bp->dev->dev, bp->mii_bus);
+ 
+-	if (mdiobus_register(bp->mii_bus))
++	np = bp->pdev->dev.of_node;
++	if (np) {
++		/* try dt phy registration */
++		err = of_mdiobus_register(bp->mii_bus, np);
++
++		/* fallback to standard phy registration if no phy were
++		   found during dt phy registration */
++		if (!err && !phy_find_first(bp->mii_bus)) {
++			for (i = 0; i < PHY_MAX_ADDR; i++) {
++				struct phy_device *phydev;
++
++				phydev = mdiobus_scan(bp->mii_bus, i);
++				if (IS_ERR(phydev)) {
++					err = PTR_ERR(phydev);
++					break;
++				}
++			}
++
++			if (err)
++				goto err_out_unregister_bus;
++		}
++	} else {
++		for (i = 0; i < PHY_MAX_ADDR; i++)
++			bp->mii_bus->irq[i] = PHY_POLL;
++
++		if (pdata)
++			bp->mii_bus->phy_mask = pdata->phy_mask;
++
++		err = mdiobus_register(bp->mii_bus);
++	}
++
++	if (err)
+ 		goto err_out_free_mdio_irq;
+ 
+ 	if (macb_mii_probe(bp->dev) != 0) {
+-- 
+1.7.9.5
 
-> > + * sysfs_remove_groups - remove a list of groups
-> > + *
-> > + * kobj:	The kobject for the groups to be removed from
-> > + * groups:	NULL terminated list of groups to be removed
-> > + *
-> > + * If groups is not NULL, the all groups will be removed from the kobject
-> 
-> "If groups is not NULL, remove listed groups from the kobject"
-
-Nice, will go fix it up now, thanks.
-
-> (I also played around with using pointer arithmetic instead of array
-> accesses for these two functions; it cut a few lines of code, but not
-> enough to bother, I don't think.)
-
-Yeah, it's better to not be "tricky" so that others can review the code
-easier, and the end result would be the same.
-
-thanks for the review.
-
-greg k-h
