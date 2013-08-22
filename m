@@ -1,63 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab3HVSj3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 14:39:29 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:40705 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754152Ab3HVSj0 (ORCPT
+	id S1754197Ab3HVSjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 14:39:54 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:39719 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754153Ab3HVSj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 14:39:26 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>, Richard Genoud <richard.genoud@gmail.com>,
-        <alexandre.belloni@free-electrons.com>, Bo Shen <voice.shen@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: device tree update for 3.12 #1
-References: <1377097510-14090-1-git-send-email-nicolas.ferre@atmel.com>
-Date: Thu, 22 Aug 2013 11:39:21 -0700
-In-Reply-To: <1377097510-14090-1-git-send-email-nicolas.ferre@atmel.com>
-	(Nicolas Ferre's message of "Wed, 21 Aug 2013 17:05:10 +0200")
-Message-ID: <87txihr2na.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 22 Aug 2013 14:39:28 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "Eric W. Biederman" <ebiederm@xmission.com>, security@kernel.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 2/2] Rename nsproxy.pid_ns to nsproxy.pid_ns_for_children
+Date: Thu, 22 Aug 2013 11:39:16 -0700
+Message-Id: <a5db0606160dbd1412828be0d91a4a115a84abf6.1377196394.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <cover.1377196394.git.luto@amacapital.net>
+References: <cover.1377196394.git.luto@amacapital.net>
+In-Reply-To: <cover.1377196394.git.luto@amacapital.net>
+References: <cover.1377196394.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas Ferre <nicolas.ferre@atmel.com> writes:
+nsproxy.pid_ns is *not* the task's pid namespace.  The name should clarify
+that.
 
-> Arnd, Olof, Kevin,
->
-> Here is the first pull request about DT on AT91 for 3.12.
-> It is based on 3.11-rc5 as I saw that the branch is coming from this tag on
-> your side.
->
-> Thanks, best regards,
->
-> The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
->
->   Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
->
-> are available in the git repository at:
->
->   git://github.com/at91linux/linux-at91.git tags/at91-dt
->
-> for you to fetch changes up to 90d01929ad38259596371c78df8a9ecf37a7f815:
->
->   ARM: at91/dt: sam9x5ek: add sound configuration (2013-08-21 13:33:44 +0200)
->
-> ----------------------------------------------------------------
-> More DT work on AT91:
-> - sound support for at91sam9x5 family
-> - at91sam9n12: touch button, i2c and gpio-keys
-> - adding missing pinctrl-names to MCI on at91rm9200 and at91sam9260/9g20
-> - adding ARM Performance Monitor Unit (PMU) on sama5d3
+This makes it more obvious that setns on a pid namespace is weird --
+it won't change the pid namespace shown in procfs.
 
-Pulled into next/dt.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ include/linux/nsproxy.h |  6 +++++-
+ kernel/fork.c           |  5 +++--
+ kernel/nsproxy.c        | 27 ++++++++++++++-------------
+ kernel/pid_namespace.c  |  4 ++--
+ 4 files changed, 24 insertions(+), 18 deletions(-)
 
-Kevin
+diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
+index 10e5947..b4ec59d 100644
+--- a/include/linux/nsproxy.h
++++ b/include/linux/nsproxy.h
+@@ -14,6 +14,10 @@ struct fs_struct;
+  * A structure to contain pointers to all per-process
+  * namespaces - fs (mount), uts, network, sysvipc, etc.
+  *
++ * The pid namespace is an exception -- it's accessed using
++ * task_active_pid_ns.  The pid namespace here is the
++ * namespace that children will use.
++ *
+  * 'count' is the number of tasks holding a reference.
+  * The count for each namespace, then, will be the number
+  * of nsproxies pointing to it, not the number of tasks.
+@@ -27,7 +31,7 @@ struct nsproxy {
+ 	struct uts_namespace *uts_ns;
+ 	struct ipc_namespace *ipc_ns;
+ 	struct mnt_namespace *mnt_ns;
+-	struct pid_namespace *pid_ns;
++	struct pid_namespace *pid_ns_for_children;
+ 	struct net 	     *net_ns;
+ };
+ extern struct nsproxy init_nsproxy;
+diff --git a/kernel/fork.c b/kernel/fork.c
+index e23bb19..bf46287 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1177,7 +1177,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	 * don't allow the creation of threads.
+ 	 */
+ 	if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
+-	    (task_active_pid_ns(current) != current->nsproxy->pid_ns))
++	    (task_active_pid_ns(current) !=
++	     current->nsproxy->pid_ns_for_children))
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	retval = security_task_create(clone_flags);
+@@ -1351,7 +1352,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 
+ 	if (pid != &init_struct_pid) {
+ 		retval = -ENOMEM;
+-		pid = alloc_pid(p->nsproxy->pid_ns);
++		pid = alloc_pid(p->nsproxy->pid_ns_for_children);
+ 		if (!pid)
+ 			goto bad_fork_cleanup_io;
+ 	}
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 364ceab..997cbb9 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -29,15 +29,15 @@
+ static struct kmem_cache *nsproxy_cachep;
+ 
+ struct nsproxy init_nsproxy = {
+-	.count	= ATOMIC_INIT(1),
+-	.uts_ns	= &init_uts_ns,
++	.count			= ATOMIC_INIT(1),
++	.uts_ns			= &init_uts_ns,
+ #if defined(CONFIG_POSIX_MQUEUE) || defined(CONFIG_SYSVIPC)
+-	.ipc_ns	= &init_ipc_ns,
++	.ipc_ns			= &init_ipc_ns,
+ #endif
+-	.mnt_ns	= NULL,
+-	.pid_ns	= &init_pid_ns,
++	.mnt_ns			= NULL,
++	.pid_ns_for_children	= &init_pid_ns,
+ #ifdef CONFIG_NET
+-	.net_ns	= &init_net,
++	.net_ns			= &init_net,
+ #endif
+ };
+ 
+@@ -85,9 +85,10 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 		goto out_ipc;
+ 	}
+ 
+-	new_nsp->pid_ns = copy_pid_ns(flags, user_ns, tsk->nsproxy->pid_ns);
+-	if (IS_ERR(new_nsp->pid_ns)) {
+-		err = PTR_ERR(new_nsp->pid_ns);
++	new_nsp->pid_ns_for_children =
++		copy_pid_ns(flags, user_ns, tsk->nsproxy->pid_ns_for_children);
++	if (IS_ERR(new_nsp->pid_ns_for_children)) {
++		err = PTR_ERR(new_nsp->pid_ns_for_children);
+ 		goto out_pid;
+ 	}
+ 
+@@ -100,8 +101,8 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 	return new_nsp;
+ 
+ out_net:
+-	if (new_nsp->pid_ns)
+-		put_pid_ns(new_nsp->pid_ns);
++	if (new_nsp->pid_ns_for_children)
++		put_pid_ns(new_nsp->pid_ns_for_children);
+ out_pid:
+ 	if (new_nsp->ipc_ns)
+ 		put_ipc_ns(new_nsp->ipc_ns);
+@@ -174,8 +175,8 @@ void free_nsproxy(struct nsproxy *ns)
+ 		put_uts_ns(ns->uts_ns);
+ 	if (ns->ipc_ns)
+ 		put_ipc_ns(ns->ipc_ns);
+-	if (ns->pid_ns)
+-		put_pid_ns(ns->pid_ns);
++	if (ns->pid_ns_for_children)
++		put_pid_ns(ns->pid_ns_for_children);
+ 	put_net(ns->net_ns);
+ 	kmem_cache_free(nsproxy_cachep, ns);
+ }
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index 6917e8e..601bb36 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -349,8 +349,8 @@ static int pidns_install(struct nsproxy *nsproxy, void *ns)
+ 	if (ancestor != active)
+ 		return -EINVAL;
+ 
+-	put_pid_ns(nsproxy->pid_ns);
+-	nsproxy->pid_ns = get_pid_ns(new);
++	put_pid_ns(nsproxy->pid_ns_for_children);
++	nsproxy->pid_ns_for_children = get_pid_ns(new);
+ 	return 0;
+ }
+ 
+-- 
+1.8.3.1
+
