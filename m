@@ -1,80 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab3HWSpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 14:45:52 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:43364 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754761Ab3HWSpu (ORCPT
+	id S1755960Ab3HWSwp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 14:52:45 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:53073 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734Ab3HWSwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 14:45:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <52167E5D.6060802@wwwdotorg.org>
-References: <1377092334-770-1-git-send-email-larsi@wh2.tu-dresden.de>
-	<1507189.CRWvzVJqTV@flatron>
-	<521548E3.6010703@wwwdotorg.org>
-	<CACRpkdYUeyVZcN1-jOzg0zo4eSJK1S+M5fJ0FcMsgwaPKW4Obw@mail.gmail.com>
-	<52167E5D.6060802@wwwdotorg.org>
-Date: Fri, 23 Aug 2013 20:45:49 +0200
-Message-ID: <CACRpkdZgFMH07_W2eUWsgsUMXAJA1paEimAds=-XeViZaYySLA@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: interrupt consistency check for OF GPIO IRQs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Lars Poeschel <poeschel@lemonage.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+	Fri, 23 Aug 2013 14:52:43 -0400
+Date: Fri, 23 Aug 2013 12:52:40 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
+Cc: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Don Dutile <ddutile@redhat.com>
+Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type 00
+ to PF Nacked" messages
+Message-ID: <20130823185240.GA1507@google.com>
+References: <CAErSpo53L3-feEw0qZvBTmRrY+SXpGrGU6oxZg3wVjH1M8JDXg@mail.gmail.com>
+ <F6FB0E698C9B3143BDF729DF222866466FD41225@ORSMSX110.amr.corp.intel.com>
+ <CAErSpo5AiRw7HvGQMq-n596ZkHJs_KJNn346yf+jc7yti-xpUw@mail.gmail.com>
+ <CAErSpo4E9LNrfqTq1_WUoAx68_krw23BjSYbPpJPOr=zbq98xA@mail.gmail.com>
+ <CAErSpo6Ky1FQeRjjbhja2KC7EYGJ2nR1ZNuYjYi89DoqLse2cw@mail.gmail.com>
+ <CAErSpo7m=YB=1cHSBTwufTHAiAd+k9Re2s-ro509BELOgK8j7Q@mail.gmail.com>
+ <F6FB0E698C9B3143BDF729DF222866466FD4418D@ORSMSX110.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <F6FB0E698C9B3143BDF729DF222866466FD4418D@ORSMSX110.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 11:10 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 08/21/2013 05:36 PM, Linus Walleij wrote:
->> On Thu, Aug 22, 2013 at 1:10 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> [Me]
->>>>> check if these in turn reference the interrupt-controller, and
->>>>> if they do, loop over the interrupts used by that child and
->>>>> perform gpio_request() and gpio_direction_input() on these,
->>>>> making them unreachable from the GPIO side.
->>>
->>> What about bindings that require a GPIO to be specified, yet don't allow
->>> an IRQ to be specified, and the driver internally does perform
->>> gpio_to_irq() on it? I don't think one can detect that case.
->>
->> This is still allowed. Consumers that prefer to have a GPIO
->> passed and convert it to IRQ by that call can still do so,
->> they will know what they're doing and will not cause the
->> double-command situation that we're trying to solve.
->
-> Why not? There are certainly drivers in the kernel which request a GPIO
-> as both a GPIO and as an (dual-edge) interrupt, so that they can read
-> the GPIO input whenever the IRQ goes off, in order to determine the pin
-> state. This is safer against high-latency or lost interrupts.
+On Fri, Aug 23, 2013 at 06:25:06PM +0000, Skidmore, Donald C wrote:
+> > -----Original Message-----
+> > From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> > Sent: Friday, August 23, 2013 9:53 AM
+> > To: Skidmore, Donald C
+> > Cc: e1000-devel@lists.sourceforge.net; linux-pci@vger.kernel.org; linux-
+> > kernel@vger.kernel.org; Don Dutile
+> > Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type 00
+> > to PF Nacked" messages
+> > 
+> > On Tue, Aug 20, 2013 at 5:37 PM, Bjorn Helgaas <bhelgaas@google.com>
+> > wrote:
+> > > On Tue, Aug 20, 2013 at 5:08 PM, Bjorn Helgaas <bhelgaas@google.com>
+> > wrote:
+> > >> On Tue, Aug 13, 2013 at 8:23 PM, Bjorn Helgaas <bhelgaas@google.com>
+> > wrote:
+> > >
+> > >>> I played with this a little more and found this:
+> > >>>
+> > >>> 1) Magma card in z420, connected to chassis containing X540: fails
+> > >>> (original report)
+> > >>> 2) X540 in z420, Magma card in z420, connected to empty chassis:
+> > >>> fails
+> > >>> 3) X540 in z420, Magma card in z420 but no cable to chassis: works
+> > >
+> > > For what it's worth, I tried config 3 again with v3.11-rc6, and it
+> > > failed the same way.  I haven't bothered with config 2.  It's not 100%
+> > > reproducible, but at least it doesn't seem related to the expansion
+> > > chassis.
+> > >
+> > > I attached the logs from config 3 to
+> > > https://bugzilla.kernel.org/show_bug.cgi?id=60776
+> > 
+> > Is there anything I can do to help debug this?  Add instrumentation, etc.?  It
+> > seems like I'm doing the simplest possible thing -- just writing to the sysfs
+> > sriov_num_vfs file to enable VFs.
+> > 
+> > I almost think it must be related to my config somehow if nobody else is
+> > seeing this, but at the same time, my config also seems the simplest possible,
+> > so I don't know what I could be doing that's unusual.
+> > 
+> > Bjorn
+> 
+> Hey Bjorn,
+> 
+> I'm may be little confused so bear with me.
+> 
+> Option 1 = (your normal set up), Magma card plugged to chasis, X540 in chasis.
+> Option 2 = Magma card plugged to chasis, X540 in z420 system.
+> Option 3 = Magma card UNplugged from chasis, x540 in z420 system.
+> 
+> Options 1 & 2 - always fail
+> Option 3 - sometimes fails (unsure at what rate failure occurs)
+> 
+> Please correct me if I messed any of that up. :)
 
-Yes? Are we talking past each other here?
+Generally correct.  I've seen failures in all three configs, so I'm only
+concerned with the simplest for now (config 3, no expansion chassis).
 
-This is a perfectly OK thing to do as long as it is done like
-this:
+> Another question I have relates to the lspci output you supplied in the bugzilla.  I'm not seeing the VF devices (i.e. 08:10.0) did you run lspci before you created the VF's?  If so could we see one while the failure was occurring?
 
-request_gpio(gpio);
-gpio_direction_input(gpio);
-request_irq(gpio_to_irq(gpio));
+That's correct, I collected the lspci output before reproducing the
+problem.  I can't easily collect lspci afterwards because the machine isn't
+responsive after the problem starts.
 
-Pass only the GPIO in the device tree and this works just fine.
+> Also could you download the latest ixgbevf from source forge?
+> 
+> https://sourceforge.net/projects/e1000/files/ixgbevf%20stable/
+> 
+> If we add debugging messages it will be easier to patch this driver and it contains our latest validated code base.
 
-The use case after that we do not interfer with.
+I can do that if it turns out to be necessary.  But John Haller gave me a
+good clue off-list: 
 
-Yours,
-Linus Walleij
+John wrote:
+> I assume you want the VFs to be instantiated in a VM.  To do this,
+> you need to blacklist the ixgbevf driver in the host (or not
+> compile it into the host), or it will try to associate the driver
+> in the host, rather than in the VM where you want it.  Then, the
+> VM needs the ixgbevf driver, which will hopefully do a better job
+> of talking to the mailbox in the host.  There is some work to
+> assign the VF(s) to the VM, but I don't remember that offhand.
+
+I don't have any VMs (I started this whole thing because I was
+looking at a PCI hotplug issue related to SR-IOV, so I don't really
+care about VMs).
+
+So the ixgbevf driver on the *host* is claiming the new VFs, and it
+sounds like maybe it can't handle that?
+
+Bjorn
