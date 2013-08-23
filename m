@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab3HWBHi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 21:07:38 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36030 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab3HWBHh (ORCPT
+	id S1754184Ab3HWBIe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 21:08:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24740 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab3HWBId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 21:07:37 -0400
-Date: Fri, 23 Aug 2013 02:07:26 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Willy Tarreau <w@1wt.eu>,
-        "security@kernel.org" <security@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Thu, 22 Aug 2013 21:08:33 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=2pwTbst9ur4A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6iCyjPme-SgA:10 a=i0EeH86SAAAA:8 a=jlHVOTUqsIPh_se549QA:9 a=CjuIK1q_8ugA:10 a=hPjdaMEvmhQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Thu, 22 Aug 2013 21:08:30 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>
-Subject: Re: [PATCH v2] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
-Message-ID: <20130823010726.GP27005@ZenIV.linux.org.uk>
-References: <CA+55aFzXNU-eJ7KeZyv5YYKKtm8iorG-o3QtD7NXx0GTzuH+Bw@mail.gmail.com>
- <20130822185317.GI31117@1wt.eu>
- <CALCETrWYeNXhEDY7S9XLD6L0wOZu8iPVO6LN3A_797hLHfBzAw@mail.gmail.com>
- <CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com>
- <CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com>
- <20130822201530.GL31117@1wt.eu>
- <CALCETrXX--FWeoDMOTYNDOWkTKcWk=LcGs2oY7CQ9GU63CMLRg@mail.gmail.com>
- <CA+55aFzR71kJOOVzHKKaXW2Ph7wb6ivtVHPeR49PPcqpiCfPsA@mail.gmail.com>
- <CALCETrXXxRksU-YTY8WFJzeET9cWsPKo_=6e9RD=F+TS7xVMyQ@mail.gmail.com>
- <CA+55aFxqdV6CQ8UWkB1Z7HUB9GmRH4Jpw_UmmFqDqG01_DmsWw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxqdV6CQ8UWkB1Z7HUB9GmRH4Jpw_UmmFqDqG01_DmsWw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a
+ ring buffer
+Message-ID: <20130822210830.784fac63@gandalf.local.home>
+In-Reply-To: <5216A55B.4030400@huawei.com>
+References: <1376037909-17797-1-git-send-email-namhyung@kernel.org>
+	<1376037909-17797-11-git-send-email-namhyung@kernel.org>
+	<5204BCE6.2070102@hitachi.com>
+	<20130822124212.328c09c7@gandalf.local.home>
+	<5216A55B.4030400@huawei.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 01:54:15PM -0700, Linus Torvalds wrote:
-> On Thu, Aug 22, 2013 at 1:48 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> >
-> > Sure.  But aren't they always last?
-> 
-> What do you mean? I'd say that the /proc lookup is always *innermost*.
-> Which means that it certainly cannot bail out, since there are many
-> levels of nesting outside of it.
-> 
-> > With the current code structure, trying to enforce some kind of
-> > security restriction in the middle of lookup seems really unpleasant.
-> 
-> If it's conditional (ie "linkat behaves differently from openat"), it
-> certainly means that we'd have to pass in that info in annoying ways.
+On Fri, 23 Aug 2013 07:57:15 +0800
+"zhangwei(Jovi)" <jovi.zhangwei@huawei.com> wrote:
 
-Nope.  All we need to pass is one more LOOKUP_...  Add
-	if (unlikely(nd->last_type == LAST_BIND)) {
-		if ((nd->flags & LOOKUP_BLAH) && !may_flink(...)) {
-			terminate_walk(nd);
-			return -EINVAL;
-		}
-	}
-in the beginning of lookup_last() and pass LOOKUP_BLAH in flags when
-linkat() calls user_path_at().  That will affect *only* the terminal
-symlinks and cost nothing in all normal cases.  The same check can
-bloody well go into path_init() - take
-                if (*name) {
-                        if (!can_lookup(dentry->d_inode)) {
-                                fdput(f);
-                                return -ENOTDIR;
-                        }
-                }
-in there and slap
-		else {
-			if ((flags & LOOKUP_BLAH) && !may_flink(...)) {
-                                fdput(f);
-				return -EINVAL;
-			}
-		}
-after it.
+
+> > 
+> > What about creating a per cpu buffer when uprobes are registered, and
+> > delete them when they are finished? Basically what trace_printk() does
+> > if it detects that there are users of trace_printk() in the kernel.
+> > Note, it does not deallocate them when finished, as it is never
+> > finished until reboot ;-)
+> > 
+> > -- Steve
+> >
+> I also thought out this approach, but the issue is we cannot fetch user
+> memory into per-cpu buffer, because use per-cpu buffer should under
+> preempt disabled, and fetching user memory could sleep.
+
+Actually, we could create a per_cpu mutex to match the per_cpu buffers.
+This is not unlike what we do in -rt.
+
+	int cpu;
+	struct mutex *mutex;
+	void *buf;
+
+
+	/*
+	 * Use per cpu buffers for fastest access, but we might migrate
+	 * So the mutex makes sure we have sole access to it.
+	 */
+
+	cpu = raw_smp_processor_id();
+	mutex = per_cpu(uprobe_cpu_mutex, cpu);
+	buf = per_cpu(uprobe_cpu_buffer, cpu);
+
+	mutex_lock(mutex);
+	store_trace_args(..., buf,...);
+	mutex_unlock(mutex);
+
+-- Steve
