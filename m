@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab3HWHG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 03:06:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61671 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754694Ab3HWHGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 03:06:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,939,1367996400"; 
-   d="scan'208";a="367234488"
-Message-ID: <521709E7.7000302@linux.intel.com>
-Date: Fri, 23 Aug 2013 10:06:15 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1754842Ab3HWHIf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 03:08:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46227 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab3HWHIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 03:08:34 -0400
+Message-ID: <52170A6F.6040009@linutronix.de>
+Date: Fri, 23 Aug 2013 09:08:31 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, eilong@broadcom.com,
-        amirv@mellanox.com, erdnetdev@gmail.com, willemb@google.com,
-        eliezer@tamir.org.il
-Subject: Re: [PATCH RFC net-next] net: epoll support for busy poll
-References: <20130821103954.30607.6819.stgit@ladj378.jer.intel.com> <20130822.131402.362258965058758270.davem@davemloft.net>
-In-Reply-To: <20130822.131402.362258965058758270.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+CC: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.9-rt5
+References: <20130822182127.GA7606@linutronix.de> <5216F81A.4050203@localhost>
+In-Reply-To: <5216F81A.4050203@localhost>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/08/2013 23:14, David Miller wrote:
-> From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-> Date: Wed, 21 Aug 2013 13:39:54 +0300
+On 08/23/2013 07:50 AM, Fernando Lopez-Lezcano wrote:
+> On 08/22/2013 11:21 AM, Sebastian Andrzej Siewior wrote:
+>> - hwlat improvements by Steven
+>>
+>> Known issues:
+> ...
+> Trying to build I get (in make modules):
 > 
->> +	SK_LL_STATE_MISS_2,	/* data came through napi poll twice in a row */
-> 
-> Please rename this to SK_LL_STATE_MISS_MULTI or something like that.
-> 
-> Thanks.
+> ERROR: "__udivdi3" [drivers/misc/hwlat_detector.ko] undefined!
+> make[1]: *** [__modpost] Error 1
+> make: *** [modules] Error 2
 
-OK
+looks like someone forgot to do do_div() instead / which fails on 32bit
+if used on a 64bit dividend.
+
+Will fix later.
+
+> (find attached the final configuration used for building)
+> -- Fernando
+
+Sebastian
