@@ -1,121 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab3HWSRg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 14:17:36 -0400
-Received: from ring0.de ([91.143.88.219]:49898 "EHLO smtp.ring0.de"
+	id S1755958Ab3HWSSM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 14:18:12 -0400
+Received: from mout.gmx.net ([212.227.17.20]:61619 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754851Ab3HWSRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 14:17:35 -0400
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-Date: Fri, 23 Aug 2013 20:17:26 +0200
-From: Sebastian Reichel <sre@debian.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>
-Subject: Re: [PATCH 2/3] ARM: OMAP2+: HSI: Introduce OMAP SSI driver
-Message-ID: <20130823181726.GB5753@earth.universe>
-Mail-Followup-To: Linus Walleij <linus.walleij@linaro.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Linux-OMAP <linux-omap@vger.kernel.org>,
-	Kevin Hilman <khilman@deeprootsystems.com>,
-	Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-	Carlos Chinea <cch.devel@gmail.com>
-References: <1376237628-1077-1-git-send-email-sre@debian.org>
- <1376237877-1740-1-git-send-email-sre@debian.org>
- <1376237877-1740-2-git-send-email-sre@debian.org>
- <CACRpkdZpB0YjZzhOsyN9uNETQWJM=2N50eUBaxDF29jDw3ZJfw@mail.gmail.com>
+	id S1755916Ab3HWSSL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 14:18:11 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZpB0YjZzhOsyN9uNETQWJM=2N50eUBaxDF29jDw3ZJfw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <trinity-899f1812-2208-4b01-ab7e-05b7e4304ac6-1377281890307@3capp-gmx-bs52>
+From: "Andreas Werner" <wernerandy@gmx.de>
+To: "Andy Lutomirski" <luto@amacapital.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Re: Re: question about ioremap_cache and PAT
+Content-Type: text/plain; charset=UTF-8
+Date: Fri, 23 Aug 2013 20:18:10 +0200 (CEST)
+Importance: normal
+Sensitivity: Normal
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+X-Provags-ID: V03:K0:Yf/Fpp5lkrlK3bSu1GeX/Pis2bLx/b2NZPxSsB9Q6c6
+ 0q2UlVqRq2rfjVuZPObUEgR5i3NR+TEUbxrF3G3eNh5SXlfOlF
+ dDY7P/97op2a6adDdzAbM8pKaAQ3J3UV++HIN90TMxNqQY6pSe
+ O7Xmr8YQpPo5bQD9pdozN+vg4k/JasmSEpLUVH0EON1a7nEkOl
+ /vSKA8IZE8Y9+5kkjY7EnI0u0VOlNXEw/x7ubpFxFgK51cpd/f
+ wtTLUtIW4Y7wSYpRwAeg4Pf9ESTxC1weqxGg7C0O3t1Ce5lWlh oXxym0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---SLDf9lqlvOQaIe6s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
 Hi,
 
-On Fri, Aug 23, 2013 at 03:57:05PM +0200, Linus Walleij wrote:
-> The HSI subsystem is lacking an active maintainer, interested?
-> Given that you can apparently test the OMAP HSI driver you're
-> one of the few applicable candidates.
+why are you curious?
 
-I don't think I'm a good candidate for that. At least not yet. This
-is my first patch sent to the kernel and I merly took the code from
-Carlos Chinea and ported it to some new kernel frameworks. Apart
-=66rom that I'm lacking any documentation for the interface (SSI is
-not part of TI's public OMAP3 TRM).
+I have never heard about movntdqa. Have you ever tried it?
+May be it is a good idea to try i out.
 
-> Overall there is one big problem with this patch in that it implements
-> a lot of stuff that should not be implemented in the driver at all,
-> but in the HSI core.
+I think i will commit the patch to the kernel and see what happens :-)
 
-The actual implementation has not (yet?) been changed by me. It's
-still the code as written by Carlos.
-
-> For example compare commit
-> ffbbdd21329f3e15eeca6df2d4bc11c04d9d91c0
-> "spi: create a message queueing infrastructure"
->=20
-> This patch basically seems to redo the mistake we did in
-> SPI and not create a central message queue from day one,
-> instead re-implementing the same code in each and every
-> driver.
->=20
-> Please attempt to draw the message queueuing into the
-> driver core atlease.
-
-I will have a look at it after conversion to DT. I will sent another
-RFC before this change to speed up the DT review, though.
-
-> Further the allocation of hosts seem pretty generic as well
-> but I'm unsure about this. I'd prefer if you take a second
-> look at the generalizeable parts.
-
-OK.
-
-> [...] (Code Comments)
-
-Thanks for the review. The code has been written by Carlos, who
-apparently had documentation for the SSI IP used in the OMAP3. I
-cannot fix the magic numbers without either reverse engineering the
-IP (which I do not have the time for) or access to the documentation.
-
-I will fix the other comments in the next RFC patch.
-
--- Sebastian
-
---SLDf9lqlvOQaIe6s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSF6c2AAoJENju1/PIO/qa4I0QAKQkXnJKN4C0+Qogh3luYXnz
-E5glMVxX6mMUE5DGbR695Vrtp8NsR4Bop0RofaKhaj3QuohyghxwhBc6JH1oDyT0
-rAVTJ1AX8BPOLcsQHuy6SiGh7wLOdoJsXUmzKgGGCwqxherjPWmm02u6T3DIHHz0
-HPMTWD7PHOeVmeUulHOyKaD/fslzJ+/0dRn4U7qP6KnuRXS6TgoMjigN53ggq4c3
-k1HuQEUK6geNLz8TekN6IOoJ0IzIbtklON7KOwDR8WuBFXOMYAapJJSXZRvhdFNa
-CU1EtSO85+6DhGJPeZWuTq7SnzGmfBIlOvcu+xgBjhuIuHh2SE5AwQ5DrGKs+yHL
-CygfZnSZAlc0EiZdfaq7FdVYFsJE23opYaAChs6bcvXn9dhUzFSbOq6P9XtcRFLT
-4Ehklua6wvU6a9H+yABF8peliCmhtbQctIy88wQBuYgZxUrEKK1G+ni+21L/moTk
-5i/axToVOeW14+CFj933iUlXIWTKBre6UVtp52Xs0NbbQ25c82mePxBfDIcJ0KD2
-JRNQFdsEO0s86dJu7TcqL7fe4ccuHBcfpF03jkaKlLle66vTURaTessyzd8PUN17
-EJA9+kU2K9wgLXlha2b0ESDJXw+vjxIc1V7oiYIGbC0oT602zgf0A4jr2e0hsK1y
-atsTvtzpLcSTORUuDWmO
-=5P5n
------END PGP SIGNATURE-----
-
---SLDf9lqlvOQaIe6s--
+Best regards.
+>> On Fri, Aug 23, 2013 at 9:59 AM, Andreas Werner <wernerandy@gmx.de>
+>> wrote:
+>>>
+>>>
+>>> Hi,
+>>> thank you for your answer.
+>>>
+>>> So we are two persons for now who need WT :-)
+>>>
+>>> Im currently working on an ethernet driver for our own ETH core.
+>>> The problem is that one requirement is to not use DMA to transmit or
+>>> receive the data.
+>>> This means the that the ethernet buffer are not located in the main
+>>> memory. They are located in
+>>> the FPGA.
+>>>
+>>> To transmit or receive a frame, i have to read or write to mmio to get
+>>> the data.
+>>>
+>>> Intel has introduced the command "clflush" which can flush a cache
+>>> line.
+>>> I wanted to activate the caches for those mmio (eth buffer) to speed up
+>>> the transmit or receive.
+>>> After that the transfer over PCIe uses burst read/write.
+>>>
+>>> The problem was if i set the buffer to Write-Back and call clflush on
+>>> those mmio-addresses, the system crashed without any output.
+>>> I found this articel
+>>> http://software.intel.com/en-us/forums/topic/393070.[http://software.intel.com/en-us/forums/topic/393070]
+>>>
+>>> After that i configured the transmit buffer to be Write-Combining (only
+>>> write to that adresses) using ioremap_wc, and
+>>> the receive buffer to be Write-Through (ioremap_cache + mtrr Write-Back
+>>> + my Kernel Hack :-)) everything worked fine.
+>>> The other configuration Register on the FPGA are just mapped with
+>>> ioremap.
+>>
+>> I'm curious: have you tried movntdqa on UC memory for this?
+>> (Certainly WP or WT is easier.)
+>>
+>> In any case, I hope to have patches to support WP and WT without using
+>> PAT reasonably soon.
+>>
+>>>
+>>> On PCIe Tracer i can see the burst read/write on my device.
+>>>
+>>> Is it possible to get hits into the Kernel?
+>>>
+>>> My modification in arch/x86/mm/pat.c:
+>>>
+>>> --- pat.c.orig 2013-02-03 01:18:49.491879407 +0100
+>>> +++ pat.c 2013-02-03 01:19:19.053509836 +0100
+>>> @@ -149,10 +149,16 @@ static unsigned long pat_x_mtrr_type(u64
+>>>    u8 mtrr_type;
+>>>
+>>>    mtrr_type = mtrr_type_lookup(start, end);
+>>> -  if (mtrr_type != MTRR_TYPE_WRBACK)
+>>> +
+>>> +  if (mtrr_type == MTRR_TYPE_WRTHROUGH) {
+>>> +   return _PAGE_CACHE_WB;
+>>> +  }
+>>> +  else if( mtrr_type == MTRR_TYPE_WRBACK )
+>>> +   return _PAGE_CACHE_WB;
+>>> +  else
+>>>     return _PAGE_CACHE_UC_MINUS;
+>>> -
+>>> -  return _PAGE_CACHE_WB;
+>>> +
+>>>   }
+>>>
+>>>   return req_type;
+>>>
+>>
+>> That seems more or less reasonable to me.  If you want it included,
+>> send it to x86@kernel.org (cc lkml) and see what they say.
+>>
+>> It would be prettier if you combined the conditions into a single
+>> if/else, though.
+>>
+>>>
+>>> Best regards.
+>>>
+>>>
+>>> Gesendet: Montag, 12. August 2013 um 19:53 Uhr
+>>> Von: "Andy Lutomirski" <luto@amacapital.net>
+>>> An: "Andreas Werner" <wernerandy@gmx.de>
+>>> Cc: linux-kernel@vger.kernel.org
+>>> Betreff: Re: question about ioremap_cache and PAT
+>>> On 08/11/2013 09:50 AM, Andreas Werner wrote:
+>>>> Hi i have a question about ioremap_cache and the resulting PAT
+>>>> attribute on X86 system. If I configure the mtrr to Write-Through for
+>>>> an adress range, and call ioremap_cache to map the mmio, the resulting
+>>>> PAT attribute is set to UC.
+>>>> If I check the Intel document IA-32 SDM vol 3a, the resulting PAT
+>>>> attribute should be WB.
+>>>>
+>>>> I found the function pat_x_mtrr_type in arch/x86/mm/pat.c where the
+>>>> resulting attribute is returned. There will be always UC return expect
+>>>> if the MTRR is set to WB.
+>>>>
+>>>> Why is there only WB or UC returned? In the Intel document there are a
+>>>> lot of combinations "allowed".
+>>>>
+>>>> I need a Attribute of WT, so what i did is to modify the
+>>>> pat_x_mtrr_type function to return also WB if the MTRR is set to WT.
+>>>>
+>>>> Is this a solution to solve that or whats the reasion why the kernel
+>>>> doesn´t support this combination?
+>>>
+>>> The kernel doesn't support it because I'm apparently the only person
+>>> who
+>>> ever wanted it and I haven't implemented it yet.
+>>>
+>>> This stuff is handled in hardware, so modifying the kernel's idea of
+>>> what hardware does won't do much. Also, the kernel using MTRRs is on
+>>> its (very slow) way out. You could probably hack something up, but I
+>>> can almost guarantee that hpa, etc won't accept the patches.
+>>>
+>>> That being said, I'm planning to support WT directly using PAT in the
+>>> near future. This will work on most recent cpus (there are errata that
+>>> will prevent use of the high PAT entries on some cpus).
+>>>
+>>> What do you need WT for? I want it for NVDIMMs, and all I need to get
+>>> started now is a heatsink*, so I'll hopefully start implementing this
+>>> stuff in the next week or so.
+>>>
+>>> --Andy
+>>>
+>>> * Damnit, Intel, it's not 2003 any more. You already figured out that
+>>> heatsinks want screw holes. But why couldn't you make sure that all
+>>> so-called "LGA 2011" sockets have the screw holes in the same place?
+>>>
+>>>
+>>>>
+>>>> Best regards
+>>>>
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> B
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> A
+>>>> B
+>>>> B
+>>>> B
+>>>> Best regards
+>>>>
+>>>
+>>
+>>
+>>
+>> --
+>> Andy Lutomirski
+>> AMA Capital Management, LLC
+>>
+> 
+> 
+> 
