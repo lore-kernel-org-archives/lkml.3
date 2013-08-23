@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075Ab3HWRmf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 13:42:35 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:42512 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756012Ab3HWRmc (ORCPT
+	id S1756013Ab3HWRoB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 13:44:01 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:1159 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755579Ab3HWRoA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 13:42:32 -0400
+	Fri, 23 Aug 2013 13:44:00 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+From: "Graham Williams" <gwilli@broadcom.com>
+To: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+cc: "balbi@ti.com" <balbi@ti.com>
+Subject: [PATCH] usb: acm gadget: Null termintate strings table
+Thread-Topic: [PATCH] usb: acm gadget: Null termintate strings table
+Thread-Index: Ac6gKC6+i4aCIBIIQ9mu74hNJV/Uog==
+Date: Fri, 23 Aug 2013 17:43:51 +0000
+Message-ID: <063828A851006E448B735F1021E028962ACE7245@SJEXCHMB09.corp.ad.broadcom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
 MIME-Version: 1.0
-In-Reply-To: <1377134300-25480-1-git-send-email-syin@broadcom.com>
-References: <1376606573-15093-1-git-send-email-syin@broadcom.com>
-	<1377134300-25480-1-git-send-email-syin@broadcom.com>
-Date: Fri, 23 Aug 2013 19:42:32 +0200
-Message-ID: <CACRpkdZeET601+jOsjQxu-VAhi1owgtMX60Fij=uU489eGVFXg@mail.gmail.com>
-Subject: Re: [PATCH v2] pinctrl: Pass all configs to driver on pin_config_set()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sherman Yin <syin@broadcom.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org, Matt Porter <matt.porter@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-WSS-ID: 7E09437F2L877404042-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 3:18 AM, Sherman Yin <syin@broadcom.com> wrote:
 
-> When setting pin configuration in the pinctrl framework, pin_config_set() or
-> pin_config_group_set() is called in a loop to set one configuration at a time
-> for the specified pin or group.
->
-> This patch 1) removes the loop and 2) changes the API to pass the whole pin
-> config array to the driver.  It is now up to the driver to loop through the
-> configs.  This allows the driver to potentially combine configs and reduce the
-> number of writes to pin config registers.
->
-> All c files changed have been build-tested to verify the change compiles and
-> that the corresponding .o is successfully generated.
->
-> Signed-off-by: Sherman Yin <syin@broadcom.com>
-> Reviewed-by: Christian Daudt <csd@broadcom.com>
-> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+The gadget strings table should be null terminated.
+usb_gadget_get_string() loops through the table
+expecting a null at the end of the list.
 
-Didn't you get review from Stephen Warren?
+Signed-off-by: Graham Williams<gwilli@broadcom.com>
+---
+drivers/usb/gadget/f_acm.c | 1 +
+1 file changed, 1 insertion(+)
 
-> ---
-> Please refer to the discussion with Linus W. "[PATCH] ARM: Adds pin config API
-> to set all configs in one function" here:
->
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-May/166567.html
->
-> All c files changed have been build-tested to verify the change compiles and
-> that the corresponding .o are successfully generated.
->
-> [v2]    rebased on LinusW's linux-pinctrl.git "devel" branch.  Fixed and build-
->         tested pinctrl-sunxi.c
-> ---
->  drivers/pinctrl/mvebu/pinctrl-mvebu.c |   26 +++--
->  drivers/pinctrl/pinconf.c             |   42 ++++----
->  drivers/pinctrl/pinctrl-abx500.c      |  187 ++++++++++++++++++---------------
->  drivers/pinctrl/pinctrl-at91.c        |   48 +++++----
->  drivers/pinctrl/pinctrl-bcm2835.c     |   43 ++++----
->  drivers/pinctrl/pinctrl-exynos5440.c  |  113 +++++++++++---------
->  drivers/pinctrl/pinctrl-falcon.c      |   63 ++++++-----
->  drivers/pinctrl/pinctrl-imx.c         |   28 ++---
->  drivers/pinctrl/pinctrl-mxs.c         |   91 ++++++++--------
->  drivers/pinctrl/pinctrl-nomadik.c     |  125 ++++++++++++----------
->  drivers/pinctrl/pinctrl-rockchip.c    |   57 ++++++----
->  drivers/pinctrl/pinctrl-samsung.c     |   17 ++-
->  drivers/pinctrl/pinctrl-single.c      |   33 ++++--
->  drivers/pinctrl/pinctrl-st.c          |   11 +-
->  drivers/pinctrl/pinctrl-sunxi.c       |   95 +++++++++--------
->  drivers/pinctrl/pinctrl-tegra.c       |   69 ++++++------
->  drivers/pinctrl/pinctrl-tz1090-pdc.c  |  135 ++++++++++++++----------
->  drivers/pinctrl/pinctrl-tz1090.c      |  140 +++++++++++++-----------
->  drivers/pinctrl/pinctrl-u300.c        |   18 ++--
->  drivers/pinctrl/pinctrl-xway.c        |  119 +++++++++++++--------
->  drivers/pinctrl/sh-pfc/pinctrl.c      |   42 ++++----
->  drivers/pinctrl/vt8500/pinctrl-wmt.c  |   54 +++++-----
->  include/linux/pinctrl/pinconf.h       |    6 +-
->  23 files changed, 889 insertions(+), 673 deletions(-)
+diff --git a/drivers/usb/gadget/f_acm.c b/drivers/usb/gadget/f_acm.c
+index 4b7e33e..ab1065a 100644
+--- a/drivers/usb/gadget/f_acm.c
++++ b/drivers/usb/gadget/f_acm.c
+@@ -285,6 +285,7 @@ static struct usb_string acm_string_defs[] = {
+        [ACM_CTRL_IDX].s = "CDC Abstract Control Model (ACM)",
+        [ACM_DATA_IDX].s = "CDC ACM Data",
+        [ACM_IAD_IDX ].s = "CDC Serial",
++       {  } /* end of list */
+};
 
-Please try to put all the maintainers for the above files on the To: line
-so they get a chance to review/ack the patch.
+static struct usb_gadget_strings acm_string_table = {
+--
+1.8.0.1
 
-Yours,
-Linus Walleij
+
