@@ -1,335 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab3HWTCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:02:24 -0400
-Received: from a9-74.smtp-out.amazonses.com ([54.240.9.74]:60073 "EHLO
-	a9-74.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755916Ab3HWTCV (ORCPT
+	id S1756197Ab3HWTCe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:02:34 -0400
+Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:46522 "EHLO
+	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755916Ab3HWTCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:02:21 -0400
-Message-ID: <00000140ac8e397b-be6580c9-6817-498a-ad2a-cba6b7f8f85b-000000@email.amazonses.com>
+	Fri, 23 Aug 2013 15:02:32 -0400
+Message-ID: <00000140ac8e6f76-e0d1e009-9bad-44ac-9e0f-801d776269f7-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Fri, 23 Aug 2013 19:02:19 +0000
+Date: Fri, 23 Aug 2013 19:02:31 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [guv 14/16] tile: __get_cpu_var conversion
+Subject: [guv 10/16] ia64: __get_cpu_var conversion
 References: <20130823190135.726207430@linux.com>
-X-SES-Outgoing: 2013.08.23-54.240.9.74
+X-SES-Outgoing: 2013.08.23-54.240.9.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/arch/tile/include/asm/irqflags.h
+Index: linux/arch/alpha/kernel/perf_event.c
 ===================================================================
---- linux.orig/arch/tile/include/asm/irqflags.h	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/include/asm/irqflags.h	2013-08-22 14:39:57.453305409 -0500
-@@ -134,7 +134,7 @@ DECLARE_PER_CPU(unsigned long long, inte
+--- linux.orig/arch/alpha/kernel/perf_event.c	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/alpha/kernel/perf_event.c	2013-08-23 09:10:22.665620124 -0500
+@@ -803,7 +803,7 @@ static void alpha_perf_event_irq_handler
+ 	struct hw_perf_event *hwc;
+ 	int idx, j;
  
- /* Re-enable all maskable interrupts. */
- #define arch_local_irq_enable() \
--	interrupt_mask_reset_mask(__get_cpu_var(interrupts_enabled_mask))
-+	interrupt_mask_reset_mask(__this_cpu_read(interrupts_enabled_mask))
+-	__get_cpu_var(irq_pmi_count)++;
++	__this_cpu_inc(irq_pmi_count);
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
  
- /* Disable or enable interrupts based on flag argument. */
- #define arch_local_irq_restore(disabled) do { \
-@@ -161,7 +161,7 @@ DECLARE_PER_CPU(unsigned long long, inte
- 
- /* Prevent the given interrupt from being enabled next time we enable irqs. */
- #define arch_local_irq_mask(interrupt) \
--	(__get_cpu_var(interrupts_enabled_mask) &= ~(1ULL << (interrupt)))
-+	(__this_cpu_read(interrupts_enabled_mask) &= ~(1ULL << (interrupt)))
- 
- /* Prevent the given interrupt from being enabled immediately. */
- #define arch_local_irq_mask_now(interrupt) do { \
-@@ -171,7 +171,7 @@ DECLARE_PER_CPU(unsigned long long, inte
- 
- /* Allow the given interrupt to be enabled next time we enable irqs. */
- #define arch_local_irq_unmask(interrupt) \
--	(__get_cpu_var(interrupts_enabled_mask) |= (1ULL << (interrupt)))
-+	(__this_cpu_read(interrupts_enabled_mask) |= (1ULL << (interrupt)))
- 
- /* Allow the given interrupt to be enabled immediately, if !irqs_disabled. */
- #define arch_local_irq_unmask_now(interrupt) do { \
-Index: linux/arch/tile/include/asm/mmu_context.h
+ 	/* Completely counting through the PMC's period to trigger a new PMC
+Index: linux/arch/ia64/kernel/irq.c
 ===================================================================
---- linux.orig/arch/tile/include/asm/mmu_context.h	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/include/asm/mmu_context.h	2013-08-22 14:39:57.453305409 -0500
-@@ -84,7 +84,7 @@ static inline void enter_lazy_tlb(struct
- 	 * clear any pending DMA interrupts.
- 	 */
- 	if (current->thread.tile_dma_state.enabled)
--		install_page_table(mm->pgd, __get_cpu_var(current_asid));
-+		install_page_table(mm->pgd, __this_cpu_read(current_asid));
- #endif
+--- linux.orig/arch/ia64/kernel/irq.c	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/kernel/irq.c	2013-08-23 09:10:22.665620124 -0500
+@@ -42,7 +42,7 @@ ia64_vector __ia64_irq_to_vector(int irq
+ 
+ unsigned int __ia64_local_vector_to_irq (ia64_vector vec)
+ {
+-	return __get_cpu_var(vector_irq)[vec];
++	return __this_cpu_read(vector_irq[vec]);
  }
- 
-@@ -96,12 +96,12 @@ static inline void switch_mm(struct mm_s
- 		int cpu = smp_processor_id();
- 
- 		/* Pick new ASID. */
--		int asid = __get_cpu_var(current_asid) + 1;
-+		int asid = __this_cpu_read(current_asid) + 1;
- 		if (asid > max_asid) {
- 			asid = min_asid;
- 			local_flush_tlb();
- 		}
--		__get_cpu_var(current_asid) = asid;
-+		__this_cpu_read(current_asid) = asid;
- 
- 		/* Clear cpu from the old mm, and set it in the new one. */
- 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
-Index: linux/arch/tile/kernel/irq.c
-===================================================================
---- linux.orig/arch/tile/kernel/irq.c	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/kernel/irq.c	2013-08-22 14:39:57.453305409 -0500
-@@ -77,7 +77,7 @@ static DEFINE_SPINLOCK(available_irqs_lo
-  */
- void tile_dev_intr(struct pt_regs *regs, int intnum)
- {
--	int depth = __get_cpu_var(irq_depth)++;
-+	int depth = __this_cpu_inc_return(irq_depth) - 1;
- 	unsigned long original_irqs;
- 	unsigned long remaining_irqs;
- 	struct pt_regs *old_regs;
-@@ -124,7 +124,7 @@ void tile_dev_intr(struct pt_regs *regs,
- 
- 		/* Count device irqs; Linux IPIs are counted elsewhere. */
- 		if (irq != IRQ_RESCHEDULE)
--			__get_cpu_var(irq_stat).irq_dev_intr_count++;
-+			__this_cpu_inc(irq_stat.irq_dev_intr_count);
- 
- 		generic_handle_irq(irq);
- 	}
-@@ -135,9 +135,9 @@ void tile_dev_intr(struct pt_regs *regs,
- 	 * handling.
- 	 */
- 	if (depth == 0)
--		unmask_irqs(~__get_cpu_var(irq_disable_mask));
-+		unmask_irqs(~__this_cpu_read(irq_disable_mask));
- 
--	__get_cpu_var(irq_depth)--;
-+	__this_cpu_dec(irq_depth);
- 
- 	/*
- 	 * Track time spent against the current process again and
-@@ -155,7 +155,7 @@ void tile_dev_intr(struct pt_regs *regs,
- static void tile_irq_chip_enable(struct irq_data *d)
- {
- 	get_cpu_var(irq_disable_mask) &= ~(1UL << d->irq);
--	if (__get_cpu_var(irq_depth) == 0)
-+	if (__this_cpu_read(irq_depth) == 0)
- 		unmask_irqs(1UL << d->irq);
- 	put_cpu_var(irq_disable_mask);
- }
-@@ -201,7 +201,7 @@ static void tile_irq_chip_ack(struct irq
-  */
- static void tile_irq_chip_eoi(struct irq_data *d)
- {
--	if (!(__get_cpu_var(irq_disable_mask) & (1UL << d->irq)))
-+	if (!(__this_cpu_read(irq_disable_mask) & (1UL << d->irq)))
- 		unmask_irqs(1UL << d->irq);
- }
- 
-Index: linux/arch/tile/kernel/messaging.c
-===================================================================
---- linux.orig/arch/tile/kernel/messaging.c	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/kernel/messaging.c	2013-08-22 14:39:57.453305409 -0500
-@@ -28,7 +28,7 @@ static DEFINE_PER_CPU(HV_MsgState, msg_s
- void init_messaging(void)
- {
- 	/* Allocate storage for messages in kernel space */
--	HV_MsgState *state = &__get_cpu_var(msg_state);
-+	HV_MsgState *state = this_cpu_ptr(&msg_state);
- 	int rc = hv_register_message_state(state);
- 	if (rc != HV_OK)
- 		panic("hv_register_message_state: error %d", rc);
-@@ -68,7 +68,7 @@ void hv_message_intr(struct pt_regs *reg
  #endif
  
- 	while (1) {
--		rmi = hv_receive_message(__get_cpu_var(msg_state),
-+		rmi = hv_receive_message(__this_cpu_read(msg_state),
- 					 (HV_VirtAddr) message,
- 					 sizeof(message));
- 		if (rmi.msglen == 0)
-@@ -96,7 +96,7 @@ void hv_message_intr(struct pt_regs *reg
- 			struct hv_driver_cb *cb =
- 				(struct hv_driver_cb *)him->intarg;
- 			cb->callback(cb, him->intdata);
--			__get_cpu_var(irq_stat).irq_hv_msg_count++;
-+			__this_cpu_inc(irq_stat.irq_hv_msg_count);
- 		}
+Index: linux/arch/ia64/kernel/irq_ia64.c
+===================================================================
+--- linux.orig/arch/ia64/kernel/irq_ia64.c	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/kernel/irq_ia64.c	2013-08-23 09:10:22.669620084 -0500
+@@ -338,7 +338,7 @@ static irqreturn_t smp_irq_move_cleanup_
+ 		int irq;
+ 		struct irq_desc *desc;
+ 		struct irq_cfg *cfg;
+-		irq = __get_cpu_var(vector_irq)[vector];
++		irq = __this_cpu_read(vector_irq[vector]);
+ 		if (irq < 0)
+ 			continue;
+ 
+@@ -352,7 +352,7 @@ static irqreturn_t smp_irq_move_cleanup_
+ 			goto unlock;
+ 
+ 		spin_lock_irqsave(&vector_lock, flags);
+-		__get_cpu_var(vector_irq)[vector] = -1;
++		__this_cpu_write(vector_irq[vector], -1);
+ 		cpu_clear(me, vector_table[vector]);
+ 		spin_unlock_irqrestore(&vector_lock, flags);
+ 		cfg->move_cleanup_count--;
+Index: linux/arch/ia64/kernel/kprobes.c
+===================================================================
+--- linux.orig/arch/ia64/kernel/kprobes.c	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/kernel/kprobes.c	2013-08-23 09:10:22.669620084 -0500
+@@ -396,7 +396,7 @@ static void __kprobes restore_previous_k
+ {
+ 	unsigned int i;
+ 	i = atomic_read(&kcb->prev_kprobe_index);
+-	__get_cpu_var(current_kprobe) = kcb->prev_kprobe[i-1].kp;
++	__this_cpu_write(current_kprobe, kcb->prev_kprobe[i-1].kp);
+ 	kcb->kprobe_status = kcb->prev_kprobe[i-1].status;
+ 	atomic_sub(1, &kcb->prev_kprobe_index);
+ }
+@@ -404,7 +404,7 @@ static void __kprobes restore_previous_k
+ static void __kprobes set_current_kprobe(struct kprobe *p,
+ 			struct kprobe_ctlblk *kcb)
+ {
+-	__get_cpu_var(current_kprobe) = p;
++	__this_cpu_write(current_kprobe, p);
+ }
+ 
+ static void kretprobe_trampoline(void)
+@@ -823,7 +823,7 @@ static int __kprobes pre_kprobes_handler
+ 			/*
+ 			 * jprobe instrumented function just completed
+ 			 */
+-			p = __get_cpu_var(current_kprobe);
++			p = __this_cpu_read(current_kprobe);
+ 			if (p->break_handler && p->break_handler(p, regs)) {
+ 				goto ss_probe;
+ 			}
+Index: linux/arch/ia64/kernel/mca.c
+===================================================================
+--- linux.orig/arch/ia64/kernel/mca.c	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/kernel/mca.c	2013-08-23 09:11:54.244715775 -0500
+@@ -1341,7 +1341,7 @@ ia64_mca_handler(struct pt_regs *regs, s
+ 		ia64_mlogbuf_finish(1);
  	}
  
-Index: linux/arch/tile/kernel/process.c
-===================================================================
---- linux.orig/arch/tile/kernel/process.c	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/kernel/process.c	2013-08-22 14:39:57.453305409 -0500
-@@ -63,7 +63,7 @@ early_param("idle", idle_setup);
- 
- void arch_cpu_idle(void)
- {
--	__get_cpu_var(irq_stat).idle_timestamp = jiffies;
-+	__this_cpu_write(irq_stat.idle_timestamp, jiffies);
- 	_cpu_idle();
- }
- 
-Index: linux/arch/tile/kernel/setup.c
-===================================================================
---- linux.orig/arch/tile/kernel/setup.c	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/kernel/setup.c	2013-08-22 14:39:57.453305409 -0500
-@@ -1119,7 +1119,7 @@ static void __init validate_hv(void)
- 	 * various asid variables to their appropriate initial states.
- 	 */
- 	asid_range = hv_inquire_asid(0);
--	__get_cpu_var(current_asid) = min_asid = asid_range.start;
-+	__this_cpu_write(current_asid, min_asid = asid_range.start);
- 	max_asid = asid_range.start + asid_range.size - 1;
- 
- 	if (hv_confstr(HV_CONFSTR_CHIP_MODEL, (HV_VirtAddr)chip_model,
-Index: linux/arch/tile/kernel/single_step.c
-===================================================================
---- linux.orig/arch/tile/kernel/single_step.c	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/kernel/single_step.c	2013-08-22 14:39:57.453305409 -0500
-@@ -732,7 +732,7 @@ static DEFINE_PER_CPU(unsigned long, ss_
- 
- void gx_singlestep_handle(struct pt_regs *regs, int fault_num)
- {
--	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
-+	unsigned long *ss_pc = this_cpu_ptr(&ss_saved_pc);
- 	struct thread_info *info = (void *)current_thread_info();
- 	int is_single_step = test_ti_thread_flag(info, TIF_SINGLESTEP);
- 	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
-@@ -758,7 +758,7 @@ void gx_singlestep_handle(struct pt_regs
- 
- void single_step_once(struct pt_regs *regs)
- {
--	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
-+	unsigned long *ss_pc = this_cpu_ptr(&ss_saved_pc);
- 	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
- 
- 	*ss_pc = regs->pc;
-Index: linux/arch/tile/kernel/smp.c
-===================================================================
---- linux.orig/arch/tile/kernel/smp.c	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/kernel/smp.c	2013-08-22 14:39:57.453305409 -0500
-@@ -176,7 +176,7 @@ void flush_icache_range(unsigned long st
- /* Called when smp_send_reschedule() triggers IRQ_RESCHEDULE. */
- static irqreturn_t handle_reschedule_ipi(int irq, void *token)
- {
--	__get_cpu_var(irq_stat).irq_resched_count++;
-+	__this_cpu_inc(irq_stat.irq_resched_count);
- 	scheduler_ipi();
- 
- 	return IRQ_HANDLED;
-Index: linux/arch/tile/kernel/smpboot.c
-===================================================================
---- linux.orig/arch/tile/kernel/smpboot.c	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/kernel/smpboot.c	2013-08-22 14:39:57.453305409 -0500
-@@ -41,7 +41,7 @@ void __init smp_prepare_boot_cpu(void)
- 	int cpu = smp_processor_id();
- 	set_cpu_online(cpu, 1);
- 	set_cpu_present(cpu, 1);
--	__get_cpu_var(cpu_state) = CPU_ONLINE;
-+	__this_cpu_write(cpu_state, CPU_ONLINE);
- 
- 	init_messaging();
- }
-@@ -156,7 +156,7 @@ static void start_secondary(void)
- 	/* printk(KERN_DEBUG "Initializing CPU#%d\n", cpuid); */
- 
- 	/* Initialize the current asid for our first page table. */
--	__get_cpu_var(current_asid) = min_asid;
-+	__this_cpu_write(current_asid, min_asid);
- 
- 	/* Set up this thread as another owner of the init_mm */
- 	atomic_inc(&init_mm.mm_count);
-@@ -199,7 +199,7 @@ void online_secondary(void)
- 	notify_cpu_starting(smp_processor_id());
- 
- 	set_cpu_online(smp_processor_id(), 1);
--	__get_cpu_var(cpu_state) = CPU_ONLINE;
-+	__this_cpu_write(cpu_state, CPU_ONLINE);
- 
- 	/* Set up tile-specific state for this cpu. */
- 	setup_cpu(0);
-Index: linux/arch/tile/kernel/time.c
-===================================================================
---- linux.orig/arch/tile/kernel/time.c	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/kernel/time.c	2013-08-22 14:39:57.453305409 -0500
-@@ -161,7 +161,7 @@ static DEFINE_PER_CPU(struct clock_event
- 
- void setup_tile_timer(void)
- {
--	struct clock_event_device *evt = &__get_cpu_var(tile_timer);
-+	struct clock_event_device *evt = this_cpu_ptr(&tile_timer);
- 
- 	/* Fill in fields that are speed-specific. */
- 	clockevents_calc_mult_shift(evt, cycles_per_sec, TILE_MINSEC);
-@@ -181,7 +181,7 @@ void setup_tile_timer(void)
- void do_timer_interrupt(struct pt_regs *regs, int fault_num)
- {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
--	struct clock_event_device *evt = &__get_cpu_var(tile_timer);
-+	struct clock_event_device *evt = this_cpu_ptr(&tile_timer);
+-	if (__get_cpu_var(ia64_mca_tr_reload)) {
++	if (__this_cpu_read(ia64_mca_tr_reload)) {
+ 		mca_insert_tr(0x1); /*Reload dynamic itrs*/
+ 		mca_insert_tr(0x2); /*Reload dynamic itrs*/
+ 	}
+@@ -1874,14 +1874,14 @@ ia64_mca_cpu_init(void *cpu_data)
+ 		"MCA", cpu);
+ 	format_mca_init_stack(data, offsetof(struct ia64_mca_cpu, init_stack),
+ 		"INIT", cpu);
+-	__get_cpu_var(ia64_mca_data) = __per_cpu_mca[cpu] = __pa(data);
++	__this_cpu_write(ia64_mca_data, __per_cpu_mca[cpu] = __pa(data));
  
  	/*
- 	 * Mask the timer interrupt here, since we are a oneshot timer
-@@ -193,7 +193,7 @@ void do_timer_interrupt(struct pt_regs *
- 	irq_enter();
- 
- 	/* Track interrupt count. */
--	__get_cpu_var(irq_stat).irq_timer_count++;
-+	__this_cpu_inc(irq_stat.irq_timer_count);
- 
- 	/* Call the generic timer handler */
- 	evt->event_handler(evt);
-@@ -234,6 +234,6 @@ cycles_t ns2cycles(unsigned long nsecs)
- 	 * We do not have to disable preemption here as each core has the same
- 	 * clock frequency.
+ 	 * Stash away a copy of the PTE needed to map the per-CPU page.
+ 	 * We may need it during MCA recovery.
  	 */
--	struct clock_event_device *dev = &__raw_get_cpu_var(tile_timer);
-+	struct clock_event_device *dev = __this_cpu_ptr(&tile_timer);
- 	return ((u64)nsecs * dev->mult) >> dev->shift;
- }
-Index: linux/arch/tile/mm/highmem.c
-===================================================================
---- linux.orig/arch/tile/mm/highmem.c	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/mm/highmem.c	2013-08-22 14:39:57.453305409 -0500
-@@ -103,7 +103,7 @@ static void kmap_atomic_register(struct
- 	spin_lock(&amp_lock);
- 
- 	/* With interrupts disabled, now fill in the per-cpu info. */
--	amp = &__get_cpu_var(amps).per_type[type];
-+	amp = this_cpu_ptr(&amps.per_type[type]);
- 	amp->page = page;
- 	amp->cpu = smp_processor_id();
- 	amp->va = va;
-Index: linux/arch/tile/mm/init.c
-===================================================================
---- linux.orig/arch/tile/mm/init.c	2013-08-22 14:39:14.000000000 -0500
-+++ linux/arch/tile/mm/init.c	2013-08-22 14:39:57.453305409 -0500
-@@ -625,14 +625,14 @@ static void __init kernel_physical_mappi
- 	interrupt_mask_set_mask(-1ULL);
- 	rc = flush_and_install_context(__pa(pgtables),
- 				       init_pgprot((unsigned long)pgtables),
--				       __get_cpu_var(current_asid),
-+				       __this_cpu_read(current_asid),
- 				       cpumask_bits(my_cpu_mask));
- 	interrupt_mask_restore_mask(irqmask);
- 	BUG_ON(rc != 0);
- 
- 	/* Copy the page table back to the normal swapper_pg_dir. */
- 	memcpy(pgd_base, pgtables, sizeof(pgtables));
--	__install_page_table(pgd_base, __get_cpu_var(current_asid),
-+	__install_page_table(pgd_base, __this_cpu_read(current_asid),
- 			     swapper_pgprot);
+-	__get_cpu_var(ia64_mca_per_cpu_pte) =
+-		pte_val(mk_pte_phys(__pa(cpu_data), PAGE_KERNEL));
++	__this_cpu_write(ia64_mca_per_cpu_pte,
++		pte_val(mk_pte_phys(__pa(cpu_data), PAGE_KERNEL)));
  
  	/*
+ 	 * Also, stash away a copy of the PAL address and the PTE
+@@ -1890,10 +1890,10 @@ ia64_mca_cpu_init(void *cpu_data)
+ 	pal_vaddr = efi_get_pal_addr();
+ 	if (!pal_vaddr)
+ 		return;
+-	__get_cpu_var(ia64_mca_pal_base) =
+-		GRANULEROUNDDOWN((unsigned long) pal_vaddr);
+-	__get_cpu_var(ia64_mca_pal_pte) = pte_val(mk_pte_phys(__pa(pal_vaddr),
+-							      PAGE_KERNEL));
++	__this_cpu_write(ia64_mca_pal_base,
++		GRANULEROUNDDOWN((unsigned long) pal_vaddr));
++	__this_cpu_write(ia64_mca_pal_pte, pte_val(mk_pte_phys(__pa(pal_vaddr),
++							      PAGE_KERNEL)));
+ }
+ 
+ static void ia64_mca_cmc_vector_adjust(void *dummy)
+Index: linux/arch/ia64/kernel/process.c
+===================================================================
+--- linux.orig/arch/ia64/kernel/process.c	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/kernel/process.c	2013-08-23 09:10:22.669620084 -0500
+@@ -215,7 +215,7 @@ static inline void play_dead(void)
+ 	unsigned int this_cpu = smp_processor_id();
+ 
+ 	/* Ack it */
+-	__get_cpu_var(cpu_state) = CPU_DEAD;
++	__this_cpu_write(cpu_state, CPU_DEAD);
+ 
+ 	max_xtp();
+ 	local_irq_disable();
+@@ -273,7 +273,7 @@ ia64_save_extra (struct task_struct *tas
+ 	if ((task->thread.flags & IA64_THREAD_PM_VALID) != 0)
+ 		pfm_save_regs(task);
+ 
+-	info = __get_cpu_var(pfm_syst_info);
++	info = __this_cpu_read(pfm_syst_info);
+ 	if (info & PFM_CPUINFO_SYST_WIDE)
+ 		pfm_syst_wide_update_task(task, info, 0);
+ #endif
+@@ -293,7 +293,7 @@ ia64_load_extra (struct task_struct *tas
+ 	if ((task->thread.flags & IA64_THREAD_PM_VALID) != 0)
+ 		pfm_load_regs(task);
+ 
+-	info = __get_cpu_var(pfm_syst_info);
++	info = __this_cpu_read(pfm_syst_info);
+ 	if (info & PFM_CPUINFO_SYST_WIDE) 
+ 		pfm_syst_wide_update_task(task, info, 1);
+ #endif
+Index: linux/arch/ia64/sn/kernel/sn2/sn2_smp.c
+===================================================================
+--- linux.orig/arch/ia64/sn/kernel/sn2/sn2_smp.c	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/sn/kernel/sn2/sn2_smp.c	2013-08-23 09:10:22.669620084 -0500
+@@ -134,8 +134,8 @@ sn2_ipi_flush_all_tlb(struct mm_struct *
+ 	itc = ia64_get_itc();
+ 	smp_flush_tlb_cpumask(*mm_cpumask(mm));
+ 	itc = ia64_get_itc() - itc;
+-	__get_cpu_var(ptcstats).shub_ipi_flushes_itc_clocks += itc;
+-	__get_cpu_var(ptcstats).shub_ipi_flushes++;
++	__this_cpu_add(ptcstats.shub_ipi_flushes_itc_clocks, itc);
++	__this_cpu_inc(ptcstats.shub_ipi_flushes);
+ }
+ 
+ /**
+@@ -199,14 +199,14 @@ sn2_global_tlb_purge(struct mm_struct *m
+ 			start += (1UL << nbits);
+ 		} while (start < end);
+ 		ia64_srlz_i();
+-		__get_cpu_var(ptcstats).ptc_l++;
++		__this_cpu_inc(ptcstats.ptc_l);
+ 		preempt_enable();
+ 		return;
+ 	}
+ 
+ 	if (atomic_read(&mm->mm_users) == 1 && mymm) {
+ 		flush_tlb_mm(mm);
+-		__get_cpu_var(ptcstats).change_rid++;
++		__this_cpu_inc(ptcstats.change_rid);
+ 		preempt_enable();
+ 		return;
+ 	}
+@@ -250,11 +250,11 @@ sn2_global_tlb_purge(struct mm_struct *m
+ 	spin_lock_irqsave(PTC_LOCK(shub1), flags);
+ 	itc2 = ia64_get_itc();
+ 
+-	__get_cpu_var(ptcstats).lock_itc_clocks += itc2 - itc;
+-	__get_cpu_var(ptcstats).shub_ptc_flushes++;
+-	__get_cpu_var(ptcstats).nodes_flushed += nix;
++	__this_cpu_add(ptcstats.lock_itc_clocks, itc2 - itc);
++	__this_cpu_inc(ptcstats.shub_ptc_flushes);
++	__this_cpu_add(ptcstats.nodes_flushed, nix);
+ 	if (!mymm)
+-		 __get_cpu_var(ptcstats).shub_ptc_flushes_not_my_mm++;
++		 __this_cpu_inc(ptcstats.shub_ptc_flushes_not_my_mm);
+ 
+ 	if (use_cpu_ptcga && !mymm) {
+ 		old_rr = ia64_get_rr(start);
+@@ -299,9 +299,9 @@ sn2_global_tlb_purge(struct mm_struct *m
+ 
+ done:
+ 	itc2 = ia64_get_itc() - itc2;
+-	__get_cpu_var(ptcstats).shub_itc_clocks += itc2;
+-	if (itc2 > __get_cpu_var(ptcstats).shub_itc_clocks_max)
+-		__get_cpu_var(ptcstats).shub_itc_clocks_max = itc2;
++	__this_cpu_add(ptcstats)shub_itc_clocks, itc2);
++	if (itc2 > __this_cpu_read(ptcstats.shub_itc_clocks_max))
++		__this_cpu_write(ptcstats).shub_itc_clocks_max, itc2);
+ 
+ 	if (old_rr) {
+ 		ia64_set_rr(start, old_rr);
+@@ -311,7 +311,7 @@ done:
+ 	spin_unlock_irqrestore(PTC_LOCK(shub1), flags);
+ 
+ 	if (flush_opt == 1 && deadlock) {
+-		__get_cpu_var(ptcstats).deadlocks++;
++		__this_cpu_inc(ptcstats.deadlocks);
+ 		sn2_ipi_flush_all_tlb(mm);
+ 	}
+ 
+@@ -334,7 +334,7 @@ sn2_ptc_deadlock_recovery(short *nasids,
+ 	short nasid, i;
+ 	unsigned long *piows, zeroval, n;
+ 
+-	__get_cpu_var(ptcstats).deadlocks++;
++	__this_cpu_inc(ptcstats.deadlocks);
+ 
+ 	piows = (unsigned long *) pda->pio_write_status_addr;
+ 	zeroval = pda->pio_write_status_val;
+@@ -349,7 +349,7 @@ sn2_ptc_deadlock_recovery(short *nasids,
+ 			ptc1 = CHANGE_NASID(nasid, ptc1);
+ 
+ 		n = sn2_ptc_deadlock_recovery_core(ptc0, data0, ptc1, data1, piows, zeroval);
+-		__get_cpu_var(ptcstats).deadlocks2 += n;
++		__this_cpu_add(ptcstats.deadlocks2, n);
+ 	}
+ 
+ }
+Index: linux/arch/ia64/include/asm/hw_irq.h
+===================================================================
+--- linux.orig/arch/ia64/include/asm/hw_irq.h	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/include/asm/hw_irq.h	2013-08-23 09:10:22.673620044 -0500
+@@ -160,7 +160,7 @@ static inline ia64_vector __ia64_irq_to_
+ static inline unsigned int
+ __ia64_local_vector_to_irq (ia64_vector vec)
+ {
+-	return __get_cpu_var(vector_irq)[vec];
++	return __this_cpu_read(vector_irq[vec]);
+ }
+ #endif
+ 
+Index: linux/arch/ia64/include/asm/sn/nodepda.h
+===================================================================
+--- linux.orig/arch/ia64/include/asm/sn/nodepda.h	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/include/asm/sn/nodepda.h	2013-08-23 09:10:22.673620044 -0500
+@@ -70,7 +70,7 @@ typedef struct nodepda_s nodepda_t;
+  */
+ 
+ DECLARE_PER_CPU(struct nodepda_s *, __sn_nodepda);
+-#define sn_nodepda		(__get_cpu_var(__sn_nodepda))
++#define sn_nodepda		__this_cpu_read(__sn_nodepda)
+ #define	NODEPDA(cnodeid)	(sn_nodepda->pernode_pdaindr[cnodeid])
+ 
+ /*
+Index: linux/arch/ia64/include/asm/switch_to.h
+===================================================================
+--- linux.orig/arch/ia64/include/asm/switch_to.h	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/include/asm/switch_to.h	2013-08-23 09:10:22.673620044 -0500
+@@ -32,7 +32,7 @@ extern void ia64_load_extra (struct task
+ 
+ #ifdef CONFIG_PERFMON
+   DECLARE_PER_CPU(unsigned long, pfm_syst_info);
+-# define PERFMON_IS_SYSWIDE() (__get_cpu_var(pfm_syst_info) & 0x1)
++# define PERFMON_IS_SYSWIDE() (__this_cpu_read(pfm_syst_info) & 0x1)
+ #else
+ # define PERFMON_IS_SYSWIDE() (0)
+ #endif
+Index: linux/arch/ia64/include/asm/sn/arch.h
+===================================================================
+--- linux.orig/arch/ia64/include/asm/sn/arch.h	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/include/asm/sn/arch.h	2013-08-23 09:10:22.673620044 -0500
+@@ -57,7 +57,7 @@ struct sn_hub_info_s {
+ 	u16 nasid_bitmask;
+ };
+ DECLARE_PER_CPU(struct sn_hub_info_s, __sn_hub_info);
+-#define sn_hub_info 	(&__get_cpu_var(__sn_hub_info))
++#define sn_hub_info 	this_cpu_ptr(&__sn_hub_info)
+ #define is_shub2()	(sn_hub_info->shub2)
+ #define is_shub1()	(sn_hub_info->shub2 == 0)
+ 
+@@ -72,7 +72,7 @@ DECLARE_PER_CPU(struct sn_hub_info_s, __
+  * cpu.
+  */
+ DECLARE_PER_CPU(short, __sn_cnodeid_to_nasid[MAX_COMPACT_NODES]);
+-#define sn_cnodeid_to_nasid	(&__get_cpu_var(__sn_cnodeid_to_nasid[0]))
++#define sn_cnodeid_to_nasid	this_cpu_ptr(&__sn_cnodeid_to_nasid[0])
+ 
+ 
+ extern u8 sn_partition_id;
+Index: linux/arch/ia64/include/asm/uv/uv_hub.h
+===================================================================
+--- linux.orig/arch/ia64/include/asm/uv/uv_hub.h	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/include/asm/uv/uv_hub.h	2013-08-23 09:10:22.673620044 -0500
+@@ -108,7 +108,7 @@ struct uv_hub_info_s {
+ 	unsigned char	n_val;
+ };
+ DECLARE_PER_CPU(struct uv_hub_info_s, __uv_hub_info);
+-#define uv_hub_info 		(&__get_cpu_var(__uv_hub_info))
++#define uv_hub_info 		this_cpu_ptr(&__uv_hub_info)
+ #define uv_cpu_hub_info(cpu)	(&per_cpu(__uv_hub_info, cpu))
+ 
+ /*
+Index: linux/arch/ia64/kernel/traps.c
+===================================================================
+--- linux.orig/arch/ia64/kernel/traps.c	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/kernel/traps.c	2013-08-23 09:10:22.673620044 -0500
+@@ -299,7 +299,7 @@ handle_fpu_swa (int fp_fault, struct pt_
+ 
+ 	if (!(current->thread.flags & IA64_THREAD_FPEMU_NOPRINT))  {
+ 		unsigned long count, current_jiffies = jiffies;
+-		struct fpu_swa_msg *cp = &__get_cpu_var(cpulast);
++		struct fpu_swa_msg *cp = this_cpu_ptr(&cpulast);
+ 
+ 		if (unlikely(current_jiffies > cp->time))
+ 			cp->count = 0;
+Index: linux/arch/ia64/xen/time.c
+===================================================================
+--- linux.orig/arch/ia64/xen/time.c	2013-08-23 09:10:22.673620044 -0500
++++ linux/arch/ia64/xen/time.c	2013-08-23 09:10:22.673620044 -0500
+@@ -68,7 +68,7 @@ static void get_runstate_snapshot(struct
+ 
+ 	BUG_ON(preemptible());
+ 
+-	state = &__get_cpu_var(xen_runstate);
++	state = this_cpu_ptr(&xen_runstate);
+ 
+ 	/*
+ 	 * The runstate info is always updated by the hypervisor on
 
