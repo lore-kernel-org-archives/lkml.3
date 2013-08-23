@@ -1,147 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab3HWMcH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 08:32:07 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:52661 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab3HWMYN (ORCPT
+	id S1756083Ab3HWMcS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 08:32:18 -0400
+Received: from shelob.oktetlabs.ru ([195.131.132.186]:50436 "EHLO
+	shelob.oktetlabs.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755011Ab3HWMcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 08:24:13 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 11/40] ARM: ux500: Rip out Hash support when booting with ATAGs
-Date: Fri, 23 Aug 2013 13:23:11 +0100
-Message-Id: <1377260620-18829-12-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
-References: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
+	Fri, 23 Aug 2013 08:32:14 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.2 shelob.oktetlabs.ru 93ECC7F505
+Date: Fri, 23 Aug 2013 16:32:00 +0400
+From: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kmemleak in apei_res_add
+Message-ID: <20130823123159.GD12595@sanechka.spb.ru>
+References: <20130812024556.GB29956@sanechka.spb.ru>
+ <CAHkRjk4y06puTL_Gq5RbpoV+kpEp+k32z5aq3HpEu9u3qsS_Aw@mail.gmail.com>
+ <20130821134455.GC12595@sanechka.spb.ru>
+ <1377161014.6167.67.camel@yhuang-dev>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377161014.6167.67.camel@yhuang-dev>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's time to remove all ATAG support from ux500 and rely solely on
-Device Tree booting. This patch is part of that endeavour.
+Hi Huang,
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/board-mop500.c   | 20 --------------------
- arch/arm/mach-ux500/devices-common.h | 24 ------------------------
- arch/arm/mach-ux500/devices-db8500.h |  2 --
- arch/arm/mach-ux500/devices.h        |  2 --
- 4 files changed, 48 deletions(-)
+On Aug 22 16:43, Huang Ying wrote:
+> Hi, Alexandra,
+> Can you try the following debug patch, and send me back the output of:
+> 
+> $ dmesg | grep apei_res
 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index f75ac95..fec8733 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -173,17 +173,6 @@ static void mop500_prox_deactivate(struct device *dev)
- 	regulator_put(prox_regulator);
- }
- 
--static struct stedma40_chan_cfg u8500_hash_dma_cfg_tx = {
--		.dir = DMA_MEM_TO_DEV,
--		.dev_type = DB8500_DMA_DEV50_HAC1_TX,
--		.mode = STEDMA40_MODE_LOGICAL,
--};
--
--static struct hash_platform_data u8500_hash1_platform_data = {
--		.mem_to_engine = &u8500_hash_dma_cfg_tx,
--		.dma_filter = stedma40_filter,
--};
--
- /* add any platform devices here - TODO */
- static struct platform_device *mop500_platform_devs[] __initdata = {
- 	&mop500_gpio_keys_device,
-@@ -293,11 +282,6 @@ static void __init mop500_uart_init(struct device *parent)
- 	db8500_add_uart2(parent, &uart2_plat);
- }
- 
--static void __init u8500_cryp1_hash1_init(struct device *parent)
--{
--	db8500_add_hash1(parent, &u8500_hash1_platform_data);
--}
--
- static void __init mop500_init_machine(void)
- {
- 	struct device *parent = NULL;
-@@ -321,8 +305,6 @@ static void __init mop500_init_machine(void)
- 	mop500_spi_init(parent);
- 	mop500_uart_init(parent);
- 
--	u8500_cryp1_hash1_init(parent);
--
- 	i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
- 
- 	i2c_register_board_info(0, mop500_i2c0_devices, i2c0_devs);
-@@ -347,8 +329,6 @@ static void __init snowball_init_machine(void)
- 	mop500_spi_init(parent);
- 	mop500_uart_init(parent);
- 
--	u8500_cryp1_hash1_init(parent);
--
- 	/* This board has full regulator constraints */
- 	regulator_has_full_constraints();
- }
-diff --git a/arch/arm/mach-ux500/devices-common.h b/arch/arm/mach-ux500/devices-common.h
-index b32f179..04fa009 100644
---- a/arch/arm/mach-ux500/devices-common.h
-+++ b/arch/arm/mach-ux500/devices-common.h
-@@ -64,30 +64,6 @@ dbx500_add_rtc(struct device *parent, resource_size_t base, int irq)
- 				0, NULL, 0);
- }
- 
--struct hash_platform_data;
--
--static inline struct platform_device *
--dbx500_add_hash1(struct device *parent, int id, resource_size_t base,
--		struct hash_platform_data *pdata)
--{
--	struct resource res[] = {
--			DEFINE_RES_MEM(base, SZ_4K),
--	};
--
--	struct platform_device_info pdevinfo = {
--			.parent = parent,
--			.name = "hash1",
--			.id = id,
--			.res = res,
--			.num_res = ARRAY_SIZE(res),
--			.data = pdata,
--			.size_data = sizeof(*pdata),
--			.dma_mask = DMA_BIT_MASK(32),
--	};
--
--	return platform_device_register_full(&pdevinfo);
--}
--
- struct nmk_gpio_platform_data;
- 
- void dbx500_add_gpios(struct device *parent, resource_size_t *base, int num,
-diff --git a/arch/arm/mach-ux500/devices-db8500.h b/arch/arm/mach-ux500/devices-db8500.h
-index 7331b7e..3d32668 100644
---- a/arch/arm/mach-ux500/devices-db8500.h
-+++ b/arch/arm/mach-ux500/devices-db8500.h
-@@ -109,6 +109,4 @@ db8500_add_ssp(struct device *parent, const char *name, resource_size_t base,
- 	dbx500_add_uart(parent, "uart2", U8500_UART2_BASE, \
- 			IRQ_DB8500_UART2, pdata)
- 
--#define db8500_add_hash1(parent, pdata) \
--	dbx500_add_hash1(parent, -1, U8500_HASH1_BASE, pdata)
- #endif
-diff --git a/arch/arm/mach-ux500/devices.h b/arch/arm/mach-ux500/devices.h
-index a5183e3..9b5eb69 100644
---- a/arch/arm/mach-ux500/devices.h
-+++ b/arch/arm/mach-ux500/devices.h
-@@ -14,8 +14,6 @@ extern struct platform_device u8500_gpio_devs[];
- 
- extern struct amba_device ux500_pl031_device;
- 
--extern struct platform_device ux500_hash1_device;
--
- extern struct platform_device u8500_dma40_device;
- extern struct platform_device ux500_ske_keypad_device;
- 
+bash$ dmesg |grep apei
+[    9.608829] apei_res_add: ffff8802730cde48: 7dfd5018 - 7dfd5019
+[    9.615354] apei_res_add: ffff8802730cde48: 7dfd5018 - 7dfd5019
+[    9.621595] apei_res_add: ffff8802730cde48: 7dfd5018 - 7dfd5019
+[    9.627915] apei_res_add: ffff8802730cde48: 7dfd5019 - 7dfd501a
+[    9.634363] apei_res_add: ffff8802730cde48: 7dfd501a - 7dfd501e
+[    9.640689] apei_res_add: ffff8802730cde58: b2 - b3
+[    9.646008] apei_res_add: ffff8802730cde48: 7dfd501e - 7dfd501f
+[    9.652320] apei_res_add: ffff8802730cde48: 7dfd501f - 7dfd5020
+[    9.658637] apei_res_add: ffff8802730cde48: 7dfd5020 - 7dfd5028
+[    9.664952] apei_res_add: ffff8802730cde48: 7dfd5028 - 7dfd5030
+[    9.671227] apei_res_add: ffff8802730cde48: 7dfd5030 - 7dfd5032
+[    9.686533] apei_res_add: ffff8802730cde48: 7dfd5018 - 7dfd5019
+[    9.702283] apei_res_add: ffff8802730cde48: 7dfd5032 - 7dfd5033
+[    9.718050] apei_res_add: ffff8802730cde48: 7dfd5032 - 7dfd503a
+[    9.732699] apei_res_add: ffff8802730cde48: 7dfd503a - 7dfd503e
+[    9.747231] apei_res_add: ffff8802730cde48: 7dfd503e - 7dfd503f
+[    9.761822] apei_res_sub: ffff8802730cde48 - ffffffff81a76ee0
+[    9.775718] apei_res_sub: ffff8802730cde58 - ffffffff81a76ef0
+[    9.789058] apei_res_add: ffff8802730cdde8: 7e095000 - 7e299000
+[    9.803780] apei_res_add: ffff8802730cdde8: 7f370000 - 7f3f6000
+[    9.818264] apei_res_sub: ffff8802730cde48 - ffff8802730cdde8
+[    9.831933] apei_res_sub: ffff8802730cde58 - ffff8802730cddf8
+[    9.846091] apei_res_add: ffffffff81a76ee0: 7dfd5018 - 7dfd503f
+[    9.859528] apei_res_add: ffffffff81a76ef0: b2 - b3
+
+I hope it helps.
+
+Alexandra.
 -- 
-1.8.1.2
-
+Alexandra N. Kossovsky
+OKTET Labs (http://www.oktetlabs.ru/)
+e-mail: sasha@oktetlabs.ru
