@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab3HWCnZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 22:43:25 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:37298 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499Ab3HWCnV (ORCPT
+	id S1754532Ab3HWCnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 22:43:22 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:59666 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754232Ab3HWCnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 22:43:21 -0400
+	Thu, 22 Aug 2013 22:43:19 -0400
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: lkml <linux-kernel@vger.kernel.org>,
@@ -19,9 +19,9 @@ Cc: lkml <linux-kernel@vger.kernel.org>,
         James Bottomley <JBottomley@Parallels.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Nicholas Bellinger <nab@daterainc.com>
-Subject: [PATCH 5/9] target: Avoid non-existent tg_pt_gp_mem in target_alua_state_check
-Date: Fri, 23 Aug 2013 02:26:57 +0000
-Message-Id: <1377224821-23422-6-git-send-email-nab@daterainc.com>
+Subject: [PATCH 4/9] target: Add global device list for EXTENDED_COPY
+Date: Fri, 23 Aug 2013 02:26:56 +0000
+Message-Id: <1377224821-23422-5-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1377224821-23422-1-git-send-email-nab@daterainc.com>
 References: <1377224821-23422-1-git-send-email-nab@daterainc.com>
@@ -31,9 +31,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@daterainc.com>
 
-This patch adds an check for a non-existent port->sep_alua_tg_pt_gp_mem
-within target_alua_state_check(), which is not present for internally
-dispatched EXTENDED_COPY WRITE I/O to the destination target port.
+EXTENDED_COPY needs to be able to search a global list of devices
+based on NAA WWN device identifiers, so add a simple g_device_list
+protected by g_device_mutex.
 
 Cc: Christoph Hellwig <hch@lst.de>
 Cc: Hannes Reinecke <hare@suse.de>
@@ -45,23 +45,67 @@ Cc: James Bottomley <JBottomley@Parallels.com>
 Cc: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
 ---
- drivers/target/target_core_alua.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/target/target_core_device.c |   13 +++++++++++++
+ include/target/target_core_base.h   |    1 +
+ 2 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
-index 5403186..ea928c4 100644
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -557,6 +557,9 @@ target_alua_state_check(struct se_cmd *cmd)
- 	 * a ALUA logical unit group.
- 	 */
- 	tg_pt_gp_mem = port->sep_alua_tg_pt_gp_mem;
-+	if (!tg_pt_gp_mem)
-+		return 0;
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index de89046..458944e 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -47,6 +47,9 @@
+ #include "target_core_pr.h"
+ #include "target_core_ua.h"
+ 
++DEFINE_MUTEX(g_device_mutex);
++LIST_HEAD(g_device_list);
 +
- 	spin_lock(&tg_pt_gp_mem->tg_pt_gp_mem_lock);
- 	tg_pt_gp = tg_pt_gp_mem->tg_pt_gp;
- 	out_alua_state = atomic_read(&tg_pt_gp->tg_pt_gp_alua_access_state);
+ static struct se_hba *lun0_hba;
+ /* not static, needed by tpg.c */
+ struct se_device *g_lun0_dev;
+@@ -1406,6 +1409,7 @@ struct se_device *target_alloc_device(struct se_hba *hba, const char *name)
+ 	INIT_LIST_HEAD(&dev->delayed_cmd_list);
+ 	INIT_LIST_HEAD(&dev->state_list);
+ 	INIT_LIST_HEAD(&dev->qf_cmd_list);
++	INIT_LIST_HEAD(&dev->g_dev_node);
+ 	spin_lock_init(&dev->stats_lock);
+ 	spin_lock_init(&dev->execute_task_lock);
+ 	spin_lock_init(&dev->delayed_cmd_lock);
+@@ -1525,6 +1529,11 @@ int target_configure_device(struct se_device *dev)
+ 	spin_lock(&hba->device_lock);
+ 	hba->dev_count++;
+ 	spin_unlock(&hba->device_lock);
++
++	mutex_lock(&g_device_mutex);
++	list_add_tail(&dev->g_dev_node, &g_device_list);
++	mutex_unlock(&g_device_mutex);
++
+ 	return 0;
+ 
+ out_free_alua:
+@@ -1543,6 +1552,10 @@ void target_free_device(struct se_device *dev)
+ 	if (dev->dev_flags & DF_CONFIGURED) {
+ 		destroy_workqueue(dev->tmr_wq);
+ 
++		mutex_lock(&g_device_mutex);
++		list_del(&dev->g_dev_node);
++		mutex_unlock(&g_device_mutex);
++
+ 		spin_lock(&hba->device_lock);
+ 		hba->dev_count--;
+ 		spin_unlock(&hba->device_lock);
+diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
+index 0783b2c..6b14f3c 100644
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -686,6 +686,7 @@ struct se_device {
+ 	struct list_head	delayed_cmd_list;
+ 	struct list_head	state_list;
+ 	struct list_head	qf_cmd_list;
++	struct list_head	g_dev_node;
+ 	/* Pointer to associated SE HBA */
+ 	struct se_hba		*se_hba;
+ 	/* T10 Inquiry and VPD WWN Information */
 -- 
 1.7.2.5
 
