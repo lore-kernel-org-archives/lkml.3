@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab3HWADl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 20:03:41 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:58055 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754678Ab3HWADh (ORCPT
+	id S1754763Ab3HWADv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 20:03:51 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:52170 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723Ab3HWADs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 20:03:37 -0400
+	Thu, 22 Aug 2013 20:03:48 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-ext4@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
@@ -15,9 +15,9 @@ Cc: linux-ext4@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
         Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
         Christoph Hellwig <hch@infradead.org>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v4 1/7] mm: Track mappings that have been written via ptes
-Date: Thu, 22 Aug 2013 17:03:17 -0700
-Message-Id: <f2ac22142b4634b55ff6858d159b45dac96f81b6.1377193658.git.luto@amacapital.net>
+Subject: [PATCH v4 6/7] btrfs: Defer mmap cmtime updates
+Date: Thu, 22 Aug 2013 17:03:22 -0700
+Message-Id: <7d32564366be185ce9a1a8030af394bdfd266c7a.1377193658.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1377193658.git.luto@amacapital.net>
 References: <cover.1377193658.git.luto@amacapital.net>
@@ -27,141 +27,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will allow the mm code to figure out when a file has been
-changed through a writable mmap.  Future changes will use this
-information to update the file timestamp after writes.
-
-This is handled in core mm code for two reasons:
-
-1. Performance.  Setting a bit directly is faster than an indirect
-   call to a vma op.
-
-2. Simplicity.  The cmtime bit is set with lots of mm locks held.
-   Rather than making filesystems add a new vm operation that needs
-   to be aware of locking, it's easier to just get it right in core
-   code.
-
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- include/linux/pagemap.h | 16 ++++++++++++++++
- mm/memory.c             |  7 ++++++-
- mm/rmap.c               | 27 +++++++++++++++++++++++++--
- 3 files changed, 47 insertions(+), 3 deletions(-)
+ fs/btrfs/extent_io.c |  1 +
+ fs/btrfs/inode.c     | 32 ++++++++++++++++----------------
+ 2 files changed, 17 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index e3dea75..9a461ee 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -25,6 +25,7 @@ enum mapping_flags {
- 	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
- 	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
- 	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
-+	AS_CMTIME	= __GFP_BITS_SHIFT + 5, /* cmtime update deferred */
- };
- 
- static inline void mapping_set_error(struct address_space *mapping, int error)
-@@ -74,6 +75,21 @@ static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
- 	return (__force gfp_t)mapping->flags & __GFP_BITS_MASK;
- }
- 
-+static inline void mapping_set_cmtime(struct address_space * mapping)
-+{
-+	set_bit(AS_CMTIME, &mapping->flags);
-+}
-+
-+static inline bool mapping_test_cmtime(struct address_space * mapping)
-+{
-+	return test_bit(AS_CMTIME, &mapping->flags);
-+}
-+
-+static inline bool mapping_test_clear_cmtime(struct address_space * mapping)
-+{
-+	return test_and_clear_bit(AS_CMTIME, &mapping->flags);
-+}
-+
- /*
-  * This is non-atomic.  Only to be used before the mapping is activated.
-  * Probably needs a barrier...
-diff --git a/mm/memory.c b/mm/memory.c
-index 4026841..1737a90 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1150,8 +1150,13 @@ again:
- 			if (PageAnon(page))
- 				rss[MM_ANONPAGES]--;
- 			else {
--				if (pte_dirty(ptent))
-+				if (pte_dirty(ptent)) {
-+					struct address_space *mapping =
-+						page_mapping(page);
-+					if (mapping)
-+						mapping_set_cmtime(mapping);
- 					set_page_dirty(page);
-+				}
- 				if (pte_young(ptent) &&
- 				    likely(!(vma->vm_flags & VM_SEQ_READ)))
- 					mark_page_accessed(page);
-diff --git a/mm/rmap.c b/mm/rmap.c
-index b2e29ac..2e3fb27 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -928,6 +928,10 @@ static int page_mkclean_file(struct address_space *mapping, struct page *page)
- 		}
- 	}
- 	mutex_unlock(&mapping->i_mmap_mutex);
-+
-+	if (ret)
-+		mapping_set_cmtime(mapping);
-+
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index fe443fe..dc2f851 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -3756,6 +3756,7 @@ int extent_writepages(struct extent_io_tree *tree,
+ 				       __extent_writepage, &epd,
+ 				       flush_write_bio);
+ 	flush_epd_write_bio(&epd);
++	mapping_flush_cmtime(mapping);
  	return ret;
  }
  
-@@ -1179,6 +1183,19 @@ out:
- }
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 021694c..fc51380 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -7499,10 +7499,8 @@ int btrfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
  
- /*
-+ * Mark a page's mapping for future cmtime update.  It's safe to call this
-+ * on any page, but it only has any effect if the page is backed by a mapping
-+ * that uses mapping_test_clear_cmtime to handle file time updates.  This means
-+ * that there's no need to call this on for non-VM_SHARED vmas.
-+ */
-+static void page_set_cmtime(struct page *page)
-+{
-+	struct address_space *mapping = page_mapping(page);
-+	if (mapping)
-+		mapping_set_cmtime(mapping);
-+}
-+
-+/*
-  * Subfunctions of try_to_unmap: try_to_unmap_one called
-  * repeatedly from try_to_unmap_ksm, try_to_unmap_anon or try_to_unmap_file.
+ 	sb_start_pagefault(inode->i_sb);
+ 	ret  = btrfs_delalloc_reserve_space(inode, PAGE_CACHE_SIZE);
+-	if (!ret) {
+-		ret = file_update_time(vma->vm_file);
++	if (!ret)
+ 		reserved = 1;
+-	}
+ 	if (ret) {
+ 		if (ret == -ENOMEM)
+ 			ret = VM_FAULT_OOM;
+@@ -8711,22 +8709,24 @@ static struct extent_io_ops btrfs_extent_io_ops = {
+  * For now we're avoiding this by dropping bmap.
   */
-@@ -1219,8 +1236,11 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 	pteval = ptep_clear_flush(vma, address, pte);
+ static const struct address_space_operations btrfs_aops = {
+-	.readpage	= btrfs_readpage,
+-	.writepage	= btrfs_writepage,
+-	.writepages	= btrfs_writepages,
+-	.readpages	= btrfs_readpages,
+-	.direct_IO	= btrfs_direct_IO,
+-	.invalidatepage = btrfs_invalidatepage,
+-	.releasepage	= btrfs_releasepage,
+-	.set_page_dirty	= btrfs_set_page_dirty,
+-	.error_remove_page = generic_error_remove_page,
++	.readpage		= btrfs_readpage,
++	.writepage		= btrfs_writepage,
++	.writepages		= btrfs_writepages,
++	.update_cmtime_deferred	= generic_update_cmtime_deferred,
++	.readpages		= btrfs_readpages,
++	.direct_IO		= btrfs_direct_IO,
++	.invalidatepage		= btrfs_invalidatepage,
++	.releasepage		= btrfs_releasepage,
++	.set_page_dirty		= btrfs_set_page_dirty,
++	.error_remove_page	= generic_error_remove_page,
+ };
  
- 	/* Move the dirty bit to the physical page now the pte is gone. */
--	if (pte_dirty(pteval))
-+	if (pte_dirty(pteval)) {
- 		set_page_dirty(page);
-+		if (vma->vm_flags & VM_SHARED)
-+			page_set_cmtime(page);
-+	}
+ static const struct address_space_operations btrfs_symlink_aops = {
+-	.readpage	= btrfs_readpage,
+-	.writepage	= btrfs_writepage,
+-	.invalidatepage = btrfs_invalidatepage,
+-	.releasepage	= btrfs_releasepage,
++	.readpage		= btrfs_readpage,
++	.writepage		= btrfs_writepage,
++	.update_cmtime_deferred	= generic_update_cmtime_deferred,
++	.invalidatepage 	= btrfs_invalidatepage,
++	.releasepage		= btrfs_releasepage,
+ };
  
- 	/* Update high watermark before we lower rss */
- 	update_hiwater_rss(mm);
-@@ -1413,8 +1433,11 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
- 		}
- 
- 		/* Move the dirty bit to the physical page now the pte is gone. */
--		if (pte_dirty(pteval))
-+		if (pte_dirty(pteval)) {
- 			set_page_dirty(page);
-+			if (vma->vm_flags & VM_SHARED)
-+				page_set_cmtime(page);
-+		}
- 
- 		page_remove_rmap(page);
- 		page_cache_release(page);
+ static const struct inode_operations btrfs_file_inode_operations = {
 -- 
 1.8.3.1
 
