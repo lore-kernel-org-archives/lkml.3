@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab3HWLDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 07:03:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57589 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755303Ab3HWLDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 07:03:19 -0400
-Date: Fri, 23 Aug 2013 13:03:10 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, hughd@google.com, shli@kernel.org,
-        jmoyer@redhat.com, kosaki.motohiro@gmail.com, riel@redhat.com,
-        lwoodman@redhat.com, mgorman@suse.de
-Subject: Re: [PATCH 02/02] swapon: allow a more flexible swap discard policy
-Message-ID: <20130823110310.GA2352@x2.net.home>
-References: <cover.1369529143.git.aquini@redhat.com>
- <6346c223ca2acb30b35480b9d51638466aac5fe6.1369530033.git.aquini@redhat.com>
+	id S1755394Ab3HWLDi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 07:03:38 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:48309 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755363Ab3HWLDh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 07:03:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6346c223ca2acb30b35480b9d51638466aac5fe6.1369530033.git.aquini@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Date: Fri, 23 Aug 2013 19:03:37 +0800
+Message-ID: <CAL1ERfPzB=CvKJ6kAq2YYTkkg-EgSOWRyfSFWkvKp8ZdQkCDxA@mail.gmail.com>
+Subject: [PATCH 1/4] zswap bugfix: memory leaks when re-swapon
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Minchan Kim <minchan@kernel.org>, Bob Liu <bob.liu@oracle.com>,
+        sjenning@linux.vnet.ibm.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, weijie.yang@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 26, 2013 at 01:31:56AM -0300, Rafael Aquini wrote:
->  sys-utils/swapon.8 | 24 +++++++++++++------
->  sys-utils/swapon.c | 70 ++++++++++++++++++++++++++++++++++++++++++++++--------
->  2 files changed, 77 insertions(+), 17 deletions(-)
+zswap_tree is not freed when swapoff, and it got re-kzalloc in swapon,
+memory leak occurs.
+Add check statement in zswap_frontswap_init so that zswap_tree is
+inited only once.
 
- Applied, thanks.
+---
+ mm/zswap.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-    Karel
+diff --git a/mm/zswap.c b/mm/zswap.c
+index deda2b6..1cf1c07 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -826,6 +826,11 @@ static void zswap_frontswap_init(unsigned type)
+ {
+ 	struct zswap_tree *tree;
 
++	if (zswap_trees[type]) {
++		BUG_ON(zswap_trees[type]->rbroot != RB_ROOT);  /* invalidate_area set it */
++		return;
++	}
++
+ 	tree = kzalloc(sizeof(struct zswap_tree), GFP_KERNEL);
+ 	if (!tree)
+ 		goto err;
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+1.7.0.4
