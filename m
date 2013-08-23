@@ -1,106 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab3HWWuJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 18:50:09 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:44299 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299Ab3HWWuH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 18:50:07 -0400
-Message-ID: <5217E712.5030008@hp.com>
-Date: Fri, 23 Aug 2013 18:49:54 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1754661Ab3HWW5r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 18:57:47 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58032 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753299Ab3HWW5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 18:57:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-pm@vger.kernel.org, rui.zhang@intel.com,
+        linux-kernel@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Peter Feuerer <peter@piie.net>, platform-driver-x86@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 3/5] drivers: thermal: make usage of CONFIG_THERMAL_HWMON optional
+Date: Sat, 24 Aug 2013 01:08:22 +0200
+Message-ID: <4832825.8PCMQe7StP@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1377295396-17289-4-git-send-email-eduardo.valentin@ti.com>
+References: <1377295396-17289-1-git-send-email-eduardo.valentin@ti.com> <1377295396-17289-4-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH 0/4] seqlock: Add new blocking reader type & use rwlock
-References: <1372902738-30693-1-git-send-email-Waiman.Long@hp.com>
-In-Reply-To: <1372902738-30693-1-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2013 09:52 PM, Waiman Long wrote:
-> During some perf-record sessions of the kernel running the high_systime
-> workload of the AIM7 benchmark, it was found that quite a large portion
-> of the spinlock contention was due to the perf_event_mmap_event()
-> function itself. This perf kernel function calls d_path() which,
-> in turn, call path_get() and dput() indirectly. These 3 functions
-> were the hottest functions shown in the perf-report output of
-> the _raw_spin_lock() function in an 8-socket system with 80 cores
-> (hyperthreading off) with a 3.10-rc1 kernel:
->
-> -  13.91%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
->     - _raw_spin_lock
->        + 35.54% path_get
->        + 34.85% dput
->        + 19.49% d_path
->
-> In fact, the output of the "perf record -s -a" (without call-graph)
-> showed:
->
->   13.37%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
->    7.61%              ls  [kernel.kallsyms]     [k] _raw_spin_lock
->    3.54%            true  [kernel.kallsyms]     [k] _raw_spin_lock
->
-> Without using the perf monitoring tool, the actual execution profile
-> will be quite different. In fact, with this patch set and my other
-> lockless reference count update patch applied, the output of the same
-> "perf record -s -a" command became:
->
->    2.82%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
->    1.11%              ls  [kernel.kallsyms]     [k] _raw_spin_lock
->    0.26%            true  [kernel.kallsyms]     [k] _raw_spin_lock
->
-> So the time spent on _raw_spin_lock() function went down from 24.52%
-> to 4.19%. It can be seen that the performance data collected by the
-> perf-record command can be heavily skewed in some cases on a system
-> with a large number of CPUs. This set of patches enables the perf
-> command to give a more accurate and reliable picture of what is really
-> happening in the system. At the same time, they can also improve the
-> general performance of systems especially those with a large number
-> of CPUs.
->
-> The d_path() function takes the following two locks:
->
-> 1. dentry->d_lock [spinlock] from dget()/dget_parent()/dput()
-> 2. rename_lock    [seqlock]  from d_path()
->
-> This set of patches address the rename_lock bottleneck by changing the
-> way seqlock is implemented so that we can optionally use a read/write
-> lock as the underlying implementation instead of the default spinlock.
->
-> Incidentally, this patch also provides slight 5% performance boost
-> over just the the lockless reference count update patch in the short
-> workload of the AIM7 benchmark running on a 8-socket 80-core DL980
-> machine on a 3.10-based kernel. There were still a few percentage
-> points of contention in d_path() and getcwd syscall left due to their
-> use of the rename_lock.
->
-> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
->
-> Waiman Long (4):
->    seqlock: Add a new blocking reader type
->    dcache: Use blocking reader seqlock when protected data are not
->      changed
->    seqlock: Allow the use of rwlock in seqlock
->    dcache: Use rwlock as the underlying lock in rename_lock
->
->   fs/dcache.c             |   28 ++++----
->   include/linux/seqlock.h |  167 ++++++++++++++++++++++++++++++++++++++++-------
->   2 files changed, 158 insertions(+), 37 deletions(-)
->
+On Friday, August 23, 2013 06:03:14 PM Eduardo Valentin wrote:
+> When registering a new thermal_device, the thermal framework
+> will always add a hwmon sysfs interface.
+> 
+> This patch adds a flag to make this behavior optional. Now
+> when registering a new thermal device, the caller needs
+> to say if the hwmon interface is required.
+> 
+> In order to keep same behavior as of today, all current
+> calls will by default create the hwmon interface.
 
-I haven't received any feedback on this patchset. Would you mind letting 
-me know if any further change will be needed to make it acceptable to be 
-merged?
+Well, instead of modifying all of the callers this way, why don't
+you add new versions taking the additional argument as, for example,
 
-Thank,
-Longman
+thermal_zone_device_register_full()
+
+and redefine the old ones as static inline wrappers, for example
+
+static inline struct thermal_zone_device *thermal_zone_device_register(args)
+{
+	return thermal_zone_device_register_full(args, true);
+}
+
+?
+
+That'd reduce the size of this patch a bit I suppose (and the number of
+subsystems involved at the same time).
+
+Thanks,
+Rafael
+
+
+> Cc: Anton Vorontsov <anton@enomsg.org>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: devicetree@vger.kernel.org
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: linux-acpi@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-samsung-soc@vger.kernel.org
+> Cc: Matthew Garrett <matthew.garrett@nebula.com>
+> Cc: Peter Feuerer <peter@piie.net>
+> Cc: platform-driver-x86@vger.kernel.org
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Suggested-by: Wei Ni <wni@nvidia.com>
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  Documentation/thermal/sysfs-api.txt                |  4 +++-
+>  drivers/acpi/thermal.c                             |  6 ++++--
+>  drivers/platform/x86/acerhdf.c                     |  3 ++-
+>  drivers/platform/x86/intel_mid_thermal.c           |  2 +-
+>  drivers/power/power_supply_core.c                  |  2 +-
+>  drivers/thermal/armada_thermal.c                   |  2 +-
+>  drivers/thermal/db8500_thermal.c                   |  2 +-
+>  drivers/thermal/dove_thermal.c                     |  2 +-
+>  drivers/thermal/exynos_thermal.c                   |  2 +-
+>  drivers/thermal/kirkwood_thermal.c                 |  2 +-
+>  drivers/thermal/rcar_thermal.c                     |  2 +-
+>  drivers/thermal/spear_thermal.c                    |  2 +-
+>  drivers/thermal/thermal_core.c                     | 13 +++++++++----
+>  drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  2 +-
+>  drivers/thermal/x86_pkg_temp_thermal.c             |  2 +-
+>  include/linux/thermal.h                            |  2 +-
+>  16 files changed, 30 insertions(+), 20 deletions(-)
+> 
+> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
+> index a71bd5b..4b4a052 100644
+> --- a/Documentation/thermal/sysfs-api.txt
+> +++ b/Documentation/thermal/sysfs-api.txt
+> @@ -64,7 +64,9 @@ temperature) and throttle appropriate devices.
+>  	performing passive cooling.
+>      polling_delay: number of milliseconds to wait between polls when checking
+>  	whether trip points have been crossed (0 for interrupt driven systems).
+> -
+> +    add_hwmon: a boolean to indicate if the thermal to hwmon sysfs interface
+> +	is required. When add_hwmon == true, a hwmon sysfs interface
+> +	will be created. When add_hwmon == false, nothing will be done
+>  
+>  1.1.2 void thermal_zone_device_unregister(struct thermal_zone_device *tz)
+>  
+> diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
+> index a33821c..4d542b4 100644
+> --- a/drivers/acpi/thermal.c
+> +++ b/drivers/acpi/thermal.c
+> @@ -916,12 +916,14 @@ static int acpi_thermal_register_thermal_zone(struct acpi_thermal *tz)
+>  			thermal_zone_device_register("acpitz", trips, 0, tz,
+>  						&acpi_thermal_zone_ops, NULL,
+>  						     tz->trips.passive.tsp*100,
+> -						     tz->polling_frequency*100);
+> +						     tz->polling_frequency*100,
+> +						     true);
+>  	else
+>  		tz->thermal_zone =
+>  			thermal_zone_device_register("acpitz", trips, 0, tz,
+>  						&acpi_thermal_zone_ops, NULL,
+> -						0, tz->polling_frequency*100);
+> +						0, tz->polling_frequency*100,
+> +						true);
+>  	if (IS_ERR(tz->thermal_zone))
+>  		return -ENODEV;
+>  
+> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+> index f94467c..004d9ba0 100644
+> --- a/drivers/platform/x86/acerhdf.c
+> +++ b/drivers/platform/x86/acerhdf.c
+> @@ -663,7 +663,8 @@ static int acerhdf_register_thermal(void)
+>  
+>  	thz_dev = thermal_zone_device_register("acerhdf", 1, 0, NULL,
+>  					      &acerhdf_dev_ops, NULL, 0,
+> -					      (kernelmode) ? interval*1000 : 0);
+> +					      (kernelmode) ? interval*1000 : 0,
+> +					      true);
+>  	if (IS_ERR(thz_dev))
+>  		return -EINVAL;
+>  
+> diff --git a/drivers/platform/x86/intel_mid_thermal.c b/drivers/platform/x86/intel_mid_thermal.c
+> index 81c491e..efea0bf 100644
+> --- a/drivers/platform/x86/intel_mid_thermal.c
+> +++ b/drivers/platform/x86/intel_mid_thermal.c
+> @@ -502,7 +502,7 @@ static int mid_thermal_probe(struct platform_device *pdev)
+>  			goto err;
+>  		}
+>  		pinfo->tzd[i] = thermal_zone_device_register(name[i],
+> -				0, 0, td_info, &tzd_ops, NULL, 0, 0);
+> +				0, 0, td_info, &tzd_ops, NULL, 0, 0, true);
+>  		if (IS_ERR(pinfo->tzd[i])) {
+>  			kfree(td_info);
+>  			ret = PTR_ERR(pinfo->tzd[i]);
+> diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+> index 3b2d5df..5f39914 100644
+> --- a/drivers/power/power_supply_core.c
+> +++ b/drivers/power/power_supply_core.c
+> @@ -359,7 +359,7 @@ static int psy_register_thermal(struct power_supply *psy)
+>  	for (i = 0; i < psy->num_properties; i++) {
+>  		if (psy->properties[i] == POWER_SUPPLY_PROP_TEMP) {
+>  			psy->tzd = thermal_zone_device_register(psy->name, 0, 0,
+> -					psy, &psy_tzd_ops, NULL, 0, 0);
+> +					psy, &psy_tzd_ops, NULL, 0, 0, true);
+>  			if (IS_ERR(psy->tzd))
+>  				return PTR_ERR(psy->tzd);
+>  			break;
+> diff --git a/drivers/thermal/armada_thermal.c b/drivers/thermal/armada_thermal.c
+> index 5e53212..bc54c80 100644
+> --- a/drivers/thermal/armada_thermal.c
+> +++ b/drivers/thermal/armada_thermal.c
+> @@ -182,7 +182,7 @@ static int armada_thermal_probe(struct platform_device *pdev)
+>  	priv->ops->init_sensor(priv);
+>  
+>  	thermal = thermal_zone_device_register("armada_thermal", 0, 0,
+> -					       priv, &ops, NULL, 0, 0);
+> +					       priv, &ops, NULL, 0, 0, true);
+>  	if (IS_ERR(thermal)) {
+>  		dev_err(&pdev->dev,
+>  			"Failed to register thermal zone device\n");
+> diff --git a/drivers/thermal/db8500_thermal.c b/drivers/thermal/db8500_thermal.c
+> index 1e3b3bf..439a854 100644
+> --- a/drivers/thermal/db8500_thermal.c
+> +++ b/drivers/thermal/db8500_thermal.c
+> @@ -447,7 +447,7 @@ static int db8500_thermal_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	pzone->therm_dev = thermal_zone_device_register("db8500_thermal_zone",
+> -		ptrips->num_trips, 0, pzone, &thdev_ops, NULL, 0, 0);
+> +		ptrips->num_trips, 0, pzone, &thdev_ops, NULL, 0, 0, true);
+>  
+>  	if (IS_ERR(pzone->therm_dev)) {
+>  		dev_err(&pdev->dev, "Register thermal zone device failed.\n");
+> diff --git a/drivers/thermal/dove_thermal.c b/drivers/thermal/dove_thermal.c
+> index 828f5e3..61f2247 100644
+> --- a/drivers/thermal/dove_thermal.c
+> +++ b/drivers/thermal/dove_thermal.c
+> @@ -155,7 +155,7 @@ static int dove_thermal_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	thermal = thermal_zone_device_register("dove_thermal", 0, 0,
+> -					       priv, &ops, NULL, 0, 0);
+> +					       priv, &ops, NULL, 0, 0, true);
+>  	if (IS_ERR(thermal)) {
+>  		dev_err(&pdev->dev,
+>  			"Failed to register thermal zone device\n");
+> diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+> index 9af4b93..6ffadd3 100644
+> --- a/drivers/thermal/exynos_thermal.c
+> +++ b/drivers/thermal/exynos_thermal.c
+> @@ -469,7 +469,7 @@ static int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+>  	th_zone->therm_dev = thermal_zone_device_register(sensor_conf->name,
+>  			EXYNOS_ZONE_COUNT, 0, NULL, &exynos_dev_ops, NULL, 0,
+>  			sensor_conf->trip_data.trigger_falling ?
+> -			0 : IDLE_INTERVAL);
+> +			0 : IDLE_INTERVAL, true);
+>  
+>  	if (IS_ERR(th_zone->therm_dev)) {
+>  		pr_err("Failed to register thermal zone device\n");
+> diff --git a/drivers/thermal/kirkwood_thermal.c b/drivers/thermal/kirkwood_thermal.c
+> index 3b034a0..fb8853e 100644
+> --- a/drivers/thermal/kirkwood_thermal.c
+> +++ b/drivers/thermal/kirkwood_thermal.c
+> @@ -85,7 +85,7 @@ static int kirkwood_thermal_probe(struct platform_device *pdev)
+>  		return PTR_ERR(priv->sensor);
+>  
+>  	thermal = thermal_zone_device_register("kirkwood_thermal", 0, 0,
+> -					       priv, &ops, NULL, 0, 0);
+> +					       priv, &ops, NULL, 0, 0, true);
+>  	if (IS_ERR(thermal)) {
+>  		dev_err(&pdev->dev,
+>  			"Failed to register thermal zone device\n");
+> diff --git a/drivers/thermal/rcar_thermal.c b/drivers/thermal/rcar_thermal.c
+> index 88f92e1..64ae530 100644
+> --- a/drivers/thermal/rcar_thermal.c
+> +++ b/drivers/thermal/rcar_thermal.c
+> @@ -439,7 +439,7 @@ static int rcar_thermal_probe(struct platform_device *pdev)
+>  		priv->zone = thermal_zone_device_register("rcar_thermal",
+>  						1, 0, priv,
+>  						&rcar_thermal_zone_ops, NULL, 0,
+> -						idle);
+> +						idle, true);
+>  		if (IS_ERR(priv->zone)) {
+>  			dev_err(dev, "can't register thermal zone\n");
+>  			ret = PTR_ERR(priv->zone);
+> diff --git a/drivers/thermal/spear_thermal.c b/drivers/thermal/spear_thermal.c
+> index ab79ea4..ec0c44d 100644
+> --- a/drivers/thermal/spear_thermal.c
+> +++ b/drivers/thermal/spear_thermal.c
+> @@ -140,7 +140,7 @@ static int spear_thermal_probe(struct platform_device *pdev)
+>  	writel_relaxed(stdev->flags, stdev->thermal_base);
+>  
+>  	spear_thermal = thermal_zone_device_register("spear_thermal", 0, 0,
+> -				stdev, &ops, NULL, 0, 0);
+> +				stdev, &ops, NULL, 0, 0, true);
+>  	if (IS_ERR(spear_thermal)) {
+>  		dev_err(&pdev->dev, "thermal zone device is NULL\n");
+>  		ret = PTR_ERR(spear_thermal);
+> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+> index 247528b..d949ab0 100644
+> --- a/drivers/thermal/thermal_core.c
+> +++ b/drivers/thermal/thermal_core.c
+> @@ -1344,6 +1344,9 @@ static void remove_trip_attrs(struct thermal_zone_device *tz)
+>   * @polling_delay: number of milliseconds to wait between polls when checking
+>   *		   whether trip points have been crossed (0 for interrupt
+>   *		   driven systems)
+> + * @add_hwmon:	a boolean to indicate if the thermal to hwmon sysfs interface
+> + *		is required. When add_hwmon == true, a hwmon sysfs interface
+> + *		will be created. When add_hwmon == false, nothing will be done
+>   *
+>   * This interface function adds a new thermal zone device (sensor) to
+>   * /sys/class/thermal folder as thermal_zone[0-*]. It tries to bind all the
+> @@ -1359,7 +1362,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+>  	int trips, int mask, void *devdata,
+>  	const struct thermal_zone_device_ops *ops,
+>  	const struct thermal_zone_params *tzp,
+> -	int passive_delay, int polling_delay)
+> +	int passive_delay, int polling_delay, bool add_hwmon)
+>  {
+>  	struct thermal_zone_device *tz;
+>  	enum thermal_trip_type trip_type;
+> @@ -1462,9 +1465,11 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+>  
+>  	mutex_unlock(&thermal_governor_lock);
+>  
+> -	result = thermal_add_hwmon_sysfs(tz);
+> -	if (result)
+> -		goto unregister;
+> +	if (add_hwmon) {
+> +		result = thermal_add_hwmon_sysfs(tz);
+> +		if (result)
+> +			goto unregister;
+> +	}
+>  
+>  	mutex_lock(&thermal_list_lock);
+>  	list_add_tail(&tz->node, &thermal_tz_list);
+> diff --git a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
+> index 4c5f55c37..5ab613a 100644
+> --- a/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
+> +++ b/drivers/thermal/ti-soc-thermal/ti-thermal-common.c
+> @@ -306,7 +306,7 @@ int ti_thermal_expose_sensor(struct ti_bandgap *bgp, int id,
+>  	data->ti_thermal = thermal_zone_device_register(domain,
+>  				OMAP_TRIP_NUMBER, 0, data, &ti_thermal_ops,
+>  				NULL, FAST_TEMP_MONITORING_RATE,
+> -				FAST_TEMP_MONITORING_RATE);
+> +				FAST_TEMP_MONITORING_RATE, true);
+>  	if (IS_ERR(data->ti_thermal)) {
+>  		dev_err(bgp->dev, "thermal zone device is NULL\n");
+>  		return PTR_ERR(data->ti_thermal);
+> diff --git a/drivers/thermal/x86_pkg_temp_thermal.c b/drivers/thermal/x86_pkg_temp_thermal.c
+> index f36950e..74eb4c0 100644
+> --- a/drivers/thermal/x86_pkg_temp_thermal.c
+> +++ b/drivers/thermal/x86_pkg_temp_thermal.c
+> @@ -444,7 +444,7 @@ static int pkg_temp_thermal_device_add(unsigned int cpu)
+>  			thres_count,
+>  			(thres_count == MAX_NUMBER_OF_TRIPS) ?
+>  				0x03 : 0x01,
+> -			phy_dev_entry, &tzone_ops, NULL, 0, 0);
+> +			phy_dev_entry, &tzone_ops, NULL, 0, 0, true);
+>  	if (IS_ERR(phy_dev_entry->tzone)) {
+>  		err = PTR_ERR(phy_dev_entry->tzone);
+>  		goto err_ret_free;
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index a386a1c..88148b9 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -226,7 +226,7 @@ struct thermal_genl_event {
+>  /* Function declarations */
+>  struct thermal_zone_device *thermal_zone_device_register(const char *, int, int,
+>  		void *, const struct thermal_zone_device_ops *,
+> -		const struct thermal_zone_params *, int, int);
+> +		const struct thermal_zone_params *, int, int, bool);
+>  void thermal_zone_device_unregister(struct thermal_zone_device *);
+>  
+>  int thermal_zone_bind_cooling_device(struct thermal_zone_device *, int,
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
