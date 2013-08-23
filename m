@@ -1,87 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab3HWWki (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 18:40:38 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:43412 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656Ab3HWWkh (ORCPT
+	id S1754265Ab3HWWuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 18:50:09 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:44299 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753299Ab3HWWuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 18:40:37 -0400
+	Fri, 23 Aug 2013 18:50:07 -0400
+Message-ID: <5217E712.5030008@hp.com>
+Date: Fri, 23 Aug 2013 18:49:54 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUzM1fHbJOkrCMC4dHD7QPpR=tXyJ-mW=y9G0XucJqyRQ@mail.gmail.com>
-References: <20130822202158.GD3490@mtj.dyndns.org>
-	<1377205598.10300.715.camel@misato.fc.hp.com>
-	<20130822212111.GF3490@mtj.dyndns.org>
-	<1377209861.10300.756.camel@misato.fc.hp.com>
-	<20130823130440.GC10322@mtj.dyndns.org>
-	<1377274448.10300.777.camel@misato.fc.hp.com>
-	<521793BB.9080605@gmail.com>
-	<CAE9FiQXZ610BrVaXoxY70NS3CaSku7mcVFx+x34-jpYUkG2rdQ@mail.gmail.com>
-	<201308231825.r7NIPQl5015165@mail.zytor.com>
-	<CAE9FiQVxQtpHp+0b1zFaA4YHx6hDiNSHKDveU=FzS5LwR80RmA@mail.gmail.com>
-	<20130823203050.GB31817@sgi.com>
-	<CAE9FiQU_JyJbYjpBQjfusc0=qjQjkA+2cxbVynEi_0mgKJFF4g@mail.gmail.com>
-	<CAD11hGxm3K0sw885nH2QWb9N+5=q0qt+8trTAkUjzoejMepeTQ@mail.gmail.com>
-	<CAE9FiQUzM1fHbJOkrCMC4dHD7QPpR=tXyJ-mW=y9G0XucJqyRQ@mail.gmail.com>
-Date: Sat, 24 Aug 2013 06:40:36 +0800
-Message-ID: <CAD11hGzE5FoVaA+r16eJdt_Bor_kPGvSALEXov4bcBJZGqVnGg@mail.gmail.com>
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-From: chen tang <imtangchen@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Russ Anderson <rja@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Toshi Kani <toshi.kani@hp.com>, Tejun Heo <tj@kernel.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH 0/4] seqlock: Add new blocking reader type & use rwlock
+References: <1372902738-30693-1-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <1372902738-30693-1-git-send-email-Waiman.Long@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yinghai,
-
-2013/8/24 Yinghai Lu <yinghai@kernel.org>:
-> On Fri, Aug 23, 2013 at 2:50 PM, chen tang <imtangchen@gmail.com> wrote:
->>>
->>> so the DSDT is 7F493E, and total is more than 8M.
->>>
->>> that will need BRK to be extended 16M?
->>>
->>
->> Then how about use early_ioremap(), and don't do it that early in
->> head_32 and head64 ?
+On 07/03/2013 09:52 PM, Waiman Long wrote:
+> During some perf-record sessions of the kernel running the high_systime
+> workload of the AIM7 benchmark, it was found that quite a large portion
+> of the spinlock contention was due to the perf_event_mmap_event()
+> function itself. This perf kernel function calls d_path() which,
+> in turn, call path_get() and dput() indirectly. These 3 functions
+> were the hottest functions shown in the perf-report output of
+> the _raw_spin_lock() function in an 8-socket system with 80 cores
+> (hyperthreading off) with a 3.10-rc1 kernel:
 >
-> why could early_ioremap() help?
+> -  13.91%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
+>     - _raw_spin_lock
+>        + 35.54% path_get
+>        + 34.85% dput
+>        + 19.49% d_path
 >
-> when to use early_ioremap()? what for?
+> In fact, the output of the "perf record -s -a" (without call-graph)
+> showed:
+>
+>   13.37%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
+>    7.61%              ls  [kernel.kallsyms]     [k] _raw_spin_lock
+>    3.54%            true  [kernel.kallsyms]     [k] _raw_spin_lock
+>
+> Without using the perf monitoring tool, the actual execution profile
+> will be quite different. In fact, with this patch set and my other
+> lockless reference count update patch applied, the output of the same
+> "perf record -s -a" command became:
+>
+>    2.82%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
+>    1.11%              ls  [kernel.kallsyms]     [k] _raw_spin_lock
+>    0.26%            true  [kernel.kallsyms]     [k] _raw_spin_lock
+>
+> So the time spent on _raw_spin_lock() function went down from 24.52%
+> to 4.19%. It can be seen that the performance data collected by the
+> perf-record command can be heavily skewed in some cases on a system
+> with a large number of CPUs. This set of patches enables the perf
+> command to give a more accurate and reliable picture of what is really
+> happening in the system. At the same time, they can also improve the
+> general performance of systems especially those with a large number
+> of CPUs.
+>
+> The d_path() function takes the following two locks:
+>
+> 1. dentry->d_lock [spinlock] from dget()/dget_parent()/dput()
+> 2. rename_lock    [seqlock]  from d_path()
+>
+> This set of patches address the rename_lock bottleneck by changing the
+> way seqlock is implemented so that we can optionally use a read/write
+> lock as the underlying implementation instead of the default spinlock.
+>
+> Incidentally, this patch also provides slight 5% performance boost
+> over just the the lockless reference count update patch in the short
+> workload of the AIM7 benchmark running on a 8-socket 80-core DL980
+> machine on a 3.10-based kernel. There were still a few percentage
+> points of contention in d_path() and getcwd syscall left due to their
+> use of the rename_lock.
+>
+> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
+>
+> Waiman Long (4):
+>    seqlock: Add a new blocking reader type
+>    dcache: Use blocking reader seqlock when protected data are not
+>      changed
+>    seqlock: Allow the use of rwlock in seqlock
+>    dcache: Use rwlock as the underlying lock in rename_lock
+>
+>   fs/dcache.c             |   28 ++++----
+>   include/linux/seqlock.h |  167 ++++++++++++++++++++++++++++++++++++++++-------
+>   2 files changed, 158 insertions(+), 37 deletions(-)
 >
 
-In my understanding, acpica framework needs users to copy the override tables
-somewhere in the memory. And acpica will get these user specified tables when
-installing firmware tables. This is the acpica logic, which cannot be
-changed, I think.
+I haven't received any feedback on this patchset. Would you mind letting 
+me know if any further change will be needed to make it acceptable to be 
+merged?
 
-So we need to allocate memory. That is why you suggested to use BRK, right ?
-And the size seems to be a problem.
-
-So I suggest to use early_ioremap().
-
-1. After paging is enabled, before direct mapping page tables are
-setup, we map the
-    initrd with early_ioremap(). And we are able to access it with va,
-even on 32bit.
-    Then we can find all tables.
-2. We still use memblock to allocate memory. Maybe it will be
-hotpluggable memory,
-    but this memory can be freed when all the acpi tables are parsed, right ?
-
-So I want to try early_ioremap(). All these should be done in setup_arch().
-
-Thanks.
+Thank,
+Longman
