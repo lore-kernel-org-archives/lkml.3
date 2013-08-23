@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab3HWJv2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 05:51:28 -0400
-Received: from smtp2-1.goneo.de ([212.90.139.83]:47987 "EHLO smtp2-1.goneo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752943Ab3HWJv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 05:51:26 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -2.744
-From: Lars Poeschel <poeschel@lemonage.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v2] gpio: interrupt consistency check for OF GPIO IRQs
-Date: Fri, 23 Aug 2013 11:51:18 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, galak@codeaurora.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-References: <1377092334-770-1-git-send-email-larsi@wh2.tu-dresden.de> <CACRpkdbVYfBS5L+0ejfbTBwPbD9HFB1kV8qnS7DdSydRccxDmg@mail.gmail.com> <52167A35.2010109@wwwdotorg.org>
-In-Reply-To: <52167A35.2010109@wwwdotorg.org>
+	id S1754790Ab3HWJ5R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 05:57:17 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:41717 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753600Ab3HWJ5Q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 05:57:16 -0400
+Message-ID: <5217321B.6060306@arm.com>
+Date: Fri, 23 Aug 2013 10:57:47 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308231151.18075.poeschel@lemonage.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v3 0/6] ARM/ARM64 architected timer updates
+References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <5213A40C.6060509@arm.com> <20130823092610.GB20186@darko.cambridge.arm.com>
+In-Reply-To: <20130823092610.GB20186@darko.cambridge.arm.com>
+X-OriginalArrivalTime: 23 Aug 2013 09:57:14.0035 (UTC) FILETIME=[24955030:01CE9FE7]
+X-MC-Unique: 113082310571404601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 22 August 2013 at 22:53:09, Stephen Warren wrote:
-> On 08/21/2013 05:27 PM, Linus Walleij wrote:
-> > On Thu, Aug 22, 2013 at 1:10 AM, Stephen Warren <swarren@wwwdotorg.org> 
-wrote:
-> >>> On Wednesday 21 of August 2013 15:38:54 Lars Poeschel wrote:
-> >>>> To solve this dilemma, perform an interrupt consistency check
-> >>>> when adding a GPIO chip: if the chip is both gpio-controller and
-> >>>> interrupt-controller, walk all children of the device tree,
-> >> 
-> >> It seems a little odd to solve this only for DT. What about the
-> >> non-DT case?
-> > 
-> > DT is the hardware configuration system that lets you request
-> > the same resource in two ways, i.e. it allows one and the same
-> > node to be both gpio-controller and interrupt-controller, and
-> > start handing out the same line as both GPIO and IRQ
-> > independently.
+On 23/08/13 10:26, Catalin Marinas wrote:
+> On Tue, Aug 20, 2013 at 06:14:52PM +0100, Sudeep KarkadaNagesha wrote:
+>> On 13/08/13 18:29, Sudeep KarkadaNagesha wrote:
+>>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+>>>
+>>> This patch series adds support to configure the rate and enable the
+>>> event stream for architected timer. The event streams can be used to
+>>> impose a timeout on a WFE, to safeguard against any programming error
+>>> in case an expected event is not generated or even to implement
+>>> wfe-based timeouts for userspace locking implementations.
+>>>
+>>> Since the timer control register is reset to zero on warm boot, CPU
+>>> PM notifier is added to re-initialize it.
+>>>
+>>> Changes v2->v3:
+>>> 1. Moved ARM and ARM64 changes into separate patches
+>>> 2. Added native hwcaps definations(ARM/ARM64) and compat-specific
+>>>    definitions(ARM64) to the users for the event stream feature. 
+>>
+>> Can you review this version of the series ?
 > 
-> Huh? What stops systems using board files and platform data from having
-> this issue?
+> I think the series is OK with the follow-up comments addressed. Could
+> you please post a v4 to make sure I haven't missed anything?
+> 
+> Another comment I have is whether we should make this feature
+> configurable. The reason is mainly hardware validation: if some CPU
+> implementation messes the event generation (and on ARMv8 it's a bit more
+> complex as this is tied to the exclusive monitor) we risk not detecting
+> it because of the event stream.
 
-I am not 100% sure, Linus knows better.
-I think nothing stops them from having this issue, but board files are 
-gentle and request the GPIO before doing gpio_to_irq, because they know 
-that they are using a gpio based interrupt.
+Yes that seems reasonable. I assume we can enable it by default and we
+need to disable it for hardware validation. Let me know if think otherwise.
 
-You can read the whole story here:
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg91405.html
-Things get interesting after the first mail from Alexander Holler, who is 
-the first having a problem with the patch in the link.
+Regards,
+Sudeep
+
