@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab3HWOOk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 10:14:40 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65502 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753428Ab3HWOOj (ORCPT
+	id S1754684Ab3HWOTa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 10:19:30 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:61499 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812Ab3HWOT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 10:14:39 -0400
-Date: Fri, 23 Aug 2013 15:14:33 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] max77693: added device tree support
-Message-ID: <20130823141433.GI25856@e106331-lin.cambridge.arm.com>
-References: <1377104014-21910-1-git-send-email-a.hajda@samsung.com>
- <1377104014-21910-3-git-send-email-a.hajda@samsung.com>
+	Fri, 23 Aug 2013 10:19:28 -0400
+Date: Fri, 23 Aug 2013 10:19:24 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Toshi Kani <toshi.kani@hp.com>, Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+Message-ID: <20130823141924.GA3277@htj.dyndns.org>
+References: <20130822033234.GA2413@htj.dyndns.org>
+ <1377186729.10300.643.camel@misato.fc.hp.com>
+ <20130822183130.GA3490@mtj.dyndns.org>
+ <1377202292.10300.693.camel@misato.fc.hp.com>
+ <20130822202158.GD3490@mtj.dyndns.org>
+ <1377205598.10300.715.camel@misato.fc.hp.com>
+ <20130822212111.GF3490@mtj.dyndns.org>
+ <1377209861.10300.756.camel@misato.fc.hp.com>
+ <20130823130440.GC10322@mtj.dyndns.org>
+ <3ee58764-21c2-4df4-9353-54799a6a3d7b@email.android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377104014-21910-3-git-send-email-a.hajda@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <3ee58764-21c2-4df4-9353-54799a6a3d7b@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 05:53:34PM +0100, Andrzej Hajda wrote:
-> This patch adds only of_match_table.
-> There are no device specific properties.
+Hello,
 
-Could you clarify what functionality this enables and what it doesn't,
-please?
+On Fri, Aug 23, 2013 at 03:08:55PM +0200, H. Peter Anvin wrote:
+> What is the point of 1G+MTRR?  If there are caching differences the
+> TLB will fracture the pages anyway.
 
-This doesn't seem to enable support for the regulators described in the
-binding [1] (which from the looks of it needs proof-reading and possibly
-rework).
+Ah, right.  Consuming less memory / cachelines would still be a small
+advantage tho unless creating split TLB from larger mapping is
+noticeably less efficient.  If the extra logic to do that is small,
+which I think it'd be, it'd be a gain at almost no cost.
 
-Are there any changes we might need in future to either support new
-functionality or to generalise the binding. e.g. do we need a regulator
-for the LED? 
+Thanks.
 
-Given the binding has never been supported, are we happy now that it
-best represents the hardware, or are there avenues of improvement
-*before* it becomes ABI?
-
-Thanks,
-Mark.
-
-[1] Documentation/devicetree/bindings/mfd/max77693.txt
-
-> 
-> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/mfd/max77693.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-> index 27f5da3..e0b11a9 100644
-> --- a/drivers/mfd/max77693.c
-> +++ b/drivers/mfd/max77693.c
-> @@ -225,11 +225,19 @@ static const struct dev_pm_ops max77693_pm = {
->  	.resume = max77693_resume,
->  };
->  
-> +#ifdef CONFIG_OF
-> +static struct of_device_id max77693_dt_match[] = {
-> +	{.compatible = "maxim,max77693"},
-> +	{},
-> +};
-> +#endif
-> +
->  static struct i2c_driver max77693_i2c_driver = {
->  	.driver = {
->  		   .name = "max77693",
->  		   .owner = THIS_MODULE,
->  		   .pm = &max77693_pm,
-> +		   .of_match_table = of_match_ptr(max77693_dt_match),
->  	},
->  	.probe = max77693_i2c_probe,
->  	.remove = max77693_i2c_remove,
-> -- 
-> 1.8.1.2
-> 
-> 
+-- 
+tejun
