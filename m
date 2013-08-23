@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab3HWOu3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 10:50:29 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:59707 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab3HWOu2 (ORCPT
+	id S1754121Ab3HWO5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 10:57:39 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:43070 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217Ab3HWO5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 10:50:28 -0400
-Date: Fri, 23 Aug 2013 15:50:18 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 33/40] ARM: ux500: Don't register the STMPE/SKE when
- booting with ATAG support
-Message-ID: <20130823145018.GE19107@lee--X1>
-References: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
- <1377260620-18829-34-git-send-email-lee.jones@linaro.org>
- <CACRpkdZdzF-HqTmEWpYiBe2VwGN23fsnWCr7aqE0NYWpBfHsfw@mail.gmail.com>
- <CACRpkdZE1yCPO0JVXX88SUKsp3ow7WBuJZZ=BEVk-c5=TOUO-A@mail.gmail.com>
+	Fri, 23 Aug 2013 10:57:37 -0400
+Date: Fri, 23 Aug 2013 10:57:32 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Toshi Kani <toshi.kani@hp.com>, Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+Message-ID: <20130823145732.GC3277@htj.dyndns.org>
+References: <1377202292.10300.693.camel@misato.fc.hp.com>
+ <20130822202158.GD3490@mtj.dyndns.org>
+ <1377205598.10300.715.camel@misato.fc.hp.com>
+ <20130822212111.GF3490@mtj.dyndns.org>
+ <1377209861.10300.756.camel@misato.fc.hp.com>
+ <20130823130440.GC10322@mtj.dyndns.org>
+ <3ee58764-21c2-4df4-9353-54799a6a3d7b@email.android.com>
+ <20130823141924.GA3277@htj.dyndns.org>
+ <bf688aac-4080-4ac6-83cd-fd66cef6ce1a@email.android.com>
+ <20130823143507.GB3277@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZE1yCPO0JVXX88SUKsp3ow7WBuJZZ=BEVk-c5=TOUO-A@mail.gmail.com>
+In-Reply-To: <20130823143507.GB3277@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Aug 2013, Linus Walleij wrote:
+On Fri, Aug 23, 2013 at 10:35:07AM -0400, Tejun Heo wrote:
+> Yeah, it's true that MTRRs are nasty.  On the other hand, we've been
+> doing that for over a decade and are still doing it anyway if I'm not
+> mistaken.  It probably isn't a big difference but it's still a bit sad
+> that this is likely causing small performance regression out in the
+> wild.
 
-> On Fri, Aug 23, 2013 at 2:55 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Fri, Aug 23, 2013 at 2:23 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> >
-> >> It's time to remove all ATAG support from ux500 and rely solely on
-> >> Device Tree booting. This patch is part of that endeavour.
-> >>
-> >> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > (...)
-> >> -/* STMPE/SKE keypad use this key layout */
-> >> -static const unsigned int mop500_keymap[] = {
-> >> -       KEY(2, 5, KEY_END),
-> >> -       KEY(4, 1, KEY_POWER),
-> >> -       KEY(3, 5, KEY_VOLUMEDOWN),
-> >> -       KEY(1, 3, KEY_3),
-> >> -       KEY(5, 2, KEY_RIGHT),
-> >> -       KEY(5, 0, KEY_9),
-> >> -
-> >> -       KEY(0, 5, KEY_MENU),
-> >> -       KEY(7, 6, KEY_ENTER),
-> >> -       KEY(4, 5, KEY_0),
-> >> -       KEY(6, 7, KEY_2),
-> >> -       KEY(3, 4, KEY_UP),
-> >> -       KEY(3, 3, KEY_DOWN),
-> >> -
-> >> -       KEY(6, 4, KEY_SEND),
-> >> -       KEY(6, 2, KEY_BACK),
-> >> -       KEY(4, 2, KEY_VOLUMEUP),
-> >> -       KEY(5, 5, KEY_1),
-> >> -       KEY(4, 3, KEY_LEFT),
-> >> -       KEY(3, 2, KEY_7),
-> >> -};
-> >
-> > This STMPE1601 keypad @0x40 and UIB encoding for
-> > the U8500 UIB does not exist in any DTS file does it? This
-> > means that the support for this UIB is effectively terminated.
-> 
-> You are wrong. Go read arch/arm/boot/dts/[ste-]stuib.dtsi.
-> 
-> Anyway, what you wanted to say was for these to be marked
-> "disabled" by default and turned into "okay" using an I2C
-> probe operation.
+Just went over the processor manual and it doesn't seem like doing the
+above would be a good idea.
 
-Why are you talking to yourself? Have you finally lost it?
+
+  System Programming Guide, Part 1
+
+  11.11.9 Large Page Size Considerations
+
+ ... 
+ Because the memory type for a large page is cached in the TLB, the
+ processor can behave in an undefined manner if a large page is mapped
+ to a region of memory that MTRRs have mapped with multiple memory
+ types.
+ ...
+ If a large page maps to a region of memory containing different
+ MTRR-defined memory types, the PCD and PWT flags in the page-table
+ entry should be set for the most conservative memory type for that
+ range. For example, a large page used for memory mapped I/O and
+ regular memory 11-48 Vol. 3A MEMORY CACHE CONTROL
+ ...
+
+ The Pentium 4, Intel Xeon, and P6 family processors provide special
+ support for the physical memory range from 0 to 4 MBytes,
+ ...
+ Here, the processor maps the memory range as multiple 4-KByte pages
+ within the TLB. This operation insures correct behavior at the cost
+ of performance. To avoid this performance penalty, operating-system
+ software should reserve the large page option for regions of memory
+ at addresses greater than or equal to 4 MBytes.
+
+So, yeah, the current behavior seems like the right thing to do.
+
+Thanks.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+tejun
