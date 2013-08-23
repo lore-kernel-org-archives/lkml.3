@@ -1,69 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab3HWG2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 02:28:48 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:65288 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539Ab3HWG2r (ORCPT
+	id S1754747Ab3HWGfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 02:35:30 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52505 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652Ab3HWGf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 02:28:47 -0400
-Message-ID: <1377239323.14131.1.camel@phoenix>
-Subject: [PATCH 2/2] pinctrl: rockchip: Remove non-reachable break statement
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+	Fri, 23 Aug 2013 02:35:29 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-7b-521702af1517
+Date: Fri, 23 Aug 2013 15:35:39 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Date: Fri, 23 Aug 2013 14:28:43 +0800
-In-Reply-To: <1377239273.14131.0.camel@phoenix>
-References: <1377239273.14131.0.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 00/16] slab: overload struct slab over struct page to
+ reduce memory usage
+Message-ID: <20130823063539.GD22605@lge.com>
+References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <00000140a6ec66e5-a4d245c0-76b6-4a8b-9cf0-d941ca9e08b0-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000140a6ec66e5-a4d245c0-76b6-4a8b-9cf0-d941ca9e08b0-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The break statement after return is non-reachable, remove them.
+On Thu, Aug 22, 2013 at 04:47:25PM +0000, Christoph Lameter wrote:
+> On Thu, 22 Aug 2013, Joonsoo Kim wrote:
+> 
+> > And this patchset change a management method of free objects of a slab.
+> > Current free objects management method of the slab is weird, because
+> > it touch random position of the array of kmem_bufctl_t when we try to
+> > get free object. See following example.
+> 
+> The ordering is intentional so that the most cache hot objects are removed
+> first.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pinctrl/pinctrl-rockchip.c | 4 ----
- 1 file changed, 4 deletions(-)
+Yes, I know.
 
-diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
-index 7eb1249..319a64a 100644
---- a/drivers/pinctrl/pinctrl-rockchip.c
-+++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -585,7 +585,6 @@ static int rockchip_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
- 	switch (param) {
- 	case PIN_CONFIG_BIAS_DISABLE:
- 		return rockchip_set_pull(bank, pin - bank->pin_base, param);
--		break;
- 	case PIN_CONFIG_BIAS_PULL_UP:
- 	case PIN_CONFIG_BIAS_PULL_DOWN:
- 	case PIN_CONFIG_BIAS_PULL_PIN_DEFAULT:
-@@ -596,10 +595,8 @@ static int rockchip_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
- 			return -EINVAL;
- 
- 		return rockchip_set_pull(bank, pin - bank->pin_base, param);
--		break;
- 	default:
- 		return -ENOTSUPP;
--		break;
- 	}
- 
- 	return 0;
-@@ -633,7 +630,6 @@ static int rockchip_pinconf_get(struct pinctrl_dev *pctldev, unsigned int pin,
- 		break;
- 	default:
- 		return -ENOTSUPP;
--		break;
- 	}
- 
- 	return 0;
--- 
-1.8.1.2
+> 
+> > To get free objects, we access this array with following pattern.
+> > 6 -> 3 -> 7 -> 2 -> 5 -> 4 -> 0 -> 1 -> END
+> 
+> Because that is the inverse order of the objects being freed.
+> 
+> The cache hot effect may not be that significant since per cpu and per
+> node queues have been aded on top. So maybe we do not be so cache aware
+> anymore when actually touching struct slab.
 
+I don't change the ordering, I just change how we store that order to
+reduce cache footprint. We can simply implement this order via stack.
 
+Assume indexes of free order are 1 -> 0 -> 4.
+Currently, this order is stored in very complex way like below.
 
+struct slab's free = 4
+kmem_bufctl_t array: 1 END ACTIVE ACTIVE 0
+
+If we allocate one object, we access slab's free and index 4 of
+kmem_bufctl_t array.
+
+struct slab's free = 0
+kmem_bufctl_t array: 1 END ACTIVE ACTIVE ACTIVE
+<we get object at index 4>
+
+And then,
+
+struct slab's free = 1
+kmem_bufctl_t array: ACTIVE END ACTIVE ACTIVE ACTIVE
+<we get object at index 0>
+
+And then,
+
+struct slab's free = END
+kmem_bufctl_t array: ACTIVE ACTIVE ACTIVE ACTIVE ACTIVE
+<we get object at index 0>
+
+Following is newly implementation (stack) in same situation.
+
+struct slab's free = 0
+kmem_bufctl_t array: 4 0 1
+
+To get an one object,
+
+struct slab's free = 1
+kmem_bufctl_t array: dummy 0 1
+<we get object at index 4>
+
+And then,
+
+struct slab's free = 2
+kmem_bufctl_t array: dummy dummy 1
+<we get object at index 0>
+
+struct slab's free = 3
+kmem_bufctl_t array: dummy dummy dummy
+<we get object at index 1>
+
+The order of returned object is same as previous algorithm.
+However this algorithm sequentially accesses kmem_bufctl_t array,
+instead of randomly access. This is an advantage of this patch.
+
+Thanks.
