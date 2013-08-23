@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab3HWXg0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 19:36:26 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:49996 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753517Ab3HWXgZ (ORCPT
+	id S1755246Ab3HWXiR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 19:38:17 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:35814 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755035Ab3HWXiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 19:36:25 -0400
-X-Sasl-enc: 4AnFDDrgt2JjDf7lDOgZ3pcBP/26Y/musDiLfKhFq9Bh 1377300984
-Date: Fri, 23 Aug 2013 16:36:23 -0700
-From: Greg KH <greg@kroah.com>
-To: Graham Williams <gwilli@broadcom.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+	Fri, 23 Aug 2013 19:38:15 -0400
+Date: Sat, 24 Aug 2013 00:38:05 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Walleij <linus.walleij@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>
-Subject: Re: [PATCH] usb: acm gadget: Null termintate strings table
-Message-ID: <20130823233623.GA2832@kroah.com>
-References: <063828A851006E448B735F1021E028962ACE7736@SJEXCHMB09.corp.ad.broadcom.com>
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: ACPI vs Device Tree - moving forward
+Message-ID: <20130823233805.GA1801@srcf.ucam.org>
+References: <20130820192650.GA19470@srcf.ucam.org>
+ <6438184.2yT2NMB1CE@vostro.rjw.lan>
+ <20130821233942.GA21502@srcf.ucam.org>
+ <1810269.JOHnJ0H7P9@vostro.rjw.lan>
+ <20130822000306.GA21785@srcf.ucam.org>
+ <1377300343.5259.84.camel@dvhart-mobl4.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <063828A851006E448B735F1021E028962ACE7736@SJEXCHMB09.corp.ad.broadcom.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1377300343.5259.84.camel@dvhart-mobl4.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 11:19:55PM +0000, Graham Williams wrote:
-> I couldn't get the whitespace formatting correctly from Windows Office (work email) so I attached the patch file.  I ran it on it applies correctly.
+On Fri, Aug 23, 2013 at 04:25:43PM -0700, Darren Hart wrote:
 
+> It had been my hope at the start of this project to open the creation of
+> SSDTs up to inventors and hackers who want to create Lures for the
+> MinnowBoard in such a way that they could write these SSDTs and load
+> them from a file at boot time, modify, rebuild, iterate, etc. When/if
+> the Lure goes to production, the SSDT could either be stored on an
+> EEPROM, or for very low volume boards, possibly just shipped as a binary
+> to be loaded (with source available of course).
 
-I can't take attachments, and especially not base64 ones :(
+There's no fundamental problem with doing this, especially on UEFI 
+systems. As long as you know the host ACPI code, it's trivial to merge 
+an SSDT in from a UEFI option ROM.
 
-Take a look at the file I pointed you at in the Documentation directory
-for how to set up other email clients to work.  Lots of other Broadcom
-developers have this working properly for their work emails, so perhaps
-you should contact them and ask what the magic incantantation is.
+> It appears that Matthew, at least, would prefer this latter scenario
+> just used DT instead. However, that seems to leave a gap in the
+> transition to incorporating the table into the board firmware should a
+> derivative product be made. e.g. no good way to prototype with ACPI. It
+> also seems to have all the same problems raised regarding mixing ACPI
+> and DT on the same system.
 
-thanks,
+I've no problem with additional hardware shipping with ACPI support - my 
+position was more that if a vendor ships a system with ACPI that fails 
+to describe the integrated hardware (or does so incorrectly), it's 
+probably easier to replace it with DT than a fixed ACPI table. Still, if 
+people *do* want to replace shipped ACPI tables, it's probably 
+preferable to do that at the bootloader level than the kernel level.
 
-greg k-h
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
