@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab3HWLEq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 07:04:46 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:59180 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755409Ab3HWLEX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 07:04:23 -0400
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH v2 0/3] kprobes: add new dma insn slot cache for s390
-Date: Fri, 23 Aug 2013 13:04:11 +0200
-Message-Id: <1377255854-30163-1-git-send-email-heiko.carstens@de.ibm.com>
-X-Mailer: git-send-email 1.7.10.4
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082311-4966-0000-0000-000006AC0DEE
+	id S1755502Ab3HWLFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 07:05:34 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:50551 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755354Ab3HWLFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 07:05:32 -0400
+Message-ID: <521741B7.9020904@interlog.com>
+Date: Fri, 23 Aug 2013 13:04:23 +0200
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@daterainc.com>
+CC: target-devel <target-devel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Martin Petersen <martin.petersen@oracle.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Roland Dreier <roland@purestorage.com>, Zach Brown <zab@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, Theodore Tso <tytso@mit.edu>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH 0/9] target: Add support for EXTENDED_COPY (VAAI) offload
+ emulation
+References: <1377224821-23422-1-git-send-email-nab@daterainc.com>
+In-Reply-To: <1377224821-23422-1-git-send-email-nab@daterainc.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current kpropes insn caches allocate memory areas for insn slots with
-module_alloc().  The assumption is that the kernel image and module area
-are both within the same +/- 2GB memory area.
+On 13-08-23 04:26 AM, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@daterainc.com>
+>
+> Hi folks!
+>
+> This series adds support to target-core for generic EXTENDED_COPY offload
+> emulation as defined by SPC-4 using virtual (IBLOCK, FILEIO, RAMDISK)
+> backends.
+>
+> EXTENDED_COPY is a VMWare ESX VAAI primative that is used to perform copy
+> offload, that allows a target to perform local READ + WRITE I/O requests
+> for bulk data transfers (cloning a virtual machine for example), instead
+> of requiring these I/Os to actually be sent to/from the requesting SCSI
+> initiator port.
 
-This however is not true for s390 where the kernel image resides within
-the first 2GB (DMA memory area), but the module area is far away in the
-vmalloc area, usually somewhere close below the 4TB area.
+Recently I have been looking at EXTENDED COPY since
+T10 has been working on it. The SCSI opcodes associated
+with it (0x83 and 0x84) have been renamed THIRD PARTY
+COPY OUT and IN, and each have several service actions.
+The Extended copy found in SPC-2 and SPC-3 is now
+termed as "LID1" (for List Identifier length of 1 byte)
+while the new stuff is termed "LID4" in SPC-4. The
+"LID4" variants are "ROD" token based. A ROD
+(Representation Of Data) token is 512 bytes long.
 
-For new pc relative instructions s390 needs insn slots that are within +/-
-2GB of each area.  That way we can patch displacements of pc-relative
-instructions within the insn slots just like x86 and powerpc.
+sg_xcopy (written by Hannes Reinecke and found in the
+sg3_utils package) only supports LID1 but that covers
+most of the existing hardware including kit that
+supports VMWare ESX VAAI.
 
-The module area works already with the normal insn slot allocator, however
-there is currently no way to get insn slots that are within the first 2GB
-on s390 (aka DMA area).
+As defined by T10 both EXTENDED COPY (LID1) and (LID4)
+do copies between disks, tapes and memory (all
+combinations (e.g. disk->tape) (but maybe not memory
+to memory).
 
-Therefore this patch set modifies the kprobes insn slot cache code in order
-to allow to specify a custom allocator for the insn slot cache pages.
-In addition architecure can now have private insn slot caches withhout the
-need to modify common code.
+There is a stripped down version of EXTENDED COPY(LID4)
+that was called XCOPY LITE at one stage that only does
+disk to disk copies (based on a ROD token). That is
+the basis of Microsoft's Offload Data Transfer (ODX).
+It uses commands defined in SBC-3 (e.g. POPULATE TOKEN
+and WRITE USING TOKEN).
 
-Patch 1 unifies and simplifies the current insn and optinsn caches
-        implementation. This is a preparation which allows to add more
-        insn caches in a simple way.
 
-Patch 2 adds the possibility to specify a custom allocator.
+Confused? I certainly was. Feel free to correct and
+clarify the above.
 
-Patch 3 makes s390 use the new insn slot mechanisms and adds support for
-        pc-relative instructions with long displacements.
+Doug Gilbert
 
-v1->v2: add possibility to specifiy a custom allocator and move the new
-        dmainsn cache into s390 code and leave common code alone.
 
-Heiko Carstens (3):
-  kprobes: unify insn caches
-  kprobes: allow to specify custum allocator for insn caches
-  s390/kprobes: add support for pc-relative long displacement instructions
-
- arch/s390/include/asm/kprobes.h |    4 +-
- arch/s390/kernel/kprobes.c      |  144 +++++++++++++++++++++++++++++++++++++--
- include/linux/kprobes.h         |   34 +++++++--
- kernel/kprobes.c                |   95 +++++++++++---------------
- 4 files changed, 209 insertions(+), 68 deletions(-)
-
--- 
-1.7.10.4
 
