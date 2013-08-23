@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab3HWFVq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 01:21:46 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57283 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715Ab3HWFVn (ORCPT
+	id S1754635Ab3HWFXI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 01:23:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:54710 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754073Ab3HWFXF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 01:21:43 -0400
-Date: Thu, 22 Aug 2013 22:21:42 -0700 (PDT)
-Message-Id: <20130822.222142.765878355588087442.davem@davemloft.net>
-To: rui.xiang@huawei.com
-Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-rdma@vger.kernel.org, linux-usb@vger.kernel.org,
-        v9fs-developer@lists.sourceforge.net, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] fs: use inode_set_user to set uid/gid of inode
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1377226118-43756-3-git-send-email-rui.xiang@huawei.com>
-References: <1377226118-43756-1-git-send-email-rui.xiang@huawei.com>
-	<1377226118-43756-3-git-send-email-rui.xiang@huawei.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 22 Aug 2013 22:21:43 -0700 (PDT)
+	Fri, 23 Aug 2013 01:23:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,938,1367996400"; 
+   d="scan'208";a="385286869"
+From: "Rymarkiewicz, WaldemarX" <waldemarx.rymarkiewicz@intel.com>
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        "poeschel@lemonage.de" <poeschel@lemonage.de>,
+        "lauro.venancio@openbossa.org" <lauro.venancio@openbossa.org>,
+        "aloisio.almeida@openbossa.org" <aloisio.almeida@openbossa.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-nfc@lists.01.org" <linux-nfc@ml01.01.org>
+Subject: RE: [linux-nfc] [PATCH RFC] nfc: add a driver for pn532 connected
+ on	uart
+Thread-Topic: [linux-nfc] [PATCH RFC] nfc: add a driver for pn532 connected
+ on	uart
+Thread-Index: AQHOn0Xc0YsyswXV40KpUciFGyM+TpmiP0KQ
+Date: Fri, 23 Aug 2013 05:23:00 +0000
+Message-ID: <A4DEEF93D8D14A418311321B77DB71E9C9D773@IRSMSX104.ger.corp.intel.com>
+References: <1377181699-1668-1-git-send-email-larsi@wh2.tu-dresden.de>
+In-Reply-To: <1377181699-1668-1-git-send-email-larsi@wh2.tu-dresden.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.180]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rui Xiang <rui.xiang@huawei.com>
-Date: Fri, 23 Aug 2013 10:48:38 +0800
+Hi  Lars,
 
-> Use the new interface to set i_uid/i_gid in inode struct.
-> 
-> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+>This adds a driver for the nxp pn532 nfc chip.
+>It is not meant for merging. Instead it is meant to show that some
+>progress has been made and what the current state is and to help
+>testing.
+>Although I can do some basic things with this driver I expect it to
+>contain lots of bugs. Be aware!
+>This driver is heavily based on the pn533 driver and duplicates much
+>code. This has do be factored out some time.
 
-For the networking bits:
+I'm not sure if this is expected approach adding new drivers. You duplicates most of pn533 code which is not good.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Also, note that pn533 and pn532  are pretty the same chips (with small differences) and it would be quite natural to support both with one driver. Pn533 already reads chip version on init, so at this point you already know with which chip you are dealing with.
+
+I suggest to separate transport layer from the core in pn533 and add support for uart and usb separately. This is exactly what I've planned while changing pn533 to support acr122 device.
+
+Thanks,
+/Waldek
