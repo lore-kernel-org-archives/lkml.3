@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab3HWTkV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:40:21 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:63320 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755503Ab3HWTkU (ORCPT
+	id S1756311Ab3HWTk2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:40:28 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54170 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756284Ab3HWTkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:40:20 -0400
-Date: Fri, 23 Aug 2013 15:40:18 -0400 (EDT)
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: Wolfram Sang <wsa@the-dreams.de>, kernel@savoirfairelinux.com,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <276016030.909379.1377286818459.JavaMail.root@mail>
-In-Reply-To: <1377285996.620418788@f48.i.mail.ru>
-Subject: Re: [PATCH] misc: (at24) move header to linux/platform_data/
+	Fri, 23 Aug 2013 15:40:23 -0400
+Message-ID: <5217BAA3.4080202@wwwdotorg.org>
+Date: Fri, 23 Aug 2013 13:40:19 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Fabian Vogt <fabian@ritter-vogt.de>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] gpio: New driver for LSI ZEVIO SoCs
+References: <op.w1c50xgmu7prd4@fabians-laptop.fritz.box> <CACRpkdbLSDiSAGiZ_PpJganrSoar+2fFPaEjbu_L1Ezx5V8DMg@mail.gmail.com> <op.w1w4bifku7prd4@fabians-laptop.fritz.box> <CACRpkdbUoOP9DH59=MQ71tKGJ+OLFd0E7-iz7ZSM4owsTxcWWw@mail.gmail.com>
+In-Reply-To: <CACRpkdbUoOP9DH59=MQ71tKGJ+OLFd0E7-iz7ZSM4owsTxcWWw@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - GC28 (Linux)/7.1.4_GA_2555)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 08/23/2013 08:09 AM, Linus Walleij wrote:
+> On Fri, Aug 16, 2013 at 6:34 PM, Fabian Vogt <fabian@ritter-vogt.de> wrote:
+>> On Fri, Aug 16, 2013 at 4:46 PM, Linus Walleij <linus.walleij@linaro.org>
+>> wrote:
+> 
+>>> I want an ACK from one of the DT bindings maintainers for this
+>>> portion of the driver ideally. (It looks all right to me.)
+>>
+>> Any ideas which mail addresses I should add to CC:?
+> 
+> No. devicetree@vger.kernel.org is the place.
+> 
+> But if nothing happens you might want to ask Stephen Warren.
 
-Alexander wrote:
-> Can this file be additionally renamed to misc-at24.h to reflect
-> belongs to a particular subsystem?
+The full list of CC's is:
 
-I'm not sure about that. Having the subsystem name at the beginning of
-the file doesn't seem to be a convention for all subsystems. For
-instance, this is true for gpio, spi or leds, but not for hwmon.
-Actually, I would stick with the corresponding subsystem naming, here:
-at24.c -> at24.h.
+OPEN FIRMWARE AND FLATTENED DEVICE TREE BINDINGS
+M:      Rob Herring <rob.herring@calxeda.com>
+M:      Pawel Moll <pawel.moll@arm.com>
+M:      Mark Rutland <mark.rutland@arm.com>
+M:      Stephen Warren <swarren@wwwdotorg.org>
+M:      Ian Campbell <ian.campbell@citrix.com>
+L:      devicetree@vger.kernel.org
 
-Regards,
-Vivien
