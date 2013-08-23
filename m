@@ -1,162 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab3HWNTm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 09:19:42 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49868 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753763Ab3HWNTl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 09:19:41 -0400
-Message-ID: <1377263977.2095.1.camel@dabdike>
-Subject: Re: [RFC PATCH] scsi: Add failfast mode to avoid infinite retry loop
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-Cc: emilne@redhat.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Date: Fri, 23 Aug 2013 06:19:37 -0700
-In-Reply-To: <52172721.1040203@hitachi.com>
-References: <20130819093925.7867.19221.stgit@ltc223.sdl.hitachi.co.jp>
-	  <1376922616.2069.9.camel@dabdike.int.hansenpartnership.com>
-	  <5213172E.1060905@hitachi.com>
-	 <1377022167.3872.13.camel@localhost.localdomain>
-	 <52172721.1040203@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755618Ab3HWNUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 09:20:32 -0400
+Received: from mout.gmx.net ([212.227.15.15]:62029 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753775Ab3HWNUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 09:20:30 -0400
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Date: Fri, 23 Aug 2013 15:20:25 +0200
+From: "Tibor Billes" <tbilles@gmx.com>
+Message-ID: <20130823132026.116850@gmx.com>
+MIME-Version: 1.0
+Subject: Re: Unusually high system CPU usage with recent kernels
+To: paulmck@linux.vnet.ibm.com
+X-Flags: 0001
+X-Mailer: GMX.com Web Mailer
+x-registered: 0
+Content-Transfer-Encoding: 8bit
+X-GMX-UID: zQRlcsFMeSEqJL5QQHchLr9+IGRvb8DE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-23 at 18:10 +0900, Eiichi Tsukata wrote:
-> (2013/08/21 3:09), Ewan Milne wrote:
-> > On Tue, 2013-08-20 at 16:13 +0900, Eiichi Tsukata wrote:
-> >> (2013/08/19 23:30), James Bottomley wrote:
-> >>> On Mon, 2013-08-19 at 18:39 +0900, Eiichi Tsukata wrote:
-> >>>> Hello,
-> >>>>
-> >>>> This patch adds scsi device failfast mode to avoid infinite retry loop.
-> >>>>
-> >>>> Currently, scsi error handling in scsi_decide_disposition() and
-> >>>> scsi_io_completion() unconditionally retries on some errors. This is because
-> >>>> retryable errors are thought to be temporary and the scsi device will soon
-> >>>> recover from those errors. Normally, such retry policy is appropriate because
-> >>>> the device will soon recover from temporary error state.
-> >>>> But there is no guarantee that device is able to recover from error state
-> >>>> immediately. Some hardware error may prevent device from recovering.
-> >>>> Therefore hardware error can results in infinite command retry loop. In fact,
-> >>>> CHECK_CONDITION error with the sense-key = UNIT_ATTENTION caused infinite
-> >>>> retry loop in our environment. As the comments in kernel source code says,
-> >>>> UNIT_ATTENTION means the device must have been a power glitch and expected
-> >>>> to immediately recover from the state. But it seems that hardware error
-> >>>> caused permanent UNIT_ATTENTION error.
-> >>>>
-> >>>> To solve the above problem, this patch introduces scsi device "failfast mode".
-> >>>> If failfast mode is enabled, retry counts of all scsi commands are limited to
-> >>>> scsi->allowed(== SD_MAX_RETRIES == 5). All commands are prohibited to retry
-> >>>> infinitely, and immediately fails when the retry count exceeds upper limit.
-> >>>> Failfast mode is useful on mission critical systems which are required
-> >>>> to keep running flawlessly because they need to failover to the secondary
-> >>>> system once they detect failures.
-> >>>> On default, failfast mode is disabled because failfast policy is not suitable
-> >>>> for most use cases which can accept I/O latency due to device hardware error.
-> >>>>
-> >>>> To enable failfast mode(default disabled):
-> >>>>            # echo 1>   /sys/bus/scsi/devices/X:X:X:X/failfast
-> >>>> To disable:
-> >>>>            # echo 0>   /sys/bus/scsi/devices/X:X:X:X/failfast
-> >>>>
-> >>>> Furthermore, I'm planning to make the upper limit count configurable.
-> >>>> Currently, I have two plans to implement it:
-> >>>> (1) set same upper limit count on all errors.
-> >>>> (2) set upper limit count on each error.
-> >>>> The first implementation is simple and easy to implement but not flexible.
-> >>>> Someone wants to set different upper limit count on each errors depends on the
-> >>>> scsi device they use. The second implementation satisfies such requirement
-> >>>> but can be too fine-grained and annoying to configure because scsi error
-> >>>> codes are so much. The default 5 times retry may too much on some errors but
-> >>>> too few on other errors.
-> >>>>
-> >>>> Which would be the appropriate implementation?
-> >>>> Any comments or suggestions are welcome as usual.
-> >>>
-> >>> I'm afraid you'll need to propose another solution.  We have a large
-> >>> selection of commands which, by design, retry until the command exceeds
-> >>> it's timeout.  UA is one of those (as are most of the others you're
-> >>> limiting).  How do you kick this device out of its UA return (because
-> >>> that's the recovery that needs to happen)?
-> >>>
-> >>> James
-> >>>
-> >>>
-> >>
-> >> Thanks for reviewing, James.
-> >>
-> >> Originally, I planned that once the retry count exceeds its limit,
-> >> a monitoring tool stops the server with the scsi prink error message
-> >> as a trigger.
-> >> Current failfast mode implementation is that the command fails when
-> >> retry command exceeds its limit. However, I noticed that only printing error messages
-> >> on retry counts excess without changing retry logic will be enough
-> >> to stop the server and take fail over.  Though there is no guarantee that
-> >> userspace application can work properly on disk failure condition.
-> >> So, now I'm considering that just calling panic() on retry excess is better.
-> >>
-> >> For that reason, I propose the solution that adding "panic_on_error" option to
-> >> sysfs parameter and if panic_on_error mode is enabled the server panics
-> >> immediately once it detects retry excess. Of course, it is disabled on default.
-> >>
-> >> I would appreciate it if you could give me some comments.
-> >>
-> >> Eiichi
-> >> --
-> >
-> > For what it's worth, I've seen a report of a case where a storage array
-> > returned a CHECK CONDITION with invalid sense data, which caused the
-> > command to be retried indefinitely.
+> From: Paul E. McKenney Sent: 08/22/13 12:09 AM
+> On Wed, Aug 21, 2013 at 11:05:51PM +0200, Tibor Billes wrote:
+> > > From: Paul E. McKenney Sent: 08/21/13 09:12 PM
+> > > On Wed, Aug 21, 2013 at 08:14:46PM +0200, Tibor Billes wrote:
+> > > > > From: Paul E. McKenney Sent: 08/20/13 11:43 PM
+> > > > > On Tue, Aug 20, 2013 at 10:52:26PM +0200, Tibor Billes wrote:
+> > > > > > > From: Paul E. McKenney Sent: 08/20/13 04:53 PM
+> > > > > > > On Tue, Aug 20, 2013 at 08:01:28AM +0200, Tibor Billes wrote:
+> > > > > > > > Hi,
+> > > > > > > > 
+> > > > > > > > I was using the 3.9.7 stable release and tried to upgrade to the 3.10.x series.
+> > > > > > > > The 3.10.x series was showing unusually high (>75%) system CPU usage in some
+> > > > > > > > situations, making things really slow. The latest stable I tried is 3.10.7.
+> > > > > > > > I also tried 3.11-rc5, they both show this behaviour. This behaviour doesn't
+> > > > > > > > show up when the system is idling, only when doing some CPU intensive work,
+> > > > > > > > like compiling with multiple threads. Compiling with only one thread seems not
+> > > > > > > > to trigger this behaviour.
+> > > > > > > > 
+> > > > > > > > To be more precise I did a `perf record -a` while compiling a large C++ program
+> > > > > > > > with scons using 4 threads, the result is appended at the end of this email.
+> > > > > > > 
+> > > > > > > New one on me! You are running a mainstream system (x86_64), so I am
+> > > > > > > surprised no one else noticed.
+> > > > > > > 
+> > > > > > > Could you please send along your .config file?
+> > > > > > 
+> > > > > > Here it is
+> > > > > 
+> > > > > Interesting. I don't see RCU stuff all that high on the list, but
+> > > > > the items I do see lead me to suspect RCU_FAST_NO_HZ, which has some
+> > > > > relevance to the otherwise inexplicable group of commits you located
+> > > > > with your bisection. Could you please rerun with CONFIG_RCU_FAST_NO_HZ=n?
+> > > > > 
+> > > > > If that helps, there are some things I could try.
+> > > > 
+> > > > It did help. I didn't notice anything unusual when running with CONFIG_RCU_FAST_NO_HZ=n.
+> > > 
+> > > Interesting. Thank you for trying this -- and we at least have a
+> > > short-term workaround for this problem. I will put a patch together
+> > > for further investigation.
+> > 
+> > I don't specifically need this config option so I'm fine without it in
+> > the long term, but I guess it's not supposed to behave like that.
 > 
-> Thank you for commenting, Ewan.
-> I appreciate your information about indefinite retry on CHECK CONDITION.
+> OK, good, we have a long-term workload for your specific case,
+> even better. ;-)
 > 
-> > I'm not sure what you can do about
-> > this, if the device won't ever complete a command without an error.
-> > Perhaps it should be offlined after sufficiently bad behavior.
-> >
-> > I don't think you want to panic on an error, though.  In a clustered
-> > environment it is possible that the other systems will all fail in the
-> > same way, for example.
-> >
-> > -Ewan
-> >
+> But yes, there are situations where RCU_FAST_NO_HZ needs to work
+> a bit better. I hope you will bear with me with a bit more
+> testing...
+
+Don't worry, I will :) Unfortunately I didn't have time yesterday and I
+won't have time today either. But I'll do what you asked tomorrow and I'll
+send you the results.
+
+Tibor
+
+> > > In the meantime, could you please tell me how you were measuring
+> > > performance for your kernel builds? Wall-clock time required to complete
+> > > one build? Number of builds completed per unit time? Something else?
+> > 
+> > Actually, I wasn't all this sophisticated. I have a system monitor
+> > applet on my top panel (using MATE, Linux Mint), four little graphs,
+> > one of which shows CPU usage. Different colors indicate different kind
+> > of CPU usage. Blue shows user space usage, red shows system usage, and
+> > two more for nice and iowait. During a normal compile it's almost
+> > completely filled with blue user space CPU usage, only the top few
+> > pixels show some iowait and system usage. With CONFIG_RCU_FAST_NO_HZ
+> > set, about 3/4 of the graph was red system CPU usage, the rest was
+> > blue. So I just looked for a pile of red on my graphs when I tested
+> > different kernel builds. But also compile speed was horrible I couldn't
+> > wait for the build to finish. Even the UI got unresponsive.
 > 
-> Yes, basically the device should be offlined on error detection.
-> Just offlining the disk is enough when an error occurs on "not" os-installed
-> system disk. Panic is going too far on such case.
+> We have been having problems with CPU accounting, but this one looks
+> quite real.
 > 
-> However, in a clustered environment where computers use each its own
-> disk and
-> do not share the same disk, calling panic() will be suitable when an
-> error
-> occurs in system disk.
-
-However, when not in a clustered environment, it won't be.  Decisions
-about whether to panic the system or not are user space policy, and
-should not be embedded into subsystems.  What we need to do is to come
-up with a way of detecting the condition, reporting it and possibly
-taking some action.
-
->  Because even on such disk error, cluster monitoring
-> tool may not be able to detect the system failure while heartbeat can
-> continue
-> working.
-> So, I think basically offlining is enough and also, panic is necessary
-> on some cases.
-
-Offline seems a bit drastic ... what happens if you send it a target
-reset?
-
-James
-
-
-
+> > Now I did some measuring. In the normal case a compile finished in 36
+> > seconds, compiled 315 object files. Here are some output lines from
+> > dstat -tasm --vm during compile:
+> > ----system---- ----total-cpu-usage---- -dsk/total- -net/total- ---paging-- ---system-- ----swap--- ------memory-usage----- -----virtual-memory----
+> >     time     |usr sys idl wai hiq siq| read  writ| recv  send|  in   out | int   csw | used  free| used  buff  cach  free|majpf minpf alloc  free
+> > 21-08 21:48:05| 91   8   2   0   0   0|   0  5852k|   0     0 |   0     0 |1413  1772 |   0  7934M| 581M 58.0M  602M 6553M|   0    71k   46k   54k
+> > 21-08 21:48:06| 93   6   1   0   0   0|   0  2064k| 137B  131B|   0     0 |1356  1650 |   0  7934M| 649M 58.0M  604M 6483M|   0    72k   47k   28k
+> > 21-08 21:48:07| 86  11   4   0   0   0|   0  5872k|   0     0 |   0     0 |2000  2991 |   0  7934M| 577M 58.0M  627M 6531M|   0    99k   67k   79k
+> > 21-08 21:48:08| 87   9   3   0   0   0|   0  2840k|   0     0 |   0     0 |2558  4164 |   0  7934M| 597M 58.0M  632M 6507M|   0    96k   57k   51k
+> > 21-08 21:48:09| 93   7   1   0   0   0|   0  3032k|   0     0 |   0     0 |1329  1512 |   0  7934M| 641M 58.0M  626M 6469M|   0    61k   48k   39k
+> > 21-08 21:48:10| 93   6   0   0   0   0|   0  4984k|   0     0 |   0     0 |1160  1146 |   0  7934M| 572M 58.0M  628M 6536M|   0    50k   40k   57k
+> > 21-08 21:48:11| 86   9   6   0   0   0|   0  2520k|   0     0 |   0     0 |2947  4760 |   0  7934M| 605M 58.0M  631M 6500M|   0   103k   55k   45k
+> > 21-08 21:48:12| 90   8   2   0   0   0|   0  2840k|   0     0 |   0     0 |2674  4179 |   0  7934M| 671M 58.0M  635M 6431M|   0    84k   59k   42k
+> > 21-08 21:48:13| 90   9   1   0   0   0|   0  4656k|   0     0 |   0     0 |1223  1410 |   0  7934M| 643M 58.0M  638M 6455M|   0    90k   62k   68k
+> > 21-08 21:48:14| 91   8   1   0   0   0|   0  3572k|   0     0 |   0     0 |1432  1828 |   0  7934M| 647M 58.0M  641M 6447M|   0    81k   59k   57k
+> > 21-08 21:48:15| 91   8   1   0   0   0|   0  5116k| 116B    0 |   0     0 |1194  1295 |   0  7934M| 605M 58.0M  644M 6487M|   0    69k   54k   64k
+> > 21-08 21:48:16| 87  10   3   0   0   0|   0  5140k|   0     0 |   0     0 |1761  2586 |   0  7934M| 584M 58.0M  650M 6502M|   0   105k   64k   68k
+> > 
+> > The abnormal case compiled only 182 object file in 6 and a half minutes,
+> > then I stopped it. The same dstat output for this case:
+> > ----system---- ----total-cpu-usage---- -dsk/total- -net/total- ---paging-- ---system-- ----swap--- ------memory-usage----- -----virtual-memory----
+> >     time     |usr sys idl wai hiq siq| read  writ| recv  send|  in   out | int   csw | used  free| used  buff  cach  free|majpf minpf alloc  free
+> > 21-08 22:10:49| 27  62   0   0  11   0|   0     0 | 210B    0 |   0     0 |1414  3137k|   0  7934M| 531M 57.6M  595M 6611M|   0  1628  1250   322 
+> > 21-08 22:10:50| 25  60   4   0  11   0|   0    88k| 126B    0 |   0     0 |1337  3110k|   0  7934M| 531M 57.6M  595M 6611M|   0    91   128   115 
+> > 21-08 22:10:51| 26  63   0   0  11   0|   0   184k| 294B    0 |   0     0 |1411  3147k|   0  7934M| 531M 57.6M  595M 6611M|   0  1485   814   815 
+> > 21-08 22:10:52| 26  63   0   0  11   0|   0     0 | 437B  239B|   0     0 |1355  3160k|   0  7934M| 531M 57.6M  595M 6611M|   0    24    94    97 
+> > 21-08 22:10:53| 26  63   0   0  11   0|   0     0 | 168B    0 |   0     0 |1397  3155k|   0  7934M| 531M 57.6M  595M 6611M|   0   479   285   273 
+> > 21-08 22:10:54| 26  63   0   0  11   0|   0  4096B| 396B  324B|   0     0 |1346  3154k|   0  7934M| 531M 57.6M  595M 6611M|   0    27   145   145 
+> > 21-08 22:10:55| 26  63   0   0  11   0|   0    60k|   0     0 |   0     0 |1353  3148k|   0  7934M| 531M 57.6M  595M 6610M|   0    93   117    36 
+> > 21-08 22:10:56| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1341  3172k|   0  7934M| 531M 57.6M  595M 6610M|   0   158    87    74 
+> > 21-08 22:10:57| 26  62   1   0  11   0|   0     0 |  42B   60B|   0     0 |1332  3162k|   0  7934M| 531M 57.6M  595M 6610M|   0    56    82    78 
+> > 21-08 22:10:58| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1334  3178k|   0  7934M| 531M 57.6M  595M 6610M|   0    26    56    56 
+> > 21-08 22:10:59| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1336  3179k|   0  7934M| 531M 57.6M  595M 6610M|   0     3    33    32 
+> > 21-08 22:11:00| 26  63   0   0  11   0|   0    24k|  90B  108B|   0     0 |1347  3172k|   0  7934M| 531M 57.6M  595M 6610M|   0    41    73    71
+> > 
+> > I have four logical cores so 25% makes up 1 core. I don't know if the ~26% user CPU usage has anthing to do with this fact or just coincidence. The rest is ~63% system and ~11% hardware interrupt. Do these support what you suspect?
+> 
+> The massive increase in context switches does come as a bit of a surprise!
+> It does rule out my initial suspicion of lock contention, but then again
+> the fact that you have only four CPUs made that pretty unlikely to begin
+> with.
+> 
+> 2.4k average context switches in the good case for the full run vs. 3,156k
+> for about half of a run in the bad case. That is an increase of more
+> than three orders of magnitude!
+> 
+> Yow!!!
+> 
+> Page faults are actually -higher- in the good case. You have about 6.5GB
+> free in both cases, so you are not running out of memory. Lots more disk
+> writes in the good case, perhaps consistent with its getting more done.
+> Networking is negligible in both cases.
+> 
+> Lots of hardware interrupts in the bad case as well. Would you be willing
+> to take a look at /proc/interrupts before and after to see which one you
+> are getting hit with? (Or whatever interrupt tracking tool you prefer.)
+> 
+> One hypothesis is that your workload and configuration are interacting
+> with RCU_FAST_NO_HZ to force very large numbers of RCU grace periods.
+> Could you please check for this by building with CONFIG_RCU_TRACE=y,
+> mounting debugfs somewhere and dumping rcu/rcu_sched/rcugp before and
+> after each run?
+> 
+> Thanx, Paul
 
