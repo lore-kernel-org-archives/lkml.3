@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab3HWLGV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 07:06:21 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:53085 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab3HWLGU (ORCPT
+	id S1755243Ab3HWLJL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 07:09:11 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:39501 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630Ab3HWLJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 07:06:20 -0400
+	Fri, 23 Aug 2013 07:09:08 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>, yongjun_wei@trendmicro.com.cn
+Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] drm/rcar-du: fix return value check in rcar_du_lvdsenc_get_resources()
+Date: Fri, 23 Aug 2013 13:10:23 +0200
+Message-ID: <4578030.6vjUEPXppL@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAPgLHd9g4DPmTnj1bNcUQigUd3pWKfkbAoFFsig5_UR_w0vcAg@mail.gmail.com>
+References: <CAPgLHd9g4DPmTnj1bNcUQigUd3pWKfkbAoFFsig5_UR_w0vcAg@mail.gmail.com>
 MIME-Version: 1.0
-Date: Fri, 23 Aug 2013 19:06:20 +0800
-Message-ID: <CAL1ERfNdZX_j2Qg-fb9g1U4Wjv8qZwKgUX=JGGjOa6q0zOWEEA@mail.gmail.com>
-Subject: [PATCH 2/4] zswap: use GFP_NOIO instead of GFP_KERNEL
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Minchan Kim <minchan@kernel.org>, Bob Liu <bob.liu@oracle.com>,
-        sjenning@linux.vnet.ibm.com
-Cc: weijie.yang@samsung.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-avoid zswap store and reclaim functions called recursively.
+Hello,
 
----
- mm/zswap.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+On Friday 23 August 2013 10:21:21 Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> In case of error, the function devm_ioremap_resource() returns ERR_PTR()
+> and never returns NULL. The NULL test in the return value check should be
+> replaced with IS_ERR(). Also remove the dev_err call to avoid redundant
+> error message.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-diff --git a/mm/zswap.c b/mm/zswap.c
-index 1cf1c07..5f97f4f 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -427,7 +427,7 @@ static int zswap_get_swap_cache_page(swp_entry_t entry,
- 		 * Get a new page to read into from swap.
- 		 */
- 		if (!new_page) {
--			new_page = alloc_page(GFP_KERNEL);
-+			new_page = alloc_page(GFP_NOIO);
- 			if (!new_page)
- 				break; /* Out of memory */
- 		}
-@@ -435,7 +435,7 @@ static int zswap_get_swap_cache_page(swp_entry_t entry,
- 		/*
- 		 * call radix_tree_preload() while we can wait.
- 		 */
--		err = radix_tree_preload(GFP_KERNEL);
-+		err = radix_tree_preload(GFP_NOIO);
- 		if (err)
- 			break;
+Thank you for the patch.
 
-@@ -628,7 +628,7 @@ static int zswap_frontswap_store(unsigned type,
-pgoff_t offset,
- 	}
+> ---
+>  drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c | 7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c
+> b/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c index a0f6a17..f59cbc4 100644
+> --- a/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c
+> +++ b/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c
+> @@ -151,11 +151,8 @@ static int rcar_du_lvdsenc_get_resources(struct
+> rcar_du_lvdsenc *lvds, }
+> 
+>  	lvds->mmio = devm_ioremap_resource(&pdev->dev, mem);
 
- 	/* allocate entry */
--	entry = zswap_entry_cache_alloc(GFP_KERNEL);
-+	entry = zswap_entry_cache_alloc(GFP_NOIO);
- 	if (!entry) {
- 		zswap_reject_kmemcache_fail++;
- 		ret = -ENOMEM;
+devm_ioremap_resource() prints an error message when the second argument is 
+NULL, so we can remove the error check after the 
+platform_get_resource_byname() call as well. The resulting code could look 
+like
+
+        mem = platform_get_resource_byname(pdev, IORESOURCE_MEM, name);
+        lvds->mmio = devm_ioremap_resource(&pdev->dev, mem);
+        if (IS_ERR(lvds->mmio))
+                return PTR_ERR(lvds->mmio);
+
+Could you please submit a v2 ?
+
+> -	if (lvds->mmio == NULL) {
+> -		dev_err(&pdev->dev, "failed to remap memory resource for %s\n",
+> -			name);
+> -		return -ENOMEM;
+> -	}
+> +	if (IS_ERR(lvds->mmio))
+> +		return PTR_ERR(lvds->mmio);
+> 
+>  	lvds->clock = devm_clk_get(&pdev->dev, name);
+>  	if (IS_ERR(lvds->clock)) {
 -- 
-1.7.0.4
+Regards,
+
+Laurent Pinchart
+
