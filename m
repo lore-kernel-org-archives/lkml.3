@@ -1,182 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab3HWTix (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:38:53 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:41609 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab3HWTit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:38:49 -0400
+	id S1756269Ab3HWTjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:39:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39154 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755686Ab3HWTjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 15:39:39 -0400
+Date: Fri, 23 Aug 2013 21:39:34 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Vince Weaver <vince@deater.net>
+Cc: Robert Richter <rric@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Vince Weaver <vincent.weaver@maine.edu>
+Subject: Re: [PATCH v3 12/12] [RFC] perf, persistent: ioctl functions to
+ control persistency
+Message-ID: <20130823193934.GB15521@pd.tnic>
+References: <1377180807-12758-1-git-send-email-rric@kernel.org>
+ <1377180807-12758-13-git-send-email-rric@kernel.org>
+ <alpine.DEB.2.02.1308221404090.26486@pianoman.cluster.toy>
+ <20130823091128.GA19548@nazgul.tnic>
+ <20130823094556.GB10223@rric.localhost>
+ <20130823104441.GD10223@rric.localhost>
+ <20130823113400.GA20310@nazgul.tnic>
+ <alpine.DEB.2.02.1308231255330.7482@pianoman.cluster.toy>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXFcM+FZnp00RP5Z8a2FhtjB7BuUUi4TuABF4-O9W+c8Q@mail.gmail.com>
-References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
-	<1376189294-32022-29-git-send-email-yinghai@kernel.org>
-	<CANVTcTYhSfU+Su9s1B+mTTBfgsZgqvQxHiTsLck1zT_vg1Cs4g@mail.gmail.com>
-	<CANVTcTb2+qX6XMBqrzeLho9yFS55AnztVJ85JBMuxjoH11qzaQ@mail.gmail.com>
-	<CAOLK0pwQJVvcT5xA-+Ftb85FzbjHN-OZmXO=n7r4EWh4nFjSBA@mail.gmail.com>
-	<CAE9FiQWnGaa6omcLW0zxLj+UMspRGxjVoYXUsH3ndydGD51T9w@mail.gmail.com>
-	<CAE9FiQXFcM+FZnp00RP5Z8a2FhtjB7BuUUi4TuABF4-O9W+c8Q@mail.gmail.com>
-Date: Fri, 23 Aug 2013 12:38:48 -0700
-X-Google-Sender-Auth: vVU8nWU1K5SIyOHslLU9MXoaTNc
-Message-ID: <CAE9FiQXMfTCSfK8no6gYmHYn6=OURg6444BPu-aiBR3BsAvziA@mail.gmail.com>
-Subject: Re: [PATCH v4 28/28] PCI, x86, ACPI: get ioapic address from acpi device
-From: Yinghai Lu <yinghai@kernel.org>
-To: Lan Tianyu <lantianyu1986@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Cc: rui wang <ruiv.wang@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Tony Luck <tony.luck@intel.com>, Linux PCI <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=e89a8ff2528a3944e504e4a28e09
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1308231255330.7482@pianoman.cluster.toy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8ff2528a3944e504e4a28e09
-Content-Type: text/plain; charset=ISO-8859-1
+On Fri, Aug 23, 2013 at 01:07:54PM -0400, Vince Weaver wrote:
+> If I had not read the man-page fragment and saw a
+>    result=ioctl(fd,PERF_EVENT_IOC_ATTACH,0);
+> I'd have no clue what it was doing (attach?  attach to what?)
+> wheras if I saw
+>    result=ioctl(fd,PERF_EVENT_IOC_UNPERSIST,0);
+> it's a little more clearer and also indicates that the ioctl is only
+> valid if you're dealing with a persistent event.
 
-On Fri, Aug 23, 2013 at 12:04 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Aug 23, 2013 at 11:38 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Fri, Aug 23, 2013 at 8:34 AM, Lan Tianyu <lantianyu1986@gmail.com> wrote:
->>>> I worked around the problem by replacing acpi_resource_to_address64()
->>>> with resource_to_addr().  But resource_to_addr() is a static function
->>>> in arch/x86/pci/acpi.c, not very convenient to use. Here's what I did:
->>>>
->>>
->>> Hi Rui&Yinghai:
->>>            How about using the following code to translate struct
->>>  acpi_resource to struct resouce in this setup_res()?
->>>
->>>          if (acpi_dev_resource_address_space(...)
->>>                 || acpi_dev_resource_memory(..))
->>>               return AE_OK;
->>
->> Yest, that could be better, will update that.
->>
->> Also can you submit patch that will use that in res_to_addr of
->> arch/x86/pci/acpi.c?
->
-> looks acpi_dev_resource_address_space... does not handle
-> PREFTCH and translation offset.
->
-> So now i have to use res_to_addr alike one.
+Maybe this makes it more understandable for you but this is beside the
+point.
 
-Raphael,
+The main and the most important idea here is that we want to
+attach/detach file descriptors to perf events and the resources
+(buffers, etc) associated with them so that those events can be made
+independent from processes.
 
-Maybe we should move resource_to_addr to acpi generic.
+But I have to say the reversed thing above does sound confusing, now
+that I'm looking at the code. Actually, at the time we discussed this,
+my idea was to do it like this:
 
-Please check if you are ok with attached.
+1. we open a perf event and get its file descriptor
+2. ioctl ATTACH to it so that it is attached to the process.
 
-Thanks
+... do some tracing and collecting and fiddling...
 
-Yinghai
+3. ioctl DETACH from it so that it is "forked in the background" so to
+speak, very similar to a background job in the shell.
 
---e89a8ff2528a3944e504e4a28e09
-Content-Type: application/octet-stream; name="move_res_to_addr.patch"
-Content-Disposition: attachment; filename="move_res_to_addr.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hkpsy5m60
+4. The rest of the code continues and deallocates the event *BUT* (and
+this is the key thing!) the counter/tracepoint remains operational in
+the kernel, running all the time.
 
-U3ViamVjdDogW1BBVENIXSBBQ1BJLCB4ODYvUENJOiBNb3ZlIHJlc291cmNlX3RvX2FkZHIoKSB0
-byBhY3BpIGdlbmVyaWMKClJ1aSB3YW5nIHJlcG9ydGVkIGlvYXBpYyBob3QtYWRkIGRvZXMgbm90
-IHdvcmsgb24gaGlzIG1hY2hpbmUKdGhhdCBfQ1JTIGhhdmUgTUVNT1JZX0ZJWEVELgpIZSBhbHNv
-IHByb3Bvc2VkIHRvIGV4cG9zZSByZXNvdXJjZV90b19hZGRyKCkgYW5kIHVzZSBpdCBmb3IgaW9h
-cGljLgoKV2Ugc2hvdWxkIG1vdmUgaXQgdG8gYWNwaSBnZW5lcmljLCBhcyBpb2FwaS5jIGN1cnJl
-bnQgaXMgaW4KZHJpdmVycy9wY2kvLgoKT3Igc2hvdWxkIG1vdmUgaXQgdG8gYWNwaWNhPwoKU2ln
-bmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKLS0tCiBhcmNoL3g4
-Ni9wY2kvYWNwaS5jICAgICB8ICAgNTEgKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tCiBkcml2ZXJzL2FjcGkvcmVzb3VyY2UuYyB8ICAgNDYgKysrKysrKysr
-KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKwogaW5jbHVkZS9saW51eC9hY3BpLmgg
-ICAgfCAgICAzICsrCiAzIGZpbGVzIGNoYW5nZWQsIDUxIGluc2VydGlvbnMoKyksIDQ5IGRlbGV0
-aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9wY2kvYWNwaS5jCj09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K
-LS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L3BjaS9hY3BpLmMKKysrIGxpbnV4LTIuNi9hcmNo
-L3g4Ni9wY2kvYWNwaS5jCkBAIC0yMTksNjAgKzIxOSwxMyBAQCBzdGF0aWMgdm9pZCB0ZWFyZG93
-bl9tY2ZnX21hcChzdHJ1Y3QgcGNpCiAjZW5kaWYKIAogc3RhdGljIGFjcGlfc3RhdHVzCi1yZXNv
-dXJjZV90b19hZGRyKHN0cnVjdCBhY3BpX3Jlc291cmNlICpyZXNvdXJjZSwKLQkJCXN0cnVjdCBh
-Y3BpX3Jlc291cmNlX2FkZHJlc3M2NCAqYWRkcikKLXsKLQlhY3BpX3N0YXR1cyBzdGF0dXM7Ci0J
-c3RydWN0IGFjcGlfcmVzb3VyY2VfbWVtb3J5MjQgKm1lbW9yeTI0OwotCXN0cnVjdCBhY3BpX3Jl
-c291cmNlX21lbW9yeTMyICptZW1vcnkzMjsKLQlzdHJ1Y3QgYWNwaV9yZXNvdXJjZV9maXhlZF9t
-ZW1vcnkzMiAqZml4ZWRfbWVtb3J5MzI7Ci0KLQltZW1zZXQoYWRkciwgMCwgc2l6ZW9mKCphZGRy
-KSk7Ci0Jc3dpdGNoIChyZXNvdXJjZS0+dHlwZSkgewotCWNhc2UgQUNQSV9SRVNPVVJDRV9UWVBF
-X01FTU9SWTI0OgotCQltZW1vcnkyNCA9ICZyZXNvdXJjZS0+ZGF0YS5tZW1vcnkyNDsKLQkJYWRk
-ci0+cmVzb3VyY2VfdHlwZSA9IEFDUElfTUVNT1JZX1JBTkdFOwotCQlhZGRyLT5taW5pbXVtID0g
-bWVtb3J5MjQtPm1pbmltdW07Ci0JCWFkZHItPmFkZHJlc3NfbGVuZ3RoID0gbWVtb3J5MjQtPmFk
-ZHJlc3NfbGVuZ3RoOwotCQlhZGRyLT5tYXhpbXVtID0gYWRkci0+bWluaW11bSArIGFkZHItPmFk
-ZHJlc3NfbGVuZ3RoIC0gMTsKLQkJcmV0dXJuIEFFX09LOwotCWNhc2UgQUNQSV9SRVNPVVJDRV9U
-WVBFX01FTU9SWTMyOgotCQltZW1vcnkzMiA9ICZyZXNvdXJjZS0+ZGF0YS5tZW1vcnkzMjsKLQkJ
-YWRkci0+cmVzb3VyY2VfdHlwZSA9IEFDUElfTUVNT1JZX1JBTkdFOwotCQlhZGRyLT5taW5pbXVt
-ID0gbWVtb3J5MzItPm1pbmltdW07Ci0JCWFkZHItPmFkZHJlc3NfbGVuZ3RoID0gbWVtb3J5MzIt
-PmFkZHJlc3NfbGVuZ3RoOwotCQlhZGRyLT5tYXhpbXVtID0gYWRkci0+bWluaW11bSArIGFkZHIt
-PmFkZHJlc3NfbGVuZ3RoIC0gMTsKLQkJcmV0dXJuIEFFX09LOwotCWNhc2UgQUNQSV9SRVNPVVJD
-RV9UWVBFX0ZJWEVEX01FTU9SWTMyOgotCQlmaXhlZF9tZW1vcnkzMiA9ICZyZXNvdXJjZS0+ZGF0
-YS5maXhlZF9tZW1vcnkzMjsKLQkJYWRkci0+cmVzb3VyY2VfdHlwZSA9IEFDUElfTUVNT1JZX1JB
-TkdFOwotCQlhZGRyLT5taW5pbXVtID0gZml4ZWRfbWVtb3J5MzItPmFkZHJlc3M7Ci0JCWFkZHIt
-PmFkZHJlc3NfbGVuZ3RoID0gZml4ZWRfbWVtb3J5MzItPmFkZHJlc3NfbGVuZ3RoOwotCQlhZGRy
-LT5tYXhpbXVtID0gYWRkci0+bWluaW11bSArIGFkZHItPmFkZHJlc3NfbGVuZ3RoIC0gMTsKLQkJ
-cmV0dXJuIEFFX09LOwotCWNhc2UgQUNQSV9SRVNPVVJDRV9UWVBFX0FERFJFU1MxNjoKLQljYXNl
-IEFDUElfUkVTT1VSQ0VfVFlQRV9BRERSRVNTMzI6Ci0JY2FzZSBBQ1BJX1JFU09VUkNFX1RZUEVf
-QUREUkVTUzY0OgotCQlzdGF0dXMgPSBhY3BpX3Jlc291cmNlX3RvX2FkZHJlc3M2NChyZXNvdXJj
-ZSwgYWRkcik7Ci0JCWlmIChBQ1BJX1NVQ0NFU1Moc3RhdHVzKSAmJgotCQkgICAgKGFkZHItPnJl
-c291cmNlX3R5cGUgPT0gQUNQSV9NRU1PUllfUkFOR0UgfHwKLQkJICAgIGFkZHItPnJlc291cmNl
-X3R5cGUgPT0gQUNQSV9JT19SQU5HRSkgJiYKLQkJICAgIGFkZHItPmFkZHJlc3NfbGVuZ3RoID4g
-MCkgewotCQkJcmV0dXJuIEFFX09LOwotCQl9Ci0JCWJyZWFrOwotCX0KLQlyZXR1cm4gQUVfRVJS
-T1I7Ci19Ci0KLXN0YXRpYyBhY3BpX3N0YXR1cwogY291bnRfcmVzb3VyY2Uoc3RydWN0IGFjcGlf
-cmVzb3VyY2UgKmFjcGlfcmVzLCB2b2lkICpkYXRhKQogewogCXN0cnVjdCBwY2lfcm9vdF9pbmZv
-ICppbmZvID0gZGF0YTsKIAlzdHJ1Y3QgYWNwaV9yZXNvdXJjZV9hZGRyZXNzNjQgYWRkcjsKIAlh
-Y3BpX3N0YXR1cyBzdGF0dXM7CiAKLQlzdGF0dXMgPSByZXNvdXJjZV90b19hZGRyKGFjcGlfcmVz
-LCAmYWRkcik7CisJc3RhdHVzID0gYWNwaV9tZW1fYWRkcl9yZXNvdXJjZV90b19hZGRyZXNzNjQo
-YWNwaV9yZXMsICZhZGRyKTsKIAlpZiAoQUNQSV9TVUNDRVNTKHN0YXR1cykpCiAJCWluZm8tPnJl
-c19udW0rKzsKIAlyZXR1cm4gQUVfT0s7CkBAIC0yODgsNyArMjQxLDcgQEAgc2V0dXBfcmVzb3Vy
-Y2Uoc3RydWN0IGFjcGlfcmVzb3VyY2UgKmFjcAogCXVuc2lnbmVkIGxvbmcgZmxhZ3M7CiAJdTY0
-IHN0YXJ0LCBvcmlnX2VuZCwgZW5kOwogCi0Jc3RhdHVzID0gcmVzb3VyY2VfdG9fYWRkcihhY3Bp
-X3JlcywgJmFkZHIpOworCXN0YXR1cyA9IGFjcGlfbWVtX2FkZHJfcmVzb3VyY2VfdG9fYWRkcmVz
-czY0KGFjcGlfcmVzLCAmYWRkcik7CiAJaWYgKCFBQ1BJX1NVQ0NFU1Moc3RhdHVzKSkKIAkJcmV0
-dXJuIEFFX09LOwogCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9hY3BpL3Jlc291cmNlLmMKPT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9hY3BpL3Jlc291cmNlLmMKKysrIGxp
-bnV4LTIuNi9kcml2ZXJzL2FjcGkvcmVzb3VyY2UuYwpAQCAtNDE0LDYgKzQxNCw1MiBAQCB2b2lk
-IGFjcGlfZGV2X2ZyZWVfcmVzb3VyY2VfbGlzdChzdHJ1Y3QKIH0KIEVYUE9SVF9TWU1CT0xfR1BM
-KGFjcGlfZGV2X2ZyZWVfcmVzb3VyY2VfbGlzdCk7CiAKK2FjcGlfc3RhdHVzIGFjcGlfbWVtX2Fk
-ZHJfcmVzb3VyY2VfdG9fYWRkcmVzczY0KHN0cnVjdCBhY3BpX3Jlc291cmNlICpyZXNvdXJjZSwK
-KwkJCXN0cnVjdCBhY3BpX3Jlc291cmNlX2FkZHJlc3M2NCAqYWRkcikKK3sKKwlhY3BpX3N0YXR1
-cyBzdGF0dXM7CisJc3RydWN0IGFjcGlfcmVzb3VyY2VfbWVtb3J5MjQgKm1lbW9yeTI0OworCXN0
-cnVjdCBhY3BpX3Jlc291cmNlX21lbW9yeTMyICptZW1vcnkzMjsKKwlzdHJ1Y3QgYWNwaV9yZXNv
-dXJjZV9maXhlZF9tZW1vcnkzMiAqZml4ZWRfbWVtb3J5MzI7CisKKwltZW1zZXQoYWRkciwgMCwg
-c2l6ZW9mKCphZGRyKSk7CisJc3dpdGNoIChyZXNvdXJjZS0+dHlwZSkgeworCWNhc2UgQUNQSV9S
-RVNPVVJDRV9UWVBFX01FTU9SWTI0OgorCQltZW1vcnkyNCA9ICZyZXNvdXJjZS0+ZGF0YS5tZW1v
-cnkyNDsKKwkJYWRkci0+cmVzb3VyY2VfdHlwZSA9IEFDUElfTUVNT1JZX1JBTkdFOworCQlhZGRy
-LT5taW5pbXVtID0gbWVtb3J5MjQtPm1pbmltdW07CisJCWFkZHItPmFkZHJlc3NfbGVuZ3RoID0g
-bWVtb3J5MjQtPmFkZHJlc3NfbGVuZ3RoOworCQlhZGRyLT5tYXhpbXVtID0gYWRkci0+bWluaW11
-bSArIGFkZHItPmFkZHJlc3NfbGVuZ3RoIC0gMTsKKwkJcmV0dXJuIEFFX09LOworCWNhc2UgQUNQ
-SV9SRVNPVVJDRV9UWVBFX01FTU9SWTMyOgorCQltZW1vcnkzMiA9ICZyZXNvdXJjZS0+ZGF0YS5t
-ZW1vcnkzMjsKKwkJYWRkci0+cmVzb3VyY2VfdHlwZSA9IEFDUElfTUVNT1JZX1JBTkdFOworCQlh
-ZGRyLT5taW5pbXVtID0gbWVtb3J5MzItPm1pbmltdW07CisJCWFkZHItPmFkZHJlc3NfbGVuZ3Ro
-ID0gbWVtb3J5MzItPmFkZHJlc3NfbGVuZ3RoOworCQlhZGRyLT5tYXhpbXVtID0gYWRkci0+bWlu
-aW11bSArIGFkZHItPmFkZHJlc3NfbGVuZ3RoIC0gMTsKKwkJcmV0dXJuIEFFX09LOworCWNhc2Ug
-QUNQSV9SRVNPVVJDRV9UWVBFX0ZJWEVEX01FTU9SWTMyOgorCQlmaXhlZF9tZW1vcnkzMiA9ICZy
-ZXNvdXJjZS0+ZGF0YS5maXhlZF9tZW1vcnkzMjsKKwkJYWRkci0+cmVzb3VyY2VfdHlwZSA9IEFD
-UElfTUVNT1JZX1JBTkdFOworCQlhZGRyLT5taW5pbXVtID0gZml4ZWRfbWVtb3J5MzItPmFkZHJl
-c3M7CisJCWFkZHItPmFkZHJlc3NfbGVuZ3RoID0gZml4ZWRfbWVtb3J5MzItPmFkZHJlc3NfbGVu
-Z3RoOworCQlhZGRyLT5tYXhpbXVtID0gYWRkci0+bWluaW11bSArIGFkZHItPmFkZHJlc3NfbGVu
-Z3RoIC0gMTsKKwkJcmV0dXJuIEFFX09LOworCWNhc2UgQUNQSV9SRVNPVVJDRV9UWVBFX0FERFJF
-U1MxNjoKKwljYXNlIEFDUElfUkVTT1VSQ0VfVFlQRV9BRERSRVNTMzI6CisJY2FzZSBBQ1BJX1JF
-U09VUkNFX1RZUEVfQUREUkVTUzY0OgorCQlzdGF0dXMgPSBhY3BpX3Jlc291cmNlX3RvX2FkZHJl
-c3M2NChyZXNvdXJjZSwgYWRkcik7CisJCWlmIChBQ1BJX1NVQ0NFU1Moc3RhdHVzKSAmJgorCQkg
-ICAgKGFkZHItPnJlc291cmNlX3R5cGUgPT0gQUNQSV9NRU1PUllfUkFOR0UgfHwKKwkJICAgIGFk
-ZHItPnJlc291cmNlX3R5cGUgPT0gQUNQSV9JT19SQU5HRSkgJiYKKwkJICAgIGFkZHItPmFkZHJl
-c3NfbGVuZ3RoID4gMCkgeworCQkJcmV0dXJuIEFFX09LOworCQl9CisJCWJyZWFrOworCX0KKwly
-ZXR1cm4gQUVfRVJST1I7Cit9CisKIHN0cnVjdCByZXNfcHJvY19jb250ZXh0IHsKIAlzdHJ1Y3Qg
-bGlzdF9oZWFkICpsaXN0OwogCWludCAoKnByZXByb2MpKHN0cnVjdCBhY3BpX3Jlc291cmNlICos
-IHZvaWQgKik7CkluZGV4OiBsaW51eC0yLjYvaW5jbHVkZS9saW51eC9hY3BpLmgKPT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PQotLS0gbGludXgtMi42Lm9yaWcvaW5jbHVkZS9saW51eC9hY3BpLmgKKysrIGxpbnV4LTIuNi9p
-bmNsdWRlL2xpbnV4L2FjcGkuaApAQCAtMjU5LDYgKzI1OSw5IEBAIHVuc2lnbmVkIGxvbmcgYWNw
-aV9kZXZfaXJxX2ZsYWdzKHU4IHRyaWcKIGJvb2wgYWNwaV9kZXZfcmVzb3VyY2VfaW50ZXJydXB0
-KHN0cnVjdCBhY3BpX3Jlc291cmNlICphcmVzLCBpbnQgaW5kZXgsCiAJCQkJIHN0cnVjdCByZXNv
-dXJjZSAqcmVzKTsKIAorYWNwaV9zdGF0dXMgYWNwaV9tZW1fYWRkcl9yZXNvdXJjZV90b19hZGRy
-ZXNzNjQoc3RydWN0IGFjcGlfcmVzb3VyY2UgKnJlc291cmNlLAorCQkJc3RydWN0IGFjcGlfcmVz
-b3VyY2VfYWRkcmVzczY0ICphZGRyKTsKKwogc3RydWN0IHJlc291cmNlX2xpc3RfZW50cnkgewog
-CXN0cnVjdCBsaXN0X2hlYWQgbm9kZTsKIAlzdHJ1Y3QgcmVzb3VyY2UgcmVzOwo=
---e89a8ff2528a3944e504e4a28e09--
+5. Now, after a certain point, you come back and ioctl ATTACH to this
+already opened event and read/collect its buffers again.
+
+And here's the deal - if you don't DETACH from the event at step 3, it
+gets destroyed on process exit, i.e. what the current perf behavior is.
+
+Robert, I think the above is more straight-forward and intuitive, no?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
