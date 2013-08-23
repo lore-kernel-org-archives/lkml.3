@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab3HWIOp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 04:14:45 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:60741 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754652Ab3HWIOn (ORCPT
+	id S1754931Ab3HWITS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 04:19:18 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50874 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719Ab3HWITO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 04:14:43 -0400
-Message-ID: <5217194B.2020209@linux.vnet.ibm.com>
-Date: Fri, 23 Aug 2013 13:41:55 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Fri, 23 Aug 2013 04:19:14 -0400
+Message-ID: <521719D8.7060506@ti.com>
+Date: Fri, 23 Aug 2013 13:44:16 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>, Lei Wen <leiwen@marvell.com>,
-        Rik van Riel <riel@surriel.com>, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 07/10] sched, fair: Optimize find_busiest_queue()
-References: <20130819160058.539049611@infradead.org> <20130819160425.527872672@infradead.org>
-In-Reply-To: <20130819160425.527872672@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sricharan R <r.sricharan@ti.com>
+CC: Rajendra Nayak <rnayak@ti.com>, Nishanth Menon <nm@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] misc: Add crossbar driver
+References: <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com> <51ED2385.60108@ti.com> <51ED5C66.1010407@ti.com> <51EFFBE1.4090505@ti.com> <51F0031B.1050307@ti.com> <51F00530.9090703@ti.com> <51F02069.3050207@ti.com> <51F0223E.4050008@ti.com> <51F0240F.3050507@ti.com> <20130813081003.GU7656@atomide.com> <520A02BA.4090805@ti.com> <CACRpkda+m82PYJsExLM6JLsLa8-bVhdvy_r_+-uKfVT2NG7Cbg@mail.gmail.com> <520D398D.9040806@ti.com> <CACRpkdYeo1y-HhftkRWgwyq8o-NVuJ978Uq+ON880LHhUxC=hg@mail.gmail.com> <520D44C5.6080205@ti.com> <CACRpkdagSHxzV3=427O9iftNxM+N=w9aPds=iDvGQPoG3H-cWw@mail.gmail.com> <5215F6F6.9060703@ti.com> <5216E966.5020902@ti.com> <5216FD0C.3090709@ti.com> <521702E2.5000102@ti.com> <521706D9.9070001@ti.com>
+In-Reply-To: <521706D9.9070001@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-x-cbid: 13082308-1396-0000-0000-000003720FA9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Friday 23 August 2013 12:23 PM, Sricharan R wrote:
+> On Friday 23 August 2013 12:06 PM, Sekhar Nori wrote:
+>> On Friday 23 August 2013 11:41 AM, Sricharan R wrote:
+>>> Hi,
+>>> On Friday 23 August 2013 10:17 AM, Rajendra Nayak wrote:
+>>>> On Thursday 22 August 2013 05:03 PM, Sricharan R wrote:
+>>>>>  maps crossbar number<->  to interrupt number and
+>>>>>  calls request_irq(int_no, crossbar_handler,..)
+>>>> So will this mapping happen based on some data passed from DT or
+>>>> just based on whats available when the device does a request_irq()?
+>>>>
+>>>> If its based on whats available then I see an issue when you need
+>>>> to remap something thats already mapped by default (and not used)
+>>>> since you run out of all free ones.
+>>> Yes, when done based on what is available then there is a
+>>> problem when we run out of free ones because we do not
+>>> know which one to replace. I was thinking of something like
+>>> this,
+>>>     1) DT would give a list of all free ones, and also if some are
+>>>         mapped as default and not used, mark those also as free.
+>>>
+>>>      2) While mapping see if it has a default mapping and use it.
+>>>           otherwise, pick from free list.   
+>> Since the entire DT is available to you at boot time, you should be able
+>> to find each node where interrupt-parent = <&crossbar> and then allocate
+>> one of 0-160 GIC interrupt numbers for that node, no? Where would there
+>> be a need for default mapping and remapping? From one the mails in the
+>> thread the crossbar is completely flexible - any of the 320 crossbar
+>> interrupts can be mapped to any of the 160 GIC interrupts.
+>>
+>> Any GIC interrupts left after this boot-time scan can be added to an
+>> unused list for use with runtime DT fragments (when that support comes).
+>>  
+>> Sorry if I misunderstood, but above proposal sounds like maintaining a
+>> separate free interrupt lines list in DT. That will quickly go out of sync.
+>  Say, peripheral x uses crossbar 1 and specifies this in DT.
+>  During boot crossbar 1 gets mapped int 10. So if by default
+> some other crossbar has its interrupt mapped to 10,
+> then it should be removed.  Instead clear all crossbar registers
+> once and mark all as free, then  allocate only during request.
+> Correct ?. In this the free no need to maintain any list.
 
-On 08/19/2013 09:31 PM, Peter Zijlstra wrote:
+Right, so in my suggestion there is nothing like a "default mapping" and
+entire 160 GIC interrupt number space is up for grabs. I think this will
+be much simpler to write and maintain.
 
-In the load balancing code, looks to me that
-cpumask_copy(cpus, cpu_active_mask) is not updating the env.cpus at all,
-before calling find_busiest_group(). Am I missing something?
+If you really want to maintain default mapping as far as possible, you
+can do two passes on the crossbar interrupt numbers requested. Once to
+assign the default map - for numbers less that 160 - and then look at
+the free GIC interrupt slots and use those for numbers greater than 160.
 
-Should not cpumask_copy() below be before we update the env.cpus parameter?
+Thanks,
+Sekhar
 
-static int load_balance(int this_cpu, struct rq *this_rq,
-			struct sched_domain *sd, enum cpu_idle_type idle,
-			int *balance)
-{
-	int ld_moved, cur_ld_moved, active_balance = 0;
-	struct sched_group *group;
-	struct rq *busiest;
-	unsigned long flags;
-	struct cpumask *cpus = __get_cpu_var(load_balance_mask);
-
-	struct lb_env env = {
-		.sd		= sd,
-		.dst_cpu	= this_cpu,
-		.dst_rq		= this_rq,
-		.dst_grpmask    = sched_group_cpus(sd->groups),
-		.idle		= idle,
-		.loop_break	= sched_nr_migrate_break,
-		.cpus		= cpus,
-	};
-
-	/*
-	 * For NEWLY_IDLE load_balancing, we don't need to consider
-	 * other cpus in our group
-	 */
-	if (idle == CPU_NEWLY_IDLE)
-		env.dst_grpmask = NULL;
-
-	cpumask_copy(cpus, cpu_active_mask);
-
-	schedstat_inc(sd, lb_count[idle]);
-redo:
-	group = find_busiest_group(&env, balance);
-
-Regards
-Preeti U Murthy
 
