@@ -1,192 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab3HWVmU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 17:42:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30291 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755799Ab3HWVmS convert rfc822-to-8bit (ORCPT
+	id S1756279Ab3HWVqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 17:46:33 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:62791 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755783Ab3HWVqa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 17:42:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,944,1367996400"; 
-   d="scan'208";a="367605039"
-From: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Don Dutile <ddutile@redhat.com>
-Subject: RE: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type
- 00 to PF Nacked" messages
-Thread-Topic: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type
- 00 to PF Nacked" messages
-Thread-Index: AQHOmJVrwoQz29MPKEui5Cqk94n7XZmfOJuAgAAH/ICABEX4gP//ngZAgACDewD//6ZTMIAAeG6A//+YeXA=
-Date: Fri, 23 Aug 2013 21:41:53 +0000
-Message-ID: <F6FB0E698C9B3143BDF729DF222866466FD44279@ORSMSX110.amr.corp.intel.com>
-References: <CAErSpo53L3-feEw0qZvBTmRrY+SXpGrGU6oxZg3wVjH1M8JDXg@mail.gmail.com>
- <F6FB0E698C9B3143BDF729DF222866466FD41225@ORSMSX110.amr.corp.intel.com>
- <CAErSpo5AiRw7HvGQMq-n596ZkHJs_KJNn346yf+jc7yti-xpUw@mail.gmail.com>
- <CAErSpo4E9LNrfqTq1_WUoAx68_krw23BjSYbPpJPOr=zbq98xA@mail.gmail.com>
- <CAErSpo6Ky1FQeRjjbhja2KC7EYGJ2nR1ZNuYjYi89DoqLse2cw@mail.gmail.com>
- <CAErSpo7m=YB=1cHSBTwufTHAiAd+k9Re2s-ro509BELOgK8j7Q@mail.gmail.com>
- <F6FB0E698C9B3143BDF729DF222866466FD4418D@ORSMSX110.amr.corp.intel.com>
- <20130823185240.GA1507@google.com>
- <F6FB0E698C9B3143BDF729DF222866466FD4421F@ORSMSX110.amr.corp.intel.com>
- <CAErSpo4VLBon21cSzaigVqy6dS7=qfVRuPTTGuWAz+GLJWmNog@mail.gmail.com>
-In-Reply-To: <CAErSpo4VLBon21cSzaigVqy6dS7=qfVRuPTTGuWAz+GLJWmNog@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 23 Aug 2013 17:46:30 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130823000252.GA29441@google.com>
+References: <1375970227-14794-1-git-send-email-rkrcmar@redhat.com> <20130823000252.GA29441@google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 23 Aug 2013 15:46:10 -0600
+Message-ID: <CAErSpo6+vT7-8NWZETCOzn55SMOp_h+ff46i2bfj52xYznMGTQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI: avoid NULL deref in alloc_pcie_link_state
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Joe Lawrence <Joe.Lawrence@stratus.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>, Shaohua Li <shli@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> Sent: Friday, August 23, 2013 1:43 PM
-> To: Skidmore, Donald C
-> Cc: e1000-devel@lists.sourceforge.net; linux-pci@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Don Dutile
-> Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type 00
-> to PF Nacked" messages
-> 
-> On Fri, Aug 23, 2013 at 2:37 PM, Skidmore, Donald C
-> <donald.c.skidmore@intel.com> wrote:
-> >> -----Original Message-----
-> >> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> >> Sent: Friday, August 23, 2013 11:53 AM
-> >> To: Skidmore, Donald C
-> >> Cc: e1000-devel@lists.sourceforge.net; linux-pci@vger.kernel.org;
-> >> linux- kernel@vger.kernel.org; Don Dutile
-> >> Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of
-> >> type 00 to PF Nacked" messages
-> >>
-> >> On Fri, Aug 23, 2013 at 06:25:06PM +0000, Skidmore, Donald C wrote:
-> >> > > -----Original Message-----
-> >> > > From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> >> > > Sent: Friday, August 23, 2013 9:53 AM
-> >> > > To: Skidmore, Donald C
-> >> > > Cc: e1000-devel@lists.sourceforge.net; linux-pci@vger.kernel.org;
-> >> > > linux- kernel@vger.kernel.org; Don Dutile
-> >> > > Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last
-> >> > > Request of type 00 to PF Nacked" messages
-> >> > >
-> >> > > On Tue, Aug 20, 2013 at 5:37 PM, Bjorn Helgaas
-> >> > > <bhelgaas@google.com>
-> >> > > wrote:
-> >> > > > On Tue, Aug 20, 2013 at 5:08 PM, Bjorn Helgaas
-> >> > > > <bhelgaas@google.com>
-> >> > > wrote:
-> >> > > >> On Tue, Aug 13, 2013 at 8:23 PM, Bjorn Helgaas
-> >> > > >> <bhelgaas@google.com>
-> >> > > wrote:
-> >> > > >
-> >> > > >>> I played with this a little more and found this:
-> >> > > >>>
-> >> > > >>> 1) Magma card in z420, connected to chassis containing X540:
-> >> > > >>> fails (original report)
-> >> > > >>> 2) X540 in z420, Magma card in z420, connected to empty chassis:
-> >> > > >>> fails
-> >> > > >>> 3) X540 in z420, Magma card in z420 but no cable to chassis:
-> >> > > >>> works
-> >> > > >
-> >> > > > For what it's worth, I tried config 3 again with v3.11-rc6, and
-> >> > > > it failed the same way.  I haven't bothered with config 2.
-> >> > > > It's not 100% reproducible, but at least it doesn't seem
-> >> > > > related to the expansion chassis.
-> >> > > >
-> >> > > > I attached the logs from config 3 to
-> >> > > > https://bugzilla.kernel.org/show_bug.cgi?id=60776
-> >> > >
-> >> > > Is there anything I can do to help debug this?  Add
-> >> > > instrumentation, etc.?  It seems like I'm doing the simplest
-> >> > > possible thing -- just writing to the sysfs sriov_num_vfs file to enable
-> VFs.
-> >> > >
-> >> > > I almost think it must be related to my config somehow if nobody
-> >> > > else is seeing this, but at the same time, my config also seems
-> >> > > the simplest possible, so I don't know what I could be doing that's
-> unusual.
-> >> > >
-> >> > > Bjorn
-> >> >
-> >> > Hey Bjorn,
-> >> >
-> >> > I'm may be little confused so bear with me.
-> >> >
-> >> > Option 1 = (your normal set up), Magma card plugged to chasis, X540
-> >> > in
-> >> chasis.
-> >> > Option 2 = Magma card plugged to chasis, X540 in z420 system.
-> >> > Option 3 = Magma card UNplugged from chasis, x540 in z420 system.
-> >> >
-> >> > Options 1 & 2 - always fail
-> >> > Option 3 - sometimes fails (unsure at what rate failure occurs)
-> >> >
-> >> > Please correct me if I messed any of that up. :)
-> >>
-> >> Generally correct.  I've seen failures in all three configs, so I'm
-> >> only concerned with the simplest for now (config 3, no expansion chassis).
-> >>
-> >> > Another question I have relates to the lspci output you supplied in
-> >> > the
-> >> bugzilla.  I'm not seeing the VF devices (i.e. 08:10.0) did you run
-> >> lspci before you created the VF's?  If so could we see one while the failure
-> was occurring?
-> >>
-> >> That's correct, I collected the lspci output before reproducing the
-> >> problem.  I can't easily collect lspci afterwards because the machine
-> >> isn't responsive after the problem starts.
-> >>
-> >> > Also could you download the latest ixgbevf from source forge?
-> >> >
-> >> > https://sourceforge.net/projects/e1000/files/ixgbevf%20stable/
-> >> >
-> >> > If we add debugging messages it will be easier to patch this driver
-> >> > and it
-> >> contains our latest validated code base.
-> >>
-> >> I can do that if it turns out to be necessary.  But John Haller gave
-> >> me a good clue off-list:
-> >>
-> >> John wrote:
-> >> > I assume you want the VFs to be instantiated in a VM.  To do this,
-> >> > you need to blacklist the ixgbevf driver in the host (or not
-> >> > compile it into the host), or it will try to associate the driver
-> >> > in the host, rather than in the VM where you want it.  Then, the VM
-> >> > needs the ixgbevf driver, which will hopefully do a better job of
-> >> > talking to the mailbox in the host.  There is some work to assign
-> >> > the VF(s) to the VM, but I don't remember that offhand.
-> >>
-> >> I don't have any VMs (I started this whole thing because I was
-> >> looking at a PCI hotplug issue related to SR-IOV, so I don't really care
-> about VMs).
-> >>
-> >> So the ixgbevf driver on the *host* is claiming the new VFs, and it
-> >> sounds like maybe it can't handle that?
-> >>
-> >> Bjorn
-> >
-> > Not to speak for John, but I believe he was saying if you want to use your
-> VF's in a VM you need to make sure you don't run the ixgbevf driver on the
-> host as it will "claim" the VF's.  If you are NOT running any VM's then it is
-> perfectly fine to have both ixgbe and ixgbevf loaded.
-> 
-> OK.  It certainly *seemed* surprising to have the ixgbevf driver blow up,
-> even if it was an error on my part to load it in the host.  Just let me know if
-> there's any more testing I can do.
-> 
-> Bjorn
+[+cc Shaohua]
 
-Something is leading to the mbx messages being messed up as event by the " Last Request of type 03 to PF Nacked" messages.   Have you tried reseting the ixgbevf port (ethtool -r <your port>)?  Is it even possible to do this as you mentioned that in the failure state the machine isn't very responsive?
+On Thu, Aug 22, 2013 at 6:02 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Thu, Aug 08, 2013 at 03:57:07PM +0200, Radim Krčmář wrote:
+>> PCIe switch can be connected directly to the PCIe root complex in QEMU;
+>> ASPM does not expect this topology and dereferences NULL pointer when
+>> initializing.
+>>
+>> Downstream port can be also connected to the root complex without
+>> upstream one, so code checks for both, otherwise they dereference NULL
+>> on line drivers/pci/pcie/aspm.c:530 (alloc_pcie_link_state+13):
+>>               parent = pdev->bus->parent->self->link_state;
+>> "pdev->bus->parent->self == NULL" if upstream port is connected directly
+>> to the root bus and "pdev->bus->parent == NULL" in the second case.
+>>
+>> v1 -> v2: (https://lkml.org/lkml/2013/6/19/753)
+>>  - Initialization is aborted in pcie_aspm_init_link_state, where other
+>>    special cases are being handled
+>>  - pci_is_root_bus is used
+>>  - Warning is printed
+>>
+>> Reproducer for "downstream -- root" and "downstream -- upstream -- root"
+>> (used qemu-kvm 1.5, q35 machine type might be missing on older ones)
+>>
+>>   for parent in pcie.0 upstream; do
+>>    qemu-kvm -m 128 -M q35 -nographic -no-reboot \
+>>      -device x3130-upstream,bus=pcie.0,id=upstream \
+>>      -device xio3130-downstream,bus=$parent,id=downstream,chassis=1 \
+>>      -device virtio-blk-pci,bus=downstream,id=virtio-zero,drive=zero \
+>>      -drive  file=/dev/zero,id=zero,format=raw \
+>>      -kernel bzImage -append "console=ttyS0 panic=3" # pcie_aspm=off
+>>   done
+>>
+>> ASPM in QEMU works if we connect upstream through root port
+>>   -device ioh3420,bus=pcie.0,id=root.0 \
+>>   -device x3130-upstream,bus=root.0,id=upstream
+>>
+>> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+>> ---
+>>  drivers/pci/pcie/aspm.c | 9 +++++++++
+>>  1 file changed, 9 insertions(+)
+>>
+>> diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+>> index 403a443..209cd7f 100644
+>> --- a/drivers/pci/pcie/aspm.c
+>> +++ b/drivers/pci/pcie/aspm.c
+>> @@ -570,6 +570,15 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
+>>           pdev->bus->self)
+>>               return;
+>>
+>> +     /* We require at least two ports between downstream and root bus */
+>> +     if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM &&
+>> +         (pci_is_root_bus(pdev->bus) ||
+>> +          pci_is_root_bus(pdev->bus->parent))) {
+>> +             dev_warn(&pdev->dev, "ASPM disabled"
+>> +                                  " (connected directly to root bus)\n");
+>> +             return;
+>> +     }
+>
+> I don't really want to detect invalid topologies piecemeal -- we will
+> likely find other areas (MPS, AER, link speed management, etc.) that
+> have similar dependencies.  I'd rather do it generically, maybe with
+> something like the following patch.
+>
+> I tried this with the following qemu invocation:
+>
+>     $ /usr/local/bin/qemu-system-x86_64 -M q35 -enable-kvm -m 512   -device x3130-upstream,bus=pcie.0,id=upstream   -device xio3130-downstream,bus=upstream,id=downstream,chassis=1   -drive file=ubuntu.img,if=none,id=mydisk   -device ide-drive,drive=mydisk,bus=ide.0   -drive file=scratch.img,id=disk1 -device virtio-blk-pci,bus=downstream,id=virtio-disk1,drive=disk1 -nographic -kernel ~/linux/arch/x86/boot/bzImage   -append "console=ttyS0,115200n8 root=/dev/sda1 ignore_loglevel"
+>
+> With unmodified v3.11-rc2, I see the NULL pointer dereference, but with
+> the patch below applied, we just ignore the 00:03.0 device and the kernel
+> boots fine.
 
-If it might be worthwhile to add logging into the ixgbevf and ixgbe drivers around the mbx messages, with the hope being that it would help show what is going between the two.  There have been some changes in that area of the ixgbevf code as of late, so working off the latest source forge driver would the easiest for me to send you patch on.  Sadly we haven't been able to recreate the failure here so it makes it rather hard to debug.
+Thinking about this some more, I'm inclined to do nothing.  The patch
+below *would* avoid the issue, but it's a fair bit of code and
+comments that future code readers would have to wade through, and the
+only benefit is for topologies that are completely invalid and will
+never be seen in real hardware.
 
-Thanks,
--Don Skidmore <donald.c.skidmore@intel.com>
+I think that we could also avoid this issue by reworking our ASPM
+support, and if we were to do anything, that's what I would prefer.
+For example, consider the following (legal and common) topology:
+
+    00:1c.0 Root Port (bridge leading to [bus 01-03])
+    01:00.0 Upstream Port (bridge leading to [bus 02-03])
+    02:00.0 Downstream Port (bridge leading to [bus 03])
+
+When we initialize ASPM link state for 02:00.0, we look all the way up
+to the link state for 00:1c.0 (the
+"pdev->bus->parent->self->link_state" in alloc_pcie_link_state()).  I
+think that's crazy.  ASPM is fundamentally a feature of a *link*, and
+the only link directly related to 02:00.0 is the one leading
+*downstream* to device 03:00.0.
+
+I know there are latency questions where we do care about upstream
+links, and there's commit 46bbdfa44c, which is what originally added
+this "pdev->bus->parent->self->link_state" expression.  It suggests
+that we need to check the whole hierarchy up to the root port.  But
+there's not enough information in the changelog to really explain it.
+
+So I strongly support rework that would simplify ASPM management
+overall.   I just don't want to add point fixes that only handle
+special cases, especially when they don't occur in the real world.
+
+Bjorn
+
+> ---
+>  arch/powerpc/kernel/pci_of_scan.c |    7 ++++++-
+>  arch/sparc/kernel/pci.c           |    7 ++++++-
+>  drivers/pci/probe.c               |   37 +++++++++++++++++++++++++++++++++----
+>  include/linux/pci.h               |    2 +-
+>  4 files changed, 46 insertions(+), 7 deletions(-)
+>
+> diff --git a/arch/powerpc/kernel/pci_of_scan.c b/arch/powerpc/kernel/pci_of_scan.c
+> index 6b0ba58..f6ef4dd 100644
+> --- a/arch/powerpc/kernel/pci_of_scan.c
+> +++ b/arch/powerpc/kernel/pci_of_scan.c
+> @@ -143,7 +143,6 @@ struct pci_dev *of_create_pci_dev(struct device_node *node,
+>         dev->devfn = devfn;
+>         dev->multifunction = 0;         /* maybe a lie? */
+>         dev->needs_freset = 0;          /* pcie fundamental reset required */
+> -       set_pcie_port_type(dev);
+>
+>         list_for_each_entry(slot, &dev->bus->slots, list)
+>                 if (PCI_SLOT(dev->devfn) == slot->number)
+> @@ -164,6 +163,12 @@ struct pci_dev *of_create_pci_dev(struct device_node *node,
+>         pr_debug("    class: 0x%x\n", dev->class);
+>         pr_debug("    revision: 0x%x\n", dev->revision);
+>
+> +       if (set_pcie_port_type(dev)) {
+> +               pci_bus_put(dev->bus);
+> +               kfree(dev);
+> +               return NULL;
+> +       }
+> +
+>         dev->current_state = PCI_UNKNOWN;       /* unknown power state */
+>         dev->error_state = pci_channel_io_normal;
+>         dev->dma_mask = 0xffffffff;
+> diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+> index bc4d3f5..5600849 100644
+> --- a/arch/sparc/kernel/pci.c
+> +++ b/arch/sparc/kernel/pci.c
+> @@ -287,7 +287,6 @@ static struct pci_dev *of_create_pci_dev(struct pci_pbm_info *pbm,
+>         dev->dev.of_node = of_node_get(node);
+>         dev->devfn = devfn;
+>         dev->multifunction = 0;         /* maybe a lie? */
+> -       set_pcie_port_type(dev);
+>
+>         list_for_each_entry(slot, &dev->bus->slots, list)
+>                 if (PCI_SLOT(dev->devfn) == slot->number)
+> @@ -319,6 +318,12 @@ static struct pci_dev *of_create_pci_dev(struct pci_pbm_info *pbm,
+>                 printk("    class: 0x%x device name: %s\n",
+>                        dev->class, pci_name(dev));
+>
+> +       if (set_pcie_port_type(dev)) {
+> +               pci_bus_put(dev->bus);
+> +               kfree(dev);
+> +               return NULL;
+> +       }
+> +
+>         /* I have seen IDE devices which will not respond to
+>          * the bmdma simplex check reads if bus mastering is
+>          * disabled.
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index cf57fe7..a8cc929 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -970,20 +970,47 @@ static void pci_read_irq(struct pci_dev *dev)
+>         dev->irq = irq;
+>  }
+>
+> -void set_pcie_port_type(struct pci_dev *pdev)
+> +int set_pcie_port_type(struct pci_dev *pdev)
+>  {
+> -       int pos;
+> +       int pos, type;
+>         u16 reg16;
+> +       struct pci_dev *parent;
+>
+>         pos = pci_find_capability(pdev, PCI_CAP_ID_EXP);
+>         if (!pos)
+> -               return;
+> +               return 0;
+> +
+>         pdev->is_pcie = 1;
+>         pdev->pcie_cap = pos;
+>         pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
+>         pdev->pcie_flags_reg = reg16;
+>         pci_read_config_word(pdev, pos + PCI_EXP_DEVCAP, &reg16);
+>         pdev->pcie_mpss = reg16 & PCI_EXP_DEVCAP_PAYLOAD;
+> +
+> +       type = pci_pcie_type(pdev);
+> +       parent = pdev->bus->self;
+> +
+> +       /* An Upstream Port must be below a Root Port or a Downstream Port */
+> +       if (type == PCI_EXP_TYPE_UPSTREAM) {
+> +               if (!parent ||
+> +                   (pci_pcie_type(parent) != PCI_EXP_TYPE_ROOT_PORT &&
+> +                    pci_pcie_type(parent) != PCI_EXP_TYPE_DOWNSTREAM)) {
+> +                       dev_warn(&pdev->dev,
+> +                                "ignoring improperly connected PCIe switch\n");
+> +                       return -EINVAL;
+> +               }
+> +       }
+> +
+> +       /* A Downstream Port must be directly below an Upstream Port */
+> +       if (type == PCI_EXP_TYPE_DOWNSTREAM) {
+> +               if (!parent ||
+> +                   pci_pcie_type(parent) != PCI_EXP_TYPE_UPSTREAM) {
+> +                       dev_warn(&pdev->dev, "ignoring malformed PCIe switch (no Upstream Port)\n");
+> +                       return -EINVAL;
+> +               }
+> +       }
+> +
+> +       return 0;
+>  }
+>
+>  void set_pcie_hotplug_bridge(struct pci_dev *pdev)
+> @@ -1025,7 +1052,6 @@ int pci_setup_device(struct pci_dev *dev)
+>         dev->hdr_type = hdr_type & 0x7f;
+>         dev->multifunction = !!(hdr_type & 0x80);
+>         dev->error_state = pci_channel_io_normal;
+> -       set_pcie_port_type(dev);
+>
+>         list_for_each_entry(slot, &dev->bus->slots, list)
+>                 if (PCI_SLOT(dev->devfn) == slot->number)
+> @@ -1046,6 +1072,9 @@ int pci_setup_device(struct pci_dev *dev)
+>         dev_printk(KERN_DEBUG, &dev->dev, "[%04x:%04x] type %02x class %#08x\n",
+>                    dev->vendor, dev->device, dev->hdr_type, dev->class);
+>
+> +       if (set_pcie_port_type(dev))
+> +               return -EINVAL;
+> +
+>         /* need to have dev->class ready */
+>         dev->cfg_size = pci_cfg_space_size(dev);
+>
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 89ed123..a61134b 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -982,7 +982,7 @@ void pci_disable_ltr(struct pci_dev *dev);
+>  int pci_set_ltr(struct pci_dev *dev, int snoop_lat_ns, int nosnoop_lat_ns);
+>
+>  /* For use by arch with custom probe code */
+> -void set_pcie_port_type(struct pci_dev *pdev);
+> +int set_pcie_port_type(struct pci_dev *pdev);
+>  void set_pcie_hotplug_bridge(struct pci_dev *pdev);
+>
+>  /* Functions for PCI Hotplug drivers to use */
