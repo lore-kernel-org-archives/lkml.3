@@ -1,80 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab3HWRi7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 13:38:59 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:50745 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab3HWRi6 (ORCPT
+	id S1755915Ab3HWRlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 13:41:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58822 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754983Ab3HWRlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 13:38:58 -0400
-From: Wei Hu <wei@aristanetworks.com>
-To: Clemens Ladisch <clemens@ladisch.de>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Cc: Wei Hu <wei@aristanetworks.com>
-Subject: [PATCH] hwmon: (k10temp) Add support for Fam16h (Kabini)
-Date: Fri, 23 Aug 2013 10:38:18 -0700
-Message-Id: <1377279498-2868-1-git-send-email-wei@aristanetworks.com>
-X-Mailer: git-send-email 1.7.4.4
+	Fri, 23 Aug 2013 13:41:05 -0400
+Date: Fri, 23 Aug 2013 10:41:04 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Graham Williams <gwilli@broadcom.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: acm gadget: Null termintate strings table
+Message-ID: <20130823174104.GA32700@kroah.com>
+References: <063828A851006E448B735F1021E028962ACE2FE9@SJEXCHMB09.corp.ad.broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <063828A851006E448B735F1021E028962ACE2FE9@SJEXCHMB09.corp.ad.broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The temperature reporting interface stays the same, so we just
-add the PCI-ID to the list.
+On Tue, Aug 20, 2013 at 03:17:37PM +0000, Graham Williams wrote:
+> The gadget strings table should be null terminated.
+> usb_gadget_get_string() loops through the table
+> expecting a null at the end of the list.
+> 
+> Signed-off-by: Graham <gwilli@broadcom.com>
 
-Verified on AMD Olive Hill.
----
- Documentation/hwmon/k10temp |    1 +
- drivers/hwmon/Kconfig       |    4 ++--
- drivers/hwmon/k10temp.c     |    3 ++-
- 3 files changed, 5 insertions(+), 3 deletions(-)
+I need a full name for a signed-off-by: line, can you please resend this
+with this fixed?
 
-diff --git a/Documentation/hwmon/k10temp b/Documentation/hwmon/k10temp
-index 90956b6..4dfdc8f 100644
---- a/Documentation/hwmon/k10temp
-+++ b/Documentation/hwmon/k10temp
-@@ -12,6 +12,7 @@ Supported chips:
- * AMD Family 12h processors: "Llano" (E2/A4/A6/A8-Series)
- * AMD Family 14h processors: "Brazos" (C/E/G/Z-Series)
- * AMD Family 15h processors: "Bulldozer" (FX-Series), "Trinity"
-+* AMD Family 16h processors: "Kabini"
- 
-   Prefix: 'k10temp'
-   Addresses scanned: PCI space
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index e989f7f..1e27838 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -296,8 +296,8 @@ config SENSORS_K10TEMP
- 	  If you say yes here you get support for the temperature
- 	  sensor(s) inside your CPU. Supported are later revisions of
- 	  the AMD Family 10h and all revisions of the AMD Family 11h,
--	  12h (Llano), 14h (Brazos) and 15h (Bulldozer/Trinity)
--	  microarchitectures.
-+	  12h (Llano), 14h (Brazos), 15h (Bulldozer/Trinity) and
-+	  16h (Kabini) microarchitectures.
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called k10temp.
-diff --git a/drivers/hwmon/k10temp.c b/drivers/hwmon/k10temp.c
-index e3b037c..e633856 100644
---- a/drivers/hwmon/k10temp.c
-+++ b/drivers/hwmon/k10temp.c
-@@ -1,5 +1,5 @@
- /*
-- * k10temp.c - AMD Family 10h/11h/12h/14h/15h processor hardware monitoring
-+ * k10temp.c - AMD Family 10h/11h/12h/14h/15h/16h processor hardware monitoring
-  *
-  * Copyright (c) 2009 Clemens Ladisch <clemens@ladisch.de>
-  *
-@@ -211,6 +211,7 @@ static DEFINE_PCI_DEVICE_TABLE(k10temp_id_table) = {
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
- 	{}
- };
- MODULE_DEVICE_TABLE(pci, k10temp_id_table);
--- 
-1.7.4.4
+thanks,
 
+greg k-h
