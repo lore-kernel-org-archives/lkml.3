@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674Ab3HWADg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 20:03:36 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:63432 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656Ab3HWADe (ORCPT
+	id S1754696Ab3HWADl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 20:03:41 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:58055 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754678Ab3HWADh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 20:03:34 -0400
+	Thu, 22 Aug 2013 20:03:37 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-ext4@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
@@ -15,113 +15,153 @@ Cc: linux-ext4@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
         Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
         Christoph Hellwig <hch@infradead.org>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 0/5] Rework mtime and ctime updates on mmaped writes
-Date: Thu, 22 Aug 2013 17:03:16 -0700
-Message-Id: <cover.1377193658.git.luto@amacapital.net>
+Subject: [PATCH v4 1/7] mm: Track mappings that have been written via ptes
+Date: Thu, 22 Aug 2013 17:03:17 -0700
+Message-Id: <f2ac22142b4634b55ff6858d159b45dac96f81b6.1377193658.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <cover.1377193658.git.luto@amacapital.net>
+References: <cover.1377193658.git.luto@amacapital.net>
+In-Reply-To: <cover.1377193658.git.luto@amacapital.net>
+References: <cover.1377193658.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Writes via mmap currently update mtime and ctime in ->page_mkwrite.
-This hurts both throughput and latency.  In workloads that dirty a
-large number of mmapped pages, ->page_mkwrite can be hot and
-file_update_time is slow and scales poorly.  Updating timestamps can
-also sleep, which hurts latency for real-time workloads.
+This will allow the mm code to figure out when a file has been
+changed through a writable mmap.  Future changes will use this
+information to update the file timestamp after writes.
 
-This is also a correctness issue.  SuS says:
+This is handled in core mm code for two reasons:
 
-    The st_ctime and st_mtime fields of a file that is mapped with
-    MAP_SHARED and PROT_WRITE, will be marked for update at some point
-    in the interval between a write reference to the mapped region and
-    the next call to msync() with MS_ASYNC or MS_SYNC for that portion
-    of the file by any process. If there is no such call, these fields
-    may be marked for update at any time after a write reference if
-    the underlying file is modified as a result.
+1. Performance.  Setting a bit directly is faster than an indirect
+   call to a vma op.
 
-Currently, if the same mmapped page is written twice, the timestamp
-may not be update at all after the second write, whereas SuS (and
-anything using timestamps to invalidate caches, backup data, etc.)
-would expect the timestamp to eventually be updated.
+2. Simplicity.  The cmtime bit is set with lots of mm locks held.
+   Rather than making filesystems add a new vm operation that needs
+   to be aware of locking, it's easier to just get it right in core
+   code.
 
-This patchset attempts to fix both issues at once.  It adds a new
-address_space flag AS_CMTIME that is set atomically whenever the
-system transfers a pte dirty bit to a struct page backed by the
-address_space.  This can happen with various locks held and when low
-on memory.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ include/linux/pagemap.h | 16 ++++++++++++++++
+ mm/memory.c             |  7 ++++++-
+ mm/rmap.c               | 27 +++++++++++++++++++++++++--
+ 3 files changed, 47 insertions(+), 3 deletions(-)
 
-Later on, a_ops.update_cmtime_deferred is called to tell the FS to
-update cmtime due to a previous mmapped write.
-
-The core changes have no effect on unmodified filesystems.  To opt in,
-a filesystem should implement .update_cmtime_deferred (most likely by
-using generic_update_cmtime_deferred) and must call either
-mapping_flush_cmtime or mapping_test_clear_cmtime in .writepages.
-Filesystems should avoid updating timestamps in ->page_mkwrite.
-
-The reason that this is not completely automatic is that filesystems
-without backing stores do not really fit in to this model.
-Eventually, someone can add support.
-
-I've converted ext4, xfs, and btrfs.  Converting most other
-filesystems should be straightforward.
-
-I wrote an xfstest for this.  ext4, xfs, and btrfs pass.  It's here:
-
-https://github.com/amluto/xfstests/commit/5fbb72ac799cc44a9c4c6d3919f00a479202c899
-
-This series is pullable from:
-
-https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=mmap_mtime/patch_v4
-
-Changes from v3:
- - The new address space op is now called update_cmtime_deferred.
-   Callers take care of protection from fs freezing and checking
-   AS_CMTIME.  I fixed a deadlock in the freezer interaction.
- - Block plugs should be handled better.
- - Fixed an infinite loop in msync(MS_ASYNC).
- - Converted xfs and btrfs.
- - Misc minor cleanups.
- - Fixed a corner case: reclaim or migration could have cleaned all
-   pages without updating cmtime.
-
-Changes from v2:
- - The core code now interacts with filesystems only through
-   address_space ops, so there should be fewer layering issues.
- - MS_ASYNC is handled correctly.
-
-Changes from v1:
- - inode_update_time_writable now locks against the fs freezer.
- - Minor cleanups.
- - Major changelog improvements.
-
-Andy Lutomirski (7):
-  mm: Track mappings that have been written via ptes
-  fs: Add inode_update_time_writable
-  mm: Allow filesystems to defer cmtime updates
-  mm: Scan for dirty ptes and update cmtime on MS_ASYNC
-  ext4: Defer mmap cmtime updates
-  btrfs: Defer mmap cmtime updates
-  xfs: Defer mmap cmtime updates
-
- fs/btrfs/extent_io.c      |  1 +
- fs/btrfs/inode.c          | 32 +++++++++---------
- fs/buffer.c               |  7 ----
- fs/ext4/inode.c           | 11 +++++--
- fs/inode.c                | 64 +++++++++++++++++++++++++++---------
- fs/xfs/xfs_aops.c         |  1 +
- include/linux/fs.h        |  9 +++++
- include/linux/pagemap.h   | 22 +++++++++++++
- include/linux/writeback.h |  1 +
- mm/memory.c               |  7 +++-
- mm/migrate.c              |  2 ++
- mm/mmap.c                 |  6 +++-
- mm/msync.c                | 84 ++++++++++++++++++++++++++++++++++++++++-------
- mm/page-writeback.c       | 53 +++++++++++++++++++++++++++++-
- mm/rmap.c                 | 27 +++++++++++++--
- mm/vmscan.c               |  1 +
- 16 files changed, 272 insertions(+), 56 deletions(-)
-
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index e3dea75..9a461ee 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -25,6 +25,7 @@ enum mapping_flags {
+ 	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
+ 	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
+ 	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
++	AS_CMTIME	= __GFP_BITS_SHIFT + 5, /* cmtime update deferred */
+ };
+ 
+ static inline void mapping_set_error(struct address_space *mapping, int error)
+@@ -74,6 +75,21 @@ static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
+ 	return (__force gfp_t)mapping->flags & __GFP_BITS_MASK;
+ }
+ 
++static inline void mapping_set_cmtime(struct address_space * mapping)
++{
++	set_bit(AS_CMTIME, &mapping->flags);
++}
++
++static inline bool mapping_test_cmtime(struct address_space * mapping)
++{
++	return test_bit(AS_CMTIME, &mapping->flags);
++}
++
++static inline bool mapping_test_clear_cmtime(struct address_space * mapping)
++{
++	return test_and_clear_bit(AS_CMTIME, &mapping->flags);
++}
++
+ /*
+  * This is non-atomic.  Only to be used before the mapping is activated.
+  * Probably needs a barrier...
+diff --git a/mm/memory.c b/mm/memory.c
+index 4026841..1737a90 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1150,8 +1150,13 @@ again:
+ 			if (PageAnon(page))
+ 				rss[MM_ANONPAGES]--;
+ 			else {
+-				if (pte_dirty(ptent))
++				if (pte_dirty(ptent)) {
++					struct address_space *mapping =
++						page_mapping(page);
++					if (mapping)
++						mapping_set_cmtime(mapping);
+ 					set_page_dirty(page);
++				}
+ 				if (pte_young(ptent) &&
+ 				    likely(!(vma->vm_flags & VM_SEQ_READ)))
+ 					mark_page_accessed(page);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index b2e29ac..2e3fb27 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -928,6 +928,10 @@ static int page_mkclean_file(struct address_space *mapping, struct page *page)
+ 		}
+ 	}
+ 	mutex_unlock(&mapping->i_mmap_mutex);
++
++	if (ret)
++		mapping_set_cmtime(mapping);
++
+ 	return ret;
+ }
+ 
+@@ -1179,6 +1183,19 @@ out:
+ }
+ 
+ /*
++ * Mark a page's mapping for future cmtime update.  It's safe to call this
++ * on any page, but it only has any effect if the page is backed by a mapping
++ * that uses mapping_test_clear_cmtime to handle file time updates.  This means
++ * that there's no need to call this on for non-VM_SHARED vmas.
++ */
++static void page_set_cmtime(struct page *page)
++{
++	struct address_space *mapping = page_mapping(page);
++	if (mapping)
++		mapping_set_cmtime(mapping);
++}
++
++/*
+  * Subfunctions of try_to_unmap: try_to_unmap_one called
+  * repeatedly from try_to_unmap_ksm, try_to_unmap_anon or try_to_unmap_file.
+  */
+@@ -1219,8 +1236,11 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+ 	pteval = ptep_clear_flush(vma, address, pte);
+ 
+ 	/* Move the dirty bit to the physical page now the pte is gone. */
+-	if (pte_dirty(pteval))
++	if (pte_dirty(pteval)) {
+ 		set_page_dirty(page);
++		if (vma->vm_flags & VM_SHARED)
++			page_set_cmtime(page);
++	}
+ 
+ 	/* Update high watermark before we lower rss */
+ 	update_hiwater_rss(mm);
+@@ -1413,8 +1433,11 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
+ 		}
+ 
+ 		/* Move the dirty bit to the physical page now the pte is gone. */
+-		if (pte_dirty(pteval))
++		if (pte_dirty(pteval)) {
+ 			set_page_dirty(page);
++			if (vma->vm_flags & VM_SHARED)
++				page_set_cmtime(page);
++		}
+ 
+ 		page_remove_rmap(page);
+ 		page_cache_release(page);
 -- 
 1.8.3.1
 
