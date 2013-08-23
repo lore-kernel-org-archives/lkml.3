@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab3HWTCw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:02:52 -0400
-Received: from sauhun.de ([89.238.76.85]:43089 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755916Ab3HWTCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:02:50 -0400
-Date: Fri, 23 Aug 2013 21:02:47 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com
-Subject: Re: [PATCH] misc: (at24) move header to linux/platform_data/
-Message-ID: <20130823190247.GA3821@katana>
-References: <1377283100-10390-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fUYQa+Pmc3FrFX/N"
-Content-Disposition: inline
-In-Reply-To: <1377283100-10390-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755797Ab3HWTCB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:02:01 -0400
+Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:46521 "EHLO
+	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754659Ab3HWTB6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 15:01:58 -0400
+Message-ID: <00000140ac8dec92-f01525aa-0880-4e11-8c31-9cccce37bfa7-000000@email.amazonses.com>
+User-Agent: quilt/0.50-1
+Date: Fri, 23 Aug 2013 19:01:57 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org
+Cc: linux-arch@vger.kernel.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [guv 01/16] x86: Use this_cpu_inc/dec for debug registers
+References: <20130823190135.726207430@linux.com>
+X-SES-Outgoing: 2013.08.23-54.240.9.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I think this patch already exists in one form or another in some x86 tree.
 
---fUYQa+Pmc3FrFX/N
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-On Fri, Aug 23, 2013 at 02:38:20PM -0400, Vivien Didelot wrote:
-> This patch moves the at24.h header from include/linux/i2c to
-> include/linux/platform_data and updates existing support accordingly.
+Index: linux/arch/x86/include/asm/debugreg.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/debugreg.h	2013-08-06 13:52:23.740092873 -0500
++++ linux/arch/x86/include/asm/debugreg.h	2013-08-06 13:52:23.740092873 -0500
+@@ -97,11 +97,11 @@ extern void hw_breakpoint_restore(void);
+ DECLARE_PER_CPU(int, debug_stack_usage);
+ static inline void debug_stack_usage_inc(void)
+ {
+-	__get_cpu_var(debug_stack_usage)++;
++	__this_cpu_inc(debug_stack_usage);
+ }
+ static inline void debug_stack_usage_dec(void)
+ {
+-	__get_cpu_var(debug_stack_usage)--;
++	__this_cpu_dec(debug_stack_usage);
+ }
+ int is_debug_stack(unsigned long addr);
+ void debug_stack_set_zero(void);
+Index: linux/arch/x86/kernel/cpu/common.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/common.c	2013-07-19 09:06:36.850047837 -0500
++++ linux/arch/x86/kernel/cpu/common.c	2013-08-06 13:54:36.426384889 -0500
+@@ -1144,9 +1144,9 @@ DEFINE_PER_CPU(int, debug_stack_usage);
+ 
+ int is_debug_stack(unsigned long addr)
+ {
+-	return __get_cpu_var(debug_stack_usage) ||
+-		(addr <= __get_cpu_var(debug_stack_addr) &&
+-		 addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ));
++	return __this_cpu_read(debug_stack_usage) ||
++		(addr <= __this_cpu_read(debug_stack_addr) &&
++		 addr > (__this_cpu_read(debug_stack_addr) - DEBUG_STKSZ));
+ }
+ 
+ DEFINE_PER_CPU(u32, debug_idt_ctr);
 
-This message explains what the patch does but not why the change is
-wanted. I'd be surprised if we really want *all* platform_data in one
-single directory? Is this patch part of a bigger series? That being said
-i2c is not the best place for this include, in deed...
-
-
---fUYQa+Pmc3FrFX/N
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSF7HWAAoJEBQN5MwUoCm2zWwP/0HCmL8utiAoXSaSITUtnxAP
-HADAzHe7f2/hkJJjJFVKj3BP5qlD/qLboSh/MwEXnpqIHQ6kZxGO2Ohfydy1JRJ5
-x+k5JEITIeB7zJeOyQM6ZpBZwOHMkB2yoa+5kDpqmETVBehBUoGBc59z9b7resHY
-yW5lgzbKHDlzaeHhzrQ/0/8SDHqz2Dr0eGIuCOE0a8I8350Jp9NuaKyRTJ9H7Si8
-ctfTGYbBEYwYsRyTsqZmN6gx0fzn6auwF4KjoO4Ijj/6B46NBeOosZyrDugZ4iIW
-Asx47LjuoRzfFkQnGh0X9g66Gq3y7LXg+9P97vu+4j9tJZaDD+lbNn11POsluSbK
-nPfF/fxGCUMFQtmtwD8esArTmG5P7Fbcd50m4evnpuZRhEBURIDmxV62Cb/B91TU
-QytdPLBJBE4pdqjKxiOr8Zbz2YuxXjlK/8BVO51YVXqyYheTyHBJGw1se2FehqMB
-l6UtNoWiygMx6PaIbZlYWJ6gByrerV4528peQ0ELWVtH6asBLn9foAj77gRdVlGg
-uZVvhU6Uh2G5+uFjePbhwS8MjNsv/GpR424zm//yKwINNgdQZRZryJWWsu+wbbkD
-QHpVw6N8tg6268KJWTjkeWiA8NkT7Jtm+BNgq8IXfP0MLMUz9A5EamL6dpI9+boT
-3sYS1NImLj4GyXp6VC21
-=bytS
------END PGP SIGNATURE-----
-
---fUYQa+Pmc3FrFX/N--
