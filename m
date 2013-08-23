@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab3HWKbH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 06:31:07 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:45875 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754794Ab3HWKbE (ORCPT
+	id S1755351Ab3HWKbN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 06:31:13 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:34271 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755110Ab3HWKbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 06:31:04 -0400
+	Fri, 23 Aug 2013 06:31:07 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
@@ -14,81 +14,170 @@ Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
         Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2 3/7] mm/hwpoison: fix race against poison thp
-Date: Fri, 23 Aug 2013 18:30:37 +0800
-Message-Id: <1377253841-17620-3-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v2 6/7] mm/hwpoison: drop forward reference declarations __soft_offline_page()
+Date: Fri, 23 Aug 2013 18:30:40 +0800
+Message-Id: <1377253841-17620-6-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1377253841-17620-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1377253841-17620-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082310-5140-0000-0000-000003B78EBB
+x-cbid: 13082310-8256-0000-0000-000008E956C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v1 -> v2:
-	* unpoison thp fail  
+Drop forward reference declarations __soft_offline_page.
 
-There is a race between hwpoison page and unpoison page, memory_failure
-set the page hwpoison and increase num_poisoned_pages without hold page
-lock, and one page count will be accounted against thp for num_poisoned_pages.
-However, unpoison can occur before memory_failure hold page lock and
-split transparent hugepage, unpoison will decrease num_poisoned_pages
-by 1 << compound_order since memory_failure has not yet split transparent
-hugepage with page lock held. That means we account one page for hwpoison
-and 1 << compound_order for unpoison. This patch fix it by inserting a 
-PageTransHuge check before doing TestClearPageHWPoison, unpoison failed 
-without clearing PageHWPoison and decreasing num_poisoned_pages.
-
-
-            A                                                 	B
-    	memory_failue
-        TestSetPageHWPoison(p);
-        if (PageHuge(p))
-            nr_pages = 1 << compound_order(hpage);
-        else
-            nr_pages = 1;
-        atomic_long_add(nr_pages, &num_poisoned_pages);
-                                                            unpoison_memory
-	                                                        nr_pages = 1<< compound_trans_order(page);
-                                                            if(TestClearPageHWPoison(p))
-                                                            atomic_long_sub(nr_pages, &num_poisoned_pages);
-        lock page
-        if (!PageHWPoison(p))
-        	unlock page and return
-        hwpoison_user_mappings
-        if (PageTransHuge(hpage))
-        	split_huge_page(hpage);
-
-
-Suggested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- mm/memory-failure.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ mm/memory-failure.c | 128 ++++++++++++++++++++++++++--------------------------
+ 1 file changed, 63 insertions(+), 65 deletions(-)
 
 diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 5a4f4d6..a6c4752 100644
+index f357c91..ca714ac 100644
 --- a/mm/memory-failure.c
 +++ b/mm/memory-failure.c
-@@ -1339,6 +1339,16 @@ int unpoison_memory(unsigned long pfn)
- 		return 0;
- 	}
+@@ -1511,71 +1511,6 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	return ret;
+ }
  
-+	/*
-+	 * unpoison_memory() can encounter thp only when the thp is being
-+	 * worked by memory_failure() and the page lock is not held yet.
-+	 * In such case, we yield to memory_failure() and make unpoison fail.
-+	 */
-+	if (PageTransHuge(page)) {
-+		pr_info("MCE: Memory failure is now running on %#lx\n", pfn);
-+			return 0;
+-static int __soft_offline_page(struct page *page, int flags);
+-
+-/**
+- * soft_offline_page - Soft offline a page.
+- * @page: page to offline
+- * @flags: flags. Same as memory_failure().
+- *
+- * Returns 0 on success, otherwise negated errno.
+- *
+- * Soft offline a page, by migration or invalidation,
+- * without killing anything. This is for the case when
+- * a page is not corrupted yet (so it's still valid to access),
+- * but has had a number of corrected errors and is better taken
+- * out.
+- *
+- * The actual policy on when to do that is maintained by
+- * user space.
+- *
+- * This should never impact any application or cause data loss,
+- * however it might take some time.
+- *
+- * This is not a 100% solution for all memory, but tries to be
+- * ``good enough'' for the majority of memory.
+- */
+-int soft_offline_page(struct page *page, int flags)
+-{
+-	int ret;
+-	unsigned long pfn = page_to_pfn(page);
+-	struct page *hpage = compound_trans_head(page);
+-
+-	if (PageHWPoison(page)) {
+-		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+-		return -EBUSY;
+-	}
+-	if (!PageHuge(page) && PageTransHuge(hpage)) {
+-		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
+-			pr_info("soft offline: %#lx: failed to split THP\n",
+-				pfn);
+-			return -EBUSY;
+-		}
+-	}
+-
+-	ret = get_any_page(page, pfn, flags);
+-	if (ret < 0)
+-		return ret;
+-	if (ret) { /* for in-use pages */
+-		if (PageHuge(page))
+-			ret = soft_offline_huge_page(page, flags);
+-		else
+-			ret = __soft_offline_page(page, flags);
+-	} else { /* for free pages */
+-		if (PageHuge(page)) {
+-			set_page_hwpoison_huge_page(hpage);
+-			dequeue_hwpoisoned_huge_page(hpage);
+-			atomic_long_add(1 << compound_order(hpage),
+-					&num_poisoned_pages);
+-		} else {
+-			SetPageHWPoison(page);
+-			atomic_long_inc(&num_poisoned_pages);
+-		}
+-	}
+-	unset_migratetype_isolate(page, MIGRATE_MOVABLE);
+-	return ret;
+-}
+-
+ static int __soft_offline_page(struct page *page, int flags)
+ {
+ 	int ret;
+@@ -1662,3 +1597,66 @@ static int __soft_offline_page(struct page *page, int flags)
+ 	}
+ 	return ret;
+ }
++
++/**
++ * soft_offline_page - Soft offline a page.
++ * @page: page to offline
++ * @flags: flags. Same as memory_failure().
++ *
++ * Returns 0 on success, otherwise negated errno.
++ *
++ * Soft offline a page, by migration or invalidation,
++ * without killing anything. This is for the case when
++ * a page is not corrupted yet (so it's still valid to access),
++ * but has had a number of corrected errors and is better taken
++ * out.
++ *
++ * The actual policy on when to do that is maintained by
++ * user space.
++ *
++ * This should never impact any application or cause data loss,
++ * however it might take some time.
++ *
++ * This is not a 100% solution for all memory, but tries to be
++ * ``good enough'' for the majority of memory.
++ */
++int soft_offline_page(struct page *page, int flags)
++{
++	int ret;
++	unsigned long pfn = page_to_pfn(page);
++	struct page *hpage = compound_trans_head(page);
++
++	if (PageHWPoison(page)) {
++		pr_info("soft offline: %#lx page already poisoned\n", pfn);
++		return -EBUSY;
++	}
++	if (!PageHuge(page) && PageTransHuge(hpage)) {
++		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
++			pr_info("soft offline: %#lx: failed to split THP\n",
++				pfn);
++			return -EBUSY;
++		}
 +	}
 +
- 	nr_pages = 1 << compound_order(page);
- 
- 	if (!get_page_unless_zero(page)) {
++	ret = get_any_page(page, pfn, flags);
++	if (ret < 0)
++		return ret;
++	if (ret) { /* for in-use pages */
++		if (PageHuge(page))
++			ret = soft_offline_huge_page(page, flags);
++		else
++			ret = __soft_offline_page(page, flags);
++	} else { /* for free pages */
++		if (PageHuge(page)) {
++			set_page_hwpoison_huge_page(hpage);
++			dequeue_hwpoisoned_huge_page(hpage);
++			atomic_long_add(1 << compound_order(hpage),
++					&num_poisoned_pages);
++		} else {
++			SetPageHWPoison(page);
++			atomic_long_inc(&num_poisoned_pages);
++		}
++	}
++	unset_migratetype_isolate(page, MIGRATE_MOVABLE);
++	return ret;
++}
 -- 
 1.8.1.2
 
