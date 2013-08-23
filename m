@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab3HWR4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 13:56:33 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51545 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932110Ab3HWR4b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 13:56:31 -0400
-Date: Fri, 23 Aug 2013 19:56:28 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.10.9-rt5
-Message-ID: <20130823175628.GA9130@linutronix.de>
-References: <20130822182127.GA7606@linutronix.de>
- <5216F81A.4050203@localhost>
- <52170A6F.6040009@linutronix.de>
- <52179950.6010601@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52179950.6010601@localhost>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755942Ab3HWR7n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 13:59:43 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:58704 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755730Ab3HWR7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 13:59:41 -0400
+From: Sergei Trofimovich <slyfox@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Cc: Sergei Trofimovich <slyfox@gentoo.org>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH v3] Makefile: enable -Werror=implicit-int and -Werror=strict-prototypes by default
+Date: Fri, 23 Aug 2013 20:55:33 +0300
+Message-Id: <1377280533-15349-1-git-send-email-slyfox@gentoo.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <CAMuHMdXRb2K+WSfFGK=SASTU=+fUZ3XRQQ-+5xoDS=04HG92OQ@mail.gmail.com>
+References: <CAMuHMdXRb2K+WSfFGK=SASTU=+fUZ3XRQQ-+5xoDS=04HG92OQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Fernando Lopez-Lezcano | 2013-08-23 10:18:08 [-0700]:
+The common error fount in forward-ported/backported patches is missing headers.
+One recent example (files and function names are mangled):
 
->Please post a patch when/if you have it so I can retry the build...
->Thanks for taking a look at this!
+    void foo(){}
+    EXPORT_SYMBOL(foo);
 
-Does this fix your trobule?
+gave only warning
 
-diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
-index 0bfa40d..6f61d5f 100644
---- a/drivers/misc/hwlat_detector.c
-+++ b/drivers/misc/hwlat_detector.c
-@@ -220,7 +220,7 @@ static struct sample *buffer_get_sample(struct sample *sample)
- #else
- #define time_type	u64
- #define time_get()	trace_clock_local()
--#define time_to_us(x)	((x) / 1000)
-+#define time_to_us(x)	div_u64(x, 1000)
- #define time_sub(a, b)	((a) - (b))
- #define init_time(a, b)	a = b
- #define time_u64(a)	a
+    foo.c:12345678:5: warning: function declaration isn't a prototype [-Wstrict-prototypes]
+    void foo(){}
+         ^
 
->-- Fernando
+    foo.c:12345679:5: warning: data definition has no type or storage class [enabled by default]
+    EXPORT_SYMBOL(foo);
+    foo.c:12345679:5: warning: type defaults to 'int' in declaration of 'EXORT_SYMBOL' [-Werror=implicit-int]
 
-Sebastian
+Now it's a fatal error. Tested on x86_64 allyesconfig.
+
+Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ Makefile | 6 +++++++
+ 1 file changed, 6 insertions(+)
+
+Change since v2:
+ - moved CFLAGS checks lower to catch $(CROSS) case
+   as suggested by Geert
+ - added comments as other warning options do
+
+Change since v1:
+ - use 'cc-option' to respect old gccs
+ - fix typos. Thanks to Oleg Verych
+
+diff --git a/Makefile b/Makefile
+index a5a55f4..f5f36e1 100644
+--- a/Makefile
++++ b/Makefile
+@@ -659,6 +660,12 @@ KBUILD_CFLAGS	+= $(call cc-option,-fno-strict-overflow)
+ # conserve stack if available
+ KBUILD_CFLAGS   += $(call cc-option,-fconserve-stack)
+ 
++# disallog errors like 'EXPORT_GPL(foo);' with missing header
++KBUILD_CFLAGS   += $(call cc-option,-Werror=implicit-int)
++
++# require functions to have argumens in prototypes, not empty 'int foo()'
++KBUILD_CFLAGS   += $(call cc-option,-Werror=strict-prototypes)
++
+ # use the deterministic mode of AR if available
+ KBUILD_ARFLAGS := $(call ar-option,D)
+ 
+-- 
+1.8.3.2
+
