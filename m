@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab3HWMHz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 08:07:55 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:56328 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752296Ab3HWMHy (ORCPT
+	id S1755522Ab3HWMKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 08:10:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48690 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753260Ab3HWMKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 08:07:54 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, linus.walleij@linaro.org, sameo@linux.intel.com,
-        sachin.kamat@linaro.org
-Subject: [PATCH 1/1] mfd: ab8500-debugfs: Staticize local variables
-Date: Fri, 23 Aug 2013 17:37:42 +0530
-Message-Id: <1377259662-17401-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 23 Aug 2013 08:10:14 -0400
+Date: Fri, 23 Aug 2013 14:10:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: Theodore Tso <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
+        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: [sched_delayed] sched: RT throttling activated
+Message-ID: <20130823121004.GW31370@twins.programming.kicks-ass.net>
+References: <521722EE.70209@fold.natur.cuni.cz>
+ <20130823100913.GQ31370@twins.programming.kicks-ass.net>
+ <52173BBD.3050803@fold.natur.cuni.cz>
+ <20130823110254.GU31370@twins.programming.kicks-ass.net>
+ <521748FC.10809@fold.natur.cuni.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521748FC.10809@fold.natur.cuni.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Local variables referenced only in this file are made static.
+On Fri, Aug 23, 2013 at 01:35:24PM +0200, Martin Mokrejs wrote:
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/mfd/ab8500-debugfs.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+> # ps -deo pid,cls,cmd | grep -e 'RR \[' -e 'FF \['
 
-diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
-index 7d1f1b0..a0afa64 100644
---- a/drivers/mfd/ab8500-debugfs.c
-+++ b/drivers/mfd/ab8500-debugfs.c
-@@ -159,7 +159,7 @@ static struct hwreg_cfg hwreg_cfg = {
- 
- static struct ab8500_prcmu_ranges *debug_ranges;
- 
--struct ab8500_prcmu_ranges ab8500_debug_ranges[AB8500_NUM_BANKS] = {
-+static struct ab8500_prcmu_ranges ab8500_debug_ranges[AB8500_NUM_BANKS] = {
- 	[0x0] = {
- 		.num_ranges = 0,
- 		.range = NULL,
-@@ -488,7 +488,7 @@ struct ab8500_prcmu_ranges ab8500_debug_ranges[AB8500_NUM_BANKS] = {
- 	},
- };
- 
--struct ab8500_prcmu_ranges ab8505_debug_ranges[AB8500_NUM_BANKS] = {
-+static struct ab8500_prcmu_ranges ab8505_debug_ranges[AB8500_NUM_BANKS] = {
- 	[0x0] = {
- 		.num_ranges = 0,
- 		.range = NULL,
-@@ -847,7 +847,7 @@ struct ab8500_prcmu_ranges ab8505_debug_ranges[AB8500_NUM_BANKS] = {
- 	},
- };
- 
--struct ab8500_prcmu_ranges ab8540_debug_ranges[AB8500_NUM_BANKS] = {
-+static struct ab8500_prcmu_ranges ab8540_debug_ranges[AB8500_NUM_BANKS] = {
- 	[AB8500_M_FSM_RANK] = {
- 		.num_ranges = 1,
- 		.range = (struct ab8500_reg_range[]) {
-@@ -1377,7 +1377,7 @@ void ab8500_dump_all_banks(struct device *dev)
- 
- /* Space for 500 registers. */
- #define DUMP_MAX_REGS 700
--struct ab8500_register_dump
-+static struct ab8500_register_dump
- {
- 	u8 bank;
- 	u8 reg;
--- 
-1.7.4.1
+This explicitly only lists kernel threads; from your other comment:
 
+> The shell/python tasks have 'TS' in place of the FF value in the second column
+> so I guess they are not requiring realtime responsiveness.
+
+I'll assume you actually inspected the other tasks and found none.
+
+>     7  FF [migration/0]
+>    10  FF [watchdog/0]
+>    11  FF [watchdog/1]
+>    12  FF [migration/1]
+>    17  FF [migration/2]
+>    22  FF [migration/3]
+
+The 'migration' threads only look like FIFO threads but they're secretly
+not and don't count to the limit. The watchdog threads shouldn't run
+much either.
+
+>  2161  FF [irq/50-iwlwifi]
+
+Oh a threaded interrupt, I presume you're not using "threadiqrs" since
+this is the only interrupt thread around and I see a
+'request_threaded_irq()' call in
+drivers/net/wireless/iwlwifi/pcie/trans.c
+
+And wow, why would that thing consume that much cpu. 
+
+Johill, ever seen the iwlwifi interrupt go 'funny' and consume gobs of
+cpu-time?
+
+
+> > Nope, you get that message once to tell you that we throttle RT tasks.
+> 
+> I think the message could improved to explain this is a warn ONCE message and
+> that there is no "[sched_delayed] sched: RT throttling deactivated" counterpart
+> message to be anticipated.
+
+Would something like: 
+
+  sched: [ONCE] RT throttle hit -- inspect system configuration.
+
+Be a better message?
+
+Also, could you clarify what exact kernel version you're running? I
+couldn't find it in your previous messages.
