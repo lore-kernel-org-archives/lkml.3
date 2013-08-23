@@ -1,184 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab3HWROk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 13:14:40 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:61571 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754482Ab3HWROj convert rfc822-to-8bit (ORCPT
+	id S1755764Ab3HWRPJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 13:15:09 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:39643 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755572Ab3HWRPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 13:14:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <trinity-5320947e-cb3a-48ad-813e-70ea78b657a4-1377277158706@3capp-gmx-bs46>
-References: <trinity-5320947e-cb3a-48ad-813e-70ea78b657a4-1377277158706@3capp-gmx-bs46>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 23 Aug 2013 10:14:18 -0700
-Message-ID: <CALCETrUW8o=ssD3VD_Tb=jnJ006oAySJtZbgOuxgFdFKbA4Wyg@mail.gmail.com>
-Subject: Re: Re: question about ioremap_cache and PAT
-To: Andreas Werner <wernerandy@gmx.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 23 Aug 2013 13:15:07 -0400
+Message-ID: <1377278016.10300.814.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Date: Fri, 23 Aug 2013 11:13:36 -0600
+In-Reply-To: <20130823162444.GL3277@htj.dyndns.org>
+References: <20130822033234.GA2413@htj.dyndns.org>
+	 <1377186729.10300.643.camel@misato.fc.hp.com>
+	 <20130822183130.GA3490@mtj.dyndns.org>
+	 <1377202292.10300.693.camel@misato.fc.hp.com>
+	 <20130822202158.GD3490@mtj.dyndns.org>
+	 <1377205598.10300.715.camel@misato.fc.hp.com>
+	 <20130822212111.GF3490@mtj.dyndns.org>
+	 <1377209861.10300.756.camel@misato.fc.hp.com>
+	 <20130823130440.GC10322@mtj.dyndns.org>
+	 <1377274448.10300.777.camel@misato.fc.hp.com>
+	 <20130823162444.GL3277@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 9:59 AM, Andreas Werner <wernerandy@gmx.de> wrote:
->
->
-> Hi,
-> thank you for your answer.
->
-> So we are two persons for now who need WT :-)
->
-> Im currently working on an ethernet driver for our own ETH core.
-> The problem is that one requirement is to not use DMA to transmit or receive the data.
-> This means the that the ethernet buffer are not located in the main memory. They are located in
-> the FPGA.
->
-> To transmit or receive a frame, i have to read or write to mmio to get the data.
->
-> Intel has introduced the command "clflush" which can flush a cache line.
-> I wanted to activate the caches for those mmio (eth buffer) to speed up the transmit or receive.
-> After that the transfer over PCIe uses burst read/write.
->
-> The problem was if i set the buffer to Write-Back and call clflush on those mmio-addresses, the system crashed without any output.
-> I found this articel http://software.intel.com/en-us/forums/topic/393070.[http://software.intel.com/en-us/forums/topic/393070]
->
-> After that i configured the transmit buffer to be Write-Combining (only write to that adresses) using ioremap_wc, and
-> the receive buffer to be Write-Through (ioremap_cache + mtrr Write-Back + my Kernel Hack :-)) everything worked fine.
-> The other configuration Register on the FPGA are just mapped with ioremap.
+Hello,
 
-I'm curious: have you tried movntdqa on UC memory for this?
-(Certainly WP or WT is easier.)
+On Fri, 2013-08-23 at 12:24 -0400, Tejun Heo wrote:
+> On Fri, Aug 23, 2013 at 10:14:08AM -0600, Toshi Kani wrote:
+> > I still think acpi table info should be available earlier, but I do not
+> > think I can convince you on this.  This can be religious debate.
+> 
+> I'm curious.  If there aren't substantial enough benefits, why would
+> you still want to pull it earlier when it brings in things like initrd
+> override and crafting the code carefully so that it's safe to execute
+> it from different address modes and so on?  Please note that x86 is
+> not ia64.  The early environment is completely different not only
+> technically but also in its diversity and suckiness.  It wasn't too
+> long ago that vendors were screwing up ACPI left and right.  It has
+> been getting better but there's a reason why, for example, we still
+> consider e820 to be the authoritative information over ACPI.
 
-In any case, I hope to have patches to support WP and WT without using
-PAT reasonably soon.
+Firmware generates tables, and provides them via some interface.  Memory
+map table can be provided via e820 or EFI memory map.  Memory topology
+table is provided via ACPI.  I agree to prioritize one table over the
+other when there is overlap.  But in the end, it is the firmware that
+generates the tables.  Because it is provided via ACPI does not make it
+suddenly unreliable.  I think table info from e820/EFI/ACPI should be
+available at the same time.  To me, it makes more sense to use the
+hotplug info to initialize memblock than try to find a way to workaround
+without it.  I think we will continue to be in that way to find a
+workaround in this direction. 
 
->
-> On PCIe Tracer i can see the burst read/write on my device.
->
-> Is it possible to get hits into the Kernel?
->
-> My modification in arch/x86/mm/pat.c:
->
-> --- pat.c.orig 2013-02-03 01:18:49.491879407 +0100
-> +++ pat.c 2013-02-03 01:19:19.053509836 +0100
-> @@ -149,10 +149,16 @@ static unsigned long pat_x_mtrr_type(u64
->    u8 mtrr_type;
->
->    mtrr_type = mtrr_type_lookup(start, end);
-> -  if (mtrr_type != MTRR_TYPE_WRBACK)
-> +
-> +  if (mtrr_type == MTRR_TYPE_WRTHROUGH) {
-> +   return _PAGE_CACHE_WB;
-> +  }
-> +  else if( mtrr_type == MTRR_TYPE_WRBACK )
-> +   return _PAGE_CACHE_WB;
-> +  else
->     return _PAGE_CACHE_UC_MINUS;
-> -
-> -  return _PAGE_CACHE_WB;
-> +
->   }
->
->   return req_type;
->
+I came from ia64 background, and am not very familiar with x86.  So, you
+may be very right about that x86 is different.  I also agree that initrd
+is making it unnecessarily complicated.  We may see some initial issues,
+but my hope is that the code gets matured over the time.
 
-That seems more or less reasonable to me.  If you want it included,
-send it to x86@kernel.org (cc lkml) and see what they say.
+Thanks,
+-Toshi
 
-It would be prettier if you combined the conditions into a single
-if/else, though.
-
->
-> Best regards.
->
->
-> Gesendet: Montag, 12. August 2013 um 19:53 Uhr
-> Von: "Andy Lutomirski" <luto@amacapital.net>
-> An: "Andreas Werner" <wernerandy@gmx.de>
-> Cc: linux-kernel@vger.kernel.org
-> Betreff: Re: question about ioremap_cache and PAT
-> On 08/11/2013 09:50 AM, Andreas Werner wrote:
->> Hi i have a question about ioremap_cache and the resulting PAT attribute on X86 system. If I configure the mtrr to Write-Through for an adress range, and call ioremap_cache to map the mmio, the resulting PAT attribute is set to UC.
->> If I check the Intel document IA-32 SDM vol 3a, the resulting PAT attribute should be WB.
->>
->> I found the function pat_x_mtrr_type in arch/x86/mm/pat.c where the resulting attribute is returned. There will be always UC return expect if the MTRR is set to WB.
->>
->> Why is there only WB or UC returned? In the Intel document there are a lot of combinations "allowed".
->>
->> I need a Attribute of WT, so what i did is to modify the pat_x_mtrr_type function to return also WB if the MTRR is set to WT.
->>
->> Is this a solution to solve that or whats the reasion why the kernel doesn´t support this combination?
->
-> The kernel doesn't support it because I'm apparently the only person who
-> ever wanted it and I haven't implemented it yet.
->
-> This stuff is handled in hardware, so modifying the kernel's idea of
-> what hardware does won't do much. Also, the kernel using MTRRs is on
-> its (very slow) way out. You could probably hack something up, but I
-> can almost guarantee that hpa, etc won't accept the patches.
->
-> That being said, I'm planning to support WT directly using PAT in the
-> near future. This will work on most recent cpus (there are errata that
-> will prevent use of the high PAT entries on some cpus).
->
-> What do you need WT for? I want it for NVDIMMs, and all I need to get
-> started now is a heatsink*, so I'll hopefully start implementing this
-> stuff in the next week or so.
->
-> --Andy
->
-> * Damnit, Intel, it's not 2003 any more. You already figured out that
-> heatsinks want screw holes. But why couldn't you make sure that all
-> so-called "LGA 2011" sockets have the screw holes in the same place?
->
->
->>
->> Best regards
->>
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> B
->> A
->> A
->> A
->> A
->> A
->> A
->> A
->> A
->> A
->> A
->> A
->> A
->> A
->> A
->> A
->> B
->> B
->> B
->> Best regards
->>
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
