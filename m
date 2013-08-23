@@ -1,120 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab3HWQ4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 12:56:18 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35183 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755824Ab3HWQ4R (ORCPT
+	id S1755663Ab3HWQ7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 12:59:22 -0400
+Received: from mout.gmx.net ([212.227.17.21]:53524 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754502Ab3HWQ7U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 12:56:17 -0400
-Date: Fri, 23 Aug 2013 17:55:39 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
- DBX500 DT
-Message-ID: <20130823165539.GD7015@e106331-lin.cambridge.arm.com>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
- <1370521041-32318-10-git-send-email-lee.jones@linaro.org>
- <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
- <20130820093034.GL31036@pengutronix.de>
- <20130822133730.GB23152@e106331-lin.cambridge.arm.com>
- <20130822141900.GB17154@lee--X1>
- <20130822151723.GE23152@e106331-lin.cambridge.arm.com>
- <20130822154116.GC17154@lee--X1>
- <20130822211912.GE31036@pengutronix.de>
- <20130823075607.GD17154@lee--X1>
+	Fri, 23 Aug 2013 12:59:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130823075607.GD17154@lee--X1>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <trinity-5320947e-cb3a-48ad-813e-70ea78b657a4-1377277158706@3capp-gmx-bs46>
+From: "Andreas Werner" <wernerandy@gmx.de>
+To: "Andy Lutomirski" <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Aw: Re: question about ioremap_cache and PAT
+Content-Type: text/plain; charset=UTF-8
+Date: Fri, 23 Aug 2013 18:59:18 +0200 (CEST)
+Importance: normal
+Sensitivity: Normal
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+X-Provags-ID: V03:K0:ip9uagZlR8kgsKM+LhyhAVj6mgf3F/xc1MQrM9mpnYE
+ 97CnBXqdq9l3sNTjGeDy6ePX3oU/z3l4gD2ZKqmM9ZuYgyREN7
+ npruKTn2yusQ108QlClst5r43lmkmcmZl8bKCIFLhTfkCIwusf
+ Kz/JAdTWupXNHXsxISvlChxJjLzhE8i/nd4JdgnnusXKnK9JIb
+ vkhmyrniVgku9lTQC3azADvwOZlOrsSPDxf7GorkUiMmL/ZCnL
+ apgiHfGCV3UvfA3fqqviIpHhmuAogAwgLrNZ0mMmiJEeep3wyN 1tERf0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 08:56:07AM +0100, Lee Jones wrote:
-> I had a short chat with Rob last night about this. I'm going to loop
-> him in to the conversation, as he wrote the binding.
-> 
-> > > When most of the other clocks that we deal with are being requested,
-> > > they rely on being index zero:
-> > > 
-> > >   drivers/i2c/busses/i2c-nomadik.c: dev->clk = clk_get(&adev->dev, NULL);
-> > 
-> > Look at drivers/clk/clkdev.c, there's some fuzzy matching
-> > involved when you pass NULL as connection id.
-> 
-> Yes, I've been looking at that. This is why it works currently. I
-> think I need to change all of the drivers to specify which clock they
-> want. At the moment that 'fuzzy matching' is what's saving us. If
-> anyone were to change our DTS file to match what the binding says,
-> then it would cease to work. I'm guessing this is the same for all
-> other DTS files too:
 
-I think if anything, the binding document(s) should be updated to
-describe that apb_pclk is referred to by name, and the names of the
-other clocks should be described in the specific device bindings. We can
-then modify the drivers which grab clock 0 to explicitly grab the first
-clock by name, and backwards compatibility should not be broken.
 
-I don't believe any other OS has implemented the common clock bindings,
-and we've never supported the binding as described. Let's correct the
-de-facto standard into a standard by decree.
+Hi,
+thank you for your answer.
+ 
+So we are two persons for now who need WT :-)
+ 
+Im currently working on an ethernet driver for our own ETH core.
+The problem is that one requirement is to not use DMA to transmit or receive the data.
+This means the that the ethernet buffer are not located in the main memory. They are located in
+the FPGA.
+ 
+To transmit or receive a frame, i have to read or write to mmio to get the data.
+ 
+Intel has introduced the command "clflush" which can flush a cache line.
+I wanted to activate the caches for those mmio (eth buffer) to speed up the transmit or receive.
+After that the transfer over PCIe uses burst read/write.
+ 
+The problem was if i set the buffer to Write-Back and call clflush on those mmio-addresses, the system crashed without any output.
+I found this articel http://software.intel.com/en-us/forums/topic/393070.[http://software.intel.com/en-us/forums/topic/393070]
+ 
+After that i configured the transmit buffer to be Write-Combining (only write to that adresses) using ioremap_wc, and
+the receive buffer to be Write-Through (ioremap_cache + mtrr Write-Back + my Kernel Hack :-)) everything worked fine.
+The other configuration Register on the FPGA are just mapped with ioremap.
+ 
+On PCIe Tracer i can see the burst read/write on my device.
+ 
+Is it possible to get hits into the Kernel?
+ 
+My modification in arch/x86/mm/pat.c:
+ 
+--- pat.c.orig 2013-02-03 01:18:49.491879407 +0100
++++ pat.c 2013-02-03 01:19:19.053509836 +0100
+@@ -149,10 +149,16 @@ static unsigned long pat_x_mtrr_type(u64
+   u8 mtrr_type;
+ 
+   mtrr_type = mtrr_type_lookup(start, end);
+-  if (mtrr_type != MTRR_TYPE_WRBACK)
++
++  if (mtrr_type == MTRR_TYPE_WRTHROUGH) {
++   return _PAGE_CACHE_WB;
++  }
++  else if( mtrr_type == MTRR_TYPE_WRBACK )
++   return _PAGE_CACHE_WB;
++  else
+    return _PAGE_CACHE_UC_MINUS;
+- 
+-  return _PAGE_CACHE_WB;
++
+  }
+ 
+  return req_type;
+ 
+ 
+Best regards.
+ 
 
-Thanks,
-Mark.
+Gesendet: Montag, 12. August 2013 um 19:53 Uhr
+Von: "Andy Lutomirski" <luto@amacapital.net>
+An: "Andreas Werner" <wernerandy@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Betreff: Re: question about ioremap_cache and PAT
+On 08/11/2013 09:50 AM, Andreas Werner wrote:
+> Hi i have a question about ioremap_cache and the resulting PAT attribute on X86 system. If I configure the mtrr to Write-Through for an adress range, and call ioremap_cache to map the mmio, the resulting PAT attribute is set to UC.
+> If I check the Intel document IA-32 SDM vol 3a, the resulting PAT attribute should be WB.
+>
+> I found the function pat_x_mtrr_type in arch/x86/mm/pat.c where the resulting attribute is returned. There will be always UC return expect if the MTRR is set to WB.
+>
+> Why is there only WB or UC returned? In the Intel document there are a lot of combinations "allowed".
+>
+> I need a Attribute of WT, so what i did is to modify the pat_x_mtrr_type function to return also WB if the MTRR is set to WT.
+>
+> Is this a solution to solve that or whats the reasion why the kernel doesn´t support this combination?
 
-> 
-> arch/arm/boot/dts/imx23.dtsi:                clock-names = "uart", "apb_pclk";
-> arch/arm/boot/dts/imx28.dtsi:                clock-names = "uart", "apb_pclk";
-> arch/arm/boot/dts/nspire-cx.dts:             clock-names = "uart_clk", "apb_pclk";
-> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "timclk", "apb_pclk";
-> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "timclk", "apb_pclk";
-> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "uartclk", "apb_pclk";
-> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "uartclk", "apb_pclk";
-> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "uartclk", "apb_pclk";
-> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "rng", "apb_pclk";
-> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "mclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "refclk", "timclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "mclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "KMIREFCLK", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "KMIREFCLK", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "uartclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "uartclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "uartclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "uartclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "wdogclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "timclken1", "timclken2", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "timclken1", "timclken2", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "clcdclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "refclk", "timclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "mclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "KMIREFCLK", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "KMIREFCLK", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "uartclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "uartclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "uartclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "uartclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "wdogclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "timclken1", "timclken2", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "timclken1", "timclken2", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "clcdclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts:  clock-names = "wdogclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2p-ca9.dts:      clock-names = "clcdclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2p-ca9.dts:      clock-names = "timclk", "apb_pclk";
-> arch/arm/boot/dts/vexpress-v2p-ca9.dts:      clock-names = "wdogclk", "apb_pclk";
-> 
-> -- 
-> Lee Jones
-> Linaro ST-Ericsson Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
-> 
+The kernel doesn't support it because I'm apparently the only person who
+ever wanted it and I haven't implemented it yet.
+
+This stuff is handled in hardware, so modifying the kernel's idea of
+what hardware does won't do much. Also, the kernel using MTRRs is on
+its (very slow) way out. You could probably hack something up, but I
+can almost guarantee that hpa, etc won't accept the patches.
+
+That being said, I'm planning to support WT directly using PAT in the
+near future. This will work on most recent cpus (there are errata that
+will prevent use of the high PAT entries on some cpus).
+
+What do you need WT for? I want it for NVDIMMs, and all I need to get
+started now is a heatsink*, so I'll hopefully start implementing this
+stuff in the next week or so.
+
+--Andy
+
+* Damnit, Intel, it's not 2003 any more. You already figured out that
+heatsinks want screw holes. But why couldn't you make sure that all
+so-called "LGA 2011" sockets have the screw holes in the same place?
+
+
+>
+> Best regards
+>
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> B
+> A
+> A
+> A
+> A
+> A
+> A
+> A
+> A
+> A
+> A
+> A
+> A
+> A
+> A
+> A
+> B
+> B
+> B
+> Best regards
+>
+ 
