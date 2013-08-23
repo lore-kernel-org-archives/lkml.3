@@ -1,112 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab3HWKHy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 06:07:54 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:52648 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968Ab3HWKHx (ORCPT
+	id S1755204Ab3HWKJV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 06:09:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46384 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074Ab3HWKJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 06:07:53 -0400
-Date: Fri, 23 Aug 2013 12:07:47 +0200
-From: Robert Richter <rric@kernel.org>
-To: Vince Weaver <vince@deater.net>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org, Vince Weaver <vincent.weaver@maine.edu>
-Subject: Re: [PATCH v3 12/12] [RFC] perf, persistent: ioctl functions to
- control persistency
-Message-ID: <20130823100747.GC10223@rric.localhost>
-References: <1377180807-12758-1-git-send-email-rric@kernel.org>
- <1377180807-12758-13-git-send-email-rric@kernel.org>
- <alpine.DEB.2.02.1308221404090.26486@pianoman.cluster.toy>
+	Fri, 23 Aug 2013 06:09:19 -0400
+Date: Fri, 23 Aug 2013 12:09:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: Theodore Tso <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
+        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [sched_delayed] sched: RT throttling activated
+Message-ID: <20130823100913.GQ31370@twins.programming.kicks-ass.net>
+References: <521722EE.70209@fold.natur.cuni.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1308221404090.26486@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <521722EE.70209@fold.natur.cuni.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.08.13 14:18:06, Vince Weaver wrote:
-> On Thu, 22 Aug 2013, Robert Richter wrote:
-> > This is for Linux man-pages:
+On Fri, Aug 23, 2013 at 10:53:02AM +0200, Martin Mokrejs wrote:
+> Hi,
+>   I tried to figure out what this message really means. I came to 
+> https://rt.wiki.kernel.org/index.php/Frequently_Asked_Questions
+> but I am still lost. I lack in the FAQ some user-related information.
+> The first paragraph is still unclear to me. I have a i7-2640M based
+> laptop, hyperthreading is enabled by BIOS but I shut down the two
+> emulated cores by (no BIOS option to disable HT):
 > 
-> Thanks, though you're missing out by not learning all about troff 
-> formatting.
+> Would you please clarify what the "[sched_delayed] sched: RT throttling activated"
+> really means? 
 
-Thanks for documenting perf_event_open(), it's a great help. The troff
-thing I may learn in case I write a patch for man-pages. ;)
+It means you have (a) real-time task(s) that consume significant amount
+of time. At some point we throttle them in an attempt to keep the system
+from falling over.
 
-> 
-> >     type ...
-> > 
-> >         PERF_TYPE_PERSISTENT (Since Linux 3.xx)
-> > 
-> >             This indicates a persistent event. There is a unique
-> >             identifier for each persistent event that needs to be
-> >             specified in the event's attribute config field.
-> >             Persistent events are listed under:
-> > 
-> >               /sys/bus/event_source/devices/persistent/
-> 
-> Wait, so the first time you create a persistent event you do *not*
-> set type PERF_TYPE_PERSISTENT?  You only do that if you're
-> "attaching" to an exisiting event?  You might want to clarify that.
+> Is that because there is some RT-requiring application on my system?
 
-You just *open* an existing persistent event and may access buffers
-with mmap(). After opening it you also may attach the event to the
-process holding the fd with the ioctl. Then, the event is no longer
-persistent and removed after all users finished using the event.
-Without doing the attach-ioctl the event stays persistent in the
-system.
+Yep.
 
-> >     persistent: (Since Linux 3.xx)
-> > 
-> >         Put event into persistent state after opening. After closing
-> >         the event's fd the event is persistent in the system and
-> >         continues to run.
-> 
-> will there be some sort of tool that will let you kill runaway persistent 
-> events?  Or will you have to manually perf_event_open() / iotcl() them
-> by hand somehow?
+> I don't know of any (or don't care about real-time responsiveness except that ALSA
+> drivers require me to have CONFIG_SND_HRTIMER=y). Per Goggle answers could the
+> culprit be nfsd? Then I will recompile is as a module.
 
-The instance opening the event should also be responsible for removing
-it. But there could be a perf tool for controlling persistent events
-(create, list, remove, etc).
-
-> >         PERF_EVENT_IOC_DETACH (Since Linux 3.xx)
-> > 
-> >             Detach the event specified by the file descriptor from the
-> >             process and make it persistent in the system. After
-> >             closing the fd the event will continue to run. An unique
-> >             identifier for the persistent event is returned or an
-> >             error otherwise. The following allows to connect to the
-> >             event again:
-> 
-> You might want to re-order things so it's clear you get the unique ID
-> at ioctl time and not after the close happens.
-
-Ah, yes, indeed:
-
-            Detach the event specified by the file descriptor from the
-            process and make it persistent in the system. An unique
-            identifier for the persistent event is returned or an
-            error otherwise. After closing the fd the event will
-            continue to run. The following allows to connect to the
-            event again:
-
-
-> >         PERF_EVENT_IOC_ATTACH (Since Linux 3.xx)
-> > 
-> >             Attach the event specified by the file descriptor to the
-> >             current process. The event is no longer persistent in the
-> >             system and will be removed after all users disconnected
-> >             from the event. Thus, if there are no other users the
-> >             event will be closed too after closing its file
-> >             descriptor, the event then no longer exists.
-
-Thanks for review, Vince.
-
--Robert
+Unlikely, I don't think I've ever seen anybody run their nfsd with RT
+priority. Also, you can run RT tasks regardless of the config options.
+SCHED_RR and SCHED_FIFO are POSIX specified and always available.
