@@ -1,108 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab3HWPNi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 11:13:38 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:33709 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab3HWPNg (ORCPT
+	id S1755646Ab3HWPNy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 11:13:54 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:32886 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755619Ab3HWPNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 11:13:36 -0400
-Message-ID: <52177C1B.60107@linux.vnet.ibm.com>
-Date: Fri, 23 Aug 2013 17:13:31 +0200
-From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+	Fri, 23 Aug 2013 11:13:51 -0400
+Date: Sat, 24 Aug 2013 00:13:38 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Bob Liu <bob.liu@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH v7 0/5] zram/zsmalloc promotion
+Message-ID: <20130823151303.GA2732@gmail.com>
+References: <1377065791-2959-1-git-send-email-minchan@kernel.org>
+ <52148730.4000709@oracle.com>
+ <20130822004250.GB4665@bbox>
+ <CAA_GA1fZc89BRxKyS8zs-i0-+YJ9TsVXFFZcmza2Dzo4O4kiaA@mail.gmail.com>
 MIME-Version: 1.0
-To: Frantisek Hrbata <fhrbata@redhat.com>
-CC: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
-        rusty@rustcorp.com.au, linux-arch@vger.kernel.org, arnd@arndb.de,
-        mgahagan@redhat.com, agospoda@redhat.com
-Subject: Re: [RFC PATCH 4/4] kernel: add support for init_array constructors
-References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com> <1377247176-13537-5-git-send-email-fhrbata@redhat.com>
-In-Reply-To: <1377247176-13537-5-git-send-email-fhrbata@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082315-8372-0000-0000-000006F874A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA_GA1fZc89BRxKyS8zs-i0-+YJ9TsVXFFZcmza2Dzo4O4kiaA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.08.2013 10:39, Frantisek Hrbata wrote:
-> This adds the .init_array section as yet another section with constructors. This
-> is needed because gcc is adding __gcov_init calls to .init_array.
+Howdy Bob,
+
+On Fri, Aug 23, 2013 at 10:10:17PM +0800, Bob Liu wrote:
+> Hi Minchan,
 > 
-> Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
-> ---
->  include/asm-generic/vmlinux.lds.h | 1 +
->  include/linux/module.h            | 2 ++
->  kernel/module.c                   | 6 ++++++
->  3 files changed, 9 insertions(+)
+> On Thu, Aug 22, 2013 at 8:42 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > Hi Bob,
+> >
+> > On Wed, Aug 21, 2013 at 05:24:00PM +0800, Bob Liu wrote:
+> >> Hi Minchan,
+> >>
+> >> On 08/21/2013 02:16 PM, Minchan Kim wrote:
+> >> > It's 7th trial of zram/zsmalloc promotion.
+> >> > I rewrote cover-letter totally based on previous discussion.
+> >> >
+> >> > The main reason to prevent zram promotion was no review of
+> >> > zsmalloc part while Jens, block maintainer, already acked
+> >> > zram part.
+> >> >
+> >> > At that time, zsmalloc was used for zram, zcache and zswap so
+> >> > everybody wanted to make it general and at last, Mel reviewed it
+> >> > when zswap was submitted to merge mainline a few month ago.
+> >> > Most of review was related to zswap writeback mechanism which
+> >> > can pageout compressed page in memory into real swap storage
+> >> > in runtime and the conclusion was that zsmalloc isn't good for
+> >> > zswap writeback so zswap borrowed zbud allocator from zcache to
+> >> > replace zsmalloc. The zbud is bad for memory compression ratio(2)
+> >> > but it's very predictable behavior because we can expect a zpage
+> >> > includes just two pages as maximum. Other reviews were not major.
+> >> > http://lkml.indiana.edu/hypermail/linux/kernel/1304.1/04334.html
+> >> >
+> >> > Zcache doesn't use zsmalloc either so zsmalloc's user is only
+> >> > zram now so this patchset moves it into zsmalloc directory.
+> >> > Recently, Bob tried to move zsmalloc under mm directory to unify
+> >> > zram and zswap with adding pseudo block device in zswap(It's
+> >> > very weired to me) but he was simple ignoring zram's block device
+> >> > (a.k.a zram-blk) feature and considered only swap usecase of zram,
+> >> > in turn, it lose zram's good concept.
+> >> >
+> >>
+> >> Yes, I didn't notice the feature that zram can be used as a normal block
+> >> device.
+> >>
+> >>
+> >> > Mel raised an another issue in v6, "maintainance headache".
+> >> > He claimed zswap and zram has a similar goal that is to compresss
+> >> > swap pages so if we promote zram, maintainance headache happens
+> >> > sometime by diverging implementaion between zswap and zram
+> >> > so that he want to unify zram and zswap. For it, he want zswap
+> >> > to implement pseudo block device like Bob did to emulate zram so
+> >> > zswap can have an advantage of writeback as well as zram's benefit.
+> >>
+> >> If consider zram as a swap device only, I still think it's better to add
+> >> a pseudo block device to zswap and just disable the writeback of zswap.
+> >
+> > Why do you think zswap is better?
+> >
 > 
-> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> index 69732d2..c55d8d9 100644
-> --- a/include/asm-generic/vmlinux.lds.h
-> +++ b/include/asm-generic/vmlinux.lds.h
-> @@ -468,6 +468,7 @@
->  #define KERNEL_CTORS()	. = ALIGN(8);			   \
->  			VMLINUX_SYMBOL(__ctors_start) = .; \
->  			*(.ctors)			   \
-> +			*(.init_array)			   \
+> In my opinion:
+> 1. It's easy for zswap to do the same thing by adding a few small changes.
 
-This is exactly how I (would) have done it.
+For supporting zram-blk, we should move most of code from zram to zswap
+because zram was based on block device. For supporting zswap, we should move
+just writeback code from zswap to zram. Frontswap implementation is trivial
+because zram already has read/write/slot_free matched to load/save/invalidate.
 
->  			VMLINUX_SYMBOL(__ctors_end) = .;
->  #else
->  #define KERNEL_CTORS()
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index 46f1ea0..89ff829 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -374,6 +374,8 @@ struct module
->  	/* Constructor functions. */
->  	ctor_fn_t *ctors;
->  	unsigned int num_ctors;
-> +	ctor_fn_t *init_array;
-> +	unsigned int num_init_array;
+In addtion to that, zram has a long history and lots of users/contributors.
 
-I think it would be safe to re-use the ctors-related fields here. Each GCC
-version will only ever create either of .ctors or .init_array, but never
-both. The only case where separate fields would be required, would be when
-linking a kernel module from multiple object files compiled with different
-versions of GCC.
+Anyway, I didn't mean trivial things like this. What I want was
+what's the potential of zswap when we consider upcoming futures.
 
->  #endif
->  };
->  #ifndef MODULE_ARCH_INIT
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 2069158..581ae89 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2760,6 +2760,9 @@ static void find_module_sections(struct module *mod, struct load_info *info)
->  #ifdef CONFIG_CONSTRUCTORS
->  	mod->ctors = section_objs(info, ".ctors",
->  				  sizeof(*mod->ctors), &mod->num_ctors);
+> 2. zswap won't get to the block layer which can reduce a lot of overheads.
 
-When reusing mod->ctors, you could check for mod->ctors == NULL here and
-fill in the values from section_objs(".init_array").
+get_swap_bio
+submit_bio
+zram_make_request
 
-> +	mod->init_array = section_objs(info, ".init_array",
-> +				  sizeof(*mod->init_array),
-> +				  &mod->num_init_array);
->  #endif
+is it really severe?
+
+These days, block layer is optimizing to support high storage speed 
+so it would have more chances to optimize by block peoples and I don't think
+above block layer's overhead heavy.
+Morever, we can get benefits from block layer like async I/O, block align,
+sequential write and even uncompressed writeback if we add new plugin to dm.
+Normally, block I/O's cost is bigger than memory operation so gain is bigger
+than lose if we can enhance in block layer.
+
+Anyway, I'd like to say agian. I don't want to make such weird beast
+which is lying between mm and block.
+
+
+> 3. zswap is transparent to current users who are using normal block
+> device as the swap device.
+
+So, what's benfit? Do you mean user don't have to configure zswap?
+Swap enabling is just once operation during boot. Is it bothering you?
+
 > 
->  #ifdef CONFIG_TRACEPOINTS
-> @@ -3024,6 +3027,9 @@ static void do_mod_ctors(struct module *mod)
+> > I don't know but when I read http://lwn.net/Articles/334649/, it aimed
+> > for compressing page caches as well as swap pages but it made widespread
+> > hooks in core (I guess that's why zcache had a birth later by Nitin and Dan)
+> > so reviewers guided him to support anon pages only to merge it.
+> > And at that time, it was a specific virtual block device for only supporting
+> > swap. AFAIRC, akpm suggested to make it general block device so other party
+> > can have a benefit.
+> >
+> > You can type "zram tmp" in google and will find many article related
+> > to use zram as tmp and I have been received some questions/reports
 > 
->  	for (i = 0; i < mod->num_ctors; i++)
->  		mod->ctors[i]();
-> +
-> +	for (i = 0; i < mod->num_init_array; i++)
-> +		mod->init_array[i]();
->  #endif
->  }
+> I see.
+> But i think if using shmem as tmp, the pages can be reclaimed during
+> memory pressure,
+> get to zswap and compressed as well.
+
+Please don't think every machine has swap. Many embedded products don't have
+swap device because It saves lots of money for our business and a few dollars
+is very critical for embedded business.
+
 > 
+> Mel also pointed a situation using zram as tmpfs may make things worse.
+
+It depends on the workload as I explained.
+
+1) Many embedded system don't have swap so although tmpfs can support swapout
+it's pointless still so such systems should have sane configuration to limit
+memory space so it's not only zram problem.
+
+2) Many embedded system don't have enough memory. Let's assume short-lived
+file growing up until half of system memory once in a while. We don't want
+to write it on flash by wear-leveing issue and very slowness so we want to use
+in-memory but if we uses tmpfs, it should evict half of working set to cover
+them when the size reach peak. zram would be better choice.
+
+I will explain another usecase I have heard from anonymous embedded developer.
+He really want to reduce core dump file size because he don't have enough space
+to save core file in storage. As I said, bigger storage is money
+so he uses zram-blk to save core dump and logs.
+
+> 
+> > from anonymous guys by private mail. And Jorome, Redhat guy, has
+> > contributed that part like partial I/O.
+> >
+> 
+> I am not going to block zram being promoted, just some different voice.
+> 
+> -- 
+> Regards,
+> --Bob
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Peter Oberparleiter
-Linux on System z Development - IBM Germany
-
+Kind regards,
+Minchan Kim
