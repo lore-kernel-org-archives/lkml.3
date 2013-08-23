@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab3HWINv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 04:13:51 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:24176 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755141Ab3HWINs (ORCPT
+	id S1755222Ab3HWIOp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 04:14:45 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:60741 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652Ab3HWIOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 04:13:48 -0400
-Message-ID: <5217100E.6080506@huawei.com>
-Date: Fri, 23 Aug 2013 15:32:30 +0800
-From: Rui Xiang <rui.xiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Fri, 23 Aug 2013 04:14:43 -0400
+Message-ID: <5217194B.2020209@linux.vnet.ibm.com>
+Date: Fri, 23 Aug 2013 13:41:55 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-fsdevel@vger.kernel.org>, <viro@zeniv.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        <linux-rdma@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <v9fs-developer@lists.sourceforge.net>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH 0/2] fs: supply inode uid/gid setting interface
-References: <1377226118-43756-1-git-send-email-rui.xiang@huawei.com> <20130823041010.GA12296@kroah.com>
-In-Reply-To: <20130823041010.GA12296@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Lei Wen <leiwen@marvell.com>,
+        Rik van Riel <riel@surriel.com>, Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH 07/10] sched, fair: Optimize find_busiest_queue()
+References: <20130819160058.539049611@infradead.org> <20130819160425.527872672@infradead.org>
+In-Reply-To: <20130819160425.527872672@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.188]
-X-CFilter-Loop: Reflected
+X-TM-AS-MML: No
+x-cbid: 13082308-1396-0000-0000-000003720FA9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/23 12:10, Greg KH wrote:
-> On Fri, Aug 23, 2013 at 10:48:36AM +0800, Rui Xiang wrote:
->> This patchset implements an accessor functions to set uid/gid
->> in inode struct. Just finish code clean up.
-> 
-> Why?
-> 
-It can introduce a new function to reduce some codes. 
- Just clean up. 
+Hi Peter,
 
+On 08/19/2013 09:31 PM, Peter Zijlstra wrote:
 
-Thanks.
+In the load balancing code, looks to me that
+cpumask_copy(cpus, cpu_active_mask) is not updating the env.cpus at all,
+before calling find_busiest_group(). Am I missing something?
+
+Should not cpumask_copy() below be before we update the env.cpus parameter?
+
+static int load_balance(int this_cpu, struct rq *this_rq,
+			struct sched_domain *sd, enum cpu_idle_type idle,
+			int *balance)
+{
+	int ld_moved, cur_ld_moved, active_balance = 0;
+	struct sched_group *group;
+	struct rq *busiest;
+	unsigned long flags;
+	struct cpumask *cpus = __get_cpu_var(load_balance_mask);
+
+	struct lb_env env = {
+		.sd		= sd,
+		.dst_cpu	= this_cpu,
+		.dst_rq		= this_rq,
+		.dst_grpmask    = sched_group_cpus(sd->groups),
+		.idle		= idle,
+		.loop_break	= sched_nr_migrate_break,
+		.cpus		= cpus,
+	};
+
+	/*
+	 * For NEWLY_IDLE load_balancing, we don't need to consider
+	 * other cpus in our group
+	 */
+	if (idle == CPU_NEWLY_IDLE)
+		env.dst_grpmask = NULL;
+
+	cpumask_copy(cpus, cpu_active_mask);
+
+	schedstat_inc(sd, lb_count[idle]);
+redo:
+	group = find_busiest_group(&env, balance);
+
+Regards
+Preeti U Murthy
 
