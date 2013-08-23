@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab3HWPWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 11:22:08 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:49602 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692Ab3HWPWF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 11:22:05 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-f2-52177e1bde11
-Message-id: <52177E19.3080106@samsung.com>
-Date: Fri, 23 Aug 2013 17:22:01 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: linux-arm-kernel@lists.infradead.org
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>, linux@arm.linux.org.uk,
-        mturquette@linaro.org, jiada_wang@mentor.com, broonie@kernel.org,
-        vapier@gentoo.org, ralf@linux-mips.org, kyungmin.park@samsung.com,
-        myungjoo.ham@samsung.com, shawn.guo@linaro.org,
-        sebastian.hesselbarth@gmail.com, LW@KARO-electronics.de,
-        t.figa@samsung.com, g.liakhovetski@gmx.de,
-        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH v3 2/5] clkdev: Fix race condition in clock lookup from
- device tree
-References: <1377270227-1030-1-git-send-email-s.nawrocki@samsung.com>
- <1377270227-1030-3-git-send-email-s.nawrocki@samsung.com>
-In-reply-to: <1377270227-1030-3-git-send-email-s.nawrocki@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t/xq7rSdeJBBi2bRSymPnzCZvF+4zwm
-	i54/lRZnm96wW3ROXMJusenxNVaLy7vmsFlMmDqJ3WLOnynMFrcv81oceLKczeLphItsFrcb
-	V7BZXNqjYnH4TTurxfufjhZP1y1htlg/4zWLxcKGL+wWNyf8YHYQ8Whp7mHzWDnd2+Py9zfM
-	Hjtn3WX3+PAxzmN2x0xWj/nTHzF7bFrVyeZx59oeNo+jK9cyeWxeUu+x+2sTo0ffllWMHp83
-	yQXwRXHZpKTmZJalFunbJXBlHN/zn73gG3vF3pu/WBoYz7F1MXJySAiYSHzof8QCYYtJXLi3
-	HiwuJLCUUWLuH1YI+xOjxL4dziA2r4CWxOa+h2D1LAKqEp/vfWQHsdkEDCV6j/YxgtiiAgES
-	i5ecY4eoF5T4MfkeWL2IgIbElK7HYHFmgV4WiUOLjbsYOTiEBSIlZmwACnMBrWpklFjcPx/s
-	Bk4BN4lrzfOYIep1JPa3TmODsOUlNq95yzyBUWAWkhWzkJTNQlK2gJF5FaNoamlyQXFSeq6R
-	XnFibnFpXrpecn7uJkZIxH7dwbj0mNUhRgEORiUe3gnOYkFCrIllxZW5hxglOJiVRHifVosH
-	CfGmJFZWpRblxxeV5qQWH2Jk4uCUamA89Z1jp1H5jYQnTTvYEzp8Kzh/v5tve/Uei8j+n3df
-	SujeNJFWq78T/sHoWunS/byBl4J7Tjr6zfjyX2ejj+xrjnWXf7DquS+Vb2fQzlPUNwl0mDw5
-	QtrVe3qlt8jXxScWRUid5O8y0WhI2Tn9Wotq7sxTt4SOb3bxLXkdt14ze8Xjw52uFcpKLMUZ
-	iYZazEXFiQAP3jeLtgIAAA==
+	id S1755436Ab3HWPWW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 11:22:22 -0400
+Received: from smtp2-1.goneo.de ([212.90.139.83]:46646 "EHLO smtp2-1.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755256Ab3HWPWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 11:22:20 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -2.856
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 1/2] gpio: mcp23s08: rename the device tree property
+Date: Fri, 23 Aug 2013 17:22:10 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+References: <1377165378-9589-1-git-send-email-larsi@wh2.tu-dresden.de> <20130823142421.GK25856@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130823142421.GK25856@e106331-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308231722.10392.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2013 05:03 PM, Sylwester Nawrocki wrote:
-> There is currently a race condition in the device tree part of clk_get()
-> function, since the pointer returned from of_clk_get_by_name() may become
-> invalid before __clk_get() call. I.e. due to the clock provider driver
-> remove() callback being called in between of_clk_get_by_name() and
-> __clk_get().
+On Friday 23 August 2013 at 16:24:21, Mark Rutland wrote:
+> On Thu, Aug 22, 2013 at 10:56:17AM +0100, Lars Poeschel wrote:
+> > From: Lars Poeschel <poeschel@lemonage.de>
+> > 
+> > The device tree property should be more descriptive.
+> > microchip seems more reasonable than mcp. As there are no
+> > in tree users of this property, so the rename can still be
+> > done without pain.
 > 
-> Fix this by doing both the look up and __clk_get() operations with the
-> clock providers list mutex held. This ensures that the clock pointer
-> returned from __of_clk_get_from_provider() call and passed to __clk_get()
-> is valid, as long as the clock supplier module first removes its clock
-> provider instance and then does clk_unregister() on the corresponding
-> clocks.
+> Are there definitely no users? I see there are no dts with a
+> "mcp,mcp23***" compatible string, but are there any boards already out
+> there with this hardware that someone might be using and a currently
+> release kernel supports?
+
+What do you mean by "release"? The device tree support for the gpio-
+mcp23s08 driver and thus the "mcp" string came in with v3.9. This is stable 
+but not longterm.
+
+> With the bcm/broadcom => brcm change, we marked the old vendor prefix as
+> deprecated (but left the support code).
 > 
-> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> If we can 100% guarantee no-one's using the compatible string, I'm happy
+> to change it. Otherwise we just have to mark the old string as
+> deprecated.
 
-Oops, I missed to add:
+I am the developer of the device tree support for that driver and I am not 
+aware of any user, but surely I can not guarantee it.
 
-Reviewed-by: Mike Turquette <mturquette@linaro.org>
+I never imagined how hard it would be. ;-)
+I presented both variants:
+1.) simply add mcp to vendor-prefixes.txt
+2.) change the driver to microchip and add microchip to vendor-prefixes.txt
 
-> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+May one of the maintainers decide which one to take or even take none of 
+the patches.
+Or do you need a third variant with both strings in the driver and 
+microchip in vendor-prefixes?
+
+Lars
