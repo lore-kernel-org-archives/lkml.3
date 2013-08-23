@@ -1,139 +1,506 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab3HWQVh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 12:21:37 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55979 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab3HWQUY (ORCPT
+	id S932071Ab3HWQWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 12:22:11 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:39257 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754806Ab3HWQWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 12:20:24 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Sudeep.KarkadaNagesha@arm.com,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: [PATCH v4 2/5] ARM: arch_timer: add support to configure and enable event stream
-Date: Fri, 23 Aug 2013 17:19:06 +0100
-Message-Id: <1377274749-6196-3-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1377274749-6196-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1377274749-6196-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 23 Aug 2013 16:20:22.0391 (UTC) FILETIME=[AAB61070:01CEA01C]
-X-MC-Unique: 113082317202301401
-Content-Type: text/plain; charset=WINDOWS-1252
+	Fri, 23 Aug 2013 12:22:07 -0400
+From: Andy King <acking@vmware.com>
+To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
+Cc: gregkh@linuxfoundation.org, pv-drivers@vmware.com,
+        Andy King <acking@vmware.com>
+Subject: [PATCH 2/2] VMCI: Add support for virtual IOMMU
+Date: Fri, 23 Aug 2013 09:22:14 -0700
+Message-Id: <1377274934-12223-3-git-send-email-acking@vmware.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1377274934-12223-1-git-send-email-acking@vmware.com>
+References: <1377274934-12223-1-git-send-email-acking@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7NGLiZT008001
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+This patch adds support for virtual IOMMU to the vmci module.  We switch
+to DMA consistent mappings for guest queuepair and doorbell pages that
+are passed to the device.  We still allocate each page individually,
+since there's no guarantee that we'll get a contiguous block of physical
+for an entire queuepair (especially since we allow up to 128 MiB!).
 
-This patch adds support for configure the event stream frequency
-and enabling it.
+Also made the split between guest and host in the kernelIf struct much
+clearer.  Now it's obvious which fields are which.
 
-It also adds the hwcaps definitions to the user to detect this event
-stream feature.
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Acked-by: George Zhang <georgezhang@vmware.com>
+Acked-by: Aditya Sarwade <asarwade@vmware.com>
+Signed-off-by: Andy King <acking@vmware.com>
 ---
- arch/arm/include/asm/arch_timer.h | 36 +++++++++++++++++++++++++++++++-----
- arch/arm/include/uapi/asm/hwcap.h |  1 +
- arch/arm/kernel/setup.c           |  1 +
- 3 files changed, 33 insertions(+), 5 deletions(-)
+ drivers/misc/vmw_vmci/vmci_driver.c     |    2 +-
+ drivers/misc/vmw_vmci/vmci_driver.h     |    7 ++
+ drivers/misc/vmw_vmci/vmci_guest.c      |   22 +++-
+ drivers/misc/vmw_vmci/vmci_queue_pair.c |  180 ++++++++++++++++++-------------
+ 4 files changed, 128 insertions(+), 83 deletions(-)
 
-diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-index 9ef74da..9617327 100644
---- a/arch/arm/include/asm/arch_timer.h
-+++ b/arch/arm/include/asm/arch_timer.h
-@@ -89,21 +89,47 @@ static inline u64 arch_counter_get_cntvct(void)
- 	return cval;
- }
+diff --git a/drivers/misc/vmw_vmci/vmci_driver.c b/drivers/misc/vmw_vmci/vmci_driver.c
+index 7b3fce2..3dee7ae 100644
+--- a/drivers/misc/vmw_vmci/vmci_driver.c
++++ b/drivers/misc/vmw_vmci/vmci_driver.c
+@@ -113,5 +113,5 @@ module_exit(vmci_drv_exit);
  
--static inline void arch_counter_set_user_access(void)
-+static inline u32 arch_timer_get_cntkctl(void)
- {
- 	u32 cntkctl;
--
- 	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
-+	return cntkctl;
-+}
-+
-+static inline void arch_timer_set_cntkctl(u32 cntkctl)
-+{
-+	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
-+}
-+
-+static inline void arch_counter_set_user_access(void)
-+{
-+	u32 cntkctl = arch_timer_get_cntkctl();
- 
- 	/* Disable user access to both physical/virtual counters/timers. */
--	/* Also disable virtual event stream */
- 	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
- 			| ARCH_TIMER_USR_VT_ACCESS_EN
--			| ARCH_TIMER_VIRT_EVT_EN
- 			| ARCH_TIMER_USR_VCT_ACCESS_EN
- 			| ARCH_TIMER_USR_PCT_ACCESS_EN);
-+	arch_timer_set_cntkctl(cntkctl);
-+}
- 
--	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
-+static inline void arch_timer_evtstrm_config(bool enable, int divider)
-+{
-+	u32 cntkctl = arch_timer_get_cntkctl();
-+	if (enable) {
-+		cntkctl &= ~ARCH_TIMER_EVT_TRIGGER_MASK;
-+		/* Set the divider and enable virtual event stream */
-+		cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
-+				| ARCH_TIMER_VIRT_EVT_EN;
-+	} else {
-+		cntkctl &= ~ARCH_TIMER_VIRT_EVT_EN; /* disable event stream */
-+	}
-+	arch_timer_set_cntkctl(cntkctl);
-+}
-+
-+static inline void arch_timer_set_hwcap_evtstrm(void)
-+{
-+	elf_hwcap |= HWCAP_EVTSTRM;
- }
- #endif
- 
-diff --git a/arch/arm/include/uapi/asm/hwcap.h b/arch/arm/include/uapi/asm/hwcap.h
-index 6d34d08..7dcc10d 100644
---- a/arch/arm/include/uapi/asm/hwcap.h
-+++ b/arch/arm/include/uapi/asm/hwcap.h
-@@ -26,5 +26,6 @@
- #define HWCAP_VFPD32	(1 << 19)	/* set if VFP has 32 regs (not 16) */
- #define HWCAP_IDIV	(HWCAP_IDIVA | HWCAP_IDIVT)
- #define HWCAP_LPAE	(1 << 20)
-+#define HWCAP_EVTSTRM	(1 << 21)
- 
- #endif /* _UAPI__ASMARM_HWCAP_H */
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index afc2489..305ffc9 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -975,6 +975,7 @@ static const char *hwcap_str[] = {
- 	"idivt",
- 	"vfpd32",
- 	"lpae",
-+	"evtstrm",
- 	NULL
+ MODULE_AUTHOR("VMware, Inc.");
+ MODULE_DESCRIPTION("VMware Virtual Machine Communication Interface.");
+-MODULE_VERSION("1.0.0.0-k");
++MODULE_VERSION("1.1.0.0-k");
+ MODULE_LICENSE("GPL v2");
+diff --git a/drivers/misc/vmw_vmci/vmci_driver.h b/drivers/misc/vmw_vmci/vmci_driver.h
+index f69156a..cee9e97 100644
+--- a/drivers/misc/vmw_vmci/vmci_driver.h
++++ b/drivers/misc/vmw_vmci/vmci_driver.h
+@@ -35,6 +35,13 @@ struct vmci_obj {
+ 	enum vmci_obj_type type;
  };
  
++/*
++ * Needed by other components of this module.  It's okay to have one global
++ * instance of this because there can only ever be one VMCI device.  Our
++ * virtual hardware enforces this.
++ */
++extern struct pci_dev *vmci_pdev;
++
+ u32 vmci_get_context_id(void);
+ int vmci_send_datagram(struct vmci_datagram *dg);
+ 
+diff --git a/drivers/misc/vmw_vmci/vmci_guest.c b/drivers/misc/vmw_vmci/vmci_guest.c
+index 60c0199..b3a2b76 100644
+--- a/drivers/misc/vmw_vmci/vmci_guest.c
++++ b/drivers/misc/vmw_vmci/vmci_guest.c
+@@ -65,9 +65,11 @@ struct vmci_guest_device {
+ 
+ 	void *data_buffer;
+ 	void *notification_bitmap;
++	dma_addr_t notification_base;
+ };
+ 
+ /* vmci_dev singleton device and supporting data*/
++struct pci_dev *vmci_pdev;
+ static struct vmci_guest_device *vmci_dev_g;
+ static DEFINE_SPINLOCK(vmci_dev_spinlock);
+ 
+@@ -528,7 +530,9 @@ static int vmci_guest_probe_device(struct pci_dev *pdev,
+ 	 * well.
+ 	 */
+ 	if (capabilities & VMCI_CAPS_NOTIFICATIONS) {
+-		vmci_dev->notification_bitmap = vmalloc(PAGE_SIZE);
++		vmci_dev->notification_bitmap = dma_alloc_coherent(
++			&pdev->dev, PAGE_SIZE, &vmci_dev->notification_base,
++			GFP_KERNEL);
+ 		if (!vmci_dev->notification_bitmap) {
+ 			dev_warn(&pdev->dev,
+ 				 "Unable to allocate notification bitmap\n");
+@@ -546,6 +550,7 @@ static int vmci_guest_probe_device(struct pci_dev *pdev,
+ 	/* Set up global device so that we can start sending datagrams */
+ 	spin_lock_irq(&vmci_dev_spinlock);
+ 	vmci_dev_g = vmci_dev;
++	vmci_pdev = pdev;
+ 	spin_unlock_irq(&vmci_dev_spinlock);
+ 
+ 	/*
+@@ -553,9 +558,8 @@ static int vmci_guest_probe_device(struct pci_dev *pdev,
+ 	 * used.
+ 	 */
+ 	if (capabilities & VMCI_CAPS_NOTIFICATIONS) {
+-		struct page *page =
+-			vmalloc_to_page(vmci_dev->notification_bitmap);
+-		unsigned long bitmap_ppn = page_to_pfn(page);
++		unsigned long bitmap_ppn =
++			vmci_dev->notification_base >> PAGE_SHIFT;
+ 		if (!vmci_dbell_register_notification_bitmap(bitmap_ppn)) {
+ 			dev_warn(&pdev->dev,
+ 				 "VMCI device unable to register notification bitmap with PPN 0x%x\n",
+@@ -665,11 +669,14 @@ err_remove_bitmap:
+ 	if (vmci_dev->notification_bitmap) {
+ 		iowrite32(VMCI_CONTROL_RESET,
+ 			  vmci_dev->iobase + VMCI_CONTROL_ADDR);
+-		vfree(vmci_dev->notification_bitmap);
++		dma_free_coherent(&pdev->dev, PAGE_SIZE,
++				  vmci_dev->notification_bitmap,
++				  vmci_dev->notification_base);
+ 	}
+ 
+ err_remove_vmci_dev_g:
+ 	spin_lock_irq(&vmci_dev_spinlock);
++	vmci_pdev = NULL;
+ 	vmci_dev_g = NULL;
+ 	spin_unlock_irq(&vmci_dev_spinlock);
+ 
+@@ -699,6 +706,7 @@ static void vmci_guest_remove_device(struct pci_dev *pdev)
+ 
+ 	spin_lock_irq(&vmci_dev_spinlock);
+ 	vmci_dev_g = NULL;
++	vmci_pdev = NULL;
+ 	spin_unlock_irq(&vmci_dev_spinlock);
+ 
+ 	dev_dbg(&pdev->dev, "Resetting vmci device\n");
+@@ -727,7 +735,9 @@ static void vmci_guest_remove_device(struct pci_dev *pdev)
+ 		 * device, so we can safely free it here.
+ 		 */
+ 
+-		vfree(vmci_dev->notification_bitmap);
++		dma_free_coherent(&pdev->dev, PAGE_SIZE,
++				  vmci_dev->notification_bitmap,
++				  vmci_dev->notification_base);
+ 	}
+ 
+ 	vfree(vmci_dev->data_buffer);
+diff --git a/drivers/misc/vmw_vmci/vmci_queue_pair.c b/drivers/misc/vmw_vmci/vmci_queue_pair.c
+index 8698e0c..a0515a6 100644
+--- a/drivers/misc/vmw_vmci/vmci_queue_pair.c
++++ b/drivers/misc/vmw_vmci/vmci_queue_pair.c
+@@ -21,6 +21,7 @@
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/pagemap.h>
++#include <linux/pci.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+ #include <linux/uio.h>
+@@ -146,12 +147,20 @@ typedef int vmci_memcpy_from_queue_func(void *dest, size_t dest_offset,
+ 
+ /* The Kernel specific component of the struct vmci_queue structure. */
+ struct vmci_queue_kern_if {
+-	struct page **page;
+-	struct page **header_page;
+ 	struct mutex __mutex;	/* Protects the queue. */
+ 	struct mutex *mutex;	/* Shared by producer and consumer queues. */
+-	bool host;
+-	size_t num_pages;
++	size_t num_pages;	/* Number of pages incl. header. */
++	bool host;		/* Host or guest? */
++	union {
++		struct {
++			dma_addr_t *pas;
++			void **vas;
++		} g;		/* Used by the guest. */
++		struct {
++			struct page **page;
++			struct page **header_page;
++		} h;		/* Used by the host. */
++	} u;
+ };
+ 
+ /*
+@@ -263,59 +272,65 @@ static void qp_free_queue(void *q, u64 size)
+ 	struct vmci_queue *queue = q;
+ 
+ 	if (queue) {
+-		u64 i = DIV_ROUND_UP(size, PAGE_SIZE);
++		u64 i;
+ 
+-		while (i)
+-			__free_page(queue->kernel_if->page[--i]);
++		/* Given size does not include header, so add in a page here. */
++		for (i = 0; i < DIV_ROUND_UP(size, PAGE_SIZE) + 1; i++) {
++			dma_free_coherent(&vmci_pdev->dev, PAGE_SIZE,
++					  queue->kernel_if->u.g.vas[i],
++					  queue->kernel_if->u.g.pas[i]);
++		}
+ 
+-		vfree(queue->q_header);
++		vfree(queue);
+ 	}
+ }
+ 
+ /*
+- * Allocates kernel VA space of specified size, plus space for the
+- * queue structure/kernel interface and the queue header.  Allocates
+- * physical pages for the queue data pages.
+- *
+- * PAGE m:      struct vmci_queue_header (struct vmci_queue->q_header)
+- * PAGE m+1:    struct vmci_queue
+- * PAGE m+1+q:  struct vmci_queue_kern_if (struct vmci_queue->kernel_if)
+- * PAGE n-size: Data pages (struct vmci_queue->kernel_if->page[])
++ * Allocates kernel queue pages of specified size with IOMMU mappings,
++ * plus space for the queue structure/kernel interface and the queue
++ * header.
+  */
+ static void *qp_alloc_queue(u64 size, u32 flags)
+ {
+ 	u64 i;
+ 	struct vmci_queue *queue;
+-	struct vmci_queue_header *q_header;
+-	const u64 num_data_pages = DIV_ROUND_UP(size, PAGE_SIZE);
+-	const uint queue_size =
+-	    PAGE_SIZE +
+-	    sizeof(*queue) + sizeof(*(queue->kernel_if)) +
+-	    num_data_pages * sizeof(*(queue->kernel_if->page));
+-
+-	q_header = vmalloc(queue_size);
+-	if (!q_header)
++	const size_t num_pages = DIV_ROUND_UP(size, PAGE_SIZE) + 1;
++	const size_t pas_size = num_pages * sizeof(*queue->kernel_if->u.g.pas);
++	const size_t vas_size = num_pages * sizeof(*queue->kernel_if->u.g.vas);
++	const size_t queue_size =
++		sizeof(*queue) + sizeof(*queue->kernel_if) +
++		pas_size + vas_size;
++
++	queue = vmalloc(queue_size);
++	if (!queue)
+ 		return NULL;
+ 
+-	queue = (void *)q_header + PAGE_SIZE;
+-	queue->q_header = q_header;
++	queue->q_header = NULL;
+ 	queue->saved_header = NULL;
+ 	queue->kernel_if = (struct vmci_queue_kern_if *)(queue + 1);
+-	queue->kernel_if->header_page = NULL;	/* Unused in guest. */
+-	queue->kernel_if->page = (struct page **)(queue->kernel_if + 1);
++	queue->kernel_if->mutex = NULL;
++	queue->kernel_if->num_pages = num_pages;
++	queue->kernel_if->u.g.pas = (dma_addr_t *)(queue->kernel_if + 1);
++	queue->kernel_if->u.g.vas =
++		(void **)((u8 *)queue->kernel_if->u.g.pas + pas_size);
+ 	queue->kernel_if->host = false;
+ 
+-	for (i = 0; i < num_data_pages; i++) {
+-		queue->kernel_if->page[i] = alloc_pages(GFP_KERNEL, 0);
+-		if (!queue->kernel_if->page[i])
+-			goto fail;
++	for (i = 0; i < num_pages; i++) {
++		queue->kernel_if->u.g.vas[i] =
++			dma_alloc_coherent(&vmci_pdev->dev, PAGE_SIZE,
++					   &queue->kernel_if->u.g.pas[i],
++					   GFP_KERNEL);
++		if (!queue->kernel_if->u.g.vas[i]) {
++			/* Size excl. the header. */
++			qp_free_queue(queue, i * PAGE_SIZE);
++			return NULL;
++		}
+ 	}
+ 
+-	return (void *)queue;
++	/* Queue header is the first page. */
++	queue->q_header = queue->kernel_if->u.g.vas[0];
+ 
+- fail:
+-	qp_free_queue(queue, i * PAGE_SIZE);
+-	return NULL;
++	return queue;
+ }
+ 
+ /*
+@@ -334,13 +349,18 @@ static int __qp_memcpy_to_queue(struct vmci_queue *queue,
+ 	size_t bytes_copied = 0;
+ 
+ 	while (bytes_copied < size) {
+-		u64 page_index = (queue_offset + bytes_copied) / PAGE_SIZE;
+-		size_t page_offset =
++		const u64 page_index =
++			(queue_offset + bytes_copied) / PAGE_SIZE;
++		const size_t page_offset =
+ 		    (queue_offset + bytes_copied) & (PAGE_SIZE - 1);
+ 		void *va;
+ 		size_t to_copy;
+ 
+-		va = kmap(kernel_if->page[page_index]);
++		if (kernel_if->host)
++			va = kmap(kernel_if->u.h.page[page_index]);
++		else
++			va = kernel_if->u.g.vas[page_index + 1];
++			/* Skip header. */
+ 
+ 		if (size - bytes_copied > PAGE_SIZE - page_offset)
+ 			/* Enough payload to fill up from this page. */
+@@ -356,7 +376,8 @@ static int __qp_memcpy_to_queue(struct vmci_queue *queue,
+ 			err = memcpy_fromiovec((u8 *)va + page_offset,
+ 					       iov, to_copy);
+ 			if (err != 0) {
+-				kunmap(kernel_if->page[page_index]);
++				if (kernel_if->host)
++					kunmap(kernel_if->u.h.page[page_index]);
+ 				return VMCI_ERROR_INVALID_ARGS;
+ 			}
+ 		} else {
+@@ -365,7 +386,8 @@ static int __qp_memcpy_to_queue(struct vmci_queue *queue,
+ 		}
+ 
+ 		bytes_copied += to_copy;
+-		kunmap(kernel_if->page[page_index]);
++		if (kernel_if->host)
++			kunmap(kernel_if->u.h.page[page_index]);
+ 	}
+ 
+ 	return VMCI_SUCCESS;
+@@ -387,13 +409,18 @@ static int __qp_memcpy_from_queue(void *dest,
+ 	size_t bytes_copied = 0;
+ 
+ 	while (bytes_copied < size) {
+-		u64 page_index = (queue_offset + bytes_copied) / PAGE_SIZE;
+-		size_t page_offset =
++		const u64 page_index =
++			(queue_offset + bytes_copied) / PAGE_SIZE;
++		const size_t page_offset =
+ 		    (queue_offset + bytes_copied) & (PAGE_SIZE - 1);
+ 		void *va;
+ 		size_t to_copy;
+ 
+-		va = kmap(kernel_if->page[page_index]);
++		if (kernel_if->host)
++			va = kmap(kernel_if->u.h.page[page_index]);
++		else
++			va = kernel_if->u.g.vas[page_index + 1];
++			/* Skip header. */
+ 
+ 		if (size - bytes_copied > PAGE_SIZE - page_offset)
+ 			/* Enough payload to fill up this page. */
+@@ -409,7 +436,8 @@ static int __qp_memcpy_from_queue(void *dest,
+ 			err = memcpy_toiovec(iov, (u8 *)va + page_offset,
+ 					     to_copy);
+ 			if (err != 0) {
+-				kunmap(kernel_if->page[page_index]);
++				if (kernel_if->host)
++					kunmap(kernel_if->u.h.page[page_index]);
+ 				return VMCI_ERROR_INVALID_ARGS;
+ 			}
+ 		} else {
+@@ -418,7 +446,8 @@ static int __qp_memcpy_from_queue(void *dest,
+ 		}
+ 
+ 		bytes_copied += to_copy;
+-		kunmap(kernel_if->page[page_index]);
++		if (kernel_if->host)
++			kunmap(kernel_if->u.h.page[page_index]);
+ 	}
+ 
+ 	return VMCI_SUCCESS;
+@@ -460,12 +489,11 @@ static int qp_alloc_ppn_set(void *prod_q,
+ 		return VMCI_ERROR_NO_MEM;
+ 	}
+ 
+-	produce_ppns[0] = page_to_pfn(vmalloc_to_page(produce_q->q_header));
+-	for (i = 1; i < num_produce_pages; i++) {
++	for (i = 0; i < num_produce_pages; i++) {
+ 		unsigned long pfn;
+ 
+ 		produce_ppns[i] =
+-		    page_to_pfn(produce_q->kernel_if->page[i - 1]);
++			produce_q->kernel_if->u.g.pas[i] >> PAGE_SHIFT;
+ 		pfn = produce_ppns[i];
+ 
+ 		/* Fail allocation if PFN isn't supported by hypervisor. */
+@@ -474,12 +502,11 @@ static int qp_alloc_ppn_set(void *prod_q,
+ 			goto ppn_error;
+ 	}
+ 
+-	consume_ppns[0] = page_to_pfn(vmalloc_to_page(consume_q->q_header));
+-	for (i = 1; i < num_consume_pages; i++) {
++	for (i = 0; i < num_consume_pages; i++) {
+ 		unsigned long pfn;
+ 
+ 		consume_ppns[i] =
+-		    page_to_pfn(consume_q->kernel_if->page[i - 1]);
++			consume_q->kernel_if->u.g.pas[i] >> PAGE_SHIFT;
+ 		pfn = consume_ppns[i];
+ 
+ 		/* Fail allocation if PFN isn't supported by hypervisor. */
+@@ -590,21 +617,20 @@ static struct vmci_queue *qp_host_alloc_queue(u64 size)
+ 	const size_t num_pages = DIV_ROUND_UP(size, PAGE_SIZE) + 1;
+ 	const size_t queue_size = sizeof(*queue) + sizeof(*(queue->kernel_if));
+ 	const size_t queue_page_size =
+-	    num_pages * sizeof(*queue->kernel_if->page);
++	    num_pages * sizeof(*queue->kernel_if->u.h.page);
+ 
+ 	queue = kzalloc(queue_size + queue_page_size, GFP_KERNEL);
+ 	if (queue) {
+ 		queue->q_header = NULL;
+ 		queue->saved_header = NULL;
+-		queue->kernel_if =
+-		    (struct vmci_queue_kern_if *)((u8 *)queue +
+-						  sizeof(*queue));
++		queue->kernel_if = (struct vmci_queue_kern_if *)(queue + 1);
+ 		queue->kernel_if->host = true;
+ 		queue->kernel_if->mutex = NULL;
+ 		queue->kernel_if->num_pages = num_pages;
+-		queue->kernel_if->header_page =
++		queue->kernel_if->u.h.header_page =
+ 		    (struct page **)((u8 *)queue + queue_size);
+-		queue->kernel_if->page = &queue->kernel_if->header_page[1];
++		queue->kernel_if->u.h.page =
++			&queue->kernel_if->u.h.header_page[1];
+ 	}
+ 
+ 	return queue;
+@@ -711,11 +737,12 @@ static int qp_host_get_user_memory(u64 produce_uva,
+ 				current->mm,
+ 				(uintptr_t) produce_uva,
+ 				produce_q->kernel_if->num_pages,
+-				1, 0, produce_q->kernel_if->header_page, NULL);
++				1, 0,
++				produce_q->kernel_if->u.h.header_page, NULL);
+ 	if (retval < produce_q->kernel_if->num_pages) {
+ 		pr_warn("get_user_pages(produce) failed (retval=%d)", retval);
+-		qp_release_pages(produce_q->kernel_if->header_page, retval,
+-				 false);
++		qp_release_pages(produce_q->kernel_if->u.h.header_page,
++				 retval, false);
+ 		err = VMCI_ERROR_NO_MEM;
+ 		goto out;
+ 	}
+@@ -724,12 +751,13 @@ static int qp_host_get_user_memory(u64 produce_uva,
+ 				current->mm,
+ 				(uintptr_t) consume_uva,
+ 				consume_q->kernel_if->num_pages,
+-				1, 0, consume_q->kernel_if->header_page, NULL);
++				1, 0,
++				consume_q->kernel_if->u.h.header_page, NULL);
+ 	if (retval < consume_q->kernel_if->num_pages) {
+ 		pr_warn("get_user_pages(consume) failed (retval=%d)", retval);
+-		qp_release_pages(consume_q->kernel_if->header_page, retval,
+-				 false);
+-		qp_release_pages(produce_q->kernel_if->header_page,
++		qp_release_pages(consume_q->kernel_if->u.h.header_page,
++				 retval, false);
++		qp_release_pages(produce_q->kernel_if->u.h.header_page,
+ 				 produce_q->kernel_if->num_pages, false);
+ 		err = VMCI_ERROR_NO_MEM;
+ 	}
+@@ -772,15 +800,15 @@ static int qp_host_register_user_memory(struct vmci_qp_page_store *page_store,
+ static void qp_host_unregister_user_memory(struct vmci_queue *produce_q,
+ 					   struct vmci_queue *consume_q)
+ {
+-	qp_release_pages(produce_q->kernel_if->header_page,
++	qp_release_pages(produce_q->kernel_if->u.h.header_page,
+ 			 produce_q->kernel_if->num_pages, true);
+-	memset(produce_q->kernel_if->header_page, 0,
+-	       sizeof(*produce_q->kernel_if->header_page) *
++	memset(produce_q->kernel_if->u.h.header_page, 0,
++	       sizeof(*produce_q->kernel_if->u.h.header_page) *
+ 	       produce_q->kernel_if->num_pages);
+-	qp_release_pages(consume_q->kernel_if->header_page,
++	qp_release_pages(consume_q->kernel_if->u.h.header_page,
+ 			 consume_q->kernel_if->num_pages, true);
+-	memset(consume_q->kernel_if->header_page, 0,
+-	       sizeof(*consume_q->kernel_if->header_page) *
++	memset(consume_q->kernel_if->u.h.header_page, 0,
++	       sizeof(*consume_q->kernel_if->u.h.header_page) *
+ 	       consume_q->kernel_if->num_pages);
+ }
+ 
+@@ -803,12 +831,12 @@ static int qp_host_map_queues(struct vmci_queue *produce_q,
+ 		if (produce_q->q_header != consume_q->q_header)
+ 			return VMCI_ERROR_QUEUEPAIR_MISMATCH;
+ 
+-		if (produce_q->kernel_if->header_page == NULL ||
+-		    *produce_q->kernel_if->header_page == NULL)
++		if (produce_q->kernel_if->u.h.header_page == NULL ||
++		    *produce_q->kernel_if->u.h.header_page == NULL)
+ 			return VMCI_ERROR_UNAVAILABLE;
+ 
+-		headers[0] = *produce_q->kernel_if->header_page;
+-		headers[1] = *consume_q->kernel_if->header_page;
++		headers[0] = *produce_q->kernel_if->u.h.header_page;
++		headers[1] = *consume_q->kernel_if->u.h.header_page;
+ 
+ 		produce_q->q_header = vmap(headers, 2, VM_MAP, PAGE_KERNEL);
+ 		if (produce_q->q_header != NULL) {
 -- 
-1.8.1.2
-
+1.7.4.1
 
