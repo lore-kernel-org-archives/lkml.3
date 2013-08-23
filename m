@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab3HWOU0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 10:20:26 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:32844 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753600Ab3HWOUY (ORCPT
+	id S1754606Ab3HWOXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 10:23:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50645 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752743Ab3HWOXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 10:20:24 -0400
-Date: Fri, 23 Aug 2013 15:20:18 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Lars Poeschel <larsi@wh2.tu-dresden.de>
-Cc: "poeschel@lemonage.de" <poeschel@lemonage.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH 2/2] of: add vendor prefix for Microchip Technology Inc
-Message-ID: <20130823142018.GJ25856@e106331-lin.cambridge.arm.com>
-References: <1377165378-9589-1-git-send-email-larsi@wh2.tu-dresden.de>
- <1377165378-9589-2-git-send-email-larsi@wh2.tu-dresden.de>
+	Fri, 23 Aug 2013 10:23:07 -0400
+Message-ID: <52177047.9070706@free-electrons.com>
+Date: Fri, 23 Aug 2013 16:23:03 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377165378-9589-2-git-send-email-larsi@wh2.tu-dresden.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 08/17] ARM: mvebu: remove custom .init_time hook
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376964271-22715-9-git-send-email-sebastian.hesselbarth@gmail.com> <52173408.1000702@free-electrons.com> <52173A3E.2040509@gmail.com> <521749E5.6020008@free-electrons.com> <521751E9.3000504@gmail.com>
+In-Reply-To: <521751E9.3000504@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 10:56:18AM +0100, Lars Poeschel wrote:
-> From: Lars Poeschel <poeschel@lemonage.de>
+On 23/08/2013 14:13, Sebastian Hesselbarth wrote:
+> On 08/23/13 13:39, Gregory CLEMENT wrote:
+>> On 23/08/2013 12:32, Sebastian Hesselbarth wrote:
+>>> On 08/23/13 12:06, Gregory CLEMENT wrote:
+>>>> On 20/08/2013 04:04, Sebastian Hesselbarth wrote:
+>>>>> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
+>>>>> remove custom .init_time hooks.
+>>>>
+>>>> As a feared it won't work on Armada XP. You moved coherency_init(), and
+>>>> l2x0_of_init() in the init_machine hook. However init_machine is an
+>>>> arch_initcall, and as all the initcall it is called at the end of the
+>>>> do_basic_setup() which is called after smp_prepare_cpus(). The issue is
+>>>> that smp_prepare_cpus need coherency (and I think L2 cache) already enable.
+>>>
+>>> Ok, I see. I remember mvebu smp relies on mbus mappings also? Can you
+>>> try below as replacement for the mach-mvebu/armada-370-xp.c changes?
+>>>
+>>> It will move coherency_init(), l2x0_of_init(), and mvebu_mbus_dt_init()
+>>> to .init_early hook.
+>>>
+>>
+>> I can't test it, because I don't receive the patch 1 and 2 neither directly
+>> or through linux-arm-kernel (it should have been bounced), or even at
+>> https://github.com/shesselba/linux-dove.git
+>>
+>> If you don't want to send them again, could you at least push our branch on your
+>> github?
 > 
-> Trivial patch to add Microchip Technology Inc. to the list
-> of devicetree vendor prefixes.
+> Gregory,
 > 
-> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+> I pushed a branch containing the latest state to
+> https://github.com/shesselba/linux-dove.git arm-clk-of-init
+> 
+> It still contains the changes to drivers/clk.c, that will become
+> obsolete, if there are no objections against Stephen's tegra patch.
+> 
 
-Acked-by: Mark Rutland <mark.rutland@arm.com>
+I tested your branch on my Armada XP boards (the GP and the AX3), and it hanged
+very early: before that anything was displayed by the early_printk!
 
-> ---
->  Documentation/devicetree/bindings/vendor-prefixes.txt |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index 366ce9b..4cdfbe8 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -36,6 +36,7 @@ linux	Linux-specific binding
->  lsi	LSI Corp. (LSI Logic)
->  marvell	Marvell Technology Group Ltd.
->  maxim	Maxim Integrated Products
-> +microchip	Microchip Technology Inc.
->  mosaixtech	Mosaix Technologies, Inc.
->  national	National Semiconductor
->  nintendo	Nintendo
-> -- 
-> 1.7.10.4
+init_early is maybe called too early :(
+
+> Sebastian
 > 
 > 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+
+
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
