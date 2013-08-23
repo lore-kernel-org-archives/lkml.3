@@ -1,115 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab3HWIsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 04:48:01 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:56454 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab3HWIr6 (ORCPT
+	id S1755028Ab3HWIuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 04:50:08 -0400
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:13449
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752553Ab3HWIuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 04:47:58 -0400
+	Fri, 23 Aug 2013 04:50:04 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h1155h)
+Date: Fri, 23 Aug 2013 16:49:55 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Grant Likely <grant.likely@linaro.org>, Rob Landley <rob@landley.net>,
+        <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/3] of: add update device node status via cmdline feature
+Message-ID: <20130823084954.GC2460@b29396-Latitude-E6410>
+References: <1376564133-11286-1-git-send-email-b29396@freescale.com>
+ <CACxGe6tMm=u1jFKUQ59+cj-rYkLLAZUqMhsXamyi-wwpWaOGvw@mail.gmail.com>
+ <20130821123708.GA17748@b29396-Latitude-E6410>
+ <20130823070906.GA2460@b29396-Latitude-E6410>
+ <20130823075102.GA10424@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130823083428.GB21757@nuc-i3427.alporthouse.com>
-References: <20130821134441.GE26909@phenom.ffwll.local>
-	<CA+icZUVLau7AgZvcnWKjx=tc4WeuJ3qEH7qQta+YLKDmxk6QvA@mail.gmail.com>
-	<20130821212012.GH26909@phenom.ffwll.local>
-	<CA+icZUUoZ3WRNChLJ8vfP_MxJhTu2annkWCmB8jnqOxNKSEtOg@mail.gmail.com>
-	<20130822072417.GM26909@phenom.ffwll.local>
-	<CA+icZUXoebf4p1pp6wkaOMFbfVjjL1+wDbYF+SvLUjkm991Rcg@mail.gmail.com>
-	<CAKMK7uG5AntN=nQ6TWUwNgXJh7tATu5TacccYah36sXnLAmAiQ@mail.gmail.com>
-	<CAKMK7uHfPb67Mshczxv6aPwwjQMb-tFwmdg8aH0VVSHnSyLiwA@mail.gmail.com>
-	<CA+icZUWy4V_6YSa_wMeZRZ=1w08YihumWXPikJdkiuPgkOb_mw@mail.gmail.com>
-	<CA+icZUUm=k9-G2M8+V-QkL3Tkv=5LXy_pyRKFnVSFjzF_vsX=A@mail.gmail.com>
-	<20130823083428.GB21757@nuc-i3427.alporthouse.com>
-Date: Fri, 23 Aug 2013 10:47:56 +0200
-Message-ID: <CA+icZUVWGQSK+MHc9z9gP5hh2g77HMP+WUAcWwwSwrhASBxBCA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 21 [ screen corruption in graphical mode ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130823075102.GA10424@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 10:34 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Fri, Aug 23, 2013 at 10:04:37AM +0200, Sedat Dilek wrote:
->> On Fri, Aug 23, 2013 at 9:55 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> > On Thu, Aug 22, 2013 at 1:32 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->> >> On Thu, Aug 22, 2013 at 1:30 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->> >>> On Thu, Aug 22, 2013 at 1:13 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> >>>> dmesg (a lot of traces) and kernel-config attached.
->> >>>>
->> >>>> UXA causes still screen corruption.
->> >>>
->> >>> Hm, was only a slim chance that this patch would fix anything - I
->> >>> think you'd always see an oops when you'd hit this bug instead of just
->> >>> a bit of corruption.
->> >>
->> >> Ok, I think it's time to throw in the towel a bit. I've dropped
->> >>
->> >>
->> >> commit d46f1c3f1372e3a72fab97c60480aa4a1084387f
->> >> Author: Chris Wilson <chris@chris-wilson.co.uk>
->> >> Date:   Thu Aug 8 14:41:06 2013 +0100
->> >>
->> >>     drm/i915: Allow the GPU to cache stolen memory
->
-> Hmm, wrong patch. Unless you have a good reason, you just want to drop
-> the ringbuffers in stolen.
->
->> >> from my queue. I guess we can retry for 3.13 again.
->> >
->> > I am sorry to keep someone's work to be delayed, really.
->> > I would have liked to see this fixed (and I have spent some time on it).
->
-> It's just a minor memory optimization (reclaiming less than a megabyte
-> of system memory).
->
->> > Which patches did you exactly drop?
->> >
->>
->> Sorry for bombing you with question...
->>
->> I am trying latest Linus-tree HEAD with the drm-intel-nightly I made
->> my last testings.
->>
->> Are any of these TLB / x86-get_unmapped_area fixes of interested...
->> has any effects on the reported issue?
->
-> It should not. Of concern is how the GPU views the world which has its
-> own independent set of TLBs and mapping tables - and access to those
-> should always be uncached from the CPU's perspective.
-> s
+On Fri, Aug 23, 2013 at 03:51:07PM +0800, Shawn Guo wrote:
+> The device tree mailing list is changed to devicetree@vger.kernel.org.
+> 
+> On Fri, Aug 23, 2013 at 03:09:08PM +0800, Dong Aisheng wrote:
+> > I tried the uboot way with fdt command to change the node status, it can work.
+> > However, it seems using fdt command is much complicated than the way i did with kernel
+> > command line and it also does not support enable/disable multi nodes at the same time.
+> > e.g, in order to enable ecspi1 and uart3 and disable gpmi:
+> > with uboot fdt command:
+> > U-Boot > fdt addr ${dtbaddr}
+> > U-Boot > fdt set /soc/aips-bus@02000000/spba-bus@02000000/ecspi@02008000 status "okay"
+> > U-Boot > fdt set /soc/aips-bus@02100000/serial@021e8000 status "okay"
+> > U-Boot > fdt set /soc/gpmi-nand@00112000 status "disabled"
+> 
+> Oh, you can use the U-Boot environment and scripting function to make
+> it even easier than your kernel cmdline approach to use.
+> 
 
-Linux-v3.11-rc6-76-g6a7492a with my last d-i-n on top shows still the
-same issue with UXA.
-So, this is unrelated.
+Hmm?
+Can you give an example to make it easier than kernel cmdline?
 
->> I still wonder what is the root-cause...
->> I mean if SNA is OK but UXA not and Linux graphics stack is that complex.
->> ( Can't say if user-space like unity isn't involved... ).
->
-> All that userspace can affect here is the timing and inital contents of
-> the framebuffer, everything else is controlled by the kernel. All the
-> testing we have done so far imply that the kernel's view of the machine
-> state is consistent with our expectations, but the display is doing
-> something inexplicable.
+First it seems the full path name can not be reduced.
+Second i'm not clear but can it get the same function that manipulating multi
+nodes at the same time as kernel cmdline does?
 
-I checked for a new BIOS, but version 13XK is the last available.
+> > with kernel cmdline:
+> > fdt.enable=ecspi@02008000,serial@021e8000 fdt.disable=gpmi-nand@00112000
+> > So from the using perspective, kernel command line is much more simple and easy than uboot.
+> 
+> NAK.
+> 
+> It's not about simple or easy.  The approach completely defects the
+> point of the whole device tree project - moving stuff that kernel does
+> not care out of kernel.  Choosing device from mutually exclusive ones
+> (due to pin conflict of board design) should NOT be something that
+> kernel cares.
+> 
+> Kernel gets device tree blob from firmware/bootloader and instantiates
+> drivers for devices found in device tree.  That's all what kernel should
+> do, nothing more.  Asking kernel to manipulate the device availability
+> property in device tree is plainly wrong to me.
+> 
 
-If I start in text-mode and then run from my VT-1 lightdm service
-manually I see this screen/display corruption.
-On a restart of lightdm everything is fine.
+We all know this basic rule and i'm not against it.
+Why the patch is sent is because there are already many places in kernel manipulate
+the device node at runtime as exceptional cases.
+And i'm wondering if we can take this as exception too since this function does
+help users.
 
-How can I check if my greeter and/or unity(-2d) is the culprit?
-AFAICS I have here E17 for testing.
+If we can find a better idea to fix this issue without this patch,
+i definitely would agree with it.
 
-I made no benchmark with the (new) d-i-n w/ dropped patches.
-Lemme see if I find some time.
+Regards
+Dong Aisheng
 
-- Sedat -
+> If your board is designed with so many pin conflicts between devices,
+> you have to do whatever you can do to get the decision made in device
+> tree blob, before it gets passed to kernel.  Kernel does NOT care about
+> that decision making.
+> 
+
