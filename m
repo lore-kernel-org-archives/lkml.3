@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab3HWIIM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 04:08:12 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:58970 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754911Ab3HWIIH (ORCPT
+	id S1755099Ab3HWIIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 04:08:53 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:9063 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745Ab3HWIIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 04:08:07 -0400
-X-AuditID: cbfee68f-b7f656d0000058e3-0b-521718651f65
+	Fri, 23 Aug 2013 04:08:49 -0400
+X-AuditID: cbfee68e-b7f756d000004512-80-521718909b07
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: rob.herring@calxeda.com, naveenkrishna.ch@gmail.com
-Subject: [PATCH v2] ARM: dts: exynos5420/5250: add ADC device tree node
-Date: Fri, 23 Aug 2013 13:32:32 +0530
-Message-id: <1377244952-25493-1-git-send-email-ch.naveen@samsung.com>
+Subject: [PATCH v2] arm: dts: fix NTC thermistor device nodes for cros5250
+Date: Fri, 23 Aug 2013 13:33:15 +0530
+Message-id: <1377244995-25568-1-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1377166691-5118-1-git-send-email-ch.naveen@samsung.com>
-References: <1377166691-5118-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsWyRsSkSjdVQjzI4NksA4v5R86xWvQuuMpm
-	senxNVaLy7vmsFnMOL+PyWLRtv/MFodXHGByYPdY8PkKu8fOWXfZPTYvqffo27KK0ePzJrkA
-	1igum5TUnMyy1CJ9uwSujE9NixkLzvFUrOvoYmpgXM/VxcjJISFgIrFw00F2CFtM4sK99Wxd
-	jFwcQgJLGSW6Hjxjhimaf2oXM0RiOqPEvBnvWSCcHiaJtd9WsIBUsQmYSRxctJodJCEisIBR
-	Yu7sLWwgCWYBc4kfb64zgdjCAu4SHc9egcVZBFQlXn76DhbnFXCVePPqNdAgDqB1ChJzJtmA
-	hDmBwie/vgS7QkjARWJ++2aoi+axS8z/5AAxRkDi2+RDUK2yEpsOQJVIShxccYNlAqPwAkaG
-	VYyiqQXJBcVJ6UXGesWJucWleel6yfm5mxiBQX7637P+HYx3D1gfYkwGGjeRWUo0OR8YJXkl
-	8YbGZkYWpiamxkbmlmakCSuJ86q1WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYDR9srh+
-	/Q2FIJcpXSaHPVZfNZ70WyHN/b7A71rd0JxQJ6vrryyXVBfd3HBvn7zau7mv1MWSfwsZC731
-	3q3F+/uskovvKv4Hcd7LGb4H7F6kWCURuntRWJzy9HWLbAz+BQUtOaHqozc5noFnqrd9ptpL
-	58LPztePGU8PmKTRsyaaY2Py310aD5RYijMSDbWYi4oTAVidRVmIAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t9jQd1UCfEgg1WL1C3mHznHatG74Cqb
-	xabH11gtLu+aw2Yx4/w+JotF2/4zWxxecYDJgd1jwecr7B47Z91l99i8pN6jb8sqRo/Pm+QC
-	WKMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgM5Q
-	UihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGZ8alrMWHCOp2JdRxdTA+N6
-	ri5GTg4JAROJ+ad2MUPYYhIX7q1n62Lk4hASmM4oMW/GexYIp4dJYu23FSwgVWwCZhIHF61m
-	B0mICCxglJg7ewsbSIJZwFzix5vrTCC2sIC7RMezV2BxFgFViZefvoPFeQVcJd68eg00iANo
-	nYLEnEk2IGFOoPDJry/BrhAScJGY376ZeQIj7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5
-	uZsYwVH0TGoH48oGi0OMAhyMSjy8E5zFgoRYE8uKK3MPMUpwMCuJ8B74CxTiTUmsrEotyo8v
-	Ks1JLT7EmAx01ERmKdHkfGCE55XEGxqbmJsam1qaWJiYWZImrCTOe6DVOlBIID2xJDU7NbUg
-	tQhmCxMHp1QDI/tso333jrOwxyaoButUSWos61bsPDzNNSTwgqMVi5/vF1XdtVc7agUWTl6R
-	e/LoXL8dn66W1Vxcy/MvVzFOm63e7mVzz2bHN/f+8WrFrt9wyeWMYugJt9Ufj56+UHcpM+Ln
-	I0O+sxJFvbsfhbrt2tFZyp78b9rP7suKZkezrlw+6/Z/esK310osxRmJhlrMRcWJAOBysAvm	AgAA
+In-reply-to: <1377172114-8312-1-git-send-email-ch.naveen@samsung.com>
+References: <1377172114-8312-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsWyRsSkSneChHiQwa/F0hbzj5xjtehdcJXN
+	YtPja6wWl3fNYbOYcX4fk8Wibf+ZLQ6vOMDkwO6x4PMVdo+ds+6ye2xeUu/Rt2UVo8fnTXIB
+	rFFcNimpOZllqUX6dglcGacbtjMWnOGuOHrqD0sD4xTOLkZODgkBE4mJvR9YIWwxiQv31rN1
+	MXJxCAksZZRYsaKBDaZo+b9WZojEdEaJbTsXM0I4PUwSl5tWM4FUsQmYSRxctJodJCEisIBR
+	Yu7sLWDtzALmEj/eXAcrEhbwkrj0bg9YnEVAVeL4/eOMIDavgKvEufuzgGwOoHUKEnMm2YCE
+	OYHC/76/ZgexhQRcJH5/Wgd2noTAInaJBz92s0LMEZD4NvkQC0SvrMSmA8wQV0tKHFxxg2UC
+	o/ACRoZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGIFhfvrfs74djDcPWB9iTAYaN5FZSjQ5
+	HxgneSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpg
+	XLf46d3Tu/i2rtzwZFG76s5Zkq/TE6Ur+2t2/ftmMSUiIFy7/OoXa6mfv2f/UmH12m7Vc4Bv
+	woqn38K/WUb3q/zVDPySFPux0WraqnKFwz57i558m5GiFPD46j3m1xwq6Ys60nXM7HcVZV0V
+	KTGyEl91Ni/q54EPxhar7/yP/skwV8S+2u7yWiWW4oxEQy3mouJEAIaIJseJAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t9jQd0JEuJBBve+C1rMP3KO1aJ3wVU2
+	i02Pr7FaXN41h81ixvl9TBaLtv1ntji84gCTA7vHgs9X2D12zrrL7rF5Sb1H35ZVjB6fN8kF
+	sEY1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAJ2h
+	pFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcw43bCdseAMd8XRU39YGhin
+	cHYxcnJICJhILP/Xygxhi0lcuLeerYuRi0NIYDqjxLadixkhnB4mictNq5lAqtgEzCQOLlrN
+	DpIQEVjAKDF39hY2kASzgLnEjzfXwYqEBbwkLr3bAxZnEVCVOH7/OCOIzSvgKnHu/iwgmwNo
+	nYLEnEk2IGFOoPC/76/ZQWwhAReJ35/WsU1g5F3AyLCKUTS1ILmgOCk911CvODG3uDQvXS85
+	P3cTIziKnkntYFzZYHGIUYCDUYmHd4KzWJAQa2JZcWXuIUYJDmYlEd4Df4FCvCmJlVWpRfnx
+	RaU5qcWHGJOBjprILCWanA+M8LySeENjE3NTY1NLEwsTM0vShJXEeQ+0WgcKCaQnlqRmp6YW
+	pBbBbGHi4JRqYLStS37w/LZPmcChmUmGhkIxyscufu1wuiX+aPvnCzd2rZoq+KzTnP+Jn+sM
+	7a87HV9t8MnwtD1Qufnu8t77GafeXHHluWvcnPr95//sWYo14Wd2euhfub/m5rbvevOXfHi7
+	I761ROPY55UvziqzTMzxOhUcoert6qHbclPn8pJNU4y/d671u52jxFKckWioxVxUnAgAyz7w
+	H+YCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,7 +50,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ADC device tree node for exynos5420 and exynos5250
+This patch fixes NTC devices nodes connected to ADC channel 3, 4, 5 and 6
+on exynos5250 based snow device.
 
 Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 Signed-off-by: Doug Anderson <dianders@chromium.org>
@@ -58,48 +60,49 @@ Signed-off-by: Doug Anderson <dianders@chromium.org>
 Added recipients accordingly,
 ./scripts/get_maintainer.pl  -f of the modified files
 
- arch/arm/boot/dts/exynos5250.dtsi |   11 +++++++++++
- arch/arm/boot/dts/exynos5420.dtsi |   11 +++++++++++
- 2 files changed, 22 insertions(+)
+ arch/arm/boot/dts/cros5250-common.dtsi |   33 ++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 1eec646..518f8cd 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -641,4 +641,15 @@
- 		clocks = <&clock 133>, <&clock 339>;
- 		clock-names = "sclk_fimd", "fimd";
+diff --git a/arch/arm/boot/dts/cros5250-common.dtsi b/arch/arm/boot/dts/cros5250-common.dtsi
+index dc259e8b..26bc25a 100644
+--- a/arch/arm/boot/dts/cros5250-common.dtsi
++++ b/arch/arm/boot/dts/cros5250-common.dtsi
+@@ -313,4 +313,37 @@
+ 			gpio-key,wakeup;
+ 		};
  	};
 +
-+	adc: adc@12D10000 {
-+		compatible = "samsung,exynos-adc-v1";
-+		reg = <0x12D10000 0x100>, <0x10040718 0x4>;
-+		interrupts = <0 106 0>;
-+		clocks = <&clock 303>;
-+		clock-names = "adc";
-+		#io-channel-cells = <1>;
-+		io-channel-ranges;
-+		status = "disabled";
-+	};
- };
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index 5353e32..0c5c055 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -218,4 +218,15 @@
- 		clocks = <&clock 147>, <&clock 421>;
- 		clock-names = "sclk_fimd", "fimd";
- 	};
++	adc@12D10000 {
++		vdd-supply = <&buck5_reg>;
 +
-+	adc: adc@12D10000 {
-+		compatible = "samsung,exynos-adc-v2";
-+		reg = <0x12D10000 0x100>, <0x10040720 0x4>;
-+		interrupts = <0 106 0>;
-+		clocks = <&clock 270>;
-+		clock-names = "adc";
-+		#io-channel-cells = <1>;
-+		io-channel-ranges;
-+		status = "disabled";
++		ncp15wb473@3 {
++			compatible = "ntc,ncp15wb473";
++			pullup-uv = <1800000>;
++			pullup-ohm = <47000>;
++			pulldown-ohm = <0>;
++			io-channels = <&adc 3>;
++		};
++		ncp15wb473@4 {
++			compatible = "ntc,ncp15wb473";
++			pullup-uv = <1800000>;
++			pullup-ohm = <47000>;
++			pulldown-ohm = <0>;
++			io-channels = <&adc 4>;
++		};
++		ncp15wb473@5 {
++			compatible = "ntc,ncp15wb473";
++			pullup-uv = <1800000>;
++			pullup-ohm = <47000>;
++			pulldown-ohm = <0>;
++			io-channels = <&adc 5>;
++		};
++		ncp15wb473@6 {
++			compatible = "ntc,ncp15wb473";
++			pullup-uv = <1800000>;
++			pullup-ohm = <47000>;
++			pulldown-ohm = <0>;
++			io-channels = <&adc 6>;
++		};
 +	};
  };
 -- 
