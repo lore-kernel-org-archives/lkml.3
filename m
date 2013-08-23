@@ -1,123 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab3HWOKU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 10:10:20 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:64471 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab3HWOKS (ORCPT
+	id S1754746Ab3HWOOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 10:14:40 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65502 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753428Ab3HWOOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 10:10:18 -0400
+	Fri, 23 Aug 2013 10:14:39 -0400
+Date: Fri, 23 Aug 2013 15:14:33 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2/2] max77693: added device tree support
+Message-ID: <20130823141433.GI25856@e106331-lin.cambridge.arm.com>
+References: <1377104014-21910-1-git-send-email-a.hajda@samsung.com>
+ <1377104014-21910-3-git-send-email-a.hajda@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20130822004250.GB4665@bbox>
-References: <1377065791-2959-1-git-send-email-minchan@kernel.org>
-	<52148730.4000709@oracle.com>
-	<20130822004250.GB4665@bbox>
-Date: Fri, 23 Aug 2013 22:10:17 +0800
-Message-ID: <CAA_GA1fZc89BRxKyS8zs-i0-+YJ9TsVXFFZcmza2Dzo4O4kiaA@mail.gmail.com>
-Subject: Re: [PATCH v7 0/5] zram/zsmalloc promotion
-From: Bob Liu <lliubbo@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Bob Liu <bob.liu@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Luigi Semenzato <semenzato@google.com>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Mel Gorman <mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377104014-21910-3-git-send-email-a.hajda@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+On Wed, Aug 21, 2013 at 05:53:34PM +0100, Andrzej Hajda wrote:
+> This patch adds only of_match_table.
+> There are no device specific properties.
 
-On Thu, Aug 22, 2013 at 8:42 AM, Minchan Kim <minchan@kernel.org> wrote:
-> Hi Bob,
->
-> On Wed, Aug 21, 2013 at 05:24:00PM +0800, Bob Liu wrote:
->> Hi Minchan,
->>
->> On 08/21/2013 02:16 PM, Minchan Kim wrote:
->> > It's 7th trial of zram/zsmalloc promotion.
->> > I rewrote cover-letter totally based on previous discussion.
->> >
->> > The main reason to prevent zram promotion was no review of
->> > zsmalloc part while Jens, block maintainer, already acked
->> > zram part.
->> >
->> > At that time, zsmalloc was used for zram, zcache and zswap so
->> > everybody wanted to make it general and at last, Mel reviewed it
->> > when zswap was submitted to merge mainline a few month ago.
->> > Most of review was related to zswap writeback mechanism which
->> > can pageout compressed page in memory into real swap storage
->> > in runtime and the conclusion was that zsmalloc isn't good for
->> > zswap writeback so zswap borrowed zbud allocator from zcache to
->> > replace zsmalloc. The zbud is bad for memory compression ratio(2)
->> > but it's very predictable behavior because we can expect a zpage
->> > includes just two pages as maximum. Other reviews were not major.
->> > http://lkml.indiana.edu/hypermail/linux/kernel/1304.1/04334.html
->> >
->> > Zcache doesn't use zsmalloc either so zsmalloc's user is only
->> > zram now so this patchset moves it into zsmalloc directory.
->> > Recently, Bob tried to move zsmalloc under mm directory to unify
->> > zram and zswap with adding pseudo block device in zswap(It's
->> > very weired to me) but he was simple ignoring zram's block device
->> > (a.k.a zram-blk) feature and considered only swap usecase of zram,
->> > in turn, it lose zram's good concept.
->> >
->>
->> Yes, I didn't notice the feature that zram can be used as a normal block
->> device.
->>
->>
->> > Mel raised an another issue in v6, "maintainance headache".
->> > He claimed zswap and zram has a similar goal that is to compresss
->> > swap pages so if we promote zram, maintainance headache happens
->> > sometime by diverging implementaion between zswap and zram
->> > so that he want to unify zram and zswap. For it, he want zswap
->> > to implement pseudo block device like Bob did to emulate zram so
->> > zswap can have an advantage of writeback as well as zram's benefit.
->>
->> If consider zram as a swap device only, I still think it's better to add
->> a pseudo block device to zswap and just disable the writeback of zswap.
->
-> Why do you think zswap is better?
->
+Could you clarify what functionality this enables and what it doesn't,
+please?
 
-In my opinion:
-1. It's easy for zswap to do the same thing by adding a few small changes.
-2. zswap won't get to the block layer which can reduce a lot of overheads.
-3. zswap is transparent to current users who are using normal block
-device as the swap device.
+This doesn't seem to enable support for the regulators described in the
+binding [1] (which from the looks of it needs proof-reading and possibly
+rework).
 
-> I don't know but when I read http://lwn.net/Articles/334649/, it aimed
-> for compressing page caches as well as swap pages but it made widespread
-> hooks in core (I guess that's why zcache had a birth later by Nitin and Dan)
-> so reviewers guided him to support anon pages only to merge it.
-> And at that time, it was a specific virtual block device for only supporting
-> swap. AFAIRC, akpm suggested to make it general block device so other party
-> can have a benefit.
->
-> You can type "zram tmp" in google and will find many article related
-> to use zram as tmp and I have been received some questions/reports
+Are there any changes we might need in future to either support new
+functionality or to generalise the binding. e.g. do we need a regulator
+for the LED? 
 
-I see.
-But i think if using shmem as tmp, the pages can be reclaimed during
-memory pressure,
-get to zswap and compressed as well.
+Given the binding has never been supported, are we happy now that it
+best represents the hardware, or are there avenues of improvement
+*before* it becomes ABI?
 
-Mel also pointed a situation using zram as tmpfs may make things worse.
+Thanks,
+Mark.
 
-> from anonymous guys by private mail. And Jorome, Redhat guy, has
-> contributed that part like partial I/O.
->
+[1] Documentation/devicetree/bindings/mfd/max77693.txt
 
-I am not going to block zram being promoted, just some different voice.
-
--- 
-Regards,
---Bob
+> 
+> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+> Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/mfd/max77693.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> index 27f5da3..e0b11a9 100644
+> --- a/drivers/mfd/max77693.c
+> +++ b/drivers/mfd/max77693.c
+> @@ -225,11 +225,19 @@ static const struct dev_pm_ops max77693_pm = {
+>  	.resume = max77693_resume,
+>  };
+>  
+> +#ifdef CONFIG_OF
+> +static struct of_device_id max77693_dt_match[] = {
+> +	{.compatible = "maxim,max77693"},
+> +	{},
+> +};
+> +#endif
+> +
+>  static struct i2c_driver max77693_i2c_driver = {
+>  	.driver = {
+>  		   .name = "max77693",
+>  		   .owner = THIS_MODULE,
+>  		   .pm = &max77693_pm,
+> +		   .of_match_table = of_match_ptr(max77693_dt_match),
+>  	},
+>  	.probe = max77693_i2c_probe,
+>  	.remove = max77693_i2c_remove,
+> -- 
+> 1.8.1.2
+> 
+> 
