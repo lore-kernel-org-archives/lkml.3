@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab3HWNDq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 09:03:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50343 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775Ab3HWNDp (ORCPT
+	id S1755306Ab3HWNDw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 09:03:52 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:43873 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab3HWNDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 09:03:45 -0400
-Date: Fri, 23 Aug 2013 15:03:32 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com
-Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
- related damage v3
-Message-ID: <20130823130332.GY31370@twins.programming.kicks-ass.net>
-References: <20120307180852.GE17697@suse.de>
+	Fri, 23 Aug 2013 09:03:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120307180852.GE17697@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CACRpkdZJ_2HF_r8cKpMrG1Usy5bD8Fr7GM_k2Btzxgk71G-VvA@mail.gmail.com>
+References: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
+	<1377260620-18829-33-git-send-email-lee.jones@linaro.org>
+	<CACRpkdZJ_2HF_r8cKpMrG1Usy5bD8Fr7GM_k2Btzxgk71G-VvA@mail.gmail.com>
+Date: Fri, 23 Aug 2013 15:03:50 +0200
+Message-ID: <CACRpkdZGD3O-iYiT7sNbyx8imKGOF+uk864BA97FhzJ5EksD+g@mail.gmail.com>
+Subject: Re: [PATCH 32/40] ARM: ux500: Delete U8500 UIB support when booting
+ with ATAGs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 07, 2012 at 06:08:52PM +0000, Mel Gorman wrote:
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index 06b145f..013d981 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -1843,18 +1843,24 @@ struct page *
->  alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
->  		unsigned long addr, int node)
->  {
-> -	struct mempolicy *pol = get_vma_policy(current, vma, addr);
-> +	struct mempolicy *pol;
->  	struct zonelist *zl;
->  	struct page *page;
-> +	unsigned int cpuset_mems_cookie;
-> +
-> +retry_cpuset:
-> +	pol = get_vma_policy(current, vma, addr);
-> +	cpuset_mems_cookie = get_mems_allowed();
->  
-> -	get_mems_allowed();
->  	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
->  		unsigned nid;
->  
->  		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
->  		mpol_cond_put(pol);
->  		page = alloc_page_interleave(gfp, order, nid);
-> -		put_mems_allowed();
-> +		if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
-> +			goto retry_cpuset;
-> +
->  		return page;
->  	}
->  	zl = policy_zonelist(gfp, pol, node);
+On Fri, Aug 23, 2013 at 2:53 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
 
-So I think this patch is broken (still). Suppose we have an
-INTERLEAVE mempol like 0x3 and change it to 0xc.
+> It is not true at all that all HREFs have the STUIB mounted.
 
-Original:	0x3
-Rebind Step 1:	0xf /* set bits */
-Rebind Step 2:	0xc /* clear bits */
+Hm I'm confused here...
 
-Now look at what can happen with offset_il_node() when its ran
-concurrently with step 2:
+arch/arm/boot/dts/[ste-]stuib.dtsi does define this stuff
+so forget about the misplaced comments.
 
-  nnodes = nodes_weight(pol->v.nodes); /* observes 0xf and returns 4 */
+For *all* HREF boards. As it is included from both
+[ste-]hrefprev60.dts and [ste-]hrefv60plus.dts
 
-  /* now we clear the actual bits */
-  
-  target = (unsigned int)off % nnodes; /* assume target >= 2 */
-  c = 0;
-  do {
-  	nid = next_node(nid, pol->v.nodes);
-	c++;
-  } while (c <= target);
+However it is only really mounted on some of the HREFs,
+and the following stays valid:
 
-  /* here nid := MAX_NUMNODES */
+> This detection needs to stay for now, unless we go and define
+> in the device tree which UIB is mounted, which would be unfortunate
+> as we can very well auto-detect it, and that makes it easier for
+> a user to just swap the UIB and test the other toch screen
+> (for example).
 
+So it would be really nice to keep this autodetection.
 
-This nid is then blindly inserted into node_zonelist() which does an
-NODE_DATA() array access out of bounds and off we go.
+What would be nice if we could mark all the STUIB as
+"disabled" in the device trees, and then augment the device tree
+at boot depending on if we find something at 0x44 as in this
+test:
 
-This would suggest we put the whole seqcount thing inside
-offset_il_node().
+> -       /* U8500-UIB has the TC35893 at 0x44 on I2C0, the ST-UIB doesn't. */
+> -       ret = i2c_smbus_xfer(i2c0, 0x44, 0, I2C_SMBUS_WRITE, 0,
+> -                       I2C_SMBUS_QUICK, NULL);
+
+And then mark these as "okay" in the DT.
+
+That's pretty high-tech but I bet we can pull it off (and set
+a good example).
+
+Yours,
+Linus Walleij
