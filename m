@@ -1,96 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab3HWQPm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 12:15:42 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:39082 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab3HWQPj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 12:15:39 -0400
-Message-ID: <1377274448.10300.777.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Date: Fri, 23 Aug 2013 10:14:08 -0600
-In-Reply-To: <20130823130440.GC10322@mtj.dyndns.org>
-References: <20130821204041.GC2436@htj.dyndns.org>
-	 <1377124595.10300.594.camel@misato.fc.hp.com>
-	 <20130822033234.GA2413@htj.dyndns.org>
-	 <1377186729.10300.643.camel@misato.fc.hp.com>
-	 <20130822183130.GA3490@mtj.dyndns.org>
-	 <1377202292.10300.693.camel@misato.fc.hp.com>
-	 <20130822202158.GD3490@mtj.dyndns.org>
-	 <1377205598.10300.715.camel@misato.fc.hp.com>
-	 <20130822212111.GF3490@mtj.dyndns.org>
-	 <1377209861.10300.756.camel@misato.fc.hp.com>
-	 <20130823130440.GC10322@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755533Ab3HWQPt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 12:15:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754692Ab3HWQPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 12:15:46 -0400
+Date: Fri, 23 Aug 2013 18:15:32 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
+        Christophe Guillon <christophe.guillon@st.com>, rusty@rustcorp.com.au,
+        linux-arch@vger.kernel.org, arnd@arndb.de, mgahagan@redhat.com,
+        agospoda@redhat.com
+Subject: Re: [RFC PATCH 0/4] add support for gcov format introduced in gcc 4.7
+Message-ID: <20130823161532.GA2336@localhost.localdomain>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com>
+ <52177AD7.1030709@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52177AD7.1030709@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, 2013-08-23 at 09:04 -0400, Tejun Heo wrote:
-> On Thu, Aug 22, 2013 at 04:17:41PM -0600, Toshi Kani wrote:
-> > I am relatively new to Linux, so I am not a good person to elaborate
-> > this.  From my experience on other OS, huge pages helped for the kernel,
-> > but did not necessarily help user applications.  It depended on
-> > applications, which were not niche cases.  But Linux may be different,
-> > so I asked since you seemed confident.  I'd appreciate if you can point
-> > us some data that endorses your statement.
+On Fri, Aug 23, 2013 at 05:08:07PM +0200, Peter Oberparleiter wrote:
+> On 23.08.2013 10:39, Frantisek Hrbata wrote:
+> > This is an attempt to bring support for modified gcov format in gcc 4.7 to
+> > the kernel. It tries to leverage the existing layout/abstraction, which was
+> > designed keeping in mind that the gcov format could change, but some changes had
+> > to be make. Mostly because the current model does not take into account that
+> > even the core gcov structures, like gcov_info, could change. One part that could
+> > be problematic is the addition of the .init_array section for constructors.
 > 
-> We are talking about the kernel linear mapping which is created during
-> early boot, so if it's available and useable there's no reason not to
-> use it.  Exceptions would be earlier processors which didn't do 1G
-> mappings or e820 maps with a lot of holes.  For CPUs used in NUMA
-> configurations, the former has been history for a bit now.  Can't be
-> sure about the latter but it'd be surprising for that to affect large
-> amount of memory in the systems that are of interest here.  Ooh, that
-> reminds me that we probably wanna go back to 1G + MTRR mapping under
-> 4G.  We're currently creating a lot of mapping holes.
+> It appears that gcc 4.7 support for gcov-kernel is quite important to a
+> number of people, at least that is what I derive from the fact that I
+> now know of 3 people who've been working on this support separately from
+> each other: you, myself (I've been close to posting my own version to
+> LKML) and Christophe Guillon.
 
-Thanks for the explanation.
+First, thank you for your quick reply. Second, great, I was worried there is no
+interest to have the new format supported, because it's quite some time gcc 4.7
+is out.
 
-> > My worry is that the code is unlikely tested with the special logic when
-> > someone makes code changes to the page tables.  Such code can easily be
-> > broken in future.
 > 
-> Well, I wouldn't consider flipping the direction of allocation to be
-> particularly difficult to get right especially when compared to
-> bringing in ACPI tables into the mix.
+> It's apparent now that I made a mistake delaying the discussion of the
+> effort for too long, but I think your posting the patches opens up a
+> good opportunity to combine the best of all previous efforts.
+
+To be honest I ran into this problem 14 days ago when I was asked to take a
+look. So I cannot say I know everything about gcov format and stuff around it.
+I mostly followed your original code after I got some idea of the gcov in-memory
+layout. Meaning, I'm glad that there is also yours and Christophe's code and
+I for sure welcome the "combine the best of all previous efforts" approach, even
+if it means dropping my code :).
+
 > 
-> > To answer your other question/email, I believe Tang's next step is to
-> > support local page tables.  This is why we think pursing SRAT earlier is
-> > the right direction.
+> Most of your code looks very familiar. There's one feature missing though
+> that Christophe brought up as a requirement: the ability for gcov-kernel
+> to cope with kernel modules being compiled with GCC versions implementing
+> a different gcov format (apparently this can happen in some embedded
+> setups).
+
+Here follows quote from the gcc/gcov-io.h file
+
+<quote>
+Coverage information is held in two files.  A notes file, which is
+generated by the compiler, and a data file, which is generated by
+the program under test.  Both files use a similar structure.  We do
+not attempt to make these files backwards compatible with previous
+versions, as you only need coverage information when developing a
+program.  We do hold version information, so that mismatches can be
+detected, and we use a format that allows tools to skip information
+they do not understand or are not interested in.
+</quote>
+
+Also from my experience, I would expect that the gcov will be used during
+development, meaning re-compilation isn't a big problem here. I for sure can be
+missing something and I'm by no means saying it wouldn't be useful feature. Just
+that it would complite things a little bit.
+
 > 
-> Given 1G mappings, is that even a worthwhile effort?  I'm getting even
-> more more skeptical.
+> Christophe proposed run-time version checking and a file-ops type function
+> table which is chosen based on info->version. I found this approach
+> somewhat intrusive and this would also not have covered the case where a
+> new GCC versions was used to compile kernel modules for which the base
+> kernel has no support. I tried to solve this requirement by combining
+> two changes:
+> 
+> 1) make the gcov-format generated by gcov-kernel compile-time configurable
+> 2) separate the gcov-format specific code into a loadable kernel module
 
-With 1G mappings, I agree that it won't make much difference.
+So if I understand it correctly you would separate the input
+format(gcov_info) from the output(gcda files). Meaning no matter which gcc
+compiled the module you can select the gcda format. And even if the kernel does
+not know the new format you can simply compile a module supporting it, instead
+of the whole kernel.
 
-I still think acpi table info should be available earlier, but I do not
-think I can convince you on this.  This can be religious debate.
+Can you please give me an example why this is needed? As I wrote I'm not that
+familiar with gcov and I'm probably missing something, but I do not understand
+why this(handling several versions at runtime, not only the one used by gcc
+during compilation) is useful(note my comment above about the gcov used during
+development).
 
-Tang, what do you think?  Are you OK to try Tejun's suggestion as well? 
+> 
+> This way, the gcov-format specific part of gcov-kernel could be replaced
+> when working with a different version GCC. I'll post the corresponding
+> patches as reply in another mail.
 
-Thanks,
--Toshi
+Great, I will take a look, but it may take me some time :).
 
+> 
+> Back to your patches: I tested them and they work fine on s390x when
+> compiled with GCC 4.3.4 and 4.7.2. I'll provide some more specific
+> comments as replies to your patch-mails.
+
+Many thanks!
+
+> 
+> 
+> Regards,
+>   Peter Oberparleiter
+> 
+> -- 
+> Peter Oberparleiter
+> Linux on System z Development - IBM Germany
+> 
+
+-- 
+Frantisek Hrbata
