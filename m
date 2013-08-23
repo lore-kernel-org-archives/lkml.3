@@ -1,89 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab3HWQGS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 12:06:18 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:49780 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab3HWQGP (ORCPT
+	id S1755490Ab3HWQGs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 12:06:48 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38913 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754625Ab3HWQGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 12:06:15 -0400
-Date: Fri, 23 Aug 2013 10:06:12 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pci: avoid unnecessary writing of the command register
- during probe
-Message-ID: <20130823160612.GA13605@google.com>
-References: <1377209958-26362-1-git-send-email-zoltan.kiss@citrix.com>
+	Fri, 23 Aug 2013 12:06:46 -0400
+Date: Fri, 23 Aug 2013 11:06:25 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: Re: [PATCH RFC v2 2/5] spmi: Linux driver framework for SPMI
+Message-ID: <20130823160625.GP4035@joshc.qualcomm.com>
+References: <cover.1377202730.git.joshc@codeaurora.org>
+ <46db5901fe4d04d09cee8fd81ea1c62068ee9503.1377202730.git.joshc@codeaurora.org>
+ <20130822231054.GA31973@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377209958-26362-1-git-send-email-zoltan.kiss@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130822231054.GA31973@kroah.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 11:19:18PM +0100, Zoltan Kiss wrote:
-> While I tracked an another bug, I noticed that the PCI command register is
-> quite often updated here unnecessarily.
+On Thu, Aug 22, 2013 at 04:10:54PM -0700, Greg Kroah-Hartman wrote:
+> On Fri, Aug 09, 2013 at 01:37:09PM -0700, Josh Cartwright wrote:
+> > +static char dbgfs_help[] =
+> > +	"SPMI Debug-FS support\n"
+> > +	"\n"
+> > +	"Hierarchy schema:\n"
+> > +	"/sys/kernel/debug/spmi\n"
+> > +	"       /help                -- Static help text\n"
+> > +	"       /spmi-0              -- Directory for SPMI bus 0\n"
+> > +	"       /spmi-0/0-1          -- Directory for SPMI device '0-1'\n"
+> > +	"       /spmi-0/0-1/address  -- Starting register for reads or writes\n"
+> > +	"       /spmi-0/0-1/count    -- Number of registers to read (only used for reads)\n"
+> > +	"       /spmi-0/0-1/data     -- Initiates the SPMI read (formatted output)\n"
+> > +	"       /spmi-0/0-1/data_raw -- Initiates the SPMI raw read or write\n"
+> > +	"       /spmi-n              -- Directory for SPMI bus n\n"
+> > +	"\n"
+> > +	"To perform SPMI read or write transactions, you need to first write the\n"
+> > +	"address of the slave device register to the 'address' file.  For read\n"
+> > +	"transactions, the number of bytes to be read needs to be written to the\n"
+> > +	"'count' file.\n"
+> > +	"\n"
+> > +	"The 'address' file specifies the 20-bit address of a slave device register.\n"
+> > +	"The upper 4 bits 'address[19..16]' specify the slave identifier (SID) for\n"
+> > +	"the slave device.  The lower 16 bits specify the slave register address.\n"
+> > +	"\n"
+> > +	"Reading from the 'data' file will initiate a SPMI read transaction starting\n"
+> > +	"from slave register 'address' for 'count' number of bytes.\n"
+> > +	"\n"
+> > +	"Writing to the 'data' file will initiate a SPMI write transaction starting\n"
+> > +	"from slave register 'address'.  The number of registers written to will\n"
+> > +	"match the number of bytes written to the 'data' file.\n"
+> > +	"\n"
+> > +	"Example: Read 4 bytes starting at register address 0x1234 for SID 2\n"
+> > +	"\n"
+> > +	"echo 0x21234 > address\n"
+> > +	"echo 4 > count\n"
+> > +	"cat data\n"
+> > +	"\n"
+> > +	"Example: Write 3 bytes starting at register address 0x1008 for SID 1\n"
+> > +	"\n"
+> > +	"echo 0x11008 > address\n"
+> > +	"echo 0x01 0x02 0x03 > data\n"
+> > +	"\n"
+> > +	"Note that the count file is not used for writes.  Since 3 bytes are\n"
+> > +	"written to the 'data' file, then 3 bytes will be written across the\n"
+> > +	"SPMI bus.\n\n";
 > 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> The help file within the kernel is a nice touch :)
+> 
+> I do know the only rule for debugfs is "There are no rules", but this
+> looks like you are going to have the way to interact to this bus and
+> devices as debugfs, is that correct?
 
-I applied this to pci/misc with minor tweaks as follows.  Let me know
-if you see anything wrong.
+Using debugfs is _a_ way to interact with the controller/slaves, however
+it is not _the_ way to do so.  The primary interface is the in-kernel
+spmi_{read,write,...}_* functions called within the context of a proper
+slave driver.
 
-Bjorn
+> Or is this only for "debugging"?  If so, please document it as such.
 
+It's there because it provides a useful interface for debugging of the
+controller code, and for simple peek/poke of the slave registers without
+having a full driver in place.  Will document this.
 
-PCI: Disable decoding for BAR sizing only when it was actually enabled
+> > +void spmi_dfs_controller_add(struct spmi_controller *ctrl)
+> > +{
+> > +	ctrl->dfs_dir = debugfs_create_dir(dev_name(&ctrl->dev),
+> > +					   spmi_debug_root);
+> > +	WARN_ON(!ctrl->dfs_dir);
+> 
+> Why?  What is a user going to be able to do with something like this?
+> You do this in a number of places, please provide "valid" error messages
+> instead of just kernel stack tracebacks, failing to show the device for
+> which the error occured (hint, use dev_err()).
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Will do.  Thanks.
 
-We disable BARs while sizing them so we don't cause conflicts with other
-devices (see 253d2e5498 and bbffe43524).  But if device decoding is already
-disabled before we size the BAR, we don't need to disable it again.
+> Again, never use WARN_ON() as error handling, it's lazy, and wrong.
 
-[bhelgaas: changelog, add PCI_COMMAND_DECODING_ENABLE for readability]
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/pci/probe.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+To be fair to the original author of this code, this was one of the
+'cleanups' I implemented.  So, I'll take full responsibility for the
+laziness. :)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index cf57fe7..2c6f328 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -165,6 +165,8 @@ static inline unsigned long decode_bar(struct pci_dev *dev, u32 bar)
-  *
-  * Returns 1 if the BAR is 64-bit, or 0 if 32-bit.
-  */
-+#define PCI_COMMAND_DECODE_ENABLE	(PCI_COMMAND_MEMORY | PCI_COMMAND_IO)
-+
- int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
- 			struct resource *res, unsigned int pos)
- {
-@@ -178,8 +180,10 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
- 	/* No printks while decoding is disabled! */
- 	if (!dev->mmio_always_on) {
- 		pci_read_config_word(dev, PCI_COMMAND, &orig_cmd);
--		pci_write_config_word(dev, PCI_COMMAND,
--			orig_cmd & ~(PCI_COMMAND_MEMORY | PCI_COMMAND_IO));
-+		if (orig_cmd & PCI_COMMAND_DECODE_ENABLE) {
-+			pci_write_config_word(dev, PCI_COMMAND,
-+				orig_cmd & ~PCI_COMMAND_DECODE_ENABLE);
-+		}
- 	}
- 
- 	res->name = pci_name(dev);
-@@ -293,7 +297,8 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
- fail:
- 	res->flags = 0;
- out:
--	if (!dev->mmio_always_on)
-+	if (!dev->mmio_always_on &&
-+	    (orig_cmd & PCI_COMMAND_DECODE_ENABLE))
- 		pci_write_config_word(dev, PCI_COMMAND, orig_cmd);
- 
- 	if (bar_too_big)
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
