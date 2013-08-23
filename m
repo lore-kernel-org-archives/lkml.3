@@ -1,226 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab3HWSEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 14:04:15 -0400
-Received: from mout.gmx.net ([212.227.17.20]:49716 "EHLO mout.gmx.net"
+	id S1756140Ab3HWSEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 14:04:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23133 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755934Ab3HWSEO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 14:04:14 -0400
+	id S1755980Ab3HWSEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 14:04:43 -0400
+Date: Fri, 23 Aug 2013 19:58:46 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Brad Spengler <spender@grsecurity.net>,
+        Colin Walters <walters@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/3] namespaces && fork fixes/cleanups
+Message-ID: <20130823175846.GA30201@redhat.com>
 MIME-Version: 1.0
-Message-ID: <trinity-ffa0da23-5491-4202-851d-c3a1cb076276-1377281052905@3capp-gmx-bs14>
-From: "Andreas Werner" <wernerandy@gmx.de>
-To: "Andy Lutomirski" <luto@amacapital.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Date: Fri, 23 Aug 2013 20:04:13 +0200 (CEST)
-Importance: normal
-Sensitivity: Normal
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-X-Provags-ID: V03:K0:SMOOQScMa5zfDEIQd86uQLUVIBU+WkiS7P7/2AuZvlU
- xNGov+doNoJheJBINduQwcwz0ejufKsdveLDhtGSLVhWs2I0rj
- P9jhIBLA5IkapMje3fy1xWhhI2jd9J41O+ZlDu70VgrQipWLMp
- ofJfqZuKJaALrfTyzJpQOeCIdQc0UEAlDHBe5vpUeZNGgEjmfu
- 0JNMq0iolPKn2tDE64gM48AWHWjCFTW37R0aXPyFGLCawdJThH
- t5GSSupsdqqMTAq1uUctaA/EJgRi479Tpoz2qOEMG1fOaj3Q3T UBdWug=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello.
 
-why are you curious?
+To remind, 1/3 fixes the regression, perhaps it should cc -stable.
 
-I have never heard about movntdqa. Have you ever tried it?
-May be it is a good idea to try i out.
+v2:
+	changed the comment, added the acks from Andy.
 
-I think i will commit the patch to the kernel and see what happens :-)
+Still needs the review from Eric.
 
-Best regards.
+Oleg.
 
->> On Fri, Aug 23, 2013 at 9:59 AM, Andreas Werner <wernerandy@gmx.de>
->> wrote:
->>>
->>>
->>> Hi,
->>> thank you for your answer.
->>>
->>> So we are two persons for now who need WT :-)
->>>
->>> Im currently working on an ethernet driver for our own ETH core.
->>> The problem is that one requirement is to not use DMA to transmit or
->>> receive the data.
->>> This means the that the ethernet buffer are not located in the main
->>> memory. They are located in
->>> the FPGA.
->>>
->>> To transmit or receive a frame, i have to read or write to mmio to get
->>> the data.
->>>
->>> Intel has introduced the command "clflush" which can flush a cache
->>> line.
->>> I wanted to activate the caches for those mmio (eth buffer) to speed up
->>> the transmit or receive.
->>> After that the transfer over PCIe uses burst read/write.
->>>
->>> The problem was if i set the buffer to Write-Back and call clflush on
->>> those mmio-addresses, the system crashed without any output.
->>> I found this articel
->>> http://software.intel.com/en-us/forums/topic/393070.[http://software.intel.com/en-us/forums/topic/393070]
->>>
->>> After that i configured the transmit buffer to be Write-Combining (only
->>> write to that adresses) using ioremap_wc, and
->>> the receive buffer to be Write-Through (ioremap_cache + mtrr Write-Back
->>> + my Kernel Hack :-)) everything worked fine.
->>> The other configuration Register on the FPGA are just mapped with
->>> ioremap.
->>
->> I'm curious: have you tried movntdqa on UC memory for this?
->> (Certainly WP or WT is easier.)
->>
->> In any case, I hope to have patches to support WP and WT without using
->> PAT reasonably soon.
->>
->>>
->>> On PCIe Tracer i can see the burst read/write on my device.
->>>
->>> Is it possible to get hits into the Kernel?
->>>
->>> My modification in arch/x86/mm/pat.c:
->>>
->>> --- pat.c.orig 2013-02-03 01:18:49.491879407 +0100
->>> +++ pat.c 2013-02-03 01:19:19.053509836 +0100
->>> @@ -149,10 +149,16 @@ static unsigned long pat_x_mtrr_type(u64
->>>    u8 mtrr_type;
->>>
->>>    mtrr_type = mtrr_type_lookup(start, end);
->>> -  if (mtrr_type != MTRR_TYPE_WRBACK)
->>> +
->>> +  if (mtrr_type == MTRR_TYPE_WRTHROUGH) {
->>> +   return _PAGE_CACHE_WB;
->>> +  }
->>> +  else if( mtrr_type == MTRR_TYPE_WRBACK )
->>> +   return _PAGE_CACHE_WB;
->>> +  else
->>>     return _PAGE_CACHE_UC_MINUS;
->>> -
->>> -  return _PAGE_CACHE_WB;
->>> +
->>>   }
->>>
->>>   return req_type;
->>>
->>
->> That seems more or less reasonable to me.  If you want it included,
->> send it to x86@kernel.org (cc lkml) and see what they say.
->>
->> It would be prettier if you combined the conditions into a single
->> if/else, though.
->>
->>>
->>> Best regards.
->>>
->>>
->>> Gesendet: Montag, 12. August 2013 um 19:53 Uhr
->>> Von: "Andy Lutomirski" <luto@amacapital.net>
->>> An: "Andreas Werner" <wernerandy@gmx.de>
->>> Cc: linux-kernel@vger.kernel.org
->>> Betreff: Re: question about ioremap_cache and PAT
->>> On 08/11/2013 09:50 AM, Andreas Werner wrote:
->>>> Hi i have a question about ioremap_cache and the resulting PAT
->>>> attribute on X86 system. If I configure the mtrr to Write-Through for
->>>> an adress range, and call ioremap_cache to map the mmio, the resulting
->>>> PAT attribute is set to UC.
->>>> If I check the Intel document IA-32 SDM vol 3a, the resulting PAT
->>>> attribute should be WB.
->>>>
->>>> I found the function pat_x_mtrr_type in arch/x86/mm/pat.c where the
->>>> resulting attribute is returned. There will be always UC return expect
->>>> if the MTRR is set to WB.
->>>>
->>>> Why is there only WB or UC returned? In the Intel document there are a
->>>> lot of combinations "allowed".
->>>>
->>>> I need a Attribute of WT, so what i did is to modify the
->>>> pat_x_mtrr_type function to return also WB if the MTRR is set to WT.
->>>>
->>>> Is this a solution to solve that or whats the reasion why the kernel
->>>> doesn´t support this combination?
->>>
->>> The kernel doesn't support it because I'm apparently the only person
->>> who
->>> ever wanted it and I haven't implemented it yet.
->>>
->>> This stuff is handled in hardware, so modifying the kernel's idea of
->>> what hardware does won't do much. Also, the kernel using MTRRs is on
->>> its (very slow) way out. You could probably hack something up, but I
->>> can almost guarantee that hpa, etc won't accept the patches.
->>>
->>> That being said, I'm planning to support WT directly using PAT in the
->>> near future. This will work on most recent cpus (there are errata that
->>> will prevent use of the high PAT entries on some cpus).
->>>
->>> What do you need WT for? I want it for NVDIMMs, and all I need to get
->>> started now is a heatsink*, so I'll hopefully start implementing this
->>> stuff in the next week or so.
->>>
->>> --Andy
->>>
->>> * Damnit, Intel, it's not 2003 any more. You already figured out that
->>> heatsinks want screw holes. But why couldn't you make sure that all
->>> so-called "LGA 2011" sockets have the screw holes in the same place?
->>>
->>>
->>>>
->>>> Best regards
->>>>
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> B
->>>> A
->>>> A
->>>> A
->>>> A
->>>> A
->>>> A
->>>> A
->>>> A
->>>> A
->>>> A
->>>> A
->>>> A
->>>> A
->>>> A
->>>> A
->>>> B
->>>> B
->>>> B
->>>> Best regards
->>>>
->>>
->>
->>
->>
->> --
->> Andy Lutomirski
->> AMA Capital Management, LLC
->>
-> 
-> 
-> 
+ kernel/fork.c |   22 ++++++++--------------
+ 1 files changed, 8 insertions(+), 14 deletions(-)
+
