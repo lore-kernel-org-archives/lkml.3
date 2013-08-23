@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab3HWJky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 05:40:54 -0400
-Received: from smtp2-1.goneo.de ([212.90.139.83]:51113 "EHLO smtp2-1.goneo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752943Ab3HWJkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 05:40:51 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -2.746
-From: Lars Poeschel <poeschel@lemonage.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v2] gpio: interrupt consistency check for OF GPIO IRQs
-Date: Fri, 23 Aug 2013 11:40:44 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, galak@codeaurora.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-References: <1377092334-770-1-git-send-email-larsi@wh2.tu-dresden.de> <CACRpkdYUeyVZcN1-jOzg0zo4eSJK1S+M5fJ0FcMsgwaPKW4Obw@mail.gmail.com> <52167E5D.6060802@wwwdotorg.org>
-In-Reply-To: <52167E5D.6060802@wwwdotorg.org>
+	id S1754329Ab3HWJqD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 05:46:03 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:59686 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724Ab3HWJqB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 05:46:01 -0400
+Date: Fri, 23 Aug 2013 11:45:56 +0200
+From: Robert Richter <rric@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Vince Weaver <vince@deater.net>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Vince Weaver <vincent.weaver@maine.edu>
+Subject: Re: [PATCH v3 12/12] [RFC] perf, persistent: ioctl functions to
+ control persistency
+Message-ID: <20130823094556.GB10223@rric.localhost>
+References: <1377180807-12758-1-git-send-email-rric@kernel.org>
+ <1377180807-12758-13-git-send-email-rric@kernel.org>
+ <alpine.DEB.2.02.1308221404090.26486@pianoman.cluster.toy>
+ <20130823091128.GA19548@nazgul.tnic>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308231140.44923.poeschel@lemonage.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130823091128.GA19548@nazgul.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 22 August 2013 at 23:10:53, Stephen Warren wrote:
-> On 08/21/2013 05:36 PM, Linus Walleij wrote:
-> > On Thu, Aug 22, 2013 at 1:10 AM, Stephen Warren
-> > <swarren@wwwdotorg.org> wrote: [Me]
+On 23.08.13 11:11:28, Borislav Petkov wrote:
+> On Thu, Aug 22, 2013 at 02:18:06PM -0400, Vince Weaver wrote:
+> > > PERF_EVENT_IOC_ATTACH (Since Linux 3.xx)
+> > > PERF_EVENT_IOC_DETACH (Since Linux 3.xx)
 > > 
-> >>>> check if these in turn reference the interrupt-controller, and
-> >>>> if they do, loop over the interrupts used by that child and
-> >>>> perform gpio_request() and gpio_direction_input() on these,
-> >>>> making them unreachable from the GPIO side.
-> >> 
-> >> What about bindings that require a GPIO to be specified, yet don't
-> >> allow an IRQ to be specified, and the driver internally does perform
-> >> gpio_to_irq() on it? I don't think one can detect that case.
-> > 
-> > This is still allowed. Consumers that prefer to have a GPIO
-> > passed and convert it to IRQ by that call can still do so,
-> > they will know what they're doing and will not cause the
-> > double-command situation that we're trying to solve.
+> > I think these aren't very good names for the ioctls.  Maybe something
+> > like
+> >   PERF_EVENT_IOC_MAKE_PERSISTENT
+> >   PERF_EVENT_IOC_UNPERSIST
+> > I know that last one's not a real word but I can't think of what the 
+> > proper term would be.  Maybe
+> >   PERF_EVENT_IOC_RELEASE_PERSISTENT
+> >   PERF_EVENT_IOC_RECLAIM_PERSISTENT
 > 
-> Why not? There are certainly drivers in the kernel which request a GPIO
-> as both a GPIO and as an (dual-edge) interrupt, so that they can read
-> the GPIO input whenever the IRQ goes off, in order to determine the pin
-> state. This is safer against high-latency or lost interrupts.
+> "aren't very good names" is not really an argument I can work with. Why
+> not? What if you want to attach/detach to events but not be persistent.
+> Which also begs the question how long are we persistent? The whole
+> system runtime or until the user decides to detach.
+> 
+> So ATTACH/DETACH in the sense of attaching processes to events for an
+> arbitrary amount of time *and* *not* for the duration of the tracee
+> as we do it currently implicitly, is much more generic wrt usage than
+> specifying that specific persistent case.
 
-This is the point! They REQUEST the GPIO. They can then do whatever they 
-like with this GPIO then, even additionally use it as interrupt.
-In the devicetree case the interrupts are not requested. This is what we 
-are trying to address with the patch. The device using this interrupt has 
-no idea where this interrupt comes from. Is it a gpio-interrupt or not? 
-Does it have to request a gpio before using this interrupt or not?
+Ok, for clarification, my intention was to say something like 'detach
+event from the current process controlling it', or 'attach the event
+to the current process that holds the fd'.
+
+Whatever term is the best for this ioctls, I am fine with it. The
+above terms look a bit long.
+
+The problem with detach/attach is more that it's actually more
+logically to attach first and afterwards detach. This is not the case
+here, it's vise versa.
+
+-Robert
