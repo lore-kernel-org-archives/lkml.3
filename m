@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab3HWMeH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 08:34:07 -0400
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:54416 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755477Ab3HWMeE (ORCPT
+	id S1756146Ab3HWMeM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 08:34:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:40427 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755477Ab3HWMeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 08:34:04 -0400
-Date: Fri, 23 Aug 2013 08:34:00 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH 11/11] cpuset: export effective masks to userspace
-Message-ID: <20130823123400.GB10322@mtj.dyndns.org>
-References: <52148F52.0@huawei.com>
- <52148FFC.4080701@huawei.com>
- <20130821142001.GK19286@mtj.dyndns.org>
- <52171501.8050401@huawei.com>
+	Fri, 23 Aug 2013 08:34:09 -0400
+To: dgilbert@interlog.com
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Martin Petersen <martin.petersen@oracle.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Roland Dreier <roland@purestorage.com>, Zach Brown <zab@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, Theodore Tso <tytso@mit.edu>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH 0/9] target: Add support for EXTENDED_COPY (VAAI) offload emulation
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1377224821-23422-1-git-send-email-nab@daterainc.com>
+	<521741B7.9020904@interlog.com>
+Date: Fri, 23 Aug 2013 08:33:46 -0400
+In-Reply-To: <521741B7.9020904@interlog.com> (Douglas Gilbert's message of
+	"Fri, 23 Aug 2013 13:04:23 +0200")
+Message-ID: <yq17gfc60yd.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52171501.8050401@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+>>>>> "Doug" == Douglas Gilbert <dgilbert@interlog.com> writes:
 
-On Fri, Aug 23, 2013 at 03:53:37PM +0800, Li Zefan wrote:
-> It seems confusing if there're two interaces but they actually mean
-> the same thing.
->
-> Another reason I didn't do this is, they're not always the same. When
-> !sane, If cpus_allowed is empty, effective_cpus is not empty, and you
-> are not able to put tasks into this cpuset. So if we want to  expose
-> it unconditionally, I'll make sure cpus_allowed == effective_cpus
-> always stand when !sane.
+Doug> The SCSI opcodes associated with it (0x83 and 0x84) have been
+Doug> renamed THIRD PARTY COPY OUT and IN, and
 
-Do you think that'll be convoluted?  Otherwise, sounds like a nice
-thing to do anyway.
+Where did you see that? My SPC still has EXTENDED COPY.
 
-Thanks.
+
+Doug> Confused? I certainly was.
+
+Yeah, this is UNMAP all over again, just 100 times worse :(
+
+Anyway. Excited to see nab posting the patches! My copy offload code
+from the spring has been getting stale both in the T10 and the kernel
+sense. But at least we know what I'll be working on next week :)
 
 -- 
-tejun
+Martin K. Petersen	Oracle Linux Engineering
