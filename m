@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab3HWRe6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 13:34:58 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:13077 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755837Ab3HWRe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 13:34:57 -0400
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-To: <devel@linuxdriverproject.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>
-Subject: [PATCH 6/6] staging: ozwpan: change max. TX frame size supported.
-Date: Fri, 23 Aug 2013 18:33:33 +0100
-Message-ID: <1377279213-17074-6-git-send-email-rupesh.gujare@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1377279213-17074-1-git-send-email-rupesh.gujare@atmel.com>
-References: <1377279213-17074-1-git-send-email-rupesh.gujare@atmel.com>
+	id S1756045Ab3HWRgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 13:36:19 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:42312 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754765Ab3HWRgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 13:36:18 -0400
+Date: Fri, 23 Aug 2013 12:36:13 -0500
+From: Ben Myers <bpm@sgi.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Alex Elder <elder@kernel.org>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        Jeff Liu <jeff.liu@oracle.com>, Dave Chinner <david@fromorbit.com>
+Subject: Re: [patch] xfs: check for underflow in xfs_iformat_fork()
+Message-ID: <20130823173613.GT5262@sgi.com>
+References: <20130815055338.GC23580@elgon.mountain>
+ <520CA923.4060409@oracle.com>
+ <20130815143706.GI7153@sgi.com>
+ <20130815222650.GX6023@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130815222650.GX6023@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Max. TX frame size supported is changed to 760 bytes.
+Dan,
 
-Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
----
- drivers/staging/ozwpan/ozproto.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Fri, Aug 16, 2013 at 08:26:50AM +1000, Dave Chinner wrote:
+> On Thu, Aug 15, 2013 at 09:37:06AM -0500, Ben Myers wrote:
+> > Hey Dan & Jeff,
+> > 
+> > On Thu, Aug 15, 2013 at 06:10:43PM +0800, Jeff Liu wrote:
+> > > On 08/15/2013 01:53 PM, Dan Carpenter wrote:
+> > > 
+> > > > The "di_size" variable comes from the disk and it's a signed 64 bit.
+> > > > We check the upper limit but we should check for negative numbers as
+> > > > well.
+> > > > 
+> > > > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > > > 
+> > > > diff --git a/fs/xfs/xfs_inode_fork.c b/fs/xfs/xfs_inode_fork.c
+> > > > index 123971b..849fc70 100644
+> > > > --- a/fs/xfs/xfs_inode_fork.c
+> > > > +++ b/fs/xfs/xfs_inode_fork.c
+> > > > @@ -167,7 +167,8 @@ xfs_iformat_fork(
+> > > >  			}
+> > > >  
+> > > >  			di_size = be64_to_cpu(dip->di_size);
+> > > > -			if (unlikely(di_size > XFS_DFORK_DSIZE(dip, ip->i_mount))) {
+> > > > +			if (unlikely(di_size < 0 ||
+> > > 
+> > > But the di_size is initialized to ZERO while allocating a new inode on disk.
+> > > I wonder if that is better to ASSERT in this case because the current check
+> > > is used to make sure that the item is inlined, or we don't need it at all.
+> > 
+> > Hmm.  Dan's additional check looks good to me.  In this case I'd say the forced
+> > shutdown is more appropriate than an assert, because here we're reading the
+> > inode from disk, as opposed to looking at a structure that is already incore
+> > which we think we've initialized.  We want to handle unexpected inputs from
+> > disk without crashing even if we are CONFIG_XFS_DEBUG.
+> 
+> There are lots of places where we only check di_size to be greater
+> than some value, and don't check for it being less than zero. Hence
+> I think that a better solution might be to di_size unsigned as that
+> will catch "negative" sizes for all types of situations.
 
-diff --git a/drivers/staging/ozwpan/ozproto.h b/drivers/staging/ozwpan/ozproto.h
-index e532347..0c49c8a 100644
---- a/drivers/staging/ozwpan/ozproto.h
-+++ b/drivers/staging/ozwpan/ozproto.h
-@@ -19,7 +19,7 @@
- #define OZ_PRESLEEP_TOUT	11
- 
- /* Maximun sizes of tx frames. */
--#define OZ_MAX_TX_SIZE		1514
-+#define OZ_MAX_TX_SIZE		760
- 
- /* Maximum number of uncompleted isoc frames that can be pending in network. */
- #define OZ_MAX_SUBMITTED_ISOC	16
--- 
-1.7.9.5
+What do you say to making di_size unsigned?  Any interest?
 
+Thanks,
+Ben
