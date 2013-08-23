@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab3HWNDw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 09:03:52 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:43873 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775Ab3HWNDv (ORCPT
+	id S1755381Ab3HWNEt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 09:04:49 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:54499 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998Ab3HWNEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 09:03:51 -0400
+	Fri, 23 Aug 2013 09:04:46 -0400
+Date: Fri, 23 Aug 2013 09:04:40 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+Message-ID: <20130823130440.GC10322@mtj.dyndns.org>
+References: <20130821204041.GC2436@htj.dyndns.org>
+ <1377124595.10300.594.camel@misato.fc.hp.com>
+ <20130822033234.GA2413@htj.dyndns.org>
+ <1377186729.10300.643.camel@misato.fc.hp.com>
+ <20130822183130.GA3490@mtj.dyndns.org>
+ <1377202292.10300.693.camel@misato.fc.hp.com>
+ <20130822202158.GD3490@mtj.dyndns.org>
+ <1377205598.10300.715.camel@misato.fc.hp.com>
+ <20130822212111.GF3490@mtj.dyndns.org>
+ <1377209861.10300.756.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZJ_2HF_r8cKpMrG1Usy5bD8Fr7GM_k2Btzxgk71G-VvA@mail.gmail.com>
-References: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
-	<1377260620-18829-33-git-send-email-lee.jones@linaro.org>
-	<CACRpkdZJ_2HF_r8cKpMrG1Usy5bD8Fr7GM_k2Btzxgk71G-VvA@mail.gmail.com>
-Date: Fri, 23 Aug 2013 15:03:50 +0200
-Message-ID: <CACRpkdZGD3O-iYiT7sNbyx8imKGOF+uk864BA97FhzJ5EksD+g@mail.gmail.com>
-Subject: Re: [PATCH 32/40] ARM: ux500: Delete U8500 UIB support when booting
- with ATAGs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377209861.10300.756.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 2:53 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+Hello, Toshi.
 
-> It is not true at all that all HREFs have the STUIB mounted.
+On Thu, Aug 22, 2013 at 04:17:41PM -0600, Toshi Kani wrote:
+> I am relatively new to Linux, so I am not a good person to elaborate
+> this.  From my experience on other OS, huge pages helped for the kernel,
+> but did not necessarily help user applications.  It depended on
+> applications, which were not niche cases.  But Linux may be different,
+> so I asked since you seemed confident.  I'd appreciate if you can point
+> us some data that endorses your statement.
 
-Hm I'm confused here...
+We are talking about the kernel linear mapping which is created during
+early boot, so if it's available and useable there's no reason not to
+use it.  Exceptions would be earlier processors which didn't do 1G
+mappings or e820 maps with a lot of holes.  For CPUs used in NUMA
+configurations, the former has been history for a bit now.  Can't be
+sure about the latter but it'd be surprising for that to affect large
+amount of memory in the systems that are of interest here.  Ooh, that
+reminds me that we probably wanna go back to 1G + MTRR mapping under
+4G.  We're currently creating a lot of mapping holes.
 
-arch/arm/boot/dts/[ste-]stuib.dtsi does define this stuff
-so forget about the misplaced comments.
+> My worry is that the code is unlikely tested with the special logic when
+> someone makes code changes to the page tables.  Such code can easily be
+> broken in future.
 
-For *all* HREF boards. As it is included from both
-[ste-]hrefprev60.dts and [ste-]hrefv60plus.dts
+Well, I wouldn't consider flipping the direction of allocation to be
+particularly difficult to get right especially when compared to
+bringing in ACPI tables into the mix.
 
-However it is only really mounted on some of the HREFs,
-and the following stays valid:
+> To answer your other question/email, I believe Tang's next step is to
+> support local page tables.  This is why we think pursing SRAT earlier is
+> the right direction.
 
-> This detection needs to stay for now, unless we go and define
-> in the device tree which UIB is mounted, which would be unfortunate
-> as we can very well auto-detect it, and that makes it easier for
-> a user to just swap the UIB and test the other toch screen
-> (for example).
+Given 1G mappings, is that even a worthwhile effort?  I'm getting even
+more more skeptical.
 
-So it would be really nice to keep this autodetection.
+Thanks.
 
-What would be nice if we could mark all the STUIB as
-"disabled" in the device trees, and then augment the device tree
-at boot depending on if we find something at 0x44 as in this
-test:
-
-> -       /* U8500-UIB has the TC35893 at 0x44 on I2C0, the ST-UIB doesn't. */
-> -       ret = i2c_smbus_xfer(i2c0, 0x44, 0, I2C_SMBUS_WRITE, 0,
-> -                       I2C_SMBUS_QUICK, NULL);
-
-And then mark these as "okay" in the DT.
-
-That's pretty high-tech but I bet we can pull it off (and set
-a good example).
-
-Yours,
-Linus Walleij
+-- 
+tejun
