@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106Ab3HWPle (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 11:41:34 -0400
-Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:56267 "EHLO
-	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754132Ab3HWPld (ORCPT
+	id S1755131Ab3HWPrJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 11:47:09 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:35181 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab3HWPrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 11:41:33 -0400
-Date: Fri, 23 Aug 2013 15:41:31 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: JoonSoo Kim <js1304@gmail.com>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/16] slab: remove cachep in struct slab_rcu
-In-Reply-To: <CAAmzW4NZHXXX08tdQitwapfi8raQ-BTRry92A0jdFQkm0vaqxw@mail.gmail.com>
-Message-ID: <00000140abd66e64-21601d31-3ba2-42bd-8153-9f1d41fcc0d9-000000@email.amazonses.com>
-References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com> <1377161065-30552-6-git-send-email-iamjoonsoo.kim@lge.com> <00000140a72870a6-f7c87696-ecbc-432c-9f41-93f414c0c623-000000@email.amazonses.com> <20130823065315.GG22605@lge.com>
- <00000140ab69e6be-3b2999b6-93b4-4b22-a91f-8929aee5238f-000000@email.amazonses.com> <CAAmzW4NZHXXX08tdQitwapfi8raQ-BTRry92A0jdFQkm0vaqxw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 23 Aug 2013 11:47:07 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH -next] staging: lustre: Use proper constant types for L*_POISON values
+Date: Fri, 23 Aug 2013 17:46:48 +0200
+Message-Id: <1377272808-21686-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.08.23-54.240.9.42
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Aug 2013, JoonSoo Kim wrote:
+On 32-bit m68k, I get lots of warnings like:
 
-> I don't get it. This patch only affect to the rcu case, because it
-> change the code
-> which is in kmem_rcu_free(). It doesn't touch anything in standard case.
+    warning: integer constant is too large for ‘long’ type
 
-In general this patchset moves struct slab to overlay struct page. The
-design of SLAB was (at least at some point in the past) to avoid struct
-page references. The freelist was kept close to struct slab so that the
-contents are in the same cache line. Moving fields to struct page will add
-another cacheline to be referenced.
+Switch the L*_POISON definitions from too-large constants and casts
+to the proper constant types to fix this.
 
-The freelist (bufctl_t) was dimensioned in such a way as to be small
-and close cache wise to struct slab. Somewhow bufctl_t grew to
-unsigned int and therefore the table became a bit large. Fundamentally
-these are indexes into the objects in page. They really could be sized
-again to just be single bytes as also explained in the comments in slab.c:
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+The values in drivers/staging/lustre/lustre/include/linux/lustre_lib.h
+don't seem to be used, as LP_POISON is already defined at that point?
 
-/*
- * kmem_bufctl_t:
- *
- * Bufctl's are used for linking objs within a slab
- * linked offsets.
- *
- * This implementation relies on "struct page" for locating the cache &
- * slab an object belongs to.
- * This allows the bufctl structure to be small (one int), but limits
- * the number of objects a slab (not a cache) can contain when off-slab
- * bufctls are used. The limit is the size of the largest general cache
- * that does not use off-slab slabs.
- * For 32bit archs with 4 kB pages, is this 56.
- * This is not serious, as it is only for large objects, when it is unwise
- * to have too many per slab.
- * Note: This limit can be raised by introducing a general cache whose size
- * is less than 512 (PAGE_SIZE<<3), but greater than 256.
- */
+ .../lustre/include/linux/libcfs/linux/kp30.h       |   10 +++++++---
+ .../lustre/lustre/include/linux/lustre_lib.h       |   10 ++++------
+ 2 files changed, 11 insertions(+), 9 deletions(-)
 
-For 56 objects the bufctl_t could really be reduced to an 8 bit integer
-which would shrink the size of the table significantly and improve speed
-by reducing cache footprint.
-
+diff --git a/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h b/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h
+index 073f4d1..c204b67 100644
+--- a/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h
++++ b/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h
+@@ -187,9 +187,13 @@ extern int  lwt_snapshot (cfs_cycles_t *now, int *ncpu, int *total_size,
+ # endif
+ #endif
+ 
+-# define LI_POISON ((int)0x5a5a5a5a5a5a5a5a)
+-# define LL_POISON ((long)0x5a5a5a5a5a5a5a5a)
+-# define LP_POISON ((void *)(long)0x5a5a5a5a5a5a5a5a)
++# define LI_POISON 0x5a5a5a5a
++#if BITS_PER_LONG > 32
++# define LL_POISON 0x5a5a5a5a5a5a5a5aL
++#else
++# define LL_POISON 0x5a5a5a5aL
++#endif
++# define LP_POISON ((void *)LL_POISON)
+ 
+ /* this is a bit chunky */
+ 
+diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_lib.h b/drivers/staging/lustre/lustre/include/linux/lustre_lib.h
+index b2f755a..57f3b01 100644
+--- a/drivers/staging/lustre/lustre/include/linux/lustre_lib.h
++++ b/drivers/staging/lustre/lustre/include/linux/lustre_lib.h
+@@ -53,15 +53,13 @@
+ # include <linux/lustre_common.h>
+ 
+ #ifndef LP_POISON
++# define LI_POISON 0x5a5a5a5a
+ #if BITS_PER_LONG > 32
+-# define LI_POISON ((int)0x5a5a5a5a5a5a5a5a)
+-# define LL_POISON ((long)0x5a5a5a5a5a5a5a5a)
+-# define LP_POISON ((void *)(long)0x5a5a5a5a5a5a5a5a)
++# define LL_POISON 0x5a5a5a5a5a5a5a5aL
+ #else
+-# define LI_POISON ((int)0x5a5a5a5a)
+-# define LL_POISON ((long)0x5a5a5a5a)
+-# define LP_POISON ((void *)(long)0x5a5a5a5a)
++# define LL_POISON 0x5a5a5a5aL
+ #endif
++# define LP_POISON ((void *)LL_POISON)
+ #endif
+ 
+ /* This macro is only for compatibility reasons with older Linux Lustre user
+-- 
+1.7.9.5
 
