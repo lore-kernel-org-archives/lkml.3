@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab3HWBGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 21:06:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39646 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab3HWBGI (ORCPT
+	id S1754050Ab3HWBHi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 21:07:38 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36030 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752965Ab3HWBHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 21:06:08 -0400
-Message-ID: <5216B578.5050506@oracle.com>
-Date: Fri, 23 Aug 2013 09:06:00 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Thu, 22 Aug 2013 21:07:37 -0400
+Date: Fri, 23 Aug 2013 02:07:26 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Willy Tarreau <w@1wt.eu>,
+        "security@kernel.org" <security@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: Re: [PATCH v2] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
+Message-ID: <20130823010726.GP27005@ZenIV.linux.org.uk>
+References: <CA+55aFzXNU-eJ7KeZyv5YYKKtm8iorG-o3QtD7NXx0GTzuH+Bw@mail.gmail.com>
+ <20130822185317.GI31117@1wt.eu>
+ <CALCETrWYeNXhEDY7S9XLD6L0wOZu8iPVO6LN3A_797hLHfBzAw@mail.gmail.com>
+ <CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com>
+ <CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com>
+ <20130822201530.GL31117@1wt.eu>
+ <CALCETrXX--FWeoDMOTYNDOWkTKcWk=LcGs2oY7CQ9GU63CMLRg@mail.gmail.com>
+ <CA+55aFzR71kJOOVzHKKaXW2Ph7wb6ivtVHPeR49PPcqpiCfPsA@mail.gmail.com>
+ <CALCETrXXxRksU-YTY8WFJzeET9cWsPKo_=6e9RD=F+TS7xVMyQ@mail.gmail.com>
+ <CA+55aFxqdV6CQ8UWkB1Z7HUB9GmRH4Jpw_UmmFqDqG01_DmsWw@mail.gmail.com>
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: Mikulas Patocka <mpatocka@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        Alasdair Kergon <agk@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dm: allow error target to replace either bio-based and
- request-based targets
-References: <5214CC25.1070307@oracle.com> <alpine.LRH.2.02.1308211041180.10797@file01.intranet.prod.int.rdu2.redhat.com> <52157C6E.6080406@oracle.com> <20130822201900.GB22556@redhat.com> <20130823001750.GA29366@redhat.com>
-In-Reply-To: <20130823001750.GA29366@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxqdV6CQ8UWkB1Z7HUB9GmRH4Jpw_UmmFqDqG01_DmsWw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/13 08:17, Mike Snitzer wrote:
-> Here is a patch that should work for your needs (I tested it to work
-> with 'dmsetup wipe_table' on both request-based and bio-based devices):
-
-This really what I looking for, thanks!
-
+On Thu, Aug 22, 2013 at 01:54:15PM -0700, Linus Torvalds wrote:
+> On Thu, Aug 22, 2013 at 1:48 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >
+> > Sure.  But aren't they always last?
 > 
-> From: Mike Snitzer <snitzer@redhat.com>
-> Date: Thu, 22 Aug 2013 18:21:38 -0400
-> Subject: [PATCH] dm: allow error target to replace either bio-based and request-based targets
+> What do you mean? I'd say that the /proc lookup is always *innermost*.
+> Which means that it certainly cannot bail out, since there are many
+> levels of nesting outside of it.
 > 
-> In may be useful to switch a request-based table to the "error" target.
-> Enhance the DM core to allow a single hybrid target to be capable of
-> handling either bios or requests.
+> > With the current code structure, trying to enforce some kind of
+> > security restriction in the middle of lookup seems really unpleasant.
 > 
-> Add a request-based (.map_rq) member to the error target_type and train
-> dm_table_set_type() to prefer the md's established type (request-based
-> or bio-based).  If the md doesn't have an established type default to
-> making the hybrid target bio-based.
+> If it's conditional (ie "linkat behaves differently from openat"), it
+> certainly means that we'd have to pass in that info in annoying ways.
 
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
-
-Thanks,
-Joe
+Nope.  All we need to pass is one more LOOKUP_...  Add
+	if (unlikely(nd->last_type == LAST_BIND)) {
+		if ((nd->flags & LOOKUP_BLAH) && !may_flink(...)) {
+			terminate_walk(nd);
+			return -EINVAL;
+		}
+	}
+in the beginning of lookup_last() and pass LOOKUP_BLAH in flags when
+linkat() calls user_path_at().  That will affect *only* the terminal
+symlinks and cost nothing in all normal cases.  The same check can
+bloody well go into path_init() - take
+                if (*name) {
+                        if (!can_lookup(dentry->d_inode)) {
+                                fdput(f);
+                                return -ENOTDIR;
+                        }
+                }
+in there and slap
+		else {
+			if ((flags & LOOKUP_BLAH) && !may_flink(...)) {
+                                fdput(f);
+				return -EINVAL;
+			}
+		}
+after it.
