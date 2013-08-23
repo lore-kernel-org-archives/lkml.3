@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab3HWCqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 22:46:05 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:51296 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab3HWCnP (ORCPT
+	id S1754453Ab3HWCrw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 22:47:52 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:60641 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754013Ab3HWCrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 22:43:15 -0400
-From: "Nicholas A. Bellinger" <nab@daterainc.com>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Roland Dreier <roland@purestorage.com>, Zach Brown <zab@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Theodore Tso <tytso@mit.edu>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Nicholas Bellinger <nab@daterainc.com>
-Subject: [PATCH 2/9] target: Make spc_parse_naa_6h_vendor_specific non static
-Date: Fri, 23 Aug 2013 02:26:54 +0000
-Message-Id: <1377224821-23422-3-git-send-email-nab@daterainc.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1377224821-23422-1-git-send-email-nab@daterainc.com>
-References: <1377224821-23422-1-git-send-email-nab@daterainc.com>
+	Thu, 22 Aug 2013 22:47:51 -0400
+MIME-Version: 1.0
+Date: Fri, 23 Aug 2013 10:47:50 +0800
+Message-ID: <CAPgLHd8HnGX_Sq2U4vh1H1E1tL1XFjwLS7=90xRobYuFkti7kw@mail.gmail.com>
+Subject: [PATCH -next] block: fix error return code in parse_parts()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: axboe@kernel.dk, akpm@linux-foundation.org, caizhiyong@huawei.com,
+        kzak@redhat.com, mag@sysgo.de, dwmw2@infradead.org,
+        computersforpeace@gmail.com, dedekind@infradead.org
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@daterainc.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-This patch makes spc_parse_naa_6h_vendor_specific() available to
-other target code, which is required by EXTENDED_COPY when comparing
-the received NAA WWN device identifer for locating the associated
-se_device backend.
+Fix to return -EINVAL in the parts parse error handling case instead
+of 0(may overwrite to 0 by parse_subpart()), as done elsewhere in this
+function.
 
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Martin Petersen <martin.petersen@oracle.com>
-Cc: Chris Mason <chris.mason@fusionio.com>
-Cc: Roland Dreier <roland@purestorage.com>
-Cc: Zach Brown <zab@redhat.com>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/target/target_core_spc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ block/cmdline-parser.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/target/target_core_spc.c b/drivers/target/target_core_spc.c
-index ed7077a..bd16a93 100644
---- a/drivers/target/target_core_spc.c
-+++ b/drivers/target/target_core_spc.c
-@@ -126,8 +126,8 @@ spc_emulate_evpd_80(struct se_cmd *cmd, unsigned char *buf)
- 	return 0;
- }
+diff --git a/block/cmdline-parser.c b/block/cmdline-parser.c
+index 18fb435..cc2637f 100644
+--- a/block/cmdline-parser.c
++++ b/block/cmdline-parser.c
+@@ -135,6 +135,7 @@ static int parse_parts(struct cmdline_parts **parts, const char *bdevdef)
  
--static void spc_parse_naa_6h_vendor_specific(struct se_device *dev,
--		unsigned char *buf)
-+void spc_parse_naa_6h_vendor_specific(struct se_device *dev,
-+				      unsigned char *buf)
- {
- 	unsigned char *p = &dev->t10_wwn.unit_serial[0];
- 	int cnt;
--- 
-1.7.2.5
+ 	if (!newparts->subpart) {
+ 		pr_warn("cmdline partition has no valid partition.");
++		ret = -EINVAL;
+ 		goto fail;
+ 	}
+ 
 
