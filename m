@@ -1,134 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab3HWJhU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 05:37:20 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:42747 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880Ab3HWJhR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 05:37:17 -0400
-Date: Fri, 23 Aug 2013 11:37:08 +0200
-From: Robert Richter <rric@kernel.org>
-To: Vince Weaver <vince@deater.net>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH v3 08/12] perf, persistent: Exposing persistent events
- using sysfs
-Message-ID: <20130823093708.GA10223@rric.localhost>
-References: <1377180807-12758-1-git-send-email-rric@kernel.org>
- <1377180807-12758-9-git-send-email-rric@kernel.org>
- <alpine.DEB.2.02.1308221344500.26486@pianoman.cluster.toy>
+	id S1754488Ab3HWJky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 05:40:54 -0400
+Received: from smtp2-1.goneo.de ([212.90.139.83]:51113 "EHLO smtp2-1.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752943Ab3HWJkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 05:40:51 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -2.746
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v2] gpio: interrupt consistency check for OF GPIO IRQs
+Date: Fri, 23 Aug 2013 11:40:44 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, galak@codeaurora.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+References: <1377092334-770-1-git-send-email-larsi@wh2.tu-dresden.de> <CACRpkdYUeyVZcN1-jOzg0zo4eSJK1S+M5fJ0FcMsgwaPKW4Obw@mail.gmail.com> <52167E5D.6060802@wwwdotorg.org>
+In-Reply-To: <52167E5D.6060802@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1308221344500.26486@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308231140.44923.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.08.13 14:00:51, Vince Weaver wrote:
-> On Thu, 22 Aug 2013, Robert Richter wrote:
-
-> > +		attr<index>:<bits>	Set any field of the event
-> > +					attribute. The index is a
-> > +					decimal number that specifies
-> > +					the u64 value to be set within
-> > +					struct perf_event_attr.
+On Thursday 22 August 2013 at 23:10:53, Stephen Warren wrote:
+> On 08/21/2013 05:36 PM, Linus Walleij wrote:
+> > On Thu, Aug 22, 2013 at 1:10 AM, Stephen Warren
+> > <swarren@wwwdotorg.org> wrote: [Me]
+> > 
+> >>>> check if these in turn reference the interrupt-controller, and
+> >>>> if they do, loop over the interrupts used by that child and
+> >>>> perform gpio_request() and gpio_direction_input() on these,
+> >>>> making them unreachable from the GPIO side.
+> >> 
+> >> What about bindings that require a GPIO to be specified, yet don't
+> >> allow an IRQ to be specified, and the driver internally does perform
+> >> gpio_to_irq() on it? I don't think one can detect that case.
+> > 
+> > This is still allowed. Consumers that prefer to have a GPIO
+> > passed and convert it to IRQ by that call can still do so,
+> > they will know what they're doing and will not cause the
+> > double-command situation that we're trying to solve.
 > 
-> Ugh this is ugly.
+> Why not? There are certainly drivers in the kernel which request a GPIO
+> as both a GPIO and as an (dual-edge) interrupt, so that they can read
+> the GPIO input whenever the IRQ goes off, in order to determine the pin
+> state. This is safer against high-latency or lost interrupts.
 
-It's not intended to be used by humans. ;) It is more for format
-definitions that are provided by the kernel and that are parsed by
-(perf) tools. Of course, a human could dig into it to figure out
-that's going on.
-
-> You might also want to specify that the "index"
-> value starts at 0 which threw me for a bit when I was trying to figure
-> out what was going on.  You might also want to clarify the previous
-> part of the document which uses "attr" to mean something else.
-
-I thought it would be clear enough to refer to struct perf_event_attr.
-Since the index usually starts with 0 as in the config fields, I
-assumed this was clear in this case too. Though this can be documented
-better.
-
-> Is this endian clean?  Will attr5:23 point to the same bit on a big-endian 
-> machine as on little-endian?
-
-It is the endianness used in the syscall. Handled in the same way as
-for the config fields. I don't see where this could be an issue.
-
-> If we're going to have to have an ugly interface like this we might
-> as well do something more human readable, since anything that parses this 
-> is going to have to rebuild the struct perf_event_attr by hand anyway
-> (unless you propose people blindly set bits at offsets using pointer math
-> which just sounds like a bad idea).
-
-The format directories in /sys/bus/event_source/devices/*/format/ are
-already there to make it human readable. A user never has to deal
-directly with syntax provided there and may use already the
-abstractions for the event syntax.
-
-> For example, just give up and let someone specify the actual field name
-> like "persistent" and have the tools handle that. 
-> 
-> /sys/bus/event_source/devices/persistent/events/mce_record
->    persistent,config=106
-> 
-> /sys/bus/event_source/devices/persistent/format/persistent
->     attr_persistent
-> 
-> That way you could also add things like
-> /sys/bus/event_source/devices/persistent/format/precise_ip
->     attr_precise_ip:0-1
-
-The problem with this is that you have to implement this in the event
-parser of perf tools. Thus, you need to update the parser for any
-other syntax you want to use. This is not necessary with my
-implementation. It already provides the above. The pmu driver just
-need to add the sysfs entry.
-
- .../format/precise_ip = attr5:15-16
-
-Then, -e cycles,precise_ip=1 is the same as -e cycles:p. Looks very
-human readable?
-
-All this without updating perf tools.
-
-Simply test this as follows:
-
- # cp -rp /sys/devices/cpu/format/ /dev/shm/
- # echo attr5:15-16 > /dev/shm/format/precise_ip
- # mount --bind /dev/shm/format/ /sys/devices/cpu/format/
- # find /sys/devices/cpu/format/
- /sys/devices/cpu/format/
- /sys/devices/cpu/format/precise_ip
- /sys/devices/cpu/format/umask
- /sys/devices/cpu/format/event
- /sys/devices/cpu/format/cmask
- /sys/devices/cpu/format/edge
- /sys/devices/cpu/format/inv
- # perf record -e cycles,precise_ip=1 sleep 1
-
-Works out-of-the-box...
-
-It's the whole intention of the new syntax that the event parser never
-needs to be modified again for new attribute flags or any other
-settings of the attributes. Now the syntax is also capable to describe
-any event setup. Also consider that different architectures may
-provide different syntax. In this case there is no need for
-arch-specific code in the tools implementation, all is just brought by
-sysfs.
-
-> Although I still think exposing the full huge attr stuct via sysfs is just 
-> silly.  Isn't there some better way?  I'm not aware of any other syscall
-> that exports things like this.
-
-That's a different story. Guess there is no way back anymore now.
-Though we are in a state all this is handable and covered by perf
-tools.
-
--Robert
+This is the point! They REQUEST the GPIO. They can then do whatever they 
+like with this GPIO then, even additionally use it as interrupt.
+In the devicetree case the interrupts are not requested. This is what we 
+are trying to address with the patch. The device using this interrupt has 
+no idea where this interrupt comes from. Is it a gpio-interrupt or not? 
+Does it have to request a gpio before using this interrupt or not?
