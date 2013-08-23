@@ -1,285 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab3HWIyO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 04:54:14 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:53936 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab3HWIyM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 04:54:12 -0400
-Message-ID: <52172330.4030000@hitachi.com>
-Date: Fri, 23 Aug 2013 17:54:08 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1755023Ab3HWIzg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 04:55:36 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36813 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752553Ab3HWIzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 04:55:33 -0400
+Message-ID: <52172264.3070000@ti.com>
+Date: Fri, 23 Aug 2013 14:20:44 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] kprobes: add new dma insn slot cache for s390
-References: <1377086465-6471-1-git-send-email-heiko.carstens@de.ibm.com> <521575C2.7050504@hitachi.com> <20130822055254.GA4293@osiris> <5216E59B.20109@hitachi.com> <20130823080949.GA4282@osiris>
-In-Reply-To: <20130823080949.GA4282@osiris>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Benoit Cousson <bcousson@baylibre.com>
+CC: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>, <mark.rutland@arm.com>,
+        <a.zummo@towertech.it>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <khilman@linaro.org>,
+        <rtc-linux@googlegroups.com>, <devicetree@vger.kernel.org>,
+        <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+        <rob.herring@calxeda.com>, <sudhakar.raj@ti.com>, <rob@landley.net>,
+        <grant.likely@linaro.org>, <akpm@linux-foundation.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 1/2] rtc: omap: update of_device_id to reflect latest
+ ip revisions
+References: <1376653017-21935-1-git-send-email-gururaja.hebbar@ti.com> <1376653017-21935-2-git-send-email-gururaja.hebbar@ti.com> <520E341D.4080206@baylibre.com> <520E482A.1070504@ti.com> <520E5444.1000700@baylibre.com>
+In-Reply-To: <520E5444.1000700@baylibre.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/23 17:09), Heiko Carstens wrote:
-> On Fri, Aug 23, 2013 at 01:31:23PM +0900, Masami Hiramatsu wrote:
->> (2013/08/22 14:52), Heiko Carstens wrote:
->>> Therefore I need to different insn slot caches, where the slots are either
->>> allocated with __get_free_page(GFP_KERNEL | GFP_DMA) (for the kernel image)
->>> or module_alloc(PAGE_SIZE) for modules.
+Hi Benoit,
+
+Did you get a chance to think about this, I have provided some replies
+below.
+
+On Friday 16 August 2013 10:03 PM, Benoit Cousson wrote:
+> Hi Sekhar,
+> 
+> On 16/08/2013 17:41, Sekhar Nori wrote:
+>>
+>> On 8/16/2013 7:45 PM, Benoit Cousson wrote:
+>>> Hi Gururaja,
 >>>
->>> I can't have a single cache which satifies both areas.
+>>> On 16/08/2013 13:36, Hebbar, Gururaja wrote:
+>>>> The syntax of compatible property in DT is to mention the Most specific
+>>>> match to most generic match.
+>>>>
+>>>> Since AM335x is the platform with latest IP revision, add it 1st in
+>>>> the device id table.
+>>>
+>>> I don't understand why? The order should not matter at all.
 >>
->> Oh, I see.
->> Indeed, that enough reason to add a new cache... By the way, is there
->> any way to implement it without new kconfig like DMAPROBE and dma flag?
->> AFAICS, since such flag is strongly depends on the s390 arch, I don't
->> like to put it in kernel/kprobes.c.
+>> Yes, it should not. We are trying to work around a bug in the kernel
+>> where the compatible order is not honored (instead the order in
+>> of_match[] array matters). There were patches being discussed to fix this.
 >>
->> Perhaps, we can make insn slot more generic, e.g. create new slot type
->> with passing page allocator.
+>>>
+>>> I've tried to follow the thread you had with Mark on the v2, but AFAIK,
+>>> you've never answered to his latest question.
+>>>
+>>> Moreover, checking the differences between the Davinci and the am3352
+>>> RTC IP, I would not claim that both are compatible.
+>>>
+>>> Sure you can use the am3352 with the Davinci driver, but you will lose
+>>> the wakeup functionality without even being notify about that.
+>>
+>> When the kernel is fixed for the bug pointed out above, this should not
+>> happen with properly defined compatible property.
+>>
+>>>
+>>> For my point of view, compatible mean that the HW will still be fully
+>>> functional with both versions of the driver, which is not the case here.
+>>
+>> I do not think that's the interpretation of compatible. Its goes from
+>> most specific to most generic per the ePAPR spec. That in itself says
+>> that 100% functionality is not expected if you don't find a match for
+>> the more specific property.
 > 
-> Something like below?
-> (only compile tested and on top of the previous patches).
+> Well, to be honest I checked as well the official documentation, and this is far from being clear:
+> 
+> page 21 of the ePAPR:
+> 
+> "
+> Property: compatible
+> Value type: <stringlist>
+> 
+> Description:
+>  The compatible property value consists of one or more strings that define the specific 
+>  programming model for the device. This list of strings should be used by a client program for
+>  device driver selection. The property value consists of a concatenated list of null terminated
+>  strings, from most specific to most general. They allow a device to express its compatibility
+>  with a family of similar devices, potentially allowing a single device driver to match against
+>  several devices.
+>  
+>  The recommended format is “manufacturer,model”, where manufacturer is a
+>  string describing the name of the manufacturer (such as a stock ticker symbol), and model
+>  specifies the model number.
+> 
+> Example:
+>  compatible = “fsl,mpc8641-uart”, “ns16550";
+>  In this example, an operating system would first try to locate a device driver that supported
+>  fsl,mpc8641-uart. If a driver was not found, it would then try to locate a driver that supported
+>  the more general ns16550 device type.
+> "
+> 
+> In this example, the generic vs specific is just about the driver. You could have one driver that manage 10 different UARTs or a specific one that manage only your HW. 
 
-Yes! this is exactly what I thought :)
-
-> I'm not sure, since that would expose struct kprobe_insn_cache.
-
-That is OK, since it is required for some arch.
-Could you update the series with this change?
-
-Thank you!
+Right, the assumption is that a specific driver is written because there
+are parts of the hardware that cannot be serviced by generic driver. So
+ultimately its all driven by changes in hardware.
 
 > 
->  arch/Kconfig               |  7 -------
->  arch/s390/Kconfig          |  1 -
->  arch/s390/kernel/kprobes.c | 20 ++++++++++++++++++
->  include/linux/kprobes.h    | 14 ++++++++-----
->  kernel/kprobes.c           | 51 ++++++++++++++++------------------------------
->  5 files changed, 47 insertions(+), 46 deletions(-)
+> There is no assumption about the lost of functionality by using the generic version of the driver. How the user is supposed to know the amount of functionality he will lose, and if this is acceptable to him.
+
+I suppose the generic driver would return some error code like -ENOTSUP
+for the functionality it cannot provide.
+
+> I'd rather have an error at boot saying that the driver is not compatible with the HW and thus I will have to upgrade the kernel, than booting a kernel that will not work as expected because some functionality are missing for that specific HW.
+
+If you have an update available, you can always upgrade to it. But what
+if there is no update available? Would you rather not have the user use
+the available functionality in the meanwhile while he waits for the
+kernel support to be developed.
+
 > 
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 7010d68..1feb169 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -76,13 +76,6 @@ config OPTPROBES
->  	depends on KPROBES && HAVE_OPTPROBES
->  	depends on !PREEMPT
->  
-> -config DMAPROBES
-> -	bool
-> -	help
-> -	  Architectures may want to put kprobes instruction slots into
-> -	  the dma memory region. E.g. s390 has the kernel image in the
-> -	  dma memory region but the module area far away.
-> -
->  config KPROBES_ON_FTRACE
->  	def_bool y
->  	depends on KPROBES && HAVE_KPROBES_ON_FTRACE
-> diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-> index ce389a9..8a4cae7 100644
-> --- a/arch/s390/Kconfig
-> +++ b/arch/s390/Kconfig
-> @@ -96,7 +96,6 @@ config S390
->  	select ARCH_WANT_IPC_PARSE_VERSION
->  	select BUILDTIME_EXTABLE_SORT
->  	select CLONE_BACKWARDS2
-> -	select DMAPROBES if KPROBES
->  	select GENERIC_CLOCKEVENTS
->  	select GENERIC_CPU_DEVICES if !SMP
->  	select GENERIC_SMP_IDLE_THREAD
-> diff --git a/arch/s390/kernel/kprobes.c b/arch/s390/kernel/kprobes.c
-> index bc1071c..cb7ac9e 100644
-> --- a/arch/s390/kernel/kprobes.c
-> +++ b/arch/s390/kernel/kprobes.c
-> @@ -37,6 +37,26 @@ DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
->  
->  struct kretprobe_blackpoint kretprobe_blacklist[] = { };
->  
-> +DEFINE_INSN_CACHE_OPS(dmainsn);
-> +
-> +static void *alloc_dmainsn_page(void)
-> +{
-> +	return (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
-> +}
-> +
-> +static void free_dmainsn_page(void *page)
-> +{
-> +	free_page((unsigned long)page);
-> +}
-> +
-> +struct kprobe_insn_cache kprobe_dmainsn_slots = {
-> +	.mutex = __MUTEX_INITIALIZER(kprobe_dmainsn_slots.mutex),
-> +	.alloc = alloc_dmainsn_page,
-> +	.free = free_dmainsn_page,
-> +	.pages = LIST_HEAD_INIT(kprobe_dmainsn_slots.pages),
-> +	.insn_size = MAX_INSN_SIZE,
-> +};
-> +
->  static int __kprobes is_prohibited_opcode(kprobe_opcode_t *insn)
->  {
->  	switch (insn[0] >> 8) {
-> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-> index a5290f6..4e96827 100644
-> --- a/include/linux/kprobes.h
-> +++ b/include/linux/kprobes.h
-> @@ -266,7 +266,15 @@ extern int arch_init_kprobes(void);
->  extern void show_registers(struct pt_regs *regs);
->  extern void kprobes_inc_nmissed_count(struct kprobe *p);
->  
-> -struct kprobe_insn_cache;
-> +struct kprobe_insn_cache {
-> +	struct mutex mutex;
-> +	void *(*alloc)(void);	/* allocate insn page */
-> +	void (*free)(void *);	/* free insn page */
-> +	struct list_head pages; /* list of kprobe_insn_page */
-> +	size_t insn_size;	/* size of instruction slot */
-> +	int nr_garbage;
-> +};
-> +
->  extern kprobe_opcode_t *__get_insn_slot(struct kprobe_insn_cache *c);
->  extern void __free_insn_slot(struct kprobe_insn_cache *c,
->  			     kprobe_opcode_t *slot, int dirty);
-> @@ -321,10 +329,6 @@ extern int proc_kprobes_optimization_handler(struct ctl_table *table,
->  
->  #endif /* CONFIG_OPTPROBES */
->  
-> -#ifdef CONFIG_DMAPROBES
-> -DEFINE_INSN_CACHE_OPS(dmainsn);
-> -#endif
-> -
->  #ifdef CONFIG_KPROBES_ON_FTRACE
->  extern void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
->  				  struct ftrace_ops *ops, struct pt_regs *regs);
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 3b8b073..a0d367a 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -112,9 +112,9 @@ static struct kprobe_blackpoint kprobe_blacklist[] = {
->  struct kprobe_insn_page {
->  	struct list_head list;
->  	kprobe_opcode_t *insns;		/* Page of instruction slots */
-> +	struct kprobe_insn_cache *cache;
->  	int nused;
->  	int ngarbage;
-> -	bool dma_alloc;
->  	char slot_used[];
->  };
->  
-> @@ -122,14 +122,6 @@ struct kprobe_insn_page {
->  	(offsetof(struct kprobe_insn_page, slot_used) +	\
->  	 (sizeof(char) * (slots)))
->  
-> -struct kprobe_insn_cache {
-> -	struct mutex mutex;
-> -	struct list_head pages;	/* list of kprobe_insn_page */
-> -	size_t insn_size;	/* size of instruction slot */
-> -	int nr_garbage;
-> -	bool dma_alloc;
-> -};
-> -
->  static int slots_per_page(struct kprobe_insn_cache *c)
->  {
->  	return PAGE_SIZE/(c->insn_size * sizeof(kprobe_opcode_t));
-> @@ -141,12 +133,23 @@ enum kprobe_slot_state {
->  	SLOT_USED = 2,
->  };
->  
-> +static void *alloc_insn_page(void)
-> +{
-> +	return module_alloc(PAGE_SIZE);
-> +}
-> +
-> +static void free_insn_page(void *page)
-> +{
-> +	module_free(NULL, page);
-> +}
-> +
->  struct kprobe_insn_cache kprobe_insn_slots = {
->  	.mutex = __MUTEX_INITIALIZER(kprobe_insn_slots.mutex),
-> +	.alloc = alloc_insn_page,
-> +	.free = free_insn_page,
->  	.pages = LIST_HEAD_INIT(kprobe_insn_slots.pages),
->  	.insn_size = MAX_INSN_SIZE,
->  	.nr_garbage = 0,
-> -	.dma_alloc = false,
->  };
->  static int __kprobes collect_garbage_slots(struct kprobe_insn_cache *c);
->  
-> @@ -192,10 +195,7 @@ kprobe_opcode_t __kprobes *__get_insn_slot(struct kprobe_insn_cache *c)
->  	 * kernel image and loaded module images reside. This is required
->  	 * so x86_64 can correctly handle the %rip-relative fixups.
->  	 */
-> -	if (c->dma_alloc)
-> -		kip->insns = (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
-> -	else
-> -		kip->insns = module_alloc(PAGE_SIZE);
-> +	kip->insns = c->alloc();
->  	if (!kip->insns) {
->  		kfree(kip);
->  		goto out;
-> @@ -205,7 +205,7 @@ kprobe_opcode_t __kprobes *__get_insn_slot(struct kprobe_insn_cache *c)
->  	kip->slot_used[0] = SLOT_USED;
->  	kip->nused = 1;
->  	kip->ngarbage = 0;
-> -	kip->dma_alloc = c->dma_alloc;
-> +	kip->cache = c;
->  	list_add(&kip->list, &c->pages);
->  	slot = kip->insns;
->  out:
-> @@ -227,10 +227,7 @@ static int __kprobes collect_one_slot(struct kprobe_insn_page *kip, int idx)
->  		 */
->  		if (!list_is_singular(&kip->list)) {
->  			list_del(&kip->list);
-> -			if (kip->dma_alloc)
-> -				free_page((unsigned long)kip->insns);
-> -			else
-> -				module_free(NULL, kip->insns);
-> +			kip->cache->free(kip->insns);
->  			kfree(kip);
->  		}
->  		return 1;
-> @@ -291,23 +288,11 @@ out:
->  /* For optimized_kprobe buffer */
->  struct kprobe_insn_cache kprobe_optinsn_slots = {
->  	.mutex = __MUTEX_INITIALIZER(kprobe_optinsn_slots.mutex),
-> +	.alloc = alloc_insn_page,
-> +	.free = free_insn_page,
->  	.pages = LIST_HEAD_INIT(kprobe_optinsn_slots.pages),
->  	/* .insn_size is initialized later */
->  	.nr_garbage = 0,
-> -	.dma_alloc = false,
-> -};
-> -#endif
-> -#ifdef CONFIG_DMAPROBES
-> -/*
-> - * Special buffer for architectures which require insn slots
-> - * to be in the GFP_DMA memory range.
-> - */
-> -struct kprobe_insn_cache kprobe_dmainsn_slots = {
-> -	.mutex = __MUTEX_INITIALIZER(kprobe_dmainsn_slots.mutex),
-> -	.pages = LIST_HEAD_INIT(kprobe_dmainsn_slots.pages),
-> -	.insn_size = MAX_INSN_SIZE,
-> -	.nr_garbage = 0,
-> -	.dma_alloc = true,
->  };
->  #endif
->  #endif
+> Claiming that a piece of HW is compatible with an other one that is just a subset in term of functionality is wrong. You can claim that the ti,da830-rtc is compatible with the ti,am3352-rtc driver, but not the opposite.
+
+If this is wrong, then what is the use of compatible property? Why would
+someone write a driver supporting “fsl,mpc8641-uart” if 100% of its
+hardware features are also supported by “ns16550" driver?
+
+>>> am3352 DTS must use the ti,am3352-rtc to have the expected behavior.
+>>
+>> Yes, that's what patch 2/2 does.
+>>
+>>> Using the ti,da830-rtc version will not make the board working as
+>>> expected. So we cannot claim the compatibility.
+>>
+>> Ideally, the DT file was *always* written as
+>>
+>> 	compatible = "ti,am3352-rtc", "ti,da830-rtc";
+>>
+>> even when there was no kernel support for AM3352 RTC.
 > 
+> You could do that only for the davinci DTS, because it is a subset of the am3352 but you cannot do that for the am3352 as explained before.
 
+DaVinci DTS will use compatible = "ti,da830-rtc"; Thats not changing
+with this patchset.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+> 
+>> That way, there is no need to update the .dts[i] file. As kernel gains
+>> functionality, more features (like rtc wake) is available to users.
+> 
+> Well, you cannot anticipate the HW evolution anyway and you did not know when Davinci DTS was done that an am3352 will exist in the future and reuse the same IP.
 
+Yeah, I am not claiming DaVinci DTS should be updated. But when
+am335x.dtsi was written, there was knowledge that a (potentially) new
+version of RTC IP is available and therefore the .dtsi should have been
+written as
 
+	compatible = "ti,am3352-rtc", "ti,da830-rtc";
+
+instead of
+
+	compatible = "ti,da830-rtc";
+
+that it is today. Thing is, you can never know if the IP needs any
+additional handling even after reading the spec. We keep discovering new
+features/quirks. So, when writing <new-soc>.dtsi its safer to always use
+
+	compatible = "ti,<new-soc>-rtc", "ti,<compatible-soc>-rtc";
+
+even though _today_ you may not have code that specifically handles
+"ti,<new-soc>-rtc".
+
+> Moreover DT is a ABI, so extending it according to the HW feature evolution is absolutely normal.
+
+You mean the DT bindings and not specifically the .dts[i], right? Then I
+agree. Ideally the .dts[i] is written once per hardware. I know its
+almost impossible to get that right.
+
+> 
+> Every SoC that are using a RTC with the same programing model than the da830 can claim the compatibility. A SoC that is using a newer version of the IP with an extended programming model cannot claim that.
+
+We differ here. As long as programming model is _extended_, new IP is
+still compatible with old. If the programming model is _changed_ then
+its not.
+
+> 
+>> Otherwise they get plain RTC functionality - but at least they get
+>> something instead of no RTC.
+> 
+> Because you assume that this feature is not important and thus you can use the plain RTC, but what if someone is buying that HW because of this new feature. Without that feature his system will just not work properly.
+
+Right, but thats not a problem DT can solve. He/she needs to hassle TI
+for updated drivers. But there could be 10 other customers who are just
+okay with plain RTC. So till the time driver is updated to use
+ti,am3352-rtc", are you saying no one should be able to use the RTC on
+the SoC at all even though 90% features are available?
+
+> Saying that this is compatible whereas you lost functionality is lying to the customer for my point of view.
+
+If 100% functionality is required for compatibility then I am afraid
+there is nothing like "compatibility". There are just different isolated
+versions.
+
+Thanks,
+Sekhar
