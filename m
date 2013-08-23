@@ -1,60 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab3HWPde (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 11:33:34 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:65335 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868Ab3HWPdc (ORCPT
+	id S1754859Ab3HWPe0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 11:34:26 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:53730 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551Ab3HWPeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 11:33:32 -0400
-Date: Fri, 23 Aug 2013 11:33:28 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH 08/11] cpuset: separate configured masks and efffective
- masks
-Message-ID: <20130823153328.GD3277@htj.dyndns.org>
-References: <52148F52.0@huawei.com>
- <52148FCA.8010704@huawei.com>
- <20130821140846.GH19286@mtj.dyndns.org>
- <52171367.90005@huawei.com>
+	Fri, 23 Aug 2013 11:34:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52171367.90005@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANVTcTb2+qX6XMBqrzeLho9yFS55AnztVJ85JBMuxjoH11qzaQ@mail.gmail.com>
+References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
+	<1376189294-32022-29-git-send-email-yinghai@kernel.org>
+	<CANVTcTYhSfU+Su9s1B+mTTBfgsZgqvQxHiTsLck1zT_vg1Cs4g@mail.gmail.com>
+	<CANVTcTb2+qX6XMBqrzeLho9yFS55AnztVJ85JBMuxjoH11qzaQ@mail.gmail.com>
+Date: Fri, 23 Aug 2013 23:34:21 +0800
+Message-ID: <CAOLK0pwQJVvcT5xA-+Ftb85FzbjHN-OZmXO=n7r4EWh4nFjSBA@mail.gmail.com>
+Subject: Re: [PATCH v4 28/28] PCI, x86, ACPI: get ioapic address from acpi device
+From: Lan Tianyu <lantianyu1986@gmail.com>
+To: rui wang <ruiv.wang@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tony Luck <tony.luck@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
+2013/8/23 rui wang <ruiv.wang@gmail.com>:
+> On 8/22/13, rui wang <ruiv.wang@gmail.com> wrote:
+>> On 8/11/13, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> Some ioapic controllers do not show up on pci config space,
+>>> or pci device is there but no bar is used and is set by firmware in
+>>> other non standard registers.
+>>>
+>>> We can get ioapic address from ACPI0009's _CRS.
+>>>
+>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>> ---
+>>>  drivers/pci/ioapic.c | 86
+>>> +++++++++++++++++++++++++++++++++++++++++++---------
+>>>  1 file changed, 71 insertions(+), 15 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+>>> index 60351b2..41f7c69 100644
+>>> --- a/drivers/pci/ioapic.c
+>>> +++ b/drivers/pci/ioapic.c
+>>> @@ -32,6 +32,36 @@ struct acpi_pci_ioapic {
+>>>  static LIST_HEAD(ioapic_list);
+>>>  static DEFINE_MUTEX(ioapic_list_lock);
+>>>
+>>> +static acpi_status setup_res(struct acpi_resource *acpi_res, void *data)
+>>> +{
+>>> +    struct resource *res;
+>>> +    struct acpi_resource_address64 addr;
+>>> +    acpi_status status;
+>>> +    unsigned long flags;
+>>> +    u64 start, end;
+>>> +
+>>> +    status = acpi_resource_to_address64(acpi_res, &addr);
+>
+> I worked around the problem by replacing acpi_resource_to_address64()
+> with resource_to_addr().  But resource_to_addr() is a static function
+> in arch/x86/pci/acpi.c, not very convenient to use. Here's what I did:
+>
 
-On Fri, Aug 23, 2013 at 03:46:47PM +0800, Li Zefan wrote:
-> On 2013/8/21 22:08, Tejun Heo wrote:
-> > On Wed, Aug 21, 2013 at 06:00:42PM +0800, Li Zefan wrote:
-> >> @@ -2261,7 +2271,8 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
-> >>  	/* synchronize mems_allowed to N_MEMORY */
-> >>  	if (mems_updated) {
-> >>  		mutex_lock(&callback_mutex);
-> >> -		top_cpuset.mems_allowed = new_mems;
-> >> +		if (!sane)
-> >> +			top_cpuset.mems_allowed = new_mems;
-> > 
-> > Can you please further explain how the top cgroup behaves?
-> > 
-> 
-> top_cpuset.cpus_allowed will always be cpu_active_mask if sane_behavior
-> is not set, otherwise it will always be cpu_possible_mask. While
-> top_cpuset.effective_cpus will always be cpu_active_mask in either
-> case.
+Hi Rui&Yinghai:
+           How about using the following code to translate struct
+ acpi_resource to struct resouce in this setup_res()?
 
-Just in case it wasn't clear, it'd be great if you can also explain
-what's going on w.r.t. sane_behavior in the comments and patch
-description.  Having dual modes of operation can always be quite
-confusing so I think some documentation could be very beneficial.
+         if (acpi_dev_resource_address_space(...)
+                || acpi_dev_resource_memory(..))
+              return AE_OK;
 
-Thanks!
+
+
+
+> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+> index d641897..cb5940a 100644
+> --- a/arch/x86/pci/acpi.c
+> +++ b/arch/x86/pci/acpi.c
+> @@ -218,7 +218,7 @@ static void teardown_mcfg_map(struct pci_root_info *info)
+>  }
+>  #endif
+>
+> -static acpi_status
+> +acpi_status
+>  resource_to_addr(struct acpi_resource *resource,
+>                         struct acpi_resource_address64 *addr)
+>  {
+> diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+> index 41f7c69..68d7395 100644
+> --- a/drivers/pci/ioapic.c
+> +++ b/drivers/pci/ioapic.c
+> @@ -40,7 +40,7 @@ static acpi_status setup_res(struct acpi_resource
+> *acpi_res, void *data)
+>         unsigned long flags;
+>         u64 start, end;
+>
+> -       status = acpi_resource_to_address64(acpi_res, &addr);
+> +       status = resource_to_addr(acpi_res, &addr);
+>         if (!ACPI_SUCCESS(status))
+>                 return AE_OK;
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> index 94383a7..ae7f759 100644
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -354,6 +354,10 @@ extern int unregister_acpi_notifier(struct
+> notifier_block *);
+>
+>  extern int register_acpi_bus_notifier(struct notifier_block *nb);
+>  extern void unregister_acpi_bus_notifier(struct notifier_block *nb);
+> +extern acpi_status
+> +resource_to_addr(struct acpi_resource *resource,
+> +                        struct acpi_resource_address64 *addr);
+> +
+>
+> Thanks
+> Rui
+>
+>
+>>
+>> The above function fails on my machine because it does not handle
+>> Memory32Fixed resources. Is the following _CRS declaration allowed for
+>> IOAPIC?
+>>
+>>             Device (APIC)
+>>             {
+>>                 Name (_HID, "ACPI0009")  // _HID: Hardware ID
+>>                 Name (_CRS, ResourceTemplate ()  // _CRS: Current
+>> Resource Settings
+>>                 {
+>>                     Memory32Fixed (ReadOnly,
+>>                         0xFEC01000,         // Address Base
+>>                         0x00001000,         // Address Length
+>>                         )
+>>                 })
+>>                 Method(_GSB) {
+>>                         return (0x18)
+>>                 }
+>>             }
+>>
+>>
+>> Thanks
+>> Rui
+>>
+>>> +    if (!ACPI_SUCCESS(status))
+>>> +            return AE_OK;
+>>> +
+>>> +    if (addr.resource_type == ACPI_MEMORY_RANGE) {
+>>> +            if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
+>>> +                    return AE_OK;
+>>> +            flags = IORESOURCE_MEM;
+>>> +    } else
+>>> +            return AE_OK;
+>>> +
+>>> +    start = addr.minimum + addr.translation_offset;
+>>> +    end = addr.maximum + addr.translation_offset;
+>>> +
+>>> +    res = data;
+>>> +    res->flags = flags;
+>>> +    res->start = start;
+>>> +    res->end = end;
+>>> +
+>>> +    return AE_OK;
+>>> +}
+>>> +
+>>>  static void handle_ioapic_add(acpi_handle handle, struct pci_dev **pdev,
+>>>                               u32 *pgsi_base)
+>>>  {
+>>> @@ -54,33 +84,56 @@ static void handle_ioapic_add(acpi_handle handle,
+>>> struct
+>>> pci_dev **pdev,
+>>>              return;
+>>>
+>>>      dev = acpi_get_pci_dev(handle);
+>>> -    if (!dev)
+>>> -            return;
+>>> +    if (!dev || !pci_resource_len(dev, 0)) {
+>>> +            struct acpi_device_info *info;
+>>> +            char *hid = NULL;
+>>> +
+>>> +            status = acpi_get_object_info(handle, &info);
+>>> +            if (ACPI_FAILURE(status))
+>>> +                    goto exit_put;
+>>> +            if (info->valid & ACPI_VALID_HID)
+>>> +                    hid = info->hardware_id.string;
+>>> +            if (!hid || strcmp(hid, "ACPI0009")) {
+>>> +                    kfree(info);
+>>> +                    goto exit_put;
+>>> +            }
+>>> +            kfree(info);
+>>> +            memset(res, 0, sizeof(*res));
+>>> +            acpi_walk_resources(handle, METHOD_NAME__CRS, setup_res, res);
+>>> +            if (!res->flags)
+>>> +                    goto exit_put;
+>>> +    }
+>>>
+>>>      acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+>>>
+>>>      gsi_base = gsb;
+>>>      type = "IOxAPIC";
+>>> +    if (dev) {
+>>> +            ret = pci_enable_device(dev);
+>>> +            if (ret < 0)
+>>> +                    goto exit_put;
+>>>
+>>> -    ret = pci_enable_device(dev);
+>>> -    if (ret < 0)
+>>> -            goto exit_put;
+>>> -
+>>> -    pci_set_master(dev);
+>>> +            pci_set_master(dev);
+>>>
+>>> -    if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
+>>> -            type = "IOAPIC";
+>>> +            if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
+>>> +                    type = "IOAPIC";
+>>>
+>>> -    if (pci_request_region(dev, 0, type))
+>>> -            goto exit_disable;
+>>> +            if (pci_resource_len(dev, 0)) {
+>>> +                    if (pci_request_region(dev, 0, type))
+>>> +                            goto exit_disable;
+>>>
+>>> -    res = &dev->resource[0];
+>>> +                    res = &dev->resource[0];
+>>> +            }
+>>> +    }
+>>>
+>>> -    if (acpi_register_ioapic(handle, res->start, gsi_base))
+>>> -            goto exit_release;
+>>> +    if (acpi_register_ioapic(handle, res->start, gsi_base)) {
+>>> +            if (dev)
+>>> +                    goto exit_release;
+>>> +            return;
+>>> +    }
+>>>
+>>>      pr_info("%s %s %s at %pR, GSI %u\n",
+>>> -            dev_name(&dev->dev), objname, type,
+>>> +            dev ? dev_name(&dev->dev) : "", objname, type,
+>>>              res, gsi_base);
+>>>
+>>>      *pdev = dev;
+>>> @@ -100,6 +153,9 @@ static void handle_ioapic_remove(acpi_handle handle,
+>>> struct pci_dev *dev,
+>>>  {
+>>>      acpi_unregister_ioapic(handle, gsi_base);
+>>>
+>>> +    if (!dev)
+>>> +            return;
+>>> +
+>>>      pci_release_region(dev, 0);
+>>>      pci_disable_device(dev);
+>>>      pci_dev_put(dev);
+>>> --
+>>> 1.8.1.4
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
 -- 
-tejun
+Best regards
+Tianyu Lan
