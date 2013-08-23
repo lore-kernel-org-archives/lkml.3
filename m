@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab3HWQig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 12:38:36 -0400
-Received: from smtpauth05h.mfg.siteprotect.com ([64.26.60.146]:42887 "EHLO
-	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754285Ab3HWQif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 12:38:35 -0400
-Date: Fri, 23 Aug 2013 12:39:53 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Robert Richter <rric@kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH v3 08/12] perf, persistent: Exposing persistent events
- using sysfs
-In-Reply-To: <20130823093708.GA10223@rric.localhost>
-Message-ID: <alpine.DEB.2.02.1308231227180.7482@pianoman.cluster.toy>
-References: <1377180807-12758-1-git-send-email-rric@kernel.org> <1377180807-12758-9-git-send-email-rric@kernel.org> <alpine.DEB.2.02.1308221344500.26486@pianoman.cluster.toy> <20130823093708.GA10223@rric.localhost>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755566Ab3HWQla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 12:41:30 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:17379 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754711Ab3HWQl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 12:41:29 -0400
+Message-ID: <5217908E.2040702@siemens.com>
+Date: Fri, 23 Aug 2013 18:40:46 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A02020A.5217900B.0039,ss=1,re=0.000,fgs=0
+To: Fenghua Yu <fenghua.yu@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+        H Peter Anvin <hpa@zytor.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: x86-32: Early microcode loading stumbles over disabled DYNAMIC_FTRACE
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Aug 2013, Robert Richter wrote:
+Hi all,
 
-> I thought it would be clear enough to refer to struct perf_event_attr.
-> Since the index usually starts with 0 as in the config fields, I
-> assumed this was clear in this case too. Though this can be documented
-> better.
+32-bit kernels currently crash/reboot in early microcode loading when
+non-dynamic function tracing is enabled. Several functions in that path
+get instrumented with mcount, but its non-dynamic implementation does
+not work before paging is enabled (it accesses global variables at wrong
+addresses).
 
-Make no assumptions when documenting.  When I as a user have to dig around
-the kernel source tree to find out what is going on then the documentation 
-is lacking.
+Below some hunks to get it working again - at least in the absence of
+any microcode in the initrd. Marking all involved functions as __init is
+another option (as __init implies notrace). But I bet there is more
+hidden. I see e.g. a pr_warn() in find_cpio_init that should trigger the
+issue as well if we hit the error it reports (btw. printing at this
+point of the boot should not work anyway, should it?).
 
-> > Is this endian clean?  Will attr5:23 point to the same bit on a big-endian 
-> > machine as on little-endian?
-> 
-> It is the endianness used in the syscall. Handled in the same way as
-> for the config fields. I don't see where this could be an issue.
+Better ideas?
 
-C bitfields go opposite ways on big-endian vs little-endian systems.
-This has come up with some of the bitfields in the sample buffers.
-It doesn't matter if you just use the bitfields, but if you're trying
-to poke single bits into opaque 64-bit blobs it might be an issue.
-
-> The format directories in /sys/bus/event_source/devices/*/format/ are
-> already there to make it human readable. A user never has to deal
-> directly with syntax provided there and may use already the
-> abstractions for the event syntax.
-
-The format directory for now was only for the "config" fields which
-traditionally were needed to specify an event, that is all.
-
-Things get a lot more complex if arbitrary subsets of the the perf_attr
-structure start getting exported.
-
-> The problem with this is that you have to implement this in the event
-> parser of perf tools. Thus, you need to update the parser for any
-> other syntax you want to use. This is not necessary with my
-> implementation. It already provides the above. The pmu driver just
-> need to add the sysfs entry.
-
-I see.  Are you going to update the parsers for programs that
-also try to read these values, like trinity?  
-
-Or is the perf tool special because it is in the kernel?
-
-> All this without updating perf tools.
-
-So are we going to admit the ABI is "it doesn't break perf" after all?
-
-> It's the whole intention of the new syntax that the event parser never
-> needs to be modified again 
-
-the *perf* event parser never needs to be modified again maybe.
-
-In any case, Andi Kleen also has some patches to this effect so you might 
-want to co-ordinate your efforts.  In his case it was the "precise" field 
-he was exporting in events.
-
-Vince
-
-(yes, I still think events should be defined in a library or else a
- user parsable file in userspace.  Putting them in sysfs just complicates
- everything for no good reason)
+Jan
 
 
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 88d99ea..c093a9c 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -14,6 +14,9 @@ CFLAGS_REMOVE_pvclock.o = -pg
+ CFLAGS_REMOVE_kvmclock.o = -pg
+ CFLAGS_REMOVE_ftrace.o = -pg
+ CFLAGS_REMOVE_early_printk.o = -pg
++CFLAGS_REMOVE_microcode_core_early.o = -pg
++CFLAGS_REMOVE_microcode_intel_early.o = -pg
++CFLAGS_REMOVE_microcode_amd_early.o = -pg
+ endif
+
+ CFLAGS_irq.o := -I$(src)/../include/asm/trace
+diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
+index 96b2c66..0917142 100644
+--- a/arch/x86/lib/Makefile
++++ b/arch/x86/lib/Makefile
+@@ -2,6 +2,10 @@
+ # Makefile for x86 specific library files.
+ #
+
++ifdef CONFIG_FUNCTION_TRACER
++CFLAGS_REMOVE_string_32.o = -pg
++endif
++
+ inat_tables_script = $(srctree)/arch/x86/tools/gen-insn-attr-x86.awk
+ inat_tables_maps = $(srctree)/arch/x86/lib/x86-opcode-map.txt
+ quiet_cmd_inat_tables = GEN     $@
+
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
