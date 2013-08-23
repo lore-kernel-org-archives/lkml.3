@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab3HWRrc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 13:47:32 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:37406 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755777Ab3HWRra (ORCPT
+	id S1755998Ab3HWRt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 13:49:26 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:57832 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755782Ab3HWRtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 13:47:30 -0400
+	Fri, 23 Aug 2013 13:49:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <201308200629.r7K6TNUS010648@localhost.localdomain>
-References: <201308200629.r7K6TNUS010648@localhost.localdomain>
-Date: Fri, 23 Aug 2013 19:47:30 +0200
-Message-ID: <CACRpkdbUv+59qZs1m3QUq11aad5RC-V-d1-TZeADjfy==Yu-+w@mail.gmail.com>
-Subject: Re: [PATCH] MAX7301 GPIO: Reverting "Do not force SPI speed when
- using OF Platform"
+In-Reply-To: <1376953494-9684-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1376953494-9684-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	<1376953494-9684-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Date: Fri, 23 Aug 2013 19:49:23 +0200
+Message-ID: <CACRpkdaXa5TGpLYdA_on9QV0igb7NvWc9G87XD30hEqqqMgTwA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] gpio: pcf857x: Sort headers alphabetically
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Roland Stigge <stigge@antcom.de>, Mark Brown <broonie@kernel.org>
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 8:29 AM, Christophe Leroy
-<christophe.leroy@c-s.fr> wrote:
+On Tue, Aug 20, 2013 at 1:04 AM, Laurent Pinchart
+<laurent.pinchart+renesas@ideasonboard.com> wrote:
 
-> This patch reverts commit 047b93a35961f7a6561e6f5dcb040738f822b892 which breaks
-> MAX7301 GPIO driver because that commit was dependant on a rejected patch that
-> was implementing selection of SPI speed from the Device Tree.
+> This makes checking for duplicates when adding a new #include easier.
 >
-> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-Patch applied with Roland's ACK.
+And I'm dreaming of patching all the GPIO drivers to have
+the header includes in inverted christmas tree order. ;-)
 
-But seriously, this is the kind of stuff that scares me a lot,
-when developers merge dependent patches into two different
-trees, that is just a recipe for chaos and me getting flamed
-by other kernel maintainers.
-
-There is *no* mention of this dependency in the other
-commit.
+Okay, applied anyway.
 
 Yours,
 Linus Walleij
