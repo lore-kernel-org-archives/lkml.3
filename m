@@ -1,127 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab3HWT1p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:27:45 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57733 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755049Ab3HWT1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:27:44 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>, Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] ACPI: Fix osc flag setup ordering to allow pcie hotplug use when available
-Date: Fri, 23 Aug 2013 21:38:18 +0200
-Message-ID: <2074111.WRY7FfU4Ni@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com>
-References: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com>
+	id S1756122Ab3HWT3S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:29:18 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34322 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754096Ab3HWT3Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 15:29:16 -0400
+Message-ID: <5217B807.7020800@wwwdotorg.org>
+Date: Fri, 23 Aug 2013 13:29:11 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Xiubo Li-B47053 <B47053@freescale.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+Subject: Re: [PATCH 4/4] Documentation: Add device tree bindings for Freescale
+ FTM PWM
+References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com> <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com> <1473340.OXSHEp7d4P@flatron> <1DD289F6464F0949A2FCA5AA6DC23F827D2244@039-SN2MPN1-013.039d.mgd.msft.net> <20130822062610.GR31036@pengutronix.de> <20130823073612.GB3535@ulmo>
+In-Reply-To: <20130823073612.GB3535@ulmo>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CCs added]
-
-Please always send PCI-related material to linux-pci in the first place.
-
-The change that broke things for you was actually intentional:
-
-commit b8178f130e25c1bdac1c33e0996f1ff6e20ec08e
-Author: Bjorn Helgaas <bhelgaas@google.com>
-Date:   Mon Apr 1 15:47:39 2013 -0600
-
-    Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
-    
-    This reverts commit 8c33f51df406e1a1f7fa4e9b244845b7ebd61fa6.
-
-so I think we'll need to clean up the ASMP initialization after all.
-
-On Friday, August 23, 2013 01:19:39 PM Neil Horman wrote:
-> Somewhere between 3.9 and 3.10 it seems the order in which pcie and acpi probed
-> slots for hotplug capabilites got reversed.  While this isn't a big deal, it did
-> uncover a bug in the ACPI bus setup path.  Specifically, acpi_pci_root_add calls
-> pci_acpi_scan_root before setting the osc flags for the device handle.
-> pci_acpi_scan_root, among other things uses device_is_managed_by_native_pciehp()
-> to determine if a given slot has pcie hotplug capabilties, whcih checks the
-> devices OSC_PCI_EXPRESS_NATIVE_HP_CONTROL flag.  Since that flag is not set
-> until after pci_acpi_scan_root_completes, the acpi code never sees that pcie
-> slots are hotplug capable and configures them all to use acpi instead.
+On 08/23/2013 01:36 AM, Thierry Reding wrote:
+> On Thu, Aug 22, 2013 at 08:26:10AM +0200, Sascha Hauer wrote:
+>> On Thu, Aug 22, 2013 at 02:55:42AM +0000, Xiubo Li-B47053 wrote:
+>>> Hi Tomasz,
+>>> 
+>>> Thanks for your comments.
+>>> 
+>>> 
+>>>> Could you explain meaning of this property more precisely?
+>>>> I'm interested especially how is this related to the PWM IP
+>>>> block and boards.
+>>>> 
+>>> 
+>>> Yes. There are 8 channels most. While the pinctrls of 4th and
+>>> 5th channels could be used by uart's Rx and Tx, then these 2
+>>> channels won't be used for pwm output, so there will be 6
+>>> channels available by the pwm. Thus, the pwm chip will register
+>>> only 6 pwms(6 channels) most("fsl,pwm-channel-orders = {0 1 2 3
+>>> 6 7}").And also the "fsl,pwm-channel-number" will be 6.
+>> 
+>> If the chip has eight PWMs I would register all of them. If some
+>> of them are not routed out by the pinmux then just nothing
+>> happens if you use them. In a sane devicetree they won't be
+>> referenced anyway when they are not routed out of the SoC.
 > 
-> Fix is pretty simple, just defer the scan until after the osc flags have been
-> set on the device.  Tested by myself and it seems to work well.
-> 
-> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> CC: Len Brown <lenb@kernel.org>
-> CC: "Rafael J. Wysocki" <rjw@sisk.pl>
-> CC: linux-acpi@vger.kernel.org
-> ---
->  drivers/acpi/pci_root.c | 41 ++++++++++++++++++++---------------------
->  1 file changed, 20 insertions(+), 21 deletions(-)
-> 
-> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> index 5917839..a2c2661 100644
-> --- a/drivers/acpi/pci_root.c
-> +++ b/drivers/acpi/pci_root.c
-> @@ -437,27 +437,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  	flags = base_flags = OSC_PCI_SEGMENT_GROUPS_SUPPORT;
->  	acpi_pci_osc_support(root, flags);
->  
-> -	/*
-> -	 * TBD: Need PCI interface for enumeration/configuration of roots.
-> -	 */
-> -
-> -	/*
-> -	 * Scan the Root Bridge
-> -	 * --------------------
-> -	 * Must do this prior to any attempt to bind the root device, as the
-> -	 * PCI namespace does not get created until this call is made (and
-> -	 * thus the root bridge's pci_dev does not exist).
-> -	 */
-> -	root->bus = pci_acpi_scan_root(root);
-> -	if (!root->bus) {
-> -		dev_err(&device->dev,
-> -			"Bus %04x:%02x not present in PCI namespace\n",
-> -			root->segment, (unsigned int)root->secondary.start);
-> -		result = -ENODEV;
-> -		goto end;
-> -	}
-> -
-> -	/* Indicate support for various _OSC capabilities. */
->  	if (pci_ext_cfg_avail())
->  		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
->  	if (pcie_aspm_support_enabled()) {
-> @@ -520,6 +499,26 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  			 "(_OSC support mask: 0x%02x)\n", flags);
->  	}
->  
-> +	/*
-> +	 * TBD: Need PCI interface for enumeration/configuration of roots.
-> +	 */
-> +
-> +	/*
-> +	 * Scan the Root Bridge
-> +	 * --------------------
-> +	 * Must do this prior to any attempt to bind the root device, as the
-> +	 * PCI namespace does not get created until this call is made (and
-> +	 * thus the root bridge's pci_dev does not exist).
-> +	 */
-> +	root->bus = pci_acpi_scan_root(root);
-> +	if (!root->bus) {
-> +		dev_err(&device->dev,
-> +			"Bus %04x:%02x not present in PCI namespace\n",
-> +			root->segment, (unsigned int)root->secondary.start);
-> +		result = -ENODEV;
-> +		goto end;
-> +	}
-> +
->  	pci_acpi_add_bus_pm_notifier(device, root->bus);
->  	if (device->wakeup.flags.run_wake)
->  		device_set_run_wake(root->bus->bridge, true);
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> In that case, shouldn't this be hooked up to the pinctrl subsystem
+> as well? As I understand the above, the logical thing would be for
+> each PWM channel's .request() operation to configure the pinmuxing
+> appropriately. And if it can't be configured as necessary then
+> .request() should return an error (or propagate the error from the
+> pinctrl subsystem).
+
+I think the pin-muxing should be static, i.e. set up when the PWM
+device as a whole probe()s, rather than being twiddled at request/free
+time. Certainly the pinmux support in the device core is now set up to
+acquire the default state right before probe(). I don't see a need to
+do anything custom here.
