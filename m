@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab3HWQnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 12:43:50 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42301 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754699Ab3HWQnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 12:43:49 -0400
-Message-ID: <52178FAD.7040402@ti.com>
-Date: Fri, 23 Aug 2013 11:37:01 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	id S1755644Ab3HWQsN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 12:48:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58434 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754699Ab3HWQsM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 12:48:12 -0400
+Date: Fri, 23 Aug 2013 09:48:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Leon Ma <xindong.ma@intel.com>
+Cc: ccross@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com
+Subject: Re: [PATCH] LMK: Optimize lowmem_shrink
+Message-ID: <20130823164810.GA25863@kroah.com>
+References: <1377049265.22148.7.camel@leonma-sh>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Jingoo Han <jg1.han@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        "'Rafael J. Wysocki'" <rafael.j.wysocki@intel.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] mailbox: remove unnecessary platform_set_drvdata()
-References: <002201ce9edc$cdc3fb90$694bf2b0$%han@samsung.com>
-In-Reply-To: <002201ce9edc$cdc3fb90$694bf2b0$%han@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377049265.22148.7.camel@leonma-sh>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ OMAP mailing list
+On Wed, Aug 21, 2013 at 09:41:05AM +0800, Leon Ma wrote:
+> From: Leon Ma <xindong.ma@intel.com>
+> Date: Mon, 19 Aug 2013 14:22:38 +0800
+> Subject: [PATCH] LMK: Optimize lowmem_shrink.
 
-Tony,
-Can you pick up this minor cleanup patch?
+Why is all of this in the patch body?
 
-regards
-Suman
+And what does "LMK:" stand for?
 
-On 08/21/2013 09:10 PM, Jingoo Han wrote:
-> The driver core clears the driver data to NULL after device_release
-> or on probe failure. Thus, it is not needed to manually clear the
-> device driver data to NULL.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> By comparing with selected_oom_score_adj instead of min_score_adj,
+> we may do less calculation.
 
-Acked-by: Suman Anna <s-anna@ti.com>
+What does this change?  Does it fix a problem?
 
-> ---
->  drivers/mailbox/mailbox-omap2.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/mailbox/mailbox-omap2.c b/drivers/mailbox/mailbox-omap2.c
-> index eba380d..42d2b89 100644
-> --- a/drivers/mailbox/mailbox-omap2.c
-> +++ b/drivers/mailbox/mailbox-omap2.c
-> @@ -325,7 +325,6 @@ static int omap2_mbox_remove(struct platform_device *pdev)
->  	kfree(privblk);
->  	kfree(mboxblk);
->  	kfree(list);
-> -	platform_set_drvdata(pdev, NULL);
->  
->  	return 0;
->  }
-> 
+thanks,
 
+greg k-h
