@@ -1,179 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab3HWL4T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 07:56:19 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:33009 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753759Ab3HWL4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 07:56:18 -0400
-Message-ID: <52174DB5.5050201@linux.vnet.ibm.com>
-Date: Fri, 23 Aug 2013 17:25:33 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Wang Dongsheng-B40534 <B40534@freescale.com>
-CC: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "michael@ellerman.id.au" <michael@ellerman.id.au>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>
-Subject: Re: [PATCH V5 3/5] POWER/cpuidle: Generic IBM-POWER backend cpuidle
- driver.
-References: <20130822095323.27416.79369.stgit@deepthi.in.ibm.com> <20130822095357.27416.48110.stgit@deepthi.in.ibm.com> <ABB05CD9C9F68C46A5CEDC7F154392590102822A@039-SN2MPN1-021.039d.mgd.msft.net>
-In-Reply-To: <ABB05CD9C9F68C46A5CEDC7F154392590102822A@039-SN2MPN1-021.039d.mgd.msft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755450Ab3HWL6y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 07:58:54 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:49878 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755282Ab3HWL6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 07:58:52 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-doc@vger.kernel.org, <linux-kernel@vger.kernel.org>,
+        <kvm@vger.kernel.org>, Rob Landley <rob@landley.net>,
+        "Michael S. Tsirkin" <mst@redhat.com>, <mtosatti@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Subject: [PATCH ] Documentation/kvm: Update cpuid documentation for steal time and pv eoi
+Date: Fri, 23 Aug 2013 17:34:47 +0530
+Message-Id: <1377259487-23989-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <y>
+References: <y>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082311-1618-0000-0000-000004811CA7
+x-cbid: 13082311-0320-0000-0000-000000C79447
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2013 08:46 AM, Wang Dongsheng-B40534 wrote:
-> 
->> diff --git a/drivers/cpuidle/Kconfig b/drivers/cpuidle/Kconfig
->> index 0e2cd5c..e805dcd 100644
->> --- a/drivers/cpuidle/Kconfig
->> +++ b/drivers/cpuidle/Kconfig
-> 
-> Maybe drivers/cpuidle/Kconfig.powerpc is better? Like arm.
-> 
->> +obj-$(CONFIG_CPU_IDLE_IBM_POWER) += cpuidle-ibm-power.o
->> diff --git a/drivers/cpuidle/cpuidle-ibm-power.c
->> b/drivers/cpuidle/cpuidle-ibm-power.c
->> new file mode 100644
->> index 0000000..4ee5a94
->> --- /dev/null
->> +++ b/drivers/cpuidle/cpuidle-ibm-power.c
->> @@ -0,0 +1,304 @@
->> +/*
->> + *  cpuidle-ibm-power - idle state cpuidle driver.
->> + *  Adapted from drivers/idle/intel_idle.c and
->> + *  drivers/acpi/processor_idle.c
->> + *
->> + */
->> +
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/init.h>
->> +#include <linux/moduleparam.h>
->> +#include <linux/cpuidle.h>
->> +#include <linux/cpu.h>
->> +#include <linux/notifier.h>
->> +
->> +#include <asm/paca.h>
->> +#include <asm/reg.h>
->> +#include <asm/machdep.h>
->> +#include <asm/firmware.h>
->> +#include <asm/runlatch.h>
->> +#include <asm/plpar_wrappers.h>
->> +
->> +struct cpuidle_driver power_idle_driver = {
->> +	.name             = "IBM-POWER-Idle",
->> +	.owner            = THIS_MODULE,
->> +};
->> +
->> +#define MAX_IDLE_STATE_COUNT	2
->> +
->> +static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
-> 
-> Again, do not use the macro.
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
+ While adding documentation for pvspinlock, I found that these two should
+ be updated. I have based this on top of pvspinlock kvm host patchset (V12)
 
-Wanting to re-use CPUIDLE_STATE_MAX macro, defined in linux/cpuidle.h
-similar to what x86 uses. This is def scalable for various platforms ,
-as demonstrated in drivers/idle/intel_idle.c
+ Documentation/virtual/kvm/cpuid.txt | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
- >
->> +static struct cpuidle_state *cpuidle_state_table;
->> +
->> +static inline void idle_loop_prolog(unsigned long *in_purr)
->> +{
->> +	*in_purr = mfspr(SPRN_PURR);
->> +	/*
->> +	 * Indicate to the HV that we are idle. Now would be
->> +	 * a good time to find other work to dispatch.
->> +	 */
->> +	get_lppaca()->idle = 1;
->> +}
->> +
->> +static inline void idle_loop_epilog(unsigned long in_purr)
->> +{
->> +	get_lppaca()->wait_state_cycles += mfspr(SPRN_PURR) - in_purr;
->> +	get_lppaca()->idle = 0;
->> +}
->> +
->> +static int snooze_loop(struct cpuidle_device *dev,
->> +			struct cpuidle_driver *drv,
->> +			int index)
->> +{
->> +	unsigned long in_purr;
->> +
->> +	idle_loop_prolog(&in_purr);
->> +	local_irq_enable();
-> 
-> snooze_loop has already registered in cpuidle framework to handle snooze state.
-> where disable the irq? Why do "enable" here?
-> 
->> +/*
->> + * States for dedicated partition case.
->> + */
->> +static struct cpuidle_state dedicated_states[MAX_IDLE_STATE_COUNT] = {
->> +	{ /* Snooze */
->> +		.name = "snooze",
->> +		.desc = "snooze",
->> +		.flags = CPUIDLE_FLAG_TIME_VALID,
->> +		.exit_latency = 0,
->> +		.target_residency = 0,
->> +		.enter = &snooze_loop },
->> +	{ /* CEDE */
->> +		.name = "CEDE",
->> +		.desc = "CEDE",
->> +		.flags = CPUIDLE_FLAG_TIME_VALID,
->> +		.exit_latency = 10,
->> +		.target_residency = 100,
->> +		.enter = &dedicated_cede_loop },
->> +};
->> +
->> +/*
->> + * States for shared partition case.
->> + */
->> +static struct cpuidle_state shared_states[MAX_IDLE_STATE_COUNT] = {
->> +	{ /* Shared Cede */
->> +		.name = "Shared Cede",
->> +		.desc = "Shared Cede",
->> +		.flags = CPUIDLE_FLAG_TIME_VALID,
->> +		.exit_latency = 0,
->> +		.target_residency = 0,
->> +		.enter = &shared_cede_loop },
->> +};
->> +
->> +static void __exit power_processor_idle_exit(void)
->> +{
->> +
->> +	unregister_cpu_notifier(&setup_hotplug_notifier);
-> 
-> Remove a blank line.
-> 
->> +	cpuidle_unregister(&power_idle_driver);
->> +	return;
->> +}
->> +
->> +module_init(power_processor_idle_init);
->> +module_exit(power_processor_idle_exit);
->> +
-> 
-> Did you have tested the module? If not tested, please don't use the module.
-> 
->> +MODULE_AUTHOR("Deepthi Dharwar <deepthi@linux.vnet.ibm.com>");
->> +MODULE_DESCRIPTION("Cpuidle driver for IBM POWER platforms");
->> +MODULE_LICENSE("GPL");
->>
-> 
+diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
+index 22ff659..15a5ac20 100644
+--- a/Documentation/virtual/kvm/cpuid.txt
++++ b/Documentation/virtual/kvm/cpuid.txt
+@@ -43,6 +43,15 @@ KVM_FEATURE_CLOCKSOURCE2           ||     3 || kvmclock available at msrs
+ KVM_FEATURE_ASYNC_PF               ||     4 || async pf can be enabled by
+                                    ||       || writing to msr 0x4b564d02
+ ------------------------------------------------------------------------------
++KVM_FEATURE_STEAL_TIME             ||     5 || guest accounts fine granularity
++                                   ||       || task steal time. enabled when
++                                   ||       || shedstat or task delay accounting
++                                   ||       || is supported by the host.
++------------------------------------------------------------------------------
++KVM_FEATURE_PV_EOI                 ||     6 || overrides the generic EOI
++                                   ||       || implementation with an optimized
++                                   ||       || version.
++------------------------------------------------------------------------------
+ KVM_FEATURE_PV_UNHALT              ||     7 || guest checks this feature bit
+                                    ||       || before enabling paravirtualized
+                                    ||       || spinlock support.
+-- 
+1.7.11.7
 
