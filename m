@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab3HWPwD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 11:52:03 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:35608 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755463Ab3HWPwA (ORCPT
+	id S1755634Ab3HWPwN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 11:52:13 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:52278 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755592Ab3HWPwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 11:52:00 -0400
+	Fri, 23 Aug 2013 11:52:08 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 01/16] cpufreq: create cpufreq_generic_get() routine
-Date: Fri, 23 Aug 2013 21:20:36 +0530
-Message-Id: <b33d9c5cd16c41f739fa8ca5ea382c8d51a24157.1377272740.git.viresh.kumar@linaro.org>
+Subject: [PATCH 02/16] cpufreq: arm_big_little: use cpufreq_generic_get() routine
+Date: Fri, 23 Aug 2013 21:20:37 +0530
+Message-Id: <82b4537e5d949f81c565057e7738068ecb819b43.1377272740.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1377272740.git.viresh.kumar@linaro.org>
 References: <cover.1377272740.git.viresh.kumar@linaro.org>
@@ -24,110 +24,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPUFreq drivers that use clock frameworks interface,i.e. clk_get_rate(), to get
-CPUs clk rate, has similar sort of code used for most of them.
-
-This patch adds a generic ->get() which will do the same thing for them. All
-those drivers are required to now is to set .get to cpufreq_generic_get() and
-set their clk pointer in policy->clk during ->init().
+We have common infrastructure available with us for getting a CPUs clk rate.
+Lets use it for this driver.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/cpufreq.c | 26 ++++++++++++++++++++------
- include/linux/cpufreq.h   |  3 +++
- 2 files changed, 23 insertions(+), 6 deletions(-)
+ drivers/cpufreq/arm_big_little.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 5fc9c6b..b068f00 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -219,6 +219,20 @@ int cpufreq_generic_init(struct cpufreq_policy *policy,
- }
- EXPORT_SYMBOL_GPL(cpufreq_generic_init);
+diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
+index e3e8f25..f48430b 100644
+--- a/drivers/cpufreq/arm_big_little.c
++++ b/drivers/cpufreq/arm_big_little.c
+@@ -40,13 +40,6 @@ static struct clk *clk[MAX_CLUSTERS];
+ static struct cpufreq_frequency_table *freq_table[MAX_CLUSTERS];
+ static atomic_t cluster_usage[MAX_CLUSTERS] = {ATOMIC_INIT(0), ATOMIC_INIT(0)};
  
-+unsigned int cpufreq_generic_get(unsigned int cpu)
-+{
-+	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);
-+
-+	if (!policy || IS_ERR(policy->clk)) {
-+		pr_err("%s: No %s associated to cpu: %d\n", __func__,
-+				policy ? "clk" : "policy", cpu);
-+		return 0;
-+	}
-+
-+	return clk_get_rate(policy->clk) / 1000;
-+}
-+EXPORT_SYMBOL_GPL(cpufreq_generic_get);
-+
- struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
- {
- 	struct cpufreq_policy *policy = NULL;
-@@ -1058,6 +1072,11 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 		goto err_set_policy_cpu;
- 	}
- 
-+	write_lock_irqsave(&cpufreq_driver_lock, flags);
-+	for_each_cpu(j, policy->cpus)
-+		per_cpu(cpufreq_cpu_data, j) = policy;
-+	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+
- 	if (cpufreq_driver->get) {
- 		policy->cur = cpufreq_driver->get(policy->cpu);
- 		if (!policy->cur) {
-@@ -1090,11 +1109,6 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 	}
- #endif
- 
--	write_lock_irqsave(&cpufreq_driver_lock, flags);
--	for_each_cpu(j, policy->cpus)
--		per_cpu(cpufreq_cpu_data, j) = policy;
--	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+-static unsigned int bL_cpufreq_get(unsigned int cpu)
+-{
+-	u32 cur_cluster = cpu_to_cluster(cpu);
 -
- 	if (!frozen) {
- 		ret = cpufreq_add_dev_interface(policy, dev);
- 		if (ret)
-@@ -1115,12 +1129,12 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 	return 0;
+-	return clk_get_rate(clk[cur_cluster]) / 1000;
+-}
+-
+ /* Set clock frequency */
+ static int bL_cpufreq_set_target(struct cpufreq_policy *policy,
+ 		unsigned int index)
+@@ -145,6 +138,7 @@ static int bL_cpufreq_init(struct cpufreq_policy *policy)
+ 	else
+ 		policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
  
- err_out_unregister:
-+err_get_freq:
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
- 	for_each_cpu(j, policy->cpus)
- 		per_cpu(cpufreq_cpu_data, j) = NULL;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
++	policy->clk = clk[cur_cluster];
+ 	cpumask_copy(policy->cpus, topology_core_cpumask(policy->cpu));
  
--err_get_freq:
- 	if (cpufreq_driver->exit)
- 		cpufreq_driver->exit(policy);
- err_set_policy_cpu:
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 6adea26..7746d11 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -11,6 +11,7 @@
- #ifndef _LINUX_CPUFREQ_H
- #define _LINUX_CPUFREQ_H
- 
-+#include <linux/clk.h>
- #include <linux/cpumask.h>
- #include <linux/completion.h>
- #include <linux/kobject.h>
-@@ -66,6 +67,7 @@ struct cpufreq_policy {
- 	unsigned int		cpu;    /* cpu nr of CPU managing this policy */
- 	unsigned int		last_cpu; /* cpu nr of previous CPU that managed
- 					   * this policy */
-+	struct clk		*clk;
- 	struct cpufreq_cpuinfo	cpuinfo;/* see above */
- 
- 	unsigned int		min;    /* in kHz */
-@@ -424,6 +426,7 @@ void cpufreq_frequency_table_put_attr(unsigned int cpu);
- int cpufreq_table_validate_and_show(struct cpufreq_policy *policy,
- 				      struct cpufreq_frequency_table *table);
- 
-+unsigned int cpufreq_generic_get(unsigned int cpu);
- int cpufreq_generic_init(struct cpufreq_policy *policy,
- 		struct cpufreq_frequency_table *table,
- 		unsigned int transition_latency);
+ 	dev_info(cpu_dev, "%s: CPU %d initialized\n", __func__, policy->cpu);
+@@ -174,7 +168,7 @@ static struct cpufreq_driver bL_cpufreq_driver = {
+ 	.flags			= CPUFREQ_STICKY,
+ 	.verify			= cpufreq_generic_frequency_table_verify,
+ 	.target_index		= bL_cpufreq_set_target,
+-	.get			= bL_cpufreq_get,
++	.get			= cpufreq_generic_get,
+ 	.init			= bL_cpufreq_init,
+ 	.exit			= bL_cpufreq_exit,
+ 	.have_governor_per_policy = true,
 -- 
 1.7.12.rc2.18.g61b472e
 
