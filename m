@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab3HWAEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 20:04:41 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:63848 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702Ab3HWADo (ORCPT
+	id S1754811Ab3HWAFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 20:05:07 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:65151 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754684Ab3HWADk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 20:03:44 -0400
+	Thu, 22 Aug 2013 20:03:40 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-ext4@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
@@ -15,9 +15,9 @@ Cc: linux-ext4@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
         Jan Kara <jack@suse.cz>, Tim Chen <tim.c.chen@linux.intel.com>,
         Christoph Hellwig <hch@infradead.org>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v4 4/7] mm: Scan for dirty ptes and update cmtime on MS_ASYNC
-Date: Thu, 22 Aug 2013 17:03:20 -0700
-Message-Id: <cd44947e645bc37a5ce32626e86596b0d5e667a1.1377193658.git.luto@amacapital.net>
+Subject: [PATCH v4 2/7] fs: Add inode_update_time_writable
+Date: Thu, 22 Aug 2013 17:03:18 -0700
+Message-Id: <dd275081395986c38e577b6db4c4dd8cb42dde93.1377193658.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1377193658.git.luto@amacapital.net>
 References: <cover.1377193658.git.luto@amacapital.net>
@@ -27,130 +27,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is probably unimportant but improves POSIX compliance.
+This is like file_update_time, except that it acts on a struct inode *
+instead of a struct file *.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- mm/msync.c | 84 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 73 insertions(+), 11 deletions(-)
+ fs/inode.c         | 64 +++++++++++++++++++++++++++++++++++++++++-------------
+ include/linux/fs.h |  1 +
+ 2 files changed, 50 insertions(+), 15 deletions(-)
 
-diff --git a/mm/msync.c b/mm/msync.c
-index 632df45..a2ee43c 100644
---- a/mm/msync.c
-+++ b/mm/msync.c
-@@ -13,13 +13,16 @@
- #include <linux/file.h>
- #include <linux/syscalls.h>
- #include <linux/sched.h>
-+#include <linux/rmap.h>
-+#include <linux/pagemap.h>
+diff --git a/fs/inode.c b/fs/inode.c
+index d6dfb09..2bbcb19 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1637,6 +1637,34 @@ int file_remove_suid(struct file *file)
+ }
+ EXPORT_SYMBOL(file_remove_suid);
  
- /*
-  * MS_SYNC syncs the entire file - including mappings.
-  *
-  * MS_ASYNC does not start I/O (it used to, up to 2.5.67).
-  * Nor does it marks the relevant pages dirty (it used to up to 2.6.17).
-- * Now it doesn't do anything, since dirty pages are properly tracked.
-+ * Now all it does is ensure that file timestamps get updated, since POSIX
-+ * requires it.  We track dirty pages correct without MS_ASYNC.
-  *
-  * The application may now run fsync() to
-  * write out the dirty pages and wait on the writeout and check the result.
-@@ -28,6 +31,54 @@
-  * So by _not_ starting I/O in MS_ASYNC we provide complete flexibility to
-  * applications.
-  */
-+
-+static int msync_async_range(struct vm_area_struct *vma,
-+			      unsigned long *start, unsigned long end)
++/*
++ * This does the work that's common to file_update_time and
++ * inode_update_time.
++ */
++static int prepare_update_cmtime(struct inode *inode, struct timespec *now)
 +{
-+	struct mm_struct *mm;
-+	int iters = 0;
++	int sync_it;
 +
-+	while (*start < end && *start < vma->vm_end && iters < 128) {
-+		unsigned int page_mask, page_increm;
++	/* First try to exhaust all avenues to not sync */
++	if (IS_NOCMTIME(inode))
++		return 0;
 +
-+		/*
-+		 * Require that the pte is writable (because otherwise
-+		 * it can't be dirty, so there's nothing to clean).
-+		 *
-+		 * In theory we could check the pte dirty bit, but this is
-+		 * awkward and barely worth it.
-+		 */
-+		struct page *page = follow_page_mask(vma, *start,
-+						     FOLL_GET | FOLL_WRITE,
-+						     &page_mask);
++	*now = current_fs_time(inode->i_sb);
++	if (!timespec_equal(&inode->i_mtime, now))
++		sync_it = S_MTIME;
 +
-+		if (page && !IS_ERR(page)) {
-+			if (lock_page_killable(page) == 0) {
-+				page_mkclean(page);
-+				unlock_page(page);
-+			}
-+			put_page(page);
-+		}
++	if (!timespec_equal(&inode->i_ctime, now))
++		sync_it |= S_CTIME;
 +
-+		if (IS_ERR(page))
-+			return PTR_ERR(page);
++	if (IS_I_VERSION(inode))
++		sync_it |= S_VERSION;
 +
-+		page_increm = 1 + (~(*start >> PAGE_SHIFT) & page_mask);
-+		*start += page_increm * PAGE_SIZE;
-+		cond_resched();
-+		iters++;
-+	}
++	if (!sync_it)
++		return 0;
 +
-+	/* XXX: try to do this only once? */
-+	mapping_flush_cmtime_nowb(vma->vm_file->f_mapping);
-+
-+	/* Give mmap_sem writers a chance. */
-+	mm = current->mm;
-+	up_read(&mm->mmap_sem);
-+	down_read(&mm->mmap_sem);
-+	return 0;
++	return sync_it;
 +}
 +
- SYSCALL_DEFINE3(msync, unsigned long, start, size_t, len, int, flags)
+ /**
+  *	file_update_time	-	update mtime and ctime time
+  *	@file: file accessed
+@@ -1654,23 +1682,9 @@ int file_update_time(struct file *file)
  {
- 	unsigned long end;
-@@ -77,18 +128,29 @@ SYSCALL_DEFINE3(msync, unsigned long, start, size_t, len, int, flags)
- 			goto out_unlock;
- 		}
- 		file = vma->vm_file;
--		start = vma->vm_end;
--		if ((flags & MS_SYNC) && file &&
--				(vma->vm_flags & VM_SHARED)) {
--			get_file(file);
--			up_read(&mm->mmap_sem);
--			error = vfs_fsync(file, 0);
--			fput(file);
--			if (error || start >= end)
--				goto out;
--			down_read(&mm->mmap_sem);
-+		if (file && vma->vm_flags & VM_SHARED) {
-+			if (flags & MS_SYNC) {
-+				start = vma->vm_end;
-+				get_file(file);
-+				up_read(&mm->mmap_sem);
-+				error = vfs_fsync(file, 0);
-+				fput(file);
-+				if (error || start >= end)
-+					goto out;
-+				down_read(&mm->mmap_sem);
-+			} else if ((vma->vm_flags & VM_WRITE) &&
-+				   file->f_mapping) {
-+				error = msync_async_range(vma, &start, end);
-+				if (error || start >= end)
-+					goto out_unlock;
-+			} else {
-+				start = vma->vm_end;
-+				if (start >= end)
-+					goto out_unlock;
-+			}
- 			vma = find_vma(mm, start);
- 		} else {
-+			start = vma->vm_end;
- 			if (start >= end) {
- 				error = 0;
- 				goto out_unlock;
+ 	struct inode *inode = file_inode(file);
+ 	struct timespec now;
+-	int sync_it = 0;
++	int sync_it = prepare_update_cmtime(inode, &now);
+ 	int ret;
+ 
+-	/* First try to exhaust all avenues to not sync */
+-	if (IS_NOCMTIME(inode))
+-		return 0;
+-
+-	now = current_fs_time(inode->i_sb);
+-	if (!timespec_equal(&inode->i_mtime, &now))
+-		sync_it = S_MTIME;
+-
+-	if (!timespec_equal(&inode->i_ctime, &now))
+-		sync_it |= S_CTIME;
+-
+-	if (IS_I_VERSION(inode))
+-		sync_it |= S_VERSION;
+-
+ 	if (!sync_it)
+ 		return 0;
+ 
+@@ -1685,6 +1699,26 @@ int file_update_time(struct file *file)
+ }
+ EXPORT_SYMBOL(file_update_time);
+ 
++/**
++ *	inode_update_time_writable	-	update mtime and ctime time
++ *	@inode: inode accessed
++ *
++ *	This is like file_update_time, but it assumes the mnt is
++ *	writable and not frozen and takes an inode parameter instead.
++ */
++
++int inode_update_time_writable(struct inode *inode)
++{
++	struct timespec now;
++	int sync_it = prepare_update_cmtime(inode, &now);
++
++	if (!sync_it)
++		return 0;
++
++	return update_time(inode, &now, sync_it);
++}
++EXPORT_SYMBOL(inode_update_time_writable);
++
+ int inode_needs_sync(struct inode *inode)
+ {
+ 	if (IS_SYNC(inode))
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 9818747..86cf0a4 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2590,6 +2590,7 @@ extern int inode_newsize_ok(const struct inode *, loff_t offset);
+ extern void setattr_copy(struct inode *inode, const struct iattr *attr);
+ 
+ extern int file_update_time(struct file *file);
++extern int inode_update_time_writable(struct inode *inode);
+ 
+ extern int generic_show_options(struct seq_file *m, struct dentry *root);
+ extern void save_mount_options(struct super_block *sb, char *options);
 -- 
 1.8.3.1
 
