@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab3HWQsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 12:48:51 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35028 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754805Ab3HWQst (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 12:48:49 -0400
-Date: Fri, 23 Aug 2013 17:48:42 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Lars Poeschel <poeschel@lemonage.de>
-Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH 1/2] gpio: mcp23s08: rename the device tree property
-Message-ID: <20130823164842.GC7015@e106331-lin.cambridge.arm.com>
-References: <1377165378-9589-1-git-send-email-larsi@wh2.tu-dresden.de>
- <20130823142421.GK25856@e106331-lin.cambridge.arm.com>
- <201308231722.10392.poeschel@lemonage.de>
+	id S1755738Ab3HWQvA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 12:51:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32253 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754832Ab3HWQu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 12:50:58 -0400
+Date: Fri, 23 Aug 2013 18:50:45 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
+        peter.oberparleiter@de.ibm.com, rusty@rustcorp.com.au,
+        linux-arch@vger.kernel.org, arnd@arndb.de, mgahagan@redhat.com,
+        agospoda@redhat.com
+Subject: Re: [RFC PATCH 1/4] gcov: move gcov structs definitions to a gcc
+ version specific file
+Message-ID: <20130823165045.GB2336@localhost.localdomain>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com>
+ <1377247176-13537-2-git-send-email-fhrbata@redhat.com>
+ <52177B46.6070404@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201308231722.10392.poeschel@lemonage.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52177B46.6070404@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 04:22:10PM +0100, Lars Poeschel wrote:
-> On Friday 23 August 2013 at 16:24:21, Mark Rutland wrote:
-> > On Thu, Aug 22, 2013 at 10:56:17AM +0100, Lars Poeschel wrote:
-> > > From: Lars Poeschel <poeschel@lemonage.de>
-> > > 
-> > > The device tree property should be more descriptive.
-> > > microchip seems more reasonable than mcp. As there are no
-> > > in tree users of this property, so the rename can still be
-> > > done without pain.
+On Fri, Aug 23, 2013 at 05:09:58PM +0200, Peter Oberparleiter wrote:
+> On 23.08.2013 10:39, Frantisek Hrbata wrote:
+> > Since also the gcov structures(gcov_info, gcov_fn_info, gcov_ctr_info) can
+> > change between gcc releases, as shown in gcc 4.7, they cannot be defined in a
+> > common header and need to be moved to a specific gcc implemention file. This
+> > also requires to make the gcov_info structure opaque for the common code and to
+> > introduce simple helpers for accessing data inside gcov_info.
+> 
+> I've taken a similar approach in my version, although I stopped at isolating
+> the code that handles the linked list. I like your version better since it's
+> more consistent.
+
+:) I also have doubts with the list "abstraction", it isn't very nice. I tried
+to keep the changes as simple as possible in the generic code. I'm not sayint it
+is the right approach, but your design is pretty good, so I had no urges to
+change it more deeper. I'm of course open to any suggestions.
+
+> 
+> > diff --git a/kernel/gcov/gcc_3_4.c b/kernel/gcov/gcc_3_4.c
+> > index ae5bb42..27bc88a 100644
+> > --- a/kernel/gcov/gcc_3_4.c
+> > +++ b/kernel/gcov/gcc_3_4.c
+> > @@ -21,6 +21,121 @@
+> >  #include <linux/vmalloc.h>
+> >  #include "gcov.h"
 > > 
-> > Are there definitely no users? I see there are no dts with a
-> > "mcp,mcp23***" compatible string, but are there any boards already out
-> > there with this hardware that someone might be using and a currently
-> > release kernel supports?
+> > +#define GCOV_COUNTERS		5
 > 
-> What do you mean by "release"? The device tree support for the gpio-
-> mcp23s08 driver and thus the "mcp" string came in with v3.9. This is stable 
-> but not longterm.
+> The value for GCOV_COUNTERS has been changed with GCC 4.3. Before it was 5,
+> starting with GCC 4.3 the value is 8. While this is not strictly necessary, I'm
+> wondering if this should be added here to prevent any unwanted side-effects.
 
-I meant a vX.Y non -rc kernel. v3.9 definitely counts.
+Yes I was thinking about this two. My first idea was to use some define, maybe
+in the Makefile during the gcc version check and set the number of counters
+properly later based on this define. Something like
 
-> 
-> > With the bcm/broadcom => brcm change, we marked the old vendor prefix as
-> > deprecated (but left the support code).
-> > 
-> > If we can 100% guarantee no-one's using the compatible string, I'm happy
-> > to change it. Otherwise we just have to mark the old string as
-> > deprecated.
-> 
-> I am the developer of the device tree support for that driver and I am not 
-> aware of any user, but surely I can not guarantee it.
-> 
-> I never imagined how hard it would be. ;-)
-> I presented both variants:
-> 1.) simply add mcp to vendor-prefixes.txt
-> 2.) change the driver to microchip and add microchip to vendor-prefixes.txt
+#if GCOV_GCC_VERIONS >= 0430
+#define GCOV_COUNTERS 8
+#elif ...
 
-I think "microchip" is definitely preferable to "mcp", and would prefer
-that going forward.
+for the gcc_3_4.c implementation.
+
+But I'm not sure what the new counters are good for and if they are really
+needed for the coverage info. This would require deeper understanding what
+and how the types of counters are used. At this point a simply did not change the
+value for the format before gcc 4.7, because each counter type has a tag and
+this should be backward compatible. We only miss the new counters. Again this is
+something that probably deserves more attention. Thanks for pointing this out!
 
 > 
-> May one of the maintainers decide which one to take or even take none of 
-> the patches.
-> Or do you need a third variant with both strings in the driver and 
-> microchip in vendor-prefixes?
+> -- 
+> Peter Oberparleiter
+> Linux on System z Development - IBM Germany
+> 
 
-If there are users, maintaining support for the old, deprecated string
-in the driver (alongside the new one) is preferable, and simple to do.
-That's how we've handled the other name changes in bindings. We should
-probably do that here, documenting the "mcp,mcp23***" strings as
-deprecated in the binding document.
-
-Later, we may choose to drop unused deprecated bindings.
-
-Thanks,
-Mark.
+-- 
+Frantisek Hrbata
