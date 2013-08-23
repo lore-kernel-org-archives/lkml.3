@@ -1,111 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab3HWS3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 14:29:38 -0400
-Received: from ring0.de ([91.143.88.219]:49959 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754761Ab3HWS3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 14:29:37 -0400
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: ring0.de]
-Date: Fri, 23 Aug 2013 20:29:28 +0200
-From: Sebastian Reichel <sre@debian.org>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linus.walleij@linaro.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>
-Subject: Re: [PATCH 1/3] ARM: OMAP2+: hwmod-data: Add SSI information
-Message-ID: <20130823182928.GD5753@earth.universe>
-Mail-Followup-To: Paul Walmsley <paul@pwsan.com>,
-	linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-	linus.walleij@linaro.org,
-	Kevin Hilman <khilman@deeprootsystems.com>,
-	Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-	Carlos Chinea <cch.devel@gmail.com>
-References: <1376237628-1077-1-git-send-email-sre@debian.org>
- <1376237877-1740-1-git-send-email-sre@debian.org>
- <alpine.DEB.2.02.1308210113040.6426@utopia.booyaka.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="gr/z0/N6AeWAPJVB"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1308210113040.6426@utopia.booyaka.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756116Ab3HWSaj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 14:30:39 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:45437 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754157Ab3HWSag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 14:30:36 -0400
+Message-ID: <1377282543.10300.820.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Tang Chen <tangchen@cn.fujitsu.com>,
+        konrad.wilk@oracle.com, robert.moore@intel.com, lv.zheng@intel.com,
+        rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Date: Fri, 23 Aug 2013 12:29:03 -0600
+In-Reply-To: <521793BB.9080605@gmail.com>
+References: <20130821204041.GC2436@htj.dyndns.org>
+	  <1377124595.10300.594.camel@misato.fc.hp.com>
+	  <20130822033234.GA2413@htj.dyndns.org>
+	  <1377186729.10300.643.camel@misato.fc.hp.com>
+	  <20130822183130.GA3490@mtj.dyndns.org>
+	  <1377202292.10300.693.camel@misato.fc.hp.com>
+	  <20130822202158.GD3490@mtj.dyndns.org>
+	  <1377205598.10300.715.camel@misato.fc.hp.com>
+	  <20130822212111.GF3490@mtj.dyndns.org>
+	  <1377209861.10300.756.camel@misato.fc.hp.com>
+	  <20130823130440.GC10322@mtj.dyndns.org>
+	 <1377274448.10300.777.camel@misato.fc.hp.com> <521793BB.9080605@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Zhang,
 
---gr/z0/N6AeWAPJVB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 2013-08-24 at 00:54 +0800, Zhang Yanfei wrote:
+> > Tang, what do you think?  Are you OK to try Tejun's suggestion as well? 
+> > 
+> 
+> By saying TJ's suggestion, you mean, we will let memblock to control the
+> behaviour, that said, we will do early allocations near the kernel image
+> range before we get the SRAT info?
 
-Hi Paul,
+Right.
 
-On Wed, Aug 21, 2013 at 01:22:09AM +0000, Paul Walmsley wrote:
-> > From: Sebastian Reichel <sre@ring0.de>
-> > This patch adds Synchronous Serial Interface (SSI) hwmod support for
-> > OMAP34xx SoCs.
->=20
-> a few comments:
->=20
-> - please add your Signed-off-by: to the patch description, per=20
-> Documentation/SubmittingPatches
+> If so, yeah, we have been working on this direction. 
 
-I assumed this was only important, when I actually want to submit
-patches.  This was merely a first RFC. I will do this for the next
-round of patches.
+Great!
 
-> - please drop "omap34xx_ssi_irqs" and "omap34xx_ssi_addrs" - that data=20
-> should go into DT now
+> By doing this, we may
+> have two main changes:
+> 
+> 1. change some of memblock's APIs to make it have the ability to allocate
+>    memory from low address.
+> 2. setup kernel page table down-top. Concretely, we first map the memory
+>    just after the kernel image to the top, then, we map 0 - kernel image end.
+> 
+> Do you guys think this is reasonable and acceptable?
 
-I'm currently working on converting the driver to use DT.
-I will send another patch when I'm done.
+Have you also looked at Yinghai's comments below?
 
-> [...]
-> FYI, this is stretching my recollection, and is not directly related to=
-=20
-> this patch, but I seem to recall that there was a problem with auto-idle=
-=20
-> when SSI was active on the 3430.  Basically, if the SSI was active, but=
-=20
-> other CORE_L3/CORE_L4 clockdomain devices weren't, I think that DPLL3=20
-> would be incorrectly shut down.  You'll probably need to check the Nokia=
-=20
-> kernel source for details.  I thought we had a hwmod flag for this, but I=
-=20
-> guess not.  Anyway, in case you notice odd behavior...
+http://www.spinics.net/lists/linux-mm/msg61362.html
 
-OK. Thanks for the hint.
+Thanks,
+-Toshi
 
--- Sebastian
-
---gr/z0/N6AeWAPJVB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSF6oIAAoJENju1/PIO/qalSwP/Rgpb0a3+AjdbcthdW3lIwuS
-+YTq/pMYY+FUD2qaKe5yDOsq0mGF4Jw3lnMEfq03oLIqBcxRuizvjE5rL3ylEAAn
-z22PhDssfYNNQ2GB4zWBkTao/Ay25WLkg2WJ2SCTjA0qHs53TJO17RFAMcHIyQjD
-kqXLPE0H5YwVz6wcrlx0KnqISmbrxkGWHNq7kOaFDvrKsGnkqJAEB+Y3rBBrMfmm
-SzeThkZvN1aABYwOBc1EAfSu4n/uhuqAyFMSJUvKO8wHv7H0svadscD70nxaPyZS
-dK9gDgr59zf4kwE+5FPe95ixirhSxpnd+RuoTJUe89bs2M050cQQf0B/r51Tv7vt
-875vKDS5GLBMVsY9Z1+mXj6CnJeXsp1cLxN4zheEtzqgk5hIA+duOZ9MrBZfOs7H
-yh8iGbPbOLAJd1ZD/aX+jy7f/hxxi6bHvxCQ0I8aPi5AQhVLjNwpSEKCkPciP/Rh
-Bnrxk+7SRi4LW7bHHSoKJ2tFKAeW8LObsbgUVaDCxqqlgUU3eYMj6W3G8C3PYUI5
-5eWPTUvJf5mGqOVgRQJmQWICfEVcHauKd1Qr5tf+znylMmv5YodIl2uZCDUzrvYn
-cppCnDlFVfr1piDGWjlZSC+W+Yjb9YQGFuqAddF3wu/aiNfQYa1Ttb4exHnzzgxH
-f7yWIg188PpWYAjSjyQ2
-=sQGa
------END PGP SIGNATURE-----
-
---gr/z0/N6AeWAPJVB--
