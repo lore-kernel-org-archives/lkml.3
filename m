@@ -1,124 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273Ab3HWV34 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 17:29:56 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:51154 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754230Ab3HWV3z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 17:29:55 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S932281Ab3HWVaQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 17:30:16 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:57922 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756490Ab3HWVaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 17:30:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Linux PCI <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] ACPI: Fix osc flag setup ordering to allow pcie hotplug use when available
+Date: Fri, 23 Aug 2013 23:40:52 +0200
+Message-ID: <4634097.MXvnqpQKZr@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAErSpo5JhCQsYHgFdp+vK9=wLzHert1r5vTe7_ZCPh-4kM80zQ@mail.gmail.com>
+References: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com> <3958698.Gm9Wz19SSi@vostro.rjw.lan> <CAErSpo5JhCQsYHgFdp+vK9=wLzHert1r5vTe7_ZCPh-4kM80zQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Jisheng Zhang <jszhang@marvell.com>, <jszhang@marvell.com>,
-        <jason@lakedaemon.net>, <andrew@lunn.ch>,
-        <gregory.clement@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>,
-        <ezequiel.garcia@free-electrons.com>,
-        <sebastian.hesselbarth@gmail.com>, <linus.walleij@linaro.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1377225242-5854-4-git-send-email-jszhang@marvell.com>
-Cc: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-References: <1377225242-5854-1-git-send-email-jszhang@marvell.com>
- <1377225242-5854-4-git-send-email-jszhang@marvell.com>
-Message-ID: <20130823212950.8231.90154@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH v2 3/4] clk: mvebu: add missing iounmap
-Date: Fri, 23 Aug 2013 14:29:50 -0700
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Jisheng Zhang (2013-08-22 19:34:01)
-> Add missing iounmap to setup error path.
+On Friday, August 23, 2013 02:46:23 PM Bjorn Helgaas wrote:
+> On Fri, Aug 23, 2013 at 2:53 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Friday, August 23, 2013 04:05:11 PM Neil Horman wrote:
+> >> On Fri, Aug 23, 2013 at 09:38:18PM +0200, Rafael J. Wysocki wrote:
+> >> > [CCs added]
+> >> >
+> >> > Please always send PCI-related material to linux-pci in the first place.
+> >> >
+> >> Sorry, I ran get_maintainers and it seemed to think linux-acpi was sufficient.
+> >>
+> >> > The change that broke things for you was actually intentional:
+> >> >
+> >> > commit b8178f130e25c1bdac1c33e0996f1ff6e20ec08e
+> >> > Author: Bjorn Helgaas <bhelgaas@google.com>
+> >> > Date:   Mon Apr 1 15:47:39 2013 -0600
+> >> >
+> >> >     Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
+> >> >
+> >> >     This reverts commit 8c33f51df406e1a1f7fa4e9b244845b7ebd61fa6.
+> >> >
+> >> > so I think we'll need to clean up the ASMP initialization after all.
+> >> >
+> >> Crud.  Reading over the revert commit, it seems like the problem boils down to
+> >> the odering of checking aspm_disabled.  It seems to me that the simple fix is to
+> >> track the desire for acpi to disable aspm separately from the users desire to
+> >> disable aspm (aspm_disabled).  Then we just turn the points where we check the
+> >> aspm_disabled into the appropriate or of two variables, except for
+> >> pcie_asmp_sanity_check, which remains sensitive to just the user disable option.
+> >>
+> >> Or is there more to this?
+> >
+> > No, I think you're right.
+> >
+> > Bjorn, what do you think?
 > 
-> Change-Id: I4371569d14d7026aa9f90d7cd53f669d365fe26a
+> My opinion is that the _OSC/ASPM state management is ridiculously
+> complicated already, and this would make it slightly more complicated.
+>  That's why my preference would be to attempt a more radical cleanup
+> and simplification instead of adding another wart.
 
-Please remove Change-Id's from the commit message for upstream patch
-submissions in the future. I can remove this one, this time.
+Well, do you have anything specific in mind?
 
-I've taken the patch into clk-next.
+> But if you want to merge a patch along the lines of what Neil
+> proposes, I won't object.
 
-Regards,
-Mike
+I'm not sure what to do really, so I'm asking. :-)
 
-> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> ---
->  drivers/clk/mvebu/clk-cpu.c |  4 +++-
->  drivers/clk/mvebu/common.c  | 18 ++++++++++++------
->  2 files changed, 15 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/clk/mvebu/clk-cpu.c b/drivers/clk/mvebu/clk-cpu.c
-> index b0fbc07..1466865 100644
-> --- a/drivers/clk/mvebu/clk-cpu.c
-> +++ b/drivers/clk/mvebu/clk-cpu.c
-> @@ -119,7 +119,7 @@ void __init of_cpu_clk_setup(struct device_node *node)
->  
->         cpuclk = kzalloc(ncpus * sizeof(*cpuclk), GFP_KERNEL);
->         if (WARN_ON(!cpuclk))
-> -               return;
-> +               goto cpuclk_out;
->  
->         clks = kzalloc(ncpus * sizeof(*clks), GFP_KERNEL);
->         if (WARN_ON(!clks))
-> @@ -170,6 +170,8 @@ bail_out:
->                 kfree(cpuclk[ncpus].clk_name);
->  clks_out:
->         kfree(cpuclk);
-> +cpuclk_out:
-> +       iounmap(clock_complex_base);
->  }
->  
->  CLK_OF_DECLARE(armada_xp_cpu_clock, "marvell,armada-xp-cpu-clock",
-> diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
-> index adaa4a1..25ceccf 100644
-> --- a/drivers/clk/mvebu/common.c
-> +++ b/drivers/clk/mvebu/common.c
-> @@ -45,8 +45,10 @@ void __init mvebu_coreclk_setup(struct device_node *np,
->         clk_data.clk_num = 2 + desc->num_ratios;
->         clk_data.clks = kzalloc(clk_data.clk_num * sizeof(struct clk *),
->                                 GFP_KERNEL);
-> -       if (WARN_ON(!clk_data.clks))
-> +       if (WARN_ON(!clk_data.clks)) {
-> +               iounmap(base);
->                 return;
-> +       }
->  
->         /* Register TCLK */
->         of_property_read_string_index(np, "clock-output-names", 0,
-> @@ -134,7 +136,7 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
->  
->         ctrl = kzalloc(sizeof(*ctrl), GFP_KERNEL);
->         if (WARN_ON(!ctrl))
-> -               return;
-> +               goto ctrl_out;
->  
->         spin_lock_init(&ctrl->lock);
->  
-> @@ -145,10 +147,8 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
->         ctrl->num_gates = n;
->         ctrl->gates = kzalloc(ctrl->num_gates * sizeof(struct clk *),
->                               GFP_KERNEL);
-> -       if (WARN_ON(!ctrl->gates)) {
-> -               kfree(ctrl);
-> -               return;
-> -       }
-> +       if (WARN_ON(!ctrl->gates))
-> +               goto gates_out;
->  
->         for (n = 0; n < ctrl->num_gates; n++) {
->                 const char *parent =
-> @@ -160,4 +160,10 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
->         }
->  
->         of_clk_add_provider(np, clk_gating_get_src, ctrl);
-> +
-> +       return;
-> +gates_out:
-> +       kfree(ctrl);
-> +ctrl_out:
-> +       iounmap(base);
->  }
-> -- 
-> 1.8.4.rc3
+Rafael
+
+
+> >> > On Friday, August 23, 2013 01:19:39 PM Neil Horman wrote:
+> >> > > Somewhere between 3.9 and 3.10 it seems the order in which pcie and acpi probed
+> >> > > slots for hotplug capabilites got reversed.  While this isn't a big deal, it did
+> >> > > uncover a bug in the ACPI bus setup path.  Specifically, acpi_pci_root_add calls
+> >> > > pci_acpi_scan_root before setting the osc flags for the device handle.
+> >> > > pci_acpi_scan_root, among other things uses device_is_managed_by_native_pciehp()
+> >> > > to determine if a given slot has pcie hotplug capabilties, whcih checks the
+> >> > > devices OSC_PCI_EXPRESS_NATIVE_HP_CONTROL flag.  Since that flag is not set
+> >> > > until after pci_acpi_scan_root_completes, the acpi code never sees that pcie
+> >> > > slots are hotplug capable and configures them all to use acpi instead.
+> >> > >
+> >> > > Fix is pretty simple, just defer the scan until after the osc flags have been
+> >> > > set on the device.  Tested by myself and it seems to work well.
+> >> > >
+> >> > > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> >> > > CC: Len Brown <lenb@kernel.org>
+> >> > > CC: "Rafael J. Wysocki" <rjw@sisk.pl>
+> >> > > CC: linux-acpi@vger.kernel.org
+> >> > > ---
+> >> > >  drivers/acpi/pci_root.c | 41 ++++++++++++++++++++---------------------
+> >> > >  1 file changed, 20 insertions(+), 21 deletions(-)
+> >> > >
+> >> > > diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+> >> > > index 5917839..a2c2661 100644
+> >> > > --- a/drivers/acpi/pci_root.c
+> >> > > +++ b/drivers/acpi/pci_root.c
+> >> > > @@ -437,27 +437,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
+> >> > >   flags = base_flags = OSC_PCI_SEGMENT_GROUPS_SUPPORT;
+> >> > >   acpi_pci_osc_support(root, flags);
+> >> > >
+> >> > > - /*
+> >> > > -  * TBD: Need PCI interface for enumeration/configuration of roots.
+> >> > > -  */
+> >> > > -
+> >> > > - /*
+> >> > > -  * Scan the Root Bridge
+> >> > > -  * --------------------
+> >> > > -  * Must do this prior to any attempt to bind the root device, as the
+> >> > > -  * PCI namespace does not get created until this call is made (and
+> >> > > -  * thus the root bridge's pci_dev does not exist).
+> >> > > -  */
+> >> > > - root->bus = pci_acpi_scan_root(root);
+> >> > > - if (!root->bus) {
+> >> > > -         dev_err(&device->dev,
+> >> > > -                 "Bus %04x:%02x not present in PCI namespace\n",
+> >> > > -                 root->segment, (unsigned int)root->secondary.start);
+> >> > > -         result = -ENODEV;
+> >> > > -         goto end;
+> >> > > - }
+> >> > > -
+> >> > > - /* Indicate support for various _OSC capabilities. */
+> >> > >   if (pci_ext_cfg_avail())
+> >> > >           flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
+> >> > >   if (pcie_aspm_support_enabled()) {
+> >> > > @@ -520,6 +499,26 @@ static int acpi_pci_root_add(struct acpi_device *device,
+> >> > >                    "(_OSC support mask: 0x%02x)\n", flags);
+> >> > >   }
+> >> > >
+> >> > > + /*
+> >> > > +  * TBD: Need PCI interface for enumeration/configuration of roots.
+> >> > > +  */
+> >> > > +
+> >> > > + /*
+> >> > > +  * Scan the Root Bridge
+> >> > > +  * --------------------
+> >> > > +  * Must do this prior to any attempt to bind the root device, as the
+> >> > > +  * PCI namespace does not get created until this call is made (and
+> >> > > +  * thus the root bridge's pci_dev does not exist).
+> >> > > +  */
+> >> > > + root->bus = pci_acpi_scan_root(root);
+> >> > > + if (!root->bus) {
+> >> > > +         dev_err(&device->dev,
+> >> > > +                 "Bus %04x:%02x not present in PCI namespace\n",
+> >> > > +                 root->segment, (unsigned int)root->secondary.start);
+> >> > > +         result = -ENODEV;
+> >> > > +         goto end;
+> >> > > + }
+> >> > > +
+> >> > >   pci_acpi_add_bus_pm_notifier(device, root->bus);
+> >> > >   if (device->wakeup.flags.run_wake)
+> >> > >           device_set_run_wake(root->bus->bridge, true);
+> >> > >
+> >>
+> > --
+> > I speak only for myself.
+> > Rafael J. Wysocki, Intel Open Source Technology Center.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
