@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab3HWKJV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 06:09:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46384 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab3HWKJT (ORCPT
+	id S1755216Ab3HWKLU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 06:11:20 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:58627 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754313Ab3HWKLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 06:09:19 -0400
-Date: Fri, 23 Aug 2013 12:09:13 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: Theodore Tso <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
-        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [sched_delayed] sched: RT throttling activated
-Message-ID: <20130823100913.GQ31370@twins.programming.kicks-ass.net>
-References: <521722EE.70209@fold.natur.cuni.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <521722EE.70209@fold.natur.cuni.cz>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 23 Aug 2013 06:11:18 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, sameo@linux.intel.com, sachin.kamat@linaro.org
+Subject: [PATCH 1/3] mfd: timberdale: Staticize local variables
+Date: Fri, 23 Aug 2013 15:41:03 +0530
+Message-Id: <1377252665-7152-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 10:53:02AM +0200, Martin Mokrejs wrote:
-> Hi,
->   I tried to figure out what this message really means. I came to 
-> https://rt.wiki.kernel.org/index.php/Frequently_Asked_Questions
-> but I am still lost. I lack in the FAQ some user-related information.
-> The first paragraph is still unclear to me. I have a i7-2640M based
-> laptop, hyperthreading is enabled by BIOS but I shut down the two
-> emulated cores by (no BIOS option to disable HT):
-> 
-> Would you please clarify what the "[sched_delayed] sched: RT throttling activated"
-> really means? 
+Local variables referenced only in this file are made static.
 
-It means you have (a) real-time task(s) that consume significant amount
-of time. At some point we throttle them in an attempt to keep the system
-from falling over.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/mfd/timberdale.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> Is that because there is some RT-requiring application on my system?
+diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
+index 0c1fcbc..4c9c149 100644
+--- a/drivers/mfd/timberdale.c
++++ b/drivers/mfd/timberdale.c
+@@ -115,11 +115,11 @@ static const struct resource timberdale_ocores_resources[] = {
+ 	},
+ };
+ 
+-const struct max7301_platform_data timberdale_max7301_platform_data = {
++static const struct max7301_platform_data timberdale_max7301_platform_data = {
+ 	.base = 200
+ };
+ 
+-const struct mc33880_platform_data timberdale_mc33880_platform_data = {
++static const struct mc33880_platform_data timberdale_mc33880_platform_data = {
+ 	.base = 100
+ };
+ 
+-- 
+1.7.4.1
 
-Yep.
-
-> I don't know of any (or don't care about real-time responsiveness except that ALSA
-> drivers require me to have CONFIG_SND_HRTIMER=y). Per Goggle answers could the
-> culprit be nfsd? Then I will recompile is as a module.
-
-Unlikely, I don't think I've ever seen anybody run their nfsd with RT
-priority. Also, you can run RT tasks regardless of the config options.
-SCHED_RR and SCHED_FIFO are POSIX specified and always available.
