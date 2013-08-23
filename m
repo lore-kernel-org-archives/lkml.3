@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab3HWGMZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 02:12:25 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58024 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754513Ab3HWGMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 02:12:23 -0400
-Message-ID: <5216FD0C.3090709@ti.com>
-Date: Fri, 23 Aug 2013 11:41:24 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1754709Ab3HWGQo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 02:16:44 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50001 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754506Ab3HWGQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 02:16:43 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-29-5216fe49ebf7
+Date: Fri, 23 Aug 2013 15:16:53 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v2 12/20] mm, hugetlb: remove vma_has_reserves()
+Message-ID: <20130823061653.GC22605@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1376040398-11212-13-git-send-email-iamjoonsoo.kim@lge.com>
+ <87siy215e1.fsf@linux.vnet.ibm.com>
+ <20130822091747.GA22605@lge.com>
+ <87mwoa0yx5.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Rajendra Nayak <rnayak@ti.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Nishanth Menon <nm@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Felipe Balbi <balbi@ti.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-References: <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com> <51ED2385.60108@ti.com> <51ED5C66.1010407@ti.com> <51EFFBE1.4090505@ti.com> <51F0031B.1050307@ti.com> <51F00530.9090703@ti.com> <51F02069.3050207@ti.com> <51F0223E.4050008@ti.com> <51F0240F.3050507@ti.com> <20130813081003.GU7656@atomide.com> <520A02BA.4090805@ti.com> <CACRpkda+m82PYJsExLM6JLsLa8-bVhdvy_r_+-uKfVT2NG7Cbg@mail.gmail.com> <520D398D.9040806@ti.com> <CACRpkdYeo1y-HhftkRWgwyq8o-NVuJ978Uq+ON880LHhUxC=hg@mail.gmail.com> <520D44C5.6080205@ti.com> <CACRpkdagSHxzV3=427O9iftNxM+N=w9aPds=iDvGQPoG3H-cWw@mail.gmail.com> <5215F6F6.9060703@ti.com> <5216E966.5020902@ti.com>
-In-Reply-To: <5216E966.5020902@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mwoa0yx5.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Friday 23 August 2013 10:17 AM, Rajendra Nayak wrote:
-> On Thursday 22 August 2013 05:03 PM, Sricharan R wrote:
->>  maps crossbar number<->  to interrupt number and
->>  calls request_irq(int_no, crossbar_handler,..)
-> So will this mapping happen based on some data passed from DT or
-> just based on whats available when the device does a request_irq()?
->
-> If its based on whats available then I see an issue when you need
-> to remap something thats already mapped by default (and not used)
-> since you run out of all free ones.
-Yes, when done based on what is available then there is a
-problem when we run out of free ones because we do not
-know which one to replace. I was thinking of something like
-this,
-    1) DT would give a list of all free ones, and also if some are
-        mapped as default and not used, mark those also as free.
+On Thu, Aug 22, 2013 at 04:34:22PM +0530, Aneesh Kumar K.V wrote:
+> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+> 
+> > On Thu, Aug 22, 2013 at 02:14:38PM +0530, Aneesh Kumar K.V wrote:
+> >> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+> >> 
+> >> > vma_has_reserves() can be substituted by using return value of
+> >> > vma_needs_reservation(). If chg returned by vma_needs_reservation()
+> >> > is 0, it means that vma has reserves. Otherwise, it means that vma don't
+> >> > have reserves and need a hugepage outside of reserve pool. This definition
+> >> > is perfectly same as vma_has_reserves(), so remove vma_has_reserves().
+> >> >
+> >> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >> 
+> >> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> >
+> > Thanks.
+> >
+> >> > @@ -580,8 +547,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+> >> >  	 * have no page reserves. This check ensures that reservations are
+> >> >  	 * not "stolen". The child may still get SIGKILLed
+> >> >  	 */
+> >> > -	if (!vma_has_reserves(vma, chg) &&
+> >> > -			h->free_huge_pages - h->resv_huge_pages == 0)
+> >> > +	if (chg && h->free_huge_pages - h->resv_huge_pages == 0)
+> >> >  		return NULL;
+> >> >
+> >> >  	/* If reserves cannot be used, ensure enough pages are in the pool */
+> >> > @@ -600,7 +566,7 @@ retry_cpuset:
+> >> >  			if (page) {
+> >> >  				if (avoid_reserve)
+> >> >  					break;
+> >> > -				if (!vma_has_reserves(vma, chg))
+> >> > +				if (chg)
+> >> >  					break;
+> >> >
+> >> >  				SetPagePrivate(page);
+> >> 
+> >> Can you add a comment above both the place to explain why checking chg
+> >> is good enough ?
+> >
+> > Yes, I can. But it will be changed to use_reserve in patch 13 and it
+> > represent it's meaning perfectly. So commeting may be useless.
+> 
+> That should be ok, because having a comment in this patch helps in
+> understanding the patch better, even though you are removing that
+> later. 
 
-     2) While mapping see if it has a default mapping and use it.
-          otherwise, pick from free list.   
+Okay. I will add it in next spin.
 
-  This should be ok right ?
-
-Regards,
- Sricharan
-
+Thanks.
