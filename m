@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab3HWJ26 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 05:28:58 -0400
-Received: from smtp2-1.goneo.de ([212.90.139.83]:43665 "EHLO smtp2-1.goneo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752663Ab3HWJ25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 05:28:57 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -2.859
-From: Lars Poeschel <poeschel@lemonage.de>
-To: "Rymarkiewicz, WaldemarX" <waldemarx.rymarkiewicz@intel.com>
-Subject: Re: [linux-nfc] [PATCH RFC] nfc: add a driver for pn532 connected on uart
-Date: Fri, 23 Aug 2013 11:28:47 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        "lauro.venancio@openbossa.org" <lauro.venancio@openbossa.org>,
-        "aloisio.almeida@openbossa.org" <aloisio.almeida@openbossa.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-nfc@lists.01.org" <linux-nfc@ml01.01.org>
-References: <1377181699-1668-1-git-send-email-larsi@wh2.tu-dresden.de> <A4DEEF93D8D14A418311321B77DB71E9C9D773@IRSMSX104.ger.corp.intel.com>
-In-Reply-To: <A4DEEF93D8D14A418311321B77DB71E9C9D773@IRSMSX104.ger.corp.intel.com>
+	id S1754182Ab3HWJaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 05:30:22 -0400
+Received: from mail-bk0-f67.google.com ([209.85.214.67]:56351 "EHLO
+	mail-bk0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753373Ab3HWJaU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 05:30:20 -0400
+Date: Fri, 23 Aug 2013 11:13:09 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: r65073@freescale.com, grant.likely@linaro.org, linux@arm.linux.org.uk,
+        rob@landley.net, ian.campbell@citrix.com, swarren@wwwdotorg.org,
+        mark.rutland@arm.com, pawel.moll@arm.com, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH 2/4] ARM: dts: Add Freescale ftm pwm node for VF610.
+Message-ID: <20130823091309.GH3535@ulmo>
+References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com>
+ <1377054462-6283-3-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308231128.47731.poeschel@lemonage.de>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SUk9VBj82R8Xhb8H"
+Content-Disposition: inline
+In-Reply-To: <1377054462-6283-3-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 August 2013 at 07:23:00, Rymarkiewicz, WaldemarX wrote:
-> Hi  Lars,
-> 
-> >This adds a driver for the nxp pn532 nfc chip.
-> >It is not meant for merging. Instead it is meant to show that some
-> >progress has been made and what the current state is and to help
-> >testing.
-> >Although I can do some basic things with this driver I expect it to
-> >contain lots of bugs. Be aware!
-> >This driver is heavily based on the pn533 driver and duplicates much
-> >code. This has do be factored out some time.
-> 
-> I'm not sure if this is expected approach adding new drivers. You
-> duplicates most of pn533 code which is not good.
 
-Yes, I know that and I explicitly mentioned that. I had to get this chip 
-working somehow and I had to begin somewhere. The pn533 driver is really 
-very hard to understand with it's massive use of nested callbacks, 
-workqueues and usb urbs. So I took the approach to try to understand what 
-happens while modifying and would then later factor out what both drivers 
-have in common. The other way is understanding the code first and then 
-decide what would be needed for both chips, factor that out and then write 
-the pn532 uart specific stuff. And this uart stuff is a pain itself in 
-linux. This way seemed much harder to me, especially as I have no pn533 
-device to test which things will break.
+--SUk9VBj82R8Xhb8H
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Also, note that pn533 and pn532  are pretty the same chips (with small
-> differences) and it would be quite natural to support both with one
-> driver. Pn533 already reads chip version on init, so at this point you
-> already know with which chip you are dealing with.
-> 
-> I suggest to separate transport layer from the core in pn533 and add
-> support for uart and usb separately. This is exactly what I've planned
-> while changing pn533 to support acr122 device.
+On Wed, Aug 21, 2013 at 11:07:40AM +0800, Xiubo Li wrote:
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  arch/arm/boot/dts/vf610.dtsi | 83 +++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 82 insertions(+), 1 deletion(-)
 
-Yes, I agree with you this should be done. I'll expect it to be challenging 
-but based on my previous work this could be doable. I'll look into that in 
-my next free timeslot. I'll not be able to do that in the next two months. 
-Sorry.
+Please also pay attention to the correct capitalization in the subject
+here. "FTM" and "PWM". Furthermore this could probably use more than a
+single line as patch description.
 
-Thank you for your comments,
-Lars
+Thierry
+
+--SUk9VBj82R8Xhb8H
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSFyelAAoJEN0jrNd/PrOhBXkQAJI+69TMKBHD21Mqi9NCseew
+DAu0qXS707U0FMaNgM8iOF2p1S+lHojZrjDQB9gt2HqDzTLNbLo0/GfYm5xObnkj
+G1UsgslgSZ161Wi7eQWif5vG87jBl1brX6DXPKiHViUYbZ4E1JG3gyu7DgSdGUWK
+fncoBvIF0qoPpYXkBj2iX4bq8+sKvXVxwUQs435iLXh3JOHKiF/w89IvOgBsyiH9
+A/x+qmjsjikZTYE2cZVtAlO7jLXgqzH1HK4kgsCJbb2sJKSRPHJff6yHGiJhxlKA
+gQ4YS//qWFUrd7E/ggYtY4UjRYvC5LYIcuB8+t8MzMYxLzPxl1Dh0Ad04vbOTLsl
+FUntukkPPHRJukcaUHvtWx7GTZVIzlnoXQTspDsZpFtV5mI06F4oNCTKOMTPOrB3
+v2HQp0W68HMov+cWZbjUN1fGO3FqysKjQ/eDJ/P5D+X77bZaJS3NLpoNl6pUK+SH
+QP+Kymnh0BEMukES44yB6lQ60scmvAr+RcdFr13A0bc+43sXquQAeox7XfmjaEF8
+vSX4RiRzTnxl4CDW3tY2ekwIJP7XsE9xAdxWvl4BVzt9APM8NpOlBde5KLqgPZ2B
+8OeFodtA2QAz6GD6Ycg3x6mYt5Vf+ed6yWlnZu05IlnQthNsdvCWgZtMUt3Qk0V7
+daL1LB+JMLzMhXkN84Ef
+=LEb+
+-----END PGP SIGNATURE-----
+
+--SUk9VBj82R8Xhb8H--
