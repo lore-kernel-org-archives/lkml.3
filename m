@@ -1,103 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab3HWQyw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 12:54:52 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:57260 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654Ab3HWQyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 12:54:50 -0400
-Message-ID: <521793BB.9080605@gmail.com>
-Date: Sat, 24 Aug 2013 00:54:19 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	id S1755801Ab3HWQzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 12:55:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8388 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754866Ab3HWQzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 12:55:50 -0400
+Date: Fri, 23 Aug 2013 18:55:28 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
+        rusty@rustcorp.com.au, linux-arch@vger.kernel.org, arnd@arndb.de,
+        mgahagan@redhat.com, agospoda@redhat.com
+Subject: Re: [RFC PATCH 4/4] kernel: add support for init_array constructors
+Message-ID: <20130823165528.GC2336@localhost.localdomain>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com>
+ <1377247176-13537-5-git-send-email-fhrbata@redhat.com>
+ <52177C1B.60107@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>, Tejun Heo <tj@kernel.org>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-References: <20130821204041.GC2436@htj.dyndns.org>  <1377124595.10300.594.camel@misato.fc.hp.com>  <20130822033234.GA2413@htj.dyndns.org>  <1377186729.10300.643.camel@misato.fc.hp.com>  <20130822183130.GA3490@mtj.dyndns.org>  <1377202292.10300.693.camel@misato.fc.hp.com>  <20130822202158.GD3490@mtj.dyndns.org>  <1377205598.10300.715.camel@misato.fc.hp.com>  <20130822212111.GF3490@mtj.dyndns.org>  <1377209861.10300.756.camel@misato.fc.hp.com>  <20130823130440.GC10322@mtj.dyndns.org> <1377274448.10300.777.camel@misato.fc.hp.com>
-In-Reply-To: <1377274448.10300.777.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52177C1B.60107@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On Fri, Aug 23, 2013 at 05:13:31PM +0200, Peter Oberparleiter wrote:
+> On 23.08.2013 10:39, Frantisek Hrbata wrote:
+> > This adds the .init_array section as yet another section with constructors. This
+> > is needed because gcc is adding __gcov_init calls to .init_array.
+> > 
+> > Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
+> > ---
+> >  include/asm-generic/vmlinux.lds.h | 1 +
+> >  include/linux/module.h            | 2 ++
+> >  kernel/module.c                   | 6 ++++++
+> >  3 files changed, 9 insertions(+)
+> > 
+> > diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+> > index 69732d2..c55d8d9 100644
+> > --- a/include/asm-generic/vmlinux.lds.h
+> > +++ b/include/asm-generic/vmlinux.lds.h
+> > @@ -468,6 +468,7 @@
+> >  #define KERNEL_CTORS()	. = ALIGN(8);			   \
+> >  			VMLINUX_SYMBOL(__ctors_start) = .; \
+> >  			*(.ctors)			   \
+> > +			*(.init_array)			   \
+> 
+> This is exactly how I (would) have done it.
+> 
+> >  			VMLINUX_SYMBOL(__ctors_end) = .;
+> >  #else
+> >  #define KERNEL_CTORS()
+> > diff --git a/include/linux/module.h b/include/linux/module.h
+> > index 46f1ea0..89ff829 100644
+> > --- a/include/linux/module.h
+> > +++ b/include/linux/module.h
+> > @@ -374,6 +374,8 @@ struct module
+> >  	/* Constructor functions. */
+> >  	ctor_fn_t *ctors;
+> >  	unsigned int num_ctors;
+> > +	ctor_fn_t *init_array;
+> > +	unsigned int num_init_array;
+> 
+> I think it would be safe to re-use the ctors-related fields here. Each GCC
+> version will only ever create either of .ctors or .init_array, but never
+> both. 
+> The only case where separate fields would be required, would be when
+> linking a kernel module from multiple object files compiled with different
+> versions of GCC.
 
-On 08/24/2013 12:14 AM, Toshi Kani wrote:
-> Hello,
-> 
-> On Fri, 2013-08-23 at 09:04 -0400, Tejun Heo wrote:
->> On Thu, Aug 22, 2013 at 04:17:41PM -0600, Toshi Kani wrote:
->>> I am relatively new to Linux, so I am not a good person to elaborate
->>> this.  From my experience on other OS, huge pages helped for the kernel,
->>> but did not necessarily help user applications.  It depended on
->>> applications, which were not niche cases.  But Linux may be different,
->>> so I asked since you seemed confident.  I'd appreciate if you can point
->>> us some data that endorses your statement.
->>
->> We are talking about the kernel linear mapping which is created during
->> early boot, so if it's available and useable there's no reason not to
->> use it.  Exceptions would be earlier processors which didn't do 1G
->> mappings or e820 maps with a lot of holes.  For CPUs used in NUMA
->> configurations, the former has been history for a bit now.  Can't be
->> sure about the latter but it'd be surprising for that to affect large
->> amount of memory in the systems that are of interest here.  Ooh, that
->> reminds me that we probably wanna go back to 1G + MTRR mapping under
->> 4G.  We're currently creating a lot of mapping holes.
-> 
-> Thanks for the explanation.
-> 
->>> My worry is that the code is unlikely tested with the special logic when
->>> someone makes code changes to the page tables.  Such code can easily be
->>> broken in future.
->>
->> Well, I wouldn't consider flipping the direction of allocation to be
->> particularly difficult to get right especially when compared to
->> bringing in ACPI tables into the mix.
->>
->>> To answer your other question/email, I believe Tang's next step is to
->>> support local page tables.  This is why we think pursing SRAT earlier is
->>> the right direction.
->>
->> Given 1G mappings, is that even a worthwhile effort?  I'm getting even
->> more more skeptical.
-> 
-> With 1G mappings, I agree that it won't make much difference.
-> 
-> I still think acpi table info should be available earlier, but I do not
-> think I can convince you on this.  This can be religious debate.
-> 
-> Tang, what do you think?  Are you OK to try Tejun's suggestion as well? 
-> 
+Ah ok, I was not aware of this.
 
-By saying TJ's suggestion, you mean, we will let memblock to control the
-behaviour, that said, we will do early allocations near the kernel image
-range before we get the SRAT info?
+> 
+> >  #endif
+> >  };
+> >  #ifndef MODULE_ARCH_INIT
+> > diff --git a/kernel/module.c b/kernel/module.c
+> > index 2069158..581ae89 100644
+> > --- a/kernel/module.c
+> > +++ b/kernel/module.c
+> > @@ -2760,6 +2760,9 @@ static void find_module_sections(struct module *mod, struct load_info *info)
+> >  #ifdef CONFIG_CONSTRUCTORS
+> >  	mod->ctors = section_objs(info, ".ctors",
+> >  				  sizeof(*mod->ctors), &mod->num_ctors);
+> 
+> When reusing mod->ctors, you could check for mod->ctors == NULL here and
+> fill in the values from section_objs(".init_array").
 
-If so, yeah, we have been working on this direction. By doing this, we may
-have two main changes:
+Yes, in the case that we only have .ctors or .init_array section, this sounds
+as the right approach.
 
-1. change some of memblock's APIs to make it have the ability to allocate
-   memory from low address.
-2. setup kernel page table down-top. Concretely, we first map the memory
-   just after the kernel image to the top, then, we map 0 - kernel image end.
-
-Do you guys think this is reasonable and acceptable?
+> 
+> > +	mod->init_array = section_objs(info, ".init_array",
+> > +				  sizeof(*mod->init_array),
+> > +				  &mod->num_init_array);
+> >  #endif
+> > 
+> >  #ifdef CONFIG_TRACEPOINTS
+> > @@ -3024,6 +3027,9 @@ static void do_mod_ctors(struct module *mod)
+> > 
+> >  	for (i = 0; i < mod->num_ctors; i++)
+> >  		mod->ctors[i]();
+> > +
+> > +	for (i = 0; i < mod->num_init_array; i++)
+> > +		mod->init_array[i]();
+> >  #endif
+> >  }
+> > 
+> 
+> -- 
+> Peter Oberparleiter
+> Linux on System z Development - IBM Germany
+> 
 
 -- 
-Thanks.
-Zhang Yanfei
+Frantisek Hrbata
