@@ -1,104 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab3HWNjZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 09:39:25 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33188 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754588Ab3HWNjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 09:39:23 -0400
-Message-ID: <521765DC.2000609@ti.com>
-Date: Fri, 23 Aug 2013 09:38:36 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755148Ab3HWN5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 09:57:09 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:57234 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754971Ab3HWN5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 09:57:07 -0400
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>
-CC: Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Nishanth Menon <nm@ti.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>,
+In-Reply-To: <1376237877-1740-2-git-send-email-sre@debian.org>
+References: <1376237628-1077-1-git-send-email-sre@debian.org>
+	<1376237877-1740-1-git-send-email-sre@debian.org>
+	<1376237877-1740-2-git-send-email-sre@debian.org>
+Date: Fri, 23 Aug 2013 15:57:05 +0200
+Message-ID: <CACRpkdZpB0YjZzhOsyN9uNETQWJM=2N50eUBaxDF29jDw3ZJfw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: OMAP2+: HSI: Introduce OMAP SSI driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sebastian Reichel <sre@debian.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-References: <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com> <51ED2385.60108@ti.com> <51ED5C66.1010407@ti.com> <51EFFBE1.4090505@ti.com> <51F0031B.1050307@ti.com> <51F00530.9090703@ti.com> <51F02069.3050207@ti.com> <51F0223E.4050008@ti.com> <51F0240F.3050507@ti.com> <20130813081003.GU7656@atomide.com> <520A02BA.4090805@ti.com> <CACRpkda+m82PYJsExLM6JLsLa8-bVhdvy_r_+-uKfVT2NG7Cbg@mail.gmail.com> <520D398D.9040806@ti.com> <CACRpkdYeo1y-HhftkRWgwyq8o-NVuJ978Uq+ON880LHhUxC=hg@mail.gmail.com> <520D44C5.6080205@ti.com> <CACRpkdagSHxzV3=427O9iftNxM+N=w9aPds=iDvGQPoG3H-cWw@mail.gmail.com> <5215F6F6.9060703@ti.com> <5216E966.5020902@ti.com> <5216FD0C.3090709@ti.com> <521702E2.5000102@ti.com> <521706D9.9070001@ti.com> <521719D8.7060506@ti.com>
-In-Reply-To: <521719D8.7060506@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Sebastian Reichel <sre@ring0.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 August 2013 04:14 AM, Sekhar Nori wrote:
-> On Friday 23 August 2013 12:23 PM, Sricharan R wrote:
->> On Friday 23 August 2013 12:06 PM, Sekhar Nori wrote:
->>> On Friday 23 August 2013 11:41 AM, Sricharan R wrote:
->>>> Hi,
->>>> On Friday 23 August 2013 10:17 AM, Rajendra Nayak wrote:
->>>>> On Thursday 22 August 2013 05:03 PM, Sricharan R wrote:
->>>>>>  maps crossbar number<->  to interrupt number and
->>>>>>  calls request_irq(int_no, crossbar_handler,..)
->>>>> So will this mapping happen based on some data passed from DT or
->>>>> just based on whats available when the device does a request_irq()?
->>>>>
->>>>> If its based on whats available then I see an issue when you need
->>>>> to remap something thats already mapped by default (and not used)
->>>>> since you run out of all free ones.
->>>> Yes, when done based on what is available then there is a
->>>> problem when we run out of free ones because we do not
->>>> know which one to replace. I was thinking of something like
->>>> this,
->>>>     1) DT would give a list of all free ones, and also if some are
->>>>         mapped as default and not used, mark those also as free.
->>>>
->>>>      2) While mapping see if it has a default mapping and use it.
->>>>           otherwise, pick from free list.   
->>> Since the entire DT is available to you at boot time, you should be able
->>> to find each node where interrupt-parent = <&crossbar> and then allocate
->>> one of 0-160 GIC interrupt numbers for that node, no? Where would there
->>> be a need for default mapping and remapping? From one the mails in the
->>> thread the crossbar is completely flexible - any of the 320 crossbar
->>> interrupts can be mapped to any of the 160 GIC interrupts.
->>>
->>> Any GIC interrupts left after this boot-time scan can be added to an
->>> unused list for use with runtime DT fragments (when that support comes).
->>>  
->>> Sorry if I misunderstood, but above proposal sounds like maintaining a
->>> separate free interrupt lines list in DT. That will quickly go out of sync.
->>  Say, peripheral x uses crossbar 1 and specifies this in DT.
->>  During boot crossbar 1 gets mapped int 10. So if by default
->> some other crossbar has its interrupt mapped to 10,
->> then it should be removed.  Instead clear all crossbar registers
->> once and mark all as free, then  allocate only during request.
->> Correct ?. In this the free no need to maintain any list.
-> 
-> Right, so in my suggestion there is nothing like a "default mapping" and
-> entire 160 GIC interrupt number space is up for grabs. I think this will
-> be much simpler to write and maintain.
-> 
-> If you really want to maintain default mapping as far as possible, you
-> can do two passes on the crossbar interrupt numbers requested. Once to
-> assign the default map - for numbers less that 160 - and then look at
-> the free GIC interrupt slots and use those for numbers greater than 160.
-> 
-The whole point we are moving to domain is not have any default
-mapping(connection done) at DT level. Rather DT only specifies the
-peripherals and their cross-bar connection ID(i.e cross-bar IRQ line).
-This will be the driver input as a IRQ line from DT. The cross-bar
-driver needs to map any of the free list available on *request* only.
+On Sun, Aug 11, 2013 at 6:17 PM, Sebastian Reichel <sre@debian.org> wrote:
 
-Of-course you have 320 inputs out of which only 160 can be mapped
-and once you run out of it, you just return error on request IRQ. 
+> From: Sebastian Reichel <sre@ring0.de>
+>
+> This patch adds an OMAP SSI driver to the HSI framework.
+>
+> The Synchronous Serial Interface (SSI) is a legacy version
+> of HSI. As in the case of HSI, it is mainly used to connect
+> Application engines (APE) with cellular modem engines (CMT)
+> in cellular handsets.
+>
+> It provides a multichannel, full-duplex, multi-core communication
+> with no reference clock. The OMAP SSI block is capable of reaching
+> speeds of 110 Mbit/s.
 
-That way there is no contention.
+First: good to see this.
 
-Regards,
-Santosh
+The HSI subsystem is lacking an active maintainer, interested?
+Given that you can apparently test the OMAP HSI driver you're
+one of the few applicable candidates.
 
+Overall there is one big problem with this patch in that it implements
+a lot of stuff that should not be implemented in the driver at all,
+but in the HSI core.
 
+For example compare commit
+ffbbdd21329f3e15eeca6df2d4bc11c04d9d91c0
+"spi: create a message queueing infrastructure"
+
+This patch basically seems to redo the mistake we did in
+SPI and not create a central message queue from day one,
+instead re-implementing the same code in each and every
+driver.
+
+Please attempt to draw the message queueuing into the
+driver core atlease.
+
+Further the allocation of hosts seem pretty generic as well
+but I'm unsure about this. I'd prefer if you take a second
+look at the generalizeable parts.
+
+(...)
+>> +       spinlock_t              wk_lock;
+> +       spinlock_t              lock;
+> +       unsigned int            channels;
+> +       struct list_head        txqueue[SSI_MAX_CHANNELS];
+> +       struct list_head        rxqueue[SSI_MAX_CHANNELS];
+> +       struct list_head        brkqueue;
+> +       unsigned int            irq;
+> +       int                     wake_irq;
+> +       int                     wake_gpio;
+> +       struct tasklet_struct   pio_tasklet;
+> +       struct tasklet_struct   wake_tasklet;
+> +       unsigned int            wktest:1; /* FIXME: HACK to be removed */
+> +       unsigned int            wkin_cken:1; /* Workaround */
+
+Atleast make them into the bool type.
+
+> +       int                     wk_refcount;
+
+A refcount does not seem like it coul be negative. Should
+this be unsigned?
+
+Since these seem to be associated with a piece of code
+that only runs when this goes to 0, why not just use kref?
+
+> +       /* OMAP SSI port context */
+> +       u32                     sys_mpu_enable; /* We use only one irq */
+> +       struct omap_ssm_ctx     sst;
+> +       struct omap_ssm_ctx     ssr;
+> +};
+> +
+> +/**
+> + * struct omap_ssi_controller - OMAP SSI controller data
+> + * @dev: device associated to the controller (HSI controller)
+> + * @sys: SSI I/O base address
+> + * @gdd: GDD I/O base address
+> + * @ick: SSI interconnect clock
+> + * @fck: SSI functional clock
+> + * @ck_refcount: References count for clocks
+> + * @gdd_irq: IRQ line for GDD
+> + * @gdd_tasklet: bottom half for DMA transfers
+> + * @gdd_trn: Array of GDD transaction data for ongoing GDD transfers
+> + * @lock: lock to serialize access to GDD
+> + * @ck_lock: lock to serialize access to the clocks
+> + * @loss_count: To follow if we need to restore context or not
+> + * @max_speed: Maximum TX speed (Kb/s) set by the clients.
+> + * @sysconfig: SSI controller saved context
+> + * @gdd_gcr: SSI GDD saved context
+> + * @get_loss: Pointer to omap_pm_get_dev_context_loss_count, if any
+> + * @port: Array of pointers of the ports of the controller
+> + * @dir: Debugfs SSI root directory
+> + */
+> +struct omap_ssi_controller {
+> +       struct device           *dev;
+> +       void __iomem            *sys;
+> +       void __iomem            *gdd;
+> +       struct clk              *ick;
+> +       struct clk              *fck;
+> +       int                     ck_refcount;
+
+Unsigned?
+
+Since these seem to be associated with a piece of code
+that only runs when this goes to 0, why not just use kref?
+
+(...)
+> +static int ssi_set_port_mode(struct omap_ssi_port *omap_port, void *data)
+> +{
+> +       u32 *mode = data;
+> +
+> +       __raw_writel(*mode, omap_port->sst_base + SSI_SST_MODE_REG);
+> +       __raw_writel(*mode, omap_port->ssr_base + SSI_SSR_MODE_REG);
+> +       /* OCP barrier */
+> +       *mode = __raw_readl(omap_port->ssr_base + SSI_SSR_MODE_REG);
+> +
+> +       return 0;
+> +}
+
+Why do you insist on using __raw_readl/writel()? I can understand
+that you want to use readl/writel_relaxed() but __raw* is just
+ugly and confusing.
+
+The last in a series of writel should probably be a plain
+writel() so as to flush buffers etc.
+
+Comment applies to every instance of these.
+
+> +static u32 ssi_calculate_div(struct hsi_controller *ssi)
+> +{
+> +       struct omap_ssi_controller *omap_ssi = hsi_controller_drvdata(ssi);
+> +       u32 tx_fckrate = (u32) omap_ssi->fck_rate;
+> +
+> +       /* / 2 : SSI TX clock is always half of the SSI functional clock */
+> +       tx_fckrate >>= 1;
+> +       /* Round down when tx_fckrate % omap_ssi->max_speed == 0 */
+> +       tx_fckrate--;
+> +       dev_dbg(&ssi->device, "TX div %d for fck_rate %lu Khz speed %d Kb/s\n",
+> +                       tx_fckrate / omap_ssi->max_speed, omap_ssi->fck_rate,
+> +                                                       omap_ssi->max_speed);
+> +
+> +       return tx_fckrate / omap_ssi->max_speed;
+
+Don't you want to use:
+DIV_ROUND_CLOSEST(tx_fckrate, omap_ssi->max_speed)
+?
+
+(...)
+> +static int ssi_setup(struct hsi_client *cl)
+> +{
+(...)
+> +       /* Set TX/RX module to sleep to stop TX/RX during cfg update */
+> +       __raw_writel(SSI_MODE_SLEEP, sst + SSI_SST_MODE_REG);
+> +       __raw_writel(SSI_MODE_SLEEP, ssr + SSI_SSR_MODE_REG);
+> +       /* Flush posted write */
+> +       val = __raw_readl(ssr + SSI_SSR_MODE_REG);
+> +       /* TX */
+> +       __raw_writel(31, sst + SSI_SST_FRAMESIZE_REG);
+
+31??
+
+Use a #define for this, I have no clue why this is 31.
+
+(...)
+> +       __raw_writel(31, ssr + SSI_SSR_FRAMESIZE_REG);
+(...)
+> +       omap_port->sst.frame_size = 31;
+(...)
+> +       omap_port->ssr.frame_size = 31;
+
+Seems like some universal constant.
+
+> +static int ssi_flush(struct hsi_client *cl)
+(...)
+> +       /* Clear interrupts */
+> +       __raw_writel(0, omap_ssi->sys + SSI_MPU_ENABLE_REG(port->num, 0));
+> +       __raw_writel(0xffffff00,
+> +                       omap_ssi->sys + SSI_MPU_STATUS_REG(port->num, 0));
+> +       __raw_writel(0, omap_ssi->sys + SSI_GDD_MPU_IRQ_ENABLE_REG);
+> +       __raw_writel(0xff, omap_ssi->sys + SSI_GDD_MPU_IRQ_STATUS_REG);
+
+Here are other magic numbers 0xfffff00, 0xff...
+
+(...)
+> +static int __init ssi_hw_init(struct hsi_controller *ssi)
+> +{
+> +       struct omap_ssi_controller *omap_ssi = hsi_controller_drvdata(ssi);
+> +       unsigned int i;
+> +       u32 val;
+> +       int err;
+> +
+> +       err = ssi_clk_enable(ssi);
+> +       if (err < 0) {
+> +               dev_err(&ssi->device, "Failed to enable the clocks %d\n", err);
+> +               return err;
+> +       }
+> +       /* Reseting SSI controller */
+> +       __raw_writel(SSI_SOFTRESET, omap_ssi->sys + SSI_SYSCONFIG_REG);
+> +       val = __raw_readl(omap_ssi->sys + SSI_SYSSTATUS_REG);
+> +       for (i = 0; ((i < 20) && !(val & SSI_RESETDONE)); i++) {
+> +               msleep(20);
+> +               val = __raw_readl(omap_ssi->sys + SSI_SYSSTATUS_REG);
+> +       }
+
+Explain constants chosen in a comment. From datasheet?
+
+> +       /* Reseting GDD */
+> +       __raw_writel(SSI_SWRESET, omap_ssi->gdd + SSI_GDD_GRST_REG);
+> +       /* Get FCK rate */
+> +       omap_ssi->fck_rate = ssi_get_clk_rate(ssi) / 1000; /* KHz */
+
+DIV_ROUND_CLOSEST()? Or is this an integer divider?
+
+Yours,
+Linus Walleij
