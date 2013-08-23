@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab3HWTEE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:04:04 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:51264 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755621Ab3HWTEC (ORCPT
+	id S1756239Ab3HWTGn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:06:43 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:64138 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756109Ab3HWTGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:04:02 -0400
+	Fri, 23 Aug 2013 15:06:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWnGaa6omcLW0zxLj+UMspRGxjVoYXUsH3ndydGD51T9w@mail.gmail.com>
-References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
-	<1376189294-32022-29-git-send-email-yinghai@kernel.org>
-	<CANVTcTYhSfU+Su9s1B+mTTBfgsZgqvQxHiTsLck1zT_vg1Cs4g@mail.gmail.com>
-	<CANVTcTb2+qX6XMBqrzeLho9yFS55AnztVJ85JBMuxjoH11qzaQ@mail.gmail.com>
-	<CAOLK0pwQJVvcT5xA-+Ftb85FzbjHN-OZmXO=n7r4EWh4nFjSBA@mail.gmail.com>
-	<CAE9FiQWnGaa6omcLW0zxLj+UMspRGxjVoYXUsH3ndydGD51T9w@mail.gmail.com>
-Date: Fri, 23 Aug 2013 12:04:01 -0700
-X-Google-Sender-Auth: a0clahp2i0V1bkeVcPJKAsJLPgk
-Message-ID: <CAE9FiQXFcM+FZnp00RP5Z8a2FhtjB7BuUUi4TuABF4-O9W+c8Q@mail.gmail.com>
-Subject: Re: [PATCH v4 28/28] PCI, x86, ACPI: get ioapic address from acpi device
-From: Yinghai Lu <yinghai@kernel.org>
-To: Lan Tianyu <lantianyu1986@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Cc: rui wang <ruiv.wang@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Tony Luck <tony.luck@intel.com>, Linux PCI <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+In-Reply-To: <52178D98.8020202@ti.com>
+References: <51E83A4F.5080904@ti.com>
+	<CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com>
+	<51ED2385.60108@ti.com>
+	<51ED5C66.1010407@ti.com>
+	<51EFFBE1.4090505@ti.com>
+	<51F0031B.1050307@ti.com>
+	<51F00530.9090703@ti.com>
+	<51F02069.3050207@ti.com>
+	<51F0223E.4050008@ti.com>
+	<51F0240F.3050507@ti.com>
+	<20130813081003.GU7656@atomide.com>
+	<520A02BA.4090805@ti.com>
+	<CACRpkda+m82PYJsExLM6JLsLa8-bVhdvy_r_+-uKfVT2NG7Cbg@mail.gmail.com>
+	<520D398D.9040806@ti.com>
+	<CACRpkdYeo1y-HhftkRWgwyq8o-NVuJ978Uq+ON880LHhUxC=hg@mail.gmail.com>
+	<520D44C5.6080205@ti.com>
+	<CACRpkdagSHxzV3=427O9iftNxM+N=w9aPds=iDvGQPoG3H-cWw@mail.gmail.com>
+	<5215F6F6.9060703@ti.com>
+	<5216E966.5020902@ti.com>
+	<5216FD0C.3090709@ti.com>
+	<521702E2.5000102@ti.com>
+	<521706D9.9070001@ti.com>
+	<521719D8.7060506@ti.com>
+	<521765DC.2000609@ti.com>
+	<52178D98.8020202@ti.com>
+Date: Fri, 23 Aug 2013 21:06:39 +0200
+Message-ID: <CACRpkdapqEVShaAekzr6TPW1U7d_y1=Gu6ixT6VS1=D1M-QjBA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] misc: Add crossbar driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Nishanth Menon <nm@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 11:38 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Aug 23, 2013 at 8:34 AM, Lan Tianyu <lantianyu1986@gmail.com> wrote:
->>> I worked around the problem by replacing acpi_resource_to_address64()
->>> with resource_to_addr().  But resource_to_addr() is a static function
->>> in arch/x86/pci/acpi.c, not very convenient to use. Here's what I did:
->>>
->>
->> Hi Rui&Yinghai:
->>            How about using the following code to translate struct
->>  acpi_resource to struct resouce in this setup_res()?
->>
->>          if (acpi_dev_resource_address_space(...)
->>                 || acpi_dev_resource_memory(..))
->>               return AE_OK;
+On Fri, Aug 23, 2013 at 6:28 PM, Sekhar Nori <nsekhar@ti.com> wrote:
+> On 8/23/2013 7:08 PM, Santosh Shilimkar wrote:
+
+>> The whole point we are moving to domain is not have any default
+>> mapping(connection done) at DT level. Rather DT only specifies the
+>> peripherals and their cross-bar connection ID(i.e cross-bar IRQ line).
+>> This will be the driver input as a IRQ line from DT. The cross-bar
+>> driver needs to map any of the free list available on *request* only.
 >
-> Yest, that could be better, will update that.
->
-> Also can you submit patch that will use that in res_to_addr of
-> arch/x86/pci/acpi.c?
+> Right, the mapping can be done on request. That will be cleaner.
 
-looks acpi_dev_resource_address_space... does not handle
-PREFTCH and translation offset.
+I like where this design is going now :-)
 
-So now i have to use res_to_addr alike one.
-
-Thanks
-
-Yinghai
+Yours,
+Linus Walleij
