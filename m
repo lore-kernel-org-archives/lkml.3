@@ -1,110 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313Ab3HWToZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:44:25 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:60137 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754551Ab3HWToY (ORCPT
+	id S1756395Ab3HWTpX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:45:23 -0400
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:52063 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756351Ab3HWTpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:44:24 -0400
-Date: Fri, 23 Aug 2013 15:51:03 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: [patch, resend] perf: export struct perf_branch_entry to userspace
-In-Reply-To: <alpine.DEB.2.10.1307081520520.10386@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1308231544420.1889@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1307081520520.10386@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 23 Aug 2013 15:45:16 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Neil Zhang <zhangwm@marvell.com>,
+        Joseph Lo <josephl@nvidia.com>, linux-tegra@vger.kernel.org,
+        Colin Cross <ccross@android.com>, stable@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: [PATCH 2/3] cpuidle: coupled: abort idle if pokes are pending
+Date: Fri, 23 Aug 2013 12:45:11 -0700
+Message-Id: <1377287112-12018-2-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1377287112-12018-1-git-send-email-ccross@android.com>
+References: <1377287112-12018-1-git-send-email-ccross@android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Jul 2013, Vince Weaver wrote:
+Joseph Lo <josephl@nvidia.com> reported a lockup on Tegra3 caused
+by a race condition in coupled cpuidle.  When two or more cpus
+enter idle at the same time, the first cpus to arrive may go to the
+ready loop without processing pending pokes from the last cpu to
+arrive.
 
-If PERF_SAMPLE_BRANCH_STACK is enabled then samples are returned
-with the format { u64 from, to, flags } but the flags layout
-is not specified.
+This patch adds a check for pending pokes once all cpus have been
+synchronized in the ready loop and resets the coupled state and
+retries if any cpus failed to handle their pending poke.
 
-This field has the type struct perf_branch_entry; move this
-definition into include/uapi/linux/perf_event.h so users can
-access these fields.
+Retrying on all cpus may trigger the same issue again, so this patch
+also adds a check to ensure that each cpu has received at least one
+poke between when it enters the waiting loop and when it moves on to
+the ready loop.
 
-This is similar to the existing inclusion of perf_mem_data_src in
-the include/uapi/linux/perf_event.h file.
+Reported-by: Joseph Lo <josephl@nvidia.com>
+CC: stable@vger.kernel.org
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ drivers/cpuidle/coupled.c | 107 +++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 82 insertions(+), 25 deletions(-)
 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 8873f82..65b2553 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -64,30 +64,6 @@ struct perf_raw_record {
- };
+diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+index db92bcb..bbc4ba5 100644
+--- a/drivers/cpuidle/coupled.c
++++ b/drivers/cpuidle/coupled.c
+@@ -106,6 +106,7 @@ struct cpuidle_coupled {
+ 	cpumask_t coupled_cpus;
+ 	int requested_state[NR_CPUS];
+ 	atomic_t ready_waiting_counts;
++	atomic_t abort_barrier;
+ 	int online_count;
+ 	int refcnt;
+ 	int prevent;
+@@ -122,12 +123,19 @@ static DEFINE_MUTEX(cpuidle_coupled_lock);
+ static DEFINE_PER_CPU(struct call_single_data, cpuidle_coupled_poke_cb);
  
  /*
-- * single taken branch record layout:
-- *
-- *      from: source instruction (may not always be a branch insn)
-- *        to: branch target
-- *   mispred: branch target was mispredicted
-- * predicted: branch target was predicted
-- *
-- * support for mispred, predicted is optional. In case it
-- * is not supported mispred = predicted = 0.
-- *
-- *     in_tx: running in a hardware transaction
-- *     abort: aborting a hardware transaction
-- */
--struct perf_branch_entry {
--	__u64	from;
--	__u64	to;
--	__u64	mispred:1,  /* target mispredicted */
--		predicted:1,/* target predicted */
--		in_tx:1,    /* in transaction */
--		abort:1,    /* transaction abort */
--		reserved:60;
--};
--
--/*
-  * branch stack layout:
-  *  nr: number of taken branches stored in entries[]
-  *
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 0b1df41..c6e2f76 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -685,4 +685,28 @@ union perf_mem_data_src {
- #define PERF_MEM_S(a, s) \
- 	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
- 
-+/*
-+ * single taken branch record layout:
-+ *
-+ *      from: source instruction (may not always be a branch insn)
-+ *        to: branch target
-+ *   mispred: branch target was mispredicted
-+ * predicted: branch target was predicted
-+ *
-+ * support for mispred, predicted is optional. In case it
-+ * is not supported mispred = predicted = 0.
-+ *
-+ *     in_tx: running in a hardware transaction
-+ *     abort: aborting a hardware transaction
-+ */
-+struct perf_branch_entry {
-+	__u64	from;
-+	__u64	to;
-+	__u64	mispred:1,  /* target mispredicted */
-+		predicted:1,/* target predicted */
-+		in_tx:1,    /* in transaction */
-+		abort:1,    /* transaction abort */
-+		reserved:60;
-+};
+- * The cpuidle_coupled_poked_mask mask is used to avoid calling
++ * The cpuidle_coupled_poke_pending mask is used to avoid calling
+  * __smp_call_function_single with the per cpu call_single_data struct already
+  * in use.  This prevents a deadlock where two cpus are waiting for each others
+  * call_single_data struct to be available
+  */
+-static cpumask_t cpuidle_coupled_poked_mask;
++static cpumask_t cpuidle_coupled_poke_pending;
 +
- #endif /* _UAPI_LINUX_PERF_EVENT_H */
++/*
++ * The cpuidle_coupled_poke_pending mask is used to ensure that each cpu has
++ * been poked once to minimize entering the ready loop with a poke pending,
++ * which would require aborting and retrying.
++ */
++static cpumask_t cpuidle_coupled_poked;
+ 
+ /**
+  * cpuidle_coupled_parallel_barrier - synchronize all online coupled cpus
+@@ -291,10 +299,11 @@ static inline int cpuidle_coupled_get_state(struct cpuidle_device *dev,
+ 	return state;
+ }
+ 
+-static void cpuidle_coupled_poked(void *info)
++static void cpuidle_coupled_handle_poke(void *info)
+ {
+ 	int cpu = (unsigned long)info;
+-	cpumask_clear_cpu(cpu, &cpuidle_coupled_poked_mask);
++	cpumask_set_cpu(cpu, &cpuidle_coupled_poked);
++	cpumask_clear_cpu(cpu, &cpuidle_coupled_poke_pending);
+ }
+ 
+ /**
+@@ -313,7 +322,7 @@ static void cpuidle_coupled_poke(int cpu)
+ {
+ 	struct call_single_data *csd = &per_cpu(cpuidle_coupled_poke_cb, cpu);
+ 
+-	if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poked_mask))
++	if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poke_pending))
+ 		__smp_call_function_single(cpu, csd, 0);
+ }
+ 
+@@ -340,30 +349,19 @@ static void cpuidle_coupled_poke_others(int this_cpu,
+  * @coupled: the struct coupled that contains the current cpu
+  * @next_state: the index in drv->states of the requested state for this cpu
+  *
+- * Updates the requested idle state for the specified cpuidle device,
+- * poking all coupled cpus out of idle if necessary to let them see the new
+- * state.
++ * Updates the requested idle state for the specified cpuidle device.
++ * Returns the number of waiting cpus.
+  */
+-static void cpuidle_coupled_set_waiting(int cpu,
++static int cpuidle_coupled_set_waiting(int cpu,
+ 		struct cpuidle_coupled *coupled, int next_state)
+ {
+-	int w;
+-
+ 	coupled->requested_state[cpu] = next_state;
+ 
+ 	/*
+-	 * If this is the last cpu to enter the waiting state, poke
+-	 * all the other cpus out of their waiting state so they can
+-	 * enter a deeper state.  This can race with one of the cpus
+-	 * exiting the waiting state due to an interrupt and
+-	 * decrementing waiting_count, see comment below.
+-	 *
+ 	 * The atomic_inc_return provides a write barrier to order the write
+ 	 * to requested_state with the later write that increments ready_count.
+ 	 */
+-	w = atomic_inc_return(&coupled->ready_waiting_counts) & WAITING_MASK;
+-	if (w == coupled->online_count)
+-		cpuidle_coupled_poke_others(cpu, coupled);
++	return atomic_inc_return(&coupled->ready_waiting_counts) & WAITING_MASK;
+ }
+ 
+ /**
+@@ -418,13 +416,24 @@ static void cpuidle_coupled_set_done(int cpu, struct cpuidle_coupled *coupled)
+ static int cpuidle_coupled_clear_pokes(int cpu)
+ {
+ 	local_irq_enable();
+-	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poked_mask))
++	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
+ 		cpu_relax();
+ 	local_irq_disable();
+ 
+ 	return need_resched() ? -EINTR : 0;
+ }
+ 
++static bool cpuidle_coupled_any_pokes_pending(struct cpuidle_coupled *coupled)
++{
++	cpumask_t cpus;
++	int ret;
++
++	cpumask_and(&cpus, cpu_online_mask, &coupled->coupled_cpus);
++	ret = cpumask_and(&cpus, &cpuidle_coupled_poke_pending, &cpus);
++
++	return ret;
++}
++
+ /**
+  * cpuidle_enter_state_coupled - attempt to enter a state with coupled cpus
+  * @dev: struct cpuidle_device for the current cpu
+@@ -449,6 +458,7 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
+ {
+ 	int entered_state = -1;
+ 	struct cpuidle_coupled *coupled = dev->coupled;
++	int w;
+ 
+ 	if (!coupled)
+ 		return -EINVAL;
+@@ -466,14 +476,33 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
+ 	/* Read barrier ensures online_count is read after prevent is cleared */
+ 	smp_rmb();
+ 
+-	cpuidle_coupled_set_waiting(dev->cpu, coupled, next_state);
++reset:
++	cpumask_clear_cpu(dev->cpu, &cpuidle_coupled_poked);
++
++	w = cpuidle_coupled_set_waiting(dev->cpu, coupled, next_state);
++	/*
++	 * If this is the last cpu to enter the waiting state, poke
++	 * all the other cpus out of their waiting state so they can
++	 * enter a deeper state.  This can race with one of the cpus
++	 * exiting the waiting state due to an interrupt and
++	 * decrementing waiting_count, see comment below.
++	 */
++	if (w == coupled->online_count) {
++		cpumask_set_cpu(dev->cpu, &cpuidle_coupled_poked);
++		cpuidle_coupled_poke_others(dev->cpu, coupled);
++	}
+ 
+ retry:
+ 	/*
+ 	 * Wait for all coupled cpus to be idle, using the deepest state
+-	 * allowed for a single cpu.
++	 * allowed for a single cpu.  If this was not the poking cpu, wait
++	 * for at least one poke before leaving to avoid a race where
++	 * two cpus could arrive at the waiting loop at the same time,
++	 * but the first of the two to arrive could skip the loop without
++	 * processing the pokes from the last to arrive.
+ 	 */
+-	while (!cpuidle_coupled_cpus_waiting(coupled)) {
++	while (!cpuidle_coupled_cpus_waiting(coupled) ||
++			!cpumask_test_cpu(dev->cpu, &cpuidle_coupled_poked)) {
+ 		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
+ 			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
+ 			goto out;
+@@ -495,6 +524,12 @@ retry:
+ 	}
+ 
+ 	/*
++	 * Make sure final poke status for this cpu is visible before setting
++	 * cpu as ready.
++	 */
++	smp_wmb();
++
++	/*
+ 	 * All coupled cpus are probably idle.  There is a small chance that
+ 	 * one of the other cpus just became active.  Increment the ready count,
+ 	 * and spin until all coupled cpus have incremented the counter. Once a
+@@ -513,6 +548,28 @@ retry:
+ 		cpu_relax();
+ 	}
+ 
++	/*
++	 * Make sure read of all cpus ready is done before reading pending pokes
++	 */
++	smp_rmb();
++
++	/*
++	 * There is a small chance that a cpu left and reentered idle after this
++	 * cpu saw that all cpus were waiting.  The cpu that reentered idle will
++	 * have sent this cpu a poke, which will still be pending after the
++	 * ready loop.  The pending interrupt may be lost by the interrupt
++	 * controller when entering the deep idle state.  It's not possible to
++	 * clear a pending interrupt without turning interrupts on and handling
++	 * it, and it's too late to turn on interrupts here, so reset the
++	 * coupled idle state of all cpus and retry.
++	 */
++	if (cpuidle_coupled_any_pokes_pending(coupled)) {
++		cpuidle_coupled_set_done(dev->cpu, coupled);
++		/* Wait for all cpus to see the pending pokes */
++		cpuidle_coupled_parallel_barrier(dev, &coupled->abort_barrier);
++		goto reset;
++	}
++
+ 	/* all cpus have acked the coupled state */
+ 	next_state = cpuidle_coupled_get_state(dev, coupled);
+ 
+@@ -598,7 +655,7 @@ have_coupled:
+ 	coupled->refcnt++;
+ 
+ 	csd = &per_cpu(cpuidle_coupled_poke_cb, dev->cpu);
+-	csd->func = cpuidle_coupled_poked;
++	csd->func = cpuidle_coupled_handle_poke;
+ 	csd->info = (void *)(unsigned long)dev->cpu;
+ 
+ 	return 0;
+-- 
+1.8.3
+
