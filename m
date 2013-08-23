@@ -1,423 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab3HWRIJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 13:08:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23455 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754502Ab3HWRIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 13:08:07 -0400
-Subject: [PATCH v4] vfio-pci: PCI hot reset interface
-To: alex.williamson@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        benh@kernel.crashing.org
-Date: Fri, 23 Aug 2013 11:08:00 -0600
-Message-ID: <20130823170603.30268.72034.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1755473Ab3HWROk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 13:14:40 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:61571 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754482Ab3HWROj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 13:14:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <trinity-5320947e-cb3a-48ad-813e-70ea78b657a4-1377277158706@3capp-gmx-bs46>
+References: <trinity-5320947e-cb3a-48ad-813e-70ea78b657a4-1377277158706@3capp-gmx-bs46>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 23 Aug 2013 10:14:18 -0700
+Message-ID: <CALCETrUW8o=ssD3VD_Tb=jnJ006oAySJtZbgOuxgFdFKbA4Wyg@mail.gmail.com>
+Subject: Re: Re: question about ioremap_cache and PAT
+To: Andreas Werner <wernerandy@gmx.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current VFIO_DEVICE_RESET interface only maps to PCI use cases
-where we can isolate the reset to the individual PCI function.  This
-means the device must support FLR (PCIe or AF), PM reset on D3hot->D0
-transition, device specific reset, or be a singleton device on a bus
-for a secondary bus reset.  FLR does not have widespread support,
-PM reset is not very reliable, and bus topology is dictated by the
-system and device design.  We need to provide a means for a user to
-induce a bus reset in cases where the existing mechanisms are not
-available or not reliable.
+On Fri, Aug 23, 2013 at 9:59 AM, Andreas Werner <wernerandy@gmx.de> wrote:
+>
+>
+> Hi,
+> thank you for your answer.
+>
+> So we are two persons for now who need WT :-)
+>
+> Im currently working on an ethernet driver for our own ETH core.
+> The problem is that one requirement is to not use DMA to transmit or receive the data.
+> This means the that the ethernet buffer are not located in the main memory. They are located in
+> the FPGA.
+>
+> To transmit or receive a frame, i have to read or write to mmio to get the data.
+>
+> Intel has introduced the command "clflush" which can flush a cache line.
+> I wanted to activate the caches for those mmio (eth buffer) to speed up the transmit or receive.
+> After that the transfer over PCIe uses burst read/write.
+>
+> The problem was if i set the buffer to Write-Back and call clflush on those mmio-addresses, the system crashed without any output.
+> I found this articel http://software.intel.com/en-us/forums/topic/393070.[http://software.intel.com/en-us/forums/topic/393070]
+>
+> After that i configured the transmit buffer to be Write-Combining (only write to that adresses) using ioremap_wc, and
+> the receive buffer to be Write-Through (ioremap_cache + mtrr Write-Back + my Kernel Hack :-)) everything worked fine.
+> The other configuration Register on the FPGA are just mapped with ioremap.
 
-This device specific extension to VFIO provides the user with this
-ability.  Two new ioctls are introduced:
- - VFIO_DEVICE_PCI_GET_HOT_RESET_INFO
- - VFIO_DEVICE_PCI_HOT_RESET
+I'm curious: have you tried movntdqa on UC memory for this?
+(Certainly WP or WT is easier.)
 
-The first provides the user with information about the extent of
-devices affected by a hot reset.  This is essentially a list of
-devices and the IOMMU groups they belong to.  The user may then
-initiate a hot reset by calling the second ioctl.  We must be
-careful that the user has ownership of all the affected devices
-found via the first ioctl, so the second ioctl takes a list of file
-descriptors for the VFIO groups affected by the reset.  Each group
-must have IOMMU protection established for the ioctl to succeed.
+In any case, I hope to have patches to support WP and WT without using
+PAT reasonably soon.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+>
+> On PCIe Tracer i can see the burst read/write on my device.
+>
+> Is it possible to get hits into the Kernel?
+>
+> My modification in arch/x86/mm/pat.c:
+>
+> --- pat.c.orig 2013-02-03 01:18:49.491879407 +0100
+> +++ pat.c 2013-02-03 01:19:19.053509836 +0100
+> @@ -149,10 +149,16 @@ static unsigned long pat_x_mtrr_type(u64
+>    u8 mtrr_type;
+>
+>    mtrr_type = mtrr_type_lookup(start, end);
+> -  if (mtrr_type != MTRR_TYPE_WRBACK)
+> +
+> +  if (mtrr_type == MTRR_TYPE_WRTHROUGH) {
+> +   return _PAGE_CACHE_WB;
+> +  }
+> +  else if( mtrr_type == MTRR_TYPE_WRBACK )
+> +   return _PAGE_CACHE_WB;
+> +  else
+>     return _PAGE_CACHE_UC_MINUS;
+> -
+> -  return _PAGE_CACHE_WB;
+> +
+>   }
+>
+>   return req_type;
+>
 
-v2: Use PCI bus iterators.  Depends on pci_walk_slot() patch
-v3: #include <linux/file.h> per Al Viro
-v4: Remove dependency on pci_walk_slot() per Bjorn
+That seems more or less reasonable to me.  If you want it included,
+send it to x86@kernel.org (cc lkml) and see what they say.
 
- drivers/vfio/pci/vfio_pci.c |  286 +++++++++++++++++++++++++++++++++++++++++++
- include/uapi/linux/vfio.h   |   38 ++++++
- 2 files changed, 323 insertions(+), 1 deletion(-)
+It would be prettier if you combined the conditions into a single
+if/else, though.
 
-diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-index cef6002..6ab71b9 100644
---- a/drivers/vfio/pci/vfio_pci.c
-+++ b/drivers/vfio/pci/vfio_pci.c
-@@ -13,6 +13,7 @@
- 
- #include <linux/device.h>
- #include <linux/eventfd.h>
-+#include <linux/file.h>
- #include <linux/interrupt.h>
- #include <linux/iommu.h>
- #include <linux/module.h>
-@@ -227,6 +228,110 @@ static int vfio_pci_get_irq_count(struct vfio_pci_device *vdev, int irq_type)
- 	return 0;
- }
- 
-+static int vfio_pci_count_devs(struct pci_dev *pdev, void *data)
-+{
-+	(*(int *)data)++;
-+	return 0;
-+}
-+
-+struct vfio_pci_fill_info {
-+	int max;
-+	int cur;
-+	struct vfio_pci_dependent_device *devices;
-+};
-+
-+static int vfio_pci_fill_devs(struct pci_dev *pdev, void *data)
-+{
-+	struct vfio_pci_fill_info *fill = data;
-+	struct iommu_group *iommu_group;
-+
-+	if (fill->cur == fill->max)
-+		return -EAGAIN; /* Something changed, try again */
-+
-+	iommu_group = iommu_group_get(&pdev->dev);
-+	if (!iommu_group)
-+		return -EPERM; /* Cannot reset non-isolated devices */
-+
-+	fill->devices[fill->cur].group_id = iommu_group_id(iommu_group);
-+	fill->devices[fill->cur].segment = pci_domain_nr(pdev->bus);
-+	fill->devices[fill->cur].bus = pdev->bus->number;
-+	fill->devices[fill->cur].devfn = pdev->devfn;
-+	fill->cur++;
-+	iommu_group_put(iommu_group);
-+	return 0;
-+}
-+
-+struct vfio_pci_group_entry {
-+	struct vfio_group *group;
-+	int id;
-+};
-+
-+struct vfio_pci_group_info {
-+	int count;
-+	struct vfio_pci_group_entry *groups;
-+};
-+
-+static int vfio_pci_validate_devs(struct pci_dev *pdev, void *data)
-+{
-+	struct vfio_pci_group_info *info = data;
-+	struct iommu_group *group;
-+	int id, i;
-+
-+	group = iommu_group_get(&pdev->dev);
-+	if (!group)
-+		return -EPERM;
-+
-+	id = iommu_group_id(group);
-+
-+	for (i = 0; i < info->count; i++)
-+		if (info->groups[i].id == id)
-+			break;
-+
-+	iommu_group_put(group);
-+
-+	return (i == info->count) ? -EINVAL : 0;
-+}
-+
-+static bool vfio_pci_dev_below_slot(struct pci_dev *pdev, struct pci_slot *slot)
-+{
-+	for (; pdev; pdev = pdev->bus->self)
-+		if (pdev->bus == slot->bus)
-+			return (pdev->slot == slot);
-+	return false;
-+}
-+
-+struct vfio_pci_walk_info {
-+	int (*fn)(struct pci_dev *, void *data);
-+	void *data;
-+	struct pci_dev *pdev;
-+	bool slot;
-+	int ret;
-+};
-+
-+static int vfio_pci_walk_wrapper(struct pci_dev *pdev, void *data)
-+{
-+	struct vfio_pci_walk_info *walk = data;
-+
-+	if (!walk->slot || vfio_pci_dev_below_slot(pdev, walk->pdev->slot))
-+		walk->ret = walk->fn(pdev, walk->data);
-+
-+	return walk->ret;
-+}
-+
-+static int vfio_pci_for_each_slot_or_bus(struct pci_dev *pdev,
-+					 int (*fn)(struct pci_dev *,
-+						   void *data), void *data,
-+					 bool slot)
-+{
-+	struct vfio_pci_walk_info walk = {
-+		.fn = fn, .data = data, .pdev = pdev, .slot = slot, .ret = 0,
-+	};
-+
-+	pci_walk_bus(pdev->bus, vfio_pci_walk_wrapper, &walk);
-+
-+	return walk.ret;
-+}
-+
- static long vfio_pci_ioctl(void *device_data,
- 			   unsigned int cmd, unsigned long arg)
- {
-@@ -407,10 +512,189 @@ static long vfio_pci_ioctl(void *device_data,
- 
- 		return ret;
- 
--	} else if (cmd == VFIO_DEVICE_RESET)
-+	} else if (cmd == VFIO_DEVICE_RESET) {
- 		return vdev->reset_works ?
- 			pci_reset_function(vdev->pdev) : -EINVAL;
- 
-+	} else if (cmd == VFIO_DEVICE_GET_PCI_HOT_RESET_INFO) {
-+		struct vfio_pci_hot_reset_info hdr;
-+		struct vfio_pci_fill_info fill = { 0 };
-+		struct vfio_pci_dependent_device *devices = NULL;
-+		bool slot = false;
-+		int ret = 0;
-+
-+		minsz = offsetofend(struct vfio_pci_hot_reset_info, count);
-+
-+		if (copy_from_user(&hdr, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (hdr.argsz < minsz)
-+			return -EINVAL;
-+
-+		hdr.flags = 0;
-+
-+		/* Can we do a slot or bus reset or neither? */
-+		if (!pci_probe_reset_slot(vdev->pdev->slot))
-+			slot = true;
-+		else if (pci_probe_reset_bus(vdev->pdev->bus))
-+			return -ENODEV;
-+
-+		/* How many devices are affected? */
-+		ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
-+						    vfio_pci_count_devs,
-+						    &fill.max, slot);
-+		if (ret)
-+			return ret;
-+
-+		WARN_ON(!fill.max); /* Should always be at least one */
-+
-+		/*
-+		 * If there's enough space, fill it now, otherwise return
-+		 * -ENOSPC and the number of devices affected.
-+		 */
-+		if (hdr.argsz < sizeof(hdr) + (fill.max * sizeof(*devices))) {
-+			ret = -ENOSPC;
-+			hdr.count = fill.max;
-+			goto reset_info_exit;
-+		}
-+
-+		devices = kcalloc(fill.max, sizeof(*devices), GFP_KERNEL);
-+		if (!devices)
-+			return -ENOMEM;
-+
-+		fill.devices = devices;
-+
-+		ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
-+						    vfio_pci_fill_devs,
-+						    &fill, slot);
-+
-+		/*
-+		 * If a device was removed between counting and filling,
-+		 * we may come up short of fill.max.  If a device was
-+		 * added, we'll have a return of -EAGAIN above.
-+		 */
-+		if (!ret)
-+			hdr.count = fill.cur;
-+
-+reset_info_exit:
-+		if (copy_to_user((void __user *)arg, &hdr, minsz))
-+			ret = -EFAULT;
-+
-+		if (!ret) {
-+			if (copy_to_user((void __user *)(arg + minsz), devices,
-+					 hdr.count * sizeof(*devices)))
-+				ret = -EFAULT;
-+		}
-+
-+		kfree(devices);
-+		return ret;
-+
-+	} else if (cmd == VFIO_DEVICE_PCI_HOT_RESET) {
-+		struct vfio_pci_hot_reset hdr;
-+		int32_t *group_fds;
-+		struct vfio_pci_group_entry *groups;
-+		struct vfio_pci_group_info info;
-+		bool slot = false;
-+		int i, count = 0, ret = 0;
-+
-+		minsz = offsetofend(struct vfio_pci_hot_reset, count);
-+
-+		if (copy_from_user(&hdr, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (hdr.argsz < minsz || hdr.flags)
-+			return -EINVAL;
-+
-+		/* Can we do a slot or bus reset or neither? */
-+		if (!pci_probe_reset_slot(vdev->pdev->slot))
-+			slot = true;
-+		else if (pci_probe_reset_bus(vdev->pdev->bus))
-+			return -ENODEV;
-+
-+		/*
-+		 * We can't let userspace give us an arbitrarily large
-+		 * buffer to copy, so verify how many we think there
-+		 * could be.  Note groups can have multiple devices so
-+		 * one group per device is the max.
-+		 */
-+		ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
-+						    vfio_pci_count_devs,
-+						    &count, slot);
-+		if (ret)
-+			return ret;
-+
-+		/* Somewhere between 1 and count is OK */
-+		if (!hdr.count || hdr.count > count)
-+			return -EINVAL;
-+
-+		group_fds = kcalloc(hdr.count, sizeof(*group_fds), GFP_KERNEL);
-+		groups = kcalloc(hdr.count, sizeof(*groups), GFP_KERNEL);
-+		if (!group_fds || !groups) {
-+			kfree(group_fds);
-+			kfree(groups);
-+			return -ENOMEM;
-+		}
-+
-+		if (copy_from_user(group_fds, (void __user *)(arg + minsz),
-+				   hdr.count * sizeof(*group_fds))) {
-+			kfree(group_fds);
-+			kfree(groups);
-+			return -EFAULT;
-+		}
-+
-+		/*
-+		 * For each group_fd, get the group through the vfio external
-+		 * user interface and store the group and iommu ID.  This
-+		 * ensures the group is held across the reset.
-+		 */
-+		for (i = 0; i < hdr.count; i++) {
-+			struct vfio_group *group;
-+			struct fd f = fdget(group_fds[i]);
-+			if (!f.file) {
-+				ret = -EBADF;
-+				break;
-+			}
-+
-+			group = vfio_group_get_external_user(f.file);
-+			fdput(f);
-+			if (IS_ERR(group)) {
-+				ret = PTR_ERR(group);
-+				break;
-+			}
-+
-+			groups[i].group = group;
-+			groups[i].id = vfio_external_user_iommu_id(group);
-+		}
-+
-+		kfree(group_fds);
-+
-+		/* release reference to groups on error */
-+		if (ret)
-+			goto hot_reset_release;
-+
-+		info.count = hdr.count;
-+		info.groups = groups;
-+
-+		/*
-+		 * Test whether all the affected devices are contained
-+		 * by the set of groups provided by the user.
-+		 */
-+		ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
-+						    vfio_pci_validate_devs,
-+						    &info, slot);
-+		if (!ret)
-+			/* User has access, do the reset */
-+			ret = slot ? pci_reset_slot(vdev->pdev->slot) :
-+				     pci_reset_bus(vdev->pdev->bus);
-+
-+hot_reset_release:
-+		for (i--; i >= 0; i--)
-+			vfio_group_put_external_user(groups[i].group);
-+
-+		kfree(groups);
-+		return ret;
-+	}
-+
- 	return -ENOTTY;
- }
- 
-diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-index 916e444..0fd47f5 100644
---- a/include/uapi/linux/vfio.h
-+++ b/include/uapi/linux/vfio.h
-@@ -324,6 +324,44 @@ enum {
- 	VFIO_PCI_NUM_IRQS
- };
- 
-+/**
-+ * VFIO_DEVICE_GET_PCI_HOT_RESET_INFO - _IORW(VFIO_TYPE, VFIO_BASE + 12,
-+ *					      struct vfio_pci_hot_reset_info)
-+ *
-+ * Return: 0 on success, -errno on failure:
-+ *	-enospc = insufficient buffer, -enodev = unsupported for device.
-+ */
-+struct vfio_pci_dependent_device {
-+	__u32	group_id;
-+	__u16	segment;
-+	__u8	bus;
-+	__u8	devfn; /* Use PCI_SLOT/PCI_FUNC */
-+};
-+
-+struct vfio_pci_hot_reset_info {
-+	__u32	argsz;
-+	__u32	flags;
-+	__u32	count;
-+	struct vfio_pci_dependent_device	devices[];
-+};
-+
-+#define VFIO_DEVICE_GET_PCI_HOT_RESET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
-+
-+/**
-+ * VFIO_DEVICE_PCI_HOT_RESET - _IOW(VFIO_TYPE, VFIO_BASE + 13,
-+ *				    struct vfio_pci_hot_reset)
-+ *
-+ * Return: 0 on success, -errno on failure.
-+ */
-+struct vfio_pci_hot_reset {
-+	__u32	argsz;
-+	__u32	flags;
-+	__u32	count;
-+	__s32	group_fds[];
-+};
-+
-+#define VFIO_DEVICE_PCI_HOT_RESET	_IO(VFIO_TYPE, VFIO_BASE + 13)
-+
- /* -------- API for Type1 VFIO IOMMU -------- */
- 
- /**
+>
+> Best regards.
+>
+>
+> Gesendet: Montag, 12. August 2013 um 19:53 Uhr
+> Von: "Andy Lutomirski" <luto@amacapital.net>
+> An: "Andreas Werner" <wernerandy@gmx.de>
+> Cc: linux-kernel@vger.kernel.org
+> Betreff: Re: question about ioremap_cache and PAT
+> On 08/11/2013 09:50 AM, Andreas Werner wrote:
+>> Hi i have a question about ioremap_cache and the resulting PAT attribute on X86 system. If I configure the mtrr to Write-Through for an adress range, and call ioremap_cache to map the mmio, the resulting PAT attribute is set to UC.
+>> If I check the Intel document IA-32 SDM vol 3a, the resulting PAT attribute should be WB.
+>>
+>> I found the function pat_x_mtrr_type in arch/x86/mm/pat.c where the resulting attribute is returned. There will be always UC return expect if the MTRR is set to WB.
+>>
+>> Why is there only WB or UC returned? In the Intel document there are a lot of combinations "allowed".
+>>
+>> I need a Attribute of WT, so what i did is to modify the pat_x_mtrr_type function to return also WB if the MTRR is set to WT.
+>>
+>> Is this a solution to solve that or whats the reasion why the kernel doesn´t support this combination?
+>
+> The kernel doesn't support it because I'm apparently the only person who
+> ever wanted it and I haven't implemented it yet.
+>
+> This stuff is handled in hardware, so modifying the kernel's idea of
+> what hardware does won't do much. Also, the kernel using MTRRs is on
+> its (very slow) way out. You could probably hack something up, but I
+> can almost guarantee that hpa, etc won't accept the patches.
+>
+> That being said, I'm planning to support WT directly using PAT in the
+> near future. This will work on most recent cpus (there are errata that
+> will prevent use of the high PAT entries on some cpus).
+>
+> What do you need WT for? I want it for NVDIMMs, and all I need to get
+> started now is a heatsink*, so I'll hopefully start implementing this
+> stuff in the next week or so.
+>
+> --Andy
+>
+> * Damnit, Intel, it's not 2003 any more. You already figured out that
+> heatsinks want screw holes. But why couldn't you make sure that all
+> so-called "LGA 2011" sockets have the screw holes in the same place?
+>
+>
+>>
+>> Best regards
+>>
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> B
+>> A
+>> A
+>> A
+>> A
+>> A
+>> A
+>> A
+>> A
+>> A
+>> A
+>> A
+>> A
+>> A
+>> A
+>> A
+>> B
+>> B
+>> B
+>> Best regards
+>>
+>
 
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
