@@ -1,120 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab3HWCia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 22:38:30 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:58040 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754098Ab3HWCi2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 22:38:28 -0400
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <jszhang@marvell.com>, <jason@lakedaemon.net>, <andrew@lunn.ch>,
-        <gregory.clement@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>,
-        <ezequiel.garcia@free-electrons.com>, <mturquette@linaro.org>,
-        <sebastian.hesselbarth@gmail.com>, <linus.walleij@linaro.org>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/4] arm: mvebu: add missing of_node_put() to fix reference leak
-Date: Fri, 23 Aug 2013 10:33:59 +0800
-Message-ID: <1377225242-5854-2-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1377225242-5854-1-git-send-email-jszhang@marvell.com>
-References: <1377225242-5854-1-git-send-email-jszhang@marvell.com>
+	id S1754418Ab3HWCil (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 22:38:41 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:59476 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754376Ab3HWCik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 22:38:40 -0400
+Date: Thu, 22 Aug 2013 21:38:38 -0500
+From: Russ Anderson <rja@sgi.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Russ Anderson <rja@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [PATCH] [BUGFIX] drivers/base: fix show_mem_removable section count
+Message-ID: <20130823023837.GA12396@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_node_put to properly decrement the refcount when we are
-done using a given node.
+"cat /sys/devices/system/memory/memory*/removable" crashed the system.
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+The problem is that show_mem_removable() is passing a
+bad pfn to is_mem_section_removable(), which causes
+if (!node_online(page_to_nid(page))) to blow up.
+Why is it passing in a bad pfn?
+
+show_mem_removable() will loop sections_per_block times.
+sections_per_block is 16, but mem->section_count is 8
+for this memory block.  Changing to loop the actual number
+of sections (mem->section_count) fixes the problem.
+The assumption that all memory blocks will have the same
+sections_per_block is not always true.
+
+I suspect other usages of sections_per_block will also
+need to be fixed.
+
+Signed-off-by: Russ Anderson <rja@sgi.com>
+
+
+The failing output:
+-----------------------------------------------------------
+harp5-sys:~ # cat /sys/devices/system/memory/memory*/removable
+0
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
+[  372.111178] BUG: unable to handle kernel paging request at ffffea00c3200000
+[  372.119230] IP: [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
+[  372.127022] PGD 83ffd4067 PUD 37bdfce067 PMD 0
+[  372.132109] Oops: 0000 [#1] SMP
+[  372.135730] Modules linked in: autofs4 binfmt_misc rdma_ucm rdma_cm iw_cm ib_addr ib_srp scsi_transport_srp scsi_tgt ib_ipoib ib_cm ib_uverbs ib_umad iw_cxgb3 cxgb3 mdio mlx4_en mlx4_ib ib_sa mlx4_core ib_mthca ib_mad ib_core fuse nls_iso8859_1 nls_cp437 vfat fat joydev loop hid_generic usbhid hid hwperf(O) numatools(O) dm_mod iTCO_wdt ipv6 iTCO_vendor_support igb i2c_i801 ioatdma i2c_algo_bit ehci_pci pcspkr lpc_ich i2c_core ehci_hcd ptp sg mfd_core dca rtc_cmos pps_core mperf button xhci_hcd sd_mod crc_t10dif usbcore usb_common scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh gru(O) xvma(O) xfs crc32c libcrc32c thermal sata_nv processor piix mptsas mptscsih scsi_transport_sas mptbase megaraid_sas fan thermal_sys hwmon ext3 jbd ata_piix ahci libahci libata scsi_mod
+[  372.213536] CPU: 4 PID: 5991 Comm: cat Tainted: G           O 3.11.0-rc5-rja-uv+ #10
+[  372.222173] Hardware name: SGI UV2000/ROMLEY, BIOS SGI UV 2000/3000 series BIOS 01/15/2013
+[  372.231391] task: ffff88081f034580 ti: ffff880820022000 task.ti: ffff880820022000
+[  372.239737] RIP: 0010:[<ffffffff81117ed1>]  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
+[  372.250229] RSP: 0018:ffff880820023df8  EFLAGS: 00010287
+[  372.256151] RAX: 0000000000040000 RBX: ffffea00c3200000 RCX: 0000000000000004
+[  372.264111] RDX: ffffea00c30b0000 RSI: 00000000001c0000 RDI: ffffea00c3200000
+[  372.272071] RBP: ffff880820023e38 R08: 0000000000000000 R09: 0000000000000001
+[  372.280030] R10: 0000000000000000 R11: 0000000000000001 R12: ffffea00c33c0000
+[  372.287987] R13: 0000160000000000 R14: 6db6db6db6db6db7 R15: 0000000000000001
+[  372.295945] FS:  00007ffff7fb2700(0000) GS:ffff88083fc80000(0000) knlGS:0000000000000000
+[  372.304970] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  372.311378] CR2: ffffea00c3200000 CR3: 000000081b954000 CR4: 00000000000407e0
+[  372.319335] Stack:
+[  372.321575]  ffff880820023e38 ffffffff81161e94 ffffffff81d9e940 0000000000000009
+[  372.329872]  0000000000000000 ffff8817bb97b800 ffff88081e928000 ffff8817bb97b870
+[  372.338167]  ffff880820023e68 ffffffff813730d1 fffffffffffffffb ffffffff81a97600
+[  372.346463] Call Trace:
+[  372.349201]  [<ffffffff81161e94>] ? is_mem_section_removable+0x84/0x110
+[  372.356579]  [<ffffffff813730d1>] show_mem_removable+0x41/0x70
+[  372.363094]  [<ffffffff8135be8a>] dev_attr_show+0x2a/0x60
+[  372.369122]  [<ffffffff811e1817>] sysfs_read_file+0xf7/0x1c0
+[  372.375441]  [<ffffffff8116e7e8>] vfs_read+0xc8/0x130
+[  372.381076]  [<ffffffff8116ee5d>] SyS_read+0x5d/0xa0
+[  372.386624]  [<ffffffff814bfa12>] system_call_fastpath+0x16/0x1b
+[  372.393313] Code: 01 00 00 00 e9 3c ff ff ff 90 0f b6 4a 30 44 89 d8 d3 e0 89 c1 83 e9 01 48 63 c9 49 01 c8 eb 92 66 2e 0f 1f 84 00 00 00 00 00 55 <48> 8b 0f 49 89 f8 48 89 e5 48 89 ca 48 c1 ea 36 0f a3 15 d8 2f
+[  372.415032] RIP  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
+[  372.422905]  RSP <ffff880820023df8>
+[  372.426792] CR2: ffffea00c3200000
+---------------------------------------------------------
+
+
 ---
- arch/arm/mach-mvebu/armada-370-xp.c     | 1 +
- arch/arm/mach-mvebu/coherency.c         | 8 +++++++-
- arch/arm/mach-mvebu/platsmp.c           | 1 +
- arch/arm/mach-mvebu/pmsu.c              | 1 +
- arch/arm/mach-mvebu/system-controller.c | 1 +
- 5 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/base/memory.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
-index 97cbb80..8a1ae83 100644
---- a/arch/arm/mach-mvebu/armada-370-xp.c
-+++ b/arch/arm/mach-mvebu/armada-370-xp.c
-@@ -64,6 +64,7 @@ static void __init armada_370_xp_mbus_init(void)
- 			ARMADA_370_XP_MBUS_WINS_SIZE,
- 			of_translate_address(dn, &sdram_wins_offs),
- 			ARMADA_370_XP_SDRAM_WINS_SIZE);
-+	of_node_put(dn);
- }
+Index: linux/drivers/base/memory.c
+===================================================================
+--- linux.orig/drivers/base/memory.c	2013-08-22 21:16:03.477826999 -0500
++++ linux/drivers/base/memory.c	2013-08-22 21:22:38.885478035 -0500
+@@ -140,7 +140,7 @@ static ssize_t show_mem_removable(struct
+ 	struct memory_block *mem =
+ 		container_of(dev, struct memory_block, dev);
  
- static void __init armada_370_xp_timer_and_clk_init(void)
-diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
-index 4c24303..58adf2f 100644
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -140,6 +140,7 @@ int __init coherency_init(void)
- 		coherency_base = of_iomap(np, 0);
- 		coherency_cpu_base = of_iomap(np, 1);
- 		set_cpu_coherent(cpu_logical_map(smp_processor_id()), 0);
-+		of_node_put(np);
+-	for (i = 0; i < sections_per_block; i++) {
++	for (i = 0; i < mem->section_count; i++) {
+ 		pfn = section_nr_to_pfn(mem->start_section_nr + i);
+ 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
  	}
- 
- 	return 0;
-@@ -147,9 +148,14 @@ int __init coherency_init(void)
- 
- static int __init coherency_late_init(void)
- {
--	if (of_find_matching_node(NULL, of_coherency_table))
-+	struct device_node *np;
-+
-+	np = of_find_matching_node(NULL, of_coherency_table);
-+	if (np) {
- 		bus_register_notifier(&platform_bus_type,
- 				      &mvebu_hwcc_platform_nb);
-+		of_node_put(np);
-+	}
- 	return 0;
- }
- 
-diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
-index ce81d30..e7edb82 100644
---- a/arch/arm/mach-mvebu/platsmp.c
-+++ b/arch/arm/mach-mvebu/platsmp.c
-@@ -95,6 +95,7 @@ static void __init armada_xp_smp_init_cpus(void)
- 		panic("No 'cpus' node found\n");
- 
- 	ncores = of_get_child_count(np);
-+	of_node_put(np);
- 	if (ncores == 0 || ncores > ARMADA_XP_MAX_CPUS)
- 		panic("Invalid number of CPUs in DT\n");
- 
-diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
-index 3cc4bef..27fc4f0 100644
---- a/arch/arm/mach-mvebu/pmsu.c
-+++ b/arch/arm/mach-mvebu/pmsu.c
-@@ -67,6 +67,7 @@ int __init armada_370_xp_pmsu_init(void)
- 		pr_info("Initializing Power Management Service Unit\n");
- 		pmsu_mp_base = of_iomap(np, 0);
- 		pmsu_reset_base = of_iomap(np, 1);
-+		of_node_put(np);
- 	}
- 
- 	return 0;
-diff --git a/arch/arm/mach-mvebu/system-controller.c b/arch/arm/mach-mvebu/system-controller.c
-index f875124..5175083c 100644
---- a/arch/arm/mach-mvebu/system-controller.c
-+++ b/arch/arm/mach-mvebu/system-controller.c
-@@ -98,6 +98,7 @@ static int __init mvebu_system_controller_init(void)
- 		BUG_ON(!match);
- 		system_controller_base = of_iomap(np, 0);
- 		mvebu_sc = (struct mvebu_system_controller *)match->data;
-+		of_node_put(np);
- 	}
- 
- 	return 0;
 -- 
-1.8.4.rc3
-
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
