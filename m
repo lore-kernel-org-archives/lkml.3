@@ -1,138 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab3HWT4U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:56:20 -0400
-Received: from mail-gh0-f180.google.com ([209.85.160.180]:59124 "EHLO
-	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755844Ab3HWT4S (ORCPT
+	id S1756221Ab3HWT6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:58:16 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:33857 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754170Ab3HWT6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:56:18 -0400
-Date: Fri, 23 Aug 2013 16:02:50 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        acme@redhat.com, Stephane Eranian <eranian@gmail.com>
-Subject: Re: [PATCH 1/2] Update perf_event ABI documentation: format and
- events
-In-Reply-To: <alpine.DEB.2.10.1307250004590.25162@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1308231601370.24098@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1307250004590.25162@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 23 Aug 2013 15:58:14 -0400
+Date: Fri, 23 Aug 2013 12:58:11 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Wei Hu <wei@aristanetworks.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [lm-sensors] [PATCH] hwmon: (k10temp) Add support for Fam16h
+ (Kabini)
+Message-ID: <20130823195810.GA12208@roeck-us.net>
+References: <1377279498-2868-1-git-send-email-wei@aristanetworks.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377279498-2868-1-git-send-email-wei@aristanetworks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-It's been a month, are there any objections to these perf_event ABI 
-documentation updates?  
-
-Vince
-
-
-On Thu, 25 Jul 2013, Vince Weaver wrote:
-
+On Fri, Aug 23, 2013 at 10:38:18AM -0700, Wei Hu wrote:
+> The temperature reporting interface stays the same, so we just
+> add the PCI-ID to the list.
 > 
-> This clarifies some of the ABI, as there has been some confusion
-> and minor breakages lately.  Most notably it documents that as of
-> 3.10 the events entries can contain decimal values in addition to
-> hex.
-> 
-> This is version 2 containing whitespace fixes suggested by
-> Jiri Olsa.
-> 
-> Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-> index 3c1cc24..16d9107 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-> +++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-> @@ -1,30 +1,52 @@
-> -What:		/sys/devices/cpu/events/
-> +What:		/sys/bus/event_source/devices/<dev>/events
-> +
-> +Date:		2013/01/08
-> +
-> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-> +
-> +Description:	Generic performance monitoring events
-> +
-> +		A collection of performance monitoring events that are
-> +		supported by the PMU (performance monitoring unit)
-> +		specified by "<dev>". These events can be monitored
-> +		using the 'perf(1)' tool.
-> +
-> +		The contents of each file is a list of attribute names
-> +		(as found in the corresponding
-> +			/sys/bus/event_source/devices/<dev>/format
-> +		file) separated by commas.  Each entry has
-> +		an optional value (either hex or decimal).  If no
-> +		value is specified than it is assumed to be a single-bit
-> +		field with a value of 1.
-> +
-> +		An example of what you might find:
-> +			event=0x2,inv,ldlat=3
-> +
-> +
-> +What:		/sys/devices/cpu/events/branch-instructions
->  		/sys/devices/cpu/events/branch-misses
-> -		/sys/devices/cpu/events/cache-references
-> +		/sys/devices/cpu/events/bus-cycles
->  		/sys/devices/cpu/events/cache-misses
-> -		/sys/devices/cpu/events/stalled-cycles-frontend
-> -		/sys/devices/cpu/events/branch-instructions
-> -		/sys/devices/cpu/events/stalled-cycles-backend
-> -		/sys/devices/cpu/events/instructions
-> +		/sys/devices/cpu/events/cache-references
->  		/sys/devices/cpu/events/cpu-cycles
-> +		/sys/devices/cpu/events/instructions
-> +		/sys/devices/cpu/events/ref-cycles
-> +		/sys/devices/cpu/events/stalled-cycles-backend
-> +		/sys/devices/cpu/events/stalled-cycles-frontend
->  
->  Date:		2013/01/08
->  
->  Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
->  
-> -Description:	Generic performance monitoring events
-> +Description:	Generic CPU performance monitoring events
->  
->  		A collection of performance monitoring events that may be
->  		supported by many/most CPUs. These events can be monitored
->  		using the 'perf(1)' tool.
->  
-> -		The contents of each file would look like:
-> -
-> -			event=0xNNNN
-> -
-> -		where 'N' is a hex digit and the number '0xNNNN' shows the
-> -		"raw code" for the perf event identified by the file's
-> -		"basename".
-> +		The format of these files matches that of
-> +		/sys/bus/event_source/devices/<dev>/events as described
-> +		previously in this file.
->  
->  
->  What: 		/sys/devices/cpu/events/PM_1PLUS_PPC_CMPL
-> diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-> index 77f47ff..8f4c13f 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-> +++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-> @@ -15,6 +15,12 @@ Description:
->  			attr2 = 'config:0-7'
->  			attr3 = 'config:12-35'
->  
-> -		Example: 'config1:1,6-10,44'
-> +		Example: event = 'config1:1,6-10,44'
->  		Defines contents of attribute that occupies bits 1,6-10,44 of
->  		perf_event_attr::config1.
-> +
-> +		In this example, the events file would have the value
-> +			event=0x7f
-> +		to set all of the specified bits (they will be split up).
-> +		You would not use 0x10000007c2 (which is what the bits
-> +		actually passed into config1 would look like).
-> 
+> Verified on AMD Olive Hill.
 
+The Signed-off-by: statement is missing. I can not apply the patch without it.
+
+Guenter
+
+> ---
+>  Documentation/hwmon/k10temp |    1 +
+>  drivers/hwmon/Kconfig       |    4 ++--
+>  drivers/hwmon/k10temp.c     |    3 ++-
+>  3 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/hwmon/k10temp b/Documentation/hwmon/k10temp
+> index 90956b6..4dfdc8f 100644
+> --- a/Documentation/hwmon/k10temp
+> +++ b/Documentation/hwmon/k10temp
+> @@ -12,6 +12,7 @@ Supported chips:
+>  * AMD Family 12h processors: "Llano" (E2/A4/A6/A8-Series)
+>  * AMD Family 14h processors: "Brazos" (C/E/G/Z-Series)
+>  * AMD Family 15h processors: "Bulldozer" (FX-Series), "Trinity"
+> +* AMD Family 16h processors: "Kabini"
+>  
+>    Prefix: 'k10temp'
+>    Addresses scanned: PCI space
+> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> index e989f7f..1e27838 100644
+> --- a/drivers/hwmon/Kconfig
+> +++ b/drivers/hwmon/Kconfig
+> @@ -296,8 +296,8 @@ config SENSORS_K10TEMP
+>  	  If you say yes here you get support for the temperature
+>  	  sensor(s) inside your CPU. Supported are later revisions of
+>  	  the AMD Family 10h and all revisions of the AMD Family 11h,
+> -	  12h (Llano), 14h (Brazos) and 15h (Bulldozer/Trinity)
+> -	  microarchitectures.
+> +	  12h (Llano), 14h (Brazos), 15h (Bulldozer/Trinity) and
+> +	  16h (Kabini) microarchitectures.
+>  
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called k10temp.
+> diff --git a/drivers/hwmon/k10temp.c b/drivers/hwmon/k10temp.c
+> index e3b037c..e633856 100644
+> --- a/drivers/hwmon/k10temp.c
+> +++ b/drivers/hwmon/k10temp.c
+> @@ -1,5 +1,5 @@
+>  /*
+> - * k10temp.c - AMD Family 10h/11h/12h/14h/15h processor hardware monitoring
+> + * k10temp.c - AMD Family 10h/11h/12h/14h/15h/16h processor hardware monitoring
+>   *
+>   * Copyright (c) 2009 Clemens Ladisch <clemens@ladisch.de>
+>   *
+> @@ -211,6 +211,7 @@ static DEFINE_PCI_DEVICE_TABLE(k10temp_id_table) = {
+>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
+>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
+> +	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+>  	{}
+>  };
+>  MODULE_DEVICE_TABLE(pci, k10temp_id_table);
+> -- 
+> 1.7.4.4
+> 
+> 
+> _______________________________________________
+> lm-sensors mailing list
+> lm-sensors@lm-sensors.org
+> http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
+> 
