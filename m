@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab3HWMKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 08:10:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48690 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260Ab3HWMKO (ORCPT
+	id S1755526Ab3HWMNf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 08:13:35 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:50072 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753435Ab3HWMNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 08:10:14 -0400
-Date: Fri, 23 Aug 2013 14:10:04 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: Theodore Tso <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
-        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [sched_delayed] sched: RT throttling activated
-Message-ID: <20130823121004.GW31370@twins.programming.kicks-ass.net>
-References: <521722EE.70209@fold.natur.cuni.cz>
- <20130823100913.GQ31370@twins.programming.kicks-ass.net>
- <52173BBD.3050803@fold.natur.cuni.cz>
- <20130823110254.GU31370@twins.programming.kicks-ass.net>
- <521748FC.10809@fold.natur.cuni.cz>
+	Fri, 23 Aug 2013 08:13:34 -0400
+Message-ID: <521751E9.3000504@gmail.com>
+Date: Fri, 23 Aug 2013 14:13:29 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <521748FC.10809@fold.natur.cuni.cz>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 08/17] ARM: mvebu: remove custom .init_time hook
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376964271-22715-9-git-send-email-sebastian.hesselbarth@gmail.com> <52173408.1000702@free-electrons.com> <52173A3E.2040509@gmail.com> <521749E5.6020008@free-electrons.com>
+In-Reply-To: <521749E5.6020008@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 01:35:24PM +0200, Martin Mokrejs wrote:
+On 08/23/13 13:39, Gregory CLEMENT wrote:
+> On 23/08/2013 12:32, Sebastian Hesselbarth wrote:
+>> On 08/23/13 12:06, Gregory CLEMENT wrote:
+>>> On 20/08/2013 04:04, Sebastian Hesselbarth wrote:
+>>>> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
+>>>> remove custom .init_time hooks.
+>>>
+>>> As a feared it won't work on Armada XP. You moved coherency_init(), and
+>>> l2x0_of_init() in the init_machine hook. However init_machine is an
+>>> arch_initcall, and as all the initcall it is called at the end of the
+>>> do_basic_setup() which is called after smp_prepare_cpus(). The issue is
+>>> that smp_prepare_cpus need coherency (and I think L2 cache) already enable.
+>>
+>> Ok, I see. I remember mvebu smp relies on mbus mappings also? Can you
+>> try below as replacement for the mach-mvebu/armada-370-xp.c changes?
+>>
+>> It will move coherency_init(), l2x0_of_init(), and mvebu_mbus_dt_init()
+>> to .init_early hook.
+>>
+>
+> I can't test it, because I don't receive the patch 1 and 2 neither directly
+> or through linux-arm-kernel (it should have been bounced), or even at
+> https://github.com/shesselba/linux-dove.git
+>
+> If you don't want to send them again, could you at least push our branch on your
+> github?
 
-> # ps -deo pid,cls,cmd | grep -e 'RR \[' -e 'FF \['
+Gregory,
 
-This explicitly only lists kernel threads; from your other comment:
+I pushed a branch containing the latest state to
+https://github.com/shesselba/linux-dove.git arm-clk-of-init
 
-> The shell/python tasks have 'TS' in place of the FF value in the second column
-> so I guess they are not requiring realtime responsiveness.
+It still contains the changes to drivers/clk.c, that will become
+obsolete, if there are no objections against Stephen's tegra patch.
 
-I'll assume you actually inspected the other tasks and found none.
+Sebastian
 
->     7  FF [migration/0]
->    10  FF [watchdog/0]
->    11  FF [watchdog/1]
->    12  FF [migration/1]
->    17  FF [migration/2]
->    22  FF [migration/3]
-
-The 'migration' threads only look like FIFO threads but they're secretly
-not and don't count to the limit. The watchdog threads shouldn't run
-much either.
-
->  2161  FF [irq/50-iwlwifi]
-
-Oh a threaded interrupt, I presume you're not using "threadiqrs" since
-this is the only interrupt thread around and I see a
-'request_threaded_irq()' call in
-drivers/net/wireless/iwlwifi/pcie/trans.c
-
-And wow, why would that thing consume that much cpu. 
-
-Johill, ever seen the iwlwifi interrupt go 'funny' and consume gobs of
-cpu-time?
-
-
-> > Nope, you get that message once to tell you that we throttle RT tasks.
-> 
-> I think the message could improved to explain this is a warn ONCE message and
-> that there is no "[sched_delayed] sched: RT throttling deactivated" counterpart
-> message to be anticipated.
-
-Would something like: 
-
-  sched: [ONCE] RT throttle hit -- inspect system configuration.
-
-Be a better message?
-
-Also, could you clarify what exact kernel version you're running? I
-couldn't find it in your previous messages.
