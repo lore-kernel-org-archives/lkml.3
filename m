@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab3HWNOO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 09:14:14 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:54455 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754134Ab3HWNOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 09:14:12 -0400
-Message-ID: <52175FE6.4040309@interlog.com>
-Date: Fri, 23 Aug 2013 15:13:10 +0200
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1755564Ab3HWNPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 09:15:19 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:42363 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754492Ab3HWNPR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 09:15:17 -0400
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Roland Dreier <roland@purestorage.com>, Zach Brown <zab@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Theodore Tso <tytso@mit.edu>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 0/9] target: Add support for EXTENDED_COPY (VAAI) offload
- emulation
-References: <1377224821-23422-1-git-send-email-nab@daterainc.com> <521741B7.9020904@interlog.com> <yq17gfc60yd.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq17gfc60yd.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Fri, 23 Aug 2013 21:15:16 +0800
+Message-ID: <CAPgLHd-LxjfpSm2U67HVn+eWFqU0P7Ku0XQrNMv0D--8+CoKvg@mail.gmail.com>
+Subject: [PATCH -next v2] drm/rcar-du: remove redundant dev_err call in rcar_du_lvdsenc_get_resources()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: airlied@linux.ie, laurent.pinchart+renesas@ideasonboard.com
+Cc: yongjun_wei@trendmicro.com.cn, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-08-23 02:33 PM, Martin K. Petersen wrote:
->>>>>> "Doug" == Douglas Gilbert <dgilbert@interlog.com> writes:
->
-> Doug> The SCSI opcodes associated with it (0x83 and 0x84) have been
-> Doug> renamed THIRD PARTY COPY OUT and IN, and
->
-> Where did you see that? My SPC still has EXTENDED COPY.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-SCSI _opcodes_ == SCSI operation codes. In other words the
-name associated with all service actions (commands) that have
-as their first byte 0x83 and 0x84 .
+In case of error, the function devm_ioremap_resource() returns ERR_PTR()
+and never returns NULL. The NULL test in the return value check should be
+replaced with IS_ERR(). Also remove the dev_err call to avoid redundant
+error message and check for return value of platform_get_resource_byname().
 
-spc4r36h.pdf Annex F.3.1 and changed in spc4r34. Yes, well
-hidden but IMO useful. So now we can use the term "Third party
-copy" to cover:
-   - EXTENDED COPY(LID1) and associated commands
-     also found in SPC-2 and SPC-3 (with the "LID1" suffix)
-   - EXTENDED COPY(LID4) and associated commands
-   - the XCOPY LITE commands: POPULATE TOKEN and WRITE USING TOKEN
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+v1 -> v2; remove return value check of platform_get_resource_byname()
+---
+ drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c | 13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-> Doug> Confused? I certainly was.
->
-> Yeah, this is UNMAP all over again, just 100 times worse :(
-
-Well what EXTENDED COPY (offload copy) is trying to do
-ain't simple but obviously there could be a substantial
-performance pay-off.
-
-There is a "Third-party copy implementation and usage" Annex
-(D) in spc4r36h.pdf . It could do with some more explanatory
-text.
-
-> Anyway. Excited to see nab posting the patches! My copy offload code
-> from the spring has been getting stale both in the T10 and the kernel
-> sense. But at least we know what I'll be working on next week :)
-
-BTW I have ported the sg_xcopy "LID1" xcopy logic into
-my ddpt utility. That gives two advantages:
-   - can cope with ibs!=obs
-   - runs on OSes other than Linux
-
-Doug Gilbert
-
+diff --git a/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c b/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c
+index a0f6a17..fe1f6f5 100644
+--- a/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c
++++ b/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c
+@@ -144,18 +144,9 @@ static int rcar_du_lvdsenc_get_resources(struct rcar_du_lvdsenc *lvds,
+ 	sprintf(name, "lvds.%u", lvds->index);
+ 
+ 	mem = platform_get_resource_byname(pdev, IORESOURCE_MEM, name);
+-	if (mem == NULL) {
+-		dev_err(&pdev->dev, "failed to get memory resource for %s\n",
+-			name);
+-		return -EINVAL;
+-	}
+-
+ 	lvds->mmio = devm_ioremap_resource(&pdev->dev, mem);
+-	if (lvds->mmio == NULL) {
+-		dev_err(&pdev->dev, "failed to remap memory resource for %s\n",
+-			name);
+-		return -ENOMEM;
+-	}
++	if (IS_ERR(lvds->mmio))
++		return PTR_ERR(lvds->mmio);
+ 
+ 	lvds->clock = devm_clk_get(&pdev->dev, name);
+ 	if (IS_ERR(lvds->clock)) {
 
