@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab3HWTe2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:34:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42818 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754098Ab3HWTe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:34:27 -0400
-Date: Fri, 23 Aug 2013 21:28:07 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
-	task->pid and task->tgid
-Message-ID: <20130823192807.GA6504@redhat.com>
-References: <cover.1377032086.git.rgb@redhat.com> <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com> <20130822200555.GN31370@twins.programming.kicks-ass.net> <20130822214347.GB21110@madcap2.tricolour.ca>
+	id S1756026Ab3HWTga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:36:30 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59329 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754391Ab3HWTg3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 15:36:29 -0400
+Message-ID: <5217B9B7.9080802@wwwdotorg.org>
+Date: Fri, 23 Aug 2013 13:36:23 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130822214347.GB21110@madcap2.tricolour.ca>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
+        grant.likely@linaro.org, linux@arm.linux.org.uk, rob@landley.net,
+        ian.campbell@citrix.com, mark.rutland@arm.com, pawel.moll@arm.com,
+        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
+        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 4/4] Documentation: Add device tree bindings for Freescale
+ FTM PWM
+References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com> <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com> <20130823091052.GG3535@ulmo>
+In-Reply-To: <20130823091052.GG3535@ulmo>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22, Richard Guy Briggs wrote:
->
-> On Thu, Aug 22, 2013 at 10:05:55PM +0200, Peter Zijlstra wrote:
-> >
-> > Why would you ever want to do this? It just makes these tests more
-> > expensive for no gain what so ff'ing ever.
->
-> Backups are generally considered a good idea, but in this case, I'd
-> quote:
+On 08/23/2013 03:10 AM, Thierry Reding wrote:
+> On Wed, Aug 21, 2013 at 11:07:42AM +0800, Xiubo Li wrote:
+>> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com> --- 
+>> .../devicetree/bindings/pwm/fsl-ftm-pwm.txt        | 52
+>> ++++++++++++++++++++++ 1 file changed, 52 insertions(+) create
+>> mode 100644
+>> Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
 
-And perhaps you are right. At least we can probably kill task->tgid.
-And I agree, it would be nice to kill task->pid.
+>> diff --git
+>> a/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+>> b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
 
-But: I also agree with Peter, we should try to not make the current
-code more expensive.
+>> +Required properties: +- compatible: should be
+>> "fsl,vf610-ftm-pwm" +- reg: physical base address and length of
+>> the controller's registers +- #pwm-cells: Should be 3. Number of
+>> cells being used to specify PWM property. +  First cell specifies
+>> the per-chip channel index of the PWM to use, the +  second cell
+>> is the period in nanoseconds and bit 0 in the third cell is +
+>> used to encode the polarity of PWM output. Set bit 0 of the third
+>> in PWM +  specifier to 1 for inverse polarity & set to 0 for
+>> normal polarity.
 
-Anyway. Imho, you should not mix the different things in one series.
-If you want to fix audit, do not add the patches like 10/12 or 11/12
-into this series.
+Lines 2..n of a property description should be indented so it's easier
+to see where each entry in the list starts.
 
-Or 3/12. OK, I agree sys_getppid() in audit_log_task_info() looks
-strange at least. Just fix it using the helpers we already have and
-add the new helpers later. Or send the patch(es) which adds the new
-helpers first.
+>> +- fsl,pwm-clk-ps: the ftm0 pwm clock's prescaler, divide-by
+>> 2^n(n = 0 ~ 7). +- fsl,pwm-cpwm: Center-Aligned PWM (CPWM) mode.
 
-Or task_pid_nr_init_ns()... For what? We already have task_pid_nr().
-Use the helper we already have, or introduce the new one first and
-change the current users of task_pid_nr().
+>> +- fsl,pwm-number: the number of PWM devices, and is must equal
+>> to the number +  of "fsl,pwm-channels".
 
-In short. Fortunately you do not need to convince me, I do not
-maintain audit or namespaces ;) But imho this series looks a bit
-confusing.
+Isn't that value a static facet of the HW, and hence it can be
+determined solely from the compatible value?
 
-Oleg.
+>> +- fsl,pwm-channels: the channels' order which is be used for pwm
+>> in ftm0 +  module, and they must be one or some of 0 ~ 7, because
+>> the ftm0 only has +  8 channels can be used.
 
+Why is there a need to re-order the channels? Why not simply reference
+the actual physical channel IDs in client nodes?
+
+>> +- for very channel, the revlatived the pinctrl should be at
+>> least two state +  {"enN", "dsN"}, which "en" means "enable",
+>> "ds" means "disable" and "N" +  means the order of the channel.
+
+revlatived??
+
+Why is there a need for pinctrl interaction at all?
+
+Is the "N" in these property names the index into fsl,pwm-channels, or
+the physical channel number in the controller HW, or something else?
+
+"dis" would be better than "ds", although "enable-chN", "disable-chN"
+would be even better.
+
+Note that it's not possible to enable multiple pinctrl states at once,
+so what happens when channel 0 is enabled, yet channel 1 is disabled,
+and you want to enable "en0" and "ds1" at the same time?
