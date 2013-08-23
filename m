@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab3HWNB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 09:01:29 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:51222 "EHLO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563Ab3HWNB2 (ORCPT
+	id S1754787Ab3HWNDq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 09:03:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50343 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab3HWNDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 09:01:28 -0400
-Message-ID: <52175D45.4010506@fold.natur.cuni.cz>
-Date: Fri, 23 Aug 2013 15:01:57 +0200
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:23.0) Gecko/20100101 Firefox/23.0 SeaMonkey/2.20
+	Fri, 23 Aug 2013 09:03:45 -0400
+Date: Fri, 23 Aug 2013 15:03:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com
+Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
+ related damage v3
+Message-ID: <20130823130332.GY31370@twins.programming.kicks-ass.net>
+References: <20120307180852.GE17697@suse.de>
 MIME-Version: 1.0
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Theodore Tso <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
-        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [sched_delayed] sched: RT throttling activated
-References: <521722EE.70209@fold.natur.cuni.cz> <20130823100913.GQ31370@twins.programming.kicks-ass.net> <52173BBD.3050803@fold.natur.cuni.cz> <20130823110254.GU31370@twins.programming.kicks-ass.net> <521748FC.10809@fold.natur.cuni.cz> <20130823121004.GW31370@twins.programming.kicks-ass.net> <5217599C.3080707@fold.natur.cuni.cz>
-In-Reply-To: <5217599C.3080707@fold.natur.cuni.cz>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120307180852.GE17697@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 07, 2012 at 06:08:52PM +0000, Mel Gorman wrote:
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 06b145f..013d981 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -1843,18 +1843,24 @@ struct page *
+>  alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+>  		unsigned long addr, int node)
+>  {
+> -	struct mempolicy *pol = get_vma_policy(current, vma, addr);
+> +	struct mempolicy *pol;
+>  	struct zonelist *zl;
+>  	struct page *page;
+> +	unsigned int cpuset_mems_cookie;
+> +
+> +retry_cpuset:
+> +	pol = get_vma_policy(current, vma, addr);
+> +	cpuset_mems_cookie = get_mems_allowed();
+>  
+> -	get_mems_allowed();
+>  	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
+>  		unsigned nid;
+>  
+>  		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
+>  		mpol_cond_put(pol);
+>  		page = alloc_page_interleave(gfp, order, nid);
+> -		put_mems_allowed();
+> +		if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
+> +			goto retry_cpuset;
+> +
+>  		return page;
+>  	}
+>  	zl = policy_zonelist(gfp, pol, node);
+
+So I think this patch is broken (still). Suppose we have an
+INTERLEAVE mempol like 0x3 and change it to 0xc.
+
+Original:	0x3
+Rebind Step 1:	0xf /* set bits */
+Rebind Step 2:	0xc /* clear bits */
+
+Now look at what can happen with offset_il_node() when its ran
+concurrently with step 2:
+
+  nnodes = nodes_weight(pol->v.nodes); /* observes 0xf and returns 4 */
+
+  /* now we clear the actual bits */
+  
+  target = (unsigned int)off % nnodes; /* assume target >= 2 */
+  c = 0;
+  do {
+  	nid = next_node(nid, pol->v.nodes);
+	c++;
+  } while (c <= target);
+
+  /* here nid := MAX_NUMNODES */
 
 
-Martin Mokrejs wrote:
+This nid is then blindly inserted into node_zonelist() which does an
+NODE_DATA() array access out of bounds and off we go.
 
->>>> Nope, you get that message once to tell you that we throttle RT tasks.
->>>
->>> I think the message could improved to explain this is a warn ONCE message and
->>> that there is no "[sched_delayed] sched: RT throttling deactivated" counterpart
->>> message to be anticipated.
->>
->> Would something like: 
->>
->>   sched: [ONCE] RT throttle hit -- inspect system configuration.
->>
->> Be a better message?
-> 
-> Not really. I would prefer something like:
-> 
-> [sched_delayed] sched: stopped running $cmd on CPU%d in favor of RR/FIFO task $psname
-
-Actually, to retain the message text appearing in current kernel so that people can find
-by e.g. Google newer syntax and possibly this thread maybe much better would be:
-
-[sched_delayed] sched: RT throttling limit $d hit. Stopped running $cmd on CPU%d in favor of RR/FIFO task $psname. Will not issue any more these messages until reboot.
-
-I know, looong line.
-
-
-I just realized this is about some threshold limit value, and you mean that iwlwifi
-contributed the highest increase compared to the other kernel threads on my system.
-
-sysctl -q -a |  grep -i limit
-
-does not show what is the actual value. Am probably looking into a wrong place. ;-)
-
+This would suggest we put the whole seqcount thing inside
+offset_il_node().
