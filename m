@@ -1,46 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab3HWLsh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 07:48:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19436 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683Ab3HWLsg (ORCPT
+	id S1755419Ab3HWL4T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 07:56:19 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:33009 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759Ab3HWL4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 07:48:36 -0400
-Date: Fri, 23 Aug 2013 14:48:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: navin patidar <navinp@cdac.in>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        maxtram95@gmail.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8187se: Remove pt_regs * irq handler
- parameter
-Message-ID: <20130823114818.GU22811@mwanda>
-References: <1377257406-16787-1-git-send-email-navinp@cdac.in>
+	Fri, 23 Aug 2013 07:56:18 -0400
+Message-ID: <52174DB5.5050201@linux.vnet.ibm.com>
+Date: Fri, 23 Aug 2013 17:25:33 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377257406-16787-1-git-send-email-navinp@cdac.in>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Wang Dongsheng-B40534 <B40534@freescale.com>
+CC: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "michael@ellerman.id.au" <michael@ellerman.id.au>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>
+Subject: Re: [PATCH V5 3/5] POWER/cpuidle: Generic IBM-POWER backend cpuidle
+ driver.
+References: <20130822095323.27416.79369.stgit@deepthi.in.ibm.com> <20130822095357.27416.48110.stgit@deepthi.in.ibm.com> <ABB05CD9C9F68C46A5CEDC7F154392590102822A@039-SN2MPN1-021.039d.mgd.msft.net>
+In-Reply-To: <ABB05CD9C9F68C46A5CEDC7F154392590102822A@039-SN2MPN1-021.039d.mgd.msft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082311-1618-0000-0000-000004811CA7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 05:00:06PM +0530, navin patidar wrote:
-> struct pt_regs pointer is no longer passed as a irq handler
-> argument.
+On 08/23/2013 08:46 AM, Wang Dongsheng-B40534 wrote:
 > 
+>> diff --git a/drivers/cpuidle/Kconfig b/drivers/cpuidle/Kconfig
+>> index 0e2cd5c..e805dcd 100644
+>> --- a/drivers/cpuidle/Kconfig
+>> +++ b/drivers/cpuidle/Kconfig
+> 
+> Maybe drivers/cpuidle/Kconfig.powerpc is better? Like arm.
+> 
+>> +obj-$(CONFIG_CPU_IDLE_IBM_POWER) += cpuidle-ibm-power.o
+>> diff --git a/drivers/cpuidle/cpuidle-ibm-power.c
+>> b/drivers/cpuidle/cpuidle-ibm-power.c
+>> new file mode 100644
+>> index 0000000..4ee5a94
+>> --- /dev/null
+>> +++ b/drivers/cpuidle/cpuidle-ibm-power.c
+>> @@ -0,0 +1,304 @@
+>> +/*
+>> + *  cpuidle-ibm-power - idle state cpuidle driver.
+>> + *  Adapted from drivers/idle/intel_idle.c and
+>> + *  drivers/acpi/processor_idle.c
+>> + *
+>> + */
+>> +
+>> +#include <linux/kernel.h>
+>> +#include <linux/module.h>
+>> +#include <linux/init.h>
+>> +#include <linux/moduleparam.h>
+>> +#include <linux/cpuidle.h>
+>> +#include <linux/cpu.h>
+>> +#include <linux/notifier.h>
+>> +
+>> +#include <asm/paca.h>
+>> +#include <asm/reg.h>
+>> +#include <asm/machdep.h>
+>> +#include <asm/firmware.h>
+>> +#include <asm/runlatch.h>
+>> +#include <asm/plpar_wrappers.h>
+>> +
+>> +struct cpuidle_driver power_idle_driver = {
+>> +	.name             = "IBM-POWER-Idle",
+>> +	.owner            = THIS_MODULE,
+>> +};
+>> +
+>> +#define MAX_IDLE_STATE_COUNT	2
+>> +
+>> +static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
+> 
+> Again, do not use the macro.
 
-Good eye.
+Wanting to re-use CPUIDLE_STATE_MAX macro, defined in linux/cpuidle.h
+similar to what x86 uses. This is def scalable for various platforms ,
+as demonstrated in drivers/idle/intel_idle.c
 
-Could you also remove the cast to (void *) so the compiler can catch
-this in the future?
-
--       if (request_irq(dev->irq, (void *)rtl8180_interrupt, IRQF_SHARED, dev->name, dev)) {
-+       if (request_irq(dev->irq, rtl8180_interrupt, IRQF_SHARED, dev->name, dev)) {
-
-regrds,
-dan carpenter
-
+ >
+>> +static struct cpuidle_state *cpuidle_state_table;
+>> +
+>> +static inline void idle_loop_prolog(unsigned long *in_purr)
+>> +{
+>> +	*in_purr = mfspr(SPRN_PURR);
+>> +	/*
+>> +	 * Indicate to the HV that we are idle. Now would be
+>> +	 * a good time to find other work to dispatch.
+>> +	 */
+>> +	get_lppaca()->idle = 1;
+>> +}
+>> +
+>> +static inline void idle_loop_epilog(unsigned long in_purr)
+>> +{
+>> +	get_lppaca()->wait_state_cycles += mfspr(SPRN_PURR) - in_purr;
+>> +	get_lppaca()->idle = 0;
+>> +}
+>> +
+>> +static int snooze_loop(struct cpuidle_device *dev,
+>> +			struct cpuidle_driver *drv,
+>> +			int index)
+>> +{
+>> +	unsigned long in_purr;
+>> +
+>> +	idle_loop_prolog(&in_purr);
+>> +	local_irq_enable();
+> 
+> snooze_loop has already registered in cpuidle framework to handle snooze state.
+> where disable the irq? Why do "enable" here?
+> 
+>> +/*
+>> + * States for dedicated partition case.
+>> + */
+>> +static struct cpuidle_state dedicated_states[MAX_IDLE_STATE_COUNT] = {
+>> +	{ /* Snooze */
+>> +		.name = "snooze",
+>> +		.desc = "snooze",
+>> +		.flags = CPUIDLE_FLAG_TIME_VALID,
+>> +		.exit_latency = 0,
+>> +		.target_residency = 0,
+>> +		.enter = &snooze_loop },
+>> +	{ /* CEDE */
+>> +		.name = "CEDE",
+>> +		.desc = "CEDE",
+>> +		.flags = CPUIDLE_FLAG_TIME_VALID,
+>> +		.exit_latency = 10,
+>> +		.target_residency = 100,
+>> +		.enter = &dedicated_cede_loop },
+>> +};
+>> +
+>> +/*
+>> + * States for shared partition case.
+>> + */
+>> +static struct cpuidle_state shared_states[MAX_IDLE_STATE_COUNT] = {
+>> +	{ /* Shared Cede */
+>> +		.name = "Shared Cede",
+>> +		.desc = "Shared Cede",
+>> +		.flags = CPUIDLE_FLAG_TIME_VALID,
+>> +		.exit_latency = 0,
+>> +		.target_residency = 0,
+>> +		.enter = &shared_cede_loop },
+>> +};
+>> +
+>> +static void __exit power_processor_idle_exit(void)
+>> +{
+>> +
+>> +	unregister_cpu_notifier(&setup_hotplug_notifier);
+> 
+> Remove a blank line.
+> 
+>> +	cpuidle_unregister(&power_idle_driver);
+>> +	return;
+>> +}
+>> +
+>> +module_init(power_processor_idle_init);
+>> +module_exit(power_processor_idle_exit);
+>> +
+> 
+> Did you have tested the module? If not tested, please don't use the module.
+> 
+>> +MODULE_AUTHOR("Deepthi Dharwar <deepthi@linux.vnet.ibm.com>");
+>> +MODULE_DESCRIPTION("Cpuidle driver for IBM POWER platforms");
+>> +MODULE_LICENSE("GPL");
+>>
+> 
 
