@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab3HWILp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 04:11:45 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:55237 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754907Ab3HWILl (ORCPT
+	id S1755189Ab3HWIMB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 04:12:01 -0400
+Received: from [207.46.163.27] ([207.46.163.27]:23522 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754900Ab3HWILy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 04:11:41 -0400
-Message-ID: <521716C2.4070200@huawei.com>
-Date: Fri, 23 Aug 2013 16:01:06 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 23 Aug 2013 04:11:54 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 23 Aug 2013 16:11:52 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Dong Aisheng <b29396@freescale.com>
+CC: Grant Likely <grant.likely@linaro.org>, Rob Landley <rob@landley.net>,
+        <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/3] of: add update device node status via cmdline feature
+Message-ID: <20130823081149.GB10424@S2101-09.ap.freescale.net>
+References: <1376564133-11286-1-git-send-email-b29396@freescale.com>
+ <CACxGe6tMm=u1jFKUQ59+cj-rYkLLAZUqMhsXamyi-wwpWaOGvw@mail.gmail.com>
+ <20130821123708.GA17748@b29396-Latitude-E6410>
+ <20130823070906.GA2460@b29396-Latitude-E6410>
+ <20130823075102.GA10424@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <brouer@redhat.com>, <gregkh@linuxfoundation.org>,
-        <stable@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: ADSL/ATM linklayer tc shaping regression fix commits for stable
-References: <20130821140350.2b953007@redhat.com> <20130821.112023.744177612387539958.davem@davemloft.net> <20130822100426.39be319d@redhat.com> <20130822.012348.1370012681436362922.davem@davemloft.net>
-In-Reply-To: <20130822.012348.1370012681436362922.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130823075102.GA10424@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-On 2013/8/22 16:23, David Miller wrote:
-> From: Jesper Dangaard Brouer <brouer@redhat.com>
-> Date: Thu, 22 Aug 2013 10:04:26 +0200
+On Fri, Aug 23, 2013 at 03:51:07PM +0800, Shawn Guo wrote:
+> The device tree mailing list is changed to devicetree@vger.kernel.org.
 > 
->> So, for future reference:
->>
->> Stable patches for the networking tree, I should:
->> 1) check http://patchwork.ozlabs.org/bundle/davem/stable/?state=*
->>    to see if my patch is already on your stable queue
->> 2) if not, ask you and cc netdev@vger.kernel.org
->> 3) you will handle the interaction with Greg and stable@vger.kernel.org
->>
->> Correct?
+> On Fri, Aug 23, 2013 at 03:09:08PM +0800, Dong Aisheng wrote:
+> > I tried the uboot way with fdt command to change the node status, it can work.
+> > However, it seems using fdt command is much complicated than the way i did with kernel
+> > command line and it also does not support enable/disable multi nodes at the same time.
+> > e.g, in order to enable ecspi1 and uart3 and disable gpmi:
+> > with uboot fdt command:
+> > U-Boot > fdt addr ${dtbaddr}
+> > U-Boot > fdt set /soc/aips-bus@02000000/spba-bus@02000000/ecspi@02008000 status "okay"
+> > U-Boot > fdt set /soc/aips-bus@02100000/serial@021e8000 status "okay"
+> > U-Boot > fdt set /soc/gpmi-nand@00112000 status "disabled"
 > 
-> Yes, and that's how it's been with the networking for years.
+> Oh, you can use the U-Boot environment and scripting function to make
+> it even easier than your kernel cmdline approach to use.
 > 
+> > with kernel cmdline:
+> > fdt.enable=ecspi@02008000,serial@021e8000 fdt.disable=gpmi-nand@00112000
+> > So from the using perspective, kernel command line is much more simple and easy than uboot.
+> 
+> NAK.
+> 
+> It's not about simple or easy.  The approach completely defects the
 
-How about these two stable requests?
+s/defects/defeats
 
-http://article.gmane.org/gmane.linux.kernel.stable/61247
-http://article.gmane.org/gmane.linux.kernel.stable/61248
+Shawn
+
+> point of the whole device tree project - moving stuff that kernel does
+> not care out of kernel.  Choosing device from mutually exclusive ones
+> (due to pin conflict of board design) should NOT be something that
+> kernel cares.
+> 
+> Kernel gets device tree blob from firmware/bootloader and instantiates
+> drivers for devices found in device tree.  That's all what kernel should
+> do, nothing more.  Asking kernel to manipulate the device availability
+> property in device tree is plainly wrong to me.
+> 
+> If your board is designed with so many pin conflicts between devices,
+> you have to do whatever you can do to get the decision made in device
+> tree blob, before it gets passed to kernel.  Kernel does NOT care about
+> that decision making.
 
