@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab3HWIz5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 04:55:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755149Ab3HWIz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 04:55:56 -0400
-Message-ID: <52172395.9000400@redhat.com>
-Date: Fri, 23 Aug 2013 16:55:49 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] vhost_net: remove the max pending check
-References: <1376630190-5912-1-git-send-email-jasowang@redhat.com> <1376630190-5912-7-git-send-email-jasowang@redhat.com> <20130816100225.GD21821@redhat.com> <5212D8F2.10307@redhat.com>
-In-Reply-To: <5212D8F2.10307@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755286Ab3HWI7a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 04:59:30 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:35967 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755172Ab3HWI71 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 04:59:27 -0400
+From: Liu Ping Fan <kernelfans@gmail.com>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kevin Hao <haokexin@gmail.com>
+Subject: [PATCH] x86: ioapic needs check attr when programmed more than once
+Date: Fri, 23 Aug 2013 16:58:47 +0800
+Message-Id: <1377248327-19633-1-git-send-email-pingfank@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 10:48 AM, Jason Wang wrote:
-> On 08/16/2013 06:02 PM, Michael S. Tsirkin wrote:
->> > On Fri, Aug 16, 2013 at 01:16:30PM +0800, Jason Wang wrote:
->>> >> We used to limit the max pending DMAs to prevent guest from pinning too many
->>> >> pages. But this could be removed since:
->>> >>
->>> >> - We have the sk_wmem_alloc check in both tun/macvtap to do the same work
->>> >> - This max pending check were almost useless since it was one done when there's
->>> >>   no new buffers coming from guest. Guest can easily exceeds the limitation.
->>> >> - We've already check upend_idx != done_idx and switch to non zerocopy then. So
->>> >>   even if all vq->heads were used, we can still does the packet transmission.
->> > We can but performance will suffer.
-> The check were in fact only done when no new buffers submitted from
-> guest. So if guest keep sending, the check won't be done.
->
-> If we really want to do this, we should do it unconditionally. Anyway, I
-> will do test to see the result.
+When programming ioapic pinX more than once, current code
+does not check whether the later attr (trigger&polarity) is the
+same as the former or not. This causes a broken semantic.
 
-There's a bug in PATCH 5/6, the check:
+This can be observed in qemu q35 machine, where ioapic's ioredtbl[x]
+can never be set as low-active, even if the hpet driver registered it.
+And hpet driver may share a high-level active IRQ line with other
+device. So in qemu, when hpet-dev asserts low-level as kernel expects,
+the kernel has no response. With this patch, we can observe an
+ioredtbl[x] set as low-active for hpet.
 
-nvq->upend_idx != nvq->done_idx
+Fix it by reporting -EBUSY to the caller, when attr is different.
 
-makes the zerocopy always been disabled since we initialize both
-upend_idx and done_idx to zero. So I change it to:
+Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+---
+ arch/x86/kernel/acpi/boot.c    | 5 ++++-
+ arch/x86/kernel/apic/io_apic.c | 7 ++++++-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
-(nvq->upend_idx + 1) % UIO_MAXIOV != nvq->done_idx.
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 230c8ea..9ef2ce9 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -1113,6 +1113,7 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+ 	int ioapic;
+ 	int ioapic_pin;
+ 	struct io_apic_irq_attr irq_attr;
++	int ret;
+ 
+ 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+ 		return gsi;
+@@ -1142,7 +1143,9 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+ 	set_io_apic_irq_attr(&irq_attr, ioapic, ioapic_pin,
+ 			     trigger == ACPI_EDGE_SENSITIVE ? 0 : 1,
+ 			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
+-	io_apic_set_pci_routing(dev, gsi_to_irq(gsi), &irq_attr);
++	ret = io_apic_set_pci_routing(dev, gsi_to_irq(gsi), &irq_attr);
++	if (ret < 0)
++		gsi = INT_MIN;
+ 
+ 	return gsi;
+ }
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 9ed796c..ce31d902 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3375,12 +3375,17 @@ int io_apic_setup_irq_pin_once(unsigned int irq, int node,
+ {
+ 	unsigned int ioapic_idx = attr->ioapic, pin = attr->ioapic_pin;
+ 	int ret;
++	struct IO_APIC_route_entry orig;
+ 
+ 	/* Avoid redundant programming */
+ 	if (test_bit(pin, ioapics[ioapic_idx].pin_programmed)) {
+ 		pr_debug("Pin %d-%d already programmed\n",
+ 			 mpc_ioapic_id(ioapic_idx), pin);
+-		return 0;
++		orig = ioapic_read_entry(attr->ioapic, pin);
++		if (attr->trigger == orig.trigger &&
++			attr->polarity == orig.polarity)
++			return 0;
++		return -EBUSY;
+ 	}
+ 	ret = io_apic_setup_irq_pin(irq, node, attr);
+ 	if (!ret)
+-- 
+1.8.1.4
 
-With this change on top, I didn't see performance difference w/ and w/o
-this patch.
