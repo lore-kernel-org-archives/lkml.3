@@ -1,98 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab3HWKch (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 06:32:37 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:52886 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754903Ab3HWKcf (ORCPT
+	id S1755389Ab3HWKc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 06:32:26 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:45877 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754988Ab3HWKbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 06:32:35 -0400
-Message-ID: <52173A3E.2040509@gmail.com>
-Date: Fri, 23 Aug 2013 12:32:30 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 08/17] ARM: mvebu: remove custom .init_time hook
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376964271-22715-9-git-send-email-sebastian.hesselbarth@gmail.com> <52173408.1000702@free-electrons.com>
-In-Reply-To: <52173408.1000702@free-electrons.com>
-Content-Type: multipart/mixed;
- boundary="------------000709030907080105060607"
+	Fri, 23 Aug 2013 06:31:06 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v2 2/7] mm/hwpoison: don't need to hold compound lock for hugetlbfs page
+Date: Fri, 23 Aug 2013 18:30:36 +0800
+Message-Id: <1377253841-17620-2-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1377253841-17620-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1377253841-17620-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082310-5140-0000-0000-000003B78EBF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000709030907080105060607
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+v1 -> v2:
+	* drop compound_trans_order completely
 
-On 08/23/13 12:06, Gregory CLEMENT wrote:
-> On 20/08/2013 04:04, Sebastian Hesselbarth wrote:
->> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
->> remove custom .init_time hooks.
->
-> As a feared it won't work on Armada XP. You moved coherency_init(), and
-> l2x0_of_init() in the init_machine hook. However init_machine is an
-> arch_initcall, and as all the initcall it is called at the end of the
-> do_basic_setup() which is called after smp_prepare_cpus(). The issue is
-> that smp_prepare_cpus need coherency (and I think L2 cache) already enable.
+compound lock is introduced by commit e9da73d67("thp: compound_lock."),
+it is used to serialize put_page against __split_huge_page_refcount().
+In addition, transparent hugepages will be splitted in hwpoison handler
+and just one subpage will be poisoned. There is unnecessary to hold
+compound lock for hugetlbfs page. This patch replace compound_trans_order
+by compond_order in the place where the page is hugetlbfs page.
 
-Ok, I see. I remember mvebu smp relies on mbus mappings also? Can you
-try below as replacement for the mach-mvebu/armada-370-xp.c changes?
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ include/linux/mm.h  |   14 --------------
+ mm/memory-failure.c |   12 ++++++------
+ 2 files changed, 6 insertions(+), 20 deletions(-)
 
-It will move coherency_init(), l2x0_of_init(), and mvebu_mbus_dt_init()
-to .init_early hook.
-
-Sebastian
-
-
---------------000709030907080105060607
-Content-Type: text/x-patch;
- name="arm-of_clk_init-mvebu-proposal.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="arm-of_clk_init-mvebu-proposal.diff"
-
-diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
-index 829b573..82e3ec0 100644
---- a/arch/arm/mach-mvebu/armada-370-xp.c
-+++ b/arch/arm/mach-mvebu/armada-370-xp.c
-@@ -14,11 +14,9 @@
- 
- #include <linux/kernel.h>
- #include <linux/init.h>
--#include <linux/clk-provider.h>
- #include <linux/of_address.h>
- #include <linux/of_platform.h>
- #include <linux/io.h>
--#include <linux/time-armada-370-xp.h>
- #include <linux/dma-mapping.h>
- #include <linux/mbus.h>
- #include <asm/hardware/cache-l2x0.h>
-@@ -34,10 +32,8 @@ static void __init armada_370_xp_map_io(void)
- 	debug_ll_io_init();
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f022460..1745a2a 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -489,20 +489,6 @@ static inline int compound_order(struct page *page)
+ 	return (unsigned long)page[1].lru.prev;
  }
  
--static void __init armada_370_xp_timer_and_clk_init(void)
-+static void __init armada_370_xp_init_early(void)
+-static inline int compound_trans_order(struct page *page)
+-{
+-	int order;
+-	unsigned long flags;
+-
+-	if (!PageHead(page))
+-		return 0;
+-
+-	flags = compound_lock_irqsave(page);
+-	order = compound_order(page);
+-	compound_unlock_irqrestore(page, flags);
+-	return order;
+-}
+-
+ static inline void set_compound_order(struct page *page, unsigned long order)
  {
--	of_clk_init(NULL);
--	armada_370_xp_timer_init();
- 	coherency_init();
- 	BUG_ON(mvebu_mbus_dt_init());
- #ifdef CONFIG_CACHE_L2X0
-@@ -58,8 +54,8 @@ static const char * const armada_370_xp_dt_compat[] = {
- DT_MACHINE_START(ARMADA_XP_DT, "Marvell Armada 370/XP (Device Tree)")
- 	.smp		= smp_ops(armada_xp_smp_ops),
- 	.init_machine	= armada_370_xp_dt_init,
-+	.init_early	= armada_370_xp_init_early,
- 	.map_io		= armada_370_xp_map_io,
--	.init_time	= armada_370_xp_timer_and_clk_init,
- 	.restart	= mvebu_restart,
- 	.dt_compat	= armada_370_xp_dt_compat,
- MACHINE_END
+ 	page[1].lru.prev = (void *)order;
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 2c13aa7..efa6bd7 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -206,7 +206,7 @@ static int kill_proc(struct task_struct *t, unsigned long addr, int trapno,
+ #ifdef __ARCH_SI_TRAPNO
+ 	si.si_trapno = trapno;
+ #endif
+-	si.si_addr_lsb = compound_trans_order(compound_head(page)) + PAGE_SHIFT;
++	si.si_addr_lsb = compound_order(compound_head(page)) + PAGE_SHIFT;
+ 
+ 	if ((flags & MF_ACTION_REQUIRED) && t == current) {
+ 		si.si_code = BUS_MCEERR_AR;
+@@ -983,7 +983,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ static void set_page_hwpoison_huge_page(struct page *hpage)
+ {
+ 	int i;
+-	int nr_pages = 1 << compound_trans_order(hpage);
++	int nr_pages = 1 << compound_order(hpage);
+ 	for (i = 0; i < nr_pages; i++)
+ 		SetPageHWPoison(hpage + i);
+ }
+@@ -991,7 +991,7 @@ static void set_page_hwpoison_huge_page(struct page *hpage)
+ static void clear_page_hwpoison_huge_page(struct page *hpage)
+ {
+ 	int i;
+-	int nr_pages = 1 << compound_trans_order(hpage);
++	int nr_pages = 1 << compound_order(hpage);
+ 	for (i = 0; i < nr_pages; i++)
+ 		ClearPageHWPoison(hpage + i);
+ }
+@@ -1336,7 +1336,7 @@ int unpoison_memory(unsigned long pfn)
+ 		return 0;
+ 	}
+ 
+-	nr_pages = 1 << compound_trans_order(page);
++	nr_pages = 1 << compound_order(page);
+ 
+ 	if (!get_page_unless_zero(page)) {
+ 		/*
+@@ -1491,7 +1491,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	} else {
+ 		set_page_hwpoison_huge_page(hpage);
+ 		dequeue_hwpoisoned_huge_page(hpage);
+-		atomic_long_add(1 << compound_trans_order(hpage),
++		atomic_long_add(1 << compound_order(hpage),
+ 				&num_poisoned_pages);
+ 	}
+ 	return ret;
+@@ -1551,7 +1551,7 @@ int soft_offline_page(struct page *page, int flags)
+ 		if (PageHuge(page)) {
+ 			set_page_hwpoison_huge_page(hpage);
+ 			dequeue_hwpoisoned_huge_page(hpage);
+-			atomic_long_add(1 << compound_trans_order(hpage),
++			atomic_long_add(1 << compound_order(hpage),
+ 					&num_poisoned_pages);
+ 		} else {
+ 			SetPageHWPoison(page);
+-- 
+1.7.5.4
 
---------------000709030907080105060607--
