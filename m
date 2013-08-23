@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab3HWCtu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 22:49:50 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:61387 "EHLO
+	id S1754528Ab3HWCts (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 22:49:48 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:61386 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab3HWCtp (ORCPT
+	with ESMTP id S1752672Ab3HWCtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Aug 2013 22:49:45 -0400
 From: Rui Xiang <rui.xiang@huawei.com>
@@ -15,10 +15,12 @@ CC: <linux-kernel@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
         <v9fs-developer@lists.sourceforge.net>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <netdev@vger.kernel.org>,
         Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 0/2] fs: supply inode uid/gid setting interface
-Date: Fri, 23 Aug 2013 10:48:36 +0800
-Message-ID: <1377226118-43756-1-git-send-email-rui.xiang@huawei.com>
+Subject: [PATCH 1/2] fs: implement inode uid/gid setting function
+Date: Fri, 23 Aug 2013 10:48:37 +0800
+Message-ID: <1377226118-43756-2-git-send-email-rui.xiang@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
+In-Reply-To: <1377226118-43756-1-git-send-email-rui.xiang@huawei.com>
+References: <1377226118-43756-1-git-send-email-rui.xiang@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.135.72.188]
@@ -27,68 +29,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset implements an accessor functions to set uid/gid
-in inode struct. Just finish code clean up.
+Supply a interface inode_set_user  to set uid/gid of inode
+structs.
 
-Rui Xiang (2):
-  fs: implement inode uid/gid setting function
-  fs: use inode_set_user to set uid/gid of inode
+Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+---
+ fs/inode.c         | 7 +++++++
+ include/linux/fs.h | 1 +
+ 2 files changed, 8 insertions(+)
 
- arch/ia64/kernel/perfmon.c                |  3 +--
- arch/powerpc/platforms/cell/spufs/inode.c |  3 +--
- arch/s390/hypfs/inode.c                   |  3 +--
- drivers/infiniband/hw/qib/qib_fs.c        |  3 +--
- drivers/usb/gadget/f_fs.c                 |  3 +--
- drivers/usb/gadget/inode.c                |  5 +++--
- fs/9p/vfs_inode.c                         |  6 ++----
- fs/adfs/inode.c                           |  3 +--
- fs/affs/inode.c                           |  6 ++----
- fs/afs/inode.c                            |  6 ++----
- fs/anon_inodes.c                          |  3 +--
- fs/autofs4/inode.c                        |  4 ++--
- fs/befs/linuxvfs.c                        |  8 ++++----
- fs/ceph/caps.c                            |  5 +++--
- fs/ceph/inode.c                           |  8 ++++----
- fs/cifs/inode.c                           |  6 ++----
- fs/configfs/inode.c                       |  3 +--
- fs/debugfs/inode.c                        |  3 +--
- fs/devpts/inode.c                         |  7 +++----
- fs/ext2/ialloc.c                          |  3 +--
- fs/ext3/ialloc.c                          |  3 +--
- fs/ext4/ialloc.c                          |  3 +--
- fs/fat/inode.c                            |  6 ++----
- fs/fuse/control.c                         |  3 +--
- fs/fuse/inode.c                           |  4 ++--
- fs/hfs/inode.c                            |  6 ++----
- fs/hfsplus/inode.c                        |  3 +--
- fs/hpfs/inode.c                           |  3 +--
- fs/hpfs/namei.c                           | 12 ++++--------
- fs/hugetlbfs/inode.c                      |  3 +--
- fs/inode.c                                |  7 +++++++
- fs/isofs/inode.c                          |  3 +--
- fs/isofs/rock.c                           |  3 +--
- fs/ncpfs/inode.c                          |  3 +--
- fs/nfs/inode.c                            |  4 ++--
- fs/ntfs/inode.c                           | 12 ++++--------
- fs/ntfs/mft.c                             |  3 +--
- fs/ntfs/super.c                           |  3 +--
- fs/ocfs2/refcounttree.c                   |  3 +--
- fs/omfs/inode.c                           |  3 +--
- fs/pipe.c                                 |  3 +--
- fs/proc/base.c                            | 15 +++++----------
- fs/proc/fd.c                              |  8 ++++----
- fs/proc/inode.c                           |  3 +--
- fs/proc/self.c                            |  3 +--
- fs/stack.c                                |  3 +--
- fs/sysfs/inode.c                          |  3 +--
- fs/xfs/xfs_iops.c                         |  4 ++--
- include/linux/fs.h                        |  1 +
- ipc/mqueue.c                              |  3 +--
- kernel/cgroup.c                           |  3 +--
- mm/shmem.c                                |  3 +--
- net/socket.c                              |  3 +--
- 53 files changed, 94 insertions(+), 142 deletions(-)
-
+diff --git a/fs/inode.c b/fs/inode.c
+index e315c0a..3f90499 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -343,6 +343,13 @@ void inc_nlink(struct inode *inode)
+ }
+ EXPORT_SYMBOL(inc_nlink);
+ 
++void inode_set_user(struct inode *inode, kuid_t uid, kgid_t gid)
++{
++	inode->i_uid = uid;
++	inode->i_gid = gid;
++}
++EXPORT_SYMBOL(inode_set_user);
++
+ void address_space_init_once(struct address_space *mapping)
+ {
+ 	memset(mapping, 0, sizeof(*mapping));
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 729e81b..36ac51b 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2619,6 +2619,7 @@ void __inode_sub_bytes(struct inode *inode, loff_t bytes);
+ void inode_sub_bytes(struct inode *inode, loff_t bytes);
+ loff_t inode_get_bytes(struct inode *inode);
+ void inode_set_bytes(struct inode *inode, loff_t bytes);
++void inode_set_user(struct inode *inode, kuid_t uid, kgid_t gid);
+ 
+ extern int vfs_readdir(struct file *, filldir_t, void *);
+ extern int iterate_dir(struct file *, struct dir_context *);
 -- 
 1.8.2.2
 
