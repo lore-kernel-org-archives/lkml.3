@@ -1,53 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab3HWIJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 04:09:57 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:36418 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab3HWIJv (ORCPT
+	id S1755169Ab3HWIKc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 04:10:32 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:49707 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755138Ab3HWIJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 04:09:51 -0400
+	Fri, 23 Aug 2013 04:09:55 -0400
+Date: Fri, 23 Aug 2013 10:09:49 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Re: [PATCH 0/3] kprobes: add new dma insn slot cache for s390
+Message-ID: <20130823080949.GA4282@osiris>
+References: <1377086465-6471-1-git-send-email-heiko.carstens@de.ibm.com>
+ <521575C2.7050504@hitachi.com>
+ <20130822055254.GA4293@osiris>
+ <5216E59B.20109@hitachi.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFgQCTuZ2ojrgvW3McDtrrVu06J1d9ssdfu4fD3Pb7rCYL2MHA@mail.gmail.com>
-References: <1377161197-3175-1-git-send-email-pingfank@linux.vnet.ibm.com>
-	<20130823073052.GA25533@gmail.com>
-	<CAFgQCTuZ2ojrgvW3McDtrrVu06J1d9ssdfu4fD3Pb7rCYL2MHA@mail.gmail.com>
-Date: Fri, 23 Aug 2013 16:09:49 +0800
-Message-ID: <CAFgQCTtNmL7td-yqrUMe=H-6yxdA-7WSjCxzbeTTrsphEGWNwg@mail.gmail.com>
-Subject: Re: [PATCH] x86: ioapic needs check attr when programmed more than once
-From: Liu ping fan <kernelfans@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kevin Hao <haokexin@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5216E59B.20109@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082308-5024-0000-0000-000006FE1EF4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 4:04 PM, Liu ping fan <kernelfans@gmail.com> wrote:
-> On Fri, Aug 23, 2013 at 3:30 PM, Ingo Molnar <mingo@kernel.org> wrote:
->>
->> * Liu Ping Fan <kernelfans@gmail.com> wrote:
->>
->>> When programming ioapic pinX more than once, current code
->>> does not check whether the later attr (trigger&polarity) is the
->>> same as the former or not. This causes a broken semantic.
->>>
->>> Fix it by reporting -EBUSY, when attr is different.
->>
->> Was this observed in real life somehow, and if yes, what is
->> the before/after behavior?
->>
-> Using qemu q35 machine, I found the ioapic's ioredtbl[] will never has
-> low-active, even the hpet driver registered it. After tracing, I found
-> it shared a high-level active IRQ line with other device. So in fact,
-> the acpi_register_gsi(, ACPI_ACTIVE_LOW) in hpet driver fail, but it
-> did not detect it.
-> The effect in qemu: when hpet-dev assert low-level, the kernel can not respond.
->
-After changing, I can observe the low-active be set in ioredtbl[x],
-and with some bug fix in qemu's hpet, the kernel can work.
->
-> Thanks,
-> Pingfan
+On Fri, Aug 23, 2013 at 01:31:23PM +0900, Masami Hiramatsu wrote:
+> (2013/08/22 14:52), Heiko Carstens wrote:
+> > Therefore I need to different insn slot caches, where the slots are either
+> > allocated with __get_free_page(GFP_KERNEL | GFP_DMA) (for the kernel image)
+> > or module_alloc(PAGE_SIZE) for modules.
+> > 
+> > I can't have a single cache which satifies both areas.
+> 
+> Oh, I see.
+> Indeed, that enough reason to add a new cache... By the way, is there
+> any way to implement it without new kconfig like DMAPROBE and dma flag?
+> AFAICS, since such flag is strongly depends on the s390 arch, I don't
+> like to put it in kernel/kprobes.c.
+> 
+> Perhaps, we can make insn slot more generic, e.g. create new slot type
+> with passing page allocator.
+
+Something like below?
+(only compile tested and on top of the previous patches).
+
+I'm not sure, since that would expose struct kprobe_insn_cache.
+
+ arch/Kconfig               |  7 -------
+ arch/s390/Kconfig          |  1 -
+ arch/s390/kernel/kprobes.c | 20 ++++++++++++++++++
+ include/linux/kprobes.h    | 14 ++++++++-----
+ kernel/kprobes.c           | 51 ++++++++++++++++------------------------------
+ 5 files changed, 47 insertions(+), 46 deletions(-)
+
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 7010d68..1feb169 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -76,13 +76,6 @@ config OPTPROBES
+ 	depends on KPROBES && HAVE_OPTPROBES
+ 	depends on !PREEMPT
+ 
+-config DMAPROBES
+-	bool
+-	help
+-	  Architectures may want to put kprobes instruction slots into
+-	  the dma memory region. E.g. s390 has the kernel image in the
+-	  dma memory region but the module area far away.
+-
+ config KPROBES_ON_FTRACE
+ 	def_bool y
+ 	depends on KPROBES && HAVE_KPROBES_ON_FTRACE
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index ce389a9..8a4cae7 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -96,7 +96,6 @@ config S390
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select BUILDTIME_EXTABLE_SORT
+ 	select CLONE_BACKWARDS2
+-	select DMAPROBES if KPROBES
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_CPU_DEVICES if !SMP
+ 	select GENERIC_SMP_IDLE_THREAD
+diff --git a/arch/s390/kernel/kprobes.c b/arch/s390/kernel/kprobes.c
+index bc1071c..cb7ac9e 100644
+--- a/arch/s390/kernel/kprobes.c
++++ b/arch/s390/kernel/kprobes.c
+@@ -37,6 +37,26 @@ DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
+ 
+ struct kretprobe_blackpoint kretprobe_blacklist[] = { };
+ 
++DEFINE_INSN_CACHE_OPS(dmainsn);
++
++static void *alloc_dmainsn_page(void)
++{
++	return (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
++}
++
++static void free_dmainsn_page(void *page)
++{
++	free_page((unsigned long)page);
++}
++
++struct kprobe_insn_cache kprobe_dmainsn_slots = {
++	.mutex = __MUTEX_INITIALIZER(kprobe_dmainsn_slots.mutex),
++	.alloc = alloc_dmainsn_page,
++	.free = free_dmainsn_page,
++	.pages = LIST_HEAD_INIT(kprobe_dmainsn_slots.pages),
++	.insn_size = MAX_INSN_SIZE,
++};
++
+ static int __kprobes is_prohibited_opcode(kprobe_opcode_t *insn)
+ {
+ 	switch (insn[0] >> 8) {
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index a5290f6..4e96827 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -266,7 +266,15 @@ extern int arch_init_kprobes(void);
+ extern void show_registers(struct pt_regs *regs);
+ extern void kprobes_inc_nmissed_count(struct kprobe *p);
+ 
+-struct kprobe_insn_cache;
++struct kprobe_insn_cache {
++	struct mutex mutex;
++	void *(*alloc)(void);	/* allocate insn page */
++	void (*free)(void *);	/* free insn page */
++	struct list_head pages; /* list of kprobe_insn_page */
++	size_t insn_size;	/* size of instruction slot */
++	int nr_garbage;
++};
++
+ extern kprobe_opcode_t *__get_insn_slot(struct kprobe_insn_cache *c);
+ extern void __free_insn_slot(struct kprobe_insn_cache *c,
+ 			     kprobe_opcode_t *slot, int dirty);
+@@ -321,10 +329,6 @@ extern int proc_kprobes_optimization_handler(struct ctl_table *table,
+ 
+ #endif /* CONFIG_OPTPROBES */
+ 
+-#ifdef CONFIG_DMAPROBES
+-DEFINE_INSN_CACHE_OPS(dmainsn);
+-#endif
+-
+ #ifdef CONFIG_KPROBES_ON_FTRACE
+ extern void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+ 				  struct ftrace_ops *ops, struct pt_regs *regs);
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 3b8b073..a0d367a 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -112,9 +112,9 @@ static struct kprobe_blackpoint kprobe_blacklist[] = {
+ struct kprobe_insn_page {
+ 	struct list_head list;
+ 	kprobe_opcode_t *insns;		/* Page of instruction slots */
++	struct kprobe_insn_cache *cache;
+ 	int nused;
+ 	int ngarbage;
+-	bool dma_alloc;
+ 	char slot_used[];
+ };
+ 
+@@ -122,14 +122,6 @@ struct kprobe_insn_page {
+ 	(offsetof(struct kprobe_insn_page, slot_used) +	\
+ 	 (sizeof(char) * (slots)))
+ 
+-struct kprobe_insn_cache {
+-	struct mutex mutex;
+-	struct list_head pages;	/* list of kprobe_insn_page */
+-	size_t insn_size;	/* size of instruction slot */
+-	int nr_garbage;
+-	bool dma_alloc;
+-};
+-
+ static int slots_per_page(struct kprobe_insn_cache *c)
+ {
+ 	return PAGE_SIZE/(c->insn_size * sizeof(kprobe_opcode_t));
+@@ -141,12 +133,23 @@ enum kprobe_slot_state {
+ 	SLOT_USED = 2,
+ };
+ 
++static void *alloc_insn_page(void)
++{
++	return module_alloc(PAGE_SIZE);
++}
++
++static void free_insn_page(void *page)
++{
++	module_free(NULL, page);
++}
++
+ struct kprobe_insn_cache kprobe_insn_slots = {
+ 	.mutex = __MUTEX_INITIALIZER(kprobe_insn_slots.mutex),
++	.alloc = alloc_insn_page,
++	.free = free_insn_page,
+ 	.pages = LIST_HEAD_INIT(kprobe_insn_slots.pages),
+ 	.insn_size = MAX_INSN_SIZE,
+ 	.nr_garbage = 0,
+-	.dma_alloc = false,
+ };
+ static int __kprobes collect_garbage_slots(struct kprobe_insn_cache *c);
+ 
+@@ -192,10 +195,7 @@ kprobe_opcode_t __kprobes *__get_insn_slot(struct kprobe_insn_cache *c)
+ 	 * kernel image and loaded module images reside. This is required
+ 	 * so x86_64 can correctly handle the %rip-relative fixups.
+ 	 */
+-	if (c->dma_alloc)
+-		kip->insns = (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
+-	else
+-		kip->insns = module_alloc(PAGE_SIZE);
++	kip->insns = c->alloc();
+ 	if (!kip->insns) {
+ 		kfree(kip);
+ 		goto out;
+@@ -205,7 +205,7 @@ kprobe_opcode_t __kprobes *__get_insn_slot(struct kprobe_insn_cache *c)
+ 	kip->slot_used[0] = SLOT_USED;
+ 	kip->nused = 1;
+ 	kip->ngarbage = 0;
+-	kip->dma_alloc = c->dma_alloc;
++	kip->cache = c;
+ 	list_add(&kip->list, &c->pages);
+ 	slot = kip->insns;
+ out:
+@@ -227,10 +227,7 @@ static int __kprobes collect_one_slot(struct kprobe_insn_page *kip, int idx)
+ 		 */
+ 		if (!list_is_singular(&kip->list)) {
+ 			list_del(&kip->list);
+-			if (kip->dma_alloc)
+-				free_page((unsigned long)kip->insns);
+-			else
+-				module_free(NULL, kip->insns);
++			kip->cache->free(kip->insns);
+ 			kfree(kip);
+ 		}
+ 		return 1;
+@@ -291,23 +288,11 @@ out:
+ /* For optimized_kprobe buffer */
+ struct kprobe_insn_cache kprobe_optinsn_slots = {
+ 	.mutex = __MUTEX_INITIALIZER(kprobe_optinsn_slots.mutex),
++	.alloc = alloc_insn_page,
++	.free = free_insn_page,
+ 	.pages = LIST_HEAD_INIT(kprobe_optinsn_slots.pages),
+ 	/* .insn_size is initialized later */
+ 	.nr_garbage = 0,
+-	.dma_alloc = false,
+-};
+-#endif
+-#ifdef CONFIG_DMAPROBES
+-/*
+- * Special buffer for architectures which require insn slots
+- * to be in the GFP_DMA memory range.
+- */
+-struct kprobe_insn_cache kprobe_dmainsn_slots = {
+-	.mutex = __MUTEX_INITIALIZER(kprobe_dmainsn_slots.mutex),
+-	.pages = LIST_HEAD_INIT(kprobe_dmainsn_slots.pages),
+-	.insn_size = MAX_INSN_SIZE,
+-	.nr_garbage = 0,
+-	.dma_alloc = true,
+ };
+ #endif
+ #endif
+-- 
+1.8.2.3
+
