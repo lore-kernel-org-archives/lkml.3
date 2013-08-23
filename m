@@ -1,52 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab3HWQIF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 12:08:05 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:49487 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754379Ab3HWQIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 12:08:04 -0400
-Date: Fri, 23 Aug 2013 11:08:02 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH] [BUGFIX] drivers/base: fix show_mem_removable section
-	count
-Message-ID: <20130823160802.GA10988@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20130823023837.GA12396@sgi.com> <52170DDE.4010103@jp.fujitsu.com>
+	id S1754731Ab3HWQMO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 12:12:14 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:44508 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753941Ab3HWQMM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 12:12:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52170DDE.4010103@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <00000140abd66e64-21601d31-3ba2-42bd-8153-9f1d41fcc0d9-000000@email.amazonses.com>
+References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1377161065-30552-6-git-send-email-iamjoonsoo.kim@lge.com>
+	<00000140a72870a6-f7c87696-ecbc-432c-9f41-93f414c0c623-000000@email.amazonses.com>
+	<20130823065315.GG22605@lge.com>
+	<00000140ab69e6be-3b2999b6-93b4-4b22-a91f-8929aee5238f-000000@email.amazonses.com>
+	<CAAmzW4NZHXXX08tdQitwapfi8raQ-BTRry92A0jdFQkm0vaqxw@mail.gmail.com>
+	<00000140abd66e64-21601d31-3ba2-42bd-8153-9f1d41fcc0d9-000000@email.amazonses.com>
+Date: Sat, 24 Aug 2013 01:12:11 +0900
+Message-ID: <CAAmzW4N1GXbr18Ws9QDKg7ChN5RVcOW9eEv2RxWhaEoHtw=ctw@mail.gmail.com>
+Subject: Re: [PATCH 05/16] slab: remove cachep in struct slab_rcu
+From: JoonSoo Kim <js1304@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 04:23:10PM +0900, Yasuaki Ishimatsu wrote:
+2013/8/24 Christoph Lameter <cl@linux.com>:
+> On Fri, 23 Aug 2013, JoonSoo Kim wrote:
 >
-> I don't think it works well.
-> mem->section_count means how many present section is in the memory_block.
-> If 0, 1, 3 and 4 sections are present in the memory_block, mem->section_count
-> is 4. In this case, is_mem_sectionremovable is called for section 2. But the
-> section is not present. So if the memory_block has hole, same problem will occur.
+>> I don't get it. This patch only affect to the rcu case, because it
+>> change the code
+>> which is in kmem_rcu_free(). It doesn't touch anything in standard case.
 >
-> How about keep sections_per_block loop and add following check:
->
-> 		if (!present_section_nr(mem->start_section_nr + i))
-> 			continue;
+> In general this patchset moves struct slab to overlay struct page. The
+> design of SLAB was (at least at some point in the past) to avoid struct
+> page references. The freelist was kept close to struct slab so that the
+> contents are in the same cache line. Moving fields to struct page will add
+> another cacheline to be referenced.
 
-Yes, I will make that change and resubmit the patch.
+I don't think so.
+We should touch the struct page in order to get the struct slab, so there is
+no additional cacheline reference.
+
+And if the size of the (slab + freelist) decreases due to this patchset,
+there is more chance to be on-slab which means that the freelist is in pages
+of a slab itself. I think that it also help cache usage.
+
+> The freelist (bufctl_t) was dimensioned in such a way as to be small
+> and close cache wise to struct slab.
+
+I think that my patchset don't harm anything related to this.
+As I said, we should access the struct page before getting the struct slab,
+so the fact that freelist is far from the struct slab doesn't mean additional
+cache overhead.
+
+* Before patchset
+struct page -> struct slab (far from struct page)
+   -> the freelist (near from struct slab)
+
+* After patchset
+struct page (overload by struct slab) -> the freelist (far from struct page)
+
+Somewhow bufctl_t grew to
+> unsigned int and therefore the table became a bit large. Fundamentally
+> these are indexes into the objects in page. They really could be sized
+> again to just be single bytes as also explained in the comments in slab.c:
+> /*
+>  * kmem_bufctl_t:
+>  *
+>  * Bufctl's are used for linking objs within a slab
+>  * linked offsets.
+>  *
+>  * This implementation relies on "struct page" for locating the cache &
+>  * slab an object belongs to.
+>  * This allows the bufctl structure to be small (one int), but limits
+>  * the number of objects a slab (not a cache) can contain when off-slab
+>  * bufctls are used. The limit is the size of the largest general cache
+>  * that does not use off-slab slabs.
+>  * For 32bit archs with 4 kB pages, is this 56.
+>  * This is not serious, as it is only for large objects, when it is unwise
+>  * to have too many per slab.
+>  * Note: This limit can be raised by introducing a general cache whose size
+>  * is less than 512 (PAGE_SIZE<<3), but greater than 256.
+>  */
+>
+> For 56 objects the bufctl_t could really be reduced to an 8 bit integer
+> which would shrink the size of the table significantly and improve speed
+> by reducing cache footprint.
+>
+
+Yes, that's very good. However this is not related to this patchset.
+It can be implemented independently :)
+
+Please let me know what I am missing.
 Thanks.
-
-> Thanks,
-> Yasuaki Ishimatsu
-
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
