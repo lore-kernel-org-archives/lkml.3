@@ -1,70 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab3HWDVk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 23:21:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13035 "EHLO mx1.redhat.com"
+	id S1754156Ab3HWD1o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 23:27:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21986 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754501Ab3HWDVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 23:21:39 -0400
-Date: Thu, 22 Aug 2013 23:21:27 -0400
-From: Dave Jones <davej@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: unused swap offset / bad page map.
-Message-ID: <20130823032127.GA5098@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20130807055157.GA32278@redhat.com>
- <CAJd=RBCJv7=Qj6dPW2Ha=nq6JctnK3r7wYCAZTm=REVOZUNowg@mail.gmail.com>
- <20130807153030.GA25515@redhat.com>
- <CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com>
- <20130819231836.GD14369@redhat.com>
- <CAJd=RBA-UZmSTxNX63Vni+UPZBHwP4tvzE_qp1ZaHBqcNG7Fcw@mail.gmail.com>
- <20130821204901.GA19802@redhat.com>
- <CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753750Ab3HWD1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Aug 2013 23:27:43 -0400
+Date: Thu, 22 Aug 2013 23:27:10 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        gong.chen@linux.intel.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <1377228430-o4j77sme-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <5216a46f.a800310a.2351.ffffa95cSMTPIN_ADDED_BROKEN@mx.google.com>
+References: <1377164907-24801-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1377164907-24801-3-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1377189788-xv5ewgmb-mutt-n-horiguchi@ah.jp.nec.com>
+ <5216a46f.a800310a.2351.ffffa95cSMTPIN_ADDED_BROKEN@mx.google.com>
+Subject: Re: [PATCH 3/6] mm/hwpoison: fix num_poisoned_pages error statistics
+ for thp
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 11:21:28AM +0800, Hillf Danton wrote:
- > On Thu, Aug 22, 2013 at 4:49 AM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > didn't hit the bug_on, but got a bunch of
- > >
- > > [  424.077993] swap_free: Unused swap offset entry 000187d5
- > > [  439.377194] swap_free: Unused swap offset entry 000187e7
- > > [  441.998411] swap_free: Unused swap offset entry 000187ee
- > > [  446.956551] swap_free: Unused swap offset entry 0000245f
- > >
- > If page is reused, its swap entry is freed.
- > 
- > reuse_swap_page()
- >   delete_from_swap_cache()
- >     swapcache_free()
- >       count = swap_entry_free(p, entry, SWAP_HAS_CACHE);
- > 
- > If count drops to zero, then swap_free() gives warning.
- > 
- > 
- > --- a/mm/memory.c Wed Aug  7 16:29:34 2013
- > +++ b/mm/memory.c Thu Aug 22 10:44:32 2013
- > @@ -3123,6 +3123,7 @@ static int do_swap_page(struct mm_struct
- >   /* It's better to call commit-charge after rmap is established */
- >   mem_cgroup_commit_charge_swapin(page, ptr);
- > 
- > + if (!exclusive)
- >   swap_free(entry);
- >   if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
- >   try_to_free_swap(page);
- > --
+Hi Wanpeng,
 
-I still see the swap_free messages with this applied.
+On Fri, Aug 23, 2013 at 07:52:40AM +0800, Wanpeng Li wrote:
+> Hi Naoya,
+> On Thu, Aug 22, 2013 at 12:43:08PM -0400, Naoya Horiguchi wrote:
+> >On Thu, Aug 22, 2013 at 05:48:24PM +0800, Wanpeng Li wrote:
+> >> There is a race between hwpoison page and unpoison page, memory_failure 
+> >> set the page hwpoison and increase num_poisoned_pages without hold page 
+> >> lock, and one page count will be accounted against thp for num_poisoned_pages.
+> >> However, unpoison can occur before memory_failure hold page lock and 
+> >> split transparent hugepage, unpoison will decrease num_poisoned_pages 
+> >> by 1 << compound_order since memory_failure has not yet split transparent 
+> >> hugepage with page lock held. That means we account one page for hwpoison
+> >> and 1 << compound_order for unpoison. This patch fix it by decrease one 
+> >> account for num_poisoned_pages against no hugetlbfs pages case.
+> >> 
+> >> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> >
+> >I think that a thp never becomes hwpoisoned without splitting, so "trying
+> >to unpoison thp" never happens (I think that this implicit fact should be
+> 
+> There is a race window here for hwpoison thp: 
 
-	Dave
+OK, thanks for great explanation (it's worth written in description.)
+And I found my previous comment was comletely pointless, sorry :(
 
+> 				A	  			 									B
+> 		memory_failue 
+> 		TestSetPageHWPoison(p);
+> 		if (PageHuge(p))
+> 			nr_pages = 1 << compound_order(hpage);
+> 		else 
+> 			nr_pages = 1;
+> 		atomic_long_add(nr_pages, &num_poisoned_pages);	
+> 																unpoison_memory
+> 																nr_pages = 1<< compound_trans_order(page;)
+> 
+> 																if(TestClearPageHWPoison(p))
+> 																	atomic_long_sub(nr_pages, &num_poisoned_pages);
+> 		lock page 
+> 		if (!PageHWPoison(p))
+> 			unlock page and return 
+> 		hwpoison_user_mappings
+> 		if (PageTransHuge(hpage))
+> 			split_huge_page(hpage);
+
+When this race happens, our expectation is that num_poisoned_pages is
+increased by 1 because finally thread A succeeds to hwpoison one normal page.
+So thread B should fail to unpoison without clearing PageHWPoison nor
+decreasing num_poisoned_pages.  My suggestion is inserting a PageTransHuge
+check before doing TestClearPageHWPoison like follows:
+
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 1cb3b7d..f551b72 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1336,6 +1336,16 @@ int unpoison_memory(unsigned long pfn)
+ 		return 0;
+ 	}
+ 
++	/*
++	 * unpoison_memory() can encounter thp only when the thp is being
++	 * worked by memory_failure() and the page lock is not held yet.
++	 * In such case, we yield to memory_failure() and make unpoison fail.
++	 */
++	if (PageTransHuge(page)) {
++		pr_info("MCE: Memory failure is now running on %#lx\n", pfn);
++		return 0;
++	}
++
+ 	nr_pages = 1 << compound_trans_order(page);
+ 
+ 	if (!get_page_unless_zero(page)) {
+
+
+I think that replacing atomic_long_sub() with atomic_long_dec() still
+has a meaning, so you don't have to drop that.
+
+> 
+> We increase one page count, however, decrease 1 << compound_trans_order.
+> The compound_trans_order you mentioned is used here for thp, that's why 
+> I don't drop it in patch 2/6.
+
+I don't think that we have to use compound_trans_order() any more, because
+with the above change we don't calculate nr_pages any more for thp.
+We can reduce the cost to lock/unlock compound_lock as described in 2/6.
+
+> >commented somewhere or asserted with VM_BUG_ON().)
+> 
+> I will add the VM_BUG_ON() in unpoison_memory after lock page in next
+> version.
+
+Sorry, my previous suggestion didn't make sense.
+
+Thank you!
+Naoya Horiguchi
+
+> >And nr_pages in unpoison_memory() can be greater than 1 for hugetlbfs page.
+> >So does this patch break counting when unpoisoning free hugetlbfs pages?
+> >
+> >Thanks,
+> >Naoya Horiguchi
+> >
+> >> ---
+> >>  mm/memory-failure.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >> 
+> >> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> >> index 5092e06..6bfd51e 100644
+> >> --- a/mm/memory-failure.c
+> >> +++ b/mm/memory-failure.c
+> >> @@ -1350,7 +1350,7 @@ int unpoison_memory(unsigned long pfn)
+> >>  			return 0;
+> >>  		}
+> >>  		if (TestClearPageHWPoison(p))
+> >> -			atomic_long_sub(nr_pages, &num_poisoned_pages);
+> >> +			atomic_long_dec(&num_poisoned_pages);
+> >>  		pr_info("MCE: Software-unpoisoned free page %#lx\n", pfn);
+> >>  		return 0;
+> >>  	}
+> >> -- 
+> >> 1.8.1.2
+> >>
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
