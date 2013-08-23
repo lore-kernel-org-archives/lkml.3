@@ -1,157 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889Ab3HWM0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 08:26:51 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:47778 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755046Ab3HWM0t (ORCPT
+	id S1755910Ab3HWM1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 08:27:16 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:54216 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755715Ab3HWMYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 08:26:49 -0400
-Message-ID: <52175506.6010502@gmail.com>
-Date: Fri, 23 Aug 2013 08:26:46 -0400
-From: Ric Wheeler <ricwheeler@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-CC: emilne@redhat.com, James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [RFC PATCH] scsi: Add failfast mode to avoid infinite retry loop
-References: <20130819093925.7867.19221.stgit@ltc223.sdl.hitachi.co.jp>  <1376922616.2069.9.camel@dabdike.int.hansenpartnership.com>  <5213172E.1060905@hitachi.com> <1377022167.3872.13.camel@localhost.localdomain> <52172721.1040203@hitachi.com>
-In-Reply-To: <52172721.1040203@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Aug 2013 08:24:54 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 33/40] ARM: ux500: Don't register the STMPE/SKE when booting with ATAG support
+Date: Fri, 23 Aug 2013 13:23:33 +0100
+Message-Id: <1377260620-18829-34-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
+References: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2013 05:10 AM, Eiichi Tsukata wrote:
-> (2013/08/21 3:09), Ewan Milne wrote:
->> On Tue, 2013-08-20 at 16:13 +0900, Eiichi Tsukata wrote:
->>> (2013/08/19 23:30), James Bottomley wrote:
->>>> On Mon, 2013-08-19 at 18:39 +0900, Eiichi Tsukata wrote:
->>>>> Hello,
->>>>>
->>>>> This patch adds scsi device failfast mode to avoid infinite retry loop.
->>>>>
->>>>> Currently, scsi error handling in scsi_decide_disposition() and
->>>>> scsi_io_completion() unconditionally retries on some errors. This is because
->>>>> retryable errors are thought to be temporary and the scsi device will soon
->>>>> recover from those errors. Normally, such retry policy is appropriate because
->>>>> the device will soon recover from temporary error state.
->>>>> But there is no guarantee that device is able to recover from error state
->>>>> immediately. Some hardware error may prevent device from recovering.
->>>>> Therefore hardware error can results in infinite command retry loop. In fact,
->>>>> CHECK_CONDITION error with the sense-key = UNIT_ATTENTION caused infinite
->>>>> retry loop in our environment. As the comments in kernel source code says,
->>>>> UNIT_ATTENTION means the device must have been a power glitch and expected
->>>>> to immediately recover from the state. But it seems that hardware error
->>>>> caused permanent UNIT_ATTENTION error.
->>>>>
->>>>> To solve the above problem, this patch introduces scsi device "failfast 
->>>>> mode".
->>>>> If failfast mode is enabled, retry counts of all scsi commands are limited to
->>>>> scsi->allowed(== SD_MAX_RETRIES == 5). All commands are prohibited to retry
->>>>> infinitely, and immediately fails when the retry count exceeds upper limit.
->>>>> Failfast mode is useful on mission critical systems which are required
->>>>> to keep running flawlessly because they need to failover to the secondary
->>>>> system once they detect failures.
->>>>> On default, failfast mode is disabled because failfast policy is not suitable
->>>>> for most use cases which can accept I/O latency due to device hardware error.
->>>>>
->>>>> To enable failfast mode(default disabled):
->>>>>            # echo 1> /sys/bus/scsi/devices/X:X:X:X/failfast
->>>>> To disable:
->>>>>            # echo 0> /sys/bus/scsi/devices/X:X:X:X/failfast
->>>>>
->>>>> Furthermore, I'm planning to make the upper limit count configurable.
->>>>> Currently, I have two plans to implement it:
->>>>> (1) set same upper limit count on all errors.
->>>>> (2) set upper limit count on each error.
->>>>> The first implementation is simple and easy to implement but not flexible.
->>>>> Someone wants to set different upper limit count on each errors depends on 
->>>>> the
->>>>> scsi device they use. The second implementation satisfies such requirement
->>>>> but can be too fine-grained and annoying to configure because scsi error
->>>>> codes are so much. The default 5 times retry may too much on some errors but
->>>>> too few on other errors.
->>>>>
->>>>> Which would be the appropriate implementation?
->>>>> Any comments or suggestions are welcome as usual.
->>>>
->>>> I'm afraid you'll need to propose another solution.  We have a large
->>>> selection of commands which, by design, retry until the command exceeds
->>>> it's timeout.  UA is one of those (as are most of the others you're
->>>> limiting).  How do you kick this device out of its UA return (because
->>>> that's the recovery that needs to happen)?
->>>>
->>>> James
->>>>
->>>>
->>>
->>> Thanks for reviewing, James.
->>>
->>> Originally, I planned that once the retry count exceeds its limit,
->>> a monitoring tool stops the server with the scsi prink error message
->>> as a trigger.
->>> Current failfast mode implementation is that the command fails when
->>> retry command exceeds its limit. However, I noticed that only printing error 
->>> messages
->>> on retry counts excess without changing retry logic will be enough
->>> to stop the server and take fail over.  Though there is no guarantee that
->>> userspace application can work properly on disk failure condition.
->>> So, now I'm considering that just calling panic() on retry excess is better.
->>>
->>> For that reason, I propose the solution that adding "panic_on_error" option to
->>> sysfs parameter and if panic_on_error mode is enabled the server panics
->>> immediately once it detects retry excess. Of course, it is disabled on default.
->>>
->>> I would appreciate it if you could give me some comments.
->>>
->>> Eiichi
->>> -- 
->>
->> For what it's worth, I've seen a report of a case where a storage array
->> returned a CHECK CONDITION with invalid sense data, which caused the
->> command to be retried indefinitely.
->
-> Thank you for commenting, Ewan.
-> I appreciate your information about indefinite retry on CHECK CONDITION.
->
->> I'm not sure what you can do about
->> this, if the device won't ever complete a command without an error.
->> Perhaps it should be offlined after sufficiently bad behavior.
->>
->> I don't think you want to panic on an error, though.  In a clustered
->> environment it is possible that the other systems will all fail in the
->> same way, for example.
->>
->> -Ewan
->>
->
-> Yes, basically the device should be offlined on error detection.
-> Just offlining the disk is enough when an error occurs on "not" os-installed
-> system disk. Panic is going too far on such case.
->
-> However, in a clustered environment where computers use each its own disk and
-> do not share the same disk, calling panic() will be suitable when an error
-> occurs in system disk. Because even on such disk error, cluster monitoring
-> tool may not be able to detect the system failure while heartbeat can continue
-> working.
-> So, I think basically offlining is enough and also, panic is necessary on some 
-> cases.
->
-> Eiichi
->
+It's time to remove all ATAG support from ux500 and rely solely on
+Device Tree booting. This patch is part of that endeavour.
 
-I think that most file systems would let you decide when to panic on an IO error 
-(like ext4's various mount options). Sometimes panic will be the right thing to 
-do, but I think that should not be done in the SCSI system but at a higher layer.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/mach-ux500/board-mop500-stuib.c | 62 --------------------------------
+ 1 file changed, 62 deletions(-)
 
-What if you have multiple LUN's and file systems and only lose one? Should we 
-panic them all?
-
-Best regards,
-
-Ric
-
+diff --git a/arch/arm/mach-ux500/board-mop500-stuib.c b/arch/arm/mach-ux500/board-mop500-stuib.c
+index 7e1f294..b57996b 100644
+--- a/arch/arm/mach-ux500/board-mop500-stuib.c
++++ b/arch/arm/mach-ux500/board-mop500-stuib.c
+@@ -6,73 +6,14 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+-#include <linux/mfd/stmpe.h>
+ #include <linux/input/bu21013.h>
+ #include <linux/gpio.h>
+ #include <linux/interrupt.h>
+ #include <linux/i2c.h>
+-#include <linux/input/matrix_keypad.h>
+ #include <asm/mach-types.h>
+ 
+ #include "board-mop500.h"
+ 
+-/* STMPE/SKE keypad use this key layout */
+-static const unsigned int mop500_keymap[] = {
+-	KEY(2, 5, KEY_END),
+-	KEY(4, 1, KEY_POWER),
+-	KEY(3, 5, KEY_VOLUMEDOWN),
+-	KEY(1, 3, KEY_3),
+-	KEY(5, 2, KEY_RIGHT),
+-	KEY(5, 0, KEY_9),
+-
+-	KEY(0, 5, KEY_MENU),
+-	KEY(7, 6, KEY_ENTER),
+-	KEY(4, 5, KEY_0),
+-	KEY(6, 7, KEY_2),
+-	KEY(3, 4, KEY_UP),
+-	KEY(3, 3, KEY_DOWN),
+-
+-	KEY(6, 4, KEY_SEND),
+-	KEY(6, 2, KEY_BACK),
+-	KEY(4, 2, KEY_VOLUMEUP),
+-	KEY(5, 5, KEY_1),
+-	KEY(4, 3, KEY_LEFT),
+-	KEY(3, 2, KEY_7),
+-};
+-
+-static const struct matrix_keymap_data mop500_keymap_data = {
+-	.keymap		= mop500_keymap,
+-	.keymap_size    = ARRAY_SIZE(mop500_keymap),
+-};
+-/*
+- * STMPE1601
+- */
+-static struct stmpe_keypad_platform_data stmpe1601_keypad_data = {
+-	.debounce_ms    = 64,
+-	.scan_count     = 8,
+-	.no_autorepeat  = true,
+-	.keymap_data    = &mop500_keymap_data,
+-};
+-
+-static struct stmpe_platform_data stmpe1601_data = {
+-	.id		= 1,
+-	.blocks		= STMPE_BLOCK_KEYPAD,
+-	.irq_trigger    = IRQF_TRIGGER_FALLING,
+-	.irq_base       = MOP500_STMPE1601_IRQ(0),
+-	.keypad		= &stmpe1601_keypad_data,
+-	.autosleep      = true,
+-	.autosleep_timeout = 1024,
+-};
+-
+-static struct i2c_board_info __initdata mop500_i2c0_devices_stuib[] = {
+-	{
+-		I2C_BOARD_INFO("stmpe1601", 0x40),
+-		.irq = NOMADIK_GPIO_TO_IRQ(218),
+-		.platform_data = &stmpe1601_data,
+-		.flags = I2C_CLIENT_WAKE,
+-	},
+-};
+-
+ /*
+  * BU21013 ROHM touchscreen interface on the STUIBs
+  */
+@@ -112,9 +53,6 @@ void __init mop500_stuib_init(void)
+ 	else
+ 		tsc_plat_device.cs_pin = GPIO_BU21013_CS;
+ 
+-	mop500_uib_i2c_add(0, mop500_i2c0_devices_stuib,
+-			ARRAY_SIZE(mop500_i2c0_devices_stuib));
+-
+ 	mop500_uib_i2c_add(3, u8500_i2c3_devices_stuib,
+ 			ARRAY_SIZE(u8500_i2c3_devices_stuib));
+ }
+-- 
+1.8.1.2
 
