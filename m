@@ -1,557 +1,1247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab3HWTIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:08:30 -0400
-Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:48814 "EHLO
-	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755983Ab3HWTI3 (ORCPT
+	id S1756328Ab3HWTIe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:08:34 -0400
+Received: from a9-99.smtp-out.amazonses.com ([54.240.9.99]:50691 "EHLO
+	a9-99.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755983Ab3HWTIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:08:29 -0400
-X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Aug 2013 15:08:28 EDT
-Message-ID: <00000140ac8e32d2-969b19c7-553b-41b3-9415-d99f927cb3ab-000000@email.amazonses.com>
+	Fri, 23 Aug 2013 15:08:31 -0400
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Aug 2013 15:08:31 EDT
+Message-ID: <00000140ac8e3021-7f5fdd6f-4b02-4e4a-82ca-2e962c1f2c56-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Fri, 23 Aug 2013 19:02:17 +0000
+Date: Fri, 23 Aug 2013 19:02:19 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [guv 15/16] misc arches __get_cpu_var conversion
+Subject: [guv 07/16] x86: Convert __get_cpu_var uses
 References: <20130823190135.726207430@linux.com>
-X-SES-Outgoing: 2013.08.23-54.240.9.62
+X-SES-Outgoing: 2013.08.23-54.240.9.99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/arch/alpha/kernel/perf_event.c
+Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
 ===================================================================
---- linux.orig/arch/alpha/kernel/perf_event.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/alpha/kernel/perf_event.c	2013-08-22 14:57:32.570610889 -0500
-@@ -422,7 +422,7 @@ static void maybe_change_configuration(s
-  */
- static int alpha_pmu_add(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int n0;
- 	int ret;
-@@ -474,7 +474,7 @@ static int alpha_pmu_add(struct perf_eve
-  */
- static void alpha_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	unsigned long irq_flags;
- 	int j;
-@@ -522,7 +522,7 @@ static void alpha_pmu_read(struct perf_e
- static void alpha_pmu_stop(struct perf_event *event, int flags)
- {
- 	struct hw_perf_event *hwc = &event->hw;
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+--- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/apic/x2apic_uv_x.c	2013-08-22 15:01:56.715952554 -0500
+@@ -874,10 +874,10 @@ int uv_handle_nmi(unsigned int reason, s
+ 		spin_unlock(&uv_blade_info[bid].nmi_lock);
+ 	}
  
- 	if (!(hwc->state & PERF_HES_STOPPED)) {
- 		cpuc->idx_mask &= ~(1UL<<hwc->idx);
-@@ -542,7 +542,7 @@ static void alpha_pmu_stop(struct perf_e
- static void alpha_pmu_start(struct perf_event *event, int flags)
- {
- 	struct hw_perf_event *hwc = &event->hw;
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+-	if (likely(__get_cpu_var(cpu_last_nmi_count) == uv_blade_info[bid].nmi_count))
++	if (likely(__this_cpu_read(cpu_last_nmi_count) == uv_blade_info[bid].nmi_count))
+ 		return NMI_DONE;
  
- 	if (WARN_ON_ONCE(!(hwc->state & PERF_HES_STOPPED)))
+-	__get_cpu_var(cpu_last_nmi_count) = uv_blade_info[bid].nmi_count;
++	__this_cpu_write(cpu_last_nmi_count, uv_blade_info[bid].nmi_count);
+ 
+ 	/*
+ 	 * Use a lock so only one cpu prints at a time.
+Index: linux/arch/x86/kernel/cpu/mcheck/mce_intel.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/mcheck/mce_intel.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/cpu/mcheck/mce_intel.c	2013-08-22 16:16:54.974785742 -0500
+@@ -86,7 +86,7 @@ void mce_intel_cmci_poll(void)
+ {
+ 	if (__this_cpu_read(cmci_storm_state) == CMCI_STORM_NONE)
  		return;
-@@ -713,7 +713,7 @@ static int alpha_pmu_event_init(struct p
+-	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
++	machine_check_poll(MCP_TIMESTAMP, this_cpu_ptr(&mce_banks_owned));
+ }
+ 
+ void mce_intel_hcpu_update(unsigned long cpu)
+@@ -179,7 +179,7 @@ static void intel_threshold_interrupt(vo
+ {
+ 	if (cmci_storm_detect())
+ 		return;
+-	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
++	machine_check_poll(MCP_TIMESTAMP, this_cpu_ptr(&mce_banks_owned));
+ 	mce_notify_irq();
+ }
+ 
+@@ -190,7 +190,7 @@ static void intel_threshold_interrupt(vo
   */
- static void alpha_pmu_enable(struct pmu *pmu)
+ static void cmci_discover(int banks)
  {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+-	unsigned long *owned = (void *)&__get_cpu_var(mce_banks_owned);
++	unsigned long *owned = (void *)this_cpu_ptr(&mce_banks_owned);
+ 	unsigned long flags;
+ 	int i;
+ 	int bios_wrong_thresh = 0;
+@@ -208,7 +208,7 @@ static void cmci_discover(int banks)
+ 		/* Already owned by someone else? */
+ 		if (val & MCI_CTL2_CMCI_EN) {
+ 			clear_bit(i, owned);
+-			__clear_bit(i, __get_cpu_var(mce_poll_banks));
++			__clear_bit(i, this_cpu_ptr(mce_poll_banks));
+ 			continue;
+ 		}
  
- 	if (cpuc->enabled)
+@@ -232,7 +232,7 @@ static void cmci_discover(int banks)
+ 		/* Did the enable bit stick? -- the bank supports CMCI */
+ 		if (val & MCI_CTL2_CMCI_EN) {
+ 			set_bit(i, owned);
+-			__clear_bit(i, __get_cpu_var(mce_poll_banks));
++			__clear_bit(i, this_cpu_ptr(mce_poll_banks));
+ 			/*
+ 			 * We are able to set thresholds for some banks that
+ 			 * had a threshold of 0. This means the BIOS has not
+@@ -243,7 +243,7 @@ static void cmci_discover(int banks)
+ 					(val & MCI_CTL2_CMCI_THRESHOLD_MASK))
+ 				bios_wrong_thresh = 1;
+ 		} else {
+-			WARN_ON(!test_bit(i, __get_cpu_var(mce_poll_banks)));
++			WARN_ON(!test_bit(i, this_cpu_ptr(mce_poll_banks)));
+ 		}
+ 	}
+ 	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
+@@ -267,7 +267,7 @@ void cmci_recheck(void)
+ 	if (!mce_available(__this_cpu_ptr(&cpu_info)) || !cmci_supported(&banks))
  		return;
-@@ -739,7 +739,7 @@ static void alpha_pmu_enable(struct pmu
+ 	local_irq_save(flags);
+-	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
++	machine_check_poll(MCP_TIMESTAMP, this_cpu_ptr(&mce_banks_owned));
+ 	local_irq_restore(flags);
+ }
  
- static void alpha_pmu_disable(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (!cpuc->enabled)
+@@ -286,13 +286,13 @@ void cmci_clear(void)
  		return;
-@@ -804,7 +804,7 @@ static void alpha_perf_event_irq_handler
- 	int idx, j;
- 
- 	__this_cpu_inc(irq_pmi_count);
--	cpuc = &__get_cpu_var(cpu_hw_events);
-+	cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	/* Completely counting through the PMC's period to trigger a new PMC
- 	 * overflow interrupt while in this interrupt routine is utterly
-Index: linux/arch/alpha/kernel/time.c
+ 	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	for (i = 0; i < banks; i++) {
+-		if (!test_bit(i, __get_cpu_var(mce_banks_owned)))
++		if (!test_bit(i, this_cpu_ptr(mce_banks_owned)))
+ 			continue;
+ 		/* Disable CMCI */
+ 		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
+ 		val &= ~MCI_CTL2_CMCI_EN;
+ 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
+-		__clear_bit(i, __get_cpu_var(mce_banks_owned));
++		__clear_bit(i, this_cpu_ptr(mce_banks_owned));
+ 	}
+ 	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
+ }
+Index: linux/arch/x86/kernel/irq_64.c
 ===================================================================
---- linux.orig/arch/alpha/kernel/time.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/alpha/kernel/time.c	2013-08-22 14:57:32.570610889 -0500
-@@ -86,9 +86,9 @@ unsigned long est_cycle_freq;
+--- linux.orig/arch/x86/kernel/irq_64.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/irq_64.c	2013-08-22 16:16:54.974785742 -0500
+@@ -52,13 +52,13 @@ static inline void stack_overflow_check(
+ 	    regs->sp <= curbase + THREAD_SIZE)
+ 		return;
  
- DEFINE_PER_CPU(u8, irq_work_pending);
+-	irq_stack_top = (u64)__get_cpu_var(irq_stack_union.irq_stack) +
++	irq_stack_top = (u64)this_cpu_ptr(irq_stack_union.irq_stack) +
+ 			STACK_TOP_MARGIN;
+-	irq_stack_bottom = (u64)__get_cpu_var(irq_stack_ptr);
++	irq_stack_bottom = (u64)__this_cpu_read(irq_stack_ptr);
+ 	if (regs->sp >= irq_stack_top && regs->sp <= irq_stack_bottom)
+ 		return;
  
--#define set_irq_work_pending_flag()  __get_cpu_var(irq_work_pending) = 1
--#define test_irq_work_pending()      __get_cpu_var(irq_work_pending)
--#define clear_irq_work_pending()     __get_cpu_var(irq_work_pending) = 0
-+#define set_irq_work_pending_flag()  __this_cpu_write(irq_work_pending, 1)
-+#define test_irq_work_pending()      __this_cpu_read(irq_work_pending)
-+#define clear_irq_work_pending()     __this_cpu_writeirq_work_pending, 0)
- 
- void arch_irq_work_raise(void)
- {
-Index: linux/arch/arc/kernel/kprobes.c
+-	oist = &__get_cpu_var(orig_ist);
++	oist = this_cpu_ptr(&orig_ist);
+ 	estack_top = (u64)oist->ist[0] - EXCEPTION_STKSZ + STACK_TOP_MARGIN;
+ 	estack_bottom = (u64)oist->ist[N_EXCEPTION_STACKS - 1];
+ 	if (regs->sp >= estack_top && regs->sp <= estack_bottom)
+Index: linux/arch/x86/kernel/kvm.c
 ===================================================================
---- linux.orig/arch/arc/kernel/kprobes.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/arc/kernel/kprobes.c	2013-08-22 14:57:32.570610889 -0500
-@@ -87,13 +87,13 @@ static void __kprobes save_previous_kpro
- 
- static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
+--- linux.orig/arch/x86/kernel/kvm.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/kvm.c	2013-08-22 16:16:54.974785742 -0500
+@@ -242,9 +242,9 @@ u32 kvm_read_and_reset_pf_reason(void)
  {
--	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
-+	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
- 	kcb->kprobe_status = kcb->prev_kprobe.status;
+ 	u32 reason = 0;
+ 
+-	if (__get_cpu_var(apf_reason).enabled) {
+-		reason = __get_cpu_var(apf_reason).reason;
+-		__get_cpu_var(apf_reason).reason = 0;
++	if (__this_cpu_read(apf_reason.enabled)) {
++		reason = __this_cpu_read(apf_reason.reason);
++		__this_cpu_write(apf_reason.reason, 0);
+ 	}
+ 
+ 	return reason;
+@@ -315,7 +315,7 @@ static void kvm_guest_apic_eoi_write(u32
+ 	 * there's no need for lock or memory barriers.
+ 	 * An optimization barrier is implied in apic write.
+ 	 */
+-	if (__test_and_clear_bit(KVM_PV_EOI_BIT, &__get_cpu_var(kvm_apic_eoi)))
++	if (__test_and_clear_bit(KVM_PV_EOI_BIT, this_cpu_ptr(&kvm_apic_eoi)))
+ 		return;
+ 	apic_write(APIC_EOI, APIC_EOI_ACK);
+ }
+@@ -326,13 +326,13 @@ void kvm_guest_cpu_init(void)
+ 		return;
+ 
+ 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF) && kvmapf) {
+-		u64 pa = slow_virt_to_phys(&__get_cpu_var(apf_reason));
++		u64 pa = slow_virt_to_phys(this_cpu_ptr(&apf_reason));
+ 
+ #ifdef CONFIG_PREEMPT
+ 		pa |= KVM_ASYNC_PF_SEND_ALWAYS;
+ #endif
+ 		wrmsrl(MSR_KVM_ASYNC_PF_EN, pa | KVM_ASYNC_PF_ENABLED);
+-		__get_cpu_var(apf_reason).enabled = 1;
++		__this_cpu_write(apf_reason.enabled, 1);
+ 		printk(KERN_INFO"KVM setup async PF for cpu %d\n",
+ 		       smp_processor_id());
+ 	}
+@@ -341,8 +341,8 @@ void kvm_guest_cpu_init(void)
+ 		unsigned long pa;
+ 		/* Size alignment is implied but just to make it explicit. */
+ 		BUILD_BUG_ON(__alignof__(kvm_apic_eoi) < 4);
+-		__get_cpu_var(kvm_apic_eoi) = 0;
+-		pa = slow_virt_to_phys(&__get_cpu_var(kvm_apic_eoi))
++		__this_cpu_write(kvm_apic_eoi, 0);
++		pa = slow_virt_to_phys(this_cpu_ptr(&kvm_apic_eoi))
+ 			| KVM_MSR_ENABLED;
+ 		wrmsrl(MSR_KVM_PV_EOI_EN, pa);
+ 	}
+@@ -353,11 +353,11 @@ void kvm_guest_cpu_init(void)
+ 
+ static void kvm_pv_disable_apf(void)
+ {
+-	if (!__get_cpu_var(apf_reason).enabled)
++	if (!__this_cpu_read(apf_reason.enabled))
+ 		return;
+ 
+ 	wrmsrl(MSR_KVM_ASYNC_PF_EN, 0);
+-	__get_cpu_var(apf_reason).enabled = 0;
++	__this_cpu_write(apf_reason.enabled, 0);
+ 
+ 	printk(KERN_INFO"Unregister pv shared memory for cpu %d\n",
+ 	       smp_processor_id());
+Index: linux/arch/x86/kvm/svm.c
+===================================================================
+--- linux.orig/arch/x86/kvm/svm.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kvm/svm.c	2013-08-22 16:16:54.974785742 -0500
+@@ -654,7 +654,7 @@ static int svm_hardware_enable(void *gar
+ 
+ 	if (static_cpu_has(X86_FEATURE_TSCRATEMSR)) {
+ 		wrmsrl(MSR_AMD64_TSC_RATIO, TSC_RATIO_DEFAULT);
+-		__get_cpu_var(current_tsc_ratio) = TSC_RATIO_DEFAULT;
++		__this_cpu_write(current_tsc_ratio, TSC_RATIO_DEFAULT);
+ 	}
+ 
+ 
+@@ -1312,8 +1312,8 @@ static void svm_vcpu_load(struct kvm_vcp
+ 		rdmsrl(host_save_user_msrs[i], svm->host_user_msrs[i]);
+ 
+ 	if (static_cpu_has(X86_FEATURE_TSCRATEMSR) &&
+-	    svm->tsc_ratio != __get_cpu_var(current_tsc_ratio)) {
+-		__get_cpu_var(current_tsc_ratio) = svm->tsc_ratio;
++	    svm->tsc_ratio != __this_cpu_read(current_tsc_ratio)) {
++		__this_cpu_write(current_tsc_ratio, svm->tsc_ratio);
+ 		wrmsrl(MSR_AMD64_TSC_RATIO, svm->tsc_ratio);
+ 	}
+ }
+Index: linux/arch/x86/kvm/x86.c
+===================================================================
+--- linux.orig/arch/x86/kvm/x86.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kvm/x86.c	2013-08-22 15:01:56.715952554 -0500
+@@ -1485,7 +1485,7 @@ static int kvm_guest_time_update(struct
+ 
+ 	/* Keep irq disabled to prevent changes to the clock */
+ 	local_irq_save(flags);
+-	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
++	this_tsc_khz = __this_cpu_read(cpu_tsc_khz);
+ 	if (unlikely(this_tsc_khz == 0)) {
+ 		local_irq_restore(flags);
+ 		kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
+Index: linux/arch/x86/oprofile/op_model_p4.c
+===================================================================
+--- linux.orig/arch/x86/oprofile/op_model_p4.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/oprofile/op_model_p4.c	2013-08-22 15:01:56.715952554 -0500
+@@ -372,7 +372,7 @@ static unsigned int get_stagger(void)
+ {
+ #ifdef CONFIG_SMP
+ 	int cpu = smp_processor_id();
+-	return cpu != cpumask_first(__get_cpu_var(cpu_sibling_map));
++	return cpu != cpumask_first(this_cpu_ptr(cpu_sibling_map));
+ #endif
+ 	return 0;
+ }
+Index: linux/arch/x86/xen/enlighten.c
+===================================================================
+--- linux.orig/arch/x86/xen/enlighten.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/xen/enlighten.c	2013-08-22 16:16:54.974785742 -0500
+@@ -817,7 +817,7 @@ static void xen_convert_trap_info(const
+ 
+ void xen_copy_trap_info(struct trap_info *traps)
+ {
+-	const struct desc_ptr *desc = &__get_cpu_var(idt_desc);
++	const struct desc_ptr *desc = this_cpu_ptr(&idt_desc);
+ 
+ 	xen_convert_trap_info(desc, traps);
+ }
+@@ -834,7 +834,7 @@ static void xen_load_idt(const struct de
+ 
+ 	spin_lock(&lock);
+ 
+-	__get_cpu_var(idt_desc) = *desc;
++	memcpy(this_cpu_ptr(&idt_desc), desc, sizeof(idt_desc));
+ 
+ 	xen_convert_trap_info(desc, traps);
+ 
+Index: linux/arch/x86/kernel/apb_timer.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apb_timer.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/apb_timer.c	2013-08-22 15:01:56.715952554 -0500
+@@ -146,7 +146,7 @@ static inline int is_apbt_capable(void)
+ static int __init apbt_clockevent_register(void)
+ {
+ 	struct sfi_timer_table_entry *mtmr;
+-	struct apbt_dev *adev = &__get_cpu_var(cpu_apbt_dev);
++	struct apbt_dev *adev = this_cpu_ptr(&cpu_apbt_dev);
+ 
+ 	mtmr = sfi_get_mtmr(APBT_CLOCKEVENT0_NUM);
+ 	if (mtmr == NULL) {
+@@ -200,7 +200,7 @@ void apbt_setup_secondary_clock(void)
+ 	if (!cpu)
+ 		return;
+ 
+-	adev = &__get_cpu_var(cpu_apbt_dev);
++	adev = this_cpu_ptr(&cpu_apbt_dev);
+ 	if (!adev->timer) {
+ 		adev->timer = dw_apb_clockevent_init(cpu, adev->name,
+ 			APBT_CLOCKEVENT_RATING, adev_virt_addr(adev),
+Index: linux/arch/x86/kernel/apic/apic.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/apic.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/apic/apic.c	2013-08-22 15:01:56.715952554 -0500
+@@ -546,7 +546,7 @@ static DEFINE_PER_CPU(struct clock_event
+  */
+ static void setup_APIC_timer(void)
+ {
+-	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
++	struct clock_event_device *levt = this_cpu_ptr(&lapic_events);
+ 
+ 	if (this_cpu_has(X86_FEATURE_ARAT)) {
+ 		lapic_clockevent.features &= ~CLOCK_EVT_FEAT_C3STOP;
+@@ -681,7 +681,7 @@ calibrate_by_pmtimer(long deltapm, long
+ 
+ static int __init calibrate_APIC_clock(void)
+ {
+-	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
++	struct clock_event_device *levt = this_cpu_ptr(&lapic_events);
+ 	void (*real_handler)(struct clock_event_device *dev);
+ 	unsigned long deltaj;
+ 	long delta, deltatsc;
+Index: linux/arch/x86/kernel/cpu/mcheck/mce-inject.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/mcheck/mce-inject.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/cpu/mcheck/mce-inject.c	2013-08-22 15:01:56.715952554 -0500
+@@ -83,7 +83,7 @@ static DEFINE_MUTEX(mce_inject_mutex);
+ static int mce_raise_notify(unsigned int cmd, struct pt_regs *regs)
+ {
+ 	int cpu = smp_processor_id();
+-	struct mce *m = &__get_cpu_var(injectm);
++	struct mce *m = this_cpu_ptr(&injectm);
+ 	if (!cpumask_test_cpu(cpu, mce_inject_cpumask))
+ 		return NMI_DONE;
+ 	cpumask_clear_cpu(cpu, mce_inject_cpumask);
+@@ -97,7 +97,7 @@ static int mce_raise_notify(unsigned int
+ static void mce_irq_ipi(void *info)
+ {
+ 	int cpu = smp_processor_id();
+-	struct mce *m = &__get_cpu_var(injectm);
++	struct mce *m = this_cpu_ptr(&injectm);
+ 
+ 	if (cpumask_test_cpu(cpu, mce_inject_cpumask) &&
+ 			m->inject_flags & MCJ_EXCEPTION) {
+@@ -109,7 +109,7 @@ static void mce_irq_ipi(void *info)
+ /* Inject mce on current CPU */
+ static int raise_local(void)
+ {
+-	struct mce *m = &__get_cpu_var(injectm);
++	struct mce *m = this_cpu_ptr(&injectm);
+ 	int context = MCJ_CTX(m->inject_flags);
+ 	int ret = 0;
+ 	int cpu = m->extcpu;
+Index: linux/arch/x86/kernel/cpu/mcheck/mce.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/mcheck/mce.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/cpu/mcheck/mce.c	2013-08-22 15:01:56.719952513 -0500
+@@ -390,7 +390,7 @@ static u64 mce_rdmsrl(u32 msr)
+ 
+ 		if (offset < 0)
+ 			return 0;
+-		return *(u64 *)((char *)&__get_cpu_var(injectm) + offset);
++		return *(u64 *)((char *)this_cpu_ptr(&injectm) + offset);
+ 	}
+ 
+ 	if (rdmsrl_safe(msr, &v)) {
+@@ -412,7 +412,7 @@ static void mce_wrmsrl(u32 msr, u64 v)
+ 		int offset = msr_to_offset(msr);
+ 
+ 		if (offset >= 0)
+-			*(u64 *)((char *)&__get_cpu_var(injectm) + offset) = v;
++			*(u64 *)((char *)this_cpu_ptr(&injectm) + offset) = v;
+ 		return;
+ 	}
+ 	wrmsrl(msr, v);
+@@ -468,7 +468,7 @@ static DEFINE_PER_CPU(struct mce_ring, m
+ /* Runs with CPU affinity in workqueue */
+ static int mce_ring_empty(void)
+ {
+-	struct mce_ring *r = &__get_cpu_var(mce_ring);
++	struct mce_ring *r = this_cpu_ptr(&mce_ring);
+ 
+ 	return r->start == r->end;
+ }
+@@ -480,7 +480,7 @@ static int mce_ring_get(unsigned long *p
+ 
+ 	*pfn = 0;
+ 	get_cpu();
+-	r = &__get_cpu_var(mce_ring);
++	r = this_cpu_ptr(&mce_ring);
+ 	if (r->start == r->end)
+ 		goto out;
+ 	*pfn = r->ring[r->start];
+@@ -494,7 +494,7 @@ out:
+ /* Always runs in MCE context with preempt off */
+ static int mce_ring_add(unsigned long pfn)
+ {
+-	struct mce_ring *r = &__get_cpu_var(mce_ring);
++	struct mce_ring *r = this_cpu_ptr(&mce_ring);
+ 	unsigned next;
+ 
+ 	next = (r->end + 1) % MCE_RING_SIZE;
+@@ -516,7 +516,7 @@ int mce_available(struct cpuinfo_x86 *c)
+ static void mce_schedule_work(void)
+ {
+ 	if (!mce_ring_empty())
+-		schedule_work(&__get_cpu_var(mce_work));
++		schedule_work(this_cpu_ptr(&mce_work));
  }
  
- static inline void __kprobes set_current_kprobe(struct kprobe *p)
- {
--	__get_cpu_var(current_kprobe) = p;
-+	__this_cpu_write(current_kprobe, p);
+ DEFINE_PER_CPU(struct irq_work, mce_irq_work);
+@@ -541,7 +541,7 @@ static void mce_report_event(struct pt_r
+ 		return;
+ 	}
+ 
+-	irq_work_queue(&__get_cpu_var(mce_irq_work));
++	irq_work_queue(this_cpu_ptr(&mce_irq_work));
  }
  
- static void __kprobes resume_execution(struct kprobe *p, unsigned long addr,
-@@ -237,7 +237,7 @@ int __kprobes arc_kprobe_handler(unsigne
+ /*
+@@ -1037,7 +1037,7 @@ void do_machine_check(struct pt_regs *re
  
- 		return 1;
- 	} else if (kprobe_running()) {
--		p = __get_cpu_var(current_kprobe);
-+		p = __this_cpu_read(current_kprobe);
- 		if (p->break_handler && p->break_handler(p, regs)) {
- 			setup_singlestep(p, regs);
- 			kcb->kprobe_status = KPROBE_HIT_SS;
-Index: linux/arch/arc/kernel/time.c
-===================================================================
---- linux.orig/arch/arc/kernel/time.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/arc/kernel/time.c	2013-08-22 14:57:32.570610889 -0500
-@@ -206,7 +206,7 @@ static DEFINE_PER_CPU(struct clock_event
+ 	mce_gather_info(&m, regs);
  
- static irqreturn_t timer_irq_handler(int irq, void *dev_id)
+-	final = &__get_cpu_var(mces_seen);
++	final = this_cpu_ptr(&mces_seen);
+ 	*final = m;
+ 
+ 	memset(valid_banks, 0, sizeof(valid_banks));
+@@ -1271,14 +1271,14 @@ static unsigned long (*mce_adjust_timer)
+ 
+ static void mce_timer_fn(unsigned long data)
  {
--	struct clock_event_device *clk = &__get_cpu_var(arc_clockevent_device);
-+	struct clock_event_device *clk = this_cpu_ptr(&arc_clockevent_device);
+-	struct timer_list *t = &__get_cpu_var(mce_timer);
++	struct timer_list *t = this_cpu_ptr(&mce_timer);
+ 	unsigned long iv;
  
- 	arc_timer_event_ack(clk->mode == CLOCK_EVT_MODE_PERIODIC);
- 	clk->event_handler(clk);
-Index: linux/arch/avr32/kernel/kprobes.c
-===================================================================
---- linux.orig/arch/avr32/kernel/kprobes.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/avr32/kernel/kprobes.c	2013-08-22 14:57:32.570610889 -0500
-@@ -104,7 +104,7 @@ static void __kprobes resume_execution(s
+ 	WARN_ON(smp_processor_id() != data);
  
- static void __kprobes set_current_kprobe(struct kprobe *p)
+ 	if (mce_available(__this_cpu_ptr(&cpu_info))) {
+ 		machine_check_poll(MCP_TIMESTAMP,
+-				&__get_cpu_var(mce_poll_banks));
++				this_cpu_ptr(&mce_poll_banks));
+ 		mce_intel_cmci_poll();
+ 	}
+ 
+@@ -1306,7 +1306,7 @@ static void mce_timer_fn(unsigned long d
+  */
+ void mce_timer_kick(unsigned long interval)
  {
--	__get_cpu_var(current_kprobe) = p;
-+	__this_cpu_write(current_kprobe, p);
+-	struct timer_list *t = &__get_cpu_var(mce_timer);
++	struct timer_list *t = this_cpu_ptr(&mce_timer);
+ 	unsigned long when = jiffies + interval;
+ 	unsigned long iv = __this_cpu_read(mce_next_interval);
+ 
+@@ -1642,7 +1642,7 @@ static void mce_start_timer(unsigned int
+ 
+ static void __mcheck_cpu_init_timer(void)
+ {
+-	struct timer_list *t = &__get_cpu_var(mce_timer);
++	struct timer_list *t = this_cpu_ptr(&mce_timer);
+ 	unsigned int cpu = smp_processor_id();
+ 
+ 	setup_timer(t, mce_timer_fn, cpu);
+@@ -1685,8 +1685,8 @@ void mcheck_cpu_init(struct cpuinfo_x86
+ 	__mcheck_cpu_init_generic();
+ 	__mcheck_cpu_init_vendor(c);
+ 	__mcheck_cpu_init_timer();
+-	INIT_WORK(&__get_cpu_var(mce_work), mce_process_work);
+-	init_irq_work(&__get_cpu_var(mce_irq_work), &mce_irq_work_cb);
++	INIT_WORK(this_cpu_ptr(&mce_work), mce_process_work);
++	init_irq_work(this_cpu_ptr(&mce_irq_work), &mce_irq_work_cb);
  }
  
- static int __kprobes kprobe_handler(struct pt_regs *regs)
-Index: linux/arch/blackfin/include/asm/ipipe.h
+ /*
+Index: linux/arch/x86/kernel/cpu/mcheck/mce_amd.c
 ===================================================================
---- linux.orig/arch/blackfin/include/asm/ipipe.h	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/blackfin/include/asm/ipipe.h	2013-08-22 14:57:32.570610889 -0500
-@@ -157,7 +157,7 @@ static inline unsigned long __ipipe_ffnz
- }
+--- linux.orig/arch/x86/kernel/cpu/mcheck/mce_amd.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/cpu/mcheck/mce_amd.c	2013-08-22 15:01:56.719952513 -0500
+@@ -310,7 +310,7 @@ static void amd_threshold_interrupt(void
+ 			 * event.
+ 			 */
+ 			machine_check_poll(MCP_TIMESTAMP,
+-					&__get_cpu_var(mce_poll_banks));
++					this_cpu_ptr(&mce_poll_banks));
  
- #define __ipipe_do_root_xirq(ipd, irq)					\
--	((ipd)->irqs[irq].handler(irq, &__raw_get_cpu_var(__ipipe_tick_regs)))
-+	((ipd)->irqs[irq].handler(irq, __this_cpu_ptr(&__ipipe_tick_regs)))
- 
- #define __ipipe_run_irqtail(irq)  /* Must be a macro */			\
- 	do {								\
-Index: linux/arch/blackfin/kernel/perf_event.c
+ 			if (high & MASK_OVERFLOW_HI) {
+ 				rdmsrl(address, m.misc);
+Index: linux/arch/x86/kernel/cpu/perf_event.c
 ===================================================================
---- linux.orig/arch/blackfin/kernel/perf_event.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/blackfin/kernel/perf_event.c	2013-08-22 14:57:32.570610889 -0500
-@@ -300,7 +300,7 @@ again:
+--- linux.orig/arch/x86/kernel/cpu/perf_event.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/cpu/perf_event.c	2013-08-22 15:01:56.719952513 -0500
+@@ -493,7 +493,7 @@ static int __x86_pmu_event_init(struct p
  
- static void bfin_pmu_stop(struct perf_event *event, int flags)
+ void x86_pmu_disable_all(void)
  {
 -	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
 +	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
+ 	int idx;
  
-@@ -318,7 +318,7 @@ static void bfin_pmu_stop(struct perf_ev
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+@@ -511,7 +511,7 @@ void x86_pmu_disable_all(void)
  
- static void bfin_pmu_start(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
-@@ -335,7 +335,7 @@ static void bfin_pmu_start(struct perf_e
- 
- static void bfin_pmu_del(struct perf_event *event, int flags)
+ static void x86_pmu_disable(struct pmu *pmu)
  {
 -	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
 +	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
  
- 	bfin_pmu_stop(event, PERF_EF_UPDATE);
- 	__clear_bit(event->hw.idx, cpuc->used_mask);
-@@ -345,7 +345,7 @@ static void bfin_pmu_del(struct perf_eve
+ 	if (!x86_pmu_initialized())
+ 		return;
+@@ -528,7 +528,7 @@ static void x86_pmu_disable(struct pmu *
  
- static int bfin_pmu_add(struct perf_event *event, int flags)
+ void x86_pmu_enable_all(int added)
  {
 -	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
 +	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 	int ret = -EAGAIN;
-@@ -429,7 +429,7 @@ static int bfin_pmu_event_init(struct pe
+ 	int idx;
  
- static void bfin_pmu_enable(struct pmu *pmu)
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+@@ -874,7 +874,7 @@ static void x86_pmu_start(struct perf_ev
+ 
+ static void x86_pmu_enable(struct pmu *pmu)
  {
 -	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
 +	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
  	struct perf_event *event;
  	struct hw_perf_event *hwc;
- 	int i;
-Index: linux/arch/blackfin/mach-common/smp.c
-===================================================================
---- linux.orig/arch/blackfin/mach-common/smp.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/blackfin/mach-common/smp.c	2013-08-22 14:57:32.570610889 -0500
-@@ -146,7 +146,7 @@ static irqreturn_t ipi_handler_int1(int
+ 	int i, added = cpuc->n_added;
+@@ -1023,7 +1023,7 @@ void x86_pmu_enable_event(struct perf_ev
+  */
+ static int x86_pmu_add(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc;
+ 	int assign[X86_PMC_IDX_MAX];
+ 	int n, n0, ret;
+@@ -1070,7 +1070,7 @@ out:
  
- 	platform_clear_ipi(cpu, IRQ_SUPPLE_1);
+ static void x86_pmu_start(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int idx = event->hw.idx;
  
--	bfin_ipi_data = &__get_cpu_var(bfin_ipi);
-+	bfin_ipi_data = this_cpu_ptr(&bfin_ipi);
- 	while ((pending = atomic_xchg(&bfin_ipi_data->bits, 0)) != 0) {
- 		msg = 0;
- 		do {
-Index: linux/arch/metag/kernel/perf/perf_event.c
-===================================================================
---- linux.orig/arch/metag/kernel/perf/perf_event.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/metag/kernel/perf/perf_event.c	2013-08-22 14:57:32.570610889 -0500
-@@ -258,7 +258,7 @@ int metag_pmu_event_set_period(struct pe
+ 	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
+@@ -1149,7 +1149,7 @@ void perf_event_print_debug(void)
  
- static void metag_pmu_start(struct perf_event *event, int flags)
+ void x86_pmu_stop(struct perf_event *event, int flags)
  {
 -	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
 +	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
  	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
  
-@@ -306,7 +306,7 @@ static void metag_pmu_stop(struct perf_e
+ 	if (__test_and_clear_bit(hwc->idx, cpuc->active_mask)) {
+@@ -1171,7 +1171,7 @@ void x86_pmu_stop(struct perf_event *eve
  
- static int metag_pmu_add(struct perf_event *event, int flags)
+ static void x86_pmu_del(struct perf_event *event, int flags)
  {
 -	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
 +	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = 0, ret = 0;
- 
-@@ -348,7 +348,7 @@ out:
- 
- static void metag_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
-@@ -607,7 +607,7 @@ static int _hw_perf_event_init(struct pe
- 
- static void metag_pmu_enable_counter(struct hw_perf_event *event, int idx)
- {
--	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
- 	unsigned int config = event->config;
- 	unsigned int tmp = config & 0xf0;
- 	unsigned long flags;
-@@ -680,7 +680,7 @@ unlock:
- 
- static void metag_pmu_disable_counter(struct hw_perf_event *event, int idx)
- {
--	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
- 	unsigned int tmp = 0;
- 	unsigned long flags;
- 
-@@ -728,7 +728,7 @@ out:
- 
- static void metag_pmu_write_counter(int idx, u32 val)
- {
--	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
- 	u32 tmp = 0;
- 	unsigned long flags;
- 
-@@ -761,7 +761,7 @@ static int metag_pmu_event_map(int idx)
- static irqreturn_t metag_pmu_counter_overflow(int irq, void *dev)
- {
- 	int idx = (int)dev;
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 	struct perf_event *event = cpuhw->events[idx];
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct pt_regs *regs = get_irq_regs();
-Index: linux/arch/parisc/lib/memcpy.c
-===================================================================
---- linux.orig/arch/parisc/lib/memcpy.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/parisc/lib/memcpy.c	2013-08-22 14:57:32.570610889 -0500
-@@ -470,7 +470,7 @@ static unsigned long pa_memcpy(void *dst
- 		return 0;
- 
- 	/* if a load or store fault occured we can get the faulty addr */
--	d = &__get_cpu_var(exception_data);
-+	d = this_cpu_ptr(&exception_data);
- 	fault_addr = d->fault_addr;
- 
- 	/* error in load or store? */
-Index: linux/arch/parisc/mm/fault.c
-===================================================================
---- linux.orig/arch/parisc/mm/fault.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/parisc/mm/fault.c	2013-08-22 14:57:32.570610889 -0500
-@@ -145,7 +145,7 @@ int fixup_exception(struct pt_regs *regs
- 	fix = search_exception_tables(regs->iaoq[0]);
- 	if (fix) {
- 		struct exception_data *d;
--		d = &__get_cpu_var(exception_data);
-+		d = this_cpu_ptr(&exception_data);
- 		d->fault_ip = regs->iaoq[0];
- 		d->fault_space = regs->isr;
- 		d->fault_addr = regs->ior;
-Index: linux/arch/sh/kernel/hw_breakpoint.c
-===================================================================
---- linux.orig/arch/sh/kernel/hw_breakpoint.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/sh/kernel/hw_breakpoint.c	2013-08-22 14:57:32.570610889 -0500
-@@ -52,7 +52,7 @@ int arch_install_hw_breakpoint(struct pe
  	int i;
  
- 	for (i = 0; i < sh_ubc->num_events; i++) {
+ 	/*
+@@ -1213,7 +1213,7 @@ int x86_pmu_handle_irq(struct pt_regs *r
+ 	int idx, handled = 0;
+ 	u64 val;
+ 
+-	cpuc = &__get_cpu_var(cpu_hw_events);
++	cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	/*
+ 	 * Some chipsets need to unmask the LVTPC in a particular spot
+@@ -1608,7 +1608,7 @@ static void x86_pmu_cancel_txn(struct pm
+  */
+ static int x86_pmu_commit_txn(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int assign[X86_PMC_IDX_MAX];
+ 	int n, ret;
+ 
+Index: linux/arch/x86/kernel/cpu/perf_event_amd.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/perf_event_amd.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/cpu/perf_event_amd.c	2013-08-22 15:01:56.719952513 -0500
+@@ -700,7 +700,7 @@ __init int amd_pmu_init(void)
+ 
+ void amd_pmu_enable_virt(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	cpuc->perf_ctr_virt_mask = 0;
+ 
+@@ -712,7 +712,7 @@ EXPORT_SYMBOL_GPL(amd_pmu_enable_virt);
+ 
+ void amd_pmu_disable_virt(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	/*
+ 	 * We only mask out the Host-only bit so that host-only counting works
+Index: linux/arch/x86/kernel/cpu/perf_event_intel.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/perf_event_intel.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/cpu/perf_event_intel.c	2013-08-22 15:01:56.719952513 -0500
+@@ -898,7 +898,7 @@ static inline bool intel_pmu_needs_lbr_s
+ 
+ static void intel_pmu_disable_all(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0);
+ 
+@@ -911,7 +911,7 @@ static void intel_pmu_disable_all(void)
+ 
+ static void intel_pmu_enable_all(int added)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	intel_pmu_pebs_enable_all();
+ 	intel_pmu_lbr_enable_all();
+@@ -945,7 +945,7 @@ static void intel_pmu_enable_all(int add
+  */
+ static void intel_pmu_nhm_workaround(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	static const unsigned long nhm_magic[4] = {
+ 		0x4300B5,
+ 		0x4300D2,
+@@ -1039,7 +1039,7 @@ static void intel_pmu_disable_fixed(stru
+ static void intel_pmu_disable_event(struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	if (unlikely(hwc->idx == INTEL_PMC_IDX_FIXED_BTS)) {
+ 		intel_pmu_disable_bts();
+@@ -1102,7 +1102,7 @@ static void intel_pmu_enable_fixed(struc
+ static void intel_pmu_enable_event(struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	if (unlikely(hwc->idx == INTEL_PMC_IDX_FIXED_BTS)) {
+ 		if (!__this_cpu_read(cpu_hw_events.enabled))
+@@ -1182,7 +1182,7 @@ static int intel_pmu_handle_irq(struct p
+ 	u64 status;
+ 	int handled;
+ 
+-	cpuc = &__get_cpu_var(cpu_hw_events);
++	cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	/*
+ 	 * No known reason to not always do late ACK,
+@@ -1600,7 +1600,7 @@ EXPORT_SYMBOL_GPL(perf_guest_get_msrs);
+ 
+ static struct perf_guest_switch_msr *intel_guest_get_msrs(int *nr)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct perf_guest_switch_msr *arr = cpuc->guest_switch_msrs;
+ 
+ 	arr[0].msr = MSR_CORE_PERF_GLOBAL_CTRL;
+@@ -1621,7 +1621,7 @@ static struct perf_guest_switch_msr *int
+ 
+ static struct perf_guest_switch_msr *core_guest_get_msrs(int *nr)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct perf_guest_switch_msr *arr = cpuc->guest_switch_msrs;
+ 	int idx;
+ 
+@@ -1655,7 +1655,7 @@ static void core_pmu_enable_event(struct
+ 
+ static void core_pmu_enable_all(int added)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int idx;
+ 
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+Index: linux/arch/x86/kernel/cpu/perf_event_intel_ds.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/perf_event_intel_ds.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/cpu/perf_event_intel_ds.c	2013-08-22 15:01:56.719952513 -0500
+@@ -424,7 +424,7 @@ void intel_pmu_enable_bts(u64 config)
+ 
+ void intel_pmu_disable_bts(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	unsigned long debugctlmsr;
+ 
+ 	if (!cpuc->ds)
+@@ -441,7 +441,7 @@ void intel_pmu_disable_bts(void)
+ 
+ int intel_pmu_drain_bts_buffer(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+ 	struct bts_record {
+ 		u64	from;
+@@ -634,7 +634,7 @@ struct event_constraint *intel_pebs_cons
+ 
+ void intel_pmu_pebs_enable(struct perf_event *event)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+ 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
+@@ -649,7 +649,7 @@ void intel_pmu_pebs_enable(struct perf_e
+ 
+ void intel_pmu_pebs_disable(struct perf_event *event)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+ 	cpuc->pebs_enabled &= ~(1ULL << hwc->idx);
+@@ -667,7 +667,7 @@ void intel_pmu_pebs_disable(struct perf_
+ 
+ void intel_pmu_pebs_enable_all(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	if (cpuc->pebs_enabled)
+ 		wrmsrl(MSR_IA32_PEBS_ENABLE, cpuc->pebs_enabled);
+@@ -675,7 +675,7 @@ void intel_pmu_pebs_enable_all(void)
+ 
+ void intel_pmu_pebs_disable_all(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	if (cpuc->pebs_enabled)
+ 		wrmsrl(MSR_IA32_PEBS_ENABLE, 0);
+@@ -683,7 +683,7 @@ void intel_pmu_pebs_disable_all(void)
+ 
+ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	unsigned long from = cpuc->lbr_entries[0].from;
+ 	unsigned long old_to, to = cpuc->lbr_entries[0].to;
+ 	unsigned long ip = regs->ip;
+@@ -766,7 +766,7 @@ static void __intel_pmu_pebs_event(struc
+ 	 * We cast to pebs_record_nhm to get the load latency data
+ 	 * if extra_reg MSR_PEBS_LD_LAT_THRESHOLD used
+ 	 */
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct pebs_record_nhm *pebs = __pebs;
+ 	struct pebs_record_hsw *pebs_hsw = __pebs;
+ 	struct perf_sample_data data;
+@@ -847,7 +847,7 @@ static void __intel_pmu_pebs_event(struc
+ 
+ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+ 	struct perf_event *event = cpuc->events[0]; /* PMC0 only */
+ 	struct pebs_record_core *at, *top;
+@@ -889,7 +889,7 @@ static void intel_pmu_drain_pebs_core(st
+ static void __intel_pmu_drain_pebs_nhm(struct pt_regs *iregs, void *at,
+ 					void *top)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+ 	struct perf_event *event = NULL;
+ 	u64 status = 0;
+@@ -926,7 +926,7 @@ static void __intel_pmu_drain_pebs_nhm(s
+ 
+ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+ 	struct pebs_record_nhm *at, *top;
+ 	int n;
+@@ -955,7 +955,7 @@ static void intel_pmu_drain_pebs_nhm(str
+ 
+ static void intel_pmu_drain_pebs_hsw(struct pt_regs *iregs)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+ 	struct pebs_record_hsw *at, *top;
+ 	int n;
+Index: linux/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/perf_event_intel_lbr.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/cpu/perf_event_intel_lbr.c	2013-08-22 15:01:56.719952513 -0500
+@@ -133,7 +133,7 @@ static void intel_pmu_lbr_filter(struct
+ static void __intel_pmu_lbr_enable(void)
+ {
+ 	u64 debugctl;
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	if (cpuc->lbr_sel)
+ 		wrmsrl(MSR_LBR_SELECT, cpuc->lbr_sel->config);
+@@ -183,7 +183,7 @@ void intel_pmu_lbr_reset(void)
+ 
+ void intel_pmu_lbr_enable(struct perf_event *event)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	if (!x86_pmu.lbr_nr)
+ 		return;
+@@ -203,7 +203,7 @@ void intel_pmu_lbr_enable(struct perf_ev
+ 
+ void intel_pmu_lbr_disable(struct perf_event *event)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	if (!x86_pmu.lbr_nr)
+ 		return;
+@@ -220,7 +220,7 @@ void intel_pmu_lbr_disable(struct perf_e
+ 
+ void intel_pmu_lbr_enable_all(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	if (cpuc->lbr_users)
+ 		__intel_pmu_lbr_enable();
+@@ -228,7 +228,7 @@ void intel_pmu_lbr_enable_all(void)
+ 
+ void intel_pmu_lbr_disable_all(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	if (cpuc->lbr_users)
+ 		__intel_pmu_lbr_disable();
+@@ -319,7 +319,7 @@ static void intel_pmu_lbr_read_64(struct
+ 
+ void intel_pmu_lbr_read(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	if (!cpuc->lbr_users)
+ 		return;
+Index: linux/arch/x86/kernel/cpu/perf_event_knc.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/perf_event_knc.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/cpu/perf_event_knc.c	2013-08-22 15:01:56.719952513 -0500
+@@ -217,7 +217,7 @@ static int knc_pmu_handle_irq(struct pt_
+ 	int bit, loops;
+ 	u64 status;
+ 
+-	cpuc = &__get_cpu_var(cpu_hw_events);
++	cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	knc_pmu_disable_all();
+ 
+Index: linux/arch/x86/kernel/cpu/perf_event_p4.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/perf_event_p4.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/cpu/perf_event_p4.c	2013-08-22 15:01:56.719952513 -0500
+@@ -915,7 +915,7 @@ static inline void p4_pmu_disable_event(
+ 
+ static void p4_pmu_disable_all(void)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int idx;
+ 
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+@@ -984,7 +984,7 @@ static void p4_pmu_enable_event(struct p
+ 
+ static void p4_pmu_enable_all(int added)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int idx;
+ 
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+@@ -1004,7 +1004,7 @@ static int p4_pmu_handle_irq(struct pt_r
+ 	int idx, handled = 0;
+ 	u64 val;
+ 
+-	cpuc = &__get_cpu_var(cpu_hw_events);
++	cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+ 		int overflow;
+Index: linux/arch/x86/kernel/hw_breakpoint.c
+===================================================================
+--- linux.orig/arch/x86/kernel/hw_breakpoint.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/hw_breakpoint.c	2013-08-22 15:01:56.719952513 -0500
+@@ -110,7 +110,7 @@ int arch_install_hw_breakpoint(struct pe
+ 	int i;
+ 
+ 	for (i = 0; i < HBP_NUM; i++) {
 -		struct perf_event **slot = &__get_cpu_var(bp_per_reg[i]);
 +		struct perf_event **slot = this_cpu_ptr(&bp_per_reg[i]);
  
  		if (!*slot) {
  			*slot = bp;
-@@ -84,7 +84,7 @@ void arch_uninstall_hw_breakpoint(struct
+@@ -124,7 +124,7 @@ int arch_install_hw_breakpoint(struct pe
+ 	set_debugreg(info->address, i);
+ 	__this_cpu_write(cpu_debugreg[i], info->address);
+ 
+-	dr7 = &__get_cpu_var(cpu_dr7);
++	dr7 = this_cpu_ptr(&cpu_dr7);
+ 	*dr7 |= encode_dr7(i, info->len, info->type);
+ 
+ 	set_debugreg(*dr7, 7);
+@@ -148,7 +148,7 @@ void arch_uninstall_hw_breakpoint(struct
  	int i;
  
- 	for (i = 0; i < sh_ubc->num_events; i++) {
+ 	for (i = 0; i < HBP_NUM; i++) {
 -		struct perf_event **slot = &__get_cpu_var(bp_per_reg[i]);
 +		struct perf_event **slot = this_cpu_ptr(&bp_per_reg[i]);
  
  		if (*slot == bp) {
  			*slot = NULL;
-Index: linux/arch/sh/kernel/kprobes.c
+@@ -159,7 +159,7 @@ void arch_uninstall_hw_breakpoint(struct
+ 	if (WARN_ONCE(i == HBP_NUM, "Can't find any breakpoint slot"))
+ 		return;
+ 
+-	dr7 = &__get_cpu_var(cpu_dr7);
++	dr7 = this_cpu_ptr(&cpu_dr7);
+ 	*dr7 &= ~__encode_dr7(i, info->len, info->type);
+ 
+ 	set_debugreg(*dr7, 7);
+Index: linux/arch/x86/kvm/vmx.c
 ===================================================================
---- linux.orig/arch/sh/kernel/kprobes.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/sh/kernel/kprobes.c	2013-08-22 14:57:32.570610889 -0500
-@@ -102,7 +102,7 @@ int __kprobes kprobe_handle_illslot(unsi
+--- linux.orig/arch/x86/kvm/vmx.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kvm/vmx.c	2013-08-22 15:01:56.719952513 -0500
+@@ -1513,7 +1513,7 @@ static void reload_tss(void)
+ 	/*
+ 	 * VT restores TR but not its size.  Useless.
+ 	 */
+-	struct desc_ptr *gdt = &__get_cpu_var(host_gdt);
++	struct desc_ptr *gdt = this_cpu_ptr(&host_gdt);
+ 	struct desc_struct *descs;
  
- void __kprobes arch_remove_kprobe(struct kprobe *p)
+ 	descs = (void *)gdt->address;
+@@ -1559,7 +1559,7 @@ static bool update_transition_efer(struc
+ 
+ static unsigned long segment_base(u16 selector)
  {
--	struct kprobe *saved = &__get_cpu_var(saved_next_opcode);
-+	struct kprobe *saved = this_cpu_ptr(&saved_next_opcode);
- 
- 	if (saved->addr) {
- 		arch_disarm_kprobe(p);
-@@ -111,7 +111,7 @@ void __kprobes arch_remove_kprobe(struct
- 		saved->addr = NULL;
- 		saved->opcode = 0;
- 
--		saved = &__get_cpu_var(saved_next_opcode2);
-+		saved = this_cpu_ptr(&saved_next_opcode2);
- 		if (saved->addr) {
- 			arch_disarm_kprobe(saved);
- 
-@@ -129,14 +129,14 @@ static void __kprobes save_previous_kpro
- 
- static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
- {
--	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
-+	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
- 	kcb->kprobe_status = kcb->prev_kprobe.status;
+-	struct desc_ptr *gdt = &__get_cpu_var(host_gdt);
++	struct desc_ptr *gdt = this_cpu_ptr(&host_gdt);
+ 	struct desc_struct *d;
+ 	unsigned long table_base;
+ 	unsigned long v;
+@@ -1685,7 +1685,7 @@ static void __vmx_load_host_state(struct
+ 	 */
+ 	if (!user_has_fpu() && !vmx->vcpu.guest_fpu_loaded)
+ 		stts();
+-	load_gdt(&__get_cpu_var(host_gdt));
++	load_gdt(this_cpu_ptr(&host_gdt));
  }
  
- static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
- 					 struct kprobe_ctlblk *kcb)
- {
--	__get_cpu_var(current_kprobe) = p;
-+	__this_cpu_write(current_kprobe, p);
+ static void vmx_load_host_state(struct vcpu_vmx *vmx)
+@@ -1715,7 +1715,7 @@ static void vmx_vcpu_load(struct kvm_vcp
+ 	}
+ 
+ 	if (vmx->loaded_vmcs->cpu != cpu) {
+-		struct desc_ptr *gdt = &__get_cpu_var(host_gdt);
++		struct desc_ptr *gdt = this_cpu_ptr(&host_gdt);
+ 		unsigned long sysenter_esp;
+ 
+ 		kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
+@@ -2611,7 +2611,7 @@ static int hardware_enable(void *garbage
+ 		ept_sync_global();
+ 	}
+ 
+-	native_store_gdt(&__get_cpu_var(host_gdt));
++	native_store_gdt(this_cpu_ptr(&host_gdt));
+ 
+ 	return 0;
  }
+Index: linux/arch/x86/mm/kmemcheck/kmemcheck.c
+===================================================================
+--- linux.orig/arch/x86/mm/kmemcheck/kmemcheck.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/mm/kmemcheck/kmemcheck.c	2013-08-22 15:01:56.719952513 -0500
+@@ -134,7 +134,7 @@ static DEFINE_PER_CPU(struct kmemcheck_c
+ 
+ bool kmemcheck_active(struct pt_regs *regs)
+ {
+-	struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
++	struct kmemcheck_context *data = this_cpu_ptr(&kmemcheck_context);
+ 
+ 	return data->balance > 0;
+ }
+@@ -142,7 +142,7 @@ bool kmemcheck_active(struct pt_regs *re
+ /* Save an address that needs to be shown/hidden */
+ static void kmemcheck_save_addr(unsigned long addr)
+ {
+-	struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
++	struct kmemcheck_context *data = this_cpu_ptr(&kmemcheck_context);
+ 
+ 	BUG_ON(data->n_addrs >= ARRAY_SIZE(data->addr));
+ 	data->addr[data->n_addrs++] = addr;
+@@ -150,7 +150,7 @@ static void kmemcheck_save_addr(unsigned
+ 
+ static unsigned int kmemcheck_show_all(void)
+ {
+-	struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
++	struct kmemcheck_context *data = this_cpu_ptr(&kmemcheck_context);
+ 	unsigned int i;
+ 	unsigned int n;
+ 
+@@ -163,7 +163,7 @@ static unsigned int kmemcheck_show_all(v
+ 
+ static unsigned int kmemcheck_hide_all(void)
+ {
+-	struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
++	struct kmemcheck_context *data = this_cpu_ptr(&kmemcheck_context);
+ 	unsigned int i;
+ 	unsigned int n;
+ 
+@@ -179,7 +179,7 @@ static unsigned int kmemcheck_hide_all(v
+  */
+ void kmemcheck_show(struct pt_regs *regs)
+ {
+-	struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
++	struct kmemcheck_context *data = this_cpu_ptr(&kmemcheck_context);
+ 
+ 	BUG_ON(!irqs_disabled());
+ 
+@@ -220,7 +220,7 @@ void kmemcheck_show(struct pt_regs *regs
+  */
+ void kmemcheck_hide(struct pt_regs *regs)
+ {
+-	struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
++	struct kmemcheck_context *data = this_cpu_ptr(&kmemcheck_context);
+ 	int n;
+ 
+ 	BUG_ON(!irqs_disabled());
+@@ -522,7 +522,7 @@ static void kmemcheck_access(struct pt_r
+ 	const uint8_t *insn_primary;
+ 	unsigned int size;
+ 
+-	struct kmemcheck_context *data = &__get_cpu_var(kmemcheck_context);
++	struct kmemcheck_context *data = this_cpu_ptr(&kmemcheck_context);
+ 
+ 	/* Recursive fault -- ouch. */
+ 	if (data->busy) {
+Index: linux/arch/x86/oprofile/nmi_int.c
+===================================================================
+--- linux.orig/arch/x86/oprofile/nmi_int.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/oprofile/nmi_int.c	2013-08-22 15:01:56.719952513 -0500
+@@ -64,11 +64,11 @@ u64 op_x86_get_ctrl(struct op_x86_model_
+ static int profile_exceptions_notify(unsigned int val, struct pt_regs *regs)
+ {
+ 	if (ctr_running)
+-		model->check_ctrs(regs, &__get_cpu_var(cpu_msrs));
++		model->check_ctrs(regs, this_cpu_ptr(&cpu_msrs));
+ 	else if (!nmi_enabled)
+ 		return NMI_DONE;
+ 	else
+-		model->stop(&__get_cpu_var(cpu_msrs));
++		model->stop(this_cpu_ptr(&cpu_msrs));
+ 	return NMI_HANDLED;
+ }
+ 
+@@ -91,7 +91,7 @@ static void nmi_cpu_save_registers(struc
+ 
+ static void nmi_cpu_start(void *dummy)
+ {
+-	struct op_msrs const *msrs = &__get_cpu_var(cpu_msrs);
++	struct op_msrs const *msrs = this_cpu_ptr(&cpu_msrs);
+ 	if (!msrs->controls)
+ 		WARN_ON_ONCE(1);
+ 	else
+@@ -111,7 +111,7 @@ static int nmi_start(void)
+ 
+ static void nmi_cpu_stop(void *dummy)
+ {
+-	struct op_msrs const *msrs = &__get_cpu_var(cpu_msrs);
++	struct op_msrs const *msrs = this_cpu_ptr(&cpu_msrs);
+ 	if (!msrs->controls)
+ 		WARN_ON_ONCE(1);
+ 	else
+Index: linux/arch/x86/platform/uv/uv_time.c
+===================================================================
+--- linux.orig/arch/x86/platform/uv/uv_time.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/platform/uv/uv_time.c	2013-08-22 15:01:56.719952513 -0500
+@@ -365,7 +365,7 @@ __setup("uvrtcevt", uv_enable_evt_rtc);
+ 
+ static __init void uv_rtc_register_clockevents(struct work_struct *dummy)
+ {
+-	struct clock_event_device *ced = &__get_cpu_var(cpu_ced);
++	struct clock_event_device *ced = this_cpu_ptr(&cpu_ced);
+ 
+ 	*ced = clock_event_device_uv;
+ 	ced->cpumask = cpumask_of(smp_processor_id());
+Index: linux/arch/x86/xen/multicalls.c
+===================================================================
+--- linux.orig/arch/x86/xen/multicalls.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/xen/multicalls.c	2013-08-22 15:01:56.719952513 -0500
+@@ -54,7 +54,7 @@ DEFINE_PER_CPU(unsigned long, xen_mc_irq
+ 
+ void xen_mc_flush(void)
+ {
+-	struct mc_buffer *b = &__get_cpu_var(mc_buffer);
++	struct mc_buffer *b = this_cpu_ptr(&mc_buffer);
+ 	struct multicall_entry *mc;
+ 	int ret = 0;
+ 	unsigned long flags;
+@@ -131,7 +131,7 @@ void xen_mc_flush(void)
+ 
+ struct multicall_space __xen_mc_entry(size_t args)
+ {
+-	struct mc_buffer *b = &__get_cpu_var(mc_buffer);
++	struct mc_buffer *b = this_cpu_ptr(&mc_buffer);
+ 	struct multicall_space ret;
+ 	unsigned argidx = roundup(b->argidx, sizeof(u64));
+ 
+@@ -162,7 +162,7 @@ struct multicall_space __xen_mc_entry(si
+ 
+ struct multicall_space xen_mc_extend_args(unsigned long op, size_t size)
+ {
+-	struct mc_buffer *b = &__get_cpu_var(mc_buffer);
++	struct mc_buffer *b = this_cpu_ptr(&mc_buffer);
+ 	struct multicall_space ret = { NULL, NULL };
+ 
+ 	BUG_ON(preemptible());
+@@ -192,7 +192,7 @@ out:
+ 
+ void xen_mc_callback(void (*fn)(void *), void *data)
+ {
+-	struct mc_buffer *b = &__get_cpu_var(mc_buffer);
++	struct mc_buffer *b = this_cpu_ptr(&mc_buffer);
+ 	struct callback *cb;
+ 
+ 	if (b->cbidx == MC_BATCH) {
+Index: linux/arch/x86/xen/time.c
+===================================================================
+--- linux.orig/arch/x86/xen/time.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/xen/time.c	2013-08-22 15:01:56.719952513 -0500
+@@ -80,7 +80,7 @@ static void get_runstate_snapshot(struct
+ 
+ 	BUG_ON(preemptible());
+ 
+-	state = &__get_cpu_var(xen_runstate);
++	state = this_cpu_ptr(&xen_runstate);
+ 
+ 	/*
+ 	 * The runstate info is always updated by the hypervisor on
+@@ -123,7 +123,7 @@ static void do_stolen_accounting(void)
+ 
+ 	WARN_ON(state.state != RUNSTATE_running);
+ 
+-	snap = &__get_cpu_var(xen_runstate_snapshot);
++	snap = this_cpu_ptr(&xen_runstate_snapshot);
+ 
+ 	/* work out how much time the VCPU has not been runn*ing*  */
+ 	runnable = state.time[RUNSTATE_runnable] - snap->time[RUNSTATE_runnable];
+@@ -158,7 +158,7 @@ cycle_t xen_clocksource_read(void)
+ 	cycle_t ret;
+ 
+ 	preempt_disable_notrace();
+-	src = &__get_cpu_var(xen_vcpu)->time;
++	src = this_cpu_ptr(&xen_vcpu->time);
+ 	ret = pvclock_clocksource_read(src);
+ 	preempt_enable_notrace();
+ 	return ret;
+@@ -397,7 +397,7 @@ static DEFINE_PER_CPU(struct xen_clock_e
+ 
+ static irqreturn_t xen_timer_interrupt(int irq, void *dev_id)
+ {
+-	struct clock_event_device *evt = &__get_cpu_var(xen_clock_events).evt;
++	struct clock_event_device *evt = this_cpu_ptr(&xen_clock_events.evt);
+ 	irqreturn_t ret;
+ 
+ 	ret = IRQ_NONE;
+@@ -460,7 +460,7 @@ void xen_setup_cpu_clockevents(void)
+ {
+ 	BUG_ON(preemptible());
+ 
+-	clockevents_register_device(&__get_cpu_var(xen_clock_events).evt);
++	clockevents_register_device(this_cpu_ptr(&xen_clock_events.evt));
+ }
+ 
+ void xen_timer_resume(void)
+Index: linux/arch/x86/include/asm/uv/uv_hub.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv_hub.h	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/include/asm/uv/uv_hub.h	2013-08-22 15:01:56.719952513 -0500
+@@ -164,7 +164,7 @@ struct uv_hub_info_s {
+ };
+ 
+ DECLARE_PER_CPU(struct uv_hub_info_s, __uv_hub_info);
+-#define uv_hub_info		(&__get_cpu_var(__uv_hub_info))
++#define uv_hub_info		this_cpu_ptr(&__uv_hub_info)
+ #define uv_cpu_hub_info(cpu)	(&per_cpu(__uv_hub_info, cpu))
  
  /*
-@@ -146,15 +146,15 @@ static void __kprobes set_current_kprobe
-  */
- static void __kprobes prepare_singlestep(struct kprobe *p, struct pt_regs *regs)
- {
--	__get_cpu_var(saved_current_opcode).addr = (kprobe_opcode_t *)regs->pc;
-+	__this_cpu_write(saved_current_opcode.addr, (kprobe_opcode_t *)regs->pc);
- 
- 	if (p != NULL) {
- 		struct kprobe *op1, *op2;
- 
- 		arch_disarm_kprobe(p);
- 
--		op1 = &__get_cpu_var(saved_next_opcode);
--		op2 = &__get_cpu_var(saved_next_opcode2);
-+		op1 = this_cpu_ptr(&saved_next_opcode);
-+		op2 = this_cpu_ptr(&saved_next_opcode2);
- 
- 		if (OPCODE_JSR(p->opcode) || OPCODE_JMP(p->opcode)) {
- 			unsigned int reg_nr = ((p->opcode >> 8) & 0x000F);
-@@ -249,7 +249,7 @@ static int __kprobes kprobe_handler(stru
- 			kcb->kprobe_status = KPROBE_REENTER;
- 			return 1;
- 		} else {
--			p = __get_cpu_var(current_kprobe);
-+			p = __this_cpu_read(current_kprobe);
- 			if (p->break_handler && p->break_handler(p, regs)) {
- 				goto ss_probe;
- 			}
-@@ -336,9 +336,9 @@ int __kprobes trampoline_probe_handler(s
- 			continue;
- 
- 		if (ri->rp && ri->rp->handler) {
--			__get_cpu_var(current_kprobe) = &ri->rp->kp;
-+			__this_cpu_write(current_kprobe, &ri->rp->kp);
- 			ri->rp->handler(ri, regs);
--			__get_cpu_var(current_kprobe) = NULL;
-+			__this_cpu_write(current_kprobe, NULL);
- 		}
- 
- 		orig_ret_address = (unsigned long)ri->ret_addr;
-@@ -383,19 +383,19 @@ static int __kprobes post_kprobe_handler
- 		cur->post_handler(cur, regs, 0);
- 	}
- 
--	p = &__get_cpu_var(saved_next_opcode);
-+	p = this_cpu_ptr(&saved_next_opcode);
- 	if (p->addr) {
- 		arch_disarm_kprobe(p);
- 		p->addr = NULL;
- 		p->opcode = 0;
- 
--		addr = __get_cpu_var(saved_current_opcode).addr;
--		__get_cpu_var(saved_current_opcode).addr = NULL;
-+		addr = __this_cpu_read(saved_current_opcode).addr;
-+		__this_cpu_write(saved_current_opcode.addr, NULL);
- 
- 		p = get_kprobe(addr);
- 		arch_arm_kprobe(p);
- 
--		p = &__get_cpu_var(saved_next_opcode2);
-+		p = this_cpu_ptr(&saved_next_opcode2);
- 		if (p->addr) {
- 			arch_disarm_kprobe(p);
- 			p->addr = NULL;
-@@ -511,7 +511,7 @@ int __kprobes kprobe_exceptions_notify(s
- 				if (kprobe_handler(args->regs)) {
- 					ret = NOTIFY_STOP;
- 				} else {
--					p = __get_cpu_var(current_kprobe);
-+					p = __this_cpu_read(current_kprobe);
- 					if (p->break_handler &&
- 					    p->break_handler(p, args->regs))
- 						ret = NOTIFY_STOP;
-Index: linux/arch/sh/kernel/localtimer.c
+Index: linux/arch/x86/include/asm/perf_event_p4.h
 ===================================================================
---- linux.orig/arch/sh/kernel/localtimer.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/sh/kernel/localtimer.c	2013-08-22 14:57:32.570610889 -0500
-@@ -32,7 +32,7 @@ static DEFINE_PER_CPU(struct clock_event
-  */
- void local_timer_interrupt(void)
+--- linux.orig/arch/x86/include/asm/perf_event_p4.h	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/include/asm/perf_event_p4.h	2013-08-22 15:01:56.719952513 -0500
+@@ -189,7 +189,7 @@ static inline int p4_ht_thread(int cpu)
  {
--	struct clock_event_device *clk = &__get_cpu_var(local_clockevent);
-+	struct clock_event_device *clk = this_cpu_ptr(&local_clockevent);
- 
- 	irq_enter();
- 	clk->event_handler(clk);
-Index: linux/arch/sh/kernel/perf_event.c
-===================================================================
---- linux.orig/arch/sh/kernel/perf_event.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/sh/kernel/perf_event.c	2013-08-22 14:57:32.570610889 -0500
-@@ -227,7 +227,7 @@ again:
- 
- static void sh_pmu_stop(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
-@@ -245,7 +245,7 @@ static void sh_pmu_stop(struct perf_even
- 
- static void sh_pmu_start(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
-@@ -262,7 +262,7 @@ static void sh_pmu_start(struct perf_eve
- 
- static void sh_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	sh_pmu_stop(event, PERF_EF_UPDATE);
- 	__clear_bit(event->hw.idx, cpuc->used_mask);
-@@ -272,7 +272,7 @@ static void sh_pmu_del(struct perf_event
- 
- static int sh_pmu_add(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 	int ret = -EAGAIN;
-Index: linux/arch/sh/kernel/smp.c
-===================================================================
---- linux.orig/arch/sh/kernel/smp.c	2013-08-22 14:57:32.574610848 -0500
-+++ linux/arch/sh/kernel/smp.c	2013-08-22 14:57:32.570610889 -0500
-@@ -111,7 +111,7 @@ void play_dead_common(void)
- 	irq_ctx_exit(raw_smp_processor_id());
- 	mb();
- 
--	__get_cpu_var(cpu_state) = CPU_DEAD;
-+	__this_cpu_write(cpu_state, CPU_DEAD);
- 	local_irq_disable();
- }
- 
-Index: linux/arch/blackfin/mach-common/ints-priority.c
-===================================================================
---- linux.orig/arch/blackfin/mach-common/ints-priority.c	2013-08-08 02:54:33.132984370 -0500
-+++ linux/arch/blackfin/mach-common/ints-priority.c	2013-08-22 14:59:17.705553303 -0500
-@@ -1675,12 +1675,12 @@ asmlinkage int __ipipe_grab_irq(int vec,
- 		bfin_write_TIMER_STATUS(1); /* Latch TIMIL0 */
+ #ifdef CONFIG_SMP
+ 	if (smp_num_siblings == 2)
+-		return cpu != cpumask_first(__this_cpu_ptr(&cpu_sibling_map[0]));
++		return cpu != cpumask_first(this_cpu_ptr(cpu_sibling_map));
  #endif
- 		/* This is basically what we need from the register frame. */
--		__raw_get_cpu_var(__ipipe_tick_regs).ipend = regs->ipend;
--		__raw_get_cpu_var(__ipipe_tick_regs).pc = regs->pc;
-+		__this_cpu_write(__ipipe_tick_regs.ipend, regs->ipend);
-+		__this_cpu_write(__ipipe_tick_regs.pc, regs->pc);
- 		if (this_domain != ipipe_root_domain)
--			__raw_get_cpu_var(__ipipe_tick_regs).ipend &= ~0x10;
-+			__this_cpu_and(__ipipe_tick_regs.ipend, ~0x10);
- 		else
--			__raw_get_cpu_var(__ipipe_tick_regs).ipend |= 0x10;
-+			__this_cpu_or(__ipipe_tick_regs.ipend, 0x10);
- 	}
+ 	return 0;
+ }
+Index: linux/arch/x86/kernel/apic/x2apic_cluster.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/x2apic_cluster.c	2013-08-22 15:01:56.723952473 -0500
++++ linux/arch/x86/kernel/apic/x2apic_cluster.c	2013-08-22 15:01:56.719952513 -0500
+@@ -43,7 +43,7 @@ __x2apic_send_IPI_mask(const struct cpum
+ 	 * We are to modify mask, so we need an own copy
+ 	 * and be sure it's manipulated with irq off.
+ 	 */
+-	ipi_mask_ptr = __raw_get_cpu_var(ipi_mask);
++	ipi_mask_ptr = this_cpu_ptr(ipi_mask);
+ 	cpumask_copy(ipi_mask_ptr, mask);
  
  	/*
 
