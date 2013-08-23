@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab3HWTCB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:02:01 -0400
-Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:46521 "EHLO
-	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754659Ab3HWTB6 (ORCPT
+	id S1756231Ab3HWTEE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:04:04 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:51264 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755621Ab3HWTEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:01:58 -0400
-Message-ID: <00000140ac8dec92-f01525aa-0880-4e11-8c31-9cccce37bfa7-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Fri, 23 Aug 2013 19:01:57 +0000
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [guv 01/16] x86: Use this_cpu_inc/dec for debug registers
-References: <20130823190135.726207430@linux.com>
-X-SES-Outgoing: 2013.08.23-54.240.9.78
+	Fri, 23 Aug 2013 15:04:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQWnGaa6omcLW0zxLj+UMspRGxjVoYXUsH3ndydGD51T9w@mail.gmail.com>
+References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
+	<1376189294-32022-29-git-send-email-yinghai@kernel.org>
+	<CANVTcTYhSfU+Su9s1B+mTTBfgsZgqvQxHiTsLck1zT_vg1Cs4g@mail.gmail.com>
+	<CANVTcTb2+qX6XMBqrzeLho9yFS55AnztVJ85JBMuxjoH11qzaQ@mail.gmail.com>
+	<CAOLK0pwQJVvcT5xA-+Ftb85FzbjHN-OZmXO=n7r4EWh4nFjSBA@mail.gmail.com>
+	<CAE9FiQWnGaa6omcLW0zxLj+UMspRGxjVoYXUsH3ndydGD51T9w@mail.gmail.com>
+Date: Fri, 23 Aug 2013 12:04:01 -0700
+X-Google-Sender-Auth: a0clahp2i0V1bkeVcPJKAsJLPgk
+Message-ID: <CAE9FiQXFcM+FZnp00RP5Z8a2FhtjB7BuUUi4TuABF4-O9W+c8Q@mail.gmail.com>
+Subject: Re: [PATCH v4 28/28] PCI, x86, ACPI: get ioapic address from acpi device
+From: Yinghai Lu <yinghai@kernel.org>
+To: Lan Tianyu <lantianyu1986@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: rui wang <ruiv.wang@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tony Luck <tony.luck@intel.com>, Linux PCI <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think this patch already exists in one form or another in some x86 tree.
+On Fri, Aug 23, 2013 at 11:38 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Aug 23, 2013 at 8:34 AM, Lan Tianyu <lantianyu1986@gmail.com> wrote:
+>>> I worked around the problem by replacing acpi_resource_to_address64()
+>>> with resource_to_addr().  But resource_to_addr() is a static function
+>>> in arch/x86/pci/acpi.c, not very convenient to use. Here's what I did:
+>>>
+>>
+>> Hi Rui&Yinghai:
+>>            How about using the following code to translate struct
+>>  acpi_resource to struct resouce in this setup_res()?
+>>
+>>          if (acpi_dev_resource_address_space(...)
+>>                 || acpi_dev_resource_memory(..))
+>>               return AE_OK;
+>
+> Yest, that could be better, will update that.
+>
+> Also can you submit patch that will use that in res_to_addr of
+> arch/x86/pci/acpi.c?
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+looks acpi_dev_resource_address_space... does not handle
+PREFTCH and translation offset.
 
-Index: linux/arch/x86/include/asm/debugreg.h
-===================================================================
---- linux.orig/arch/x86/include/asm/debugreg.h	2013-08-06 13:52:23.740092873 -0500
-+++ linux/arch/x86/include/asm/debugreg.h	2013-08-06 13:52:23.740092873 -0500
-@@ -97,11 +97,11 @@ extern void hw_breakpoint_restore(void);
- DECLARE_PER_CPU(int, debug_stack_usage);
- static inline void debug_stack_usage_inc(void)
- {
--	__get_cpu_var(debug_stack_usage)++;
-+	__this_cpu_inc(debug_stack_usage);
- }
- static inline void debug_stack_usage_dec(void)
- {
--	__get_cpu_var(debug_stack_usage)--;
-+	__this_cpu_dec(debug_stack_usage);
- }
- int is_debug_stack(unsigned long addr);
- void debug_stack_set_zero(void);
-Index: linux/arch/x86/kernel/cpu/common.c
-===================================================================
---- linux.orig/arch/x86/kernel/cpu/common.c	2013-07-19 09:06:36.850047837 -0500
-+++ linux/arch/x86/kernel/cpu/common.c	2013-08-06 13:54:36.426384889 -0500
-@@ -1144,9 +1144,9 @@ DEFINE_PER_CPU(int, debug_stack_usage);
- 
- int is_debug_stack(unsigned long addr)
- {
--	return __get_cpu_var(debug_stack_usage) ||
--		(addr <= __get_cpu_var(debug_stack_addr) &&
--		 addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ));
-+	return __this_cpu_read(debug_stack_usage) ||
-+		(addr <= __this_cpu_read(debug_stack_addr) &&
-+		 addr > (__this_cpu_read(debug_stack_addr) - DEBUG_STKSZ));
- }
- 
- DEFINE_PER_CPU(u32, debug_idt_ctr);
+So now i have to use res_to_addr alike one.
 
+Thanks
+
+Yinghai
