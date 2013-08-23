@@ -1,54 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab3HWT1H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:27:07 -0400
-Received: from fallback5.mail.ru ([94.100.176.59]:34603 "EHLO
-	fallback5.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084Ab3HWT1F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:27:05 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?Vml2aWVuIERpZGVsb3Q=?= 
-	<vivien.didelot@savoirfairelinux.com>
-Cc: =?UTF-8?B?V29sZnJhbSBTYW5n?= <wsa@the-dreams.de>,
-        kernel@savoirfairelinux.com, linux-i2c@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gbWlzYzogKGF0MjQpIG1vdmUgaGVhZGVyIHRvIGxpbnV4?=
- =?UTF-8?B?L3BsYXRmb3JtX2RhdGEv?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [188.134.40.128]
-Date: Fri, 23 Aug 2013 23:26:36 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1377285996.620418788@f48.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-In-Reply-To: <1033284781.908504.1377285587778.JavaMail.root@mail>
-References: <20130823190247.GA3821@katana>
- <1033284781.908504.1377285587778.JavaMail.root@mail>
+	id S1756043Ab3HWT1p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:27:45 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:57733 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755049Ab3HWT1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 15:27:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>, Linux PCI <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] ACPI: Fix osc flag setup ordering to allow pcie hotplug use when available
+Date: Fri, 23 Aug 2013 21:38:18 +0200
+Message-ID: <2074111.WRY7FfU4Ni@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com>
+References: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7NJRB96009736
 
-> Wolfram wrote:
+[CCs added]
+
+Please always send PCI-related material to linux-pci in the first place.
+
+The change that broke things for you was actually intentional:
+
+commit b8178f130e25c1bdac1c33e0996f1ff6e20ec08e
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date:   Mon Apr 1 15:47:39 2013 -0600
+
+    Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
+    
+    This reverts commit 8c33f51df406e1a1f7fa4e9b244845b7ebd61fa6.
+
+so I think we'll need to clean up the ASMP initialization after all.
+
+On Friday, August 23, 2013 01:19:39 PM Neil Horman wrote:
+> Somewhere between 3.9 and 3.10 it seems the order in which pcie and acpi probed
+> slots for hotplug capabilites got reversed.  While this isn't a big deal, it did
+> uncover a bug in the ACPI bus setup path.  Specifically, acpi_pci_root_add calls
+> pci_acpi_scan_root before setting the osc flags for the device handle.
+> pci_acpi_scan_root, among other things uses device_is_managed_by_native_pciehp()
+> to determine if a given slot has pcie hotplug capabilties, whcih checks the
+> devices OSC_PCI_EXPRESS_NATIVE_HP_CONTROL flag.  Since that flag is not set
+> until after pci_acpi_scan_root_completes, the acpi code never sees that pcie
+> slots are hotplug capable and configures them all to use acpi instead.
 > 
-> > On Fri, Aug 23, 2013 at 02:38:20PM -0400, Vivien Didelot wrote:
-> > > This patch moves the at24.h header from include/linux/i2c to
-> > > include/linux/platform_data and updates existing support
-> > > accordingly.
-> > 
-> > This message explains what the patch does but not why the change is
-> > wanted. I'd be surprised if we really want *all* platform_data in one
-> > single directory?
+> Fix is pretty simple, just defer the scan until after the osc flags have been
+> set on the device.  Tested by myself and it seems to work well.
 > 
-> IMHO it makes sense. Why wouldn't we want all platform_data in
-> include/linux/platform_data/?
-
-Can this file be additionally renamed to misc-at24.h to reflect belongs
-to a particular subsystem?
-
----
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> CC: Len Brown <lenb@kernel.org>
+> CC: "Rafael J. Wysocki" <rjw@sisk.pl>
+> CC: linux-acpi@vger.kernel.org
+> ---
+>  drivers/acpi/pci_root.c | 41 ++++++++++++++++++++---------------------
+>  1 file changed, 20 insertions(+), 21 deletions(-)
+> 
+> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+> index 5917839..a2c2661 100644
+> --- a/drivers/acpi/pci_root.c
+> +++ b/drivers/acpi/pci_root.c
+> @@ -437,27 +437,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>  	flags = base_flags = OSC_PCI_SEGMENT_GROUPS_SUPPORT;
+>  	acpi_pci_osc_support(root, flags);
+>  
+> -	/*
+> -	 * TBD: Need PCI interface for enumeration/configuration of roots.
+> -	 */
+> -
+> -	/*
+> -	 * Scan the Root Bridge
+> -	 * --------------------
+> -	 * Must do this prior to any attempt to bind the root device, as the
+> -	 * PCI namespace does not get created until this call is made (and
+> -	 * thus the root bridge's pci_dev does not exist).
+> -	 */
+> -	root->bus = pci_acpi_scan_root(root);
+> -	if (!root->bus) {
+> -		dev_err(&device->dev,
+> -			"Bus %04x:%02x not present in PCI namespace\n",
+> -			root->segment, (unsigned int)root->secondary.start);
+> -		result = -ENODEV;
+> -		goto end;
+> -	}
+> -
+> -	/* Indicate support for various _OSC capabilities. */
+>  	if (pci_ext_cfg_avail())
+>  		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
+>  	if (pcie_aspm_support_enabled()) {
+> @@ -520,6 +499,26 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>  			 "(_OSC support mask: 0x%02x)\n", flags);
+>  	}
+>  
+> +	/*
+> +	 * TBD: Need PCI interface for enumeration/configuration of roots.
+> +	 */
+> +
+> +	/*
+> +	 * Scan the Root Bridge
+> +	 * --------------------
+> +	 * Must do this prior to any attempt to bind the root device, as the
+> +	 * PCI namespace does not get created until this call is made (and
+> +	 * thus the root bridge's pci_dev does not exist).
+> +	 */
+> +	root->bus = pci_acpi_scan_root(root);
+> +	if (!root->bus) {
+> +		dev_err(&device->dev,
+> +			"Bus %04x:%02x not present in PCI namespace\n",
+> +			root->segment, (unsigned int)root->secondary.start);
+> +		result = -ENODEV;
+> +		goto end;
+> +	}
+> +
+>  	pci_acpi_add_bus_pm_notifier(device, root->bus);
+>  	if (device->wakeup.flags.run_wake)
+>  		device_set_run_wake(root->bus->bridge, true);
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
