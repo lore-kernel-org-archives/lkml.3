@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab3HWTga (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 15:36:30 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59329 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754391Ab3HWTg3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 15:36:29 -0400
-Message-ID: <5217B9B7.9080802@wwwdotorg.org>
-Date: Fri, 23 Aug 2013 13:36:23 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
-        grant.likely@linaro.org, linux@arm.linux.org.uk, rob@landley.net,
-        ian.campbell@citrix.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 4/4] Documentation: Add device tree bindings for Freescale
- FTM PWM
-References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com> <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com> <20130823091052.GG3535@ulmo>
-In-Reply-To: <20130823091052.GG3535@ulmo>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756218Ab3HWThA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 15:37:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13535 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755844Ab3HWTg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 15:36:59 -0400
+Subject: Re: [RFC PATCH] scsi: Add failfast mode to avoid infinite retry
+ loop
+From: Ewan Milne <emilne@redhat.com>
+Reply-To: emilne@redhat.com
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+In-Reply-To: <1377263977.2095.1.camel@dabdike>
+References: <20130819093925.7867.19221.stgit@ltc223.sdl.hitachi.co.jp>
+	 <1376922616.2069.9.camel@dabdike.int.hansenpartnership.com>
+	 <5213172E.1060905@hitachi.com>
+	 <1377022167.3872.13.camel@localhost.localdomain>
+	 <52172721.1040203@hitachi.com>  <1377263977.2095.1.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Fri, 23 Aug 2013 15:36:55 -0400
+Message-ID: <1377286615.3872.25.camel@localhost.localdomain>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2013 03:10 AM, Thierry Reding wrote:
-> On Wed, Aug 21, 2013 at 11:07:42AM +0800, Xiubo Li wrote:
->> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com> --- 
->> .../devicetree/bindings/pwm/fsl-ftm-pwm.txt        | 52
->> ++++++++++++++++++++++ 1 file changed, 52 insertions(+) create
->> mode 100644
->> Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+On Fri, 2013-08-23 at 06:19 -0700, James Bottomley wrote:
+> On Fri, 2013-08-23 at 18:10 +0900, Eiichi Tsukata wrote:
+> > Yes, basically the device should be offlined on error detection.
+> > Just offlining the disk is enough when an error occurs on "not" os-installed
+> > system disk. Panic is going too far on such case.
+> > 
+> > However, in a clustered environment where computers use each its own
+> > disk and
+> > do not share the same disk, calling panic() will be suitable when an
+> > error
+> > occurs in system disk.
+> 
+> However, when not in a clustered environment, it won't be.  Decisions
+> about whether to panic the system or not are user space policy, and
+> should not be embedded into subsystems.  What we need to do is to come
+> up with a way of detecting the condition, reporting it and possibly
+> taking some action.
+> 
+> >  Because even on such disk error, cluster monitoring
+> > tool may not be able to detect the system failure while heartbeat can
+> > continue
+> > working.
+> > So, I think basically offlining is enough and also, panic is necessary
+> > on some cases.
 
->> diff --git
->> a/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
->> b/Documentation/devicetree/bindings/pwm/fsl-ftm-pwm.txt
+The way I have seen this done in such a clustered environment is to have
+the heartbeat agent on each system periodically attempt to access the
+disk.  If that I/O hangs, other systems will see loss of heartbeat.
+You really don't want to panic the kernel.  Among other things, it may
+make it difficult to get the system up again later for long enough to
+figure out what is wrong.
 
->> +Required properties: +- compatible: should be
->> "fsl,vf610-ftm-pwm" +- reg: physical base address and length of
->> the controller's registers +- #pwm-cells: Should be 3. Number of
->> cells being used to specify PWM property. +  First cell specifies
->> the per-chip channel index of the PWM to use, the +  second cell
->> is the period in nanoseconds and bit 0 in the third cell is +
->> used to encode the polarity of PWM output. Set bit 0 of the third
->> in PWM +  specifier to 1 for inverse polarity & set to 0 for
->> normal polarity.
+> 
+> Offline seems a bit drastic ... what happens if you send it a target
+> reset?
+> 
+> James
+> 
+> 
+> 
+> 
 
-Lines 2..n of a property description should be indented so it's easier
-to see where each entry in the list starts.
 
->> +- fsl,pwm-clk-ps: the ftm0 pwm clock's prescaler, divide-by
->> 2^n(n = 0 ~ 7). +- fsl,pwm-cpwm: Center-Aligned PWM (CPWM) mode.
-
->> +- fsl,pwm-number: the number of PWM devices, and is must equal
->> to the number +  of "fsl,pwm-channels".
-
-Isn't that value a static facet of the HW, and hence it can be
-determined solely from the compatible value?
-
->> +- fsl,pwm-channels: the channels' order which is be used for pwm
->> in ftm0 +  module, and they must be one or some of 0 ~ 7, because
->> the ftm0 only has +  8 channels can be used.
-
-Why is there a need to re-order the channels? Why not simply reference
-the actual physical channel IDs in client nodes?
-
->> +- for very channel, the revlatived the pinctrl should be at
->> least two state +  {"enN", "dsN"}, which "en" means "enable",
->> "ds" means "disable" and "N" +  means the order of the channel.
-
-revlatived??
-
-Why is there a need for pinctrl interaction at all?
-
-Is the "N" in these property names the index into fsl,pwm-channels, or
-the physical channel number in the controller HW, or something else?
-
-"dis" would be better than "ds", although "enable-chN", "disable-chN"
-would be even better.
-
-Note that it's not possible to enable multiple pinctrl states at once,
-so what happens when channel 0 is enabled, yet channel 1 is disabled,
-and you want to enable "en0" and "ds1" at the same time?
