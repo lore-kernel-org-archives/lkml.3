@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab3HWMcS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 08:32:18 -0400
-Received: from shelob.oktetlabs.ru ([195.131.132.186]:50436 "EHLO
-	shelob.oktetlabs.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755011Ab3HWMcO (ORCPT
+	id S1755541Ab3HWMYM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 08:24:12 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:59559 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755363Ab3HWMYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 08:32:14 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 shelob.oktetlabs.ru 93ECC7F505
-Date: Fri, 23 Aug 2013 16:32:00 +0400
-From: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kmemleak in apei_res_add
-Message-ID: <20130823123159.GD12595@sanechka.spb.ru>
-References: <20130812024556.GB29956@sanechka.spb.ru>
- <CAHkRjk4y06puTL_Gq5RbpoV+kpEp+k32z5aq3HpEu9u3qsS_Aw@mail.gmail.com>
- <20130821134455.GC12595@sanechka.spb.ru>
- <1377161014.6167.67.camel@yhuang-dev>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377161014.6167.67.camel@yhuang-dev>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 23 Aug 2013 08:24:06 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 07/40] ARM: ux500: Remove support for Snowball's Ethernet regulator when booting with ATAGs
+Date: Fri, 23 Aug 2013 13:23:07 +0100
+Message-Id: <1377260620-18829-8-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
+References: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Huang,
+It's time to remove all ATAG support from ux500 and rely solely on
+Device Tree booting. This patch is part of that endeavour.
 
-On Aug 22 16:43, Huang Ying wrote:
-> Hi, Alexandra,
-> Can you try the following debug patch, and send me back the output of:
-> 
-> $ dmesg | grep apei_res
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/mach-ux500/board-mop500.c | 18 ------------------
+ 1 file changed, 18 deletions(-)
 
-bash$ dmesg |grep apei
-[    9.608829] apei_res_add: ffff8802730cde48: 7dfd5018 - 7dfd5019
-[    9.615354] apei_res_add: ffff8802730cde48: 7dfd5018 - 7dfd5019
-[    9.621595] apei_res_add: ffff8802730cde48: 7dfd5018 - 7dfd5019
-[    9.627915] apei_res_add: ffff8802730cde48: 7dfd5019 - 7dfd501a
-[    9.634363] apei_res_add: ffff8802730cde48: 7dfd501a - 7dfd501e
-[    9.640689] apei_res_add: ffff8802730cde58: b2 - b3
-[    9.646008] apei_res_add: ffff8802730cde48: 7dfd501e - 7dfd501f
-[    9.652320] apei_res_add: ffff8802730cde48: 7dfd501f - 7dfd5020
-[    9.658637] apei_res_add: ffff8802730cde48: 7dfd5020 - 7dfd5028
-[    9.664952] apei_res_add: ffff8802730cde48: 7dfd5028 - 7dfd5030
-[    9.671227] apei_res_add: ffff8802730cde48: 7dfd5030 - 7dfd5032
-[    9.686533] apei_res_add: ffff8802730cde48: 7dfd5018 - 7dfd5019
-[    9.702283] apei_res_add: ffff8802730cde48: 7dfd5032 - 7dfd5033
-[    9.718050] apei_res_add: ffff8802730cde48: 7dfd5032 - 7dfd503a
-[    9.732699] apei_res_add: ffff8802730cde48: 7dfd503a - 7dfd503e
-[    9.747231] apei_res_add: ffff8802730cde48: 7dfd503e - 7dfd503f
-[    9.761822] apei_res_sub: ffff8802730cde48 - ffffffff81a76ee0
-[    9.775718] apei_res_sub: ffff8802730cde58 - ffffffff81a76ef0
-[    9.789058] apei_res_add: ffff8802730cdde8: 7e095000 - 7e299000
-[    9.803780] apei_res_add: ffff8802730cdde8: 7f370000 - 7f3f6000
-[    9.818264] apei_res_sub: ffff8802730cde48 - ffff8802730cdde8
-[    9.831933] apei_res_sub: ffff8802730cde58 - ffff8802730cddf8
-[    9.846091] apei_res_add: ffffffff81a76ee0: 7dfd5018 - 7dfd503f
-[    9.859528] apei_res_add: ffffffff81a76ef0: b2 - b3
-
-I hope it helps.
-
-Alexandra.
+diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+index 062f8bf..68bd9d3 100644
+--- a/arch/arm/mach-ux500/board-mop500.c
++++ b/arch/arm/mach-ux500/board-mop500.c
+@@ -54,23 +54,6 @@
+ #include "board-mop500.h"
+ #include "board-mop500-regulators.h"
+ 
+-static struct fixed_voltage_config snowball_gpio_en_3v3_data = {
+-       .supply_name            = "EN-3V3",
+-       .gpio                   = SNOWBALL_EN_3V3_ETH_GPIO,
+-       .microvolts             = 3300000,
+-       .enable_high            = 1,
+-       .init_data              = &gpio_en_3v3_regulator,
+-       .startup_delay          = 5000, /* 1200us */
+-};
+-
+-static struct platform_device snowball_gpio_en_3v3_regulator_dev = {
+-       .name   = "reg-fixed-voltage",
+-       .id     = 1,
+-       .dev    = {
+-               .platform_data  = &snowball_gpio_en_3v3_data,
+-       },
+-};
+-
+ /* Dynamically populated. */
+ static struct gpio sdi0_reg_gpios[] = {
+ 	{ 0, GPIOF_OUT_INIT_LOW, "mmci_vsel" },
+@@ -368,7 +351,6 @@ static void __init u8500_cryp1_hash1_init(struct device *parent)
+ }
+ 
+ static struct platform_device *snowball_platform_devs[] __initdata = {
+-	&snowball_gpio_en_3v3_regulator_dev,
+ 	&u8500_cpufreq_cooling_device,
+ 	&sdi0_regulator,
+ };
 -- 
-Alexandra N. Kossovsky
-OKTET Labs (http://www.oktetlabs.ru/)
-e-mail: sasha@oktetlabs.ru
+1.8.1.2
+
