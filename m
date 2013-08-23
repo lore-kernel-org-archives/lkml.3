@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab3HWPVR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 11:21:17 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:48773 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab3HWPVP (ORCPT
+	id S1755177Ab3HWPWI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 11:22:08 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:49602 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754692Ab3HWPWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 11:21:15 -0400
-Message-ID: <52177DE8.6090704@linux.vnet.ibm.com>
-Date: Fri, 23 Aug 2013 17:21:12 +0200
-From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-To: Frantisek Hrbata <fhrbata@redhat.com>
-CC: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
-        rusty@rustcorp.com.au, linux-arch@vger.kernel.org, arnd@arndb.de,
-        mgahagan@redhat.com, agospoda@redhat.com
-Subject: Re: [RFC PATCH 3/4] gcov: compile specific gcov implementation based
- on gcc version
-References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com> <1377247176-13537-4-git-send-email-fhrbata@redhat.com> <52177C87.4090003@linux.vnet.ibm.com>
-In-Reply-To: <52177C87.4090003@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082315-2966-0000-0000-0000088A6866
+	Fri, 23 Aug 2013 11:22:05 -0400
+X-AuditID: cbfec7f5-b7ef66d00000795a-f2-52177e1bde11
+Message-id: <52177E19.3080106@samsung.com>
+Date: Fri, 23 Aug 2013 17:22:01 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>, linux@arm.linux.org.uk,
+        mturquette@linaro.org, jiada_wang@mentor.com, broonie@kernel.org,
+        vapier@gentoo.org, ralf@linux-mips.org, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com, shawn.guo@linaro.org,
+        sebastian.hesselbarth@gmail.com, LW@KARO-electronics.de,
+        t.figa@samsung.com, g.liakhovetski@gmx.de,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH v3 2/5] clkdev: Fix race condition in clock lookup from
+ device tree
+References: <1377270227-1030-1-git-send-email-s.nawrocki@samsung.com>
+ <1377270227-1030-3-git-send-email-s.nawrocki@samsung.com>
+In-reply-to: <1377270227-1030-3-git-send-email-s.nawrocki@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsVy+t/xq7rSdeJBBi2bRSymPnzCZvF+4zwm
+	i54/lRZnm96wW3ROXMJusenxNVaLy7vmsFlMmDqJ3WLOnynMFrcv81oceLKczeLphItsFrcb
+	V7BZXNqjYnH4TTurxfufjhZP1y1htlg/4zWLxcKGL+wWNyf8YHYQ8Whp7mHzWDnd2+Py9zfM
+	Hjtn3WX3+PAxzmN2x0xWj/nTHzF7bFrVyeZx59oeNo+jK9cyeWxeUu+x+2sTo0ffllWMHp83
+	yQXwRXHZpKTmZJalFunbJXBlHN/zn73gG3vF3pu/WBoYz7F1MXJySAiYSHzof8QCYYtJXLi3
+	HiwuJLCUUWLuH1YI+xOjxL4dziA2r4CWxOa+h2D1LAKqEp/vfWQHsdkEDCV6j/YxgtiiAgES
+	i5ecY4eoF5T4MfkeWL2IgIbElK7HYHFmgV4WiUOLjbsYOTiEBSIlZmwACnMBrWpklFjcPx/s
+	Bk4BN4lrzfOYIep1JPa3TmODsOUlNq95yzyBUWAWkhWzkJTNQlK2gJF5FaNoamlyQXFSeq6R
+	XnFibnFpXrpecn7uJkZIxH7dwbj0mNUhRgEORiUe3gnOYkFCrIllxZW5hxglOJiVRHifVosH
+	CfGmJFZWpRblxxeV5qQWH2Jk4uCUamA89Z1jp1H5jYQnTTvYEzp8Kzh/v5tve/Uei8j+n3df
+	SujeNJFWq78T/sHoWunS/byBl4J7Tjr6zfjyX2ejj+xrjnWXf7DquS+Vb2fQzlPUNwl0mDw5
+	QtrVe3qlt8jXxScWRUid5O8y0WhI2Tn9Wotq7sxTt4SOb3bxLXkdt14ze8Xjw52uFcpKLMUZ
+	iYZazEXFiQAP3jeLtgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.08.2013 17:15, Peter Oberparleiter wrote:
-> On 23.08.2013 10:39, Frantisek Hrbata wrote:
->> Compile the correct gcov implementation file for a specific gcc version. In
->> the future, if another file is added, the conditions will need to be somehow
->> adjusted to if-elif-else case, but at this point the simple cc-ifversion should
->> be enough.
+On 08/23/2013 05:03 PM, Sylwester Nawrocki wrote:
+> There is currently a race condition in the device tree part of clk_get()
+> function, since the pointer returned from of_clk_get_by_name() may become
+> invalid before __clk_get() call. I.e. due to the clock provider driver
+> remove() callback being called in between of_clk_get_by_name() and
+> __clk_get().
+> 
+> Fix this by doing both the look up and __clk_get() operations with the
+> clock providers list mutex held. This ensures that the clock pointer
+> returned from __of_clk_get_from_provider() call and passed to __clk_get()
+> is valid, as long as the clock supplier module first removes its clock
+> provider instance and then does clk_unregister() on the corresponding
+> clocks.
+> 
+> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-As promised, I'm also adding the patch that makes the format-specific part
-of gcov-kernel a loadable kernel module:
+Oops, I missed to add:
 
----
-kernel: gcov: make format-specific code loadable
+Reviewed-by: Mike Turquette <mturquette@linaro.org>
 
-Turn the format-specific part of gcov-kernel into a loadable kernel
-module. This enables the use of gcov-kernel with kernel modules
-that were compiled with a version of GCC that produces a different
-gcov format when compared to the version of GCC that was used to
-compile the kernel.
-
-Signed-off-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
----
- kernel/gcov/Kconfig  |   19 +++++++++++++++++--
- kernel/gcov/Makefile |    7 ++++---
- 2 files changed, 21 insertions(+), 5 deletions(-)
-
---- a/kernel/gcov/Kconfig
-+++ b/kernel/gcov/Kconfig
-@@ -29,8 +29,23 @@ config GCOV_KERNEL
- 	and:
- 	        GCOV_PROFILE := n
-
--	Note that the debugfs filesystem has to be mounted to access
--	profiling data.
-+	Note that GCOV_KERNEL_FS has to specified as well and the debugfs
-+	filesystem has to be mounted to access profiling data.
-+
-+config GCOV_KERNEL_FS
-+	tristate "Provide gcov data files in debugfs"
-+	depends on GCOV_KERNEL
-+	default y
-+	---help---
-+	Make profiling data available in debugfs at /sys/kernel/debug/gcov.
-+
-+	Say M if you want to enable collecting coverage data for kernel modules
-+	which are compiled using a gcc version different from the one that
-+	was used to compile the kernel. In that case, re-compile the gcov
-+	kernel module with corresponding format support and load that module
-+	instead.
-+
-+	If unsure, say Y.
-
- config GCOV_PROFILE_ALL
- 	bool "Profile entire Kernel"
---- a/kernel/gcov/Makefile
-+++ b/kernel/gcov/Makefile
-@@ -13,10 +13,11 @@ else
-   cc-ver := $(call cc-version)
- endif
-
--obj-$(CONFIG_GCOV_KERNEL) := base.o fs.o
-+obj-$(CONFIG_GCOV_KERNEL) += base.o
-+obj-$(CONFIG_GCOV_KERNEL_FS) += gcov.o
-
- ifeq ($(call if-lt, $(cc-ver), 0407),1)
--  obj-$(CONFIG_GCOV_KERNEL) += gcc_3_4.o
-+  gcov-objs += fs.o gcc_3_4.o
- else
--  obj-$(CONFIG_GCOV_KERNEL) += gcc_4_7.o
-+  gcov-objs += fs.o gcc_4_7.o
- endif
-
--- 
-Peter Oberparleiter
-Linux on System z Development - IBM Germany
-
+> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
