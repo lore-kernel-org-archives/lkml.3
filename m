@@ -1,91 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab3HWVh3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 17:37:29 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47525 "EHLO mail.skyhub.de"
+	id S1756204Ab3HWVmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 17:42:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30291 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755844Ab3HWVh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 17:37:27 -0400
-Date: Fri, 23 Aug 2013 23:37:25 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        dougthompson@xmission.com, bhelgaas@google.com, jbeulich@suse.com,
-        linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 1/1] AMD64_EDAC: Fix incorrect wrap arounds due to left
- shift beyond 32 bits.
-Message-ID: <20130823213725.GC15521@pd.tnic>
-References: <1376958472-2150-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <1376958472-2150-2-git-send-email-Aravind.Gopalakrishnan@amd.com>
+	id S1755799Ab3HWVmS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 17:42:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,944,1367996400"; 
+   d="scan'208";a="367605039"
+From: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Don Dutile <ddutile@redhat.com>
+Subject: RE: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type
+ 00 to PF Nacked" messages
+Thread-Topic: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type
+ 00 to PF Nacked" messages
+Thread-Index: AQHOmJVrwoQz29MPKEui5Cqk94n7XZmfOJuAgAAH/ICABEX4gP//ngZAgACDewD//6ZTMIAAeG6A//+YeXA=
+Date: Fri, 23 Aug 2013 21:41:53 +0000
+Message-ID: <F6FB0E698C9B3143BDF729DF222866466FD44279@ORSMSX110.amr.corp.intel.com>
+References: <CAErSpo53L3-feEw0qZvBTmRrY+SXpGrGU6oxZg3wVjH1M8JDXg@mail.gmail.com>
+ <F6FB0E698C9B3143BDF729DF222866466FD41225@ORSMSX110.amr.corp.intel.com>
+ <CAErSpo5AiRw7HvGQMq-n596ZkHJs_KJNn346yf+jc7yti-xpUw@mail.gmail.com>
+ <CAErSpo4E9LNrfqTq1_WUoAx68_krw23BjSYbPpJPOr=zbq98xA@mail.gmail.com>
+ <CAErSpo6Ky1FQeRjjbhja2KC7EYGJ2nR1ZNuYjYi89DoqLse2cw@mail.gmail.com>
+ <CAErSpo7m=YB=1cHSBTwufTHAiAd+k9Re2s-ro509BELOgK8j7Q@mail.gmail.com>
+ <F6FB0E698C9B3143BDF729DF222866466FD4418D@ORSMSX110.amr.corp.intel.com>
+ <20130823185240.GA1507@google.com>
+ <F6FB0E698C9B3143BDF729DF222866466FD4421F@ORSMSX110.amr.corp.intel.com>
+ <CAErSpo4VLBon21cSzaigVqy6dS7=qfVRuPTTGuWAz+GLJWmNog@mail.gmail.com>
+In-Reply-To: <CAErSpo4VLBon21cSzaigVqy6dS7=qfVRuPTTGuWAz+GLJWmNog@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1376958472-2150-2-git-send-email-Aravind.Gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 07:27:52PM -0500, Aravind Gopalakrishnan wrote:
-> Link to the bug report:
-> http://marc.info/?l=linux-edac&m=137692201732220&w=2
+> -----Original Message-----
+> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> Sent: Friday, August 23, 2013 1:43 PM
+> To: Skidmore, Donald C
+> Cc: e1000-devel@lists.sourceforge.net; linux-pci@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Don Dutile
+> Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type 00
+> to PF Nacked" messages
 > 
-> dct_base and dct_limit obtain 32 bit register values when they read their
-> respective pci config space registers. A left shift beyond 32 bits will
-> cause them to wrap around. Similar case for chan_addr as can be seen from
-> the bug report. In the patch, we rectify this by casting chan_addr to u64
-> and by comparing dct_base and dct_limit against (sys_addr >> 27)
+> On Fri, Aug 23, 2013 at 2:37 PM, Skidmore, Donald C
+> <donald.c.skidmore@intel.com> wrote:
+> >> -----Original Message-----
+> >> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> >> Sent: Friday, August 23, 2013 11:53 AM
+> >> To: Skidmore, Donald C
+> >> Cc: e1000-devel@lists.sourceforge.net; linux-pci@vger.kernel.org;
+> >> linux- kernel@vger.kernel.org; Don Dutile
+> >> Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of
+> >> type 00 to PF Nacked" messages
+> >>
+> >> On Fri, Aug 23, 2013 at 06:25:06PM +0000, Skidmore, Donald C wrote:
+> >> > > -----Original Message-----
+> >> > > From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> >> > > Sent: Friday, August 23, 2013 9:53 AM
+> >> > > To: Skidmore, Donald C
+> >> > > Cc: e1000-devel@lists.sourceforge.net; linux-pci@vger.kernel.org;
+> >> > > linux- kernel@vger.kernel.org; Don Dutile
+> >> > > Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last
+> >> > > Request of type 00 to PF Nacked" messages
+> >> > >
+> >> > > On Tue, Aug 20, 2013 at 5:37 PM, Bjorn Helgaas
+> >> > > <bhelgaas@google.com>
+> >> > > wrote:
+> >> > > > On Tue, Aug 20, 2013 at 5:08 PM, Bjorn Helgaas
+> >> > > > <bhelgaas@google.com>
+> >> > > wrote:
+> >> > > >> On Tue, Aug 13, 2013 at 8:23 PM, Bjorn Helgaas
+> >> > > >> <bhelgaas@google.com>
+> >> > > wrote:
+> >> > > >
+> >> > > >>> I played with this a little more and found this:
+> >> > > >>>
+> >> > > >>> 1) Magma card in z420, connected to chassis containing X540:
+> >> > > >>> fails (original report)
+> >> > > >>> 2) X540 in z420, Magma card in z420, connected to empty chassis:
+> >> > > >>> fails
+> >> > > >>> 3) X540 in z420, Magma card in z420 but no cable to chassis:
+> >> > > >>> works
+> >> > > >
+> >> > > > For what it's worth, I tried config 3 again with v3.11-rc6, and
+> >> > > > it failed the same way.  I haven't bothered with config 2.
+> >> > > > It's not 100% reproducible, but at least it doesn't seem
+> >> > > > related to the expansion chassis.
+> >> > > >
+> >> > > > I attached the logs from config 3 to
+> >> > > > https://bugzilla.kernel.org/show_bug.cgi?id=60776
+> >> > >
+> >> > > Is there anything I can do to help debug this?  Add
+> >> > > instrumentation, etc.?  It seems like I'm doing the simplest
+> >> > > possible thing -- just writing to the sysfs sriov_num_vfs file to enable
+> VFs.
+> >> > >
+> >> > > I almost think it must be related to my config somehow if nobody
+> >> > > else is seeing this, but at the same time, my config also seems
+> >> > > the simplest possible, so I don't know what I could be doing that's
+> unusual.
+> >> > >
+> >> > > Bjorn
+> >> >
+> >> > Hey Bjorn,
+> >> >
+> >> > I'm may be little confused so bear with me.
+> >> >
+> >> > Option 1 = (your normal set up), Magma card plugged to chasis, X540
+> >> > in
+> >> chasis.
+> >> > Option 2 = Magma card plugged to chasis, X540 in z420 system.
+> >> > Option 3 = Magma card UNplugged from chasis, x540 in z420 system.
+> >> >
+> >> > Options 1 & 2 - always fail
+> >> > Option 3 - sometimes fails (unsure at what rate failure occurs)
+> >> >
+> >> > Please correct me if I messed any of that up. :)
+> >>
+> >> Generally correct.  I've seen failures in all three configs, so I'm
+> >> only concerned with the simplest for now (config 3, no expansion chassis).
+> >>
+> >> > Another question I have relates to the lspci output you supplied in
+> >> > the
+> >> bugzilla.  I'm not seeing the VF devices (i.e. 08:10.0) did you run
+> >> lspci before you created the VF's?  If so could we see one while the failure
+> was occurring?
+> >>
+> >> That's correct, I collected the lspci output before reproducing the
+> >> problem.  I can't easily collect lspci afterwards because the machine
+> >> isn't responsive after the problem starts.
+> >>
+> >> > Also could you download the latest ixgbevf from source forge?
+> >> >
+> >> > https://sourceforge.net/projects/e1000/files/ixgbevf%20stable/
+> >> >
+> >> > If we add debugging messages it will be easier to patch this driver
+> >> > and it
+> >> contains our latest validated code base.
+> >>
+> >> I can do that if it turns out to be necessary.  But John Haller gave
+> >> me a good clue off-list:
+> >>
+> >> John wrote:
+> >> > I assume you want the VFs to be instantiated in a VM.  To do this,
+> >> > you need to blacklist the ixgbevf driver in the host (or not
+> >> > compile it into the host), or it will try to associate the driver
+> >> > in the host, rather than in the VM where you want it.  Then, the VM
+> >> > needs the ixgbevf driver, which will hopefully do a better job of
+> >> > talking to the mailbox in the host.  There is some work to assign
+> >> > the VF(s) to the VM, but I don't remember that offhand.
+> >>
+> >> I don't have any VMs (I started this whole thing because I was
+> >> looking at a PCI hotplug issue related to SR-IOV, so I don't really care
+> about VMs).
+> >>
+> >> So the ixgbevf driver on the *host* is claiming the new VFs, and it
+> >> sounds like maybe it can't handle that?
+> >>
+> >> Bjorn
+> >
+> > Not to speak for John, but I believe he was saying if you want to use your
+> VF's in a VM you need to make sure you don't run the ixgbevf driver on the
+> host as it will "claim" the VF's.  If you are NOT running any VM's then it is
+> perfectly fine to have both ixgbe and ixgbevf loaded.
 > 
-> Tested on F15h, M30h with ECC turned on and works fine.
+> OK.  It certainly *seemed* surprising to have the ixgbevf driver blow up,
+> even if it was an error on my part to load it in the host.  Just let me know if
+> there's any more testing I can do.
 > 
-> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-> 
-> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-> index b86228c..eb4793e 100644
-> --- a/drivers/edac/amd64_edac.c
-> +++ b/drivers/edac/amd64_edac.c
-> @@ -1558,11 +1558,12 @@ static int f15_m30h_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
->  	}
->  
->  	/* Verify sys_addr is within DCT Range. */
-> -	dct_base = (dct_sel_baseaddr(pvt) << 27);
-> -	dct_limit = (((dct_cont_limit_reg >> 11) & 0x1FFF) << 27) | 0x7FFFFFF;
-> +	dct_base = dct_sel_baseaddr(pvt);
+> Bjorn
 
-This can't be correct.
+Something is leading to the mbx messages being messed up as event by the " Last Request of type 03 to PF Nacked" messages.   Have you tried reseting the ixgbevf port (ethtool -r <your port>)?  Is it even possible to do this as you mentioned that in the failure state the machine isn't very responsive?
 
-So the original patch takes the shifted dct_base while your change
-doesn't anymore...
+If it might be worthwhile to add logging into the ixgbevf and ixgbe drivers around the mbx messages, with the hope being that it would help show what is going between the two.  There have been some changes in that area of the ixgbevf code as of late, so working off the latest source forge driver would the easiest for me to send you patch on.  Sadly we haven't been able to recreate the failure here so it makes it rather hard to debug.
 
-> +	dct_limit = (dct_cont_limit_reg >> 11) & 0x1FFF;
->  
->  	if (!(dct_cont_base_reg & BIT(0)) &&
-> -	    !(dct_base <= sys_addr && dct_limit >= sys_addr))
-> +	    !(dct_base <= (sys_addr >> 27) &&
-> +	      dct_limit >= (sys_addr >> 27)))
-
-... and while this comparison shifts sys_addr to use the proper bits,
-the code does this assignment later:
-
-	chan_offset = dct_base;
-
-Now, chan_offset has the << 27 version of dct_base which makes the following
-calculation wrong:
-
-	chan_addr = sys_addr - chan_offset;
-
-because sys_addr is the full 64-bit, unshifted value.
-
-The right thing to do would be to do:
-
-	chan_offset = dct_base << 27;
-
-Or am I missing something?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+-Don Skidmore <donald.c.skidmore@intel.com>
