@@ -1,203 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab3HWJa2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 05:30:28 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:53425 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188Ab3HWJaY (ORCPT
+	id S1754183Ab3HWJey (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 05:34:54 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:27051
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753454Ab3HWJew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 05:30:24 -0400
-Message-ID: <52172BAA.7020009@gmail.com>
-Date: Fri, 23 Aug 2013 11:30:18 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 23 Aug 2013 05:34:52 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 23 Aug 2013 17:36:02 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Dong Aisheng <b29396@freescale.com>
+CC: Grant Likely <grant.likely@linaro.org>, Rob Landley <rob@landley.net>,
+        <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/3] of: add update device node status via cmdline feature
+Message-ID: <20130823093559.GA10662@S2101-09.ap.freescale.net>
+References: <1376564133-11286-1-git-send-email-b29396@freescale.com>
+ <CACxGe6tMm=u1jFKUQ59+cj-rYkLLAZUqMhsXamyi-wwpWaOGvw@mail.gmail.com>
+ <20130821123708.GA17748@b29396-Latitude-E6410>
+ <20130823070906.GA2460@b29396-Latitude-E6410>
+ <20130823075102.GA10424@S2101-09.ap.freescale.net>
+ <20130823084954.GC2460@b29396-Latitude-E6410>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: Re: [RFC 17/17] clk: zynq: remove call to of_clk_init
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376964271-22715-18-git-send-email-sebastian.hesselbarth@gmail.com> <d17acba9-85f9-40cd-a176-2005e3e924f8@CO1EHSMHS002.ehs.local> <c4d10bdf-6506-4edc-92cc-2acc67b86602@VA3EHSMHS032.ehs.local>
-In-Reply-To: <c4d10bdf-6506-4edc-92cc-2acc67b86602@VA3EHSMHS032.ehs.local>
-Content-Type: multipart/mixed;
- boundary="------------010201020507060305010600"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130823084954.GC2460@b29396-Latitude-E6410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010201020507060305010600
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+On Fri, Aug 23, 2013 at 04:49:55PM +0800, Dong Aisheng wrote:
+> On Fri, Aug 23, 2013 at 03:51:07PM +0800, Shawn Guo wrote:
+> > The device tree mailing list is changed to devicetree@vger.kernel.org.
+> > 
+> > On Fri, Aug 23, 2013 at 03:09:08PM +0800, Dong Aisheng wrote:
+> > > I tried the uboot way with fdt command to change the node status, it can work.
+> > > However, it seems using fdt command is much complicated than the way i did with kernel
+> > > command line and it also does not support enable/disable multi nodes at the same time.
+> > > e.g, in order to enable ecspi1 and uart3 and disable gpmi:
+> > > with uboot fdt command:
+> > > U-Boot > fdt addr ${dtbaddr}
+> > > U-Boot > fdt set /soc/aips-bus@02000000/spba-bus@02000000/ecspi@02008000 status "okay"
+> > > U-Boot > fdt set /soc/aips-bus@02100000/serial@021e8000 status "okay"
+> > > U-Boot > fdt set /soc/gpmi-nand@00112000 status "disabled"
+> > 
+> > Oh, you can use the U-Boot environment and scripting function to make
+> > it even easier than your kernel cmdline approach to use.
+> > 
+> 
+> Hmm?
+> Can you give an example to make it easier than kernel cmdline?
 
-On 08/23/13 02:59, Sören Brinkmann wrote:
-> On Thu, Aug 22, 2013 at 05:26:47PM -0700, Sören Brinkmann wrote:
->> On Tue, Aug 20, 2013 at 04:04:31AM +0200, Sebastian Hesselbarth wrote:
->>> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
->>> remove it from corresponding drivers/clk code.
->>
->> I think that would break Zynq.
->> If I see this correctly you call of_clk_init() from common code,
->> _before_ the SOC specific time init function is called.
->> The problem is, that we have code setting up a global pointer which is
->> required by zynq_clk_setup() which is triggered when of_clk_init() is
->> called.
->>
->> Let me try to illustrate the current call graph:
->>
->> time_init()
->> 	zynq_timer_init()		// this machines init_time()
->> 		zynq_slcr_init()	// setup System Level Control Registers including a global pointer
->> 			zynq_clock_init()
->> 				of_clk_init()
->> 					zynq_clk_setup()   // requires pointer setup in zynq_slcr_init()
->> 					...
->>
->> IIUC, your series would change this to:
->> time_init()
->> 	of_clk_init()
->> 		zynq_clk_setup()	// SLCR pointer is not setup/NULL
->> 		...
->> 	zynq_timer_init()
->> 		zynq_slcr_init()	// now the pointer becomes valid
->
-> I guess we could move zynq_slcr_init() into init_irq(). I'll give that a
-> shot tomorrow.
+For imx6q-sabreauto example,
 
-Sören,
+setenv loadaddr 0x12000000
+setenv fdtaddr 0x18000000
+setenv fdt_file imx6q-sabreauto.dtb
 
-thanks for looking into this. I also had a look at the files in
-question. Based on Steffen's proposal, I prepared a diff that should do
-the trick. It moves zynq_slcr_init() to early_init, instead of reusing
-another hook that has magic cow powers (it calls irqchip_init that zynq
-also wants sooner or later).
+setenv bootcmd 'tftpboot zImage; tftpboot ${fdtaddr} ${fdt_file}; fdt addr ${fdtaddr}; run select_${devsel}; bootz ${loadaddr} - ${fdtaddr}'
 
-Also, it removes zynq_clock_init() and let zynq_clk_setup() map the
-register itself by finding the node and use of_iomap(). I realized that
-clock registers are quite separated within slcr, so you can consider
-to have your own node for the clk-provider. As Steffen is proposing
-this but mentioned incompatible DT changes, I chose that intermediate
-step above.
+setenv select_gpmi 'fdt set /soc/aips-bus@02000000/spba-bus@02000000/ecspi@02008000 status disabled; fdt set /soc/aips-bus@02100000/serial@021e8000 status disabled; fdt set /soc/gpmi-nand@00112000 status okay'
+setenv select_ecspi '...'
+setenv select_serial '...'
 
-It would be great, if you test the diff and prepare a patch out of
-it, that I pick-up in the patch set. That way, we also have your
-Signed-off on it.
+You can have all above environments defined in U-Boot mx6qsabreauto.h
+at compile time.  Then at runtime, you only need the following two
+commands to boot kernel with the device that you want.
 
-Sebastian
+U-Boot > setenv devsel gpmi
+U-Boot > boot
 
+Shawn
 
-
---------------010201020507060305010600
-Content-Type: text/x-patch;
- name="arm-of_clk_init-zynq-proposal.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="arm-of_clk_init-zynq-proposal.diff"
-
-diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index 5f25256..a5a3969 100644
---- a/arch/arm/mach-zynq/common.c
-+++ b/arch/arm/mach-zynq/common.c
-@@ -19,8 +19,6 @@
- #include <linux/cpumask.h>
- #include <linux/platform_device.h>
- #include <linux/clk.h>
--#include <linux/clk/zynq.h>
--#include <linux/clocksource.h>
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
-@@ -58,10 +56,9 @@ static void __init zynq_init_machine(void)
- 	of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
- }
- 
--static void __init zynq_timer_init(void)
-+static void __init zynq_init_early(void)
- {
- 	zynq_slcr_init();
--	clocksource_of_init();
- }
- 
- static struct map_desc zynq_cortex_a9_scu_map __initdata = {
-@@ -104,8 +101,8 @@ static const char * const zynq_dt_match[] = {
- DT_MACHINE_START(XILINX_EP107, "Xilinx Zynq Platform")
- 	.smp		= smp_ops(zynq_smp_ops),
- 	.map_io		= zynq_map_io,
-+	.init_early	= zynq_init_early,
- 	.init_machine	= zynq_init_machine,
--	.init_time	= zynq_timer_init,
- 	.dt_compat	= zynq_dt_match,
- 	.restart	= zynq_system_reset,
- MACHINE_END
-diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
-index 1836d5a..59ad09f 100644
---- a/arch/arm/mach-zynq/slcr.c
-+++ b/arch/arm/mach-zynq/slcr.c
-@@ -106,8 +106,6 @@ int __init zynq_slcr_init(void)
- 
- 	pr_info("%s mapped to %p\n", np->name, zynq_slcr_base);
- 
--	zynq_clock_init(zynq_slcr_base);
--
- 	of_node_put(np);
- 
- 	return 0;
-diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
-index 089d3e3..8fa0de7 100644
---- a/drivers/clk/zynq/clkc.c
-+++ b/drivers/clk/zynq/clkc.c
-@@ -21,6 +21,7 @@
- #include <linux/clk/zynq.h>
- #include <linux/clk-provider.h>
- #include <linux/of.h>
-+#include <linux/of_address.h>
- #include <linux/slab.h>
- #include <linux/string.h>
- #include <linux/io.h>
-@@ -203,9 +204,19 @@ static void __init zynq_clk_setup(struct device_node *np)
- 	const char *periph_parents[4];
- 	const char *swdt_ext_clk_mux_parents[2];
- 	const char *can_mio_mux_parents[NUM_MIO_PINS];
-+	struct device_node *slcrnp;
- 
- 	pr_info("Zynq clock init\n");
- 
-+	slcrnp = of_find_compatible_node(NULL, NULL, "xlnx,zynq-slcr");
-+	if (WARN_ON(!slcrnp))
-+		return;
-+
-+	zynq_slcr_base_priv = of_iomap(slcrnp, 0);
-+	of_node_put(slcrnp);
-+	if (WARN_ON(!zynq_slcr_base_priv))
-+		return;
-+	
- 	/* get clock output names from DT */
- 	for (i = 0; i < clk_max; i++) {
- 		if (of_property_read_string_index(np, "clock-output-names",
-@@ -528,9 +539,3 @@ static void __init zynq_clk_setup(struct device_node *np)
- }
- 
- CLK_OF_DECLARE(zynq_clkc, "xlnx,ps7-clkc", zynq_clk_setup);
--
--void __init zynq_clock_init(void __iomem *slcr_base)
--{
--	zynq_slcr_base_priv = slcr_base;
--	of_clk_init(NULL);
--}
-diff --git a/include/linux/clk/zynq.h b/include/linux/clk/zynq.h
-index e062d31..58b5516 100644
---- a/include/linux/clk/zynq.h
-+++ b/include/linux/clk/zynq.h
-@@ -22,8 +22,6 @@
- 
- #include <linux/spinlock.h>
- 
--void zynq_clock_init(void __iomem *slcr);
--
- struct clk *clk_register_zynq_pll(const char *name, const char *parent,
- 		void __iomem *pll_ctrl, void __iomem *pll_status, u8 lock_index,
- 		spinlock_t *lock);
-
---------------010201020507060305010600--
