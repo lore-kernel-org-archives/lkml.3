@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab3HWRgT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 13:36:19 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:42312 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754765Ab3HWRgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 13:36:18 -0400
-Date: Fri, 23 Aug 2013 12:36:13 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Alex Elder <elder@kernel.org>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        Jeff Liu <jeff.liu@oracle.com>, Dave Chinner <david@fromorbit.com>
-Subject: Re: [patch] xfs: check for underflow in xfs_iformat_fork()
-Message-ID: <20130823173613.GT5262@sgi.com>
-References: <20130815055338.GC23580@elgon.mountain>
- <520CA923.4060409@oracle.com>
- <20130815143706.GI7153@sgi.com>
- <20130815222650.GX6023@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130815222650.GX6023@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756101Ab3HWRi7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 13:38:59 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:50745 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab3HWRi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 13:38:58 -0400
+From: Wei Hu <wei@aristanetworks.com>
+To: Clemens Ladisch <clemens@ladisch.de>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Cc: Wei Hu <wei@aristanetworks.com>
+Subject: [PATCH] hwmon: (k10temp) Add support for Fam16h (Kabini)
+Date: Fri, 23 Aug 2013 10:38:18 -0700
+Message-Id: <1377279498-2868-1-git-send-email-wei@aristanetworks.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan,
+The temperature reporting interface stays the same, so we just
+add the PCI-ID to the list.
 
-On Fri, Aug 16, 2013 at 08:26:50AM +1000, Dave Chinner wrote:
-> On Thu, Aug 15, 2013 at 09:37:06AM -0500, Ben Myers wrote:
-> > Hey Dan & Jeff,
-> > 
-> > On Thu, Aug 15, 2013 at 06:10:43PM +0800, Jeff Liu wrote:
-> > > On 08/15/2013 01:53 PM, Dan Carpenter wrote:
-> > > 
-> > > > The "di_size" variable comes from the disk and it's a signed 64 bit.
-> > > > We check the upper limit but we should check for negative numbers as
-> > > > well.
-> > > > 
-> > > > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> > > > 
-> > > > diff --git a/fs/xfs/xfs_inode_fork.c b/fs/xfs/xfs_inode_fork.c
-> > > > index 123971b..849fc70 100644
-> > > > --- a/fs/xfs/xfs_inode_fork.c
-> > > > +++ b/fs/xfs/xfs_inode_fork.c
-> > > > @@ -167,7 +167,8 @@ xfs_iformat_fork(
-> > > >  			}
-> > > >  
-> > > >  			di_size = be64_to_cpu(dip->di_size);
-> > > > -			if (unlikely(di_size > XFS_DFORK_DSIZE(dip, ip->i_mount))) {
-> > > > +			if (unlikely(di_size < 0 ||
-> > > 
-> > > But the di_size is initialized to ZERO while allocating a new inode on disk.
-> > > I wonder if that is better to ASSERT in this case because the current check
-> > > is used to make sure that the item is inlined, or we don't need it at all.
-> > 
-> > Hmm.  Dan's additional check looks good to me.  In this case I'd say the forced
-> > shutdown is more appropriate than an assert, because here we're reading the
-> > inode from disk, as opposed to looking at a structure that is already incore
-> > which we think we've initialized.  We want to handle unexpected inputs from
-> > disk without crashing even if we are CONFIG_XFS_DEBUG.
-> 
-> There are lots of places where we only check di_size to be greater
-> than some value, and don't check for it being less than zero. Hence
-> I think that a better solution might be to di_size unsigned as that
-> will catch "negative" sizes for all types of situations.
+Verified on AMD Olive Hill.
+---
+ Documentation/hwmon/k10temp |    1 +
+ drivers/hwmon/Kconfig       |    4 ++--
+ drivers/hwmon/k10temp.c     |    3 ++-
+ 3 files changed, 5 insertions(+), 3 deletions(-)
 
-What do you say to making di_size unsigned?  Any interest?
+diff --git a/Documentation/hwmon/k10temp b/Documentation/hwmon/k10temp
+index 90956b6..4dfdc8f 100644
+--- a/Documentation/hwmon/k10temp
++++ b/Documentation/hwmon/k10temp
+@@ -12,6 +12,7 @@ Supported chips:
+ * AMD Family 12h processors: "Llano" (E2/A4/A6/A8-Series)
+ * AMD Family 14h processors: "Brazos" (C/E/G/Z-Series)
+ * AMD Family 15h processors: "Bulldozer" (FX-Series), "Trinity"
++* AMD Family 16h processors: "Kabini"
+ 
+   Prefix: 'k10temp'
+   Addresses scanned: PCI space
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index e989f7f..1e27838 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -296,8 +296,8 @@ config SENSORS_K10TEMP
+ 	  If you say yes here you get support for the temperature
+ 	  sensor(s) inside your CPU. Supported are later revisions of
+ 	  the AMD Family 10h and all revisions of the AMD Family 11h,
+-	  12h (Llano), 14h (Brazos) and 15h (Bulldozer/Trinity)
+-	  microarchitectures.
++	  12h (Llano), 14h (Brazos), 15h (Bulldozer/Trinity) and
++	  16h (Kabini) microarchitectures.
+ 
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called k10temp.
+diff --git a/drivers/hwmon/k10temp.c b/drivers/hwmon/k10temp.c
+index e3b037c..e633856 100644
+--- a/drivers/hwmon/k10temp.c
++++ b/drivers/hwmon/k10temp.c
+@@ -1,5 +1,5 @@
+ /*
+- * k10temp.c - AMD Family 10h/11h/12h/14h/15h processor hardware monitoring
++ * k10temp.c - AMD Family 10h/11h/12h/14h/15h/16h processor hardware monitoring
+  *
+  * Copyright (c) 2009 Clemens Ladisch <clemens@ladisch.de>
+  *
+@@ -211,6 +211,7 @@ static DEFINE_PCI_DEVICE_TABLE(k10temp_id_table) = {
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(pci, k10temp_id_table);
+-- 
+1.7.4.4
 
-Thanks,
-Ben
