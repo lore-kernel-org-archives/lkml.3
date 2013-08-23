@@ -1,120 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab3HWQzx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 12:55:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8388 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754866Ab3HWQzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 12:55:50 -0400
-Date: Fri, 23 Aug 2013 18:55:28 +0200
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
-        rusty@rustcorp.com.au, linux-arch@vger.kernel.org, arnd@arndb.de,
-        mgahagan@redhat.com, agospoda@redhat.com
-Subject: Re: [RFC PATCH 4/4] kernel: add support for init_array constructors
-Message-ID: <20130823165528.GC2336@localhost.localdomain>
-Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
-References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com>
- <1377247176-13537-5-git-send-email-fhrbata@redhat.com>
- <52177C1B.60107@linux.vnet.ibm.com>
+	id S1755846Ab3HWQ4S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 12:56:18 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35183 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755824Ab3HWQ4R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 12:56:17 -0400
+Date: Fri, 23 Aug 2013 17:55:39 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
+ DBX500 DT
+Message-ID: <20130823165539.GD7015@e106331-lin.cambridge.arm.com>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+ <1370521041-32318-10-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
+ <20130820093034.GL31036@pengutronix.de>
+ <20130822133730.GB23152@e106331-lin.cambridge.arm.com>
+ <20130822141900.GB17154@lee--X1>
+ <20130822151723.GE23152@e106331-lin.cambridge.arm.com>
+ <20130822154116.GC17154@lee--X1>
+ <20130822211912.GE31036@pengutronix.de>
+ <20130823075607.GD17154@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52177C1B.60107@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130823075607.GD17154@lee--X1>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 05:13:31PM +0200, Peter Oberparleiter wrote:
-> On 23.08.2013 10:39, Frantisek Hrbata wrote:
-> > This adds the .init_array section as yet another section with constructors. This
-> > is needed because gcc is adding __gcov_init calls to .init_array.
+On Fri, Aug 23, 2013 at 08:56:07AM +0100, Lee Jones wrote:
+> I had a short chat with Rob last night about this. I'm going to loop
+> him in to the conversation, as he wrote the binding.
+> 
+> > > When most of the other clocks that we deal with are being requested,
+> > > they rely on being index zero:
+> > > 
+> > >   drivers/i2c/busses/i2c-nomadik.c: dev->clk = clk_get(&adev->dev, NULL);
 > > 
-> > Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
-> > ---
-> >  include/asm-generic/vmlinux.lds.h | 1 +
-> >  include/linux/module.h            | 2 ++
-> >  kernel/module.c                   | 6 ++++++
-> >  3 files changed, 9 insertions(+)
-> > 
-> > diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> > index 69732d2..c55d8d9 100644
-> > --- a/include/asm-generic/vmlinux.lds.h
-> > +++ b/include/asm-generic/vmlinux.lds.h
-> > @@ -468,6 +468,7 @@
-> >  #define KERNEL_CTORS()	. = ALIGN(8);			   \
-> >  			VMLINUX_SYMBOL(__ctors_start) = .; \
-> >  			*(.ctors)			   \
-> > +			*(.init_array)			   \
+> > Look at drivers/clk/clkdev.c, there's some fuzzy matching
+> > involved when you pass NULL as connection id.
 > 
-> This is exactly how I (would) have done it.
-> 
-> >  			VMLINUX_SYMBOL(__ctors_end) = .;
-> >  #else
-> >  #define KERNEL_CTORS()
-> > diff --git a/include/linux/module.h b/include/linux/module.h
-> > index 46f1ea0..89ff829 100644
-> > --- a/include/linux/module.h
-> > +++ b/include/linux/module.h
-> > @@ -374,6 +374,8 @@ struct module
-> >  	/* Constructor functions. */
-> >  	ctor_fn_t *ctors;
-> >  	unsigned int num_ctors;
-> > +	ctor_fn_t *init_array;
-> > +	unsigned int num_init_array;
-> 
-> I think it would be safe to re-use the ctors-related fields here. Each GCC
-> version will only ever create either of .ctors or .init_array, but never
-> both. 
-> The only case where separate fields would be required, would be when
-> linking a kernel module from multiple object files compiled with different
-> versions of GCC.
+> Yes, I've been looking at that. This is why it works currently. I
+> think I need to change all of the drivers to specify which clock they
+> want. At the moment that 'fuzzy matching' is what's saving us. If
+> anyone were to change our DTS file to match what the binding says,
+> then it would cease to work. I'm guessing this is the same for all
+> other DTS files too:
 
-Ah ok, I was not aware of this.
+I think if anything, the binding document(s) should be updated to
+describe that apb_pclk is referred to by name, and the names of the
+other clocks should be described in the specific device bindings. We can
+then modify the drivers which grab clock 0 to explicitly grab the first
+clock by name, and backwards compatibility should not be broken.
+
+I don't believe any other OS has implemented the common clock bindings,
+and we've never supported the binding as described. Let's correct the
+de-facto standard into a standard by decree.
+
+Thanks,
+Mark.
 
 > 
-> >  #endif
-> >  };
-> >  #ifndef MODULE_ARCH_INIT
-> > diff --git a/kernel/module.c b/kernel/module.c
-> > index 2069158..581ae89 100644
-> > --- a/kernel/module.c
-> > +++ b/kernel/module.c
-> > @@ -2760,6 +2760,9 @@ static void find_module_sections(struct module *mod, struct load_info *info)
-> >  #ifdef CONFIG_CONSTRUCTORS
-> >  	mod->ctors = section_objs(info, ".ctors",
-> >  				  sizeof(*mod->ctors), &mod->num_ctors);
-> 
-> When reusing mod->ctors, you could check for mod->ctors == NULL here and
-> fill in the values from section_objs(".init_array").
-
-Yes, in the case that we only have .ctors or .init_array section, this sounds
-as the right approach.
-
-> 
-> > +	mod->init_array = section_objs(info, ".init_array",
-> > +				  sizeof(*mod->init_array),
-> > +				  &mod->num_init_array);
-> >  #endif
-> > 
-> >  #ifdef CONFIG_TRACEPOINTS
-> > @@ -3024,6 +3027,9 @@ static void do_mod_ctors(struct module *mod)
-> > 
-> >  	for (i = 0; i < mod->num_ctors; i++)
-> >  		mod->ctors[i]();
-> > +
-> > +	for (i = 0; i < mod->num_init_array; i++)
-> > +		mod->init_array[i]();
-> >  #endif
-> >  }
-> > 
+> arch/arm/boot/dts/imx23.dtsi:                clock-names = "uart", "apb_pclk";
+> arch/arm/boot/dts/imx28.dtsi:                clock-names = "uart", "apb_pclk";
+> arch/arm/boot/dts/nspire-cx.dts:             clock-names = "uart_clk", "apb_pclk";
+> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "timclk", "apb_pclk";
+> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "timclk", "apb_pclk";
+> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "uartclk", "apb_pclk";
+> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "uartclk", "apb_pclk";
+> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "uartclk", "apb_pclk";
+> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "rng", "apb_pclk";
+> arch/arm/boot/dts/ste-nomadik-stn8815.dtsi:  clock-names = "mclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "refclk", "timclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "mclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "KMIREFCLK", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "KMIREFCLK", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "uartclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "uartclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "uartclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "uartclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "wdogclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "timclken1", "timclken2", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "timclken1", "timclken2", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m-rs1.dtsi:     clock-names = "clcdclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "refclk", "timclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "mclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "KMIREFCLK", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "KMIREFCLK", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "uartclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "uartclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "uartclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "uartclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "wdogclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "timclken1", "timclken2", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "timclken1", "timclken2", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2m.dtsi:         clock-names = "clcdclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts:  clock-names = "wdogclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2p-ca9.dts:      clock-names = "clcdclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2p-ca9.dts:      clock-names = "timclk", "apb_pclk";
+> arch/arm/boot/dts/vexpress-v2p-ca9.dts:      clock-names = "wdogclk", "apb_pclk";
 > 
 > -- 
-> Peter Oberparleiter
-> Linux on System z Development - IBM Germany
+> Lee Jones
+> Linaro ST-Ericsson Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
 > 
-
--- 
-Frantisek Hrbata
