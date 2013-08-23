@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649Ab3HWOra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 10:47:30 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:51349 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755155Ab3HWOr2 (ORCPT
+	id S1755224Ab3HWOu3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 10:50:29 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:59707 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab3HWOu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 10:47:28 -0400
-From: zwu.kernel@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: walken@google.com, akpm@linux-foundation.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH] rbtree: Add some necessary condition checks
-Date: Fri, 23 Aug 2013 22:45:06 +0800
-Message-Id: <1377269106-26468-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082314-5406-0000-0000-00000BB4F2D3
+	Fri, 23 Aug 2013 10:50:28 -0400
+Date: Fri, 23 Aug 2013 15:50:18 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 33/40] ARM: ux500: Don't register the STMPE/SKE when
+ booting with ATAG support
+Message-ID: <20130823145018.GE19107@lee--X1>
+References: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
+ <1377260620-18829-34-git-send-email-lee.jones@linaro.org>
+ <CACRpkdZdzF-HqTmEWpYiBe2VwGN23fsnWCr7aqE0NYWpBfHsfw@mail.gmail.com>
+ <CACRpkdZE1yCPO0JVXX88SUKsp3ow7WBuJZZ=BEVk-c5=TOUO-A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZE1yCPO0JVXX88SUKsp3ow7WBuJZZ=BEVk-c5=TOUO-A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Fri, 23 Aug 2013, Linus Walleij wrote:
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- include/linux/rbtree_augmented.h | 3 ++-
- lib/rbtree.c                     | 5 +++--
- 2 files changed, 5 insertions(+), 3 deletions(-)
+> On Fri, Aug 23, 2013 at 2:55 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > On Fri, Aug 23, 2013 at 2:23 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> >
+> >> It's time to remove all ATAG support from ux500 and rely solely on
+> >> Device Tree booting. This patch is part of that endeavour.
+> >>
+> >> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > (...)
+> >> -/* STMPE/SKE keypad use this key layout */
+> >> -static const unsigned int mop500_keymap[] = {
+> >> -       KEY(2, 5, KEY_END),
+> >> -       KEY(4, 1, KEY_POWER),
+> >> -       KEY(3, 5, KEY_VOLUMEDOWN),
+> >> -       KEY(1, 3, KEY_3),
+> >> -       KEY(5, 2, KEY_RIGHT),
+> >> -       KEY(5, 0, KEY_9),
+> >> -
+> >> -       KEY(0, 5, KEY_MENU),
+> >> -       KEY(7, 6, KEY_ENTER),
+> >> -       KEY(4, 5, KEY_0),
+> >> -       KEY(6, 7, KEY_2),
+> >> -       KEY(3, 4, KEY_UP),
+> >> -       KEY(3, 3, KEY_DOWN),
+> >> -
+> >> -       KEY(6, 4, KEY_SEND),
+> >> -       KEY(6, 2, KEY_BACK),
+> >> -       KEY(4, 2, KEY_VOLUMEUP),
+> >> -       KEY(5, 5, KEY_1),
+> >> -       KEY(4, 3, KEY_LEFT),
+> >> -       KEY(3, 2, KEY_7),
+> >> -};
+> >
+> > This STMPE1601 keypad @0x40 and UIB encoding for
+> > the U8500 UIB does not exist in any DTS file does it? This
+> > means that the support for this UIB is effectively terminated.
+> 
+> You are wrong. Go read arch/arm/boot/dts/[ste-]stuib.dtsi.
+> 
+> Anyway, what you wanted to say was for these to be marked
+> "disabled" by default and turned into "okay" using an I2C
+> probe operation.
 
-diff --git a/include/linux/rbtree_augmented.h b/include/linux/rbtree_augmented.h
-index fea49b5..7d19770 100644
---- a/include/linux/rbtree_augmented.h
-+++ b/include/linux/rbtree_augmented.h
-@@ -199,7 +199,8 @@ __rb_erase_augmented(struct rb_node *node, struct rb_root *root,
- 		}
- 
- 		successor->rb_left = tmp = node->rb_left;
--		rb_set_parent(tmp, successor);
-+		if (tmp)
-+			rb_set_parent(tmp, successor);
- 
- 		pc = node->__rb_parent_color;
- 		tmp = __rb_parent(pc);
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index c0e31fe..2cb01ba 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -214,7 +214,7 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
- 		 */
- 		sibling = parent->rb_right;
- 		if (node != sibling) {	/* node == parent->rb_left */
--			if (rb_is_red(sibling)) {
-+			if (sibling && rb_is_red(sibling)) {
- 				/*
- 				 * Case 1 - left rotate at parent
- 				 *
-@@ -226,7 +226,8 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
- 				 */
- 				parent->rb_right = tmp1 = sibling->rb_left;
- 				sibling->rb_left = parent;
--				rb_set_parent_color(tmp1, parent, RB_BLACK);
-+				if (tmp1)
-+					rb_set_parent_color(tmp1, parent, RB_BLACK);
- 				__rb_rotate_set_parents(parent, sibling, root,
- 							RB_RED);
- 				augment_rotate(parent, sibling);
+Why are you talking to yourself? Have you finally lost it?
+
 -- 
-1.7.11.7
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
