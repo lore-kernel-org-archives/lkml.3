@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab3HWRm3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 13:42:29 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:46720 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755491Ab3HWRm2 (ORCPT
+	id S932075Ab3HWRmf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 13:42:35 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:42512 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756012Ab3HWRmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 13:42:28 -0400
+	Fri, 23 Aug 2013 13:42:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130823135923.GA16773@redhat.com>
-References: <20130822170939.GA20296@redhat.com> <20130822171004.GA20324@redhat.com>
- <CALCETrU9D59MqxPm2SNegPFH_+gpPfoQJkD2E2Q8zjJ94QhLDg@mail.gmail.com>
- <20130822181536.GA22995@redhat.com> <CALCETrW3gnXjUqvm-jNZq6k_qSnTN5=VNRCp+gNC+t2YtBBMYQ@mail.gmail.com>
- <20130822183250.GA23769@redhat.com> <CALCETrVT4r3G9tQpt4y22iB+y-fw5piH93OOn9wfvSd8xQdDBw@mail.gmail.com>
- <20130823135923.GA16773@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 23 Aug 2013 10:42:07 -0700
-Message-ID: <CALCETrXQDmrwUNxrD6e5deqaFKj5yvxLfvtJ=qFzLvV45HOPsQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] fork: unify and tighten up CLONE_NEWUSER/CLONE_NEWPID checks
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Brad Spengler <spender@grsecurity.net>,
-        Colin Walters <walters@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1377134300-25480-1-git-send-email-syin@broadcom.com>
+References: <1376606573-15093-1-git-send-email-syin@broadcom.com>
+	<1377134300-25480-1-git-send-email-syin@broadcom.com>
+Date: Fri, 23 Aug 2013 19:42:32 +0200
+Message-ID: <CACRpkdZeET601+jOsjQxu-VAhi1owgtMX60Fij=uU489eGVFXg@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: Pass all configs to driver on pin_config_set()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sherman Yin <syin@broadcom.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mips@linux-mips.org, Matt Porter <matt.porter@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 6:59 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 08/22, Andy Lutomirski wrote:
->>
->> On Thu, Aug 22, 2013 at 11:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> > On 08/22, Andy Lutomirski wrote:
->> >>
->> >> On Thu, Aug 22, 2013 at 11:15 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> >> >
->> >> > Yes. Before this patch do_fork() did:
->> >> >
->> >> >         if (clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) {
->> >> >                 if (clone_flags & (CLONE_THREAD|CLONE_PARENT))
->> >> >                         return -EINVAL;
->> >> >         }
->> >> >
->> >> > however, let me repeat, CLONE_PARENT after unshare(CLONE_NEWPID) was
->> >> > allowed. With this patch CLONE_PARENT is nacked in both cases.
->> >>
->> >> Is this -stable-worthy?
->> >
->> > Honestly, I do not know. I do not want to abuse -stable, and I will
->> > sleep better if this patch won't go into the stable trees ;)
->> >
->> > OTOH, I think that at least 1/3 is probably -stable material... Since
->> > I am going to send v2, I would not mind to add stable@vger.kernel.org
->> > if both you and Eric agree.
->>
->> This may allow creation of a process with tgid and pid in different
->> pid namespaces.  If so, I have no idea what the consequences would be.
->
-> and share the parent with the creator.
->
-> Not good. But probably not too bad, one can abuse ->pidns_install()
-> anyway, create a child in another ns, exit. Like it or not but pid_ns
-> is "special" and you even sent the patch to reflect this sad^W fact.
->
-> Anyway. The main point of this patch is the consistency (plus imho it
-> cleanups/simplifies the code). Both CLONE_NEWPID and
-> "task_active_pid_ns() != pid_ns" create a task in another namespace,
-> we should use the same restrictions.
->
-> And you seem to agree with this change, can I take it as your ack ?
-> I am going to preserve your acks in 1-2 and resend.
->
+On Thu, Aug 22, 2013 at 3:18 AM, Sherman Yin <syin@broadcom.com> wrote:
 
-Yes.  These patches probably want Eric's ack, too, though -- it's his code.
+> When setting pin configuration in the pinctrl framework, pin_config_set() or
+> pin_config_group_set() is called in a loop to set one configuration at a time
+> for the specified pin or group.
+>
+> This patch 1) removes the loop and 2) changes the API to pass the whole pin
+> config array to the driver.  It is now up to the driver to loop through the
+> configs.  This allows the driver to potentially combine configs and reduce the
+> number of writes to pin config registers.
+>
+> All c files changed have been build-tested to verify the change compiles and
+> that the corresponding .o is successfully generated.
+>
+> Signed-off-by: Sherman Yin <syin@broadcom.com>
+> Reviewed-by: Christian Daudt <csd@broadcom.com>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
 
---Andy
+Didn't you get review from Stephen Warren?
+
+> ---
+> Please refer to the discussion with Linus W. "[PATCH] ARM: Adds pin config API
+> to set all configs in one function" here:
+>
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-May/166567.html
+>
+> All c files changed have been build-tested to verify the change compiles and
+> that the corresponding .o are successfully generated.
+>
+> [v2]    rebased on LinusW's linux-pinctrl.git "devel" branch.  Fixed and build-
+>         tested pinctrl-sunxi.c
+> ---
+>  drivers/pinctrl/mvebu/pinctrl-mvebu.c |   26 +++--
+>  drivers/pinctrl/pinconf.c             |   42 ++++----
+>  drivers/pinctrl/pinctrl-abx500.c      |  187 ++++++++++++++++++---------------
+>  drivers/pinctrl/pinctrl-at91.c        |   48 +++++----
+>  drivers/pinctrl/pinctrl-bcm2835.c     |   43 ++++----
+>  drivers/pinctrl/pinctrl-exynos5440.c  |  113 +++++++++++---------
+>  drivers/pinctrl/pinctrl-falcon.c      |   63 ++++++-----
+>  drivers/pinctrl/pinctrl-imx.c         |   28 ++---
+>  drivers/pinctrl/pinctrl-mxs.c         |   91 ++++++++--------
+>  drivers/pinctrl/pinctrl-nomadik.c     |  125 ++++++++++++----------
+>  drivers/pinctrl/pinctrl-rockchip.c    |   57 ++++++----
+>  drivers/pinctrl/pinctrl-samsung.c     |   17 ++-
+>  drivers/pinctrl/pinctrl-single.c      |   33 ++++--
+>  drivers/pinctrl/pinctrl-st.c          |   11 +-
+>  drivers/pinctrl/pinctrl-sunxi.c       |   95 +++++++++--------
+>  drivers/pinctrl/pinctrl-tegra.c       |   69 ++++++------
+>  drivers/pinctrl/pinctrl-tz1090-pdc.c  |  135 ++++++++++++++----------
+>  drivers/pinctrl/pinctrl-tz1090.c      |  140 +++++++++++++-----------
+>  drivers/pinctrl/pinctrl-u300.c        |   18 ++--
+>  drivers/pinctrl/pinctrl-xway.c        |  119 +++++++++++++--------
+>  drivers/pinctrl/sh-pfc/pinctrl.c      |   42 ++++----
+>  drivers/pinctrl/vt8500/pinctrl-wmt.c  |   54 +++++-----
+>  include/linux/pinctrl/pinconf.h       |    6 +-
+>  23 files changed, 889 insertions(+), 673 deletions(-)
+
+Please try to put all the maintainers for the above files on the To: line
+so they get a chance to review/ack the patch.
+
+Yours,
+Linus Walleij
