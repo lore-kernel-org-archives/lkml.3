@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab3HWMxh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 08:53:37 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:62533 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab3HWMxg (ORCPT
+	id S1755383Ab3HWMzn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 08:55:43 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:54049 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab3HWMzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 08:53:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1377260620-18829-33-git-send-email-lee.jones@linaro.org>
-References: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
-	<1377260620-18829-33-git-send-email-lee.jones@linaro.org>
-Date: Fri, 23 Aug 2013 14:53:35 +0200
-Message-ID: <CACRpkdZJ_2HF_r8cKpMrG1Usy5bD8Fr7GM_k2Btzxgk71G-VvA@mail.gmail.com>
-Subject: Re: [PATCH 32/40] ARM: ux500: Delete U8500 UIB support when booting
- with ATAGs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 23 Aug 2013 08:55:42 -0400
+From: navin patidar <navinp@cdac.in>
+To: gregkh@linuxfoundation.org
+Cc: dan.carpenter@oracle.com, maxtram95@gmail.com, viro@zeniv.linux.org.uk,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        navin patidar <navinp@cdac.in>
+Subject: [PATCH v2] staging: rtl8187se: Remove pt_regs * irq handler parameter
+Date: Fri, 23 Aug 2013 18:24:02 +0530
+Message-Id: <1377262442-20111-1-git-send-email-navinp@cdac.in>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 2:23 PM, Lee Jones <lee.jones@linaro.org> wrote:
+struct pt_regs pointer is no longer passed as a irq handler
+argument.
 
-> It's time to remove all ATAG support from ux500 and rely solely on
-> Device Tree booting. This patch is part of that endeavour.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+v2:
+remove rtl8180_interrupt cast to (void *) .
 
-This needs some more afterthought.
+Signed-off-by: navin patidar <navinp@cdac.in>
+---
+ drivers/staging/rtl8187se/r8180_core.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> -       i2c0 = i2c_get_adapter(0);
-> -       if (!i2c0) {
-> -               __mop500_uib_init(&mop500_uibs[STUIB],
-> -                               "fallback, could not get i2c0");
-> -               return -ENODEV;
-> -       }
-> -
-> -       /* U8500-UIB has the TC35893 at 0x44 on I2C0, the ST-UIB doesn't. */
-> -       ret = i2c_smbus_xfer(i2c0, 0x44, 0, I2C_SMBUS_WRITE, 0,
-> -                       I2C_SMBUS_QUICK, NULL);
-> -       i2c_put_adapter(i2c0);
-> -
-> -       if (ret == 0)
-> -               uib = &mop500_uibs[U8500UIB];
-> -       else
-> -               uib = &mop500_uibs[STUIB];
-> -
-> -       __mop500_uib_init(uib, "detected");
-> +       __mop500_uib_init(&mop500_uibs[STUIB], "detected");
+diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
+index ca69155..eee4fd3 100644
+--- a/drivers/staging/rtl8187se/r8180_core.c
++++ b/drivers/staging/rtl8187se/r8180_core.c
+@@ -197,7 +197,7 @@ inline void force_pci_posting(struct net_device *dev)
+ 	mb();
+ }
 
-It is not true at all that all HREFs have the STUIB mounted.
+-irqreturn_t rtl8180_interrupt(int irq, void *netdev, struct pt_regs *regs);
++static irqreturn_t rtl8180_interrupt(int irq, void *netdev);
+ void set_nic_rxring(struct net_device *dev);
+ void set_nic_txring(struct net_device *dev);
+ static struct net_device_stats *rtl8180_stats(struct net_device *dev);
+@@ -2666,7 +2666,7 @@ short rtl8180_init(struct net_device *dev)
+ 				  TX_BEACON_RING_ADDR))
+ 		return -ENOMEM;
 
-This detection needs to stay for now, unless we go and define
-in the device tree which UIB is mounted, which would be unfortunate
-as we can very well auto-detect it, and that makes it easier for
-a user to just swap the UIB and test the other toch screen
-(for example).
+-	if (request_irq(dev->irq, (void *)rtl8180_interrupt, IRQF_SHARED, dev->name, dev)) {
++	if (request_irq(dev->irq, rtl8180_interrupt, IRQF_SHARED, dev->name, dev)) {
+ 		DMESGE("Error allocating IRQ %d", dev->irq);
+ 		return -1;
+ 	} else {
+@@ -3537,7 +3537,7 @@ void rtl8180_tx_isr(struct net_device *dev, int pri, short error)
+ 	spin_unlock_irqrestore(&priv->tx_lock, flag);
+ }
 
-Yours,
-Linus Walleij
+-irqreturn_t rtl8180_interrupt(int irq, void *netdev, struct pt_regs *regs)
++irqreturn_t rtl8180_interrupt(int irq, void *netdev)
+ {
+ 	struct net_device *dev = (struct net_device *) netdev;
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+--
+1.7.10.4
+
