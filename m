@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab3HWGze (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 02:55:34 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:48970 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746Ab3HWGzd (ORCPT
+	id S1754512Ab3HWHGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 03:06:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46214 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab3HWHGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 02:55:33 -0400
-X-AuditID: 9c93017e-b7c76ae000003897-b6-52170763d346
-Date: Fri, 23 Aug 2013 15:55:43 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/16] slab: use __GFP_COMP flag for allocating slab pages
-Message-ID: <20130823065543.GH22605@lge.com>
-References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1377161065-30552-10-git-send-email-iamjoonsoo.kim@lge.com>
- <00000140a72fb556-3269e81c-8829-4c26-a57f-c1bb7e40977b-000000@email.amazonses.com>
+	Fri, 23 Aug 2013 03:06:12 -0400
+Message-ID: <521709E0.3060505@linutronix.de>
+Date: Fri, 23 Aug 2013 09:06:08 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000140a72fb556-3269e81c-8829-4c26-a57f-c1bb7e40977b-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.9-rt5
+References: <20130822182127.GA7606@linutronix.de> <20130822145314.32bdb0f9@gandalf.local.home>
+In-Reply-To: <20130822145314.32bdb0f9@gandalf.local.home>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 06:00:56PM +0000, Christoph Lameter wrote:
-> On Thu, 22 Aug 2013, Joonsoo Kim wrote:
+On 08/22/2013 08:53 PM, Steven Rostedt wrote:
+>>       - bcache does not compile.
 > 
-> > If we use 'struct page' of first page as 'struct slab', there is no
-> > advantage not to use __GFP_COMP. So use __GFP_COMP flag for all the cases.
+> For now, it may be prudent to just make bcache depend on !PREEMPT_RT.
 > 
-> Ok that brings it in line with SLUB and SLOB.
+> I can send a patch if you want.
 
-Yes!
+I was tempted to take one of your two patches. Haven't deiced yet.
 
-> 
-> > @@ -2717,17 +2701,8 @@ static void slab_put_obj(struct kmem_cache *cachep, struct slab *slabp,
-> >  static void slab_map_pages(struct kmem_cache *cache, struct slab *slab,
-> >  			   struct page *page)
-> >  {
-> > -	int nr_pages;
-> > -
-> > -	nr_pages = 1;
-> > -	if (likely(!PageCompound(page)))
-> > -		nr_pages <<= cache->gfporder;
-> > -
-> > -	do {
-> > -		page->slab_cache = cache;
-> > -		page->slab_page = slab;
-> > -		page++;
-> > -	} while (--nr_pages);
-> > +	page->slab_cache = cache;
-> > +	page->slab_page = slab;
-> >  }
-> 
-> And saves some processing.
+> -- Steve
 
-Yes!
-
+Sebastian
