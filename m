@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab3HWRv0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 13:51:26 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3882 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755765Ab3HWRvY convert rfc822-to-8bit (ORCPT
+	id S1756085Ab3HWRwM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 13:52:12 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:55917 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756040Ab3HWRwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 13:51:24 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Graham Williams" <gwilli@broadcom.com>
-To: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-cc: "balbi@ti.com" <balbi@ti.com>
-Subject: [PATCH] usb: acm gadget: Null termintate strings table
-Thread-Topic: [PATCH] usb: acm gadget: Null termintate strings table
-Thread-Index: Ac6gKUihEwnOQOzhRHCsjyOVBTkXDQ==
-Date: Fri, 23 Aug 2013 17:51:12 +0000
-Message-ID: <063828A851006E448B735F1021E028962ACE72A6@SJEXCHMB09.corp.ad.broadcom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
+	Fri, 23 Aug 2013 13:52:10 -0400
 MIME-Version: 1.0
-X-WSS-ID: 7E097FAD31W87368762-01-01
-Content-Type: text/plain;
- charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1376953494-9684-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1376953494-9684-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	<1376953494-9684-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Date: Fri, 23 Aug 2013 19:52:10 +0200
+Message-ID: <CACRpkdY4k7quQQpRLy0wRzdLYk4Brr64CQJK2BPgsBMLV2k0Yw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] gpio: pcf857x: Remove pdata argument to pcf857x_irq_domain_init()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 20, 2013 at 1:04 AM, Laurent Pinchart
+<laurent.pinchart+renesas@ideasonboard.com> wrote:
 
-The gadget strings table should be null terminated.
-usb_gadget_get_string() loops through the table
-expecting a null at the end of the list.
+> The argument is not used, remove it. No board registers a pcf857x device
+> with an IRQ without specifying platform data, IRQ domain registration
+> behaviour is thus not affected by this change.
+>
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-Signed-off-by: Graham Williams <gwilli@broadcom.com>
----
-drivers/usb/gadget/f_acm.c | 1 +
-1 file changed, 1 insertion(+)
+Patch applied, unless Kuninori has some objections.
 
-diff --git a/drivers/usb/gadget/f_acm.c b/drivers/usb/gadget/f_acm.c
-index 4b7e33e..ab1065a 100644
---- a/drivers/usb/gadget/f_acm.c
-+++ b/drivers/usb/gadget/f_acm.c
-@@ -285,6 +285,7 @@ static struct usb_string acm_string_defs[] = {
-        [ACM_CTRL_IDX].s = "CDC Abstract Control Model (ACM)",
-        [ACM_DATA_IDX].s = "CDC ACM Data",
-        [ACM_IAD_IDX ].s = "CDC Serial",
-+       {  } /* end of list */
-};
-
-static struct usb_gadget_strings acm_string_table = {
---
-1.8.0.1
-
-
+Yours,
+Linus Walleij
