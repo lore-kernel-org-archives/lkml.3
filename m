@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab3HWPrJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 11:47:09 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:35181 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112Ab3HWPrH (ORCPT
+	id S1755335Ab3HWPsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 11:48:19 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:61044 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754707Ab3HWPsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 11:47:07 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH -next] staging: lustre: Use proper constant types for L*_POISON values
-Date: Fri, 23 Aug 2013 17:46:48 +0200
-Message-Id: <1377272808-21686-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 23 Aug 2013 11:48:17 -0400
 MIME-Version: 1.0
+In-Reply-To: <1374774659-13121-12-git-send-email-dave.kleikamp@oracle.com>
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+	<1374774659-13121-12-git-send-email-dave.kleikamp@oracle.com>
+Date: Fri, 23 Aug 2013 17:48:17 +0200
+X-Google-Sender-Auth: 0GDpqtomb6MI5Wr9RRyK4Qlnqxc
+Message-ID: <CAMuHMdXthZ5RUctCWuKXVM+iqoWkthSgLeFXthFqT-ijsNAHdw@mail.gmail.com>
+Subject: Re: [PATCH V8 11/33] dio: Convert direct_IO to use iov_iter
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>, driverdevel <devel@driverdev.osuosl.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 32-bit m68k, I get lots of warnings like:
+On Thu, Jul 25, 2013 at 7:50 PM, Dave Kleikamp <dave.kleikamp@oracle.com> wrote:
+> Change the direct_IO aop to take an iov_iter argument rather than an iovec.
+> This will get passed down through most filesystems so that only the
+> __blockdev_direct_IO helper need be aware of whether user or kernel memory
+> is being passed to the function.
 
-    warning: integer constant is too large for ‘long’ type
+Lustre in -next also needs to be updated:
 
-Switch the L*_POISON definitions from too-large constants and casts
-to the proper constant types to fix this.
+drivers/staging/lustre/lustre/llite/rw26.c:549: warning:
+initialization from incompatible pointer type
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-The values in drivers/staging/lustre/lustre/include/linux/lustre_lib.h
-don't seem to be used, as LP_POISON is already defined at that point?
+Gr{oetje,eeting}s,
 
- .../lustre/include/linux/libcfs/linux/kp30.h       |   10 +++++++---
- .../lustre/lustre/include/linux/lustre_lib.h       |   10 ++++------
- 2 files changed, 11 insertions(+), 9 deletions(-)
+                        Geert
 
-diff --git a/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h b/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h
-index 073f4d1..c204b67 100644
---- a/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h
-+++ b/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h
-@@ -187,9 +187,13 @@ extern int  lwt_snapshot (cfs_cycles_t *now, int *ncpu, int *total_size,
- # endif
- #endif
- 
--# define LI_POISON ((int)0x5a5a5a5a5a5a5a5a)
--# define LL_POISON ((long)0x5a5a5a5a5a5a5a5a)
--# define LP_POISON ((void *)(long)0x5a5a5a5a5a5a5a5a)
-+# define LI_POISON 0x5a5a5a5a
-+#if BITS_PER_LONG > 32
-+# define LL_POISON 0x5a5a5a5a5a5a5a5aL
-+#else
-+# define LL_POISON 0x5a5a5a5aL
-+#endif
-+# define LP_POISON ((void *)LL_POISON)
- 
- /* this is a bit chunky */
- 
-diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_lib.h b/drivers/staging/lustre/lustre/include/linux/lustre_lib.h
-index b2f755a..57f3b01 100644
---- a/drivers/staging/lustre/lustre/include/linux/lustre_lib.h
-+++ b/drivers/staging/lustre/lustre/include/linux/lustre_lib.h
-@@ -53,15 +53,13 @@
- # include <linux/lustre_common.h>
- 
- #ifndef LP_POISON
-+# define LI_POISON 0x5a5a5a5a
- #if BITS_PER_LONG > 32
--# define LI_POISON ((int)0x5a5a5a5a5a5a5a5a)
--# define LL_POISON ((long)0x5a5a5a5a5a5a5a5a)
--# define LP_POISON ((void *)(long)0x5a5a5a5a5a5a5a5a)
-+# define LL_POISON 0x5a5a5a5a5a5a5a5aL
- #else
--# define LI_POISON ((int)0x5a5a5a5a)
--# define LL_POISON ((long)0x5a5a5a5a)
--# define LP_POISON ((void *)(long)0x5a5a5a5a)
-+# define LL_POISON 0x5a5a5a5aL
- #endif
-+# define LP_POISON ((void *)LL_POISON)
- #endif
- 
- /* This macro is only for compatibility reasons with older Linux Lustre user
--- 
-1.7.9.5
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
