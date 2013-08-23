@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab3HWMd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 08:33:59 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:38905 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755698Ab3HWMd5 (ORCPT
+	id S1756130Ab3HWMeH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 08:34:07 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:54416 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755477Ab3HWMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 08:33:57 -0400
-Message-ID: <1377261222.14021.23.camel@jlt4.sipsolutions.net>
-Subject: Re: [sched_delayed] sched: RT throttling activated
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>, Theodore Tso <tytso@mit.edu>,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 23 Aug 2013 14:33:42 +0200
-In-Reply-To: <20130823121004.GW31370@twins.programming.kicks-ass.net>
-References: <521722EE.70209@fold.natur.cuni.cz>
-	 <20130823100913.GQ31370@twins.programming.kicks-ass.net>
-	 <52173BBD.3050803@fold.natur.cuni.cz>
-	 <20130823110254.GU31370@twins.programming.kicks-ass.net>
-	 <521748FC.10809@fold.natur.cuni.cz>
-	 <20130823121004.GW31370@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Aug 2013 08:34:04 -0400
+Date: Fri, 23 Aug 2013 08:34:00 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH 11/11] cpuset: export effective masks to userspace
+Message-ID: <20130823123400.GB10322@mtj.dyndns.org>
+References: <52148F52.0@huawei.com>
+ <52148FFC.4080701@huawei.com>
+ <20130821142001.GK19286@mtj.dyndns.org>
+ <52171501.8050401@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52171501.8050401@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-23 at 14:10 +0200, Peter Zijlstra wrote:
+Hello,
 
-> >  2161  FF [irq/50-iwlwifi]
-> 
-> Oh a threaded interrupt, I presume you're not using "threadiqrs" since
-> this is the only interrupt thread around and I see a
-> 'request_threaded_irq()' call in
-> drivers/net/wireless/iwlwifi/pcie/trans.c
-> 
-> And wow, why would that thing consume that much cpu. 
+On Fri, Aug 23, 2013 at 03:53:37PM +0800, Li Zefan wrote:
+> It seems confusing if there're two interaces but they actually mean
+> the same thing.
+>
+> Another reason I didn't do this is, they're not always the same. When
+> !sane, If cpus_allowed is empty, effective_cpus is not empty, and you
+> are not able to put tasks into this cpuset. So if we want to  expose
+> it unconditionally, I'll make sure cpus_allowed == effective_cpus
+> always stand when !sane.
 
-How much is "that much"?
+Do you think that'll be convoluted?  Otherwise, sounds like a nice
+thing to do anyway.
 
-> Johill, ever seen the iwlwifi interrupt go 'funny' and consume gobs of
-> cpu-time?
+Thanks.
 
-Not really, no, though if you do a lot of data transfer it can actually
-consume a fair bit of CPU - made better by two somewhat recent patches,
-commits 01911dab97cb3e21e640aaca82689acec00ed848 and
-68972c46f2975d3d61f9dc9f311f77bfc8a8b12b.
-
-johannes
-
+-- 
+tejun
