@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab3HWCiS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 22:38:18 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:59340 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754098Ab3HWCiR (ORCPT
+	id S1754290Ab3HWCia (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 22:38:30 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:58040 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754098Ab3HWCi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 22:38:17 -0400
+	Thu, 22 Aug 2013 22:38:28 -0400
 From: Jisheng Zhang <jszhang@marvell.com>
 To: <jszhang@marvell.com>, <jason@lakedaemon.net>, <andrew@lunn.ch>,
         <gregory.clement@free-electrons.com>,
@@ -15,9 +15,9 @@ To: <jszhang@marvell.com>, <jason@lakedaemon.net>, <andrew@lunn.ch>,
         <sebastian.hesselbarth@gmail.com>, <linus.walleij@linaro.org>
 CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 3/4] clk: mvebu: add missing iounmap
-Date: Fri, 23 Aug 2013 10:34:01 +0800
-Message-ID: <1377225242-5854-4-git-send-email-jszhang@marvell.com>
+Subject: [PATCH v2 1/4] arm: mvebu: add missing of_node_put() to fix reference leak
+Date: Fri, 23 Aug 2013 10:33:59 +0800
+Message-ID: <1377225242-5854-2-git-send-email-jszhang@marvell.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1377225242-5854-1-git-send-email-jszhang@marvell.com>
 References: <1377225242-5854-1-git-send-email-jszhang@marvell.com>
@@ -27,86 +27,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing iounmap to setup error path.
+Add of_node_put to properly decrement the refcount when we are
+done using a given node.
 
-Change-Id: I4371569d14d7026aa9f90d7cd53f669d365fe26a
 Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 ---
- drivers/clk/mvebu/clk-cpu.c |  4 +++-
- drivers/clk/mvebu/common.c  | 18 ++++++++++++------
- 2 files changed, 15 insertions(+), 7 deletions(-)
+ arch/arm/mach-mvebu/armada-370-xp.c     | 1 +
+ arch/arm/mach-mvebu/coherency.c         | 8 +++++++-
+ arch/arm/mach-mvebu/platsmp.c           | 1 +
+ arch/arm/mach-mvebu/pmsu.c              | 1 +
+ arch/arm/mach-mvebu/system-controller.c | 1 +
+ 5 files changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/clk/mvebu/clk-cpu.c b/drivers/clk/mvebu/clk-cpu.c
-index b0fbc07..1466865 100644
---- a/drivers/clk/mvebu/clk-cpu.c
-+++ b/drivers/clk/mvebu/clk-cpu.c
-@@ -119,7 +119,7 @@ void __init of_cpu_clk_setup(struct device_node *node)
- 
- 	cpuclk = kzalloc(ncpus * sizeof(*cpuclk), GFP_KERNEL);
- 	if (WARN_ON(!cpuclk))
--		return;
-+		goto cpuclk_out;
- 
- 	clks = kzalloc(ncpus * sizeof(*clks), GFP_KERNEL);
- 	if (WARN_ON(!clks))
-@@ -170,6 +170,8 @@ bail_out:
- 		kfree(cpuclk[ncpus].clk_name);
- clks_out:
- 	kfree(cpuclk);
-+cpuclk_out:
-+	iounmap(clock_complex_base);
+diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
+index 97cbb80..8a1ae83 100644
+--- a/arch/arm/mach-mvebu/armada-370-xp.c
++++ b/arch/arm/mach-mvebu/armada-370-xp.c
+@@ -64,6 +64,7 @@ static void __init armada_370_xp_mbus_init(void)
+ 			ARMADA_370_XP_MBUS_WINS_SIZE,
+ 			of_translate_address(dn, &sdram_wins_offs),
+ 			ARMADA_370_XP_SDRAM_WINS_SIZE);
++	of_node_put(dn);
  }
  
- CLK_OF_DECLARE(armada_xp_cpu_clock, "marvell,armada-xp-cpu-clock",
-diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
-index adaa4a1..25ceccf 100644
---- a/drivers/clk/mvebu/common.c
-+++ b/drivers/clk/mvebu/common.c
-@@ -45,8 +45,10 @@ void __init mvebu_coreclk_setup(struct device_node *np,
- 	clk_data.clk_num = 2 + desc->num_ratios;
- 	clk_data.clks = kzalloc(clk_data.clk_num * sizeof(struct clk *),
- 				GFP_KERNEL);
--	if (WARN_ON(!clk_data.clks))
-+	if (WARN_ON(!clk_data.clks)) {
-+		iounmap(base);
- 		return;
-+	}
- 
- 	/* Register TCLK */
- 	of_property_read_string_index(np, "clock-output-names", 0,
-@@ -134,7 +136,7 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
- 
- 	ctrl = kzalloc(sizeof(*ctrl), GFP_KERNEL);
- 	if (WARN_ON(!ctrl))
--		return;
-+		goto ctrl_out;
- 
- 	spin_lock_init(&ctrl->lock);
- 
-@@ -145,10 +147,8 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
- 	ctrl->num_gates = n;
- 	ctrl->gates = kzalloc(ctrl->num_gates * sizeof(struct clk *),
- 			      GFP_KERNEL);
--	if (WARN_ON(!ctrl->gates)) {
--		kfree(ctrl);
--		return;
--	}
-+	if (WARN_ON(!ctrl->gates))
-+		goto gates_out;
- 
- 	for (n = 0; n < ctrl->num_gates; n++) {
- 		const char *parent =
-@@ -160,4 +160,10 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
+ static void __init armada_370_xp_timer_and_clk_init(void)
+diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
+index 4c24303..58adf2f 100644
+--- a/arch/arm/mach-mvebu/coherency.c
++++ b/arch/arm/mach-mvebu/coherency.c
+@@ -140,6 +140,7 @@ int __init coherency_init(void)
+ 		coherency_base = of_iomap(np, 0);
+ 		coherency_cpu_base = of_iomap(np, 1);
+ 		set_cpu_coherent(cpu_logical_map(smp_processor_id()), 0);
++		of_node_put(np);
  	}
  
- 	of_clk_add_provider(np, clk_gating_get_src, ctrl);
+ 	return 0;
+@@ -147,9 +148,14 @@ int __init coherency_init(void)
+ 
+ static int __init coherency_late_init(void)
+ {
+-	if (of_find_matching_node(NULL, of_coherency_table))
++	struct device_node *np;
 +
-+	return;
-+gates_out:
-+	kfree(ctrl);
-+ctrl_out:
-+	iounmap(base);
++	np = of_find_matching_node(NULL, of_coherency_table);
++	if (np) {
+ 		bus_register_notifier(&platform_bus_type,
+ 				      &mvebu_hwcc_platform_nb);
++		of_node_put(np);
++	}
+ 	return 0;
  }
+ 
+diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
+index ce81d30..e7edb82 100644
+--- a/arch/arm/mach-mvebu/platsmp.c
++++ b/arch/arm/mach-mvebu/platsmp.c
+@@ -95,6 +95,7 @@ static void __init armada_xp_smp_init_cpus(void)
+ 		panic("No 'cpus' node found\n");
+ 
+ 	ncores = of_get_child_count(np);
++	of_node_put(np);
+ 	if (ncores == 0 || ncores > ARMADA_XP_MAX_CPUS)
+ 		panic("Invalid number of CPUs in DT\n");
+ 
+diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
+index 3cc4bef..27fc4f0 100644
+--- a/arch/arm/mach-mvebu/pmsu.c
++++ b/arch/arm/mach-mvebu/pmsu.c
+@@ -67,6 +67,7 @@ int __init armada_370_xp_pmsu_init(void)
+ 		pr_info("Initializing Power Management Service Unit\n");
+ 		pmsu_mp_base = of_iomap(np, 0);
+ 		pmsu_reset_base = of_iomap(np, 1);
++		of_node_put(np);
+ 	}
+ 
+ 	return 0;
+diff --git a/arch/arm/mach-mvebu/system-controller.c b/arch/arm/mach-mvebu/system-controller.c
+index f875124..5175083c 100644
+--- a/arch/arm/mach-mvebu/system-controller.c
++++ b/arch/arm/mach-mvebu/system-controller.c
+@@ -98,6 +98,7 @@ static int __init mvebu_system_controller_init(void)
+ 		BUG_ON(!match);
+ 		system_controller_base = of_iomap(np, 0);
+ 		mvebu_sc = (struct mvebu_system_controller *)match->data;
++		of_node_put(np);
+ 	}
+ 
+ 	return 0;
 -- 
 1.8.4.rc3
 
