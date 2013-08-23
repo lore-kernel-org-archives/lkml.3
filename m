@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab3HWOep (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 10:34:45 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50687 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753605Ab3HWOeo (ORCPT
+	id S1755210Ab3HWOfO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 10:35:14 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:58367 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872Ab3HWOfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 10:34:44 -0400
-Message-ID: <52177301.1060803@free-electrons.com>
-Date: Fri, 23 Aug 2013 16:34:41 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 23 Aug 2013 10:35:12 -0400
+Date: Fri, 23 Aug 2013 10:35:07 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Toshi Kani <toshi.kani@hp.com>, Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
+Message-ID: <20130823143507.GB3277@htj.dyndns.org>
+References: <20130822183130.GA3490@mtj.dyndns.org>
+ <1377202292.10300.693.camel@misato.fc.hp.com>
+ <20130822202158.GD3490@mtj.dyndns.org>
+ <1377205598.10300.715.camel@misato.fc.hp.com>
+ <20130822212111.GF3490@mtj.dyndns.org>
+ <1377209861.10300.756.camel@misato.fc.hp.com>
+ <20130823130440.GC10322@mtj.dyndns.org>
+ <3ee58764-21c2-4df4-9353-54799a6a3d7b@email.android.com>
+ <20130823141924.GA3277@htj.dyndns.org>
+ <bf688aac-4080-4ac6-83cd-fd66cef6ce1a@email.android.com>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 08/17] ARM: mvebu: remove custom .init_time hook
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376964271-22715-9-git-send-email-sebastian.hesselbarth@gmail.com> <52173408.1000702@free-electrons.com> <52173A3E.2040509@gmail.com> <521749E5.6020008@free-electrons.com> <521751E9.3000504@gmail.com> <52177047.9070706@free-electrons.com>
-In-Reply-To: <52177047.9070706@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <bf688aac-4080-4ac6-83cd-fd66cef6ce1a@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/08/2013 16:23, Gregory CLEMENT wrote:
-> On 23/08/2013 14:13, Sebastian Hesselbarth wrote:
->> On 08/23/13 13:39, Gregory CLEMENT wrote:
->>> On 23/08/2013 12:32, Sebastian Hesselbarth wrote:
->>>> On 08/23/13 12:06, Gregory CLEMENT wrote:
->>>>> On 20/08/2013 04:04, Sebastian Hesselbarth wrote:
->>>>>> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
->>>>>> remove custom .init_time hooks.
->>>>>
->>>>> As a feared it won't work on Armada XP. You moved coherency_init(), and
->>>>> l2x0_of_init() in the init_machine hook. However init_machine is an
->>>>> arch_initcall, and as all the initcall it is called at the end of the
->>>>> do_basic_setup() which is called after smp_prepare_cpus(). The issue is
->>>>> that smp_prepare_cpus need coherency (and I think L2 cache) already enable.
->>>>
->>>> Ok, I see. I remember mvebu smp relies on mbus mappings also? Can you
->>>> try below as replacement for the mach-mvebu/armada-370-xp.c changes?
->>>>
->>>> It will move coherency_init(), l2x0_of_init(), and mvebu_mbus_dt_init()
->>>> to .init_early hook.
->>>>
->>>
->>> I can't test it, because I don't receive the patch 1 and 2 neither directly
->>> or through linux-arm-kernel (it should have been bounced), or even at
->>> https://github.com/shesselba/linux-dove.git
->>>
->>> If you don't want to send them again, could you at least push our branch on your
->>> github?
->>
->> Gregory,
->>
->> I pushed a branch containing the latest state to
->> https://github.com/shesselba/linux-dove.git arm-clk-of-init
->>
->> It still contains the changes to drivers/clk.c, that will become
->> obsolete, if there are no objections against Stephen's tegra patch.
->>
-> 
-> I tested your branch on my Armada XP boards (the GP and the AX3), and it hanged
-> very early: before that anything was displayed by the early_printk!
-> 
-> init_early is maybe called too early :(
+Hello,
 
-Well actually next-20130822 don't boot. So I can't say if your changes are ok.
+On Fri, Aug 23, 2013 at 04:24:06PM +0200, H. Peter Anvin wrote:
+> Well... relying on MTRRs is a big cost in complexity and failure modes.
 
-> 
->> Sebastian
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>
-> 
-> 
+Yeah, it's true that MTRRs are nasty.  On the other hand, we've been
+doing that for over a decade and are still doing it anyway if I'm not
+mistaken.  It probably isn't a big difference but it's still a bit sad
+that this is likely causing small performance regression out in the
+wild.
 
+Thanks.
 
 -- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+tejun
