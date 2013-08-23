@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab3HWV1E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 17:27:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60438 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104Ab3HWVY6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932100Ab3HWVY6 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 23 Aug 2013 17:24:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60430 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968Ab3HWVY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 17:24:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 08/15] Input: serio: convert bus code to use drv_groups
-Date: Fri, 23 Aug 2013 14:24:34 -0700
-Message-Id: <1377293081-10957-8-git-send-email-gregkh@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 05/15] PPC: VIO: convert bus code to use bus_groups
+Date: Fri, 23 Aug 2013 14:24:31 -0700
+Message-Id: <1377293081-10957-5-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1377293081-10957-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1377293081-10957-1-git-send-email-gregkh@linuxfoundation.org>
@@ -21,74 +22,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The drv_attrs field of struct bus_type is going away soon, drv_groups
-should be used instead.  This converts the serio bus code to use the
+The bus_attrs field of struct bus_type is going away soon, dev_groups
+should be used instead.  This converts the VIO bus code to use the
 correct field.
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/input/serio/serio.c | 21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ arch/powerpc/kernel/vio.c | 66 ++++++++++++++++++++++++++---------------------
+ 1 file changed, 36 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
-index 25fc5971..2b56855c 100644
---- a/drivers/input/serio/serio.c
-+++ b/drivers/input/serio/serio.c
-@@ -732,19 +732,20 @@ EXPORT_SYMBOL(serio_unregister_child_port);
-  * Serio driver operations
-  */
+diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
+index 536016d7..5e34f20b 100644
+--- a/arch/powerpc/kernel/vio.c
++++ b/arch/powerpc/kernel/vio.c
+@@ -997,21 +997,36 @@ static struct device_attribute vio_cmo_dev_attrs[] = {
+ /* sysfs bus functions and data structures for CMO */
  
--static ssize_t serio_driver_show_description(struct device_driver *drv, char *buf)
-+static ssize_t description_show(struct device_driver *drv, char *buf)
- {
- 	struct serio_driver *driver = to_serio_driver(drv);
- 	return sprintf(buf, "%s\n", driver->description ? driver->description : "(none)");
+ #define viobus_cmo_rd_attr(name)                                        \
+-static ssize_t                                                          \
+-viobus_cmo_##name##_show(struct bus_type *bt, char *buf)                \
++static ssize_t cmo_##name##_show(struct bus_type *bt, char *buf)        \
+ {                                                                       \
+ 	return sprintf(buf, "%lu\n", vio_cmo.name);                     \
+-}
++}                                                                       \
++static BUS_ATTR_RO(cmo_##name)
+ 
+ #define viobus_cmo_pool_rd_attr(name, var)                              \
+ static ssize_t                                                          \
+-viobus_cmo_##name##_pool_show_##var(struct bus_type *bt, char *buf)     \
++cmo_##name##_##var##_show(struct bus_type *bt, char *buf)               \
+ {                                                                       \
+ 	return sprintf(buf, "%lu\n", vio_cmo.name.var);                 \
++}                                                                       \
++static BUS_ATTR_RO(cmo_##name##_##var)
++
++viobus_cmo_rd_attr(entitled);
++viobus_cmo_rd_attr(spare);
++viobus_cmo_rd_attr(min);
++viobus_cmo_rd_attr(desired);
++viobus_cmo_rd_attr(curr);
++viobus_cmo_pool_rd_attr(reserve, size);
++viobus_cmo_pool_rd_attr(excess, size);
++viobus_cmo_pool_rd_attr(excess, free);
++
++static ssize_t cmo_high_show(struct bus_type *bt, char *buf)
++{
++	return sprintf(buf, "%lu\n", vio_cmo.high);
  }
-+static DRIVER_ATTR_RO(description);
  
--static ssize_t serio_driver_show_bind_mode(struct device_driver *drv, char *buf)
-+static ssize_t bind_mode_show(struct device_driver *drv, char *buf)
+-static ssize_t viobus_cmo_high_reset(struct bus_type *bt, const char *buf,
+-                                     size_t count)
++static ssize_t cmo_high_store(struct bus_type *bt, const char *buf,
++			      size_t count)
  {
- 	struct serio_driver *serio_drv = to_serio_driver(drv);
- 	return sprintf(buf, "%s\n", serio_drv->manual_bind ? "manual" : "auto");
+ 	unsigned long flags;
+ 
+@@ -1021,35 +1036,26 @@ static ssize_t viobus_cmo_high_reset(struct bus_type *bt, const char *buf,
+ 
+ 	return count;
  }
- 
--static ssize_t serio_driver_set_bind_mode(struct device_driver *drv, const char *buf, size_t count)
-+static ssize_t bind_mode_store(struct device_driver *drv, const char *buf, size_t count)
- {
- 	struct serio_driver *serio_drv = to_serio_driver(drv);
- 	int retval;
-@@ -760,14 +761,14 @@ static ssize_t serio_driver_set_bind_mode(struct device_driver *drv, const char
- 
- 	return retval;
- }
-+static DRIVER_ATTR_RW(bind_mode);
- 
 -
--static struct driver_attribute serio_driver_attrs[] = {
--	__ATTR(description, S_IRUGO, serio_driver_show_description, NULL),
--	__ATTR(bind_mode, S_IWUSR | S_IRUGO,
--		serio_driver_show_bind_mode, serio_driver_set_bind_mode),
+-viobus_cmo_rd_attr(entitled);
+-viobus_cmo_pool_rd_attr(reserve, size);
+-viobus_cmo_pool_rd_attr(excess, size);
+-viobus_cmo_pool_rd_attr(excess, free);
+-viobus_cmo_rd_attr(spare);
+-viobus_cmo_rd_attr(min);
+-viobus_cmo_rd_attr(desired);
+-viobus_cmo_rd_attr(curr);
+-viobus_cmo_rd_attr(high);
+-
+-static struct bus_attribute vio_cmo_bus_attrs[] = {
+-	__ATTR(cmo_entitled, S_IRUGO, viobus_cmo_entitled_show, NULL),
+-	__ATTR(cmo_reserve_size, S_IRUGO, viobus_cmo_reserve_pool_show_size, NULL),
+-	__ATTR(cmo_excess_size, S_IRUGO, viobus_cmo_excess_pool_show_size, NULL),
+-	__ATTR(cmo_excess_free, S_IRUGO, viobus_cmo_excess_pool_show_free, NULL),
+-	__ATTR(cmo_spare,   S_IRUGO, viobus_cmo_spare_show,   NULL),
+-	__ATTR(cmo_min,     S_IRUGO, viobus_cmo_min_show,     NULL),
+-	__ATTR(cmo_desired, S_IRUGO, viobus_cmo_desired_show, NULL),
+-	__ATTR(cmo_curr,    S_IRUGO, viobus_cmo_curr_show,    NULL),
+-	__ATTR(cmo_high,    S_IWUSR|S_IRUSR|S_IWGRP|S_IRGRP|S_IROTH,
+-	       viobus_cmo_high_show, viobus_cmo_high_reset),
 -	__ATTR_NULL
-+static struct attribute *serio_driver_attrs[] = {
-+	&driver_attr_description.attr,
-+	&driver_attr_bind_mode.attr,
++static BUS_ATTR_RW(cmo_high);
++
++static struct attribute *vio_bus_attrs[] = {
++	&bus_attr_cmo_entitled.attr,
++	&bus_attr_cmo_spare.attr,
++	&bus_attr_cmo_min.attr,
++	&bus_attr_cmo_desired.attr,
++	&bus_attr_cmo_curr.attr,
++	&bus_attr_cmo_high.attr,
++	&bus_attr_cmo_reserve_size.attr,
++	&bus_attr_cmo_excess_size.attr,
++	&bus_attr_cmo_excess_free.attr,
 +	NULL,
  };
-+ATTRIBUTE_GROUPS(serio_driver);
++ATTRIBUTE_GROUPS(vio_bus);
  
- static int serio_driver_probe(struct device *dev)
+ static void vio_cmo_sysfs_init(void)
  {
-@@ -996,7 +997,7 @@ EXPORT_SYMBOL(serio_interrupt);
- static struct bus_type serio_bus = {
- 	.name		= "serio",
- 	.dev_attrs	= serio_device_attrs,
--	.drv_attrs	= serio_driver_attrs,
-+	.drv_groups	= serio_driver_groups,
- 	.match		= serio_bus_match,
- 	.uevent		= serio_uevent,
- 	.probe		= serio_driver_probe,
+ 	vio_bus_type.dev_attrs = vio_cmo_dev_attrs;
+-	vio_bus_type.bus_attrs = vio_cmo_bus_attrs;
++	vio_bus_type.bus_groups = vio_bus_groups;
+ }
+ #else /* CONFIG_PPC_SMLPAR */
+ int vio_cmo_entitlement_update(size_t new_entitlement) { return 0; }
 -- 
 1.8.3.rc0.20.gb99dd2e
 
