@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab3HWUTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 16:19:35 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52699 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756109Ab3HWUTc (ORCPT
+	id S1756225Ab3HWUVf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 16:21:35 -0400
+Received: from smtp2.Stanford.EDU ([171.67.219.82]:53252 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755198Ab3HWUVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 16:19:32 -0400
-Date: Fri, 23 Aug 2013 17:19:26 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jisheng Zhang <jszhang@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] pinctrl: mvebu: add missing iounmap
-Message-ID: <20130823201925.GA2417@localhost>
-References: <1377175611-4241-1-git-send-email-jszhang@marvell.com>
- <1377175611-4241-5-git-send-email-jszhang@marvell.com>
- <20130822132207.GA27167@localhost>
- <CACRpkdZKGUGnnwEt0W6hQKhA0NnHWtkeBuaz-chDS=9rZD9y7A@mail.gmail.com>
+	Fri, 23 Aug 2013 16:21:34 -0400
+Message-ID: <5217C43D.6090909@localhost>
+Date: Fri, 23 Aug 2013 13:21:17 -0700
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZKGUGnnwEt0W6hQKhA0NnHWtkeBuaz-chDS=9rZD9y7A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.9-rt5
+References: <20130822182127.GA7606@linutronix.de> <5216F81A.4050203@localhost> <52170A6F.6040009@linutronix.de> <52179950.6010601@localhost> <20130823175628.GA9130@linutronix.de>
+In-Reply-To: <20130823175628.GA9130@linutronix.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 08:06:02PM +0200, Linus Walleij wrote:
-> On Thu, Aug 22, 2013 at 3:22 PM, Ezequiel Garcia
-> <ezequiel.garcia@free-electrons.com> wrote:
-> > On Thu, Aug 22, 2013 at 08:46:51PM +0800, Jisheng Zhang wrote:
-> >> Add missing iounmap to prove error path and remove path
-> >>
-> >> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> >> ---
-> >>  drivers/pinctrl/mvebu/pinctrl-mvebu.c | 24 +++++++++++++++++-------
-> >>  1 file changed, 17 insertions(+), 7 deletions(-)
-> >
-> > How about using devm_ioremap_resource() instead?
-> 
-> Yeah that's the right solution, Jisheng can you fix this?
-> 
+On 08/23/2013 10:56 AM, Sebastian Andrzej Siewior wrote:
+> * Fernando Lopez-Lezcano | 2013-08-23 10:18:08 [-0700]:
+>
+>> Please post a patch when/if you have it so I can retry the build...
+>> Thanks for taking a look at this!
+>
+> Does this fix your trobule?
 
-I think he already did that, there's a v2 floating around
-with such change. I plan to give it a test, maybe tomorrow,
-if I can find some spare time.
+Yes, it does, thanks! Builds, installs and boots the x86_64 kernel (I 
+did not test the i686 build, I don't have a 32 machine to test).
 
-Regards,
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+-- Fernando
+
+
+> diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
+> index 0bfa40d..6f61d5f 100644
+> --- a/drivers/misc/hwlat_detector.c
+> +++ b/drivers/misc/hwlat_detector.c
+> @@ -220,7 +220,7 @@ static struct sample *buffer_get_sample(struct sample *sample)
+>   #else
+>   #define time_type	u64
+>   #define time_get()	trace_clock_local()
+> -#define time_to_us(x)	((x) / 1000)
+> +#define time_to_us(x)	div_u64(x, 1000)
+>   #define time_sub(a, b)	((a) - (b))
+>   #define init_time(a, b)	a = b
+>   #define time_u64(a)	a
