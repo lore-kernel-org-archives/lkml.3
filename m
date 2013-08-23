@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab3HWM3X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 08:29:23 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:57912 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755615Ab3HWMYg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755620Ab3HWMYg (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 23 Aug 2013 08:24:36 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:35986 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753768Ab3HWMYb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 08:24:31 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 23/40] ARM: ux500: Stop enabling GPIOs when not booting with Device Tree
-Date: Fri, 23 Aug 2013 13:23:23 +0100
-Message-Id: <1377260620-18829-24-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 20/40] ARM: ux500: Remove USB support when booting using ATAGs
+Date: Fri, 23 Aug 2013 13:23:20 +0100
+Message-Id: <1377260620-18829-21-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
 References: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
@@ -25,182 +25,220 @@ Device Tree booting. This patch is part of that endeavour.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500.c   |  2 --
- arch/arm/mach-ux500/cpu-db8500.c     | 24 ---------------
- arch/arm/mach-ux500/devices-common.c | 60 ------------------------------------
- arch/arm/mach-ux500/devices-common.h |  5 ---
- arch/arm/mach-ux500/devices-db8500.c |  1 -
- arch/arm/mach-ux500/devices.h        |  2 --
- 6 files changed, 94 deletions(-)
- delete mode 100644 arch/arm/mach-ux500/devices-common.c
+ arch/arm/mach-ux500/Makefile         |   2 +-
+ arch/arm/mach-ux500/cpu-db8500.c     |  12 ----
+ arch/arm/mach-ux500/devices-db8500.h |   5 --
+ arch/arm/mach-ux500/usb.c            | 135 -----------------------------------
+ 4 files changed, 1 insertion(+), 153 deletions(-)
+ delete mode 100644 arch/arm/mach-ux500/usb.c
 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index d53d672..7763c5b 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -15,7 +15,6 @@
- #include <linux/clk.h>
- #include <linux/io.h>
- #include <linux/platform_data/db8500_thermal.h>
--#include <linux/gpio.h>
- #include <linux/amba/bus.h>
- #include <linux/amba/pl022.h>
- #include <linux/amba/serial.h>
-@@ -25,7 +24,6 @@
- #include <linux/regulator/fixed.h>
- #include <linux/regulator/driver.h>
- #include <linux/mfd/tps6105x.h>
--#include <linux/mfd/abx500/ab8500-gpio.h>
- #include <linux/platform_data/leds-lp55xx.h>
- #include <linux/input.h>
- #include <linux/delay.h>
+diff --git a/arch/arm/mach-ux500/Makefile b/arch/arm/mach-ux500/Makefile
+index bf9b6be..cac22ba 100644
+--- a/arch/arm/mach-ux500/Makefile
++++ b/arch/arm/mach-ux500/Makefile
+@@ -3,7 +3,7 @@
+ #
+ 
+ obj-y				:= cpu.o devices.o devices-common.o \
+-				   id.o usb.o timer.o pm.o
++				   id.o timer.o pm.o
+ obj-$(CONFIG_CPU_IDLE)          += cpuidle.o
+ obj-$(CONFIG_CACHE_L2X0)	+= cache-l2x0.o
+ obj-$(CONFIG_UX500_SOC_DB8500)	+= cpu-db8500.o devices-db8500.o
 diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index 33264f5..69cee39 100644
+index 12eee81..30024ff 100644
 --- a/arch/arm/mach-ux500/cpu-db8500.c
 +++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -139,28 +139,6 @@ static struct platform_device *platform_devs[] __initdata = {
- 	&db8500_pmu_device,
- };
+@@ -162,17 +162,6 @@ static void __init db8500_add_gpios(struct device *parent)
+ 	dbx500_add_pinctrl(parent, "pinctrl-db8500", U8500_PRCMU_BASE);
+ }
  
--static resource_size_t __initdata db8500_gpio_base[] = {
--	U8500_GPIOBANK0_BASE,
--	U8500_GPIOBANK1_BASE,
--	U8500_GPIOBANK2_BASE,
--	U8500_GPIOBANK3_BASE,
--	U8500_GPIOBANK4_BASE,
--	U8500_GPIOBANK5_BASE,
--	U8500_GPIOBANK6_BASE,
--	U8500_GPIOBANK7_BASE,
--	U8500_GPIOBANK8_BASE,
+-static int usb_db8500_dma_cfg[] = {
+-	DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9,
+-	DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10,
+-	DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11,
+-	DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12,
+-	DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13,
+-	DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14,
+-	DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15,
+-	DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8
 -};
--
--static void __init db8500_add_gpios(struct device *parent)
--{
--	struct nmk_gpio_platform_data pdata = {
--		.supports_sleepmode = true,
--	};
--
--	dbx500_add_gpios(parent, ARRAY_AND_SIZE(db8500_gpio_base),
--			 IRQ_DB8500_GPIO0, &pdata);
--}
 -
  static const char *db8500_read_soc_id(void)
  {
  	void __iomem *uid = __io_address(U8500_BB_UID_BASE);
-@@ -190,8 +168,6 @@ struct device * __init u8500_init_devices(void)
+@@ -204,7 +193,6 @@ struct device * __init u8500_init_devices(void)
  
- 	parent = db8500_soc_device_init();
+ 	db8500_add_rtc(parent);
+ 	db8500_add_gpios(parent);
+-	db8500_add_usb(parent, usb_db8500_dma_cfg, usb_db8500_dma_cfg);
  
--	db8500_add_gpios(parent);
--
  	for (i = 0; i < ARRAY_SIZE(platform_devs); i++)
  		platform_devs[i]->dev.parent = parent;
+diff --git a/arch/arm/mach-ux500/devices-db8500.h b/arch/arm/mach-ux500/devices-db8500.h
+index be1d538..9352400 100644
+--- a/arch/arm/mach-ux500/devices-db8500.h
++++ b/arch/arm/mach-ux500/devices-db8500.h
+@@ -8,7 +8,6 @@
+ #ifndef __DEVICES_DB8500_H
+ #define __DEVICES_DB8500_H
  
-diff --git a/arch/arm/mach-ux500/devices-common.c b/arch/arm/mach-ux500/devices-common.c
+-#include <linux/platform_data/usb-musb-ux500.h>
+ #include "irqs.h"
+ #include "db8500-regs.h"
+ #include "devices-common.h"
+@@ -30,10 +29,6 @@ db8500_add_ssp(struct device *parent, const char *name, resource_size_t base,
+ #define db8500_add_rtc(parent) \
+ 	dbx500_add_rtc(parent, U8500_RTC_BASE, IRQ_DB8500_RTC);
+ 
+-#define db8500_add_usb(parent, rx_cfg, tx_cfg) \
+-	ux500_add_usb(parent, U8500_USBOTG_BASE, \
+-		      IRQ_DB8500_USBOTG, rx_cfg, tx_cfg)
+-
+ #define db8500_add_ssp0(parent, pdata) \
+ 	db8500_add_ssp(parent, "ssp0", U8500_SSP0_BASE, \
+ 		       IRQ_DB8500_SSP0, pdata)
+diff --git a/arch/arm/mach-ux500/usb.c b/arch/arm/mach-ux500/usb.c
 deleted file mode 100644
-index f71b3d7..0000000
---- a/arch/arm/mach-ux500/devices-common.c
+index b7bd8d3..0000000
+--- a/arch/arm/mach-ux500/usb.c
 +++ /dev/null
-@@ -1,60 +0,0 @@
+@@ -1,135 +0,0 @@
 -/*
-- * Copyright (C) ST-Ericsson SA 2010
+- * Copyright (C) ST-Ericsson SA 2011
 - *
-- * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
-- * License terms: GNU General Public License (GPL), version 2.
+- * Author: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+- * License terms: GNU General Public License (GPL) version 2
 - */
--
--#include <linux/kernel.h>
--#include <linux/dma-mapping.h>
--#include <linux/err.h>
--#include <linux/irq.h>
--#include <linux/slab.h>
 -#include <linux/platform_device.h>
--#include <linux/platform_data/pinctrl-nomadik.h>
+-#include <linux/usb/musb.h>
+-#include <linux/dma-mapping.h>
+-#include <linux/platform_data/usb-musb-ux500.h>
+-#include <linux/platform_data/dma-ste-dma40.h>
 -
--#include "irqs.h"
+-#include "db8500-regs.h"
 -
--#include "devices-common.h"
--
--static struct platform_device *
--dbx500_add_gpio(struct device *parent, int id, resource_size_t addr, int irq,
--		struct nmk_gpio_platform_data *pdata)
--{
--	struct resource resources[] = {
--		{
--			.start	= addr,
--			.end	= addr + 127,
--			.flags	= IORESOURCE_MEM,
--		},
--		{
--			.start	= irq,
--			.end	= irq,
--			.flags	= IORESOURCE_IRQ,
--		}
--	};
--
--	return platform_device_register_resndata(
--		parent,
--		"gpio",
--		id,
--		resources,
--		ARRAY_SIZE(resources),
--		pdata,
--		sizeof(*pdata));
--}
--
--void dbx500_add_gpios(struct device *parent, resource_size_t *base, int num,
--		      int irq, struct nmk_gpio_platform_data *pdata)
--{
--	int first = 0;
--	int i;
--
--	for (i = 0; i < num; i++, first += 32, irq++) {
--		pdata->first_gpio = first;
--		pdata->first_irq = NOMADIK_GPIO_TO_IRQ(first);
--		pdata->num_gpio = 32;
--
--		dbx500_add_gpio(parent, i, base[i], irq, pdata);
+-#define MUSB_DMA40_RX_CH { \
+-		.mode = STEDMA40_MODE_LOGICAL, \
+-		.dir = DMA_DEV_TO_MEM, \
 -	}
+-
+-#define MUSB_DMA40_TX_CH { \
+-		.mode = STEDMA40_MODE_LOGICAL, \
+-		.dir = DMA_MEM_TO_DEV, \
+-	}
+-
+-static struct stedma40_chan_cfg musb_dma_rx_ch[UX500_MUSB_DMA_NUM_RX_TX_CHANNELS]
+-	= {
+-	MUSB_DMA40_RX_CH,
+-	MUSB_DMA40_RX_CH,
+-	MUSB_DMA40_RX_CH,
+-	MUSB_DMA40_RX_CH,
+-	MUSB_DMA40_RX_CH,
+-	MUSB_DMA40_RX_CH,
+-	MUSB_DMA40_RX_CH,
+-	MUSB_DMA40_RX_CH
+-};
+-
+-static struct stedma40_chan_cfg musb_dma_tx_ch[UX500_MUSB_DMA_NUM_RX_TX_CHANNELS]
+-	= {
+-	MUSB_DMA40_TX_CH,
+-	MUSB_DMA40_TX_CH,
+-	MUSB_DMA40_TX_CH,
+-	MUSB_DMA40_TX_CH,
+-	MUSB_DMA40_TX_CH,
+-	MUSB_DMA40_TX_CH,
+-	MUSB_DMA40_TX_CH,
+-	MUSB_DMA40_TX_CH,
+-};
+-
+-static void *ux500_dma_rx_param_array[UX500_MUSB_DMA_NUM_RX_TX_CHANNELS] = {
+-	&musb_dma_rx_ch[0],
+-	&musb_dma_rx_ch[1],
+-	&musb_dma_rx_ch[2],
+-	&musb_dma_rx_ch[3],
+-	&musb_dma_rx_ch[4],
+-	&musb_dma_rx_ch[5],
+-	&musb_dma_rx_ch[6],
+-	&musb_dma_rx_ch[7]
+-};
+-
+-static void *ux500_dma_tx_param_array[UX500_MUSB_DMA_NUM_RX_TX_CHANNELS] = {
+-	&musb_dma_tx_ch[0],
+-	&musb_dma_tx_ch[1],
+-	&musb_dma_tx_ch[2],
+-	&musb_dma_tx_ch[3],
+-	&musb_dma_tx_ch[4],
+-	&musb_dma_tx_ch[5],
+-	&musb_dma_tx_ch[6],
+-	&musb_dma_tx_ch[7]
+-};
+-
+-static struct ux500_musb_board_data musb_board_data = {
+-	.dma_rx_param_array = ux500_dma_rx_param_array,
+-	.dma_tx_param_array = ux500_dma_tx_param_array,
+-	.dma_filter = stedma40_filter,
+-};
+-
+-static struct musb_hdrc_platform_data musb_platform_data = {
+-	.mode = MUSB_OTG,
+-	.board_data = &musb_board_data,
+-};
+-
+-static struct resource usb_resources[] = {
+-	[0] = {
+-		.name	= "usb-mem",
+-		.flags	=  IORESOURCE_MEM,
+-	},
+-
+-	[1] = {
+-		.name   = "mc", /* hard-coded in musb */
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-};
+-
+-struct platform_device ux500_musb_device = {
+-	.name = "musb-ux500",
+-	.id = 0,
+-	.dev = {
+-		.platform_data = &musb_platform_data,
+-		.coherent_dma_mask = DMA_BIT_MASK(32),
+-	},
+-	.num_resources = ARRAY_SIZE(usb_resources),
+-	.resource = usb_resources,
+-};
+-
+-static inline void ux500_usb_dma_update_rx_ch_config(int *dev_type)
+-{
+-	u32 idx;
+-
+-	for (idx = 0; idx < UX500_MUSB_DMA_NUM_RX_TX_CHANNELS; idx++)
+-		musb_dma_rx_ch[idx].dev_type = dev_type[idx];
 -}
-diff --git a/arch/arm/mach-ux500/devices-common.h b/arch/arm/mach-ux500/devices-common.h
-index 7167b69..ce48a02 100644
---- a/arch/arm/mach-ux500/devices-common.h
-+++ b/arch/arm/mach-ux500/devices-common.h
-@@ -33,9 +33,4 @@ dbx500_add_uart(struct device *parent, const char *name, resource_size_t base,
- 	return amba_ahb_device_add(parent, name, base, SZ_4K, irq, 0, pdata, 0);
- }
- 
--struct nmk_gpio_platform_data;
 -
--void dbx500_add_gpios(struct device *parent, resource_size_t *base, int num,
--		      int irq, struct nmk_gpio_platform_data *pdata);
+-static inline void ux500_usb_dma_update_tx_ch_config(int *dev_type)
+-{
+-	u32 idx;
 -
- #endif
-diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
-index 3c5393b..d30205b 100644
---- a/arch/arm/mach-ux500/devices-db8500.c
-+++ b/arch/arm/mach-ux500/devices-db8500.c
-@@ -9,7 +9,6 @@
- #include <linux/platform_device.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
--#include <linux/gpio.h>
- #include <linux/amba/bus.h>
- #include <linux/amba/pl022.h>
- #include <linux/platform_data/dma-ste-dma40.h>
-diff --git a/arch/arm/mach-ux500/devices.h b/arch/arm/mach-ux500/devices.h
-index eafb07a..da23c05 100644
---- a/arch/arm/mach-ux500/devices.h
-+++ b/arch/arm/mach-ux500/devices.h
-@@ -10,8 +10,6 @@
- struct platform_device;
- struct amba_device;
- 
--extern struct platform_device u8500_gpio_devs[];
+-	for (idx = 0; idx < UX500_MUSB_DMA_NUM_RX_TX_CHANNELS; idx++)
+-		musb_dma_tx_ch[idx].dev_type = dev_type[idx];
+-}
 -
- extern struct amba_device ux500_pl031_device;
- 
- extern struct platform_device u8500_dma40_device;
+-void ux500_add_usb(struct device *parent, resource_size_t base, int irq,
+-		   int *dma_rx_cfg, int *dma_tx_cfg)
+-{
+-	ux500_musb_device.resource[0].start = base;
+-	ux500_musb_device.resource[0].end = base + SZ_64K - 1;
+-	ux500_musb_device.resource[1].start = irq;
+-	ux500_musb_device.resource[1].end = irq;
+-
+-	ux500_usb_dma_update_rx_ch_config(dma_rx_cfg);
+-	ux500_usb_dma_update_tx_ch_config(dma_tx_cfg);
+-
+-	ux500_musb_device.dev.parent = parent;
+-
+-	platform_device_register(&ux500_musb_device);
+-}
 -- 
 1.8.1.2
 
