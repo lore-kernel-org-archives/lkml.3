@@ -1,170 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab3HWHdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 03:33:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47756 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271Ab3HWHc7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 03:32:59 -0400
-Date: Fri, 23 Aug 2013 09:32:50 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 17/17] clk: zynq: remove call to of_clk_init
-Message-ID: <20130823073250.GB30135@pengutronix.de>
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1376964271-22715-18-git-send-email-sebastian.hesselbarth@gmail.com>
- <d17acba9-85f9-40cd-a176-2005e3e924f8@CO1EHSMHS002.ehs.local>
- <c4d10bdf-6506-4edc-92cc-2acc67b86602@VA3EHSMHS032.ehs.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <c4d10bdf-6506-4edc-92cc-2acc67b86602@VA3EHSMHS032.ehs.local>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:13:47 up 23 days, 16:17, 37 users,  load average: 0.00, 0.03,
- 0.05
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754417Ab3HWHfY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 03:35:24 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:55580 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754056Ab3HWHfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 03:35:21 -0400
+Message-ID: <1377243247.18389.10.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH RFC v3] mmc: sdhci-msm: Add support for MSM chipsets
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Georgi Djakov <gdjakov@mm-sol.com>
+Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Asutosh Das <asutoshd@codeaurora.org>,
+        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
+        Sahitya Tummala <stummala@codeaurora.org>,
+        Subhash Jadavani <subhashj@codeaurora.org>
+Date: Fri, 23 Aug 2013 10:34:07 +0300
+In-Reply-To: <1377017077-9834-1-git-send-email-gdjakov@mm-sol.com>
+References: <1377017077-9834-1-git-send-email-gdjakov@mm-sol.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Georgi, 
 
-On Thu, Aug 22, 2013 at 05:59:36PM -0700, Sören Brinkmann wrote:
-> On Thu, Aug 22, 2013 at 05:26:47PM -0700, Sören Brinkmann wrote:
-> > Hi Sebastian,
-> >
-> > On Tue, Aug 20, 2013 at 04:04:31AM +0200, Sebastian Hesselbarth wrote:
-> > > With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-> > > remove it from corresponding drivers/clk code.
-> >
-> > I think that would break Zynq.
-> > If I see this correctly you call of_clk_init() from common code,
-> > _before_ the SOC specific time init function is called.
-> > The problem is, that we have code setting up a global pointer which is
-> > required by zynq_clk_setup() which is triggered when of_clk_init() is
-> > called.
-> >
-> > Let me try to illustrate the current call graph:
-> >
-> > time_init()
-> > 	zynq_timer_init()		// this machines init_time()
-> > 		zynq_slcr_init()	// setup System Level Control Registers including a global pointer
-> > 			zynq_clock_init()
-> > 				of_clk_init()
-> > 					zynq_clk_setup()   // requires pointer setup in zynq_slcr_init()
-> > 					...
-> >
-> > IIUC, your series would change this to:
-> > time_init()
-> > 	of_clk_init()
-> > 		zynq_clk_setup()	// SLCR pointer is not setup/NULL
-> > 		...
-> > 	zynq_timer_init()
-> > 		zynq_slcr_init()	// now the pointer becomes valid
->
-> I guess we could move zynq_slcr_init() into init_irq(). I'll give that a
-> shot tomorrow.
->
+On Tue, 2013-08-20 at 19:44 +0300, Georgi Djakov wrote: 
+> This platform driver adds the support of Secure Digital Host
+> Controller Interface compliant controller in MSM chipsets.
+> 
+> CC: Asutosh Das <asutoshd@codeaurora.org>
+> CC: Venkat Gopalakrishnan <venkatg@codeaurora.org>
+> CC: Sahitya Tummala <stummala@codeaurora.org>
+> CC: Subhash Jadavani <subhashj@codeaurora.org>
+> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+> ---
+> Changes from v2:
+> - Added DT bindings for clocks
+> - Moved voltage regulators data to platform data
+> - Removed unneeded includes
+> - Removed obsolete and wrapper functions
+> - Removed error checking where unnecessary
+> - Removed redundant _clk suffix from clock names
+> - Just return instead of goto where possible
+> - Minor fixes
+> 
 
-I propose getting rid of the whole global pointer and let the clkc map the
-address itself instead.
+Is this version intermediate step before you address
+all previous comments?
 
-Then there is no need to shuffle stuff around in the initcalls.
-I have some WIP patches (not rebased on next and not even tested with it,
-but with v3.11-rc4)
+<snip>
 
-The dtsi would be something like:
+> +
+> +static const struct of_device_id sdhci_msm_dt_match[] = {
+> +	{.compatible = "qcom,sdhci-msm"},
 
-       control-register@f8000000 {
-	       compatible = "simple-bus";
-               #address-cells = <1>;
-               #size-cells = <1>;
-               reg = <0xf8000000 0x1000>;
-               ranges;
+Missing termination entry
 
-               slcr: slcr@f8000000 {
-                       compatible = "xlnx,zynq-slcr", "syscon";
-                       reg = <0xf8000000 0x10>;
-               };
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, sdhci_msm_dt_match);
+> +
+> +static int sdhci_msm_probe(struct platform_device *pdev)
+> +{
+> +	struct sdhci_host *host;
+> +	struct sdhci_pltfm_host *pltfm_host;
+> +	struct sdhci_msm_host *msm_host;
+> +	struct resource *core_memres = NULL;
+> +	int ret = 0, dead = 0;
+> +	struct pinctrl	*pinctrl;
+> +
+> +	msm_host = devm_kzalloc(&pdev->dev, sizeof(struct sdhci_msm_host),
+> +				GFP_KERNEL);
+> +	if (!msm_host)
+> +		return -ENOMEM;
+> +
+> +	host = sdhci_pltfm_init(pdev, &msm_host->sdhci_msm_pdata, 0);
+> +	if (IS_ERR(host)) {
+> +		dev_err(mmc_dev(host->mmc), "sdhci_pltfm_init error\n");
+> +		return PTR_ERR(host);
+> +	}
+> +
+> +	pltfm_host = sdhci_priv(host);
+> +	pltfm_host->priv = msm_host;
+> +	msm_host->mmc = host->mmc;
+> +	msm_host->pdev = pdev;
+> +
+> +	ret = mmc_of_parse(host->mmc);
+> +	if (ret)
 
-               clkc: clkc@f8000100 {
-                       #clock-cells = <1>;
-                       compatible = "xlnx,ps7-clkc";
-                       reg = <0xf8000100 0x100>;
-                       ps-clk-frequency = <33333333>;
-		       xlnx,slcr = <&slcr>;
-                       clock-output-names = "armpll", "ddrpll", "iopll", "cpu_6or4x",
-                                       "cpu_3or2x", "cpu_2x", "cpu_1x", "ddr2x", "ddr3x",
-                                       "dci", "lqspi", "smc", "pcap", "gem0", "gem1",
-                                       "fclk0", "fclk1", "fclk2", "fclk3", "can0", "can1",
-                                       "sdio0", "sdio1", "uart0", "uart1", "spi0", "spi1",
-                                       "dma", "usb0_aper", "usb1_aper", "gem0_aper",
-                                       "gem1_aper", "sdio0_aper", "sdio1_aper",
-                                       "spi0_aper", "spi1_aper", "can0_aper", "can1_aper",
-                                       "i2c0_aper", "i2c1_aper", "uart0_aper", "uart1_aper",
-                                       "gpio_aper", "lqspi_aper", "smc_aper", "swdt",
-                                       "dbg_trc", "dbg_apb";
-               };
+Shouldn't sdhci_pltfm_init operation be reverted?
 
-               mio: pinmux@f8000700 {
-                       compatible = "xlnx,ps7-pinctrl";
-                       reg = <0xf8000700 0x110>;
-		       xlnx,slcr = <&slcr>;
-               };
-       };
+> +		return ret;
+> +
+> +	/* Extract platform data */
+> +	if (pdev->dev.of_node) {
+> +		msm_host->pdata = sdhci_msm_populate_pdata(&pdev->dev);
+> +		if (!msm_host->pdata) {
+> +			dev_err(&pdev->dev, "DT parsing error\n");
+> +			goto pltfm_free;
+> +		}
+> +	} else {
+> +		dev_err(&pdev->dev, "No device tree node\n");
+> +		goto pltfm_free;
+> +	}
+> +
+> +	/* Setup pins */
+> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+> +	if (IS_ERR(pinctrl))
+> +		dev_warn(&pdev->dev, "pins are not configured by the driver\n");
+> +
+> +	/* Setup Clocks */
+> +
+> +	/* Setup SDCC bus voter clock. */
+> +	msm_host->bus_clk = devm_clk_get(&pdev->dev, "bus");
+> +	if (!IS_ERR_OR_NULL(msm_host->bus_clk)) {
+> +		/* Vote for max. clk rate for max. performance */
+> +		ret = clk_set_rate(msm_host->bus_clk, INT_MAX);
+> +		if (ret)
+> +			goto pltfm_free;
+> +		ret = clk_prepare_enable(msm_host->bus_clk);
+> +		if (ret)
+> +			goto pltfm_free;
+> +	}
+> +
+> +	/* Setup main peripheral bus clock */
+> +	msm_host->pclk = devm_clk_get(&pdev->dev, "iface");
+> +	if (!IS_ERR(msm_host->pclk)) {
+> +		ret = clk_prepare_enable(msm_host->pclk);
+> +		if (ret) {
+> +			dev_err(&pdev->dev,
+> +				"Main peripheral clock setup failed (%d)\n",
+> +				ret);
+> +			goto bus_clk_disable;
+> +		}
+> +	}
+> +
+> +	/* Setup SDC MMC clock */
+> +	msm_host->clk = devm_clk_get(&pdev->dev, "core");
+> +	if (IS_ERR(msm_host->clk)) {
+> +		ret = PTR_ERR(msm_host->clk);
+> +		dev_err(&pdev->dev, "SDC MMC clock setup failed (%d)\n", ret);
+> +		goto pclk_disable;
+> +	}
+> +
+> +	ret = clk_prepare_enable(msm_host->clk);
+> +	if (ret)
+> +		goto pclk_disable;
+> +
+> +	/* Setup regulators */
+> +	ret = sdhci_msm_vreg_init(&pdev->dev, msm_host->pdata, true);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Regulator setup failed (%d)\n", ret);
+> +		goto clk_disable;
+> +	}
+> +
+> +	/* Reset the core and Enable SDHC mode */
+> +	core_memres = platform_get_resource_byname(pdev,
+> +						   IORESOURCE_MEM, "core_mem");
+> +	msm_host->core_mem = devm_ioremap(&pdev->dev, core_memres->start,
+> +					  resource_size(core_memres));
+> +
+> +	if (!msm_host->core_mem) {
+> +		dev_err(&pdev->dev, "Failed to remap registers\n");
+> +		ret = -ENOMEM;
+> +		goto vreg_deinit;
+> +	}
+> +
+> +	/* Set SW_RST bit in POWER register (Offset 0x0) */
+> +	writel_relaxed(CORE_SW_RST, msm_host->core_mem + CORE_POWER);
+> +	/* Set HC_MODE_EN bit in HC_MODE register */
+> +	writel_relaxed(HC_MODE_EN, (msm_host->core_mem + CORE_HC_MODE));
+> +
+> +	/*
+> +	 * Following are the deviations from SDHC spec v3.0 -
+> +	 * 1. Card detection is handled using separate GPIO.
+> +	 * 2. Bus power control is handled by interacting with PMIC.
+> +	 */
+> +	host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+> +
+> +	/* Setup PWRCTL irq */
+> +	msm_host->pwr_irq = platform_get_irq_byname(pdev, "pwr_irq");
+> +	if (msm_host->pwr_irq < 0) {
+> +		dev_err(&pdev->dev, "Failed to get pwr_irq by name (%d)\n",
+> +			msm_host->pwr_irq);
+> +		goto vreg_deinit;
+> +	}
+> +	ret = devm_request_threaded_irq(&pdev->dev, msm_host->pwr_irq, NULL,
+> +					sdhci_msm_pwr_irq, IRQF_ONESHOT,
+> +					dev_name(&pdev->dev), host);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Request threaded irq(%d) failed (%d)\n",
+> +			msm_host->pwr_irq, ret);
+> +		goto vreg_deinit;
+> +	}
+> +
+> +	/* Enable pwr irq interrupts */
+> +	writel_relaxed(INT_MASK, (msm_host->core_mem + CORE_PWRCTL_MASK));
+> +
+> +	/* Set host capabilities */
+> +	msm_host->mmc->caps |= msm_host->pdata->caps;
+> +	msm_host->mmc->caps2 |= msm_host->pdata->caps2;
+> +
+> +	ret = sdhci_add_host(host);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Add host failed (%d)\n", ret);
+> +		goto vreg_deinit;
+> +	}
+> +
+> +	/* Set core clk rate */
+> +	ret = clk_set_rate(msm_host->clk, host->max_clk);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "MClk rate set failed (%d)\n", ret);
+> +		goto remove_host;
+> +	}
+> +
+> +	host->mmc->max_current_180 = host->mmc->max_current_300 =
+> +	host->mmc->max_current_330 = sdhci_msm_get_vdd_max_current(msm_host);
+> +
+> +	/* Successful initialization */
+> +	goto out;
+> +
+> +remove_host:
+> +	dead = (readl_relaxed(host->ioaddr + SDHCI_INT_STATUS) == 0xffffffff);
+> +	sdhci_remove_host(host, dead);
+> +vreg_deinit:
+> +	sdhci_msm_vreg_init(&pdev->dev, msm_host->pdata, false);
+> +clk_disable:
+> +	if (!IS_ERR(msm_host->clk))
+> +		clk_disable_unprepare(msm_host->clk);
+> +pclk_disable:
+> +	if (!IS_ERR(msm_host->pclk))
+> +		clk_disable_unprepare(msm_host->pclk);
+> +bus_clk_disable:
+> +	if (!IS_ERR_OR_NULL(msm_host->bus_clk))
+> +		clk_disable_unprepare(msm_host->bus_clk);
+> +pltfm_free:
+> +	sdhci_pltfm_free(pdev);
+> +out:
+> +	return ret;
+> +}
+> +
 
-With the phandle to the slcr node it should also be possible to handle locking,
-unlocking, but I haven't tried that yet.
-Also, as you can see, I would add "syscon" to the slcr. Than it can get an early
-init call to unlock the register space. And be later added as as syscon driver
-so you can work with regmap etc. and work dynamically with the slcr after boot
-(pinmuxing + dt overlays etc). I have tested the early-init-and-later-syscon-registering-stuff
-and it works. With the time_init changes, the early_init might have to be earlier
-though, but only when the slcr is locked.
+<snip>
 
-The clkc driver than has
+> +
+> +static struct platform_driver sdhci_msm_driver = {
+> +	.probe = sdhci_msm_probe,
+> +	.remove = sdhci_msm_remove,
+> +	.driver = {
+> +		   .name = "sdhci_msm",
+> +		   .owner = THIS_MODULE,
+> +		   .of_match_table = of_match_ptr(sdhci_msm_dt_match),
 
-        np = of_find_compatible_node(NULL, NULL, "xlnx,ps7-clkc");
-        if (!np) {
-                pr_err("%s: no ps7-clkc node found\n", __func__);
-                BUG();
-        }
-
-        zynq_slcr_base_priv = of_iomap(np, 0);
-        if (!zynq_slcr_base_priv) {
-                pr_err("%s: Unable to map I/O memory\n", np->name);
-                of_node_put(np);
-                BUG();
-                return;
-        }
-
-in the setup function. So, it is independent from any prior setup of the slcr.
-This just leaves the locking. Which might me able to be handled with the phandle.
-
-But I have to finish that first. So, if reording the entries is working as a
-hotfix, go ahead I guess.
-
+of_match_ptr is not really required.
 
 Regards,
-Steffen
+Ivan
 
---
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> +		   },
+> +};
+> +
+> +module_platform_driver(sdhci_msm_driver);
+> +
+> +MODULE_DESCRIPTION("Qualcomm Secure Digital Host Controller Interface driver");
+> +MODULE_LICENSE("GPL v2");
+
+
