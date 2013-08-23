@@ -1,134 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab3HWQPt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 12:15:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30356 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754692Ab3HWQPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 12:15:46 -0400
-Date: Fri, 23 Aug 2013 18:15:32 +0200
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
-        Christophe Guillon <christophe.guillon@st.com>, rusty@rustcorp.com.au,
-        linux-arch@vger.kernel.org, arnd@arndb.de, mgahagan@redhat.com,
-        agospoda@redhat.com
-Subject: Re: [RFC PATCH 0/4] add support for gcov format introduced in gcc 4.7
-Message-ID: <20130823161532.GA2336@localhost.localdomain>
-Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
-References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com>
- <52177AD7.1030709@linux.vnet.ibm.com>
+	id S1755515Ab3HWQSG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 12:18:06 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44882 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754145Ab3HWQSE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 12:18:04 -0400
+Message-ID: <52178B0B.7090303@ti.com>
+Date: Fri, 23 Aug 2013 21:47:15 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52177AD7.1030709@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benoit Cousson <bcousson@baylibre.com>
+CC: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>, <mark.rutland@arm.com>,
+        <a.zummo@towertech.it>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <khilman@linaro.org>,
+        <rtc-linux@googlegroups.com>, <devicetree@vger.kernel.org>,
+        <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+        <rob.herring@calxeda.com>, <sudhakar.raj@ti.com>, <rob@landley.net>,
+        <grant.likely@linaro.org>, <akpm@linux-foundation.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 1/2] rtc: omap: update of_device_id to reflect latest
+ ip revisions
+References: <1376653017-21935-1-git-send-email-gururaja.hebbar@ti.com> <1376653017-21935-2-git-send-email-gururaja.hebbar@ti.com> <520E341D.4080206@baylibre.com> <520E482A.1070504@ti.com> <520E5444.1000700@baylibre.com> <52172264.3070000@ti.com> <52177B6C.2080406@baylibre.com>
+In-Reply-To: <52177B6C.2080406@baylibre.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 05:08:07PM +0200, Peter Oberparleiter wrote:
-> On 23.08.2013 10:39, Frantisek Hrbata wrote:
-> > This is an attempt to bring support for modified gcov format in gcc 4.7 to
-> > the kernel. It tries to leverage the existing layout/abstraction, which was
-> > designed keeping in mind that the gcov format could change, but some changes had
-> > to be make. Mostly because the current model does not take into account that
-> > even the core gcov structures, like gcov_info, could change. One part that could
-> > be problematic is the addition of the .init_array section for constructors.
+On 8/23/2013 8:40 PM, Benoit Cousson wrote:
+
+>>> There is no assumption about the lost of functionality by using the
+>>> generic version of the driver. How the user is supposed to know the
+>>> amount of functionality he will lose, and if this is acceptable to
+>>> him.
+>>
+>> I suppose the generic driver would return some error code like
+>> -ENOTSUP for the functionality it cannot provide.
 > 
-> It appears that gcc 4.7 support for gcov-kernel is quite important to a
-> number of people, at least that is what I derive from the fact that I
-> now know of 3 people who've been working on this support separately from
-> each other: you, myself (I've been close to posting my own version to
-> LKML) and Christophe Guillon.
-
-First, thank you for your quick reply. Second, great, I was worried there is no
-interest to have the new format supported, because it's quite some time gcc 4.7
-is out.
-
+> Well, I guess it depends of the added functionality add how far the IP
+> version is forward compatible with the old driver. If the new IP version
+> is just improving the performance by adding a DMA mode instead of the
+> PIO, then the driver API can remain the same.
+> But if you add a new functionality that will require an extended API,
+> there is no way you can report such error. Except if the API itself is
+> done with a good forward compatibility support.
 > 
-> It's apparent now that I made a mistake delaying the discussion of the
-> effort for too long, but I think your posting the patches opens up a
-> good opportunity to combine the best of all previous efforts.
+> And if the new functionality is mandatory to make the new system
+> operational, returning an error might just make the system not working
+> at all.
 
-To be honest I ran into this problem 14 days ago when I was asked to take a
-look. So I cannot say I know everything about gcov format and stuff around it.
-I mostly followed your original code after I got some idea of the gcov in-memory
-layout. Meaning, I'm glad that there is also yours and Christophe's code and
-I for sure welcome the "combine the best of all previous efforts" approach, even
-if it means dropping my code :).
+If the driver cannot work at all, then yes, I would not claim
+compatibility. At least a subset of functionality should work.
 
 > 
-> Most of your code looks very familiar. There's one feature missing though
-> that Christophe brought up as a requirement: the ability for gcov-kernel
-> to cope with kernel modules being compiled with GCC versions implementing
-> a different gcov format (apparently this can happen in some embedded
-> setups).
+>> Why
+>> would someone write a driver supporting “fsl,mpc8641-uart” if 100% of
+>> its hardware features are also supported by “ns16550" driver?
+> 
+> That's still doable, if you want to reduce the size of a big generic
+> driver into a smaller specific driver. The point is that the compatible
 
-Here follows quote from the gcc/gcov-io.h file
+Thats plausible. Although I have to admit I have never seen a new driver
+being written just because another existing driver is bloated.
 
-<quote>
-Coverage information is held in two files.  A notes file, which is
-generated by the compiler, and a data file, which is generated by
-the program under test.  Both files use a similar structure.  We do
-not attempt to make these files backwards compatible with previous
-versions, as you only need coverage information when developing a
-program.  We do hold version information, so that mismatches can be
-detected, and we use a format that allows tools to skip information
-they do not understand or are not interested in.
-</quote>
+> value does not have any assumption about the driver that will handle it.
 
-Also from my experience, I would expect that the gcov will be used during
-development, meaning re-compilation isn't a big problem here. I for sure can be
-missing something and I'm by no means saying it wouldn't be useful feature. Just
-that it would complite things a little bit.
+Right. Its all driven by hardware changes.
 
 > 
-> Christophe proposed run-time version checking and a file-ops type function
-> table which is chosen based on info->version. I found this approach
-> somewhat intrusive and this would also not have covered the case where a
-> new GCC versions was used to compile kernel modules for which the base
-> kernel has no support. I tried to solve this requirement by combining
-> two changes:
+> The other issue is that we are supposed to always use the latest SoC
+> version even if the IP is 100% the same. Like
 > 
-> 1) make the gcov-format generated by gcov-kernel compile-time configurable
-> 2) separate the gcov-format specific code into a loadable kernel module
-
-So if I understand it correctly you would separate the input
-format(gcov_info) from the output(gcda files). Meaning no matter which gcc
-compiled the module you can select the gcda format. And even if the kernel does
-not know the new format you can simply compile a module supporting it, instead
-of the whole kernel.
-
-Can you please give me an example why this is needed? As I wrote I'm not that
-familiar with gcov and I'm probably missing something, but I do not understand
-why this(handling several versions at runtime, not only the one used by gcc
-during compilation) is useful(note my comment above about the gcov used during
-development).
-
+> omap5-timer {
+>     compatible = "omap5-timer", "omap4-timer";
+> }
 > 
-> This way, the gcov-format specific part of gcov-kernel could be replaced
-> when working with a different version GCC. I'll post the corresponding
-> patches as reply in another mail.
-
-Great, I will take a look, but it may take me some time :).
-
+> So how are you suppose to differentiate the same IP, and a compatible IP???
 > 
-> Back to your patches: I tested them and they work fine on s390x when
-> compiled with GCC 4.3.4 and 4.7.2. I'll provide some more specific
-> comments as replies to your patch-mails.
+> That's what I don't like in that compatible string definition. You do
+> not necessarily know the amount of compatibility you are talking about.
 
-Many thanks!
+That's correct. The strings themselves tell very little how much OMAP5
+timer works when compatible = "omap4-timer" is passed. Some known
+limitations can perhaps be documented in binding definition.
 
+>> that it is today. Thing is, you can never know if the IP needs any
+>> additional handling even after reading the spec. We keep discovering
+>> new features/quirks. So, when writing <new-soc>.dtsi its safer to
+>> always use
+>>
+>> compatible = "ti,<new-soc>-rtc", "ti,<compatible-soc>-rtc";
+>>
+>> even though _today_ you may not have code that specifically handles
+>> "ti,<new-soc>-rtc".
 > 
+> Well, we can do that, but honestly, I do not see the need. You can
+> always update the dts later. Why would we add hundreds more compatible
+> strings just in case few devices will need special handling. That's
+> overkill.
+> If was maybe easy and harmless in the good old PPC time when the DTS
+> files were relatively small, but the ARM DTS files are much bigger.
 > 
-> Regards,
->   Peter Oberparleiter
-> 
-> -- 
-> Peter Oberparleiter
-> Linux on System z Development - IBM Germany
-> 
+> In the name of the Keep It Simple Principle, I would just avoid adding
+> something just because it might be useful in 5 % of the cases.
 
--- 
-Frantisek Hrbata
+It certainly seems overkill today. If and when the .dts[i] files are
+maintained as a separate project it will become painful to keep kernel
+and .dtb in sync. This will then become important, as bootloader
+independence today is.
+
+>>>> Otherwise they get plain RTC functionality - but at least they
+>>>> get something instead of no RTC.
+>>>
+>>> Because you assume that this feature is not important and thus you
+>>> can use the plain RTC, but what if someone is buying that HW
+>>> because of this new feature. Without that feature his system will
+>>> just not work properly.
+>>
+>> Right, but thats not a problem DT can solve. He/she needs to hassle
+>> TI for updated drivers. But there could be 10 other customers who are
+>> just okay with plain RTC. So till the time driver is updated to use
+>> ti,am3352-rtc", are you saying no one should be able to use the RTC
+>> on the SoC at all even though 90% features are available?
+> 
+> Again, if it will not prevent the system to work properly, then it is
+> fine. But let's assume that without the wakeup RTC functionality, you
+> just cannot wakeup from suspend an am3352 board. Then you end up with a
+> non functional system for the PM point of view.
+
+Correct, but this is because of lack of kernel support for a feature.
+Not because of the way compatible is written.
+
+> Someone who is not aware that the compatible RTC is not supporting that
+> feature might spend some time figuring out why he cannot wakeup from
+> suspend on a RTC alarm.
+
+Right. DT/compatible does not make this problem better or worse. Even
+using platform device model, you would still end up with a partially
+working system.
+
+>>> Saying that this is compatible whereas you lost functionality is
+>>> lying to the customer for my point of view.
+>>
+>> If 100% functionality is required for compatibility then I am afraid
+>> there is nothing like "compatibility". There are just different
+>> isolated versions.
+> 
+> I guess you are right.
+> 
+> Bottom-line, I'm really disappointed but that lack of accuracy in the
+> compatible string, but I guess, it was done for what you guys are doing.
+> And maybe, it is something that should just be well documented in the
+> bindings to avoid confusing the users.
+
+Okay. Can you please see if you can take 2/2 for v3.12? It can be taken
+independently of 1/2 (which I guess akpm will pick up).
+
+Thanks,
+Sekhar
