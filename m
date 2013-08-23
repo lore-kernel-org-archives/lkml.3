@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab3HWOTa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 10:19:30 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:61499 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab3HWOT2 (ORCPT
+	id S1755182Ab3HWOU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 10:20:26 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:32844 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753600Ab3HWOUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 10:19:28 -0400
-Date: Fri, 23 Aug 2013 10:19:24 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Toshi Kani <toshi.kani@hp.com>, Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, konrad.wilk@oracle.com,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 0/8] x86, acpi: Move acpi_initrd_override() earlier.
-Message-ID: <20130823141924.GA3277@htj.dyndns.org>
-References: <20130822033234.GA2413@htj.dyndns.org>
- <1377186729.10300.643.camel@misato.fc.hp.com>
- <20130822183130.GA3490@mtj.dyndns.org>
- <1377202292.10300.693.camel@misato.fc.hp.com>
- <20130822202158.GD3490@mtj.dyndns.org>
- <1377205598.10300.715.camel@misato.fc.hp.com>
- <20130822212111.GF3490@mtj.dyndns.org>
- <1377209861.10300.756.camel@misato.fc.hp.com>
- <20130823130440.GC10322@mtj.dyndns.org>
- <3ee58764-21c2-4df4-9353-54799a6a3d7b@email.android.com>
+	Fri, 23 Aug 2013 10:20:24 -0400
+Date: Fri, 23 Aug 2013 15:20:18 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+Cc: "poeschel@lemonage.de" <poeschel@lemonage.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCH 2/2] of: add vendor prefix for Microchip Technology Inc
+Message-ID: <20130823142018.GJ25856@e106331-lin.cambridge.arm.com>
+References: <1377165378-9589-1-git-send-email-larsi@wh2.tu-dresden.de>
+ <1377165378-9589-2-git-send-email-larsi@wh2.tu-dresden.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3ee58764-21c2-4df4-9353-54799a6a3d7b@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1377165378-9589-2-git-send-email-larsi@wh2.tu-dresden.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Aug 22, 2013 at 10:56:18AM +0100, Lars Poeschel wrote:
+> From: Lars Poeschel <poeschel@lemonage.de>
+> 
+> Trivial patch to add Microchip Technology Inc. to the list
+> of devicetree vendor prefixes.
+> 
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
 
-On Fri, Aug 23, 2013 at 03:08:55PM +0200, H. Peter Anvin wrote:
-> What is the point of 1G+MTRR?  If there are caching differences the
-> TLB will fracture the pages anyway.
+Acked-by: Mark Rutland <mark.rutland@arm.com>
 
-Ah, right.  Consuming less memory / cachelines would still be a small
-advantage tho unless creating split TLB from larger mapping is
-noticeably less efficient.  If the extra logic to do that is small,
-which I think it'd be, it'd be a gain at almost no cost.
-
-Thanks.
-
--- 
-tejun
+> ---
+>  Documentation/devicetree/bindings/vendor-prefixes.txt |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> index 366ce9b..4cdfbe8 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -36,6 +36,7 @@ linux	Linux-specific binding
+>  lsi	LSI Corp. (LSI Logic)
+>  marvell	Marvell Technology Group Ltd.
+>  maxim	Maxim Integrated Products
+> +microchip	Microchip Technology Inc.
+>  mosaixtech	Mosaix Technologies, Inc.
+>  national	National Semiconductor
+>  nintendo	Nintendo
+> -- 
+> 1.7.10.4
+> 
+> 
