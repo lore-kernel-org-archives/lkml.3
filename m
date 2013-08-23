@@ -1,214 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab3HWRxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 13:53:39 -0400
-Received: from mout.gmx.net ([212.227.17.21]:54017 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755730Ab3HWRxh convert rfc822-to-8bit (ORCPT
+	id S932081Ab3HWRyH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 13:54:07 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:63707 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755905Ab3HWRyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 13:53:37 -0400
-Message-ID: <0a5435eea47406832bab660285067340.squirrel@192.168.178.250>
-In-Reply-To: <CALCETrUW8o=ssD3VD_Tb=jnJ006oAySJtZbgOuxgFdFKbA4Wyg@mail.gmail.com>
-References: <trinity-5320947e-cb3a-48ad-813e-70ea78b657a4-1377277158706@3capp-gmx-bs46>
-    <CALCETrUW8o=ssD3VD_Tb=jnJ006oAySJtZbgOuxgFdFKbA4Wyg@mail.gmail.com>
-Date: Fri, 23 Aug 2013 19:53:35 +0200
-Subject: Re: Re: question about ioremap_cache and PAT
-From: wernerandy@gmx.de
-To: "Andy Lutomirski" <luto@amacapital.net>
-Cc: "Andreas Werner" <wernerandy@gmx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.20
+	Fri, 23 Aug 2013 13:54:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-X-Priority: 3 (Normal)
-Importance: Normal
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:BpbEJsuDuhxaJU+8ePwcNan/TyP3IM/HAfi3O6qG91QeZXLlgdM
- Sc2Q4lWDEq11mqIz0jSbNTD7B7M0BXbMucRrGSPRq4ZFtyjHtd8/hw1rrm4GVPMCAGMOZer
- ABHDTjcqJN0Nn/N49crouHSW3RhXSKBQ3aTdSiW+7j8LG/zFiT38fBmToQ17ZDBI6XYQ8I8
- 6ayQXHxyv/qKYojTEad5g==
+In-Reply-To: <1376953494-9684-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1376953494-9684-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	<1376953494-9684-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Date: Fri, 23 Aug 2013 19:54:03 +0200
+Message-ID: <CACRpkdYvP6yCiQMQFpzaerrcvFug4rNWALPSDvkTidmz8_PovQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] gpio: pcf857x: Add OF support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Aug 23, 2013 at 9:59 AM, Andreas Werner <wernerandy@gmx.de> wrote:
->>
->>
->> Hi,
->> thank you for your answer.
->>
->> So we are two persons for now who need WT :-)
->>
->> Im currently working on an ethernet driver for our own ETH core.
->> The problem is that one requirement is to not use DMA to transmit or
->> receive the data.
->> This means the that the ethernet buffer are not located in the main
->> memory. They are located in
->> the FPGA.
->>
->> To transmit or receive a frame, i have to read or write to mmio to get
->> the data.
->>
->> Intel has introduced the command "clflush" which can flush a cache line.
->> I wanted to activate the caches for those mmio (eth buffer) to speed up
->> the transmit or receive.
->> After that the transfer over PCIe uses burst read/write.
->>
->> The problem was if i set the buffer to Write-Back and call clflush on
->> those mmio-addresses, the system crashed without any output.
->> I found this articel
->> http://software.intel.com/en-us/forums/topic/393070.[http://software.intel.com/en-us/forums/topic/393070]
->>
->> After that i configured the transmit buffer to be Write-Combining (only
->> write to that adresses) using ioremap_wc, and
->> the receive buffer to be Write-Through (ioremap_cache + mtrr Write-Back
->> + my Kernel Hack :-)) everything worked fine.
->> The other configuration Register on the FPGA are just mapped with
->> ioremap.
->
-> I'm curious: have you tried movntdqa on UC memory for this?
-> (Certainly WP or WT is easier.)
->
-> In any case, I hope to have patches to support WP and WT without using
-> PAT reasonably soon.
->
->>
->> On PCIe Tracer i can see the burst read/write on my device.
->>
->> Is it possible to get hits into the Kernel?
->>
->> My modification in arch/x86/mm/pat.c:
->>
->> --- pat.c.orig 2013-02-03 01:18:49.491879407 +0100
->> +++ pat.c 2013-02-03 01:19:19.053509836 +0100
->> @@ -149,10 +149,16 @@ static unsigned long pat_x_mtrr_type(u64
->>    u8 mtrr_type;
->>
->>    mtrr_type = mtrr_type_lookup(start, end);
->> -  if (mtrr_type != MTRR_TYPE_WRBACK)
->> +
->> +  if (mtrr_type == MTRR_TYPE_WRTHROUGH) {
->> +   return _PAGE_CACHE_WB;
->> +  }
->> +  else if( mtrr_type == MTRR_TYPE_WRBACK )
->> +   return _PAGE_CACHE_WB;
->> +  else
->>     return _PAGE_CACHE_UC_MINUS;
->> -
->> -  return _PAGE_CACHE_WB;
->> +
->>   }
->>
->>   return req_type;
->>
->
-> That seems more or less reasonable to me.  If you want it included,
-> send it to x86@kernel.org (cc lkml) and see what they say.
->
-> It would be prettier if you combined the conditions into a single
-> if/else, though.
->
->>
->> Best regards.
->>
->>
->> Gesendet: Montag, 12. August 2013 um 19:53 Uhr
->> Von: "Andy Lutomirski" <luto@amacapital.net>
->> An: "Andreas Werner" <wernerandy@gmx.de>
->> Cc: linux-kernel@vger.kernel.org
->> Betreff: Re: question about ioremap_cache and PAT
->> On 08/11/2013 09:50 AM, Andreas Werner wrote:
->>> Hi i have a question about ioremap_cache and the resulting PAT
->>> attribute on X86 system. If I configure the mtrr to Write-Through for
->>> an adress range, and call ioremap_cache to map the mmio, the resulting
->>> PAT attribute is set to UC.
->>> If I check the Intel document IA-32 SDM vol 3a, the resulting PAT
->>> attribute should be WB.
->>>
->>> I found the function pat_x_mtrr_type in arch/x86/mm/pat.c where the
->>> resulting attribute is returned. There will be always UC return expect
->>> if the MTRR is set to WB.
->>>
->>> Why is there only WB or UC returned? In the Intel document there are a
->>> lot of combinations "allowed".
->>>
->>> I need a Attribute of WT, so what i did is to modify the
->>> pat_x_mtrr_type function to return also WB if the MTRR is set to WT.
->>>
->>> Is this a solution to solve that or whats the reasion why the kernel
->>> doesn´t support this combination?
->>
->> The kernel doesn't support it because I'm apparently the only person who
->> ever wanted it and I haven't implemented it yet.
->>
->> This stuff is handled in hardware, so modifying the kernel's idea of
->> what hardware does won't do much. Also, the kernel using MTRRs is on
->> its (very slow) way out. You could probably hack something up, but I
->> can almost guarantee that hpa, etc won't accept the patches.
->>
->> That being said, I'm planning to support WT directly using PAT in the
->> near future. This will work on most recent cpus (there are errata that
->> will prevent use of the high PAT entries on some cpus).
->>
->> What do you need WT for? I want it for NVDIMMs, and all I need to get
->> started now is a heatsink*, so I'll hopefully start implementing this
->> stuff in the next week or so.
->>
->> --Andy
->>
->> * Damnit, Intel, it's not 2003 any more. You already figured out that
->> heatsinks want screw holes. But why couldn't you make sure that all
->> so-called "LGA 2011" sockets have the screw holes in the same place?
->>
->>
->>>
->>> Best regards
->>>
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> B
->>> A
->>> A
->>> A
->>> A
->>> A
->>> A
->>> A
->>> A
->>> A
->>> A
->>> A
->>> A
->>> A
->>> A
->>> A
->>> B
->>> B
->>> B
->>> Best regards
->>>
->>
->
->
->
-> --
-> Andy Lutomirski
-> AMA Capital Management, LLC
->
+On Tue, Aug 20, 2013 at 1:04 AM, Laurent Pinchart
+<laurent.pinchart+renesas@ideasonboard.com> wrote:
 
+> Add DT bindings for the pcf857x-compatible chips and parse the device
+> tree node in the driver.
+>
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
+I'm holding this until I get some reaction from the device tree reviewers,
+or until I get unpatient, whichever comes first. It looks good to me.
+
+Yours,
+Linus Walleij
