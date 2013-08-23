@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab3HWFBq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 01:01:46 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:37425 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab3HWFBp convert rfc822-to-8bit (ORCPT
+	id S1754649Ab3HWFCU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 01:02:20 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:49427 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971Ab3HWFCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 01:01:45 -0400
-From: Caizhiyong <caizhiyong@huawei.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>, "axboe@kernel.dk" <axboe@kernel.dk>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "kzak@redhat.com" <kzak@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "dedekind@infradead.org" <dedekind@infradead.org>
-CC: "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@huawei.com>
-Subject: RE: [PATCH -next] block: fix error return code in parse_parts()
-Thread-Topic: [PATCH -next] block: fix error return code in parse_parts()
-Thread-Index: AQHOn6stv1pAMo5jqU2AZ5C/F8qMuJmiOzQQ
-Date: Fri, 23 Aug 2013 04:58:39 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F1C0671B3@szxeml512-mbs.china.huawei.com>
-References: <CAPgLHd8HnGX_Sq2U4vh1H1E1tL1XFjwLS7=90xRobYuFkti7kw@mail.gmail.com>
-In-Reply-To: <CAPgLHd8HnGX_Sq2U4vh1H1E1tL1XFjwLS7=90xRobYuFkti7kw@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.18]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+	Fri, 23 Aug 2013 01:02:19 -0400
+Message-ID: <1377234132.12495.1.camel@phoenix>
+Subject: [PATCH] irqchip: sun4i: Don't write to read-only registers
+From: Axel Lin <axel.lin@ingics.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 23 Aug 2013 13:02:12 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Wei Yongjun [mailto:weiyj.lk@gmail.com]
-> Sent: Friday, August 23, 2013 10:48 AM
-> To: axboe@kernel.dk; akpm@linux-foundation.org; Caizhiyong; kzak@redhat.com;
-> mag@sysgo.de; dwmw2@infradead.org; computersforpeace@gmail.com;
-> dedekind@infradead.org
-> Cc: yongjun_wei@trendmicro.com.cn; linux-kernel@vger.kernel.org
-> Subject: [PATCH -next] block: fix error return code in parse_parts()
-> 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Fix to return -EINVAL in the parts parse error handling case instead
-> of 0(may overwrite to 0 by parse_subpart()), as done elsewhere in this
-> function.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  block/cmdline-parser.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/block/cmdline-parser.c b/block/cmdline-parser.c
-> index 18fb435..cc2637f 100644
-> --- a/block/cmdline-parser.c
-> +++ b/block/cmdline-parser.c
-> @@ -135,6 +135,7 @@ static int parse_parts(struct cmdline_parts **parts, const char
-> *bdevdef)
-> 
->  	if (!newparts->subpart) {
->  		pr_warn("cmdline partition has no valid partition.");
-> +		ret = -EINVAL;
+According to the datasheet[1], the Interrupt IRQ Pending Registers are
+read-only. The implementation of sun4i_irq_ack() is wrong because it writes
+to these read-only registers.
+
+This patch removes the wrong irq_ack callback implementation and all the code
+writing to these read-only registers in sun4i_of_init().
+
+[1] http://dl.linux-sunxi.org/A10/A10%20User%20Manual%20-%20v1.20%20%282012-04-09%2c%20DECRYPTED%29.pdf
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+Hi Thomas,
+This patch was sent on https://lkml.org/lkml/2013/7/6/59 with Maxime's Ack.
+And re-sent on https://lkml.org/lkml/2013/7/19/229
+I change the subject line as the patch does is to avoid writing to read-only
+registers.
+
+Axel
+ drivers/irqchip/irq-sun4i.c | 18 ------------------
+ 1 file changed, 18 deletions(-)
+
+diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+index a5438d8..29b75c0a 100644
+--- a/drivers/irqchip/irq-sun4i.c
++++ b/drivers/irqchip/irq-sun4i.c
+@@ -38,18 +38,6 @@ static struct irq_domain *sun4i_irq_domain;
+ 
+ static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
+ 
+-static void sun4i_irq_ack(struct irq_data *irqd)
+-{
+-	unsigned int irq = irqd_to_hwirq(irqd);
+-	unsigned int irq_off = irq % 32;
+-	int reg = irq / 32;
+-	u32 val;
+-
+-	val = readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
+-	writel(val | (1 << irq_off),
+-	       sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
+-}
+-
+ static void sun4i_irq_mask(struct irq_data *irqd)
+ {
+ 	unsigned int irq = irqd_to_hwirq(irqd);
+@@ -76,7 +64,6 @@ static void sun4i_irq_unmask(struct irq_data *irqd)
+ 
+ static struct irq_chip sun4i_irq_chip = {
+ 	.name		= "sun4i_irq",
+-	.irq_ack	= sun4i_irq_ack,
+ 	.irq_mask	= sun4i_irq_mask,
+ 	.irq_unmask	= sun4i_irq_unmask,
+ };
+@@ -114,11 +101,6 @@ static int __init sun4i_of_init(struct device_node *node,
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(1));
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(2));
+ 
+-	/* Clear all the pending interrupts */
+-	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(0));
+-	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(1));
+-	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(2));
+-
+ 	/* Enable protection mode */
+ 	writel(0x01, sun4i_irq_base + SUN4I_IRQ_PROTECTION_REG);
+ 
+-- 
+1.8.1.2
 
 
-Seems OK to me.
-
->  		goto fail;
->  	}
-> 
 
