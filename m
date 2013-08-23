@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab3HWCiC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Aug 2013 22:38:02 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:40830 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753950Ab3HWCiA (ORCPT
+	id S1754167Ab3HWCiS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Aug 2013 22:38:18 -0400
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:59340 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754098Ab3HWCiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 22:38:00 -0400
+	Thu, 22 Aug 2013 22:38:17 -0400
 From: Jisheng Zhang <jszhang@marvell.com>
 To: <jszhang@marvell.com>, <jason@lakedaemon.net>, <andrew@lunn.ch>,
         <gregory.clement@free-electrons.com>,
@@ -15,9 +15,9 @@ To: <jszhang@marvell.com>, <jason@lakedaemon.net>, <andrew@lunn.ch>,
         <sebastian.hesselbarth@gmail.com>, <linus.walleij@linaro.org>
 CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/4] bus: mvebu: add missing of_node_put() to fix reference leak
-Date: Fri, 23 Aug 2013 10:34:00 +0800
-Message-ID: <1377225242-5854-3-git-send-email-jszhang@marvell.com>
+Subject: [PATCH v2 3/4] clk: mvebu: add missing iounmap
+Date: Fri, 23 Aug 2013 10:34:01 +0800
+Message-ID: <1377225242-5854-4-git-send-email-jszhang@marvell.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1377225242-5854-1-git-send-email-jszhang@marvell.com>
 References: <1377225242-5854-1-git-send-email-jszhang@marvell.com>
@@ -27,39 +27,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_node_put to properly decrement the refcount when we are
-done using a given node.
+Add missing iounmap to setup error path.
 
+Change-Id: I4371569d14d7026aa9f90d7cd53f669d365fe26a
 Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 ---
- drivers/bus/mvebu-mbus.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/clk/mvebu/clk-cpu.c |  4 +++-
+ drivers/clk/mvebu/common.c  | 18 ++++++++++++------
+ 2 files changed, 15 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/bus/mvebu-mbus.c b/drivers/bus/mvebu-mbus.c
-index 33c6947..20da90f 100644
---- a/drivers/bus/mvebu-mbus.c
-+++ b/drivers/bus/mvebu-mbus.c
-@@ -837,6 +837,7 @@ int __init mvebu_mbus_init(const char *soc, phys_addr_t mbuswins_phys_base,
- {
- 	struct mvebu_mbus_state *mbus = &mbus_state;
- 	const struct of_device_id *of_id;
-+	struct device_node *np;
- 	int win;
+diff --git a/drivers/clk/mvebu/clk-cpu.c b/drivers/clk/mvebu/clk-cpu.c
+index b0fbc07..1466865 100644
+--- a/drivers/clk/mvebu/clk-cpu.c
++++ b/drivers/clk/mvebu/clk-cpu.c
+@@ -119,7 +119,7 @@ void __init of_cpu_clk_setup(struct device_node *node)
  
- 	for (of_id = of_mvebu_mbus_ids; of_id->compatible; of_id++)
-@@ -860,8 +861,11 @@ int __init mvebu_mbus_init(const char *soc, phys_addr_t mbuswins_phys_base,
- 		return -ENOMEM;
- 	}
+ 	cpuclk = kzalloc(ncpus * sizeof(*cpuclk), GFP_KERNEL);
+ 	if (WARN_ON(!cpuclk))
+-		return;
++		goto cpuclk_out;
  
--	if (of_find_compatible_node(NULL, NULL, "marvell,coherency-fabric"))
-+	np = of_find_compatible_node(NULL, NULL, "marvell,coherency-fabric");
-+	if (np) {
- 		mbus->hw_io_coherency = 1;
-+		of_node_put(np);
+ 	clks = kzalloc(ncpus * sizeof(*clks), GFP_KERNEL);
+ 	if (WARN_ON(!clks))
+@@ -170,6 +170,8 @@ bail_out:
+ 		kfree(cpuclk[ncpus].clk_name);
+ clks_out:
+ 	kfree(cpuclk);
++cpuclk_out:
++	iounmap(clock_complex_base);
+ }
+ 
+ CLK_OF_DECLARE(armada_xp_cpu_clock, "marvell,armada-xp-cpu-clock",
+diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
+index adaa4a1..25ceccf 100644
+--- a/drivers/clk/mvebu/common.c
++++ b/drivers/clk/mvebu/common.c
+@@ -45,8 +45,10 @@ void __init mvebu_coreclk_setup(struct device_node *np,
+ 	clk_data.clk_num = 2 + desc->num_ratios;
+ 	clk_data.clks = kzalloc(clk_data.clk_num * sizeof(struct clk *),
+ 				GFP_KERNEL);
+-	if (WARN_ON(!clk_data.clks))
++	if (WARN_ON(!clk_data.clks)) {
++		iounmap(base);
+ 		return;
 +	}
  
- 	for (win = 0; win < mbus->soc->num_wins; win++)
- 		mvebu_mbus_disable_window(mbus, win);
+ 	/* Register TCLK */
+ 	of_property_read_string_index(np, "clock-output-names", 0,
+@@ -134,7 +136,7 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
+ 
+ 	ctrl = kzalloc(sizeof(*ctrl), GFP_KERNEL);
+ 	if (WARN_ON(!ctrl))
+-		return;
++		goto ctrl_out;
+ 
+ 	spin_lock_init(&ctrl->lock);
+ 
+@@ -145,10 +147,8 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
+ 	ctrl->num_gates = n;
+ 	ctrl->gates = kzalloc(ctrl->num_gates * sizeof(struct clk *),
+ 			      GFP_KERNEL);
+-	if (WARN_ON(!ctrl->gates)) {
+-		kfree(ctrl);
+-		return;
+-	}
++	if (WARN_ON(!ctrl->gates))
++		goto gates_out;
+ 
+ 	for (n = 0; n < ctrl->num_gates; n++) {
+ 		const char *parent =
+@@ -160,4 +160,10 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
+ 	}
+ 
+ 	of_clk_add_provider(np, clk_gating_get_src, ctrl);
++
++	return;
++gates_out:
++	kfree(ctrl);
++ctrl_out:
++	iounmap(base);
+ }
 -- 
 1.8.4.rc3
 
