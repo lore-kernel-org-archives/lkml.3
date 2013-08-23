@@ -1,67 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383Ab3HWMzn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 08:55:43 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:54049 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552Ab3HWMzm (ORCPT
+	id S1755504Ab3HWMzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 08:55:53 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51031 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755445Ab3HWMzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 08:55:42 -0400
-From: navin patidar <navinp@cdac.in>
-To: gregkh@linuxfoundation.org
-Cc: dan.carpenter@oracle.com, maxtram95@gmail.com, viro@zeniv.linux.org.uk,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        navin patidar <navinp@cdac.in>
-Subject: [PATCH v2] staging: rtl8187se: Remove pt_regs * irq handler parameter
-Date: Fri, 23 Aug 2013 18:24:02 +0530
-Message-Id: <1377262442-20111-1-git-send-email-navinp@cdac.in>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 23 Aug 2013 08:55:51 -0400
+Date: Fri, 23 Aug 2013 08:55:33 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] tracing/events: Add bounce tracing to swiotbl-xen
+Message-ID: <20130823125533.GC14306@konrad-lan.dumpdata.com>
+References: <1377208048-8963-1-git-send-email-zoltan.kiss@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377208048-8963-1-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct pt_regs pointer is no longer passed as a irq handler
-argument.
+On Thu, Aug 22, 2013 at 10:47:28PM +0100, Zoltan Kiss wrote:
+> Ftrace is currently not able to detect when SWIOTLB has to do double buffering
+> under Xen. You can only see it indirectly in function_graph, when
+> xen_swiotlb_map_page() doesn't stop after range_straddles_page_boundary(), but
+> calls spinlock functions, memcpy() and xen_phys_to_bus() as well. This patch
+> introduces the swiotlb-xen:bounced event, which also prints out the following
+> informations to help you find out why bouncing happened:
+> 
+> dev_name: 0000:08:00.0 dma_mask=ffffffffffffffff dev_addr=9149f000 size=32768
+> swiotlb_force=0
+> 
+> If (dev_addr + size + 1) > dma_mask, the buffer is out of the device's DMA
+> range. If swiotlb_force == 1, you should really change the kernel parameters.
+> Otherwise, the buffer is not contiguous in mfn space.
 
-v2:
-remove rtl8180_interrupt cast to (void *) .
-
-Signed-off-by: navin patidar <navinp@cdac.in>
----
- drivers/staging/rtl8187se/r8180_core.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
-index ca69155..eee4fd3 100644
---- a/drivers/staging/rtl8187se/r8180_core.c
-+++ b/drivers/staging/rtl8187se/r8180_core.c
-@@ -197,7 +197,7 @@ inline void force_pci_posting(struct net_device *dev)
- 	mb();
- }
-
--irqreturn_t rtl8180_interrupt(int irq, void *netdev, struct pt_regs *regs);
-+static irqreturn_t rtl8180_interrupt(int irq, void *netdev);
- void set_nic_rxring(struct net_device *dev);
- void set_nic_txring(struct net_device *dev);
- static struct net_device_stats *rtl8180_stats(struct net_device *dev);
-@@ -2666,7 +2666,7 @@ short rtl8180_init(struct net_device *dev)
- 				  TX_BEACON_RING_ADDR))
- 		return -ENOMEM;
-
--	if (request_irq(dev->irq, (void *)rtl8180_interrupt, IRQF_SHARED, dev->name, dev)) {
-+	if (request_irq(dev->irq, rtl8180_interrupt, IRQF_SHARED, dev->name, dev)) {
- 		DMESGE("Error allocating IRQ %d", dev->irq);
- 		return -1;
- 	} else {
-@@ -3537,7 +3537,7 @@ void rtl8180_tx_isr(struct net_device *dev, int pri, short error)
- 	spin_unlock_irqrestore(&priv->tx_lock, flag);
- }
-
--irqreturn_t rtl8180_interrupt(int irq, void *netdev, struct pt_regs *regs)
-+irqreturn_t rtl8180_interrupt(int irq, void *netdev)
- {
- 	struct net_device *dev = (struct net_device *) netdev;
- 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
---
-1.7.10.4
-
+Could this be in the lib/swiotlb.c instead?
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> ---
+>  drivers/xen/swiotlb-xen.c          |    7 ++++++
+>  include/trace/events/swiotlb-xen.h |   46 ++++++++++++++++++++++++++++++++++++
+>  2 files changed, 53 insertions(+)
+>  create mode 100644 include/trace/events/swiotlb-xen.h
+> 
+> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> index aadffcf..f08440d 100644
+> --- a/drivers/xen/swiotlb-xen.c
+> +++ b/drivers/xen/swiotlb-xen.c
+> @@ -42,6 +42,10 @@
+>  #include <xen/page.h>
+>  #include <xen/xen-ops.h>
+>  #include <xen/hvc-console.h>
+> +
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/swiotlb-xen.h>
+> +
+>  /*
+>   * Used to do a quick range check in swiotlb_tbl_unmap_single and
+>   * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+> @@ -358,6 +362,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+>  	/*
+>  	 * Oh well, have to allocate and map a bounce buffer.
+>  	 */
+> +
+> +	trace_bounced(dev, dev_addr, size, swiotlb_force);
+> +
+>  	map = swiotlb_tbl_map_single(dev, start_dma_addr, phys, size, dir);
+>  	if (map == SWIOTLB_MAP_ERROR)
+>  		return DMA_ERROR_CODE;
+> diff --git a/include/trace/events/swiotlb-xen.h b/include/trace/events/swiotlb-xen.h
+> new file mode 100644
+> index 0000000..cbe2dca
+> --- /dev/null
+> +++ b/include/trace/events/swiotlb-xen.h
+> @@ -0,0 +1,46 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM swiotlb-xen
+> +
+> +#if !defined(_TRACE_SWIOTLBXEN_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_SWIOTLBXEN_H
+> +
+> +#include <linux/tracepoint.h>
+> +
+> +TRACE_EVENT(bounced,
+> +
+> +	TP_PROTO(struct device *dev,
+> +		 dma_addr_t dev_addr,
+> +		 size_t size,
+> +		 int swiotlb_force),
+> +
+> +	TP_ARGS(dev, dev_addr, size, swiotlb_force),
+> +
+> +	TP_STRUCT__entry(
+> +		__string(	dev_name,	dev_name(dev)	)
+> +		__field(	u64,	dma_mask		)
+> +		__field(	dma_addr_t,	dev_addr	)
+> +		__field(	size_t,	size			)
+> +		__field(	int,	swiotlb_force		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__assign_str(dev_name, dev_name(dev));
+> +		__entry->dma_mask = (dev->dma_mask ? *dev->dma_mask : 0);
+> +		__entry->dev_addr = dev_addr;
+> +		__entry->size = size;
+> +		__entry->swiotlb_force = swiotlb_force;
+> +	),
+> +
+> +	TP_printk("dev_name: %s dma_mask=%llx dev_addr=%llx "
+> +		"size=%zu swiotlb_force=%x",
+> +		__get_str(dev_name),
+> +		__entry->dma_mask,
+> +		(unsigned long long)__entry->dev_addr,
+> +		__entry->size,
+> +		__entry->swiotlb_force )
+> +);
+> +
+> +#endif /*  _TRACE_IRQ_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+> -- 
+> 1.7.9.5
+> 
