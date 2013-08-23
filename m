@@ -1,35 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab3HWEId (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 00:08:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49862 "EHLO
+	id S1754238Ab3HWEJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 00:09:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49868 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763Ab3HWEIb (ORCPT
+	with ESMTP id S1754145Ab3HWEJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 00:08:31 -0400
-Date: Thu, 22 Aug 2013 21:10:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Rui Xiang <rui.xiang@huawei.com>
-Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-rdma@vger.kernel.org, linux-usb@vger.kernel.org,
-        v9fs-developer@lists.sourceforge.net, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 0/2] fs: supply inode uid/gid setting interface
-Message-ID: <20130823041010.GA12296@kroah.com>
-References: <1377226118-43756-1-git-send-email-rui.xiang@huawei.com>
+	Fri, 23 Aug 2013 00:09:05 -0400
+Date: Thu, 22 Aug 2013 21:10:45 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Russ Anderson <rja@sgi.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH] [BUGFIX] drivers/base: fix show_mem_removable section
+ count
+Message-ID: <20130823041045.GB12296@kroah.com>
+References: <20130823023837.GA12396@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377226118-43756-1-git-send-email-rui.xiang@huawei.com>
+In-Reply-To: <20130823023837.GA12396@sgi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 10:48:36AM +0800, Rui Xiang wrote:
-> This patchset implements an accessor functions to set uid/gid
-> in inode struct. Just finish code clean up.
+On Thu, Aug 22, 2013 at 09:38:38PM -0500, Russ Anderson wrote:
+> "cat /sys/devices/system/memory/memory*/removable" crashed the system.
 
-Why?
+On what kernels?  linux-next or Linus's tree, or 3.10.y?
+
+thanks,
+
+greg k-h
