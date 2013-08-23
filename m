@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab3HWPGS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 11:06:18 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40855 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293Ab3HWPF4 (ORCPT
+	id S1754729Ab3HWPIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 11:08:15 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:49414 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752977Ab3HWPIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 11:05:56 -0400
-From: zwu.kernel@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: walken@google.com, akpm@linux-foundation.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH] rbtree: Add some necessary condition checks
-Date: Fri, 23 Aug 2013 23:03:13 +0800
-Message-Id: <1377270193-8710-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	Fri, 23 Aug 2013 11:08:13 -0400
+Message-ID: <52177AD7.1030709@linux.vnet.ibm.com>
+Date: Fri, 23 Aug 2013 17:08:07 +0200
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+To: Frantisek Hrbata <fhrbata@redhat.com>
+CC: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
+        Christophe Guillon <christophe.guillon@st.com>, rusty@rustcorp.com.au,
+        linux-arch@vger.kernel.org, arnd@arndb.de, mgahagan@redhat.com,
+        agospoda@redhat.com
+Subject: Re: [RFC PATCH 0/4] add support for gcov format introduced in gcc
+ 4.7
+References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com>
+In-Reply-To: <1377247176-13537-1-git-send-email-fhrbata@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082315-9332-0000-0000-000001303889
+x-cbid: 13082315-3548-0000-0000-00000656FD28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On 23.08.2013 10:39, Frantisek Hrbata wrote:
+> This is an attempt to bring support for modified gcov format in gcc 4.7 to
+> the kernel. It tries to leverage the existing layout/abstraction, which was
+> designed keeping in mind that the gcov format could change, but some changes had
+> to be make. Mostly because the current model does not take into account that
+> even the core gcov structures, like gcov_info, could change. One part that could
+> be problematic is the addition of the .init_array section for constructors.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- include/linux/rbtree_augmented.h | 3 ++-
- lib/rbtree.c                     | 3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+It appears that gcc 4.7 support for gcov-kernel is quite important to a
+number of people, at least that is what I derive from the fact that I
+now know of 3 people who've been working on this support separately from
+each other: you, myself (I've been close to posting my own version to
+LKML) and Christophe Guillon.
 
-diff --git a/include/linux/rbtree_augmented.h b/include/linux/rbtree_augmented.h
-index fea49b5..7d19770 100644
---- a/include/linux/rbtree_augmented.h
-+++ b/include/linux/rbtree_augmented.h
-@@ -199,7 +199,8 @@ __rb_erase_augmented(struct rb_node *node, struct rb_root *root,
- 		}
- 
- 		successor->rb_left = tmp = node->rb_left;
--		rb_set_parent(tmp, successor);
-+		if (tmp)
-+			rb_set_parent(tmp, successor);
- 
- 		pc = node->__rb_parent_color;
- 		tmp = __rb_parent(pc);
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index c0e31fe..329f2bc 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -226,7 +226,8 @@ ____rb_erase_color(struct rb_node *parent, struct rb_root *root,
- 				 */
- 				parent->rb_right = tmp1 = sibling->rb_left;
- 				sibling->rb_left = parent;
--				rb_set_parent_color(tmp1, parent, RB_BLACK);
-+				if (tmp1)
-+					rb_set_parent_color(tmp1, parent, RB_BLACK);
- 				__rb_rotate_set_parents(parent, sibling, root,
- 							RB_RED);
- 				augment_rotate(parent, sibling);
+It's apparent now that I made a mistake delaying the discussion of the
+effort for too long, but I think your posting the patches opens up a
+good opportunity to combine the best of all previous efforts.
+
+Most of your code looks very familiar. There's one feature missing though
+that Christophe brought up as a requirement: the ability for gcov-kernel
+to cope with kernel modules being compiled with GCC versions implementing
+a different gcov format (apparently this can happen in some embedded
+setups).
+
+Christophe proposed run-time version checking and a file-ops type function
+table which is chosen based on info->version. I found this approach
+somewhat intrusive and this would also not have covered the case where a
+new GCC versions was used to compile kernel modules for which the base
+kernel has no support. I tried to solve this requirement by combining
+two changes:
+
+1) make the gcov-format generated by gcov-kernel compile-time configurable
+2) separate the gcov-format specific code into a loadable kernel module
+
+This way, the gcov-format specific part of gcov-kernel could be replaced
+when working with a different version GCC. I'll post the corresponding
+patches as reply in another mail.
+
+Back to your patches: I tested them and they work fine on s390x when
+compiled with GCC 4.3.4 and 4.7.2. I'll provide some more specific
+comments as replies to your patch-mails.
+
+
+Regards,
+  Peter Oberparleiter
+
 -- 
-1.7.11.7
+Peter Oberparleiter
+Linux on System z Development - IBM Germany
 
