@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab3HWLcE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 07:32:04 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:61678 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab3HWLcC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 07:32:02 -0400
-From: navin patidar <navinp@cdac.in>
-To: gregkh@linuxfoundation.org
-Cc: maxtram95@gmail.com, viro@zeniv.linux.org.uk, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, navin patidar <navinp@cdac.in>
-Subject: [PATCH] staging: rtl8187se: Remove pt_regs * irq handler parameter
-Date: Fri, 23 Aug 2013 17:00:06 +0530
-Message-Id: <1377257406-16787-1-git-send-email-navinp@cdac.in>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755429Ab3HWLeE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 07:34:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38634 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754778Ab3HWLeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Aug 2013 07:34:02 -0400
+Date: Fri, 23 Aug 2013 13:34:00 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Robert Richter <rric@kernel.org>
+Cc: Vince Weaver <vince@deater.net>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Vince Weaver <vincent.weaver@maine.edu>
+Subject: Re: [PATCH v3 12/12] [RFC] perf, persistent: ioctl functions to
+ control persistency
+Message-ID: <20130823113400.GA20310@nazgul.tnic>
+References: <1377180807-12758-1-git-send-email-rric@kernel.org>
+ <1377180807-12758-13-git-send-email-rric@kernel.org>
+ <alpine.DEB.2.02.1308221404090.26486@pianoman.cluster.toy>
+ <20130823091128.GA19548@nazgul.tnic>
+ <20130823094556.GB10223@rric.localhost>
+ <20130823104441.GD10223@rric.localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130823104441.GD10223@rric.localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct pt_regs pointer is no longer passed as a irq handler
-argument.
+On Fri, Aug 23, 2013 at 12:44:41PM +0200, Robert Richter wrote:
+> On 23.08.13 11:45:56, Robert Richter wrote:
+> > On 23.08.13 11:11:28, Borislav Petkov wrote:
+> > > On Thu, Aug 22, 2013 at 02:18:06PM -0400, Vince Weaver wrote:
+> > > >   PERF_EVENT_IOC_MAKE_PERSISTENT
+> > > >   PERF_EVENT_IOC_UNPERSIST
+> 
+> Maybe this?
+> 
+>  PERF_EVENT_IOC_PERSIST
+>  PERF_EVENT_IOC_UNPERSIST
 
-Signed-off-by: navin patidar <navinp@cdac.in>
----
- drivers/staging/rtl8187se/r8180_core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+No, ATTACH/DETACH actually describes what you do with the fds and is
+most generic. "PERSIST*" is a special use case of attaching/detaching
+events.
 
-diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
-index ca69155..d722bed 100644
---- a/drivers/staging/rtl8187se/r8180_core.c
-+++ b/drivers/staging/rtl8187se/r8180_core.c
-@@ -197,7 +197,7 @@ inline void force_pci_posting(struct net_device *dev)
- 	mb();
- }
- 
--irqreturn_t rtl8180_interrupt(int irq, void *netdev, struct pt_regs *regs);
-+static irqreturn_t rtl8180_interrupt(int irq, void *netdev);
- void set_nic_rxring(struct net_device *dev);
- void set_nic_txring(struct net_device *dev);
- static struct net_device_stats *rtl8180_stats(struct net_device *dev);
-@@ -3537,7 +3537,7 @@ void rtl8180_tx_isr(struct net_device *dev, int pri, short error)
- 	spin_unlock_irqrestore(&priv->tx_lock, flag);
- }
- 
--irqreturn_t rtl8180_interrupt(int irq, void *netdev, struct pt_regs *regs)
-+irqreturn_t rtl8180_interrupt(int irq, void *netdev)
- {
- 	struct net_device *dev = (struct net_device *) netdev;
- 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
--- 
-1.7.10.4
-
+Thanks.
