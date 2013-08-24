@@ -1,131 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613Ab3HXTo2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 15:44:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43865 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755432Ab3HXToZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 15:44:25 -0400
-Date: Sat, 24 Aug 2013 21:44:13 +0200
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
-        rusty@rustcorp.com.au, linux-arch@vger.kernel.org, arnd@arndb.de,
-        mgahagan@redhat.com, agospoda@redhat.com
-Subject: Re: [RFC PATCH 3/4] gcov: compile specific gcov implementation based
- on gcc version
-Message-ID: <20130824194413.GB2365@localhost.localdomain>
-Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
-References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com>
- <1377247176-13537-4-git-send-email-fhrbata@redhat.com>
- <52177C87.4090003@linux.vnet.ibm.com>
- <52177DE8.6090704@linux.vnet.ibm.com>
+	id S1755608Ab3HXT54 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 15:57:56 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53120 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755451Ab3HXT5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 15:57:55 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <52191041.7040505@roeck-us.net>
+Date: Sat, 24 Aug 2013 12:57:53 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52177DE8.6090704@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Santos <daniel.santos@pobox.com>
+CC: danielfsantos@att.net, Linus Walleij <linus.walleij@linaro.org>,
+        linux-gpio@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpiolib: Fix crash when exporting non-existant gpio
+References: <1377370108-2867-1-git-send-email-daniel.santos@pobox.com>
+In-Reply-To: <1377370108-2867-1-git-send-email-daniel.santos@pobox.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 05:21:12PM +0200, Peter Oberparleiter wrote:
-> On 23.08.2013 17:15, Peter Oberparleiter wrote:
-> > On 23.08.2013 10:39, Frantisek Hrbata wrote:
-> >> Compile the correct gcov implementation file for a specific gcc version. In
-> >> the future, if another file is added, the conditions will need to be somehow
-> >> adjusted to if-elif-else case, but at this point the simple cc-ifversion should
-> >> be enough.
-> 
-> As promised, I'm also adding the patch that makes the format-specific part
-> of gcov-kernel a loadable kernel module:
-> 
+On 08/24/2013 11:48 AM, danielfsantos@att.net wrote:
+> I got this on an RPi and I can't find anything specific to that.
+> Besides, it's clearly wrong to try to access desc->chip when we have
+> just tested that it may be NULL at drivers/gpio/gpiolib.c:1409:
+>
+> 	chip = desc->chip;
+> 	if (chip == NULL)
+> 		goto done;
+>
+> ....
+>
+> done:
+> 	if (status)
+> 		pr_debug("_gpio_request: gpio-%d (%s) status %d\n",
+> 			 desc_to_gpio(desc), label ? : "?", status);
+>
+> To reproduce, just pick an invalid gpio nubmer and:
+>
+> echo -n 248 > /sys/class/gpio/export
+>
+> However, I wasn't able to reproduce it on my laptop, maybe because I
+> don't have any real gpio chips there, not sure.  More info on RPi bug
+> report: https://github.com/raspberrypi/linux/issues/364
+>
+> [  222.961384] Unable to handle kernel NULL pointer dereference at
+> virtual address 00000044
+> [  222.969486] pgd = d97d0000
+> [  222.972190] [00000044] *pgd=1aaca831, *pte=00000000, *ppte=00000000
+> [  222.978483] Internal error: Oops: 17 [#1] PREEMPT ARM
 > ---
-> kernel: gcov: make format-specific code loadable
-> 
-> Turn the format-specific part of gcov-kernel into a loadable kernel
-> module. This enables the use of gcov-kernel with kernel modules
-> that were compiled with a version of GCC that produces a different
-> gcov format when compared to the version of GCC that was used to
-> compile the kernel.
+>   drivers/gpio/gpiolib.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index d6413b2..e547f75f8b 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -136,7 +136,7 @@ static struct gpio_desc *gpio_to_desc(unsigned gpio)
+>    */
+>   static int desc_to_gpio(const struct gpio_desc *desc)
+>   {
+> -	return desc->chip->base + gpio_chip_hwgpio(desc);
+> +	return desc->chip ?  desc->chip->base + gpio_chip_hwgpio(desc) : -1;
+>   }
+>
 
-If I understand it correctly, this would mean that you will be able to use only
-one implementation of gcov format at the time. Meaning you will be able to get
-coverage data for module, but not for kernel if it was compiled with different
-gcc(gcda format). This is probably ok if you work only on your module, but I'm
-not sure this is generally the right approach. In this case I would probably
-rather see some support for more gcov formats at the same time(e.g. set of
-callback operations per gcov version). Again I'm probably missing something, but
-I still cannot see reason why to add such feature. If you want gcov support just
-compile your kernel and modules with the same gcc version(gcda format). But if
-this is really needed maybe it would be better to consider some parallel support
-for more gcov formats based on the gcov_info version.
+Looking into calling code, desc_to_gpio() is clearly not supposed to return an error,
+and it will result in odd behavior if it returns -1. For example, the resulting debug
+message of "gpio--1 (...) status ..." is not very useful.
 
-Would it be possible to add support for the modified gcc 4.7 gcov format and
-deal with this later? I can incorporate your changes: iter to use buffer,
-.init_array for modules and possibility to explicitly select the gcda format.
-In this case we will have at least the basic support in kernel. This is just me
-thinking out loud.
+It would make more sense to fix the calling code. You could for example
+validate in affected functions if the gpio pin exists by not only
+checking for desc but also for desc->chip. Another option might be
+to have gpio_to_desc() return NULL if desc->chip is NULL.
 
-Many thanks Peter!
+Guenter
 
-> 
-> Signed-off-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-> ---
->  kernel/gcov/Kconfig  |   19 +++++++++++++++++--
->  kernel/gcov/Makefile |    7 ++++---
->  2 files changed, 21 insertions(+), 5 deletions(-)
-> 
-> --- a/kernel/gcov/Kconfig
-> +++ b/kernel/gcov/Kconfig
-> @@ -29,8 +29,23 @@ config GCOV_KERNEL
->  	and:
->  	        GCOV_PROFILE := n
-> 
-> -	Note that the debugfs filesystem has to be mounted to access
-> -	profiling data.
-> +	Note that GCOV_KERNEL_FS has to specified as well and the debugfs
-> +	filesystem has to be mounted to access profiling data.
-> +
-> +config GCOV_KERNEL_FS
-> +	tristate "Provide gcov data files in debugfs"
-> +	depends on GCOV_KERNEL
-> +	default y
-> +	---help---
-> +	Make profiling data available in debugfs at /sys/kernel/debug/gcov.
-> +
-> +	Say M if you want to enable collecting coverage data for kernel modules
-> +	which are compiled using a gcc version different from the one that
-> +	was used to compile the kernel. In that case, re-compile the gcov
-> +	kernel module with corresponding format support and load that module
-> +	instead.
-> +
-> +	If unsure, say Y.
-> 
->  config GCOV_PROFILE_ALL
->  	bool "Profile entire Kernel"
-> --- a/kernel/gcov/Makefile
-> +++ b/kernel/gcov/Makefile
-> @@ -13,10 +13,11 @@ else
->    cc-ver := $(call cc-version)
->  endif
-> 
-> -obj-$(CONFIG_GCOV_KERNEL) := base.o fs.o
-> +obj-$(CONFIG_GCOV_KERNEL) += base.o
-> +obj-$(CONFIG_GCOV_KERNEL_FS) += gcov.o
-> 
->  ifeq ($(call if-lt, $(cc-ver), 0407),1)
-> -  obj-$(CONFIG_GCOV_KERNEL) += gcc_3_4.o
-> +  gcov-objs += fs.o gcc_3_4.o
->  else
-> -  obj-$(CONFIG_GCOV_KERNEL) += gcc_4_7.o
-> +  gcov-objs += fs.o gcc_4_7.o
->  endif
-> 
-> -- 
-> Peter Oberparleiter
-> Linux on System z Development - IBM Germany
-> 
 
--- 
-Frantisek Hrbata
