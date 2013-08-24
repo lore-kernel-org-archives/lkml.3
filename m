@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab3HXXdp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 19:33:45 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:59077 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755907Ab3HXXdo (ORCPT
+	id S1756073Ab3HXXhM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 19:37:12 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:46771 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755911Ab3HXXhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 19:33:44 -0400
-Date: Sat, 24 Aug 2013 16:33:41 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/15] Input: serio: convert bus code to use drv_groups
-Message-ID: <20130824233341.GC4454@core.coreip.homeip.net>
-References: <1377293081-10957-1-git-send-email-gregkh@linuxfoundation.org>
- <1377293081-10957-8-git-send-email-gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377293081-10957-8-git-send-email-gregkh@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 24 Aug 2013 19:37:10 -0400
+Message-ID: <1377387845.32763.149.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH-v2 06/12] target: Add memory allocation for
+ bidirectional commands
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Martin Petersen <martin.petersen@oracle.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Roland Dreier <roland@purestorage.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Date: Sat, 24 Aug 2013 16:44:05 -0700
+In-Reply-To: <20130824151817.GA15588@infradead.org>
+References: <1377147250-10125-1-git-send-email-nab@daterainc.com>
+	 <1377147250-10125-7-git-send-email-nab@daterainc.com>
+	 <20130824151817.GA15588@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 02:24:34PM -0700, Greg Kroah-Hartman wrote:
-> The drv_attrs field of struct bus_type is going away soon, drv_groups
-> should be used instead.  This converts the serio bus code to use the
-> correct field.
+On Sat, 2013-08-24 at 08:18 -0700, Christoph Hellwig wrote:
+> >  static int
+> > +transport_generic_get_mem_bidi(struct se_cmd *cmd)
 > 
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Except for the fields touched in struct se_cmd this is a duplication
+> of transport_generic_get_mem.  I'd suggest to factor that one into
+> a new helper:
+> 
+> static int
+> target_alloc_sgl(struct scatterlist **sgl, unsigned int **nents,
+> 		u32 length, gfp_t gfp_mask)
+> {
+> 	..
+> }
+> 
+> and then call that one from transport_generic_new_cmd directly,
 
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Sounds reasonable enough, doing that bit of refactoring now..
 
-Thanks.
+> including opencoding the actual BIDI case there as a first step.
+> 
 
--- 
-Dmitry
+Not sure why this needs to be opencoded for BIDI, instead of just doing
+target_alloc_sgl(&cmd->t_bidi_data_sg, ...) for the two SCF_BIDI ||
+SCF_COMPARE_AND_WRITE cases in transport_generic_new_cmd()..?
+
+--nab
+
