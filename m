@@ -1,333 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab3HXSPR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 14:15:17 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36088 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755080Ab3HXSPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 14:15:15 -0400
-Message-ID: <1377368111.1757.2.camel@joe-AO722>
-Subject: Re: [PATCH] USB2NET : SR9700 : One chip USB 1.1 USB2NET SR9700
- Device Driver Support
-From: Joe Perches <joe@perches.com>
-To: liujunliang_ljl@163.com
-Cc: davem@davemloft.net, horms@verge.net.au, romieu@fr.zoreil.com,
-        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sunhecheng@vip.126.com
-Date: Sat, 24 Aug 2013 11:15:11 -0700
-In-Reply-To: <1377343560-10524-1-git-send-email-liujunliang_ljl@163.com>
-References: <1377343560-10524-1-git-send-email-liujunliang_ljl@163.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755417Ab3HXS1N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 14:27:13 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:56026 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755245Ab3HXS1M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 14:27:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <1377358532-23802-2-git-send-email-ezequiel.garcia@free-electrons.com>
+References: <1377358532-23802-1-git-send-email-ezequiel.garcia@free-electrons.com>
+	<1377358532-23802-2-git-send-email-ezequiel.garcia@free-electrons.com>
+Date: Sat, 24 Aug 2013 20:27:10 +0200
+Message-ID: <CAFLxGvxLyGH1Xgq6=Y5Z9x=DtBmjWnE+x9X-65RKY1=8dhL_OA@mail.gmail.com>
+Subject: Re: [PATCH v4 1/4] lib: Introduce atomic MMIO modify
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Baruch Siach <baruch@tkos.co.il>,
+        Will Deacon <will.deacon@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some whitespace and neatening fixups.
-Some conversions from 4 indent tabs to normal tabs
+On Sat, Aug 24, 2013 at 5:35 PM, Ezequiel Garcia
+<ezequiel.garcia@free-electrons.com> wrote:
+> Some platforms have MMIO regions that are shared across orthogonal
+> subsystems. This commit implements a possible solution for the
+> thread-safe access of such regions through a spinlock-protected API.
+>
+> Concurrent access is protected with a single spinlock for the
+> entire MMIO address space. While this protects shared-registers,
+> it also serializes access to unrelated/unshared registers.
+>
+> Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> ---
+>  include/linux/io.h |  5 +++++
+>  lib/Makefile       |  2 +-
+>  lib/atomicio.c     | 27 +++++++++++++++++++++++++++
+>  3 files changed, 33 insertions(+), 1 deletion(-)
+>  create mode 100644 lib/atomicio.c
+>
+> diff --git a/include/linux/io.h b/include/linux/io.h
+> index f4f42fa..c331dcb 100644
+> --- a/include/linux/io.h
+> +++ b/include/linux/io.h
+> @@ -101,4 +101,9 @@ static inline void arch_phys_wc_del(int handle)
+>  #define arch_phys_wc_add arch_phys_wc_add
+>  #endif
+>
+> +#ifndef __HAVE_ARCH_ATOMIC_IO_MODIFY
+> +/* Atomic MMIO-wide IO modify */
+> +extern void atomic_io_modify(void __iomem *reg, u32 mask, u32 set);
+> +#endif
+> +
+>  #endif /* _LINUX_IO_H */
+> diff --git a/lib/Makefile b/lib/Makefile
+> index 7baccfd..695d6e2 100644
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+>          sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+>          proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+>          is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+> -        earlycpio.o percpu-refcount.o
+> +        earlycpio.o percpu-refcount.o atomicio.o
+>
+>  obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+>  lib-$(CONFIG_MMU) += ioremap.o
+> diff --git a/lib/atomicio.c b/lib/atomicio.c
+> new file mode 100644
+> index 0000000..1750f9d
+> --- /dev/null
+> +++ b/lib/atomicio.c
+> @@ -0,0 +1,27 @@
+> +#include <linux/io.h>
+> +#include <linux/spinlock.h>
+> +
+> +#ifndef __HAVE_ARCH_ATOMIC_IO_MODIFY
+> +/*
+> + * Generic atomic MMIO modify.
+> + *
+> + * Allows thread-safe access to registers shared by unrelated subsystems.
+> + * The access is protected by a single MMIO-wide lock.
+> + *
+> + * Optimized variants can be implemented on a per-architecture basis.
+> + */
+> +static DEFINE_RAW_SPINLOCK(__io_lock);
+> +void atomic_io_modify(void __iomem *reg, u32 mask, u32 set)
+> +{
+> +       unsigned long flags;
+> +       u32 value;
+> +
+> +       raw_spin_lock_irqsave(&__io_lock, flags);
+> +       value = readl(reg) & ~mask;
+> +       value |= (set & mask);
+> +       writel(value, reg);
+> +       raw_spin_unlock_irqrestore(&__io_lock, flags);
+> +
+> +}
+> +EXPORT_SYMBOL(atomic_io_modify);
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-Just doing this instead of commenting about spacing
-again.
+Why not the default case EXPORT_SYMBOL_GPL()?
 
- drivers/net/usb/sr9700.c | 127 +++++++++++++++++++++++++----------------------
- 1 file changed, 67 insertions(+), 60 deletions(-)
-
-diff --git a/drivers/net/usb/sr9700.c b/drivers/net/usb/sr9700.c
-index 27c86ec..4262b9d 100644
---- a/drivers/net/usb/sr9700.c
-+++ b/drivers/net/usb/sr9700.c
-@@ -29,7 +29,7 @@ static int sr_read(struct usbnet *dev, u8 reg, u16 length, void *data)
- 	int err;
- 
- 	err = usbnet_read_cmd(dev, SR_RD_REGS, SR_REQ_RD_REG,
--					0, reg, data, length);
-+			      0, reg, data, length);
- 	if ((err != length) && (err >= 0))
- 		err = -EINVAL;
- 	return err;
-@@ -40,7 +40,7 @@ static int sr_write(struct usbnet *dev, u8 reg, u16 length, void *data)
- 	int err;
- 
- 	err = usbnet_write_cmd(dev, SR_WR_REGS, SR_REQ_WR_REG,
--					0, reg, data, length);
-+			       0, reg, data, length);
- 	if ((err >= 0) && (err < length))
- 		err = -EINVAL;
- 	return err;
-@@ -54,19 +54,19 @@ static int sr_read_reg(struct usbnet *dev, u8 reg, u8 *value)
- static int sr_write_reg(struct usbnet *dev, u8 reg, u8 value)
- {
- 	return usbnet_write_cmd(dev, SR_WR_REGS, SR_REQ_WR_REG,
--					value, reg, NULL, 0);
-+				value, reg, NULL, 0);
- }
- 
- static void sr_write_async(struct usbnet *dev, u8 reg, u16 length, void *data)
- {
- 	usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
--					0, reg, data, length);
-+			       0, reg, data, length);
- }
- 
- static void sr_write_reg_async(struct usbnet *dev, u8 reg, u8 value)
- {
- 	usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
--					value, reg, NULL, 0);
-+			       value, reg, NULL, 0);
- }
- 
- static int wait_phy_eeprom_ready(struct usbnet *dev, int phy)
-@@ -89,7 +89,7 @@ static int wait_phy_eeprom_ready(struct usbnet *dev, int phy)
- 
- 	if (i >= SR_SHARE_TIMEOUT) {
- 		netdev_err(dev->net, "%s write timed out!\n",
--						phy ? "phy" : "eeprom");
-+			   phy ? "phy" : "eeprom");
- 		ret = -EIO;
- 		goto out;
- 	}
-@@ -98,7 +98,8 @@ out:
- 	return ret;
- }
- 
--static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg, __le16 *value)
-+static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg,
-+			      __le16 *value)
- {
- 	int ret;
- 
-@@ -115,14 +116,15 @@ static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg, __le16 *value
- 	ret = sr_read(dev, EPDR, 2, value);
- 
- 	netdev_dbg(dev->net, "read shared %d 0x%02x returned 0x%04x, %d\n",
--					phy, reg, *value, ret);
-+		   phy, reg, *value, ret);
- 
- out:
- 	mutex_unlock(&dev->phy_mutex);
- 	return ret;
- }
- 
--static int sr_share_write_word(struct usbnet *dev, int phy, u8 reg, __le16 value)
-+static int sr_share_write_word(struct usbnet *dev, int phy, u8 reg,
-+			       __le16 value)
- {
- 	int ret;
- 
-@@ -156,7 +158,8 @@ static int sr9700_get_eeprom_len(struct net_device *dev)
- 	return SR_EEPROM_LEN;
- }
- 
--static int sr9700_get_eeprom(struct net_device *net, struct ethtool_eeprom *eeprom, u8 *data)
-+static int sr9700_get_eeprom(struct net_device *net,
-+			     struct ethtool_eeprom *eeprom, u8 *data)
- {
- 	struct usbnet *dev = netdev_priv(net);
- 	__le16 *ebuf = (__le16 *)data;
-@@ -168,7 +171,8 @@ static int sr9700_get_eeprom(struct net_device *net, struct ethtool_eeprom *eepr
- 		return -EINVAL;
- 
- 	for (i = 0; i < eeprom->len / 2; i++)
--		ret = sr_read_eeprom_word(dev, eeprom->offset / 2 + i, &ebuf[i]);
-+		ret = sr_read_eeprom_word(dev, eeprom->offset / 2 + i,
-+					  &ebuf[i]);
- 
- 	return ret;
- }
-@@ -199,12 +203,13 @@ static int sr_mdio_read(struct net_device *netdev, int phy_id, int loc)
- 		res = le16_to_cpu(res) & ~BMSR_LSTATUS;
- 
- 	netdev_dbg(dev->net, "sr_mdio_read() phy_id=0x%02x, loc=0x%02x, returns=0x%04x\n",
--					phy_id, loc, res);
-+		   phy_id, loc, res);
- 
- 	return res;
- }
- 
--static void sr_mdio_write(struct net_device *netdev, int phy_id, int loc, int val)
-+static void sr_mdio_write(struct net_device *netdev, int phy_id, int loc,
-+			  int val)
- {
- 	struct usbnet *dev = netdev_priv(netdev);
- 	__le16 res = cpu_to_le16(val);
-@@ -215,7 +220,7 @@ static void sr_mdio_write(struct net_device *netdev, int phy_id, int loc, int va
- 	}
- 
- 	netdev_dbg(dev->net, "sr_mdio_write() phy_id=0x%02x, loc=0x%02x, val=0x%04x\n",
--					phy_id, loc, val);
-+		   phy_id, loc, val);
- 
- 	sr_share_write_word(dev, 1, loc, res);
- }
-@@ -242,15 +247,15 @@ static int sr9700_ioctl(struct net_device *net, struct ifreq *rq, int cmd)
- }
- 
- static const struct ethtool_ops sr9700_ethtool_ops = {
--		.get_drvinfo	= usbnet_get_drvinfo,
--		.get_link		= sr9700_get_link,
--		.get_msglevel	= usbnet_get_msglevel,
--		.set_msglevel	= usbnet_set_msglevel,
--		.get_eeprom_len	= sr9700_get_eeprom_len,
--		.get_eeprom		= sr9700_get_eeprom,
--		.get_settings	= usbnet_get_settings,
--		.set_settings	= usbnet_set_settings,
--		.nway_reset		= usbnet_nway_reset,
-+	.get_drvinfo	= usbnet_get_drvinfo,
-+	.get_link	= sr9700_get_link,
-+	.get_msglevel	= usbnet_get_msglevel,
-+	.set_msglevel	= usbnet_set_msglevel,
-+	.get_eeprom_len	= sr9700_get_eeprom_len,
-+	.get_eeprom	= sr9700_get_eeprom,
-+	.get_settings	= usbnet_get_settings,
-+	.set_settings	= usbnet_set_settings,
-+	.nway_reset	= usbnet_nway_reset,
- };
- 
- static void sr9700_set_multicast(struct net_device *net)
-@@ -269,7 +274,7 @@ static void sr9700_set_multicast(struct net_device *net)
- 	if (net->flags & IFF_PROMISC) {
- 		rx_ctl |= RCR_PRMSC;
- 	} else if (net->flags & IFF_ALLMULTI ||
--			  netdev_mc_count(net) > SR_MCAST_MAX) {
-+		   netdev_mc_count(net) > SR_MCAST_MAX) {
- 		rx_ctl |= RCR_RUNT;
- 	} else if (!netdev_mc_empty(net)) {
- 		struct netdev_hw_addr *ha;
-@@ -290,7 +295,7 @@ static int sr9700_set_mac_address(struct net_device *net, void *p)
- 
- 	if (!is_valid_ether_addr(addr->sa_data)) {
- 		netdev_err(net, "not setting invalid mac address %pM\n",
--						addr->sa_data);
-+			   addr->sa_data);
- 		return -EINVAL;
- 	}
- 
-@@ -301,15 +306,15 @@ static int sr9700_set_mac_address(struct net_device *net, void *p)
- }
- 
- static const struct net_device_ops sr9700_netdev_ops = {
--		.ndo_open			= usbnet_open,
--		.ndo_stop			= usbnet_stop,
--		.ndo_start_xmit		= usbnet_start_xmit,
--		.ndo_tx_timeout		= usbnet_tx_timeout,
--		.ndo_change_mtu		= usbnet_change_mtu,
--		.ndo_validate_addr	= eth_validate_addr,
--		.ndo_do_ioctl		= sr9700_ioctl,
--		.ndo_set_rx_mode	= sr9700_set_multicast,
--		.ndo_set_mac_address	= sr9700_set_mac_address,
-+	.ndo_open		= usbnet_open,
-+	.ndo_stop		= usbnet_stop,
-+	.ndo_start_xmit		= usbnet_start_xmit,
-+	.ndo_tx_timeout		= usbnet_tx_timeout,
-+	.ndo_change_mtu		= usbnet_change_mtu,
-+	.ndo_validate_addr	= eth_validate_addr,
-+	.ndo_do_ioctl		= sr9700_ioctl,
-+	.ndo_set_rx_mode	= sr9700_set_multicast,
-+	.ndo_set_mac_address	= sr9700_set_mac_address,
- };
- 
- static int sr9700_bind(struct usbnet *dev, struct usb_interface *intf)
-@@ -360,7 +365,8 @@ static int sr9700_bind(struct usbnet *dev, struct usb_interface *intf)
- 
- 	sr_mdio_write(dev->net, dev->mii.phy_id, MII_BMCR, BMCR_RESET);
- 	sr_mdio_write(dev->net, dev->mii.phy_id,
--					MII_ADVERTISE, ADVERTISE_ALL | ADVERTISE_CSMA | ADVERTISE_PAUSE_CAP);
-+		      (MII_ADVERTISE, ADVERTISE_ALL |
-+		       ADVERTISE_CSMA | ADVERTISE_PAUSE_CAP));
- 	mii_nway_restart(&dev->mii);
- 
- out:
-@@ -373,11 +379,11 @@ static int sr9700_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 	int len;
- 
- 	/* skb content (packets) format :
--	 *					p0			p1			p2	......	pm
--	 *			     /	  \
--	 *			/				\
--	 *		/							\
--	 *  /										\
-+	 *                    p0            p1            p2    ......    pm
-+	 *                 /      \
-+	 *            /                \
-+	 *        /                            \
-+	 *  /                                        \
- 	 * p0b0 p0b1 p0b2 p0b3 ...... p0b(n-4) p0b(n-3)...p0bn
- 	 *
- 	 * p0 : packet 0
-@@ -431,7 +437,8 @@ static int sr9700_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 	return 0;
- }
- 
--static struct sk_buff *sr9700_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t flags)
-+static struct sk_buff *sr9700_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
-+				       gfp_t flags)
- {
- 	int len;
- 
-@@ -508,40 +515,40 @@ static int sr9700_link_reset(struct usbnet *dev)
- 	mii_ethtool_gset(&dev->mii, &ecmd);
- 
- 	netdev_dbg(dev->net, "link_reset() speed: %d duplex: %d\n",
--					ecmd.speed, ecmd.duplex);
-+		   ecmd.speed, ecmd.duplex);
- 
- 	return 0;
- }
- 
- static const struct driver_info sr9700_driver_info = {
--		.description	= "CoreChip SR9700 USB Ethernet",
--		.flags		= FLAG_ETHER,
--		.bind		= sr9700_bind,
--		.rx_fixup	= sr9700_rx_fixup,
--		.tx_fixup	= sr9700_tx_fixup,
--		.status		= sr9700_status,
--		.link_reset	= sr9700_link_reset,
--		.reset		= sr9700_link_reset,
-+	.description	= "CoreChip SR9700 USB Ethernet",
-+	.flags		= FLAG_ETHER,
-+	.bind		= sr9700_bind,
-+	.rx_fixup	= sr9700_rx_fixup,
-+	.tx_fixup	= sr9700_tx_fixup,
-+	.status		= sr9700_status,
-+	.link_reset	= sr9700_link_reset,
-+	.reset		= sr9700_link_reset,
- };
- 
- static const struct usb_device_id products[] = {
- 	{
--	 USB_DEVICE(0x0fe6, 0x9700),	/* SR9700 device */
--	 .driver_info = (unsigned long)&sr9700_driver_info,
--	 },
-+		USB_DEVICE(0x0fe6, 0x9700),	/* SR9700 device */
-+		.driver_info = (unsigned long)&sr9700_driver_info,
-+	},
- 	{},			/* END */
- };
- 
- MODULE_DEVICE_TABLE(usb, products);
- 
- static struct usb_driver sr9700_usb_driver = {
--		.name = "sr9700",
--		.id_table = products,
--		.probe = usbnet_probe,
--		.disconnect = usbnet_disconnect,
--		.suspend = usbnet_suspend,
--		.resume = usbnet_resume,
--		.disable_hub_initiated_lpm = 1,
-+	.name		= "sr9700",
-+	.id_table	= products,
-+	.probe		= usbnet_probe,
-+	.disconnect	= usbnet_disconnect,
-+	.suspend	= usbnet_suspend,
-+	.resume		= usbnet_resume,
-+	.disable_hub_initiated_lpm = 1,
- };
- 
- module_usb_driver(sr9700_usb_driver);
-
-
+-- 
+Thanks,
+//richard
