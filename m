@@ -1,62 +1,32 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab3HVW5O (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 22 Aug 2013 18:57:14 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56753 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309Ab3HVW5E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Aug 2013 18:57:04 -0400
-Message-Id: <0fed3abba1286c59e51087efa02514d79e79ac14.1377202730.git.joshc@codeaurora.org>
-In-Reply-To: <cover.1377202730.git.joshc@codeaurora.org>
-References: <cover.1377202730.git.joshc@codeaurora.org>
-From: Josh Cartwright <joshc@codeaurora.org>
-Date: Mon, 10 Dec 2012 20:41:31 +0100
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH RFC v2 1/5] of: Add empty for_each_available_child_of_node() macro
- definition
+	id S1755146Ab3HXRj2 (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sat, 24 Aug 2013 13:39:28 -0400
+Received: from ns1.nurdns.com ([74.208.243.57]:57700 "HELO mail.nurdns.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750876Ab3HXRj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 13:39:27 -0400
+X-Greylist: delayed 3745 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Aug 2013 13:39:27 EDT
+Date: Sat, 24 Aug 2013 18:26:11 +0200
+From: ericnur@nur-realty.com
+X-Mailer: The Bat! (v3.98.4) UNREG
+Organization: fobos2006
+X-Priority: 3 (Normal)
+Message-ID: <5933837058.20130824183620@nur-realty.com>
+To: <tulikivi@tulikivi.fi>, <info@modelist143.ru>,
+        <linux-kernel@vger.kernel.org>, <waltercmarsh@aol.com>,
+        <hospedaria.anagri@vizzavi.net>
+Subject: =?koi8-r?Q?=CD=C1=D3=D4=C5=D2=D3=CB=C9=CA_=D0=D5=D4=D8_?=
+	=?koi8-r?Q?=D3=D0=C1=D3=D4=C9_=C7=CC=C1=DA=CB=C9_http=3A/?=
+	=?koi8-r?Q?/linkbox=2Ealtervista=2Eorg/743884?=
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="koi8-r";
+X-DBMail-PhysMessage-ID: 1429
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by spinics.net id r7OHdmNR029604
 
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-
-Add this empty macro definition so users can be compiled without
-excluding this macro call with preprocessor directives when CONFIG_OF
-is disabled.
-
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-This patch was first introduced in December @
-http://thread.gmane.org/gmane.linux.drivers.devicetree/26315
-
- include/linux/of.h | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 1fd08ca..fefffb3 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -369,6 +369,9 @@ static inline bool of_have_populated_dt(void)
- #define for_each_child_of_node(parent, child) \
- 	while (0)
- 
-+#define for_each_available_child_of_node(parent, child) \
-+	while (0)
-+
- static inline struct device_node *of_get_child_by_name(
- 					const struct device_node *node,
- 					const char *name)
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
-
+ èÏÒÏÛÉÊ ÓĞÏÓÏÂ ÓĞÁÓÔÉ ÇÌÁÚËÉ
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
