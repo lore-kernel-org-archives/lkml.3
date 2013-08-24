@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab3HXPVQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 11:21:16 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:33786 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755230Ab3HXPVM (ORCPT
+	id S1755463Ab3HXPVW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 11:21:22 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:50512 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230Ab3HXPVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 11:21:12 -0400
+	Sat, 24 Aug 2013 11:21:19 -0400
 From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
@@ -17,9 +17,9 @@ Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
         laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
         uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
         linux-sh@vger.kernel.org, s.nawrocki@samsung.com
-Subject: [PATCH v4 2/5] clkdev: Fix race condition in clock lookup from device tree
-Date: Sat, 24 Aug 2013 17:19:46 +0200
-Message-Id: <1377357589-13242-3-git-send-email-s.nawrocki@samsung.com>
+Subject: [PATCH v4 4/5] clk: Assign module owner of a clock being registered
+Date: Sat, 24 Aug 2013 17:19:48 +0200
+Message-Id: <1377357589-13242-5-git-send-email-s.nawrocki@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1377357589-13242-1-git-send-email-s.nawrocki@samsung.com>
 References: <1377357589-13242-1-git-send-email-s.nawrocki@samsung.com>
@@ -27,71 +27,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is currently a race condition in the device tree part of clk_get()
-function, since the pointer returned from of_clk_get_by_name() may become
-invalid before __clk_get() call. E.g. due to the clock provider driver
-remove() callback being called in between of_clk_get_by_name() and
-__clk_get().
-
-Fix this by doing both the look up and __clk_get() operations with the
-clock providers list mutex held. This ensures that the clock pointer
-returned from __of_clk_get_from_provider() call and passed to __clk_get()
-is valid, as long as the clock supplier module first removes its clock
-provider instance and then does clk_unregister() on the corresponding
-clocks.
+Assign module owner of a driver of a device passed to _clk_register()
+and __clk_register() functions so the module_{get,put} calls in
+__clk_get(), __clk_put() can have required effect.
 
 Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Reviewed-by: Mike Turquette <mturquette@linaro.org>
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
+Initially I had an 'owner' field added to struct clk_init_data so it can
+be set explicitly in clock providers.  But this required modifications
+of all users of (devm_)clk_register() as struct clk_init_data instance
+was in most cases an unitialized stack variable.  This would also require
+adding yet another argument to various clk_register_* functions
+registering the standard clocks.  So I went for assigning clk->owner from
+dev->driver->owner.  The disadvantages are that dereferencing dev->driver
+may be potentially unsafe when not holding struct device::mutex.  And
+there might be cases where clk->owner will need to be NULL.  One option
+is to set dev argument of clk_register_*() to NULL for that, but it
+predates devm_*.
 
-Changes since v2:
- - none.
-
-Changes since v1:
- - include "clk.h".
+Presumably a requirement could be added that callers of clk_register*()
+must ensure dev->driver won't change during a call to these functions ?
 ---
- drivers/clk/clkdev.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+ drivers/clk/clk.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 442a313..48f6721 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -21,6 +21,8 @@
- #include <linux/clkdev.h>
- #include <linux/of.h>
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 8ccc1cd..cf5765a 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1799,6 +1799,10 @@ struct clk *__clk_register(struct device *dev, struct clk_hw *hw)
+ 	clk->flags = hw->init->flags;
+ 	clk->parent_names = hw->init->parent_names;
+ 	clk->num_parents = hw->init->num_parents;
++	if (dev && dev->driver)
++		clk->owner = dev->driver->owner;
++	else
++		clk->owner = NULL;
  
-+#include "clk.h"
-+
- static LIST_HEAD(clocks);
- static DEFINE_MUTEX(clocks_mutex);
- 
-@@ -39,7 +41,13 @@ struct clk *of_clk_get(struct device_node *np, int index)
- 	if (rc)
- 		return ERR_PTR(rc);
- 
--	clk = of_clk_get_from_provider(&clkspec);
-+	of_clk_lock();
-+	clk = __of_clk_get_from_provider(&clkspec);
-+
-+	if (!IS_ERR(clk) && !__clk_get(clk))
-+		clk = ERR_PTR(-ENOENT);
-+
-+	of_clk_unlock();
- 	of_node_put(clkspec.np);
- 	return clk;
- }
-@@ -157,7 +165,7 @@ struct clk *clk_get(struct device *dev, const char *con_id)
- 
- 	if (dev) {
- 		clk = of_clk_get_by_name(dev->of_node, con_id);
--		if (!IS_ERR(clk) && __clk_get(clk))
-+		if (!IS_ERR(clk))
- 			return clk;
+ 	ret = __clk_init(dev, clk);
+ 	if (ret)
+@@ -1819,6 +1823,8 @@ static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
+ 		goto fail_name;
  	}
- 
+ 	clk->ops = hw->init->ops;
++	if (dev && dev->driver)
++		clk->owner = dev->driver->owner;
+ 	clk->hw = hw;
+ 	clk->flags = hw->init->flags;
+ 	clk->num_parents = hw->init->num_parents;
 -- 
 1.7.4.1
 
