@@ -1,52 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab3HXOjc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 10:39:32 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:59328 "EHLO hydra.sisk.pl"
+	id S1754935Ab3HXOq1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 10:46:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61965 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754587Ab3HXOjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 10:39:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/16] cpufreq: create & use cpufreq_generic_get() routine
-Date: Sat, 24 Aug 2013 16:50:11 +0200
-Message-ID: <3157592.DnWQ5yyNjd@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpokQkwYJBp=Bf7jOVk3MU-ziWtUCSyiX_f-JNzkt0F+-Dw@mail.gmail.com>
-References: <cover.1377272740.git.viresh.kumar@linaro.org> <2330969.4ermKsDahJ@vostro.rjw.lan> <CAKohpokQkwYJBp=Bf7jOVk3MU-ziWtUCSyiX_f-JNzkt0F+-Dw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754792Ab3HXOq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 10:46:26 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH] perf: Prevent race in unthrottling code
+Date: Sat, 24 Aug 2013 16:45:54 +0200
+Message-Id: <1377355554-8934-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, August 24, 2013 09:50:06 AM Viresh Kumar wrote:
-> On 24 August 2013 01:10, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Friday, August 23, 2013 09:20:35 PM Viresh Kumar wrote:
-> >> CPUFreq drivers that use clock frameworks interface,i.e. clk_get_rate(), to get
-> >> CPUs clk rate, has similar sort of code used for most of them.
-> >>
-> >> This patchset adds a generic ->get() which will do the same thing for them. All
-> >> those drivers are required to now is to set .get to cpufreq_generic_get() and
-> >> set their clk pointer in policy->clk during ->init().
-> >>
-> >> Later part of this patchset fixes 17 drivers with this change.
-> >>
-> >> That's part 7 of my generic cleanups for CPUFreq core, first six are here:
-> >
-> > And that's the last one for 3.13, right?
-> 
-> 3.13 is too far, can't promise that really :)
+The current throttling code triggers WARN below via following
+workload (only hit on AMD machine with 48 CPUs):
 
-OK, let me rephrase that more directly: Please, slow down.  Allow your previous
-changes to be integrated before you throw more of them at people.
+  # while [ 1 ]; do perf record perf bench sched messaging; done
 
-Thanks,
-Rafael
+  WARNING: at arch/x86/kernel/cpu/perf_event.c:1054 x86_pmu_start+0xc6/0x100()
+  SNIP
+  Call Trace:
+   <IRQ>  [<ffffffff815f62d6>] dump_stack+0x19/0x1b
+   [<ffffffff8105f531>] warn_slowpath_common+0x61/0x80
+   [<ffffffff8105f60a>] warn_slowpath_null+0x1a/0x20
+   [<ffffffff810213a6>] x86_pmu_start+0xc6/0x100
+   [<ffffffff81129dd2>] perf_adjust_freq_unthr_context.part.75+0x182/0x1a0
+   [<ffffffff8112a058>] perf_event_task_tick+0xc8/0xf0
+   [<ffffffff81093221>] scheduler_tick+0xd1/0x140
+   [<ffffffff81070176>] update_process_times+0x66/0x80
+   [<ffffffff810b9565>] tick_sched_handle.isra.15+0x25/0x60
+   [<ffffffff810b95e1>] tick_sched_timer+0x41/0x60
+   [<ffffffff81087c24>] __run_hrtimer+0x74/0x1d0
+   [<ffffffff810b95a0>] ? tick_sched_handle.isra.15+0x60/0x60
+   [<ffffffff81088407>] hrtimer_interrupt+0xf7/0x240
+   [<ffffffff81606829>] smp_apic_timer_interrupt+0x69/0x9c
+   [<ffffffff8160569d>] apic_timer_interrupt+0x6d/0x80
+   <EOI>  [<ffffffff81129f74>] ? __perf_event_task_sched_in+0x184/0x1a0
+   [<ffffffff814dd937>] ? kfree_skbmem+0x37/0x90
+   [<ffffffff815f2c47>] ? __slab_free+0x1ac/0x30f
+   [<ffffffff8118143d>] ? kfree+0xfd/0x130
+   [<ffffffff81181622>] kmem_cache_free+0x1b2/0x1d0
+   [<ffffffff814dd937>] kfree_skbmem+0x37/0x90
+   [<ffffffff814e03c4>] consume_skb+0x34/0x80
+   [<ffffffff8158b057>] unix_stream_recvmsg+0x4e7/0x820
+   [<ffffffff814d5546>] sock_aio_read.part.7+0x116/0x130
+   [<ffffffff8112c10c>] ? __perf_sw_event+0x19c/0x1e0
+   [<ffffffff814d5581>] sock_aio_read+0x21/0x30
+   [<ffffffff8119a5d0>] do_sync_read+0x80/0xb0
+   [<ffffffff8119ac85>] vfs_read+0x145/0x170
+   [<ffffffff8119b699>] SyS_read+0x49/0xa0
+   [<ffffffff810df516>] ? __audit_syscall_exit+0x1f6/0x2a0
+   [<ffffffff81604a19>] system_call_fastpath+0x16/0x1b
+  ---[ end trace 622b7e226c4a766a ]---
+
+The reason is race in perf_event_task_tick throttling code.
+The race flow (simplified code):
+
+  - perf_throttled_count is per cpu variable and is
+    CPU throttling flag, here starting with 0
+  - perf_throttled_seq is sequence/domain for allowed
+    count of interrupts within the tick, gets increased
+    each tick
+
+    on single CPU (CPU bounded event):
+
+      ... workload
+
+    perf_event_task_tick:
+    |
+    | T0    inc(perf_throttled_seq)
+    | T1    needs_unthr = xchg(perf_throttled_count, 0) == 0
+     tick gets interrupted:
+
+            ... event gets throttled under new seq ...
+
+      T2    last NMI comes, event is throttled - inc(perf_throttled_count)
+
+     back to tick:
+    | perf_adjust_freq_unthr_context:
+    |
+    | T3    unthrottling is skiped for event (needs_unthr == 0)
+    | T4    event is stop and started via freq adjustment
+    |
+    tick ends
+
+      ... workload
+      ... no sample is hit for event ...
+
+    perf_event_task_tick:
+    |
+    | T5    needs_unthr = xchg(perf_throttled_count, 0) != 0 (from T2)
+    | T6    unthrottling is done on event (interrupts == MAX_INTERRUPTS)
+    |       event is already started (from T4) -> WARN
+
+Fixing this by not checking needs_unthr again and thus
+check all events for unthrottling.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Reported-by: Jan Stancek <jstancek@redhat.com>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ kernel/events/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 928fae7..299d1f1 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2709,7 +2709,7 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
+ 
+ 		hwc = &event->hw;
+ 
+-		if (needs_unthr && hwc->interrupts == MAX_INTERRUPTS) {
++		if (hwc->interrupts == MAX_INTERRUPTS) {
+ 			hwc->interrupts = 0;
+ 			perf_log_throttle(event, 1);
+ 			event->pmu->start(event, 0);
+-- 
+1.7.11.7
 
