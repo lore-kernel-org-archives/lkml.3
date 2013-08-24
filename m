@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab3HXVjk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 17:39:40 -0400
-Received: from 3.mo2.mail-out.ovh.net ([46.105.58.226]:36385 "EHLO
+	id S1755962Ab3HXVl6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 17:41:58 -0400
+Received: from 2.mo2.mail-out.ovh.net ([188.165.53.149]:49884 "EHLO
 	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755578Ab3HXVji (ORCPT
+	with ESMTP id S1755782Ab3HXVl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 17:39:38 -0400
+	Sat, 24 Aug 2013 17:41:57 -0400
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -23,13 +23,13 @@ Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Boris BREZILLON <b.brezillon@overkiz.com>
 X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: [RFC PATCH 2/3] pinctrl: at91: add support for generic pinconf
-Date: Sat, 24 Aug 2013 23:37:39 +0200
-Message-Id: <1377380259-11290-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [RFC PATCH 3/3] ARM: at91/dt: move sama5 to generic pinconf
+Date: Sat, 24 Aug 2013 23:40:00 +0200
+Message-Id: <1377380400-11331-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com>
 References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 2884274087906015456
+X-Ovh-Tracer-Id: 2923399109810419936
 X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -43,484 +43,680 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for generic pin configuration to pinctrl-at91 driver.
+Add generic pinconf definitions and reference appropriate configs in
+atmel,pins properties.
 
 Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
- .../bindings/pinctrl/atmel,at91-pinctrl.txt        |   43 +++-
- drivers/pinctrl/Kconfig                            |    2 +-
- drivers/pinctrl/pinctrl-at91.c                     |  265 ++++++++++++++++++--
- 3 files changed, 289 insertions(+), 21 deletions(-)
+ arch/arm/boot/dts/sama5d3.dtsi    |  363 +++++++++++++++++++------------------
+ arch/arm/boot/dts/sama5d3xdm.dtsi |    2 +-
+ arch/arm/boot/dts/sama5d3xmb.dtsi |   12 +-
+ 3 files changed, 197 insertions(+), 180 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
-index 7ccae49..7a7c0c4 100644
---- a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
-@@ -18,7 +18,9 @@ mode) this pin can work on and the 'config' configures various pad settings
- such as pull-up, multi drive, etc.
+diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+index a1d5e25..3e38383 100644
+--- a/arch/arm/boot/dts/sama5d3.dtsi
++++ b/arch/arm/boot/dts/sama5d3.dtsi
+@@ -402,7 +402,7 @@
+ 			pinctrl@fffff200 {
+ 				#address-cells = <1>;
+ 				#size-cells = <1>;
+-				compatible = "atmel,at91sam9x5-pinctrl", "atmel,at91rm9200-pinctrl", "simple-bus";
++				compatible = "atmel,at91sam9x5-pinctrl", "atmel,at91rm9200-pinctrl", "generic-pinconf", "simple-bus";
+ 				ranges = <0xfffff200 0xfffff200 0xa00>;
+ 				atmel,mux-mask = <
+ 					/*   A          B          C  */
+@@ -413,206 +413,223 @@
+ 					0xffffffff 0xbf9f8000 0x18000000	/* pioE */
+ 					>;
  
- Required properties for iomux controller:
--- compatible: "atmel,at91rm9200-pinctrl"
-+- compatible: "atmel,at91rm9200-pinctrl" or "atmel,at91sam9x5-pinctrl".
-+  Add "generic-pinconf" to the compatible string list to use the generic pin
-+  configuration syntax.
- - atmel,mux-mask: array of mask (periph per bank) to describe if a pin can be
-   configured in this periph mode. All the periph and bank need to be describe.
++				pcfg_none: pcfg_none {
++					bias-disable;
++				};
++
++				pcfg_pull_up: pcfg_pull_up {
++					bias-pull-up;
++				};
++
++				pcfg_deglitch: pcfg_deglitch {
++					input-deglitch = <1>;
++				};
++
++				pcfg_pull_up_deglitch: pcfg_pull_up_deglitch {
++					bias-pull-up;
++					input-deglitch = <1>;
++				};
++
+ 				/* shared pinctrl settings */
+ 				adc0 {
+ 					pinctrl_adc0_adtrg: adc0_adtrg {
+ 						atmel,pins =
+-							<AT91_PIOD 19 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD19 periph A ADTRG */
++							<AT91_PIOD 19 AT91_PERIPH_A &pcfg_none>;	/* PD19 periph A ADTRG */
+ 					};
+ 					pinctrl_adc0_ad0: adc0_ad0 {
+ 						atmel,pins =
+-							<AT91_PIOD 20 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD20 periph A AD0 */
++							<AT91_PIOD 20 AT91_PERIPH_A &pcfg_none>;	/* PD20 periph A AD0 */
+ 					};
+ 					pinctrl_adc0_ad1: adc0_ad1 {
+ 						atmel,pins =
+-							<AT91_PIOD 21 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD21 periph A AD1 */
++							<AT91_PIOD 21 AT91_PERIPH_A &pcfg_none>;	/* PD21 periph A AD1 */
+ 					};
+ 					pinctrl_adc0_ad2: adc0_ad2 {
+ 						atmel,pins =
+-							<AT91_PIOD 22 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD22 periph A AD2 */
++							<AT91_PIOD 22 AT91_PERIPH_A &pcfg_none>;	/* PD22 periph A AD2 */
+ 					};
+ 					pinctrl_adc0_ad3: adc0_ad3 {
+ 						atmel,pins =
+-							<AT91_PIOD 23 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD23 periph A AD3 */
++							<AT91_PIOD 23 AT91_PERIPH_A &pcfg_none>;	/* PD23 periph A AD3 */
+ 					};
+ 					pinctrl_adc0_ad4: adc0_ad4 {
+ 						atmel,pins =
+-							<AT91_PIOD 24 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD24 periph A AD4 */
++							<AT91_PIOD 24 AT91_PERIPH_A &pcfg_none>;	/* PD24 periph A AD4 */
+ 					};
+ 					pinctrl_adc0_ad5: adc0_ad5 {
+ 						atmel,pins =
+-							<AT91_PIOD 25 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD25 periph A AD5 */
++							<AT91_PIOD 25 AT91_PERIPH_A &pcfg_none>;	/* PD25 periph A AD5 */
+ 					};
+ 					pinctrl_adc0_ad6: adc0_ad6 {
+ 						atmel,pins =
+-							<AT91_PIOD 26 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD26 periph A AD6 */
++							<AT91_PIOD 26 AT91_PERIPH_A &pcfg_none>;	/* PD26 periph A AD6 */
+ 					};
+ 					pinctrl_adc0_ad7: adc0_ad7 {
+ 						atmel,pins =
+-							<AT91_PIOD 27 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD27 periph A AD7 */
++							<AT91_PIOD 27 AT91_PERIPH_A &pcfg_none>;	/* PD27 periph A AD7 */
+ 					};
+ 					pinctrl_adc0_ad8: adc0_ad8 {
+ 						atmel,pins =
+-							<AT91_PIOD 28 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD28 periph A AD8 */
++							<AT91_PIOD 28 AT91_PERIPH_A &pcfg_none>;	/* PD28 periph A AD8 */
+ 					};
+ 					pinctrl_adc0_ad9: adc0_ad9 {
+ 						atmel,pins =
+-							<AT91_PIOD 29 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD29 periph A AD9 */
++							<AT91_PIOD 29 AT91_PERIPH_A &pcfg_none>;	/* PD29 periph A AD9 */
+ 					};
+ 					pinctrl_adc0_ad10: adc0_ad10 {
+ 						atmel,pins =
+-							<AT91_PIOD 30 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD30 periph A AD10, conflicts with PCK0 */
++							<AT91_PIOD 30 AT91_PERIPH_A &pcfg_none>;	/* PD30 periph A AD10, conflicts with PCK0 */
+ 					};
+ 					pinctrl_adc0_ad11: adc0_ad11 {
+ 						atmel,pins =
+-							<AT91_PIOD 31 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD31 periph A AD11, conflicts with PCK1 */
++							<AT91_PIOD 31 AT91_PERIPH_A &pcfg_none>;	/* PD31 periph A AD11, conflicts with PCK1 */
+ 					};
+ 				};
  
-@@ -83,6 +85,11 @@ Required properties for pin configuration node:
-   setting. The format is atmel,pins = <PIN_BANK PIN_BANK_NUM PERIPH CONFIG>.
-   The PERIPH 0 means gpio, PERIPH 1 is periph A, PERIPH 2 is periph B...
-   PIN_BANK 0 is pioA, PIN_BANK 1 is pioB...
-+  Dependending on the presence of the "generic-pinconf" string in the
-+  compatible property the 4th cell is:
-+   * a phandle referencing a generic pin config node (refer to
-+     pinctrl-bindings.txt)
-+   * an integer defining the pin config (see the following description)
+ 				can0 {
+ 					pinctrl_can0_rx_tx: can0_rx_tx {
+ 						atmel,pins =
+-							<AT91_PIOD 14 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PD14 periph C RX, conflicts with SCK0, SPI0_NPCS1 */
+-							 AT91_PIOD 15 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PD15 periph C TX, conflicts with CTS0, SPI0_NPCS2 */
++							<AT91_PIOD 14 AT91_PERIPH_C &pcfg_none	/* PD14 periph C RX, conflicts with SCK0, SPI0_NPCS1 */
++							 AT91_PIOD 15 AT91_PERIPH_C &pcfg_none>;	/* PD15 periph C TX, conflicts with CTS0, SPI0_NPCS2 */
+ 					};
+ 				};
  
- Bits used for CONFIG:
- PULL_UP		(1 << 0): indicate this pin need a pull up.
-@@ -132,6 +139,40 @@ pinctrl@fffff400 {
- 	};
- };
+ 				can1 {
+ 					pinctrl_can1_rx_tx: can1_rx_tx {
+ 						atmel,pins =
+-							<AT91_PIOB 14 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB14 periph B RX, conflicts with GCRS */
+-							 AT91_PIOB 15 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB15 periph B TX, conflicts with GCOL */
++							<AT91_PIOB 14 AT91_PERIPH_B &pcfg_none	/* PB14 periph B RX, conflicts with GCRS */
++							 AT91_PIOB 15 AT91_PERIPH_B &pcfg_none>;	/* PB15 periph B TX, conflicts with GCOL */
+ 					};
+ 				};
  
-+or
-+
-+pinctrl@fffff400 {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	ranges;
-+	compatible = "atmel,at91rm9200-pinctrl", "generic-pinconf", "simple-bus";
-+	reg = <0xfffff400 0x600>;
-+
-+	atmel,mux-mask = <
-+	      /*    A         B     */
-+	       0xffffffff 0xffc00c3b  /* pioA */
-+	       0xffffffff 0x7fff3ccf  /* pioB */
-+	       0xffffffff 0x007fffff  /* pioC */
-+	      >;
-+
-+	pcfg_none: pcfg_none {
-+		bias-disable;
-+	};
-+
-+	pcfg_pull_up: pcfg_pull_up {
-+		bias-pullup;
-+	};
-+
-+	/* shared pinctrl settings */
-+	dbgu {
-+		pinctrl_dbgu: dbgu-0 {
-+			atmel,pins =
-+				<1 14 0x1 &pcfg_none		/* PB14 periph A */
-+				 1 15 0x1 &pcfg_pull_up>;	/* PB15 periph A with pullup */
-+		};
-+	};
-+};
-+
- dbgu: serial@fffff200 {
- 	compatible = "atmel,at91sam9260-usart";
- 	reg = <0xfffff200 0x200>;
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index bdb1a87..55a4f2c 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -54,7 +54,7 @@ config PINCTRL_AT91
- 	depends on OF
- 	depends on ARCH_AT91
- 	select PINMUX
--	select PINCONF
-+	select GENERIC_PINCONF
- 	help
- 	  Say Y here to enable the at91 pinctrl driver
+ 				dbgu {
+ 					pinctrl_dbgu: dbgu-0 {
+ 						atmel,pins =
+-							<AT91_PIOB 30 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB30 periph A */
+-							 AT91_PIOB 31 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PB31 periph A with pullup */
++							<AT91_PIOB 30 AT91_PERIPH_A &pcfg_none	/* PB30 periph A */
++							 AT91_PIOB 31 AT91_PERIPH_A &pcfg_pull_up>;	/* PB31 periph A with pullup */
+ 					};
+ 				};
  
-diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-index 7cce066..1994dd2 100644
---- a/drivers/pinctrl/pinctrl-at91.c
-+++ b/drivers/pinctrl/pinctrl-at91.c
-@@ -23,6 +23,7 @@
- #include <linux/gpio.h>
- #include <linux/pinctrl/machine.h>
- #include <linux/pinctrl/pinconf.h>
-+#include <linux/pinctrl/pinconf-generic.h>
- #include <linux/pinctrl/pinctrl.h>
- #include <linux/pinctrl/pinmux.h>
- /* Since we request GPIOs from ourself */
-@@ -32,6 +33,7 @@
- #include <mach/at91_pio.h>
+ 				i2c0 {
+ 					pinctrl_i2c0: i2c0-0 {
+ 						atmel,pins =
+-							<AT91_PIOA 30 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA30 periph A TWD0 pin, conflicts with URXD1, ISI_VSYNC */
+-							 AT91_PIOA 31 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PA31 periph A TWCK0 pin, conflicts with UTXD1, ISI_HSYNC */
++							<AT91_PIOA 30 AT91_PERIPH_A &pcfg_none	/* PA30 periph A TWD0 pin, conflicts with URXD1, ISI_VSYNC */
++							 AT91_PIOA 31 AT91_PERIPH_A &pcfg_none>;	/* PA31 periph A TWCK0 pin, conflicts with UTXD1, ISI_HSYNC */
+ 					};
+ 				};
  
- #include "core.h"
-+#include "pinconf.h"
+ 				i2c1 {
+ 					pinctrl_i2c1: i2c1-0 {
+ 						atmel,pins =
+-							<AT91_PIOC 26 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC26 periph B TWD1 pin, conflicts with SPI1_NPCS1, ISI_D11 */
+-							 AT91_PIOC 27 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PC27 periph B TWCK1 pin, conflicts with SPI1_NPCS2, ISI_D10 */
++							<AT91_PIOC 26 AT91_PERIPH_B &pcfg_none	/* PC26 periph B TWD1 pin, conflicts with SPI1_NPCS1, ISI_D11 */
++							 AT91_PIOC 27 AT91_PERIPH_B &pcfg_none>;	/* PC27 periph B TWCK1 pin, conflicts with SPI1_NPCS2, ISI_D10 */
+ 					};
+ 				};
  
- #define MAX_NB_GPIO_PER_BANK	32
+ 				isi {
+ 					pinctrl_isi: isi-0 {
+ 						atmel,pins =
+-							<AT91_PIOA 16 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PA16 periph C ISI_D0, conflicts with LCDDAT16 */
+-							 AT91_PIOA 17 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PA17 periph C ISI_D1, conflicts with LCDDAT17 */
+-							 AT91_PIOA 18 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PA18 periph C ISI_D2, conflicts with LCDDAT18, TWD2 */
+-							 AT91_PIOA 19 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PA19 periph C ISI_D3, conflicts with LCDDAT19, TWCK2 */
+-							 AT91_PIOA 20 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PA20 periph C ISI_D4, conflicts with LCDDAT20, PWMH0 */
+-							 AT91_PIOA 21 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PA21 periph C ISI_D5, conflicts with LCDDAT21, PWML0 */
+-							 AT91_PIOA 22 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PA22 periph C ISI_D6, conflicts with LCDDAT22, PWMH1 */
+-							 AT91_PIOA 23 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PA23 periph C ISI_D7, conflicts with LCDDAT23, PWML1 */
+-							 AT91_PIOC 30 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC30 periph C ISI_PCK, conflicts with UTXD0 */
+-							 AT91_PIOA 31 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PA31 periph C ISI_HSYNC, conflicts with TWCK0, UTXD1 */
+-							 AT91_PIOA 30 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PA30 periph C ISI_VSYNC, conflicts with TWD0, URXD1 */
+-							 AT91_PIOC 29 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC29 periph C ISI_PD8, conflicts with URXD0, PWMFI2 */
+-							 AT91_PIOC 28 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PC28 periph C ISI_PD9, conflicts with SPI1_NPCS3, PWMFI0 */
++							<AT91_PIOA 16 AT91_PERIPH_C &pcfg_none	/* PA16 periph C ISI_D0, conflicts with LCDDAT16 */
++							 AT91_PIOA 17 AT91_PERIPH_C &pcfg_none	/* PA17 periph C ISI_D1, conflicts with LCDDAT17 */
++							 AT91_PIOA 18 AT91_PERIPH_C &pcfg_none	/* PA18 periph C ISI_D2, conflicts with LCDDAT18, TWD2 */
++							 AT91_PIOA 19 AT91_PERIPH_C &pcfg_none	/* PA19 periph C ISI_D3, conflicts with LCDDAT19, TWCK2 */
++							 AT91_PIOA 20 AT91_PERIPH_C &pcfg_none	/* PA20 periph C ISI_D4, conflicts with LCDDAT20, PWMH0 */
++							 AT91_PIOA 21 AT91_PERIPH_C &pcfg_none	/* PA21 periph C ISI_D5, conflicts with LCDDAT21, PWML0 */
++							 AT91_PIOA 22 AT91_PERIPH_C &pcfg_none	/* PA22 periph C ISI_D6, conflicts with LCDDAT22, PWMH1 */
++							 AT91_PIOA 23 AT91_PERIPH_C &pcfg_none	/* PA23 periph C ISI_D7, conflicts with LCDDAT23, PWML1 */
++							 AT91_PIOC 30 AT91_PERIPH_C &pcfg_none	/* PC30 periph C ISI_PCK, conflicts with UTXD0 */
++							 AT91_PIOA 31 AT91_PERIPH_C &pcfg_none	/* PA31 periph C ISI_HSYNC, conflicts with TWCK0, UTXD1 */
++							 AT91_PIOA 30 AT91_PERIPH_C &pcfg_none	/* PA30 periph C ISI_VSYNC, conflicts with TWD0, URXD1 */
++							 AT91_PIOC 29 AT91_PERIPH_C &pcfg_none	/* PC29 periph C ISI_PD8, conflicts with URXD0, PWMFI2 */
++							 AT91_PIOC 28 AT91_PERIPH_C &pcfg_none>;	/* PC28 periph C ISI_PD9, conflicts with SPI1_NPCS3, PWMFI0 */
+ 					};
+ 					pinctrl_isi_pck_as_mck: isi_pck_as_mck-0 {
+ 						atmel,pins =
+-							<AT91_PIOD 31 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PD31 periph B ISI_MCK */
++							<AT91_PIOD 31 AT91_PERIPH_B &pcfg_none>;	/* PD31 periph B ISI_MCK */
+ 					};
+ 				};
  
-@@ -85,6 +87,21 @@ enum at91_mux {
- 	AT91_MUX_PERIPH_D = 4,
- };
+ 				lcd {
+ 					pinctrl_lcd: lcd-0 {
+ 						atmel,pins =
+-							<AT91_PIOA 24 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA24 periph A LCDPWM */
+-							 AT91_PIOA 26 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA26 periph A LCDVSYNC */
+-							 AT91_PIOA 27 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA27 periph A LCDHSYNC */
+-							 AT91_PIOA 25 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA25 periph A LCDDISP */
+-							 AT91_PIOA 29 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA29 periph A LCDDEN */
+-							 AT91_PIOA 28 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA28 periph A LCDPCK */
+-							 AT91_PIOA 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA0 periph A LCDD0 pin */
+-							 AT91_PIOA 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA1 periph A LCDD1 pin */
+-							 AT91_PIOA 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA2 periph A LCDD2 pin */
+-							 AT91_PIOA 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA3 periph A LCDD3 pin */
+-							 AT91_PIOA 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA4 periph A LCDD4 pin */
+-							 AT91_PIOA 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA5 periph A LCDD5 pin */
+-							 AT91_PIOA 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA6 periph A LCDD6 pin */
+-							 AT91_PIOA 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA7 periph A LCDD7 pin */
+-							 AT91_PIOA 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA8 periph A LCDD8 pin */
+-							 AT91_PIOA 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA9 periph A LCDD9 pin */
+-							 AT91_PIOA 10 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA10 periph A LCDD10 pin */
+-							 AT91_PIOA 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA11 periph A LCDD11 pin */
+-							 AT91_PIOA 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA12 periph A LCDD12 pin */
+-							 AT91_PIOA 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA13 periph A LCDD13 pin */
+-							 AT91_PIOA 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA14 periph A LCDD14 pin */
+-							 AT91_PIOA 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA15 periph A LCDD15 pin */
+-							 AT91_PIOC 14 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC14 periph C LCDD16 pin */
+-							 AT91_PIOC 13 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC13 periph C LCDD17 pin */
+-							 AT91_PIOC 12 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC12 periph C LCDD18 pin */
+-							 AT91_PIOC 11 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC11 periph C LCDD19 pin */
+-							 AT91_PIOC 10 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC10 periph C LCDD20 pin */
+-							 AT91_PIOC 15 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC15 periph C LCDD21 pin */
+-							 AT91_PIOE 27 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PE27 periph C LCDD22 pin */
+-							 AT91_PIOE 28 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PE28 periph C LCDD23 pin */
++							<AT91_PIOA 24 AT91_PERIPH_A &pcfg_none	/* PA24 periph A LCDPWM */
++							 AT91_PIOA 26 AT91_PERIPH_A &pcfg_none	/* PA26 periph A LCDVSYNC */
++							 AT91_PIOA 27 AT91_PERIPH_A &pcfg_none	/* PA27 periph A LCDHSYNC */
++							 AT91_PIOA 25 AT91_PERIPH_A &pcfg_none	/* PA25 periph A LCDDISP */
++							 AT91_PIOA 29 AT91_PERIPH_A &pcfg_none	/* PA29 periph A LCDDEN */
++							 AT91_PIOA 28 AT91_PERIPH_A &pcfg_none	/* PA28 periph A LCDPCK */
++							 AT91_PIOA 0 AT91_PERIPH_A &pcfg_none	/* PA0 periph A LCDD0 pin */
++							 AT91_PIOA 1 AT91_PERIPH_A &pcfg_none	/* PA1 periph A LCDD1 pin */
++							 AT91_PIOA 2 AT91_PERIPH_A &pcfg_none	/* PA2 periph A LCDD2 pin */
++							 AT91_PIOA 3 AT91_PERIPH_A &pcfg_none	/* PA3 periph A LCDD3 pin */
++							 AT91_PIOA 4 AT91_PERIPH_A &pcfg_none	/* PA4 periph A LCDD4 pin */
++							 AT91_PIOA 5 AT91_PERIPH_A &pcfg_none	/* PA5 periph A LCDD5 pin */
++							 AT91_PIOA 6 AT91_PERIPH_A &pcfg_none	/* PA6 periph A LCDD6 pin */
++							 AT91_PIOA 7 AT91_PERIPH_A &pcfg_none	/* PA7 periph A LCDD7 pin */
++							 AT91_PIOA 8 AT91_PERIPH_A &pcfg_none	/* PA8 periph A LCDD8 pin */
++							 AT91_PIOA 9 AT91_PERIPH_A &pcfg_none	/* PA9 periph A LCDD9 pin */
++							 AT91_PIOA 10 AT91_PERIPH_A &pcfg_none	/* PA10 periph A LCDD10 pin */
++							 AT91_PIOA 11 AT91_PERIPH_A &pcfg_none	/* PA11 periph A LCDD11 pin */
++							 AT91_PIOA 12 AT91_PERIPH_A &pcfg_none	/* PA12 periph A LCDD12 pin */
++							 AT91_PIOA 13 AT91_PERIPH_A &pcfg_none	/* PA13 periph A LCDD13 pin */
++							 AT91_PIOA 14 AT91_PERIPH_A &pcfg_none	/* PA14 periph A LCDD14 pin */
++							 AT91_PIOA 15 AT91_PERIPH_A &pcfg_none	/* PA15 periph A LCDD15 pin */
++							 AT91_PIOC 14 AT91_PERIPH_C &pcfg_none	/* PC14 periph C LCDD16 pin */
++							 AT91_PIOC 13 AT91_PERIPH_C &pcfg_none	/* PC13 periph C LCDD17 pin */
++							 AT91_PIOC 12 AT91_PERIPH_C &pcfg_none	/* PC12 periph C LCDD18 pin */
++							 AT91_PIOC 11 AT91_PERIPH_C &pcfg_none	/* PC11 periph C LCDD19 pin */
++							 AT91_PIOC 10 AT91_PERIPH_C &pcfg_none	/* PC10 periph C LCDD20 pin */
++							 AT91_PIOC 15 AT91_PERIPH_C &pcfg_none	/* PC15 periph C LCDD21 pin */
++							 AT91_PIOE 27 AT91_PERIPH_C &pcfg_none	/* PE27 periph C LCDD22 pin */
++							 AT91_PIOE 28 AT91_PERIPH_C &pcfg_none>;	/* PE28 periph C LCDD23 pin */
+ 					};
+ 				};
  
-+struct at91_generic_pinconf {
-+	unsigned long	*configs;
-+	unsigned int	nconfigs;
-+};
-+
-+enum at91_pinconf_type {
-+	AT91_PINCONF_NATIVE,
-+	AT91_PINCONF_GENERIC,
-+};
-+
-+union at91_pinconf {
-+	unsigned long			native;
-+	struct at91_generic_pinconf	generic;
-+};
-+
- /**
-  * struct at91_pmx_pin - describes an At91 pin mux
-  * @bank: the bank of the pin
-@@ -93,10 +110,11 @@ enum at91_mux {
-  * @conf: the configuration of the pin: PULL_UP, MULTIDRIVE etc...
-  */
- struct at91_pmx_pin {
--	uint32_t	bank;
--	uint32_t	pin;
--	enum at91_mux	mux;
--	unsigned long	conf;
-+	uint32_t		bank;
-+	uint32_t		pin;
-+	enum at91_mux		mux;
-+	enum at91_pinconf_type	conftype;
-+	union at91_pinconf	conf;
- };
+ 				macb0 {
+ 					pinctrl_macb0_data_rgmii: macb0_data_rgmii {
+ 						atmel,pins =
+-							<AT91_PIOB 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB0 periph A GTX0, conflicts with PWMH0 */
+-							 AT91_PIOB 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB1 periph A GTX1, conflicts with PWML0 */
+-							 AT91_PIOB 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB2 periph A GTX2, conflicts with TK1 */
+-							 AT91_PIOB 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB3 periph A GTX3, conflicts with TF1 */
+-							 AT91_PIOB 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB4 periph A GRX0, conflicts with PWMH1 */
+-							 AT91_PIOB 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB5 periph A GRX1, conflicts with PWML1 */
+-							 AT91_PIOB 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB6 periph A GRX2, conflicts with TD1 */
+-							 AT91_PIOB 7 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PB7 periph A GRX3, conflicts with RK1 */
++							<AT91_PIOB 0 AT91_PERIPH_A &pcfg_none	/* PB0 periph A GTX0, conflicts with PWMH0 */
++							 AT91_PIOB 1 AT91_PERIPH_A &pcfg_none	/* PB1 periph A GTX1, conflicts with PWML0 */
++							 AT91_PIOB 2 AT91_PERIPH_A &pcfg_none	/* PB2 periph A GTX2, conflicts with TK1 */
++							 AT91_PIOB 3 AT91_PERIPH_A &pcfg_none	/* PB3 periph A GTX3, conflicts with TF1 */
++							 AT91_PIOB 4 AT91_PERIPH_A &pcfg_none	/* PB4 periph A GRX0, conflicts with PWMH1 */
++							 AT91_PIOB 5 AT91_PERIPH_A &pcfg_none	/* PB5 periph A GRX1, conflicts with PWML1 */
++							 AT91_PIOB 6 AT91_PERIPH_A &pcfg_none	/* PB6 periph A GRX2, conflicts with TD1 */
++							 AT91_PIOB 7 AT91_PERIPH_A &pcfg_none>;	/* PB7 periph A GRX3, conflicts with RK1 */
+ 					};
+ 					pinctrl_macb0_data_gmii: macb0_data_gmii {
+ 						atmel,pins =
+-							<AT91_PIOB 19 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB19 periph B GTX4, conflicts with MCI1_CDA */
+-							 AT91_PIOB 20 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB20 periph B GTX5, conflicts with MCI1_DA0 */
+-							 AT91_PIOB 21 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB21 periph B GTX6, conflicts with MCI1_DA1 */
+-							 AT91_PIOB 22 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB22 periph B GTX7, conflicts with MCI1_DA2 */
+-							 AT91_PIOB 23 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB23 periph B GRX4, conflicts with MCI1_DA3 */
+-							 AT91_PIOB 24 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB24 periph B GRX5, conflicts with MCI1_CK */
+-							 AT91_PIOB 25 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB25 periph B GRX6, conflicts with SCK1 */
+-							 AT91_PIOB 26 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB26 periph B GRX7, conflicts with CTS1 */
++							<AT91_PIOB 19 AT91_PERIPH_B &pcfg_none	/* PB19 periph B GTX4, conflicts with MCI1_CDA */
++							 AT91_PIOB 20 AT91_PERIPH_B &pcfg_none	/* PB20 periph B GTX5, conflicts with MCI1_DA0 */
++							 AT91_PIOB 21 AT91_PERIPH_B &pcfg_none	/* PB21 periph B GTX6, conflicts with MCI1_DA1 */
++							 AT91_PIOB 22 AT91_PERIPH_B &pcfg_none	/* PB22 periph B GTX7, conflicts with MCI1_DA2 */
++							 AT91_PIOB 23 AT91_PERIPH_B &pcfg_none	/* PB23 periph B GRX4, conflicts with MCI1_DA3 */
++							 AT91_PIOB 24 AT91_PERIPH_B &pcfg_none	/* PB24 periph B GRX5, conflicts with MCI1_CK */
++							 AT91_PIOB 25 AT91_PERIPH_B &pcfg_none	/* PB25 periph B GRX6, conflicts with SCK1 */
++							 AT91_PIOB 26 AT91_PERIPH_B &pcfg_none>;	/* PB26 periph B GRX7, conflicts with CTS1 */
+ 					};
+ 					pinctrl_macb0_signal_rgmii: macb0_signal_rgmii {
+ 						atmel,pins =
+-							<AT91_PIOB 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB8 periph A GTXCK, conflicts with PWMH2 */
+-							 AT91_PIOB 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB9 periph A GTXEN, conflicts with PWML2 */
+-							 AT91_PIOB 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB11 periph A GRXCK, conflicts with RD1 */
+-							 AT91_PIOB 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB13 periph A GRXER, conflicts with PWML3 */
+-							 AT91_PIOB 16 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB16 periph A GMDC */
+-							 AT91_PIOB 17 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB17 periph A GMDIO */
+-							 AT91_PIOB 18 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PB18 periph A G125CK */
++							<AT91_PIOB 8 AT91_PERIPH_A &pcfg_none	/* PB8 periph A GTXCK, conflicts with PWMH2 */
++							 AT91_PIOB 9 AT91_PERIPH_A &pcfg_none	/* PB9 periph A GTXEN, conflicts with PWML2 */
++							 AT91_PIOB 11 AT91_PERIPH_A &pcfg_none	/* PB11 periph A GRXCK, conflicts with RD1 */
++							 AT91_PIOB 13 AT91_PERIPH_A &pcfg_none	/* PB13 periph A GRXER, conflicts with PWML3 */
++							 AT91_PIOB 16 AT91_PERIPH_A &pcfg_none	/* PB16 periph A GMDC */
++							 AT91_PIOB 17 AT91_PERIPH_A &pcfg_none	/* PB17 periph A GMDIO */
++							 AT91_PIOB 18 AT91_PERIPH_A &pcfg_none>;	/* PB18 periph A G125CK */
+ 					};
+ 					pinctrl_macb0_signal_gmii: macb0_signal_gmii {
+ 						atmel,pins =
+-							<AT91_PIOB 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB9 periph A GTXEN, conflicts with PWML2 */
+-							 AT91_PIOB 10 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB10 periph A GTXER, conflicts with RF1 */
+-							 AT91_PIOB 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB11 periph A GRXCK, conflicts with RD1 */
+-							 AT91_PIOB 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB12 periph A GRXDV, conflicts with PWMH3 */
+-							 AT91_PIOB 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB13 periph A GRXER, conflicts with PWML3 */
+-							 AT91_PIOB 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB14 periph A GCRS, conflicts with CANRX1 */
+-							 AT91_PIOB 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB15 periph A GCOL, conflicts with CANTX1 */
+-							 AT91_PIOB 16 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB16 periph A GMDC */
+-							 AT91_PIOB 17 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB17 periph A GMDIO */
+-							 AT91_PIOB 27 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB27 periph B G125CKO */
++							<AT91_PIOB 9 AT91_PERIPH_A &pcfg_none	/* PB9 periph A GTXEN, conflicts with PWML2 */
++							 AT91_PIOB 10 AT91_PERIPH_A &pcfg_none	/* PB10 periph A GTXER, conflicts with RF1 */
++							 AT91_PIOB 11 AT91_PERIPH_A &pcfg_none	/* PB11 periph A GRXCK, conflicts with RD1 */
++							 AT91_PIOB 12 AT91_PERIPH_A &pcfg_none	/* PB12 periph A GRXDV, conflicts with PWMH3 */
++							 AT91_PIOB 13 AT91_PERIPH_A &pcfg_none	/* PB13 periph A GRXER, conflicts with PWML3 */
++							 AT91_PIOB 14 AT91_PERIPH_A &pcfg_none	/* PB14 periph A GCRS, conflicts with CANRX1 */
++							 AT91_PIOB 15 AT91_PERIPH_A &pcfg_none	/* PB15 periph A GCOL, conflicts with CANTX1 */
++							 AT91_PIOB 16 AT91_PERIPH_A &pcfg_none	/* PB16 periph A GMDC */
++							 AT91_PIOB 17 AT91_PERIPH_A &pcfg_none	/* PB17 periph A GMDIO */
++							 AT91_PIOB 27 AT91_PERIPH_B &pcfg_none>;	/* PB27 periph B G125CKO */
+ 					};
  
- /**
-@@ -278,8 +296,16 @@ static int at91_dt_node_to_map(struct pinctrl_dev *pctldev,
- 		new_map[i].type = PIN_MAP_TYPE_CONFIGS_PIN;
- 		new_map[i].data.configs.group_or_pin =
- 				pin_get_name(pctldev, grp->pins[i]);
--		new_map[i].data.configs.configs = &grp->pins_conf[i].conf;
--		new_map[i].data.configs.num_configs = 1;
-+		if (!pctldev->desc->confops->is_generic) {
-+			new_map[i].data.configs.configs =
-+				&grp->pins_conf[i].conf.native;
-+			new_map[i].data.configs.num_configs = 1;
-+		} else {
-+			new_map[i].data.configs.configs =
-+				grp->pins_conf[i].conf.generic.configs;
-+			new_map[i].data.configs.num_configs =
-+				grp->pins_conf[i].conf.generic.nconfigs;
-+		}
- 	}
+ 				};
+@@ -620,198 +637,198 @@
+ 				macb1 {
+ 					pinctrl_macb1_rmii: macb1_rmii-0 {
+ 						atmel,pins =
+-							<AT91_PIOC 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC0 periph A ETX0, conflicts with TIOA3 */
+-							 AT91_PIOC 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC1 periph A ETX1, conflicts with TIOB3 */
+-							 AT91_PIOC 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC2 periph A ERX0, conflicts with TCLK3 */
+-							 AT91_PIOC 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC3 periph A ERX1, conflicts with TIOA4 */
+-							 AT91_PIOC 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC4 periph A ETXEN, conflicts with TIOB4 */
+-							 AT91_PIOC 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC5 periph A ECRSDV,conflicts with TCLK4 */
+-							 AT91_PIOC 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC6 periph A ERXER, conflicts with TIOA5 */
+-							 AT91_PIOC 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC7 periph A EREFCK, conflicts with TIOB5 */
+-							 AT91_PIOC 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC8 periph A EMDC, conflicts with TCLK5 */
+-							 AT91_PIOC 9 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PC9 periph A EMDIO  */
++							<AT91_PIOC 0 AT91_PERIPH_A &pcfg_none	/* PC0 periph A ETX0, conflicts with TIOA3 */
++							 AT91_PIOC 1 AT91_PERIPH_A &pcfg_none	/* PC1 periph A ETX1, conflicts with TIOB3 */
++							 AT91_PIOC 2 AT91_PERIPH_A &pcfg_none	/* PC2 periph A ERX0, conflicts with TCLK3 */
++							 AT91_PIOC 3 AT91_PERIPH_A &pcfg_none	/* PC3 periph A ERX1, conflicts with TIOA4 */
++							 AT91_PIOC 4 AT91_PERIPH_A &pcfg_none	/* PC4 periph A ETXEN, conflicts with TIOB4 */
++							 AT91_PIOC 5 AT91_PERIPH_A &pcfg_none	/* PC5 periph A ECRSDV,conflicts with TCLK4 */
++							 AT91_PIOC 6 AT91_PERIPH_A &pcfg_none	/* PC6 periph A ERXER, conflicts with TIOA5 */
++							 AT91_PIOC 7 AT91_PERIPH_A &pcfg_none	/* PC7 periph A EREFCK, conflicts with TIOB5 */
++							 AT91_PIOC 8 AT91_PERIPH_A &pcfg_none	/* PC8 periph A EMDC, conflicts with TCLK5 */
++							 AT91_PIOC 9 AT91_PERIPH_A &pcfg_none>;	/* PC9 periph A EMDIO  */
+ 					};
+ 				};
  
- 	dev_dbg(pctldev->dev, "maps: function %s group %s num %d\n",
-@@ -325,7 +351,7 @@ static void at91_mux_disable_interrupt(void __iomem *pio, unsigned mask)
+ 				mmc0 {
+ 					pinctrl_mmc0_clk_cmd_dat0: mmc0_clk_cmd_dat0 {
+ 						atmel,pins =
+-							<AT91_PIOD 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PD9 periph A MCI0_CK */
+-							 AT91_PIOD 0 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PD0 periph A MCI0_CDA with pullup */
+-							 AT91_PIOD 1 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PD1 periph A MCI0_DA0 with pullup */
++							<AT91_PIOD 9 AT91_PERIPH_A &pcfg_none	/* PD9 periph A MCI0_CK */
++							 AT91_PIOD 0 AT91_PERIPH_A &pcfg_pull_up	/* PD0 periph A MCI0_CDA with pullup */
++							 AT91_PIOD 1 AT91_PERIPH_A &pcfg_pull_up>;	/* PD1 periph A MCI0_DA0 with pullup */
+ 					};
+ 					pinctrl_mmc0_dat1_3: mmc0_dat1_3 {
+ 						atmel,pins =
+-							<AT91_PIOD 2 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PD2 periph A MCI0_DA1 with pullup */
+-							 AT91_PIOD 3 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PD3 periph A MCI0_DA2 with pullup */
+-							 AT91_PIOD 4 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PD4 periph A MCI0_DA3 with pullup */
++							<AT91_PIOD 2 AT91_PERIPH_A &pcfg_pull_up	/* PD2 periph A MCI0_DA1 with pullup */
++							 AT91_PIOD 3 AT91_PERIPH_A &pcfg_pull_up	/* PD3 periph A MCI0_DA2 with pullup */
++							 AT91_PIOD 4 AT91_PERIPH_A &pcfg_pull_up>;	/* PD4 periph A MCI0_DA3 with pullup */
+ 					};
+ 					pinctrl_mmc0_dat4_7: mmc0_dat4_7 {
+ 						atmel,pins =
+-							<AT91_PIOD 5 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PD5 periph A MCI0_DA4 with pullup, conflicts with TIOA0, PWMH2 */
+-							 AT91_PIOD 6 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PD6 periph A MCI0_DA5 with pullup, conflicts with TIOB0, PWML2 */
+-							 AT91_PIOD 7 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PD7 periph A MCI0_DA6 with pullup, conlicts with TCLK0, PWMH3 */
+-							 AT91_PIOD 8 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PD8 periph A MCI0_DA7 with pullup, conflicts with PWML3 */
++							<AT91_PIOD 5 AT91_PERIPH_A &pcfg_pull_up	/* PD5 periph A MCI0_DA4 with pullup, conflicts with TIOA0, PWMH2 */
++							 AT91_PIOD 6 AT91_PERIPH_A &pcfg_pull_up	/* PD6 periph A MCI0_DA5 with pullup, conflicts with TIOB0, PWML2 */
++							 AT91_PIOD 7 AT91_PERIPH_A &pcfg_pull_up	/* PD7 periph A MCI0_DA6 with pullup, conlicts with TCLK0, PWMH3 */
++							 AT91_PIOD 8 AT91_PERIPH_A &pcfg_pull_up>;	/* PD8 periph A MCI0_DA7 with pullup, conflicts with PWML3 */
+ 					};
+ 				};
  
- static unsigned at91_mux_get_pullup(void __iomem *pio, unsigned pin)
- {
--	return (readl_relaxed(pio + PIO_PUSR) >> pin) & 0x1;
-+	return !((readl_relaxed(pio + PIO_PUSR) >> pin) & 0x1);
- }
+ 				mmc1 {
+ 					pinctrl_mmc1_clk_cmd_dat0: mmc1_clk_cmd_dat0 {
+ 						atmel,pins =
+-							<AT91_PIOB 24 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB24 periph A MCI1_CK, conflicts with GRX5 */
+-							 AT91_PIOB 19 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PB19 periph A MCI1_CDA with pullup, conflicts with GTX4 */
+-							 AT91_PIOB 20 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PB20 periph A MCI1_DA0 with pullup, conflicts with GTX5 */
++							<AT91_PIOB 24 AT91_PERIPH_A &pcfg_none	/* PB24 periph A MCI1_CK, conflicts with GRX5 */
++							 AT91_PIOB 19 AT91_PERIPH_A &pcfg_pull_up	/* PB19 periph A MCI1_CDA with pullup, conflicts with GTX4 */
++							 AT91_PIOB 20 AT91_PERIPH_A &pcfg_pull_up>;	/* PB20 periph A MCI1_DA0 with pullup, conflicts with GTX5 */
+ 					};
+ 					pinctrl_mmc1_dat1_3: mmc1_dat1_3 {
+ 						atmel,pins =
+-							<AT91_PIOB 21 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PB21 periph A MCI1_DA1 with pullup, conflicts with GTX6 */
+-							 AT91_PIOB 22 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PB22 periph A MCI1_DA2 with pullup, conflicts with GTX7 */
+-							 AT91_PIOB 23 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PB23 periph A MCI1_DA3 with pullup, conflicts with GRX4 */
++							<AT91_PIOB 21 AT91_PERIPH_A &pcfg_pull_up	/* PB21 periph A MCI1_DA1 with pullup, conflicts with GTX6 */
++							 AT91_PIOB 22 AT91_PERIPH_A &pcfg_pull_up	/* PB22 periph A MCI1_DA2 with pullup, conflicts with GTX7 */
++							 AT91_PIOB 23 AT91_PERIPH_A &pcfg_pull_up>;	/* PB23 periph A MCI1_DA3 with pullup, conflicts with GRX4 */
+ 					};
+ 				};
  
- static void at91_mux_set_pullup(void __iomem *pio, unsigned mask, bool on)
-@@ -407,6 +433,16 @@ static enum at91_mux at91_mux_get_periph(void __iomem *pio, unsigned mask)
- 	return select + 1;
- }
+ 				mmc2 {
+ 					pinctrl_mmc2_clk_cmd_dat0: mmc2_clk_cmd_dat0 {
+ 						atmel,pins =
+-							<AT91_PIOC 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC15 periph A MCI2_CK, conflicts with PCK2 */
+-							 AT91_PIOC 10 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PC10 periph A MCI2_CDA with pullup */
+-							 AT91_PIOC 11 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PC11 periph A MCI2_DA0 with pullup */
++							<AT91_PIOC 15 AT91_PERIPH_A &pcfg_none	/* PC15 periph A MCI2_CK, conflicts with PCK2 */
++							 AT91_PIOC 10 AT91_PERIPH_A &pcfg_pull_up	/* PC10 periph A MCI2_CDA with pullup */
++							 AT91_PIOC 11 AT91_PERIPH_A &pcfg_pull_up>;	/* PC11 periph A MCI2_DA0 with pullup */
+ 					};
+ 					pinctrl_mmc2_dat1_3: mmc2_dat1_3 {
+ 						atmel,pins =
+-							<AT91_PIOC 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC12 periph A MCI2_DA1 with pullup, conflicts with TIOA1 */
+-							 AT91_PIOC 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC13 periph A MCI2_DA2 with pullup, conflicts with TIOB1 */
+-							 AT91_PIOC 14 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PC14 periph A MCI2_DA3 with pullup, conflicts with TCLK1 */
++							<AT91_PIOC 12 AT91_PERIPH_A &pcfg_none	/* PC12 periph A MCI2_DA1 with pullup, conflicts with TIOA1 */
++							 AT91_PIOC 13 AT91_PERIPH_A &pcfg_none	/* PC13 periph A MCI2_DA2 with pullup, conflicts with TIOB1 */
++							 AT91_PIOC 14 AT91_PERIPH_A &pcfg_none>;	/* PC14 periph A MCI2_DA3 with pullup, conflicts with TCLK1 */
+ 					};
+ 				};
  
-+static bool at91_mux_get_output(void __iomem *pio, unsigned pin)
-+{
-+	return (readl_relaxed(pio + PIO_OSR) >> pin) & 0x1;
-+}
-+
-+static void at91_mux_set_output(void __iomem *pio, unsigned mask, bool is_on)
-+{
-+	__raw_writel(mask, pio + (is_on ? PIO_OER : PIO_ODR));
-+}
-+
- static bool at91_mux_get_deglitch(void __iomem *pio, unsigned pin)
- {
- 	return (__raw_readl(pio + PIO_IFSR) >> pin) & 0x1;
-@@ -445,7 +481,7 @@ static void at91_mux_pio3_set_debounce(void __iomem *pio, unsigned mask,
+ 				nand0 {
+ 					pinctrl_nand0_ale_cle: nand0_ale_cle-0 {
+ 						atmel,pins =
+-							<AT91_PIOE 21 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PE21 periph A with pullup */
+-							 AT91_PIOE 22 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PE22 periph A with pullup */
++							<AT91_PIOE 21 AT91_PERIPH_A &pcfg_pull_up	/* PE21 periph A with pullup */
++							 AT91_PIOE 22 AT91_PERIPH_A &pcfg_pull_up>;	/* PE22 periph A with pullup */
+ 					};
+ 				};
  
- static bool at91_mux_pio3_get_pulldown(void __iomem *pio, unsigned pin)
- {
--	return (__raw_readl(pio + PIO_PPDSR) >> pin) & 0x1;
-+	return !((__raw_readl(pio + PIO_PPDSR) >> pin) & 0x1);
- }
+ 				spi0 {
+ 					pinctrl_spi0: spi0-0 {
+ 						atmel,pins =
+-							<AT91_PIOD 10 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PD10 periph A SPI0_MISO pin */
+-							 AT91_PIOD 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PD11 periph A SPI0_MOSI pin */
+-							 AT91_PIOD 12 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD12 periph A SPI0_SPCK pin */
++							<AT91_PIOD 10 AT91_PERIPH_A &pcfg_none	/* PD10 periph A SPI0_MISO pin */
++							 AT91_PIOD 11 AT91_PERIPH_A &pcfg_none	/* PD11 periph A SPI0_MOSI pin */
++							 AT91_PIOD 12 AT91_PERIPH_A &pcfg_none>;	/* PD12 periph A SPI0_SPCK pin */
+ 					};
+ 				};
  
- static void at91_mux_pio3_set_pulldown(void __iomem *pio, unsigned mask, bool is_on)
-@@ -492,12 +528,17 @@ static struct at91_pinctrl_mux_ops at91sam9x5_ops = {
- static void at91_pin_dbg(const struct device *dev, const struct at91_pmx_pin *pin)
- {
- 	if (pin->mux) {
--		dev_dbg(dev, "pio%c%d configured as periph%c with conf = 0x%lu\n",
--			pin->bank + 'A', pin->pin, pin->mux - 1 + 'A', pin->conf);
-+		dev_dbg(dev, "pio%c%d configured as periph%c",
-+			pin->bank + 'A', pin->pin, pin->mux - 1 + 'A');
- 	} else {
--		dev_dbg(dev, "pio%c%d configured as gpio with conf = 0x%lu\n",
--			pin->bank + 'A', pin->pin, pin->conf);
-+		dev_dbg(dev, "pio%c%d configured as gpio",
-+			pin->bank + 'A', pin->pin);
- 	}
-+
-+	if (pin->conftype == AT91_PINCONF_NATIVE)
-+		dev_dbg(dev, " with conf = 0x%lu\n", pin->conf.native);
-+	else
-+		dev_dbg(dev, "\n");
- }
+ 				spi1 {
+ 					pinctrl_spi1: spi1-0 {
+ 						atmel,pins =
+-							<AT91_PIOC 22 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC22 periph A SPI1_MISO pin */
+-							 AT91_PIOC 23 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC23 periph A SPI1_MOSI pin */
+-							 AT91_PIOC 24 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PC24 periph A SPI1_SPCK pin */
++							<AT91_PIOC 22 AT91_PERIPH_A &pcfg_none	/* PC22 periph A SPI1_MISO pin */
++							 AT91_PIOC 23 AT91_PERIPH_A &pcfg_none	/* PC23 periph A SPI1_MOSI pin */
++							 AT91_PIOC 24 AT91_PERIPH_A &pcfg_none>;	/* PC24 periph A SPI1_SPCK pin */
+ 					};
+ 				};
  
- static int pin_check_config(struct at91_pinctrl *info, const char *name,
-@@ -782,6 +823,157 @@ static const struct pinconf_ops at91_pinconf_ops = {
- 	.pin_config_group_dbg_show	= at91_pinconf_group_dbg_show,
- };
+ 				ssc0 {
+ 					pinctrl_ssc0_tx: ssc0_tx {
+ 						atmel,pins =
+-							<AT91_PIOC 16 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC16 periph A TK0 */
+-							 AT91_PIOC 17 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC17 periph A TF0 */
+-							 AT91_PIOC 18 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PC18 periph A TD0 */
++							<AT91_PIOC 16 AT91_PERIPH_A &pcfg_none	/* PC16 periph A TK0 */
++							 AT91_PIOC 17 AT91_PERIPH_A &pcfg_none	/* PC17 periph A TF0 */
++							 AT91_PIOC 18 AT91_PERIPH_A &pcfg_none>;	/* PC18 periph A TD0 */
+ 					};
  
-+static int at91_generic_pinconf_get(struct pinctrl_dev *pctldev,
-+				    unsigned pin_id, unsigned long *config)
-+{
-+	struct at91_pinctrl *info = pinctrl_dev_get_drvdata(pctldev);
-+	enum pin_config_param param = pinconf_to_config_param(*config);
-+	void __iomem *pio = pin_to_controller(info, pin_to_bank(pin_id));
-+	unsigned pin = pin_id % MAX_NB_GPIO_PER_BANK;
-+	int div;
-+
-+	switch (param) {
-+	case PIN_CONFIG_BIAS_DISABLE:
-+		if (at91_mux_get_pullup(pio, pin) &&
-+		    (info->ops->get_pulldown ||
-+		     !info->ops->get_pulldown(pio, pin)))
-+			return -EINVAL;
-+
-+		*config = 0;
-+		break;
-+	case PIN_CONFIG_BIAS_PULL_UP:
-+		if (!at91_mux_get_pullup(pio, pin))
-+			return -EINVAL;
-+
-+		*config = 0;
-+		break;
-+	case PIN_CONFIG_BIAS_PULL_DOWN:
-+		if (!info->ops->get_pulldown)
-+			return -ENOTSUPP;
-+		if (!info->ops->get_pulldown(pio, pin))
-+			return -EINVAL;
-+
-+		*config = 0;
-+		break;
-+	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
-+		if (!at91_mux_get_multidrive(pio, pin))
-+			return -EINVAL;
-+
-+		*config = 0;
-+		break;
-+	case PIN_CONFIG_INPUT_SCHMITT_ENABLE:
-+		if (!info->ops->get_schmitt_trig)
-+			return -ENOTSUPP;
-+
-+		if (!(info->ops->get_schmitt_trig(pio, pin)))
-+			*config = 1;
-+		else
-+			*config = 0;
-+		break;
-+	case PIN_CONFIG_INPUT_DEBOUNCE:
-+		if (!info->ops->get_debounce)
-+			return -ENOTSUPP;
-+
-+		if (info->ops->get_debounce(pio, pin, &div)) {
-+			/* TODO: replace 32768 with clk_get_rate(slck) return */
-+			*config = ((div + 1) * 2) * 1000000 / 32768;
-+			if (*config > 0xffff)
-+				*config = 0xffff;
-+		} else
-+			*config = 0;
-+		break;
-+	case PIN_CONFIG_INPUT_DEGLITCH:
-+		if (!info->ops->get_deglitch)
-+			return -ENOTSUPP;
-+
-+		*config = info->ops->get_deglitch(pio, pin);
-+		break;
-+	case PIN_CONFIG_OUTPUT:
-+		if (info->ops->get_periph(pio, pin) != AT91_MUX_GPIO)
-+			return -EINVAL;
-+
-+		*config = at91_mux_get_output(pio, pin);
-+		break;
-+	default:
-+		return -ENOTSUPP;
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static int at91_generic_pinconf_set(struct pinctrl_dev *pctldev,
-+				    unsigned pin_id, unsigned long config)
-+{
-+	struct at91_pinctrl *info = pinctrl_dev_get_drvdata(pctldev);
-+	enum pin_config_param param = pinconf_to_config_param(config);
-+	u16 arg = pinconf_to_config_argument(config);
-+	u32 div = 0;
-+	unsigned pin = pin_id % MAX_NB_GPIO_PER_BANK;
-+	unsigned mask = pin_to_mask(pin);
-+	void __iomem *pio = pin_to_controller(info, pin_to_bank(pin_id));
-+
-+	switch (param) {
-+	case PIN_CONFIG_BIAS_DISABLE:
-+		at91_mux_set_pullup(pio, mask, 0);
-+		if (info->ops->set_pulldown)
-+			info->ops->set_pulldown(pio, mask, 0);
-+		break;
-+	case PIN_CONFIG_BIAS_PULL_UP:
-+		at91_mux_set_pullup(pio, mask, arg);
-+		break;
-+	case PIN_CONFIG_BIAS_PULL_DOWN:
-+		if (!info->ops->set_pulldown)
-+			return -ENOTSUPP;
-+		info->ops->set_pulldown(pio, mask, arg);
-+		break;
-+	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
-+		at91_mux_set_multidrive(pio, mask, 1);
-+		break;
-+	case PIN_CONFIG_INPUT_SCHMITT_ENABLE:
-+		if (!info->ops->disable_schmitt_trig)
-+			return -ENOTSUPP;
-+		if (arg)
-+			mask = ~mask;
-+		info->ops->disable_schmitt_trig(pio, mask);
-+		break;
-+	case PIN_CONFIG_INPUT_DEBOUNCE:
-+		if (!info->ops->set_debounce)
-+			return -ENOTSUPP;
-+
-+		/* TODO: replace 32768 with clk_get_rate(slck) return */
-+		if (arg) {
-+			div = (arg * 32768 / (2 * 1000000));
-+			if (div)
-+				div--;
-+		}
-+		info->ops->set_debounce(pio, mask, arg ? 1 : 0, div);
-+		break;
-+	case PIN_CONFIG_INPUT_DEGLITCH:
-+		if (!info->ops->set_deglitch)
-+			return -ENOTSUPP;
-+
-+		info->ops->set_deglitch(pio, mask, arg ? 1 : 0);
-+		break;
-+	case PIN_CONFIG_OUTPUT:
-+		if (info->ops->get_periph(pio, pin) != AT91_MUX_GPIO)
-+			return -EINVAL;
-+		at91_mux_set_output(pio, mask, arg);
-+		break;
-+	default:
-+		return -ENOTSUPP;
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct pinconf_ops at91_generic_pinconf_ops = {
-+	.is_generic			= true,
-+	.pin_config_get			= at91_generic_pinconf_get,
-+	.pin_config_set			= at91_generic_pinconf_set,
-+};
-+
- static struct pinctrl_desc at91_pinctrl_desc = {
- 	.pctlops	= &at91_pctrl_ops,
- 	.pmxops		= &at91_pmx_ops,
-@@ -847,6 +1039,7 @@ static int at91_pinctrl_parse_groups(struct device_node *np,
- 	int size;
- 	const __be32 *list;
- 	int i, j;
-+	int err;
+ 					pinctrl_ssc0_rx: ssc0_rx {
+ 						atmel,pins =
+-							<AT91_PIOC 19 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC19 periph A RK0 */
+-							 AT91_PIOC 20 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC20 periph A RF0 */
+-							 AT91_PIOC 21 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PC21 periph A RD0 */
++							<AT91_PIOC 19 AT91_PERIPH_A &pcfg_none	/* PC19 periph A RK0 */
++							 AT91_PIOC 20 AT91_PERIPH_A &pcfg_none	/* PC20 periph A RF0 */
++							 AT91_PIOC 21 AT91_PERIPH_A &pcfg_none>;	/* PC21 periph A RD0 */
+ 					};
+ 				};
  
- 	dev_dbg(info->dev, "group(%d): %s\n", index, np->name);
+ 				ssc1 {
+ 					pinctrl_ssc1_tx: ssc1_tx {
+ 						atmel,pins =
+-							<AT91_PIOB 2 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB2 periph B TK1, conflicts with GTX2 */
+-							 AT91_PIOB 3 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB3 periph B TF1, conflicts with GTX3 */
+-							 AT91_PIOB 6 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB6 periph B TD1, conflicts with TD1 */
++							<AT91_PIOB 2 AT91_PERIPH_B &pcfg_none	/* PB2 periph B TK1, conflicts with GTX2 */
++							 AT91_PIOB 3 AT91_PERIPH_B &pcfg_none	/* PB3 periph B TF1, conflicts with GTX3 */
++							 AT91_PIOB 6 AT91_PERIPH_B &pcfg_none>;	/* PB6 periph B TD1, conflicts with TD1 */
+ 					};
  
-@@ -870,21 +1063,48 @@ static int at91_pinctrl_parse_groups(struct device_node *np,
- 				GFP_KERNEL);
- 	grp->pins = devm_kzalloc(info->dev, grp->npins * sizeof(unsigned int),
- 				GFP_KERNEL);
--	if (!grp->pins_conf || !grp->pins)
--		return -ENOMEM;
-+	if (!grp->pins_conf || !grp->pins) {
-+		err = -ENOMEM;
-+		goto out_err;
-+	}
+ 					pinctrl_ssc1_rx: ssc1_rx {
+ 						atmel,pins =
+-							<AT91_PIOB 7 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB7 periph B RK1, conflicts with EREFCK */
+-							 AT91_PIOB 10 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB10 periph B RF1, conflicts with GTXER */
+-							 AT91_PIOB 11 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PB11 periph B RD1, conflicts with GRXCK */
++							<AT91_PIOB 7 AT91_PERIPH_B &pcfg_none	/* PB7 periph B RK1, conflicts with EREFCK */
++							 AT91_PIOB 10 AT91_PERIPH_B &pcfg_none	/* PB10 periph B RF1, conflicts with GTXER */
++							 AT91_PIOB 11 AT91_PERIPH_B &pcfg_none>;	/* PB11 periph B RD1, conflicts with GRXCK */
+ 					};
+ 				};
  
- 	for (i = 0, j = 0; i < size; i += 4, j++) {
- 		pin->bank = be32_to_cpu(*list++);
- 		pin->pin = be32_to_cpu(*list++);
- 		grp->pins[j] = pin->bank * MAX_NB_GPIO_PER_BANK + pin->pin;
- 		pin->mux = be32_to_cpu(*list++);
--		pin->conf = be32_to_cpu(*list++);
-+		if (at91_pinctrl_desc.confops->is_generic) {
-+			struct device_node *np_config;
-+			const __be32 *phandle =	list++;
-+
-+			if (!phandle) {
-+				err = -EINVAL;
-+				goto out_err;
-+			}
-+			np_config =
-+				of_find_node_by_phandle(be32_to_cpup(phandle));
-+			pin->conftype = AT91_PINCONF_GENERIC;
-+			err = pinconf_generic_parse_dt_config(np_config,
-+						&pin->conf.generic.configs,
-+						&pin->conf.generic.nconfigs);
-+			if (err)
-+				goto out_err;
-+
-+		} else {
-+			pin->conftype = AT91_PINCONF_NATIVE;
-+			pin->conf.native = be32_to_cpu(*list++);
-+		}
+ 				uart0 {
+ 					pinctrl_uart0: uart0-0 {
+ 						atmel,pins =
+-							<AT91_PIOC 29 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PC29 periph A, conflicts with PWMFI2, ISI_D8 */
+-							 AT91_PIOC 30 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PC30 periph A with pullup, conflicts with ISI_PCK */
++							<AT91_PIOC 29 AT91_PERIPH_A &pcfg_none	/* PC29 periph A, conflicts with PWMFI2, ISI_D8 */
++							 AT91_PIOC 30 AT91_PERIPH_A &pcfg_pull_up>;	/* PC30 periph A with pullup, conflicts with ISI_PCK */
+ 					};
+ 				};
  
- 		at91_pin_dbg(info->dev, pin);
- 		pin++;
- 	}
+ 				uart1 {
+ 					pinctrl_uart1: uart1-0 {
+ 						atmel,pins =
+-							<AT91_PIOA 30 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PA30 periph B, conflicts with TWD0, ISI_VSYNC */
+-							 AT91_PIOA 31 AT91_PERIPH_B AT91_PINCTRL_PULL_UP>;	/* PA31 periph B with pullup, conflicts with TWCK0, ISI_HSYNC */
++							<AT91_PIOA 30 AT91_PERIPH_B &pcfg_none	/* PA30 periph B, conflicts with TWD0, ISI_VSYNC */
++							 AT91_PIOA 31 AT91_PERIPH_B &pcfg_pull_up>;	/* PA31 periph B with pullup, conflicts with TWCK0, ISI_HSYNC */
+ 					};
+ 				};
  
- 	return 0;
-+
-+out_err:
-+	kfree(grp->pins_conf);
-+	kfree(grp->pins);
-+	return err;
- }
+ 				usart0 {
+ 					pinctrl_usart0: usart0-0 {
+ 						atmel,pins =
+-							<AT91_PIOD 17 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PD17 periph A */
+-							 AT91_PIOD 18 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PD18 periph A with pullup */
++							<AT91_PIOD 17 AT91_PERIPH_A &pcfg_none	/* PD17 periph A */
++							 AT91_PIOD 18 AT91_PERIPH_A &pcfg_pull_up>;	/* PD18 periph A with pullup */
+ 					};
  
- static int at91_pinctrl_parse_functions(struct device_node *np,
-@@ -904,10 +1124,10 @@ static int at91_pinctrl_parse_functions(struct device_node *np,
- 	/* Initialise function */
- 	func->name = np->name;
- 	func->ngroups = of_get_child_count(np);
--	if (func->ngroups <= 0) {
--		dev_err(info->dev, "no groups defined\n");
--		return -EINVAL;
--	}
-+	/* This node might be a generic config definition: silently ignore it */
-+	if (func->ngroups <= 0)
-+		return 0;
-+
- 	func->groups = devm_kzalloc(info->dev,
- 			func->ngroups * sizeof(char *), GFP_KERNEL);
- 	if (!func->groups)
-@@ -930,6 +1150,11 @@ static struct of_device_id at91_pinctrl_of_match[] = {
- 	{ /* sentinel */ }
- };
+ 					pinctrl_usart0_rts_cts: usart0_rts_cts-0 {
+ 						atmel,pins =
+-							<AT91_PIOD 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PD15 periph A, conflicts with SPI0_NPCS2, CANTX0 */
+-							 AT91_PIOD 16 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PD16 periph A, conflicts with SPI0_NPCS3, PWMFI3 */
++							<AT91_PIOD 15 AT91_PERIPH_A &pcfg_none	/* PD15 periph A, conflicts with SPI0_NPCS2, CANTX0 */
++							 AT91_PIOD 16 AT91_PERIPH_A &pcfg_none>;	/* PD16 periph A, conflicts with SPI0_NPCS3, PWMFI3 */
+ 					};
+ 				};
  
-+static struct of_device_id at91_pinconf_of_match[] = {
-+	{ .compatible = "generic-pinconf" },
-+	{ /* sentinel */ }
-+};
-+
- static int at91_pinctrl_probe_dt(struct platform_device *pdev,
- 				 struct at91_pinctrl *info)
- {
-@@ -945,6 +1170,8 @@ static int at91_pinctrl_probe_dt(struct platform_device *pdev,
- 	info->dev = &pdev->dev;
- 	info->ops = (struct at91_pinctrl_mux_ops *)
- 		of_match_device(at91_pinctrl_of_match, &pdev->dev)->data;
-+	if (of_match_device(at91_pinconf_of_match, &pdev->dev))
-+		at91_pinctrl_desc.confops = &at91_generic_pinconf_ops;
- 	at91_pinctrl_child_count(info, np);
+ 				usart1 {
+ 					pinctrl_usart1: usart1-0 {
+ 						atmel,pins =
+-							<AT91_PIOB 28 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB28 periph A */
+-							 AT91_PIOB 29 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PB29 periph A with pullup */
++							<AT91_PIOB 28 AT91_PERIPH_A &pcfg_none	/* PB28 periph A */
++							 AT91_PIOB 29 AT91_PERIPH_A &pcfg_pull_up>;	/* PB29 periph A with pullup */
+ 					};
  
- 	if (info->nbanks < 1) {
+ 					pinctrl_usart1_rts_cts: usart1_rts_cts-0 {
+ 						atmel,pins =
+-							<AT91_PIOB 26 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB26 periph A, conflicts with GRX7 */
+-							 AT91_PIOB 27 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PB27 periph A, conflicts with G125CKO */
++							<AT91_PIOB 26 AT91_PERIPH_A &pcfg_none	/* PB26 periph A, conflicts with GRX7 */
++							 AT91_PIOB 27 AT91_PERIPH_A &pcfg_none>;	/* PB27 periph A, conflicts with G125CKO */
+ 					};
+ 				};
+ 
+ 				usart2 {
+ 					pinctrl_usart2: usart2-0 {
+ 						atmel,pins =
+-							<AT91_PIOE 25 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PE25 periph B, conflicts with A25 */
+-							 AT91_PIOE 26 AT91_PERIPH_B AT91_PINCTRL_PULL_UP>;	/* PE26 periph B with pullup, conflicts NCS0 */
++							<AT91_PIOE 25 AT91_PERIPH_B &pcfg_none	/* PE25 periph B, conflicts with A25 */
++							 AT91_PIOE 26 AT91_PERIPH_B &pcfg_pull_up>;	/* PE26 periph B with pullup, conflicts NCS0 */
+ 					};
+ 
+ 					pinctrl_usart2_rts_cts: usart2_rts_cts-0 {
+ 						atmel,pins =
+-							<AT91_PIOE 23 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PE23 periph B, conflicts with A23 */
+-							 AT91_PIOE 24 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PE24 periph B, conflicts with A24 */
++							<AT91_PIOE 23 AT91_PERIPH_B &pcfg_none	/* PE23 periph B, conflicts with A23 */
++							 AT91_PIOE 24 AT91_PERIPH_B &pcfg_none>;	/* PE24 periph B, conflicts with A24 */
+ 					};
+ 				};
+ 
+ 				usart3 {
+ 					pinctrl_usart3: usart3-0 {
+ 						atmel,pins =
+-							<AT91_PIOE 18 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PE18 periph B, conflicts with A18 */
+-							 AT91_PIOE 19 AT91_PERIPH_B AT91_PINCTRL_PULL_UP>;	/* PE19 periph B with pullup, conflicts with A19 */
++							<AT91_PIOE 18 AT91_PERIPH_B &pcfg_none	/* PE18 periph B, conflicts with A18 */
++							 AT91_PIOE 19 AT91_PERIPH_B &pcfg_pull_up>;	/* PE19 periph B with pullup, conflicts with A19 */
+ 					};
+ 
+ 					pinctrl_usart3_rts_cts: usart3_rts_cts-0 {
+ 						atmel,pins =
+-							<AT91_PIOE 16 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PE16 periph B, conflicts with A16 */
+-							 AT91_PIOE 17 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PE17 periph B, conflicts with A17 */
++							<AT91_PIOE 16 AT91_PERIPH_B &pcfg_none	/* PE16 periph B, conflicts with A16 */
++							 AT91_PIOE 17 AT91_PERIPH_B &pcfg_none>;	/* PE17 periph B, conflicts with A17 */
+ 					};
+ 				};
+ 
+diff --git a/arch/arm/boot/dts/sama5d3xdm.dtsi b/arch/arm/boot/dts/sama5d3xdm.dtsi
+index 1c296d6..a8d5f77 100644
+--- a/arch/arm/boot/dts/sama5d3xdm.dtsi
++++ b/arch/arm/boot/dts/sama5d3xdm.dtsi
+@@ -33,7 +33,7 @@
+ 				board {
+ 					pinctrl_qt1070_irq: qt1070_irq {
+ 						atmel,pins =
+-							<AT91_PIOE 31 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>; /* PE31 GPIO with pull up deglith */
++							<AT91_PIOE 31 AT91_PERIPH_GPIO &pcfg_pull_up_deglitch>; /* PE31 GPIO with pull up deglith */
+ 					};
+ 				};
+ 			};
+diff --git a/arch/arm/boot/dts/sama5d3xmb.dtsi b/arch/arm/boot/dts/sama5d3xmb.dtsi
+index 8a9e05d..126a3a8 100644
+--- a/arch/arm/boot/dts/sama5d3xmb.dtsi
++++ b/arch/arm/boot/dts/sama5d3xmb.dtsi
+@@ -87,32 +87,32 @@
+ 				board {
+ 					pinctrl_mmc0_cd: mmc0_cd {
+ 						atmel,pins =
+-							<AT91_PIOD 17 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>; /* PD17 GPIO with pullup deglitch */
++							<AT91_PIOD 17 AT91_PERIPH_GPIO &pcfg_pull_up_deglitch>; /* PD17 GPIO with pullup deglitch */
+ 					};
+ 
+ 					pinctrl_mmc1_cd: mmc1_cd {
+ 						atmel,pins =
+-							<AT91_PIOD 18 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>; /* PD18 GPIO with pullup deglitch */
++							<AT91_PIOD 18 AT91_PERIPH_GPIO &pcfg_pull_up_deglitch>; /* PD18 GPIO with pullup deglitch */
+ 					};
+ 
+ 					pinctrl_pck0_as_audio_mck: pck0_as_audio_mck {
+ 						atmel,pins =
+-							<AT91_PIOD 30 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PD30 periph B */
++							<AT91_PIOD 30 AT91_PERIPH_B &pcfg_none>;	/* PD30 periph B */
+ 					};
+ 
+ 					pinctrl_isi_reset: isi_reset-0 {
+ 						atmel,pins =
+-							<AT91_PIOE 24 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;   /* PE24 gpio */
++							<AT91_PIOE 24 AT91_PERIPH_GPIO &pcfg_none>;   /* PE24 gpio */
+ 					};
+ 
+ 					pinctrl_isi_power: isi_power-0 {
+ 						atmel,pins =
+-							<AT91_PIOE 29 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>; /* PE29 gpio */
++							<AT91_PIOE 29 AT91_PERIPH_GPIO &pcfg_none>; /* PE29 gpio */
+ 					};
+ 
+ 					pinctrl_usba_vbus: usba_vbus {
+ 						atmel,pins =
+-							<AT91_PIOD 29 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>; /* PD29 GPIO with deglitch */
++							<AT91_PIOD 29 AT91_PERIPH_GPIO &pcfg_deglitch>; /* PD29 GPIO with deglitch */
+ 					};
+ 				};
+ 			};
 -- 
 1.7.9.5
 
