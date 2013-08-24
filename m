@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab3HXIAd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 04:00:33 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63337 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755355Ab3HXIAc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 04:00:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 21/33] clk: ux500: Add Device Tree support for the PRCC Kernel clock
-Date: Sat, 24 Aug 2013 10:00:01 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org> <20130822092130.GB22023@lee--X1> <CACRpkdYLJdmhCqXpQ0s5nbxRoFdZ3bLn+hxAhkoGHYfvugc=7A@mail.gmail.com>
-In-Reply-To: <CACRpkdYLJdmhCqXpQ0s5nbxRoFdZ3bLn+hxAhkoGHYfvugc=7A@mail.gmail.com>
+	id S1755251Ab3HXJZL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 05:25:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45125 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753805Ab3HXJZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 05:25:09 -0400
+Date: Sat, 24 Aug 2013 11:25:00 +0200
+From: Borislav Petkov <bp@suse.de>
+To: x86-ml <x86@kernel.org>
+Cc: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH] amd64_edac: Correct erratum 505 range
+Message-ID: <20130824092500.GA28945@pd.tnic>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308241000.01649.arnd@arndb.de>
-X-Provags-ID: V02:K0:LFoRlp1+6l6iaQSTxWxMkJdBY+cfGU9u84vKN3r6iAO
- fdWI4JAeNUTA7vb0YGndVR6PmVJvdl+r65I2C26U6tShzP1B7y
- m6zXP5pi4e/3TNDWsjA/+kVb5zdOgT8R5sja+5GUux1sX08l+A
- +KR3VAhkKHynyydpKv2Tg2PpMI3rrQQDJV0aKNPuDVn4SFdg6b
- V/t2agnBXP0hjBd+D0EfqO6myjFg8WM3IpbX78Ww5aA2cMqcsa
- UJaybHY7VGtN+XQzfPzmomcu58xvjad6KLvCahFHWm7an70olJ
- hnQdOQLWk/go/pVTa0u+N/C90UpuaQJ/12KH8gCwqFK8uWSkDe
- gZmr8HAapja8Mg6MvtYA=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 August 2013, Linus Walleij wrote:
-> I think this is perfectly realistic.
-> 
-> You're not going to duplicate each clk_register_clkdev(),
-> which makes it way smaller than the original function,
-> and since one of the function will be inside a
-> 
-> #ifdef CONFIG_OF
-> #endif
-> 
-> After we switch the entire platform to DT-only it will be pretty
-> obvious which big chunk of code that needs to go away, it's
-> a clean cut.
-> 
-> (Note: I know the #ifdef CONFIG_OF is not necessary anymore
-> since we switched to multiplatform, but I intend that marker for
-> humans, not machines.)
-> 
+Basically we want to cover all 0x0-0xf models, i.e. Orochi and later.
 
-You just reminded me that I'm still sitting on this old patch
-to add lots of #ifdef CONFIG_ATAGS to ux500 in the places that need
-to get cut out. I don't think I'm able to update that patch at
-the moment, but I can send you the old version I have if you
-are interested.
+Cc: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Link: http://lkml.kernel.org/r/20130819192321.GF4165@pd.tnic
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
 
-	Arnd
+Hey guys,
+
+I've got one more patch which needs to go to tip/x86/ras for 3.12. It
+was not worth it IMO to send a pull request for a single patch so please
+apply.
+
+Thanks.
+
+ drivers/edac/amd64_edac.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index b86228cce672..6952d432e62b 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -206,8 +206,8 @@ static int amd64_set_scrub_rate(struct mem_ctl_info *mci, u32 bw)
+ 	if (pvt->fam == 0xf)
+ 		min_scrubrate = 0x0;
+ 
+-	/* Erratum #505 for F15h Model 0x00 - Model 0x01, Stepping 0 */
+-	if (pvt->fam == 0x15 && pvt->model <= 0x01 && pvt->stepping < 0x1)
++	/* Erratum #505 */
++	if (pvt->fam == 0x15 && pvt->model < 0x10)
+ 		f15h_select_dct(pvt, 0);
+ 
+ 	return __amd64_set_scrub_rate(pvt->F3, bw, min_scrubrate);
+@@ -219,8 +219,8 @@ static int amd64_get_scrub_rate(struct mem_ctl_info *mci)
+ 	u32 scrubval = 0;
+ 	int i, retval = -EINVAL;
+ 
+-	/* Erratum #505 for F15h Model 0x00 - Model 0x01, Stepping 0 */
+-	if (pvt->fam == 0x15 && pvt->model <= 0x01 && pvt->stepping < 0x1)
++	/* Erratum #505 */
++	if (pvt->fam == 0x15 && pvt->model < 0x10)
+ 		f15h_select_dct(pvt, 0);
+ 
+ 	amd64_read_pci_cfg(pvt->F3, SCRCTRL, &scrubval);
+-- 
+1.8.4.rc3
+
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
