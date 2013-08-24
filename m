@@ -1,507 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab3HXKKN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 06:10:13 -0400
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:42049 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab3HXKKK (ORCPT
+	id S1754026Ab3HXKLE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 06:11:04 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53421 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752507Ab3HXKLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 06:10:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130819160425.230612223@infradead.org>
-References: <20130819160058.539049611@infradead.org> <20130819160425.230612223@infradead.org>
-From: Paul Turner <pjt@google.com>
-Date: Sat, 24 Aug 2013 03:09:38 -0700
-Message-ID: <CAPM31RJtQKZzb-POVY_ffoZ++vF2uZC9TkPiib-FXUrXF5UEKw@mail.gmail.com>
-Subject: Re: [PATCH 03/10] sched: Clean-up struct sd_lb_stat
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>, Lei Wen <leiwen@marvell.com>,
-        Rik van Riel <riel@surriel.com>, Joonsoo Kim <js1304@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 24 Aug 2013 06:11:02 -0400
+Message-ID: <1377339051.8757.18.camel@dabdike>
+Subject: [GIT PULL] SCSI fixes for 3.11-rc6
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Sat, 24 Aug 2013 14:10:51 +0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 19, 2013 at 9:01 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> There is no reason to maintain separate variables for this_group
-> and busiest_group in sd_lb_stat, except saving some space.
-> But this structure is always allocated in stack, so this saving
-> isn't really benificial [peterz: reducing stack space is good; in this
-> case readability increases enough that I think its still beneficial]
->
-> This patch unify these variables, so IMO, readability may be improved.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> [peterz: lots of style edits, a few fixes and a rename]
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/1375778203-31343-4-git-send-email-iamjoonsoo.kim@lge.com
-> ---
->  kernel/sched/fair.c |  225 +++++++++++++++++++++++++---------------------------
->  1 file changed, 112 insertions(+), 113 deletions(-)
->
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4277,36 +4277,6 @@ static unsigned long task_h_load(struct
->
->  /********** Helpers for find_busiest_group ************************/
->  /*
-> - * sd_lb_stats - Structure to store the statistics of a sched_domain
-> - *             during load balancing.
-> - */
-> -struct sd_lb_stats {
-> -       struct sched_group *busiest; /* Busiest group in this sd */
-> -       struct sched_group *this;  /* Local group in this sd */
-> -       unsigned long total_load;  /* Total load of all groups in sd */
-> -       unsigned long total_pwr;   /*   Total power of all groups in sd */
-> -       unsigned long avg_load;    /* Average load across all groups in sd */
-> -
-> -       /** Statistics of this group */
-> -       unsigned long this_load;
-> -       unsigned long this_load_per_task;
-> -       unsigned long this_nr_running;
-> -       unsigned long this_has_capacity;
-> -       unsigned int  this_idle_cpus;
-> -
-> -       /* Statistics of the busiest group */
-> -       unsigned int  busiest_idle_cpus;
-> -       unsigned long max_load;
-> -       unsigned long busiest_load_per_task;
-> -       unsigned long busiest_nr_running;
-> -       unsigned long busiest_group_capacity;
-> -       unsigned long busiest_has_capacity;
-> -       unsigned int  busiest_group_weight;
-> -
-> -       int group_imb; /* Is there imbalance in this sd */
-> -};
-> -
-> -/*
->   * sg_lb_stats - stats of a sched_group required for load_balancing
->   */
->  struct sg_lb_stats {
-> @@ -4314,6 +4284,7 @@ struct sg_lb_stats {
->         unsigned long group_load; /* Total load over the CPUs of the group */
->         unsigned long sum_nr_running; /* Nr tasks running in the group */
->         unsigned long sum_weighted_load; /* Weighted load of group's tasks */
-> +       unsigned long load_per_task;
->         unsigned long group_capacity;
->         unsigned long idle_cpus;
->         unsigned long group_weight;
-> @@ -4321,6 +4292,21 @@ struct sg_lb_stats {
->         int group_has_capacity; /* Is there extra capacity in the group? */
->  };
->
-> +/*
-> + * sd_lb_stats - Structure to store the statistics of a sched_domain
-> + *              during load balancing.
-> + */
-> +struct sd_lb_stats {
-> +       struct sched_group *busiest;    /* Busiest group in this sd */
-> +       struct sched_group *this;       /* Local group in this sd */
-> +       unsigned long total_load;       /* Total load of all groups in sd */
-> +       unsigned long total_pwr;        /* Total power of all groups in sd */
-> +       unsigned long avg_load; /* Average load across all groups in sd */
-> +
-> +       struct sg_lb_stats this_stat;   /* Statistics of this group */
-> +       struct sg_lb_stats busiest_stat;/* Statistics of the busiest group */
-> +};
-> +
->  /**
->   * get_sd_load_idx - Obtain the load index for a given sched domain.
->   * @sd: The sched_domain whose load_idx is to be obtained.
-> @@ -4533,10 +4519,11 @@ static inline void update_sg_lb_stats(st
->                 nr_running = rq->nr_running;
->
->                 /* Bias balancing toward cpus of our domain */
-> -               if (local_group)
-> +               if (local_group) {
->                         load = target_load(i, load_idx);
-> -               else {
-> +               } else {
->                         load = source_load(i, load_idx);
-> +
->                         if (load > max_cpu_load)
->                                 max_cpu_load = load;
->                         if (min_cpu_load > load)
-> @@ -4578,10 +4565,12 @@ static inline void update_sg_lb_stats(st
->             (max_nr_running - min_nr_running) > 1)
->                 sgs->group_imb = 1;
->
-> -       sgs->group_capacity = DIV_ROUND_CLOSEST(group->sgp->power,
-> -                                               SCHED_POWER_SCALE);
-> +       sgs->group_capacity =
-> +               DIV_ROUND_CLOSEST(group->sgp->power, SCHED_POWER_SCALE);
-> +
->         if (!sgs->group_capacity)
->                 sgs->group_capacity = fix_small_capacity(env->sd, group);
-> +
->         sgs->group_weight = group->group_weight;
->
->         if (sgs->group_capacity > sgs->sum_nr_running)
-> @@ -4606,7 +4595,7 @@ static bool update_sd_pick_busiest(struc
->                                    struct sched_group *sg,
->                                    struct sg_lb_stats *sgs)
->  {
-> -       if (sgs->avg_load <= sds->max_load)
-> +       if (sgs->avg_load <= sds->busiest_stat.avg_load)
->                 return false;
->
->         if (sgs->sum_nr_running > sgs->group_capacity)
-> @@ -4643,7 +4632,7 @@ static inline void update_sd_lb_stats(st
->  {
->         struct sched_domain *child = env->sd->child;
->         struct sched_group *sg = env->sd->groups;
-> -       struct sg_lb_stats sgs;
-> +       struct sg_lb_stats tmp_sgs;
->         int load_idx, prefer_sibling = 0;
->
->         if (child && child->flags & SD_PREFER_SIBLING)
-> @@ -4652,14 +4641,17 @@ static inline void update_sd_lb_stats(st
->         load_idx = get_sd_load_idx(env->sd, env->idle);
->
->         do {
-> +               struct sg_lb_stats *sgs = &tmp_sgs;
->                 int local_group;
->
->                 local_group = cpumask_test_cpu(env->dst_cpu, sched_group_cpus(sg));
-> -               memset(&sgs, 0, sizeof(sgs));
-> -               update_sg_lb_stats(env, sg, load_idx, local_group, &sgs);
-> +               if (local_group) {
-> +                       sds->this = sg;
-> +                       sgs = &sds->this_stat;
-> +               }
->
-> -               sds->total_load += sgs.group_load;
-> -               sds->total_pwr += sg->sgp->power;
-> +               memset(sgs, 0, sizeof(*sgs));
-> +               update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
->
->                 /*
->                  * In case the child domain prefers tasks go to siblings
-> @@ -4671,26 +4663,17 @@ static inline void update_sd_lb_stats(st
->                  * heaviest group when it is already under-utilized (possible
->                  * with a large weight task outweighs the tasks on the system).
->                  */
-> -               if (prefer_sibling && !local_group && sds->this_has_capacity)
-> -                       sgs.group_capacity = min(sgs.group_capacity, 1UL);
-> +               if (prefer_sibling && !local_group &&
-> +                               sds->this && sds->this_stat.group_has_capacity)
-> +                       sgs->group_capacity = min(sgs->group_capacity, 1UL);
->
-> -               if (local_group) {
-> -                       sds->this_load = sgs.avg_load;
-> -                       sds->this = sg;
-> -                       sds->this_nr_running = sgs.sum_nr_running;
-> -                       sds->this_load_per_task = sgs.sum_weighted_load;
-> -                       sds->this_has_capacity = sgs.group_has_capacity;
-> -                       sds->this_idle_cpus = sgs.idle_cpus;
-> -               } else if (update_sd_pick_busiest(env, sds, sg, &sgs)) {
-> -                       sds->max_load = sgs.avg_load;
-> +               /* Now, start updating sd_lb_stats */
-> +               sds->total_load += sgs->group_load;
-> +               sds->total_pwr += sg->sgp->power;
-> +
-> +               if (!local_group && update_sd_pick_busiest(env, sds, sg, sgs)) {
->                         sds->busiest = sg;
-> -                       sds->busiest_nr_running = sgs.sum_nr_running;
-> -                       sds->busiest_idle_cpus = sgs.idle_cpus;
-> -                       sds->busiest_group_capacity = sgs.group_capacity;
-> -                       sds->busiest_load_per_task = sgs.sum_weighted_load;
-> -                       sds->busiest_has_capacity = sgs.group_has_capacity;
-> -                       sds->busiest_group_weight = sgs.group_weight;
-> -                       sds->group_imb = sgs.group_imb;
-> +                       sds->busiest_stat = *sgs;
->                 }
->
->                 sg = sg->next;
-> @@ -4734,8 +4717,8 @@ static int check_asym_packing(struct lb_
->         if (env->dst_cpu > busiest_cpu)
->                 return 0;
->
-> -       env->imbalance = DIV_ROUND_CLOSEST(
-> -               sds->max_load * sds->busiest->sgp->power, SCHED_POWER_SCALE);
-> +       env->imbalance = DIV_ROUND_CLOSEST(sds->busiest_stat.avg_load *
-> +                               sds->busiest->sgp->power, SCHED_POWER_SCALE);
->
->         return 1;
->  }
-> @@ -4753,24 +4736,23 @@ void fix_small_imbalance(struct lb_env *
->         unsigned long tmp, pwr_now = 0, pwr_move = 0;
->         unsigned int imbn = 2;
->         unsigned long scaled_busy_load_per_task;
-> +       struct sg_lb_stats *this, *busiest;
->
-> -       if (sds->this_nr_running) {
-> -               sds->this_load_per_task /= sds->this_nr_running;
-> -               if (sds->busiest_load_per_task >
-> -                               sds->this_load_per_task)
-> -                       imbn = 1;
-> -       } else {
-> -               sds->this_load_per_task =
-> -                       cpu_avg_load_per_task(env->dst_cpu);
-> -       }
-> +       this = &sds->this_stat;
-> +       busiest = &sds->busiest_stat;
-> +
-> +       if (!this->sum_nr_running)
-> +               this->load_per_task = cpu_avg_load_per_task(env->dst_cpu);
-> +       else if (busiest->load_per_task > this->load_per_task)
-> +               imbn = 1;
->
-> -       scaled_busy_load_per_task = sds->busiest_load_per_task
-> -                                        * SCHED_POWER_SCALE;
-> -       scaled_busy_load_per_task /= sds->busiest->sgp->power;
-> +       scaled_busy_load_per_task =
-> +               (busiest->load_per_task * SCHED_POWER_SCALE) /
-> +               sds->busiest->sgp->power;
->
-> -       if (sds->max_load - sds->this_load + scaled_busy_load_per_task >=
-> -                       (scaled_busy_load_per_task * imbn)) {
-> -               env->imbalance = sds->busiest_load_per_task;
-> +       if (busiest->avg_load - this->avg_load + scaled_busy_load_per_task >=
-> +           (scaled_busy_load_per_task * imbn)) {
-> +               env->imbalance = busiest->load_per_task;
->                 return;
->         }
->
-> @@ -4781,33 +4763,36 @@ void fix_small_imbalance(struct lb_env *
->          */
->
->         pwr_now += sds->busiest->sgp->power *
-> -                       min(sds->busiest_load_per_task, sds->max_load);
-> +                       min(busiest->load_per_task, busiest->avg_load);
->         pwr_now += sds->this->sgp->power *
-> -                       min(sds->this_load_per_task, sds->this_load);
-> +                       min(this->load_per_task, this->avg_load);
->         pwr_now /= SCHED_POWER_SCALE;
->
->         /* Amount of load we'd subtract */
-> -       tmp = (sds->busiest_load_per_task * SCHED_POWER_SCALE) /
-> +       tmp = (busiest->load_per_task * SCHED_POWER_SCALE) /
->                 sds->busiest->sgp->power;
-> -       if (sds->max_load > tmp)
-> +       if (busiest->avg_load > tmp) {
->                 pwr_move += sds->busiest->sgp->power *
-> -                       min(sds->busiest_load_per_task, sds->max_load - tmp);
-> +                           min(busiest->load_per_task,
-> +                               busiest->avg_load - tmp);
-> +       }
->
->         /* Amount of load we'd add */
-> -       if (sds->max_load * sds->busiest->sgp->power <
-> -               sds->busiest_load_per_task * SCHED_POWER_SCALE)
-> -               tmp = (sds->max_load * sds->busiest->sgp->power) /
-> +       if (busiest->avg_load * sds->busiest->sgp->power <
-> +           busiest->load_per_task * SCHED_POWER_SCALE) {
-> +               tmp = (busiest->avg_load * sds->busiest->sgp->power) /
->                         sds->this->sgp->power;
-> -       else
-> -               tmp = (sds->busiest_load_per_task * SCHED_POWER_SCALE) /
-> +       } else {
-> +               tmp = (busiest->load_per_task * SCHED_POWER_SCALE) /
->                         sds->this->sgp->power;
-> +       }
->         pwr_move += sds->this->sgp->power *
-> -                       min(sds->this_load_per_task, sds->this_load + tmp);
-> +                       min(this->load_per_task, this->avg_load + tmp);
->         pwr_move /= SCHED_POWER_SCALE;
->
->         /* Move if we gain throughput */
->         if (pwr_move > pwr_now)
-> -               env->imbalance = sds->busiest_load_per_task;
-> +               env->imbalance = busiest->load_per_task;
->  }
->
->  /**
-> @@ -4819,11 +4804,22 @@ void fix_small_imbalance(struct lb_env *
->  static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
->  {
->         unsigned long max_pull, load_above_capacity = ~0UL;
-> +       struct sg_lb_stats *this, *busiest;
->
-> -       sds->busiest_load_per_task /= sds->busiest_nr_running;
-> -       if (sds->group_imb) {
-> -               sds->busiest_load_per_task =
-> -                       min(sds->busiest_load_per_task, sds->avg_load);
-> +       this = &sds->this_stat;
-> +       if (this->sum_nr_running) {
-> +               this->load_per_task =
-> +                       this->sum_weighted_load / this->sum_nr_running;
-> +       }
-> +
-> +       busiest = &sds->busiest_stat;
-> +       /* busiest must have some tasks */
-> +       busiest->load_per_task =
-> +               busiest->sum_weighted_load / busiest->sum_nr_running;
-> +
-> +       if (busiest->group_imb) {
-> +               busiest->load_per_task =
-> +                       min(busiest->load_per_task, sds->avg_load);
->         }
->
->         /*
-> @@ -4831,20 +4827,19 @@ static inline void calculate_imbalance(s
->          * max load less than avg load(as we skip the groups at or below
->          * its cpu_power, while calculating max_load..)
->          */
-> -       if (sds->max_load < sds->avg_load) {
-> +       if (busiest->avg_load < sds->avg_load) {
->                 env->imbalance = 0;
->                 return fix_small_imbalance(env, sds);
->         }
->
-> -       if (!sds->group_imb) {
-> +       if (!busiest->group_imb) {
->                 /*
->                  * Don't want to pull so many tasks that a group would go idle.
->                  */
-> -               load_above_capacity = (sds->busiest_nr_running -
-> -                                               sds->busiest_group_capacity);
-> +               load_above_capacity =
-> +                       (busiest->sum_nr_running - busiest->group_capacity);
->
->                 load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
-> -
->                 load_above_capacity /= sds->busiest->sgp->power;
->         }
->
-> @@ -4858,12 +4853,14 @@ static inline void calculate_imbalance(s
->          * Be careful of negative numbers as they'll appear as very large values
->          * with unsigned longs.
->          */
-> -       max_pull = min(sds->max_load - sds->avg_load, load_above_capacity);
-> +       max_pull = min(busiest->avg_load - sds->avg_load,
-> +                      load_above_capacity);
->
->         /* How much load to actually move to equalise the imbalance */
-> -       env->imbalance = min(max_pull * sds->busiest->sgp->power,
-> -               (sds->avg_load - sds->this_load) * sds->this->sgp->power)
-> -                       / SCHED_POWER_SCALE;
-> +       env->imbalance = min(
-> +               max_pull * sds->busiest->sgp->power,
-> +               (sds->avg_load - this->avg_load) * sds->this->sgp->power
-> +       ) / SCHED_POWER_SCALE;
->
->         /*
->          * if *imbalance is less than the average load per runnable task
-> @@ -4871,9 +4868,8 @@ static inline void calculate_imbalance(s
->          * a think about bumping its value to force at least one task to be
->          * moved
->          */
-> -       if (env->imbalance < sds->busiest_load_per_task)
-> +       if (env->imbalance < busiest->load_per_task)
->                 return fix_small_imbalance(env, sds);
-> -
->  }
->
->  /******* find_busiest_group() helpers end here *********************/
-> @@ -4895,9 +4891,9 @@ static inline void calculate_imbalance(s
->   *                return the least loaded group whose CPUs can be
->   *                put to idle by rebalancing its tasks onto our group.
->   */
-> -static struct sched_group *
-> -find_busiest_group(struct lb_env *env)
-> +static struct sched_group *find_busiest_group(struct lb_env *env)
->  {
-> +       struct sg_lb_stats *this, *busiest;
+This is a set of small bug fixes for lpfc and zfcp and a fix for a
+fairly nasty bug in sg where a process which cancels I/O completes in a
+kernel thread which would then try to write back to the now gone
+userspace and end up writing to a random kernel address instead.
 
-"this" is a little confusing to read; mainly because elsewhere we've
-tied this to "this cpu" whereas the local sched group is arger.  (Not
-to mention the obvious OOP-land overloading of "this->".)
+The patch is available here:
 
-Perhaps %s/this/local/ for sg_lb_stat references?  Including this_stat
--> local_stat on sd_lb_stats?
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
 
->         struct sd_lb_stats sds;
->
->         memset(&sds, 0, sizeof(sds));
-> @@ -4907,13 +4903,15 @@ find_busiest_group(struct lb_env *env)
->          * this level.
->          */
->         update_sd_lb_stats(env, &sds);
-> +       this = &sds.this_stat;
-> +       busiest = &sds.busiest_stat;
->
->         if ((env->idle == CPU_IDLE || env->idle == CPU_NEWLY_IDLE) &&
->             check_asym_packing(env, &sds))
->                 return sds.busiest;
->
->         /* There is no busy sibling group to pull tasks from */
-> -       if (!sds.busiest || sds.busiest_nr_running == 0)
-> +       if (!sds.busiest || busiest->sum_nr_running == 0)
->                 goto out_balanced;
->
->         sds.avg_load = (SCHED_POWER_SCALE * sds.total_load) / sds.total_pwr;
-> @@ -4923,26 +4921,26 @@ find_busiest_group(struct lb_env *env)
->          * work because they assumes all things are equal, which typically
->          * isn't true due to cpus_allowed constraints and the like.
->          */
-> -       if (sds.group_imb)
-> +       if (busiest->group_imb)
->                 goto force_balance;
->
->         /* SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
-> -       if (env->idle == CPU_NEWLY_IDLE && sds.this_has_capacity &&
-> -                       !sds.busiest_has_capacity)
-> +       if (env->idle == CPU_NEWLY_IDLE && this->group_has_capacity &&
-> +           !busiest->group_has_capacity)
->                 goto force_balance;
->
->         /*
->          * If the local group is more busy than the selected busiest group
->          * don't try and pull any tasks.
->          */
-> -       if (sds.this_load >= sds.max_load)
-> +       if (this->avg_load >= busiest->avg_load)
->                 goto out_balanced;
->
->         /*
->          * Don't pull any tasks if this group is already above the domain
->          * average load.
->          */
-> -       if (sds.this_load >= sds.avg_load)
-> +       if (this->avg_load >= sds.avg_load)
->                 goto out_balanced;
->
->         if (env->idle == CPU_IDLE) {
-> @@ -4952,15 +4950,16 @@ find_busiest_group(struct lb_env *env)
->                  * there is no imbalance between this and busiest group
->                  * wrt to idle cpu's, it is balanced.
->                  */
-> -               if ((sds.this_idle_cpus <= sds.busiest_idle_cpus + 1) &&
-> -                   sds.busiest_nr_running <= sds.busiest_group_weight)
-> +               if ((this->idle_cpus <= busiest->idle_cpus + 1) &&
-> +                   busiest->sum_nr_running <= busiest->group_weight)
+The short changelog is:
 
-While we're improving readability:  idle_cpus < busiest->idle_cpus ?
+Anton Blanchard (1):
+      lpfc: Don't force CONFIG_GENERIC_CSUM on
 
-This check has always been a little oddly asymmetric in that:
-  group_weight - sum_nr_running <= idle_cpus
+Martin Peschke (3):
+      zfcp: remove access control tables interface (keep sysfs files)
+      zfcp: fix schedule-inside-lock in scsi_device list loops
+      zfcp: fix lock imbalance by reworking request queue locking
 
-This allows the case where our group has pulled lots of work to one of
-its cpus, but not yet spread that out, but still keep trying to
-balance because idle_cpus is high.
+Roland Dreier (1):
+      sg: Fix user memory corruption when SG_IO is interrupted by a signal
 
-This is more food for thought since this patch is not changing functionality.
+And the diffstat:
 
->                         goto out_balanced;
->         } else {
->                 /*
->                  * In the CPU_NEWLY_IDLE, CPU_NOT_IDLE cases, use
->                  * imbalance_pct to be conservative.
->                  */
-> -               if (100 * sds.max_load <= env->sd->imbalance_pct * sds.this_load)
-> +               if (100 * busiest->avg_load <=
-> +                               env->sd->imbalance_pct * this->avg_load)
->                         goto out_balanced;
->         }
->
->
-Reviewed-by: Paul  Turner <pjt@google.com>
+ drivers/s390/scsi/zfcp_erp.c   | 29 +++++++++++++++------
+ drivers/s390/scsi/zfcp_qdio.c  |  8 ++----
+ drivers/s390/scsi/zfcp_sysfs.c | 14 +++++++++++
+ drivers/scsi/Kconfig           |  1 -
+ fs/bio.c                       | 20 +++++++++++----
+ include/linux/wait.h           | 57 ++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 110 insertions(+), 19 deletions(-)
+
+With full diff below.
+
+James
+
+---
+
+diff --git a/drivers/s390/scsi/zfcp_erp.c b/drivers/s390/scsi/zfcp_erp.c
+index 1d4c8fe..c82fe65 100644
+--- a/drivers/s390/scsi/zfcp_erp.c
++++ b/drivers/s390/scsi/zfcp_erp.c
+@@ -102,10 +102,13 @@ static void zfcp_erp_action_dismiss_port(struct zfcp_port *port)
+ 
+ 	if (atomic_read(&port->status) & ZFCP_STATUS_COMMON_ERP_INUSE)
+ 		zfcp_erp_action_dismiss(&port->erp_action);
+-	else
+-		shost_for_each_device(sdev, port->adapter->scsi_host)
++	else {
++		spin_lock(port->adapter->scsi_host->host_lock);
++		__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 			if (sdev_to_zfcp(sdev)->port == port)
+ 				zfcp_erp_action_dismiss_lun(sdev);
++		spin_unlock(port->adapter->scsi_host->host_lock);
++	}
+ }
+ 
+ static void zfcp_erp_action_dismiss_adapter(struct zfcp_adapter *adapter)
+@@ -592,9 +595,11 @@ static void _zfcp_erp_lun_reopen_all(struct zfcp_port *port, int clear,
+ {
+ 	struct scsi_device *sdev;
+ 
+-	shost_for_each_device(sdev, port->adapter->scsi_host)
++	spin_lock(port->adapter->scsi_host->host_lock);
++	__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 		if (sdev_to_zfcp(sdev)->port == port)
+ 			_zfcp_erp_lun_reopen(sdev, clear, id, 0);
++	spin_unlock(port->adapter->scsi_host->host_lock);
+ }
+ 
+ static void zfcp_erp_strategy_followup_failed(struct zfcp_erp_action *act)
+@@ -1434,8 +1439,10 @@ void zfcp_erp_set_adapter_status(struct zfcp_adapter *adapter, u32 mask)
+ 		atomic_set_mask(common_mask, &port->status);
+ 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
+ 
+-	shost_for_each_device(sdev, adapter->scsi_host)
++	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, adapter->scsi_host)
+ 		atomic_set_mask(common_mask, &sdev_to_zfcp(sdev)->status);
++	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
+@@ -1469,11 +1476,13 @@ void zfcp_erp_clear_adapter_status(struct zfcp_adapter *adapter, u32 mask)
+ 	}
+ 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
+ 
+-	shost_for_each_device(sdev, adapter->scsi_host) {
++	spin_lock_irqsave(adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, adapter->scsi_host) {
+ 		atomic_clear_mask(common_mask, &sdev_to_zfcp(sdev)->status);
+ 		if (clear_counter)
+ 			atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
+ 	}
++	spin_unlock_irqrestore(adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
+@@ -1487,16 +1496,19 @@ void zfcp_erp_set_port_status(struct zfcp_port *port, u32 mask)
+ {
+ 	struct scsi_device *sdev;
+ 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
++	unsigned long flags;
+ 
+ 	atomic_set_mask(mask, &port->status);
+ 
+ 	if (!common_mask)
+ 		return;
+ 
+-	shost_for_each_device(sdev, port->adapter->scsi_host)
++	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 		if (sdev_to_zfcp(sdev)->port == port)
+ 			atomic_set_mask(common_mask,
+ 					&sdev_to_zfcp(sdev)->status);
++	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
+@@ -1511,6 +1523,7 @@ void zfcp_erp_clear_port_status(struct zfcp_port *port, u32 mask)
+ 	struct scsi_device *sdev;
+ 	u32 common_mask = mask & ZFCP_COMMON_FLAGS;
+ 	u32 clear_counter = mask & ZFCP_STATUS_COMMON_ERP_FAILED;
++	unsigned long flags;
+ 
+ 	atomic_clear_mask(mask, &port->status);
+ 
+@@ -1520,13 +1533,15 @@ void zfcp_erp_clear_port_status(struct zfcp_port *port, u32 mask)
+ 	if (clear_counter)
+ 		atomic_set(&port->erp_counter, 0);
+ 
+-	shost_for_each_device(sdev, port->adapter->scsi_host)
++	spin_lock_irqsave(port->adapter->scsi_host->host_lock, flags);
++	__shost_for_each_device(sdev, port->adapter->scsi_host)
+ 		if (sdev_to_zfcp(sdev)->port == port) {
+ 			atomic_clear_mask(common_mask,
+ 					  &sdev_to_zfcp(sdev)->status);
+ 			if (clear_counter)
+ 				atomic_set(&sdev_to_zfcp(sdev)->erp_counter, 0);
+ 		}
++	spin_unlock_irqrestore(port->adapter->scsi_host->host_lock, flags);
+ }
+ 
+ /**
+diff --git a/drivers/s390/scsi/zfcp_qdio.c b/drivers/s390/scsi/zfcp_qdio.c
+index 665e3cf..de0598e 100644
+--- a/drivers/s390/scsi/zfcp_qdio.c
++++ b/drivers/s390/scsi/zfcp_qdio.c
+@@ -224,11 +224,9 @@ int zfcp_qdio_sbals_from_sg(struct zfcp_qdio *qdio, struct zfcp_qdio_req *q_req,
+ 
+ static int zfcp_qdio_sbal_check(struct zfcp_qdio *qdio)
+ {
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	if (atomic_read(&qdio->req_q_free) ||
+ 	    !(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return 1;
+-	spin_unlock_irq(&qdio->req_q_lock);
+ 	return 0;
+ }
+ 
+@@ -246,9 +244,8 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio *qdio)
+ {
+ 	long ret;
+ 
+-	spin_unlock_irq(&qdio->req_q_lock);
+-	ret = wait_event_interruptible_timeout(qdio->req_q_wq,
+-			       zfcp_qdio_sbal_check(qdio), 5 * HZ);
++	ret = wait_event_interruptible_lock_irq_timeout(qdio->req_q_wq,
++		       zfcp_qdio_sbal_check(qdio), qdio->req_q_lock, 5 * HZ);
+ 
+ 	if (!(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return -EIO;
+@@ -262,7 +259,6 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio *qdio)
+ 		zfcp_erp_adapter_reopen(qdio->adapter, 0, "qdsbg_1");
+ 	}
+ 
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	return -EIO;
+ }
+ 
+diff --git a/drivers/s390/scsi/zfcp_sysfs.c b/drivers/s390/scsi/zfcp_sysfs.c
+index 3f01bbf..8906392 100644
+--- a/drivers/s390/scsi/zfcp_sysfs.c
++++ b/drivers/s390/scsi/zfcp_sysfs.c
+@@ -27,6 +27,16 @@ static ssize_t zfcp_sysfs_##_feat##_##_name##_show(struct device *dev,	       \
+ static ZFCP_DEV_ATTR(_feat, _name, S_IRUGO,				       \
+ 		     zfcp_sysfs_##_feat##_##_name##_show, NULL);
+ 
++#define ZFCP_DEFINE_ATTR_CONST(_feat, _name, _format, _value)		       \
++static ssize_t zfcp_sysfs_##_feat##_##_name##_show(struct device *dev,	       \
++						   struct device_attribute *at,\
++						   char *buf)		       \
++{									       \
++	return sprintf(buf, _format, _value);				       \
++}									       \
++static ZFCP_DEV_ATTR(_feat, _name, S_IRUGO,				       \
++		     zfcp_sysfs_##_feat##_##_name##_show, NULL);
++
+ #define ZFCP_DEFINE_A_ATTR(_name, _format, _value)			     \
+ static ssize_t zfcp_sysfs_adapter_##_name##_show(struct device *dev,	     \
+ 						 struct device_attribute *at,\
+@@ -75,6 +85,8 @@ ZFCP_DEFINE_ATTR(zfcp_unit, unit, in_recovery, "%d\n",
+ ZFCP_DEFINE_ATTR(zfcp_unit, unit, access_denied, "%d\n",
+ 		 (zfcp_unit_sdev_status(unit) &
+ 		  ZFCP_STATUS_COMMON_ACCESS_DENIED) != 0);
++ZFCP_DEFINE_ATTR_CONST(unit, access_shared, "%d\n", 0);
++ZFCP_DEFINE_ATTR_CONST(unit, access_readonly, "%d\n", 0);
+ 
+ static ssize_t zfcp_sysfs_port_failed_show(struct device *dev,
+ 					   struct device_attribute *attr,
+@@ -347,6 +359,8 @@ static struct attribute *zfcp_unit_attrs[] = {
+ 	&dev_attr_unit_in_recovery.attr,
+ 	&dev_attr_unit_status.attr,
+ 	&dev_attr_unit_access_denied.attr,
++	&dev_attr_unit_access_shared.attr,
++	&dev_attr_unit_access_readonly.attr,
+ 	NULL
+ };
+ static struct attribute_group zfcp_unit_attr_group = {
+diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+index 48b2918..92ff027 100644
+--- a/drivers/scsi/Kconfig
++++ b/drivers/scsi/Kconfig
+@@ -1353,7 +1353,6 @@ config SCSI_LPFC
+ 	tristate "Emulex LightPulse Fibre Channel Support"
+ 	depends on PCI && SCSI
+ 	select SCSI_FC_ATTRS
+-	select GENERIC_CSUM
+ 	select CRC_T10DIF
+ 	help
+           This lpfc driver supports the Emulex LightPulse
+diff --git a/fs/bio.c b/fs/bio.c
+index 94bbc04..c5eae72 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -1045,12 +1045,22 @@ static int __bio_copy_iov(struct bio *bio, struct bio_vec *iovecs,
+ int bio_uncopy_user(struct bio *bio)
+ {
+ 	struct bio_map_data *bmd = bio->bi_private;
+-	int ret = 0;
++	struct bio_vec *bvec;
++	int ret = 0, i;
+ 
+-	if (!bio_flagged(bio, BIO_NULL_MAPPED))
+-		ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
+-				     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
+-				     0, bmd->is_our_pages);
++	if (!bio_flagged(bio, BIO_NULL_MAPPED)) {
++		/*
++		 * if we're in a workqueue, the request is orphaned, so
++		 * don't copy into a random user address space, just free.
++		 */
++		if (current->mm)
++			ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
++					     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
++					     0, bmd->is_our_pages);
++		else if (bmd->is_our_pages)
++			bio_for_each_segment_all(bvec, bio, i)
++				__free_page(bvec->bv_page);
++	}
+ 	bio_free_map_data(bmd);
+ 	bio_put(bio);
+ 	return ret;
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index f487a47..a67fc16 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -811,6 +811,63 @@ do {									\
+ 	__ret;								\
+ })
+ 
++#define __wait_event_interruptible_lock_irq_timeout(wq, condition,	\
++						    lock, ret)		\
++do {									\
++	DEFINE_WAIT(__wait);						\
++									\
++	for (;;) {							\
++		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
++		if (condition)						\
++			break;						\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			break;						\
++		}							\
++		spin_unlock_irq(&lock);					\
++		ret = schedule_timeout(ret);				\
++		spin_lock_irq(&lock);					\
++		if (!ret)						\
++			break;						\
++	}								\
++	finish_wait(&wq, &__wait);					\
++} while (0)
++
++/**
++ * wait_event_interruptible_lock_irq_timeout - sleep until a condition gets true or a timeout elapses.
++ *		The condition is checked under the lock. This is expected
++ *		to be called with the lock taken.
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @lock: a locked spinlock_t, which will be released before schedule()
++ *	  and reacquired afterwards.
++ * @timeout: timeout, in jiffies
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or signal is received. The @condition is
++ * checked each time the waitqueue @wq is woken up.
++ *
++ * wake_up() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * This is supposed to be called while holding the lock. The lock is
++ * dropped before going to sleep and is reacquired afterwards.
++ *
++ * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
++ * was interrupted by a signal, and the remaining jiffies otherwise
++ * if the condition evaluated to true before the timeout elapsed.
++ */
++#define wait_event_interruptible_lock_irq_timeout(wq, condition, lock,	\
++						  timeout)		\
++({									\
++	int __ret = timeout;						\
++									\
++	if (!(condition))						\
++		__wait_event_interruptible_lock_irq_timeout(		\
++					wq, condition, lock, __ret);	\
++	__ret;								\
++})
++
+ 
+ /*
+  * These are the old interfaces to sleep waiting for an event.
+
+
