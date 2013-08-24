@@ -1,139 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab3HXOq1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 10:46:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61965 "EHLO mx1.redhat.com"
+	id S1754971Ab3HXOxo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 10:53:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8217 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754792Ab3HXOq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 10:46:26 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf: Prevent race in unthrottling code
-Date: Sat, 24 Aug 2013 16:45:54 +0200
-Message-Id: <1377355554-8934-1-git-send-email-jolsa@redhat.com>
+	id S1750746Ab3HXOxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 10:53:43 -0400
+Subject: [PATCH v2] i915: Update VGA arbiter support for newer devices
+To: intel-gfx@lists.freedesktop.org
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: airlied@redhat.com, linux-kernel@vger.kernel.org,
+        ville.syrjala@linux.intel.com
+Date: Sat, 24 Aug 2013 08:53:40 -0600
+Message-ID: <20130824144701.23370.42110.stgit@bling.home>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current throttling code triggers WARN below via following
-workload (only hit on AMD machine with 48 CPUs):
+This is intended to add VGA arbiter support for Intel HD graphics on
+Core processors.  The old GMCH registers no longer exist, so even
+though it appears that i915 participates in VGA arbitration, it doesn't
+work.  On Intel HD graphics we already attempt to disable VGA regions
+of the device.  This makes registering as a VGA client unnecessary since
+we don't intend to operate differently depending on how many VGA devices
+are present.  We can disable VGA memory regions by clearing the memory
+enable bit in the VGA MSR.  That only leaves VGA IO, which we update
+the VGA arbiter to know that we don't participate in VGA memory
+arbitration.  We also add a hook on unload to re-enable memory and
+reinstate VGA memory arbitration.
 
-  # while [ 1 ]; do perf record perf bench sched messaging; done
-
-  WARNING: at arch/x86/kernel/cpu/perf_event.c:1054 x86_pmu_start+0xc6/0x100()
-  SNIP
-  Call Trace:
-   <IRQ>  [<ffffffff815f62d6>] dump_stack+0x19/0x1b
-   [<ffffffff8105f531>] warn_slowpath_common+0x61/0x80
-   [<ffffffff8105f60a>] warn_slowpath_null+0x1a/0x20
-   [<ffffffff810213a6>] x86_pmu_start+0xc6/0x100
-   [<ffffffff81129dd2>] perf_adjust_freq_unthr_context.part.75+0x182/0x1a0
-   [<ffffffff8112a058>] perf_event_task_tick+0xc8/0xf0
-   [<ffffffff81093221>] scheduler_tick+0xd1/0x140
-   [<ffffffff81070176>] update_process_times+0x66/0x80
-   [<ffffffff810b9565>] tick_sched_handle.isra.15+0x25/0x60
-   [<ffffffff810b95e1>] tick_sched_timer+0x41/0x60
-   [<ffffffff81087c24>] __run_hrtimer+0x74/0x1d0
-   [<ffffffff810b95a0>] ? tick_sched_handle.isra.15+0x60/0x60
-   [<ffffffff81088407>] hrtimer_interrupt+0xf7/0x240
-   [<ffffffff81606829>] smp_apic_timer_interrupt+0x69/0x9c
-   [<ffffffff8160569d>] apic_timer_interrupt+0x6d/0x80
-   <EOI>  [<ffffffff81129f74>] ? __perf_event_task_sched_in+0x184/0x1a0
-   [<ffffffff814dd937>] ? kfree_skbmem+0x37/0x90
-   [<ffffffff815f2c47>] ? __slab_free+0x1ac/0x30f
-   [<ffffffff8118143d>] ? kfree+0xfd/0x130
-   [<ffffffff81181622>] kmem_cache_free+0x1b2/0x1d0
-   [<ffffffff814dd937>] kfree_skbmem+0x37/0x90
-   [<ffffffff814e03c4>] consume_skb+0x34/0x80
-   [<ffffffff8158b057>] unix_stream_recvmsg+0x4e7/0x820
-   [<ffffffff814d5546>] sock_aio_read.part.7+0x116/0x130
-   [<ffffffff8112c10c>] ? __perf_sw_event+0x19c/0x1e0
-   [<ffffffff814d5581>] sock_aio_read+0x21/0x30
-   [<ffffffff8119a5d0>] do_sync_read+0x80/0xb0
-   [<ffffffff8119ac85>] vfs_read+0x145/0x170
-   [<ffffffff8119b699>] SyS_read+0x49/0xa0
-   [<ffffffff810df516>] ? __audit_syscall_exit+0x1f6/0x2a0
-   [<ffffffff81604a19>] system_call_fastpath+0x16/0x1b
-  ---[ end trace 622b7e226c4a766a ]---
-
-The reason is race in perf_event_task_tick throttling code.
-The race flow (simplified code):
-
-  - perf_throttled_count is per cpu variable and is
-    CPU throttling flag, here starting with 0
-  - perf_throttled_seq is sequence/domain for allowed
-    count of interrupts within the tick, gets increased
-    each tick
-
-    on single CPU (CPU bounded event):
-
-      ... workload
-
-    perf_event_task_tick:
-    |
-    | T0    inc(perf_throttled_seq)
-    | T1    needs_unthr = xchg(perf_throttled_count, 0) == 0
-     tick gets interrupted:
-
-            ... event gets throttled under new seq ...
-
-      T2    last NMI comes, event is throttled - inc(perf_throttled_count)
-
-     back to tick:
-    | perf_adjust_freq_unthr_context:
-    |
-    | T3    unthrottling is skiped for event (needs_unthr == 0)
-    | T4    event is stop and started via freq adjustment
-    |
-    tick ends
-
-      ... workload
-      ... no sample is hit for event ...
-
-    perf_event_task_tick:
-    |
-    | T5    needs_unthr = xchg(perf_throttled_count, 0) != 0 (from T2)
-    | T6    unthrottling is done on event (interrupts == MAX_INTERRUPTS)
-    |       event is already started (from T4) -> WARN
-
-Fixing this by not checking needs_unthr again and thus
-check all events for unthrottling.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- kernel/events/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 928fae7..299d1f1 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2709,7 +2709,7 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
+v2: I915_READ/WRITE accessors don't work in i915_disable_vga, use inb/outb
+    directly.  Also, on the driver unbind VGA enable path, acquire legacy
+    IO to re-enable VGA memory.  Correct comment.
+
+As with v1, this depends on "vgaarb: Fixes for partial VGA opt-out".  With
+all patches I'm able to assign a discrete PEG VGA device to a guest and
+execute the VBIOS w/o interference from IGD or corruption of the IGD
+framebuffer.
+
+ drivers/gpu/drm/i915/i915_dma.c      |    9 ++++++---
+ drivers/gpu/drm/i915/intel_display.c |   24 ++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index f466980..d9cf216 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1287,9 +1287,12 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 	 * then we do not take part in VGA arbitration and the
+ 	 * vga_client_register() fails with -ENODEV.
+ 	 */
+-	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
+-	if (ret && ret != -ENODEV)
+-		goto out;
++	if (!HAS_PCH_SPLIT(dev)) {
++		ret = vga_client_register(dev->pdev, dev, NULL,
++					  i915_vga_set_decode);
++		if (ret && ret != -ENODEV)
++			goto out;
++	}
  
- 		hwc = &event->hw;
+ 	intel_register_dsm_handler();
  
--		if (needs_unthr && hwc->interrupts == MAX_INTERRUPTS) {
-+		if (hwc->interrupts == MAX_INTERRUPTS) {
- 			hwc->interrupts = 0;
- 			perf_log_throttle(event, 1);
- 			event->pmu->start(event, 0);
--- 
-1.7.11.7
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 5fb3058..2bb805c 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9519,6 +9519,15 @@ static void i915_disable_vga(struct drm_device *dev)
+ 	outb(SR01, VGA_SR_INDEX);
+ 	sr1 = inb(VGA_SR_DATA);
+ 	outb(sr1 | 1<<5, VGA_SR_DATA);
++
++	/* Disable VGA memory on Intel HD */
++	if (HAS_PCH_SPLIT(dev)) {
++		outb(inb(VGA_MSR_READ) & ~VGA_MSR_MEM_EN, VGA_MSR_WRITE);
++		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
++						   VGA_RSRC_NORMAL_IO |
++						   VGA_RSRC_NORMAL_MEM);
++	}
++
+ 	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
+ 	udelay(300);
+ 
+@@ -9526,6 +9535,19 @@ static void i915_disable_vga(struct drm_device *dev)
+ 	POSTING_READ(vga_reg);
+ }
+ 
++static void i915_enable_vga(struct drm_device *dev)
++{
++	/* Enable VGA memory on Intel HD */
++	if (HAS_PCH_SPLIT(dev)) {
++		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
++		outb(inb(VGA_MSR_READ) | VGA_MSR_MEM_EN, VGA_MSR_WRITE);
++		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_MASK |
++						   VGA_RSRC_NORMAL_IO |
++						   VGA_RSRC_NORMAL_MEM);
++		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
++	}
++}
++
+ void intel_modeset_init_hw(struct drm_device *dev)
+ {
+ 	intel_init_power_well(dev);
+@@ -9983,6 +10005,8 @@ void intel_modeset_cleanup(struct drm_device *dev)
+ 
+ 	intel_disable_fbc(dev);
+ 
++	i915_enable_vga(dev);
++
+ 	intel_disable_gt_powersave(dev);
+ 
+ 	ironlake_teardown_rc6(dev);
 
