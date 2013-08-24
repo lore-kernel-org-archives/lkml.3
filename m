@@ -1,131 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab3HXUfm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 16:35:42 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755445Ab3HXUfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 16:35:40 -0400
-Message-ID: <52191916.4080600@nod.at>
-Date: Sat, 24 Aug 2013 22:35:34 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1755894Ab3HXUhg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 16:37:36 -0400
+Received: from nm23-vm5.access.bullet.mail.gq1.yahoo.com ([216.39.63.141]:47850
+	"EHLO nm23-vm5.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755638Ab3HXUhf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 16:37:35 -0400
+X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Aug 2013 16:37:35 EDT
+X-Yahoo-Newman-Id: 349413.86358.bm@smtp116.sbc.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: WPJLG8gVM1kipjwROVVVTubylrnPtuzdIPdqABn9K9PbaMO
+ kUIsyI96wWdtOMWOuY_HFRL0AVdfE77ZSzYCQ6nu4RwTDtWlA1aut9o9_IUf
+ H8oLPhUP5b7ZjLG6ao.FG5qdzsAWteUcqXzsBAV0cs7RahuNeRGGNpU4DI..
+ 4TV3iy2NusI91BxpFSAGbZYq4w.r1WMnQ8uNpN.uEHjE64ofNFYQDS5SsydP
+ emvMFZaj7X6TaEeNYDLC.qb0hPbLF6PjvDeJbFu0DnOdYY8AImCdw_vlz659
+ JoP1Ye41djTOtZxRxXmLqP9oruaZ2jOk850VUPXQU9rWby9ky6EIjRre9StW
+ qs7PX4gKPdf0ZdjXElhJaHVZ2xWvjWbEIu5T5q7Uiievsb8U91jr9TJ1bipG
+ WfQdR3jteoeLS5m8pfduulFKvzQN3ba3C__g9xaFrSfeFp8LLrdVR3lqI0pL
+ rvxg33aRBwNhwsadgSxoIl5pFWgVDMkX7drIkyzNH2.t6M0K5qT5lku.1NQw
+ ZYsIoP8n89PJk8S2Rcw--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with plain)
+        by smtp116.sbc.mail.ne1.yahoo.com with SMTP; 24 Aug 2013 20:31:50 +0000 UTC
+Message-ID: <5219183F.8080300@att.net>
+Date: Sat, 24 Aug 2013 15:31:59 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130730 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Baruch Siach <baruch@tkos.co.il>,
-        Will Deacon <will.deacon@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v4 1/4] lib: Introduce atomic MMIO modify
-References: <1377358532-23802-1-git-send-email-ezequiel.garcia@free-electrons.com> <1377358532-23802-2-git-send-email-ezequiel.garcia@free-electrons.com> <CAFLxGvxLyGH1Xgq6=Y5Z9x=DtBmjWnE+x9X-65RKY1=8dhL_OA@mail.gmail.com> <20130824195858.GA5957@localhost>
-In-Reply-To: <20130824195858.GA5957@localhost>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        linux-gpio <linux-gpio@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpiolib: Fix crash when exporting non-existant gpio
+References: <1377370108-2867-1-git-send-email-daniel.santos@pobox.com> <52191041.7040505@roeck-us.net>
+In-Reply-To: <52191041.7040505@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.08.2013 21:58, schrieb Ezequiel Garcia:
-> On Sat, Aug 24, 2013 at 08:27:10PM +0200, richard -rw- weinberger wrote:
->> On Sat, Aug 24, 2013 at 5:35 PM, Ezequiel Garcia
->> <ezequiel.garcia@free-electrons.com> wrote:
->>> Some platforms have MMIO regions that are shared across orthogonal
->>> subsystems. This commit implements a possible solution for the
->>> thread-safe access of such regions through a spinlock-protected API.
->>>
->>> Concurrent access is protected with a single spinlock for the
->>> entire MMIO address space. While this protects shared-registers,
->>> it also serializes access to unrelated/unshared registers.
->>>
->>> Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
->>> ---
->>>  include/linux/io.h |  5 +++++
->>>  lib/Makefile       |  2 +-
->>>  lib/atomicio.c     | 27 +++++++++++++++++++++++++++
->>>  3 files changed, 33 insertions(+), 1 deletion(-)
->>>  create mode 100644 lib/atomicio.c
->>>
->>> diff --git a/include/linux/io.h b/include/linux/io.h
->>> index f4f42fa..c331dcb 100644
->>> --- a/include/linux/io.h
->>> +++ b/include/linux/io.h
->>> @@ -101,4 +101,9 @@ static inline void arch_phys_wc_del(int handle)
->>>  #define arch_phys_wc_add arch_phys_wc_add
->>>  #endif
->>>
->>> +#ifndef __HAVE_ARCH_ATOMIC_IO_MODIFY
->>> +/* Atomic MMIO-wide IO modify */
->>> +extern void atomic_io_modify(void __iomem *reg, u32 mask, u32 set);
->>> +#endif
->>> +
->>>  #endif /* _LINUX_IO_H */
->>> diff --git a/lib/Makefile b/lib/Makefile
->>> index 7baccfd..695d6e2 100644
->>> --- a/lib/Makefile
->>> +++ b/lib/Makefile
->>> @@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
->>>          sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
->>>          proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
->>>          is_single_threaded.o plist.o decompress.o kobject_uevent.o \
->>> -        earlycpio.o percpu-refcount.o
->>> +        earlycpio.o percpu-refcount.o atomicio.o
->>>
->>>  obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
->>>  lib-$(CONFIG_MMU) += ioremap.o
->>> diff --git a/lib/atomicio.c b/lib/atomicio.c
->>> new file mode 100644
->>> index 0000000..1750f9d
->>> --- /dev/null
->>> +++ b/lib/atomicio.c
->>> @@ -0,0 +1,27 @@
->>> +#include <linux/io.h>
->>> +#include <linux/spinlock.h>
->>> +
->>> +#ifndef __HAVE_ARCH_ATOMIC_IO_MODIFY
->>> +/*
->>> + * Generic atomic MMIO modify.
->>> + *
->>> + * Allows thread-safe access to registers shared by unrelated subsystems.
->>> + * The access is protected by a single MMIO-wide lock.
->>> + *
->>> + * Optimized variants can be implemented on a per-architecture basis.
->>> + */
->>> +static DEFINE_RAW_SPINLOCK(__io_lock);
->>> +void atomic_io_modify(void __iomem *reg, u32 mask, u32 set)
->>> +{
->>> +       unsigned long flags;
->>> +       u32 value;
->>> +
->>> +       raw_spin_lock_irqsave(&__io_lock, flags);
->>> +       value = readl(reg) & ~mask;
->>> +       value |= (set & mask);
->>> +       writel(value, reg);
->>> +       raw_spin_unlock_irqrestore(&__io_lock, flags);
->>> +
->>> +}
->>> +EXPORT_SYMBOL(atomic_io_modify);
->>
->> Why not the default case EXPORT_SYMBOL_GPL()?
->>
-> 
-> Because I copy-pasted the export from some other lib/.. :-)
-> 
-> Mind explaining me the difference, why you say _GPL it's the default,
-> and why EXPORT_SYMBOL is more frequently used in lib/ ?
 
-As the kernel is GPL it is the default case to mark new things as GPL symbols.
-If your new feature is a core feature which is used by mostly everyone, EXPORT_SYMBOL()
-is appropriate.
-I.e. having kmalloc() and friends EXPORT_SYMBOL_GPL() would be a bad idea. :)
-EXPORT_SYMBOL() seems to be often used in lib/ because most lib/ things are core features.
+On 08/24/2013 02:57 PM, Guenter Roeck wrote:
+>
+> Looking into calling code, desc_to_gpio() is clearly not supposed to 
+> return an error,
+> and it will result in odd behavior if it returns -1. For example, the 
+> resulting debug
+> message of "gpio--1 (...) status ..." is not very useful.
+>
+> It would make more sense to fix the calling code. You could for example
+> validate in affected functions if the gpio pin exists by not only
+> checking for desc but also for desc->chip. Another option might be
+> to have gpio_to_desc() return NULL if desc->chip is NULL.
 
-Thanks,
-//richard
+Yes, you are correct of course.  I guess I was just being lazy. :) I'll 
+re-submit.
+
