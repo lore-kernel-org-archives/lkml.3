@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab3HXHji (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 03:39:38 -0400
-Received: from mail14-co9on0067.outbound.messaging.microsoft.com ([157.56.211.67]:22266
-	"EHLO CO9EHSNDR004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754124Ab3HXHjg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 03:39:36 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Aug 2013 03:39:35 EDT
-X-Forefront-Antispam-Report: CIP:152.20.9.164;KIP:(null);UIP:(null);IPV:NLI;H:UNCWEXHT1.dcs.uncw.edu;RD:exchsmtp.uncw.edu;EFVD:NLI
-X-BigFish: VPS56(z569dh16d9mza898kkzz1f42h1d77h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hza7h58hz17326ah186068h8275bh1de097hz2fh2a8h839h947hd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1fe8h1ff5h)
-X-FB-OUTBOUND-SPAM: yes
-X-SpamScore: 56
-From: "Hutchinson, Alayna Louise" <alh3666@uncw.edu>
-Date: Sat, 24 Aug 2013 03:24:27 -0400
-Subject: Warning Alert
-Thread-Topic: Warning Alert
-Thread-Index: AQHOoJr3xqMwPpW9jUWYNXaktwqgcg==
-Message-ID: <81A472001B6F19408BFEBBD51E7F00B622F5C8EB09@uncwexmb4.dcs.uncw.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1755337Ab3HXH6H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 03:58:07 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61287 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754719Ab3HXH6F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 03:58:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 26/33] ARM: ux500: Remove AUXDATA relating to SDI (MMC) clock-name bindings
+Date: Sat, 24 Aug 2013 09:57:53 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org> <1370521041-32318-27-git-send-email-lee.jones@linaro.org> <CACRpkdb+WEecBEuFtoDLv9k3vyi=o0nZcLfCeny-7+uxdNBryA@mail.gmail.com>
+In-Reply-To: <CACRpkdb+WEecBEuFtoDLv9k3vyi=o0nZcLfCeny-7+uxdNBryA@mail.gmail.com>
 MIME-Version: 1.0
-To: Undisclosed recipients:;
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%VCOE.ORG$RO%1$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%VIGNANUNIVERSITY.ORG$RO%1$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%VISITLOUDOUN.ORG$RO%1$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%VSOINT.ORG$RO%1$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%WACAP.ORG$RO%1$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%WACOISD.ORG$RO%1$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%WINEINSTITUTE.ORG$RO%1$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%WMS.ORG$RO%1$TLS%0$FQDN%$TlsDn%
-X-OriginatorOrg: uncw.edu
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308240957.53944.arnd@arndb.de>
+X-Provags-ID: V02:K0:a3f6ypMB2oXQkjhSPx4EY7/XT1rdM5fiDIbhHCxk9xX
+ W/McKaeJd7CBl2Sci5q2eCgpkAJfrb6BvbK9HQYN6OD+vnr3aH
+ PL3dEUsr1w45W3gy7XoTY0vy8ZxKcjYexaZDth3qYimJOoVVAu
+ W3bsvIW+pAxtNRXwJS/X+O3+t/MRGfKTdFXWT5o6swATTwdSxg
+ itBVO75JN0oEh1rABaxrV5PIgT8uk7kQBOWWmD0lQfN5Lt/bU7
+ 6WNsXPj6BSFTMPgKSvvH7pPOYOVdD4EoXAAu/Es0j4WDUOtt9Z
+ +mkabohxzbldn+0FDMuCaB+3eDwazGAps93lxgS1rIcGwol5FE
+ vNPPEfkmGrXl96oEUnGY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IT Service,
+On Friday 23 August 2013, Linus Walleij wrote:
+> On Thu, Jun 6, 2013 at 2:17 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> (...)
+> >         /* Requires DMA bindings. */
+> >         OF_DEV_AUXDATA("arm,pl022", 0x80002000, "ssp0",  &ssp0_plat),
+> > -       OF_DEV_AUXDATA("arm,pl18x", 0x80126000, "sdi0",  &mop500_sdi0_data),
+> > -       OF_DEV_AUXDATA("arm,pl18x", 0x80118000, "sdi1",  &mop500_sdi1_data),
+> > -       OF_DEV_AUXDATA("arm,pl18x", 0x80005000, "sdi2",  &mop500_sdi2_data),
+> > -       OF_DEV_AUXDATA("arm,pl18x", 0x80114000, "sdi4",  &mop500_sdi4_data),
+> 
+> This cannot be done. Ulf H would beat me up if I applied this.
+> 
+> The platform data there in the end is actually used.
+> 
+> Especially look at mop500_sdi0_data, it contains a lot of stuff that is
+> not yet DT:ed even (a task in its own right).
+> 
+> But as long as we keep this pdata we can still delete ATAGs support (as
+> per the second patch set pending) and get a clearer picture.
 
-You have exceeded the limit of 23432 storage on your mailbox set by your
-WEB ITSERVICE/Administrator, and you will be having problems in sending
-and receiving mails Until You Re-Validate. You have to update by clicking on the
-below link and fill out the information to validate/increase the limit storage of your account.
+Which parts of mop500_sdi0_data are not yet converted? I thought it was all covered
+months ago.
 
-Please Click the link Below or copy paste to your browser To Validate Your Mailbox
-
-http://webupdatemail.jimdo.com/
-
-Warning!!!
-Failure to do this, will result in limited access to your mailbox.
-failure to update your account within Three days of this update
-notification, your account will be closed permanently.
-
-Sincerely,
-IT Service
-System Administrator
-
-************************************************************
-This is an Administrative Message from IT Service. It is
-not spam. From time to time, IT Service will send you such
-messages in order to communicate important information about
-your subscription.
-************************************************************
-
-
-
+	Arnd
