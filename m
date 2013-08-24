@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab3HXVvp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 17:51:45 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60070 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755578Ab3HXVvo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 17:51:44 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <52192AEB.3070607@roeck-us.net>
-Date: Sat, 24 Aug 2013 14:51:39 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1755989Ab3HXVyj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 17:54:39 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:46736 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755656Ab3HXVyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 17:54:38 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Omnikey Cardman 4000: pull in ioctl.h in user header
+Date: Sat, 24 Aug 2013 17:54:12 -0400
+User-Agent: KMail/1.13.7 (Linux/3.10.6; KDE/4.6.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, laforge@gnumonks.org
+References: <1376676429-3953-1-git-send-email-vapier@gentoo.org> <20130822155545.e263454227265e049f58f6a3@linux-foundation.org>
+In-Reply-To: <20130822155545.e263454227265e049f58f6a3@linux-foundation.org>
 MIME-Version: 1.0
-To: Daniel Santos <daniel.santos@pobox.com>
-CC: danielfsantos@att.net, Linus Walleij <linus.walleij@linaro.org>,
-        linux-gpio@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpiolib: Fix crash when exporting non-existant gpio
-References: <1377370108-2867-1-git-send-email-daniel.santos@pobox.com> <1377377305-11695-1-git-send-email-daniel.santos@pobox.com>
-In-Reply-To: <1377377305-11695-1-git-send-email-daniel.santos@pobox.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: multipart/signed;
+  boundary="nextPart9780763.JC2Z4JIgkZ";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201308241754.41626.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2013 01:48 PM, danielfsantos@att.net wrote:
-> I got this on an RPi and I can't find anything specific to that.
-> Besides, it's clearly wrong to try to access desc->chip when we have
-> just tested that it may be NULL at drivers/gpio/gpiolib.c:1409:
->
-> 	chip = desc->chip;
-> 	if (chip == NULL)
-> 		goto done;
->
-> ....
->
-> done:
-> 	if (status)
-> 		pr_debug("_gpio_request: gpio-%d (%s) status %d\n",
-> 			 desc_to_gpio(desc), label ? : "?", status);
->
-> To reproduce, just pick an invalid gpio nubmer and:
->
-> echo -n 248 > /sys/class/gpio/export
->
-> However, I wasn't able to reproduce it on my laptop, maybe because I
-> don't have any real gpio chips there, not sure.  More info on RPi bug
-> report: https://github.com/raspberrypi/linux/issues/364
->
-> This fix makes sure that gpio_to_desc() only returns non-NULL if the
-> specified gpio really has a chip, and not just if it's within the ranged
-> of gpios for the arch.
->
-> [  222.961384] Unable to handle kernel NULL pointer dereference at
-> virtual address 00000044
-> [  222.969486] pgd = d97d0000
-> [  222.972190] [00000044] *pgd=1aaca831, *pte=00000000, *ppte=00000000
-> [  222.978483] Internal error: Oops: 17 [#1] PREEMPT ARM
-> ---
->   drivers/gpio/gpiolib.c | 6 +++---
->   1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index d6413b2..db7c6bb 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -123,7 +123,8 @@ static int gpio_chip_hwgpio(const struct gpio_desc *desc)
->    */
->   static struct gpio_desc *gpio_to_desc(unsigned gpio)
->   {
-> -	if (WARN(!gpio_is_valid(gpio), "invalid GPIO %d\n", gpio))
-> +	if (WARN(!gpio_is_valid(gpio) || !gpio_desc[gpio].chip,
-> +			"invalid GPIO %d\n", gpio))
+--nextPart9780763.JC2Z4JIgkZ
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-I think this triggers a WARN if someone requests an invalid gpio pin from userspace.
-Is this really a good idea ?
+On Thursday 22 August 2013 18:55:45 Andrew Morton wrote:
+> On Fri, 16 Aug 2013 14:07:09 -0400 Mike Frysinger wrote:
+> > This file uses the ioctl helpers (_IOR/_IOW/etc...), so include ioctl.h
+> > for the definitions.
+> >=20
+> > ...
+> >=20
+> > --- a/include/uapi/linux/cm4000_cs.h
+> > +++ b/include/uapi/linux/cm4000_cs.h
+> > @@ -2,6 +2,7 @@
+> >  #define _UAPI_CM4000_H_
+> > =20
+> >  #include <linux/types.h>
+> > +#include <linux/ioctl.h>
+> >=20
+> >  #define	MAX_ATR			33
+>=20
+> I'm assuming this fixes a build error under unknown circumstances, or
+> not, or something else?
 
-[ and then export_store and unexport_store complain again with pr_warn ]
+yes, it's to fix a build error.  i don't have any specific source packages =
+that=20
+are known to fail though.  just doing analysis of the headers by grep/eye.
+=2Dmike
 
-May be a separate patch, but if the WARN is useful it might make sense to introduce
-gpio_to_desc_silent() which doesn't produce the WARN if it fails.
+--nextPart9780763.JC2Z4JIgkZ
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Looking further into the code, I suspect there may be some race condition
-where desc->chip is not (yet) set and export_store is called. So we will
-see a WARNING instead of a crash, as the underlying condition still exists.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
->   		return NULL;
->   	else
->   		return &gpio_desc[gpio];
-> @@ -1406,8 +1407,7 @@ static int gpiod_request(struct gpio_desc *desc, const char *label)
->   	spin_lock_irqsave(&gpio_lock, flags);
->
->   	chip = desc->chip;
-> -	if (chip == NULL)
-> -		goto done;
-> +	BUG_ON(!chip);
->
-... which in turn means we might see this one. If so, this code might replace
-an invalid memory access crash with a BUG crash. Is this really desirable, or
-should this better be a WARN ?
+iQIcBAABAgAGBQJSGSuhAAoJEEFjO5/oN/WBobgQAMtrLICwV0eZ+cMuSh9LYhWQ
+jASwKlbeTR22gAS4pGRP3oFmJAiwA/c/V8f3xOUOpHwS415mis9EIOG2NLxtphfw
+NzlIE5m6V/p5SNNszktTiz7huikdbfTuYhqV6sFTE75Q96hNMDF7JhrAn9xeKUWt
+fPKMtwKZ3746TwoRLB9xcrCia91CfF/mIe43KMS1hbKSBgpqLJmjus34Wj83iBME
+8Y2gwDWFIZ6NkpN9apRiLN2ZhJz161y+WA1H06kZpM6l/7Jf8kWVnxZ+Z6jAtGMq
+EBSP9USF3AeXryBVxMCFPp9Hl4vzQNU5/q8o3QpEgFHZ7/AqvNrZewW5wtD1Mnld
+GU5CpQ5HbzXlwS0Fq+yjxEr4Sj9si1f4e62sQbzK6YNV+bEZjJ8pg/lOH09sxbIP
+utLZPY1yBsZdFuNO5R04F9zMVj1emBgp08Cf6Pk/5WYxGiQlYfA/xbImRtjyp+y2
+BgbsGQnlKm819j1v3S/L4ivyUCWYqWOtDOlG78HvJSULctiEd3dTaDrpX8Tkc+3V
+G4SdtxivGuVqNScIcmZ0TeGpy/xsLgfX6MULDXJMcDLWK0l1/ha5AaKttuUW2Xs7
+4AeEJ6cuEXhiutCZnPClsirDO9uEAf7ndCcUAXCqJhHUfjsa0E2cM5a8ew8jGQdc
+GYHZiyhprV2MOLlFMctZ
+=X9mZ
+-----END PGP SIGNATURE-----
 
-Guenter
-
-
->   	if (!try_module_get(chip->owner))
->   		goto done;
->
-
+--nextPart9780763.JC2Z4JIgkZ--
