@@ -1,1261 +1,811 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab3HXLLB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 07:11:01 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:60310 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880Ab3HXLKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 07:10:55 -0400
-X-AuditID: cbfec373-b7f6d6d00000330d-07-521894bd2316
-Date: Sat, 24 Aug 2013 08:10:44 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, dri-devel@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org, devel@driverdev.osuosl.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH V3] i2c: move of helpers into the core
-Message-id: <20130824081044.1053b993@samsung.com>
-In-reply-to: <1377187217-31820-1-git-send-email-wsa@the-dreams.de>
-References: <1377187217-31820-1-git-send-email-wsa@the-dreams.de>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t/hIN29UySCDLpvClhcuXiIyeLcrQZW
-	iz1nfrFbzD9yjtXiytf3bBbL9/UzWmx6fI3VYmHbEhaLjr9fGC0u75rDZtGzYSurxewl/SwW
-	M87vY7Lo/DKLzeL393+sFitPzGJ2EPDY8LmJzePevsMsHnOmNbF43O8+zuSxeUm9x/kZCxk9
-	Tp56wuLxeZNcAEcUl01Kak5mWWqRvl0CV8bBDZ0sBacOMFUcOHGQtYGxrZmpi5GTQ0LAROL3
-	rE0sELaYxIV769lAbCGBJYwS/9aqdjFyAdndTBKbX+wBa2ARUJX40b0UzGYTMJJ41djCCmKL
-	CKhIdK7/DzaIWeAJs8Ss9ykgtrCAlcT9LYsZuxg5OHgFDCWev80GCXMKOEkcfL+EEWKXo8Sx
-	rl2sICUSQPGtU31BwrwCghI/Jt+DmqglsXlbEyuELS+xec1b5gmMArOQlM1CUjYLSdkCRuZV
-	jKKlxckFxUnpuUZ6xYm5xaV56XrJ+bmbGCGxVbyD8cUGq0OMAhyMSjy8glPFg4RYE8uKK3MP
-	MUpwMCuJ8K5QkggS4k1JrKxKLcqPLyrNSS0+xMjEwSnVwLjghfz728y5u2R+/VnKYLKtXHu2
-	XZJfg0VvgXBi+2OXDTXqRTyTdc3lLgQs3q4pNcVu1VbnRynbqqfW2fKsq2XJdZz8yHm64fOO
-	73sW2BWcjn/wcvPfGUrTNjLmzpadYXKnz/j6y7m5HdtE5+9uv/otMDinIuPnwvBT5/rLrize
-	evfzd4NPV/YpsRRnJBpqMRcVJwIAHKUSQ4sCAAA=
+	id S1754504Ab3HXL1B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 07:27:01 -0400
+Received: from m50-132.163.com ([123.125.50.132]:59153 "EHLO m50-132.163.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753952Ab3HXL06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 07:26:58 -0400
+From: liujunliang_ljl@163.com
+To: davem@davemloft.net
+Cc: horms@verge.net.au, joe@perches.com, romieu@fr.zoreil.com,
+        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sunhecheng@vip.126.com, liujl <liujunliang_ljl@163.com>
+Subject: [PATCH] USB2NET : SR9700 : One chip USB 1.1 USB2NET SR9700 Device Driver Support
+Date: Sat, 24 Aug 2013 19:26:00 +0800
+Message-Id: <1377343560-10524-1-git-send-email-liujunliang_ljl@163.com>
+X-Mailer: git-send-email 1.7.0.4
+X-CM-TRANSID: DNGowEB5G09TmBhSZSsWAg--.188S2
+X-Coremail-Antispam: 1Uf129KBjvAXoWfCr4fXF4xKr1rCryrJw1fWFg_yoW8ZFWDGo
+	Z3XFsxXw18JryxArZ5Ww1xXw4DZFyDKw45Ar45ZrZ7Xa43XF1DKrWag3y5Z345Ja4S9rn5
+	Zw1xtan3AFZYvry5n29KB7ZKAUJUUUU5529EdanIXcx71UUUUU7v73VFW2AGmfu7bjvjm3
+	AaLaJ3UbIYCTnIWIevJa73UjIFyTuYvjxU0wIDDUUUU
+X-CM-SenderInfo: xolxy3pqolt0hjboyzi6rwjhhfrp/1tbiqxmDX1EAE3JBPwAAsg
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 22 Aug 2013 18:00:14 +0200
-Wolfram Sang <wsa@the-dreams.de> escreveu:
-
-> I2C of helpers used to live in of_i2c.c but experience (from SPI) shows
-> that it is much cleaner to have this in the core. This also removes a
-> circular dependency between the helpers and the core, and so we can
-> finally register child nodes in the core instead of doing this manually
-> in each driver. So, fix the drivers and documentation, too.
-> 
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
-> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-
-Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-
-> ---
-> 
-> V2->V3: Was trying to be too smart by only fixing includes needed.
-> 	Took a more general approach this time, converting of_i2c.h
-> 	to i2c.h in case i2c.h was not already there. Otherwise
-> 	remove it. Improved my build scripts and no build failures,
-> 	no complaints from buildbot as well.
-> 
-> 
->  Documentation/acpi/enumeration.txt              |    1 -
->  arch/powerpc/platforms/44x/warp.c               |    1 -
->  drivers/gpu/drm/tilcdc/tilcdc_slave.c           |    1 -
->  drivers/gpu/drm/tilcdc/tilcdc_tfp410.c          |    1 -
->  drivers/gpu/host1x/drm/output.c                 |    2 +-
->  drivers/i2c/busses/i2c-at91.c                   |    3 -
->  drivers/i2c/busses/i2c-cpm.c                    |    6 --
->  drivers/i2c/busses/i2c-davinci.c                |    2 -
->  drivers/i2c/busses/i2c-designware-platdrv.c     |    2 -
->  drivers/i2c/busses/i2c-gpio.c                   |    3 -
->  drivers/i2c/busses/i2c-i801.c                   |    2 -
->  drivers/i2c/busses/i2c-ibm_iic.c                |    4 -
->  drivers/i2c/busses/i2c-imx.c                    |    3 -
->  drivers/i2c/busses/i2c-mpc.c                    |    2 -
->  drivers/i2c/busses/i2c-mv64xxx.c                |    3 -
->  drivers/i2c/busses/i2c-mxs.c                    |    3 -
->  drivers/i2c/busses/i2c-nomadik.c                |    3 -
->  drivers/i2c/busses/i2c-ocores.c                 |    3 -
->  drivers/i2c/busses/i2c-octeon.c                 |    3 -
->  drivers/i2c/busses/i2c-omap.c                   |    3 -
->  drivers/i2c/busses/i2c-pnx.c                    |    3 -
->  drivers/i2c/busses/i2c-powermac.c               |    9 +-
->  drivers/i2c/busses/i2c-pxa.c                    |    2 -
->  drivers/i2c/busses/i2c-s3c2410.c                |    2 -
->  drivers/i2c/busses/i2c-sh_mobile.c              |    2 -
->  drivers/i2c/busses/i2c-sirf.c                   |    3 -
->  drivers/i2c/busses/i2c-stu300.c                 |    2 -
->  drivers/i2c/busses/i2c-tegra.c                  |    3 -
->  drivers/i2c/busses/i2c-versatile.c              |    2 -
->  drivers/i2c/busses/i2c-wmt.c                    |    3 -
->  drivers/i2c/busses/i2c-xiic.c                   |    3 -
->  drivers/i2c/i2c-core.c                          |  109 +++++++++++++++++++++-
->  drivers/i2c/i2c-mux.c                           |    3 -
->  drivers/i2c/muxes/i2c-arb-gpio-challenge.c      |    1 -
->  drivers/i2c/muxes/i2c-mux-gpio.c                |    1 -
->  drivers/i2c/muxes/i2c-mux-pinctrl.c             |    1 -
->  drivers/media/platform/exynos4-is/fimc-is-i2c.c |    4 +-
->  drivers/media/platform/exynos4-is/fimc-is.c     |    2 +-
->  drivers/media/platform/exynos4-is/media-dev.c   |    1 -
->  drivers/of/Kconfig                              |    6 --
->  drivers/of/Makefile                             |    1 -
->  drivers/of/of_i2c.c                             |  114 -----------------------
->  drivers/staging/imx-drm/imx-tve.c               |    2 +-
->  include/linux/i2c.h                             |   20 ++++
->  include/linux/of_i2c.h                          |   46 ---------
->  sound/soc/fsl/imx-sgtl5000.c                    |    2 +-
->  sound/soc/fsl/imx-wm8962.c                      |    2 +-
->  47 files changed, 138 insertions(+), 262 deletions(-)
->  delete mode 100644 drivers/of/of_i2c.c
->  delete mode 100644 include/linux/of_i2c.h
-> 
-> diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-> index d9be7a9..958266e 100644
-> --- a/Documentation/acpi/enumeration.txt
-> +++ b/Documentation/acpi/enumeration.txt
-> @@ -238,7 +238,6 @@ An I2C bus (controller) driver does:
->  	if (ret)
->  		/* handle error */
->  
-> -	of_i2c_register_devices(adapter);
->  	/* Enumerate the slave devices behind this bus via ACPI */
->  	acpi_i2c_register_devices(adapter);
->  
-> diff --git a/arch/powerpc/platforms/44x/warp.c b/arch/powerpc/platforms/44x/warp.c
-> index 4cfa499..534574a 100644
-> --- a/arch/powerpc/platforms/44x/warp.c
-> +++ b/arch/powerpc/platforms/44x/warp.c
-> @@ -16,7 +16,6 @@
->  #include <linux/interrupt.h>
->  #include <linux/delay.h>
->  #include <linux/of_gpio.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/slab.h>
->  #include <linux/export.h>
->  
-> diff --git a/drivers/gpu/drm/tilcdc/tilcdc_slave.c b/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-> index dfffaf0..a19f657 100644
-> --- a/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-> +++ b/drivers/gpu/drm/tilcdc/tilcdc_slave.c
-> @@ -16,7 +16,6 @@
->   */
->  
->  #include <linux/i2c.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/pinctrl/pinmux.h>
->  #include <linux/pinctrl/consumer.h>
->  #include <drm/drm_encoder_slave.h>
-> diff --git a/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c b/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c
-> index 925c7cd..c38b56b 100644
-> --- a/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c
-> +++ b/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c
-> @@ -16,7 +16,6 @@
->   */
->  
->  #include <linux/i2c.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/gpio.h>
->  #include <linux/of_gpio.h>
->  #include <linux/pinctrl/pinmux.h>
-> diff --git a/drivers/gpu/host1x/drm/output.c b/drivers/gpu/host1x/drm/output.c
-> index 8140fc6..137ae81 100644
-> --- a/drivers/gpu/host1x/drm/output.c
-> +++ b/drivers/gpu/host1x/drm/output.c
-> @@ -9,7 +9,7 @@
->  
->  #include <linux/module.h>
->  #include <linux/of_gpio.h>
-> -#include <linux/of_i2c.h>
-> +#include <linux/i2c.h>
->  
->  #include "drm.h"
->  
-> diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-> index 6bb839b..fd05930 100644
-> --- a/drivers/i2c/busses/i2c-at91.c
-> +++ b/drivers/i2c/busses/i2c-at91.c
-> @@ -28,7 +28,6 @@
->  #include <linux/module.h>
->  #include <linux/of.h>
->  #include <linux/of_device.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/platform_device.h>
->  #include <linux/slab.h>
->  #include <linux/platform_data/dma-atmel.h>
-> @@ -775,8 +774,6 @@ static int at91_twi_probe(struct platform_device *pdev)
->  		return rc;
->  	}
->  
-> -	of_i2c_register_devices(&dev->adapter);
-> -
->  	dev_info(dev->dev, "AT91 i2c bus driver.\n");
->  	return 0;
->  }
-> diff --git a/drivers/i2c/busses/i2c-cpm.c b/drivers/i2c/busses/i2c-cpm.c
-> index 2e1f7eb..b2b8aa9 100644
-> --- a/drivers/i2c/busses/i2c-cpm.c
-> +++ b/drivers/i2c/busses/i2c-cpm.c
-> @@ -42,7 +42,6 @@
->  #include <linux/dma-mapping.h>
->  #include <linux/of_device.h>
->  #include <linux/of_platform.h>
-> -#include <linux/of_i2c.h>
->  #include <sysdev/fsl_soc.h>
->  #include <asm/cpm.h>
->  
-> @@ -681,11 +680,6 @@ static int cpm_i2c_probe(struct platform_device *ofdev)
->  	dev_dbg(&ofdev->dev, "hw routines for %s registered.\n",
->  		cpm->adap.name);
->  
-> -	/*
-> -	 * register OF I2C devices
-> -	 */
-> -	of_i2c_register_devices(&cpm->adap);
-> -
->  	return 0;
->  out_shut:
->  	cpm_i2c_shutdown(cpm);
-> diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-> index fa55605..62be3b3 100644
-> --- a/drivers/i2c/busses/i2c-davinci.c
-> +++ b/drivers/i2c/busses/i2c-davinci.c
-> @@ -38,7 +38,6 @@
->  #include <linux/slab.h>
->  #include <linux/cpufreq.h>
->  #include <linux/gpio.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/of_device.h>
->  
->  #include <mach/hardware.h>
-> @@ -728,7 +727,6 @@ static int davinci_i2c_probe(struct platform_device *pdev)
->  		dev_err(&pdev->dev, "failure adding adapter\n");
->  		goto err_unuse_clocks;
->  	}
-> -	of_i2c_register_devices(adap);
->  
->  	return 0;
->  
-> diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-> index 4c5fada..27ea436 100644
-> --- a/drivers/i2c/busses/i2c-designware-platdrv.c
-> +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-> @@ -35,7 +35,6 @@
->  #include <linux/err.h>
->  #include <linux/interrupt.h>
->  #include <linux/of.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/platform_device.h>
->  #include <linux/pm.h>
->  #include <linux/pm_runtime.h>
-> @@ -172,7 +171,6 @@ static int dw_i2c_probe(struct platform_device *pdev)
->  		dev_err(&pdev->dev, "failure adding adapter\n");
->  		return r;
->  	}
-> -	of_i2c_register_devices(adap);
->  	acpi_i2c_register_devices(adap);
->  
->  	pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
-> diff --git a/drivers/i2c/busses/i2c-gpio.c b/drivers/i2c/busses/i2c-gpio.c
-> index bc6e139..e5da9fe 100644
-> --- a/drivers/i2c/busses/i2c-gpio.c
-> +++ b/drivers/i2c/busses/i2c-gpio.c
-> @@ -16,7 +16,6 @@
->  #include <linux/platform_device.h>
->  #include <linux/gpio.h>
->  #include <linux/of_gpio.h>
-> -#include <linux/of_i2c.h>
->  
->  struct i2c_gpio_private_data {
->  	struct i2c_adapter adap;
-> @@ -224,8 +223,6 @@ static int i2c_gpio_probe(struct platform_device *pdev)
->  	if (ret)
->  		goto err_add_bus;
->  
-> -	of_i2c_register_devices(adap);
-> -
->  	platform_set_drvdata(pdev, priv);
->  
->  	dev_info(&pdev->dev, "using pins %u (SDA) and %u (SCL%s)\n",
-> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-> index 4ebceed..4296d17 100644
-> --- a/drivers/i2c/busses/i2c-i801.c
-> +++ b/drivers/i2c/busses/i2c-i801.c
-> @@ -87,7 +87,6 @@
->  #include <linux/slab.h>
->  #include <linux/wait.h>
->  #include <linux/err.h>
-> -#include <linux/of_i2c.h>
->  
->  #if (defined CONFIG_I2C_MUX_GPIO || defined CONFIG_I2C_MUX_GPIO_MODULE) && \
->  		defined CONFIG_DMI
-> @@ -1230,7 +1229,6 @@ static int i801_probe(struct pci_dev *dev, const struct pci_device_id *id)
->  		goto exit_free_irq;
->  	}
->  
-> -	of_i2c_register_devices(&priv->adapter);
->  	i801_probe_optional_slaves(priv);
->  	/* We ignore errors - multiplexing is optional */
->  	i801_add_mux(priv);
-> diff --git a/drivers/i2c/busses/i2c-ibm_iic.c b/drivers/i2c/busses/i2c-ibm_iic.c
-> index 973f516..ff3caa0 100644
-> --- a/drivers/i2c/busses/i2c-ibm_iic.c
-> +++ b/drivers/i2c/busses/i2c-ibm_iic.c
-> @@ -42,7 +42,6 @@
->  #include <linux/io.h>
->  #include <linux/i2c.h>
->  #include <linux/of_platform.h>
-> -#include <linux/of_i2c.h>
->  
->  #include "i2c-ibm_iic.h"
->  
-> @@ -759,9 +758,6 @@ static int iic_probe(struct platform_device *ofdev)
->  	dev_info(&ofdev->dev, "using %s mode\n",
->  		 dev->fast_mode ? "fast (400 kHz)" : "standard (100 kHz)");
->  
-> -	/* Now register all the child nodes */
-> -	of_i2c_register_devices(adap);
-> -
->  	return 0;
->  
->  error_cleanup:
-> diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-> index e242797..bbbea6b 100644
-> --- a/drivers/i2c/busses/i2c-imx.c
-> +++ b/drivers/i2c/busses/i2c-imx.c
-> @@ -50,7 +50,6 @@
->  #include <linux/slab.h>
->  #include <linux/of.h>
->  #include <linux/of_device.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/platform_data/i2c-imx.h>
->  
->  /** Defines ********************************************************************
-> @@ -570,8 +569,6 @@ static int __init i2c_imx_probe(struct platform_device *pdev)
->  		return ret;
->  	}
->  
-> -	of_i2c_register_devices(&i2c_imx->adapter);
-> -
->  	/* Set up platform driver data */
->  	platform_set_drvdata(pdev, i2c_imx);
->  
-> diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
-> index 7607dc0..9f2513d 100644
-> --- a/drivers/i2c/busses/i2c-mpc.c
-> +++ b/drivers/i2c/busses/i2c-mpc.c
-> @@ -18,7 +18,6 @@
->  #include <linux/sched.h>
->  #include <linux/init.h>
->  #include <linux/of_platform.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/slab.h>
->  
->  #include <linux/io.h>
-> @@ -691,7 +690,6 @@ static int fsl_i2c_probe(struct platform_device *op)
->  		dev_err(i2c->dev, "failed to add adapter\n");
->  		goto fail_add;
->  	}
-> -	of_i2c_register_devices(&i2c->adap);
->  
->  	return result;
->  
-> diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
-> index b1f42bf..8220322 100644
-> --- a/drivers/i2c/busses/i2c-mv64xxx.c
-> +++ b/drivers/i2c/busses/i2c-mv64xxx.c
-> @@ -21,7 +21,6 @@
->  #include <linux/of.h>
->  #include <linux/of_device.h>
->  #include <linux/of_irq.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/clk.h>
->  #include <linux/err.h>
->  
-> @@ -689,8 +688,6 @@ mv64xxx_i2c_probe(struct platform_device *pd)
->  		goto exit_free_irq;
->  	}
->  
-> -	of_i2c_register_devices(&drv_data->adapter);
-> -
->  	return 0;
->  
->  exit_free_irq:
-> diff --git a/drivers/i2c/busses/i2c-mxs.c b/drivers/i2c/busses/i2c-mxs.c
-> index df8ff5a..62ed07d 100644
-> --- a/drivers/i2c/busses/i2c-mxs.c
-> +++ b/drivers/i2c/busses/i2c-mxs.c
-> @@ -27,7 +27,6 @@
->  #include <linux/stmp_device.h>
->  #include <linux/of.h>
->  #include <linux/of_device.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/dmaengine.h>
->  
-> @@ -701,8 +700,6 @@ static int mxs_i2c_probe(struct platform_device *pdev)
->  		return err;
->  	}
->  
-> -	of_i2c_register_devices(adap);
-> -
->  	return 0;
->  }
->  
-> diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
-> index 512dfe6..519df17 100644
-> --- a/drivers/i2c/busses/i2c-nomadik.c
-> +++ b/drivers/i2c/busses/i2c-nomadik.c
-> @@ -24,7 +24,6 @@
->  #include <linux/pm_runtime.h>
->  #include <linux/platform_data/i2c-nomadik.h>
->  #include <linux/of.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/pinctrl/consumer.h>
->  
->  #define DRIVER_NAME "nmk-i2c"
-> @@ -1045,8 +1044,6 @@ static int nmk_i2c_probe(struct amba_device *adev, const struct amba_id *id)
->  		goto err_add_adap;
->  	}
->  
-> -	of_i2c_register_devices(adap);
-> -
->  	pm_runtime_put(&adev->dev);
->  
->  	return 0;
-> diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
-> index 0e1f824..0a52b78 100644
-> --- a/drivers/i2c/busses/i2c-ocores.c
-> +++ b/drivers/i2c/busses/i2c-ocores.c
-> @@ -24,7 +24,6 @@
->  #include <linux/i2c-ocores.h>
->  #include <linux/slab.h>
->  #include <linux/io.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/log2.h>
->  
->  struct ocores_i2c {
-> @@ -435,8 +434,6 @@ static int ocores_i2c_probe(struct platform_device *pdev)
->  	if (pdata) {
->  		for (i = 0; i < pdata->num_devices; i++)
->  			i2c_new_device(&i2c->adap, pdata->devices + i);
-> -	} else {
-> -		of_i2c_register_devices(&i2c->adap);
->  	}
->  
->  	return 0;
-> diff --git a/drivers/i2c/busses/i2c-octeon.c b/drivers/i2c/busses/i2c-octeon.c
-> index 956fe32..b929ba2 100644
-> --- a/drivers/i2c/busses/i2c-octeon.c
-> +++ b/drivers/i2c/busses/i2c-octeon.c
-> @@ -15,7 +15,6 @@
->  #include <linux/interrupt.h>
->  #include <linux/kernel.h>
->  #include <linux/module.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/delay.h>
->  #include <linux/sched.h>
->  #include <linux/slab.h>
-> @@ -599,8 +598,6 @@ static int octeon_i2c_probe(struct platform_device *pdev)
->  	}
->  	dev_info(i2c->dev, "version %s\n", DRV_VERSION);
->  
-> -	of_i2c_register_devices(&i2c->adap);
-> -
->  	return 0;
->  
->  out:
-> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-> index 142b694d..a9f0f80 100644
-> --- a/drivers/i2c/busses/i2c-omap.c
-> +++ b/drivers/i2c/busses/i2c-omap.c
-> @@ -38,7 +38,6 @@
->  #include <linux/clk.h>
->  #include <linux/io.h>
->  #include <linux/of.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/of_device.h>
->  #include <linux/slab.h>
->  #include <linux/i2c-omap.h>
-> @@ -1245,8 +1244,6 @@ omap_i2c_probe(struct platform_device *pdev)
->  	dev_info(dev->dev, "bus %d rev%d.%d at %d kHz\n", adap->nr,
->  		 major, minor, dev->speed);
->  
-> -	of_i2c_register_devices(adap);
-> -
->  	pm_runtime_mark_last_busy(dev->dev);
->  	pm_runtime_put_autosuspend(dev->dev);
->  
-> diff --git a/drivers/i2c/busses/i2c-pnx.c b/drivers/i2c/busses/i2c-pnx.c
-> index 5f39c6d..7b57d67 100644
-> --- a/drivers/i2c/busses/i2c-pnx.c
-> +++ b/drivers/i2c/busses/i2c-pnx.c
-> @@ -23,7 +23,6 @@
->  #include <linux/err.h>
->  #include <linux/clk.h>
->  #include <linux/slab.h>
-> -#include <linux/of_i2c.h>
->  
->  #define I2C_PNX_TIMEOUT_DEFAULT		10 /* msec */
->  #define I2C_PNX_SPEED_KHZ_DEFAULT	100
-> @@ -741,8 +740,6 @@ static int i2c_pnx_probe(struct platform_device *pdev)
->  		goto out_irq;
->  	}
->  
-> -	of_i2c_register_devices(&alg_data->adapter);
-> -
->  	dev_dbg(&pdev->dev, "%s: Master at %#8x, irq %d.\n",
->  		alg_data->adapter.name, res->start, alg_data->irq);
->  
-> diff --git a/drivers/i2c/busses/i2c-powermac.c b/drivers/i2c/busses/i2c-powermac.c
-> index 8dc90da..1010f2e 100644
-> --- a/drivers/i2c/busses/i2c-powermac.c
-> +++ b/drivers/i2c/busses/i2c-powermac.c
-> @@ -440,7 +440,9 @@ static int i2c_powermac_probe(struct platform_device *dev)
->  	adapter->algo = &i2c_powermac_algorithm;
->  	i2c_set_adapdata(adapter, bus);
->  	adapter->dev.parent = &dev->dev;
-> -	adapter->dev.of_node = dev->dev.of_node;
-> +
-> +	/* Clear of_node to skip automatic registration of i2c child nodes */
-> +	adapter->dev.of_node = NULL;
->  	rc = i2c_add_adapter(adapter);
->  	if (rc) {
->  		printk(KERN_ERR "i2c-powermac: Adapter %s registration "
-> @@ -450,9 +452,8 @@ static int i2c_powermac_probe(struct platform_device *dev)
->  
->  	printk(KERN_INFO "PowerMac i2c bus %s registered\n", adapter->name);
->  
-> -	/* Cannot use of_i2c_register_devices() due to Apple device-tree
-> -	 * funkyness
-> -	 */
-> +	/* Use custom child registration due to Apple device-tree funkyness */
-> +	adapter->dev.of_node = dev->dev.of_node;
->  	i2c_powermac_register_devices(adapter, bus);
->  
->  	return rc;
-> diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
-> index fbafed2..bc65014 100644
-> --- a/drivers/i2c/busses/i2c-pxa.c
-> +++ b/drivers/i2c/busses/i2c-pxa.c
-> @@ -31,7 +31,6 @@
->  #include <linux/i2c-pxa.h>
->  #include <linux/of.h>
->  #include <linux/of_device.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/platform_device.h>
->  #include <linux/err.h>
->  #include <linux/clk.h>
-> @@ -1185,7 +1184,6 @@ static int i2c_pxa_probe(struct platform_device *dev)
->  		printk(KERN_INFO "I2C: Failed to add bus\n");
->  		goto eadapt;
->  	}
-> -	of_i2c_register_devices(&i2c->adap);
->  
->  	platform_set_drvdata(dev, i2c);
->  
-> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-> index cab1c91..643426e 100644
-> --- a/drivers/i2c/busses/i2c-s3c2410.c
-> +++ b/drivers/i2c/busses/i2c-s3c2410.c
-> @@ -36,7 +36,6 @@
->  #include <linux/cpufreq.h>
->  #include <linux/slab.h>
->  #include <linux/io.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/of_gpio.h>
->  #include <linux/pinctrl/consumer.h>
->  
-> @@ -1154,7 +1153,6 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
->  		return ret;
->  	}
->  
-> -	of_i2c_register_devices(&i2c->adap);
->  	platform_set_drvdata(pdev, i2c);
->  
->  	pm_runtime_enable(&pdev->dev);
-> diff --git a/drivers/i2c/busses/i2c-sh_mobile.c b/drivers/i2c/busses/i2c-sh_mobile.c
-> index debf745..aa1268f 100644
-> --- a/drivers/i2c/busses/i2c-sh_mobile.c
-> +++ b/drivers/i2c/busses/i2c-sh_mobile.c
-> @@ -27,7 +27,6 @@
->  #include <linux/platform_device.h>
->  #include <linux/interrupt.h>
->  #include <linux/i2c.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/err.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/clk.h>
-> @@ -758,7 +757,6 @@ static int sh_mobile_i2c_probe(struct platform_device *dev)
->  		 "I2C adapter %d with bus speed %lu Hz (L/H=%x/%x)\n",
->  		 adap->nr, pd->bus_speed, pd->iccl, pd->icch);
->  
-> -	of_i2c_register_devices(adap);
->  	return 0;
->  
->   err_all:
-> diff --git a/drivers/i2c/busses/i2c-sirf.c b/drivers/i2c/busses/i2c-sirf.c
-> index a63c7d5..0ff22e2 100644
-> --- a/drivers/i2c/busses/i2c-sirf.c
-> +++ b/drivers/i2c/busses/i2c-sirf.c
-> @@ -12,7 +12,6 @@
->  #include <linux/slab.h>
->  #include <linux/platform_device.h>
->  #include <linux/i2c.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/clk.h>
->  #include <linux/err.h>
->  #include <linux/io.h>
-> @@ -366,8 +365,6 @@ static int i2c_sirfsoc_probe(struct platform_device *pdev)
->  
->  	clk_disable(clk);
->  
-> -	of_i2c_register_devices(adap);
-> -
->  	dev_info(&pdev->dev, " I2C adapter ready to operate\n");
->  
->  	return 0;
-> diff --git a/drivers/i2c/busses/i2c-stu300.c b/drivers/i2c/busses/i2c-stu300.c
-> index d1a6b20..047546c 100644
-> --- a/drivers/i2c/busses/i2c-stu300.c
-> +++ b/drivers/i2c/busses/i2c-stu300.c
-> @@ -17,7 +17,6 @@
->  #include <linux/clk.h>
->  #include <linux/io.h>
->  #include <linux/slab.h>
-> -#include <linux/of_i2c.h>
->  
->  /* the name of this kernel module */
->  #define NAME "stu300"
-> @@ -936,7 +935,6 @@ stu300_probe(struct platform_device *pdev)
->  	platform_set_drvdata(pdev, dev);
->  	dev_info(&pdev->dev, "ST DDC I2C @ %p, irq %d\n",
->  		 dev->virtbase, dev->irq);
-> -	of_i2c_register_devices(adap);
->  
->  	return 0;
->  }
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> index 9aa1b60..c457cb4 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -25,7 +25,6 @@
->  #include <linux/interrupt.h>
->  #include <linux/delay.h>
->  #include <linux/slab.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/of_device.h>
->  #include <linux/module.h>
->  #include <linux/clk/tegra.h>
-> @@ -802,8 +801,6 @@ static int tegra_i2c_probe(struct platform_device *pdev)
->  		return ret;
->  	}
->  
-> -	of_i2c_register_devices(&i2c_dev->adapter);
-> -
->  	return 0;
->  }
->  
-> diff --git a/drivers/i2c/busses/i2c-versatile.c b/drivers/i2c/busses/i2c-versatile.c
-> index f3a8790..6bb3a89 100644
-> --- a/drivers/i2c/busses/i2c-versatile.c
-> +++ b/drivers/i2c/busses/i2c-versatile.c
-> @@ -16,7 +16,6 @@
->  #include <linux/platform_device.h>
->  #include <linux/slab.h>
->  #include <linux/io.h>
-> -#include <linux/of_i2c.h>
->  
->  #define I2C_CONTROL	0x00
->  #define I2C_CONTROLS	0x00
-> @@ -108,7 +107,6 @@ static int i2c_versatile_probe(struct platform_device *dev)
->  	ret = i2c_bit_add_numbered_bus(&i2c->adap);
->  	if (ret >= 0) {
->  		platform_set_drvdata(dev, i2c);
-> -		of_i2c_register_devices(&i2c->adap);
->  		return 0;
->  	}
->  
-> diff --git a/drivers/i2c/busses/i2c-wmt.c b/drivers/i2c/busses/i2c-wmt.c
-> index baaa7d1..c65da3d 100644
-> --- a/drivers/i2c/busses/i2c-wmt.c
-> +++ b/drivers/i2c/busses/i2c-wmt.c
-> @@ -21,7 +21,6 @@
->  #include <linux/module.h>
->  #include <linux/of.h>
->  #include <linux/of_address.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/of_irq.h>
->  #include <linux/platform_device.h>
->  
-> @@ -439,8 +438,6 @@ static int wmt_i2c_probe(struct platform_device *pdev)
->  
->  	platform_set_drvdata(pdev, i2c_dev);
->  
-> -	of_i2c_register_devices(adap);
-> -
->  	return 0;
->  }
->  
-> diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
-> index 3d0f052..8823db7 100644
-> --- a/drivers/i2c/busses/i2c-xiic.c
-> +++ b/drivers/i2c/busses/i2c-xiic.c
-> @@ -40,7 +40,6 @@
->  #include <linux/i2c-xiic.h>
->  #include <linux/io.h>
->  #include <linux/slab.h>
-> -#include <linux/of_i2c.h>
->  
->  #define DRIVER_NAME "xiic-i2c"
->  
-> @@ -752,8 +751,6 @@ static int xiic_i2c_probe(struct platform_device *pdev)
->  			i2c_new_device(&i2c->adap, pdata->devices + i);
->  	}
->  
-> -	of_i2c_register_devices(&i2c->adap);
-> -
->  	return 0;
->  
->  add_adapter_failed:
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index f32ca29..08ebd78 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -23,7 +23,11 @@
->     SMBus 2.0 support by Mark Studebaker <mdsxyz123@yahoo.com> and
->     Jean Delvare <khali@linux-fr.org>
->     Mux support by Rodolfo Giometti <giometti@enneenne.com> and
-> -   Michael Lawnick <michael.lawnick.ext@nsn.com> */
-> +   Michael Lawnick <michael.lawnick.ext@nsn.com>
-> +   OF support is copyright (c) 2008 Jochen Friedrich <jochen@scram.de>
-> +   (based on a previous patch from Jon Smirl <jonsmirl@gmail.com>) and
-> +   (c) 2013  Wolfram Sang <wsa@the-dreams.de>
-> + */
->  
->  #include <linux/module.h>
->  #include <linux/kernel.h>
-> @@ -35,7 +39,9 @@
->  #include <linux/init.h>
->  #include <linux/idr.h>
->  #include <linux/mutex.h>
-> +#include <linux/of.h>
->  #include <linux/of_device.h>
-> +#include <linux/of_irq.h>
->  #include <linux/completion.h>
->  #include <linux/hardirq.h>
->  #include <linux/irqflags.h>
-> @@ -954,6 +960,104 @@ static void i2c_scan_static_board_info(struct i2c_adapter *adapter)
->  	up_read(&__i2c_board_lock);
->  }
->  
-> +/* OF support code */
-> +
-> +#if IS_ENABLED(CONFIG_OF)
-> +static void of_i2c_register_devices(struct i2c_adapter *adap)
-> +{
-> +	void *result;
-> +	struct device_node *node;
-> +
-> +	/* Only register child devices if the adapter has a node pointer set */
-> +	if (!adap->dev.of_node)
-> +		return;
-> +
-> +	dev_dbg(&adap->dev, "of_i2c: walking child nodes\n");
-> +
-> +	for_each_available_child_of_node(adap->dev.of_node, node) {
-> +		struct i2c_board_info info = {};
-> +		struct dev_archdata dev_ad = {};
-> +		const __be32 *addr;
-> +		int len;
-> +
-> +		dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
-> +
-> +		if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
-> +			dev_err(&adap->dev, "of_i2c: modalias failure on %s\n",
-> +				node->full_name);
-> +			continue;
-> +		}
-> +
-> +		addr = of_get_property(node, "reg", &len);
-> +		if (!addr || (len < sizeof(int))) {
-> +			dev_err(&adap->dev, "of_i2c: invalid reg on %s\n",
-> +				node->full_name);
-> +			continue;
-> +		}
-> +
-> +		info.addr = be32_to_cpup(addr);
-> +		if (info.addr > (1 << 10) - 1) {
-> +			dev_err(&adap->dev, "of_i2c: invalid addr=%x on %s\n",
-> +				info.addr, node->full_name);
-> +			continue;
-> +		}
-> +
-> +		info.irq = irq_of_parse_and_map(node, 0);
-> +		info.of_node = of_node_get(node);
-> +		info.archdata = &dev_ad;
-> +
-> +		if (of_get_property(node, "wakeup-source", NULL))
-> +			info.flags |= I2C_CLIENT_WAKE;
-> +
-> +		request_module("%s%s", I2C_MODULE_PREFIX, info.type);
-> +
-> +		result = i2c_new_device(adap, &info);
-> +		if (result == NULL) {
-> +			dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
-> +				node->full_name);
-> +			of_node_put(node);
-> +			irq_dispose_mapping(info.irq);
-> +			continue;
-> +		}
-> +	}
-> +}
-> +
-> +static int of_dev_node_match(struct device *dev, void *data)
-> +{
-> +	return dev->of_node == data;
-> +}
-> +
-> +/* must call put_device() when done with returned i2c_client device */
-> +struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
-> +{
-> +	struct device *dev;
-> +
-> +	dev = bus_find_device(&i2c_bus_type, NULL, node,
-> +					 of_dev_node_match);
-> +	if (!dev)
-> +		return NULL;
-> +
-> +	return i2c_verify_client(dev);
-> +}
-> +EXPORT_SYMBOL(of_find_i2c_device_by_node);
-> +
-> +/* must call put_device() when done with returned i2c_adapter device */
-> +struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
-> +{
-> +	struct device *dev;
-> +
-> +	dev = bus_find_device(&i2c_bus_type, NULL, node,
-> +					 of_dev_node_match);
-> +	if (!dev)
-> +		return NULL;
-> +
-> +	return i2c_verify_adapter(dev);
-> +}
-> +EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
-> +#else
-> +static void of_i2c_register_devices(struct i2c_adapter *adap) { }
-> +#endif /* CONFIG_OF */
-> +
->  static int i2c_do_add_adapter(struct i2c_driver *driver,
->  			      struct i2c_adapter *adap)
->  {
-> @@ -1058,6 +1162,8 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
->  
->  exit_recovery:
->  	/* create pre-declared device nodes */
-> +	of_i2c_register_devices(adap);
-> +
->  	if (adap->nr < __i2c_first_dynamic_bus_num)
->  		i2c_scan_static_board_info(adap);
->  
-> @@ -1282,7 +1388,6 @@ void i2c_del_adapter(struct i2c_adapter *adap)
->  }
->  EXPORT_SYMBOL(i2c_del_adapter);
->  
-> -
->  /* ------------------------------------------------------------------------- */
->  
->  int i2c_for_each_dev(void *data, int (*fn)(struct device *, void *))
-> diff --git a/drivers/i2c/i2c-mux.c b/drivers/i2c/i2c-mux.c
-> index 7409ebb..797e311 100644
-> --- a/drivers/i2c/i2c-mux.c
-> +++ b/drivers/i2c/i2c-mux.c
-> @@ -25,7 +25,6 @@
->  #include <linux/i2c.h>
->  #include <linux/i2c-mux.h>
->  #include <linux/of.h>
-> -#include <linux/of_i2c.h>
->  
->  /* multiplexer per channel data */
->  struct i2c_mux_priv {
-> @@ -185,8 +184,6 @@ struct i2c_adapter *i2c_add_mux_adapter(struct i2c_adapter *parent,
->  	dev_info(&parent->dev, "Added multiplexed i2c bus %d\n",
->  		 i2c_adapter_id(&priv->adap));
->  
-> -	of_i2c_register_devices(&priv->adap);
-> -
->  	return &priv->adap;
->  }
->  EXPORT_SYMBOL_GPL(i2c_add_mux_adapter);
-> diff --git a/drivers/i2c/muxes/i2c-arb-gpio-challenge.c b/drivers/i2c/muxes/i2c-arb-gpio-challenge.c
-> index 210b6f7..b901638 100644
-> --- a/drivers/i2c/muxes/i2c-arb-gpio-challenge.c
-> +++ b/drivers/i2c/muxes/i2c-arb-gpio-challenge.c
-> @@ -21,7 +21,6 @@
->  #include <linux/i2c-mux.h>
->  #include <linux/init.h>
->  #include <linux/module.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/of_gpio.h>
->  #include <linux/platform_device.h>
->  #include <linux/slab.h>
-> diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
-> index 5a0ce00..128a981 100644
-> --- a/drivers/i2c/muxes/i2c-mux-gpio.c
-> +++ b/drivers/i2c/muxes/i2c-mux-gpio.c
-> @@ -16,7 +16,6 @@
->  #include <linux/module.h>
->  #include <linux/slab.h>
->  #include <linux/gpio.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/of_gpio.h>
->  
->  struct gpiomux {
-> diff --git a/drivers/i2c/muxes/i2c-mux-pinctrl.c b/drivers/i2c/muxes/i2c-mux-pinctrl.c
-> index a43c0ce..859a6d2 100644
-> --- a/drivers/i2c/muxes/i2c-mux-pinctrl.c
-> +++ b/drivers/i2c/muxes/i2c-mux-pinctrl.c
-> @@ -20,7 +20,6 @@
->  #include <linux/i2c-mux.h>
->  #include <linux/init.h>
->  #include <linux/module.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/pinctrl/consumer.h>
->  #include <linux/i2c-mux-pinctrl.h>
->  #include <linux/platform_device.h>
-> diff --git a/drivers/media/platform/exynos4-is/fimc-is-i2c.c b/drivers/media/platform/exynos4-is/fimc-is-i2c.c
-> index 617a798..9930556 100644
-> --- a/drivers/media/platform/exynos4-is/fimc-is-i2c.c
-> +++ b/drivers/media/platform/exynos4-is/fimc-is-i2c.c
-> @@ -12,7 +12,7 @@
->  
->  #include <linux/clk.h>
->  #include <linux/module.h>
-> -#include <linux/of_i2c.h>
-> +#include <linux/i2c.h>
->  #include <linux/platform_device.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/slab.h>
-> @@ -67,8 +67,6 @@ static int fimc_is_i2c_probe(struct platform_device *pdev)
->  	pm_runtime_enable(&pdev->dev);
->  	pm_runtime_enable(&i2c_adap->dev);
->  
-> -	of_i2c_register_devices(i2c_adap);
-> -
->  	return 0;
->  }
->  
-> diff --git a/drivers/media/platform/exynos4-is/fimc-is.c b/drivers/media/platform/exynos4-is/fimc-is.c
-> index 967f6a9..2276fdc 100644
-> --- a/drivers/media/platform/exynos4-is/fimc-is.c
-> +++ b/drivers/media/platform/exynos4-is/fimc-is.c
-> @@ -21,7 +21,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/kernel.h>
->  #include <linux/module.h>
-> -#include <linux/of_i2c.h>
-> +#include <linux/i2c.h>
->  #include <linux/of_irq.h>
->  #include <linux/of_address.h>
->  #include <linux/of_platform.h>
-> diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
-> index 19f556c..f8c66b4 100644
-> --- a/drivers/media/platform/exynos4-is/media-dev.c
-> +++ b/drivers/media/platform/exynos4-is/media-dev.c
-> @@ -20,7 +20,6 @@
->  #include <linux/of.h>
->  #include <linux/of_platform.h>
->  #include <linux/of_device.h>
-> -#include <linux/of_i2c.h>
->  #include <linux/platform_device.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/types.h>
-> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-> index 80e5c13..78cc760 100644
-> --- a/drivers/of/Kconfig
-> +++ b/drivers/of/Kconfig
-> @@ -48,12 +48,6 @@ config OF_IRQ
->  	def_bool y
->  	depends on !SPARC
->  
-> -config OF_I2C
-> -	def_tristate I2C
-> -	depends on I2C
-> -	help
-> -	  OpenFirmware I2C accessors
-> -
->  config OF_NET
->  	depends on NETDEVICES
->  	def_bool y
-> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-> index 1f9c0c4..efd0510 100644
-> --- a/drivers/of/Makefile
-> +++ b/drivers/of/Makefile
-> @@ -3,7 +3,6 @@ obj-$(CONFIG_OF_FLATTREE) += fdt.o
->  obj-$(CONFIG_OF_PROMTREE) += pdt.o
->  obj-$(CONFIG_OF_ADDRESS)  += address.o
->  obj-$(CONFIG_OF_IRQ)    += irq.o
-> -obj-$(CONFIG_OF_I2C)	+= of_i2c.o
->  obj-$(CONFIG_OF_NET)	+= of_net.o
->  obj-$(CONFIG_OF_SELFTEST) += selftest.o
->  obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
-> diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
-> deleted file mode 100644
-> index b667264..0000000
-> --- a/drivers/of/of_i2c.c
-> +++ /dev/null
-> @@ -1,114 +0,0 @@
-> -/*
-> - * OF helpers for the I2C API
-> - *
-> - * Copyright (c) 2008 Jochen Friedrich <jochen@scram.de>
-> - *
-> - * Based on a previous patch from Jon Smirl <jonsmirl@gmail.com>
-> - *
-> - * This program is free software; you can redistribute it and/or modify
-> - * it under the terms of the GNU General Public License as published by
-> - * the Free Software Foundation; either version 2 of the License, or
-> - * (at your option) any later version.
-> - */
-> -
-> -#include <linux/i2c.h>
-> -#include <linux/irq.h>
-> -#include <linux/of.h>
-> -#include <linux/of_i2c.h>
-> -#include <linux/of_irq.h>
-> -#include <linux/module.h>
-> -
-> -void of_i2c_register_devices(struct i2c_adapter *adap)
-> -{
-> -	void *result;
-> -	struct device_node *node;
-> -
-> -	/* Only register child devices if the adapter has a node pointer set */
-> -	if (!adap->dev.of_node)
-> -		return;
-> -
-> -	dev_dbg(&adap->dev, "of_i2c: walking child nodes\n");
-> -
-> -	for_each_available_child_of_node(adap->dev.of_node, node) {
-> -		struct i2c_board_info info = {};
-> -		struct dev_archdata dev_ad = {};
-> -		const __be32 *addr;
-> -		int len;
-> -
-> -		dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
-> -
-> -		if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
-> -			dev_err(&adap->dev, "of_i2c: modalias failure on %s\n",
-> -				node->full_name);
-> -			continue;
-> -		}
-> -
-> -		addr = of_get_property(node, "reg", &len);
-> -		if (!addr || (len < sizeof(int))) {
-> -			dev_err(&adap->dev, "of_i2c: invalid reg on %s\n",
-> -				node->full_name);
-> -			continue;
-> -		}
-> -
-> -		info.addr = be32_to_cpup(addr);
-> -		if (info.addr > (1 << 10) - 1) {
-> -			dev_err(&adap->dev, "of_i2c: invalid addr=%x on %s\n",
-> -				info.addr, node->full_name);
-> -			continue;
-> -		}
-> -
-> -		info.irq = irq_of_parse_and_map(node, 0);
-> -		info.of_node = of_node_get(node);
-> -		info.archdata = &dev_ad;
-> -
-> -		if (of_get_property(node, "wakeup-source", NULL))
-> -			info.flags |= I2C_CLIENT_WAKE;
-> -
-> -		request_module("%s%s", I2C_MODULE_PREFIX, info.type);
-> -
-> -		result = i2c_new_device(adap, &info);
-> -		if (result == NULL) {
-> -			dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
-> -			        node->full_name);
-> -			of_node_put(node);
-> -			irq_dispose_mapping(info.irq);
-> -			continue;
-> -		}
-> -	}
-> -}
-> -EXPORT_SYMBOL(of_i2c_register_devices);
-> -
-> -static int of_dev_node_match(struct device *dev, void *data)
-> -{
-> -        return dev->of_node == data;
-> -}
-> -
-> -/* must call put_device() when done with returned i2c_client device */
-> -struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
-> -{
-> -	struct device *dev;
-> -
-> -	dev = bus_find_device(&i2c_bus_type, NULL, node,
-> -					 of_dev_node_match);
-> -	if (!dev)
-> -		return NULL;
-> -
-> -	return i2c_verify_client(dev);
-> -}
-> -EXPORT_SYMBOL(of_find_i2c_device_by_node);
-> -
-> -/* must call put_device() when done with returned i2c_adapter device */
-> -struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
-> -{
-> -	struct device *dev;
-> -
-> -	dev = bus_find_device(&i2c_bus_type, NULL, node,
-> -					 of_dev_node_match);
-> -	if (!dev)
-> -		return NULL;
-> -
-> -	return i2c_verify_adapter(dev);
-> -}
-> -EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
-> -
-> -MODULE_LICENSE("GPL");
-> diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
-> index a56797d..2d76fd4 100644
-> --- a/drivers/staging/imx-drm/imx-tve.c
-> +++ b/drivers/staging/imx-drm/imx-tve.c
-> @@ -21,7 +21,7 @@
->  #include <linux/clk.h>
->  #include <linux/clk-provider.h>
->  #include <linux/module.h>
-> -#include <linux/of_i2c.h>
-> +#include <linux/i2c.h>
->  #include <linux/regmap.h>
->  #include <linux/regulator/consumer.h>
->  #include <linux/spinlock.h>
-> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-> index e988fa9..2189189 100644
-> --- a/include/linux/i2c.h
-> +++ b/include/linux/i2c.h
-> @@ -542,6 +542,26 @@ static inline int i2c_adapter_id(struct i2c_adapter *adap)
->  
->  #endif /* I2C */
->  
-> +#if IS_ENABLED(CONFIG_OF)
-> +/* must call put_device() when done with returned i2c_client device */
-> +extern struct i2c_client *of_find_i2c_device_by_node(struct device_node *node);
-> +
-> +/* must call put_device() when done with returned i2c_adapter device */
-> +extern struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node);
-> +
-> +#else
-> +
-> +static inline struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
-> +{
-> +	return NULL;
-> +}
-> +#endif /* CONFIG_OF */
-> +
->  #if IS_ENABLED(CONFIG_ACPI_I2C)
->  extern void acpi_i2c_register_devices(struct i2c_adapter *adap);
->  #else
-> diff --git a/include/linux/of_i2c.h b/include/linux/of_i2c.h
-> deleted file mode 100644
-> index cfb545c..0000000
-> --- a/include/linux/of_i2c.h
-> +++ /dev/null
-> @@ -1,46 +0,0 @@
-> -/*
-> - * Generic I2C API implementation for PowerPC.
-> - *
-> - * Copyright (c) 2008 Jochen Friedrich <jochen@scram.de>
-> - *
-> - * This program is free software; you can redistribute it and/or modify
-> - * it under the terms of the GNU General Public License as published by
-> - * the Free Software Foundation; either version 2 of the License, or
-> - * (at your option) any later version.
-> - */
-> -
-> -#ifndef __LINUX_OF_I2C_H
-> -#define __LINUX_OF_I2C_H
-> -
-> -#if defined(CONFIG_OF_I2C) || defined(CONFIG_OF_I2C_MODULE)
-> -#include <linux/i2c.h>
-> -
-> -extern void of_i2c_register_devices(struct i2c_adapter *adap);
-> -
-> -/* must call put_device() when done with returned i2c_client device */
-> -extern struct i2c_client *of_find_i2c_device_by_node(struct device_node *node);
-> -
-> -/* must call put_device() when done with returned i2c_adapter device */
-> -extern struct i2c_adapter *of_find_i2c_adapter_by_node(
-> -						struct device_node *node);
-> -
-> -#else
-> -static inline void of_i2c_register_devices(struct i2c_adapter *adap)
-> -{
-> -	return;
-> -}
-> -
-> -static inline struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
-> -{
-> -	return NULL;
-> -}
-> -
-> -/* must call put_device() when done with returned i2c_adapter device */
-> -static inline struct i2c_adapter *of_find_i2c_adapter_by_node(
-> -						struct device_node *node)
-> -{
-> -	return NULL;
-> -}
-> -#endif /* CONFIG_OF_I2C */
-> -
-> -#endif /* __LINUX_OF_I2C_H */
-> diff --git a/sound/soc/fsl/imx-sgtl5000.c b/sound/soc/fsl/imx-sgtl5000.c
-> index 3f726e4..f2fbde9 100644
-> --- a/sound/soc/fsl/imx-sgtl5000.c
-> +++ b/sound/soc/fsl/imx-sgtl5000.c
-> @@ -13,7 +13,7 @@
->  #include <linux/module.h>
->  #include <linux/of.h>
->  #include <linux/of_platform.h>
-> -#include <linux/of_i2c.h>
-> +#include <linux/i2c.h>
->  #include <linux/clk.h>
->  #include <sound/soc.h>
->  
-> diff --git a/sound/soc/fsl/imx-wm8962.c b/sound/soc/fsl/imx-wm8962.c
-> index 52a36a9..9fd7a65 100644
-> --- a/sound/soc/fsl/imx-wm8962.c
-> +++ b/sound/soc/fsl/imx-wm8962.c
-> @@ -15,7 +15,7 @@
->  
->  #include <linux/module.h>
->  #include <linux/of_platform.h>
-> -#include <linux/of_i2c.h>
-> +#include <linux/i2c.h>
->  #include <linux/slab.h>
->  #include <linux/clk.h>
->  #include <sound/soc.h>
+From: liujl <liujunliang_ljl@163.com>
 
 
+Signed-off-by: liujl <liujunliang_ljl@163.com>
+---
+ drivers/net/usb/Kconfig  |    8 +
+ drivers/net/usb/Makefile |    1 +
+ drivers/net/usb/sr9700.c |  551 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/net/usb/sr9700.h |  172 ++++++++++++++
+ 4 files changed, 732 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/net/usb/sr9700.c
+ create mode 100644 drivers/net/usb/sr9700.h
+
+diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
+index 287cc62..a94b196 100644
+--- a/drivers/net/usb/Kconfig
++++ b/drivers/net/usb/Kconfig
+@@ -272,6 +272,14 @@ config USB_NET_DM9601
+ 	  This option adds support for Davicom DM9601 based USB 1.1
+ 	  10/100 Ethernet adapters.
+ 
++config USB_NET_SR9700
++	tristate "CoreChip-sz SR9700 based USB 1.1 10/100 ethernet devices"
++	depends on USB_USBNET
++	select CRC32
++	help
++	  This option adds support for CoreChip-sz SR9700 based USB 1.1
++	  10/100 Ethernet adapters.
++
+ config USB_NET_SMSC75XX
+ 	tristate "SMSC LAN75XX based USB 2.0 gigabit ethernet devices"
+ 	depends on USB_USBNET
+diff --git a/drivers/net/usb/Makefile b/drivers/net/usb/Makefile
+index 9ab5c9d..bba87a2 100644
+--- a/drivers/net/usb/Makefile
++++ b/drivers/net/usb/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_USB_NET_AX88179_178A)      += ax88179_178a.o
+ obj-$(CONFIG_USB_NET_CDCETHER)	+= cdc_ether.o
+ obj-$(CONFIG_USB_NET_CDC_EEM)	+= cdc_eem.o
+ obj-$(CONFIG_USB_NET_DM9601)	+= dm9601.o
++obj-$(CONFIG_USB_NET_SR9700)	+= sr9700.o
+ obj-$(CONFIG_USB_NET_SMSC75XX)	+= smsc75xx.o
+ obj-$(CONFIG_USB_NET_SMSC95XX)	+= smsc95xx.o
+ obj-$(CONFIG_USB_NET_GL620A)	+= gl620a.o
+diff --git a/drivers/net/usb/sr9700.c b/drivers/net/usb/sr9700.c
+new file mode 100644
+index 0000000..27c86ec
+--- /dev/null
++++ b/drivers/net/usb/sr9700.c
+@@ -0,0 +1,551 @@
++/*
++ * CoreChip-sz SR9700 one chip USB 1.1 Ethernet Devices
++ *
++ * Author : liujl <liujunliang_ljl@163.com>
++ *
++ * Based on dm9601.c
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++#include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/stddef.h>
++#include <linux/init.h>
++#include <linux/netdevice.h>
++#include <linux/etherdevice.h>
++#include <linux/ethtool.h>
++#include <linux/mii.h>
++#include <linux/usb.h>
++#include <linux/crc32.h>
++#include <linux/usb/usbnet.h>
++
++#include "sr9700.h"
++
++static int sr_read(struct usbnet *dev, u8 reg, u16 length, void *data)
++{
++	int err;
++
++	err = usbnet_read_cmd(dev, SR_RD_REGS, SR_REQ_RD_REG,
++					0, reg, data, length);
++	if ((err != length) && (err >= 0))
++		err = -EINVAL;
++	return err;
++}
++
++static int sr_write(struct usbnet *dev, u8 reg, u16 length, void *data)
++{
++	int err;
++
++	err = usbnet_write_cmd(dev, SR_WR_REGS, SR_REQ_WR_REG,
++					0, reg, data, length);
++	if ((err >= 0) && (err < length))
++		err = -EINVAL;
++	return err;
++}
++
++static int sr_read_reg(struct usbnet *dev, u8 reg, u8 *value)
++{
++	return sr_read(dev, reg, 1, value);
++}
++
++static int sr_write_reg(struct usbnet *dev, u8 reg, u8 value)
++{
++	return usbnet_write_cmd(dev, SR_WR_REGS, SR_REQ_WR_REG,
++					value, reg, NULL, 0);
++}
++
++static void sr_write_async(struct usbnet *dev, u8 reg, u16 length, void *data)
++{
++	usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
++					0, reg, data, length);
++}
++
++static void sr_write_reg_async(struct usbnet *dev, u8 reg, u8 value)
++{
++	usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
++					value, reg, NULL, 0);
++}
++
++static int wait_phy_eeprom_ready(struct usbnet *dev, int phy)
++{
++	int i, ret;
++
++	ret = 0;
++	for (i = 0; i < SR_SHARE_TIMEOUT; i++) {
++		u8 tmp = 0;
++
++		udelay(1);
++		ret = sr_read_reg(dev, EPCR, &tmp);
++		if (ret < 0)
++			goto out;
++
++		/* ready */
++		if ((tmp & EPCR_ERRE) == 0)
++			break;
++	}
++
++	if (i >= SR_SHARE_TIMEOUT) {
++		netdev_err(dev->net, "%s write timed out!\n",
++						phy ? "phy" : "eeprom");
++		ret = -EIO;
++		goto out;
++	}
++
++out:
++	return ret;
++}
++
++static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg, __le16 *value)
++{
++	int ret;
++
++	mutex_lock(&dev->phy_mutex);
++
++	sr_write_reg(dev, EPAR, phy ? (reg | 0x40) : reg);
++	sr_write_reg(dev, EPCR, phy ? 0xc : 0x4);
++
++	ret = wait_phy_eeprom_ready(dev, phy);
++	if (ret < 0)
++		goto out;
++
++	sr_write_reg(dev, EPCR, 0x0);
++	ret = sr_read(dev, EPDR, 2, value);
++
++	netdev_dbg(dev->net, "read shared %d 0x%02x returned 0x%04x, %d\n",
++					phy, reg, *value, ret);
++
++out:
++	mutex_unlock(&dev->phy_mutex);
++	return ret;
++}
++
++static int sr_share_write_word(struct usbnet *dev, int phy, u8 reg, __le16 value)
++{
++	int ret;
++
++	mutex_lock(&dev->phy_mutex);
++
++	ret = sr_write(dev, EPDR, 2, &value);
++	if (ret < 0)
++		goto out;
++
++	sr_write_reg(dev, EPAR, phy ? (reg | 0x40) : reg);
++	sr_write_reg(dev, EPCR, phy ? 0x1a : 0x12);
++
++	ret = wait_phy_eeprom_ready(dev, phy);
++	if (ret < 0)
++		goto out;
++
++	sr_write_reg(dev, EPCR, 0x0);
++
++out:
++	mutex_unlock(&dev->phy_mutex);
++	return ret;
++}
++
++static int sr_read_eeprom_word(struct usbnet *dev, u8 offset, void *value)
++{
++	return sr_share_read_word(dev, 0, offset, value);
++}
++
++static int sr9700_get_eeprom_len(struct net_device *dev)
++{
++	return SR_EEPROM_LEN;
++}
++
++static int sr9700_get_eeprom(struct net_device *net, struct ethtool_eeprom *eeprom, u8 *data)
++{
++	struct usbnet *dev = netdev_priv(net);
++	__le16 *ebuf = (__le16 *)data;
++	int ret = 0;
++	int i;
++
++	/* access is 16bit */
++	if ((eeprom->offset & 0x01) || (eeprom->len & 0x01))
++		return -EINVAL;
++
++	for (i = 0; i < eeprom->len / 2; i++)
++		ret = sr_read_eeprom_word(dev, eeprom->offset / 2 + i, &ebuf[i]);
++
++	return ret;
++}
++
++static int sr_mdio_read(struct net_device *netdev, int phy_id, int loc)
++{
++	struct usbnet *dev = netdev_priv(netdev);
++	__le16 res;
++	int rc = 0;
++
++	if (phy_id) {
++		netdev_dbg(dev->net, "Only internal phy supported\n");
++		return 0;
++	}
++
++	/* Access NSR_LINKST bit for link status instead of MII_BMSR */
++	if (loc == MII_BMSR) {
++		u8 value;
++
++		sr_read_reg(dev, NSR, &value);
++		if (value & NSR_LINKST)
++			rc = 1;
++	}
++	sr_share_read_word(dev, 1, loc, &res);
++	if (rc == 1)
++		res = le16_to_cpu(res) | BMSR_LSTATUS;
++	else
++		res = le16_to_cpu(res) & ~BMSR_LSTATUS;
++
++	netdev_dbg(dev->net, "sr_mdio_read() phy_id=0x%02x, loc=0x%02x, returns=0x%04x\n",
++					phy_id, loc, res);
++
++	return res;
++}
++
++static void sr_mdio_write(struct net_device *netdev, int phy_id, int loc, int val)
++{
++	struct usbnet *dev = netdev_priv(netdev);
++	__le16 res = cpu_to_le16(val);
++
++	if (phy_id) {
++		netdev_dbg(dev->net, "Only internal phy supported\n");
++		return;
++	}
++
++	netdev_dbg(dev->net, "sr_mdio_write() phy_id=0x%02x, loc=0x%02x, val=0x%04x\n",
++					phy_id, loc, val);
++
++	sr_share_write_word(dev, 1, loc, res);
++}
++
++static u32 sr9700_get_link(struct net_device *net)
++{
++	struct usbnet *dev = netdev_priv(net);
++	u8 value = 0;
++	int rc = 0;
++
++	/* Get the Link Status directly */
++	sr_read_reg(dev, NSR, &value);
++	if (value & NSR_LINKST)
++		rc = 1;
++
++	return rc;
++}
++
++static int sr9700_ioctl(struct net_device *net, struct ifreq *rq, int cmd)
++{
++	struct usbnet *dev = netdev_priv(net);
++
++	return generic_mii_ioctl(&dev->mii, if_mii(rq), cmd, NULL);
++}
++
++static const struct ethtool_ops sr9700_ethtool_ops = {
++		.get_drvinfo	= usbnet_get_drvinfo,
++		.get_link		= sr9700_get_link,
++		.get_msglevel	= usbnet_get_msglevel,
++		.set_msglevel	= usbnet_set_msglevel,
++		.get_eeprom_len	= sr9700_get_eeprom_len,
++		.get_eeprom		= sr9700_get_eeprom,
++		.get_settings	= usbnet_get_settings,
++		.set_settings	= usbnet_set_settings,
++		.nway_reset		= usbnet_nway_reset,
++};
++
++static void sr9700_set_multicast(struct net_device *net)
++{
++	struct usbnet *dev = netdev_priv(net);
++	/* We use the 20 byte dev->data for our 8 byte filter buffer
++	 * to avoid allocating memory that is tricky to free later
++	 */
++	u8 *hashes = (u8 *)&dev->data;
++	/* rx_ctl setting : enable, disable_long, disable_crc */
++	u8 rx_ctl = RCR_RXEN | RCR_DIS_CRC | RCR_DIS_LONG;
++
++	memset(hashes, 0x00, SR_MCAST_SIZE);
++	/* broadcast address */
++	hashes[SR_MCAST_SIZE - 1] |= SR_MCAST_ADDR_FLAG;
++	if (net->flags & IFF_PROMISC) {
++		rx_ctl |= RCR_PRMSC;
++	} else if (net->flags & IFF_ALLMULTI ||
++			  netdev_mc_count(net) > SR_MCAST_MAX) {
++		rx_ctl |= RCR_RUNT;
++	} else if (!netdev_mc_empty(net)) {
++		struct netdev_hw_addr *ha;
++		netdev_for_each_mc_addr(ha, net) {
++			u32 crc = ether_crc(ETH_ALEN, ha->addr) >> 26;
++			hashes[crc >> 3] |= 1 << (crc & 0x7);
++		}
++	}
++
++	sr_write_async(dev, MAR, SR_MCAST_SIZE, hashes);
++	sr_write_reg_async(dev, RCR, rx_ctl);
++}
++
++static int sr9700_set_mac_address(struct net_device *net, void *p)
++{
++	struct usbnet *dev = netdev_priv(net);
++	struct sockaddr *addr = p;
++
++	if (!is_valid_ether_addr(addr->sa_data)) {
++		netdev_err(net, "not setting invalid mac address %pM\n",
++						addr->sa_data);
++		return -EINVAL;
++	}
++
++	memcpy(net->dev_addr, addr->sa_data, net->addr_len);
++	sr_write_async(dev, PAR, 6, dev->net->dev_addr);
++
++	return 0;
++}
++
++static const struct net_device_ops sr9700_netdev_ops = {
++		.ndo_open			= usbnet_open,
++		.ndo_stop			= usbnet_stop,
++		.ndo_start_xmit		= usbnet_start_xmit,
++		.ndo_tx_timeout		= usbnet_tx_timeout,
++		.ndo_change_mtu		= usbnet_change_mtu,
++		.ndo_validate_addr	= eth_validate_addr,
++		.ndo_do_ioctl		= sr9700_ioctl,
++		.ndo_set_rx_mode	= sr9700_set_multicast,
++		.ndo_set_mac_address	= sr9700_set_mac_address,
++};
++
++static int sr9700_bind(struct usbnet *dev, struct usb_interface *intf)
++{
++	int ret;
++
++	ret = usbnet_get_endpoints(dev, intf);
++	if (ret)
++		goto out;
++
++	dev->net->netdev_ops = &sr9700_netdev_ops;
++	dev->net->ethtool_ops = &sr9700_ethtool_ops;
++	dev->net->hard_header_len += SR_TX_OVERHEAD;
++	dev->hard_mtu = dev->net->mtu + dev->net->hard_header_len;
++	/* bulkin buffer is preferably not less than 3K */
++	dev->rx_urb_size = 3072;
++	dev->mii.dev = dev->net;
++	dev->mii.mdio_read = sr_mdio_read;
++	dev->mii.mdio_write = sr_mdio_write;
++	dev->mii.phy_id_mask = 0x1f;
++	dev->mii.reg_num_mask = 0x1f;
++
++	/* reset the sr9700 */
++	sr_write_reg(dev, NCR, 1);
++	udelay(20);
++
++	/* read MAC
++	 * After Chip Power on, the Chip will reload the MAC from
++	 * EEPROM automatically to PAR. In case there is no EEPROM externally,
++	 * a default MAC address is stored in PAR for making chip work properly.
++	 */
++	if (sr_read(dev, PAR, ETH_ALEN, dev->net->dev_addr) < 0) {
++		netdev_err(dev->net, "Error reading MAC address\n");
++		ret = -ENODEV;
++		goto out;
++	}
++
++	/* power up and reset phy */
++	sr_write_reg(dev, PRR, 1);
++	/* at least 10ms, here 20ms for safe */
++	mdelay(20);
++	sr_write_reg(dev, PRR, 0);
++	/* at least 1ms, here 2ms for reading right register */
++	udelay(2 * 1000);
++
++	/* receive broadcast packets */
++	sr9700_set_multicast(dev->net);
++
++	sr_mdio_write(dev->net, dev->mii.phy_id, MII_BMCR, BMCR_RESET);
++	sr_mdio_write(dev->net, dev->mii.phy_id,
++					MII_ADVERTISE, ADVERTISE_ALL | ADVERTISE_CSMA | ADVERTISE_PAUSE_CAP);
++	mii_nway_restart(&dev->mii);
++
++out:
++	return ret;
++}
++
++static int sr9700_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
++{
++	struct sk_buff *sr_skb;
++	int len;
++
++	/* skb content (packets) format :
++	 *					p0			p1			p2	......	pm
++	 *			     /	  \
++	 *			/				\
++	 *		/							\
++	 *  /										\
++	 * p0b0 p0b1 p0b2 p0b3 ...... p0b(n-4) p0b(n-3)...p0bn
++	 *
++	 * p0 : packet 0
++	 * p0b0 : packet 0 byte 0
++	 *
++	 * b0: rx status
++	 * b1: packet length (incl crc) low
++	 * b2: packet length (incl crc) high
++	 * b3..n-4: packet data
++	 * bn-3..bn: ethernet packet crc
++	 */
++	if (unlikely(skb->len < SR_RX_OVERHEAD)) {
++		netdev_err(dev->net, "unexpected tiny rx frame\n");
++		return 0;
++	}
++
++	/* one skb may contains multiple packets */
++	while (skb->len > SR_RX_OVERHEAD) {
++		if (skb->data[0] != 0x40)
++			return 0;
++
++		/* ignore the CRC length */
++		len = (skb->data[1] | (skb->data[2] << 8)) - 4;
++
++		if (len > ETH_FRAME_LEN)
++			return 0;
++
++		/* the last packet of current skb */
++		if (skb->len == (len + SR_RX_OVERHEAD))	{
++			skb_pull(skb, 3);
++			skb->len = len;
++			skb->tail = skb->data + len;
++			skb->truesize = len + sizeof(struct sk_buff);
++			return 2;
++		}
++
++		/* skb_clone is used for address align */
++		sr_skb = skb_clone(skb, GFP_ATOMIC);
++		if (!sr_skb)
++			return 0;
++
++		sr_skb->len = len;
++		sr_skb->data = skb->data + 3;
++		sr_skb->tail = skb->data + len;
++		sr_skb->truesize = len + sizeof(struct sk_buff);
++		usbnet_skb_return(dev, sr_skb);
++
++		skb_pull(skb, len + SR_RX_OVERHEAD);
++	};
++
++	return 0;
++}
++
++static struct sk_buff *sr9700_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t flags)
++{
++	int len;
++
++	/* SR9700 can only send out one ethernet packet at once.
++	 *
++	 * b0 b1 b2 b3 ...... b(n-4) b(n-3)...bn
++	 *
++	 * b0: rx status
++	 * b1: packet length (incl crc) low
++	 * b2: packet length (incl crc) high
++	 * b3..n-4: packet data
++	 * bn-3..bn: ethernet packet crc
++	 */
++
++	len = skb->len;
++
++	if (skb_headroom(skb) < SR_TX_OVERHEAD) {
++		struct sk_buff *skb2;
++
++		skb2 = skb_copy_expand(skb, SR_TX_OVERHEAD, 0, flags);
++		dev_kfree_skb_any(skb);
++		skb = skb2;
++		if (!skb)
++			return NULL;
++	}
++
++	__skb_push(skb, SR_TX_OVERHEAD);
++
++	/* usbnet adds padding if length is a multiple of packet size
++	 * if so, adjust length value in header
++	 */
++	if ((skb->len % dev->maxpacket) == 0)
++		len++;
++
++	skb->data[0] = len;
++	skb->data[1] = len >> 8;
++
++	return skb;
++}
++
++static void sr9700_status(struct usbnet *dev, struct urb *urb)
++{
++	int link;
++	u8 *buf;
++
++	/* format:
++	   b0: net status
++	   b1: tx status 1
++	   b2: tx status 2
++	   b3: rx status
++	   b4: rx overflow
++	   b5: rx count
++	   b6: tx count
++	   b7: gpr
++	*/
++
++	if (urb->actual_length < 8)
++		return;
++
++	buf = urb->transfer_buffer;
++
++	link = !!(buf[0] & 0x40);
++	if (netif_carrier_ok(dev->net) != link) {
++		usbnet_link_change(dev, link, 1);
++		netdev_dbg(dev->net, "Link Status is: %d\n", link);
++	}
++}
++
++static int sr9700_link_reset(struct usbnet *dev)
++{
++	struct ethtool_cmd ecmd;
++
++	mii_check_media(&dev->mii, 1, 1);
++	mii_ethtool_gset(&dev->mii, &ecmd);
++
++	netdev_dbg(dev->net, "link_reset() speed: %d duplex: %d\n",
++					ecmd.speed, ecmd.duplex);
++
++	return 0;
++}
++
++static const struct driver_info sr9700_driver_info = {
++		.description	= "CoreChip SR9700 USB Ethernet",
++		.flags		= FLAG_ETHER,
++		.bind		= sr9700_bind,
++		.rx_fixup	= sr9700_rx_fixup,
++		.tx_fixup	= sr9700_tx_fixup,
++		.status		= sr9700_status,
++		.link_reset	= sr9700_link_reset,
++		.reset		= sr9700_link_reset,
++};
++
++static const struct usb_device_id products[] = {
++	{
++	 USB_DEVICE(0x0fe6, 0x9700),	/* SR9700 device */
++	 .driver_info = (unsigned long)&sr9700_driver_info,
++	 },
++	{},			/* END */
++};
++
++MODULE_DEVICE_TABLE(usb, products);
++
++static struct usb_driver sr9700_usb_driver = {
++		.name = "sr9700",
++		.id_table = products,
++		.probe = usbnet_probe,
++		.disconnect = usbnet_disconnect,
++		.suspend = usbnet_suspend,
++		.resume = usbnet_resume,
++		.disable_hub_initiated_lpm = 1,
++};
++
++module_usb_driver(sr9700_usb_driver);
++
++MODULE_AUTHOR("liujl <liujunliang_ljl@163.com>");
++MODULE_DESCRIPTION("SR9700 one chip USB 1.1 USB to Ethernet device from http://www.corechip-sz.com/");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/net/usb/sr9700.h b/drivers/net/usb/sr9700.h
+new file mode 100644
+index 0000000..f1968ae
+--- /dev/null
++++ b/drivers/net/usb/sr9700.h
+@@ -0,0 +1,172 @@
++/*
++ * CoreChip-sz SR9700 one chip USB 1.1 Ethernet Devices
++ *
++ * Author : liujl <liujunliang_ljl@163.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ */
++
++#ifndef _SR9700_H
++#define	_SR9700_H
++
++/* sr9700 spec. register table on Linux platform */
++
++/* Network Control Reg */
++#define	NCR			0x00
++#define		NCR_RST			(1 << 0)
++#define		NCR_LBK			(3 << 1)
++#define		NCR_FDX			(1 << 3)
++#define		NCR_WAKEEN		(1 << 6)
++/* Network Status Reg */
++#define	NSR			0x01
++#define		NSR_RXRDY		(1 << 0)
++#define		NSR_RXOV		(1 << 1)
++#define		NSR_TX1END		(1 << 2)
++#define		NSR_TX2END		(1 << 3)
++#define		NSR_TXFULL		(1 << 4)
++#define		NSR_WAKEST		(1 << 5)
++#define		NSR_LINKST		(1 << 6)
++#define		NSR_SPEED		(1 << 7)
++/* Tx Control Reg */
++#define	TCR			0x02
++#define		TCR_CRC_DIS		(1 << 1)
++#define		TCR_PAD_DIS		(1 << 2)
++#define		TCR_LC_CARE		(1 << 3)
++#define		TCR_CRS_CARE	(1 << 4)
++#define		TCR_EXCECM		(1 << 5)
++#define		TCR_LF_EN		(1 << 6)
++/* Tx Status Reg for Packet Index 1 */
++#define	TSR1		0x03
++#define		TSR1_EC			(1 << 2)
++#define		TSR1_COL		(1 << 3)
++#define		TSR1_LC			(1 << 4)
++#define		TSR1_NC			(1 << 5)
++#define		TSR1_LOC		(1 << 6)
++#define		TSR1_TLF		(1 << 7)
++/* Tx Status Reg for Packet Index 2 */
++#define	TSR2		0x04
++#define		TSR2_EC			(1 << 2)
++#define		TSR2_COL		(1 << 3)
++#define		TSR2_LC			(1 << 4)
++#define		TSR2_NC			(1 << 5)
++#define		TSR2_LOC		(1 << 6)
++#define		TSR2_TLF		(1 << 7)
++/* Rx Control Reg*/
++#define	RCR			0x05
++#define		RCR_RXEN		(1 << 0)
++#define		RCR_PRMSC		(1 << 1)
++#define		RCR_RUNT		(1 << 2)
++#define		RCR_ALL			(1 << 3)
++#define		RCR_DIS_CRC		(1 << 4)
++#define		RCR_DIS_LONG	(1 << 5)
++/* Rx Status Reg */
++#define	RSR			0x06
++#define		RSR_AE			(1 << 2)
++#define		RSR_MF			(1 << 6)
++#define		RSR_RF			(1 << 7)
++/* Rx Overflow Counter Reg */
++#define	ROCR		0x07
++#define		ROCR_ROC		(0x7F << 0)
++#define		ROCR_RXFU		(1 << 7)
++/* Back Pressure Threshold Reg */
++#define	BPTR		0x08
++#define		BPTR_JPT		(0x0F << 0)
++#define		BPTR_BPHW		(0x0F << 4)
++/* Flow Control Threshold Reg */
++#define	FCTR		0x09
++#define		FCTR_LWOT		(0x0F << 0)
++#define		FCTR_HWOT		(0x0F << 4)
++/* rx/tx Flow Control Reg */
++#define	FCR			0x0A
++#define		FCR_FLCE		(1 << 0)
++#define		FCR_BKPA		(1 << 4)
++#define		FCR_TXPEN		(1 << 5)
++#define		FCR_TXPF		(1 << 6)
++#define		FCR_TXP0		(1 << 7)
++/* Eeprom & Phy Control Reg */
++#define	EPCR		0x0B
++#define		EPCR_ERRE		(1 << 0)
++#define		EPCR_ERPRW		(1 << 1)
++#define		EPCR_ERPRR		(1 << 2)
++#define		EPCR_EPOS		(1 << 3)
++#define		EPCR_WEP		(1 << 4)
++/* Eeprom & Phy Address Reg */
++#define	EPAR		0x0C
++#define		EPAR_EROA		(0x3F << 0)
++#define		EPAR_PHY_ADR	(0x03 << 6)
++/* Eeprom &	Phy Data Reg */
++#define	EPDR		0x0D	/* 0x0D ~ 0x0E for Data Reg Low & High */
++/* Wakeup Control Reg */
++#define	WCR			0x0F
++#define		WCR_MAGICST		(1 << 0)
++#define		WCR_LINKST		(1 << 2)
++#define		WCR_MAGICEN		(1 << 3)
++#define		WCR_LINKEN		(1 << 5)
++/* Physical Address Reg */
++#define	PAR			0x10	/* 0x10 ~ 0x15 6 bytes for PAR */
++/* Multicast Address Reg */
++#define	MAR			0x16	/* 0x16 ~ 0x1D 8 bytes for MAR */
++/* 0x1e unused */
++/* Phy Reset Reg */
++#define	PRR			0x1F
++#define		PRR_PHY_RST		(1 << 0)
++/* Tx sdram Write Pointer Address Low */
++#define	TWPAL		0x20
++/* Tx sdram Write Pointer Address High */
++#define	TWPAH		0x21
++/* Tx sdram Read Pointer Address Low */
++#define	TRPAL		0x22
++/* Tx sdram Read Pointer Address High */
++#define	TRPAH		0x23
++/* Rx sdram Write Pointer Address Low */
++#define	RWPAL		0x24
++/* Rx sdram Write Pointer Address High */
++#define	RWPAH		0x25
++/* Rx sdram Read Pointer Address Low */
++#define	RRPAL		0x26
++/* Rx sdram Read Pointer Address High */
++#define	RRPAH		0x27
++/* Vendor ID register */
++#define	VID			0x28	/* 0x28 ~ 0x29 2 bytes for VID */
++/* Product ID register */
++#define	PID			0x2A	/* 0x2A ~ 0x2B 2 bytes for PID */
++/* CHIP Revision register */
++#define	CHIPR		0x2C
++/* 0x2D --> 0xEF unused */
++/* USB Device Address */
++#define	USBDA		0xF0
++#define		USBDA_USBFA		(0x7F << 0)
++/* RX packet Counter Reg */
++#define	RXC			0xF1
++/* Tx packet Counter & USB Status Reg */
++#define	TXC_USBS	0xF2
++#define		TXC_USBS_TXC0		(1 << 0)
++#define		TXC_USBS_TXC1		(1 << 1)
++#define		TXC_USBS_TXC2		(1 << 2)
++#define		TXC_USBS_EP1RDY		(1 << 5)
++#define		TXC_USBS_SUSFLAG	(1 << 6)
++#define		TXC_USBS_RXFAULT	(1 << 7)
++/* USB Control register */
++#define	USBC		0xF4
++#define		USBC_EP3NAK		(1 << 4)
++#define		USBC_EP3ACK		(1 << 5)
++
++/* Register access commands and flags */
++#define	SR_RD_REGS		0x00
++#define	SR_WR_REGS		0x01
++#define	SR_WR_REG		0x03
++#define	SR_REQ_RD_REG	(USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE)
++#define	SR_REQ_WR_REG	(USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE)
++
++/* parameters */
++#define	SR_SHARE_TIMEOUT	1000
++#define	SR_EEPROM_LEN		256
++#define	SR_MCAST_SIZE		8
++#define	SR_MCAST_ADDR_FLAG	0x80
++#define	SR_MCAST_MAX		64
++#define	SR_TX_OVERHEAD		2	/* 2bytes header */
++#define	SR_RX_OVERHEAD		7	/* 3bytes header + 4crc tail */
++
++#endif	/* _SR9700_H */
 -- 
+1.7.0.4
 
-Cheers,
-Mauro
+
