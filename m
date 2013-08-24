@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab3HXUV1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 16:21:27 -0400
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:57233 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754761Ab3HXUVZ (ORCPT
+	id S1755725Ab3HXUVm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 16:21:42 -0400
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:41516 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755645Ab3HXUVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 16:21:25 -0400
+	Sat, 24 Aug 2013 16:21:40 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
+To: Alexander Graf <agraf@suse.de>, Gleb Natapov <gleb@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
 Cc: Yann Droneaud <ydroneaud@opteya.com>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
+        Alex Williamson <alex.williamson@redhat.com>, kvm-ppc@vger.kernel.org,
+        kvm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] kvm: use anon_inode_getfd() with O_CLOEXEC flag
-Date: Sat, 24 Aug 2013 22:14:07 +0200
-Message-Id: <16c6c5380d543aca2aab13fdcbacaf12fdbca168.1377372576.git.ydroneaud@opteya.com>
+Subject: [PATCH 0/2] kvm: use anon_inode_getfd() with O_CLOEXEC flag
+Date: Sat, 24 Aug 2013 22:14:06 +0200
+Message-Id: <cover.1377372576.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <cover.1377372576.git.ydroneaud@opteya.com>
-References: <cover.1377372576.git.ydroneaud@opteya.com>
-In-Reply-To: <cover.1377372576.git.ydroneaud@opteya.com>
-References: <cover.1377372576.git.ydroneaud@opteya.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KVM uses anon_inode_get() to allocate file descriptors as part
-of some of its ioctls. But those ioctls are lacking a flag argument
-allowing userspace to choose options for the newly opened file descriptor.
+Hi,
 
-In such case it's advised to use O_CLOEXEC by default so that
-userspace is allowed to choose, without race, if the file descriptor
-is going to be inherited across exec().
+Following a patchset asking to change calls to get_unused_flag() [1]
+to use O_CLOEXEC, Alex Williamson [2][3] decided to change VFIO
+to use the flag.
 
-This patch set O_CLOEXEC flag on all file descriptors created
-with anon_inode_getfd() to not leak file descriptors across exec().
+Since it's a related subsystem to KVM, using O_CLOEXEC for
+file descriptors created by KVM might be applicable too.
 
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Link: http://lkml.kernel.org/r/cover.1377372576.git.ydroneaud@opteya.com
----
- virt/kvm/kvm_main.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+I'm suggesting to change calls to anon_inode_getfd() to use O_CLOEXEC
+as default flag.
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 89f74d1..d65cc0c 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1896,7 +1896,7 @@ static struct file_operations kvm_vcpu_fops = {
-  */
- static int create_vcpu_fd(struct kvm_vcpu *vcpu)
- {
--	return anon_inode_getfd("kvm-vcpu", &kvm_vcpu_fops, vcpu, O_RDWR);
-+	return anon_inode_getfd("kvm-vcpu", &kvm_vcpu_fops, vcpu, O_RDWR | O_CLOEXEC);
- }
- 
- /*
-@@ -2306,7 +2306,7 @@ static int kvm_ioctl_create_device(struct kvm *kvm,
- 		return ret;
- 	}
- 
--	ret = anon_inode_getfd(ops->name, &kvm_device_fops, dev, O_RDWR);
-+	ret = anon_inode_getfd(ops->name, &kvm_device_fops, dev, O_RDWR | O_CLOEXEC);
- 	if (ret < 0) {
- 		ops->destroy(dev);
- 		return ret;
-@@ -2590,7 +2590,7 @@ static int kvm_dev_ioctl_create_vm(unsigned long type)
- 		return r;
- 	}
- #endif
--	r = anon_inode_getfd("kvm-vm", &kvm_vm_fops, kvm, O_RDWR);
-+	r = anon_inode_getfd("kvm-vm", &kvm_vm_fops, kvm, O_RDWR | O_CLOEXEC);
- 	if (r < 0)
- 		kvm_put_kvm(kvm);
- 
+This patchset should be reviewed to not break existing userspace program.
+
+BTW, if it's not applicable, I would suggest that new ioctls be added to
+KVM subsystem, those ioctls would have a "flag" field added to their arguments.
+Such "flag" would let userspace choose the open flag to use.
+See for example other APIs using anon_inode_getfd() such as fanotify,
+inotify, signalfd and timerfd.
+
+You might be interested to read:
+
+- Secure File Descriptor Handling (Ulrich Drepper, 2008)
+  http://udrepper.livejournal.com/20407.html
+
+- Excuse me son, but your code is leaking !!! (Dan Walsh, March 2012) 
+  http://danwalsh.livejournal.com/53603.html
+
+Regards.
+
+[1] http://lkml.kernel.org/r/cover.1376327678.git.ydroneaud@opteya.com
+[2] http://lkml.kernel.org/r/1377186804.25163.17.camel@ul30vt.home
+[3] http://lkml.kernel.org/r/20130822171744.1297.13711.stgit@bling.home
+
+Yann Droneaud (2):
+  kvm: use anon_inode_getfd() with O_CLOEXEC flag
+  ppc: kvm: use anon_inode_getfd() with O_CLOEXEC flag
+
+ arch/powerpc/kvm/book3s_64_mmu_hv.c | 2 +-
+ arch/powerpc/kvm/book3s_64_vio.c    | 2 +-
+ arch/powerpc/kvm/book3s_hv.c        | 2 +-
+ virt/kvm/kvm_main.c                 | 6 +++---
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
 -- 
 1.8.3.1
 
