@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab3HXPSY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 11:18:24 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56015 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883Ab3HXPSW (ORCPT
+	id S1755276Ab3HXPUF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 11:20:05 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:43791 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755252Ab3HXPUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 11:18:22 -0400
-Date: Sat, 24 Aug 2013 08:18:17 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: "Nicholas A. Bellinger" <nab@daterainc.com>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Roland Dreier <roland@purestorage.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH-v2 06/12] target: Add memory allocation for bidirectional
- commands
-Message-ID: <20130824151817.GA15588@infradead.org>
-References: <1377147250-10125-1-git-send-email-nab@daterainc.com>
- <1377147250-10125-7-git-send-email-nab@daterainc.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377147250-10125-7-git-send-email-nab@daterainc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 24 Aug 2013 11:20:03 -0400
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
+        broonie@kernel.org, vapier@gentoo.org, ralf@linux-mips.org,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        shawn.guo@linaro.org, sebastian.hesselbarth@gmail.com,
+        LW@KARO-electronics.de, t.figa@samsung.com, g.liakhovetski@gmx.de,
+        laurent.pinchart@ideasonboard.com, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, s.nawrocki@samsung.com
+Subject: [PATCH v4 0/5] clk: clock deregistration support
+Date: Sat, 24 Aug 2013 17:19:44 +0200
+Message-Id: <1377357589-13242-1-git-send-email-s.nawrocki@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  static int
-> +transport_generic_get_mem_bidi(struct se_cmd *cmd)
+This patch series implements clock deregistration in the common clock
+framework. This is required for proper support of clock suppliers as
+loadable modules.  Previous version of this series can be found at [1].
 
-Except for the fields touched in struct se_cmd this is a duplication
-of transport_generic_get_mem.  I'd suggest to factor that one into
-a new helper:
+Changes since v3:
+ - dropped exporting of __clk_get(), __clk_put(),
+ - replaced WARN_ON() with WARN_ON_ONCE() in clk_nodrv_disable_unprepare()
+   callback.
 
-static int
-target_alloc_sgl(struct scatterlist **sgl, unsigned int **nents,
-		u32 length, gfp_t gfp_mask)
-{
-	..
-}
+Changes since v2:
+ - reordered the patches so the race condition is fixed before it can
+   actually cause any issues,
+ - fixed handling of NULL clock pointers in __clk_get(), __clk_put(),
+ - added patch adding actual asignment of clk->owner; more details are
+   discussed in that specific patch.
 
-and then call that one from transport_generic_new_cmd directly,
-including opencoding the actual BIDI case there as a first step.
+Changes since v1:
+ - moved of_clk_{lock, unlock}, __of_clk_get_from_provider() function
+   declaractions to a local header,
+ - renamed clk_dummy_* to clk_nodrv_*.
 
-If we go down your proposed route for COMPARE and WRITE we'd also
-allocate that buffer there, although I think there is a more elegant
-way to do that, but more on that later.
+
+[1] https://lkml.org/lkml/2013/8/23/289
+
+Sylwester Nawrocki (5):
+  clk: Provide not locked variant of of_clk_get_from_provider()
+  clkdev: Fix race condition in clock lookup from device tree
+  clk: Add common __clk_get(), __clk_put() implementations
+  clk: Assign module owner of a clock being registered
+  clk: Implement clk_unregister
+
+ arch/arm/include/asm/clkdev.h      |    2 +
+ arch/blackfin/include/asm/clkdev.h |    2 +
+ arch/mips/include/asm/clkdev.h     |    2 +
+ arch/sh/include/asm/clkdev.h       |    2 +
+ drivers/clk/clk.c                  |  187 +++++++++++++++++++++++++++++++++--
+ drivers/clk/clk.h                  |   16 +++
+ drivers/clk/clkdev.c               |   12 ++-
+ include/linux/clk-private.h        |    5 +
+ include/linux/clk-provider.h       |    2 +
+ include/linux/clkdev.h             |    5 +
+ 10 files changed, 222 insertions(+), 13 deletions(-)
+ create mode 100644 drivers/clk/clk.h
+
+--
+1.7.4.1
 
