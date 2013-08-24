@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab3HXKeb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 06:34:31 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:64469 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab3HXKea (ORCPT
+	id S1754298Ab3HXKq3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 06:46:29 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:51586 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946Ab3HXKq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 06:34:30 -0400
+	Sat, 24 Aug 2013 06:46:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130819160425.527872672@infradead.org>
-References: <20130819160058.539049611@infradead.org> <20130819160425.527872672@infradead.org>
+In-Reply-To: <20130819160425.672255367@infradead.org>
+References: <20130819160058.539049611@infradead.org> <20130819160425.672255367@infradead.org>
 From: Paul Turner <pjt@google.com>
-Date: Sat, 24 Aug 2013 03:33:59 -0700
-Message-ID: <CAPM31RKTZYsZ6V6qjBNwZfE0i0Tk3fgeH_rxnDoG=pM24-TG_g@mail.gmail.com>
-Subject: Re: [PATCH 07/10] sched, fair: Optimize find_busiest_queue()
+Date: Sat, 24 Aug 2013 03:45:57 -0700
+Message-ID: <CAPM31RLOX9NSaHK9+ysC6yDXvAj2swaoXmg6hHHpMdOJjWBFrQ@mail.gmail.com>
+Subject: Re: [PATCH 09/10] sched, fair: Fix the sd_parent_degenerate() code
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
@@ -29,48 +29,68 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Aug 19, 2013 at 9:01 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> Use for_each_cpu_and() and thereby avoid computing the capacity for
-> CPUs we know we're not interested in.
+> I found that on my wsm box I had a redundant domain:
+>
+> [    0.949769] CPU0 attaching sched-domain:
+> [    0.953765]  domain 0: span 0,12 level SIBLING
+> [    0.958335]   groups: 0 (cpu_power = 587) 12 (cpu_power = 588)
+> [    0.964548]   domain 1: span 0-5,12-17 level MC
+> [    0.969206]    groups: 0,12 (cpu_power = 1175) 1,13 (cpu_power = 1176) 2,14 (cpu_power = 1176) 3,15 (cpu_power = 1176) 4,16 (cpu_power = 1176) 5,17 (cpu_power = 1176)
+> [    0.984993]    domain 2: span 0-5,12-17 level CPU
+> [    0.989822]     groups: 0-5,12-17 (cpu_power = 7055)
+> [    0.995049]     domain 3: span 0-23 level NUMA
+> [    0.999620]      groups: 0-5,12-17 (cpu_power = 7055) 6-11,18-23 (cpu_power = 7056)
+>
+> Note how domain 2 has only a single group and spans the same CPUs as
+> domain 1. We should not keep such domains and do in fact have code to
+> prune these.
+>
+> It turns out that the 'new' SD_PREFER_SIBLING flag causes this, it
+> makes sd_parent_degenerate() fail on the CPU domain. We can easily fix
+> this by 'ignoring' the SD_PREFER_SIBLING bit and transfering it to
+> whatever domain ends up covering the span.
+>
+> With this patch the domains now look like this:
+>
+> [    0.950419] CPU0 attaching sched-domain:
+> [    0.954454]  domain 0: span 0,12 level SIBLING
+> [    0.959039]   groups: 0 (cpu_power = 587) 12 (cpu_power = 588)
+> [    0.965271]   domain 1: span 0-5,12-17 level MC
+> [    0.969936]    groups: 0,12 (cpu_power = 1175) 1,13 (cpu_power = 1176) 2,14 (cpu_power = 1176) 3,15 (cpu_power = 1176) 4,16 (cpu_power = 1176) 5,17 (cpu_power = 1176)
+> [    0.985737]    domain 2: span 0-23 level NUMA
+> [    0.990231]     groups: 0-5,12-17 (cpu_power = 7055) 6-11,18-23 (cpu_power = 7056)
 >
 > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 > ---
->  kernel/sched/fair.c |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
+>  kernel/sched/core.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
 >
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4977,7 +4977,7 @@ static struct rq *find_busiest_queue(str
->         unsigned long busiest_load = 0, busiest_power = SCHED_POWER_SCALE;
->         int i;
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4948,7 +4948,8 @@ sd_parent_degenerate(struct sched_domain
+>                                 SD_BALANCE_FORK |
+>                                 SD_BALANCE_EXEC |
+>                                 SD_SHARE_CPUPOWER |
+> -                               SD_SHARE_PKG_RESOURCES);
+> +                               SD_SHARE_PKG_RESOURCES |
+> +                               SD_PREFER_SIBLING);
+>                 if (nr_node_ids == 1)
+>                         pflags &= ~SD_SERIALIZE;
+>         }
+> @@ -5157,6 +5158,13 @@ cpu_attach_domain(struct sched_domain *s
+>                         tmp->parent = parent->parent;
+>                         if (parent->parent)
+>                                 parent->parent->child = tmp;
+> +                       /*
+> +                        * Transfer SD_PREFER_SIBLING down in case of a
+> +                        * degenerate parent; the spans match for this
+> +                        * so the property transfers.
+> +                        */
+> +                       if (parent->flags & SD_PREFER_SIBLING)
+> +                               tmp->flags |= SD_PREFER_SIBLING;
+>                         destroy_sched_domain(parent, cpu);
+>                 } else
+>                         tmp = tmp->parent;
 >
-> -       for_each_cpu(i, sched_group_cpus(group)) {
-> +       for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
->                 unsigned long power = power_of(i);
->                 unsigned long capacity = DIV_ROUND_CLOSEST(power,
->                                                            SCHED_POWER_SCALE);
-> @@ -4986,9 +4986,6 @@ static struct rq *find_busiest_queue(str
->                 if (!capacity)
->                         capacity = fix_small_capacity(env->sd, group);
->
-> -               if (!cpumask_test_cpu(i, env->cpus))
-> -                       continue;
-> -
->                 rq = cpu_rq(i);
->                 wl = weighted_cpuload(i);
-
-There's no need to actually do the divisions immediately below this also.
-
-e.g.
-  unsigned long max_load_power = SCHED_POWER_SCALE;
-  ...
-  if (wl * max_load_power > max_load * power) {
-   max_load = wl;
-   max_load_power = power;
-   ...
-
-This would actually end up being a little more accurate even.
-
-[ Alternatively without caching max_load_power we could compare wl *
-power vs max_load * SCHED_POWER_SCALE. ]
 
 Reviewed-by: Paul Turner <pjt@google.com>
