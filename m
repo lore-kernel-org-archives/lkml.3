@@ -1,35 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab3HXD4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Aug 2013 23:56:08 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:56259 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754107Ab3HXD4G (ORCPT
+	id S1754834Ab3HXD5s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Aug 2013 23:57:48 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:47520 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754693Ab3HXD5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Aug 2013 23:56:06 -0400
-Date: Sat, 24 Aug 2013 11:53:42 +0800
+	Fri, 23 Aug 2013 23:57:47 -0400
+Date: Sat, 24 Aug 2013 11:55:45 +0800
 From: Jisheng Zhang <jszhang@marvell.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "gregory.clement@free-electrons.com" 
-	<gregory.clement@free-electrons.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/4] clk: mvebu: add missing iounmap
-Message-ID: <20130824115342.675b3a6b@xhacker>
-In-Reply-To: <20130823212950.8231.90154@quantum>
-References: <1377225242-5854-1-git-send-email-jszhang@marvell.com>
-	<1377225242-5854-4-git-send-email-jszhang@marvell.com>
-	<20130823212950.8231.90154@quantum>
+Subject: Re: [PATCH 4/4] pinctrl: mvebu: add missing iounmap
+Message-ID: <20130824115545.6b4abecb@xhacker>
+In-Reply-To: <20130823201925.GA2417@localhost>
+References: <1377175611-4241-1-git-send-email-jszhang@marvell.com>
+	<1377175611-4241-5-git-send-email-jszhang@marvell.com>
+	<20130822132207.GA27167@localhost>
+	<CACRpkdZKGUGnnwEt0W6hQKhA0NnHWtkeBuaz-chDS=9rZD9y7A@mail.gmail.com>
+	<20130823201925.GA2417@localhost>
 X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
@@ -38,23 +36,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+Hi Linus and Ezequiel,
 
-On Fri, 23 Aug 2013 14:29:50 -0700
-Mike Turquette <mturquette@linaro.org> wrote:
+On Fri, 23 Aug 2013 13:19:26 -0700
+Ezequiel Garcia <ezequiel.garcia@free-electrons.com> wrote:
 
-> Quoting Jisheng Zhang (2013-08-22 19:34:01)
-> > Add missing iounmap to setup error path.
+> On Fri, Aug 23, 2013 at 08:06:02PM +0200, Linus Walleij wrote:
+> > On Thu, Aug 22, 2013 at 3:22 PM, Ezequiel Garcia
+> > <ezequiel.garcia@free-electrons.com> wrote:
+> > > On Thu, Aug 22, 2013 at 08:46:51PM +0800, Jisheng Zhang wrote:
+> > >> Add missing iounmap to prove error path and remove path
+> > >>
+> > >> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> > >> ---
+> > >>  drivers/pinctrl/mvebu/pinctrl-mvebu.c | 24 +++++++++++++++++-------
+> > >>  1 file changed, 17 insertions(+), 7 deletions(-)
+> > >
+> > > How about using devm_ioremap_resource() instead?
 > > 
-> > Change-Id: I4371569d14d7026aa9f90d7cd53f669d365fe26a
+> > Yeah that's the right solution, Jisheng can you fix this?
+> > 
 > 
-> Please remove Change-Id's from the commit message for upstream patch
-> submissions in the future. I can remove this one, this time.
-> 
-> I've taken the patch into clk-next.
+> I think he already did that, there's a v2 floating around
+> with such change. I plan to give it a test, maybe tomorrow,
+> if I can find some spare time.
 > 
 
-Thanks for kindly reminding. I'll take care of this in the future.
+Yep. Here is the V2
 
-Best Regards,
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-August/194072.html
+
+Thank you for your help,
 Jisheng
+
