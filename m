@@ -1,70 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab3HXS1g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 14:27:36 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:50128 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245Ab3HXS1e (ORCPT
+	id S1755498Ab3HXS22 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 14:28:28 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:55130 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755245Ab3HXS20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 14:27:34 -0400
+	Sat, 24 Aug 2013 14:28:26 -0400
 From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
         linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
         linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
-        s.nawrocki@samsung.com
-Subject: [PATCH v5 0/5] clk: clock deregistration support
-Date: Sat, 24 Aug 2013 20:27:00 +0200
-Message-Id: <1377368825-30715-1-git-send-email-s.nawrocki@samsung.com>
+        s.nawrocki@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH v5 1/5] clk: Provide not locked variant of of_clk_get_from_provider()
+Date: Sat, 24 Aug 2013 20:27:01 +0200
+Message-Id: <1377368825-30715-2-git-send-email-s.nawrocki@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1377368825-30715-1-git-send-email-s.nawrocki@samsung.com>
+References: <1377368825-30715-1-git-send-email-s.nawrocki@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series implements clock deregistration in the common clock
-framework.  This is required for proper support of clock suppliers as
-loadable modules.  Previous version of this series can be found at [1].
+Add helper functions for the of_clk_providers list locking and
+an unlocked variant of of_clk_get_from_provider().
+These functions are intended to be used in the clkdev to avoid
+race condition in the device tree based clock look up in clk_get().
 
-Comparing to v4 only a stray struct module forward declaration has been 
-removed from patch 3/5. My apologies for spamming.
-
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
 Changes since v3:
- - replaced WARN_ON() with WARN_ON_ONCE() in clk_nodrv_disable_unprepare()
-   callback.
+ - none.
 
 Changes since v2:
- - reordered the patches so the race condition is fixed before it can
-   actually cause any issues,
- - fixed handling of NULL clock pointers in __clk_get(), __clk_put(),
- - added patch adding actual asignment of clk->owner; more details are
-   discussed in that specific patch.
+ - fixed typo in clk.h.
 
 Changes since v1:
- - moved of_clk_{lock, unlock}, __of_clk_get_from_provider() function
-   declaractions to a local header,
- - renamed clk_dummy_* to clk_nodrv_*.
-
-[1] https://lkml.org/lkml/2013/8/24/43
-
-Sylwester Nawrocki (5):
-  clk: Provide not locked variant of of_clk_get_from_provider()
-  clkdev: Fix race condition in clock lookup from device tree
-  clk: Add common __clk_get(), __clk_put() implementations
-  clk: Assign module owner of a clock being registered
-  clk: Implement clk_unregister
-
- arch/arm/include/asm/clkdev.h      |    2 +
- arch/blackfin/include/asm/clkdev.h |    2 +
- arch/mips/include/asm/clkdev.h     |    2 +
- arch/sh/include/asm/clkdev.h       |    2 +
- drivers/clk/clk.c                  |  187 +++++++++++++++++++++++++++++++++--
- drivers/clk/clk.h                  |   16 +++
- drivers/clk/clkdev.c               |   12 ++-
- include/linux/clk-private.h        |    5 +
- include/linux/clkdev.h             |    5 +
- 9 files changed, 220 insertions(+), 13 deletions(-)
+ - moved the function declaractions to a local header.
+---
+ drivers/clk/clk.c |   38 ++++++++++++++++++++++++++++++--------
+ drivers/clk/clk.h |   16 ++++++++++++++++
+ 2 files changed, 46 insertions(+), 8 deletions(-)
  create mode 100644 drivers/clk/clk.h
 
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index bc02037..f46444f 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -21,6 +21,8 @@
+ #include <linux/init.h>
+ #include <linux/sched.h>
+ 
++#include "clk.h"
++
+ static DEFINE_SPINLOCK(enable_lock);
+ static DEFINE_MUTEX(prepare_lock);
+ 
+@@ -2097,7 +2099,18 @@ static const struct of_device_id __clk_of_table_sentinel
+ 	__used __section(__clk_of_table_end);
+ 
+ static LIST_HEAD(of_clk_providers);
+-static DEFINE_MUTEX(of_clk_lock);
++static DEFINE_MUTEX(of_clk_mutex);
++
++/* of_clk_provider list locking helpers */
++void of_clk_lock(void)
++{
++	mutex_lock(&of_clk_mutex);
++}
++
++void of_clk_unlock(void)
++{
++	mutex_unlock(&of_clk_mutex);
++}
+ 
+ struct clk *of_clk_src_simple_get(struct of_phandle_args *clkspec,
+ 				     void *data)
+@@ -2141,9 +2154,9 @@ int of_clk_add_provider(struct device_node *np,
+ 	cp->data = data;
+ 	cp->get = clk_src_get;
+ 
+-	mutex_lock(&of_clk_lock);
++	mutex_lock(&of_clk_mutex);
+ 	list_add(&cp->link, &of_clk_providers);
+-	mutex_unlock(&of_clk_lock);
++	mutex_unlock(&of_clk_mutex);
+ 	pr_debug("Added clock from %s\n", np->full_name);
+ 
+ 	return 0;
+@@ -2158,7 +2171,7 @@ void of_clk_del_provider(struct device_node *np)
+ {
+ 	struct of_clk_provider *cp;
+ 
+-	mutex_lock(&of_clk_lock);
++	mutex_lock(&of_clk_mutex);
+ 	list_for_each_entry(cp, &of_clk_providers, link) {
+ 		if (cp->node == np) {
+ 			list_del(&cp->link);
+@@ -2167,24 +2180,33 @@ void of_clk_del_provider(struct device_node *np)
+ 			break;
+ 		}
+ 	}
+-	mutex_unlock(&of_clk_lock);
++	mutex_unlock(&of_clk_mutex);
+ }
+ EXPORT_SYMBOL_GPL(of_clk_del_provider);
+ 
+-struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec)
++struct clk *__of_clk_get_from_provider(struct of_phandle_args *clkspec)
+ {
+ 	struct of_clk_provider *provider;
+ 	struct clk *clk = ERR_PTR(-ENOENT);
+ 
+ 	/* Check if we have such a provider in our array */
+-	mutex_lock(&of_clk_lock);
+ 	list_for_each_entry(provider, &of_clk_providers, link) {
+ 		if (provider->node == clkspec->np)
+ 			clk = provider->get(clkspec, provider->data);
+ 		if (!IS_ERR(clk))
+ 			break;
+ 	}
+-	mutex_unlock(&of_clk_lock);
++
++	return clk;
++}
++
++struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec)
++{
++	struct clk *clk;
++
++	mutex_lock(&of_clk_mutex);
++	clk = __of_clk_get_from_provider(clkspec);
++	mutex_unlock(&of_clk_mutex);
+ 
+ 	return clk;
+ }
+diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
+new file mode 100644
+index 0000000..795cc9f
+--- /dev/null
++++ b/drivers/clk/clk.h
+@@ -0,0 +1,16 @@
++/*
++ * linux/drivers/clk/clk.h
++ *
++ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
++ * Sylwester Nawrocki <s.nawrocki@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
++struct clk *__of_clk_get_from_provider(struct of_phandle_args *clkspec);
++void of_clk_lock(void);
++void of_clk_unlock(void);
++#endif
 -- 
 1.7.4.1
 
