@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab3HXPGc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 11:06:32 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54496 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754145Ab3HXPGb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 11:06:31 -0400
-Date: Sat, 24 Aug 2013 12:06:25 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Jisheng Zhang <jszhang@marvell.com>
-Cc: jason@lakedaemon.net, andrew@lunn.ch, gregory.clement@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, mturquette@linaro.org,
-        sebastian.hesselbarth@gmail.com, linus.walleij@linaro.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] pinctrl: mvebu: Convert to use
- devm_ioremap_resource
-Message-ID: <20130824150624.GA12907@localhost>
-References: <1377225242-5854-1-git-send-email-jszhang@marvell.com>
- <1377225242-5854-5-git-send-email-jszhang@marvell.com>
+	id S1755059Ab3HXPHT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 11:07:19 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:59364 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754839Ab3HXPHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 11:07:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] ACPI fix for v3.11-rc7
+Date: Sat, 24 Aug 2013 17:17:56 +0200
+Message-ID: <11694750.y7arDE0Ss8@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1377225242-5854-5-git-send-email-jszhang@marvell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jisheng,
+Hi Linus,
 
-On Fri, Aug 23, 2013 at 10:34:02AM +0800, Jisheng Zhang wrote:
-> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> ---
->  drivers/pinctrl/mvebu/pinctrl-mvebu.c | 11 +++++------
->  1 file changed, 5 insertions(+), 6 deletions(-)
-> 
+Please pull from the git repository at
 
-Mmm.. I would prefer to see a better commit log for this patch.
-In particular, the current code is buggy (for there's a leak) and
-this patch fixes it.
-Care to write something meaningful and re-send? (except the patch
-Mike already took, I guess).
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git acpi-3.11-rc7
 
-With that changes you can add:
+to receive one ACPI fix for v3.11-rc7 as
+commit 168cf0eca45b86014b8c2a17fcb0673ab1af809b
 
-Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>T
+  Revert "ACPI / video: Always call acpi_video_init_brightness() on init"
 
-for the whole series.
+on top of commit b36f4be3de1b123d8601de062e7dbfc904f305fb
 
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+  Linux 3.11-rc6
+
+I really hoped that it wouldn't be necessary to change anything in ACPI at
+this point, but it turns out that we need to revert one more ACPI video
+commit causing trouble.
+
+This reverts a change in the ACPI video driver that caused the ACPI
+backlight initialization to be carried out even if acpi_backlight=vendor
+is passed in the kernel command line which turns out to break things
+at least on one system.
+
+Thanks!
+
+
+---------------
+
+Rafael J. Wysocki (1):
+      Revert "ACPI / video: Always call acpi_video_init_brightness() on init"
+
+---------------
+
+ drivers/acpi/video.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
+
