@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab3HXPfz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 11:35:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54629 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755307Ab3HXPfw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754699Ab3HXPfw (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 24 Aug 2013 11:35:52 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54619 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755269Ab3HXPfs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 11:35:48 -0400
 From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
@@ -17,9 +17,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Subject: [PATCH v4 3/4] clocksource: orion: Use atomic access for shared registers
-Date: Sat, 24 Aug 2013 12:35:31 -0300
-Message-Id: <1377358532-23802-4-git-send-email-ezequiel.garcia@free-electrons.com>
+Subject: [PATCH v4 2/4] ARM: Add atomic_io_modify optimized routines
+Date: Sat, 24 Aug 2013 12:35:30 -0300
+Message-Id: <1377358532-23802-3-git-send-email-ezequiel.garcia@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1377358532-23802-1-git-send-email-ezequiel.garcia@free-electrons.com>
 References: <1377358532-23802-1-git-send-email-ezequiel.garcia@free-electrons.com>
@@ -27,84 +27,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the driver-specific thread-safe shared register API
-by the recently introduced atomic_io_modify().
+Implement arch-specific atomic_io_modify and atomic_io_modify_relaxed,
+which are based on writel/readl_relaxed and writel_relaxed/readl_relaxed,
+respectively.
+In both cases, by relaxing the readl, perfomance can be improved.
 
 Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 ---
- drivers/clocksource/time-orion.c | 29 +++++++++++------------------
- 1 file changed, 11 insertions(+), 18 deletions(-)
+ arch/arm/include/asm/io.h |  4 ++++
+ arch/arm/kernel/io.c      | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+)
 
-diff --git a/drivers/clocksource/time-orion.c b/drivers/clocksource/time-orion.c
-index ecbeb68..f69f697 100644
---- a/drivers/clocksource/time-orion.c
-+++ b/drivers/clocksource/time-orion.c
-@@ -18,6 +18,7 @@
- #include <linux/interrupt.h>
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
-+#include <linux/io.h>
- #include <linux/spinlock.h>
- #include <asm/sched_clock.h>
+diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
+index d070741..53637b6 100644
+--- a/arch/arm/include/asm/io.h
++++ b/arch/arm/include/asm/io.h
+@@ -397,5 +397,9 @@ extern int devmem_is_allowed(unsigned long pfn);
+ extern void register_isa_ports(unsigned int mmio, unsigned int io,
+ 			       unsigned int io_shift);
  
-@@ -35,20 +36,6 @@
- #define ORION_ONESHOT_MAX	0xfffffffe
- 
- static void __iomem *timer_base;
--static DEFINE_SPINLOCK(timer_ctrl_lock);
--
--/*
-- * Thread-safe access to TIMER_CTRL register
-- * (shared with watchdog timer)
-- */
--void orion_timer_ctrl_clrset(u32 clr, u32 set)
--{
--	spin_lock(&timer_ctrl_lock);
--	writel((readl(timer_base + TIMER_CTRL) & ~clr) | set,
--		timer_base + TIMER_CTRL);
--	spin_unlock(&timer_ctrl_lock);
--}
--EXPORT_SYMBOL(orion_timer_ctrl_clrset);
++#define __HAVE_ARCH_ATOMIC_IO_MODIFY
++extern void atomic_io_modify(void __iomem *reg, u32 mask, u32 set);
++extern void atomic_io_modify_relaxed(void __iomem *reg, u32 mask, u32 set);
++
+ #endif	/* __KERNEL__ */
+ #endif	/* __ASM_ARM_IO_H */
+diff --git a/arch/arm/kernel/io.c b/arch/arm/kernel/io.c
+index dcd5b4d..a8c9c9b 100644
+--- a/arch/arm/kernel/io.c
++++ b/arch/arm/kernel/io.c
+@@ -1,6 +1,35 @@
+ #include <linux/export.h>
+ #include <linux/types.h>
+ #include <linux/io.h>
++#include <linux/spinlock.h>
++
++static DEFINE_RAW_SPINLOCK(__io_lock);
++
++void atomic_io_modify_relaxed(void __iomem *reg, u32 mask, u32 set)
++{
++	unsigned long flags;
++	u32 value;
++
++	raw_spin_lock_irqsave(&__io_lock, flags);
++	value = readl_relaxed(reg) & ~mask;
++	value |= (set & mask);
++	writel_relaxed(value, reg);
++	raw_spin_unlock_irqrestore(&__io_lock, flags);
++}
++EXPORT_SYMBOL(atomic_io_modify_relaxed);
++
++void atomic_io_modify(void __iomem *reg, u32 mask, u32 set)
++{
++	unsigned long flags;
++	u32 value;
++
++	raw_spin_lock_irqsave(&__io_lock, flags);
++	value = readl_relaxed(reg) & ~mask;
++	value |= (set & mask);
++	writel(value, reg);
++	raw_spin_unlock_irqrestore(&__io_lock, flags);
++}
++EXPORT_SYMBOL(atomic_io_modify);
  
  /*
-  * Free-running clocksource handling.
-@@ -68,7 +55,8 @@ static int orion_clkevt_next_event(unsigned long delta,
- {
- 	/* setup and enable one-shot timer */
- 	writel(delta, timer_base + TIMER1_VAL);
--	orion_timer_ctrl_clrset(TIMER1_RELOAD_EN, TIMER1_EN);
-+	atomic_io_modify(timer_base + TIMER_CTRL,
-+		TIMER1_RELOAD_EN | TIMER1_EN, TIMER1_EN);
- 
- 	return 0;
- }
-@@ -80,10 +68,13 @@ static void orion_clkevt_mode(enum clock_event_mode mode,
- 		/* setup and enable periodic timer at 1/HZ intervals */
- 		writel(ticks_per_jiffy - 1, timer_base + TIMER1_RELOAD);
- 		writel(ticks_per_jiffy - 1, timer_base + TIMER1_VAL);
--		orion_timer_ctrl_clrset(0, TIMER1_RELOAD_EN | TIMER1_EN);
-+		atomic_io_modify(timer_base + TIMER_CTRL,
-+			TIMER1_RELOAD_EN | TIMER1_EN,
-+			TIMER1_RELOAD_EN | TIMER1_EN);
- 	} else {
- 		/* disable timer */
--		orion_timer_ctrl_clrset(TIMER1_RELOAD_EN | TIMER1_EN, 0);
-+		atomic_io_modify(timer_base + TIMER_CTRL,
-+			TIMER1_RELOAD_EN | TIMER1_EN, 0);
- 	}
- }
- 
-@@ -131,7 +122,9 @@ static void __init orion_timer_init(struct device_node *np)
- 	/* setup timer0 as free-running clocksource */
- 	writel(~0, timer_base + TIMER0_VAL);
- 	writel(~0, timer_base + TIMER0_RELOAD);
--	orion_timer_ctrl_clrset(0, TIMER0_RELOAD_EN | TIMER0_EN);
-+	atomic_io_modify(timer_base + TIMER_CTRL,
-+		TIMER0_RELOAD_EN | TIMER0_EN,
-+		TIMER0_RELOAD_EN | TIMER0_EN);
- 	clocksource_mmio_init(timer_base + TIMER0_VAL, "orion_clocksource",
- 			      clk_get_rate(clk), 300, 32,
- 			      clocksource_mmio_readl_down);
+  * Copy data from IO memory space to "real" memory space.
 -- 
 1.8.1.5
 
