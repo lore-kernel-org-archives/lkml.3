@@ -1,116 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab3HXS1N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 14:27:13 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:56026 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245Ab3HXS1M (ORCPT
+	id S1755472Ab3HXS1g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 14:27:36 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:50128 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755245Ab3HXS1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 14:27:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <1377358532-23802-2-git-send-email-ezequiel.garcia@free-electrons.com>
-References: <1377358532-23802-1-git-send-email-ezequiel.garcia@free-electrons.com>
-	<1377358532-23802-2-git-send-email-ezequiel.garcia@free-electrons.com>
-Date: Sat, 24 Aug 2013 20:27:10 +0200
-Message-ID: <CAFLxGvxLyGH1Xgq6=Y5Z9x=DtBmjWnE+x9X-65RKY1=8dhL_OA@mail.gmail.com>
-Subject: Re: [PATCH v4 1/4] lib: Introduce atomic MMIO modify
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Baruch Siach <baruch@tkos.co.il>,
-        Will Deacon <will.deacon@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 24 Aug 2013 14:27:34 -0400
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux@arm.linux.org.uk, mturquette@linaro.org, jiada_wang@mentor.com,
+        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
+        linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
+        s.nawrocki@samsung.com
+Subject: [PATCH v5 0/5] clk: clock deregistration support
+Date: Sat, 24 Aug 2013 20:27:00 +0200
+Message-Id: <1377368825-30715-1-git-send-email-s.nawrocki@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 24, 2013 at 5:35 PM, Ezequiel Garcia
-<ezequiel.garcia@free-electrons.com> wrote:
-> Some platforms have MMIO regions that are shared across orthogonal
-> subsystems. This commit implements a possible solution for the
-> thread-safe access of such regions through a spinlock-protected API.
->
-> Concurrent access is protected with a single spinlock for the
-> entire MMIO address space. While this protects shared-registers,
-> it also serializes access to unrelated/unshared registers.
->
-> Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> ---
->  include/linux/io.h |  5 +++++
->  lib/Makefile       |  2 +-
->  lib/atomicio.c     | 27 +++++++++++++++++++++++++++
->  3 files changed, 33 insertions(+), 1 deletion(-)
->  create mode 100644 lib/atomicio.c
->
-> diff --git a/include/linux/io.h b/include/linux/io.h
-> index f4f42fa..c331dcb 100644
-> --- a/include/linux/io.h
-> +++ b/include/linux/io.h
-> @@ -101,4 +101,9 @@ static inline void arch_phys_wc_del(int handle)
->  #define arch_phys_wc_add arch_phys_wc_add
->  #endif
->
-> +#ifndef __HAVE_ARCH_ATOMIC_IO_MODIFY
-> +/* Atomic MMIO-wide IO modify */
-> +extern void atomic_io_modify(void __iomem *reg, u32 mask, u32 set);
-> +#endif
-> +
->  #endif /* _LINUX_IO_H */
-> diff --git a/lib/Makefile b/lib/Makefile
-> index 7baccfd..695d6e2 100644
-> --- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
->          sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
->          proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
->          is_single_threaded.o plist.o decompress.o kobject_uevent.o \
-> -        earlycpio.o percpu-refcount.o
-> +        earlycpio.o percpu-refcount.o atomicio.o
->
->  obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
->  lib-$(CONFIG_MMU) += ioremap.o
-> diff --git a/lib/atomicio.c b/lib/atomicio.c
-> new file mode 100644
-> index 0000000..1750f9d
-> --- /dev/null
-> +++ b/lib/atomicio.c
-> @@ -0,0 +1,27 @@
-> +#include <linux/io.h>
-> +#include <linux/spinlock.h>
-> +
-> +#ifndef __HAVE_ARCH_ATOMIC_IO_MODIFY
-> +/*
-> + * Generic atomic MMIO modify.
-> + *
-> + * Allows thread-safe access to registers shared by unrelated subsystems.
-> + * The access is protected by a single MMIO-wide lock.
-> + *
-> + * Optimized variants can be implemented on a per-architecture basis.
-> + */
-> +static DEFINE_RAW_SPINLOCK(__io_lock);
-> +void atomic_io_modify(void __iomem *reg, u32 mask, u32 set)
-> +{
-> +       unsigned long flags;
-> +       u32 value;
-> +
-> +       raw_spin_lock_irqsave(&__io_lock, flags);
-> +       value = readl(reg) & ~mask;
-> +       value |= (set & mask);
-> +       writel(value, reg);
-> +       raw_spin_unlock_irqrestore(&__io_lock, flags);
-> +
-> +}
-> +EXPORT_SYMBOL(atomic_io_modify);
+This patch series implements clock deregistration in the common clock
+framework.  This is required for proper support of clock suppliers as
+loadable modules.  Previous version of this series can be found at [1].
 
-Why not the default case EXPORT_SYMBOL_GPL()?
+Comparing to v4 only a stray struct module forward declaration has been 
+removed from patch 3/5. My apologies for spamming.
+
+Changes since v3:
+ - replaced WARN_ON() with WARN_ON_ONCE() in clk_nodrv_disable_unprepare()
+   callback.
+
+Changes since v2:
+ - reordered the patches so the race condition is fixed before it can
+   actually cause any issues,
+ - fixed handling of NULL clock pointers in __clk_get(), __clk_put(),
+ - added patch adding actual asignment of clk->owner; more details are
+   discussed in that specific patch.
+
+Changes since v1:
+ - moved of_clk_{lock, unlock}, __of_clk_get_from_provider() function
+   declaractions to a local header,
+ - renamed clk_dummy_* to clk_nodrv_*.
+
+[1] https://lkml.org/lkml/2013/8/24/43
+
+Sylwester Nawrocki (5):
+  clk: Provide not locked variant of of_clk_get_from_provider()
+  clkdev: Fix race condition in clock lookup from device tree
+  clk: Add common __clk_get(), __clk_put() implementations
+  clk: Assign module owner of a clock being registered
+  clk: Implement clk_unregister
+
+ arch/arm/include/asm/clkdev.h      |    2 +
+ arch/blackfin/include/asm/clkdev.h |    2 +
+ arch/mips/include/asm/clkdev.h     |    2 +
+ arch/sh/include/asm/clkdev.h       |    2 +
+ drivers/clk/clk.c                  |  187 +++++++++++++++++++++++++++++++++--
+ drivers/clk/clk.h                  |   16 +++
+ drivers/clk/clkdev.c               |   12 ++-
+ include/linux/clk-private.h        |    5 +
+ include/linux/clkdev.h             |    5 +
+ 9 files changed, 220 insertions(+), 13 deletions(-)
+ create mode 100644 drivers/clk/clk.h
 
 -- 
-Thanks,
-//richard
+1.7.4.1
+
