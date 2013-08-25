@@ -1,88 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab3HYTgy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 15:36:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54870 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756099Ab3HYTgw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 15:36:52 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Stephen Warren" <swarren@wwwdotorg.org>
-Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
-        linus.walleij@linaro.org, grant.likely@linaro.org, pawel.moll@arm.com
-Subject: Re: [PATCH V3] gpio: New driver for LSI ZEVIO SoCs
-References: <1375879989-18606-1-git-send-email-fabian@ritter-vogt.de>
- <5217BB73.8050907@wwwdotorg.org>
-Date: Sun, 25 Aug 2013 21:44:29 +0200
+	id S1756638Ab3HYTh5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 15:37:57 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:33540 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756099Ab3HYTh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Aug 2013 15:37:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH] acpi: blacklist win8 OSI for buggy laptops
+Date: Sun, 25 Aug 2013 21:48:34 +0200
+Message-ID: <1703730.yuNIYf6TyH@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1377452253-15882-1-git-send-email-felipe.contreras@gmail.com>
+References: <1377452253-15882-1-git-send-email-felipe.contreras@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Fabian Vogt" <fabian@ritter-vogt.de>
-Message-ID: <op.w2d04ftpu7prd4@fabians-laptop.fritz.box>
-In-Reply-To: <5217BB73.8050907@wwwdotorg.org>
-User-Agent: Opera Mail/12.15 (Linux)
-X-Provags-ID: V02:K0:+uB066rHWAftaZx9fTKaX+K5Eg6EHJ49IIWJL9RaYwi
- tJgMaaEmzSkTlsK0jsC/hOxCFNVfuuaB3SgZNKE4jrXqOtYB6T
- 3yRLiSTOyqtu0IjauA+xYevuEg8xgMgfUr7zPnGqRMmQWvD/1r
- SH4Z3kuCj6YUKzT3obQuxNEqDULaHZdqy9z52SdD2PXIU/C/1n
- FdUqUQA/rb2O4nfk4UODIncmqAOHL3X7MQKncM064vHmcAdAUl
- 2bk4xFT/hgx6Fd4BpZkkEbexz/C1WTjApYeWxTvKWEO4ntzhue
- 7Hp/xsEH/td9TiKa/4WUDBeGys1GjkVprrmKFZ9l4o0xxqdLZE
- dnsXUuhdmY1Hs4+vvdw2zLptLsCOKv9O5GBxyIWlPTvb7wq9sM
- 3c5xWDYSnZo2A==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sunday, August 25, 2013 12:37:33 PM Felipe Contreras wrote:
+> Since v3.7 the acpi backlight driver doesn't work correctly in several
+> machines because ACPI code has different code for Windows 8, and the
+> rest.
+> 
+> The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the
+> intel backlight driver, however it introduced several other issues in
+> different machines.
+> 
+> This patch fixes both regressions by blacklisting the win8 OSI, so we
+> are back to v3.6 behavior, and it should remain that way until the intel
+> backlight driver is fixed.
+> 
+> Since v3.7, users have been forced to fix the initial regression by
+> modifying the boot arguments (acpi_osi="!Windows 2012").
+> 
+> Once the Intel backlight driver works correctly for all machines, this
+> blacklist can be removed and that driver can be used instead.
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=60682
+> 
+> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 
-> On 08/07/2013 06:53 AM, Fabian Vogt wrote:
->> This driver supports the GPIO controller found in LSI ZEVIO SoCs.
->> It has been successfully tested on a TI nspire CX calculator.
->
->> diff --git a/Documentation/devicetree/bindings/gpio/gpio-zevio.txt  
->> b/Documentation/devicetree/bindings/gpio/gpio-zevio.txt
->
->> +Zevio GPIO controller
->> +
->> +Required properties:
->> +- compatible = "lsi,zevio-gpio"
->
-> Is there only one zevio chip, or a series? Is "zevio" the full name of
-> the chip, including any version number?
-We don't know, it's a relableled chip with
-TI-NSPIRE / L9A0702 / TI-NS2006A-0 / LSI LOGIC / ZEVIO / U 0714 /  
-WYJ14052-1
-on it. But this driver should match the other drivers (lsi,zevio-intc,  
-lsi,zevio-timer).
+Queued up for 3.12, but I've already applied your previous patch for the Asus
+Zenbook, so I needed to rebase this one.  Please check the bleeding-edge branch
+of the linux-pm.git tree for the result.
 
->> +- reg = <BASEADDR SIZE>
->> +- #gpio-cells = <2>
->> +- gpio-controller;
->> +
->> +Optional:
->> +- #ngpios = <32>: Number of GPIOs. Defaults to 32 if absent
->
-> Perhaps one can derive that from the compatible value? The fact this
-> property exists implies there's more than one zevio chip, so perhaps
-> each should have an explicit compatible value described above?
-I added it just for someone who maybe needs it. It's only two lines and  
-maybe
-it'll be helpful for someone. We don't know whether some similiar or this  
-controller
-exist in different configurations (pin count, section sice, register  
-layout).
-Also I hate hardcoded values which require a recompile to change..
+Also next time you fix problems reported by other people please add Reported-by
+tags to the patch to give a credit to the reporters.
 
-> Is the GPIO block not also an interrupt source/controller? I see the
-> following in the patch, and references to some IRQ registers...
->
->> +	select GENERIC_IRQ_CHIP
-I forgot to remove this line after testing the interrupts, the tests went  
-horribly (hard lockups)...
+Thanks,
+Rafael
 
-V4 should be underway soon.
 
-Bye,
-Fabian
+> ---
+>  drivers/acpi/blacklist.c | 35 +++++++++++++++++++++++++++++++++++
+>  1 file changed, 35 insertions(+)
+> 
+> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+> index cb96296..42cccbe 100644
+> --- a/drivers/acpi/blacklist.c
+> +++ b/drivers/acpi/blacklist.c
+> @@ -192,6 +192,12 @@ static int __init dmi_disable_osi_win7(const struct dmi_system_id *d)
+>  	acpi_osi_setup("!Windows 2009");
+>  	return 0;
+>  }
+> +static int __init dmi_disable_osi_win8(const struct dmi_system_id *d)
+> +{
+> +	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
+> +	acpi_osi_setup("!Windows 2012");
+> +	return 0;
+> +}
+>  
+>  static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+>  	{
+> @@ -269,6 +275,35 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+>  	},
+>  
+>  	/*
+> +	 * The following machines have broken backlight support when reporting
+> +	 * the Windows 2012 OSI, so disable it until their support is fixed.
+> +	 */
+> +	{
+> +	.callback = dmi_disable_osi_win8,
+> +	.ident = "ASUS Zenbook Prime UX31A",
+> +	.matches = {
+> +		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+> +		     DMI_MATCH(DMI_PRODUCT_NAME, "UX31A"),
+> +		},
+> +	},
+> +	{
+> +	.callback = dmi_disable_osi_win8,
+> +	.ident = "Dell Inspiron 15R SE",
+> +	.matches = {
+> +		     DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+> +		     DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 7520"),
+> +		},
+> +	},
+> +	{
+> +	.callback = dmi_disable_osi_win8,
+> +	.ident = "Lenovo ThinkPad Edge E530",
+> +	.matches = {
+> +		     DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+> +		     DMI_MATCH(DMI_PRODUCT_VERSION, "3259A2G"),
+> +		},
+> +	},
+> +
+> +	/*
+>  	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
+>  	 * Linux ignores it, except for the machines enumerated below.
+>  	 */
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
