@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab3HYU2n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 16:28:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:65332 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab3HYU2l (ORCPT
+	id S1756310Ab3HYVuR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 17:50:17 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:35996 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756077Ab3HYVuP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 16:28:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Subject: Re: [PATCH V2] PCI: exynos: add support for MSI
-Date: Sun, 25 Aug 2013 22:28:20 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Pratyush Anand <pratyush.anand@st.com>, Jingoo Han <jg1.han@samsung.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
-        Siva Reddy Kallam <siva.kallam@samsung.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        "'Sean Cross'" <xobs@kosagi.com>,
-        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-References: <003d01ce9fc6$9c0f1c20$d42d5460$%han@samsung.com> <20130823083539.GB3937@pratyush-vbox> <20130823092238.GJ3535@ulmo>
-In-Reply-To: <20130823092238.GJ3535@ulmo>
+	Sun, 25 Aug 2013 17:50:15 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308252228.20843.arnd@arndb.de>
-X-Provags-ID: V02:K0:Vo0VTtKpmEXPvG0D3Mt4ym15d72hUgMNgYoCjEWiQsb
- g8WbQTJxmeYf9K38ObIIjT0kC8dJfsZq0/Mgcqijg4156COv8X
- nxi49o9KHpnUkbHl6zXgy5o+TeHcm64LGTnHw7P6CHTupMnMiv
- XVscpVR+wLsiM1vk70Bx/c/EoECUBOsLuBCuNO5Gnl1Vo4xaKU
- al0LNEYNv6FQoxMOBGdIiHhIkpceokacwpyUihQJrjd/8OlKPO
- Ann3HlRTRdtUX/aqQIIP4soZL6GUe9DzuhTDswQtRIciqRKTPh
- dqkUKoNimW2wM0VvmhGXqMfAVLjxjCPurQRnYOSmmktjrxJgjL
- uc2zTvqSyF18PGoK7/7w=
+Content-Transfer-Encoding: 8BIT
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1375609657-15434-3-git-send-email-maxime.ripard@free-electrons.com>
+Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+References: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1375609657-15434-3-git-send-email-maxime.ripard@free-electrons.com>
+Message-ID: <20130825215008.8231.41811@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCHv3 02/10] clk: sunxi: fix initialization of basic clocks
+Date: Sun, 25 Aug 2013 14:50:08 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 August 2013, Thierry Reding wrote:
-> > > +       if (IS_ENABLED(CONFIG_PCI_MSI)) {
-> > > +               if (of_property_read_u32(np, "msi-base", &pp->msi_irq_start)) {
-> > > +                       dev_err(pp->dev, "Failed to parse the number of lanes\n");
-> > > +                       return -EINVAL;
-> > > +               }
-> > > +       }
-> > > +
-> > 
-> > What if an implementor want to use irq_domain method for msi_irq_start
-> > allocation? Is it fine to return error if msi-base is not passed from
-> > dt?
+Quoting Maxime Ripard (2013-08-04 02:47:29)
+> From: Emilio López <emilio@elopez.com.ar>
 > 
-> I agree. This should be using an IRQ domain to represent the MSI
-> controller. Both Tegra and Marvell drivers do that already and if Exynos
-> can follow that same path it will increase the chances of refactoring
-> common bits.
+> With the recent move towards CLK_OF_DECLARE(...), the driver stopped
+> initializing osc32k, which is compatible "fixed-clock". This is because
+> we never called of_clk_init(NULL). Fix this by moving the only other
+> simple clock (osc24M) to use CLK_OF_DECLARE(...) and call of_clk_init(NULL)
+> to initialize both of them.
 > 
-> Also the error message doesn't quite match up with what the code is
-> doing. =)
+> Signed-off-by: Emilio López <emilio@elopez.com.ar>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Cc: Mike Turquette <mturquette@linaro.org>
 
-Agreed. Besides the encoding of "base" irq values in the device tree is always
-wrong, since the numbers are not at all a hardware property but an implementation
-detail of how Linux currently uses interrupt numbers. When using DT probing,
-you *have* to use IRQ domains, and the rest of Exynos does that.
+Taken into clk-next.
 
-	Arnd
+Regards,
+Mike
+
+> ---
+>  drivers/clk/sunxi/clk-sunxi.c | 11 +++--------
+>  1 file changed, 3 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+> index db1c45b..567963f 100644
+> --- a/drivers/clk/sunxi/clk-sunxi.c
+> +++ b/drivers/clk/sunxi/clk-sunxi.c
+> @@ -69,6 +69,7 @@ static void __init sunxi_osc_clk_setup(struct device_node *node)
+>                 clk_register_clkdev(clk, clk_name, NULL);
+>         }
+>  }
+> +CLK_OF_DECLARE(sunxi_osc, "allwinner,sun4i-osc-clk", sunxi_osc_clk_setup);
+>  
+>  
+>  
+> @@ -422,12 +423,6 @@ static void __init sunxi_gates_clk_setup(struct device_node *node,
+>         of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+>  }
+>  
+> -/* Matches for of_clk_init */
+> -static const __initconst struct of_device_id clk_match[] = {
+> -       {.compatible = "allwinner,sun4i-osc-clk", .data = sunxi_osc_clk_setup,},
+> -       {}
+> -};
+> -
+>  /* Matches for factors clocks */
+>  static const __initconst struct of_device_id clk_factors_match[] = {
+>         {.compatible = "allwinner,sun4i-pll1-clk", .data = &pll1_data,},
+> @@ -482,8 +477,8 @@ static void __init of_sunxi_table_clock_setup(const struct of_device_id *clk_mat
+>  
+>  void __init sunxi_init_clocks(void)
+>  {
+> -       /* Register all the simple sunxi clocks on DT */
+> -       of_clk_init(clk_match);
+> +       /* Register all the simple and basic clocks on DT */
+> +       of_clk_init(NULL);
+>  
+>         /* Register factor clocks */
+>         of_sunxi_table_clock_setup(clk_factors_match, sunxi_factors_clk_setup);
+> -- 
+> 1.8.3.4
