@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab3HYVuR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 17:50:17 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:35996 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756077Ab3HYVuP convert rfc822-to-8bit (ORCPT
+	id S1756664Ab3HYVwL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 17:52:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47157 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756103Ab3HYVwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 17:50:15 -0400
-Content-Type: text/plain; charset="utf-8"
+	Sun, 25 Aug 2013 17:52:09 -0400
+Date: Sun, 25 Aug 2013 14:54:20 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH] driver core / ACPI: Avoid device removal locking problems
+Message-ID: <20130825215420.GB23446@kroah.com>
+References: <1543475.L7gSB7lLAu@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1375609657-15434-3-git-send-email-maxime.ripard@free-electrons.com>
-Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-References: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
- <1375609657-15434-3-git-send-email-maxime.ripard@free-electrons.com>
-Message-ID: <20130825215008.8231.41811@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCHv3 02/10] clk: sunxi: fix initialization of basic clocks
-Date: Sun, 25 Aug 2013 14:50:08 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1543475.L7gSB7lLAu@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Maxime Ripard (2013-08-04 02:47:29)
-> From: Emilio López <emilio@elopez.com.ar>
+On Sun, Aug 25, 2013 at 10:09:47PM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> With the recent move towards CLK_OF_DECLARE(...), the driver stopped
-> initializing osc32k, which is compatible "fixed-clock". This is because
-> we never called of_clk_init(NULL). Fix this by moving the only other
-> simple clock (osc24M) to use CLK_OF_DECLARE(...) and call of_clk_init(NULL)
-> to initialize both of them.
+> There are two mutexes, device_hotplug_lock and acpi_scan_lock, held
+> around the acpi_bus_trim() call in acpi_scan_hot_remove() which
+> generally removes devices (it removes ACPI device objects at least,
+> but it may also remove "physical" device objects through .detach()
+> callbacks of ACPI scan handlers).  Thus, potentially, device sysfs
+> attributes are removed under these locks and to remove those
+> attributes it is necessary to hold the s_active references of their
+> directory entries for writing.
 > 
-> Signed-off-by: Emilio López <emilio@elopez.com.ar>
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Cc: Mike Turquette <mturquette@linaro.org>
-
-Taken into clk-next.
-
-Regards,
-Mike
-
-> ---
->  drivers/clk/sunxi/clk-sunxi.c | 11 +++--------
->  1 file changed, 3 insertions(+), 8 deletions(-)
+> On the other hand, the execution of a .show() or .store() callback
+> from a sysfs attribute is carried out with that attribute's s_active
+> reference held for reading.  Consequently, if any device sysfs
+> attribute that may be removed from within acpi_scan_hot_remove()
+> through acpi_bus_trim() has a .store() or .show() callback which
+> acquires either acpi_scan_lock or device_hotplug_lock, the execution
+> of that callback may deadlock with the removal of the attribute.
+> [Unfortunately, the "online" device attribute of CPUs and memory
+> blocks and the "eject" attribute of ACPI device objects are affected
+> by this issue.]
 > 
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index db1c45b..567963f 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -69,6 +69,7 @@ static void __init sunxi_osc_clk_setup(struct device_node *node)
->                 clk_register_clkdev(clk, clk_name, NULL);
->         }
->  }
-> +CLK_OF_DECLARE(sunxi_osc, "allwinner,sun4i-osc-clk", sunxi_osc_clk_setup);
->  
->  
->  
-> @@ -422,12 +423,6 @@ static void __init sunxi_gates_clk_setup(struct device_node *node,
->         of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
->  }
->  
-> -/* Matches for of_clk_init */
-> -static const __initconst struct of_device_id clk_match[] = {
-> -       {.compatible = "allwinner,sun4i-osc-clk", .data = sunxi_osc_clk_setup,},
-> -       {}
-> -};
-> -
->  /* Matches for factors clocks */
->  static const __initconst struct of_device_id clk_factors_match[] = {
->         {.compatible = "allwinner,sun4i-pll1-clk", .data = &pll1_data,},
-> @@ -482,8 +477,8 @@ static void __init of_sunxi_table_clock_setup(const struct of_device_id *clk_mat
->  
->  void __init sunxi_init_clocks(void)
->  {
-> -       /* Register all the simple sunxi clocks on DT */
-> -       of_clk_init(clk_match);
-> +       /* Register all the simple and basic clocks on DT */
-> +       of_clk_init(NULL);
->  
->         /* Register factor clocks */
->         of_sunxi_table_clock_setup(clk_factors_match, sunxi_factors_clk_setup);
-> -- 
-> 1.8.3.4
+> To avoid those deadlocks introduce a new protection mechanism that
+> can be used by the device sysfs attributes in question.  Namely,
+> if a device sysfs attribute's .store() or .show() callback routine
+> is about to acquire device_hotplug_lock or acpi_scan_lock, it can
+> first execute read_lock_device_remove() and return an error code if
+> that function returns false.  If true is returned, the lock in
+> question may be acquired and read_unlock_device_remove() must be
+> called.  [This mechanism is implemented by means of an additional
+> rwsem in drivers/base/core.c.]
+> 
+> Make the affected sysfs attributes in the driver core and ACPI core
+> use read_lock_device_remove() and read_unlock_device_remove() as
+> described above.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
