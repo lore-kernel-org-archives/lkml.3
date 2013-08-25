@@ -1,372 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab3HYTTR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 15:19:17 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:47407 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755854Ab3HYTTQ (ORCPT
+	id S1756338Ab3HYTeZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 15:34:25 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:51943 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755320Ab3HYTeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 15:19:16 -0400
-Date: Sun, 25 Aug 2013 12:18:39 -0700
+	Sun, 25 Aug 2013 15:34:24 -0400
+Date: Sun, 25 Aug 2013 12:34:14 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: dipankar@in.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/rcutree.c: deem to be lazy if there are no
- callbacks.
-Message-ID: <20130825191839.GA22515@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, Sedat Dilek <sedat.dilek@gmail.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Rik van Riel <riel@surriel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH tip/core/rcu 1/5] rcu: Add duplicate-callback tests to
+ rcutorture
+Message-ID: <20130825193414.GN3871@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <5212E76A.40903@asianux.com>
- <5212E7BB.4020602@asianux.com>
- <20130820041832.GY29406@linux.vnet.ibm.com>
- <5212F3E5.7080700@asianux.com>
- <5212F467.8090407@asianux.com>
- <52145741.7000008@asianux.com>
- <20130821142301.GX29406@linux.vnet.ibm.com>
- <52157F21.5080200@asianux.com>
+References: <20130818022453.GA3475@linux.vnet.ibm.com>
+ <1376967074-32530-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <52133EBF.3020605@cn.fujitsu.com>
+ <20130820183843.GK29406@linux.vnet.ibm.com>
+ <20130824192536.GE13216@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52157F21.5080200@asianux.com>
+In-Reply-To: <20130824192536.GE13216@Krystal>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082519-5518-0000-0000-00001173BAD8
+x-cbid: 13082519-7606-0000-0000-00000E998694
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 11:01:53AM +0800, Chen Gang wrote:
-> On 08/21/2013 10:23 PM, Paul E. McKenney wrote:
-> > On Wed, Aug 21, 2013 at 01:59:29PM +0800, Chen Gang wrote:
-
-[ . . . ]
-
-> > Don't get me wrong, I do welcome appropriate patches.  In fact, if
-> > you look at RCU's git history, you will see that I frequently accept
-> > patches from a fair number of people.  And if you were willing to
-> > invest some time and thought, you might eventually be able to generate
-> > an appropriate (albeit low priority) patch to this function.  However,
-> > you seem to be motivated to submit small patches with a minimum of
-> > thought and preparation, perhaps because you need to meet some external
-> > or self-imposed quota of accepted patches.  And if you are in fact driven
-> > by a quota that prevents you from taking the time required to carefully
-> > think things through, you are wasting your time with RCU.
+On Sat, Aug 24, 2013 at 03:25:36PM -0400, Mathieu Desnoyers wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> [...]
+> > The result is as follows.  Better?
 > 
-> Hmm... at least, some contents you said above is correct to me.
+> Hi Paul,
 > 
-> At least, I should provide 10 patches per month, it is a necessary
-> basic requirement to me.
-
-OK, that does help explain the otherwise inexplicable approach you have
-been taking.  Let's see how you have been doing, based on committer date
-in Linus's tree:
-
-      1 2012-11
-     15 2013-01
-      7 2013-02
-     20 2013-03
-     21 2013-04
-     12 2013-05
-     17 2013-06
-     10 2013-07
-
-The last few months might be understated a bit due to patches
-still being in maintainer trees.  This is a nice contrast from my
-first impression of you from https://lkml.org/lkml/2013/6/9/64 and
-https://lkml.org/lkml/2013/8/19/650, neither of which gave me any
-reason to trust your work, to put it mildly.  And if I cannot trust
-your work, I obviously cannot accept your patches.
-
-You do seem to select for localized bug fixes, which require less work
-than the performance-motivated patches you were putting forward earlier
-in this thread.  With a localized bug, you demonstrate the bug, show the
-fix, and that is that.  From what I can see, part of the problem with
-your patches in this email thread is that you are trying to move from
-localized bug fixes to performance issues without doing the additional
-work required.  Please see below for a rough outline of this additional
-work.
-
-> And what my focus is efficiency: let appliers and maintainers together
-> to provide contributes to outside with efficiency.
-
-Sounds great, but there are many possible definitions of "efficiency".
-Given your quota, I would expect your definition to involve number of
-patches accepted.  In contrast, my definition for RCU instead involves
-maintainability, robustness, scalability, and, for a few critical
-code paths, performance.  I therefore need you to have thought through
-and carefully tested your patch.
-
-> If you already know about it, why need I continue ?  but if you don't
-> know either, I should try.
-
-What I need you to do in future RCU performance patch submissions is:
-
-1.	Think through your patch and the code that it is modifying.
-	If you submit a patch to me, you should be able to answer the
-	sorts of questions that I was asking in this thread.
-
-2.	Tell me what situations your patch helps and not.
-
-3.	Tell me how much your patch improves performance in the
-	situations where it helps.
-
-4.	Test the code.  If it makes a measurable difference, present
-	the performance results.  (It would be very surprising if your
-	early-loop exit patch made a significant difference, expecially
-	on a CONFIG_PREEMPT=n kernel.)
-
-5.	Rather than randomly dropping into the code, use actual measurements
-	to determine where to focus your performance-improvement efforts.
-	Developers, even experienced ones, are really bad at guessing
-	where the most important performance problems are.
-
-6.	Use your judgement.  For example, 1000-line patch to improve a
-	slowpath by 0.1% simply isn't worth it.  A high risk of adding
-	bugs for a microscopic benefit?  Thanks, but no thanks!!!
-
-For your patch https://lkml.org/lkml/2013/8/19/651, which was closest
-of the three to being useful, here are some things about RCU that you
-should have taken the time to learn -before- submitting the patch:
-
-a.	Q:  How many iterations for the for_each_rcu_flavor() loop?
-	A:  On CONFIG_PREEMPT=n kernels, only two iterations.
-	    On CONFIG_PREEMPT=y kernels, only three iterations.
-
-b.	Q:  Which flavor of RCU is most likely to have non-lazy callbacks
-	    queued?
-	    
-	A:  On CONFIG_PREEMPT=y kernels, the first one in the list.
-	    For CONFIG_PREEMPT=n kernels, it is last in the list.
-	    (In other words, for CONFIG_PREEMPT=n kernels, this change
-	    won't help at all, at least not without also changing the
-	    order of the list.)
-
-c.	Q:  Do any of the other for_each_rcu_flavor() loops care what order
-	    the flavors are in?
-
-	A:  No.  (In other words, it is OK to reorder the list to improve
-	    the performance.)
-
-d.	Q:  What is the performance benefit of this change?
-
-	A:  Quite small, for example, much less than an atomic operation
-	    on a shared data item.  It is probably not possible to
-	    measure the performance difference.
-
-e.	Q:  Is the change on a hotpath?
-
-	A:  Somewhat.  It is not on the read side, but it is on the path
-	    to and from idle, which can be important for latency-sensitive
-	    workloads.
-
-f.	Q:  How did you test this patch?
-
-	A:  As far as I can see, you did no testing.
-
-If I receive a future patch from you that does not convince me that you
-know the answer to questions like these, I will most likely ignore it.
-
-Just for practice, let's rework your second patch to make it something
-that I might accept.  Here is what you had:
-
-		for_each_rcu_flavor(rsp) {
-			rdp = per_cpu_ptr(rsp->rda, cpu);
-	-		if (rdp->qlen != rdp->qlen_lazy)
-	-			al = false;
-	-		if (rdp->nxtlist)
-	+		if (rdp->nxtlist) {
-				hc = true;
-	+			if (rdp->qlen != rdp->qlen_lazy) {
-	+				al = false;
-	+				break;
-	+			}
-	+		}
-		}
-		if (all_lazy)
-			*all_lazy = al;
-
-We need to do something about the indentation, perhaps as follows:
-
-		for_each_rcu_flavor(rsp) {
-			rdp = per_cpu_ptr(rsp->rda, cpu);
-			if (!rdp->nxtlist)
-				continue;
-			hc = true;
-			if (rdp->qlen != rdp->qlen_lazy) {
-				al = false;
-				break;
-			}
-		}
-		if (all_lazy)
-			*all_lazy = al;
-
-
-We also need to change the following code in rcu_init() in the file
-kernel/rcutree.c:
-
-	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
-	rcu_init_one(&rcu_bh_state, &rcu_bh_data);
-	__rcu_init_preempt();
-
-So that it gets rcu_sched_state in the right place, which I believe is
-like this:
-
-	rcu_init_one(&rcu_bh_state, &rcu_bh_data);
-	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
-	__rcu_init_preempt();
-
-
-If you make these changes, test them with RCU_FAST_NO_HZ both set and
-not set, and verify that rcu_sched_state is first in the flavor list
-for kernels with PREEMPT=n and that rcu_preempt_state is first in flavor
-list for kernels with PREEMPT=y, and send me a the resulting patch by end
-of day Friday, China time, I will seriously consider it for acceptance.
-Otherwise, I will author the patch myself with your Reported-by.
-
-Again, good luck!
-
-							Thanx, Paul
-
-> > Good luck!
-> > 
-> 
-> Thanks.
+> Pitching in late in the thread, so that I can get a share of the fun ;-)
 > 
 > > 							Thanx, Paul
 > > 
-> >> -------------------------------diff begin-------------------------------
-> >>
-> >> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> >> index dbf74b5..1d02659 100644
-> >> --- a/kernel/rcutree.c
-> >> +++ b/kernel/rcutree.c
-> >> @@ -2728,6 +2728,7 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
-> >>  		if (rdp->nxtlist)
-> >>  			hc = true;
-> >>  	}
-> >> +	BUG_ON(!hc && !al);
-> >>  	if (all_lazy)
-> >>  		*all_lazy = al;
-> >>  	return hc;
-> >>
-> >> -------------------------------diff end---------------------------------
-> >>
-> >> Thanks.
-> >>
-> >>
-> >> On 08/20/2013 12:45 PM, Chen Gang wrote:
-> >>> On 08/20/2013 12:43 PM, Chen Gang wrote:
-> >>>> On 08/20/2013 12:18 PM, Paul E. McKenney wrote:
-> >>>>> On Tue, Aug 20, 2013 at 11:51:23AM +0800, Chen Gang wrote:
-> >>>>>>
-> >>>>>>
-> >>>>>> If 'hc' is false, 'al' will never be false, either (only need check
-> >>>>>> "irdp->qlen != rdp->qlen_lazy' when 'rdp->nxtlist' existance).
-> >>>>>>
-> >>>>>> Recommend to improve the related code, like the diff below.
-> >>>>>
-> >>>>> Are you sure that this represents an improvement?  If so, why?
-> >>>>>
-> >>>>
-> >>>> If 'hc' and 'al' really has relationships, better to let 'C code'
-> >>>> express it, that will make the code clearer.
-> >>>>
-> >>>>> Or to put it another way, I see a patch that increases the size of the
-> >>>>> kernel by three lines.  What is the corresponding benefit given common
-> >>>>> kernel workloads?
-> >>>>>
-> >>>>
-> >>>> For 'al', need not check for each looping, and for 'hc', may save the
-> >>>> useless looping (so it can make performance better).
-> >>>>
-> >>>> For C code, it really increases 3 lines, but may not for assembly code
-> >>>> (excuse me, I am not check it, I think it is not important, although it
-> >>>> is easy to give a comparing for binary).
-> >>>>
-> >>>
-> >>> Oh, sorry, I mean: only for our case, "it is not important".
-> >>>
-> >>>
-> >>>>> 							Thanx, Paul
-> >>>>>
-> >>>>>> ----------------------------------diff begin------------------------------------
-> >>>>>>
-> >>>>>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> >>>>>> index 5b53a89..421caf0 100644
-> >>>>>> --- a/kernel/rcutree.c
-> >>>>>> +++ b/kernel/rcutree.c
-> >>>>>> @@ -2719,10 +2719,13 @@ static int rcd'_cpu_has_callbacks(int cpu, bool *all_lazy)
-> >>>>>>
-> >>>>>>  	for_each_rcu_flavor(rsp) {
-> >>>>>>  		rdp = per_cpu_ptr(rsp->rda, cpu);
-> >>>>>> -		if (rdp->qlen != rdp->qlen_lazy)
-> >>>>>> -			al = false;
-> >>>>>> -		if (rdp->nxtlist)
-> >>>>>> +		if (rdp->nxtlist) {
-> >>>>>>  			hc = true;
-> >>>>>> +			if (rdp->qlen != rdp->qlen_lazy) {
-> >>>>>> +				al = false;
-> >>>>>> +				break;
-> >>>>>> +			}
-> >>>>>> +		}
-> >>>>>>  	}
-> >>>>>>  	if (all_lazy)
-> >>>>>>  		*all_lazy = al;
-> >>>>>>
-> >>>>>> ----------------------------------diff end--------------------------------------
-> >>>>>>
-> >>>>>>
-> >>>>>> On 08/20/2013 11:50 AM, Chen Gang wrote:
-> >>>>>>> According to the comment above rcu_cpu_has_callbacks(): "If there are
-> >>>>>>> no callbacks, all of them are deemed to be lazy".
-> >>>>>>>
-> >>>>>>> So when both 'hc' and 'al' are false, '*all_lazy' should be true, not
-> >>>>>>> false.
-> >>>>>>>
-> >>>>>>>
-> >>>>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> >>>>>>> ---
-> >>>>>>>  kernel/rcutree.c |    2 +-
-> >>>>>>>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>>>>>>
-> >>>>>>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> >>>>>>> index 5b53a89..9ee9565 100644
-> >>>>>>> --- a/kernel/rcutree.c
-> >>>>>>> +++ b/kernel/rcutree.c
-> >>>>>>> @@ -2725,7 +2725,7 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
-> >>>>>>>  			hc = true;
-> >>>>>>>  	}
-> >>>>>>>  	if (all_lazy)
-> >>>>>>> -		*all_lazy = al;
-> >>>>>>> +		*all_lazy = !hc ? true : al;
-> >>>>>>>  	return hc;
-> >>>>>>>  }
-> >>>>>>>  
-> >>>>>>>
-> >>>>>>
-> >>>>>>
-> >>>>>> -- 
-> >>>>>> Chen Gang
-> >>>>>>
-> >>>>>
-> >>>>>
-> >>>>>
-> >>>>
-> >>>>
-> >>>
-> >>>
-> >>
-> >>
-> >> -- 
-> >> Chen Gang
-> >>
+> > #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+> > static void rcu_torture_leak_cb(struct rcu_head *rhp)
+> > {
+> > }
 > > 
-> > 
+> > static void rcu_torture_err_cb(struct rcu_head *rhp)
+> > {
+> > 	/*
+> > 	 * This -might- happen due to race conditions, but is unlikely.
+> > 	 * The scenario that leads to this happening is that the
+> > 	 * first of the pair of duplicate callbacks is queued,
+> > 	 * someone else starts a grace period that includes that
+> > 	 * callback, then the second of the pair must wait for the
+> > 	 * next grace period.  Unlikely, but can happen.  If it
+> > 	 * does happen, the debug-objects subsystem won't have splatted.
+> > 	 */
+> > 	pr_alert("rcutorture: duplicated callback was invoked.\n");
+> > }
+> > #endif /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
 > > 
 > 
+> Hrm. Putting an #ifdef within a function when not utterly needed is
+> usually a bad idea. How about:
+> 
+> /*
+>  * Verify that double-free causes debug-objects to complain, but only
+>  * if CONFIG_DEBUG_OBJECTS_RCU_HEAD=y.  Otherwise, say that the test
+>  * cannot be carried out.
+>  */
+> #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+> static void rcu_test_debug_objects(void)
+> {
+>  	struct rcu_head rh1;
+>  	struct rcu_head rh2;
+> 
+>  	init_rcu_head_on_stack(&rh1);
+>  	init_rcu_head_on_stack(&rh2);
+>  	pr_alert("rcutorture: WARN: Duplicate call_rcu() test starting.\n");
+>  	preempt_disable(); /* Prevent preemption from interrupting test. */
+>  	rcu_read_lock(); /* Make it impossible to finish a grace period. */
+>  	call_rcu(&rh1, rcu_torture_leak_cb); /* Start grace period. */
+>  	local_irq_disable(); /* Make it harder to start a new grace period. */
+>  	call_rcu(&rh2, rcu_torture_leak_cb);
+>  	call_rcu(&rh2, rcu_torture_err_cb); /* Duplicate callback. */
+>  	local_irq_enable();
+>  	rcu_read_unlock();
+>  	preempt_enable();
+>  	rcu_barrier();
+>  	pr_alert("rcutorture: WARN: Duplicate call_rcu() test complete.\n");
+>  	destroy_rcu_head_on_stack(&rh1);
+>  	destroy_rcu_head_on_stack(&rh2);
+> }
+> #else /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+> static void rcu_test_debug_objects(void)
+> {
+>  	pr_alert("rcutorture: !CONFIG_DEBUG_OBJECTS_RCU_HEAD, not testing duplicate call_rcu()\n");
+> }
+> #endif /* #else #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+
+The objection to this is that it duplicates the function header, both
+copies of which must be updated.  See Josh's and my discussion on this
+point earlier in the thread.  Who knows, Josh might eventually convince
+me to individually ifdef the functions in kernel/rcutree_plugin.h,
+but I am not quite there yet.  ;-)
+
+That said, I do see two benefits of individual ifdef:
+
+1.	It is easy to see when a given function is included.
+	As it is, there are runs of many hundreds of lines of
+	code where it might not be obvious to the casual reader.
+
+2.	Duplicated code is asking for silent rebase and merge errors.
+	This can happen when a change to the function header collides
+	with a change that duplicates the function under ifdef.
+
+So perhaps I will eventually convert to the individual-ifdef style.
+At the moment, I am in no hurry.
+
+> More comments inlined in the code below,
+> 
+> > /*
+> >  * Verify that double-free causes debug-objects to complain, but only
+> >  * if CONFIG_DEBUG_OBJECTS_RCU_HEAD=y.  Otherwise, say that the test
+> >  * cannot be carried out.
+> >  */
+> > static void rcu_test_debug_objects(void)
+> > {
+> > #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+> > 	struct rcu_head rh1;
+> > 	struct rcu_head rh2;
+> > 
+> > 	init_rcu_head_on_stack(&rh1);
+> > 	init_rcu_head_on_stack(&rh2);
+> > 	pr_alert("rcutorture: WARN: Duplicate call_rcu() test starting.\n");
+> > 	preempt_disable(); /* Prevent preemption from interrupting test. */
+> > 	rcu_read_lock(); /* Make it impossible to finish a grace period. */
+> > 	call_rcu(&rh1, rcu_torture_leak_cb); /* Start grace period. */
+> 
+> Are we really "starting" a grace period ? If rcu_test_debug_objects() is
+> executed after some callbacks are already queued, are we, by definition,
+> "starting" the grace period ?
+> 
+> Also, I find it weird to have, in that order:
+> 
+> 1) preempt_disable()
+> 2) rcu_read_lock()
+> 3) local_irq_disable()
+> 
+> I would rather expect:
+> 
+> 1) rcu_read_lock()
+> 2) preempt_disable()
+> 3) local_irq_disable()
+> 
+> So they come in increasing order of impact on the system: with
+> non-preemptable RCU, the read-lock and preempt disable mean the same
+> thing, however, with preemptable RCU, the impact of preempt disable
+> seems larger than the impact of RCU read lock: preemption is still
+> enabled when within a RCU critical section. Both will work, but I find
+> this call order slightly weird.
+
+If this was code that ran normally, I would agree with you.  Your
+suggested ordering would reduce the scheduling-latency impact due to
+this code, among other things.
+
+However, this code is a one-off that runs only once during an rcutorture
+run that explicitly calls for it using rcutorture's new object_debug
+module parameter.
+
+> Also, if your goal is to increase the chances that call_rcu() enqueues
+> both callbacks into the same grace period, you might want to issue a
+> rcu_barrier() early in this function, so that call_rcu() has even more
+> chances to enqueue the callbacks into the same grace period.
+
+The problem is that neither rcu_barrier() nor synchronize_rcu() clean
+up at a well-defined point in time.  In both cases, the task will be
+awakened at some time after the operation completes, by which time
+any number of new grace periods might have started and completed.
+
+> However, if you care about testing enqueue into same _and_ different
+> grace periods, you might want to turn this single-shot test into a
+> stress-test by calling it repeatedly.
+
+Good point, and I might do that.  However, the above code has not yet
+failed to produce a debug-objects splat.  When and if it does fail to
+splat, then running the code repeatedly would definitely be one of the
+fixes that I would consider.  (Another potential fix being to simply load
+the rcutorture module a few times in succession, though your suggestion
+would in fact work better for my current testing setup.)
+
+Thank you for your review and comments!
+
+							Thanx, Paul
+
+> Thanks!
+> 
+> Mathieu
+> 
+> > 	local_irq_disable(); /* Make it harder to start a new grace period. */
+> > 	call_rcu(&rh2, rcu_torture_leak_cb);
+> > 	call_rcu(&rh2, rcu_torture_err_cb); /* Duplicate callback. */
+> > 	local_irq_enable();
+> > 	rcu_read_unlock();
+> > 	preempt_enable();
+> > 	rcu_barrier();
+> > 	pr_alert("rcutorture: WARN: Duplicate call_rcu() test complete.\n");
+> > 	destroy_rcu_head_on_stack(&rh1);
+> > 	destroy_rcu_head_on_stack(&rh2);
+> > #else /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+> > 	pr_alert("rcutorture: !CONFIG_DEBUG_OBJECTS_RCU_HEAD, not testing duplicate call_rcu()\n");
+> > #endif /* #else #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+> > }
+> > 
+> > > > +
+> > > >  static int __init
+> > > >  rcu_torture_init(void)
+> > > >  {
+> > > > @@ -2163,6 +2206,8 @@ rcu_torture_init(void)
+> > > >  		firsterr = retval;
+> > > >  		goto unwind;
+> > > >  	}
+> > > > +	if (object_debug)
+> > > > +		rcu_test_debug_objects();
+> > > >  	rcutorture_record_test_transition();
+> > > >  	mutex_unlock(&fullstop_mutex);
+> > > >  	return 0;
+> > > 
+> > 
 > 
 > -- 
-> Chen Gang
+> Mathieu Desnoyers
+> EfficiOS Inc.
+> http://www.efficios.com
 > 
 
