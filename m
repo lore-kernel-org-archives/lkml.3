@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab3HYCWS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 22:22:18 -0400
-Received: from void.printf.net ([89.145.121.20]:36145 "EHLO void.printf.net"
+	id S1755572Ab3HYDSW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 23:18:22 -0400
+Received: from void.printf.net ([89.145.121.20]:41120 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754541Ab3HYCWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 22:22:16 -0400
+	id S1755220Ab3HYDSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 23:18:20 -0400
 From: Chris Ball <cjb@laptop.org>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: "'Doug Anderson'" <dianders@chromium.org>,
-        "'Markos Chandras'" <markos.chandras@imgtec.com>,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        "'James Hogan'" <james.hogan@imgtec.com>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Alim Akhtar'" <alim.akhtar@samsung.com>,
-        "'Abhilash Kesavan'" <a.kesavan@samsung.com>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: dw_mmc: Handle DW_MCI_QUIRK_IDMAC_DTO properly
-References: <1373400280-7408-1-git-send-email-dianders@chromium.org>
-	<002901ce7d7d$65223e10$2f66ba30$%jun@samsung.com>
-Date: Sat, 24 Aug 2013 22:22:10 -0400
-In-Reply-To: <002901ce7d7d$65223e10$2f66ba30$%jun@samsung.com> (Seungwon
-	Jeon's message of "Wed, 10 Jul 2013 23:54:36 +0900")
-Message-ID: <87d2p2tsq5.fsf@octavius.laptop.org>
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH v4 2/5] mmc: atmel-mci: prepare clk before calling enable
+References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com>
+	<1374133132-17556-1-git-send-email-b.brezillon@overkiz.com>
+Date: Sat, 24 Aug 2013 23:18:14 -0400
+In-Reply-To: <1374133132-17556-1-git-send-email-b.brezillon@overkiz.com>
+	(Boris BREZILLON's message of "Thu, 18 Jul 2013 09:38:52 +0200")
+Message-ID: <87li3qsbk9.fsf@octavius.laptop.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -33,20 +29,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Wed, Jul 10 2013, Seungwon Jeon wrote:
-> On Wed, July 10, 2013, Doug Anderson wrote:
->> In (1fb5f68 mmc: dw_mmc: Don't loop when handling an interrupt), the
->> code for handling DW_MCI_QUIRK_IDMAC_DTO became dead code.  Move it to
->> where it ought to live.
->> 
->> Found by code inspection and compile-tested only--I don't know of any
->> boards that need DW_MCI_QUIRK_IDMAC_DTO.
->> 
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
+On Thu, Jul 18 2013, Boris BREZILLON wrote:
+> Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+> avoid common clk framework warnings.
 >
-> Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
 
-Thanks, pushed to mmc-next for 3.12.
+Okay, pushed to mmc-next for 3.12.
+
+Boris, you got feedback from Thomas Petazzoni and Russell King, but
+you didn't CC either of them on the patch v4, and you didn't write a
+changelog explaining the differences between patches v3 and v4 --
+please do both of those next time.
+
+Also, it looks like the Ack from Ludovic happened away from the MMC
+list, since I don't see a message from Ludovic on the thread here.
+It would be better if the Ack happened somewhere I can see it.
+
+Thanks,
 
 - Chris.
 -- 
