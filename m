@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab3HYFaT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 01:30:19 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59667 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab3HYFaQ (ORCPT
+	id S1756091Ab3HYFfZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 01:35:25 -0400
+Received: from 8.mo2.mail-out.ovh.net ([188.165.52.147]:39338 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755980Ab3HYFfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 01:30:16 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <52199663.8070201@roeck-us.net>
-Date: Sat, 24 Aug 2013 22:30:11 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Sun, 25 Aug 2013 01:35:24 -0400
+Message-ID: <52199796.4080800@overkiz.com>
+Date: Sun, 25 Aug 2013 07:35:18 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: George Cherian <george.cherian@ti.com>, balbi@ti.com,
-        myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, grant.likely@linaro.org, rob@landley.net,
-        ian.campbell@citrix.com, mark.rutland@arm.com, pawel.moll@arm.co
-Subject: Re: [PATCH 1/2] extcon: extcon-dra7xx: Add extcon driver for USB
- ID detection
-References: <1376648029-30659-1-git-send-email-george.cherian@ti.com> <1376648029-30659-2-git-send-email-george.cherian@ti.com> <52127284.6030506@wwwdotorg.org> <521312CC.8060003@ti.com> <52139F0F.6090507@wwwdotorg.org>
-In-Reply-To: <52139F0F.6090507@wwwdotorg.org>
+To: Chris Ball <cjb@laptop.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH v4 2/5] mmc: atmel-mci: prepare clk before calling enable
+References: <1374132753-15206-1-git-send-email-b.brezillon@overkiz.com> <1374133132-17556-1-git-send-email-b.brezillon@overkiz.com> <87li3qsbk9.fsf@octavius.laptop.org>
+In-Reply-To: <87li3qsbk9.fsf@octavius.laptop.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 10950221020186048566
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2013 09:53 AM, Stephen Warren wrote:
-> On 08/20/2013 12:55 AM, George Cherian wrote:
->> Hi Stephen,
->>
->> Thanks for your review.
->>
->> On 8/20/2013 1:01 AM, Stephen Warren wrote:
->>
->>> On 08/16/2013 04:13 AM, George Cherian wrote:
->>>> Adding extcon driver for USB ID detection to dynamically
->>>> configure USB Host/Peripheral mode.
->>>> diff --git
->>>> a/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
->>>> b/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
->>>> +EXTCON FOR DRA7xx
->>>> +
->>>> +Required Properties:
->>> Please at lest explain what a DRA7xxx is, and the purpose of the HW
->>> module this binding describes.
->>
->> DRA7xx is the SoC name and the USB VID  detection is implemented via gpio's
->> Basically it does only ID detection via GPIO and there is no VBUS
->> detection in h/w.
+Hello Chris,
+
+On 25/08/2013 05:18, Chris Ball wrote:
+> Hi,
 >
-> If there's no SoC-specific HW, then the binding has nothing to do with
-> the SoC; it's entirely generic.
+> On Thu, Jul 18 2013, Boris BREZILLON wrote:
+>> Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+>> avoid common clk framework warnings.
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>> Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> Okay, pushed to mmc-next for 3.12.
+
+Thanks.
+
 >
-I am currently working on adding device tree support to the extcon-gpio driver.
+> Boris, you got feedback from Thomas Petazzoni and Russell King, but
+> you didn't CC either of them on the patch v4
 
-Wonder if it would make sense to just use that driver. As far as I can see
-the only missing part is support for multiple cables and cable naming through
-device tree properties.
+I didn't knew I had to add the reviewers of a patch in the cc list
+of the future versions. I'll do it next time.
 
-Any thoughts ? The patches are not yet clean enough to submit upstream,
-but I could send them as RFC if there is interest.
+> , and you didn't write a
+> changelog explaining the differences between patches v3 and v4 --
+> please do both of those next time.
 
-Guenter
+The changelog is in the cover letter ("Changes since v3").
+But I didn't send you this cover letter.
+
+> Also, it looks like the Ack from Ludovic happened away from the MMC
+> list, since I don't see a message from Ludovic on the thread here.
+> It would be better if the Ack happened somewhere I can see it.
+
+The 'Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>' was added
+in the 2nd version of this patch series.
+But I don't know if I should have kept it in this version since this 
+patch has evolved.
+
+
+Thanks for these feebacks, I'm still learning the good practices of the 
+kernel
+submission process.
+I'll check these points next time.
+
+Best Regards,
+
+Boris
+> Thanks,
+>
+> - Chris.
 
