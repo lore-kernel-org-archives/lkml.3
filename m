@@ -1,197 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab3HYT7J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 15:59:09 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:33560 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756555Ab3HYT7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 15:59:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>
-Subject: [PATCH] driver core / ACPI: Avoid device removal locking problems
-Date: Sun, 25 Aug 2013 22:09:47 +0200
-Message-ID: <1543475.L7gSB7lLAu@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
+	id S1756623Ab3HYUF6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 16:05:58 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:33773 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799Ab3HYUF4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Aug 2013 16:05:56 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20130825194844.GA16717@redhat.com>
+References: <20130822185317.GI31117@1wt.eu>
+	<CALCETrWYeNXhEDY7S9XLD6L0wOZu8iPVO6LN3A_797hLHfBzAw@mail.gmail.com>
+	<CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com>
+	<CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com>
+	<20130822201530.GL31117@1wt.eu>
+	<20130824182939.GA23630@redhat.com>
+	<20130824212432.GA9299@1wt.eu>
+	<20130825052317.GZ27005@ZenIV.linux.org.uk>
+	<20130825065039.GB9299@1wt.eu>
+	<CA+55aFwFeCRcwn4qo570Y15mKrN3jEdN757PcZhrXs7QYi8MYA@mail.gmail.com>
+	<20130825194844.GA16717@redhat.com>
+Date: Sun, 25 Aug 2013 13:05:55 -0700
+X-Google-Sender-Auth: OZgmarFsmDFPEx__726djjDb8qA
+Message-ID: <CA+55aFzbY3zYD1i5x02Z-6K3nHKzJj6227ZBYRLqij9y0eXRqQ@mail.gmail.com>
+Subject: Re: /proc/pid/fd && anon_inode_fops
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Willy Tarreau <w@1wt.eu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "security@kernel.org" <security@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Sun, Aug 25, 2013 at 12:48 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> Or pid_revalidate(), but my concern is task_dumpable() logic.
+>
+> pid_revalidate() does inode->i_*id = GLOBAL_ROOT_*ID if task_dumpable()
+> fails, but it can fail simply because ->mm = NULL.
+>
+> This means that almost everything in /proc/zombie-pid/ becomes root.
+> Doesn't really hurt, but for what? Looks a bit strange imho.
 
-There are two mutexes, device_hotplug_lock and acpi_scan_lock, held
-around the acpi_bus_trim() call in acpi_scan_hot_remove() which
-generally removes devices (it removes ACPI device objects at least,
-but it may also remove "physical" device objects through .detach()
-callbacks of ACPI scan handlers).  Thus, potentially, device sysfs
-attributes are removed under these locks and to remove those
-attributes it is necessary to hold the s_active references of their
-directory entries for writing.
+The zombie case shouldn't be relevant, because a zombie will have
+closed all the file descriptors anyway, so they no longer exist.
 
-On the other hand, the execution of a .show() or .store() callback
-from a sysfs attribute is carried out with that attribute's s_active
-reference held for reading.  Consequently, if any device sysfs
-attribute that may be removed from within acpi_scan_hot_remove()
-through acpi_bus_trim() has a .store() or .show() callback which
-acquires either acpi_scan_lock or device_hotplug_lock, the execution
-of that callback may deadlock with the removal of the attribute.
-[Unfortunately, the "online" device attribute of CPUs and memory
-blocks and the "eject" attribute of ACPI device objects are affected
-by this issue.]
+That said, task_dumpable isn't wonderful, and I suspect we could drop
+that logic entirely in the tid-fd case if we just use f_cred.
 
-To avoid those deadlocks introduce a new protection mechanism that
-can be used by the device sysfs attributes in question.  Namely,
-if a device sysfs attribute's .store() or .show() callback routine
-is about to acquire device_hotplug_lock or acpi_scan_lock, it can
-first execute read_lock_device_remove() and return an error code if
-that function returns false.  If true is returned, the lock in
-question may be acquired and read_unlock_device_remove() must be
-called.  [This mechanism is implemented by means of an additional
-rwsem in drivers/base/core.c.]
+The reason we have task_dumpable is exactly because we use the task
+credentials, and they may not really be relevant to the file
+credentials. IOW, it's there to protect against execve'ing a suid
+program that opens some protected file and then in setuid()'s back the
+the original user after having done the critical stuff.  But
+file->f_cred is exactly about the credentials at the time of the open,
+so it should make things like that irrelevant.
 
-Make the affected sysfs attributes in the driver core and ACPI core
-use read_lock_device_remove() and read_unlock_device_remove() as
-described above.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
-
-For 3.12, applies on top of linux-pm.git/linux-next.
-
-Thanks,
-Rafael
-
----
- drivers/acpi/scan.c    |    8 ++++++++
- drivers/base/core.c    |   29 +++++++++++++++++++++++++++++
- include/linux/device.h |    4 ++++
- 3 files changed, 41 insertions(+)
-
-Index: linux-pm/drivers/base/core.c
-===================================================================
---- linux-pm.orig/drivers/base/core.c
-+++ linux-pm/drivers/base/core.c
-@@ -408,7 +408,11 @@ static ssize_t show_online(struct device
- {
- 	bool val;
- 
-+	if (!read_lock_device_remove())
-+		return -EBUSY;
-+
- 	lock_device_hotplug();
-+	read_unlock_device_remove();
- 	val = !dev->offline;
- 	unlock_device_hotplug();
- 	return sprintf(buf, "%u\n", val);
-@@ -424,7 +428,11 @@ static ssize_t store_online(struct devic
- 	if (ret < 0)
- 		return ret;
- 
-+	if (!read_lock_device_remove())
-+		return -EBUSY;
-+
- 	lock_device_hotplug();
-+	read_unlock_device_remove();
- 	ret = val ? device_online(dev) : device_offline(dev);
- 	unlock_device_hotplug();
- 	return ret < 0 ? ret : count;
-@@ -1479,8 +1487,29 @@ EXPORT_SYMBOL_GPL(put_device);
- EXPORT_SYMBOL_GPL(device_create_file);
- EXPORT_SYMBOL_GPL(device_remove_file);
- 
-+static DECLARE_RWSEM(device_remove_rwsem);
- static DEFINE_MUTEX(device_hotplug_lock);
- 
-+bool __must_check read_lock_device_remove(void)
-+{
-+	return down_read_trylock(&device_remove_rwsem);
-+}
-+
-+void read_unlock_device_remove(void)
-+{
-+	up_read(&device_remove_rwsem);
-+}
-+
-+void device_remove_begin(void)
-+{
-+	down_write(&device_remove_rwsem);
-+}
-+
-+void device_remove_end(void)
-+{
-+	up_write(&device_remove_rwsem);
-+}
-+
- void lock_device_hotplug(void)
- {
- 	mutex_lock(&device_hotplug_lock);
-Index: linux-pm/include/linux/device.h
-===================================================================
---- linux-pm.orig/include/linux/device.h
-+++ linux-pm/include/linux/device.h
-@@ -893,6 +893,10 @@ static inline bool device_supports_offli
- 	return dev->bus && dev->bus->offline && dev->bus->online;
- }
- 
-+extern bool __must_check read_lock_device_remove(void);
-+extern void read_unlock_device_remove(void);
-+extern void device_remove_begin(void);
-+extern void device_remove_end(void);
- extern void lock_device_hotplug(void);
- extern void unlock_device_hotplug(void);
- extern int device_offline(struct device *dev);
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -288,6 +288,7 @@ static void acpi_bus_device_eject(void *
- 	struct acpi_scan_handler *handler;
- 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
- 
-+	device_remove_begin();
- 	mutex_lock(&acpi_scan_lock);
- 
- 	acpi_bus_get_device(handle, &device);
-@@ -315,6 +316,7 @@ static void acpi_bus_device_eject(void *
- 
-  out:
- 	mutex_unlock(&acpi_scan_lock);
-+	device_remove_end();
- 	return;
- 
-  err_out:
-@@ -449,6 +451,7 @@ void acpi_bus_hot_remove_device(void *co
- 	acpi_handle handle = device->handle;
- 	int error;
- 
-+	device_remove_begin();
- 	mutex_lock(&acpi_scan_lock);
- 
- 	error = acpi_scan_hot_remove(device);
-@@ -458,6 +461,7 @@ void acpi_bus_hot_remove_device(void *co
- 					  NULL);
- 
- 	mutex_unlock(&acpi_scan_lock);
-+	device_remove_end();
- 	kfree(context);
- }
- EXPORT_SYMBOL(acpi_bus_hot_remove_device);
-@@ -510,7 +514,11 @@ acpi_eject_store(struct device *d, struc
- 	if (ACPI_FAILURE(status) || !acpi_device->flags.ejectable)
- 		return -ENODEV;
- 
-+	if (!read_lock_device_remove())
-+		return -EBUSY;
-+
- 	mutex_lock(&acpi_scan_lock);
-+	read_unlock_device_remove();
- 
- 	if (acpi_device->flags.eject_pending) {
- 		/* ACPI eject notification event. */
-
+            Linus
