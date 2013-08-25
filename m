@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab3HYHBy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 03:01:54 -0400
-Received: from mout.gmx.net ([212.227.17.20]:63680 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756055Ab3HYHBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 03:01:53 -0400
-From: Andreas Werner <wernerandy@gmx.de>
-To: tglx@linutronix.de
-Cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, dave@linux.vnet.ibm.com,
-        khlebnikov@openvz.org, suresh.b.siddha@intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        wernerandy@gmx.de
-Subject: [PATCH] X86: MM: Add PAT Type write-through in combination with mtrr
-Date: Sun, 25 Aug 2013 09:01:25 +0200
-Message-Id: <1377414085-3801-1-git-send-email-wernerandy@gmx.de>
-X-Mailer: git-send-email 1.8.3.4
-X-Provags-ID: V03:K0:+wGaXxSa10eNDGAnIyWavm1+ODRMlhmgjOXGWc5AYW6LE7yNpHR
- krltueveiRfx4s/DClMUzqq4/stVRk3mkBGFX7CbsJ2Tq7E18ZXc5+8Cowd+smqERevcrK3
- NpJt3ihc+zooFmvOpRySvlYdRBnUdhw/8Q1MwlIPOXFDn1d6IxgTQhypzRecQ4twcHIVtWX
- GYtxeDHyvyzRJk84aHVmg==
+	id S1755799Ab3HYHF5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 03:05:57 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:41262 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab3HYHFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Aug 2013 03:05:55 -0400
+X-SENDER-IP: [85.230.171.181]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkBDAHusGVJV5qu1PGdsb2JhbABZgweDRIUjuDGBGRcDAQEBATg1giQBAQQBOhwjBQsIAw4TJQ8FJQoaiA4KtlgWkGIHgxx9A5dthj6ORDo
+X-IronPort-AV: E=Sophos;i="4.89,950,1367964000"; 
+   d="scan'208";a="384663263"
+Date: Sun, 25 Aug 2013 09:11:22 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+To: Ian Munsie <darkstarsword@gmail.com>
+Cc: Brad Ford <plymouthffl@gmail.com>, Linus G Thiel <linus@hanssonlarsson.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] HID: apple: Add another device ID for the mid-2013
+ Macbook Air
+Message-ID: <20130825071122.GA12567@polaris.bitmath.org>
+References: <1377353873-17000-1-git-send-email-darkstarsword@gmail.com>
+ <1377353873-17000-2-git-send-email-darkstarsword@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377353873-17000-2-git-send-email-darkstarsword@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Write-through memory type in combination with mtrr.
-If you call ioremap_cache to request cachable memory (write-back) the function
-tries to set the PAT to write-back only if the mtrr setting of the requested region
-is also marked as Write-Back.
+Hi Ian,
 
-If the mttr regions are marked e.g. as Write-through or with other types, the function will
-always return UC- memory.
+> This patch adds a device ID found for mid-2013 Macbook Air 6,1 from
+> lsusb:
+> 
+> Bus 001 Device 003: ID 05ac:0290 Apple, Inc.
+> 
+> Since IDs already exist for this generation Macbook air as WELLSPRING8,
+> name this one WELLSPRING8A. This only adds an ANSI version since it's
+> device ID is only one less than the existing WELLSPRING8 IDs.
 
-If you check the Intel document " IA-32 SDM vol 3a table Effective Memory Type", there
-are many other combinations possible.
+This seems to indicate that we got the ANSI/ISO numbers wrong in a
+recent patch. IIRC, there was doubt already when the patch was
+applied (Linus T CC'd). Most likely the right patch is this:
 
-This patch will only add the following combination:
-  PAT=Write-Back + MTRR=Write-Through = Effective Memory of Write-Through
-
-Tested on - Intel (R) Atom E680 (Tunnel Creek)
-          - Intel (R) Core(TM)2 Duo
-
-Signed-off-by: Andreas Werner <wernerandy@gmx.de>
----
- arch/x86/mm/pat.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 6574388..9cfe107 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -149,10 +149,15 @@ static unsigned long pat_x_mtrr_type(u64 start, u64 end, unsigned long req_type)
- 		u8 mtrr_type;
+diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
+index 4ef4d5e..a73f961 100644
+--- a/drivers/input/mouse/bcm5974.c
++++ b/drivers/input/mouse/bcm5974.c
+@@ -89,9 +89,9 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO   0x025a
+ #define USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS   0x025b
+ /* MacbookAir6,2 (unibody, June 2013) */
+-#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI   0x0291
+-#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO    0x0292
+-#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS    0x0293
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI   0x0290
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO    0x0291
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS    0x0292
  
- 		mtrr_type = mtrr_type_lookup(start, end);
--		if (mtrr_type != MTRR_TYPE_WRBACK)
--			return _PAGE_CACHE_UC_MINUS;
- 
--		return _PAGE_CACHE_WB;
-+		switch (mtrr_type) {
-+		case MTRR_TYPE_WRBACK:
-+		case MTRR_TYPE_WRTHROUGH:
-+		  return _PAGE_CACHE_WB;
-+
-+		default:
-+		  return _PAGE_CACHE_UC_MINUS;
-+		}
- 	}
- 
- 	return req_type;
--- 
-1.8.3.4
+ #define BCM5974_DEVICE(prod) {                                 \
+        .match_flags = (USB_DEVICE_ID_MATCH_DEVICE |            \
 
+Brad, Linus, does the above patch work for you as well as for Ian?
+
+Thanks,
+Henrik
