@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab3HYPwU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 11:52:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12498 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756517Ab3HYPwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 11:52:18 -0400
-Date: Sun, 25 Aug 2013 17:45:56 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>
-Subject: Re: /proc/pid/fd && anon_inode_fops
-Message-ID: <20130825154556.GA25922@redhat.com>
-References: <b121a1082bf3365fda22a131782147c169c969f5.1377112282.git.luto@amacapital.net> <CA+55aFzXNU-eJ7KeZyv5YYKKtm8iorG-o3QtD7NXx0GTzuH+Bw@mail.gmail.com> <20130822185317.GI31117@1wt.eu> <CALCETrWYeNXhEDY7S9XLD6L0wOZu8iPVO6LN3A_797hLHfBzAw@mail.gmail.com> <CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com> <CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com> <20130822201530.GL31117@1wt.eu> <20130824182939.GA23630@redhat.com> <20130824212432.GA9299@1wt.eu>
+	id S1756565Ab3HYPxQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 11:53:16 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37096 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756546Ab3HYPxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Aug 2013 11:53:12 -0400
+Date: Sun, 25 Aug 2013 17:53:09 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
+        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
+        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Lee, Chun-Yi" <jlee@suse.com>
+Subject: Re: [PATCH 02/18] asymmetric keys: implement
+ EMSA_PKCS1-v1_5-ENCODE in rsa
+Message-ID: <20130825155309.GA5171@amd.pavel.ucw.cz>
+References: <1377169317-5959-1-git-send-email-jlee@suse.com>
+ <1377169317-5959-3-git-send-email-jlee@suse.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130824212432.GA9299@1wt.eu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1377169317-5959-3-git-send-email-jlee@suse.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Willy,
+On Thu 2013-08-22 19:01:41, Lee, Chun-Yi wrote:
+> Implement EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2] in rsa.c. It's the
+> first step of signature generation operation
+> (RSASSA-PKCS1-v1_5-SIGN).
 
-On 08/24, Willy Tarreau wrote:
->
-> On Sat, Aug 24, 2013 at 08:29:39PM +0200, Oleg Nesterov wrote:
-> >
-> > On 08/22, Willy Tarreau wrote:
-> > >
-> > > It's not only that, it also supports sockets and pipes that you can access
-> > > via /proc/pid/fd and not via a real symlink which would try to open eg
-> > > "pipe:[23456]" instead of the real file.
-> >
-> > But sock_no_open() disallows this, and for good reason I guess.
->
-> Hmmm not exactly, it works for a pipe but not for a socket.
+Is this your own code, or did you copy it from somewhere?
 
-But this is what I meant, sorry for confusion.
+> +	if (!T)
+> +		goto error_T;
+> +
+> +	memcpy(T, RSA_ASN1_templates[hash_algo].data, RSA_ASN1_templates[hash_algo].size);
+> +	memcpy(T + RSA_ASN1_templates[hash_algo].size, pks->digest, pks->digest_size);
+> +
+> +	/* 3) check If emLen < tLen + 11, output "intended encoded message length too short" */
+> +	if (emLen < tLen + 11) {
+> +		ret = EINVAL;
+> +		goto error_emLen;
+> +	}
 
-Let me try to explain. Just in case, this has nothing to do with security
-and I do not see any problem, still I think there is something wrong (but
-harmless).
+Normal kernel calling convention is 0 / -EINVAL.
 
-Suppose that you are trying to open(/proc/pid/$pipe-or-socket-fd).
-nd_jump_link() sets nd->inode correctly, then dentry_open() does the
-rest. Everything is correct at this stage, the new file gets the correct
-f_inode/f_op.
+> +	memcpy(EM + 2, PS, emLen - tLen - 3);
+> +	EM[2 + emLen - tLen - 3] = 0x00;
+> +	memcpy(EM + 2 + emLen - tLen - 3 + 1, T, tLen);
 
-However, unlike fifo_open(), socket_file_ops->open() can not actually
-create the file/sock connection, so sock_no_open() just fails and
-nothing bad happens.
+ThisDoesNotLookLikeKernelCode, NoCamelCase, please.
 
-But if you open an anon_inodefs file via proc, you get the "bogus" file.
-There is a single anon_inode_inode, its ->i_fop points to the empty
-anon_inode_fops, this has nothing to do with ->f_op of the actual file
-you tried to open.
+> +	*_EM = EM;
 
-Nothing bad happens, still I think this is simply wrong and misleading,
-and thus I think it would be better to disallow this via anon_open().
+And we don't usually use _ prefix like this.
 
-Oleg.
 
+> --- a/include/crypto/public_key.h
+> +++ b/include/crypto/public_key.h
+> @@ -110,6 +110,8 @@ extern void public_key_destroy(void *payload);
+>  struct public_key_signature {
+>  	u8 *digest;
+>  	u8 digest_size;			/* Number of bytes in digest */
+> +	u8 *S;				/* signature S of length k octets */
+
+u8 *signature?
+
+> +	size_t k;			/* length k of signature S */
+
+u8 *signature_length.
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
