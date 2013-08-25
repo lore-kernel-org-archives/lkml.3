@@ -1,21 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab3HYCCa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Aug 2013 22:02:30 -0400
-Received: from void.printf.net ([89.145.121.20]:45506 "EHLO void.printf.net"
+	id S1755055Ab3HYCWS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Aug 2013 22:22:18 -0400
+Received: from void.printf.net ([89.145.121.20]:36145 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754537Ab3HYCC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 22:02:29 -0400
+	id S1754541Ab3HYCWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Aug 2013 22:22:16 -0400
 From: Chris Ball <cjb@laptop.org>
-To: Francesco Lavra <francescolavra.fl@gmail.com>
-Cc: Balaji T K <balajitk@ti.com>, linux-mmc@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: omap_hsmmc: clear status flags before starting a new command
-References: <51CE7DC8.2070905@gmail.com>
-Date: Sat, 24 Aug 2013 22:02:24 -0400
-In-Reply-To: <51CE7DC8.2070905@gmail.com> (Francesco Lavra's message of "Sat,
-	29 Jun 2013 08:25:12 +0200")
-Message-ID: <87vc2uttn3.fsf@octavius.laptop.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: "'Doug Anderson'" <dianders@chromium.org>,
+        "'Markos Chandras'" <markos.chandras@imgtec.com>,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
+        "'James Hogan'" <james.hogan@imgtec.com>,
+        "'Grant Grundler'" <grundler@chromium.org>,
+        "'Alim Akhtar'" <alim.akhtar@samsung.com>,
+        "'Abhilash Kesavan'" <a.kesavan@samsung.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: dw_mmc: Handle DW_MCI_QUIRK_IDMAC_DTO properly
+References: <1373400280-7408-1-git-send-email-dianders@chromium.org>
+	<002901ce7d7d$65223e10$2f66ba30$%jun@samsung.com>
+Date: Sat, 24 Aug 2013 22:22:10 -0400
+In-Reply-To: <002901ce7d7d$65223e10$2f66ba30$%jun@samsung.com> (Seungwon
+	Jeon's message of "Wed, 10 Jul 2013 23:54:36 +0900")
+Message-ID: <87d2p2tsq5.fsf@octavius.laptop.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -23,46 +31,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Balaji,
+Hi,
 
-On Sat, Jun 29 2013, Francesco Lavra wrote:
-> Commit 1f6b9fa40e76fffaaa0b3bd6a0bfdcf1cdc06efa consolidated writes to 
-> the STAT register in one location, moving them from omap_hsmmc_do_irq() 
-> to omap_hsmmc_irq(). This move has the unwanted side effect that the 
-> controller status flags are potentially cleared after a new command has 
-> been started as a consequence of reading the previous status flags. 
-> This means that if the new command changes the status flags before the 
-> IRQ routine returns, those flags may be cleared without handling the 
-> event which asserted them, and thus missing the event.
-> Move the writing of the STAT register back in omap_hsmmc_do_irq(), 
-> before handling the status flags which generated the interrupt.
+On Wed, Jul 10 2013, Seungwon Jeon wrote:
+> On Wed, July 10, 2013, Doug Anderson wrote:
+>> In (1fb5f68 mmc: dw_mmc: Don't loop when handling an interrupt), the
+>> code for handling DW_MCI_QUIRK_IDMAC_DTO became dead code.  Move it to
+>> where it ought to live.
+>> 
+>> Found by code inspection and compile-tested only--I don't know of any
+>> boards that need DW_MCI_QUIRK_IDMAC_DTO.
+>> 
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
 >
-> Signed-off-by: Francesco Lavra <francescolavra.fl@gmail.com>
-> ---
->  drivers/mmc/host/omap_hsmmc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-> index eccedc7..301cb7e 100644
-> --- a/drivers/mmc/host/omap_hsmmc.c
-> +++ b/drivers/mmc/host/omap_hsmmc.c
-> @@ -1041,6 +1041,7 @@ static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status)
->  		}
->  	}
->  
-> +	OMAP_HSMMC_WRITE(host->base, STAT, status);
->  	if (end_cmd || ((status & CC_EN) && host->cmd))
->  		omap_hsmmc_cmd_done(host, host->cmd);
->  	if ((end_trans || (status & TC_EN)) && host->mrq)
-> @@ -1060,7 +1061,6 @@ static irqreturn_t omap_hsmmc_irq(int irq, void *dev_id)
->  		omap_hsmmc_do_irq(host, status);
->  
->  		/* Flush posted write */
-> -		OMAP_HSMMC_WRITE(host->base, STAT, status);
->  		status = OMAP_HSMMC_READ(host->base, STAT);
->  	}
+> Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
 
-Please could you review this patch?  Thanks,
+Thanks, pushed to mmc-next for 3.12.
 
 - Chris.
 -- 
