@@ -1,154 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab3HYKi2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 06:38:28 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57083 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754347Ab3HYKiZ (ORCPT
+	id S1756296Ab3HYKvY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 06:51:24 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:41498 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754347Ab3HYKvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 06:38:25 -0400
-From: Dolev Raviv <draviv@codeaurora.org>
-To: linux-scsi@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, Dolev Raviv <draviv@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] scsi: ufs: read door bell register after clearing interrupt aggregation
-Date: Sun, 25 Aug 2013 13:36:56 +0300
-Message-Id: <1377427016-28469-1-git-send-email-draviv@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
+	Sun, 25 Aug 2013 06:51:23 -0400
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH] ath5k: debugfs: NULL-terminate strings
+Date: Sun, 25 Aug 2013 11:50:49 +0100
+Message-Id: <1377427849-13264-1-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In interrupt context, after reading and comparing the UTRLDBR to
-hba->outstanding_request and before resetting the interrupt aggregation,
-there might be completion of another transfer request (TR). Such TRs might
-get stuck, pending, until the next interrupt is generated.
+Avoid processing garbage data by NULL terminating the strings.
 
-The fix reads the UTRLDBR after resetting the interrupt aggregation and
-handles completed TRs.
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+---
+Patch compile tested only.
 
-Signed-off-by: Dolev Raviv <draviv@codeaurora.org>
+ drivers/net/wireless/ath/ath5k/debug.c | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
-index 4dca9b4..30c84d8 100644
---- a/drivers/scsi/ufs/ufshcd.c
-+++ b/drivers/scsi/ufs/ufshcd.c
-@@ -1915,6 +1915,13 @@ static void ufshcd_uic_cmd_compl(struct ufs_hba *hba)
- /**
-  * ufshcd_transfer_req_compl - handle SCSI and query command completion
-  * @hba: per adapter instance
-+ *
-+ * Resetting interrupt aggregation counters first and reading the DOOR_BELL
-+ * afterward , allows us to handle all the completed requests.
-+ * In order to prevent other interrupts starvation the DB is read once
-+ * after reset. The down side of this solution is the possibility of false
-+ * interrupt if device completes another request after resetting aggregation
-+ * and before reading the DB.
-  */
- static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
- {
-@@ -1924,47 +1931,36 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
- 	u32 tr_doorbell;
- 	int result;
- 	int index;
--	bool int_aggr_reset = false;
-+
-+	/* Reset interrupt aggregation counters */
-+	ufshcd_config_int_aggr(hba, INT_AGGR_RESET);
+diff --git a/drivers/net/wireless/ath/ath5k/debug.c b/drivers/net/wireless/ath/ath5k/debug.c
+index 9d00dab..b8d031a 100644
+--- a/drivers/net/wireless/ath/ath5k/debug.c
++++ b/drivers/net/wireless/ath/ath5k/debug.c
+@@ -245,9 +245,11 @@ static ssize_t write_file_beacon(struct file *file,
+ 	struct ath5k_hw *ah = file->private_data;
+ 	char buf[20];
  
- 	tr_doorbell = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
- 	completed_reqs = tr_doorbell ^ hba->outstanding_reqs;
+-	if (copy_from_user(buf, userbuf, min(count, sizeof(buf))))
++	count = min_t(size_t, count, sizeof(buf) - 1);
++	if (copy_from_user(buf, userbuf, count))
+ 		return -EFAULT;
  
--	for (index = 0; index < hba->nutrs; index++) {
--		if (test_bit(index, &completed_reqs)) {
--			lrbp = &hba->lrb[index];
--			cmd = lrbp->cmd;
--			/*
--			 * Don't skip resetting interrupt aggregation counters
--			 * if a regular command is present.
--			 */
--			int_aggr_reset |= !lrbp->intr_cmd;
--
--			if (cmd) {
--				result = ufshcd_transfer_rsp_status(hba, lrbp);
--				scsi_dma_unmap(cmd);
--				cmd->result = result;
--				/* Mark completed command as NULL in LRB */
--				lrbp->cmd = NULL;
--				clear_bit_unlock(index, &hba->lrb_in_use);
--				/* Do not touch lrbp after scsi done */
--				cmd->scsi_done(cmd);
--			} else if (lrbp->command_type ==
--					UTP_CMD_TYPE_DEV_MANAGE) {
--				if (hba->dev_cmd.complete)
--					complete(hba->dev_cmd.complete);
--			}
--		} /* end of if */
--	} /* end of for */
-+	for_each_set_bit(index, &completed_reqs, hba->nutrs) {
-+		lrbp = &hba->lrb[index];
-+		cmd = lrbp->cmd;
-+		if (cmd) {
-+			result = ufshcd_transfer_rsp_status(hba, lrbp);
-+			scsi_dma_unmap(cmd);
-+			cmd->result = result;
-+			/* Mark completed command as NULL in LRB */
-+			lrbp->cmd = NULL;
-+			clear_bit_unlock(index, &hba->lrb_in_use);
-+			/* Do not touch lrbp after scsi done */
-+			cmd->scsi_done(cmd);
-+		} else if (lrbp->command_type == UTP_CMD_TYPE_DEV_MANAGE) {
-+			if (hba->dev_cmd.complete)
-+				complete(hba->dev_cmd.complete);
-+		}
-+	} /* end of for_each_set_bit */
++	buf[count] = '\0';
+ 	if (strncmp(buf, "disable", 7) == 0) {
+ 		AR5K_REG_DISABLE_BITS(ah, AR5K_BEACON, AR5K_BEACON_ENABLE);
+ 		pr_info("debugfs disable beacons\n");
+@@ -345,9 +347,11 @@ static ssize_t write_file_debug(struct file *file,
+ 	unsigned int i;
+ 	char buf[20];
  
- 	/* clear corresponding bits of completed commands */
- 	hba->outstanding_reqs ^= completed_reqs;
+-	if (copy_from_user(buf, userbuf, min(count, sizeof(buf))))
++	count = min_t(size_t, count, sizeof(buf) - 1);
++	if (copy_from_user(buf, userbuf, count))
+ 		return -EFAULT;
  
- 	/* we might have free'd some tags above */
- 	wake_up(&hba->dev_cmd.tag_wq);
--
--	/* Reset interrupt aggregation counters */
--	if (int_aggr_reset)
--		ufshcd_config_int_aggr(hba, INT_AGGR_RESET);
- }
++	buf[count] = '\0';
+ 	for (i = 0; i < ARRAY_SIZE(dbg_info); i++) {
+ 		if (strncmp(buf, dbg_info[i].name,
+ 					strlen(dbg_info[i].name)) == 0) {
+@@ -448,9 +452,11 @@ static ssize_t write_file_antenna(struct file *file,
+ 	unsigned int i;
+ 	char buf[20];
  
- /**
-@@ -2569,6 +2565,7 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
- 	int poll_cnt;
- 	u8 resp = 0xF;
- 	struct ufshcd_lrb *lrbp;
-+	u32 reg;
+-	if (copy_from_user(buf, userbuf, min(count, sizeof(buf))))
++	count = min_t(size_t, count, sizeof(buf) - 1);
++	if (copy_from_user(buf, userbuf, count))
+ 		return -EFAULT;
  
- 	host = cmd->device->host;
- 	hba = shost_priv(host);
-@@ -2578,6 +2575,13 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
- 	if (!(test_bit(tag, &hba->outstanding_reqs)))
- 		goto out;
++	buf[count] = '\0';
+ 	if (strncmp(buf, "diversity", 9) == 0) {
+ 		ath5k_hw_set_antenna_mode(ah, AR5K_ANTMODE_DEFAULT);
+ 		pr_info("debug: enable diversity\n");
+@@ -619,9 +625,11 @@ static ssize_t write_file_frameerrors(struct file *file,
+ 	struct ath5k_statistics *st = &ah->stats;
+ 	char buf[20];
  
-+	reg = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
-+	if (!(reg & (1 << tag))) {
-+		dev_err(hba->dev,
-+		"%s: cmd was completed, but without a notifying intr, tag = %d",
-+		__func__, tag);
-+	}
-+
- 	lrbp = &hba->lrb[tag];
- 	for (poll_cnt = 100; poll_cnt; poll_cnt--) {
- 		err = ufshcd_issue_tm_cmd(hba, lrbp->lun, lrbp->task_tag,
-@@ -2586,8 +2590,6 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
- 			/* cmd pending in the device */
- 			break;
- 		} else if (!err && resp == UPIU_TASK_MANAGEMENT_FUNC_COMPL) {
--			u32 reg;
--
- 			/*
- 			 * cmd not pending in the device, check if it is
- 			 * in transition.
+-	if (copy_from_user(buf, userbuf, min(count, sizeof(buf))))
++	count = min_t(size_t, count, sizeof(buf) - 1);
++	if (copy_from_user(buf, userbuf, count))
+ 		return -EFAULT;
+ 
++	buf[count] = '\0';
+ 	if (strncmp(buf, "clear", 5) == 0) {
+ 		st->rxerr_crc = 0;
+ 		st->rxerr_phy = 0;
+@@ -766,9 +774,11 @@ static ssize_t write_file_ani(struct file *file,
+ 	struct ath5k_hw *ah = file->private_data;
+ 	char buf[20];
+ 
+-	if (copy_from_user(buf, userbuf, min(count, sizeof(buf))))
++	count = min_t(size_t, count, sizeof(buf) - 1);
++	if (copy_from_user(buf, userbuf, count))
+ 		return -EFAULT;
+ 
++	buf[count] = '\0';
+ 	if (strncmp(buf, "sens-low", 8) == 0) {
+ 		ath5k_ani_init(ah, ATH5K_ANI_MODE_MANUAL_HIGH);
+ 	} else if (strncmp(buf, "sens-high", 9) == 0) {
+@@ -862,9 +872,11 @@ static ssize_t write_file_queue(struct file *file,
+ 	struct ath5k_hw *ah = file->private_data;
+ 	char buf[20];
+ 
+-	if (copy_from_user(buf, userbuf, min(count, sizeof(buf))))
++	count = min_t(size_t, count, sizeof(buf) - 1);
++	if (copy_from_user(buf, userbuf, count))
+ 		return -EFAULT;
+ 
++	buf[count] = '\0';
+ 	if (strncmp(buf, "start", 5) == 0)
+ 		ieee80211_wake_queues(ah->hw);
+ 	else if (strncmp(buf, "stop", 4) == 0)
 -- 
-1.7.6
--- 
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation
+1.7.11.7
 
