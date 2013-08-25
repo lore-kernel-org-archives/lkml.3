@@ -1,57 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab3HYKGv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 06:06:51 -0400
-Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:54555 "EHLO
-	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752984Ab3HYKGt (ORCPT
+	id S1756295Ab3HYKi2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 06:38:28 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57083 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754347Ab3HYKiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 06:06:49 -0400
-From: Lars Poeschel <larsi@wh2.tu-dresden.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 1/2] gpio: mcp23s08: rename the device tree property
-Date: Sun, 25 Aug 2013 12:06:41 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Lars Poeschel <poeschel@lemonage.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-References: <1377165378-9589-1-git-send-email-larsi@wh2.tu-dresden.de> <CACRpkdZMsBynLohhNw=XyzpYns9E8QVksVJYkv3dcRJ2JHWLnA@mail.gmail.com>
-In-Reply-To: <CACRpkdZMsBynLohhNw=XyzpYns9E8QVksVJYkv3dcRJ2JHWLnA@mail.gmail.com>
-MIME-Version: 1.0
-Message-Id: <201308251206.41764.larsi@wh2.tu-dresden.de>
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+	Sun, 25 Aug 2013 06:38:25 -0400
+From: Dolev Raviv <draviv@codeaurora.org>
+To: linux-scsi@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Dolev Raviv <draviv@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] scsi: ufs: read door bell register after clearing interrupt aggregation
+Date: Sun, 25 Aug 2013 13:36:56 +0300
+Message-Id: <1377427016-28469-1-git-send-email-draviv@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag 23 August 2013, 21:10:00 schrieb Linus Walleij:
-> On Thu, Aug 22, 2013 at 11:56 AM, Lars Poeschel <larsi@wh2.tu-dresden.de> 
-wrote:
-> > From: Lars Poeschel <poeschel@lemonage.de>
-> > 
-> > The device tree property should be more descriptive.
-> > microchip seems more reasonable than mcp. As there are no
-> > in tree users of this property, so the rename can still be
-> > done without pain.
-> > 
-> > Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
-> 
-> So do I apply this to the GPIO tree now or what?
-> 
-> Are the DT custodians happy?
+In interrupt context, after reading and comparing the UTRLDBR to
+hba->outstanding_request and before resetting the interrupt aggregation,
+there might be completion of another transfer request (TR). Such TRs might
+get stuck, pending, until the next interrupt is generated.
 
-No Linus, do not take this.
-There will be a new version.
+The fix reads the UTRLDBR after resetting the interrupt aggregation and
+handles completed TRs.
 
-Thanks,
-Lars
+Signed-off-by: Dolev Raviv <draviv@codeaurora.org>
+
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index 4dca9b4..30c84d8 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -1915,6 +1915,13 @@ static void ufshcd_uic_cmd_compl(struct ufs_hba *hba)
+ /**
+  * ufshcd_transfer_req_compl - handle SCSI and query command completion
+  * @hba: per adapter instance
++ *
++ * Resetting interrupt aggregation counters first and reading the DOOR_BELL
++ * afterward , allows us to handle all the completed requests.
++ * In order to prevent other interrupts starvation the DB is read once
++ * after reset. The down side of this solution is the possibility of false
++ * interrupt if device completes another request after resetting aggregation
++ * and before reading the DB.
+  */
+ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
+ {
+@@ -1924,47 +1931,36 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
+ 	u32 tr_doorbell;
+ 	int result;
+ 	int index;
+-	bool int_aggr_reset = false;
++
++	/* Reset interrupt aggregation counters */
++	ufshcd_config_int_aggr(hba, INT_AGGR_RESET);
+ 
+ 	tr_doorbell = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
+ 	completed_reqs = tr_doorbell ^ hba->outstanding_reqs;
+ 
+-	for (index = 0; index < hba->nutrs; index++) {
+-		if (test_bit(index, &completed_reqs)) {
+-			lrbp = &hba->lrb[index];
+-			cmd = lrbp->cmd;
+-			/*
+-			 * Don't skip resetting interrupt aggregation counters
+-			 * if a regular command is present.
+-			 */
+-			int_aggr_reset |= !lrbp->intr_cmd;
+-
+-			if (cmd) {
+-				result = ufshcd_transfer_rsp_status(hba, lrbp);
+-				scsi_dma_unmap(cmd);
+-				cmd->result = result;
+-				/* Mark completed command as NULL in LRB */
+-				lrbp->cmd = NULL;
+-				clear_bit_unlock(index, &hba->lrb_in_use);
+-				/* Do not touch lrbp after scsi done */
+-				cmd->scsi_done(cmd);
+-			} else if (lrbp->command_type ==
+-					UTP_CMD_TYPE_DEV_MANAGE) {
+-				if (hba->dev_cmd.complete)
+-					complete(hba->dev_cmd.complete);
+-			}
+-		} /* end of if */
+-	} /* end of for */
++	for_each_set_bit(index, &completed_reqs, hba->nutrs) {
++		lrbp = &hba->lrb[index];
++		cmd = lrbp->cmd;
++		if (cmd) {
++			result = ufshcd_transfer_rsp_status(hba, lrbp);
++			scsi_dma_unmap(cmd);
++			cmd->result = result;
++			/* Mark completed command as NULL in LRB */
++			lrbp->cmd = NULL;
++			clear_bit_unlock(index, &hba->lrb_in_use);
++			/* Do not touch lrbp after scsi done */
++			cmd->scsi_done(cmd);
++		} else if (lrbp->command_type == UTP_CMD_TYPE_DEV_MANAGE) {
++			if (hba->dev_cmd.complete)
++				complete(hba->dev_cmd.complete);
++		}
++	} /* end of for_each_set_bit */
+ 
+ 	/* clear corresponding bits of completed commands */
+ 	hba->outstanding_reqs ^= completed_reqs;
+ 
+ 	/* we might have free'd some tags above */
+ 	wake_up(&hba->dev_cmd.tag_wq);
+-
+-	/* Reset interrupt aggregation counters */
+-	if (int_aggr_reset)
+-		ufshcd_config_int_aggr(hba, INT_AGGR_RESET);
+ }
+ 
+ /**
+@@ -2569,6 +2565,7 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
+ 	int poll_cnt;
+ 	u8 resp = 0xF;
+ 	struct ufshcd_lrb *lrbp;
++	u32 reg;
+ 
+ 	host = cmd->device->host;
+ 	hba = shost_priv(host);
+@@ -2578,6 +2575,13 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
+ 	if (!(test_bit(tag, &hba->outstanding_reqs)))
+ 		goto out;
+ 
++	reg = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
++	if (!(reg & (1 << tag))) {
++		dev_err(hba->dev,
++		"%s: cmd was completed, but without a notifying intr, tag = %d",
++		__func__, tag);
++	}
++
+ 	lrbp = &hba->lrb[tag];
+ 	for (poll_cnt = 100; poll_cnt; poll_cnt--) {
+ 		err = ufshcd_issue_tm_cmd(hba, lrbp->lun, lrbp->task_tag,
+@@ -2586,8 +2590,6 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
+ 			/* cmd pending in the device */
+ 			break;
+ 		} else if (!err && resp == UPIU_TASK_MANAGEMENT_FUNC_COMPL) {
+-			u32 reg;
+-
+ 			/*
+ 			 * cmd not pending in the device, check if it is
+ 			 * in transition.
+-- 
+1.7.6
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
+
