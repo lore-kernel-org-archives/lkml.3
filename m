@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab3HYFX0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 01:23:26 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41276 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755727Ab3HYFXY (ORCPT
+	id S1756089Ab3HYFaT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 01:30:19 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59667 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755853Ab3HYFaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 01:23:24 -0400
-Date: Sun, 25 Aug 2013 06:23:17 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>
-Subject: Re: /proc/pid/fd && anon_inode_fops
-Message-ID: <20130825052317.GZ27005@ZenIV.linux.org.uk>
-References: <b121a1082bf3365fda22a131782147c169c969f5.1377112282.git.luto@amacapital.net>
- <CA+55aFzXNU-eJ7KeZyv5YYKKtm8iorG-o3QtD7NXx0GTzuH+Bw@mail.gmail.com>
- <20130822185317.GI31117@1wt.eu>
- <CALCETrWYeNXhEDY7S9XLD6L0wOZu8iPVO6LN3A_797hLHfBzAw@mail.gmail.com>
- <CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com>
- <CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com>
- <20130822201530.GL31117@1wt.eu>
- <20130824182939.GA23630@redhat.com>
- <20130824212432.GA9299@1wt.eu>
+	Sun, 25 Aug 2013 01:30:16 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <52199663.8070201@roeck-us.net>
+Date: Sat, 24 Aug 2013 22:30:11 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130824212432.GA9299@1wt.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: George Cherian <george.cherian@ti.com>, balbi@ti.com,
+        myungjoo.ham@samsung.com, cw00.choi@samsung.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, grant.likely@linaro.org, rob@landley.net,
+        ian.campbell@citrix.com, mark.rutland@arm.com, pawel.moll@arm.co
+Subject: Re: [PATCH 1/2] extcon: extcon-dra7xx: Add extcon driver for USB
+ ID detection
+References: <1376648029-30659-1-git-send-email-george.cherian@ti.com> <1376648029-30659-2-git-send-email-george.cherian@ti.com> <52127284.6030506@wwwdotorg.org> <521312CC.8060003@ti.com> <52139F0F.6090507@wwwdotorg.org>
+In-Reply-To: <52139F0F.6090507@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 24, 2013 at 11:24:32PM +0200, Willy Tarreau wrote:
+On 08/20/2013 09:53 AM, Stephen Warren wrote:
+> On 08/20/2013 12:55 AM, George Cherian wrote:
+>> Hi Stephen,
+>>
+>> Thanks for your review.
+>>
+>> On 8/20/2013 1:01 AM, Stephen Warren wrote:
+>>
+>>> On 08/16/2013 04:13 AM, George Cherian wrote:
+>>>> Adding extcon driver for USB ID detection to dynamically
+>>>> configure USB Host/Peripheral mode.
+>>>> diff --git
+>>>> a/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
+>>>> b/Documentation/devicetree/bindings/extcon/extcon-dra7xx.txt
+>>>> +EXTCON FOR DRA7xx
+>>>> +
+>>>> +Required Properties:
+>>> Please at lest explain what a DRA7xxx is, and the purpose of the HW
+>>> module this binding describes.
+>>
+>> DRA7xx is the SoC name and the USB VID  detection is implemented via gpio's
+>> Basically it does only ID detection via GPIO and there is no VBUS
+>> detection in h/w.
+>
+> If there's no SoC-specific HW, then the binding has nothing to do with
+> the SoC; it's entirely generic.
+>
+I am currently working on adding device tree support to the extcon-gpio driver.
 
-> I doubt it. It seems to me that most such entries are implemented
-> for completeness while most valid uses only concern /proc/self/fd.
-> Maybe if we had an option so that only /proc/self/fd would actually
-> allow to access the fds while all /proc/pid/fd would only show what
-> they map to, it would be a good step forward.
+Wonder if it would make sense to just use that driver. As far as I can see
+the only missing part is support for multiple cables and cable naming through
+device tree properties.
 
-How?  The fundamental problem is not visibility of that stuff, it's
-new opened file for the same object (Linux behaviour) vs. new descriptor
-refering to the same opened file (*BSD and friends).  We can't get
-anon_... sanely reopened in the former semantics and they are very
-visibly different for regular files, so switching to *BSD one is not
-feasible - too high odds of userland breakage.  The difference in
-semantics, of course, is that on Linux opening /dev/stdin gives you
-a descriptor with independent current IO position; on *BSD you get
-a descriptor sharing the current IO position with stdin.  IOW, it's
-independent open() of the same file vs. dup().
+Any thoughts ? The patches are not yet clean enough to submit upstream,
+but I could send them as RFC if there is interest.
 
-We are really stuck with the current semantics here - switching to
-*BSD one would not only mean serious surgery on descriptor handling
-(it's one of the wartier areas in *BSD VFS, in large part because
-of magic-open-really-a-dup kludges they have to do), it would change
-a long-standing userland API that had been there for nearly 20 years
-_and_ one that tends to be used in corner cases of hell knows how many
-scripts.
+Guenter
+
