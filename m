@@ -1,52 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab3HZUqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 16:46:19 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15408 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751949Ab3HZUqQ (ORCPT
+	id S1752710Ab3HZUq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 16:46:28 -0400
+Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:54764 "EHLO
+	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751949Ab3HZUqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 16:46:16 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX198r4IKgkbUBXe6W2lDGsAUzBzM4f3lQpc=
-Date: Mon, 26 Aug 2013 16:46:05 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Jisheng Zhang <jszhang@marvell.com>
-Cc: andrew@lunn.ch, gregory.clement@free-electrons.com,
-        thomas.petazzoni@free-electrons.com,
-        ezequiel.garcia@free-electrons.com, mturquette@linaro.org,
-        sebastian.hesselbarth@gmail.com, linus.walleij@linaro.org,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 3/3] pinctrl: mvebu: Convert to use
- devm_ioremap_resource
-Message-ID: <20130826204605.GE24470@titan.lakedaemon.net>
-References: <1377517018-7716-1-git-send-email-jszhang@marvell.com>
- <1377517018-7716-4-git-send-email-jszhang@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377517018-7716-4-git-send-email-jszhang@marvell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 26 Aug 2013 16:46:24 -0400
+X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 16:46:23 EDT
+Message-ID: <00000140bc5bf5c8-d334aab7-49e5-43fb-b027-26a88e7b41c8-000000@email.amazonses.com>
+User-Agent: quilt/0.50-1
+Date: Mon, 26 Aug 2013 20:41:18 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org
+Cc: linux-arch@vger.kernel.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [guv v2 00/31] percpu v2: Replace __get_cpu_var uses throughout the kernel
+X-SES-Outgoing: 2013.08.26-54.240.9.46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 07:36:58PM +0800, Jisheng Zhang wrote:
-> The resource mapped by of_iomap() isn't unmapped in error path. This
-> patch fix the resource leakage by using devm_ioremap_resource() instead
-> of of_iomap().
-> 
-> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> ---
->  drivers/pinctrl/mvebu/pinctrl-mvebu.c | 11 +++++------
->  1 file changed, 5 insertions(+), 6 deletions(-)
+V1->V2:
+ - Break up larger patches.
+ - CC maintainers
+ - Include description in each patch.
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
+address calculation via the form &__get_cpu_var(x). This calculates the address for
+the instance of the percpu variable of the current processor based on an offset.
 
-thx,
+Others usage cases are for storing and retrieving data from the current processors percpu area.
+__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
 
-Jason.
+__get_cpu_var() is defined as :
+
+
+#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+
+
+
+__get_cpu_var() always only does a address determination. However, store and retrieve operations
+could use a segment prefix (or global register on other platforms) to avoid the address calculation.
+
+this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
+optimized assembly code to read and write per cpu variables.
+
+
+This patch converts __get_cpu_var into either and explicit address calculation using this_cpu_ptr()
+or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
+and less registers are used when code is generated.
+
+At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
+
+The patchset includes passes over all arches as well. Once these operations are used throughout then
+specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
+f.e. using a global register that may be set to the per cpu base.
+
+
+
+
+Transformations done to __get_cpu_var()
+
+
+1. Determine the address of the percpu instance of the current processor.
+
+	DEFINE_PER_CPU(int, y);
+	int *x = &__get_cpu_var(y);
+
+    Converts to
+
+	int *x = this_cpu_ptr(&y);
+
+
+2. Same as #1 but this time an array structure is involved.
+
+	DEFINE_PER_CPU(int, y[20]);
+	int *x = __get_cpu_var(y);
+
+    Converts to
+
+	int *x = this_cpu_ptr(y);
+
+
+3. Retrieve the content of the current processors instance of a per cpu variable.
+
+	DEFINE_PER_CPU(int, u);
+	int x = __get_cpu_var(y)
+
+   Converts to
+
+	int x = __this_cpu_read(y);
+
+
+4. Retrieve the content of a percpu struct
+
+	DEFINE_PER_CPU(struct mystruct, y);
+	struct mystruct x = __get_cpu_var(y);
+
+   Converts to
+
+	memcpy(this_cpu_ptr(&y), x, sizeof(x));
+
+
+5. Assignment to a per cpu variable
+
+	DEFINE_PER_CPU(int, y)
+	__get_cpu_var(y) = x;
+
+   Converts to
+
+	this_cpu_write(y, x);
+
+
+6. Increment/Decrement etc of a per cpu variable
+
+	DEFINE_PER_CPU(int, y);
+	__get_cpu_var(y)++
+
+   Converts to
+
+	this_cpu_inc(y)
+
+
+These conversions lead to some savings in code size.
+
+Before
+
+size arch/x86/boot/bzImage
+   text	   data	    bss	    dec	    hex	filename
+3996624	      0	      0	3996624	 3cfbd0	arch/x86/boot/bzImage
+
+After
+
+size arch/x86/boot/bzImage
+   text	   data	    bss	    dec	    hex	filename
+3995840	      0	      0	3995840	 3cf8c0	arch/x86/boot/bzImage
+
+
+
