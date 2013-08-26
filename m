@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab3HZWIM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:08:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8155 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592Ab3HZWIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:08:11 -0400
-Date: Mon, 26 Aug 2013 18:07:11 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
- task->pid and task->tgid
-Message-ID: <20130826220711.GA21098@madcap2.tricolour.ca>
-References: <cover.1377032086.git.rgb@redhat.com>
- <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
- <20130822190848.GA25053@redhat.com>
+	id S1752447Ab3HZWJH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:09:07 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:43215 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab3HZWJF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 18:09:05 -0400
+Date: Mon, 26 Aug 2013 15:08:45 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Dave Jones <davej@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: unused swap offset / bad page map.
+In-Reply-To: <CA+55aFwQbJbR3xij1+iGbvj3EQggF9NLGAfDbmA54FkKz9xfew@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1308261448490.4982@eggly.anvils>
+References: <20130807153030.GA25515@redhat.com> <CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com> <20130819231836.GD14369@redhat.com> <CAJd=RBA-UZmSTxNX63Vni+UPZBHwP4tvzE_qp1ZaHBqcNG7Fcw@mail.gmail.com> <20130821204901.GA19802@redhat.com>
+ <CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com> <20130823032127.GA5098@redhat.com> <CAJd=RBArkh3sKVoOJUZBLngXtJubjx4-a3G6s7Tn0N=Pr1gU4g@mail.gmail.com> <20130823035344.GB5098@redhat.com> <CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
+ <20130826190757.GB27768@redhat.com> <CA+55aFw_bhMOP73owFHRFHZDAYEdWgF9j-502Aq9tZe3tEfmwg@mail.gmail.com> <CA+55aFwQbJbR3xij1+iGbvj3EQggF9NLGAfDbmA54FkKz9xfew@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130822190848.GA25053@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 22, 2013 at 09:08:48PM +0200, Oleg Nesterov wrote:
-> On 08/20, Richard Guy Briggs wrote:
+On Mon, 26 Aug 2013, Linus Torvalds wrote:
+> On Mon, Aug 26, 2013 at 1:15 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
 > >
-> >  static inline int is_global_init(struct task_struct *tsk)
-> >  {
-> > -	return tsk->pid == 1;
-> > +	return task_pid_nr(tsk) == 1;
-> >  }
+> > So I'm almost likely to think that we are more likely to have
+> > something wrong in the messy magical special cases.
 > 
-> Probably it would be better to simply kill it. Almost every usage is
-> wrong.
+> Of course, the good news would be if it actually ends up being the
+> soft-dirty stuff, and bisection hits something recent.
 
-Can you be more clear?  I don't follow.  It should instead return a
-boolean.  Usage of is_global_init() or task_pid_nr()?
+I suspect so.
 
-If is_global_init(), is that because they could be unaware of pid
-namespaces?
-
-If task_pid_nr(), is that for the same reason?
-
-> >  static inline bool is_idle_task(const struct task_struct *p)
-> >  {
-> > -	return p->pid == 0;
-> > +	return task_pid(p) == &init_struct_pid;
-> >  }
 > 
-> hmm. there should be a simpler check for this...
+> So maybe I'm overly pessimistic. That messy swap_map[] code really
+> _is_ messy, but at the same time it should also be pretty well-tested.
+> I don't think it's been touched in years.
 
-Other than the original, this one is pretty simple.  What did you have
-in mind?
+Blame me for the byte-instead-of-short continuation stuff.
+But it's never yet shown any problem (okay, perhaps that's
+because it's so rare to need any continuation anyway).
 
-> >  static inline int has_group_leader_pid(struct task_struct *p)
-> >  {
-> > -	return p->pid == p->tgid;
-> > +	return task_pid(p) == task_tgid(p);
-> >  }
-> >  
-> >  static inline
-> >  int same_thread_group(struct task_struct *p1, struct task_struct *p2)
-> >  {
-> > -	return p1->tgid == p2->tgid;
-> > +	return task_tgid(p1) == task_tgid(p2);
 > 
-> This is suboptinal. See the attached
-> include-linux-schedh-dont-use-task-pid-tgid-in-same_thread_group-has_group_leader_pid.patch
-> from -mm below.
+> That said, google does find "swap_free: Unused swap offset entry"
+> reports from over the years. Most of them seem to be single-bit
+> errors, though (ie when the entry is 00000100 or similar I'm more
+> inclined to blame a bit error
 
-I'm fine with that if it is deemed better.  The point was to remove the
-dependence on task_struct::tgid.
+Yes, historically they have usually represented either single-bit
+errors, or corruption of page tables by other kernel data.  The
+swap subsystem discovers it, but it's rarely an error of swap.
 
-> Oleg.
+So I don't care for Dave's suggestion much earlier in this thread,
+that swapoff should fail with -EINVAL if there has been a bad page
+taint: that doesn't necessarily interfere with swapoff at all.
 
-- RGB
+And besides, swapoff is killable: yes, if counts go wrong, it
+can cycle around endlessly, but it checks for signal_pending()
+each time around the loop.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer
-Kernel Security
-AMER ENG Base Operating Systems
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635
-Internal: (81) 32635
-Alt: +1.613.693.0684x3545
+> - in contrast your values look like "real" swap entries).
+
+Indeed they do.
+
+I just did a quick diff of 3.11-rc7/mm against 3.10, and here's
+a line in mremap which worries me.  That set_pte_at() is operating
+on anything that isn't pte_none(), so the pte_mksoft_dirty() looks
+prone to corrupt a swap entry.
+
+I've not tried matching up bits with Dave's reports, and just going
+into a meeting now, but this patch looks worth a try: probably Cyrill
+can improve it meanwhile to what he actually wants there (I'm
+surprised anything special is needed for just moving a pte).
+
+Hugh
+
+--- 3.11-rc7/mm/mremap.c	2013-07-14 17:10:16.640003652 -0700
++++ linux/mm/mremap.c	2013-08-26 14:46:14.460027627 -0700
+@@ -126,7 +126,7 @@ static void move_ptes(struct vm_area_str
+ 			continue;
+ 		pte = ptep_get_and_clear(mm, old_addr, old_pte);
+ 		pte = move_pte(pte, new_vma->vm_page_prot, old_addr, new_addr);
+-		set_pte_at(mm, new_addr, new_pte, pte_mksoft_dirty(pte));
++		set_pte_at(mm, new_addr, new_pte, pte);
+ 	}
+ 
+ 	arch_leave_lazy_mmu_mode();
