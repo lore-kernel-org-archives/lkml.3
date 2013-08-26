@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757258Ab3HZPzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 11:55:20 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35122 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933Ab3HZPzR (ORCPT
+	id S1757284Ab3HZPzr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 11:55:47 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:43535 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272Ab3HZPzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 11:55:17 -0400
-Message-ID: <521B7A5F.7030101@wwwdotorg.org>
-Date: Mon, 26 Aug 2013 09:55:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 26 Aug 2013 11:55:45 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Bo Shen <voice.shen@atmel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: soc update for 3.12 #1
+Date: Mon, 26 Aug 2013 17:55:43 +0200
+Message-ID: <1377532543-349-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Neil Zhang <zhangwm@marvell.com>,
-        Joseph Lo <josephl@nvidia.com>,
-        linux-tegra <linux-tegra@vger.kernel.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 1/3] cpuidle: coupled: disable interrupts after entering
- safe state
-References: <1377287112-12018-1-git-send-email-ccross@android.com> <5217EB9A.5050206@wwwdotorg.org> <CAMbhsRQzmyftujGhD+b7WwdXWP9b+=R0D7SavgKSjWKuFNLejQ@mail.gmail.com>
-In-Reply-To: <CAMbhsRQzmyftujGhD+b7WwdXWP9b+=R0D7SavgKSjWKuFNLejQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2013 06:22 PM, Colin Cross wrote:
-> On Fri, Aug 23, 2013 at 4:09 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 08/23/2013 01:45 PM, Colin Cross wrote:
->>> Calling cpuidle_enter_state is expected to return with interrupts
->>> enabled, but interrupts must be disabled before starting the
->>> ready loop synchronization stage.  Call local_irq_disable after
->>> each call to cpuidle_enter_state for the safe state.
->>
->> Tested-by: Stephen Warren <swarren@nvidia.com>
->>
->> Note: I tested the current Tegra cpuidle code that's in next-20130819.
->> IIRC, Joseph reported the issue when trying to enable some additional
->> feature in Tegra30 cpuidle. I didn't actually try to enable whatever
->> that was; I just briefly tested for regressions in the existing code
->> configuration.
-> 
-> Is that for the series or just this patch?
+Arnd, Olof, Kevin,
 
-The series.
+Here is AT91 SoC updates for 3.12 kernel. It is the first pull-request for
+this topic and it is based on 3.11-rc5 like your next/soc branch.
 
+Thanks, best regards,
+
+The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
+
+  Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-soc
+
+for you to fetch changes up to 99eb3b40ec42e7fce1fc58429bf9b26c17973c12:
+
+  ARM: at91: at91_dt_defconfig: enable rm9200 support (2013-08-26 09:58:29 +0200)
+
+----------------------------------------------------------------
+AT91 SoC update for 3.12 take 1
+- enable kernel uncompress information output for
+  SoC where it was missing: at91sam9n12 and sama5d3
+- addition of at91rm9200 to the generic at91_dt_defconfig
+
+----------------------------------------------------------------
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      ARM: at91: at91_dt_defconfig: enable rm9200 support
+
+voice (4):
+      ARM: at91: sama5d3: add definition for usart base address
+      ARM: at91: include sama5d3.h into hardware.h
+      ARM: at91: sama5: enable kernel uncompress info output
+      ARM: at91: sam9n12: enable kernel uncompress info output
+
+ arch/arm/configs/at91_dt_defconfig           |  4 +++-
+ arch/arm/mach-at91/include/mach/hardware.h   |  1 +
+ arch/arm/mach-at91/include/mach/sama5d3.h    |  8 ++++++++
+ arch/arm/mach-at91/include/mach/uncompress.h | 13 +++++++++++++
+ 4 files changed, 25 insertions(+), 1 deletion(-)
+
+-- 
+Nicolas Ferre
