@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985Ab3HZLnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 07:43:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48621 "EHLO mx2.suse.de"
+	id S1756589Ab3HZLs2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 07:48:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48767 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751524Ab3HZLnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 07:43:11 -0400
-Date: Mon, 26 Aug 2013 13:43:06 +0200 (CEST)
+	id S1751596Ab3HZLs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 07:48:27 -0400
+Date: Mon, 26 Aug 2013 13:48:21 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/3] HID: Win 8 multitouch panels detection in core
-In-Reply-To: <20130822175515.GA5215@polaris.bitmath.org>
-Message-ID: <alpine.LNX.2.00.1308261342430.2077@pobox.suse.cz>
-References: <1377175869-5336-1-git-send-email-benjamin.tissoires@redhat.com> <20130822175515.GA5215@polaris.bitmath.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        mhocko@suse.cz, hare@suse.de, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 0/4 v6] Avoid softlockups in console_unlock()
+In-Reply-To: <20130823125822.b3f5b946ef1e86c52834d0c3@linux-foundation.org>
+Message-ID: <alpine.LNX.2.00.1308261347220.2077@pobox.suse.cz>
+References: <1377072512-7986-1-git-send-email-jack@suse.cz> <20130821142723.5fd8c0b0062b35ee83a68dcc@linux-foundation.org> <20130821225915.GA16653@quack.suse.cz> <20130822124913.c6de8fe61e9fd601bd83ff63@linux-foundation.org> <alpine.LNX.2.00.1308232146250.25124@deuxcents.site>
+ <20130823125822.b3f5b946ef1e86c52834d0c3@linux-foundation.org>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -26,21 +23,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Aug 2013, Henrik Rydberg wrote:
+On Fri, 23 Aug 2013, Andrew Morton wrote:
 
-> > this is the v3 of this patch series.
+> > > >   We have customers (quite a few of them actually) which have machines with
+> > > > lots of SCSI disks attached (due to multipath etc.) and during boot when
+> > > > these disks are discovered and partitions set up quite some printing
+> > > > happens - multiplied by the number of devices (1000+) it is too much for a
+> > > > serial console to handle quickly enough. So these machines aren't able to
+> > > > boot with serial console enabled.
+> > > 
+> > > It sounds like rather a corner case, not worth mucking up the critical
+> > > core logging code.
 > > 
-> > Srinivas, I still did not added your tested-by as I made minors modifications of
-> > the patches 1 and 2. Now only the patch 1 will impact sensor_hub, and patch 2
-> > will not impact this. Maybe just wait for Henrik to put his "Reviewed-by" before
-> > giving one last test.
+> > Andrew, I have to admit I don't understand this argument at all.
 > 
-> Here goes:
-> 
->     Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+> Of course you do.  print should be simple, robust and have minimum
+> dependency on other kernel parts.
 
-Thanks guys. Not applying this just yet, waiting for Tested-by: from 
-Srinivas.
+I agree. That would need a complete printk() rewrite though. Before that 
+happens, fixing obvious lockup in the code seems like a very proper thing 
+to do.
 
 -- 
 Jiri Kosina
