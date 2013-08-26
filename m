@@ -1,28 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab3HZUyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 16:54:20 -0400
-Received: from b232-35.smtp-out.amazonses.com ([199.127.232.35]:44932 "EHLO
-	b232-35.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752911Ab3HZUyQ (ORCPT
+	id S1752969Ab3HZUy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 16:54:28 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:41083 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752923Ab3HZUyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 16:54:16 -0400
-X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 16:54:15 EDT
-Message-Id: <00000140bc5f0313-84b1748d-fe8e-4b02-bff9-60ec7fdbe984-000000@email.amazonses.com>
+	Mon, 26 Aug 2013 16:54:20 -0400
+X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 16:54:20 EDT
+Message-Id: <00000140bc5f0b10-1401cff4-f6f5-4db6-a4cc-d73df56d8076-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Mon, 26 Aug 2013 20:44:38 +0000
+Date: Mon, 26 Aug 2013 20:44:40 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, akpm@linux-foundation.org, linux-mm@kvack.org
+Cc: akpm@linuxfoundation.org
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [guv v2 07/31] mm: Replace __get_cpu_var uses
-References: <20130826204351.725357339@linux.com>
-X-SES-Outgoing: 199.127.232.35
+Subject: [guv v2 00/31] percpu v2: Replace __get_cpu_var uses throughout the kernel
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+V1->V2:
+ - Break up larger patches.
+ - CC maintainers
+ - Include description in each patch.
 
 __get_cpu_var() is used for multiple purposes in the kernel source. One of them is
 address calculation via the form &__get_cpu_var(x). This calculates the address for
@@ -120,123 +124,20 @@ Transformations done to __get_cpu_var()
 
 	this_cpu_inc(y)
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/lib/radix-tree.c
-===================================================================
---- linux.orig/lib/radix-tree.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/lib/radix-tree.c	2013-08-26 14:25:30.709616290 -0500
-@@ -215,7 +215,7 @@ radix_tree_node_alloc(struct radix_tree_
- 		 * succeed in getting a node here (and never reach
- 		 * kmem_cache_alloc)
- 		 */
--		rtp = &__get_cpu_var(radix_tree_preloads);
-+		rtp = this_cpu_ptr(&radix_tree_preloads);
- 		if (rtp->nr) {
- 			ret = rtp->nodes[rtp->nr - 1];
- 			rtp->nodes[rtp->nr - 1] = NULL;
-@@ -271,14 +271,14 @@ int radix_tree_preload(gfp_t gfp_mask)
- 	int ret = -ENOMEM;
- 
- 	preempt_disable();
--	rtp = &__get_cpu_var(radix_tree_preloads);
-+	rtp = this_cpu_ptr(&radix_tree_preloads);
- 	while (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
- 		preempt_enable();
- 		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
- 		if (node == NULL)
- 			goto out;
- 		preempt_disable();
--		rtp = &__get_cpu_var(radix_tree_preloads);
-+		rtp = this_cpu_ptr(&radix_tree_preloads);
- 		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
- 			rtp->nodes[rtp->nr++] = node;
- 		else
-Index: linux/mm/memcontrol.c
-===================================================================
---- linux.orig/mm/memcontrol.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/memcontrol.c	2013-08-26 14:25:30.713616248 -0500
-@@ -2398,7 +2398,7 @@ static void drain_stock(struct memcg_sto
-  */
- static void drain_local_stock(struct work_struct *dummy)
- {
--	struct memcg_stock_pcp *stock = &__get_cpu_var(memcg_stock);
-+	struct memcg_stock_pcp *stock = this_cpu_ptr(&memcg_stock);
- 	drain_stock(stock);
- 	clear_bit(FLUSHING_CACHED_CHARGE, &stock->flags);
- }
-Index: linux/mm/memory-failure.c
-===================================================================
---- linux.orig/mm/memory-failure.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/memory-failure.c	2013-08-26 14:25:30.713616248 -0500
-@@ -1279,7 +1279,7 @@ static void memory_failure_work_func(str
- 	unsigned long proc_flags;
- 	int gotten;
- 
--	mf_cpu = &__get_cpu_var(memory_failure_cpu);
-+	mf_cpu = this_cpu_ptr(&memory_failure_cpu);
- 	for (;;) {
- 		spin_lock_irqsave(&mf_cpu->lock, proc_flags);
- 		gotten = kfifo_get(&mf_cpu->fifo, &entry);
-Index: linux/mm/page-writeback.c
-===================================================================
---- linux.orig/mm/page-writeback.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/page-writeback.c	2013-08-26 14:25:30.713616248 -0500
-@@ -1487,7 +1487,7 @@ void balance_dirty_pages_ratelimited(str
- 	 * 1000+ tasks, all of them start dirtying pages at exactly the same
- 	 * time, hence all honoured too large initial task->nr_dirtied_pause.
- 	 */
--	p =  &__get_cpu_var(bdp_ratelimits);
-+	p =  this_cpu_ptr(&bdp_ratelimits);
- 	if (unlikely(current->nr_dirtied >= ratelimit))
- 		*p = 0;
- 	else if (unlikely(*p >= ratelimit_pages)) {
-@@ -1499,7 +1499,7 @@ void balance_dirty_pages_ratelimited(str
- 	 * short-lived tasks (eg. gcc invocations in a kernel build) escaping
- 	 * the dirty throttling and livelock other long-run dirtiers.
- 	 */
--	p = &__get_cpu_var(dirty_throttle_leaks);
-+	p = this_cpu_ptr(&dirty_throttle_leaks);
- 	if (*p > 0 && current->nr_dirtied < ratelimit) {
- 		unsigned long nr_pages_dirtied;
- 		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
-Index: linux/mm/swap.c
-===================================================================
---- linux.orig/mm/swap.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/swap.c	2013-08-26 14:25:30.717616206 -0500
-@@ -359,7 +359,7 @@ void rotate_reclaimable_page(struct page
- 
- 		page_cache_get(page);
- 		local_irq_save(flags);
--		pvec = &__get_cpu_var(lru_rotate_pvecs);
-+		pvec = this_cpu_ptr(&lru_rotate_pvecs);
- 		if (!pagevec_add(pvec, page))
- 			pagevec_move_tail(pvec);
- 		local_irq_restore(flags);
-Index: linux/mm/vmalloc.c
-===================================================================
---- linux.orig/mm/vmalloc.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/vmalloc.c	2013-08-26 14:25:30.717616206 -0500
-@@ -1487,7 +1487,7 @@ void vfree(const void *addr)
- 	if (!addr)
- 		return;
- 	if (unlikely(in_interrupt())) {
--		struct vfree_deferred *p = &__get_cpu_var(vfree_deferred);
-+		struct vfree_deferred *p = this_cpu_ptr(&vfree_deferred);
- 		if (llist_add((struct llist_node *)addr, &p->list))
- 			schedule_work(&p->wq);
- 	} else
-Index: linux/mm/vmstat.c
-===================================================================
---- linux.orig/mm/vmstat.c	2013-08-26 14:24:48.000000000 -0500
-+++ linux/mm/vmstat.c	2013-08-26 14:25:30.717616206 -0500
-@@ -1178,7 +1178,7 @@ int sysctl_stat_interval __read_mostly =
- static void vmstat_update(struct work_struct *w)
- {
- 	refresh_cpu_vm_stats(smp_processor_id());
--	schedule_delayed_work(&__get_cpu_var(vmstat_work),
-+	schedule_delayed_work(this_cpu_ptr(&vmstat_work),
- 		round_jiffies_relative(sysctl_stat_interval));
- }
- 
+These conversions lead to some savings in code size.
+
+Before
+
+size arch/x86/boot/bzImage
+   text	   data	    bss	    dec	    hex	filename
+3996624	      0	      0	3996624	 3cfbd0	arch/x86/boot/bzImage
+
+After
+
+size arch/x86/boot/bzImage
+   text	   data	    bss	    dec	    hex	filename
+3995840	      0	      0	3995840	 3cf8c0	arch/x86/boot/bzImage
+
+
 
