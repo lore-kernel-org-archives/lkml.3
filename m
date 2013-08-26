@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab3HZOh3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 10:37:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28705 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab3HZOh1 (ORCPT
+	id S1756858Ab3HZOhg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 10:37:36 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42614 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab3HZOhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 10:37:27 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=WWWfXbpW1U4A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=G5Vss12qNGkA:10 a=3nbZYyFuAAAA:8 a=bc_fnt18xrrjeiQm0SMA:9 a=CjuIK1q_8ugA:10 a=EvKJbDF4Ut8A:10 a=LWPhl77mJRN9qz7e:21 a=XLFxzTp-uHGDJzZe:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 26 Aug 2013 10:37:26 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 07/11] [CLEANUP] trace-cmd: Split out binding a port
- and fork reader from open_udp()
-Message-ID: <20130826103726.60f92fbc@gandalf.local.home>
-In-Reply-To: <521AB3DF.3070505@hitachi.com>
-References: <20130819094620.26597.79499.stgit@yunodevel>
-	<20130819094637.26597.35505.stgit@yunodevel>
-	<20130820134902.3a06e4d0@gandalf.local.home>
-	<521AB3DF.3070505@hitachi.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Aug 2013 10:37:33 -0400
+Date: Mon, 26 Aug 2013 17:37:15 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        Jeff Liu <jeff.liu@oracle.com>, Dave Chinner <david@fromorbit.com>
+Subject: Re: [patch] xfs: check for underflow in xfs_iformat_fork()
+Message-ID: <20130826143714.GA6329@mwanda>
+References: <20130815055338.GC23580@elgon.mountain>
+ <520CA923.4060409@oracle.com>
+ <20130815143706.GI7153@sgi.com>
+ <20130815222650.GX6023@dastard>
+ <20130823173613.GT5262@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130823173613.GT5262@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Aug 2013 10:48:15 +0900
-Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
-
-
-> >> +static int open_udp(const char *node, const char *port, int *pid,
-> >> +		    int cpu, int pagesize, int start_port)
-> >> +{
-> >> +	int sfd;
-> >> +	int num_port;
-> >> +
-> >> +	num_port = udp_bind_a_port(start_port, &sfd);
-> >> +	if (num_port < 0)
-> >> +		return num_port;
-> >
-> > I don't see how num_port could be less than zero.
+On Fri, Aug 23, 2013 at 12:36:13PM -0500, Ben Myers wrote:
+> Dan,
 > 
-> I think so, but trace-cmd checks whether udp_port is less than zero or
-> not in create_all_readers().
+> On Fri, Aug 16, 2013 at 08:26:50AM +1000, Dave Chinner wrote:
+> > On Thu, Aug 15, 2013 at 09:37:06AM -0500, Ben Myers wrote:
+> > > Hey Dan & Jeff,
+> > > 
+> > > On Thu, Aug 15, 2013 at 06:10:43PM +0800, Jeff Liu wrote:
+> > > > On 08/15/2013 01:53 PM, Dan Carpenter wrote:
+> > > > 
+> > > > > The "di_size" variable comes from the disk and it's a signed 64 bit.
+> > > > > We check the upper limit but we should check for negative numbers as
+> > > > > well.
+> > > > > 
+> > > > > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > > > > 
+> > > > > diff --git a/fs/xfs/xfs_inode_fork.c b/fs/xfs/xfs_inode_fork.c
+> > > > > index 123971b..849fc70 100644
+> > > > > --- a/fs/xfs/xfs_inode_fork.c
+> > > > > +++ b/fs/xfs/xfs_inode_fork.c
+> > > > > @@ -167,7 +167,8 @@ xfs_iformat_fork(
+> > > > >  			}
+> > > > >  
+> > > > >  			di_size = be64_to_cpu(dip->di_size);
+> > > > > -			if (unlikely(di_size > XFS_DFORK_DSIZE(dip, ip->i_mount))) {
+> > > > > +			if (unlikely(di_size < 0 ||
+> > > > 
+> > > > But the di_size is initialized to ZERO while allocating a new inode on disk.
+> > > > I wonder if that is better to ASSERT in this case because the current check
+> > > > is used to make sure that the item is inlined, or we don't need it at all.
+> > > 
+> > > Hmm.  Dan's additional check looks good to me.  In this case I'd say the forced
+> > > shutdown is more appropriate than an assert, because here we're reading the
+> > > inode from disk, as opposed to looking at a structure that is already incore
+> > > which we think we've initialized.  We want to handle unexpected inputs from
+> > > disk without crashing even if we are CONFIG_XFS_DEBUG.
+> > 
+> > There are lots of places where we only check di_size to be greater
+> > than some value, and don't check for it being less than zero. Hence
+> > I think that a better solution might be to di_size unsigned as that
+> > will catch "negative" sizes for all types of situations.
 > 
-> May I submit the removal patch?
+> What do you say to making di_size unsigned?  Any interest?
+> 
 
-It's not a critical path, the check is fine. As there was a check, I
-was thinking that you were expecting it to pass an error which it never
-did.
+I'm not the right person to change "lots of places".  Some of these
+are probably subtle.  Just give me the reported-by and I'm happy.
 
-Perhaps just add a comment stating that udp_bind_a_port() currently
-does not return an error, but if that changes in the future, we have a
-check for it now.
+regards,
+dan carpenter
 
-That way a reviewer of the code does not get confused by it.
-
--- Steve
