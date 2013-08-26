@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab3HZThl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 15:37:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60762 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751675Ab3HZThj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 15:37:39 -0400
-Message-ID: <521BADC1.7000003@ti.com>
-Date: Tue, 27 Aug 2013 01:04:25 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1752196Ab3HZTiE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 15:38:04 -0400
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:33337 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab3HZTiC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 15:38:02 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: Julius Werner <jwerner@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        "Benson Leung" <bleung@chromium.org>, Felipe Balbi <balbi@ti.com>,
+        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>
+Subject: RE: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support for
+ platform xHCs
+Thread-Topic: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support
+ for platform xHCs
+Thread-Index: AQHOnfwYI9Np33Plqkq7vUNbfD4u75mgdUEAgAAzMICAADKpAIAAPKeA//+VVhCAB60tgP//i2hQ
+Date: Mon, 26 Aug 2013 19:37:56 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458DED818@US01WEMBX2.internal.synopsys.com>
+References: <1377040909-18428-1-git-send-email-jwerner@chromium.org>
+ <20130821184042.GC3577@xanatos>
+ <CAODwPW8tCFaykJnatyweJ96UzntRVNmo3WU1UYXw9nwp2bq_Ow@mail.gmail.com>
+ <20130822004514.GB19747@xanatos>
+ <CAODwPW99gLBtNQD=UyPq9DqY0TtNubR_7e+FymkfO5u2+et++Q@mail.gmail.com>
+ <A2CA0424C0A6F04399FB9E1CD98E030458DEC6BC@US01WEMBX2.internal.synopsys.com>
+ <20130826191411.GG5112@xanatos>
+In-Reply-To: <20130826191411.GG5112@xanatos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.240]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Pantel Antoniou <panto@antoniou-consulting.com>
-Subject: Re: [PATCH v2] ARM: EDMA: Fix clearing of unused list for DT DMA
- resources
-References: <1377287613-16491-1-git-send-email-joelf@ti.com> <521B3212.3050405@ti.com> <521B87C0.1090507@ti.com>
-In-Reply-To: <521B87C0.1090507@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 8/26/2013 10:22 PM, Joel Fernandes wrote:
-> On 08/26/2013 05:46 AM, Sekhar Nori wrote:
->> On Saturday 24 August 2013 01:23 AM, Joel Fernandes wrote:
->>> HWMOD removal for MMC and Crypto is breaking edma_start as the events are
->>> being manually triggered due to unused channel list not being clear. Atleast
->>> breakage has been seen on these peripherals, but it is expected Audio (McASP)
->>> maybe breaking too.
->>>
->>> This patch fixes the issue, by reading the "dmas" property from the DT node if
->>> it exists and clearing the bits in the unused channel list so that these channels
->>> are not manually triggered.
->>>
->>> v2 changes:
->>> Reduced indendation by returning from if block.
->>
->> Is this a v2 or v3 since you already sent a v2 about a month back?
+> From: Sarah Sharp [mailto:sarah.a.sharp@linux.intel.com]
+> Sent: Monday, August 26, 2013 12:14 PM
 > 
-> No, there aren't any changes since v2, I just resubmitted the same patch.
-
-Heh, it does seem to contain some indentation changes per your
-documentation :)
-
+> On Thu, Aug 22, 2013 at 05:11:49AM +0000, Paul Zimmerman wrote:
+> > > From: Julius Werner
+> > > Sent: Wednesday, August 21, 2013 9:22 PM
+> > >
+> > > > You need the USB 2.0 spec errata from 2011-11 that describes the changes
+> > > > made for BESL as well.  It's in the USB2-LPM-Errata-final.pdf and
+> > > > USB2_LinkPowerMangement_ECN[final].pdf files in this zip file:
+> > > >
+> > > > http://www.usb.org/developers/docs/usb_20_070113.zip
+> > > >
+> > > > I agree though, it's all a confusing mess for documentation on USB 2.0
+> > > > Link PM.
+> > >
+> > > Thanks, I hadn't found that first one yet. Do you also have a link for
+> > > the updated XHCI specification or a separate erratum document
+> > > describing the PORTHLPMC register referenced in the BESL patches (they
+> > > don't exist on DWC3, but I'm still curious)?
+> >
+> > Just to set the record straight :)
+> >
+> > The PORTHLPMC registers do exist on DWC3, starting with the 1.90a version
+> > of the core or thereabouts. They only supported the HIRD flavor of LPM,
+> > though. Only fairly recently has support for BESL been added, around
+> > version 2.41a or so.
 > 
->>>
->>> Reviewed-by: Sekhar Nori <nsekhar@ti.com>
->>> Reported-by: Balaji T K <balajitk@ti.com>
->>> Cc: Pantel Antoniou <panto@antoniou-consulting.com>
->>> Signed-off-by: Joel Fernandes <joelf@ti.com>
->>> ---
->>> Note:
->>> Patch should go in for -rc cycle as it fixes existing crypto drivers.
->>
->> We agreed the patch is not needed in -rc cycle since there are no
->> current EDMA users in DT-boot?
-> 
-> There is now, crypto and EDMA DT patches are being merged in.
+> And the 2.41a version that supports BESL properly sets the BLC flag in
+> the USB 2.0 Protocol extended capabilities for all the USB 2.0 ports?
+> Has this functionality been well-tested?
 
-They are being merged in v3.12, right? So you meant the -rc cycle of
-v3.12? If yes, no need to wait for a broken v3.12-rc1 to come out. It is
-possible to queue fixes during merge window too.
+In 2.41a it is described as an "early adopter" feature in the databook,
+and no mention is made of the BLC flag. So the answer there is "maybe".
+Starting with 2.50a it is a full-fledged feature and the databook does
+describe the BLC flag.
 
-Thanks,
-Sekhar
+So it may be safer to say that the feature is present starting with 2.50a.
+
+In 2.51a it has been well-tested in simulation. In actual hardware, it
+has only been briefly tested in an ad-hoc sort of way, since none of the
+standard drivers in the market support the feature yet, as far as we know.
+
+Once the support is fully working in the Linux driver we can try testing
+it there.
+
+-- 
+Paul
+
