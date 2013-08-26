@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab3HZH6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 03:58:36 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:50274 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab3HZH6f (ORCPT
+	id S1756166Ab3HZIEa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:04:30 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:59144 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755268Ab3HZIE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 03:58:35 -0400
-From: Johannes Berg <johannes@sipsolutions.net>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Huang Ying <ying.huang@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH] debugfs: provide debugfs_create_x64() when disabled
-Date: Mon, 26 Aug 2013 09:58:30 +0200
-Message-Id: <1377503910-6919-1-git-send-email-johannes@sipsolutions.net>
-X-Mailer: git-send-email 1.8.4.rc3
+	Mon, 26 Aug 2013 04:04:29 -0400
+X-Greylist: delayed 507 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 04:04:29 EDT
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: airlied@linux.ie, airlied@redhat.com, thellstrom@vmware.com,
+        brianp@vmware.com, daniel.vetter@ffwll.ch,
+        yongjun_wei@trendmicro.com.cn, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/vmwgfx: fix error return code in vmw_driver_load()
+Date: Mon, 26 Aug 2013 00:56 -0700
+Message-ID: <8371335.jOCe9OeWEl@dtor-d630.eng.vmware.com>
+Organization: VMware, Inc.
+User-Agent: KMail/4.10.5 (Linux/3.10.4-100.fc18.x86_64; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAPgLHd-6AP74UFPzxU0dz2y+JyPSL1w+x5zd_hXCVLOuws8AYQ@mail.gmail.com>
+References: <CAPgLHd-6AP74UFPzxU0dz2y+JyPSL1w+x5zd_hXCVLOuws8AYQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes.berg@intel.com>
+On Monday, August 26, 2013 03:15:37 PM Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> Fix to return -ENOMEM in the fence manager init error handling
+> case instead of 0, as done elsewhere in this function.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 15b0beaa332b3923cc ("Add x64 support to debugfs") added
-debugfs_create_x64(), but forgot to provide it when debugfs is
-disabled, causing problems when code tries to use it even then.
-Provide the appropriate static inline.
+Acked-by: Dmitry Torokhov <dtor@vmware.com>
 
-Cc: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
----
- include/linux/debugfs.h | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-index d68b4ea..263489d 100644
---- a/include/linux/debugfs.h
-+++ b/include/linux/debugfs.h
-@@ -192,6 +192,13 @@ static inline struct dentry *debugfs_create_x32(const char *name, umode_t mode,
- 	return ERR_PTR(-ENODEV);
- }
- 
-+static inline struct dentry *debugfs_create_x64(const char *name, umode_t mode,
-+						struct dentry *parent,
-+						u64 *value)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+
- static inline struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
- 				     struct dentry *parent,
- 				     size_t *value)
--- 
-1.8.4.rc3
-
+> ---
+>  drivers/gpu/drm/vmwgfx/vmwgfx_drv.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+> b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c index 78e2164..6dafefc 100644
+> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+> @@ -622,8 +622,10 @@ static int vmw_driver_load(struct drm_device *dev,
+> unsigned long chipset) }
+> 
+>  	dev_priv->fman = vmw_fence_manager_init(dev_priv);
+> -	if (unlikely(dev_priv->fman == NULL))
+> +	if (unlikely(dev_priv->fman == NULL)) {
+> +		ret = -ENOMEM;
+>  		goto out_no_fman;
+> +	}
+> 
+>  	vmw_kms_save_vga(dev_priv);
