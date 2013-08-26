@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab3HZVHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 17:07:10 -0400
-Received: from a9-54.smtp-out.amazonses.com ([54.240.9.54]:46741 "EHLO
-	a9-54.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751650Ab3HZVHI (ORCPT
+	id S1752683Ab3HZVI2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 17:08:28 -0400
+Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:36140 "EHLO
+	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752205Ab3HZVIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 17:07:08 -0400
-X-Greylist: delayed 649 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 17:07:07 EDT
-Message-ID: <00000140bc69ace7-f1bfaae1-ce5a-4c09-9635-340e29d3c6c8-000000@email.amazonses.com>
+	Mon, 26 Aug 2013 17:08:25 -0400
+X-Greylist: delayed 727 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 17:08:25 EDT
+Message-ID: <00000140bc69acd0-a726b027-118a-48bd-a832-a6454a9dfe04-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Mon, 26 Aug 2013 20:56:17 +0000
+Date: Mon, 26 Aug 2013 20:56:16 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org
+Cc: akpm@linuxfoundation.org, Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [guv v2 29/31] parisc: Replace __get_cpu_var uses
+Subject: [guv v2 25/31] avr32: Replace __get_cpu_var uses
 References: <20130826204351.725357339@linux.com>
-X-SES-Outgoing: 2013.08.26-54.240.9.54
+X-SES-Outgoing: 2013.08.26-54.240.9.62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -123,30 +123,18 @@ Transformations done to __get_cpu_var()
 
 
 
-Index: linux/arch/parisc/lib/memcpy.c
+
+Index: linux/arch/avr32/kernel/kprobes.c
 ===================================================================
---- linux.orig/arch/parisc/lib/memcpy.c	2013-08-26 13:28:53.000000000 -0500
-+++ linux/arch/parisc/lib/memcpy.c	2013-08-26 13:30:41.656224744 -0500
-@@ -470,7 +470,7 @@ static unsigned long pa_memcpy(void *dst
- 		return 0;
+--- linux.orig/arch/avr32/kernel/kprobes.c	2013-08-26 13:25:18.000000000 -0500
++++ linux/arch/avr32/kernel/kprobes.c	2013-08-26 13:27:09.758485808 -0500
+@@ -104,7 +104,7 @@ static void __kprobes resume_execution(s
  
- 	/* if a load or store fault occured we can get the faulty addr */
--	d = &__get_cpu_var(exception_data);
-+	d = this_cpu_ptr(&exception_data);
- 	fault_addr = d->fault_addr;
+ static void __kprobes set_current_kprobe(struct kprobe *p)
+ {
+-	__get_cpu_var(current_kprobe) = p;
++	__this_cpu_write(current_kprobe, p);
+ }
  
- 	/* error in load or store? */
-Index: linux/arch/parisc/mm/fault.c
-===================================================================
---- linux.orig/arch/parisc/mm/fault.c	2013-08-26 13:28:53.000000000 -0500
-+++ linux/arch/parisc/mm/fault.c	2013-08-26 13:30:41.656224744 -0500
-@@ -145,7 +145,7 @@ int fixup_exception(struct pt_regs *regs
- 	fix = search_exception_tables(regs->iaoq[0]);
- 	if (fix) {
- 		struct exception_data *d;
--		d = &__get_cpu_var(exception_data);
-+		d = this_cpu_ptr(&exception_data);
- 		d->fault_ip = regs->iaoq[0];
- 		d->fault_space = regs->isr;
- 		d->fault_addr = regs->ior;
+ static int __kprobes kprobe_handler(struct pt_regs *regs)
 
