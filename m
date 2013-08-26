@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab3HZOxz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 10:53:55 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59113 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752006Ab3HZOxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 10:53:54 -0400
-Date: Mon, 26 Aug 2013 10:53:53 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: Guenter Roeck <linux@roeck-us.net>, Meelis Roos <mroos@linux.ee>,
+	id S1754170Ab3HZOzx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 10:55:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64932 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751961Ab3HZOzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 10:55:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,958,1367996400"; 
+   d="scan'208";a="393531733"
+Date: Mon, 26 Aug 2013 19:40:57 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Richard Zhao <linuxzsc@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steve Cotton <steve@s.cotton.clara.co.uk>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: [PATCH] USB: OHCI: fix build error related to ohci_suspend/resume
-In-Reply-To: <20130826042653.GA2778@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1308261051340.1445-100000@iolanthe.rowland.org>
+        Richard Zhao <rizhao@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] DMA: let filter functions of of_dma_simple_xlate
+ possible check of_node
+Message-ID: <20130826141057.GQ2748@intel.com>
+References: <1375408800-11789-1-git-send-email-rizhao@nvidia.com>
+ <1441310.1kjKG7uebg@avalon>
+ <20130826125547.GA2733@richard-laptop>
+ <2811939.DFy94j5OEx@avalon>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2811939.DFy94j5OEx@avalon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9a11899c5e69 (USB: OHCI: add missing PCI PM callbacks to
-ohci-pci.c) added missing ohci_suspend and ohci_resume callback
-pointers, but forgot that these callbacks are declared and defined
-only when CONFIG_PM is enabled.
+On Mon, Aug 26, 2013 at 03:18:00PM +0200, Laurent Pinchart wrote:
+> Hi Richard,
+> 
+> (Dropping Dan Williams from the CC list as his e-mail address doesn't seem to 
+> be valid anymore)
+> 
+> > > > >> Hmm. Looking at the patch, I'm not sure it's right.
+> > > > >> 
+> > > > >> This patch simply passes all the specfier args to the filter
+> > > > >> function, and the code to check the equality of the of_node to the
+> > > > >> filter args is still duplicated in each DMA driver. Instead, the DMA
+> > > > >> core should be implementing the equality check, and only even calling
+> > > > >> the driver-specific filter function for devices where the client's
+> > > > >> phandle matches the DMA providing device's of_node handle.
+> > > > > 
+> > > > > Filter function is called in dmaengine core code, independent of dt.
+> > > > 
+> > > > The core code can still check if a dmaengine's driver was instantiated
+> > > > from DT and take additional actions in that case.
+> > > > 
+> > > > > And the reason why the driver has to write its own filter function is
+> > > > > it has to store slave id there in its own way.
+> > > > 
+> > > > I'm not saying don't call the driver's filter function, but rather that
+> > > > the dmaengine core should perform the common checks before doing so.
+> > > 
+> > > And it looks to me like the common case could even get rid of the driver's
+> > > filter function:
+> > > 
+> > > https://lkml.org/lkml/2013/5/15/270
+> > > https://lkml.org/lkml/2013/3/25/250
+> > 
+> > For general case, the slave id is not staticly bind to a specific channel.
+> 
+> Certainly not in all cases, but I think it's common enough to deserve a 
+> specific helper function.
+Why does DT need the fliter function in the first place. The DT enabled drivers
+should not even have a filter function...
 
-This patch adds a preprocessor conditional to avoid build errors when
-PM is disabled.
+The dmaengine core calls the optional filter function. This needs to be
+implemented in driver in order for driver to check if the channel is what it
+needs or not.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+And the selection should be done for the cases where you dont have programmable
+mux in dmac. For programmable ones passing slave_id in dma_slave_config should
+be fine.
 
----
-
-
-[as1702]
-
-
- drivers/usb/host/ohci-pci.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-Index: usb-3.11/drivers/usb/host/ohci-pci.c
-===================================================================
---- usb-3.11.orig/drivers/usb/host/ohci-pci.c
-+++ usb-3.11/drivers/usb/host/ohci-pci.c
-@@ -305,9 +305,11 @@ static int __init ohci_pci_init(void)
- 
- 	ohci_init_driver(&ohci_pci_hc_driver, &pci_overrides);
- 
-+#ifdef	CONFIG_PM
- 	/* Entries for the PCI suspend/resume callbacks are special */
- 	ohci_pci_hc_driver.pci_suspend = ohci_suspend;
- 	ohci_pci_hc_driver.pci_resume = ohci_resume;
-+#endif
- 
- 	return pci_register_driver(&ohci_pci_driver);
- }
-
-
+~Vinod
