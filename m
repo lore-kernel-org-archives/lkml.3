@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab3HZIwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 04:52:41 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:21082 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711Ab3HZIwj (ORCPT
+	id S1756859Ab3HZIw6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:52:58 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:32514 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751683Ab3HZIwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 04:52:39 -0400
-From: Rui Xiang <rui.xiang@huawei.com>
-To: David Howells <dhowells@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 1/2] proc: set attributes of pde by accessor functions
-Date: Mon, 26 Aug 2013 16:51:51 +0800
-Message-ID: <1377507112-48288-1-git-send-email-rui.xiang@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
+	Mon, 26 Aug 2013 04:52:55 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18ITKb/HrR/qHnRQ/ACLg2I
+Date: Mon, 26 Aug 2013 01:52:53 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>
+Subject: Re: [PATCH 3/3] ARM: OMAP2+: Add SSI driver configuration
+Message-ID: <20130826085252.GA7656@atomide.com>
+References: <1376237628-1077-1-git-send-email-sre@debian.org>
+ <1376237877-1740-1-git-send-email-sre@debian.org>
+ <1376237877-1740-3-git-send-email-sre@debian.org>
+ <20130812083051.GL7656@atomide.com>
+ <CACRpkdbfGPx=j7byCdQV7Eghohr==mi+FyxSODE8kNTCgH-ayA@mail.gmail.com>
+ <20130823182011.GC5753@earth.universe>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.72.188]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130823182011.GC5753@earth.universe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up.
+* Sebastian Reichel <sre@debian.org> [130823 11:27]:
+> On Fri, Aug 23, 2013 at 03:58:30PM +0200, Linus Walleij wrote:
+> > On Mon, Aug 12, 2013 at 10:30 AM, Tony Lindgren <tony@atomide.com> wrote:
+> > > * Sebastian Reichel <sre@debian.org> [130811 09:25]:
+> > >> From: Sebastian Reichel <sre@ring0.de>
+> > >>
+> > >> This patch configures and activates the OMAP SSI driver on the RX-51.
+> > >
+> > > Hmm, I'd rather see this be DT only driver at this point.
+> > 
+> > +1 on this.
+> 
+> I'm already working on this.
 
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
----
- fs/proc/generic.c      | 3 +--
- fs/proc/proc_devtree.c | 4 ++--
- 2 files changed, 3 insertions(+), 4 deletions(-)
+Thanks good to hear!
 
-diff --git a/fs/proc/generic.c b/fs/proc/generic.c
-index 737e156..2097e9e 100644
---- a/fs/proc/generic.c
-+++ b/fs/proc/generic.c
-@@ -49,8 +49,7 @@ static int proc_notify_change(struct dentry *dentry, struct iattr *iattr)
- 	setattr_copy(inode, iattr);
- 	mark_inode_dirty(inode);
- 
--	de->uid = inode->i_uid;
--	de->gid = inode->i_gid;
-+	proc_set_user(de, inode->i_uid, inode->i_gid);
- 	de->mode = inode->i_mode;
- 	return 0;
- }
-diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
-index 106a835..b38b822 100644
---- a/fs/proc/proc_devtree.c
-+++ b/fs/proc/proc_devtree.c
-@@ -77,9 +77,9 @@ __proc_device_tree_add_prop(struct proc_dir_entry *de, struct property *pp,
- 		return NULL;
- 
- 	if (!strncmp(name, "security-", 9))
--		ent->size = 0; /* don't leak number of password chars */
-+		proc_set_size(ent, 0); /* don't leak number of password chars */
- 	else
--		ent->size = pp->length;
-+		proc_set_size(ent, pp->length);
- 
- 	return ent;
- }
--- 
-1.8.2.2
-
-
+Tony
