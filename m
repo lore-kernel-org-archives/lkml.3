@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab3HZShe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 14:37:34 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:44468 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752122Ab3HZShd (ORCPT
+	id S1752524Ab3HZShp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 14:37:45 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:62622 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474Ab3HZShn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 14:37:33 -0400
-Message-ID: <521BA068.8030003@semaphore.gr>
-Date: Mon, 26 Aug 2013 21:37:28 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Mon, 26 Aug 2013 14:37:43 -0400
+Message-ID: <521BA070.2000800@gmail.com>
+Date: Mon, 26 Aug 2013 20:37:36 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
-CC: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cpufreq: governors: Remove duplicate check of target freq
- in supported range
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>, kgene.kim@samsung.com,
+        kyungmin.park@samsung.com, t.figa@samsung.com, tomasz.figa@gmail.com,
+        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
+        mturquette@linaro.org, thomas.abraham@linaro.org,
+        t.stanislaws@samsung.com, m.chehab@samsung.com, s.nawrocki@samsung.com,
+        m.szyprowski@samung.com, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH RFC 3/5] ARM: samsung: add clock setup for FIMC and FIMD
+References: <1377517114-20222-1-git-send-email-m.krawczuk@partner.samsung.com> <1377517114-20222-4-git-send-email-m.krawczuk@partner.samsung.com> <1445676.NMCyFEC5q4@amdc1032>
+In-Reply-To: <1445676.NMCyFEC5q4@amdc1032>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function __cpufreq_driver_target checks if target_freq is within
-policy->min and policy->max range. generic_powersave_bias_target also
-checks if target_freq is valid through cpufreq_frequency_table_target
-call. So, drop the unnecessary duplicate check in *_check_cpu functions.
+(dropping linux-doc mailing list from Cc)
 
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
----
- drivers/cpufreq/cpufreq_conservative.c | 4 ----
- drivers/cpufreq/cpufreq_ondemand.c     | 3 ---
- 2 files changed, 7 deletions(-)
+On 08/26/2013 06:19 PM, Bartlomiej Zolnierkiewicz wrote:
+> On Monday, August 26, 2013 01:38:32 PM Mateusz Krawczuk wrote:
+>> This patch adds code that sets correct parents and rates for clocks
+>> used by FIMC and FIMD on Goni board.
 
-diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-index 7f67a75..f62d822 100644
---- a/drivers/cpufreq/cpufreq_conservative.c
-+++ b/drivers/cpufreq/cpufreq_conservative.c
-@@ -67,8 +67,6 @@ static void cs_check_cpu(int cpu, unsigned int load)
- 			return;
- 
- 		dbs_info->requested_freq += get_freq_target(cs_tuners, policy);
--		if (dbs_info->requested_freq > policy->max)
--			dbs_info->requested_freq = policy->max;
- 
- 		__cpufreq_driver_target(policy, dbs_info->requested_freq,
- 			CPUFREQ_RELATION_H);
-@@ -89,8 +87,6 @@ static void cs_check_cpu(int cpu, unsigned int load)
- 			return;
- 
- 		dbs_info->requested_freq -= get_freq_target(cs_tuners, policy);
--		if (dbs_info->requested_freq < policy->min)
--			dbs_info->requested_freq = policy->min;
- 
- 		__cpufreq_driver_target(policy, dbs_info->requested_freq,
- 				CPUFREQ_RELATION_L);
-diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-index 87f3305..32f26f6 100644
---- a/drivers/cpufreq/cpufreq_ondemand.c
-+++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -177,9 +177,6 @@ static void od_check_cpu(int cpu, unsigned int load)
- 		/* No longer fully busy, reset rate_mult */
- 		dbs_info->rate_mult = 1;
- 
--		if (freq_next < policy->min)
--			freq_next = policy->min;
--
- 		if (!od_tuners->powersave_bias) {
- 			__cpufreq_driver_target(policy, freq_next,
- 					CPUFREQ_RELATION_L);
--- 
-1.8.3.1
+This patch is supposed to be a workaround to make the display and camera
+subsystem working even without properly configured parent clocks in the
+boot-loader, right ? And as such it doesn't really belong to this series
+and has been written primarily for the clocks testing purposes ?
+I think it can be dropped in the next iteration of this series.
 
+--
+Thanks,
+Sylwester
