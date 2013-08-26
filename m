@@ -1,194 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab3HZWJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:09:17 -0400
-Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:56853 "EHLO
-	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752113Ab3HZWJM (ORCPT
+	id S1752525Ab3HZWL7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:11:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58235 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab3HZWL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:09:12 -0400
-X-Greylist: delayed 773 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 18:09:12 EDT
-Message-ID: <00000140bca09c47-54b56d47-a2ca-4f4d-969f-c868d11eb31d-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Mon, 26 Aug 2013 21:56:17 +0000
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, James Hogan <james.hogan@imgtec.com>
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [guv v2 30/31] metag: Replace __get_cpu_var uses
-References: <20130826204351.725357339@linux.com>
-X-SES-Outgoing: 2013.08.26-54.240.9.46
+	Mon, 26 Aug 2013 18:11:57 -0400
+Date: Mon, 26 Aug 2013 15:14:14 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Meelis Roos <mroos@linux.ee>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steve Cotton <steve@s.cotton.clara.co.uk>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] USB: OHCI: fix build error related to ohci_suspend/resume
+Message-ID: <20130826221414.GC10063@kroah.com>
+References: <20130826042653.GA2778@kroah.com>
+ <Pine.LNX.4.44L0.1308261051340.1445-100000@iolanthe.rowland.org>
+ <20130826153840.GA29862@kroah.com>
+ <20130826160627.GA11307@roeck-us.net>
+ <20130826165022.GA2113@kroah.com>
+ <20130826171903.GA21675@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130826171903.GA21675@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
+On Mon, Aug 26, 2013 at 10:19:03AM -0700, Guenter Roeck wrote:
+> On Mon, Aug 26, 2013 at 09:50:22AM -0700, Greg Kroah-Hartman wrote:
+> > On Mon, Aug 26, 2013 at 09:06:27AM -0700, Guenter Roeck wrote:
+> > > On Mon, Aug 26, 2013 at 08:38:40AM -0700, Greg Kroah-Hartman wrote:
+> > > > On Mon, Aug 26, 2013 at 10:53:53AM -0400, Alan Stern wrote:
+> > > > > Commit 9a11899c5e69 (USB: OHCI: add missing PCI PM callbacks to
+> > > > > ohci-pci.c) added missing ohci_suspend and ohci_resume callback
+> > > > > pointers, but forgot that these callbacks are declared and defined
+> > > > > only when CONFIG_PM is enabled.
+> > > > > 
+> > > > > This patch adds a preprocessor conditional to avoid build errors when
+> > > > > PM is disabled.
+> > > > > 
+> > > > > Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+> > > > > 
+> > > > > ---
+> > > > 
+> > > > Guenter and Meelis, does the patch below fix the problem for you?
+> > > > 
+> > > Tested-by: Guenter Roeck <linux@roeck-us.net>
+> > > 
+> > > Previously failing builds:
+> > > 	mips:ath79_defconfig
+> > > 	powerpc:ppc64e_defconfig
+> > > 	powerpc:cell_defconfig
+> > > 	powerpc:maple_defconfig
+> > > 	parisc:defconfig
+> > > 	tile:defconfig
+> > > 	sparc32:defconfig
+> > > 	sparc64:defconfig
+> > > 
+> > > 	as well as the powerpc qemu test (with the config file used
+> > > 	by the yocto project)
+> > > 
+> > > All builds pass with the patch applied, as does the qemu test.
+> > 
+> > Thanks for testing, I'll queue it up later today (at an airport right
+> > now, about to board a flight), and send it to Linus later tonight if no
+> > one else has any problems with it.
+> > 
+> To simplify this kind of testing, I added a 'testing' branch to the list of
+> branches I am auto-building. Right now it runs a complete test cycle with the
+> patch applied on top of v3.11-rc7. This should ensure that the patch doesn't
+> break any previously passing builds. You should see the results in the 'testing'
+> column of the stable queue build table on http://server.roeck-us.net:8010/builders
+> when you get out of the plane.
 
-Others usage cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
+Thanks, all looks good, except for xtensa, which says I broke something,
+but I can't understand what, as I don't see any networking patches in my
+tree at the moment.
 
-__get_cpu_var() is defined as :
+Any ideas?
 
+thanks,
 
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does a address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
-
-
-This patch converts __get_cpu_var into either and explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
-and less registers are used when code is generated.
-
-At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
-
-The patchset includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, u);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(this_cpu_ptr(&y), x, sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/arch/metag/kernel/perf/perf_event.c
-===================================================================
---- linux.orig/arch/metag/kernel/perf/perf_event.c	2013-08-26 13:30:45.220186762 -0500
-+++ linux/arch/metag/kernel/perf/perf_event.c	2013-08-26 13:30:45.216186804 -0500
-@@ -258,7 +258,7 @@ int metag_pmu_event_set_period(struct pe
- 
- static void metag_pmu_start(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
-@@ -306,7 +306,7 @@ static void metag_pmu_stop(struct perf_e
- 
- static int metag_pmu_add(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = 0, ret = 0;
- 
-@@ -348,7 +348,7 @@ out:
- 
- static void metag_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
-@@ -607,7 +607,7 @@ static int _hw_perf_event_init(struct pe
- 
- static void metag_pmu_enable_counter(struct hw_perf_event *event, int idx)
- {
--	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
- 	unsigned int config = event->config;
- 	unsigned int tmp = config & 0xf0;
- 	unsigned long flags;
-@@ -680,7 +680,7 @@ unlock:
- 
- static void metag_pmu_disable_counter(struct hw_perf_event *event, int idx)
- {
--	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
- 	unsigned int tmp = 0;
- 	unsigned long flags;
- 
-@@ -728,7 +728,7 @@ out:
- 
- static void metag_pmu_write_counter(int idx, u32 val)
- {
--	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
- 	u32 tmp = 0;
- 	unsigned long flags;
- 
-@@ -761,7 +761,7 @@ static int metag_pmu_event_map(int idx)
- static irqreturn_t metag_pmu_counter_overflow(int irq, void *dev)
- {
- 	int idx = (int)dev;
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 	struct perf_event *event = cpuhw->events[idx];
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct pt_regs *regs = get_irq_regs();
-
+greg k-h
