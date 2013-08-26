@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab3HZSNa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 14:13:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57572 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab3HZSN3 (ORCPT
+	id S1752340Ab3HZSSH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 14:18:07 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:54443 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841Ab3HZSSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 14:13:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Zhao <rizhao@nvidia.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Richard Zhao <linuxzsc@gmail.com>
-Subject: Re: [PATCH] DMA: let filter functions of of_dma_simple_xlate possible check of_node
-Date: Mon, 26 Aug 2013 20:15:17 +0200
-Message-ID: <3565907.5flGSRLgMJ@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.10.95; x86_64; ; )
-In-Reply-To: <20130826141057.GQ2748@intel.com>
-References: <1375408800-11789-1-git-send-email-rizhao@nvidia.com> <2811939.DFy94j5OEx@avalon> <20130826141057.GQ2748@intel.com>
+	Mon, 26 Aug 2013 14:18:04 -0400
+Date: Mon, 26 Aug 2013 14:18:00 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linuxfoundation.org, linux-arch@vger.kernel.org,
+        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [guv 00/16] [RFC] percpu: Replace __get_cpu_var uses throughout
+ the kernel
+Message-ID: <20130826181800.GA25997@mtj.dyndns.org>
+References: <00000140ac8debd6-6f9e64f9-1107-4336-91ef-77cdf764b96a-000000@email.amazonses.com>
+ <20130823200514.GA11391@mtj.dyndns.org>
+ <00000140bb37931e-fbfdfad2-8241-40cc-b053-7c53d54a9728-000000@email.amazonses.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:MWA1nc9UbXCXjAALg8G1/I4EOsltLPasQ99TsLgb5+N
- eMxUL0DRqqgkKCi3CiTiO9RNO2bd3ZENd038XgtecrSrLteEGh
- K+B+ryiswg6iqlHe8oYYHkhhj10DT1R2sgk/hm6QaBByKB8Kfg
- egPrOplnj2YhPg0htuUX2jZz2u+I70nCQLapNUTSDPi1BjREyn
- IOH1k+YQWhFbsin6BWFVEh3Bt0AxAnZUuro8mkCgHCq1IxXItR
- l6q/K/+8XXg2tQYU5u1sFJ3/xsyV49f5zX+neNEd6CCfcw317a
- Ej4YLDWFoQqA0NmdqERTMZ1BQwG0N2Rsikegdy48CuQ7Np81nx
- EvHKcXm2FT02vNirRCa8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000140bb37931e-fbfdfad2-8241-40cc-b053-7c53d54a9728-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 26 August 2013 19:40:57 Vinod Koul wrote:
-> Why does DT need the fliter function in the first place. The DT enabled drivers
-> should not even have a filter function...
+Hey, Christoph.
+
+On Mon, Aug 26, 2013 at 03:21:56PM +0000, Christoph Lameter wrote:
+> On Fri, 23 Aug 2013, Tejun Heo wrote:
 > 
-> The dmaengine core calls the optional filter function. This needs to be
-> implemented in driver in order for driver to check if the channel is what it
-> needs or not.
+> > * It would be a lot easier to route the patches if each had cc's to
+> >   the maintainers of the affected subsystems.
+> 
+> So the drivers patch needs to CC all driver maintainers?
 
-You only just merged the dma_get_slave_channel() patch, which allows having
-no filter function. Up to Linux-3.11, the filter was always needed but
-could be 'static' and only called by the xlate function. Now the xlate
-function can pick a channel itself.
+There usually is a maintainer for a whole lot of similar drivers - one
+for infiniband, one for v4l and so on, so the list usually isn't that
+long.
 
-> And the selection should be done for the cases where you dont have programmable
-> mux in dmac. For programmable ones passing slave_id in dma_slave_config should
-> be fine.
+> There must be some easier way to get this done.
 
-I think passing a slave_id from the slave driver is never correct with DT,
-since the ID is a property of the system rather than the slave device, so
-the driver has no access to it. Drivers have to always take the settings
-from DT and ignore what dma_slave_config() sets later.
+It can be consolidated and pushed as a single series either through
+the percpu tree or -mm but it still at least needs to inform the
+people working on the affected code and get the confirmations where
+possible.
 
-	Arnd
+> Not sure how to do this. Thats why its an RFC. I cced Andrew because he
+> usually knows how to deal with massive patches like this.
+
+It can go two ways.
+
+* Split further so that the patches can be merged through separate
+  branches so that they converge on the next merge window where the
+  leftovers can be taken care of and further dependent changes merged.
+
+* Get acks from most maintainers and push the changes as a single
+  series through either percpu tree or -mm.  The benefits of going
+  through -mm is that -mm floats on top of all changes scheduled for
+  the next merge window, so if the changes in question are likely to
+  conflict with other changes in various subsystems scheduled for the
+  next merge window, -mm is easier.  Given the nature of the changes,
+  I don't think going through percpu or -mm would make much
+  difference.
+
+Thanks.
+
+-- 
+tejun
