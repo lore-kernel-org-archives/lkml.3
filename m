@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab3HZWqu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:46:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10008 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752076Ab3HZWqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:46:47 -0400
-Date: Mon, 26 Aug 2013 15:46:28 -0700
-From: Zach Brown <zab@redhat.com>
-To: "Nicholas A. Bellinger" <nab@daterainc.com>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Kent Overstreet <kmo@daterainc.com>, Theodore Tso <tytso@mit.edu>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH-v2 0/9] target: Add support for EXTENDED_COPY (VAAI)
- offload emulation
-Message-ID: <20130826224628.GJ26818@lenny.home.zabbo.net>
-References: <1377554588-28394-1-git-send-email-nab@daterainc.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377554588-28394-1-git-send-email-nab@daterainc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752638Ab3HZWqG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:46:06 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:46597 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab3HZWqC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 18:46:02 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Andreas Herrmann <andreas.herrmann@calxeda.com>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 10/11] net: calxedaxgmac: fix rx DMA mapping API size mismatches
+Date: Mon, 26 Aug 2013 17:45:25 -0500
+Message-Id: <1377557126-10716-10-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
+References: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 10:02:59PM +0000, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@daterainc.com>
-> 
-> Hi folks,
-> 
-> This -v2 series adds support to target-core for generic EXTENDED_COPY offload
-> emulation as defined by SPC-4 using virtual (IBLOCK, FILEIO, RAMDISK)
-> backends.
+From: Rob Herring <rob.herring@calxeda.com>
 
-Cool, thanks for sending this out.  I'll just stare blankly but
-supportively at the SCSI details.
+Fix the mismatch in the DMA mapping and unmapping sizes for receive. The
+unmap size must be equal to the map size and should not be the actual
+received frame length. The map size should also be adjusted by the
+NET_IP_ALIGN size since the h/w buffer size (dma_buf_sz) includes this
+offset.
 
-I've been experimenting with the reasonable suggestion of using splice
-as the entry point into the high level fs methods that'd be backed by
-this stuff.  Let me get it cleaned up and sent out for review.
+Also, add a missing dma_mapping_error check in xgmac_rx_refill.
 
-Hopefully with a few iterations of that we could test some block file
-systems on top of this.
+Reported-by: Lennert Buytenhek <buytenh@wantstofly.org>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+---
+ drivers/net/ethernet/calxeda/xgmac.c | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-> This implemenation fully supports copy offload between the same device
-> backend, and across multiple device backends.  It supports copy offload
-> transparently across multiple target ports of different fabrics, eg:
-> iSCSI -> FC, FC -> iSER, iSER -> FCoE and so on.
+diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
+index b206268..f149c08 100644
+--- a/drivers/net/ethernet/calxeda/xgmac.c
++++ b/drivers/net/ethernet/calxeda/xgmac.c
+@@ -695,9 +695,14 @@ static void xgmac_rx_refill(struct xgmac_priv *priv)
+ 			if (unlikely(skb == NULL))
+ 				break;
+ 
+-			priv->rx_skbuff[entry] = skb;
+ 			paddr = dma_map_single(priv->device, skb->data,
+-					       bufsz, DMA_FROM_DEVICE);
++					       priv->dma_buf_sz - NET_IP_ALIGN,
++					       DMA_FROM_DEVICE);
++			if (dma_mapping_error(priv->device, paddr)) {
++				dev_kfree_skb_any(skb);
++				break;
++			}
++			priv->rx_skbuff[entry] = skb;
+ 			desc_set_buf_addr(p, paddr, priv->dma_buf_sz);
+ 		}
+ 
+@@ -794,13 +799,14 @@ static void xgmac_free_rx_skbufs(struct xgmac_priv *priv)
+ 		return;
+ 
+ 	for (i = 0; i < DMA_RX_RING_SZ; i++) {
+-		if (priv->rx_skbuff[i] == NULL)
++		struct sk_buff *skb = priv->rx_skbuff[i];
++		if (skb == NULL)
+ 			continue;
+ 
+ 		p = priv->dma_rx + i;
+ 		dma_unmap_single(priv->device, desc_get_buf_addr(p),
+-				 priv->dma_buf_sz, DMA_FROM_DEVICE);
+-		dev_kfree_skb_any(priv->rx_skbuff[i]);
++				 priv->dma_buf_sz - NET_IP_ALIGN, DMA_FROM_DEVICE);
++		dev_kfree_skb_any(skb);
+ 		priv->rx_skbuff[i] = NULL;
+ 	}
+ }
+@@ -1190,7 +1196,7 @@ static int xgmac_rx(struct xgmac_priv *priv, int limit)
+ 
+ 		skb_put(skb, frame_len);
+ 		dma_unmap_single(priv->device, desc_get_buf_addr(p),
+-				 frame_len, DMA_FROM_DEVICE);
++				 priv->dma_buf_sz - NET_IP_ALIGN, DMA_FROM_DEVICE);
+ 
+ 		skb->protocol = eth_type_trans(skb, priv->dev);
+ 		skb->ip_summed = ip_checksum;
+-- 
+1.8.1.2
 
-That's exciting!  I doubt that we want to be derailed by getting this
-working in the first pass, but it'd be fun to enable cross-fs copying
-once we got the fundamentals worked out
-
-- z
