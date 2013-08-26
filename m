@@ -1,82 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab3HZTIg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 15:08:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31913 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751725Ab3HZTIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 15:08:35 -0400
-Date: Mon, 26 Aug 2013 15:08:22 -0400
-From: Dave Jones <davej@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux Kernel <linux-kernel@vger.kernel.org>,
+	id S1752253Ab3HZTKZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 15:10:25 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:39444 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab3HZTKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 15:10:23 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Willy Tarreau <w@1wt.eu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: unused swap offset / bad page map.
-Message-ID: <20130826190757.GB27768@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20130807153030.GA25515@redhat.com>
- <CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com>
- <20130819231836.GD14369@redhat.com>
- <CAJd=RBA-UZmSTxNX63Vni+UPZBHwP4tvzE_qp1ZaHBqcNG7Fcw@mail.gmail.com>
- <20130821204901.GA19802@redhat.com>
- <CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com>
- <20130823032127.GA5098@redhat.com>
- <CAJd=RBArkh3sKVoOJUZBLngXtJubjx4-a3G6s7Tn0N=Pr1gU4g@mail.gmail.com>
- <20130823035344.GB5098@redhat.com>
- <CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
+References: <20130824212432.GA9299@1wt.eu>
+	<20130825052317.GZ27005@ZenIV.linux.org.uk>
+	<20130825065039.GB9299@1wt.eu>
+	<CA+55aFwFeCRcwn4qo570Y15mKrN3jEdN757PcZhrXs7QYi8MYA@mail.gmail.com>
+	<20130825194844.GA16717@redhat.com>
+	<CA+55aFzbY3zYD1i5x02Z-6K3nHKzJj6227ZBYRLqij9y0eXRqQ@mail.gmail.com>
+	<20130826153301.GA15890@redhat.com>
+	<20130826163704.GA21763@redhat.com>
+	<20130826175441.GA28856@redhat.com> <87ioyspaju.fsf@xmission.com>
+	<20130826184631.GA30917@redhat.com>
+Date: Mon, 26 Aug 2013 12:10:16 -0700
+In-Reply-To: <20130826184631.GA30917@redhat.com> (Oleg Nesterov's message of
+	"Mon, 26 Aug 2013 20:46:31 +0200")
+Message-ID: <8738pwp8tj.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1//WIM8yiC3JqZZYmVmdVY93Yc2ynyQxJk=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4356]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] proc: make proc_fd_permission() thread-friendly
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 11:45:53AM +0800, Hillf Danton wrote:
- > On Fri, Aug 23, 2013 at 11:53 AM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > It actually seems worse, seems I can trigger it even easier now, as if
- > > there's a leak.
- > >
- > Can you please try the new fix for TLB flush?
- > 
- > commit  2b047252d087be7f2ba
- > Fix TLB gather virtual address range invalidation corner cases
+Oleg Nesterov <oleg@redhat.com> writes:
 
-No luck.
+> On 08/26, Eric W. Biederman wrote:
+>>
+>> Oleg Nesterov <oleg@redhat.com> writes:
+>>
+>> > proc_fd_permission() says "process can still access /proc/self/fd
+>> > after it has executed a setuid()", but the "task_pid() = proc_pid()
+>> > check only helps if the task is group leader, /proc/self points to
+>> > /proc/leader-pid.
+>> >
+>> > Change this check to use task_tgid() so that the whole process can
+>> > access /proc/self/fd.
+>>
+>> There is at least a semantic goofiness here.
+>>
+>> There is /proc/<tgid>/fd and /proc/<tgid>/task/<pid>/fd, and the same
+>> permission check is used by both.
+>
+> Yes, and we have /proc/<tid>/ which includes fd as well.
+>
+>> We might just want to have a /proc/thread symlink as well so people
+>> don't have this issue.
+>
+> Yes! I agree.
+>
+> In particular, from the changelog:
+>
+> 	Note: CLONE_THREAD doesn't require CLONE_FILES so task->files can
+> 	differ,
+>
+> so /proc/self/fd doesn't necessarily mean current->files, this can confuse
+> the application.
+>
+> And I also assume that you agree with this change ;)
 
-[ 4588.541886] swap_free: Unused swap offset entry 00002d15
-[ 4588.541952] BUG: Bad page map in process trinity-kid12  pte:005a2a80 pmd:22c01f067
-[ 4588.541979] addr:00007f0e95fa8000 vm_flags:00100073 anon_vma:ffff880217665550 mapping:          (null) index:1a42
-[ 4588.542011] Modules linked in: snd_seq_dummy fuse hidp bnep scsi_transport_iscsi rfcomm ipt_ULOG can_bcm can_raw nfnetlink nfc caif_socket caif af_802154 phonet af_rxrpc bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 xfs libcrc32c snd_hda_codec_realtek snd_hda_intel e1000e snd_hda_codec snd_hwdep ptp snd_seq snd_seq_device snd_pcm usb_debug pps_core pcspkr snd_page_alloc snd_timer snd soundcore
-[ 4588.542245] CPU: 2 PID: 25390 Comm: trinity-kid12 Not tainted 3.11.0-rc7+ #13 
-[ 4588.542321]  0000000000000000 ffff88021ba33c98 ffffffff816f9ddf 00007f0e95fa8000
-[ 4588.542354]  ffff88021ba33ce0 ffffffff81177047 00000000005a2a80 0000000000001a42
-[ 4588.542386]  00007f0e96000000 ffff88022c01fd40 00000000005a2a80 ffff88021ba33e00
-[ 4588.542418] Call Trace:
-[ 4588.542435]  [<ffffffff816f9ddf>] dump_stack+0x54/0x74
-[ 4588.542457]  [<ffffffff81177047>] print_bad_pte+0x187/0x220
-[ 4588.542478]  [<ffffffff81178874>] unmap_single_vma+0x524/0x850
-[ 4588.542500]  [<ffffffff81179ac9>] unmap_vmas+0x49/0x90
-[ 4588.542521]  [<ffffffff811822c5>] exit_mmap+0xc5/0x170
-[ 4588.542542]  [<ffffffff8104ffb7>] mmput+0x77/0x100
-[ 4588.542562]  [<ffffffff8105465d>] do_exit+0x28d/0xcd0
-[ 4588.542583]  [<ffffffff810c0085>] ? trace_hardirqs_on_caller+0x115/0x1e0
-[ 4588.542607]  [<ffffffff810c015d>] ? trace_hardirqs_on+0xd/0x10
-[ 4588.542629]  [<ffffffff8105643c>] do_group_exit+0x4c/0xc0
-[ 4588.543534]  [<ffffffff810564c4>] SyS_exit_group+0x14/0x20
-[ 4588.544438]  [<ffffffff8170d554>] tracesys+0xdd/0xe2
+I don't disagree.  Comparing tgid to pids is goofy and my brain is
+elsewhere so I have no thought through the implications.
 
-I can reproduce this pretty quickly by driving the system into swapping using
-a few instances of 'trinity -C64' (this creates 64 threads) 
+Actually thinking I think the check should really be.  In which case we
+are comparing what we really care about.
 
-I'm not sure how far back this bug goes, so I'll try some older kernels
-and see if I can bisect it, because we don't seem to be getting closer
-to figuring out what's actually happening..
+int proc_fd_permission(struct inode *inode, int mask)
+{
+	int rv = generic_permission(inode, mask);
+	if (rv == 0)
+		return 0;
 
-	Dave
+        rcu_read_lock();
+        struct task *task = pid_task(proc_pid(inode));
+        if (task && (current->files == task->files))
+		rv = 0;
+        rcu_read_unlock();
+
+	return rv;
+}
+
+Eric
 
