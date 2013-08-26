@@ -1,98 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab3HZLAj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 07:00:39 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:19688 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756649Ab3HZLAf (ORCPT
+	id S1756743Ab3HZLAn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 07:00:43 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:41819 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756649Ab3HZLAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 07:00:35 -0400
-X-Spam-Score: -101.0
-Message-ID: <521B3514.305@asianux.com>
-Date: Mon, 26 Aug 2013 18:59:32 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 26 Aug 2013 07:00:40 -0400
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Yoshinori Sato <ysato@users.sourceforge.jp>, Arnd Bergmann <arnd@arndb.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Dave Jones <davej@redhat.com>, David Sharp <dhsharp@google.com>,
+In-Reply-To: <521B2E75.1040802@asianux.com>
+References: <521B2E75.1040802@asianux.com>
+Date: Mon, 26 Aug 2013 13:00:39 +0200
+X-Google-Sender-Auth: tnhjLLWhzCE7W9cKH6Myzyp0eY0
+Message-ID: <CAMuHMdVXJvLfmNLFFW=TBLOi2_mVyZy+kr46oM5GVz_PK-bbvA@mail.gmail.com>
+Subject: Re: [PATCH] h8300/kernel/setup.c: add "linux/initrd.h" to pass compiling
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Yoshinori Sato <ysato@users.sourceforge.jp>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] h8300: include: asm: Kbuild: add gpio.h for pass compiling
-References: <521B2AF7.6070806@asianux.com> <CAMuHMdXT+ezyFGNisEaz62ReHxeNzZq0XgKR905OtyhmCnu6Kg@mail.gmail.com>
-In-Reply-To: <CAMuHMdXT+ezyFGNisEaz62ReHxeNzZq0XgKR905OtyhmCnu6Kg@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2013 06:21 PM, Geert Uytterhoeven wrote:
-> On Mon, Aug 26, 2013 at 12:16 PM, Chen Gang <gang.chen@asianux.com> wrote:
->> Need add default "gpio.h" for h8300, or can not pass compiling.
->>
->> The related error (allmodconfig for h8300):
->>
->>   arch/h8300/kernel/h8300_ksyms.c:17:22: fatal error: asm/gpio.h: No such file or directory
->>    #include <asm/gpio.h>
->>                         ^
-> 
-> I this include needed at all? Perhaps it can just be removed?
-> 
+On Mon, Aug 26, 2013 at 12:31 PM, Chen Gang <gang.chen@asianux.com> wrote:
+> --- a/arch/h8300/kernel/setup.c
+> +++ b/arch/h8300/kernel/setup.c
+> @@ -47,6 +47,9 @@
+>  #include <asm/regs267x.h>
+>  #endif
+>
+> +#if defined(CONFIG_BLK_DEV_INITRD)
 
-Pardon ?  Do you mean, only removing it  will be OK ?
+Why have you added the #ifdef?
 
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> ---
->>  arch/h8300/include/asm/Kbuild |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/h8300/include/asm/Kbuild b/arch/h8300/include/asm/Kbuild
->> index 8ada3cf..4c627aa 100644
->> --- a/arch/h8300/include/asm/Kbuild
->> +++ b/arch/h8300/include/asm/Kbuild
->> @@ -1,6 +1,7 @@
->>
->>  generic-y += clkdev.h
->>  generic-y += exec.h
->> +generic-y += gpio.h
->>  generic-y += linkage.h
->>  generic-y += mmu.h
->>  generic-y += module.h
-> 
-> The only gpio-related exports in arch/h8300/kernel/h8300_ksyms.c are:
-> 
-> EXPORT_SYMBOL(h8300_reserved_gpio);
-> EXPORT_SYMBOL(h8300_free_gpio);
-> EXPORT_SYMBOL(h8300_set_gpio_dir);
-> 
-> and these are definitely not provided by asm-generic/gpio.h.
-> 
+> +#include <linux/initrd.h>
+> +#endif
+>  #define STUBSIZE 0xc000
 
-Yeah, I will try to remove "#include <asm/gpio.h>" to see whether can
-pass compiling, tomorrow.  :-)
+Gr{oetje,eeting}s,
 
-And now, I feel (just guess), it will not, for h8300 really need gpio
-(it has "gpio-internal.h"), commonly it will need "asm/gpio.h" too.
+                        Geert
 
-Tomorrow, I will try to prove whether my guess is correct or not.  ;-).
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
-Thanks.
-
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> 
-> 
-
-
--- 
-Chen Gang
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
