@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab3HZMyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 08:54:18 -0400
+	id S1756884Ab3HZMy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 08:54:28 -0400
 Received: from mga01.intel.com ([192.55.52.88]:14401 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756677Ab3HZMyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 08:54:17 -0400
+	id S1756863Ab3HZMy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 08:54:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,958,1367996400"; 
-   d="scan'208";a="392111719"
+   d="scan'208";a="392111751"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,249 +17,383 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V12 00/13] perf tools: some fixes and tweaks
-Date: Mon, 26 Aug 2013 16:00:17 +0300
-Message-Id: <1377522030-27870-1-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V12 03/13] perf tools: change machine__findnew_thread() to set thread pid
+Date: Mon, 26 Aug 2013 16:00:20 +0300
+Message-Id: <1377522030-27870-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1377522030-27870-1-git-send-email-adrian.hunter@intel.com>
+References: <1377522030-27870-1-git-send-email-adrian.hunter@intel.com>
 Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Add a new parameter for 'pid' to machine__findnew_thread().
+Change callers to pass 'pid' when it is known.
 
-Here are some fixes and tweaks to perf tools (version 12).
+Note that callers sometimes want to find the main thread
+which has the memory maps.  The main thread has tid == pid
+so the usage in that case is:
 
-Changes in V12:
-	perf tools: re-implement debug print function for linking python/perf.so
-		Dropped since its been applied
-	perf tools: add debug prints
-		Dropped since its been applied
-	perf tools: allow non-matching sample types
-		Do not call perf_evlist__set_id_pos() when adding events other than the first
-		Do not use matching_sample_types
-	perf: make events stream always parsable
-		Added Peter's missing Ack
-		Added Stephane's Tested-by
-	perf tools: add missing 'abi' member to 'struct regs_dump'
-		Added Jiri's Ack
+	machine__findnew_thread(machine, pid, pid)
 
-Changes in V11:
-	perf tools: re-implement debug print function for linking python/perf.so
-		New patch split from "perf tools: add debug prints"
-	perf tools: add debug prints
-		Changed to use graph_dotted_line
-		Moved python/link changes to separate patch
-		Added Namhyung's Ack
-	perf tools: change machine__findnew_thread() to set thread pid
-		Added explanation of main thread lookup to commit message
-	perf tools: tidy up sample parsing overflow checking
-		Added Jiri's Ack
-	perf tools: remove unnecessary callchain validation
-		Added Namhyung's Ack
-	perf tools: remove references to struct ip_event
-		Added Namhyung's Ack
-	perf tools: move perf_evlist__config() to a new source file
-		Added Namhyung's Ack
-	perf tools: add missing 'abi' member to 'struct regs_dump'
-		New patch
-	perf tools: expand perf_event__synthesize_sample()
-		Adjusted for new 'abi' member of 'struct regs_dump'
-	perf tools: add a function to calculate sample event size
-		Adjusted for new 'abi' member of 'struct regs_dump'
-	perf tools: add a sample parsing test
-		Adjusted for new 'abi' member of 'struct regs_dump'
+whereas the usage to find the specific thread is:
 
-Changes in V10:
-	Re-based on:
-		perf/core branch of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git
-		commit 207353be1574027c151609a31167ac5919a056c8: perf tools: Remove filter parameter of thread__find_addr_map()
+	machine__findnew_thread(machine, pid, tid)
 
-	perf tools: add debug prints
-		Changed to use macros
-	perf tools: add pid to struct thread
-		Added David's Ack
-	perf tools: change machine__findnew_thread() to set thread pid
-		Added David's Ack
-	perf tools: remove references to struct ip_event
-		Also remove from hists_link.c
-	perf tools: move struct ip_event
-		Dropped since it is covered by "perf tools: remove references to struct ip_event"
-	perf tools: add a sample parsing test
-		Fix missing sample comparison for PERF_SAMPLE_READ
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/builtin-inject.c     |  2 +-
+ tools/perf/builtin-kmem.c       |  3 ++-
+ tools/perf/builtin-kvm.c        |  2 +-
+ tools/perf/builtin-lock.c       |  3 ++-
+ tools/perf/builtin-sched.c      | 20 +++++++++++---------
+ tools/perf/builtin-script.c     |  3 ++-
+ tools/perf/builtin-trace.c      | 10 +++++++---
+ tools/perf/tests/code-reading.c |  4 ++--
+ tools/perf/tests/hists_link.c   |  3 ++-
+ tools/perf/util/build-id.c      |  7 +++++--
+ tools/perf/util/event.c         |  3 ++-
+ tools/perf/util/machine.c       | 23 ++++++++++++++++-------
+ tools/perf/util/machine.h       |  3 ++-
+ tools/perf/util/session.c       |  2 +-
+ 14 files changed, 56 insertions(+), 32 deletions(-)
 
-Changes in V9:
-	perf: Update perf_event_type documentation
-		Dropped since its been applied
-	perf tools: tidy up sample parsing overflow checking
-		Changed to use a single overflow function
-		Updated for PERF_SAMPLE_READ
-	perf: make events stream always parsable
-		Added more about sample parsing to the commit message
-	perf tools: add support for PERF_SAMPLE_IDENTFIER
-		When selecting PERF_SAMPLE_IDENTFIER, ensure PERF_SAMPLE_ID
-		is deselected
-	perf tools: expand perf_event__synthesize_sample()
-		Updated for PERF_SAMPLE_READ
-	perf tools: add a function to calculate sample event size
-		Updated for PERF_SAMPLE_READ
-	perf tools: add a sample parsing test
-		Updated for PERF_SAMPLE_READ
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 1d8de2e..0d4ae1d 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -198,7 +198,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+ 
+ 	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 
+-	thread = machine__findnew_thread(machine, event->ip.pid);
++	thread = machine__findnew_thread(machine, event->ip.pid, event->ip.pid);
+ 	if (thread == NULL) {
+ 		pr_err("problem processing %d event, skipping it.\n",
+ 		       event->header.type);
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index b49f5c5..c324778 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -305,7 +305,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				struct perf_evsel *evsel,
+ 				struct machine *machine)
+ {
+-	struct thread *thread = machine__findnew_thread(machine, event->ip.pid);
++	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
++							event->ip.pid);
+ 
+ 	if (thread == NULL) {
+ 		pr_debug("problem processing %d event, skipping it.\n",
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 6cd4de5..47b3540 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -815,7 +815,7 @@ static int process_sample_event(struct perf_tool *tool,
+ 	if (skip_sample(kvm, sample))
+ 		return 0;
+ 
+-	thread = machine__findnew_thread(machine, sample->tid);
++	thread = machine__findnew_thread(machine, sample->pid, sample->tid);
+ 	if (thread == NULL) {
+ 		pr_debug("problem processing %d event, skipping it.\n",
+ 			event->header.type);
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 76543a4..ee33ba2 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -805,7 +805,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				struct perf_evsel *evsel,
+ 				struct machine *machine)
+ {
+-	struct thread *thread = machine__findnew_thread(machine, sample->tid);
++	struct thread *thread = machine__findnew_thread(machine, sample->pid,
++							sample->tid);
+ 
+ 	if (thread == NULL) {
+ 		pr_debug("problem processing %d event, skipping it.\n",
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index f809cc7..d8c51b2 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -724,8 +724,10 @@ static int replay_fork_event(struct perf_sched *sched,
+ {
+ 	struct thread *child, *parent;
+ 
+-	child = machine__findnew_thread(machine, event->fork.tid);
+-	parent = machine__findnew_thread(machine, event->fork.ptid);
++	child = machine__findnew_thread(machine, event->fork.pid,
++					event->fork.tid);
++	parent = machine__findnew_thread(machine, event->fork.ppid,
++					 event->fork.ptid);
+ 
+ 	if (child == NULL || parent == NULL) {
+ 		pr_debug("thread does not exist on fork event: child %p, parent %p\n",
+@@ -934,8 +936,8 @@ static int latency_switch_event(struct perf_sched *sched,
+ 		return -1;
+ 	}
+ 
+-	sched_out = machine__findnew_thread(machine, prev_pid);
+-	sched_in = machine__findnew_thread(machine, next_pid);
++	sched_out = machine__findnew_thread(machine, 0, prev_pid);
++	sched_in = machine__findnew_thread(machine, 0, next_pid);
+ 
+ 	out_events = thread_atoms_search(&sched->atom_root, sched_out, &sched->cmp_pid);
+ 	if (!out_events) {
+@@ -978,7 +980,7 @@ static int latency_runtime_event(struct perf_sched *sched,
+ {
+ 	const u32 pid	   = perf_evsel__intval(evsel, sample, "pid");
+ 	const u64 runtime  = perf_evsel__intval(evsel, sample, "runtime");
+-	struct thread *thread = machine__findnew_thread(machine, pid);
++	struct thread *thread = machine__findnew_thread(machine, 0, pid);
+ 	struct work_atoms *atoms = thread_atoms_search(&sched->atom_root, thread, &sched->cmp_pid);
+ 	u64 timestamp = sample->time;
+ 	int cpu = sample->cpu;
+@@ -1016,7 +1018,7 @@ static int latency_wakeup_event(struct perf_sched *sched,
+ 	if (!success)
+ 		return 0;
+ 
+-	wakee = machine__findnew_thread(machine, pid);
++	wakee = machine__findnew_thread(machine, 0, pid);
+ 	atoms = thread_atoms_search(&sched->atom_root, wakee, &sched->cmp_pid);
+ 	if (!atoms) {
+ 		if (thread_atoms_insert(sched, wakee))
+@@ -1070,7 +1072,7 @@ static int latency_migrate_task_event(struct perf_sched *sched,
+ 	if (sched->profile_cpu == -1)
+ 		return 0;
+ 
+-	migrant = machine__findnew_thread(machine, pid);
++	migrant = machine__findnew_thread(machine, 0, pid);
+ 	atoms = thread_atoms_search(&sched->atom_root, migrant, &sched->cmp_pid);
+ 	if (!atoms) {
+ 		if (thread_atoms_insert(sched, migrant))
+@@ -1289,8 +1291,8 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
+ 		return -1;
+ 	}
+ 
+-	sched_out = machine__findnew_thread(machine, prev_pid);
+-	sched_in = machine__findnew_thread(machine, next_pid);
++	sched_out = machine__findnew_thread(machine, 0, prev_pid);
++	sched_in = machine__findnew_thread(machine, 0, next_pid);
+ 
+ 	sched->curr_thread[this_cpu] = sched_in;
+ 
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 2ad9d5b..d82712f 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -501,7 +501,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				struct machine *machine)
+ {
+ 	struct addr_location al;
+-	struct thread *thread = machine__findnew_thread(machine, event->ip.tid);
++	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
++							event->ip.tid);
+ 
+ 	if (thread == NULL) {
+ 		pr_debug("problem processing %d event, skipping it.\n",
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 9891d8c..c3bac45 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -329,7 +329,8 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
+ 	if (sc->filtered)
+ 		return 0;
+ 
+-	thread = machine__findnew_thread(&trace->host, sample->tid);
++	thread = machine__findnew_thread(&trace->host, sample->pid,
++					 sample->tid);
+ 	ttrace = thread__trace(thread, trace->output);
+ 	if (ttrace == NULL)
+ 		return -1;
+@@ -380,7 +381,8 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
+ 	if (sc->filtered)
+ 		return 0;
+ 
+-	thread = machine__findnew_thread(&trace->host, sample->tid);
++	thread = machine__findnew_thread(&trace->host, sample->pid,
++					 sample->tid);
+ 	ttrace = thread__trace(thread, trace->output);
+ 	if (ttrace == NULL)
+ 		return -1;
+@@ -431,7 +433,9 @@ static int trace__sched_stat_runtime(struct trace *trace, struct perf_evsel *evs
+ {
+         u64 runtime = perf_evsel__intval(evsel, sample, "runtime");
+ 	double runtime_ms = (double)runtime / NSEC_PER_MSEC;
+-	struct thread *thread = machine__findnew_thread(&trace->host, sample->tid);
++	struct thread *thread = machine__findnew_thread(&trace->host,
++							sample->pid,
++							sample->tid);
+ 	struct thread_trace *ttrace = thread__trace(thread, trace->output);
+ 
+ 	if (ttrace == NULL)
+diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
+index df9afd9..6fb781d 100644
+--- a/tools/perf/tests/code-reading.c
++++ b/tools/perf/tests/code-reading.c
+@@ -257,7 +257,7 @@ static int process_sample_event(struct machine *machine,
+ 		return -1;
+ 	}
+ 
+-	thread = machine__findnew_thread(machine, sample.pid);
++	thread = machine__findnew_thread(machine, sample.pid, sample.pid);
+ 	if (!thread) {
+ 		pr_debug("machine__findnew_thread failed\n");
+ 		return -1;
+@@ -446,7 +446,7 @@ static int do_test_code_reading(bool try_kcore)
+ 		goto out_err;
+ 	}
+ 
+-	thread = machine__findnew_thread(machine, pid);
++	thread = machine__findnew_thread(machine, pid, pid);
+ 	if (!thread) {
+ 		pr_debug("machine__findnew_thread failed\n");
+ 		goto out_err;
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 50bfb01..87f9f72 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -88,7 +88,8 @@ static struct machine *setup_fake_machine(struct machines *machines)
+ 	for (i = 0; i < ARRAY_SIZE(fake_threads); i++) {
+ 		struct thread *thread;
+ 
+-		thread = machine__findnew_thread(machine, fake_threads[i].pid);
++		thread = machine__findnew_thread(machine, fake_threads[i].pid,
++						 fake_threads[i].pid);
+ 		if (thread == NULL)
+ 			goto out;
+ 
+diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+index 5295625..0f9d27a 100644
+--- a/tools/perf/util/build-id.c
++++ b/tools/perf/util/build-id.c
+@@ -24,7 +24,8 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
+ {
+ 	struct addr_location al;
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+-	struct thread *thread = machine__findnew_thread(machine, event->ip.pid);
++	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
++							event->ip.pid);
+ 
+ 	if (thread == NULL) {
+ 		pr_err("problem processing %d event, skipping it.\n",
+@@ -47,7 +48,9 @@ static int perf_event__exit_del_thread(struct perf_tool *tool __maybe_unused,
+ 				       __maybe_unused,
+ 				       struct machine *machine)
+ {
+-	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
++	struct thread *thread = machine__findnew_thread(machine,
++							event->fork.pid,
++							event->fork.tid);
+ 
+ 	dump_printf("(%d:%d):(%d:%d)\n", event->fork.pid, event->fork.tid,
+ 		    event->fork.ppid, event->fork.ptid);
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 49713ae..61cecf9 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -686,7 +686,8 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 				  struct perf_sample *sample)
+ {
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+-	struct thread *thread = machine__findnew_thread(machine, event->ip.pid);
++	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
++							event->ip.pid);
+ 
+ 	if (thread == NULL)
+ 		return -1;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 40d92f4..7a934ea 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -32,7 +32,8 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ 		return -ENOMEM;
+ 
+ 	if (pid != HOST_KERNEL_ID) {
+-		struct thread *thread = machine__findnew_thread(machine, pid);
++		struct thread *thread = machine__findnew_thread(machine, 0,
++								pid);
+ 		char comm[64];
+ 
+ 		if (thread == NULL)
+@@ -302,9 +303,10 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+ 	return th;
+ }
+ 
+-struct thread *machine__findnew_thread(struct machine *machine, pid_t tid)
++struct thread *machine__findnew_thread(struct machine *machine, pid_t pid,
++				       pid_t tid)
+ {
+-	return __machine__findnew_thread(machine, 0, tid, true);
++	return __machine__findnew_thread(machine, pid, tid, true);
+ }
+ 
+ struct thread *machine__find_thread(struct machine *machine, pid_t tid)
+@@ -314,7 +316,9 @@ struct thread *machine__find_thread(struct machine *machine, pid_t tid)
+ 
+ int machine__process_comm_event(struct machine *machine, union perf_event *event)
+ {
+-	struct thread *thread = machine__findnew_thread(machine, event->comm.tid);
++	struct thread *thread = machine__findnew_thread(machine,
++							event->comm.pid,
++							event->comm.tid);
+ 
+ 	if (dump_trace)
+ 		perf_event__fprintf_comm(event, stdout);
+@@ -1012,7 +1016,8 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+ 		return 0;
+ 	}
+ 
+-	thread = machine__findnew_thread(machine, event->mmap.pid);
++	thread = machine__findnew_thread(machine, event->mmap.pid,
++					 event->mmap.pid);
+ 	if (thread == NULL)
+ 		goto out_problem;
+ 
+@@ -1039,8 +1044,12 @@ out_problem:
+ 
+ int machine__process_fork_event(struct machine *machine, union perf_event *event)
+ {
+-	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
+-	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
++	struct thread *thread = machine__findnew_thread(machine,
++							event->fork.pid,
++							event->fork.tid);
++	struct thread *parent = machine__findnew_thread(machine,
++							event->fork.ppid,
++							event->fork.ptid);
+ 
+ 	if (dump_trace)
+ 		perf_event__fprintf_task(event, stdout);
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 603ffba..0df925b 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -106,7 +106,8 @@ static inline bool machine__is_host(struct machine *machine)
+ 	return machine ? machine->pid == HOST_KERNEL_ID : false;
+ }
+ 
+-struct thread *machine__findnew_thread(struct machine *machine, pid_t tid);
++struct thread *machine__findnew_thread(struct machine *machine, pid_t pid,
++				       pid_t tid);
+ 
+ size_t machine__fprintf(struct machine *machine, FILE *fp);
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 0e7ae17..da0a216 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1099,7 +1099,7 @@ void perf_event_header__bswap(struct perf_event_header *self)
+ 
+ struct thread *perf_session__findnew(struct perf_session *session, pid_t pid)
+ {
+-	return machine__findnew_thread(&session->machines.host, pid);
++	return machine__findnew_thread(&session->machines.host, 0, pid);
+ }
+ 
+ static struct thread *perf_session__register_idle_thread(struct perf_session *self)
+-- 
+1.7.11.7
 
-Changes in V8:
-	perf tools: add debug prints
-		Fixed Python link errors
-	perf tools: move perf_evlist__config() to a new source file
-		New Patch to avoid Python link errors
-	perf tools: add support for PERF_SAMPLE_IDENTFIER
-		Adjustments due to patch above
-
-Changes in V7:
-	perf: Update perf_event_type documentation
-		Proposed new patch from Peter Zijlstra
-	perf: make events stream always parsable
-		Adjustments due to patch above
-	perf tools: tidy up sample parsing overflow checking
-		Change to a single overflow function
-		Amend comment
-	perf tools: add a function to calculate sample event size
-		New patch
-	perf tools: add a sample parsing test
-		Amended to use sample event size calculation
-
-Changes in V6:
-	Some checkpatch fixes
-
-	perf: make events stream always parsable
-		Add sample format comments
-
-Changes in V5:
-	Re-based to Arnaldo's tree and dropped already applied patches:
-		perf tools: remove unused parameter
-		perf tools: fix missing tool parameter
-		perf tools: fix missing 'finished_round'
-		perf tools: fix parse_events_terms() segfault on error path
-		perf tools: fix new_term() missing free on error path
-		perf tools: add const specifier to perf_pmu__find name parameter
-		perf tools: tidy duplicated munmap code
-		perf tools: validate perf event header size
-
-	perf tools: add debug prints
-		Changed to perf_event_attr__fprintf()
-	perf tools: add pid to struct thread
-		Always set the pid, even if a pid is already set
-	perf tools: change machine__findnew_thread() to set thread pid
-		Replaces: perf tools: change "machine" functions to set thread pid
-	perf tools: add support for PERF_SAMPLE_IDENTFIER
-		Only use PERF_SAMPLE_IDENTFIER if sample types are different
-	perf tools: expand perf_event__synthesize_sample()
-		New patch in preparation of a sample parsing test
-	perf tools: add a sample parsing test
-		New patch
-
-Changes in V4:
-	I added kernel support for matching sample types via
-	PERF_SAMPLE_IDENTIFIER.  perf tools support for that required
-	first fixing some other things.
-
-	perf tools: fix parse_events_terms() freeing local variable on error path
-		Dropped - covered by David Ahern
-	perf tools: struct thread has a tid not a pid
-		Added ack by David Ahern
-	perf tools: add pid to struct thread
-		Remove unused function
-	perf tools: fix missing increment in sample parsing
-		New patch
-	perf tools: tidy up sample parsing overflow checking
-		New patch
-	perf tools: remove unnecessary callchain validation
-		New patch
-	perf tools: remove references to struct ip_event
-		New patch
-	perf tools: move struct ip_event
-		New patch
-	perf: make events stream always parsable
-		New patch
-	perf tools: add support for PERF_SAMPLE_IDENTFIER
-		New patch
-
-Changes in V3:
-	perf tools: add pid to struct thread
-		Split into 2 patches
-	perf tools: fix ppid in thread__fork()
-		Dropped for now
-
-Changes in V2:
-	perf tools: fix missing tool parameter
-		Fixed one extra occurrence
-	perf tools: fix parse_events_terms() freeing local variable on error path
-		Made "freeing" code into a new function
-	perf tools: validate perf event header size
-		Corrected byte-swapping
-	perf tools: allow non-matching sample types
-		Added comments
-		Fixed id_pos calculation
-		id_pos/is_pos updated whenever sample_type changes
-		Removed perf_evlist__sample_type()
-		Added __perf_evlist__combined_sample_type()
-		Added perf_evlist__combined_sample_type()
-		Added perf_evlist__make_sample_types_compatible()
-	Added ack's to patches acked by Jiri Olsa
-
-
-Adrian Hunter (13):
-      perf tools: allow non-matching sample types
-      perf tools: add pid to struct thread
-      perf tools: change machine__findnew_thread() to set thread pid
-      perf tools: tidy up sample parsing overflow checking
-      perf tools: remove unnecessary callchain validation
-      perf tools: remove references to struct ip_event
-      perf: make events stream always parsable
-      perf tools: move perf_evlist__config() to a new source file
-      perf tools: add support for PERF_SAMPLE_IDENTFIER
-      perf tools: add missing 'abi' member to 'struct regs_dump'
-      perf tools: expand perf_event__synthesize_sample()
-      perf tools: add a function to calculate sample event size
-      perf tools: add a sample parsing test
-
- include/uapi/linux/perf_event.h   |  27 ++-
- kernel/events/core.c              |  11 +-
- tools/perf/Makefile               |   2 +
- tools/perf/builtin-inject.c       |   8 +-
- tools/perf/builtin-kmem.c         |   3 +-
- tools/perf/builtin-kvm.c          |   2 +-
- tools/perf/builtin-lock.c         |   3 +-
- tools/perf/builtin-mem.c          |   2 +-
- tools/perf/builtin-report.c       |   2 +-
- tools/perf/builtin-sched.c        |  20 +-
- tools/perf/builtin-script.c       |   3 +-
- tools/perf/builtin-top.c          |  11 +-
- tools/perf/builtin-trace.c        |  10 +-
- tools/perf/tests/builtin-test.c   |   4 +
- tools/perf/tests/code-reading.c   |   4 +-
- tools/perf/tests/hists_link.c     |  23 +--
- tools/perf/tests/mmap-basic.c     |   2 +-
- tools/perf/tests/sample-parsing.c | 316 +++++++++++++++++++++++++++++
- tools/perf/tests/tests.h          |   1 +
- tools/perf/util/build-id.c        |  11 +-
- tools/perf/util/callchain.c       |   8 -
- tools/perf/util/callchain.h       |   5 -
- tools/perf/util/event.c           |   5 +-
- tools/perf/util/event.h           |  34 ++--
- tools/perf/util/evlist.c          | 143 +++++++++++---
- tools/perf/util/evlist.h          |   9 +-
- tools/perf/util/evsel.c           | 405 +++++++++++++++++++++++++++++++++-----
- tools/perf/util/evsel.h           |  13 +-
- tools/perf/util/machine.c         |  37 ++--
- tools/perf/util/machine.h         |   3 +-
- tools/perf/util/record.c          | 111 +++++++++++
- tools/perf/util/session.c         |  32 +--
- tools/perf/util/thread.c          |   3 +-
- tools/perf/util/thread.h          |   3 +-
- 34 files changed, 1081 insertions(+), 195 deletions(-)
- create mode 100644 tools/perf/tests/sample-parsing.c
- create mode 100644 tools/perf/util/record.c
-
-
-Regards
-Adrian
