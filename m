@@ -1,212 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab3HZVZv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 17:25:51 -0400
-Received: from a194-110.smtp-out.amazonses.com ([199.255.194.110]:27262 "EHLO
-	a194-110.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752214Ab3HZVZt (ORCPT
+	id S1752676Ab3HZV3v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 17:29:51 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:40206 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306Ab3HZV3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 17:25:49 -0400
-X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 17:25:49 EDT
-Message-Id: <00000140bc7bfb6c-aba98d04-0ee5-42f9-9eb3-54ea66a26e84-000000@email.amazonses.com>
-User-Agent: quilt/0.50-1
-Date: Mon, 26 Aug 2013 21:16:17 +0000
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Cc: linux-arch@vger.kernel.org
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [guv v2 26/31] alpha: Replace __get_cpu_var
-References: <20130826204351.725357339@linux.com>
-X-SES-Outgoing: 199.255.194.110
+	Mon, 26 Aug 2013 17:29:47 -0400
+From: "Nicholas A. Bellinger" <nab@daterainc.com>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Martin Petersen <martin.petersen@oracle.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Kent Overstreet <kmo@daterainc.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Nicholas Bellinger <nab@daterainc.com>
+Subject: [PATCH-v3 00/13] target: Add support for COMPARE_AND_WRITE (VAAI) emulation
+Date: Mon, 26 Aug 2013 21:13:33 +0000
+Message-Id: <1377551626-27447-1-git-send-email-nab@daterainc.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
+From: Nicholas Bellinger <nab@daterainc.com>
 
-Others usage cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
+Hi folks,
 
-__get_cpu_var() is defined as :
+This series -v3 adds support to target-core for generic COMPARE_AND_WRITE
+emulation as defined by SBC-3 using virtual (IBLOCK, FILEIO, RAMDISK)
+backends.
 
+COMPARE_AND_WRITE is a VMWare ESX VAAI primitive that is currently used
+by VMFS to perform array side locking of filesystem extents.  The logic
+is the functional equivilent of an atomic test and set, which allows a
+cluster filesystem to scale across multiple clients by locking individual
+regions, without having to obtain a traditional SCSI reservation for
+exclusive access to the entire logical unit.
 
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
+As this point, a se_device->caw_mutex is in place to synchronize
+between sbc_compare_and_write() -> compare_and_write_callback() ->
+compare_and_write_post() callbacks and failure paths, and the code is
+fully functional.  The use of mutex_lock() -> mutex_unlock() across
+multiple functions looks a bit strange, so comments have been added
+to clarify the rather unusual looking usage.
 
+Note this implemenation is currently limited to a single number of
+logical blocks (NoLB).
 
+v3 changes:
+  
+  - Refactor transport_generic_get_mem() to target_alloc_sgl() in
+    order to accept parameters **sgl, *sgl_nents, length and zero_flag.
+  - Make transport_generic_new_cmd() use target_alloc_sgl() to do
+    SGL + page allocations for SCF_BIDI + SCF_COMPARE_AND_WRITE cases.
 
-__get_cpu_var() always only does a address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
+v2 changes:
 
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
+  - Add SCF_COMPARE_AND_WRITE command flag
+  - Use sbc_execute_rw() for normal cmd->execute_rw() submission
+    with expected se_cmd members.
+  - Use SCF_COMPARE_AND_WRITE instead of CDB based check for
+    calculating length in transport_generic_get_mem_bidi().
+  - Use SCF_COMPARE_AND_WRITE in transport_generic_new_cmd()
+    for determing when to call transport_generic_get_mem_bidi()
+  - Make __target_execute_cmd() available as extern for WRITE
+    I/O submission within compare_and_write_callback()
+  - Set SCF_COMPARE_AND_WRITE and cmd->execute_cmd() to
+    sbc_compare_and_write() during setup in sbc_parse_cdb()
+  - Use sbc_compare_and_write() for initial READ submission with
+    DMA_FROM_DEVICE
+  - Reset cmd->execute_cmd() to sbc_execute_rw() for write instance
+    user-data in compare_and_write_callback()
+  - Drop SCF_BIDI command flag usage
+  - Set TRANSPORT_PROCESSING + transport_state flags before write
+    instance submission, and convert to __target_execute_cmd()
+  - Prevent sbc_get_size() from being being called twice to
+    generate incorrect size in sbc_parse_cdb()
+  - Enforce se_device->caw_mutex synchronization between initial
+    READ I/O submission, and final WRITE I/O completion.
+  - Drop tcm_qla2xxx patch, and will include as seperate patch
+    for common target_reverse_dma_direction().
 
+Please review as v3.12 material.
 
-This patch converts __get_cpu_var into either and explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
-and less registers are used when code is generated.
+Thanks!
 
-At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
+--nab
 
-The patchset includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
+Nicholas Bellinger (13):
+  scsi: Add CDB definition for COMPARE_AND_WRITE
+  target: Add return for se_cmd->transport_complete_callback
+  target: Add TCM_MISCOMPARE_VERIFY sense handling
+  target: Allow sbc_ops->execute_rw() to accept SGLs + data_direction
+  target: Convert se_cmd->t_bidi_data_sg checks to use SCF_BIDI
+  target: Refactor transport_generic_get_mem to target_alloc_sgl
+  target: Do memory allocation for bidi commands using target_alloc_sgl
+  target: Add transport_reset_sgl_orig() for COMPARE_AND_WRITE
+  target: Make __target_execute_cmd() available as extern
+  target: Add MAXIMUM COMPARE AND WRITE LENGTH in Block Limits VPD
+  target: Add support for COMPARE_AND_WRITE emulation
+  target: Add compare_and_write_post() completion callback fall through
+  target: Release COMPARE_AND_WRITE mutex in generic failure path
 
+ drivers/target/target_core_configfs.c  |    4 +
+ drivers/target/target_core_device.c    |   15 ++
+ drivers/target/target_core_file.c      |    6 +-
+ drivers/target/target_core_iblock.c    |    6 +-
+ drivers/target/target_core_internal.h  |    1 +
+ drivers/target/target_core_rd.c        |    6 +-
+ drivers/target/target_core_sbc.c       |  248 +++++++++++++++++++++++++++++--
+ drivers/target/target_core_spc.c       |    5 +
+ drivers/target/target_core_transport.c |  115 ++++++++++++---
+ include/scsi/scsi.h                    |    1 +
+ include/target/target_core_backend.h   |    3 +-
+ include/target/target_core_base.h      |   14 ++-
+ include/target/target_core_fabric.h    |    1 +
+ 13 files changed, 371 insertions(+), 54 deletions(-)
 
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, u);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(this_cpu_ptr(&y), x, sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-
-
-
-Index: linux/arch/alpha/kernel/perf_event.c
-===================================================================
---- linux.orig/arch/alpha/kernel/perf_event.c	2013-08-26 13:55:35.904436503 -0500
-+++ linux/arch/alpha/kernel/perf_event.c	2013-08-26 13:55:35.896436587 -0500
-@@ -422,7 +422,7 @@ static void maybe_change_configuration(s
-  */
- static int alpha_pmu_add(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int n0;
- 	int ret;
-@@ -474,7 +474,7 @@ static int alpha_pmu_add(struct perf_eve
-  */
- static void alpha_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	unsigned long irq_flags;
- 	int j;
-@@ -522,7 +522,7 @@ static void alpha_pmu_read(struct perf_e
- static void alpha_pmu_stop(struct perf_event *event, int flags)
- {
- 	struct hw_perf_event *hwc = &event->hw;
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (!(hwc->state & PERF_HES_STOPPED)) {
- 		cpuc->idx_mask &= ~(1UL<<hwc->idx);
-@@ -542,7 +542,7 @@ static void alpha_pmu_stop(struct perf_e
- static void alpha_pmu_start(struct perf_event *event, int flags)
- {
- 	struct hw_perf_event *hwc = &event->hw;
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (WARN_ON_ONCE(!(hwc->state & PERF_HES_STOPPED)))
- 		return;
-@@ -713,7 +713,7 @@ static int alpha_pmu_event_init(struct p
-  */
- static void alpha_pmu_enable(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (cpuc->enabled)
- 		return;
-@@ -739,7 +739,7 @@ static void alpha_pmu_enable(struct pmu
- 
- static void alpha_pmu_disable(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (!cpuc->enabled)
- 		return;
-@@ -804,7 +804,7 @@ static void alpha_perf_event_irq_handler
- 	int idx, j;
- 
- 	__this_cpu_inc(irq_pmi_count);
--	cpuc = &__get_cpu_var(cpu_hw_events);
-+	cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	/* Completely counting through the PMC's period to trigger a new PMC
- 	 * overflow interrupt while in this interrupt routine is utterly
-Index: linux/arch/alpha/kernel/time.c
-===================================================================
---- linux.orig/arch/alpha/kernel/time.c	2013-08-26 13:55:35.904436503 -0500
-+++ linux/arch/alpha/kernel/time.c	2013-08-26 13:55:35.896436587 -0500
-@@ -86,9 +86,9 @@ unsigned long est_cycle_freq;
- 
- DEFINE_PER_CPU(u8, irq_work_pending);
- 
--#define set_irq_work_pending_flag()  __get_cpu_var(irq_work_pending) = 1
--#define test_irq_work_pending()      __get_cpu_var(irq_work_pending)
--#define clear_irq_work_pending()     __get_cpu_var(irq_work_pending) = 0
-+#define set_irq_work_pending_flag()  __this_cpu_write(irq_work_pending, 1)
-+#define test_irq_work_pending()      __this_cpu_read(irq_work_pending)
-+#define clear_irq_work_pending()     __this_cpu_writeirq_work_pending, 0)
- 
- void arch_irq_work_raise(void)
- {
+-- 
+1.7.2.5
 
