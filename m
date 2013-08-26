@@ -1,101 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab3HZNQn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 09:16:43 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:60945 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab3HZNQl (ORCPT
+	id S1756861Ab3HZNRL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 09:17:11 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:59257 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756750Ab3HZNRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 09:16:41 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Richard Zhao <linuxzsc@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Zhao <rizhao@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] DMA: let filter functions of of_dma_simple_xlate possible check of_node
-Date: Mon, 26 Aug 2013 15:18 +0200
-Message-ID: <2811939.DFy94j5OEx@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130826125547.GA2733@richard-laptop>
-References: <1375408800-11789-1-git-send-email-rizhao@nvidia.com> <1441310.1kjKG7uebg@avalon> <20130826125547.GA2733@richard-laptop>
+	Mon, 26 Aug 2013 09:17:10 -0400
+From: Jisheng Zhang <jszhang@marvell.com>
+To: <maxime.ripard@free-electrons.com>, <davem@davemloft.net>,
+        <emilio@elopez.com.ar>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jisheng Zhang <jszhang@marvell.com>
+Subject: [PATCH] net: mdio-sun4i: Convert to devm_* api
+Date: Mon, 26 Aug 2013 21:11:57 +0800
+Message-ID: <1377522717-5784-1-git-send-email-jszhang@marvell.com>
+X-Mailer: git-send-email 1.8.4.rc3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+Use devm_ioremap_resource instead of of_iomap() and devm_kzalloc()
+instead of kmalloc() to make cleanup paths simpler. This patch also
+fixes the resource leak caused by missing corresponding iounamp()
+of the of_iomap().
 
-(Dropping Dan Williams from the CC list as his e-mail address doesn't seem to 
-be valid anymore)
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+---
+ drivers/net/phy/mdio-sun4i.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-On Monday 26 August 2013 20:55:57 Richard Zhao wrote:
-> On Mon, Aug 26, 2013 at 02:17:43PM +0200, Laurent Pinchart wrote:
-> > On Friday 23 August 2013 09:57:43 Stephen Warren wrote:
-> > > On 08/22/2013 07:29 PM, Richard Zhao wrote:
-> > > > On Fri, Aug 23, 2013 at 04:18:27AM +0800, Stephen Warren wrote:
-> > > >> On 08/21/2013 11:19 PM, Richard Zhao wrote:
-> > > >>> On Fri, Aug 02, 2013 at 10:00:00AM +0800, Richard Zhao wrote:
-> > > >>>> pass of_phandle_args dma_spec to dma_request_channel in
-> > > >>>> of_dma_simple_xlate, so the filter function could access of_node in
-> > > >>>> of_phandle_args.
-> > > >>>> 
-> > > >>>> It also remove restriction of #dma-cells has to be one.
-> > > >>>> 
-> > > >>>> Signed-off-by: Richard Zhao <rizhao@nvidia.com>
-> > > >>>> ---
-> > > >>>> 
-> > > >>>>  drivers/dma/edma.c     |  7 +++++--
-> > > >>>>  drivers/dma/of-dma.c   | 10 ++++------
-> > > >>>>  drivers/dma/omap-dma.c |  6 ++++--
-> > > >>>>  3 files changed, 13 insertions(+), 10 deletions(-)
-> > > >>> 
-> > > >>> Hi Vinod,
-> > > >>> 
-> > > >>> Can you please pick up this change?
-> > > >>> 
-> > > >>> Hi Stephen,
-> > > >>> 
-> > > >>> Can you please give a ack or reviewed-by etc?
-> > > >> 
-> > > >> Hmm. Looking at the patch, I'm not sure it's right.
-> > > >> 
-> > > >> This patch simply passes all the specfier args to the filter
-> > > >> function, and the code to check the equality of the of_node to the
-> > > >> filter args is still duplicated in each DMA driver. Instead, the DMA
-> > > >> core should be implementing the equality check, and only even calling
-> > > >> the driver-specific filter function for devices where the client's
-> > > >> phandle matches the DMA providing device's of_node handle.
-> > > > 
-> > > > Filter function is called in dmaengine core code, independent of dt.
-> > > 
-> > > The core code can still check if a dmaengine's driver was instantiated
-> > > from DT and take additional actions in that case.
-> > > 
-> > > > And the reason why the driver has to write its own filter function is
-> > > > it has to store slave id there in its own way.
-> > > 
-> > > I'm not saying don't call the driver's filter function, but rather that
-> > > the dmaengine core should perform the common checks before doing so.
-> > 
-> > And it looks to me like the common case could even get rid of the driver's
-> > filter function:
-> > 
-> > https://lkml.org/lkml/2013/5/15/270
-> > https://lkml.org/lkml/2013/3/25/250
-> 
-> For general case, the slave id is not staticly bind to a specific channel.
-
-Certainly not in all cases, but I think it's common enough to deserve a 
-specific helper function.
-
+diff --git a/drivers/net/phy/mdio-sun4i.c b/drivers/net/phy/mdio-sun4i.c
+index 7f25e49..18969b3 100644
+--- a/drivers/net/phy/mdio-sun4i.c
++++ b/drivers/net/phy/mdio-sun4i.c
+@@ -101,6 +101,7 @@ static int sun4i_mdio_probe(struct platform_device *pdev)
+ 	struct device_node *np = pdev->dev.of_node;
+ 	struct mii_bus *bus;
+ 	struct sun4i_mdio_data *data;
++	struct resource *res;
+ 	int ret, i;
+ 
+ 	bus = mdiobus_alloc_size(sizeof(*data));
+@@ -114,7 +115,8 @@ static int sun4i_mdio_probe(struct platform_device *pdev)
+ 	snprintf(bus->id, MII_BUS_ID_SIZE, "%s-mii", dev_name(&pdev->dev));
+ 	bus->parent = &pdev->dev;
+ 
+-	bus->irq = kmalloc(sizeof(int) * PHY_MAX_ADDR, GFP_KERNEL);
++	bus->irq = devm_kzalloc(&pdev->dev, sizeof(int) * PHY_MAX_ADDR,
++			GFP_KERNEL);
+ 	if (!bus->irq) {
+ 		ret = -ENOMEM;
+ 		goto err_out_free_mdiobus;
+@@ -124,10 +126,11 @@ static int sun4i_mdio_probe(struct platform_device *pdev)
+ 		bus->irq[i] = PHY_POLL;
+ 
+ 	data = bus->priv;
+-	data->membase = of_iomap(np, 0);
+-	if (!data->membase) {
+-		ret = -ENOMEM;
+-		goto err_out_free_mdio_irq;
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	data->membase = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(data->membase)) {
++		ret = PTR_ERR(data->membase);
++		goto err_out_free_mdiobus;
+ 	}
+ 
+ 	data->regulator = devm_regulator_get(&pdev->dev, "phy");
+@@ -139,7 +142,7 @@ static int sun4i_mdio_probe(struct platform_device *pdev)
+ 	} else {
+ 		ret = regulator_enable(data->regulator);
+ 		if (ret)
+-			goto err_out_free_mdio_irq;
++			goto err_out_free_mdiobus;
+ 	}
+ 
+ 	ret = of_mdiobus_register(bus, np);
+@@ -152,8 +155,6 @@ static int sun4i_mdio_probe(struct platform_device *pdev)
+ 
+ err_out_disable_regulator:
+ 	regulator_disable(data->regulator);
+-err_out_free_mdio_irq:
+-	kfree(bus->irq);
+ err_out_free_mdiobus:
+ 	mdiobus_free(bus);
+ 	return ret;
+@@ -164,7 +165,6 @@ static int sun4i_mdio_remove(struct platform_device *pdev)
+ 	struct mii_bus *bus = platform_get_drvdata(pdev);
+ 
+ 	mdiobus_unregister(bus);
+-	kfree(bus->irq);
+ 	mdiobus_free(bus);
+ 
+ 	return 0;
 -- 
-Regards,
-
-Laurent Pinchart
+1.8.4.rc3
 
