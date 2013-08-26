@@ -1,173 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab3HZQFl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 12:05:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57333 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756738Ab3HZQFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 12:05:40 -0400
-Message-ID: <1377533136.25163.159.camel@ul30vt.home>
-Subject: Re: [PATCH v2] i915: Update VGA arbiter support for newer devices
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Ville =?ISO-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-Cc: intel-gfx@lists.freedesktop.org, airlied@redhat.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 26 Aug 2013 10:05:36 -0600
-In-Reply-To: <20130826122319.GO11428@intel.com>
-References: <20130824144701.23370.42110.stgit@bling.home>
-	 <20130826122319.GO11428@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1757018Ab3HZQFw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 12:05:52 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:38792 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756952Ab3HZQFt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 12:05:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <521B1A87.4000500@samsung.com>
+References: <1377188348-3418-1-git-send-email-dianders@chromium.org>
+	<1377188348-3418-3-git-send-email-dianders@chromium.org>
+	<001201cea215$8c125e30$a4371a90$%jun@samsung.com>
+	<521B1A87.4000500@samsung.com>
+Date: Mon, 26 Aug 2013 09:05:48 -0700
+X-Google-Sender-Auth: LKCdv1y-JDkx9d_2E7VKyFyOfT8
+Message-ID: <CAD=FV=WYMyGVmG-DXk1ke-yQCrfF74KDaZAUCW3qzf+Xfp-tpQ@mail.gmail.com>
+Subject: Re: [PATCH v6 2/3] mmc: dw_mmc: Honor requests to set the clock to 0
+ (turn off clock)
+From: Doug Anderson <dianders@chromium.org>
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>, Chris Ball <cjb@laptop.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-26 at 15:23 +0300, Ville Syrjälä wrote:
-> On Sat, Aug 24, 2013 at 08:53:40AM -0600, Alex Williamson wrote:
-> > This is intended to add VGA arbiter support for Intel HD graphics on
-> > Core processors.  The old GMCH registers no longer exist, so even
-> > though it appears that i915 participates in VGA arbitration, it doesn't
-> > work.  On Intel HD graphics we already attempt to disable VGA regions
-> > of the device.  This makes registering as a VGA client unnecessary since
-> > we don't intend to operate differently depending on how many VGA devices
-> > are present.  We can disable VGA memory regions by clearing the memory
-> > enable bit in the VGA MSR.  That only leaves VGA IO, which we update
-> > the VGA arbiter to know that we don't participate in VGA memory
-> > arbitration.  We also add a hook on unload to re-enable memory and
-> > reinstate VGA memory arbitration.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> > 
-> > v2: I915_READ/WRITE accessors don't work in i915_disable_vga, use inb/outb
-> >     directly.  Also, on the driver unbind VGA enable path, acquire legacy
-> >     IO to re-enable VGA memory.  Correct comment.
-> > 
-> > As with v1, this depends on "vgaarb: Fixes for partial VGA opt-out".  With
-> > all patches I'm able to assign a discrete PEG VGA device to a guest and
-> > execute the VBIOS w/o interference from IGD or corruption of the IGD
-> > framebuffer.
-> 
-> I glanced through those before, but I'll try to do a more thorough
-> review soon.
+Jaehoon / Seungwon,
 
-Thanks!
+On Mon, Aug 26, 2013 at 2:06 AM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+> On 08/26/2013 01:34 PM, Seungwon Jeon wrote:
+>> On Fri, August 23, 2013, Doug Anderson wrote:
+>>> Previously the dw_mmc driver would ignore any requests to disable the
+>>> card's clock.  This doesn't seem like a good thing in general, but had
+>>> one extra bad side effect in the following situtation:
+>>> * mmc core would set clk to 400kHz at boot time while initting
+>>> * mmc core would set clk to 0 since no card, but it would be ignored.
+>>> * suspend to ram and resume; clocks in the dw_mmc IP block are now 0
+>>>   but dw_mmc thinks that they're 400kHz (it ignored the set to 0).
+>>> * insert card
+>>> * mmc core would set clk to 400kHz which would be considered a no-op.
+>>>
+>>> Note that if there is no card in the slot and we do a suspend/resume
+>>> cycle, we _do_ still end up with differences in a dw_mmc register
+>>> dump, but the differences are clock related and we've got the clock
+>>> disabled both before and after, so this should be OK.
+>>>
+>>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>>> ---
+>>> Changes in v6:
+>>> - Replaces previous pathes that ensured saving/restoring clocks.
+>>>
+>>>  drivers/mmc/host/dw_mmc.c | 21 +++++++++++----------
+>>>  1 file changed, 11 insertions(+), 10 deletions(-)
+>>>
+>>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+>>> index ee5f167..f6c7545 100644
+>>> --- a/drivers/mmc/host/dw_mmc.c
+>>> +++ b/drivers/mmc/host/dw_mmc.c
+>>> @@ -635,7 +635,11 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
+>>>      u32 div;
+>>>      u32 clk_en_a;
+>>>
+>>> -    if (slot->clock != host->current_speed || force_clkinit) {
+>>> +    if (slot->clock == 0) {
+>>> +            mci_writel(host, CLKENA, 0);
+>>> +            mci_send_cmd(slot,
+>>> +                         SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
+>> Basically dw_mmc driver uses host's low power mode(auto clock gating)
+>> So, how about keeping origin code rather than programming clock setting to '0'?
+> Right, Dw-mmc controller can use the Low-power mode.
+> This mode is functionality like clock-gating. Well, i didn't know what benefit we get, if set to 0.
 
-> > 
-> >  drivers/gpu/drm/i915/i915_dma.c      |    9 ++++++---
-> >  drivers/gpu/drm/i915/intel_display.c |   24 ++++++++++++++++++++++++
-> >  2 files changed, 30 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> > index f466980..d9cf216 100644
-> > --- a/drivers/gpu/drm/i915/i915_dma.c
-> > +++ b/drivers/gpu/drm/i915/i915_dma.c
-> > @@ -1287,9 +1287,12 @@ static int i915_load_modeset_init(struct drm_device *dev)
-> >  	 * then we do not take part in VGA arbitration and the
-> >  	 * vga_client_register() fails with -ENODEV.
-> >  	 */
-> > -	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
-> > -	if (ret && ret != -ENODEV)
-> > -		goto out;
-> > +	if (!HAS_PCH_SPLIT(dev)) {
-> > +		ret = vga_client_register(dev->pdev, dev, NULL,
-> > +					  i915_vga_set_decode);
-> > +		if (ret && ret != -ENODEV)
-> > +			goto out;
-> > +	}
-> 
-> I think we should do something to fix i915_redisable_vga() for !pch
-> platforms too. The MSR method should work for everything, so I'm leaning
-> towards using it all the time. The other option would be add an mmio
-> codepath into intel_disable_vga(), but then we have several codepaths
-> to worry about.
+Ah, right.  ...so it's unlikely that we'd save any power because we're
+already gating the clock.
 
-Do you have time, systems, and interest to be able to test !pch?  I
-assume that at some point in the past VGA arbiter did work on i915 with
-the right hardware, so I didn't want to go breaking code that I can't
-test.
-  
-> >  	intel_register_dsm_handler();
-> >  
-> > diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> > index 5fb3058..2bb805c 100644
-> > --- a/drivers/gpu/drm/i915/intel_display.c
-> > +++ b/drivers/gpu/drm/i915/intel_display.c
-> > @@ -9519,6 +9519,15 @@ static void i915_disable_vga(struct drm_device *dev)
-> >  	outb(SR01, VGA_SR_INDEX);
-> >  	sr1 = inb(VGA_SR_DATA);
-> >  	outb(sr1 | 1<<5, VGA_SR_DATA);
-> > +
-> > +	/* Disable VGA memory on Intel HD */
-> > +	if (HAS_PCH_SPLIT(dev)) {
-> > +		outb(inb(VGA_MSR_READ) & ~VGA_MSR_MEM_EN, VGA_MSR_WRITE);
-> > +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
-> > +						   VGA_RSRC_NORMAL_IO |
-> > +						   VGA_RSRC_NORMAL_MEM);
-> > +	}
-> > +
-> >  	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
-> >  	udelay(300);
-> >  
-> > @@ -9526,6 +9535,19 @@ static void i915_disable_vga(struct drm_device *dev)
-> >  	POSTING_READ(vga_reg);
-> >  }
-> >  
-> > +static void i915_enable_vga(struct drm_device *dev)
-> > +{
-> 
-> Not sure we need this actually. We don't re-enable the VGA display
-> on unload, so you'll never see anything on the display anyway. But
-> then again, I don't see any real harm in doing this either.
+I'd really still rather honor the MMC subsystem's request.  It
+shouldn't _hurt_ to turn the clock off when the subsystem requests it,
+right?  One reason to honor the mmc core is that it will make things
+cleaner if/when we support a voltage change operation.  The MMC core
+has the logic for the voltage change, and part of that involves
+turning off the clock.  We'll already need a bunch of special case
+code in dw_mmc for voltage change, but it would be nice to avoid one
+extra bit.
 
-Right, I actually get a flood of DMAR errors from VT-d when I unbind the
-device from i915, but that happens regardless of this patch.  I did
-confirm that VGA memory is re-added to VGA arbitration though, which is
-important because even if i915 doesn't leave the device in a usable
-state we might still be able to pass it to a guest, which will rely on
-the VGA arbiter control being re-enabled.
+Another option would be to add a core MMC quirk to disable MMC_CLKGATE
+on a per-driver basis.  In the "single zImage" world that seems like
+the right thing to do, since the MMC_CLKGATE description seems to
+indicate that enabling that won't really work on all drivers anyway.
 
-> > +	/* Enable VGA memory on Intel HD */
-> > +	if (HAS_PCH_SPLIT(dev)) {
-> > +		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
-> > +		outb(inb(VGA_MSR_READ) | VGA_MSR_MEM_EN, VGA_MSR_WRITE);
-> 
-> I was thinking we might save the MSR state during driver load and
-> restore to that same state, but it could be a bit overkill.
-
-It seems unnecessary for just this bit, but if i915 wanted to restore
-the device to a working VGA state it might make sense.  I have no idea
-what would be involved for that.
-
-> > +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_MASK |
-> 
-> Maybe spell out IO and MEM for legacy too. Otherwise it looks a
-> bit cryptic.
-
-Ok.  Thanks,
-
-Alex
-
-> > +						   VGA_RSRC_NORMAL_IO |
-> > +						   VGA_RSRC_NORMAL_MEM);
-> > +		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
-> > +	}
-> > +}
-> > +
-> >  void intel_modeset_init_hw(struct drm_device *dev)
-> >  {
-> >  	intel_init_power_well(dev);
-> > @@ -9983,6 +10005,8 @@ void intel_modeset_cleanup(struct drm_device *dev)
-> >  
-> >  	intel_disable_fbc(dev);
-> >  
-> > +	i915_enable_vga(dev);
-> > +
-> >  	intel_disable_gt_powersave(dev);
-> >  
-> >  	ironlake_teardown_rc6(dev);
-> 
-
-
-
+-Doug
