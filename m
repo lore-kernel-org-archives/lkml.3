@@ -1,365 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab3HZCao (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 22:30:44 -0400
-Received: from m12-11.163.com ([220.181.12.11]:55488 "EHLO m12-11.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755195Ab3HZCam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 22:30:42 -0400
-Date: Mon, 26 Aug 2013 10:14:35 +0800
-From: "=?utf-8?B?bGl1anVubGlhbmdfbGps?=" <liujunliang_ljl@163.com>
-To: "=?utf-8?B?Sm9lIFBlcmNoZXM=?=" <joe@perches.com>
-Cc: "=?utf-8?B?ZGF2ZW0=?=" <davem@davemloft.net>,
-        "=?utf-8?B?aG9ybXM=?=" <horms@verge.net.au>,
-        "=?utf-8?B?cm9taWV1?=" <romieu@fr.zoreil.com>,
-        "=?utf-8?B?Z3JlZ2to?=" <gregkh@linuxfoundation.org>,
-        "=?utf-8?B?bmV0ZGV2?=" <netdev@vger.kernel.org>,
-        "=?utf-8?B?bGludXgtdXNi?=" <linux-usb@vger.kernel.org>,
-        "=?utf-8?B?bGludXgta2VybmVs?=" <linux-kernel@vger.kernel.org>,
-        "=?utf-8?B?c3VuaGVjaGVuZw==?=" <sunhecheng@vip.126.com>
-References: <1377343560-10524-1-git-send-email-liujunliang_ljl@163.com>,
- <1377368111.1757.2.camel@joe-AO722>
-Subject: =?utf-8?B?UmU6IFJlOiBbUEFUQ0hdIFVTQjJORVQgOiBTUjk3MDAgOiBPbmUgY2hpcCBVU0IgMS4xIFVTQjJORVQgU1I5NzAwRGV2aWNlIERyaXZlciBTdXBwb3J0?=
-Message-ID: <201308261014331251822@163.com>
-X-mailer: Foxmail 6, 15, 201, 22 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-X-CM-TRANSID: C8CowED5D0sJuhpSuy+jAQ--.1577S2
-X-Coremail-Antispam: 1Uf129KBjvJXoW3tw15AryfGFW8Xry7tFyxXwb_yoWDXrykpF
-	WUGa45JF4UXr1xXrZYyay8ua4Fvw1kJ3y7Cry3G34F9a43Ar1kXFy09342yryYk3yxCr4S
-	kF4jk343Za15u3JanT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
-	9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07j8EfrUUUUU=
-X-CM-SenderInfo: xolxy3pqolt0hjboyzi6rwjhhfrp/1tbiRQKFX1EAGfMWyAAAs4
+	id S1755501Ab3HZCfS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 22:35:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:38524 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755241Ab3HZCfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Aug 2013 22:35:16 -0400
+X-IronPort-AV: E=Sophos;i="4.89,955,1367942400"; 
+   d="scan'208";a="8300551"
+Message-ID: <521ABFE4.3070703@cn.fujitsu.com>
+Date: Mon, 26 Aug 2013 10:39:32 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Lai Jiangshan <eag0628@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 5/8] rcu: eliminate deadlock for rcu read site
+References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com> <1375871104-10688-6-git-send-email-laijs@cn.fujitsu.com> <20130808204020.GA31127@linux.vnet.ibm.com> <5205B6FF.7060502@cn.fujitsu.com> <20130812135309.GF27162@twins.programming.kicks-ass.net> <20130812101008.27048d83@gandalf.local.home> <CACvQF51-oAGkdxwku+orKSQ=SZd1A4saXzkrgcRGi+KnZUZYxQ@mail.gmail.com> <20130822103431.7abc09ab@gandalf.local.home> <5217009F.5030309@cn.fujitsu.com> <CACvQF51kcLrJsa=zBKhLkJfFBh109TW+Zrepm+tRxmEp0gALbQ@mail.gmail.com> <20130825174304.GL3871@linux.vnet.ibm.com>
+In-Reply-To: <20130825174304.GL3871@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/26 10:33:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/26 10:33:13,
+	Serialize complete at 2013/08/26 10:33:13
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7Q2UpkG017575
 
-Dear    Joe :
-		
-			I'm sorry to ask you that, do you need me to merge the patch and re-send it again.
+On 08/26/2013 01:43 AM, Paul E. McKenney wrote:
+> On Sun, Aug 25, 2013 at 11:19:37PM +0800, Lai Jiangshan wrote:
+>> Hi, Steven
+>>
+>> Any comments about this patch?
+> 
+> For whatever it is worth, it ran without incident for two hours worth
+> of rcutorture on my P5 test (boosting but no CPU hotplug).
+> 
+> Lai, do you have a specific test for this patch?  
 
-		And which version of kernel will release this driver.
-	
-			Thanks a lot and apologizing for making you trouble.
+Also rcutorture.
+(A special module is added to ensure all paths of my code are covered.)
 
-			Thanks again.
+> Your deadlock
+> scenario looks plausible, but is apparently not occurring in the
+> mainline kernel.
 
+Yes, you can leave this possible bug until the real problem happens
+or just disallow overlapping.
+I can write some debug code for it which allow us find out
+the problems earlier.
 
-2013-08-26 
+I guess this is an useful usage pattern of rcu:
 
+again:
+	rcu_read_lock();
+	obj = read_dereference(ptr);
+	spin_lock_XX(obj->lock);
+	if (obj is invalid) {
+		spin_unlock_XX(obj->lock);
+		rcu_read_unlock();
+		goto again;
+	}
+	rcu_read_unlock();
+	# use obj
+	spin_unlock_XX(obj->lock);
 
+If we encourage this pattern, we should fix all the related problems.
 
-liujunliang_ljl 
+Thanks,
+Lai
 
+> 
+> 							Thanx, Paul
+> 
+>> Thanks,
+>> Lai
+>>
+>>
+>> On Fri, Aug 23, 2013 at 2:26 PM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+>>
+>>> [PATCH] rcu/rt_mutex: eliminate a kind of deadlock for rcu read site
+>>>
+>>> Current rtmutex's lock->wait_lock doesn't disables softirq nor irq, it will
+>>> cause rcu read site deadlock when rcu overlaps with any
+>>> softirq-context/irq-context lock.
+>>>
+>>> @L is a spinlock of softirq or irq context.
+>>>
+>>> CPU1                                    cpu2(rcu boost)
+>>> rcu_read_lock()                         rt_mutext_lock()
+>>> <preemption and reschedule back>          raw_spin_lock(lock->wait_lock)
+>>> spin_lock_XX(L)                           <interrupt and doing softirq or
+>>> irq>
+>>> rcu_read_unlock()                         do_softirq()
+>>>   rcu_read_unlock_special()
+>>>     rt_mutext_unlock()
+>>>       raw_spin_lock(lock->wait_lock)        spin_lock_XX(L)  **DEADLOCK**
+>>>
+>>> This patch fixes this kind of deadlock by removing rt_mutext_unlock() from
+>>> rcu_read_unlock(), new rt_mutex_rcu_deboost_unlock() is called instead.
+>>> Thus rtmutex's lock->wait_lock will not be called from rcu_read_unlock().
+>>>
+>>> This patch does not eliminate all kinds of rcu-read-site deadlock,
+>>> if @L is a scheduler lock, it will be deadlock, we should apply Paul's rule
+>>> in this case.(avoid overlapping or preempt_disable()).
+>>>
+>>> rt_mutex_rcu_deboost_unlock() requires the @waiter is queued, so we
+>>> can't directly call rt_mutex_lock(&mtx) in the rcu_boost thread,
+>>> we split rt_mutex_lock(&mtx) into two steps just like pi-futex.
+>>> This result a internal state in rcu_boost thread and cause
+>>> rcu_boost thread a bit more complicated.
+>>>
+>>> Thanks
+>>> Lai
+>>>
+>>> diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+>>> index 5cd0f09..8830874 100644
+>>> --- a/include/linux/init_task.h
+>>> +++ b/include/linux/init_task.h
+>>> @@ -102,7 +102,7 @@ extern struct group_info init_groups;
+>>>
+>>>  #ifdef CONFIG_RCU_BOOST
+>>>  #define INIT_TASK_RCU_BOOST()                                          \
+>>> -       .rcu_boost_mutex = NULL,
+>>> +       .rcu_boost_waiter = NULL,
+>>>  #else
+>>>  #define INIT_TASK_RCU_BOOST()
+>>>  #endif
+>>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>>> index e9995eb..1eca99f 100644
+>>> --- a/include/linux/sched.h
+>>> +++ b/include/linux/sched.h
+>>> @@ -1078,7 +1078,7 @@ struct task_struct {
+>>>         struct rcu_node *rcu_blocked_node;
+>>>  #endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+>>>  #ifdef CONFIG_RCU_BOOST
+>>> -       struct rt_mutex *rcu_boost_mutex;
+>>> +       struct rt_mutex_waiter *rcu_boost_waiter;
+>>>  #endif /* #ifdef CONFIG_RCU_BOOST */
+>>>
+>>>  #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+>>> @@ -1723,7 +1723,7 @@ static inline void rcu_copy_process(struct
+>>> task_struct *p)
+>>>         p->rcu_blocked_node = NULL;
+>>>  #endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+>>>  #ifdef CONFIG_RCU_BOOST
+>>> -       p->rcu_boost_mutex = NULL;
+>>> +       p->rcu_boost_waiter = NULL;
+>>>  #endif /* #ifdef CONFIG_RCU_BOOST */
+>>>         INIT_LIST_HEAD(&p->rcu_node_entry);
+>>>  }
+>>> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+>>> index 769e12e..d207ddd 100644
+>>> --- a/kernel/rcutree_plugin.h
+>>> +++ b/kernel/rcutree_plugin.h
+>>> @@ -33,6 +33,7 @@
+>>>  #define RCU_KTHREAD_PRIO 1
+>>>
+>>>  #ifdef CONFIG_RCU_BOOST
+>>> +#include "rtmutex_common.h"
+>>>  #define RCU_BOOST_PRIO CONFIG_RCU_BOOST_PRIO
+>>>  #else
+>>>  #define RCU_BOOST_PRIO RCU_KTHREAD_PRIO
+>>> @@ -340,7 +341,7 @@ void rcu_read_unlock_special(struct task_struct *t)
+>>>         unsigned long flags;
+>>>         struct list_head *np;
+>>>  #ifdef CONFIG_RCU_BOOST
+>>> -       struct rt_mutex *rbmp = NULL;
+>>> +       struct rt_mutex_waiter *waiter = NULL;
+>>>  #endif /* #ifdef CONFIG_RCU_BOOST */
+>>>         struct rcu_node *rnp;
+>>>         int special;
+>>> @@ -397,10 +398,10 @@ void rcu_read_unlock_special(struct task_struct *t)
+>>>  #ifdef CONFIG_RCU_BOOST
+>>>                 if (&t->rcu_node_entry == rnp->boost_tasks)
+>>>                         rnp->boost_tasks = np;
+>>> -               /* Snapshot/clear ->rcu_boost_mutex with rcu_node lock
+>>> held. */
+>>> -               if (t->rcu_boost_mutex) {
+>>> -                       rbmp = t->rcu_boost_mutex;
+>>> -                       t->rcu_boost_mutex = NULL;
+>>> +               /* Snapshot/clear ->rcu_boost_waiter with rcu_node lock
+>>> held. */
+>>> +               if (t->rcu_boost_waiter) {
+>>> +                       waiter = t->rcu_boost_waiter;
+>>> +                       t->rcu_boost_waiter = NULL;
+>>>                 }
+>>>  #endif /* #ifdef CONFIG_RCU_BOOST */
+>>>
+>>> @@ -426,8 +427,8 @@ void rcu_read_unlock_special(struct task_struct *t)
+>>>
+>>>  #ifdef CONFIG_RCU_BOOST
+>>>                 /* Unboost if we were boosted. */
+>>> -               if (rbmp)
+>>> -                       rt_mutex_unlock(rbmp);
+>>> +               if (waiter)
+>>> +                       rt_mutex_rcu_deboost_unlock(t, waiter);
+>>>  #endif /* #ifdef CONFIG_RCU_BOOST */
+>>>
+>>>                 /*
+>>> @@ -1129,9 +1130,6 @@ void exit_rcu(void)
+>>>  #endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
+>>>
+>>>  #ifdef CONFIG_RCU_BOOST
+>>> -
+>>> -#include "rtmutex_common.h"
+>>> -
+>>>  #ifdef CONFIG_RCU_TRACE
+>>>
+>>>  static void rcu_initiate_boost_trace(struct rcu_node *rnp)
+>>> @@ -1181,14 +1179,15 @@ static int rcu_boost(struct rcu_node *rnp)
+>>>  {
+>>>         unsigned long flags;
+>>>         struct rt_mutex mtx;
+>>> +       struct rt_mutex_waiter rcu_boost_waiter;
+>>>         struct task_struct *t;
+>>>         struct list_head *tb;
+>>> +       int ret;
+>>>
+>>>         if (rnp->exp_tasks == NULL && rnp->boost_tasks == NULL)
+>>>                 return 0;  /* Nothing left to boost. */
+>>>
+>>>         raw_spin_lock_irqsave(&rnp->lock, flags);
+>>> -
+>>>         /*
+>>>          * Recheck under the lock: all tasks in need of boosting
+>>>          * might exit their RCU read-side critical sections on their own.
+>>> @@ -1215,7 +1214,7 @@ static int rcu_boost(struct rcu_node *rnp)
+>>>
+>>>         /*
+>>>          * We boost task t by manufacturing an rt_mutex that appears to
+>>> -        * be held by task t.  We leave a pointer to that rt_mutex where
+>>> +        * be held by task t.  We leave a pointer to that rt_mutex_waiter
+>>> where
+>>>          * task t can find it, and task t will release the mutex when it
+>>>          * exits its outermost RCU read-side critical section.  Then
+>>>          * simply acquiring this artificial rt_mutex will boost task
+>>> @@ -1230,11 +1229,30 @@ static int rcu_boost(struct rcu_node *rnp)
+>>>          * section.
+>>>          */
+>>>         t = container_of(tb, struct task_struct, rcu_node_entry);
+>>> +       get_task_struct(t);
+>>>         rt_mutex_init_proxy_locked(&mtx, t);
+>>> -       t->rcu_boost_mutex = &mtx;
+>>>         raw_spin_unlock_irqrestore(&rnp->lock, flags);
+>>> -       rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
+>>> -       rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
+>>> +
+>>> +       debug_rt_mutex_init_waiter(&rcu_boost_waiter);
+>>> +       /* Side effect: boosts task t's priority. */
+>>> +       ret = rt_mutex_start_proxy_lock(&mtx, &rcu_boost_waiter, current,
+>>> 0);
+>>> +       if (WARN_ON_ONCE(ret)) {
+>>> +               put_task_struct(t);
+>>> +               return 0; /* temporary stop boosting */
+>>> +       }
+>>> +
+>>> +       raw_spin_lock_irqsave(&rnp->lock, flags);
+>>> +       if (&t->rcu_node_entry == rnp->exp_tasks ||
+>>> +           &t->rcu_node_entry == rnp->boost_tasks) {
+>>> +               t->rcu_boost_waiter = &rcu_boost_waiter;
+>>> +               raw_spin_unlock_irqrestore(&rnp->lock, flags);
+>>> +       } else {
+>>> +               raw_spin_unlock_irqrestore(&rnp->lock, flags);
+>>> +               rt_mutex_rcu_deboost_unlock(t, &rcu_boost_waiter);
+>>> +       }
+>>> +
+>>> +       put_task_struct(t);
+>>> +       rt_mutex_finish_proxy_lock(&mtx, NULL, &rcu_boost_waiter, 0);
+>>>
+>>>         return ACCESS_ONCE(rnp->exp_tasks) != NULL ||
+>>>                ACCESS_ONCE(rnp->boost_tasks) != NULL;
+>>> diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+>>> index 0dd6aec..2f3caee 100644
+>>> --- a/kernel/rtmutex.c
+>>> +++ b/kernel/rtmutex.c
+>>> @@ -734,6 +734,43 @@ rt_mutex_slowunlock(struct rt_mutex *lock)
+>>>         rt_mutex_adjust_prio(current);
+>>>  }
+>>>
+>>> +#ifdef CONFIG_RCU_BOOST
+>>> +/*
+>>> + * rt_mutex_rcu_deboost_unlock() - unlock in irq/bh/process context
+>>> + *
+>>> + * please revert the patch which introduces this function when
+>>> + * rt_mutex's ->wait_lock is irq-off.
+>>> + */
+>>> +void rt_mutex_rcu_deboost_unlock(struct task_struct *owner,
+>>> +                                struct rt_mutex_waiter *waiter)
+>>> +{
+>>> +       unsigned long flags;
+>>> +       struct rt_mutex *lock = waiter->lock;
+>>> +
+>>> +       /*
+>>> +        * The correction of the following code is based on
+>>> +        * 1) current lock is owned by @owner
+>>> +        * 2) only one task(@waiter->task) is waiting on the @lock
+>>> +        * 3) the @waiter has been queued and keeps been queued
+>>> +        */
+>>> +       if (WARN_ON_ONCE(rt_mutex_owner(lock) != owner))
+>>> +               return; /* 1) */
+>>> +       if (WARN_ON_ONCE(rt_mutex_top_waiter(lock) != waiter))
+>>> +               return; /* 2) & 3) */
+>>> +       if (WARN_ON_ONCE(plist_node_empty(&waiter->pi_list_entry)))
+>>> +               return; /* 2) & 3) */
+>>> +
+>>> +       raw_spin_lock_irqsave(&owner->pi_lock, flags);
+>>> +       plist_del(&waiter->pi_list_entry, &owner->pi_waiters);
+>>> +       lock->owner = NULL;
+>>> +       raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+>>> +
+>>> +       wake_up_process(waiter->task);
+>>> +       /* Undo pi boosting if necessary: */
+>>> +       rt_mutex_adjust_prio(owner);
+>>> +}
+>>> +#endif /* #ifdef CONFIG_RCU_BOOST */
+>>> +
+>>>  /*
+>>>   * debug aware fast / slowpath lock,trylock,unlock
+>>>   *
+>>> diff --git a/kernel/rtmutex_common.h b/kernel/rtmutex_common.h
+>>> index 53a66c8..3cdbe82 100644
+>>> --- a/kernel/rtmutex_common.h
+>>> +++ b/kernel/rtmutex_common.h
+>>> @@ -117,6 +117,11 @@ extern int rt_mutex_finish_proxy_lock(struct rt_mutex
+>>> *lock,
+>>>                                       struct rt_mutex_waiter *waiter,
+>>>                                       int detect_deadlock);
+>>>
+>>> +#ifdef CONFIG_RCU_BOOST
+>>> +void rt_mutex_rcu_deboost_unlock(struct task_struct *owner,
+>>> +                                struct rt_mutex_waiter *waiter);
+>>> +#endif /* #ifdef CONFIG_RCU_BOOST */
+>>> +
+>>>  #ifdef CONFIG_DEBUG_RT_MUTEXES
+>>>  # include "rtmutex-debug.h"
+>>>  #else
+>>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-
-Âèë‰ª∂‰∫∫Ôºö Joe Perches 
-ÂèëÈÄÅÊó∂Èó¥Ôºö 2013-08-25  02:15:19 
-Êî∂‰ª∂‰∫∫Ôºö liujunliang_ljl 
-ÊäÑÈÄÅÔºö davem; horms; romieu; gregkh; netdev; linux-usb; linux-kernel; sunhecheng 
-‰∏ªÈ¢òÔºö Re: [PATCH] USB2NET : SR9700 : One chip USB 1.1 USB2NET SR9700Device Driver Support 
- 
-Some whitespace and neatening fixups.
-Some conversions from 4 indent tabs to normal tabs
-Signed-off-by: Joe Perches <joe@perches.com>
----
-Just doing this instead of commenting about spacing
-again.
- drivers/net/usb/sr9700.c | 127 +++++++++++++++++++++++++----------------------
- 1 file changed, 67 insertions(+), 60 deletions(-)
-diff --git a/drivers/net/usb/sr9700.c b/drivers/net/usb/sr9700.c
-index 27c86ec..4262b9d 100644
---- a/drivers/net/usb/sr9700.c
-+++ b/drivers/net/usb/sr9700.c
-@@ -29,7 +29,7 @@ static int sr_read(struct usbnet *dev, u8 reg, u16 length, void *data)
-  int err;
-
-  err = usbnet_read_cmd(dev, SR_RD_REGS, SR_REQ_RD_REG,
-- 0, reg, data, length);
-+       0, reg, data, length);
-  if ((err != length) && (err >= 0))
-  err = -EINVAL;
-  return err;
-@@ -40,7 +40,7 @@ static int sr_write(struct usbnet *dev, u8 reg, u16 length, void *data)
-  int err;
-
-  err = usbnet_write_cmd(dev, SR_WR_REGS, SR_REQ_WR_REG,
-- 0, reg, data, length);
-+        0, reg, data, length);
-  if ((err >= 0) && (err < length))
-  err = -EINVAL;
-  return err;
-@@ -54,19 +54,19 @@ static int sr_read_reg(struct usbnet *dev, u8 reg, u8 *value)
- static int sr_write_reg(struct usbnet *dev, u8 reg, u8 value)
- {
-  return usbnet_write_cmd(dev, SR_WR_REGS, SR_REQ_WR_REG,
-- value, reg, NULL, 0);
-+ value, reg, NULL, 0);
- }
-
- static void sr_write_async(struct usbnet *dev, u8 reg, u16 length, void *data)
- {
-  usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
-- 0, reg, data, length);
-+        0, reg, data, length);
- }
-
- static void sr_write_reg_async(struct usbnet *dev, u8 reg, u8 value)
- {
-  usbnet_write_cmd_async(dev, SR_WR_REGS, SR_REQ_WR_REG,
-- value, reg, NULL, 0);
-+        value, reg, NULL, 0);
- }
-
- static int wait_phy_eeprom_ready(struct usbnet *dev, int phy)
-@@ -89,7 +89,7 @@ static int wait_phy_eeprom_ready(struct usbnet *dev, int phy)
-
-  if (i >= SR_SHARE_TIMEOUT) {
-  netdev_err(dev->net, "%s write timed out!\n",
-- phy ? "phy" : "eeprom");
-+    phy ? "phy" : "eeprom");
-  ret = -EIO;
-  goto out;
-  }
-@@ -98,7 +98,8 @@ out:
-  return ret;
- }
-
--static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg, __le16 *value)
-+static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg,
-+       __le16 *value)
- {
-  int ret;
-
-@@ -115,14 +116,15 @@ static int sr_share_read_word(struct usbnet *dev, int phy, u8 reg, __le16 *value
-  ret = sr_read(dev, EPDR, 2, value);
-
-  netdev_dbg(dev->net, "read shared %d 0x%02x returned 0x%04x, %d\n",
-- phy, reg, *value, ret);
-+    phy, reg, *value, ret);
-
- out:
-  mutex_unlock(&dev->phy_mutex);
-  return ret;
- }
-
--static int sr_share_write_word(struct usbnet *dev, int phy, u8 reg, __le16 value)
-+static int sr_share_write_word(struct usbnet *dev, int phy, u8 reg,
-+        __le16 value)
- {
-  int ret;
-
-@@ -156,7 +158,8 @@ static int sr9700_get_eeprom_len(struct net_device *dev)
-  return SR_EEPROM_LEN;
- }
-
--static int sr9700_get_eeprom(struct net_device *net, struct ethtool_eeprom *eeprom, u8 *data)
-+static int sr9700_get_eeprom(struct net_device *net,
-+      struct ethtool_eeprom *eeprom, u8 *data)
- {
-  struct usbnet *dev = netdev_priv(net);
-  __le16 *ebuf = (__le16 *)data;
-@@ -168,7 +171,8 @@ static int sr9700_get_eeprom(struct net_device *net, struct ethtool_eeprom *eepr
-  return -EINVAL;
-
-  for (i = 0; i < eeprom->len / 2; i++)
-- ret = sr_read_eeprom_word(dev, eeprom->offset / 2 + i, &ebuf[i]);
-+ ret = sr_read_eeprom_word(dev, eeprom->offset / 2 + i,
-+   &ebuf[i]);
-
-  return ret;
- }
-@@ -199,12 +203,13 @@ static int sr_mdio_read(struct net_device *netdev, int phy_id, int loc)
-  res = le16_to_cpu(res) & ~BMSR_LSTATUS;
-
-  netdev_dbg(dev->net, "sr_mdio_read() phy_id=0x%02x, loc=0x%02x, returns=0x%04x\n",
-- phy_id, loc, res);
-+    phy_id, loc, res);
-
-  return res;
- }
-
--static void sr_mdio_write(struct net_device *netdev, int phy_id, int loc, int val)
-+static void sr_mdio_write(struct net_device *netdev, int phy_id, int loc,
-+   int val)
- {
-  struct usbnet *dev = netdev_priv(netdev);
-  __le16 res = cpu_to_le16(val);
-@@ -215,7 +220,7 @@ static void sr_mdio_write(struct net_device *netdev, int phy_id, int loc, int va
-  }
-
-  netdev_dbg(dev->net, "sr_mdio_write() phy_id=0x%02x, loc=0x%02x, val=0x%04x\n",
-- phy_id, loc, val);
-+    phy_id, loc, val);
-
-  sr_share_write_word(dev, 1, loc, res);
- }
-@@ -242,15 +247,15 @@ static int sr9700_ioctl(struct net_device *net, struct ifreq *rq, int cmd)
- }
-
- static const struct ethtool_ops sr9700_ethtool_ops = {
-- .get_drvinfo = usbnet_get_drvinfo,
-- .get_link = sr9700_get_link,
-- .get_msglevel = usbnet_get_msglevel,
-- .set_msglevel = usbnet_set_msglevel,
-- .get_eeprom_len = sr9700_get_eeprom_len,
-- .get_eeprom = sr9700_get_eeprom,
-- .get_settings = usbnet_get_settings,
-- .set_settings = usbnet_set_settings,
-- .nway_reset = usbnet_nway_reset,
-+ .get_drvinfo = usbnet_get_drvinfo,
-+ .get_link = sr9700_get_link,
-+ .get_msglevel = usbnet_get_msglevel,
-+ .set_msglevel = usbnet_set_msglevel,
-+ .get_eeprom_len = sr9700_get_eeprom_len,
-+ .get_eeprom = sr9700_get_eeprom,
-+ .get_settings = usbnet_get_settings,
-+ .set_settings = usbnet_set_settings,
-+ .nway_reset = usbnet_nway_reset,
- };
-
- static void sr9700_set_multicast(struct net_device *net)
-@@ -269,7 +274,7 @@ static void sr9700_set_multicast(struct net_device *net)
-  if (net->flags & IFF_PROMISC) {
-  rx_ctl |= RCR_PRMSC;
-  } else if (net->flags & IFF_ALLMULTI ||
--   netdev_mc_count(net) > SR_MCAST_MAX) {
-+    netdev_mc_count(net) > SR_MCAST_MAX) {
-  rx_ctl |= RCR_RUNT;
-  } else if (!netdev_mc_empty(net)) {
-  struct netdev_hw_addr *ha;
-@@ -290,7 +295,7 @@ static int sr9700_set_mac_address(struct net_device *net, void *p)
-
-  if (!is_valid_ether_addr(addr->sa_data)) {
-  netdev_err(net, "not setting invalid mac address %pM\n",
-- addr->sa_data);
-+    addr->sa_data);
-  return -EINVAL;
-  }
-
-@@ -301,15 +306,15 @@ static int sr9700_set_mac_address(struct net_device *net, void *p)
- }
-
- static const struct net_device_ops sr9700_netdev_ops = {
-- .ndo_open = usbnet_open,
-- .ndo_stop = usbnet_stop,
-- .ndo_start_xmit = usbnet_start_xmit,
-- .ndo_tx_timeout = usbnet_tx_timeout,
-- .ndo_change_mtu = usbnet_change_mtu,
-- .ndo_validate_addr = eth_validate_addr,
-- .ndo_do_ioctl = sr9700_ioctl,
-- .ndo_set_rx_mode = sr9700_set_multicast,
-- .ndo_set_mac_address = sr9700_set_mac_address,
-+ .ndo_open = usbnet_open,
-+ .ndo_stop = usbnet_stop,
-+ .ndo_start_xmit = usbnet_start_xmit,
-+ .ndo_tx_timeout = usbnet_tx_timeout,
-+ .ndo_change_mtu = usbnet_change_mtu,
-+ .ndo_validate_addr = eth_validate_addr,
-+ .ndo_do_ioctl = sr9700_ioctl,
-+ .ndo_set_rx_mode = sr9700_set_multicast,
-+ .ndo_set_mac_address = sr9700_set_mac_address,
- };
-
- static int sr9700_bind(struct usbnet *dev, struct usb_interface *intf)
-@@ -360,7 +365,8 @@ static int sr9700_bind(struct usbnet *dev, struct usb_interface *intf)
-
-  sr_mdio_write(dev->net, dev->mii.phy_id, MII_BMCR, BMCR_RESET);
-  sr_mdio_write(dev->net, dev->mii.phy_id,
-- MII_ADVERTISE, ADVERTISE_ALL | ADVERTISE_CSMA | ADVERTISE_PAUSE_CAP);
-+       (MII_ADVERTISE, ADVERTISE_ALL |
-+        ADVERTISE_CSMA | ADVERTISE_PAUSE_CAP));
-  mii_nway_restart(&dev->mii);
-
- out:
-@@ -373,11 +379,11 @@ static int sr9700_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
-  int len;
-
-  /* skb content (packets) format :
--  * p0 p1 p2 ...... pm
--  *      /   \
--  * / \
--  * / \
--  *  / \
-+  *                    p0            p1            p2    ......    pm
-+  *                 /      \
-+  *            /                \
-+  *        /                            \
-+  *  /                                        \
-   * p0b0 p0b1 p0b2 p0b3 ...... p0b(n-4) p0b(n-3)...p0bn
-   *
-   * p0 : packet 0
-@@ -431,7 +437,8 @@ static int sr9700_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
-  return 0;
- }
-
--static struct sk_buff *sr9700_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t flags)
-+static struct sk_buff *sr9700_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
-+        gfp_t flags)
- {
-  int len;
-
-@@ -508,40 +515,40 @@ static int sr9700_link_reset(struct usbnet *dev)
-  mii_ethtool_gset(&dev->mii, &ecmd);
-
-  netdev_dbg(dev->net, "link_reset() speed: %d duplex: %d\n",
-- ecmd.speed, ecmd.duplex);
-+    ecmd.speed, ecmd.duplex);
-
-  return 0;
- }
-
- static const struct driver_info sr9700_driver_info = {
-- .description = "CoreChip SR9700 USB Ethernet",
-- .flags = FLAG_ETHER,
-- .bind = sr9700_bind,
-- .rx_fixup = sr9700_rx_fixup,
-- .tx_fixup = sr9700_tx_fixup,
-- .status = sr9700_status,
-- .link_reset = sr9700_link_reset,
-- .reset = sr9700_link_reset,
-+ .description = "CoreChip SR9700 USB Ethernet",
-+ .flags = FLAG_ETHER,
-+ .bind = sr9700_bind,
-+ .rx_fixup = sr9700_rx_fixup,
-+ .tx_fixup = sr9700_tx_fixup,
-+ .status = sr9700_status,
-+ .link_reset = sr9700_link_reset,
-+ .reset = sr9700_link_reset,
- };
-
- static const struct usb_device_id products[] = {
-  {
--  USB_DEVICE(0x0fe6, 0x9700), /* SR9700 device */
--  .driver_info = (unsigned long)&sr9700_driver_info,
--  },
-+ USB_DEVICE(0x0fe6, 0x9700), /* SR9700 device */
-+ .driver_info = (unsigned long)&sr9700_driver_info,
-+ },
-  {}, /* END */
- };
-
- MODULE_DEVICE_TABLE(usb, products);
-
- static struct usb_driver sr9700_usb_driver = {
-- .name = "sr9700",
-- .id_table = products,
-- .probe = usbnet_probe,
-- .disconnect = usbnet_disconnect,
-- .suspend = usbnet_suspend,
-- .resume = usbnet_resume,
-- .disable_hub_initiated_lpm = 1,
-+ .name = "sr9700",
-+ .id_table = products,
-+ .probe = usbnet_probe,
-+ .disconnect = usbnet_disconnect,
-+ .suspend = usbnet_suspend,
-+ .resume = usbnet_resume,
-+ .disable_hub_initiated_lpm = 1,
- };
-
- module_usb_driver(sr9700_usb_driver);
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
