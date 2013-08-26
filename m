@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab3HZGIF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 02:08:05 -0400
-Received: from pindarots.xs4all.nl ([80.101.128.228]:51977 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755779Ab3HZGID (ORCPT
+	id S1755963Ab3HZGSD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 02:18:03 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:37661 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755568Ab3HZGSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 02:08:03 -0400
-X-Greylist: delayed 846 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 02:08:03 EDT
-Message-ID: <521AED72.8050105@xs4all.nl>
-Date: Mon, 26 Aug 2013 07:53:54 +0200
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Mon, 26 Aug 2013 02:18:01 -0400
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: weird keyboard issue (ps/2 port?) 3.9.x/3.10.x?
-X-Enigmail-Version: 1.5.2
+Date: Mon, 26 Aug 2013 11:48:00 +0530
+Message-ID: <CAKohpoksNiGT+r3JTY6KFwnDFA5OYE-vQe8W_9GT-fN21UMrfQ@mail.gmail.com>
+Subject: [GIT PULL]: CPUFreq: ARM Fixes for 3.12
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Joseph Lo <josephl@nvidia.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Stephen Warren <swarren@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Rafael,
 
-I am stuck with a weird keyboard related issue:
-Since a few weeks I see loads of ^@^@^@^@^@^@ appear on the text console
-while the PC_speaker beeps when this box is in runlevel 3.
-When xorg is running the ^@^@^@ stream stops, as does the beeping, but I
-can notice that selecting text, scrolling xterminals with the mouse are
-interrupted by these characters appearing. (but not printing)
+Hopefully this is the last patch for 3.12 for ARM CPUFreq subsystem.
 
-Removing/replacing the ps/2 keyboard does not help.
-Rebooting does help for a while.
+The following changes since commit b36f4be3de1b123d8601de062e7dbfc904f305fb:
 
-The hardware is a Gigabyte F2A85X-UP4, BIOS F5a 04/30/2013.
-I replaced the board last weekend by a brand new F2A85X-UP4 with same
-BIOS F5a but the problem persists.
+  Linux 3.11-rc6 (2013-08-18 14:36:53 -0700)
 
-What could this be?
-Is it really a software issue?
-If so: how could I help fix this?
+are available in the git repository at:
 
-Kind regards,
-Udo
+  git://git.linaro.org/people/vireshk/linux.git cpufreq-fixes
+
+for you to fetch changes up to b192b910f3832793082c1a18262c4da0efe121ae:
+
+  cpufreq: tegra: fix the wrong clock name (2013-08-23 21:58:28 +0530)
+
+----------------------------------------------------------------
+Joseph Lo (1):
+      cpufreq: tegra: fix the wrong clock name
+
+ drivers/cpufreq/tegra-cpufreq.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
