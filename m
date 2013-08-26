@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab3HZKEF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:04:05 -0400
-Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:41670 "EHLO
-	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751675Ab3HZKED (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:04:03 -0400
-Date: Mon, 26 Aug 2013 17:59:25 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "gregory.clement@free-electrons.com" 
-	<gregory.clement@free-electrons.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 4/4] pinctrl: mvebu: Convert to use
- devm_ioremap_resource
-Message-ID: <20130826175925.5774a277@xhacker>
-In-Reply-To: <20130824150624.GA12907@localhost>
-References: <1377225242-5854-1-git-send-email-jszhang@marvell.com>
-	<1377225242-5854-5-git-send-email-jszhang@marvell.com>
-	<20130824150624.GA12907@localhost>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	id S1756681Ab3HZKFG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:05:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18504 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751821Ab3HZKFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 06:05:04 -0400
+Date: Mon, 26 Aug 2013 13:04:01 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, pbonzini@redhat.com,
+        jeremy@goop.org, konrad.wilk@oracle.com, peterz@infradead.org,
+        tglx@linutronix.de, agraf@suse.de, digitaleric@google.com,
+        riel@redhat.com, avi.kivity@gmail.com, habanero@linux.vnet.ibm.com,
+        chegu_vinod@hp.com, ouyang@cs.pitt.edu, drjones@redhat.com,
+        linux-doc@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, andi@firstfloor.org,
+        virtualization@lists.linux-foundation.org, mtosatti@redhat.com,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH V13 0/4] Paravirtualized ticket spinlocks for KVM host
+Message-ID: <20130826100401.GZ8218@redhat.com>
+References: <y>
+ <1377506916-26946-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377506916-26946-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ezequiel,
-
-On Sat, 24 Aug 2013 08:06:25 -0700
-Ezequiel Garcia <ezequiel.garcia@free-electrons.com> wrote:
-
-> Hi Jisheng,
+On Mon, Aug 26, 2013 at 02:18:32PM +0530, Raghavendra K T wrote:
 > 
-> On Fri, Aug 23, 2013 at 10:34:02AM +0800, Jisheng Zhang wrote:
-> > Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> > ---
-> >  drivers/pinctrl/mvebu/pinctrl-mvebu.c | 11 +++++------
-> >  1 file changed, 5 insertions(+), 6 deletions(-)
-> > 
+>  This series forms the kvm host part of paravirtual spinlock
+>  based against kvm tree.
 > 
-> Mmm.. I would prefer to see a better commit log for this patch.
-> In particular, the current code is buggy (for there's a leak) and
-> this patch fixes it.
-> Care to write something meaningful and re-send? (except the patch
-
-Done. Could you please review again?
-
-> Mike already took, I guess).
+>  Please refer to https://lkml.org/lkml/2013/8/9/265 for
+>  kvm guest and Xen, x86 part merged to -tip spinlocks.
 > 
-> With that changes you can add:
+>  Please note that:
+>  kvm uapi: Add KICK_CPU and PV_UNHALT definition to uapi is a common patch
+>  for both guest and host.
 > 
-> Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>T
-Thank you for your help
+Thanks, applied. The patchset is not against kvm.git queue though, so I
+had to fix one minor conflict manually.
+
+>  Changes since V12:
+>   fold the patch 3 into patch 2 for bisection. (Eric Northup)
 > 
-> for the whole series.
+> Raghavendra K T (3):
+>   kvm uapi: Add KICK_CPU and PV_UNHALT definition to uapi
+>   kvm hypervisor: Simplify kvm_for_each_vcpu with
+>     kvm_irq_delivery_to_apic
+>   Documentation/kvm : Add documentation on Hypercalls and features used
+>     for PV spinlock
+> 
+> Srivatsa Vaddagiri (1):
+>   kvm hypervisor : Add a hypercall to KVM hypervisor to support
+>     pv-ticketlocks
+> 
+>  Documentation/virtual/kvm/cpuid.txt      |  4 ++++
+>  Documentation/virtual/kvm/hypercalls.txt | 14 ++++++++++++++
+>  arch/x86/include/asm/kvm_host.h          |  5 +++++
+>  arch/x86/include/uapi/asm/kvm_para.h     |  1 +
+>  arch/x86/kvm/cpuid.c                     |  3 ++-
+>  arch/x86/kvm/lapic.c                     |  5 ++++-
+>  arch/x86/kvm/x86.c                       | 31 ++++++++++++++++++++++++++++++-
+>  include/uapi/linux/kvm_para.h            |  1 +
+>  8 files changed, 61 insertions(+), 3 deletions(-)
+> 
+> -- 
+> 1.7.11.7
 
-Best Regards,
-Jisheng
-
-
+--
+			Gleb.
