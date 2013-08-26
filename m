@@ -1,70 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab3HZJcq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 05:32:46 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:35236 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab3HZJco (ORCPT
+	id S1756508Ab3HZJdF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 05:33:05 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:45481 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756305Ab3HZJdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 05:32:44 -0400
+	Mon, 26 Aug 2013 05:33:03 -0400
+Message-ID: <521B20CA.1020809@hitachi.com>
+Date: Mon, 26 Aug 2013 18:32:58 +0900
+From: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130824001345.GD14810@roeck-us.net>
-References: <20130820192650.GA19470@srcf.ucam.org>
-	<6438184.2yT2NMB1CE@vostro.rjw.lan>
-	<20130821233942.GA21502@srcf.ucam.org>
-	<1810269.JOHnJ0H7P9@vostro.rjw.lan>
-	<20130822000306.GA21785@srcf.ucam.org>
-	<1377300343.5259.84.camel@dvhart-mobl4.amr.corp.intel.com>
-	<20130823233805.GA1801@srcf.ucam.org>
-	<1377301548.5259.91.camel@dvhart-mobl4.amr.corp.intel.com>
-	<20130824001345.GD14810@roeck-us.net>
-Date: Mon, 26 Aug 2013 11:32:44 +0200
-Message-ID: <CACRpkdb-qwDrKUp4+5OzPQ_tJPGB4B69GmO__i-KwjFTETSYqw@mail.gmail.com>
-Subject: Re: ACPI vs Device Tree - moving forward
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: emilne@redhat.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [RFC PATCH] scsi: Add failfast mode to avoid infinite retry loop
+References: <20130819093925.7867.19221.stgit@ltc223.sdl.hitachi.co.jp>   <1376922616.2069.9.camel@dabdike.int.hansenpartnership.com>   <5213172E.1060905@hitachi.com>  <1377022167.3872.13.camel@localhost.localdomain>  <52172721.1040203@hitachi.com> <1377263977.2095.1.camel@dabdike>
+In-Reply-To: <1377263977.2095.1.camel@dabdike>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 24, 2013 at 2:13 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+(2013/08/23 22:19), James Bottomley wrote:
+> On Fri, 2013-08-23 at 18:10 +0900, Eiichi Tsukata wrote:
+>> (2013/08/21 3:09), Ewan Milne wrote:
+>>> On Tue, 2013-08-20 at 16:13 +0900, Eiichi Tsukata wrote:
+>>>> (2013/08/19 23:30), James Bottomley wrote:
+>>>>> On Mon, 2013-08-19 at 18:39 +0900, Eiichi Tsukata wrote:
+>>>>>> Hello,
+>>>>>>
+>>>>>> This patch adds scsi device failfast mode to avoid infinite retry loop.
+>>>>>>
+>>>>>> Currently, scsi error handling in scsi_decide_disposition() and
+>>>>>> scsi_io_completion() unconditionally retries on some errors. This is because
+>>>>>> retryable errors are thought to be temporary and the scsi device will soon
+>>>>>> recover from those errors. Normally, such retry policy is appropriate because
+>>>>>> the device will soon recover from temporary error state.
+>>>>>> But there is no guarantee that device is able to recover from error state
+>>>>>> immediately. Some hardware error may prevent device from recovering.
+>>>>>> Therefore hardware error can results in infinite command retry loop. In fact,
+>>>>>> CHECK_CONDITION error with the sense-key = UNIT_ATTENTION caused infinite
+>>>>>> retry loop in our environment. As the comments in kernel source code says,
+>>>>>> UNIT_ATTENTION means the device must have been a power glitch and expected
+>>>>>> to immediately recover from the state. But it seems that hardware error
+>>>>>> caused permanent UNIT_ATTENTION error.
+>>>>>>
+>>>>>> To solve the above problem, this patch introduces scsi device "failfast mode".
+>>>>>> If failfast mode is enabled, retry counts of all scsi commands are limited to
+>>>>>> scsi->allowed(== SD_MAX_RETRIES == 5). All commands are prohibited to retry
+>>>>>> infinitely, and immediately fails when the retry count exceeds upper limit.
+>>>>>> Failfast mode is useful on mission critical systems which are required
+>>>>>> to keep running flawlessly because they need to failover to the secondary
+>>>>>> system once they detect failures.
+>>>>>> On default, failfast mode is disabled because failfast policy is not suitable
+>>>>>> for most use cases which can accept I/O latency due to device hardware error.
+>>>>>>
+>>>>>> To enable failfast mode(default disabled):
+>>>>>>             # echo 1>    /sys/bus/scsi/devices/X:X:X:X/failfast
+>>>>>> To disable:
+>>>>>>             # echo 0>    /sys/bus/scsi/devices/X:X:X:X/failfast
+>>>>>>
+>>>>>> Furthermore, I'm planning to make the upper limit count configurable.
+>>>>>> Currently, I have two plans to implement it:
+>>>>>> (1) set same upper limit count on all errors.
+>>>>>> (2) set upper limit count on each error.
+>>>>>> The first implementation is simple and easy to implement but not flexible.
+>>>>>> Someone wants to set different upper limit count on each errors depends on the
+>>>>>> scsi device they use. The second implementation satisfies such requirement
+>>>>>> but can be too fine-grained and annoying to configure because scsi error
+>>>>>> codes are so much. The default 5 times retry may too much on some errors but
+>>>>>> too few on other errors.
+>>>>>>
+>>>>>> Which would be the appropriate implementation?
+>>>>>> Any comments or suggestions are welcome as usual.
+>>>>>
+>>>>> I'm afraid you'll need to propose another solution.  We have a large
+>>>>> selection of commands which, by design, retry until the command exceeds
+>>>>> it's timeout.  UA is one of those (as are most of the others you're
+>>>>> limiting).  How do you kick this device out of its UA return (because
+>>>>> that's the recovery that needs to happen)?
+>>>>>
+>>>>> James
+>>>>>
+>>>>>
+>>>>
+>>>> Thanks for reviewing, James.
+>>>>
+>>>> Originally, I planned that once the retry count exceeds its limit,
+>>>> a monitoring tool stops the server with the scsi prink error message
+>>>> as a trigger.
+>>>> Current failfast mode implementation is that the command fails when
+>>>> retry command exceeds its limit. However, I noticed that only printing error messages
+>>>> on retry counts excess without changing retry logic will be enough
+>>>> to stop the server and take fail over.  Though there is no guarantee that
+>>>> userspace application can work properly on disk failure condition.
+>>>> So, now I'm considering that just calling panic() on retry excess is better.
+>>>>
+>>>> For that reason, I propose the solution that adding "panic_on_error" option to
+>>>> sysfs parameter and if panic_on_error mode is enabled the server panics
+>>>> immediately once it detects retry excess. Of course, it is disabled on default.
+>>>>
+>>>> I would appreciate it if you could give me some comments.
+>>>>
+>>>> Eiichi
+>>>> --
+>>>
+>>> For what it's worth, I've seen a report of a case where a storage array
+>>> returned a CHECK CONDITION with invalid sense data, which caused the
+>>> command to be retried indefinitely.
+>>
+>> Thank you for commenting, Ewan.
+>> I appreciate your information about indefinite retry on CHECK CONDITION.
+>>
+>>> I'm not sure what you can do about
+>>> this, if the device won't ever complete a command without an error.
+>>> Perhaps it should be offlined after sufficiently bad behavior.
+>>>
+>>> I don't think you want to panic on an error, though.  In a clustered
+>>> environment it is possible that the other systems will all fail in the
+>>> same way, for example.
+>>>
+>>> -Ewan
+>>>
+>>
+>> Yes, basically the device should be offlined on error detection.
+>> Just offlining the disk is enough when an error occurs on "not" os-installed
+>> system disk. Panic is going too far on such case.
+>>
+>> However, in a clustered environment where computers use each its own
+>> disk and
+>> do not share the same disk, calling panic() will be suitable when an
+>> error
+>> occurs in system disk.
+>
+> However, when not in a clustered environment, it won't be.  Decisions
+> about whether to panic the system or not are user space policy, and
+> should not be embedded into subsystems.  What we need to do is to come
+> up with a way of detecting the condition, reporting it and possibly
+> taking some action.
+>
+>>   Because even on such disk error, cluster monitoring
+>> tool may not be able to detect the system failure while heartbeat can
+>> continue
+>> working.
+>> So, I think basically offlining is enough and also, panic is necessary
+>> on some cases.
+>
+> Offline seems a bit drastic ... what happens if you send it a target
+> reset?
+>
+> James
+>
 
-> Did the group conclude that the idea of FDT augmenting ACPI is not feasible ?
+I see. Users should decide whether or not to panic.
+As Ric says, that should be done on file system or higher layer.
 
-I don't think anyone really knows. For example: how to specify a few
-config options through a FDT augmented ACPI system is trivial. Passing
-system-wide resources such as clocks, regulators, pin control handles,
-GPIOs, interrupts and DMA channels is a criss-cross operation and
-nobody knows if that will work because nobody tried to hash out
-the details of.
+I'm now considering about handling SCSI error in user space with printk
+error message as a fail over trigger. Currently, is there a nice
+way to detect indefinite retry on SCSI layer?
+/proc/sys/dev/scsi/logging_level can show detailed information about scsi
+command but too much to detect indefinite retry.
+How about adding printk error message when retry count exceed scmd->allowed
+on each SCSI command?
 
-> If not, the key question for me is how to implement it, and how to handle
-> all its little problems.
-
-It seems like we are in the "teenagers talking about sex" situation,
-everybody is talking about it but nobody is really doing it.
-Which makes it all pretty theoretical.
-
-> If yes, the key question for me is how to handle all the drivers which
-> assume fdt-style properties, and how to express all that information in ACPI
-> in a way which does not require a substantial driver rewrite (and, as you point
-> out, how that data would be described in ACPI consistently across multiple
-> vendors).
-
-For GPIO we have this:
-
-drivers/gpio/gpiolib-of.c
-drivers/gpio/gpiolib-acpi.c
-
-So one thing is clear: for this resource we're going to have two
-implementations.
-
-Yours,
-Linus Walleij
+Eiichi
