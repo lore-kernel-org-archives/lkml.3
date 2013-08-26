@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab3HZWUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:20:47 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:63908 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685Ab3HZWTX (ORCPT
+	id S1752871Ab3HZWVO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:21:14 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:56091 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab3HZWTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:19:23 -0400
+	Mon, 26 Aug 2013 18:19:19 -0400
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: lkml <linux-kernel@vger.kernel.org>,
@@ -19,9 +19,9 @@ Cc: lkml <linux-kernel@vger.kernel.org>,
         James Bottomley <JBottomley@Parallels.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Nicholas Bellinger <nab@daterainc.com>
-Subject: [PATCH-v2 5/9] target: Avoid non-existent tg_pt_gp_mem in target_alua_state_check
-Date: Mon, 26 Aug 2013 22:03:04 +0000
-Message-Id: <1377554588-28394-6-git-send-email-nab@daterainc.com>
+Subject: [PATCH-v2 3/9] target: Make helpers non static for EXTENDED_COPY command setup
+Date: Mon, 26 Aug 2013 22:03:02 +0000
+Message-Id: <1377554588-28394-4-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1377554588-28394-1-git-send-email-nab@daterainc.com>
 References: <1377554588-28394-1-git-send-email-nab@daterainc.com>
@@ -31,9 +31,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@daterainc.com>
 
-This patch adds an check for a non-existent port->sep_alua_tg_pt_gp_mem
-within target_alua_state_check(), which is not present for internally
-dispatched EXTENDED_COPY WRITE I/O to the destination target port.
+Both target_alloc_sgl() and transport_generic_map_mem_to_cmd() are
+required by EXTENDED_COPY logic when setting up internally dispatched
+command descriptors, so go ahead and make both of these non static.
 
 Cc: Christoph Hellwig <hch@lst.de>
 Cc: Hannes Reinecke <hare@suse.de>
@@ -45,23 +45,47 @@ Cc: James Bottomley <JBottomley@Parallels.com>
 Cc: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
 ---
- drivers/target/target_core_alua.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/target/target_core_transport.c |    4 ++--
+ include/target/target_core_backend.h   |    4 ++++
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
-index 5403186..ea928c4 100644
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -557,6 +557,9 @@ target_alua_state_check(struct se_cmd *cmd)
- 	 * a ALUA logical unit group.
- 	 */
- 	tg_pt_gp_mem = port->sep_alua_tg_pt_gp_mem;
-+	if (!tg_pt_gp_mem)
-+		return 0;
-+
- 	spin_lock(&tg_pt_gp_mem->tg_pt_gp_mem_lock);
- 	tg_pt_gp = tg_pt_gp_mem->tg_pt_gp;
- 	out_alua_state = atomic_read(&tg_pt_gp->tg_pt_gp_alua_access_state);
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 526e5ba..6d0e523 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1253,7 +1253,7 @@ int transport_handle_cdb_direct(
+ }
+ EXPORT_SYMBOL(transport_handle_cdb_direct);
+ 
+-static sense_reason_t
++sense_reason_t
+ transport_generic_map_mem_to_cmd(struct se_cmd *cmd, struct scatterlist *sgl,
+ 		u32 sgl_count, struct scatterlist *sgl_bidi, u32 sgl_bidi_count)
+ {
+@@ -2116,7 +2116,7 @@ void transport_kunmap_data_sg(struct se_cmd *cmd)
+ }
+ EXPORT_SYMBOL(transport_kunmap_data_sg);
+ 
+-static int
++int
+ target_alloc_sgl(struct scatterlist **sgl, unsigned int *nents, u32 length,
+ 		 bool zero_page)
+ {
+diff --git a/include/target/target_core_backend.h b/include/target/target_core_backend.h
+index 77f25e0..5ebe21c 100644
+--- a/include/target/target_core_backend.h
++++ b/include/target/target_core_backend.h
+@@ -74,6 +74,10 @@ int	transport_set_vpd_ident(struct t10_vpd *, unsigned char *);
+ /* core helpers also used by command snooping in pscsi */
+ void	*transport_kmap_data_sg(struct se_cmd *);
+ void	transport_kunmap_data_sg(struct se_cmd *);
++/* core helpers also used by xcopy during internal command setup */
++int	target_alloc_sgl(struct scatterlist **, unsigned int *, u32, bool);
++sense_reason_t	transport_generic_map_mem_to_cmd(struct se_cmd *,
++		struct scatterlist *, u32, struct scatterlist *, u32);
+ 
+ void	array_free(void *array, int n);
+ 
 -- 
 1.7.2.5
 
