@@ -1,58 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab3HZUba (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 16:31:30 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41485 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab3HZUb2 (ORCPT
+	id S1752524Ab3HZUeS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 16:34:18 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:44864 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653Ab3HZUeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 16:31:28 -0400
-Date: Mon, 26 Aug 2013 16:31:25 -0400 (EDT)
-Message-Id: <20130826.163125.1134768821551948034.davem@davemloft.net>
-To: mrkiko.rs@gmail.com
-Cc: gregkh@linuxfoundation.org, oliver@neukum.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH RESEND V3 net-next 2/3] net: huawei_cdc_ncm: Introduce
- the huawei_cdc_ncm driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1377244590-8558-3-git-send-email-mrkiko.rs@gmail.com>
-References: <mrkiko.rs@gmail.com>
-	<1377244590-8558-1-git-send-email-mrkiko.rs@gmail.com>
-	<1377244590-8558-3-git-send-email-mrkiko.rs@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 26 Aug 2013 13:31:28 -0700 (PDT)
+	Mon, 26 Aug 2013 16:34:17 -0400
+Date: Mon, 26 Aug 2013 21:34:12 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on
+ /proc/*/{syscall,stack,personality}
+Message-ID: <20130826203412.GA2414@dztty>
+References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
+ <871u5gqtw3.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871u5gqtw3.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Enrico Mioso <mrkiko.rs@gmail.com>
-Date: Fri, 23 Aug 2013 09:56:29 +0200
+On Mon, Aug 26, 2013 at 09:49:48AM -0700, Eric W. Biederman wrote:
+> Djalal Harouni <tixxdz@opendz.org> writes:
+> 
+> > Avoid giving an fd on privileged files for free by switching these
+> > files to 0400 mode.
+> 
+> This seems to be a revert of Al's patch in March of 2011 based on broken
+> reasoning.
+Yes it reverts some parts of it which are not correct.
 
-> +	if ((on && atomic_add_return(1, &drvstate->pmcount) == 1) || (!on && atomic_dec_and_test(&drvstate->pmcount))) {
+Yes the patch closes the races *during* read() time, but why the
+permissions were changed ?
 
-These line significantly exceeds 80 columns.
+Note: it does not close any suid exec between open(),read(),lseek()...
 
-> +		subdriver = usb_cdc_wdm_register(ctx->control,
-> +						 &usbnet_dev->status->desc,
-> +						 256, /* CDC-WMC r1.1 requires wMaxCommand to be "at least 256 decimal (0x100)" */
-> +						 huawei_cdc_ncm_wdm_manage_power);
 
-Likewise.
+History:
+This is the link of the original thread that added /proc/pid/stack
+support
+https://lkml.org/lkml/2008/11/7/109
 
-> +	if (intf == ctx->control && drvstate->subdriver && drvstate->subdriver->suspend)
+Quoting Andrew "I guess the 0400 mode on that file will suffice..."
 
-Likewise.
 
-> +	int ret = 0;
-> +	struct usbnet *usbnet_dev = usb_get_intfdata(intf);
-> +	struct huawei_cdc_ncm_state *drvstate = (void *)&usbnet_dev->data;
-> +	struct cdc_ncm_ctx *ctx = drvstate->ctx;
-> +	bool callsub = (intf == ctx->control && drvstate->subdriver && drvstate->subdriver->resume); /* should we call subdriver's resume? ? */
+Here we do not have traceble checks at open() time, and the *only*
+protection at open() which is the 0400 mode was also removed!
 
-Likewise, and order local function variable declarations by line
-length, longest to shortest.
+Please do check protections for /proc/*/mem
 
+> Al Viro commited:
+> > commit a9712bc12c40c172e393f85a9b2ba8db4bf59509
+> > Author: Al Viro <viro@zeniv.linux.org.uk>
+> > Date:   Wed Mar 23 15:52:50 2011 -0400
+> > 
+> >     deal with races in /proc/*/{syscall,stack,personality}
+> >     
+> >     All of those are rw-r--r-- and all are broken for suid - if you open
+> >     a file before the target does suid-root exec, you'll be still able
+> >     to access it.  For personality it's not a big deal, but for syscall
+> >     and stack it's a real problem.
+> >     
+> >     Fix: check that task is tracable for you at the time of read().
+> >     
+> >     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> 
+> How does changing the permissions to S_IRUSR prevent someone from
+> opening the file before, and reading the file after a suid exec?
+This will block opening files owned by other users, doing a suid will
+not help since you do not have an fd on the file.
+
+
+There is a big difference here:
+
+Currently you can get an fd on /proc/1/stack or whatever root owned
+process or files, later just do a suid exec to read from it.
+
+But with this simple change you can't. You will be able to open and get
+an fd only on the files owned by you (or the same user). Of course you
+can do a suid exec but you will only read input from this suid exec.
+You will not be able to read from arbitrary processes.
+
+
+There is a reason that these files were made 0400. Al's commit
+stated that currently all these files are "rw-r--r--" so add a check to
+close a race, but these files were "r--------" before the commit and not
+"r--r--r--" and it mistakenly changed them.
+
+> > This patch restores the old mode which was 0400
+> 
+> Which seems to add no security whatsoever and obscure the fact that
+> anyone who cares can read the file so what is the point?
+Well, I guess there is a big difference between 0400 and 0444
+
+-- 
+Djalal Harouni
+http://opendz.org
