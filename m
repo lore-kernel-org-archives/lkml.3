@@ -1,118 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab3HZCmK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 22:42:10 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:59695 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755195Ab3HZCmH (ORCPT
+	id S1755810Ab3HZCmW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 22:42:22 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:60222 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755733Ab3HZCmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 22:42:07 -0400
+	Sun, 25 Aug 2013 22:42:20 -0400
+Message-ID: <521AC0B8.5010300@gmail.com>
+Date: Mon, 26 Aug 2013 10:43:04 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <5217A3E7.50706@samsung.com>
-References: <1374301266-26726-1-git-send-email-prabhakar.csengg@gmail.com>
- <1374301266-26726-3-git-send-email-prabhakar.csengg@gmail.com> <5217A3E7.50706@samsung.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Mon, 26 Aug 2013 08:11:45 +0530
-Message-ID: <CA+V-a8tStFRbELAmZL=418VpR9SJgp8uo_4hrtny2UEMEoXakg@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] media: i2c: adv7343: add OF support
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        device-tree <devicetree-discuss@lists.ozlabs.org>,
-        LDOC <linux-doc@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <Mark.Rutland@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: zhuyj <zyjzyj2000@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] ipv6:remove ipv6 global address after the interface is
+ down
+References: <521ABD33.7070905@gmail.com>
+In-Reply-To: <521ABD33.7070905@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester,
+2.6.34.x kernels require a similar logic change as commit 73a8bd74
+[ipv6:Revert 'administrative down' address handling changes]
+introduces for newer kernels.
 
-On Fri, Aug 23, 2013 at 11:33 PM, Sylwester Nawrocki
-<s.nawrocki@samsung.com> wrote:
-> Cc: DT binding maintainers
->
-> On 07/20/2013 08:21 AM, Lad, Prabhakar wrote:
->> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->>
->> add OF support for the adv7343 driver.
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> ---
-> [...]
->>  .../devicetree/bindings/media/i2c/adv7343.txt      |   48 ++++++++++++++++++++
->>  drivers/media/i2c/adv7343.c                        |   46 ++++++++++++++++++-
->>  2 files changed, 93 insertions(+), 1 deletion(-)
->>  create mode 100644 Documentation/devicetree/bindings/media/i2c/adv7343.txt
->>
->> diff --git a/Documentation/devicetree/bindings/media/i2c/adv7343.txt b/Documentation/devicetree/bindings/media/i2c/adv7343.txt
->> new file mode 100644
->> index 0000000..5653bc2
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/media/i2c/adv7343.txt
->> @@ -0,0 +1,48 @@
->> +* Analog Devices adv7343 video encoder
->> +
->> +The ADV7343 are high speed, digital-to-analog video encoders in a 64-lead LQFP
->> +package. Six high speed, 3.3 V, 11-bit video DACs provide support for composite
->> +(CVBS), S-Video (Y-C), and component (YPrPb/RGB) analog outputs in standard
->> +definition (SD), enhanced definition (ED), or high definition (HD) video
->> +formats.
->> +
->> +Required Properties :
->> +- compatible: Must be "adi,adv7343"
->> +
->> +Optional Properties :
->> +- adi,power-mode-sleep-mode: on enable the current consumption is reduced to
->> +                           micro ampere level. All DACs and the internal PLL
->> +                           circuit are disabled.
->
-> Sorry for getting back so late to this. I realize this is already queued in
-> the media tree. But this binding doesn't look good enough to me. I think it
-> will need to be corrected during upcoming -rc period.
->
-Thanks for the catch :-)
+In 2.6.34.x kernels, when an interface with ipv6 global address is
+restarted, the ipv6 route item disappear, but ipv6 global address
+still remains. Compared with kernel versions 3.4+, the ipv6 global
+address and route item should both disappear. To be consistent with
+kernel versions 3.4+, we remove ipv6 address from the interface that
+is shutdown.
 
-> It might be hard to figure out only from the chip's datasheet what
-> adi,power-mode-sleep-mode really refers to. AFAICS it is for assigning some
-> value to a specific register. If we really need to specify register values
-> in the device tree then it would probably make sense to describe to which
-> register this apply. Now the name looks like derived from some structure
-> member name in the Linux driver of the device.
->
-the property is derived from the datasheet itself for example the
-'adi,power-mode-sleep-mode' --> Register 0x0 power mode bit 0
-'adi,power-mode-pll-ctrl' ---> Register 0x0 power mode bit 1
-'adi,dac-enable' ----> Register 0x0 power mode bit 2-7
-'adi,sd-dac-enable' ---> Register 0x82 SD mode register bit 1-2
+Signed-off-by: yanjun.zhu<yanjun.zhu@windriver.com>
+---
+  net/ipv6/addrconf.c |   68 +++++++++-----------------------------------------
+  1 files changed, 13 insertions(+), 55 deletions(-)
 
-[1] http://www.analog.com/static/imported-files/data_sheets/ADV7342_7343.pdf
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index 018f431..bcb9d24 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -2652,10 +2652,9 @@ static void addrconf_bonding_change(struct net_device *dev, unsigned long event)
+  static int addrconf_ifdown(struct net_device *dev, int how)
+  {
+  	struct inet6_dev *idev;
+-	struct inet6_ifaddr *ifa, *keep_list, **bifa;
++	struct inet6_ifaddr *ifa, **bifa;
+  	struct net *net = dev_net(dev);
+-	int state;
+-	int i;
++	int state, i;
+  
+  	ASSERT_RTNL();
+  
+@@ -2686,9 +2685,7 @@ static int addrconf_ifdown(struct net_device *dev, int how)
+  
+  		write_lock_bh(&addrconf_hash_lock);
+  		while ((ifa = *bifa) != NULL) {
+-			if (ifa->idev == idev &&
+-			    (how || !(ifa->flags&IFA_F_PERMANENT) ||
+-			     ipv6_addr_type(&ifa->addr) & IPV6_ADDR_LINKLOCAL)) {
++			if (ifa->idev == idev){
+  				*bifa = ifa->lst_next;
+  				ifa->lst_next = NULL;
+  				__in6_ifa_put(ifa);
+@@ -2726,65 +2723,27 @@ static int addrconf_ifdown(struct net_device *dev, int how)
+  		write_lock_bh(&idev->lock);
+  	}
+  #endif
+-	keep_list = NULL;
+-	bifa = &keep_list;
+  	while ((ifa = idev->addr_list) != NULL) {
+  		idev->addr_list = ifa->if_next;
+  		ifa->if_next = NULL;
+-
+  		addrconf_del_timer(ifa);
+  
+-		/* If just doing link down, and address is permanent
+-		   and not link-local, then retain it. */
+-		if (how == 0 &&
+-		    (ifa->flags&IFA_F_PERMANENT) &&
+-		    !(ipv6_addr_type(&ifa->addr) & IPV6_ADDR_LINKLOCAL)) {
+-
+-			/* Move to holding list */
+-			*bifa = ifa;
+-			bifa = &ifa->if_next;
+-
+-			/* If not doing DAD on this address, just keep it. */
+-			if ((dev->flags&(IFF_NOARP|IFF_LOOPBACK)) ||
+-			    idev->cnf.accept_dad <= 0 ||
+-			    (ifa->flags & IFA_F_NODAD))
+-				continue;
+-
+-			/* If it was tentative already, no need to notify */
+-			if (ifa->flags & IFA_F_TENTATIVE)
+-				continue;
+-
+-			/* Flag it for later restoration when link comes up */
+-			ifa->flags |= IFA_F_TENTATIVE;
+-			ifa->state = INET6_IFADDR_STATE_DAD;
+-
+-			write_unlock_bh(&idev->lock);
+-
+-			in6_ifa_hold(ifa);
+-		} else {
+-			write_unlock_bh(&idev->lock);
+-			spin_lock_bh(&ifa->state_lock);
+-			state = ifa->state;
+-			ifa->state = INET6_IFADDR_STATE_DEAD;
+-			spin_unlock_bh(&ifa->state_lock);
+-
+-			if (state == INET6_IFADDR_STATE_DEAD)
+-				goto put_ifa;
++		write_unlock_bh(&idev->lock);
++		spin_lock_bh(&ifa->state_lock);
++		state = ifa->state;
++		ifa->state = INET6_IFADDR_STATE_DEAD;
++		spin_unlock_bh(&ifa->state_lock);
++
++		if (state != INET6_IFADDR_STATE_DEAD){
++			__ipv6_ifa_notify(RTM_DELADDR, ifa);
++			atomic_notifier_call_chain(&inet6addr_chain, NETDEV_DOWN, ifa);
+  		}
+  
+-		__ipv6_ifa_notify(RTM_DELADDR, ifa);
+-		if (ifa->state == INET6_IFADDR_STATE_DEAD)
+-			atomic_notifier_call_chain(&inet6addr_chain,
+-						   NETDEV_DOWN, ifa);
+-
+-put_ifa:
+  		in6_ifa_put(ifa);
+  
+  		write_lock_bh(&idev->lock);
+  	}
+  
+-	idev->addr_list = keep_list;
+-
+  	write_unlock_bh(&idev->lock);
+  
+  	/* Step 5: Discard multicast list */
+@@ -4103,8 +4062,7 @@ static void __ipv6_ifa_notify(int event, struct inet6_ifaddr *ifp)
+  		addrconf_leave_solict(ifp->idev, &ifp->addr);
+  		dst_hold(&ifp->rt->u.dst);
+  
+-		if (ifp->state == INET6_IFADDR_STATE_DEAD &&
+-		    ip6_del_rt(ifp->rt))
++		if (ip6_del_rt(ifp->rt))
+  			dst_free(&ifp->rt->u.dst);
+  		break;
+  	}
 
->> +- adi,power-mode-pll-ctrl: PLL and oversampling control. This control allows
->> +                        internal PLL 1 circuit to be powered down and the
->> +                        oversampling to be switched off.
->
-> Similar comments applies to this property.
->
->> +- ad,adv7343-power-mode-dac: array configuring the power on/off DAC's 1..6,
->> +                           0 = OFF and 1 = ON, Default value when this
->> +                           property is not specified is <0 0 0 0 0 0>.
->
-> Name of the property is incorrect here. It has changed to "adi,dac-enable".
->
-OK
 
->> +- ad,adv7343-sd-config-dac-out: array configure SD DAC Output's 1 and 2, 0 = OFF
->> +                              and 1 = ON, Default value when this property is
->> +                              not specified is <0 0>.
+On 08/26/2013 10:28 AM, zhuyj wrote:
+> With two directly connected targets running kernel 2.6.34.x.
 >
-> Similarly, "adi,sd-dac-enable.
+> TargetA ------------------------- TargetB
+> 3000::1/64                        3000::2/64
 >
-OK
+> TargetA
+>    - bring the interface down by doing an "ifconfig eth1 down"
+>    - bring the interface back up by doing an "ifconfig eth1 up"
+>
+> TargetB
+>    - ping6 3000::1
+>      ping6 succeeds the first time
+>    - after bringing the interface on TargetA down and then back up, 
+> ping6 to the interface fails.
+>
+> The root cause is:
+> IPv6 address 3000::1/64 remains while the ipv6 route on eth1 
+> disappears. Thus on TargetB, running "ping6 3000::1" can not succeed.
+> Compared with 3.4.x, ipv6 address and ipv6 route item are removed when 
+> an interface is restarted in the.
+>
+> Best Regards!
+>
+> zhuyj
+>
 
-Regards,
---Prabhakar Lad
