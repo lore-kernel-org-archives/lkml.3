@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab3HZBTW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 21:19:22 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:44142 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab3HZBTO (ORCPT
+	id S1755537Ab3HZBTT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 21:19:19 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:42160 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755179Ab3HZBTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 21:19:14 -0400
+	Sun, 25 Aug 2013 21:19:12 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
@@ -14,170 +14,55 @@ Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
         Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v3 6/8] mm/hwpoison: drop forward reference declarations __soft_offline_page()
-Date: Mon, 26 Aug 2013 09:18:49 +0800
-Message-Id: <1377479931-7430-6-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v3 5/8] mm/hwpoison: don't set migration type twice to avoid hold heavy contend zone->lock
+Date: Mon, 26 Aug 2013 09:18:48 +0800
+Message-Id: <1377479931-7430-5-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1377479931-7430-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1377479931-7430-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082601-4790-0000-0000-000009F839A0
+x-cbid: 13082601-6102-0000-0000-000004121CD7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop forward reference declarations __soft_offline_page.
+v1 -> v2:
+ * add more explanation in patch description.
+v2 -> v3:
+ * set MIGRATE_ISOLATE only if it's not set. 
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Set pageblock migration type will hold zone->lock which is heavy contended
+in system to avoid race. However, soft offline page will set pageblock
+migration type twice during get page if the page is in used, not hugetlbfs
+page and not on lru list. There is unnecessary to set the pageblock migration
+type and hold heavy contended zone->lock again if the first round get page
+have already set the pageblock to right migration type.
+
+The trick here is migration type is MIGRATE_ISOLATE. There are other two parts 
+can change MIGRATE_ISOLATE except hwpoison. One is memory hoplug, however, we 
+hold lock_memory_hotplug() which avoid race. The second is CMA which umovable 
+page allocation requst can't fallback to. So it's safe here.
+
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- mm/memory-failure.c | 128 ++++++++++++++++++++++++++--------------------------
- 1 file changed, 63 insertions(+), 65 deletions(-)
+ mm/memory-failure.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index f357c91..ca714ac 100644
+index 297965e..f357c91 100644
 --- a/mm/memory-failure.c
 +++ b/mm/memory-failure.c
-@@ -1511,71 +1511,6 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 	return ret;
- }
- 
--static int __soft_offline_page(struct page *page, int flags);
--
--/**
-- * soft_offline_page - Soft offline a page.
-- * @page: page to offline
-- * @flags: flags. Same as memory_failure().
-- *
-- * Returns 0 on success, otherwise negated errno.
-- *
-- * Soft offline a page, by migration or invalidation,
-- * without killing anything. This is for the case when
-- * a page is not corrupted yet (so it's still valid to access),
-- * but has had a number of corrected errors and is better taken
-- * out.
-- *
-- * The actual policy on when to do that is maintained by
-- * user space.
-- *
-- * This should never impact any application or cause data loss,
-- * however it might take some time.
-- *
-- * This is not a 100% solution for all memory, but tries to be
-- * ``good enough'' for the majority of memory.
-- */
--int soft_offline_page(struct page *page, int flags)
--{
--	int ret;
--	unsigned long pfn = page_to_pfn(page);
--	struct page *hpage = compound_trans_head(page);
--
--	if (PageHWPoison(page)) {
--		pr_info("soft offline: %#lx page already poisoned\n", pfn);
--		return -EBUSY;
--	}
--	if (!PageHuge(page) && PageTransHuge(hpage)) {
--		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
--			pr_info("soft offline: %#lx: failed to split THP\n",
--				pfn);
--			return -EBUSY;
--		}
--	}
--
--	ret = get_any_page(page, pfn, flags);
--	if (ret < 0)
--		return ret;
--	if (ret) { /* for in-use pages */
--		if (PageHuge(page))
--			ret = soft_offline_huge_page(page, flags);
--		else
--			ret = __soft_offline_page(page, flags);
--	} else { /* for free pages */
--		if (PageHuge(page)) {
--			set_page_hwpoison_huge_page(hpage);
--			dequeue_hwpoisoned_huge_page(hpage);
--			atomic_long_add(1 << compound_order(hpage),
--					&num_poisoned_pages);
--		} else {
--			SetPageHWPoison(page);
--			atomic_long_inc(&num_poisoned_pages);
--		}
--	}
--	unset_migratetype_isolate(page, MIGRATE_MOVABLE);
--	return ret;
--}
--
- static int __soft_offline_page(struct page *page, int flags)
- {
- 	int ret;
-@@ -1662,3 +1597,66 @@ static int __soft_offline_page(struct page *page, int flags)
- 	}
- 	return ret;
- }
-+
-+/**
-+ * soft_offline_page - Soft offline a page.
-+ * @page: page to offline
-+ * @flags: flags. Same as memory_failure().
-+ *
-+ * Returns 0 on success, otherwise negated errno.
-+ *
-+ * Soft offline a page, by migration or invalidation,
-+ * without killing anything. This is for the case when
-+ * a page is not corrupted yet (so it's still valid to access),
-+ * but has had a number of corrected errors and is better taken
-+ * out.
-+ *
-+ * The actual policy on when to do that is maintained by
-+ * user space.
-+ *
-+ * This should never impact any application or cause data loss,
-+ * however it might take some time.
-+ *
-+ * This is not a 100% solution for all memory, but tries to be
-+ * ``good enough'' for the majority of memory.
-+ */
-+int soft_offline_page(struct page *page, int flags)
-+{
-+	int ret;
-+	unsigned long pfn = page_to_pfn(page);
-+	struct page *hpage = compound_trans_head(page);
-+
-+	if (PageHWPoison(page)) {
-+		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-+		return -EBUSY;
-+	}
-+	if (!PageHuge(page) && PageTransHuge(hpage)) {
-+		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
-+			pr_info("soft offline: %#lx: failed to split THP\n",
-+				pfn);
-+			return -EBUSY;
-+		}
-+	}
-+
-+	ret = get_any_page(page, pfn, flags);
-+	if (ret < 0)
-+		return ret;
-+	if (ret) { /* for in-use pages */
-+		if (PageHuge(page))
-+			ret = soft_offline_huge_page(page, flags);
-+		else
-+			ret = __soft_offline_page(page, flags);
-+	} else { /* for free pages */
-+		if (PageHuge(page)) {
-+			set_page_hwpoison_huge_page(hpage);
-+			dequeue_hwpoisoned_huge_page(hpage);
-+			atomic_long_add(1 << compound_order(hpage),
-+					&num_poisoned_pages);
-+		} else {
-+			SetPageHWPoison(page);
-+			atomic_long_inc(&num_poisoned_pages);
-+		}
-+	}
-+	unset_migratetype_isolate(page, MIGRATE_MOVABLE);
-+	return ret;
-+}
+@@ -1426,7 +1426,8 @@ static int __get_any_page(struct page *p, unsigned long pfn, int flags)
+ 	 * was free. This flag should be kept set until the source page
+ 	 * is freed and PG_hwpoison on it is set.
+ 	 */
+-	set_migratetype_isolate(p, true);
++	if (get_pageblock_migratetype(p) != MIGRATE_ISOLATE)
++		set_migratetype_isolate(p, true);
+ 	/*
+ 	 * When the target page is a free hugepage, just remove it
+ 	 * from free hugepage list.
 -- 
 1.8.1.2
 
