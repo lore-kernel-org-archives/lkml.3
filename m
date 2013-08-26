@@ -1,82 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3HZInJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 04:43:09 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:35851 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756430Ab3HZInB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 04:43:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPM31R+W56bOfex18i4+ywNKW5EJz0Rq32bGZbWEYVyKgKVy_A@mail.gmail.com>
-References: <20130819160058.539049611@infradead.org>
-	<20130819160425.230612223@infradead.org>
-	<CALZhoSRtyS1G6jpKwxqyx=GxFP8dvo0Qq=wGfNkw=Kya3yBEow@mail.gmail.com>
-	<CAPM31R+W56bOfex18i4+ywNKW5EJz0Rq32bGZbWEYVyKgKVy_A@mail.gmail.com>
-Date: Mon, 26 Aug 2013 16:42:58 +0800
-Message-ID: <CALZhoSRYRP+ap-yVvt06BhAMf4V+NE=6BsvQWf-bgRyPQt7+wQ@mail.gmail.com>
-Subject: Re: [PATCH 03/10] sched: Clean-up struct sd_lb_stat
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Paul Turner <pjt@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>, Lei Wen <leiwen@marvell.com>,
-        Rik van Riel <riel@surriel.com>, Joonsoo Kim <js1304@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756678Ab3HZInT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:43:19 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:55533 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756530Ab3HZInL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 04:43:11 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: <mingo@redhat.com>, <hpa@zytor.com>, <x86@kernel.org>, <gleb@redhat.com>,
+        <pbonzini@redhat.com>
+Cc: <jeremy@goop.org>, <konrad.wilk@oracle.com>, <peterz@infradead.org>,
+        <tglx@linutronix.de>, <agraf@suse.de>, digitaleric@google.com,
+        <riel@redhat.com>, <avi.kivity@gmail.com>,
+        <habanero@linux.vnet.ibm.com>, <chegu_vinod@hp.com>,
+        <ouyang@cs.pitt.edu>, <drjones@redhat.com>, linux-doc@vger.kernel.org,
+        <torvalds@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <kvm@vger.kernel.org>, <andi@firstfloor.org>,
+        <virtualization@lists.linux-foundation.org>, <mtosatti@redhat.com>,
+        <srivatsa.vaddagiri@gmail.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Subject: [PATCH V13 3/4] kvm hypervisor: Simplify kvm_for_each_vcpu with kvm_irq_delivery_to_apic
+Date: Mon, 26 Aug 2013 14:18:35 +0530
+Message-Id: <1377506916-26946-4-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1377506916-26946-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+References: <y>
+ <1377506916-26946-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082608-5806-0000-0000-0000228A5662
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 12:36 PM, Paul Turner <pjt@google.com> wrote:
-> On Sun, Aug 25, 2013 at 7:56 PM, Lei Wen <adrian.wenl@gmail.com> wrote:
->> On Tue, Aug 20, 2013 at 12:01 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->>> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>>
->>> There is no reason to maintain separate variables for this_group
->>> and busiest_group in sd_lb_stat, except saving some space.
->>> But this structure is always allocated in stack, so this saving
->>> isn't really benificial [peterz: reducing stack space is good; in this
->>> case readability increases enough that I think its still beneficial]
->>>
->>> This patch unify these variables, so IMO, readability may be improved.
->>>
->>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>> [peterz: lots of style edits, a few fixes and a rename]
->>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->>> Link: http://lkml.kernel.org/r/1375778203-31343-4-git-send-email-iamjoonsoo.kim@lge.com
->>> ---
->>>  kernel/sched/fair.c |  225 +++++++++++++++++++++++++---------------------------
->>>  1 file changed, 112 insertions(+), 113 deletions(-)
->>>
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -4277,36 +4277,6 @@ static unsigned long task_h_load(struct
->>>
->> [snip]...
->>> -       env->imbalance = DIV_ROUND_CLOSEST(
->>> -               sds->max_load * sds->busiest->sgp->power, SCHED_POWER_SCALE);
->>> +       env->imbalance = DIV_ROUND_CLOSEST(sds->busiest_stat.avg_load *
->>> +                               sds->busiest->sgp->power, SCHED_POWER_SCALE);
->>>
->>
->> I am wondering whether we could change this line as below is more appropriate,
->> since it would avoid the division here:
->>        env->imbalance = (sds->busiest_stat.avg_load * sds->busiest->sgp->power)
->>                                       >> SCHED_POWER_SHIFT;
->>
->> I am not sure whether compiler would be smarter enough to covert into
->>>> operation,
->> if it see SCHED_POWER_SCALE is 1024 here.
->
-> This would change the rounding.  Fortunately, gcc is smart enough to
-> handle this.
+Note that we are using APIC_DM_REMRD which has reserved usage.
+In future if APIC_DM_REMRD usage is standardized, then we should
+find some other way or go back to old method.
 
-Indeed, I check the assembly code, and it is really smart to do the changes.
+Suggested-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Acked-by: Gleb Natapov <gleb@redhat.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kvm/lapic.c |  5 ++++-
+ arch/x86/kvm/x86.c   | 25 ++++++-------------------
+ 2 files changed, 10 insertions(+), 20 deletions(-)
 
-Thanks,
-Lei
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index afc1124..48c13c9 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -706,7 +706,10 @@ out:
+ 		break;
+ 
+ 	case APIC_DM_REMRD:
+-		apic_debug("Ignoring delivery mode 3\n");
++		result = 1;
++		vcpu->arch.pv.pv_unhalted = 1;
++		kvm_make_request(KVM_REQ_EVENT, vcpu);
++		kvm_vcpu_kick(vcpu);
+ 		break;
+ 
+ 	case APIC_DM_SMI:
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 1e73dab..640d112 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5502,27 +5502,14 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+  */
+ static void kvm_pv_kick_cpu_op(struct kvm *kvm, unsigned long flags, int apicid)
+ {
+-	struct kvm_vcpu *vcpu = NULL;
+-	int i;
++	struct kvm_lapic_irq lapic_irq;
+ 
+-	kvm_for_each_vcpu(i, vcpu, kvm) {
+-		if (!kvm_apic_present(vcpu))
+-			continue;
++	lapic_irq.shorthand = 0;
++	lapic_irq.dest_mode = 0;
++	lapic_irq.dest_id = apicid;
+ 
+-		if (kvm_apic_match_dest(vcpu, 0, 0, apicid, 0))
+-			break;
+-	}
+-	if (vcpu) {
+-		/*
+-		 * Setting unhalt flag here can result in spurious runnable
+-		 * state when unhalt reset does not happen in vcpu_block.
+-		 * But that is harmless since that should soon result in halt.
+-		 */
+-		vcpu->arch.pv.pv_unhalted = true;
+-		/* We need everybody see unhalt before vcpu unblocks */
+-		smp_wmb();
+-		kvm_vcpu_kick(vcpu);
+-	}
++	lapic_irq.delivery_mode = APIC_DM_REMRD;
++	kvm_irq_delivery_to_apic(kvm, 0, &lapic_irq, NULL);
+ }
+ 
+ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+-- 
+1.7.11.7
+
