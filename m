@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab3HZKJa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:09:30 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:26049 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754918Ab3HZKJ2 (ORCPT
+	id S1756627Ab3HZKKo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:10:44 -0400
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:50278 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752204Ab3HZKKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:09:28 -0400
-X-Spam-Score: -101.0
-Message-ID: <521B2917.6040908@asianux.com>
-Date: Mon, 26 Aug 2013 18:08:23 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: linus.walleij@linaro.org
-CC: Arnd Bergmann <arnd@arndb.de>, linux-gpio@vger.kernel.org,
-        Linux-Arch <linux-arch@vger.kernel.org>,
+	Mon, 26 Aug 2013 06:10:43 -0400
+Date: Mon, 26 Aug 2013 18:06:36 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+CC: "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "gregory.clement@free-electrons.com" 
+	<gregory.clement@free-electrons.com>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] include/asm-generic/gpio.h: remove the call for __gpio_get_value()
- and __gpio_set_value() when GPIOLIB disabled
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH v3 1/3] arm: mvebu: add missing of_node_put() to fix
+ reference leak
+Message-ID: <20130826180636.3e2bdb20@xhacker>
+In-Reply-To: <20130826120200.2269ba82@skate>
+References: <1377510981-1793-1-git-send-email-jszhang@marvell.com>
+	<1377510981-1793-2-git-send-email-jszhang@marvell.com>
+	<20130826120200.2269ba82@skate>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When GPIOLIB disabled, __gpio_get_value() and __gpio_set_value() will
-not implement, so need remove them, or compiling fails.
+Dear Thomas,
 
-e.g. (allmodconfig for h8300)
+On Mon, 26 Aug 2013 03:02:00 -0700
+Thomas Petazzoni <thomas.petazzoni@free-electrons.com> wrote:
 
-    CC      arch/h8300/kernel/h8300_ksyms.o
-  In file included from arch/h8300/include/generated/asm/gpio.h:1:0,
-                   from arch/h8300/kernel/h8300_ksyms.c:17:
-  include/asm-generic/gpio.h: In function 'gpio_get_value_cansleep':
-  include/asm-generic/gpio.h:270:2: error: implicit declaration of function '__gpio_get_value' [-Werror=implicit-function-declaration]
-    return __gpio_get_value(gpio);
-    ^
+> Dear Jisheng Zhang,
+> 
+> On Mon, 26 Aug 2013 17:56:19 +0800, Jisheng Zhang wrote:
+> 
+> > diff --git a/arch/arm/mach-mvebu/armada-370-xp.c
+> > b/arch/arm/mach-mvebu/armada-370-xp.c index 97cbb80..8a1ae83 100644
+> > --- a/arch/arm/mach-mvebu/armada-370-xp.c
+> > +++ b/arch/arm/mach-mvebu/armada-370-xp.c
+> > @@ -64,6 +64,7 @@ static void __init armada_370_xp_mbus_init(void)
+> >  			ARMADA_370_XP_MBUS_WINS_SIZE,
+> >  			of_translate_address(dn, &sdram_wins_offs),
+> >  			ARMADA_370_XP_SDRAM_WINS_SIZE);
+> > +	of_node_put(dn);
+> >  }
+> 
+> With the integration of Ezequiel patches that add DT support to the
+> mvebu-mbus driver, this chunk of the code is no longer needed, as of
+> linux-next.
+> 
+Got it. Thanks for the information. Will send v4 latter
 
-For __gpio_get_value(), according to its implementation, it is enough
-to use "return 0" instead of, and for __gpio_set_value(), just remove
-directly.
+Thanks,
+Jisheng
 
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- include/asm-generic/gpio.h |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index bde6469..10a2853 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -267,13 +267,12 @@ static inline int gpio_cansleep(unsigned gpio)
- static inline int gpio_get_value_cansleep(unsigned gpio)
- {
- 	might_sleep();
--	return __gpio_get_value(gpio);
-+	return 0;
- }
- 
- static inline void gpio_set_value_cansleep(unsigned gpio, int value)
- {
- 	might_sleep();
--	__gpio_set_value(gpio, value);
- }
- 
- #endif /* !CONFIG_GPIOLIB */
--- 
-1.7.7.6
