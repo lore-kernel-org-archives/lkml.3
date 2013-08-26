@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab3HZOhz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 10:37:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4629 "EHLO mga02.intel.com"
+	id S1756926Ab3HZOiJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 10:38:09 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:35008 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751683Ab3HZOhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 10:37:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,958,1367996400"; 
-   d="scan'208";a="368606318"
-Date: Mon, 26 Aug 2013 19:23:08 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: Re: [PATCH] DMA: shdma: fix a bad merge - remove free_irq()
-Message-ID: <20130826135308.GP2748@intel.com>
-References: <Pine.LNX.4.64.1308261426320.1767@axis700.grange>
+	id S1751683Ab3HZOiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 10:38:07 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
+Subject: Re: [Query] CPUFreq: Why do we need policy->user_policy?
+Date: Mon, 26 Aug 2013 16:48:48 +0200
+Message-ID: <20581731.mdSQ720dHi@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAKohponkO6oZrvrsUGVK0uUbAM5wse7eHd7udtWkab7y2aatGA@mail.gmail.com>
+References: <CAKohponkO6oZrvrsUGVK0uUbAM5wse7eHd7udtWkab7y2aatGA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1308261426320.1767@axis700.grange>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 02:27:51PM +0200, Guennadi Liakhovetski wrote:
-> A bad merge resulted in a left-over free_irq() call. This patch removes it.
-Applied, thanks
+On Monday, August 26, 2013 08:00:52 PM Viresh Kumar wrote:
+> Hi Rafael,
 
-Can you also test this branch and see if anything is remaining
+Hi,
 
-And can you take care then ARM patches in last serries are merged this week...
+> I am almost done with cleanup of drivers and am back at cpufreq core.. :)
+> I got to this structure: struct cpufreq_real_policy;
+> 
+> And I am not able to understand what's the need for this structure?
+> Can you let me know? Before I try to get rid of it :)
 
-~Vinod
+Honestly, I don't remember from the top of my head.
+
+Thanks,
+Rafael
+
