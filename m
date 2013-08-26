@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab3HZNwK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 09:52:10 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:59320 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab3HZNwG (ORCPT
+	id S1756897Ab3HZNxO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 09:53:14 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:47415 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab3HZNxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 09:52:06 -0400
+	Mon, 26 Aug 2013 09:53:13 -0400
+Date: Mon, 26 Aug 2013 10:53:05 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/3] perf: add a dummy software event to keep tracking
+Message-ID: <20130826135305.GA1885@ghostprotocols.net>
+References: <1375882231-18339-1-git-send-email-adrian.hunter@intel.com>
+ <1375882231-18339-2-git-send-email-adrian.hunter@intel.com>
+ <521B54F6.5060304@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJd=RBBbJMWox5yJaNzW_jUdDfKfWe-Y7d1riYdN6huQStxzcA@mail.gmail.com>
-References: <CAJd=RBBbJMWox5yJaNzW_jUdDfKfWe-Y7d1riYdN6huQStxzcA@mail.gmail.com>
-From: Michal Suchanek <hramrach@gmail.com>
-Date: Mon, 26 Aug 2013 15:51:24 +0200
-Message-ID: <CAOMqctQyS2SFraqJpzE0sRFcihFpMHRhT+3QuZhxft=SUXYVDw@mail.gmail.com>
-Subject: Re: doing lots of disk writes causes oom killer to kill processes
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521B54F6.5060304@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 March 2013 03:15, Hillf Danton <dhillf@gmail.com> wrote:
->>On 11 March 2013 13:15, Michal Suchanek <hramrach@gmail.com> wrote:
->>>On 8 February 2013 17:31, Michal Suchanek <hramrach@gmail.com> wrote:
->>> Hello,
->>>
->>> I am dealing with VM disk images and performing something like wiping
->>> free space to prepare image for compressing and storing on server or
->>> copying it to external USB disk causes
->>>
->>> 1) system lockup in order of a few tens of seconds when all CPU cores
->>> are 100% used by system and the machine is basicaly unusable
->>>
->>> 2) oom killer killing processes
->>>
->>> This all on system with 8G ram so there should be plenty space to work with.
->>>
->>> This happens with kernels 3.6.4 or 3.7.1
->>>
->>> With earlier kernel versions (some 3.0 or 3.2 kernels) this was not a
->>> problem even with less ram.
->>>
->>> I have  vm.swappiness = 0 set for a long  time already.
->>>
->>>
->>I did some testing with 3.7.1 and with swappiness as much as 75 the
->>kernel still causes all cores to loop somewhere in system when writing
->>lots of data to disk.
->>
->>With swappiness as much as 90 processes still get killed on large disk writes.
->>
->>Given that the max is 100 the interval in which mm works at all is
->>going to be very narrow, less than 10% of the paramater range. This is
->>a severe regression as is the cpu time consumed by the kernel.
->>
->>The io scheduler is the default cfq.
->>
->>If you have any idea what to try other than downgrading to an earlier
->>unaffected kernel I would like to hear.
->>
-> Can you try commit 3cf23841b4b7(mm/vmscan.c: avoid possible
-> deadlock caused by too_many_isolated())?
->
-> Or try 3.8 and/or 3.9, additionally?
->
+Em Mon, Aug 26, 2013 at 04:15:34PM +0300, Adrian Hunter escreveu:
+> On 07/08/13 16:30, Adrian Hunter wrote:
+> > When an event is disabled the "tracking" events
+> > selected by the 'mmap', 'comm' and 'task' bits of
+> > struct perf_event_attr, are also disabled.  However,
+> > the information those events provide is necessary to
+> > resolve symbols for when the main event is re-enabled.
+> > 
+> > The "tracking" events can be kept enabled by putting
+> > them on another event, but that requires an event
+> > that otherwise does nothing.  A new software event
+> > PERF_COUNT_SW_DUMMY is added for that purpose.
+> > 
+> > Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> 
+> Any comments?
 
-Hello,
+Ok with me, Peter?
 
-with deadline IO scheduler I experience this issue less often but it
-still happens.
-
-I am on 3.9.6 Debian kernel so 3.8 did not fix this problem.
-
-Do you have some idea what to log so that useful information about the
-lockup is gathered?
-
-Thanks
-
-Michal
+- Arnaldo
+ 
+> > ---
+> >  include/uapi/linux/perf_event.h | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+> > index 62c25a2..9e28422 100644
+> > --- a/include/uapi/linux/perf_event.h
+> > +++ b/include/uapi/linux/perf_event.h
+> > @@ -109,6 +109,7 @@ enum perf_sw_ids {
+> >  	PERF_COUNT_SW_PAGE_FAULTS_MAJ		= 6,
+> >  	PERF_COUNT_SW_ALIGNMENT_FAULTS		= 7,
+> >  	PERF_COUNT_SW_EMULATION_FAULTS		= 8,
+> > +	PERF_COUNT_SW_DUMMY			= 9,
+> >  
+> >  	PERF_COUNT_SW_MAX,			/* non-ABI */
+> >  };
+> > 
