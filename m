@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330Ab3HZI3L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 04:29:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54031 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755699Ab3HZI3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 04:29:10 -0400
-Message-ID: <521B11C2.3040801@redhat.com>
-Date: Mon, 26 Aug 2013 10:28:50 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Yann Droneaud <ydroneaud@opteya.com>
-CC: Alexander Graf <agraf@suse.de>, Gleb Natapov <gleb@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm-ppc@vger.kernel.org,
-        kvm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Paolo Bonzini <paolo.bonzini@gmail.com>
-Subject: Re: [PATCH 2/2] ppc: kvm: use anon_inode_getfd() with O_CLOEXEC flag
-References: <cover.1377372576.git.ydroneaud@opteya.com> <b7ae23be3a3d4a2f57eca6cfc7f9361da883ceca.1377372576.git.ydroneaud@opteya.com> <3557EF65-4327-4DAE-999A-B0EE13C433F5@suse.de> <521B0622.9090208@redhat.com> <156342996ba92cb5f49519b0c2e9d6ac@meuh.org>
-In-Reply-To: <156342996ba92cb5f49519b0c2e9d6ac@meuh.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756429Ab3HZI35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:29:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57916 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755822Ab3HZI34 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 04:29:56 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Benoit Cousson <bcousson@baylibre.com>, tony@atomide.com
+Cc: Joel Fernandes <joelf@ti.com>, santosh.shilimkar@ti.com,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Matt Porter <mdp@ti.com>, Matt Porter <mporter@ti.com>,
+        Joel A Fernandes <joelagnel@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH v2] ARM: dts: add AM33XX EDMA support
+Date: Mon, 26 Aug 2013 10:29:44 +0200
+Message-Id: <1377505784-9820-1-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.8.4.rc3
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 26/08/2013 10:23, Yann Droneaud ha scritto:
-> 
-> Sounds a lot like InfiniBand subsystem behavor: IB file descriptors
-> are of no use accross exec() since memory mappings tied to those fds
-> won't be available in the new process:
-> 
-> https://lkml.org/lkml/2013/7/8/380
-> http://mid.gmane.org/f58540dc64fec1ac0e496dfcd3cc1af7@meuh.org
+From: Matt Porter <mdp@ti.com>
 
-Yes, it is very similar.
+Adds AM33XX EDMA support to the am33xx.dtsi as documented in
+Documentation/devicetree/bindings/dma/ti-edma.txt
 
-Paolo
+Joel: Drop DT entries that are non-hardware-description for now as discussed in [1]
+
+[1] https://patchwork.kernel.org/patch/2226761/
+
+Signed-off-by: Matt Porter <mporter@ti.com>
+Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+Could someone please pick this up?
+
+v1..v2:
+	- s/edma@/dma-controller@/
+
+ arch/arm/boot/dts/am33xx.dtsi | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 38b446b..784f774 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -96,6 +96,18 @@
+ 			reg = <0x48200000 0x1000>;
+ 		};
+ 
++		edma: dma-controller@49000000 {
++			compatible = "ti,edma3";
++			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
++			reg =	<0x49000000 0x10000>,
++				<0x44e10f90 0x10>;
++			interrupts = <12 13 14>;
++			#dma-cells = <1>;
++			dma-channels = <64>;
++			ti,edma-regions = <4>;
++			ti,edma-slots = <256>;
++		};
++
+ 		gpio0: gpio@44e07000 {
+ 			compatible = "ti,omap4-gpio";
+ 			ti,hwmods = "gpio1";
+-- 
+1.8.4.rc3
+
