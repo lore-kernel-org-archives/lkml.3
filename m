@@ -1,150 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab3HZVdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 17:33:32 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:50669 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab3HZV3x (ORCPT
+	id S1752538Ab3HZVh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 17:37:58 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:62834 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab3HZVh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 17:29:53 -0400
-From: "Nicholas A. Bellinger" <nab@daterainc.com>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Kent Overstreet <kmo@daterainc.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Nicholas Bellinger <nab@daterainc.com>
-Subject: [PATCH-v3 02/13] target: Add return for se_cmd->transport_complete_callback
-Date: Mon, 26 Aug 2013 21:13:35 +0000
-Message-Id: <1377551626-27447-3-git-send-email-nab@daterainc.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1377551626-27447-1-git-send-email-nab@daterainc.com>
-References: <1377551626-27447-1-git-send-email-nab@daterainc.com>
+	Mon, 26 Aug 2013 17:37:57 -0400
+Date: Tue, 27 Aug 2013 01:37:54 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: unused swap offset / bad page map.
+Message-ID: <20130826213754.GN3814@moon>
+References: <20130821204901.GA19802@redhat.com>
+ <CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com>
+ <20130823032127.GA5098@redhat.com>
+ <CAJd=RBArkh3sKVoOJUZBLngXtJubjx4-a3G6s7Tn0N=Pr1gU4g@mail.gmail.com>
+ <20130823035344.GB5098@redhat.com>
+ <CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
+ <20130826190757.GB27768@redhat.com>
+ <20130826201846.GA23724@moon>
+ <20130826203702.GA15407@redhat.com>
+ <20130826204203.GB23724@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130826204203.GB23724@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@daterainc.com>
+On Tue, Aug 27, 2013 at 12:42:03AM +0400, Cyrill Gorcunov wrote:
+> On Mon, Aug 26, 2013 at 04:37:02PM -0400, Dave Jones wrote:
+> > 
+> > Try adding the -C64 to the invocation in scripts/test-multi.sh,
+> > and perhaps up'ing the NR_PROCESSES variable there too.
+> 
+> Thanks! I'll ping you if I manage to crash my instance.
 
-This patch adds a sense_reason_t return to ->transport_complete_callback(),
-and updates target_complete_ok_work() to invoke the call if necessary to
-transport_send_check_condition_and_sense() during the failure case.
+So trinity tained kernel, but definitely not in place I'm interested.
 
-Also update xdreadwrite_callback() to use this return value.
+[  320.904506] raw_sendmsg: trinity-child14 forgot to set AF_INET. Fix it!
+[  329.570812] ------------[ cut here ]------------
+[  329.571650] WARNING: CPU: 0 PID: 1982 at kernel/lockdep.c:3552 check_flags+0x18a/0x1c1()
+[  329.571650] DEBUG_LOCKS_WARN_ON(current->softirqs_enabled)
+[  329.571650] Modules linked in:
+[  329.571650] CPU: 0 PID: 1982 Comm: trinity-child4 Not tainted 3.11.0-rc6-dirty #386
+[  329.571650] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  329.571650]  0000000000000009 ffff88001ee03b10 ffffffff8157ac8a 0000000000000006
+[  329.571650]  ffff88001ee03b60 ffff88001ee03b50 ffffffff81045bb2 ffffffff81583840
+[  329.571650]  ffffffff81092620 ffff880002b48000 0000000000000046 ffffffff81a2f750
+[  329.571650] Call Trace:
+[  329.571650]  <IRQ>  [<ffffffff8157ac8a>] dump_stack+0x4f/0x84
+[  329.571650]  [<ffffffff81045bb2>] warn_slowpath_common+0x81/0x9b
+[  329.571650]  [<ffffffff81583840>] ? ftrace_call+0x5/0x2f
+[  329.571650]  [<ffffffff81092620>] ? check_flags+0x18a/0x1c1
+[  329.571650]  [<ffffffff81045c6f>] warn_slowpath_fmt+0x46/0x48
+[  329.571650]  [<ffffffff81045c2e>] ? warn_slowpath_fmt+0x5/0x48
+[  329.571650]  [<ffffffff81092620>] check_flags+0x18a/0x1c1
+[  329.571650]  [<ffffffff81093595>] lock_is_held+0x30/0x5f
+[  329.571650]  [<ffffffff810eb19e>] rcu_read_lock_held+0x36/0x38
+[  329.571650]  [<ffffffff810f1b92>] perf_tp_event+0x92/0x220
+[  329.571650]  [<ffffffff810f1d0e>] ? perf_tp_event+0x20e/0x220
+[  329.571650]  [<ffffffff81049f6c>] ? __local_bh_enable+0x9a/0x9e
+[  329.571650]  [<ffffffff810712f3>] ? get_parent_ip+0x3f/0x3f
+[  329.571650]  [<ffffffff81049f6c>] ? __local_bh_enable+0x9a/0x9e
+[  329.571650]  [<ffffffff810e3af1>] perf_ftrace_function_call+0xce/0xdc
 
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Martin Petersen <martin.petersen@oracle.com>
-Cc: Chris Mason <chris.mason@fusionio.com>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
----
- drivers/target/target_core_sbc.c       |   13 ++++++++-----
- drivers/target/target_core_transport.c |   20 +++++++++++++++++---
- include/target/target_core_base.h      |    2 +-
- 3 files changed, 26 insertions(+), 9 deletions(-)
+	...
 
-diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
-index 8a46277..be5234a 100644
---- a/drivers/target/target_core_sbc.c
-+++ b/drivers/target/target_core_sbc.c
-@@ -280,13 +280,13 @@ sbc_setup_write_same(struct se_cmd *cmd, unsigned char *flags, struct sbc_ops *o
- 	return 0;
- }
- 
--static void xdreadwrite_callback(struct se_cmd *cmd)
-+static sense_reason_t xdreadwrite_callback(struct se_cmd *cmd)
- {
- 	unsigned char *buf, *addr;
- 	struct scatterlist *sg;
- 	unsigned int offset;
--	int i;
--	int count;
-+	sense_reason_t ret = TCM_NO_SENSE;
-+	int i, count;
- 	/*
- 	 * From sbc3r22.pdf section 5.48 XDWRITEREAD (10) command
- 	 *
-@@ -301,7 +301,7 @@ static void xdreadwrite_callback(struct se_cmd *cmd)
- 	buf = kmalloc(cmd->data_length, GFP_KERNEL);
- 	if (!buf) {
- 		pr_err("Unable to allocate xor_callback buf\n");
--		return;
-+		return TCM_OUT_OF_RESOURCES;
- 	}
- 	/*
- 	 * Copy the scatterlist WRITE buffer located at cmd->t_data_sg
-@@ -320,8 +320,10 @@ static void xdreadwrite_callback(struct se_cmd *cmd)
- 	offset = 0;
- 	for_each_sg(cmd->t_bidi_data_sg, sg, cmd->t_bidi_data_nents, count) {
- 		addr = kmap_atomic(sg_page(sg));
--		if (!addr)
-+		if (!addr) {
-+			ret = TCM_OUT_OF_RESOURCES;
- 			goto out;
-+		}
- 
- 		for (i = 0; i < sg->length; i++)
- 			*(addr + sg->offset + i) ^= *(buf + offset + i);
-@@ -332,6 +334,7 @@ static void xdreadwrite_callback(struct se_cmd *cmd)
- 
- out:
- 	kfree(buf);
-+	return ret;
- }
- 
- sense_reason_t
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 98ec711..53d1d75 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1904,10 +1904,24 @@ static void target_complete_ok_work(struct work_struct *work)
- 	}
- 	/*
- 	 * Check for a callback, used by amongst other things
--	 * XDWRITE_READ_10 emulation.
-+	 * XDWRITE_READ_10 and COMPARE_AND_WRITE emulation.
- 	 */
--	if (cmd->transport_complete_callback)
--		cmd->transport_complete_callback(cmd);
-+	if (cmd->transport_complete_callback) {
-+		sense_reason_t rc;
-+
-+		rc = cmd->transport_complete_callback(cmd);
-+		if (!rc)
-+			return;
-+
-+		ret = transport_send_check_condition_and_sense(cmd,
-+					rc, 0);
-+		if (ret == -EAGAIN || ret == -ENOMEM)
-+			goto queue_full;
-+
-+		transport_lun_remove_cmd(cmd);
-+		transport_cmd_check_stop_to_fabric(cmd);
-+		return;
-+	}
- 
- 	switch (cmd->data_direction) {
- 	case DMA_FROM_DEVICE:
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index 360e4a3..6e946f3 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -447,7 +447,7 @@ struct se_cmd {
- 	struct kref		cmd_kref;
- 	struct target_core_fabric_ops *se_tfo;
- 	sense_reason_t		(*execute_cmd)(struct se_cmd *);
--	void (*transport_complete_callback)(struct se_cmd *);
-+	sense_reason_t (*transport_complete_callback)(struct se_cmd *);
- 
- 	unsigned char		*t_task_cdb;
- 	unsigned char		__t_task_cdb[TCM_MAX_COMMAND_SIZE];
--- 
-1.7.2.5
+(since my config pretty similar to yours I tried to run trinity without
+ kernel recompilation. At first i loaded swap space with crap data
 
+[root@ovz trinity]# free 
+             total       used       free     shared    buffers     cached
+Mem:        493228     480188      13040          0       2912      12112
+-/+ buffers/cache:     465164      28064
+Swap:      2063356    1741304     322052
+
+then run it as
+
+[root@ovz trinity]# ./trinity -C64 --dangerous)
+
+I'll continue tomorrow with your config and test-multi.sh.
