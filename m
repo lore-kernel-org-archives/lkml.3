@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab3HZP3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 11:29:48 -0400
-Received: from b232-35.smtp-out.amazonses.com ([199.127.232.35]:11953 "EHLO
-	b232-35.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751857Ab3HZP3r (ORCPT
+	id S1752399Ab3HZPbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 11:31:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53067 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab3HZPbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 11:29:47 -0400
-X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 11:29:46 EDT
-Date: Mon, 26 Aug 2013 15:20:09 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [guv 04/16] core: Convert __get_cpu_var uses
-In-Reply-To: <20130826141849.GA6276@home.goodmis.org>
-Message-ID: <00000140bb35f38a-99d5d8ab-6672-42e8-9e91-55cb231c693d-000000@email.amazonses.com>
-References: <20130823190135.726207430@linux.com> <00000140ac8e2bdd-f0151a00-88ca-4d0b-adbc-007c514b6856-000000@email.amazonses.com> <20130826141849.GA6276@home.goodmis.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 26 Aug 2013 11:31:21 -0400
+Date: Mon, 26 Aug 2013 17:31:13 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 17/17] clk: zynq: remove call to of_clk_init
+Message-ID: <20130826153113.GD24795@pengutronix.de>
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1376964271-22715-18-git-send-email-sebastian.hesselbarth@gmail.com>
+ <d17acba9-85f9-40cd-a176-2005e3e924f8@CO1EHSMHS002.ehs.local>
+ <c4d10bdf-6506-4edc-92cc-2acc67b86602@VA3EHSMHS032.ehs.local>
+ <20130823073250.GB30135@pengutronix.de>
+ <521B38BF.6040400@monstr.eu>
+ <20130826120716.GB24795@pengutronix.de>
+ <521B4FCF.5000904@gmail.com>
+ <521B70D1.5090506@monstr.eu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.127.232.35
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521B70D1.5090506@monstr.eu>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:28:33 up 2 days, 59 min, 43 users,  load average: 0,01, 0,36,
+ 0,62
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Aug 2013, Steven Rostedt wrote:
+Hi Michal,
 
-> As Tejun said, each commit needs its own change log. Never expect a
-> change lgo from another commit to be read for changes in this commit.
+On Mon, Aug 26, 2013 at 05:14:25PM +0200, Michal Simek wrote:
+> Steffen: Can you point me to that floading patches? If they are useful
+> we can try them and help with pushing them to the mainline.
+> I don't think that there is any reasonable solution without using these
+> patches.
+> 
 
-I can copy the intro into each of the patches?
+I was referring to the RFC from Thierry https://lkml.org/lkml/2013/8/16/399
+It sounds like it might help, but also that this might lead to unwanted
+side effects.
 
-> > Index: linux/kernel/time/tick-oneshot.c
-> > Index: linux/kernel/trace/ftrace.c
-> > Index: linux/kernel/user-return-notifier.c
-> > Index: linux/kernel/watchdog.c
-> > Index: linux/lib/radix-tree.c
-> > Index: linux/mm/memcontrol.c
-> > Index: linux/mm/memory-failure.c
-> > Index: linux/mm/page-writeback.c
-> > Index: linux/mm/swap.c
-> > Index: linux/mm/vmalloc.c
-> > Index: linux/mm/vmstat.c
-> > Index: linux/net/core/dev.c
-> > Index: linux/net/core/drop_monitor.c
-> > Index: linux/net/core/skbuff.c
-> > Index: linux/net/ipv4/tcp_output.c
-> > Index: linux/net/rds/ib_rdma.c
-> > Index: linux/kernel/timer.c
-> > Index: linux/kernel/trace/trace.c
->
-> This patch needs to be broken up per subsystem. Or are you just looking
-> for acks from all the maintainers here and you'll pull it in. If that's
-> the case, you should have Cc'd each of the maintainers of the files that
-> this touches.
+str
 
-I did a breakout by arch, then core and drivers. How fine grained do you
-want them? This touches a significant portion of the kernel source.
-There could be quite a number of maintainers involved.
-
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
