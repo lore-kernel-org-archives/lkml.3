@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab3HZOAL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 10:00:11 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:64501 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab3HZOAI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 10:00:08 -0400
+	id S1754637Ab3HZOFH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 10:05:07 -0400
+Received: from smtp2-1.goneo.de ([212.90.139.83]:58575 "EHLO smtp2-1.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751666Ab3HZOFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 10:05:05 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -2.739
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Andreas Larsson <andreas@gaisler.com>
+Subject: Re: [PATCH v2] gpio: interrupt consistency check for OF GPIO IRQs
+Date: Mon, 26 Aug 2013 16:04:55 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>, grant.likely@linaro.org,
+        linus.walleij@linaro.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mark.rutland@arm.com, ian.campbell@citrix.com, galak@codeaurora.org,
+        pawel.moll@arm.com, tomasz.figa@gmail.com, swarren@wwwdotorg.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+References: <1377092334-770-1-git-send-email-larsi@wh2.tu-dresden.de> <201308261256.00870.poeschel@lemonage.de> <521B3C03.8080508@gaisler.com>
+In-Reply-To: <521B3C03.8080508@gaisler.com>
 MIME-Version: 1.0
-In-Reply-To: <2003732.zyaEDD5Bdr@vostro.rjw.lan>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<CAKohpondC1BuODMauBsBKZtL=9sSDUSB6nXFKSoLWJG_xgO+iw@mail.gmail.com>
-	<20130826091114.78ea4f61@amdc308.digital.local>
-	<2003732.zyaEDD5Bdr@vostro.rjw.lan>
-Date: Mon, 26 Aug 2013 19:30:07 +0530
-Message-ID: <CAKohpo=h9rW+FVrsmqee0oY_KK+h9x8o40b7LvAGzX1s4KsZNA@mail.gmail.com>
-Subject: Re: [PATCH v7 1/7] cpufreq: Add boost frequency support in core
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Lukasz Majewski <l.majewski@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        "R, Durgadoss" <durgadoss.r@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308261604.55827.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 August 2013 18:42, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, August 26, 2013 09:11:14 AM Lukasz Majewski wrote:
->> On Mon, 26 Aug 2013 12:36:47 +0530 Viresh Kumar viresh.kumar@linaro.org
->> wrote,
->> > On 26 August 2013 12:32, Lukasz Majewski <l.majewski@samsung.com>
->> > wrote:
->> > > On Mon, 26 Aug 2013 10:58:53 +0530 Viresh Kumar
->> > > viresh.kumar@linaro.org wrote,
->> > >> Some minor nitpicking, nothing much :)
->> > >
->> > > Is there any chance to pull those corrected patches to v3.12?
->> >
->> > Only Rafael can decide :)
->>
->> :-)
->
-> Well, 3.11 is a week away and the 3.12 merge window will open then.
->
-> Honestly, I'd prefer this stuff to spend a couple of weeks in linux-next
-> before pushing it to Linus, so this means 3.13 I'm afraid.
+On Monday 26 August 2013 at 13:29:07, Andreas Larsson wrote:
+> On 2013-08-26 12:56, Lars Poeschel wrote:
+> > Hi Andreas!
+> > 
+> > On Thursday 22 August 2013 at 15:16:18, Andreas Larsson wrote:
+> >> On 2013-08-21 15:38, Lars Poeschel wrote:
+> >>> +static void of_gpio_scan_irq_lines(const struct device_node *const
+> >>> node, +				   struct device_node *const gcn,
+> >>> +				   struct irq_domain *const irq_domain,
+> >>> +				   const u32 intsize,
+> >>> +				   const struct gpio_chip * const gc,
+> >>> +				   bool request)
+> >>> +{
+> >>> +	struct device_node *child;
+> >>> +	struct device_node *irq_parent;
+> >>> +	const __be32 *intspec;
+> >>> +	u32 intlen;
+> >>> +	int ret;
+> >>> +	int i;
+> >>> +	irq_hw_number_t hwirq;
+> >>> +	unsigned int type;
+> >>> +
+> >>> +	if (node == NULL)
+> >>> +		return;
+> >>> +
+> >>> +	for_each_child_of_node(node, child) {
+> >>> +		of_gpio_scan_irq_lines(child, gcn, irq_domain, intsize, gc,
+> >>> +				       request);
+> >>> +		/* Check if we have an IRQ parent, else continue */
+> >>> +		irq_parent = of_irq_find_parent(child);
+> >> 
+> >> Hi!
+> >> 
+> >> This call to of_irq_find_parent breaks gpiolib-of for SPARC due to
+> >> the fact that the function is undefined when !defined(CONFIG_OF_IRQ)
+> >> && defined(CONFIG_OF).
+> >> 
+> >> Defining the empty of_irq_find_parent in include/linux/of_irq.h when
+> >> !defined(CONFIG_OF_IRQ) instead of the current case when
+> >> !defined(CONFIG_OF) would solve the immediate compilation problem.
+> > 
+> > Is this a bug and should be fixed ?
+> 
+> Well, at least as soon as anyone tries to use in a context that does not
+> exclude SPARC it creates a bug, so I would say so. There is no reason
+> for SPARC to fall between the chairs. This is the first case I am aware
+> of that triggers this.
 
-+1
+I also think this should be fixed.
+Are you able to do a patch that fixes this and submit to the relevant 
+people?
+
+Regards,
+Lars
