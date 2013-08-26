@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab3HZXXs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 19:23:48 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:44109 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466Ab3HZXXq (ORCPT
+	id S1752347Ab3HZXcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 19:32:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58905 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575Ab3HZXcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 19:23:46 -0400
-Date: Mon, 26 Aug 2013 16:23:33 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: stable@vger.kernel.org, linux-bcache@vger.kernel.org,
+	Mon, 26 Aug 2013 19:32:45 -0400
+Date: Mon, 26 Aug 2013 16:31:50 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        gong.chen@linux.intel.com, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: Bcache fixes for stable
-Message-ID: <20130826232333.GA11778@moria.home.lan>
-References: <20130826220249.GF2798@kmo-pixel>
- <20130826221957.GA2782@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130826221957.GA2782@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH v4 8/10] mm/hwpoison: fix memory failure still hold
+ reference count after unpoison empty zero page
+Message-Id: <20130826163150.72bb773c.akpm@linux-foundation.org>
+In-Reply-To: <521be416.a5e8420a.6786.09d1SMTPIN_ADDED_BROKEN@mx.google.com>
+References: <1377506774-5377-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	<1377506774-5377-8-git-send-email-liwanp@linux.vnet.ibm.com>
+	<1377531937-15nx3q8e-mutt-n-horiguchi@ah.jp.nec.com>
+	<521be416.a5e8420a.6786.09d1SMTPIN_ADDED_BROKEN@mx.google.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 03:19:57PM -0700, Greg Kroah-Hartman wrote:
-> On Mon, Aug 26, 2013 at 03:02:49PM -0700, Kent Overstreet wrote:
-> > Two fixes that went into 3.11 should've been marked for stable, but I
-> > screwed up and forgot to mark them.
-> > 
-> > One of them fixes bugs that appear to being hit in the wild, so please
-> > pull these:
-> > 
-> > The following changes since commit 0a4b6d4ff200a553951f77f765971cb3e4c91ec0:
-> > 
-> >   Linux 3.10.9 (2013-08-20 15:40:47 -0700)
-> > 
-> > are available in the git repository at:
-> > 
-> >   git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.10
-> > 
-> > for you to fetch changes up to a213846fafcdf52153dfebf8b1671498a72b6285:
-> > 
-> >   bcache: FUA fixes (2013-08-26 14:56:52 -0700)
-> > 
-> > ----------------------------------------------------------------
-> > Kent Overstreet (1):
-> >       bcache: FUA fixes
-> > 
-> > Kumar Amit Mehta (1):
-> >       md: bcache: io.c: fix a potential NULL pointer dereference
+On Tue, 27 Aug 2013 07:26:04 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+
+> Hi Naoya,
+> On Mon, Aug 26, 2013 at 11:45:37AM -0400, Naoya Horiguchi wrote:
+> >On Mon, Aug 26, 2013 at 04:46:12PM +0800, Wanpeng Li wrote:
+> >> madvise hwpoison inject will poison the read-only empty zero page if there is 
+> >> no write access before poison. Empty zero page reference count will be increased 
+> >> for hwpoison, subsequent poison zero page will return directly since page has
+> >> already been set PG_hwpoison, however, page reference count is still increased 
+> >> by get_user_pages_fast. The unpoison process will unpoison the empty zero page 
+> >> and decrease the reference count successfully for the fist time, however, 
+> >> subsequent unpoison empty zero page will return directly since page has already 
+> >> been unpoisoned and without decrease the page reference count of empty zero page.
+> >> This patch fix it by decrease page reference count for empty zero page which has 
+> >> already been unpoisoned and page count > 1.
+> >
+> >I guess that fixing on the madvise side looks reasonable to me, because this
+> >refcount mismatch happens only when we poison with madvise(). The root cause
+> >is that we can get refcount multiple times on a page, even if memory_failure()
+> >or soft_offline_page() can do its work only once.
+> >
 > 
-> Can I get a hint as to what the git commit ids of these patches are in
-> Linus's tree?
+> I think this just happen in read-only before poison case against empty
+> zero page. 
+> 
+> Hi Andrew,
+> 
+> I see you have already merged the patch, which method you prefer? 
+> 
 
-5c694129c8db6d89c9be109049a16510b2f70f6d
-e49c7c374e7aacd1f04ecbc21d9dbbeeea4a77d6
+Addressing it within the madvise code does sound more appropriate.  The
+change which
+mm-hwpoison-fix-memory-failure-still-holding-reference-count-after-unpoisoning-empty-zero-page.patch
+makes is pretty darn strange-looking at at least needs a comment
+telling people what it's doing, and why.
 
-> Ideally, that's all you need to send me, but if you want to send me a
-> git pull, that's fine too, but please use a signed tag, otherwise it's
-> just a random tree...
-
-*nod* I need to get some more signatures on my gpg key...
-
-> Also, if you do a git pull, I need the git commit ids in the changelog
-> entry that match Linus's tree, so people (like me) can verify things.
-
-Ok, I'll remember that for the future.
-
-> For now, I can edit these two patches and add them in, if you give me
-> the git commit ids to verify them.
-
-Ok - I don't care too much either way but there were some slightly
-nontrivial conflicts on the second patch, and the one I did backported
-has been tested.
