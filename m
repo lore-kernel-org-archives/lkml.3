@@ -1,97 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756514Ab3HZKve (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:51:34 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46634 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307Ab3HZKvc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:51:32 -0400
-Message-ID: <521B3212.3050405@ti.com>
-Date: Mon, 26 Aug 2013 16:16:42 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1756340Ab3HZK4L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:56:11 -0400
+Received: from smtp2-1.goneo.de ([212.90.139.83]:34829 "EHLO smtp2-1.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751793Ab3HZK4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 06:56:09 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -2.74
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Andreas Larsson <andreas@gaisler.com>
+Subject: Re: [PATCH v2] gpio: interrupt consistency check for OF GPIO IRQs
+Date: Mon, 26 Aug 2013 12:56:00 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>, grant.likely@linaro.org,
+        linus.walleij@linaro.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mark.rutland@arm.com, ian.campbell@citrix.com, galak@codeaurora.org,
+        pawel.moll@arm.com, tomasz.figa@gmail.com, swarren@wwwdotorg.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+References: <1377092334-770-1-git-send-email-larsi@wh2.tu-dresden.de> <52160F22.2080701@gaisler.com>
+In-Reply-To: <52160F22.2080701@gaisler.com>
 MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Matt Porter <matt@ohporter.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Pantel Antoniou <panto@antoniou-consulting.com>
-Subject: Re: [PATCH v2] ARM: EDMA: Fix clearing of unused list for DT DMA
- resources
-References: <1377287613-16491-1-git-send-email-joelf@ti.com>
-In-Reply-To: <1377287613-16491-1-git-send-email-joelf@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201308261256.00870.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 24 August 2013 01:23 AM, Joel Fernandes wrote:
-> HWMOD removal for MMC and Crypto is breaking edma_start as the events are
-> being manually triggered due to unused channel list not being clear. Atleast
-> breakage has been seen on these peripherals, but it is expected Audio (McASP)
-> maybe breaking too.
-> 
-> This patch fixes the issue, by reading the "dmas" property from the DT node if
-> it exists and clearing the bits in the unused channel list so that these channels
-> are not manually triggered.
-> 
-> v2 changes:
-> Reduced indendation by returning from if block.
+Hi Andreas!
 
-Is this a v2 or v3 since you already sent a v2 about a month back?
-
+On Thursday 22 August 2013 at 15:16:18, Andreas Larsson wrote:
+> On 2013-08-21 15:38, Lars Poeschel wrote:
+> > +static void of_gpio_scan_irq_lines(const struct device_node *const
+> > node, +				   struct device_node *const gcn,
+> > +				   struct irq_domain *const irq_domain,
+> > +				   const u32 intsize,
+> > +				   const struct gpio_chip * const gc,
+> > +				   bool request)
+> > +{
+> > +	struct device_node *child;
+> > +	struct device_node *irq_parent;
+> > +	const __be32 *intspec;
+> > +	u32 intlen;
+> > +	int ret;
+> > +	int i;
+> > +	irq_hw_number_t hwirq;
+> > +	unsigned int type;
+> > +
+> > +	if (node == NULL)
+> > +		return;
+> > +
+> > +	for_each_child_of_node(node, child) {
+> > +		of_gpio_scan_irq_lines(child, gcn, irq_domain, intsize, gc,
+> > +				       request);
+> > +		/* Check if we have an IRQ parent, else continue */
+> > +		irq_parent = of_irq_find_parent(child);
 > 
-> Reviewed-by: Sekhar Nori <nsekhar@ti.com>
-> Reported-by: Balaji T K <balajitk@ti.com>
-> Cc: Pantel Antoniou <panto@antoniou-consulting.com>
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> ---
-> Note:
-> Patch should go in for -rc cycle as it fixes existing crypto drivers.
-
-We agreed the patch is not needed in -rc cycle since there are no
-current EDMA users in DT-boot?
-
+> Hi!
 > 
->  arch/arm/common/edma.c | 22 +++++++++++++++++++---
->  1 file changed, 19 insertions(+), 3 deletions(-)
+> This call to of_irq_find_parent breaks gpiolib-of for SPARC due to the
+> fact that the function is undefined when !defined(CONFIG_OF_IRQ) &&
+> defined(CONFIG_OF).
 > 
-> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-> index 39ad030..3867e7e 100644
-> --- a/arch/arm/common/edma.c
-> +++ b/arch/arm/common/edma.c
-> @@ -560,14 +560,30 @@ static int reserve_contiguous_slots(int ctlr, unsigned int id,
->  static int prepare_unused_channel_list(struct device *dev, void *data)
->  {
->  	struct platform_device *pdev = to_platform_device(dev);
-> -	int i, ctlr;
-> +	int i = 0, ctlr;
-> +	u32 dma_chan;
-> +	const __be32 *dma_chan_p;
-> +	struct property *prop;
-> +
-> +	if (dev->of_node) {
-> +		of_property_for_each_u32(dev->of_node, "dmas", prop,
-> +					 dma_chan_p, dma_chan) {
-> +			if (i++ & 1) {
-> +				ctlr = EDMA_CTLR(dma_chan);
-> +				clear_bit(EDMA_CHAN_SLOT(dma_chan),
-> +					  edma_cc[ctlr]->edma_unused);
-> +			}
+> Defining the empty of_irq_find_parent in include/linux/of_irq.h when
+> !defined(CONFIG_OF_IRQ) instead of the current case when
+> !defined(CONFIG_OF) would solve the immediate compilation problem.
 
-I thought we agreed to do this differently using
-of_property_count_strings() and of_parse_phandle_with_args(). I seemed
-to have missed any discussion on why this cannot be done (if such a
-discussion took place on the list).
+Is this a bug and should be fixed ?
+
+> However, when !defined(CONFIG_OF_IRQ) (i.e. SPARC in this case) the
+> whole tree walking will never accomplish anything, so it would be good
+> if of_gpiochip_reserve_irq_lines is just an empty dummy or something
+> like that when !defined(CONFIG_OF_IRQ).
+
+You are right. I'll consider this in the next spin.
 
 Thanks,
-Sekhar
-
+Lars
