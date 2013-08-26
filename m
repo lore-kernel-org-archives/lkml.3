@@ -1,345 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab3HZUxp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 16:53:45 -0400
-Received: from a9-97.smtp-out.amazonses.com ([54.240.9.97]:58942 "EHLO
-	a9-97.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752221Ab3HZUxn (ORCPT
+	id S1752886Ab3HZUyD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 16:54:03 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:40839 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752653Ab3HZUyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 16:53:43 -0400
-X-Greylist: delayed 546 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 16:53:43 EDT
-Message-ID: <00000140bc5efaa6-6574c593-6225-4451-9562-cee6477fc573-000000@email.amazonses.com>
+	Mon, 26 Aug 2013 16:54:01 -0400
+X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 16:54:00 EDT
+Message-Id: <00000140bc5eb9ae-8673adeb-adfa-41a4-be1e-2994edde3fe8-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Mon, 26 Aug 2013 20:44:36 +0000
+Date: Mon, 26 Aug 2013 20:44:19 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
+Cc: akpm@linuxfoundation.org
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [guv v2 06/31] scheduler: Replace __get_cpu_var uses
+Subject: [guv v2 02/31] percpu: Make __verify_pcu_ptr handle per cpu pointers to arrays
 References: <20130826204351.725357339@linux.com>
-X-SES-Outgoing: 2013.08.26-54.240.9.97
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
-
-Others usage cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
-
-__get_cpu_var() is defined as :
-
-
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does a address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
-
-
-This patch converts __get_cpu_var into either and explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
-and less registers are used when code is generated.
-
-At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
-
-The patchset includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, u);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(this_cpu_ptr(&y), x, sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
+__verify_pcpu_ptr() will cause a compilation failure if the type of the
+pointer is a pointer to a fixed array of objects. Adding zero to the
+pointer converts the type of pointer to that pointing to a single
+object of the array.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/include/linux/kernel_stat.h
+Index: linux/include/linux/percpu-defs.h
 ===================================================================
---- linux.orig/include/linux/kernel_stat.h	2013-08-26 14:21:39.000000000 -0500
-+++ linux/include/linux/kernel_stat.h	2013-08-26 14:23:08.883120293 -0500
-@@ -47,8 +47,8 @@ DECLARE_PER_CPU(struct kernel_stat, ksta
- DECLARE_PER_CPU(struct kernel_cpustat, kernel_cpustat);
+--- linux.orig/include/linux/percpu-defs.h	2013-08-22 13:39:04.000000000 -0500
++++ linux/include/linux/percpu-defs.h	2013-08-22 13:41:15.333140537 -0500
+@@ -22,9 +22,12 @@
+  * Macro which verifies @ptr is a percpu pointer without evaluating
+  * @ptr.  This is to be used in percpu accessors to verify that the
+  * input parameter is a percpu pointer.
++ *
++ * + 0 is required in order to convert the pointer type from a
++ * potential array type to a pointer to a single item of the array.
+  */
+ #define __verify_pcpu_ptr(ptr)	do {					\
+-	const void __percpu *__vpp_verify = (typeof(ptr))NULL;		\
++	const void __percpu *__vpp_verify = (typeof((ptr) + 0))NULL;	\
+ 	(void)__vpp_verify;						\
+ } while (0)
  
- /* Must have preemption disabled for this to be meaningful. */
--#define kstat_this_cpu (&__get_cpu_var(kstat))
--#define kcpustat_this_cpu (&__get_cpu_var(kernel_cpustat))
-+#define kstat_this_cpu this_cpu_ptr(&kstat)
-+#define kcpustat_this_cpu this_cpu_ptr(&kernel_cpustat)
- #define kstat_cpu(cpu) per_cpu(kstat, cpu)
- #define kcpustat_cpu(cpu) per_cpu(kernel_cpustat, cpu)
- 
-Index: linux/kernel/events/callchain.c
-===================================================================
---- linux.orig/kernel/events/callchain.c	2013-08-26 14:21:39.000000000 -0500
-+++ linux/kernel/events/callchain.c	2013-08-26 14:23:08.875120379 -0500
-@@ -134,7 +134,7 @@ static struct perf_callchain_entry *get_
- 	int cpu;
- 	struct callchain_cpus_entries *entries;
- 
--	*rctx = get_recursion_context(__get_cpu_var(callchain_recursion));
-+	*rctx = get_recursion_context(this_cpu_ptr(callchain_recursion));
- 	if (*rctx == -1)
- 		return NULL;
- 
-@@ -150,7 +150,7 @@ static struct perf_callchain_entry *get_
- static void
- put_callchain_entry(int rctx)
- {
--	put_recursion_context(__get_cpu_var(callchain_recursion), rctx);
-+	put_recursion_context(this_cpu_ptr(callchain_recursion), rctx);
- }
- 
- struct perf_callchain_entry *
-Index: linux/kernel/events/core.c
-===================================================================
---- linux.orig/kernel/events/core.c	2013-08-26 14:21:39.000000000 -0500
-+++ linux/kernel/events/core.c	2013-08-26 14:23:08.875120379 -0500
-@@ -238,10 +238,10 @@ void perf_sample_event_took(u64 sample_l
- 		return;
- 
- 	/* decay the counter by 1 average sample */
--	local_samples_len = __get_cpu_var(running_sample_length);
-+	local_samples_len = __this_cpu_read(running_sample_length);
- 	local_samples_len -= local_samples_len/NR_ACCUMULATED_SAMPLES;
- 	local_samples_len += sample_len_ns;
--	__get_cpu_var(running_sample_length) = local_samples_len;
-+	__this_cpu_write(running_sample_length, local_samples_len);
- 
- 	/*
- 	 * note: this will be biased artifically low until we have
-@@ -865,7 +865,7 @@ static DEFINE_PER_CPU(struct list_head,
- static void perf_pmu_rotate_start(struct pmu *pmu)
- {
- 	struct perf_cpu_context *cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
--	struct list_head *head = &__get_cpu_var(rotation_list);
-+	struct list_head *head = this_cpu_ptr(&rotation_list);
- 
- 	WARN_ON(!irqs_disabled());
- 
-@@ -2321,7 +2321,7 @@ void __perf_event_task_sched_out(struct
- 	 * to check if we have to switch out PMU state.
- 	 * cgroup event are system-wide mode only
- 	 */
--	if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
-+	if (atomic_read(this_cpu_ptr(&perf_cgroup_events)))
- 		perf_cgroup_sched_out(task, next);
- }
- 
-@@ -2566,11 +2566,11 @@ void __perf_event_task_sched_in(struct t
- 	 * to check if we have to switch in PMU state.
- 	 * cgroup event are system-wide mode only
- 	 */
--	if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
-+	if (atomic_read(this_cpu_ptr(&perf_cgroup_events)))
- 		perf_cgroup_sched_in(prev, task);
- 
- 	/* check for system-wide branch_stack events */
--	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
-+	if (atomic_read(this_cpu_ptr(&perf_branch_stack_events)))
- 		perf_branch_stack_sched_in(prev, task);
- }
- 
-@@ -2811,7 +2811,7 @@ done:
- #ifdef CONFIG_NO_HZ_FULL
- bool perf_event_can_stop_tick(void)
- {
--	if (list_empty(&__get_cpu_var(rotation_list)))
-+	if (list_empty(this_cpu_ptr(&rotation_list)))
- 		return true;
- 	else
- 		return false;
-@@ -2820,7 +2820,7 @@ bool perf_event_can_stop_tick(void)
- 
- void perf_event_task_tick(void)
- {
--	struct list_head *head = &__get_cpu_var(rotation_list);
-+	struct list_head *head = this_cpu_ptr(&rotation_list);
- 	struct perf_cpu_context *cpuctx, *tmp;
- 	struct perf_event_context *ctx;
- 	int throttled;
-@@ -5414,7 +5414,7 @@ static void do_perf_sw_event(enum perf_t
- 				    struct perf_sample_data *data,
- 				    struct pt_regs *regs)
- {
--	struct swevent_htable *swhash = &__get_cpu_var(swevent_htable);
-+	struct swevent_htable *swhash = this_cpu_ptr(&swevent_htable);
- 	struct perf_event *event;
- 	struct hlist_head *head;
- 
-@@ -5433,7 +5433,7 @@ end:
- 
- int perf_swevent_get_recursion_context(void)
- {
--	struct swevent_htable *swhash = &__get_cpu_var(swevent_htable);
-+	struct swevent_htable *swhash = this_cpu_ptr(&swevent_htable);
- 
- 	return get_recursion_context(swhash->recursion);
- }
-@@ -5441,7 +5441,7 @@ EXPORT_SYMBOL_GPL(perf_swevent_get_recur
- 
- inline void perf_swevent_put_recursion_context(int rctx)
- {
--	struct swevent_htable *swhash = &__get_cpu_var(swevent_htable);
-+	struct swevent_htable *swhash = this_cpu_ptr(&swevent_htable);
- 
- 	put_recursion_context(swhash->recursion, rctx);
- }
-@@ -5470,7 +5470,7 @@ static void perf_swevent_read(struct per
- 
- static int perf_swevent_add(struct perf_event *event, int flags)
- {
--	struct swevent_htable *swhash = &__get_cpu_var(swevent_htable);
-+	struct swevent_htable *swhash = this_cpu_ptr(&swevent_htable);
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct hlist_head *head;
- 
-Index: linux/kernel/sched/cputime.c
-===================================================================
---- linux.orig/kernel/sched/cputime.c	2013-08-26 14:21:39.000000000 -0500
-+++ linux/kernel/sched/cputime.c	2013-08-26 14:23:08.879120335 -0500
-@@ -121,7 +121,7 @@ static inline void task_group_account_fi
- 	 * is the only cgroup, then nothing else should be necessary.
- 	 *
- 	 */
--	__get_cpu_var(kernel_cpustat).cpustat[index] += tmp;
-+	__this_cpu_add(kernel_cpustat.cpustat[index], tmp);
- 
- 	cpuacct_account_field(p, index, tmp);
- }
-Index: linux/kernel/sched/fair.c
-===================================================================
---- linux.orig/kernel/sched/fair.c	2013-08-26 14:21:39.000000000 -0500
-+++ linux/kernel/sched/fair.c	2013-08-26 14:23:08.879120335 -0500
-@@ -5057,7 +5057,7 @@ static int load_balance(int this_cpu, st
- 	struct sched_group *group;
- 	struct rq *busiest;
- 	unsigned long flags;
--	struct cpumask *cpus = __get_cpu_var(load_balance_mask);
-+	struct cpumask *cpus = this_cpu_ptr(load_balance_mask);
- 
- 	struct lb_env env = {
- 		.sd		= sd,
-Index: linux/kernel/sched/rt.c
-===================================================================
---- linux.orig/kernel/sched/rt.c	2013-08-26 14:21:39.000000000 -0500
-+++ linux/kernel/sched/rt.c	2013-08-26 14:23:08.883120293 -0500
-@@ -1389,7 +1389,7 @@ static DEFINE_PER_CPU(cpumask_var_t, loc
- static int find_lowest_rq(struct task_struct *task)
- {
- 	struct sched_domain *sd;
--	struct cpumask *lowest_mask = __get_cpu_var(local_cpu_mask);
-+	struct cpumask *lowest_mask = this_cpu_ptr(local_cpu_mask);
- 	int this_cpu = smp_processor_id();
- 	int cpu      = task_cpu(task);
- 
-Index: linux/kernel/sched/sched.h
-===================================================================
---- linux.orig/kernel/sched/sched.h	2013-08-26 14:21:39.000000000 -0500
-+++ linux/kernel/sched/sched.h	2013-08-26 14:23:08.883120293 -0500
-@@ -538,10 +538,10 @@ static inline int cpu_of(struct rq *rq)
- DECLARE_PER_CPU(struct rq, runqueues);
- 
- #define cpu_rq(cpu)		(&per_cpu(runqueues, (cpu)))
--#define this_rq()		(&__get_cpu_var(runqueues))
-+#define this_rq()		this_cpu_ptr(&runqueues)
- #define task_rq(p)		cpu_rq(task_cpu(p))
- #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
--#define raw_rq()		(&__raw_get_cpu_var(runqueues))
-+#define raw_rq()		__this_cpu_ptr(&runqueues)
- 
- static inline u64 rq_clock(struct rq *rq)
- {
-Index: linux/kernel/user-return-notifier.c
-===================================================================
---- linux.orig/kernel/user-return-notifier.c	2013-08-26 14:21:39.000000000 -0500
-+++ linux/kernel/user-return-notifier.c	2013-08-26 14:23:08.883120293 -0500
-@@ -14,7 +14,7 @@ static DEFINE_PER_CPU(struct hlist_head,
- void user_return_notifier_register(struct user_return_notifier *urn)
- {
- 	set_tsk_thread_flag(current, TIF_USER_RETURN_NOTIFY);
--	hlist_add_head(&urn->link, &__get_cpu_var(return_notifier_list));
-+	hlist_add_head(&urn->link, this_cpu_ptr(&return_notifier_list));
- }
- EXPORT_SYMBOL_GPL(user_return_notifier_register);
- 
-@@ -25,7 +25,7 @@ EXPORT_SYMBOL_GPL(user_return_notifier_r
- void user_return_notifier_unregister(struct user_return_notifier *urn)
- {
- 	hlist_del(&urn->link);
--	if (hlist_empty(&__get_cpu_var(return_notifier_list)))
-+	if (hlist_empty(this_cpu_ptr(&return_notifier_list)))
- 		clear_tsk_thread_flag(current, TIF_USER_RETURN_NOTIFY);
- }
- EXPORT_SYMBOL_GPL(user_return_notifier_unregister);
 
