@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab3HZIdm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 04:33:42 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:52866 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756052Ab3HZIdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 04:33:39 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: Axel Lin <axel.lin@ingics.com>
-Subject: Re: [PATCH] pinctrl: rockchip: Simplify pin_to_bank equation
-Date: Mon, 26 Aug 2013 10:33:35 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-References: <1377244140.24387.1.camel@phoenix>
-In-Reply-To: <1377244140.24387.1.camel@phoenix>
+	id S1756525Ab3HZIdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:33:40 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:53220 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756053Ab3HZIdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 04:33:38 -0400
+Message-ID: <521B12DD.8010505@baylibre.com>
+Date: Mon, 26 Aug 2013 10:33:33 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: tony@atomide.com, Joel Fernandes <joelf@ti.com>, santosh.shilimkar@ti.com,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Matt Porter <mdp@ti.com>, Matt Porter <mporter@ti.com>,
+        Joel A Fernandes <joelagnel@ti.com>
+Subject: Re: [PATCH] ARM: dts: add AM33XX EDMA support
+References: <1377284808-32412-1-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <1377284808-32412-1-git-send-email-bigeasy@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201308261033.35541.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 23. August 2013, 09:49:00 schrieb Axel Lin:
-> If (b->pin_base + b->nr_pins - 1) < pin is true, pin >= b->pin_base is
-> always true because b->nr_pins is never less than 0.
-> Thus this patch simplify the equation.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Hi Sebastian,
 
-Acked-by: Heiko Stuebner <heiko@sntech.de>
+Is this patch different from that one:
+http://www.mail-archive.com/linux-omap@vger.kernel.org/msg92176.html
 
+Lokesh just pointed me this patch because it was missing for the 
+SHAM/AES series from Mark Greer.
+
+Bottom-line, I've just applied the original one along with a second one 
+that was adding EDMA in SPI.
+
+Regards,
+Benoit
+
+
+On 23/08/2013 21:06, Sebastian Andrzej Siewior wrote:
+> From: Matt Porter <mdp@ti.com>
+>
+> Adds AM33XX EDMA support to the am33xx.dtsi as documented in
+> Documentation/devicetree/bindings/dma/ti-edma.txt
+>
+> Joel: Drop DT entries that are non-hardware-description for now as discussed in [1]
+>
+> [1] https://patchwork.kernel.org/patch/2226761/
+>
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 > ---
->  drivers/pinctrl/pinctrl-rockchip.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-rockchip.c
-> b/drivers/pinctrl/pinctrl-rockchip.c index 319a64a..ea27806 100644
-> --- a/drivers/pinctrl/pinctrl-rockchip.c
-> +++ b/drivers/pinctrl/pinctrl-rockchip.c
-> @@ -186,8 +186,7 @@ static struct rockchip_pin_bank *pin_to_bank(struct
-> rockchip_pinctrl *info, {
->  	struct rockchip_pin_bank *b = info->ctrl->pin_banks;
-> 
-> -	while ((pin >= b->pin_base) &&
-> -			((b->pin_base + b->nr_pins - 1) < pin))
-> +	while (pin >= (b->pin_base + b->nr_pins))
->  		b++;
-> 
->  	return b;
+> Could someone please pick this up?
+>
+>   arch/arm/boot/dts/am33xx.dtsi | 12 ++++++++++++
+>   1 file changed, 12 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> index 38b446b..784f774 100644
+> --- a/arch/arm/boot/dts/am33xx.dtsi
+> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> @@ -96,6 +96,18 @@
+>   			reg = <0x48200000 0x1000>;
+>   		};
+>
+> +		edma: edma@49000000 {
+> +			compatible = "ti,edma3";
+> +			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
+> +			reg =	<0x49000000 0x10000>,
+> +				<0x44e10f90 0x10>;
+> +			interrupts = <12 13 14>;
+> +			#dma-cells = <1>;
+> +			dma-channels = <64>;
+> +			ti,edma-regions = <4>;
+> +			ti,edma-slots = <256>;
+> +		};
+> +
+>   		gpio0: gpio@44e07000 {
+>   			compatible = "ti,omap4-gpio";
+>   			ti,hwmods = "gpio1";
+>
 
