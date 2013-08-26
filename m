@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab3HZVFw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 17:05:52 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1761 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751465Ab3HZVFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 17:05:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,962,1367996400"; 
-   d="scan'208";a="393705907"
-Message-ID: <521BC4D7.5050507@linux.intel.com>
-Date: Mon, 26 Aug 2013 14:12:55 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>,
-        Alexander Holler <holler@ahsoftware.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/3] HID: Win 8 multitouch panels detection in core
-References: <1377175869-5336-1-git-send-email-benjamin.tissoires@redhat.com> <20130822175515.GA5215@polaris.bitmath.org> <alpine.LNX.2.00.1308261342430.2077@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1308261342430.2077@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752573Ab3HZVF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 17:05:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42405 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752376Ab3HZVF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 17:05:56 -0400
+Message-ID: <1377551155.1877.18.camel@joe-AO722>
+Subject: Re: [PATCH RESEND V3 net-next 2/3] net: huawei_cdc_ncm: Introduce
+ the huawei_cdc_ncm driver
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: mrkiko.rs@gmail.com, gregkh@linuxfoundation.org, oliver@neukum.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Mon, 26 Aug 2013 14:05:55 -0700
+In-Reply-To: <20130826.165831.112649899191508957.davem@davemloft.net>
+References: <1377244590-8558-3-git-send-email-mrkiko.rs@gmail.com>
+	 <20130826.163125.1134768821551948034.davem@davemloft.net>
+	 <1377549913.1877.12.camel@joe-AO722>
+	 <20130826.165831.112649899191508957.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2013 04:43 AM, Jiri Kosina wrote:
-> On Thu, 22 Aug 2013, Henrik Rydberg wrote:
->
->>> this is the v3 of this patch series.
->>>
->>> Srinivas, I still did not added your tested-by as I made minors modifications of
->>> the patches 1 and 2. Now only the patch 1 will impact sensor_hub, and patch 2
->>> will not impact this. Maybe just wait for Henrik to put his "Reviewed-by" before
->>> giving one last test.
->> Here goes:
->>
->>      Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
-> Thanks guys. Not applying this just yet, waiting for Tested-by: from
-> Srinivas.
->
-Tested-by: Srinivas Pandruvada<srinivas.pandruvada@linux.intel.com>
+On Mon, 2013-08-26 at 16:58 -0400, David Miller wrote:
+> From: Joe Perches <joe@perches.com>
+> Date: Mon, 26 Aug 2013 13:45:13 -0700
+> 
+> > I think the premise of local variable
+> > declaration by line length is flawed.
+> 
+> I disagree.
+> 
+> > It can't work when local variables are
+> > dependent on initialization order as
+> > above.
+> 
+> Move the initialization below the declarations.
+
+So all initializations should be on separate
+lines from declarations?
+
+ick.
+
+It's possible, but it doubles the associated
+line count and I still think it's a very
+dubious premise/practice/style.
+
+As a general rule, it's I suppose OK, but as
+a hardened rule, it's like most all hard rules.
+It's made to be broken.
+
 
 
