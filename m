@@ -1,155 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab3HZMXY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 08:23:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62804 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751737Ab3HZMXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 08:23:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,958,1367996400"; 
-   d="scan'208";a="393463563"
-Date: Mon, 26 Aug 2013 15:23:19 +0300
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: intel-gfx@lists.freedesktop.org, airlied@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] i915: Update VGA arbiter support for newer devices
-Message-ID: <20130826122319.GO11428@intel.com>
-References: <20130824144701.23370.42110.stgit@bling.home>
+	id S1756620Ab3HZM2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 08:28:04 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61020 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617Ab3HZM2C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 08:28:02 -0400
+Date: Mon, 26 Aug 2013 14:27:51 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: "Koul, Vinod" <vinod.koul@intel.com>
+cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Subject: [PATCH] DMA: shdma: fix a bad merge - remove free_irq()
+Message-ID: <Pine.LNX.4.64.1308261426320.1767@axis700.grange>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130824144701.23370.42110.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:FRh5/twE0SbNHzZW/XHP4enJ0EnhRCI5kUPx0ndIG3y
+ EUv+VsmqlE4rKAWOh4dPtPcg71LMYijc0AkigCVkLRqCmtHS6r
+ dkGck5iiJkuk2VlucOzArcz7YsrkYDkK77suqoQxKn7FKViT8d
+ EPt7zgGURVnHyg9bV7j0vLHh7oM2qJ4sXYWALUultqPXCDDZKG
+ jylD9KoyJyF/jS4h0L6OT3ybHcSpxvxX8L1YO3O8bdyIHmN7Hb
+ LlLkUOp4x4t0WMpR41fUIzboM2KCIT7XCQcOr8Ajith3gKBBO1
+ FRrC1bsXEWprnJqdBvvrS5DFdYvlmQHLd2p9j9BFviRYvurEqm
+ SHc2JUxOwEgPajwoeXhIlTmetePOQbnCFBjy/wdT/HpvRh+pSM
+ 3K1fFtb1ZjYvw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 24, 2013 at 08:53:40AM -0600, Alex Williamson wrote:
-> This is intended to add VGA arbiter support for Intel HD graphics on
-> Core processors.  The old GMCH registers no longer exist, so even
-> though it appears that i915 participates in VGA arbitration, it doesn't
-> work.  On Intel HD graphics we already attempt to disable VGA regions
-> of the device.  This makes registering as a VGA client unnecessary since
-> we don't intend to operate differently depending on how many VGA devices
-> are present.  We can disable VGA memory regions by clearing the memory
-> enable bit in the VGA MSR.  That only leaves VGA IO, which we update
-> the VGA arbiter to know that we don't participate in VGA memory
-> arbitration.  We also add a hook on unload to re-enable memory and
-> reinstate VGA memory arbitration.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
-> v2: I915_READ/WRITE accessors don't work in i915_disable_vga, use inb/outb
->     directly.  Also, on the driver unbind VGA enable path, acquire legacy
->     IO to re-enable VGA memory.  Correct comment.
-> 
-> As with v1, this depends on "vgaarb: Fixes for partial VGA opt-out".  With
-> all patches I'm able to assign a discrete PEG VGA device to a guest and
-> execute the VBIOS w/o interference from IGD or corruption of the IGD
-> framebuffer.
+A bad merge resulted in a left-over free_irq() call. This patch removes it.
 
-I glanced through those before, but I'll try to do a more thorough
-review soon.
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+---
 
-> 
->  drivers/gpu/drm/i915/i915_dma.c      |    9 ++++++---
->  drivers/gpu/drm/i915/intel_display.c |   24 ++++++++++++++++++++++++
->  2 files changed, 30 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> index f466980..d9cf216 100644
-> --- a/drivers/gpu/drm/i915/i915_dma.c
-> +++ b/drivers/gpu/drm/i915/i915_dma.c
-> @@ -1287,9 +1287,12 @@ static int i915_load_modeset_init(struct drm_device *dev)
->  	 * then we do not take part in VGA arbitration and the
->  	 * vga_client_register() fails with -ENODEV.
->  	 */
-> -	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
-> -	if (ret && ret != -ENODEV)
-> -		goto out;
-> +	if (!HAS_PCH_SPLIT(dev)) {
-> +		ret = vga_client_register(dev->pdev, dev, NULL,
-> +					  i915_vga_set_decode);
-> +		if (ret && ret != -ENODEV)
-> +			goto out;
-> +	}
+Against today's dma-slave next branch.
 
-I think we should do something to fix i915_redisable_vga() for !pch
-platforms too. The MSR method should work for everything, so I'm leaning
-towards using it all the time. The other option would be add an mmio
-codepath into intel_disable_vga(), but then we have several codepaths
-to worry about.
+ drivers/dma/sh/shdmac.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
->  
->  	intel_register_dsm_handler();
->  
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index 5fb3058..2bb805c 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -9519,6 +9519,15 @@ static void i915_disable_vga(struct drm_device *dev)
->  	outb(SR01, VGA_SR_INDEX);
->  	sr1 = inb(VGA_SR_DATA);
->  	outb(sr1 | 1<<5, VGA_SR_DATA);
-> +
-> +	/* Disable VGA memory on Intel HD */
-> +	if (HAS_PCH_SPLIT(dev)) {
-> +		outb(inb(VGA_MSR_READ) & ~VGA_MSR_MEM_EN, VGA_MSR_WRITE);
-> +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
-> +						   VGA_RSRC_NORMAL_IO |
-> +						   VGA_RSRC_NORMAL_MEM);
-> +	}
-> +
->  	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
->  	udelay(300);
->  
-> @@ -9526,6 +9535,19 @@ static void i915_disable_vga(struct drm_device *dev)
->  	POSTING_READ(vga_reg);
->  }
->  
-> +static void i915_enable_vga(struct drm_device *dev)
-> +{
-
-Not sure we need this actually. We don't re-enable the VGA display
-on unload, so you'll never see anything on the display anyway. But
-then again, I don't see any real harm in doing this either.
-
-> +	/* Enable VGA memory on Intel HD */
-> +	if (HAS_PCH_SPLIT(dev)) {
-> +		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
-> +		outb(inb(VGA_MSR_READ) | VGA_MSR_MEM_EN, VGA_MSR_WRITE);
-
-I was thinking we might save the MSR state during driver load and
-restore to that same state, but it could be a bit overkill.
-
-> +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_MASK |
-
-Maybe spell out IO and MEM for legacy too. Otherwise it looks a
-bit cryptic.
-
-> +						   VGA_RSRC_NORMAL_IO |
-> +						   VGA_RSRC_NORMAL_MEM);
-> +		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
-> +	}
-> +}
-> +
->  void intel_modeset_init_hw(struct drm_device *dev)
->  {
->  	intel_init_power_well(dev);
-> @@ -9983,6 +10005,8 @@ void intel_modeset_cleanup(struct drm_device *dev)
->  
->  	intel_disable_fbc(dev);
->  
-> +	i915_enable_vga(dev);
-> +
->  	intel_disable_gt_powersave(dev);
->  
->  	ironlake_teardown_rc6(dev);
-
+diff --git a/drivers/dma/sh/shdmac.c b/drivers/dma/sh/shdmac.c
+index c7faded..8f1683d 100644
+--- a/drivers/dma/sh/shdmac.c
++++ b/drivers/dma/sh/shdmac.c
+@@ -894,14 +894,9 @@ static int sh_dmae_remove(struct platform_device *pdev)
+ {
+ 	struct sh_dmae_device *shdev = platform_get_drvdata(pdev);
+ 	struct dma_device *dma_dev = &shdev->shdma_dev.dma_dev;
+-	struct resource *res;
+-	int errirq = platform_get_irq(pdev, 0);
+ 
+ 	dma_async_device_unregister(dma_dev);
+ 
+-	if (errirq > 0)
+-		free_irq(errirq, shdev);
+-
+ 	spin_lock_irq(&sh_dmae_lock);
+ 	list_del_rcu(&shdev->node);
+ 	spin_unlock_irq(&sh_dmae_lock);
 -- 
-Ville Syrjälä
-Intel OTC
+1.7.2.5
+
