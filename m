@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254Ab3HZUPf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 16:15:35 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:43328 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113Ab3HZUPe (ORCPT
+	id S1752313Ab3HZUQC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 16:16:02 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:50877 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab3HZUQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 16:15:34 -0400
-Message-ID: <521BB71F.6080300@hp.com>
-Date: Mon, 26 Aug 2013 16:14:23 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Mon, 26 Aug 2013 16:16:00 -0400
 MIME-Version: 1.0
-To: Alexander Fyodorov <halcy@yandex.ru>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH RFC v2 1/2] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-References: <15321377012704@web8h.yandex.ru> <52142D6C.6000400@hp.com> <336901377100289@web16f.yandex.ru> <5215638E.5020702@hp.com> <169431377178121@web21f.yandex.ru>
-In-Reply-To: <169431377178121@web21f.yandex.ru>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130826190757.GB27768@redhat.com>
+References: <20130807153030.GA25515@redhat.com>
+	<CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com>
+	<20130819231836.GD14369@redhat.com>
+	<CAJd=RBA-UZmSTxNX63Vni+UPZBHwP4tvzE_qp1ZaHBqcNG7Fcw@mail.gmail.com>
+	<20130821204901.GA19802@redhat.com>
+	<CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com>
+	<20130823032127.GA5098@redhat.com>
+	<CAJd=RBArkh3sKVoOJUZBLngXtJubjx4-a3G6s7Tn0N=Pr1gU4g@mail.gmail.com>
+	<20130823035344.GB5098@redhat.com>
+	<CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
+	<20130826190757.GB27768@redhat.com>
+Date: Mon, 26 Aug 2013 13:15:59 -0700
+X-Google-Sender-Auth: vcEzV4VeXwFmErqs8K0ZTTF1xLg
+Message-ID: <CA+55aFw_bhMOP73owFHRFHZDAYEdWgF9j-502Aq9tZe3tEfmwg@mail.gmail.com>
+Subject: Re: unused swap offset / bad page map.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Hillf Danton <dhillf@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2013 09:28 AM, Alexander Fyodorov wrote:
-> 22.08.2013, 05:04, "Waiman Long"<waiman.long@hp.com>:
->> On 08/21/2013 11:51 AM, Alexander Fyodorov wrote:
->> In this case, we should have smp_wmb() before freeing the lock. The
->> question is whether we need to do a full mb() instead. The x86 ticket
->> spinlock unlock code is just a regular add instruction except for some
->> exotic processors. So it is a compiler barrier but not really a memory
->> fence. However, we may need to do a full memory fence for some other
->> processors.
-> The thing is that x86 ticket spinlock code does have full memory barriers both in lock() and unlock() code: "add" instruction there has "lock" prefix which implies a full memory barrier. So it is better to use smp_mb() and let each architecture define it.
-
-I also thought that the x86 spinlock unlock path was an atomic add. It 
-just comes to my realization recently that this is not the case. The 
-UNLOCK_LOCK_PREFIX will be mapped to "" except for some old 32-bit x86 
-processors.
-
->> At this point, I am inclined to have either a smp_wmb() or smp_mb() at
->> the beginning of the unlock function and a barrier() at the end.
->>
->> As the lock/unlock functions can be inlined, it is possible that a
->> memory variable can be accessed earlier in the calling function and the
->> stale copy may be used in the inlined lock/unlock function instead of
->> fetching a new copy. That is why I prefer a more liberal use of
->> ACCESS_ONCE() for safety purpose.
-> That is impossible: both lock() and unlock() must have either full memory barrier or an atomic operation which returns value. Both of them prohibit optimizations and compiler cannot reuse any global variable. So this usage of ACCESS_ONCE() is unneeded.
+On Mon, Aug 26, 2013 at 12:08 PM, Dave Jones <davej@redhat.com> wrote:
 >
-> You can read more on this in Documentation/volatile-considered-harmful.txt
+> [ 4588.541886] swap_free: Unused swap offset entry 00002d15
+> [ 4588.541952] BUG: Bad page map in process trinity-kid12  pte:005a2a80 pmd:22c01f067
 >
-> And although I already suggested that, have you read Documentation/memory-barriers.txt? There is a lot of valuable information there.
+> I can reproduce this pretty quickly by driving the system into swapping using
+> a few instances of 'trinity -C64' (this creates 64 threads)
+>
+> I'm not sure how far back this bug goes, so I'll try some older kernels
+> and see if I can bisect it, because we don't seem to be getting closer
+> to figuring out what's actually happening..
 
-I did read Documentation/memory-barriers.txt. I will read 
-volatile-considered-harmful.txt.
+Bisecting would indeed be good. But I get the feeling that you'll need
+to go back a *long* time, because the swap_map[] code hasn't changed
+in ages.
 
-Regards,
-Longman
+I'm adding Hugh Dickins to the cc just in case he hasn't seen this on
+linux-mm, because the swap_map[] code is complex as hell, and Hugh did
+touch some of it last. The whole swap_map[] thing is complicated by:
+
+ - it's a single byte per swap entry
+ - it's not even a *structured* byte, but a single counter that has
+several "fields" by hand
+ - it has a count in the low 6 bits, with a magic "bad" value (which
+is also a magic "continuation" value if one of the high bits are set)
+ - it has two magic bits: HAS_CACHE and CONTINUED
+ - it has a _third_ magic value (SWAP_MAP_SHMEM) which is "CONTINUED+BAD"
+ - we increment this nasty pseudo-counter wildly hackily, and and have
+magic special case checks for the odd cases
+
+and if we get any of the special cases wrong, we'll
+increment/decrement it wrong, and we're screwed.
+
+The *locking* looks pretty simple, though. It's a simple spinlock. We
+do some optimistic tests outside the spinlock, but the actual
+allocation and modification seem to all be inside the lock and
+re-check any optimistic values afaik.
+
+So I'm almost likely to think that we are more likely to have
+something wrong in the messy magical special cases. I'm wondering if
+we should get rid of the continuation crap, for example, and expand
+the "one byte per swap page" to two bytes instead.
+
+Hugh, I think you know this code best, because you added the last
+special case (that SWAP_MAP_SHMEM value). Comments?
+
+                  Linus
