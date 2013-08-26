@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab3HZUol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 16:44:41 -0400
-Received: from a9-74.smtp-out.amazonses.com ([54.240.9.74]:46999 "EHLO
-	a9-74.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752325Ab3HZUok (ORCPT
+	id S1752528Ab3HZUor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 16:44:47 -0400
+Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:46064 "EHLO
+	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752325Ab3HZUop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 16:44:40 -0400
-Message-ID: <00000140bc5f0660-6073e25d-5d66-4601-9e4d-c25c8643ed28-000000@email.amazonses.com>
+	Mon, 26 Aug 2013 16:44:45 -0400
+Message-ID: <00000140bc5f1696-c002fa01-3db1-4f4e-979c-354c054a0caf-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Mon, 26 Aug 2013 20:44:38 +0000
+Date: Mon, 26 Aug 2013 20:44:43 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [guv v2 11/31] percpu: Replace __get_cpu_var uses
+Subject: [guv v2 01/31] x86: Use this_cpu_inc/dec for debug registers
 References: <20130826204351.725357339@linux.com>
-X-SES-Outgoing: 2013.08.26-54.240.9.74
+X-SES-Outgoing: 2013.08.26-54.240.9.58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
-
-Others usage cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
-
-__get_cpu_var() is defined as :
-
-
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does a address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
-
-
-This patch converts __get_cpu_var into either and explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
-and less registers are used when code is generated.
-
-At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
-
-The patchset includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, u);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(this_cpu_ptr(&y), x, sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
+I think this patch already exists in one form or another in some x86 tree.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/include/linux/percpu.h
+Index: linux/arch/x86/include/asm/debugreg.h
 ===================================================================
---- linux.orig/include/linux/percpu.h	2013-08-26 14:29:49.000000000 -0500
-+++ linux/include/linux/percpu.h	2013-08-26 14:30:18.302570608 -0500
-@@ -28,7 +28,7 @@
-  */
- #define get_cpu_var(var) (*({				\
- 	preempt_disable();				\
--	&__get_cpu_var(var); }))
-+	this_cpu_ptr(&var); }))
+--- linux.orig/arch/x86/include/asm/debugreg.h	2013-08-06 13:52:23.740092873 -0500
++++ linux/arch/x86/include/asm/debugreg.h	2013-08-06 13:52:23.740092873 -0500
+@@ -97,11 +97,11 @@ extern void hw_breakpoint_restore(void);
+ DECLARE_PER_CPU(int, debug_stack_usage);
+ static inline void debug_stack_usage_inc(void)
+ {
+-	__get_cpu_var(debug_stack_usage)++;
++	__this_cpu_inc(debug_stack_usage);
+ }
+ static inline void debug_stack_usage_dec(void)
+ {
+-	__get_cpu_var(debug_stack_usage)--;
++	__this_cpu_dec(debug_stack_usage);
+ }
+ int is_debug_stack(unsigned long addr);
+ void debug_stack_set_zero(void);
+Index: linux/arch/x86/kernel/cpu/common.c
+===================================================================
+--- linux.orig/arch/x86/kernel/cpu/common.c	2013-07-19 09:06:36.850047837 -0500
++++ linux/arch/x86/kernel/cpu/common.c	2013-08-06 13:54:36.426384889 -0500
+@@ -1144,9 +1144,9 @@ DEFINE_PER_CPU(int, debug_stack_usage);
  
- /*
-  * The weird & is necessary because sparse considers (void)(var) to be
+ int is_debug_stack(unsigned long addr)
+ {
+-	return __get_cpu_var(debug_stack_usage) ||
+-		(addr <= __get_cpu_var(debug_stack_addr) &&
+-		 addr > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ));
++	return __this_cpu_read(debug_stack_usage) ||
++		(addr <= __this_cpu_read(debug_stack_addr) &&
++		 addr > (__this_cpu_read(debug_stack_addr) - DEBUG_STKSZ));
+ }
+ 
+ DEFINE_PER_CPU(u32, debug_idt_ctr);
 
