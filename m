@@ -1,48 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab3HZGSD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 02:18:03 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:37661 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755568Ab3HZGSB (ORCPT
+	id S1755992Ab3HZGeO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 02:34:14 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:52996 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755800Ab3HZGeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 02:18:01 -0400
+	Mon, 26 Aug 2013 02:34:13 -0400
+Message-ID: <521AF6DF.7010609@hitachi.com>
+Date: Mon, 26 Aug 2013 15:34:07 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Date: Mon, 26 Aug 2013 11:48:00 +0530
-Message-ID: <CAKohpoksNiGT+r3JTY6KFwnDFA5OYE-vQe8W_9GT-fN21UMrfQ@mail.gmail.com>
-Subject: [GIT PULL]: CPUFreq: ARM Fixes for 3.12
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Joseph Lo <josephl@nvidia.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Stephen Warren <swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 02/10] tracing: add basic event trigger framework
+References: <cover.1377213245.git.tom.zanussi@linux.intel.com> <923484a1826a9c5b872450dc60fe41a6815a1709.1377213245.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <923484a1826a9c5b872450dc60fe41a6815a1709.1377213245.git.tom.zanussi@linux.intel.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Hi Tom,
 
-Hopefully this is the last patch for 3.12 for ARM CPUFreq subsystem.
+This patch basically good for me.
 
-The following changes since commit b36f4be3de1b123d8601de062e7dbfc904f305fb:
+Unfortunately, I've found a small build issue on this patch.
 
-  Linux 3.11-rc6 (2013-08-18 14:36:53 -0700)
+  CC      kernel/trace/trace_events_filter.o
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events.c:1864:1: error: static declaration of 'find_event_file' follows non-static declaration
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace.h:1019:34: note: previous declaration of 'find_event_file' was here
+make[3]: *** [kernel/trace/trace_events.o] Error 1
 
-are available in the git repository at:
 
-  git://git.linaro.org/people/vireshk/linux.git cpufreq-fixes
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index b1227b9..1733ac9 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -1016,9 +1016,184 @@ extern void trace_event_enable_cmd_record(bool enable);
+>  extern int event_trace_add_tracer(struct dentry *parent, struct trace_array *tr);
+>  extern int event_trace_del_tracer(struct trace_array *tr);
+>
+> +extern struct ftrace_event_file *find_event_file(struct trace_array *tr,
+> +						 const char *system,
+> +						 const char *event);
+> +
 
-for you to fetch changes up to b192b910f3832793082c1a18262c4da0efe121ae:
+Here, you exposed find_event_file, but forgot to remove static from the definition
+in kernel/trace/trace_events.c.
+And even if it solved, I also hit an error and many warnings.
 
-  cpufreq: tegra: fix the wrong clock name (2013-08-23 21:58:28 +0530)
+  LD      arch/x86/built-in.o
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events_trigger.c: In function 'event_trigger_callback':
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events_trigger.c:510:14: error: 'struct event_trigger_data' has no member named 'post_trigger'
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events_trigger.c: At top level:
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events_trigger.c:242:19: warning: 'register_event_command' defined but not used [-Wunused-function]
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events_trigger.c:267:19: warning: 'unregister_event_command' defined but not used [-Wunused-function]
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events_trigger.c:297:1: warning: 'event_trigger_print' defined but not used [-Wunused-function]
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events_trigger.c:326:1: warning: 'event_trigger_init' defined but not used [-Wunused-function]
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events_trigger.c:344:1: warning: 'event_trigger_free' defined but not used [-Wunused-function]
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events_trigger.c:412:12: warning: 'register_trigger' defined but not used [-Wunused-function]
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events_trigger.c:451:13: warning: 'unregister_trigger' defined but not used [-Wunused-function]
+/home/mhiramat/ksrc/linux-3/kernel/trace/trace_events_trigger.c:482:1: warning: 'event_trigger_callback' defined but not used [-Wunused-function]
+make[3]: *** [kernel/trace/trace_events_trigger.o] Error 1
 
-----------------------------------------------------------------
-Joseph Lo (1):
-      cpufreq: tegra: fix the wrong clock name
+The post_trigger member is introduced in 7/10, and all warning helper functions
+are used in the next (3/10) patch. So, I recommend you to move all post_trigger
+related code into 7/10 or merge it into this patch, and move all helper functions
+into 3/10 for fixing these warnings and an error. :)
 
- drivers/cpufreq/tegra-cpufreq.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+(2013/08/23 8:27), Tom Zanussi wrote:
+> +/**
+> + * struct event_command - callbacks and data members for event commands
+> + *
+[...]
+> + * @post_trigger: A flag that says whether or not this command needs
+[...]
+> +	trigger_data->count = -1;
+> +	trigger_data->ops = trigger_ops;
+> +	trigger_data->cmd_ops = cmd_ops;
+> +	trigger_data->mode = cmd_ops->trigger_mode;
+> +	trigger_data->post_trigger = cmd_ops->post_trigger;
+
+BTW, why the trigger_data has a copy of trigger_mode and post_trigger?
+It seems redundant... :(
+Also, the "trigger_mode" name is not good for me, because we already has
+FTRACE_EVENT_FL_TRIGGER_MODE_BIT bitflag. Perhaps, trigger_group or just
+group_id may be better, I think.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
