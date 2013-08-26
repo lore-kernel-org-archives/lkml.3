@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab3HZLRP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 07:17:15 -0400
+	id S1756780Ab3HZLRu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 07:17:50 -0400
 Received: from mailout1.samsung.com ([203.254.224.24]:64107 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756620Ab3HZLQy (ORCPT
+	with ESMTP id S1755433Ab3HZLQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 07:16:54 -0400
-X-AuditID: cbfee68e-b7f756d000004512-6c-521b3920be9b
+	Mon, 26 Aug 2013 07:16:51 -0400
+X-AuditID: cbfee68e-b7f756d000004512-66-521b3920ad2f
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 5/5] f2fs: support the inline xattrs
-Date: Mon, 26 Aug 2013 20:16:41 +0900
-Message-id: <1377515801-15243-5-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 2/5] f2fs: reserve the xattr space dynamically
+Date: Mon, 26 Aug 2013 20:16:38 +0900
+Message-id: <1377515801-15243-2-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.3.1.437.g0dbd812
 In-reply-to: <1377515801-15243-1-git-send-email-jaegeuk.kim@samsung.com>
 References: <1377515801-15243-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t8zY10FS+kgg2N7DCyu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyrhz9gdjwbKiioe3
-	DzI1MG6M7mLk5JAQMJE4dPI9M4QtJnHh3no2EFtIYBmjxJ8nQjA1t/6cBopzAcWnM0r8eLmV
-	BcJpY5LYcP4UUDcHB5uAtsTm/QYgDSICzBILpp5nBKlhFpjAKPF/0XsWkIQw0KQ577eD1bMI
-	qEo86o0HCfMKuEt8+DKDDWKZrsSiEwdZQWxOAQ+Jjlc32CEOcpe4OPcy2F4Jge9sEk8enAGb
-	ySIgIPFt8iEWkJkSArISmw5APSMpcXDFDZYJjMILGBlWMYqmFiQXFCelFxnpFSfmFpfmpesl
-	5+duYoQEbN8OxpsHrA8xJgONm8gsJZqcDwz4vJJ4Q2MzIwtTE1NjI3NLM9KElcR51VqsA4UE
-	0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwdtSc+GxqkXQr/WuNwlf582wznGXfGj9++i6++Ms1
-	BSEPxVVRzWVZV3tSnQ4ZN09eX5U/c+aG/ZFmtQVn8yZ9ON/0o3i3521FjxUKG3SX39RV+i7j
-	/Mk27fR9vZfP9+0OrpBY9HBDwjxOjomXTz1N5y+YvsWF9xYfk5FztEdr3YweHstw4QxFJZbi
-	jERDLeai4kQAmr9ULm4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jQV0FS+kgg/+ztSyu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
-	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8y4c/YHY8GyooqHtw8yNTBujO5i5OSQEDCRuPXnNBuELSZx4d56IJuLQ0hg
-	OqPEj5dbWSCcNiaJDedPMXcxcnCwCWhLbN5vANIgIsAssWDqeUaQGmaBCYwS/xe9ZwFJCANN
-	nfN+O1g9i4CqxKPeeJAwr4C7xIcvM6CW6UosOnGQFcTmFPCQ6Hh1gx3EFgKquTj3MssERt4F
-	jAyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYIj4pn0DsZVDRaHGAU4GJV4eAPYpIOEWBPL
-	iitzDzFKcDArifCaiwKFeFMSK6tSi/Lji0pzUosPMSYDHTWRWUo0OR8YrXkl8YbGJmZGlkZm
-	FkYm5uakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnVwDhzpnfolYCerdr7OuR+rAs9xpx9
-	SDSofPaklY4/5k7QuCxc8X2t6VM5m/N3nvpM8tq9d9Wv+sYXGlvjpvnJvnv+pUnzG3ej7V2Z
-	aD4z57Wf1zhPP/T32YZ/BobtcSJHJufbtzveLvYMaHzxzf79uYICBYVvjBK79LLjIy5++x53
-	YmKxTL6nxyUlluKMREMt5qLiRACbQX91zAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t8zY10FS+kgg7v7JS2u7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyvh+4jFLwRnfilM7
+	frA0MDbZdzFyckgImEhcetzPCmGLSVy4t56ti5GLQ0hgGaPE+g0b2WGK9q9sYIRITGeUeL14
+	EzOE08YkseH8KSCHg4NNQFti834DkAYRAWaJBVPPgzUwC0xglPi/6D0LSEJYwE5i79s9LCD1
+	LAKqEs0tIiBhXgF3iZfXZjFBLNOVWHTiINhFnAIeEh2vboAdIQRUc3HuZRaQmRICv9kkJv19
+	wwySYBEQkPg2+RDYTAkBWYlNB5gh5khKHFxxg2UCo/ACRoZVjKKpBckFxUnpRUZ6xYm5xaV5
+	6XrJ+bmbGCEh27eD8eYB60OMyUDjJjJLiSbnA0M+ryTe0NjMyMLUxNTYyNzSjDRhJXFetRbr
+	QCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MhifUyz9osXKFvp4WKGP2o3P2RHHXvitNOQ/W
+	hbZw7ZL2M9U0rQ46mDk9Nb/l5Zo3O7dqtGRX+TvYrJLZVePLzn34dIL5H/91wr1mLUfmnM5+
+	M686ii9g9rbew2stX8y9O2vHkb9fHhcfk38pdEg49E/T7901wclLO66oFXS+NVZ+uCh+Tne8
+	EktxRqKhFnNRcSIA7GIKE28CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jQV0FS+kgg+75IhbXd/1lsri0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
+	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
+	EgTXY2SABhLWMWZ8P/GYpeCMb8WpHT9YGhib7LsYOTkkBEwk9q9sYISwxSQu3FvP1sXIxSEk
+	MJ1R4vXiTcwQThuTxIbzp4AcDg42AW2JzfsNQBpEBJglFkw9zwhSwywwgVHi/6L3LCAJYQE7
+	ib1v97CA1LMIqEo0t4iAhHkF3CVeXpvFBLFMV2LRiYOsIDangIdEx6sb7CC2EFDNxbmXWSYw
+	8i5gZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERwRz6R3MK5qsDjEKMDBqMTDG8AmHSTE
+	mlhWXJl7iFGCg1lJhNdcFCjEm5JYWZValB9fVJqTWnyIMRnoqInMUqLJ+cBozSuJNzQ2MTOy
+	NDKzMDIxNydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGRh+9jrKpLNmqSSq+tpHl7kd2
+	b3p/ZNY0WTu+W7sXTbx+eoOj7+VP3S7bHU0a99heume6udzQ6HmtRkapxc17T5TWTVn5VfDb
+	8ZuWF9QtA1PfGG6V23pZT6jmh/r0QteXLD//Mm9YcHQfh8ARszcR/DYJQbdWyKWtX/He/djT
+	TbXcDv7+ac+u8yixFGckGmoxFxUnAgC3wOgTzAIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,507 +48,290 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-0. modified inode structure
---------------------------------------
-metadata (e.g., i_mtime, i_ctime, etc)
---------------------------------------
-direct pointers [0 ~ 873]
+This patch enables the number of direct pointers inside on-disk inode block to
+be changed dynamically according to the size of inline xattr space.
 
-inline xattrs (200 bytes by default)
+The number of direct pointers, ADDRS_PER_INODE, can be changed only if the file
+has inline xattr flag.
 
-indirect pointers [0 ~ 4]
---------------------------------------
-node footer
---------------------------------------
-
-1. setxattr flow
- - read_all_xattrs copies all the xattrs from inline and xattr node block.
- - handle xattr entries
- - write_all_xattrs copies modified xattrs into inline and xattr node block.
-
-2. getxattr flow
- - read_all_xattrs copies all the xattrs from inline and xattr node block.
- - check target entries
-
-3. Usage
- # mount -t f2fs -o inline_xattr $DEV $MNT
-
- Once mounted with the inline_xattr option, f2fs marks all the newly created
- files to reserve an amount of inline xattr space explicitly inside the inode
- block. Without the mount option, f2fs will not touch any existing files and
- newly created files as well.
+The number of direct pointers that will be used by inline xattrs is defined as
+F2FS_INLINE_XATTR_ADDRS.
+Current patch assigns F2FS_INLINE_XATTR_ADDRS to 0 temporarily.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/f2fs.h          |  16 ++++
- fs/f2fs/node.c          |   7 ++
- fs/f2fs/xattr.c         | 249 ++++++++++++++++++++++++++++++++----------------
- fs/f2fs/xattr.h         |  12 +--
- include/linux/f2fs_fs.h |   2 +-
- 5 files changed, 196 insertions(+), 90 deletions(-)
+ fs/f2fs/data.c          |  5 +++--
+ fs/f2fs/f2fs.h          | 18 ++++++++----------
+ fs/f2fs/file.c          |  2 +-
+ fs/f2fs/gc.c            |  9 ++++++---
+ fs/f2fs/node.c          |  9 +++++----
+ fs/f2fs/recovery.c      | 13 +++++++++----
+ fs/f2fs/super.c         |  2 +-
+ include/linux/f2fs_fs.h | 16 ++++++++++++----
+ 8 files changed, 45 insertions(+), 29 deletions(-)
 
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 6b328de..941f9b9 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -117,7 +117,8 @@ void update_extent_cache(block_t blk_addr, struct dnode_of_data *dn)
+ 	block_t start_blkaddr, end_blkaddr;
+ 
+ 	BUG_ON(blk_addr == NEW_ADDR);
+-	fofs = start_bidx_of_node(ofs_of_node(dn->node_page)) + dn->ofs_in_node;
++	fofs = start_bidx_of_node(ofs_of_node(dn->node_page), fi) +
++							dn->ofs_in_node;
+ 
+ 	/* Update the page address in the parent node */
+ 	__set_data_blkaddr(dn, blk_addr);
+@@ -448,7 +449,7 @@ static int get_data_block_ro(struct inode *inode, sector_t iblock,
+ 		unsigned int end_offset;
+ 
+ 		end_offset = IS_INODE(dn.node_page) ?
+-				ADDRS_PER_INODE :
++				ADDRS_PER_INODE(F2FS_I(inode)) :
+ 				ADDRS_PER_BLOCK;
+ 
+ 		clear_buffer_new(bh_result);
 diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 0fe9302..608f0df 100644
+index b82f141..0343759 100644
 --- a/fs/f2fs/f2fs.h
 +++ b/fs/f2fs/f2fs.h
-@@ -940,6 +940,22 @@ static inline unsigned int addrs_per_inode(struct f2fs_inode_info *fi)
- 	return DEF_ADDRS_PER_INODE;
+@@ -301,15 +301,6 @@ struct f2fs_sm_info {
+ };
+ 
+ /*
+- * For directory operation
+- */
+-#define	NODE_DIR1_BLOCK		(ADDRS_PER_INODE + 1)
+-#define	NODE_DIR2_BLOCK		(ADDRS_PER_INODE + 2)
+-#define	NODE_IND1_BLOCK		(ADDRS_PER_INODE + 3)
+-#define	NODE_IND2_BLOCK		(ADDRS_PER_INODE + 4)
+-#define	NODE_DIND_BLOCK		(ADDRS_PER_INODE + 5)
+-
+-/*
+  * For superblock
+  */
+ /*
+@@ -942,6 +933,13 @@ static inline void set_raw_inline(struct f2fs_inode_info *fi,
+ 		ri->i_inline |= F2FS_INLINE_XATTR;
  }
  
-+static inline void *inline_xattr_addr(struct page *page)
++static inline unsigned int addrs_per_inode(struct f2fs_inode_info *fi)
 +{
-+	struct f2fs_inode *ri;
-+	ri = (struct f2fs_inode *)page_address(page);
-+	return (void *)&(ri->i_addr[DEF_ADDRS_PER_INODE -
-+					F2FS_INLINE_XATTR_ADDRS]);
-+}
-+
-+static inline int inline_xattr_size(struct inode *inode)
-+{
-+	if (is_inode_flag_set(F2FS_I(inode), FI_INLINE_XATTR))
-+		return F2FS_INLINE_XATTR_ADDRS << 2;
-+	else
-+		return 0;
++	if (is_inode_flag_set(fi, FI_INLINE_XATTR))
++		return DEF_ADDRS_PER_INODE - F2FS_INLINE_XATTR_ADDRS;
++	return DEF_ADDRS_PER_INODE;
 +}
 +
  static inline int f2fs_readonly(struct super_block *sb)
  {
  	return sb->s_flags & MS_RDONLY;
+@@ -1108,7 +1106,7 @@ int do_write_data_page(struct page *);
+  */
+ int start_gc_thread(struct f2fs_sb_info *);
+ void stop_gc_thread(struct f2fs_sb_info *);
+-block_t start_bidx_of_node(unsigned int);
++block_t start_bidx_of_node(unsigned int, struct f2fs_inode_info *);
+ int f2fs_gc(struct f2fs_sb_info *);
+ void build_gc_manager(struct f2fs_sb_info *);
+ int __init create_gc_caches(void);
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index bd4184e..02c9069 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -290,7 +290,7 @@ static int truncate_blocks(struct inode *inode, u64 from)
+ 	}
+ 
+ 	if (IS_INODE(dn.node_page))
+-		count = ADDRS_PER_INODE;
++		count = ADDRS_PER_INODE(F2FS_I(inode));
+ 	else
+ 		count = ADDRS_PER_BLOCK;
+ 
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index e6b3ffd..eb89037 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -461,7 +461,7 @@ next_step:
+  * as indirect or double indirect node blocks, are given, it must be a caller's
+  * bug.
+  */
+-block_t start_bidx_of_node(unsigned int node_ofs)
++block_t start_bidx_of_node(unsigned int node_ofs, struct f2fs_inode_info *fi)
+ {
+ 	unsigned int indirect_blks = 2 * NIDS_PER_BLOCK + 4;
+ 	unsigned int bidx;
+@@ -478,7 +478,7 @@ block_t start_bidx_of_node(unsigned int node_ofs)
+ 		int dec = (node_ofs - indirect_blks - 3) / (NIDS_PER_BLOCK + 1);
+ 		bidx = node_ofs - 5 - dec;
+ 	}
+-	return bidx * ADDRS_PER_BLOCK + ADDRS_PER_INODE;
++	return bidx * ADDRS_PER_BLOCK + ADDRS_PER_INODE(fi);
+ }
+ 
+ static int check_dnode(struct f2fs_sb_info *sbi, struct f2fs_summary *sum,
+@@ -586,7 +586,6 @@ next_step:
+ 			continue;
+ 		}
+ 
+-		start_bidx = start_bidx_of_node(nofs);
+ 		ofs_in_node = le16_to_cpu(entry->ofs_in_node);
+ 
+ 		if (phase == 2) {
+@@ -594,6 +593,8 @@ next_step:
+ 			if (IS_ERR(inode))
+ 				continue;
+ 
++			start_bidx = start_bidx_of_node(nofs, F2FS_I(inode));
++
+ 			data_page = find_data_page(inode,
+ 					start_bidx + ofs_in_node, false);
+ 			if (IS_ERR(data_page))
+@@ -604,6 +605,8 @@ next_step:
+ 		} else {
+ 			inode = find_gc_inode(dni.ino, ilist);
+ 			if (inode) {
++				start_bidx = start_bidx_of_node(nofs,
++								F2FS_I(inode));
+ 				data_page = get_lock_data_page(inode,
+ 						start_bidx + ofs_in_node);
+ 				if (IS_ERR(data_page))
 diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 2a464a7..c3c03c9 100644
+index 818ff36..f0e733b 100644
 --- a/fs/f2fs/node.c
 +++ b/fs/f2fs/node.c
-@@ -787,6 +787,10 @@ int truncate_xattr_node(struct inode *inode, struct page *page)
- 		return PTR_ERR(npage);
- 
- 	F2FS_I(inode)->i_xattr_nid = 0;
-+
-+	/* need to do checkpoint during fsync */
-+	F2FS_I(inode)->xattr_ver = cur_cp_version(F2FS_CKPT(sbi));
-+
- 	set_new_dnode(&dn, inode, page, npage, nid);
- 
- 	if (page)
-@@ -1464,6 +1468,9 @@ void alloc_nid_failed(struct f2fs_sb_info *sbi, nid_t nid)
- 	struct f2fs_nm_info *nm_i = NM_I(sbi);
- 	struct free_nid *i;
- 
-+	if (!nid)
-+		return;
-+
- 	spin_lock(&nm_i->free_nid_list_lock);
- 	i = __lookup_free_nid_list(nid, &nm_i->free_nid_list);
- 	BUG_ON(!i || i->state != NID_ALLOC);
-diff --git a/fs/f2fs/xattr.c b/fs/f2fs/xattr.c
-index 45a8ef8..1ac8a5f 100644
---- a/fs/f2fs/xattr.c
-+++ b/fs/f2fs/xattr.c
-@@ -262,13 +262,141 @@ static struct f2fs_xattr_entry *__find_xattr(void *base_addr, int name_index,
- 	return entry;
- }
- 
-+static void *read_all_xattrs(struct inode *inode, struct page *ipage)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct f2fs_xattr_header *header;
-+	size_t size = PAGE_SIZE, inline_size = 0;
-+	void *txattr_addr;
-+
-+	inline_size = inline_xattr_size(inode);
-+
-+	txattr_addr = kzalloc(inline_size + size, GFP_KERNEL);
-+	if (!txattr_addr)
-+		return NULL;
-+
-+	/* read from inline xattr */
-+	if (inline_size) {
-+		struct page *page = NULL;
-+		void *inline_addr;
-+
-+		if (ipage) {
-+			inline_addr = inline_xattr_addr(ipage);
-+		} else {
-+			page = get_node_page(sbi, inode->i_ino);
-+			if (IS_ERR(page))
-+				goto fail;
-+			inline_addr = inline_xattr_addr(page);
-+		}
-+		memcpy(txattr_addr, inline_addr, inline_size);
-+		f2fs_put_page(page, 1);
-+	}
-+
-+	/* read from xattr node block */
-+	if (F2FS_I(inode)->i_xattr_nid) {
-+		struct page *xpage;
-+		void *xattr_addr;
-+
-+		/* The inode already has an extended attribute block. */
-+		xpage = get_node_page(sbi, F2FS_I(inode)->i_xattr_nid);
-+		if (IS_ERR(xpage))
-+			goto fail;
-+
-+		xattr_addr = page_address(xpage);
-+		memcpy(txattr_addr + inline_size, xattr_addr, PAGE_SIZE);
-+		f2fs_put_page(xpage, 1);
-+	}
-+
-+	header = XATTR_HDR(txattr_addr);
-+
-+	/* never been allocated xattrs */
-+	if (le32_to_cpu(header->h_magic) != F2FS_XATTR_MAGIC) {
-+		header->h_magic = cpu_to_le32(F2FS_XATTR_MAGIC);
-+		header->h_refcount = cpu_to_le32(1);
-+	}
-+	return txattr_addr;
-+fail:
-+	kzfree(txattr_addr);
-+	return NULL;
-+}
-+
-+static inline int write_all_xattrs(struct inode *inode, __u32 hsize,
-+				void *txattr_addr, struct page *ipage)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	size_t inline_size = 0;
-+	void *xattr_addr;
-+	struct page *xpage;
-+	nid_t new_nid = 0;
-+	int err;
-+
-+	inline_size = inline_xattr_size(inode);
-+
-+	if (hsize > inline_size && !F2FS_I(inode)->i_xattr_nid)
-+		if (!alloc_nid(sbi, &new_nid))
-+			return -ENOSPC;
-+
-+	/* write to inline xattr */
-+	if (inline_size) {
-+		struct page *page = NULL;
-+		void *inline_addr;
-+
-+		if (ipage) {
-+			inline_addr = inline_xattr_addr(ipage);
-+		} else {
-+			page = get_node_page(sbi, inode->i_ino);
-+			if (IS_ERR(page)) {
-+				alloc_nid_failed(sbi, new_nid);
-+				return PTR_ERR(page);
-+			}
-+			inline_addr = inline_xattr_addr(page);
-+		}
-+		memcpy(inline_addr, txattr_addr, inline_size);
-+		f2fs_put_page(page, 1);
-+
-+		/* no need to use xattr node block */
-+		if (hsize <= inline_size) {
-+			err = truncate_xattr_node(inode, ipage);
-+			alloc_nid_failed(sbi, new_nid);
-+			return err;
-+		}
-+	}
-+
-+	/* write to xattr node block */
-+	if (F2FS_I(inode)->i_xattr_nid) {
-+		xpage = get_node_page(sbi, F2FS_I(inode)->i_xattr_nid);
-+		if (IS_ERR(xpage)) {
-+			alloc_nid_failed(sbi, new_nid);
-+			return PTR_ERR(xpage);
-+		}
-+		BUG_ON(new_nid);
-+	} else {
-+		struct dnode_of_data dn;
-+		set_new_dnode(&dn, inode, NULL, NULL, new_nid);
-+		xpage = new_node_page(&dn, XATTR_NODE_OFFSET, ipage);
-+		if (IS_ERR(xpage)) {
-+			alloc_nid_failed(sbi, new_nid);
-+			return PTR_ERR(xpage);
-+		}
-+		alloc_nid_done(sbi, new_nid);
-+	}
-+
-+	xattr_addr = page_address(xpage);
-+	memcpy(xattr_addr, txattr_addr + inline_size, PAGE_SIZE -
-+						sizeof(struct node_footer));
-+	set_page_dirty(xpage);
-+	f2fs_put_page(xpage, 1);
-+
-+	/* need to checkpoint during fsync */
-+	F2FS_I(inode)->xattr_ver = cur_cp_version(F2FS_CKPT(sbi));
-+	return 0;
-+}
-+
- int f2fs_getxattr(struct inode *inode, int name_index, const char *name,
- 		void *buffer, size_t buffer_size)
+@@ -315,9 +315,10 @@ cache:
+  * The maximum depth is four.
+  * Offset[0] will have raw inode offset.
+  */
+-static int get_node_path(long block, int offset[4], unsigned int noffset[4])
++static int get_node_path(struct f2fs_inode_info *fi, long block,
++				int offset[4], unsigned int noffset[4])
  {
--	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
--	struct f2fs_inode_info *fi = F2FS_I(inode);
- 	struct f2fs_xattr_entry *entry;
--	struct page *page;
-+	void *base_addr;
- 	int error = 0;
- 	size_t value_len, name_len;
+-	const long direct_index = ADDRS_PER_INODE;
++	const long direct_index = ADDRS_PER_INODE(fi);
+ 	const long direct_blks = ADDRS_PER_BLOCK;
+ 	const long dptrs_per_blk = NIDS_PER_BLOCK;
+ 	const long indirect_blks = ADDRS_PER_BLOCK * NIDS_PER_BLOCK;
+@@ -405,7 +406,7 @@ int get_dnode_of_data(struct dnode_of_data *dn, pgoff_t index, int mode)
+ 	int level, i;
+ 	int err = 0;
  
-@@ -276,14 +404,11 @@ int f2fs_getxattr(struct inode *inode, int name_index, const char *name,
- 		return -EINVAL;
- 	name_len = strlen(name);
+-	level = get_node_path(index, offset, noffset);
++	level = get_node_path(F2FS_I(dn->inode), index, offset, noffset);
  
--	if (!fi->i_xattr_nid)
--		return -ENODATA;
--
--	page = get_node_page(sbi, fi->i_xattr_nid);
--	if (IS_ERR(page))
--		return PTR_ERR(page);
-+	base_addr = read_all_xattrs(inode, NULL);
-+	if (!base_addr)
-+		return -ENOMEM;
+ 	nids[0] = dn->inode->i_ino;
+ 	npage[0] = dn->inode_page;
+@@ -687,7 +688,7 @@ int truncate_inode_blocks(struct inode *inode, pgoff_t from)
  
--	entry = __find_xattr(page_address(page), name_index, name_len, name);
-+	entry = __find_xattr(base_addr, name_index, name_len, name);
- 	if (IS_XATTR_LAST_ENTRY(entry)) {
- 		error = -ENODATA;
- 		goto cleanup;
-@@ -303,28 +428,21 @@ int f2fs_getxattr(struct inode *inode, int name_index, const char *name,
- 	error = value_len;
+ 	trace_f2fs_truncate_inode_blocks_enter(inode, from);
  
- cleanup:
--	f2fs_put_page(page, 1);
-+	kzfree(base_addr);
- 	return error;
- }
+-	level = get_node_path(from, offset, noffset);
++	level = get_node_path(F2FS_I(inode), from, offset, noffset);
+ restart:
+ 	page = get_node_page(sbi, inode->i_ino);
+ 	if (IS_ERR(page)) {
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index fa493bb..51ef5ee 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -213,6 +213,7 @@ static int check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
+ 	void *kaddr;
+ 	struct inode *inode;
+ 	struct page *node_page;
++	unsigned int offset;
+ 	block_t bidx;
+ 	int i;
  
- ssize_t f2fs_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size)
+@@ -257,8 +258,8 @@ static int check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
+ 	node_page = get_node_page(sbi, nid);
+ 	if (IS_ERR(node_page))
+ 		return PTR_ERR(node_page);
+-	bidx = start_bidx_of_node(ofs_of_node(node_page)) +
+-					le16_to_cpu(sum.ofs_in_node);
++
++	offset = ofs_of_node(node_page);
+ 	ino = ino_of_node(node_page);
+ 	f2fs_put_page(node_page, 1);
+ 
+@@ -267,6 +268,9 @@ static int check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
+ 	if (IS_ERR(inode))
+ 		return PTR_ERR(inode);
+ 
++	bidx = start_bidx_of_node(offset, F2FS_I(inode)) +
++					le16_to_cpu(sum.ofs_in_node);
++
+ 	truncate_hole(inode, bidx, bidx + 1);
+ 	iput(inode);
+ 	return 0;
+@@ -275,6 +279,7 @@ static int check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
+ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
+ 					struct page *page, block_t blkaddr)
  {
- 	struct inode *inode = dentry->d_inode;
--	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
--	struct f2fs_inode_info *fi = F2FS_I(inode);
- 	struct f2fs_xattr_entry *entry;
--	struct page *page;
- 	void *base_addr;
- 	int error = 0;
- 	size_t rest = buffer_size;
- 
--	if (!fi->i_xattr_nid)
--		return 0;
--
--	page = get_node_page(sbi, fi->i_xattr_nid);
--	if (IS_ERR(page))
--		return PTR_ERR(page);
--	base_addr = page_address(page);
-+	base_addr = read_all_xattrs(inode, NULL);
-+	if (!base_addr)
-+		return -ENOMEM;
- 
- 	list_for_each_xattr(entry, base_addr) {
- 		const struct xattr_handler *handler =
-@@ -347,7 +465,7 @@ ssize_t f2fs_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size)
- 	}
- 	error = buffer_size - rest;
- cleanup:
--	f2fs_put_page(page, 1);
-+	kzfree(base_addr);
- 	return error;
- }
- 
-@@ -356,14 +474,13 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
- 	struct f2fs_inode_info *fi = F2FS_I(inode);
--	struct f2fs_xattr_header *header = NULL;
- 	struct f2fs_xattr_entry *here, *last;
--	struct page *page;
- 	void *base_addr;
--	int error, found, free, newsize;
-+	int found, newsize;
- 	size_t name_len;
--	char *pval;
++	struct f2fs_inode_info *fi = F2FS_I(inode);
+ 	unsigned int start, end;
+ 	struct dnode_of_data dn;
+ 	struct f2fs_summary sum;
+@@ -282,9 +287,9 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
+ 	int err = 0, recovered = 0;
  	int ilock;
-+	__u32 new_hsize;
-+	int error = -ENOMEM;
  
- 	if (name == NULL)
- 		return -EINVAL;
-@@ -373,53 +490,16 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
- 
- 	name_len = strlen(name);
- 
--	if (name_len > F2FS_NAME_LEN || value_len > MAX_VALUE_LEN)
-+	if (name_len > F2FS_NAME_LEN || value_len > MAX_VALUE_LEN(inode))
- 		return -ERANGE;
- 
- 	f2fs_balance_fs(sbi);
- 
- 	ilock = mutex_lock_op(sbi);
- 
--	if (!fi->i_xattr_nid) {
--		/* Allocate new attribute block */
--		struct dnode_of_data dn;
--		nid_t new_nid;
--
--		if (!alloc_nid(sbi, &new_nid)) {
--			error = -ENOSPC;
--			goto exit;
--		}
--		set_new_dnode(&dn, inode, NULL, NULL, new_nid);
--		mark_inode_dirty(inode);
--
--		page = new_node_page(&dn, XATTR_NODE_OFFSET, ipage);
--		if (IS_ERR(page)) {
--			alloc_nid_failed(sbi, new_nid);
--			error = PTR_ERR(page);
--			goto exit;
--		}
--
--		alloc_nid_done(sbi, new_nid);
--		base_addr = page_address(page);
--		header = XATTR_HDR(base_addr);
--		header->h_magic = cpu_to_le32(F2FS_XATTR_MAGIC);
--		header->h_refcount = cpu_to_le32(1);
--	} else {
--		/* The inode already has an extended attribute block. */
--		page = get_node_page(sbi, fi->i_xattr_nid);
--		if (IS_ERR(page)) {
--			error = PTR_ERR(page);
--			goto exit;
--		}
--
--		base_addr = page_address(page);
--		header = XATTR_HDR(base_addr);
--	}
--
--	if (le32_to_cpu(header->h_magic) != F2FS_XATTR_MAGIC) {
--		error = -EIO;
--		goto cleanup;
--	}
-+	base_addr = read_all_xattrs(inode, ipage);
-+	if (!base_addr)
-+		goto exit;
- 
- 	/* find entry with wanted name. */
- 	here = __find_xattr(base_addr, name_index, name_len, name);
-@@ -435,22 +515,25 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
- 
- 	/* 1. Check space */
- 	if (value) {
--		/* If value is NULL, it is remove operation.
-+		int free;
-+		/*
-+		 * If value is NULL, it is remove operation.
- 		 * In case of update operation, we caculate free.
- 		 */
--		free = MIN_OFFSET - ((char *)last - (char *)header);
-+		free = MIN_OFFSET(inode) - ((char *)last - (char *)base_addr);
- 		if (found)
- 			free = free - ENTRY_SIZE(here);
- 
- 		if (free < newsize) {
- 			error = -ENOSPC;
--			goto cleanup;
-+			goto exit;
- 		}
- 	}
- 
- 	/* 2. Remove old entry */
- 	if (found) {
--		/* If entry is found, remove old entry.
-+		/*
-+		 * If entry is found, remove old entry.
- 		 * If not found, remove operation is not needed.
- 		 */
- 		struct f2fs_xattr_entry *next = XATTR_NEXT_ENTRY(here);
-@@ -461,10 +544,15 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
- 		memset(last, 0, oldsize);
- 	}
- 
-+	new_hsize = (char *)last - (char *)base_addr;
-+
- 	/* 3. Write new entry */
- 	if (value) {
--		/* Before we come here, old entry is removed.
--		 * We just write new entry. */
-+		char *pval;
-+		/*
-+		 * Before we come here, old entry is removed.
-+		 * We just write new entry.
-+		 */
- 		memset(last, 0, newsize);
- 		last->e_name_index = name_index;
- 		last->e_name_len = name_len;
-@@ -472,10 +560,12 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
- 		pval = last->e_name + name_len;
- 		memcpy(pval, value, value_len);
- 		last->e_value_size = cpu_to_le16(value_len);
-+		new_hsize += newsize;
- 	}
- 
--	set_page_dirty(page);
--	f2fs_put_page(page, 1);
-+	error = write_all_xattrs(inode, new_hsize, base_addr, ipage);
-+	if (error)
-+		goto exit;
- 
- 	if (is_inode_flag_set(fi, FI_ACL_MODE)) {
- 		inode->i_mode = fi->i_acl_mode;
-@@ -483,19 +573,12 @@ int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
- 		clear_inode_flag(fi, FI_ACL_MODE);
- 	}
- 
--	/* store checkpoint version for conducting checkpoint during fsync */
--	fi->xattr_ver = cur_cp_version(F2FS_CKPT(sbi));
--
- 	if (ipage)
- 		update_inode(inode, ipage);
+-	start = start_bidx_of_node(ofs_of_node(page));
++	start = start_bidx_of_node(ofs_of_node(page), fi);
+ 	if (IS_INODE(page))
+-		end = start + ADDRS_PER_INODE;
++		end = start + ADDRS_PER_INODE(fi);
  	else
- 		update_inode_page(inode);
--	mutex_unlock_op(sbi, ilock);
--
--	return 0;
--cleanup:
--	f2fs_put_page(page, 1);
- exit:
- 	mutex_unlock_op(sbi, ilock);
-+	kzfree(base_addr);
- 	return error;
- }
-diff --git a/fs/f2fs/xattr.h b/fs/f2fs/xattr.h
-index c3ec042..02a08fb 100644
---- a/fs/f2fs/xattr.h
-+++ b/fs/f2fs/xattr.h
-@@ -69,16 +69,16 @@ struct f2fs_xattr_entry {
- 				!IS_XATTR_LAST_ENTRY(entry);\
- 				entry = XATTR_NEXT_ENTRY(entry))
+ 		end = start + ADDRS_PER_BLOCK;
  
--#define MIN_OFFSET	XATTR_ALIGN(PAGE_SIZE - \
--			sizeof(struct node_footer) - \
--			sizeof(__u32))
-+#define MIN_OFFSET(i)	XATTR_ALIGN(inline_xattr_size(i) + PAGE_SIZE -	\
-+				sizeof(struct node_footer) - sizeof(__u32))
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 70ecf48..13d0a0f 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -618,7 +618,7 @@ static const struct export_operations f2fs_export_ops = {
  
--#define MAX_VALUE_LEN	(MIN_OFFSET - sizeof(struct f2fs_xattr_header) - \
--			sizeof(struct f2fs_xattr_entry))
-+#define MAX_VALUE_LEN(i)	(MIN_OFFSET(i) -			\
-+				sizeof(struct f2fs_xattr_header) -	\
-+				sizeof(struct f2fs_xattr_entry))
+ static loff_t max_file_size(unsigned bits)
+ {
+-	loff_t result = ADDRS_PER_INODE;
++	loff_t result = (DEF_ADDRS_PER_INODE - F2FS_INLINE_XATTR_ADDRS);
+ 	loff_t leaf_count = ADDRS_PER_BLOCK;
  
- /*
-  * On-disk structure of f2fs_xattr
-- * We use only 1 block for xattr.
-+ * We use inline xattrs space + 1 block for xattr.
-  *
-  * +--------------------+
-  * | f2fs_xattr_header  |
+ 	/* two direct node blocks */
 diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
-index 93e7020..bb942f6 100644
+index 10ab11f..93e7020 100644
 --- a/include/linux/f2fs_fs.h
 +++ b/include/linux/f2fs_fs.h
-@@ -140,7 +140,7 @@ struct f2fs_extent {
+@@ -140,9 +140,17 @@ struct f2fs_extent {
  } __packed;
  
  #define F2FS_NAME_LEN		255
--#define F2FS_INLINE_XATTR_ADDRS	0	/* 0 bytes for inline xattrs */
-+#define F2FS_INLINE_XATTR_ADDRS	50	/* 200 bytes for inline xattrs */
- #define DEF_ADDRS_PER_INODE	923	/* Address Pointers in an Inode */
- #define ADDRS_PER_INODE(fi)	addrs_per_inode(fi)
- #define ADDRS_PER_BLOCK		1018	/* Address Pointers in a Direct Block */
+-#define ADDRS_PER_INODE         923	/* Address Pointers in an Inode */
+-#define ADDRS_PER_BLOCK         1018	/* Address Pointers in a Direct Block */
+-#define NIDS_PER_BLOCK          1018	/* Node IDs in an Indirect Block */
++#define F2FS_INLINE_XATTR_ADDRS	0	/* 0 bytes for inline xattrs */
++#define DEF_ADDRS_PER_INODE	923	/* Address Pointers in an Inode */
++#define ADDRS_PER_INODE(fi)	addrs_per_inode(fi)
++#define ADDRS_PER_BLOCK		1018	/* Address Pointers in a Direct Block */
++#define NIDS_PER_BLOCK		1018	/* Node IDs in an Indirect Block */
++
++#define	NODE_DIR1_BLOCK		(DEF_ADDRS_PER_INODE + 1)
++#define	NODE_DIR2_BLOCK		(DEF_ADDRS_PER_INODE + 2)
++#define	NODE_IND1_BLOCK		(DEF_ADDRS_PER_INODE + 3)
++#define	NODE_IND2_BLOCK		(DEF_ADDRS_PER_INODE + 4)
++#define	NODE_DIND_BLOCK		(DEF_ADDRS_PER_INODE + 5)
+ 
+ #define F2FS_INLINE_XATTR	0x01	/* file inline xattr flag */
+ 
+@@ -172,7 +180,7 @@ struct f2fs_inode {
+ 
+ 	struct f2fs_extent i_ext;	/* caching a largest extent */
+ 
+-	__le32 i_addr[ADDRS_PER_INODE];	/* Pointers to data blocks */
++	__le32 i_addr[DEF_ADDRS_PER_INODE];	/* Pointers to data blocks */
+ 
+ 	__le32 i_nid[5];		/* direct(2), indirect(2),
+ 						double_indirect(1) node id */
 -- 
 1.8.3.1.437.g0dbd812
 
