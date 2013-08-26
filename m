@@ -1,1181 +1,412 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905Ab3HZE2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 00:28:11 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:60147 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755500Ab3HZE2J (ORCPT
+	id S1755974Ab3HZE2X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 00:28:23 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:44025 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755917Ab3HZE2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 00:28:09 -0400
-Message-ID: <60A4377E7BEE4B2EA7855F9701B34BF0@chingDT>
-Reply-To: =?big5?B?tsCyTbap?= <ching2048@areca.com.tw>
-From: =?big5?B?tsCyTbap?= <ching2048@areca.com.tw>
-To: <james.bottomley@hansenpartnership.com>,
-        "linux-scsi" <linux-scsi@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>, <jejb@kernel.org>
-Subject: [PATCH 3/3] arcmsr: Fix bug of updating adapter firmware through ioctl(ARCHTTP) interface
-Date: Mon, 26 Aug 2013 12:28:20 +0800
+	Mon, 26 Aug 2013 00:28:20 -0400
+Date: Sun, 25 Aug 2013 21:28:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tibor Billes <tbilles@gmx.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Unusually high system CPU usage with recent kernels
+Message-ID: <20130826042812.GO3871@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130825195021.44760@gmx.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_002F_01CEA257.BFE89BB0"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
-X-Antivirus: avast! (VPS 130825-1, 2013/08/26), Outbound message
-X-Antivirus-Status: Clean
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130825195021.44760@gmx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082604-7606-0000-0000-00000E9B6777
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On Sun, Aug 25, 2013 at 09:50:21PM +0200, Tibor Billes wrote:
+> From: Paul E. McKenney Sent: 08/24/13 11:03 PM
+> > On Sat, Aug 24, 2013 at 09:59:45PM +0200, Tibor Billes wrote:
+> > > From: Paul E. McKenney Sent: 08/22/13 12:09 AM
+> > > > On Wed, Aug 21, 2013 at 11:05:51PM +0200, Tibor Billes wrote:
+> > > > > > From: Paul E. McKenney Sent: 08/21/13 09:12 PM
+> > > > > > On Wed, Aug 21, 2013 at 08:14:46PM +0200, Tibor Billes wrote:
+> > > > > > > > From: Paul E. McKenney Sent: 08/20/13 11:43 PM
+> > > > > > > > On Tue, Aug 20, 2013 at 10:52:26PM +0200, Tibor Billes wrote:
+> > > > > > > > > > From: Paul E. McKenney Sent: 08/20/13 04:53 PM
+> > > > > > > > > > On Tue, Aug 20, 2013 at 08:01:28AM +0200, Tibor Billes wrote:
+> > > > > > > > > > > Hi,
+> > > > > > > > > > > 
+> > > > > > > > > > > I was using the 3.9.7 stable release and tried to upgrade to the 3.10.x series.
+> > > > > > > > > > > The 3.10.x series was showing unusually high (>75%) system CPU usage in some
+> > > > > > > > > > > situations, making things really slow. The latest stable I tried is 3.10.7.
+> > > > > > > > > > > I also tried 3.11-rc5, they both show this behaviour. This behaviour doesn't
+> > > > > > > > > > > show up when the system is idling, only when doing some CPU intensive work,
+> > > > > > > > > > > like compiling with multiple threads. Compiling with only one thread seems not
+> > > > > > > > > > > to trigger this behaviour.
+> > > > > > > > > > > 
+> > > > > > > > > > > To be more precise I did a `perf record -a` while compiling a large C++ program
+> > > > > > > > > > > with scons using 4 threads, the result is appended at the end of this email.
+> > > > > > > > > > 
+> > > > > > > > > > New one on me! You are running a mainstream system (x86_64), so I am
+> > > > > > > > > > surprised no one else noticed.
+> > > > > > > > > > 
+> > > > > > > > > > Could you please send along your .config file?
+> > > > > > > > > 
+> > > > > > > > > Here it is
+> > > > > > > > 
+> > > > > > > > Interesting. I don't see RCU stuff all that high on the list, but
+> > > > > > > > the items I do see lead me to suspect RCU_FAST_NO_HZ, which has some
+> > > > > > > > relevance to the otherwise inexplicable group of commits you located
+> > > > > > > > with your bisection. Could you please rerun with CONFIG_RCU_FAST_NO_HZ=n?
+> > > > > > > > 
+> > > > > > > > If that helps, there are some things I could try.
+> > > > > > > 
+> > > > > > > It did help. I didn't notice anything unusual when running with CONFIG_RCU_FAST_NO_HZ=n.
+> > > > > > 
+> > > > > > Interesting. Thank you for trying this -- and we at least have a
+> > > > > > short-term workaround for this problem. I will put a patch together
+> > > > > > for further investigation.
+> > > > > 
+> > > > > I don't specifically need this config option so I'm fine without it in
+> > > > > the long term, but I guess it's not supposed to behave like that.
+> > > > 
+> > > > OK, good, we have a long-term workload for your specific case,
+> > > > even better. ;-)
+> > > > 
+> > > > But yes, there are situations where RCU_FAST_NO_HZ needs to work
+> > > > a bit better. I hope you will bear with me with a bit more
+> > > > testing...
+> > > >
+> > > > > > In the meantime, could you please tell me how you were measuring
+> > > > > > performance for your kernel builds? Wall-clock time required to complete
+> > > > > > one build? Number of builds completed per unit time? Something else?
+> > > > > 
+> > > > > Actually, I wasn't all this sophisticated. I have a system monitor
+> > > > > applet on my top panel (using MATE, Linux Mint), four little graphs,
+> > > > > one of which shows CPU usage. Different colors indicate different kind
+> > > > > of CPU usage. Blue shows user space usage, red shows system usage, and
+> > > > > two more for nice and iowait. During a normal compile it's almost
+> > > > > completely filled with blue user space CPU usage, only the top few
+> > > > > pixels show some iowait and system usage. With CONFIG_RCU_FAST_NO_HZ
+> > > > > set, about 3/4 of the graph was red system CPU usage, the rest was
+> > > > > blue. So I just looked for a pile of red on my graphs when I tested
+> > > > > different kernel builds. But also compile speed was horrible I couldn't
+> > > > > wait for the build to finish. Even the UI got unresponsive.
+> > > > 
+> > > > We have been having problems with CPU accounting, but this one looks
+> > > > quite real.
+> > > > 
+> > > > > Now I did some measuring. In the normal case a compile finished in 36
+> > > > > seconds, compiled 315 object files. Here are some output lines from
+> > > > > dstat -tasm --vm during compile:
+> > > > > ----system---- ----total-cpu-usage---- -dsk/total- -net/total- ---paging-- ---system-- ----swap--- ------memory-usage----- -----virtual-memory----
+> > > > >     time     |usr sys idl wai hiq siq| read  writ| recv  send|  in   out | int   csw | used  free| used  buff  cach  free|majpf minpf alloc  free
+> > > > > 21-08 21:48:05| 91   8   2   0   0   0|   0  5852k|   0     0 |   0     0 |1413  1772 |   0  7934M| 581M 58.0M  602M 6553M|   0    71k   46k   54k
+> > > > > 21-08 21:48:06| 93   6   1   0   0   0|   0  2064k| 137B  131B|   0     0 |1356  1650 |   0  7934M| 649M 58.0M  604M 6483M|   0    72k   47k   28k
+> > > > > 21-08 21:48:07| 86  11   4   0   0   0|   0  5872k|   0     0 |   0     0 |2000  2991 |   0  7934M| 577M 58.0M  627M 6531M|   0    99k   67k   79k
+> > > > > 21-08 21:48:08| 87   9   3   0   0   0|   0  2840k|   0     0 |   0     0 |2558  4164 |   0  7934M| 597M 58.0M  632M 6507M|   0    96k   57k   51k
+> > > > > 21-08 21:48:09| 93   7   1   0   0   0|   0  3032k|   0     0 |   0     0 |1329  1512 |   0  7934M| 641M 58.0M  626M 6469M|   0    61k   48k   39k
+> > > > > 21-08 21:48:10| 93   6   0   0   0   0|   0  4984k|   0     0 |   0     0 |1160  1146 |   0  7934M| 572M 58.0M  628M 6536M|   0    50k   40k   57k
+> > > > > 21-08 21:48:11| 86   9   6   0   0   0|   0  2520k|   0     0 |   0     0 |2947  4760 |   0  7934M| 605M 58.0M  631M 6500M|   0   103k   55k   45k
+> > > > > 21-08 21:48:12| 90   8   2   0   0   0|   0  2840k|   0     0 |   0     0 |2674  4179 |   0  7934M| 671M 58.0M  635M 6431M|   0    84k   59k   42k
+> > > > > 21-08 21:48:13| 90   9   1   0   0   0|   0  4656k|   0     0 |   0     0 |1223  1410 |   0  7934M| 643M 58.0M  638M 6455M|   0    90k   62k   68k
+> > > > > 21-08 21:48:14| 91   8   1   0   0   0|   0  3572k|   0     0 |   0     0 |1432  1828 |   0  7934M| 647M 58.0M  641M 6447M|   0    81k   59k   57k
+> > > > > 21-08 21:48:15| 91   8   1   0   0   0|   0  5116k| 116B    0 |   0     0 |1194  1295 |   0  7934M| 605M 58.0M  644M 6487M|   0    69k   54k   64k
+> > > > > 21-08 21:48:16| 87  10   3   0   0   0|   0  5140k|   0     0 |   0     0 |1761  2586 |   0  7934M| 584M 58.0M  650M 6502M|   0   105k   64k   68k
+> > > > > 
+> > > > > The abnormal case compiled only 182 object file in 6 and a half minutes,
+> > > > > then I stopped it. The same dstat output for this case:
+> > > > > ----system---- ----total-cpu-usage---- -dsk/total- -net/total- ---paging-- ---system-- ----swap--- ------memory-usage----- -----virtual-memory----
+> > > > >     time     |usr sys idl wai hiq siq| read  writ| recv  send|  in   out | int   csw | used  free| used  buff  cach  free|majpf minpf alloc  free
+> > > > > 21-08 22:10:49| 27  62   0   0  11   0|   0     0 | 210B    0 |   0     0 |1414  3137k|   0  7934M| 531M 57.6M  595M 6611M|   0  1628  1250   322 
+> > > > > 21-08 22:10:50| 25  60   4   0  11   0|   0    88k| 126B    0 |   0     0 |1337  3110k|   0  7934M| 531M 57.6M  595M 6611M|   0    91   128   115 
+> > > > > 21-08 22:10:51| 26  63   0   0  11   0|   0   184k| 294B    0 |   0     0 |1411  3147k|   0  7934M| 531M 57.6M  595M 6611M|   0  1485   814   815 
+> > > > > 21-08 22:10:52| 26  63   0   0  11   0|   0     0 | 437B  239B|   0     0 |1355  3160k|   0  7934M| 531M 57.6M  595M 6611M|   0    24    94    97 
+> > > > > 21-08 22:10:53| 26  63   0   0  11   0|   0     0 | 168B    0 |   0     0 |1397  3155k|   0  7934M| 531M 57.6M  595M 6611M|   0   479   285   273 
+> > > > > 21-08 22:10:54| 26  63   0   0  11   0|   0  4096B| 396B  324B|   0     0 |1346  3154k|   0  7934M| 531M 57.6M  595M 6611M|   0    27   145   145 
+> > > > > 21-08 22:10:55| 26  63   0   0  11   0|   0    60k|   0     0 |   0     0 |1353  3148k|   0  7934M| 531M 57.6M  595M 6610M|   0    93   117    36 
+> > > > > 21-08 22:10:56| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1341  3172k|   0  7934M| 531M 57.6M  595M 6610M|   0   158    87    74 
+> > > > > 21-08 22:10:57| 26  62   1   0  11   0|   0     0 |  42B   60B|   0     0 |1332  3162k|   0  7934M| 531M 57.6M  595M 6610M|   0    56    82    78 
+> > > > > 21-08 22:10:58| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1334  3178k|   0  7934M| 531M 57.6M  595M 6610M|   0    26    56    56 
+> > > > > 21-08 22:10:59| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1336  3179k|   0  7934M| 531M 57.6M  595M 6610M|   0     3    33    32 
+> > > > > 21-08 22:11:00| 26  63   0   0  11   0|   0    24k|  90B  108B|   0     0 |1347  3172k|   0  7934M| 531M 57.6M  595M 6610M|   0    41    73    71
+> > > > > 
+> > > > > I have four logical cores so 25% makes up 1 core. I don't know if the ~26% user CPU usage has anthing to do with this fact or just coincidence. The rest is ~63% system and ~11% hardware interrupt. Do these support what you suspect?
+> > > > 
+> > > > The massive increase in context switches does come as a bit of a surprise!
+> > > > It does rule out my initial suspicion of lock contention, but then again
+> > > > the fact that you have only four CPUs made that pretty unlikely to begin
+> > > > with.
+> > > > 
+> > > > 2.4k average context switches in the good case for the full run vs. 3,156k
+> > > > for about half of a run in the bad case. That is an increase of more
+> > > > than three orders of magnitude!
+> > > > 
+> > > > Yow!!!
+> > > > 
+> > > > Page faults are actually -higher- in the good case. You have about 6.5GB
+> > > > free in both cases, so you are not running out of memory. Lots more disk
+> > > > writes in the good case, perhaps consistent with its getting more done.
+> > > > Networking is negligible in both cases.
+> > > > 
+> > > > Lots of hardware interrupts in the bad case as well. Would you be willing
+> > > > to take a look at /proc/interrupts before and after to see which one you
+> > > > are getting hit with? (Or whatever interrupt tracking tool you prefer.)
+> > > 
+> > > Here are the results.
+> > > 
+> > > Good case before:
+> > >           CPU0       CPU1       CPU2       CPU3       
+> > >  0:         17          0          0          0   IO-APIC-edge      timer
+> > >  1:        356          1         68          4   IO-APIC-edge      i8042
+> > >  8:          0          0          1          0   IO-APIC-edge      rtc0
+> > >  9:        330         14        449         71   IO-APIC-fasteoi   acpi
+> > > 12:         10        108        269       2696   IO-APIC-edge      i8042
+> > > 16:         36         10        111          2   IO-APIC-fasteoi   ehci_hcd:usb1
+> > > 17:         20          3         25          4   IO-APIC-fasteoi   mmc0
+> > > 21:          3          0         34          0   IO-APIC-fasteoi   ehci_hcd:usb2
+> > > 40:          0          1         12         11   PCI-MSI-edge      mei_me
+> > > 41:      10617        173       9959        292   PCI-MSI-edge      ahci
+> > > 42:        862         11        186         26   PCI-MSI-edge      xhci_hcd
+> > > 43:        107         77         27        102   PCI-MSI-edge      i915
+> > > 44:       5322         20        434         22   PCI-MSI-edge      iwlwifi
+> > > 45:        180          0        183         86   PCI-MSI-edge      snd_hda_intel
+> > > 46:          0          3          0          0   PCI-MSI-edge      eth0
+> > > NMI:          1          0          0          0   Non-maskable interrupts
+> > > LOC:      16312      15177      10840       8995   Local timer interrupts
+> > > SPU:          0          0          0          0   Spurious interrupts
+> > > PMI:          1          0          0          0   Performance monitoring interrupts
+> > > IWI:       1160        523       1031        481   IRQ work interrupts
+> > > RTR:          3          0          0          0   APIC ICR read retries
+> > > RES:      14976      16135       9973      10784   Rescheduling interrupts
+> > > CAL:        482        457        151        370   Function call interrupts
+> > > TLB:         70        106        352        230   TLB shootdowns
+> > > TRM:          0          0          0          0   Thermal event interrupts
+> > > THR:          0          0          0          0   Threshold APIC interrupts
+> > > MCE:          0          0          0          0   Machine check exceptions
+> > > MCP:          2          2          2          2   Machine check polls
+> > > ERR:          0
+> > > MIS:          0
+> > > 
+> > > Good case after:
+> > >           CPU0       CPU1       CPU2       CPU3       
+> > >  0:         17          0          0          0   IO-APIC-edge      timer
+> > >  1:        367          1         81          4   IO-APIC-edge      i8042
+> > >  8:          0          0          1          0   IO-APIC-edge      rtc0
+> > >  9:        478         14        460         71   IO-APIC-fasteoi   acpi
+> > > 12:         10        108        269       2696   IO-APIC-edge      i8042
+> > > 16:         36         10        111          2   IO-APIC-fasteoi   ehci_hcd:usb1
+> > > 17:         20          3         25          4   IO-APIC-fasteoi   mmc0
+> > > 21:          3          0         34          0   IO-APIC-fasteoi   ehci_hcd:usb2
+> > > 40:          0          1         12         11   PCI-MSI-edge      mei_me
+> > > 41:      16888        173       9959        292   PCI-MSI-edge      ahci
+> > > 42:       1102         11        186         26   PCI-MSI-edge      xhci_hcd
+> > > 43:        107        132         27        136   PCI-MSI-edge      i915
+> > > 44:       6943         20        434         22   PCI-MSI-edge      iwlwifi
+> > > 45:        180          0        183         86   PCI-MSI-edge      snd_hda_intel
+> > > 46:          0          3          0          0   PCI-MSI-edge      eth0
+> > > NMI:          4          3          3          3   Non-maskable interrupts
+> > > LOC:      26845      24780      19025      17746   Local timer interrupts
+> > > SPU:          0          0          0          0   Spurious interrupts
+> > > PMI:          4          3          3          3   Performance monitoring interrupts
+> > > IWI:       1637        751       1287        695   IRQ work interrupts
+> > > RTR:          3          0          0          0   APIC ICR read retries
+> > > RES:      26511      26673      18791      20194   Rescheduling interrupts
+> > > CAL:        510        480        151        370   Function call interrupts
+> > > TLB:        361        292        575        461   TLB shootdowns
+> > > TRM:          0          0          0          0   Thermal event interrupts
+> > > THR:          0          0          0          0   Threshold APIC interrupts
+> > > MCE:          0          0          0          0   Machine check exceptions
+> > > MCP:          2          2          2          2   Machine check polls
+> > > ERR:          0
+> > > MIS:          0
+> > > 
+> > > Bad case before:
+> > >           CPU0       CPU1       CPU2       CPU3       
+> > >  0:         17          0          0          0   IO-APIC-edge      timer
+> > >  1:        172          3         78          3   IO-APIC-edge      i8042
+> > >  8:          0          1          0          0   IO-APIC-edge      rtc0
+> > >  9:       1200        148        395         81   IO-APIC-fasteoi   acpi
+> > > 12:       1625          2        348         10   IO-APIC-edge      i8042
+> > > 16:         26         23        115          0   IO-APIC-fasteoi   ehci_hcd:usb1
+> > > 17:         16          3         12         21   IO-APIC-fasteoi   mmc0
+> > > 21:          2          2         33          0   IO-APIC-fasteoi   ehci_hcd:usb2
+> > > 40:          0          0         14         10   PCI-MSI-edge      mei_me
+> > > 41:      15776        374       8497        687   PCI-MSI-edge      ahci
+> > > 42:       1297        829        115         24   PCI-MSI-edge      xhci_hcd
+> > > 43:        103        149          9        212   PCI-MSI-edge      i915
+> > > 44:      13151        101        511         91   PCI-MSI-edge      iwlwifi
+> > > 45:        153        159          0        122   PCI-MSI-edge      snd_hda_intel
+> > > 46:          0          1          1          0   PCI-MSI-edge      eth0
+> > > NMI:         32         31         31         31   Non-maskable interrupts
+> > > LOC:      82504      82732      74172      75985   Local timer interrupts
+> > > SPU:          0          0          0          0   Spurious interrupts
+> > > PMI:         32         31         31         31   Performance monitoring interrupts
+> > > IWI:      17816      16278      13833      13282   IRQ work interrupts
+> > > RTR:          3          0          0          0   APIC ICR read retries
+> > > RES:      18784      21084      13313      12946   Rescheduling interrupts
+> > > CAL:        393        422        306        356   Function call interrupts
+> > > TLB:        231        176        235        191   TLB shootdowns
+> > > TRM:          0          0          0          0   Thermal event interrupts
+> > > THR:          0          0          0          0   Threshold APIC interrupts
+> > > MCE:          0          0          0          0   Machine check exceptions
+> > > MCP:          3          3          3          3   Machine check polls
+> > > ERR:          0
+> > > MIS:          0
+> > > 
+> > > Bad case after:
+> > >           CPU0       CPU1       CPU2       CPU3       
+> > >  0:         17          0          0          0   IO-APIC-edge      timer
+> > >  1:        415          3         85          3   IO-APIC-edge      i8042
+> > >  8:          0          1          0          0   IO-APIC-edge      rtc0
+> > >  9:       1277        148        428         81   IO-APIC-fasteoi   acpi
+> > > 12:       1625          2        348         10   IO-APIC-edge      i8042
+> > > 16:         26         23        115          0   IO-APIC-fasteoi   ehci_hcd:usb1
+> > > 17:         16          3         12         21   IO-APIC-fasteoi   mmc0
+> > > 21:          2          2         33          0   IO-APIC-fasteoi   ehci_hcd:usb2
+> > > 40:          0          0         14         10   PCI-MSI-edge      mei_me
+> > > 41:      17814        374       8497        687   PCI-MSI-edge      ahci
+> > > 42:       1567        829        115         24   PCI-MSI-edge      xhci_hcd
+> > > 43:        103        177          9        242   PCI-MSI-edge      i915
+> > > 44:      14956        101        511         91   PCI-MSI-edge      iwlwifi
+> > > 45:        153        159          0        122   PCI-MSI-edge      snd_hda_intel
+> > > 46:          0          1          1          0   PCI-MSI-edge      eth0
+> > > NMI:         36         35         34         34   Non-maskable interrupts
+> > > LOC:      92429      92708      81714      84071   Local timer interrupts
+> > > SPU:          0          0          0          0   Spurious interrupts
+> > > PMI:         36         35         34         34   Performance monitoring interrupts
+> > > IWI:      22594      19658      17439      14257   IRQ work interrupts
+> > > RTR:          3          0          0          0   APIC ICR read retries
+> > > RES:      21491      24670      14618      14569   Rescheduling interrupts
+> > > CAL:        441        439        306        356   Function call interrupts
+> > > TLB:        232        181        274        465   TLB shootdowns
+> > > TRM:          0          0          0          0   Thermal event interrupts
+> > > THR:          0          0          0          0   Threshold APIC interrupts
+> > > MCE:          0          0          0          0   Machine check exceptions
+> > > MCP:          3          3          3          3   Machine check polls
+> > > ERR:          0
+> > > MIS:          0
+> > 
+> > Lots more local timer interrupts, which is consistent with the higher
+> > time in interrupt handlers for the bad case.
+> > 
+> > > > One hypothesis is that your workload and configuration are interacting
+> > > > with RCU_FAST_NO_HZ to force very large numbers of RCU grace periods.
+> > > > Could you please check for this by building with CONFIG_RCU_TRACE=y,
+> > > > mounting debugfs somewhere and dumping rcu/rcu_sched/rcugp before and
+> > > > after each run?
+> > > 
+> > > Good case before:
+> > > completed=8756  gpnum=8757  age=0  max=21
+> > > after:
+> > > completed=14686  gpnum=14687  age=0  max=21
+> > > 
+> > > Bad case before:
+> > > completed=22970  gpnum=22971  age=0  max=21
+> > > after:
+> > > completed=26110  gpnum=26111  age=0  max=21
+> > 
+> > In the good case, (14686-8756)/40=148.25 grace periods per second, which
+> > is a fast but reasonable rate given your HZ=250. Not a large difference
+> > in the number of grace periods, but extrapolating for the longer runtime,
+> > maybe ten times as much. But not much change in grace-period rate per
+> > unit time.
+> > 
+> > > The test scenario was the following in both cases (mixed english and pseudo-bash):
+> > > reboot, login, start terminal
+> > > cd project
+> > > rm -r build
+> > > cat /proc/interrupts >> somefile ; cat /sys/kernel/debug/rcu/rcu_sched/rcugp >> somefile
+> > > scons -j4
+> > > wait ~40 sec (good case finished, Ctrl-C in bad case)
+> > > cat /proc/interrupts >> somefile ; cat /sys/kernel/debug/rcu/rcu_sched/rcugp >> somefile
+> > > 
+> > > I stopped the build in the bad case after about the same time the good
+> > > case finished, so the extra interrupts and RCU grace periods because of the
+> > > longer runtime don't fake the results.
+> > 
+> > That procedure works for me, thank you for laying it out carefully.
+> > 
+> > I believe I see what is going on and how to fix it, though it may take
+> > me a bit to work things through and get a good patch.
+> > 
+> > Thank you very much for your testing efforts!
+> 
+> I'm glad I can help. I've been using Linux for many years, now I have a
+> chance to help the community, to do something in return. I'm quite
+> enjoying this :)
 
-------=_NextPart_000_002F_01CEA257.BFE89BB0
-Content-Type: text/plain;
-	format=flowed;
-	charset="big5";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
+;-)
 
-From: Ching <ching2048@areca.com.tw>
+Here is a patch that is more likely to help.  I am testing it in parallel,
+but figured I should send you a sneak preview.
 
-Fix bug of updating adapter firmware through ioctl(ARCHTTP) interface.
-Signed-off-by: Ching <ching2048@areca.com.tw>
----
-------=_NextPart_000_002F_01CEA257.BFE89BB0
-Content-Type: application/octet-stream;
-	name="patch3"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="patch3"
+								Thanx, Paul
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_attr.c =
-b/drivers/scsi/arcmsr/arcmsr_attr.c=0A=
---- a/drivers/scsi/arcmsr/arcmsr_attr.c	2012-11-29 19:35:16.000000000 =
-+0800=0A=
-+++ b/drivers/scsi/arcmsr/arcmsr_attr.c	2013-07-16 02:31:38.000000000 =
-+0800=0A=
-@@ -86,6 +86,7 @@ arcmsr_sysfs_iop_message_read(struct fil=0A=
- 			if ((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex) >=3D 1032) {=0A=
- 				memcpy(ptmpQbuffer, pQbuffer, 1032);=0A=
- 				acb->rqbuf_firstindex +=3D 1032;=0A=
-+				acb->rqbuf_firstindex %=3D ARCMSR_MAX_QBUFFER;=0A=
- 				allxfer_len =3D 1032;=0A=
- 			} else {=0A=
- 				if (((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex) + =
-acb->rqbuf_lastindex) > 1032) {=0A=
-@@ -116,36 +117,10 @@ arcmsr_sysfs_iop_message_read(struct fil=0A=
- 	}=0A=
- 	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {=0A=
- 		struct QBUFFER __iomem *prbuffer;=0A=
--		uint8_t __iomem *iop_data, *vaddr, *temp;=0A=
--			int32_t data_len_residual, data_len, rqbuf_lastindex;=0A=
--			acb->acb_flags &=3D ~ACB_F_IOPDATA_OVERFLOW;=0A=
--		rqbuf_lastindex =3D acb->rqbuf_lastindex;=0A=
-+		acb->acb_flags &=3D ~ACB_F_IOPDATA_OVERFLOW;=0A=
- 		prbuffer =3D arcmsr_get_iop_rqbuffer(acb);=0A=
--		iop_data =3D (uint8_t __iomem *)prbuffer->data;=0A=
--		data_len_residual =3D data_len =3D readl(&prbuffer->data_len);=0A=
--		if (data_len > 0) {=0A=
--			temp =3D vaddr =3D kmalloc(data_len, GFP_ATOMIC);=0A=
--			do {=0A=
--				memcpy(temp, iop_data, 4);=0A=
--				temp +=3D 4;=0A=
--				iop_data +=3D 4;=0A=
--				data_len_residual -=3D 4;=0A=
--			} while (data_len_residual > 0);=0A=
--			pQbuffer =3D &acb->rqbuffer[acb->rqbuf_lastindex];=0A=
--			temp =3D vaddr;=0A=
--			if ((rqbuf_lastindex + data_len) > ARCMSR_MAX_QBUFFER) {=0A=
--				memcpy(pQbuffer, temp, ARCMSR_MAX_QBUFFER - rqbuf_lastindex);=0A=
--				temp +=3D (ARCMSR_MAX_QBUFFER - rqbuf_lastindex);=0A=
--				rqbuf_lastindex =3D (rqbuf_lastindex + data_len) % =
-ARCMSR_MAX_QBUFFER;=0A=
--				memcpy(&acb->rqbuffer[0], temp, rqbuf_lastindex);=0A=
--			} else {=0A=
--				memcpy(pQbuffer, temp, data_len);=0A=
--				rqbuf_lastindex =3D (rqbuf_lastindex + data_len) % =
-ARCMSR_MAX_QBUFFER;=0A=
--			}=0A=
--			kfree(vaddr);=0A=
--		}=0A=
--		acb->rqbuf_lastindex =3D rqbuf_lastindex;=0A=
--		arcmsr_iop_message_read(acb);=0A=
-+		if (arcmsr_Read_iop_rqbuffer_data(acb, prbuffer) =3D=3D 0)=0A=
-+			acb->acb_flags |=3D ACB_F_IOPDATA_OVERFLOW;=0A=
- 	}=0A=
- 	spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);=0A=
- 	return (allxfer_len);=0A=
-@@ -177,7 +152,7 @@ arcmsr_sysfs_iop_message_write(struct fi=0A=
- 	wqbuf_lastindex =3D acb->wqbuf_lastindex;=0A=
- 	wqbuf_firstindex =3D acb->wqbuf_firstindex;=0A=
- 	if (wqbuf_lastindex !=3D wqbuf_firstindex) {=0A=
--		arcmsr_post_ioctldata2iop(acb);=0A=
-+		arcmsr_write_ioctldata2iop(acb);=0A=
- 		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);=0A=
- 		return 0;	/*need retry*/=0A=
- 	} else {=0A=
-@@ -198,7 +173,7 @@ arcmsr_sysfs_iop_message_write(struct fi=0A=
- 				ACB_F_MESSAGE_WQBUFFER_CLEARED) {=0A=
- 				acb->acb_flags &=3D=0A=
- 					~ACB_F_MESSAGE_WQBUFFER_CLEARED;=0A=
--				arcmsr_post_ioctldata2iop(acb);=0A=
-+				arcmsr_write_ioctldata2iop(acb);=0A=
- 			}=0A=
- 			spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);=0A=
- 			return count;=0A=
-@@ -226,10 +201,7 @@ arcmsr_sysfs_iop_message_clear(struct fi=0A=
- 	if (!capable(CAP_SYS_ADMIN))=0A=
- 		return -EACCES;=0A=
- =0A=
--	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {=0A=
--		acb->acb_flags &=3D ~ACB_F_IOPDATA_OVERFLOW;=0A=
--		arcmsr_iop_message_read(acb);=0A=
--	}=0A=
-+	arcmsr_clear_iop2drv_rqueue_buffer(acb);=0A=
- 	acb->acb_flags |=3D=0A=
- 		(ACB_F_MESSAGE_WQBUFFER_CLEARED=0A=
- 		| ACB_F_MESSAGE_RQBUFFER_CLEARED=0A=
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h=0A=
---- a/drivers/scsi/arcmsr/arcmsr.h	2013-08-26 19:25:02.000000000 +0800=0A=
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2013-08-26 19:23:50.000000000 +0800=0A=
-@@ -51,7 +51,7 @@ struct device_attribute;=0A=
- #else=0A=
- 	#define ARCMSR_MAX_FREECCB_NUM	320=0A=
- #endif=0A=
--#define ARCMSR_DRIVER_VERSION		"Driver Version 1.30.00.02 2013/05/15"=0A=
-+#define ARCMSR_DRIVER_VERSION		"Driver Version 1.30.00.03 2013/08/26"=0A=
- #define ARCMSR_SCSI_INITIATOR_ID		255=0A=
- #define ARCMSR_MAX_XFER_SECTORS		512=0A=
- #define ARCMSR_MAX_XFER_SECTORS_B		4096=0A=
-@@ -796,8 +796,10 @@ struct SENSE_DATA=0A=
- #define ARCMSR_MU_OUTBOUND_MESSAGE0_INTMASKENABLE	0x01=0A=
- #define ARCMSR_MU_OUTBOUND_ALL_INTMASKENABLE		0x1F=0A=
- =0A=
--extern void arcmsr_post_ioctldata2iop(struct AdapterControlBlock *);=0A=
--extern void arcmsr_iop_message_read(struct AdapterControlBlock *);=0A=
-+extern void arcmsr_write_ioctldata2iop(struct AdapterControlBlock *);=0A=
-+extern uint32_t arcmsr_Read_iop_rqbuffer_data(struct =
-AdapterControlBlock *,=0A=
-+    struct QBUFFER __iomem *);=0A=
-+extern void arcmsr_clear_iop2drv_rqueue_buffer(struct =
-AdapterControlBlock *);=0A=
- extern struct QBUFFER __iomem *arcmsr_get_iop_rqbuffer(struct =
-AdapterControlBlock *);=0A=
- extern struct device_attribute *arcmsr_host_attrs[];=0A=
- extern int arcmsr_alloc_sysfs_attr(struct AdapterControlBlock *);=0A=
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c =
-b/drivers/scsi/arcmsr/arcmsr_hba.c=0A=
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2013-05-16 04:20:04.000000000 =
-+0800=0A=
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2013-08-26 19:01:40.000000000 =
-+0800=0A=
-@@ -70,7 +70,7 @@=0A=
- #include <scsi/scsi_transport.h>=0A=
- #include <scsi/scsicam.h>=0A=
- #include "arcmsr.h"=0A=
--MODULE_AUTHOR("Nick Cheng <support@areca.com.tw>");=0A=
-+MODULE_AUTHOR("Nick Cheng, Ching Huang <support@areca.com.tw>");=0A=
- MODULE_DESCRIPTION("Areca SAS,SATA RAID Controller Driver");=0A=
- MODULE_LICENSE("Dual BSD/GPL");=0A=
- MODULE_VERSION(ARCMSR_DRIVER_VERSION);=0A=
-@@ -291,6 +291,7 @@ static void arcmsr_unmap_pciregion(struc=0A=
- 	}=0A=
- 	case ACB_ADAPTER_TYPE_D: {=0A=
- 		iounmap(acb->mem_base0);=0A=
-+		break;=0A=
- 	}=0A=
- 	}=0A=
- }=0A=
-@@ -543,19 +544,19 @@ arcmsr_flush_adapter_cache(struct Adapte=0A=
- =0A=
- 	case ACB_ADAPTER_TYPE_A: {=0A=
- 		arcmsr_hbaA_flush_cache(acb);=0A=
--		}=0A=
- 		break;=0A=
--=0A=
-+		}=0A=
- 	case ACB_ADAPTER_TYPE_B: {=0A=
- 		arcmsr_hbaB_flush_cache(acb);=0A=
--		}=0A=
- 		break;=0A=
-+		}=0A=
- 	case ACB_ADAPTER_TYPE_C: {=0A=
- 		arcmsr_hbaC_flush_cache(acb);=0A=
--		}=0A=
- 		break;=0A=
-+		}=0A=
- 	case ACB_ADAPTER_TYPE_D: {=0A=
- 		arcmsr_hbaD_flush_cache(acb);=0A=
-+		break;=0A=
- 	}=0A=
- 	}=0A=
- }=0A=
-@@ -728,6 +729,7 @@ arcmsr_alloc_ccb_pool(struct AdapterCont=0A=
- 			dma_coherent_handle =3D dma_coherent_handle=0A=
- 				+ roundup_ccbsize;=0A=
- 		}=0A=
-+		break;=0A=
- 	}=0A=
- 	}=0A=
- 	for (i =3D 0; i < ARCMSR_MAX_TARGETID; i++)=0A=
-@@ -1267,21 +1269,23 @@ arcmsr_abort_allcmd(struct AdapterContro=0A=
- 	switch (acb->adapter_type) {=0A=
- 	case ACB_ADAPTER_TYPE_A: {=0A=
- 		rtnval =3D arcmsr_hbaA_abort_allcmd(acb);=0A=
--		}=0A=
- 		break;=0A=
-+		}=0A=
- =0A=
- 	case ACB_ADAPTER_TYPE_B: {=0A=
- 		rtnval =3D arcmsr_hbaB_abort_allcmd(acb);=0A=
--		}=0A=
- 		break;=0A=
-+		}=0A=
- =0A=
- 	case ACB_ADAPTER_TYPE_C: {=0A=
- 		rtnval =3D arcmsr_hbaC_abort_allcmd(acb);=0A=
--		}=0A=
- 		break;=0A=
-+		}=0A=
-+=0A=
- 	case ACB_ADAPTER_TYPE_D: {=0A=
- 		rtnval =3D arcmsr_hbaD_abort_allcmd(acb);=0A=
--	}=0A=
-+		break;=0A=
-+		}=0A=
- 	}=0A=
- 	return rtnval;=0A=
- }=0A=
-@@ -1696,9 +1700,8 @@ arcmsr_enable_outbound_ints(struct Adapt=0A=
- 		writel(mask, &reg->outbound_intmask);=0A=
- 		acb->outbound_int_enable =3D ~(intmask_org & mask) &=0A=
- 			0x000000ff;=0A=
--		}=0A=
- 		break;=0A=
--=0A=
-+		}=0A=
- 	case ACB_ADAPTER_TYPE_B: {=0A=
- 		struct MessageUnit_B *reg =3D acb->pmuB;=0A=
- 		mask =3D intmask_org | (ARCMSR_IOP2DRV_DATA_WRITE_OK |=0A=
-@@ -1708,8 +1711,8 @@ arcmsr_enable_outbound_ints(struct Adapt=0A=
- 		writel(mask, reg->iop2drv_doorbell_mask);=0A=
- 		acb->outbound_int_enable =3D (intmask_org | mask) &=0A=
- 			0x0000000f;=0A=
--		}=0A=
- 		break;=0A=
-+		}=0A=
- 	case ACB_ADAPTER_TYPE_C: {=0A=
- 		struct MessageUnit_C __iomem *reg =3D acb->pmuC;=0A=
- 		mask =3D ~(ARCMSR_HBCMU_UTILITY_A_ISR_MASK |=0A=
-@@ -1718,12 +1721,13 @@ arcmsr_enable_outbound_ints(struct Adapt=0A=
- 		writel(intmask_org & mask, &reg->host_int_mask);=0A=
- 		acb->outbound_int_enable =3D ~(intmask_org & mask) &=0A=
- 			0x0000000f;=0A=
--		}=0A=
- 		break;=0A=
-+		}=0A=
- 	case ACB_ADAPTER_TYPE_D: {=0A=
- 		struct MessageUnit_D __iomem *reg =3D acb->pmuD;=0A=
- 		mask =3D ARCMSR_ARC1214_ALL_INT_ENABLE;=0A=
- 		writel(intmask_org | mask, reg->pcief0_int_enable);=0A=
-+		break;=0A=
- 	}=0A=
- 	}=0A=
- }=0A=
-@@ -1863,7 +1867,7 @@ arcmsr_post_ccb(struct AdapterControlBlo=0A=
- 		pinbound_srb =3D (struct InBound_SRB *)&pmu->post_qbuffer[postq_index =
-& 0xFF];=0A=
- 		pinbound_srb->addressHigh =3D dma_addr_hi32(cdb_phyaddr);=0A=
- 		pinbound_srb->addressLow =3D dma_addr_lo32(cdb_phyaddr);=0A=
--		pinbound_srb->length =3D arccdbsize / 4;=0A=
-+		pinbound_srb->length =3D arccdbsize >> 2;=0A=
- 		arcmsr_cdb->msgContext =3D dma_addr_lo32(cdb_phyaddr);=0A=
- 		if (postq_index & 0x4000) {=0A=
- 			index_stripped =3D postq_index & 0xFF;=0A=
-@@ -1878,6 +1882,7 @@ arcmsr_post_ccb(struct AdapterControlBlo=0A=
- 		}=0A=
- 		writel(postq_index, pmu->inboundlist_write_pointer);=0A=
- 		spin_unlock_irqrestore(&acb->postq_lock, flags);=0A=
-+		break;=0A=
- 	}=0A=
- 	}=0A=
- }=0A=
-@@ -1921,7 +1926,6 @@ arcmsr_hbaC_stop_bgrb(struct AdapterCont=0A=
- 		"background rebulid' timeout\n"=0A=
- 		, pACB->host->host_no);=0A=
- 	}=0A=
--	return;=0A=
- }=0A=
- =0A=
- static void=0A=
-@@ -1938,7 +1942,6 @@ arcmsr_hbaD_stop_bgrb(struct AdapterCont=0A=
- 		"rebulid' timeout\n"=0A=
- 		, pACB->host->host_no);=0A=
- 	}=0A=
--	return;=0A=
- }=0A=
- =0A=
- static void=0A=
-@@ -2124,193 +2127,174 @@ struct QBUFFER __iomem=0A=
- 	return pqbuffer;=0A=
- }=0A=
- =0A=
-+static uint32_t=0A=
-+arcmsr_Read_iop_rqbuffer_in_DWORD(struct AdapterControlBlock *acb,=0A=
-+	struct QBUFFER __iomem *prbuffer) {=0A=
-+=0A=
-+	uint8_t *pQbuffer;=0A=
-+	uint8_t *buf1 =3D 0;=0A=
-+	uint32_t __iomem *iop_data;=0A=
-+	uint32_t iop_len, data_len, *buf2 =3D 0;=0A=
-+=0A=
-+	iop_data =3D (uint32_t *)prbuffer->data;=0A=
-+	iop_len =3D readl(&prbuffer->data_len);=0A=
-+	if ( iop_len > 0 ) {=0A=
-+		buf1 =3D kmalloc(128, GFP_ATOMIC);=0A=
-+		buf2 =3D (uint32_t *)buf1;=0A=
-+		if( buf1 =3D=3D NULL)=0A=
-+			return (0);=0A=
-+		data_len =3D iop_len;=0A=
-+		while (data_len >=3D 4) {=0A=
-+			*buf2++ =3D *iop_data++;=0A=
-+			data_len -=3D 4;=0A=
-+		}=0A=
-+		if(data_len)=0A=
-+			*buf2 =3D *iop_data;=0A=
-+		buf2 =3D (uint32_t *)buf1;=0A=
-+	}=0A=
-+	while (iop_len > 0) {=0A=
-+		pQbuffer =3D &acb->rqbuffer[acb->rqbuf_lastindex];=0A=
-+		*pQbuffer =3D *buf1;=0A=
-+		acb->rqbuf_lastindex++;=0A=
-+		/* if last, index number set it to 0 */=0A=
-+		acb->rqbuf_lastindex %=3D ARCMSR_MAX_QBUFFER;=0A=
-+		buf1++;=0A=
-+		iop_len--;=0A=
-+	}=0A=
-+	if (buf2)=0A=
-+		kfree( (uint8_t *)buf2);=0A=
-+	/* let IOP know data has been read */=0A=
-+	arcmsr_iop_message_read(acb);=0A=
-+	return (1);=0A=
-+}=0A=
-+=0A=
-+uint32_t=0A=
-+arcmsr_Read_iop_rqbuffer_data(struct AdapterControlBlock *acb,=0A=
-+    struct QBUFFER __iomem *prbuffer) {=0A=
-+=0A=
-+	uint8_t *pQbuffer;=0A=
-+	uint8_t __iomem *iop_data;=0A=
-+	uint32_t iop_len;=0A=
-+=0A=
-+	if (acb->adapter_type & (ACB_ADAPTER_TYPE_C | ACB_ADAPTER_TYPE_D)) {=0A=
-+		return(arcmsr_Read_iop_rqbuffer_in_DWORD(acb, prbuffer));=0A=
-+	}=0A=
-+	iop_data =3D (uint8_t *)prbuffer->data;=0A=
-+	iop_len =3D readl(&prbuffer->data_len);=0A=
-+	while (iop_len > 0) {=0A=
-+		pQbuffer =3D &acb->rqbuffer[acb->rqbuf_lastindex];=0A=
-+		*pQbuffer =3D *iop_data;=0A=
-+		acb->rqbuf_lastindex++;=0A=
-+		acb->rqbuf_lastindex %=3D ARCMSR_MAX_QBUFFER;=0A=
-+		iop_data++;=0A=
-+		iop_len--;=0A=
-+	}=0A=
-+	arcmsr_iop_message_read(acb);=0A=
-+	return (1);=0A=
-+}=0A=
-+=0A=
- void=0A=
- arcmsr_iop2drv_data_wrote_handle(struct AdapterControlBlock *acb)=0A=
- {=0A=
--	uint8_t __iomem *iop_data, *pQbuffer, *vaddr, *temp;=0A=
--	int32_t buf_empty_len, data_len, data_len_residual;=0A=
--	uint32_t rqbuf_firstindex, rqbuf_lastindex;=0A=
- 	unsigned long flags;=0A=
- 	struct QBUFFER __iomem  *prbuffer;=0A=
-+	int32_t buf_empty_len;=0A=
-+=0A=
- 	spin_lock_irqsave(&acb->rqbuffer_lock, flags);=0A=
--	rqbuf_lastindex =3D acb->rqbuf_lastindex;=0A=
--	rqbuf_firstindex =3D acb->rqbuf_firstindex;=0A=
- 	prbuffer =3D arcmsr_get_iop_rqbuffer(acb);=0A=
--	iop_data =3D (uint8_t __iomem *)prbuffer->data;=0A=
--	data_len_residual =3D data_len =3D readl(&prbuffer->data_len);=0A=
--	buf_empty_len =3D (rqbuf_firstindex - rqbuf_lastindex - 1) &=0A=
--		(ARCMSR_MAX_QBUFFER - 1);=0A=
--	if (buf_empty_len >=3D data_len) {=0A=
--		if (data_len > 0) {=0A=
--			temp =3D vaddr =3D kmalloc(data_len, GFP_ATOMIC);=0A=
--			if (!vaddr) {=0A=
--				goto leave;=0A=
--			}=0A=
--			acb->acb_flags &=3D ~ACB_F_IOPDATA_OVERFLOW;=0A=
--			while (data_len_residual >=3D 4) {=0A=
--				memcpy(temp, iop_data, 4);=0A=
--				temp +=3D 4;=0A=
--				iop_data +=3D 4;=0A=
--				data_len_residual -=3D 4;=0A=
--			}=0A=
--			if ((data_len_residual > 0) &&=0A=
--			(data_len_residual < 4)) {=0A=
--				memcpy(temp, iop_data, data_len_residual);=0A=
--			}=0A=
--			pQbuffer =3D &acb->rqbuffer[rqbuf_lastindex];=0A=
--			temp =3D vaddr;=0A=
--			if ((rqbuf_lastindex + data_len) >=0A=
--			ARCMSR_MAX_QBUFFER) {=0A=
--				memcpy(pQbuffer, temp,=0A=
--				ARCMSR_MAX_QBUFFER - rqbuf_lastindex);=0A=
--				temp +=3D (ARCMSR_MAX_QBUFFER -=0A=
--				rqbuf_lastindex);=0A=
--				rqbuf_lastindex =3D (rqbuf_lastindex + data_len)=0A=
--				% ARCMSR_MAX_QBUFFER;=0A=
--				memcpy(&acb->rqbuffer[0], temp,=0A=
--				rqbuf_lastindex);=0A=
--			} else {=0A=
--				memcpy(pQbuffer, temp, data_len);=0A=
--				rqbuf_lastindex =3D (rqbuf_lastindex + data_len)=0A=
--				% ARCMSR_MAX_QBUFFER;=0A=
--			}=0A=
--			kfree(vaddr);=0A=
--			acb->rqbuf_lastindex =3D rqbuf_lastindex;=0A=
--			arcmsr_iop_message_read(acb);=0A=
--		}=0A=
-+	buf_empty_len =3D (acb->rqbuf_lastindex - acb->rqbuf_firstindex -1) &=0A=
-+		(ARCMSR_MAX_QBUFFER -1);=0A=
-+	if (buf_empty_len >=3D prbuffer->data_len) {=0A=
-+		if (arcmsr_Read_iop_rqbuffer_data(acb, prbuffer) =3D=3D 0)=0A=
-+			acb->acb_flags |=3D ACB_F_IOPDATA_OVERFLOW;=0A=
- 	} else {=0A=
- 		acb->acb_flags |=3D ACB_F_IOPDATA_OVERFLOW;=0A=
- 	}=0A=
--	leave:=0A=
- 	spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);=0A=
- }=0A=
- =0A=
--void=0A=
--arcmsr_iop2drv_data_read_handle(struct AdapterControlBlock *acb)=0A=
-+static void=0A=
-+arcmsr_write_ioctldata2iop_in_DWORD(struct AdapterControlBlock *acb)=0A=
- {=0A=
--	unsigned long flags;=0A=
--	spin_lock_irqsave(&acb->wqbuffer_lock, flags);=0A=
--	acb->acb_flags |=3D ACB_F_MESSAGE_WQBUFFER_READED;=0A=
--	if (acb->wqbuf_firstindex !=3D acb->wqbuf_lastindex) {=0A=
--		uint8_t *pQbuffer;=0A=
--		struct QBUFFER __iomem *pwbuffer;=0A=
--		uint8_t __iomem *iop_data;=0A=
--		int32_t allxfer_len =3D 0;=0A=
-+	uint8_t *pQbuffer;=0A=
-+	struct QBUFFER __iomem *pwbuffer;=0A=
-+	uint8_t *buf1 =3D 0;=0A=
-+	uint32_t __iomem *iop_data;=0A=
-+	uint32_t allxfer_len =3D 0, data_len, *buf2 =3D 0;=0A=
-+	=0A=
-+	if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_READED) {=0A=
-+		buf1 =3D kmalloc(128, GFP_ATOMIC);=0A=
-+		buf2 =3D (uint32_t *)buf1;=0A=
-+		if( buf1 =3D=3D NULL)=0A=
-+			return;=0A=
- =0A=
- 		acb->acb_flags &=3D (~ACB_F_MESSAGE_WQBUFFER_READED);=0A=
- 		pwbuffer =3D arcmsr_get_iop_wqbuffer(acb);=0A=
--		iop_data =3D (uint8_t __iomem *)pwbuffer->data;=0A=
--		if (acb->wqbuf_firstindex > acb->wqbuf_lastindex) {=0A=
--			if ((ARCMSR_MAX_QBUFFER - acb->wqbuf_firstindex) >=3D 4) {=0A=
--				do {=0A=
--					pQbuffer =3D=0A=
--					&acb->wqbuffer[acb->wqbuf_firstindex];=0A=
--					if (acb->wqbuf_firstindex + 4=0A=
--					> ARCMSR_MAX_QBUFFER) {=0A=
--						memcpy(iop_data, pQbuffer,=0A=
--						ARCMSR_MAX_QBUFFER=0A=
--						- acb->wqbuf_firstindex);=0A=
--						iop_data +=3D ARCMSR_MAX_QBUFFER=0A=
--						- acb->wqbuf_firstindex;=0A=
--						acb->wqbuf_firstindex +=3D 4;=0A=
--						acb->wqbuf_firstindex %=3D=0A=
--						ARCMSR_MAX_QBUFFER;=0A=
--						memcpy(iop_data,=0A=
--						&acb->wqbuffer[0],=0A=
--						acb->wqbuf_firstindex);=0A=
--						iop_data +=3D=0A=
--						acb->wqbuf_firstindex;=0A=
--					} else {=0A=
--						if ((acb->wqbuf_lastindex=0A=
--						- acb->wqbuf_firstindex) > 4) {=0A=
--							memcpy(iop_data,=0A=
--							pQbuffer, 4);=0A=
--							acb->wqbuf_firstindex=0A=
--							+=3D 4;=0A=
--							acb->wqbuf_firstindex=0A=
--							%=3D ARCMSR_MAX_QBUFFER;=0A=
--							iop_data +=3D 4;=0A=
--						} else {=0A=
--							memcpy(iop_data, pQbuffer,=0A=
--							acb->wqbuf_lastindex=0A=
--							- acb->wqbuf_firstindex);=0A=
--							allxfer_len +=3D=0A=
--							acb->wqbuf_lastindex -=0A=
--							acb->wqbuf_firstindex;=0A=
--							acb->wqbuf_firstindex =3D=0A=
--							acb->wqbuf_lastindex;=0A=
--							break;=0A=
--						}=0A=
--					}=0A=
--					allxfer_len +=3D 4;=0A=
--				} while ((acb->wqbuf_firstindex !=3D=0A=
--				acb->wqbuf_lastindex) && (allxfer_len < 124));=0A=
--			} else {=0A=
--				pQbuffer =3D=0A=
--				&acb->wqbuffer[acb->wqbuf_firstindex];=0A=
--				memcpy(iop_data, pQbuffer, ARCMSR_MAX_QBUFFER=0A=
--				- acb->wqbuf_firstindex);=0A=
--				iop_data +=3D ARCMSR_MAX_QBUFFER=0A=
--				- acb->wqbuf_firstindex;=0A=
--				allxfer_len =3D ARCMSR_MAX_QBUFFER=0A=
--				- acb->wqbuf_firstindex;=0A=
--				acb->wqbuf_firstindex =3D 0;=0A=
--				do {=0A=
--					pQbuffer =3D=0A=
--					&acb->wqbuffer[acb->wqbuf_firstindex];=0A=
--					if ((acb->wqbuf_lastindex -=0A=
--					acb->wqbuf_firstindex) > 4) {=0A=
--						memcpy(iop_data, pQbuffer, 4);=0A=
--						acb->wqbuf_firstindex +=3D 4;=0A=
--						acb->wqbuf_firstindex %=3D=0A=
--						ARCMSR_MAX_QBUFFER;=0A=
--						iop_data +=3D 4;=0A=
--					} else {=0A=
--						memcpy(iop_data, pQbuffer,=0A=
--						acb->wqbuf_lastindex -=0A=
--						acb->wqbuf_firstindex);=0A=
--						allxfer_len +=3D=0A=
--						acb->wqbuf_lastindex=0A=
--						- acb->wqbuf_firstindex;=0A=
--						acb->wqbuf_firstindex =3D=0A=
--						acb->wqbuf_lastindex;=0A=
--						break;=0A=
--					}=0A=
--					allxfer_len +=3D 4;=0A=
--				} while ((acb->wqbuf_firstindex !=3D=0A=
--				acb->wqbuf_lastindex) && (allxfer_len < 124));=0A=
--			}=0A=
--		} else {=0A=
--			do {=0A=
--				pQbuffer =3D=0A=
--				&acb->wqbuffer[acb->wqbuf_firstindex];=0A=
--				if ((acb->wqbuf_lastindex -=0A=
--				acb->wqbuf_firstindex) > 4) {=0A=
--					memcpy(iop_data, pQbuffer, 4);=0A=
--					acb->wqbuf_firstindex +=3D 4;=0A=
--					acb->wqbuf_firstindex %=3D=0A=
--					ARCMSR_MAX_QBUFFER;=0A=
--					iop_data +=3D 4;=0A=
--				} else {=0A=
--					memcpy(iop_data, pQbuffer,=0A=
--					acb->wqbuf_lastindex -=0A=
--					acb->wqbuf_firstindex);=0A=
--					allxfer_len +=3D acb->wqbuf_lastindex=0A=
--					- acb->wqbuf_firstindex;=0A=
--					acb->wqbuf_firstindex =3D=0A=
--					acb->wqbuf_lastindex;=0A=
--					break;=0A=
--				}=0A=
--				allxfer_len +=3D 4;=0A=
--			} while ((acb->wqbuf_firstindex !=3D=0A=
--			acb->wqbuf_lastindex) && (allxfer_len < 124));=0A=
-+		iop_data =3D (uint32_t *)pwbuffer->data;=0A=
-+		while ((acb->wqbuf_firstindex !=3D acb->wqbuf_lastindex)=0A=
-+			&& (allxfer_len < 124)) {=0A=
-+			pQbuffer =3D &acb->wqbuffer[acb->wqbuf_firstindex];=0A=
-+			*buf1 =3D *pQbuffer;=0A=
-+			acb->wqbuf_firstindex++;=0A=
-+			acb->wqbuf_firstindex %=3D ARCMSR_MAX_QBUFFER;=0A=
-+			buf1++;=0A=
-+			allxfer_len++;=0A=
-+		}=0A=
-+		data_len =3D allxfer_len;=0A=
-+		buf1 =3D (uint8_t *)buf2;=0A=
-+		while (data_len >=3D 4) {=0A=
-+			*iop_data++ =3D *buf2++;=0A=
-+			data_len -=3D 4;=0A=
- 		}=0A=
-+		if (data_len)=0A=
-+			*iop_data =3D *buf2;=0A=
- 		writel(allxfer_len, &pwbuffer->data_len);=0A=
--		arcmsr_iop_message_wrote(acb);/*notice IOP the message has been =
-written*/=0A=
-+		kfree( buf1);=0A=
-+		arcmsr_iop_message_wrote(acb);=0A=
- 	}=0A=
--	if (acb->wqbuf_firstindex =3D=3D acb->wqbuf_lastindex) {=0A=
--		acb->acb_flags |=3D ACB_F_MESSAGE_WQBUFFER_CLEARED;=0A=
-+}=0A=
-+=0A=
-+void=0A=
-+arcmsr_write_ioctldata2iop(struct AdapterControlBlock *acb)=0A=
-+{=0A=
-+	uint8_t *pQbuffer;=0A=
-+	struct QBUFFER __iomem *pwbuffer;=0A=
-+	uint8_t __iomem *iop_data;=0A=
-+	int32_t allxfer_len=3D0;=0A=
-+	=0A=
-+	if (acb->adapter_type & (ACB_ADAPTER_TYPE_C | ACB_ADAPTER_TYPE_D)) {=0A=
-+		arcmsr_write_ioctldata2iop_in_DWORD(acb);=0A=
-+		return;=0A=
- 	}=0A=
-+	if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_READED) {=0A=
-+		acb->acb_flags &=3D (~ACB_F_MESSAGE_WQBUFFER_READED);=0A=
-+		pwbuffer =3D arcmsr_get_iop_wqbuffer(acb);=0A=
-+		iop_data =3D (uint8_t *)pwbuffer->data;=0A=
-+		while ((acb->wqbuf_firstindex !=3D acb->wqbuf_lastindex) =0A=
-+			&& (allxfer_len < 124)) {=0A=
-+			pQbuffer =3D &acb->wqbuffer[acb->wqbuf_firstindex];=0A=
-+			*iop_data =3D *pQbuffer;=0A=
-+			acb->wqbuf_firstindex++;=0A=
-+			acb->wqbuf_firstindex %=3D ARCMSR_MAX_QBUFFER;=0A=
-+			iop_data++;=0A=
-+			allxfer_len++;=0A=
-+		}=0A=
-+		writel(allxfer_len, &pwbuffer->data_len);=0A=
-+		arcmsr_iop_message_wrote(acb);=0A=
-+	}=0A=
-+}=0A=
-+=0A=
-+void=0A=
-+arcmsr_iop2drv_data_read_handle(struct AdapterControlBlock *acb)=0A=
-+{=0A=
-+	unsigned long flags;=0A=
-+=0A=
-+	spin_lock_irqsave(&acb->wqbuffer_lock, flags);=0A=
-+	acb->acb_flags |=3D ACB_F_MESSAGE_WQBUFFER_READED;=0A=
-+	if (acb->wqbuf_firstindex !=3D acb->wqbuf_lastindex)=0A=
-+		arcmsr_write_ioctldata2iop(acb);=0A=
-+	if (acb->wqbuf_firstindex =3D=3D acb->wqbuf_lastindex)=0A=
-+		acb->acb_flags |=3D ACB_F_MESSAGE_WQBUFFER_CLEARED;=0A=
- 	spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);=0A=
- }=0A=
- =0A=
-@@ -2361,7 +2345,6 @@ arcmsr_hbaC_doorbell_isr(struct AdapterC=0A=
- 	} while (outbound_doorbell & (ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK=0A=
- 	| ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK=0A=
- 	| ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE));=0A=
--	return;=0A=
- }=0A=
- =0A=
- static void=0A=
-@@ -2390,7 +2373,6 @@ arcmsr_hbaD_doorbell_isr(struct AdapterC=0A=
- 	} while (outbound_doorbell & (ARCMSR_ARC1214_IOP2DRV_DATA_WRITE_OK=0A=
- 	| ARCMSR_ARC1214_IOP2DRV_DATA_READ_OK=0A=
- 	| ARCMSR_ARC1214_IOP2DRV_MESSAGE_CMD_DONE));=0A=
--	return;=0A=
- }=0A=
- =0A=
- static void=0A=
-@@ -2710,132 +2692,24 @@ arcmsr_iop_parking(struct AdapterControl=0A=
- }=0A=
- =0A=
- void=0A=
--arcmsr_post_ioctldata2iop(struct AdapterControlBlock *acb)=0A=
-+arcmsr_clear_iop2drv_rqueue_buffer(struct AdapterControlBlock *acb)=0A=
- {=0A=
--	if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_READED) {=0A=
--		if (acb->wqbuf_firstindex !=3D acb->wqbuf_lastindex) {=0A=
--			uint8_t *pQbuffer;=0A=
--			uint8_t __iomem *iop_data;=0A=
--			int32_t allxfer_len =3D 0;=0A=
--			struct QBUFFER __iomem *pwbuffer;=0A=
--			acb->acb_flags &=3D (~ACB_F_MESSAGE_WQBUFFER_READED);=0A=
--			pwbuffer =3D arcmsr_get_iop_wqbuffer(acb);=0A=
--			iop_data =3D (uint8_t __iomem *)pwbuffer->data;=0A=
--			if (acb->wqbuf_firstindex > acb->wqbuf_lastindex) {=0A=
--				if ((ARCMSR_MAX_QBUFFER -=0A=
--					acb->wqbuf_firstindex) >=3D 4) {=0A=
--					do {=0A=
--						pQbuffer =3D=0A=
--						&acb->wqbuffer[acb->wqbuf_firstindex];=0A=
--						if (acb->wqbuf_firstindex + 4 >=0A=
--						ARCMSR_MAX_QBUFFER) {=0A=
--							memcpy(iop_data, pQbuffer,=0A=
--							ARCMSR_MAX_QBUFFER - acb->wqbuf_firstindex);=0A=
--							iop_data +=3D ARCMSR_MAX_QBUFFER=0A=
--							- acb->wqbuf_firstindex;=0A=
--							acb->wqbuf_firstindex +=3D 4;=0A=
--							acb->wqbuf_firstindex %=3D=0A=
--							ARCMSR_MAX_QBUFFER;=0A=
--							memcpy(iop_data,=0A=
--							&acb->wqbuffer[0],=0A=
--							acb->wqbuf_firstindex);=0A=
--							iop_data +=3D=0A=
--							acb->wqbuf_firstindex;=0A=
--						} else {=0A=
--							if ((acb->wqbuf_lastindex -=0A=
--							acb->wqbuf_firstindex) > 4) {=0A=
--								memcpy(iop_data,=0A=
--								pQbuffer, 4);=0A=
--								acb->wqbuf_firstindex=0A=
--								+=3D 4;=0A=
--								acb->wqbuf_firstindex=0A=
--								%=3D ARCMSR_MAX_QBUFFER;=0A=
--								iop_data +=3D 4;=0A=
--							} else {=0A=
--								memcpy(iop_data,=0A=
--								pQbuffer,=0A=
--								acb->wqbuf_lastindex=0A=
--								- acb->wqbuf_firstindex);=0A=
--								allxfer_len +=3D=0A=
--								acb->wqbuf_lastindex=0A=
--								- acb->wqbuf_firstindex;=0A=
--								acb->wqbuf_firstindex=0A=
--								=3D acb->wqbuf_lastindex;=0A=
--								break;=0A=
--							}=0A=
--						}=0A=
--						allxfer_len +=3D 4;=0A=
--					} while ((acb->wqbuf_firstindex !=3D=0A=
--					acb->wqbuf_lastindex) &&=0A=
--					(allxfer_len < 124));=0A=
--				} else {=0A=
--					pQbuffer =3D=0A=
--					&acb->wqbuffer[acb->wqbuf_firstindex];=0A=
--					memcpy(iop_data, pQbuffer,=0A=
--					ARCMSR_MAX_QBUFFER -=0A=
--					acb->wqbuf_firstindex);=0A=
--					iop_data +=3D ARCMSR_MAX_QBUFFER=0A=
--					- acb->wqbuf_firstindex;=0A=
--					allxfer_len =3D ARCMSR_MAX_QBUFFER=0A=
--					- acb->wqbuf_firstindex;=0A=
--					acb->wqbuf_firstindex =3D 0;=0A=
--					do {=0A=
--						pQbuffer =3D=0A=
--						&acb->wqbuffer[acb->wqbuf_firstindex];=0A=
--						if ((acb->wqbuf_lastindex -=0A=
--						acb->wqbuf_firstindex) > 4) {=0A=
--							memcpy(iop_data,=0A=
--							pQbuffer, 4);=0A=
--							acb->wqbuf_firstindex=0A=
--							+=3D 4;=0A=
--							acb->wqbuf_firstindex=0A=
--							%=3D ARCMSR_MAX_QBUFFER;=0A=
--							iop_data +=3D 4;=0A=
--						} else {=0A=
--							memcpy(iop_data, pQbuffer,=0A=
--							acb->wqbuf_lastindex=0A=
--							- acb->wqbuf_firstindex);=0A=
--							allxfer_len +=3D=0A=
--							acb->wqbuf_lastindex=0A=
--							- acb->wqbuf_firstindex;=0A=
--							acb->wqbuf_firstindex =3D=0A=
--							acb->wqbuf_lastindex;=0A=
--							break;=0A=
--						}=0A=
--						allxfer_len +=3D 4;=0A=
--					} while ((acb->wqbuf_firstindex=0A=
--					!=3D acb->wqbuf_lastindex) &&=0A=
--					(allxfer_len < 124));=0A=
--				}=0A=
--			} else {=0A=
--				do {=0A=
--					pQbuffer =3D=0A=
--					&acb->wqbuffer[acb->wqbuf_firstindex];=0A=
--					if ((acb->wqbuf_lastindex -=0A=
--					acb->wqbuf_firstindex) > 4) {=0A=
--						memcpy(iop_data,=0A=
--						pQbuffer, 4);=0A=
--						acb->wqbuf_firstindex=0A=
--						+=3D 4;=0A=
--						acb->wqbuf_firstindex=0A=
--						%=3D ARCMSR_MAX_QBUFFER;=0A=
--						iop_data +=3D 4;=0A=
--					} else {=0A=
--						memcpy(iop_data, pQbuffer,=0A=
--						acb->wqbuf_lastindex -=0A=
--						acb->wqbuf_firstindex);=0A=
--						allxfer_len +=3D acb->wqbuf_lastindex=0A=
--						- acb->wqbuf_firstindex;=0A=
--						acb->wqbuf_firstindex =3D=0A=
--						acb->wqbuf_lastindex;=0A=
--						break;=0A=
--					}=0A=
--					allxfer_len +=3D 4;=0A=
--				} while ((acb->wqbuf_firstindex !=3D=0A=
--				acb->wqbuf_lastindex) && (allxfer_len < 124));=0A=
--			}=0A=
--			writel(allxfer_len, &pwbuffer->data_len);=0A=
--			arcmsr_iop_message_wrote(acb);=0A=
-+	uint32_t	i;=0A=
-+=0A=
-+	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {=0A=
-+		for (i=3D0; i < 15; i++) {=0A=
-+			if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {=0A=
-+				acb->acb_flags &=3D ~ACB_F_IOPDATA_OVERFLOW;=0A=
-+				acb->rqbuf_firstindex =3D 0;=0A=
-+				acb->rqbuf_lastindex =3D 0;=0A=
-+				arcmsr_iop_message_read(acb);=0A=
-+				mdelay(30);=0A=
-+			} else if (acb->rqbuf_firstindex !=3D acb->rqbuf_lastindex) {=0A=
-+				acb->rqbuf_firstindex =3D 0;=0A=
-+				acb->rqbuf_lastindex =3D 0;=0A=
-+				mdelay(30);=0A=
-+			} else =0A=
-+				break;=0A=
- 		}=0A=
- 	}=0A=
- }=0A=
-@@ -2889,6 +2763,7 @@ arcmsr_iop_message_xfer(struct AdapterCo=0A=
- 					acb->rqbuf_firstindex) >=3D 1032) {=0A=
- 					memcpy(ptmpQbuffer, pQbuffer, 1032);=0A=
- 					acb->rqbuf_firstindex +=3D 1032;=0A=
-+					acb->rqbuf_firstindex %=3D ARCMSR_MAX_QBUFFER;=0A=
- 					allxfer_len =3D 1032;=0A=
- 				} else {=0A=
- 					if (((ARCMSR_MAX_QBUFFER -=0A=
-@@ -2941,58 +2816,16 @@ arcmsr_iop_message_xfer(struct AdapterCo=0A=
- 				}=0A=
- 			}=0A=
- 		}=0A=
-+		memcpy(pcmdmessagefld->messagedatabuffer, ver_addr, allxfer_len);=0A=
- 		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {=0A=
- 			struct QBUFFER __iomem *prbuffer;=0A=
--			uint8_t __iomem *iop_data, *vaddr, *temp;=0A=
--			uint32_t data_len_residual, data_len, rqbuf_lastindex;=0A=
--			rqbuf_lastindex =3D acb->rqbuf_lastindex;=0A=
-+			acb->acb_flags &=3D ~ACB_F_IOPDATA_OVERFLOW;=0A=
- 			prbuffer =3D arcmsr_get_iop_rqbuffer(acb);=0A=
--			iop_data =3D (uint8_t __iomem *)prbuffer->data;=0A=
--			data_len_residual =3D data_len =3D readl(&prbuffer->data_len);=0A=
--			if (data_len > 0) {=0A=
--				temp =3D vaddr =3D kmalloc(data_len, GFP_ATOMIC);=0A=
--				if (!vaddr) {=0A=
--					goto leave;=0A=
--				}=0A=
--				acb->acb_flags &=3D ~ACB_F_IOPDATA_OVERFLOW;=0A=
--				while (data_len_residual >=3D 4) {=0A=
--					memcpy(temp, iop_data, 4);=0A=
--					temp +=3D 4;=0A=
--					iop_data +=3D 4;=0A=
--					data_len_residual -=3D 4;=0A=
--				}=0A=
--				if ((data_len_residual > 0) &&=0A=
--				(data_len_residual < 4)) {=0A=
--					memcpy(temp, iop_data,=0A=
--					data_len_residual);=0A=
--				}=0A=
--				pQbuffer =3D=0A=
--				&acb->rqbuffer[acb->rqbuf_lastindex];=0A=
--				temp =3D vaddr;=0A=
--				if ((rqbuf_lastindex + data_len) >=0A=
--				ARCMSR_MAX_QBUFFER) {=0A=
--					memcpy(pQbuffer, temp,=0A=
--					ARCMSR_MAX_QBUFFER - rqbuf_lastindex);=0A=
--					temp +=3D (ARCMSR_MAX_QBUFFER -=0A=
--					rqbuf_lastindex);=0A=
--					rqbuf_lastindex =3D (rqbuf_lastindex +=0A=
--					data_len) % ARCMSR_MAX_QBUFFER;=0A=
--					memcpy(&acb->rqbuffer[0],=0A=
--					temp, rqbuf_lastindex);=0A=
--				} else {=0A=
--					memcpy(pQbuffer, temp, data_len);=0A=
--					rqbuf_lastindex =3D=0A=
--					(rqbuf_lastindex + data_len) %=0A=
--					ARCMSR_MAX_QBUFFER;=0A=
--				}=0A=
--				kfree(vaddr);=0A=
--				acb->rqbuf_lastindex =3D rqbuf_lastindex;=0A=
--				arcmsr_iop_message_read(acb);=0A=
--			}=0A=
-+			if(arcmsr_Read_iop_rqbuffer_data(acb, prbuffer) =3D=3D 0)=0A=
-+				acb->acb_flags |=3D ACB_F_IOPDATA_OVERFLOW;=0A=
- 		}=0A=
--		leave:=0A=
- 		spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);=0A=
--		memcpy(pcmdmessagefld->messagedatabuffer, ver_addr, allxfer_len);=0A=
-+		kfree(ver_addr);=0A=
- 		pcmdmessagefld->cmdmessage.Length =3D allxfer_len;=0A=
- 		if (acb->fw_flag =3D=3D FW_DEADLOCK) {=0A=
- 			pcmdmessagefld->cmdmessage.ReturnCode =3D=0A=
-@@ -3001,7 +2834,6 @@ arcmsr_iop_message_xfer(struct AdapterCo=0A=
- 			pcmdmessagefld->cmdmessage.ReturnCode =3D=0A=
- 			ARCMSR_MESSAGE_RETURNCODE_OK;=0A=
- 		}=0A=
--		kfree(ver_addr);=0A=
- 		break;=0A=
- 	}=0A=
- 	case ARCMSR_MESSAGE_WRITE_WQBUFFER: {=0A=
-@@ -3014,13 +2846,6 @@ arcmsr_iop_message_xfer(struct AdapterCo=0A=
- 			retvalue =3D ARCMSR_MESSAGE_FAIL;=0A=
- 			goto message_out;=0A=
- 		}=0A=
--		if (acb->fw_flag =3D=3D FW_DEADLOCK) {=0A=
--			pcmdmessagefld->cmdmessage.ReturnCode =3D=0A=
--			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;=0A=
--		} else {=0A=
--			pcmdmessagefld->cmdmessage.ReturnCode =3D=0A=
--			ARCMSR_MESSAGE_RETURNCODE_OK;=0A=
--		}=0A=
- 		ptmpuserbuffer =3D ver_addr;=0A=
- 		user_len =3D pcmdmessagefld->cmdmessage.Length;=0A=
- 		memcpy(ptmpuserbuffer, pcmdmessagefld->messagedatabuffer,=0A=
-@@ -3031,7 +2856,7 @@ arcmsr_iop_message_xfer(struct AdapterCo=0A=
- 		if (wqbuf_lastindex !=3D wqbuf_firstindex) {=0A=
- 			struct SENSE_DATA *sensebuffer =3D=0A=
- 			(struct SENSE_DATA *)cmd->sense_buffer;=0A=
--			arcmsr_post_ioctldata2iop(acb);=0A=
-+			arcmsr_write_ioctldata2iop(acb);=0A=
- 			/* has error report sensedata */=0A=
- 			sensebuffer->ErrorCode =3D SCSI_SENSE_CURRENT_ERRORS;=0A=
- 			sensebuffer->SenseKey =3D ILLEGAL_REQUEST;=0A=
-@@ -3068,7 +2893,7 @@ arcmsr_iop_message_xfer(struct AdapterCo=0A=
- 				ACB_F_MESSAGE_WQBUFFER_CLEARED) {=0A=
- 					acb->acb_flags &=3D=0A=
- 					~ACB_F_MESSAGE_WQBUFFER_CLEARED;=0A=
--					arcmsr_post_ioctldata2iop(acb);=0A=
-+					arcmsr_write_ioctldata2iop(acb);=0A=
- 				}=0A=
- 			} else {=0A=
- 				struct SENSE_DATA *sensebuffer =3D=0A=
-@@ -3085,16 +2910,20 @@ arcmsr_iop_message_xfer(struct AdapterCo=0A=
- 		}=0A=
- 		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);=0A=
- 		kfree(ver_addr);=0A=
-+		if (acb->fw_flag =3D=3D FW_DEADLOCK) {=0A=
-+			pcmdmessagefld->cmdmessage.ReturnCode =3D=0A=
-+			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;=0A=
-+		} else {=0A=
-+			pcmdmessagefld->cmdmessage.ReturnCode =3D=0A=
-+			ARCMSR_MESSAGE_RETURNCODE_OK;=0A=
-+		}=0A=
- 		break;=0A=
- 	}=0A=
- 	case ARCMSR_MESSAGE_CLEAR_RQBUFFER: {=0A=
- 		uint8_t *pQbuffer =3D acb->rqbuffer;=0A=
- =0A=
-+		arcmsr_clear_iop2drv_rqueue_buffer(acb);=0A=
- 		spin_lock_irqsave(&acb->rqbuffer_lock, flags);=0A=
--		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {=0A=
--			acb->acb_flags &=3D ~ACB_F_IOPDATA_OVERFLOW;=0A=
--			arcmsr_iop_message_read(acb);=0A=
--		}=0A=
- 		acb->acb_flags |=3D ACB_F_MESSAGE_RQBUFFER_CLEARED;=0A=
- 		acb->rqbuf_firstindex =3D 0;=0A=
- 		acb->rqbuf_lastindex =3D 0;=0A=
-@@ -3111,32 +2940,25 @@ arcmsr_iop_message_xfer(struct AdapterCo=0A=
- 	}=0A=
- 	case ARCMSR_MESSAGE_CLEAR_WQBUFFER: {=0A=
- 		uint8_t *pQbuffer =3D acb->wqbuffer;=0A=
--		if (acb->fw_flag =3D=3D FW_DEADLOCK) {=0A=
--			pcmdmessagefld->cmdmessage.ReturnCode =3D=0A=
--			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;=0A=
--		} else {=0A=
--			pcmdmessagefld->cmdmessage.ReturnCode =3D=0A=
--			ARCMSR_MESSAGE_RETURNCODE_OK;=0A=
--		}=0A=
- 		spin_lock_irqsave(&acb->wqbuffer_lock, flags);=0A=
--		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {=0A=
--			acb->acb_flags &=3D ~ACB_F_IOPDATA_OVERFLOW;=0A=
--			arcmsr_iop_message_read(acb);=0A=
--		}=0A=
- 		acb->acb_flags |=3D (ACB_F_MESSAGE_WQBUFFER_CLEARED |=0A=
- 		ACB_F_MESSAGE_WQBUFFER_READED);=0A=
- 		acb->wqbuf_firstindex =3D 0;=0A=
- 		acb->wqbuf_lastindex =3D 0;=0A=
- 		memset(pQbuffer, 0, ARCMSR_MAX_QBUFFER);=0A=
- 		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);=0A=
-+		if (acb->fw_flag =3D=3D FW_DEADLOCK) {=0A=
-+			pcmdmessagefld->cmdmessage.ReturnCode =3D=0A=
-+			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;=0A=
-+		} else {=0A=
-+			pcmdmessagefld->cmdmessage.ReturnCode =3D=0A=
-+			ARCMSR_MESSAGE_RETURNCODE_OK;=0A=
-+		}=0A=
- 		break;=0A=
- 	}=0A=
- 	case ARCMSR_MESSAGE_CLEAR_ALLQBUFFER: {=0A=
- 		uint8_t *pQbuffer;=0A=
--		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {=0A=
--			acb->acb_flags &=3D ~ACB_F_IOPDATA_OVERFLOW;=0A=
--			arcmsr_iop_message_read(acb);=0A=
--		}=0A=
-+		arcmsr_clear_iop2drv_rqueue_buffer(acb);=0A=
- 		spin_lock_irqsave(&acb->rqbuffer_lock, flags);=0A=
- 		acb->acb_flags |=3D ACB_F_MESSAGE_RQBUFFER_CLEARED;=0A=
- 		acb->rqbuf_firstindex =3D 0;=0A=
-@@ -3376,11 +3198,10 @@ arcmsr_hbaA_get_config(struct AdapterCon=0A=
- 		iop_device_map++;=0A=
- 		count--;=0A=
- 	}=0A=
--	pr_notice("Areca RAID Controller%d: F/W %s "=0A=
--		"& Model %s\n",=0A=
-+	pr_notice("Areca RAID Controller%d: Model %s, F/W %s\n",=0A=
- 		acb->host->host_no,=0A=
--		acb->firm_version,=0A=
--		acb->firm_model);=0A=
-+		acb->firm_model,=0A=
-+		acb->firm_version);=0A=
- 	acb->signature =3D readl(&reg->message_rwbuffer[0]);=0A=
- 	acb->firm_request_len =3D readl(&reg->message_rwbuffer[1]);=0A=
- 	acb->firm_numbers_queue =3D readl(&reg->message_rwbuffer[2]);=0A=
-@@ -3472,11 +3293,10 @@ arcmsr_hbaB_get_config(struct AdapterCon=0A=
- 		count--;=0A=
- 	}=0A=
- =0A=
--	pr_notice("Areca RAID Controller%d: "=0A=
--		"F/W %s & Model %s\n",=0A=
-+	pr_notice("Areca RAID Controller%d: Model %s, F/W %s\n",=0A=
- 		acb->host->host_no,=0A=
--		acb->firm_version,=0A=
--		acb->firm_model);=0A=
-+		acb->firm_model,=0A=
-+		acb->firm_version);=0A=
- =0A=
- 	acb->signature =3D readl(&reg->message_rwbuffer[1]);=0A=
- 	/*firm_signature,1,00-03*/=0A=
-@@ -3543,11 +3363,10 @@ arcmsr_hbaC_get_config(struct AdapterCon=0A=
- 		iop_firm_version++;=0A=
- 		count--;=0A=
- 	}=0A=
--	pr_notice("Areca RAID Controller%d: F/W %s & "=0A=
--	"Model %s\n",=0A=
--	pACB->host->host_no,=0A=
--	pACB->firm_version,=0A=
--	pACB->firm_model);=0A=
-+	pr_notice("Areca RAID Controller%d: Model %s, F/W %s\n",=0A=
-+		pACB->host->host_no,=0A=
-+		pACB->firm_model,=0A=
-+		pACB->firm_version);=0A=
- 	pACB->firm_request_len =3D readl(&reg->msgcode_rwbuffer[1]);=0A=
- 	pACB->firm_numbers_queue =3D readl(&reg->msgcode_rwbuffer[2]);=0A=
- 	pACB->firm_sdram_size =3D readl(&reg->msgcode_rwbuffer[3]);=0A=
-@@ -3686,8 +3505,10 @@ arcmsr_hbaD_get_config(struct AdapterCon=0A=
- 	acb->firm_hd_channels =3D readl(&reg->msgcode_rwbuffer[5]);=0A=
- 	/*firm_hd_channels,4,16-19*/=0A=
- 	acb->firm_cfg_version =3D readl(&reg->msgcode_rwbuffer[25]);=0A=
--	pr_notice("Areca RAID Controller%d: F/W %s & Model %s\n",=0A=
--	acb->host->host_no, acb->firm_version, acb->firm_model);=0A=
-+	pr_notice("Areca RAID Controller%d: Model %s, F/W %s\n",=0A=
-+		acb->host->host_no,=0A=
-+		acb->firm_model,=0A=
-+		acb->firm_version);=0A=
- 	return true;=0A=
- }=0A=
- =0A=
-@@ -4026,6 +3847,7 @@ arcmsr_polling_ccbdone(struct AdapterCon=0A=
- 	}=0A=
- 	case ACB_ADAPTER_TYPE_D: {=0A=
- 		rtn =3D arcmsr_hbaD_polling_ccbdone(acb, poll_ccb);=0A=
-+		break;=0A=
- 	}=0A=
- 	}=0A=
- 	return rtn;=0A=
-@@ -4227,7 +4049,6 @@ arcmsr_hbaA_request_device_map(struct Ad=0A=
- 		mod_timer(&acb->eternal_timer, jiffies +=0A=
- 			msecs_to_jiffies(6 * HZ));=0A=
- 	}=0A=
--	return;=0A=
- }=0A=
- =0A=
- static void=0A=
-@@ -4258,7 +4079,6 @@ arcmsr_hbaB_request_device_map(struct Ad=0A=
- 		mod_timer(&acb->eternal_timer, jiffies +=0A=
- 			msecs_to_jiffies(6 * HZ));=0A=
- 	}=0A=
--	return;=0A=
- }=0A=
- =0A=
- static void=0A=
-@@ -4291,7 +4111,6 @@ arcmsr_hbaC_request_device_map(struct Ad=0A=
- 		mod_timer(&acb->eternal_timer, jiffies +=0A=
- 			msecs_to_jiffies(6 * HZ));=0A=
- 	}=0A=
--	return;=0A=
- }=0A=
- =0A=
- static void=0A=
-@@ -4321,7 +4140,6 @@ arcmsr_hbaD_request_device_map(struct Ad=0A=
- 		mod_timer(&acb->eternal_timer, jiffies +=0A=
- 			msecs_to_jiffies(6 * HZ));=0A=
- 	}=0A=
--	return;=0A=
- }=0A=
- =0A=
- static void=0A=
-@@ -4344,6 +4162,7 @@ arcmsr_request_device_map(unsigned long=0A=
- 		}=0A=
- 		case ACB_ADAPTER_TYPE_D: {=0A=
- 			arcmsr_hbaD_request_device_map(acb);=0A=
-+			break;=0A=
- 		}=0A=
- 	}=0A=
- }=0A=
-@@ -4451,23 +4270,45 @@ arcmsr_clear_doorbell_queue_buffer(struc=0A=
- 	case ACB_ADAPTER_TYPE_C: {=0A=
- 		struct MessageUnit_C *reg =3D=0A=
- 			(struct MessageUnit_C *)acb->pmuC;=0A=
--		uint32_t outbound_doorbell;=0A=
-+		uint32_t outbound_doorbell, i;=0A=
- 		/* empty doorbell Qbuffer if door bell ringed */=0A=
- 		outbound_doorbell =3D readl(&reg->outbound_doorbell);=0A=
- 		writel(outbound_doorbell, &reg->outbound_doorbell_clear);=0A=
- 		writel(ARCMSR_HBCMU_DRV2IOP_DATA_READ_OK,=0A=
- 			&reg->inbound_doorbell);=0A=
-+		for (i=3D0; i < 200; i++) {=0A=
-+			msleep(10);=0A=
-+			outbound_doorbell =3D readl(&reg->outbound_doorbell);=0A=
-+			if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK) {=0A=
-+				writel(outbound_doorbell,=0A=
-+				&reg->outbound_doorbell_clear);=0A=
-+				writel(ARCMSR_HBCMU_DRV2IOP_DATA_READ_OK,=0A=
-+				&reg->inbound_doorbell);=0A=
-+			} else=0A=
-+				break;=0A=
-+		}=0A=
- 		}=0A=
- 		break;=0A=
- 	case ACB_ADAPTER_TYPE_D: {=0A=
- 		struct MessageUnit_D __iomem *reg =3D=0A=
- 			(struct MessageUnit_D *)acb->pmuD;=0A=
--		uint32_t outbound_doorbell;=0A=
-+		uint32_t outbound_doorbell, i;=0A=
- 		/* empty doorbell Qbuffer if door bell ringed */=0A=
- 		outbound_doorbell =3D readl(reg->outbound_doorbell);=0A=
- 		writel(outbound_doorbell, reg->outbound_doorbell);=0A=
- 		writel(ARCMSR_ARC1214_DRV2IOP_DATA_OUT_READ,=0A=
- 			reg->inbound_doorbell);=0A=
-+		for (i=3D0; i < 200; i++) {=0A=
-+			msleep(10);=0A=
-+			outbound_doorbell =3D readl(reg->outbound_doorbell);=0A=
-+			if (outbound_doorbell & ARCMSR_ARC1214_IOP2DRV_DATA_WRITE_OK) {=0A=
-+				writel(outbound_doorbell,=0A=
-+				reg->outbound_doorbell);=0A=
-+				writel(ARCMSR_ARC1214_DRV2IOP_DATA_OUT_READ,=0A=
-+				reg->inbound_doorbell);=0A=
-+			} else=0A=
-+				break;=0A=
-+		}=0A=
- 		break;=0A=
- 	}=0A=
- 	}=0A=
-@@ -4901,12 +4742,13 @@ static const char=0A=
- 		type =3D "SAS";=0A=
- 		break;=0A=
- 	default:=0A=
--		type =3D "X-TYPE";=0A=
-+		type =3D "unknown";=0A=
-+		raid6 =3D	0;=0A=
- 		break;=0A=
- 	}=0A=
--	sprintf(buf, "Areca %s Host Adapter RAID Controller%s\n %s",=0A=
--			type, raid6 ? "( RAID6 capable)" : "",=0A=
--			ARCMSR_DRIVER_VERSION);=0A=
-+	sprintf(buf, "Areca %s Host Adapter RAID Controller%s\narcmsr "=0A=
-+		"version %s\n",type, raid6 ? "( RAID6 capable)" : "",=0A=
-+		ARCMSR_DRIVER_VERSION);=0A=
- 	return buf;=0A=
- }=0A=
- =0A=
+------------------------------------------------------------------------
 
-------=_NextPart_000_002F_01CEA257.BFE89BB0--
+rcu: Throttle rcu_try_advance_all_cbs() execution
+
+The rcu_try_advance_all_cbs() function is invoked on each attempted
+entry to and every exit from idle.  If this function determines that
+there are callbacks ready to invoke, the caller will invoke the RCU
+core, which in turn will result in a pair of context switches.  If a
+CPU enters and exits idle extremely frequently, this can result in
+an excessive number of context switches and high CPU overhead.
+
+This commit therefore causes rcu_try_advance_all_cbs() to throttle
+itself, refusing to do work more than once per jiffy.
+
+Reported-by: Tibor Billes <tbilles@gmx.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 5f97eab..52be957 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -104,6 +104,8 @@ struct rcu_dynticks {
+ 				    /* idle-period nonlazy_posted snapshot. */
+ 	unsigned long last_accelerate;
+ 				    /* Last jiffy CBs were accelerated. */
++	unsigned long last_advance_all;
++				    /* Last jiffy CBs were all advanced. */
+ 	int tick_nohz_enabled_snap; /* Previously seen value from sysfs. */
+ #endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
+ };
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index a538e73..2205751 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1630,17 +1630,23 @@ module_param(rcu_idle_lazy_gp_delay, int, 0644);
+ extern int tick_nohz_enabled;
+ 
+ /*
+- * Try to advance callbacks for all flavors of RCU on the current CPU.
+- * Afterwards, if there are any callbacks ready for immediate invocation,
+- * return true.
++ * Try to advance callbacks for all flavors of RCU on the current CPU, but
++ * only if it has been awhile since the last time we did so.  Afterwards,
++ * if there are any callbacks ready for immediate invocation, return true.
+  */
+ static bool rcu_try_advance_all_cbs(void)
+ {
+ 	bool cbs_ready = false;
+ 	struct rcu_data *rdp;
++	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
+ 	struct rcu_node *rnp;
+ 	struct rcu_state *rsp;
+ 
++	/* Exit early if we advanced recently. */
++	if (jiffies == rdtp->last_advance_all)
++		return 0;
++	rdtp->last_advance_all = jiffies;
++
+ 	for_each_rcu_flavor(rsp) {
+ 		rdp = this_cpu_ptr(rsp->rda);
+ 		rnp = rdp->mynode;
 
