@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab3HZOSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 10:18:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18893 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab3HZOSw (ORCPT
+	id S1756410Ab3HZOTi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 10:19:38 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:38886 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab3HZOTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 10:18:52 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=wom5GMh1gUkA:10 a=K5CnSjgaiocA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=HYTzF2Oq1SkA:10 a=1psFuYWTBHozATT-7xkA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 26 Aug 2013 10:18:49 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [guv 04/16] core: Convert __get_cpu_var uses
-Message-ID: <20130826141849.GA6276@home.goodmis.org>
-References: <20130823190135.726207430@linux.com>
- <00000140ac8e2bdd-f0151a00-88ca-4d0b-adbc-007c514b6856-000000@email.amazonses.com>
+	Mon, 26 Aug 2013 10:19:36 -0400
+Message-ID: <521B63F7.9050409@linux.vnet.ibm.com>
+Date: Mon, 26 Aug 2013 16:19:35 +0200
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000140ac8e2bdd-f0151a00-88ca-4d0b-adbc-007c514b6856-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "LF.Tan" <lftan.linux@gmail.com>
+CC: Frantisek Hrbata <fhrbata@redhat.com>, linux-kernel@vger.kernel.org,
+        jstancek@redhat.com, keescook@chromium.org,
+        Christophe Guillon <christophe.guillon@st.com>, rusty@rustcorp.com.au,
+        linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        mgahagan@redhat.com, agospoda@redhat.com
+Subject: Re: [RFC PATCH 0/4] add support for gcov format introduced in gcc
+ 4.7
+References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com> <52177AD7.1030709@linux.vnet.ibm.com> <20130823161532.GA2336@localhost.localdomain> <CAFiDJ5_S9Y_9t4kmkh5a9vK8bZFf1ZispTiWxj7PybxJpvYZ3w@mail.gmail.com>
+In-Reply-To: <CAFiDJ5_S9Y_9t4kmkh5a9vK8bZFf1ZispTiWxj7PybxJpvYZ3w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082614-0542-0000-0000-0000063E6C7D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 26.08.2013 13:39, LF.Tan wrote:
+> Hi all
+> 
+> I am interested to enable Gcov on my platform (on a target board). I
+> have tried to apply the 4 patches submitted by Frantisek Hrbata. But,
+> the *.gcda is always empty. Note, I am using GCC 4.7.3.
+> 
+> I have followed the steps in Documentation/gcov.txt. I've mounted the
+> NFS filesystem and it has access to the kernel build directory on host
+> machine.The path for the kernel source in host and target are same.
+> 
+> Let said my kernel module is under drivers/misc,
+> drivers/misc/module.ko. Turn on Gcov in drivers/misc/Makefile.
+> 
+> 1. mount -t debugfs none /sys/kernel/debug/
+> 2. insmod <PATH>/module.ko
+> 3. Perform some actions to excute code in module.ko
+> 4. rmmod <PATH>/module.ko
+> 5. Check /sys/kernel/debug/gcov/<PATH>/drivers/misc/. There is a soft
+> link of module.gcno (I check the soft link is working), but
+> module.gcda is empty.
 
-As Tejun said, each commit needs its own change log. Never expect a
-change lgo from another commit to be read for changes in this commit.
+Are you sure they are empty? .gcda files report a file size of 0 as many
+virtual files do, but you can read data from them nevertheless. You could
+try running "cat" on them to copy their contents for example.
 
-> Index: linux/kernel/events/callchain.c
-> Index: linux/kernel/events/core.c
-> Index: linux/kernel/printk/printk.c
-> Index: linux/kernel/rcutree.c
-> Index: linux/kernel/sched/cputime.c
-> Index: linux/kernel/sched/fair.c
-> Index: linux/kernel/sched/rt.c
-> Index: linux/kernel/time/tick-sched.c
-> Index: linux/net/ipv4/syncookies.c
-> Index: linux/net/ipv6/syncookies.c
-> Index: linux/block/blk-iopoll.c
-> Index: linux/block/blk-softirq.c
-> Index: linux/fs/fscache/object.c
-> Index: linux/include/linux/kernel_stat.h
-> Index: linux/include/linux/kprobes.h
-> Index: linux/include/linux/percpu.h
-> Index: linux/include/net/netfilter/nf_conntrack.h
-> Index: linux/kernel/hrtimer.c
-> Index: linux/kernel/irq_work.c
-> Index: linux/kernel/rcutree_plugin.h
-> Index: linux/kernel/sched/clock.c
-> Index: linux/kernel/sched/sched.h
-> Index: linux/kernel/smp.c
-> Index: linux/kernel/softirq.c
-> Index: linux/kernel/time/tick-common.c
-> Index: linux/kernel/time/tick-oneshot.c
-> Index: linux/kernel/trace/ftrace.c
-> Index: linux/kernel/user-return-notifier.c
-> Index: linux/kernel/watchdog.c
-> Index: linux/lib/radix-tree.c
-> Index: linux/mm/memcontrol.c
-> Index: linux/mm/memory-failure.c
-> Index: linux/mm/page-writeback.c
-> Index: linux/mm/swap.c
-> Index: linux/mm/vmalloc.c
-> Index: linux/mm/vmstat.c
-> Index: linux/net/core/dev.c
-> Index: linux/net/core/drop_monitor.c
-> Index: linux/net/core/skbuff.c
-> Index: linux/net/ipv4/tcp_output.c
-> Index: linux/net/rds/ib_rdma.c
-> Index: linux/kernel/timer.c
-> Index: linux/kernel/trace/trace.c
+> Any step is incorrect or missing? Or anyone know how to enable GCOV on
+> target board? Please advice.
+> I would like to enable GCOV in arch/ code as well.
+> Thank you very much.
 
-This patch needs to be broken up per subsystem. Or are you just looking
-for acks from all the maintainers here and you'll pull it in. If that's
-the case, you should have Cc'd each of the maintainers of the files that
-this touches.
-
--- Steve
+-- 
+Peter Oberparleiter
+Linux on System z Development - IBM Germany
 
