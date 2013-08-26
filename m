@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab3HZE4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 00:56:20 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62329 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab3HZE4T (ORCPT
+	id S1755838Ab3HZF2z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 01:28:55 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:53050 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505Ab3HZF2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 00:56:19 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <521ADFEF.2010307@roeck-us.net>
-Date: Sun, 25 Aug 2013 21:56:15 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 26 Aug 2013 01:28:54 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Steve Cotton <steve@s.cotton.clara.co.uk>
-Subject: Re: Commit 9a11899 (USB: OHCI: add missing PCI PM callbacks to ohci-pci.c)
- breaks several builds
-References: <521ACBEF.60006@roeck-us.net> <521AD347.1090601@roeck-us.net> <20130826042653.GA2778@kroah.com>
-In-Reply-To: <20130826042653.GA2778@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1376388505-30233-2-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1376388505-30233-1-git-send-email-l.majewski@samsung.com>
+	<1376388505-30233-2-git-send-email-l.majewski@samsung.com>
+Date: Mon, 26 Aug 2013 10:58:53 +0530
+Message-ID: <CAKohpo=m=smN-qk45dSdq8SOwAyqtE1xLV-Y85GaCbVhBDsmjQ@mail.gmail.com>
+Subject: Re: [PATCH v7 1/7] cpufreq: Add boost frequency support in core
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        "R, Durgadoss" <durgadoss.r@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2013 09:26 PM, Greg Kroah-Hartman wrote:
-> On Sun, Aug 25, 2013 at 09:02:15PM -0700, Guenter Roeck wrote:
->> On 08/25/2013 08:30 PM, Guenter Roeck wrote:
->>> Broken builds:
->>>       mips:ath79_defconfig
->>>       parisc:defconfig
->>>       sparc32:defconfig
->>>       sparc64:defconfig
->>>       tile:defconfig
->>>
->> Add:
->> 	powerpc:ppc64e_defconfig
->> 	powerpc:cell_defconfig
->> 	powerps:maple_defconfig
->>
->> That makes it 8 out of 82 builds, or roughly 10% of all builds.
->>
->> My qemu test build for powerpc (which has its own config file)  fails as well :(.
->
-> Ugh, I got no reports of this from linux-next or the 0-day build system,
-> odd.
->
+Some minor nitpicking, nothing much :)
 
-Maybe the build system isn't as comprehensive as mine, or it just takes a bit longer.
-My system caught it because you updated linux-stable to 3.11-rc7, which triggers all builds.
+On 13 August 2013 15:38, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> +static int cpufreq_boost_set_sw(int state)
+> +{
+> +       struct cpufreq_frequency_table *freq_table;
+> +       struct cpufreq_policy *policy;
+> +       int ret = -EINVAL;
+> +
+> +       list_for_each_entry(policy, &cpufreq_policy_list, policy_list) {
+> +               freq_table = cpufreq_frequency_get_table(policy->cpu);
+> +               if (freq_table) {
+> +                       ret = cpufreq_frequency_table_cpuinfo(policy,
+> +                                                       freq_table);
+> +                       if (!ret) {
+> +                               policy->user_policy.max = policy->max;
+> +                               __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
+> +                       }
 
-The functions are only declared if CONFIG_PM is defined, yet are called unconditionally.
-This means the patch breaks in all configurations where CONFIG_PM is undefined and
-CONFIG_USB_OHCI_HCD_PCI is defined.
+In case ret wasn't 0 (i.e. we failed), we should print an error
+message and break
+our loop ?
 
-Add this to the agenda at the kernel summit: We need more automated test coverage.
-It is a bit scary that my little pc-based server farm catches problems like this
-faster than everything else out there. And it isn't even the kind of problem
-I am looking for, but rather a side effect of the builds I am running.
+> +               }
+> +       }
+> +
+> +       return ret;
+> +}
+> +
+> +int cpufreq_boost_trigger_state(int state)
+> +{
+> +       unsigned long flags;
+> +       int ret = 0;
+> +
+> +       if (cpufreq_driver->boost_enabled == state)
+> +               return 0;
+> +
+> +       write_lock_irqsave(&cpufreq_driver_lock, flags);
+> +       cpufreq_driver->boost_enabled = state;
+> +       write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +
+> +       ret = cpufreq_driver->set_boost(state);
+> +       if (ret) {
+> +               write_lock_irqsave(&cpufreq_driver_lock, flags);
+> +               cpufreq_driver->boost_enabled = !state;
+> +               write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +
+> +               pr_err("%s: Cannot %s BOOST\n", __func__,
+> +                      state ? "enabled" : "disabled");
 
-Guenter
+s/enabled/enable and s/disabled/disable
 
+> +       }
+> +
+> +       return ret;
+> +}
+> +
