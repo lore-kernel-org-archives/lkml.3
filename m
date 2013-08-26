@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab3HZWU0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:20:26 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:42443 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab3HZWT1 (ORCPT
+	id S1752852Ab3HZWUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:20:47 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:63908 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685Ab3HZWTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:19:27 -0400
+	Mon, 26 Aug 2013 18:19:23 -0400
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: lkml <linux-kernel@vger.kernel.org>,
@@ -19,9 +19,9 @@ Cc: lkml <linux-kernel@vger.kernel.org>,
         James Bottomley <JBottomley@Parallels.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Nicholas Bellinger <nab@daterainc.com>
-Subject: [PATCH-v2 7/9] target: Enable EXTENDED_COPY setup in spc_parse_cdb
-Date: Mon, 26 Aug 2013 22:03:06 +0000
-Message-Id: <1377554588-28394-8-git-send-email-nab@daterainc.com>
+Subject: [PATCH-v2 5/9] target: Avoid non-existent tg_pt_gp_mem in target_alua_state_check
+Date: Mon, 26 Aug 2013 22:03:04 +0000
+Message-Id: <1377554588-28394-6-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1377554588-28394-1-git-send-email-nab@daterainc.com>
 References: <1377554588-28394-1-git-send-email-nab@daterainc.com>
@@ -31,8 +31,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@daterainc.com>
 
-Setup up the se_cmd->execute_cmd() pointers for EXTENDED_COPY and
-RECEIVE_COPY_RESULTS handling within spc_parse_cdb()
+This patch adds an check for a non-existent port->sep_alua_tg_pt_gp_mem
+within target_alua_state_check(), which is not present for internally
+dispatched EXTENDED_COPY WRITE I/O to the destination target port.
 
 Cc: Christoph Hellwig <hch@lst.de>
 Cc: Hannes Reinecke <hare@suse.de>
@@ -44,38 +45,23 @@ Cc: James Bottomley <JBottomley@Parallels.com>
 Cc: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
 ---
- drivers/target/target_core_spc.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/target/target_core_alua.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/target/target_core_spc.c b/drivers/target/target_core_spc.c
-index bd16a93..894e83b 100644
---- a/drivers/target/target_core_spc.c
-+++ b/drivers/target/target_core_spc.c
-@@ -35,7 +35,7 @@
- #include "target_core_alua.h"
- #include "target_core_pr.h"
- #include "target_core_ua.h"
--
-+#include "target_core_xcopy.h"
- 
- static void spc_fill_alua_data(struct se_port *port, unsigned char *buf)
- {
-@@ -1252,8 +1252,14 @@ spc_parse_cdb(struct se_cmd *cmd, unsigned int *size)
- 		*size = (cdb[6] << 24) | (cdb[7] << 16) | (cdb[8] << 8) | cdb[9];
- 		break;
- 	case EXTENDED_COPY:
--	case READ_ATTRIBUTE:
-+		*size = get_unaligned_be32(&cdb[10]);
-+		cmd->execute_cmd = target_do_xcopy;
-+		break;
- 	case RECEIVE_COPY_RESULTS:
-+		*size = get_unaligned_be32(&cdb[10]);
-+		cmd->execute_cmd = target_do_receive_copy_results;
-+		break;
-+	case READ_ATTRIBUTE:
- 	case WRITE_ATTRIBUTE:
- 		*size = (cdb[10] << 24) | (cdb[11] << 16) |
- 		       (cdb[12] << 8) | cdb[13];
+diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
+index 5403186..ea928c4 100644
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -557,6 +557,9 @@ target_alua_state_check(struct se_cmd *cmd)
+ 	 * a ALUA logical unit group.
+ 	 */
+ 	tg_pt_gp_mem = port->sep_alua_tg_pt_gp_mem;
++	if (!tg_pt_gp_mem)
++		return 0;
++
+ 	spin_lock(&tg_pt_gp_mem->tg_pt_gp_mem_lock);
+ 	tg_pt_gp = tg_pt_gp_mem->tg_pt_gp;
+ 	out_alua_state = atomic_read(&tg_pt_gp->tg_pt_gp_alua_access_state);
 -- 
 1.7.2.5
 
