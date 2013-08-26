@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab3HZQyy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 12:54:54 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:62158 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab3HZQyw (ORCPT
+	id S1757120Ab3HZQ5j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 12:57:39 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46112 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab3HZQ5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 12:54:52 -0400
-From: Gabriel de Perthuis <g2p.code@gmail.com>
-To: Kent Overstreet <kmo@daterainc.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Gabriel de Perthuis <g2p.code@gmail.com>
-Subject: [PATCH] bcache: Downgrade "device already registered" to pr_debug
-Date: Mon, 26 Aug 2013 18:54:10 +0200
-Message-Id: <1377536050-22925-1-git-send-email-g2p.code@gmail.com>
-X-Mailer: git-send-email 1.8.4.rc0.5.g48765cc
-In-Reply-To: <kvfvst$j12$2@ger.gmane.org>
-References: <kvfvst$j12$2@ger.gmane.org>
+	Mon, 26 Aug 2013 12:57:38 -0400
+Message-ID: <521B88FE.4070000@wwwdotorg.org>
+Date: Mon, 26 Aug 2013 10:57:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Fabian Vogt <fabian@ritter-vogt.de>
+CC: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
+        linus.walleij@linaro.org, grant.likely@linaro.org, pawel.moll@arm.com
+Subject: Re: [PATCH V3] gpio: New driver for LSI ZEVIO SoCs
+References: <1375879989-18606-1-git-send-email-fabian@ritter-vogt.de> <5217BB73.8050907@wwwdotorg.org> <op.w2d04ftpu7prd4@fabians-laptop.fritz.box>
+In-Reply-To: <op.w2d04ftpu7prd4@fabians-laptop.fritz.box>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-People tended to see:
+On 08/25/2013 01:44 PM, Fabian Vogt wrote:
+> Hi,
+> 
+>> On 08/07/2013 06:53 AM, Fabian Vogt wrote:
+>>> This driver supports the GPIO controller found in LSI ZEVIO SoCs.
+>>> It has been successfully tested on a TI nspire CX calculator.
+>>
+>>> diff --git a/Documentation/devicetree/bindings/gpio/gpio-zevio.txt
+>>> b/Documentation/devicetree/bindings/gpio/gpio-zevio.txt
+>>
+>>> +Zevio GPIO controller
+>>> +
+>>> +Required properties:
+>>> +- compatible = "lsi,zevio-gpio"
+>>
+>> Is there only one zevio chip, or a series? Is "zevio" the full name of
+>> the chip, including any version number?
+>
+> We don't know, it's a relableled chip with
+> TI-NSPIRE / L9A0702 / TI-NS2006A-0 / LSI LOGIC / ZEVIO / U 0714 /
+> WYJ14052-1
+> on it. But this driver should match the other drivers (lsi,zevio-intc,
+> lsi,zevio-timer).
 
-    (info) bcache: register_bcache() error opening /dev/blah: device already registered
+OK, I guess that's fine then. I suppose if we find "zevio2" chips, we
+can always use that for the compatible value later.
 
-as more problematic than it really is.  Change it to:
+>>> +- reg = <BASEADDR SIZE>
+>>> +- #gpio-cells = <2>
+>>> +- gpio-controller;
+>>> +
+>>> +Optional:
+>>> +- #ngpios = <32>: Number of GPIOs. Defaults to 32 if absent
+>>
+>> Perhaps one can derive that from the compatible value? The fact this
+>> property exists implies there's more than one zevio chip, so perhaps
+>> each should have an explicit compatible value described above?
+>
+> I added it just for someone who maybe needs it. It's only two lines and
+> maybe
+> it'll be helpful for someone. We don't know whether some similiar or
+> this controller
+> exist in different configurations (pin count, section sice, register
+> layout).
+> Also I hate hardcoded values which require a recompile to change..
 
-    (debug) bcache: register_bcache() device /dev/blah is already registered
-
-and don't return -EINVAL in this case.
-
-Signed-off-by: Gabriel de Perthuis <g2p.code@gmail.com>
----
- drivers/md/bcache/super.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index a41c681..b09e973 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1894,21 +1894,24 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 
- 	if (!(path = kstrndup(buffer, size, GFP_KERNEL)) ||
- 	    !(sb = kmalloc(sizeof(struct cache_sb), GFP_KERNEL)))
- 		goto err;
- 
--	err = "failed to open device";
- 	bdev = blkdev_get_by_path(strim(path),
- 				  FMODE_READ|FMODE_WRITE|FMODE_EXCL,
- 				  sb);
- 	if (IS_ERR(bdev)) {
- 		if (bdev == ERR_PTR(-EBUSY)) {
- 			bdev = lookup_bdev(strim(path));
--			if (!IS_ERR(bdev) && bch_is_open(bdev))
--				err = "device already registered";
--			else
--				err = "device busy";
-+			if (!IS_ERR(bdev) && bch_is_open(bdev)) {
-+				pr_debug("device %s is already registered",
-+					 path);
-+				goto out;
-+			}
-+			err = "device busy";
-+		} else {
-+			err = "failed to open device";
- 		}
- 		goto err;
- 	}
- 
- 	err = "failed to set blocksize";
--- 
-1.8.4.rc0.5.g48765cc
+If there's no reason for this property, I think we should remove it.
 
