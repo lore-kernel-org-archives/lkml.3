@@ -1,213 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab3HZPPv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 11:15:51 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:50928 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794Ab3HZPL2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 11:11:28 -0400
-From: Iker Pedrosa <ikerpedrosam@gmail.com>
-To: pavel@ucw.cz
-Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com,
-        justinmattock@gmail.com, harsh1kumar@gmail.com,
-        dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 08/24] Staging: winbond: reg: changed sleep function from msleep to usleep
-Date: Mon, 26 Aug 2013 17:10:07 +0200
-Message-Id: <1377529823-5116-9-git-send-email-ikerpedrosam@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1377529823-5116-1-git-send-email-ikerpedrosam@gmail.com>
-References: <1377529823-5116-1-git-send-email-ikerpedrosam@gmail.com>
+	id S1757381Ab3HZPQF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 11:16:05 -0400
+Received: from vm1.sequanux.org ([188.165.36.56]:33768 "EHLO vm1.sequanux.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757363Ab3HZPQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 11:16:01 -0400
+Date: Mon, 26 Aug 2013 17:15:57 +0200
+From: Simon Guinot <simon.guinot@sequanux.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCH v3] gpio: add GPIO support for F71882FG and F71889F
+Message-ID: <20130826151556.GD13942@kw.sim.vm.gnt>
+References: <1374486633-9737-1-git-send-email-simon.guinot@sequanux.org>
+ <CACRpkda2bH_TkFR6c0cXvjye4SmFWN5xuzQSO=NqBq8mNDgV0g@mail.gmail.com>
+ <20130801134632.GY9916@kw.sim.vm.gnt>
+ <51FA8440.7050507@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rqzD5py0kzyFAOWN"
+Content-Disposition: inline
+In-Reply-To: <51FA8440.7050507@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the documentation it is not recommended to use msleep for 1ms - 20ms because it may sleep longer than 20ms. So, it is recommended to use usleep instead.
 
-Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
----
- drivers/staging/winbond/reg.c | 52 +++++++++++++++++++++----------------------
- 1 file changed, 26 insertions(+), 26 deletions(-)
+--rqzD5py0kzyFAOWN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
-index 80b4b34..61916f5 100644
---- a/drivers/staging/winbond/reg.c
-+++ b/drivers/staging/winbond/reg.c
-@@ -890,9 +890,9 @@ void Uxx_power_on_procedure(struct hw_data *pHwData)
- 	else {
- 		Wb35Reg_WriteSync(pHwData, 0x03f4, 0xFF5807FF);
- 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0x80); /* regulator on only */
--		msleep(10);
-+		usleep(10000);
- 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xb8); /* REG_ON RF_RSTN on, and */
--		msleep(10);
-+		usleep(10000);
- 		ltmp = 0x4968;
- 		if ((pHwData->phy_type == RF_WB_242) ||
- 			(RF_WB_242_1 == pHwData->phy_type))
-@@ -905,7 +905,7 @@ void Uxx_power_on_procedure(struct hw_data *pHwData)
- 		Wb35Reg_ReadSync(pHwData, 0x03d0, &ltmp);
- 		loop = 500; /* Wait for 5 second */
- 		while (!(ltmp & 0x20) && loop--) {
--			msleep(10);
-+			usleep(10000);
- 			if (!Wb35Reg_ReadSync(pHwData, 0x03d0, &ltmp))
- 				break;
- 		}
-@@ -914,7 +914,7 @@ void Uxx_power_on_procedure(struct hw_data *pHwData)
- 	}
- 
- 	Wb35Reg_WriteSync(pHwData, 0x03b0, 1); /* Reset hardware first */
--	msleep(10);
-+	usleep(10000);
- 
- 	/* Set burst write delay */
- 	Wb35Reg_WriteSync(pHwData, 0x03f8, 0x7ff);
-@@ -1055,18 +1055,18 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 	case RF_AIROHA_2230:
- 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x07 << 20) | 0xE168E, 20);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(10);
-+		usleep(10000);
- 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse(al2230_rf_data[7], 20);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(10);
-+		usleep(10000);
- 	case RF_AIROHA_2230S:
- 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0x80); /* regulator on only */
--		msleep(10);
-+		usleep(10000);
- 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xa0); /* PLL_PD REF_PD set to 0 */
--		msleep(10);
-+		usleep(10000);
- 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xe0); /* MLK_EN */
- 		Wb35Reg_WriteSync(pHwData, 0x03b0, 1); /* Reset hardware first */
--		msleep(10);
-+		usleep(10000);
- 		/* ========================================================= */
- 
- 		/* The follow code doesn't use the burst-write mode */
-@@ -1077,15 +1077,15 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		Wb35Reg_WriteSync(pHwData, 0x105c, ltmp);
- 		pHwData->reg.BB50 |= 0x13; /* (MASK_IQCAL_MODE|MASK_CALIB_START) */
- 		Wb35Reg_WriteSync(pHwData, 0x1050, pHwData->reg.BB50);
--		msleep(5);
-+		usleep(5000);
- 
- 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01B0, 20);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 
- 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01E0, 20);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 
- 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01A0, 20);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
-@@ -1102,13 +1102,13 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* 2.4GHz */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x9ABA8F;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x3ABA8F;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x1ABA8F;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 
- 		/* 5GHz */
- 		Wb35Reg_WriteSync(pHwData, 0x03dc, 0x00000000);
-@@ -1119,20 +1119,20 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Write to register. number must less and equal than 16 */
- 		for (i = 0; i < number; i++)
- 			Wb35Reg_WriteSync(pHwData, 0x0864, pltmp[i]);
--		msleep(5);
-+		usleep(5000);
- 
- 		Wb35Reg_WriteSync(pHwData, 0x03dc, 0x00000080);
- 		pr_debug("* PLL_ON    high\n");
- 
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x9ABA8F;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x3ABA8F;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x12BACF;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		break;
- 	case RF_WB_242:
- 	case RF_WB_242_1:
-@@ -1147,11 +1147,11 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Calibration (1a.0). Synthesizer reset */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x0F<<24) | 0x00101E, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		/* Calibration (1a). VCO frequency calibration mode ; waiting 2msec VCO calibration time */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFE69c0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(2);
-+		usleep(2000);
- 
- 		/* ----- Calibration (2). TX baseband Gm-C filter auto-tuning */
- 		/* Calibration (2a). turn off ENCAL signal */
-@@ -1210,7 +1210,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(2);
-+		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
-@@ -1222,7 +1222,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(2);
-+		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
-@@ -1234,7 +1234,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(2);
-+		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
-@@ -1246,7 +1246,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(2);
-+		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
-@@ -1258,7 +1258,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* 0x00 0xF86100 ; 3E184   ; Switch RF chip to normal mode */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xF86100, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		break;
- 	}
- }
--- 
-1.8.1.2
+On Thu, Aug 01, 2013 at 08:52:32AM -0700, Guenter Roeck wrote:
+> On 08/01/2013 06:46 AM, Simon Guinot wrote:
+> >On Mon, Jul 29, 2013 at 05:59:08PM +0200, Linus Walleij wrote:
+> >>On Mon, Jul 22, 2013 at 11:50 AM, Simon Guinot
+> >><simon.guinot@sequanux.org> wrote:
+> >>
+> >>>This patch adds support for the GPIOs found on the Fintek super-I/O
+> >>>chips F71882FG and F71889F.
+> >>>
+> >>>A super-I/O is a legacy I/O controller embedded on x86 motherboards. It
+> >>>is used to connect the low-bandwidth devices. Among others functions t=
+he
+> >>>F71882FG/F71889F provides: a parallel port, two serial ports, a keyboa=
+rd
+> >>>controller, an hardware monitoring controller and some GPIO pins.
+> >>>
+> >>>Note that this super-I/Os are embedded on some Atom-based LaCie NASes.
+> >>>The GPIOs are used to control the LEDs and the hard drive power.
+> >>>
+> >>>Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
+> >>>---
+> >>>Changes since v2:
+> >>>- Remove useless NULL setters for driver data.
+> >
+> >Hi Linus,
+> >
+> >>
+> >>Given the recent discussion with Rafael I want to have an
+> >>extended discussion of this patch.
+> >>
+> >>It is my current understanding that:
+> >>
+> >>- It is possible to define the whereabouts of the SuperIO
+> >>   chips using ACPI
+> >
+> >Agreed.
+> >
+> >>- It is possible for developers to influence the source
+> >>   AML for the DSDT tables of these systems.
+> >
+> >I am not sure about that. Let's consider the LaCie x86-based boards.
+> >LaCie only adds a few devices on the top of a motherboard provided by
+> >an another manufacturer. In turns, this last gets a Super-I/O from an
+> >another manufacturer. In my understanding, the Super-I/O manufacturer is
+> >responsible for registering the PNP IDs (one per device functionality).
+> >
+> >LaCie may have enough leverage to obtain some modifications on the ACPI
+> >DSDT tables but about the PNP IDs registration, let's say it is less
+> >that certain. The problem is that LaCie don't have any contacts with the
+> >Super-I/O manufacturer.
+> >
+> >I have to say that all this process is not as easy as adding a node in
+> >a dts file.
+> >
+> >>- It is the proper thing to do.
+> >
+> >Yes, it may be.
+> >
+> >>- So we should atleast support ACPI probing with the
+> >>   port-based detection as a final fallback if all else fails.
+> >>
+> >>Why can I not get something like:
+> >>
+> >>#include <linux/acpi.h>
+> >>(...)
+> >>static const struct acpi_device_id gpio_acpi_match[] =3D {
+> >>         { "FOOBAR", 0 },
+> >
+> >After some checks on my boards, it appears that there is no PNP ID
+> >available for the Super-I/O GPIO functionality (or any others). Moreover
+> >I think this IDs don't have been registered to Microsoft by Fintech
+> >(the super-I/O manufacturer).
+> >
+> >How do you envisage the follow-up ?
+> >
+> >>         { }
+> >>};
+> >>MODULE_DEVICE_TABLE(acpi, gpio_acpi_match);
+> >>
+> >>static struct platform_driver gpio_driver =3D {
+> >>         (...)
+> >>         .driver         =3D {
+> >>                  (...)
+> >>                 .acpi_match_table =3D ACPI_PTR(gpio_acpi_match),
+> >>         },
+> >>};
+> >
+> >It seems to me that the ACPI probing is the easiest part. How do you see
+> >the ioport probing fallback ?
+> >
+> >I can only figure out broken solutions:
+> >
+> >1. From the init function, we could check that the PNP IDs are well
+> >    available in the ACPI DSDT tables before registering the platform
+> >    driver. If not, we could fall back on the ioport probing method.
+> >    I don't know if checking the DSDT tables is even possible. It is at
+> >    least weird and it defeats completely the purpos of acpi_match_table.
+> >2. In a late initcall, we could check that the driver is well
+> >    registered else fall back on the ioport detection.
+> >    As GPIOs may be needed early, I don't think this method is suitable.
+> >
+> >And I have no more ideas...
+> >
+> 3. Implement Super-IO detection in the the ACPI platform driver.
+>    If there is no ACPI device entry for a detected Super-IO chip's sub-fu=
+nction(s),
+>    fake it and create the respective platform device(s).
+>=20
+> Just as kludgy as your proposed solutions, but at least it would move Sup=
+er-IO detection
+> to one file and let all Super-IO drivers use the ACPI match table.
+>=20
+> Drawbacks:
+> - Only works for x86 (ie it would limit SuperIO drivers to x86). Not sure=
+ if that is
+>   a real limitation - are SuperIO chips used on other platforms ?
+> - It would require us to define fake PNP IDs for the various SuperIO func=
+tions.
+> - It may fail if a firmware / chip vendor ever adds real PNP IDs for the =
+various
+>   sub-functions and those start showing up in ACPI tables (maybe that doe=
+sn't matter
+>   as much as the drivers would have to be updated anyway to match the rea=
+l IDs).
 
+As an additional drawback, this solution involves systematic I/O port
+probing from the ACPI platform driver, even if the platform don't need
+it. This may increase the conflicts risk in comparison with probes from
+some end drivers (which are more likely built as modules and not loaded
+automatically). Except that, moving all this Super-I/O detection in a
+same place would be indeed a great benefit.
+
+Linus, how do you see the follow-up for the gpio-f7188x driver ? Let me
+know your advice.
+
+Thanks,
+
+Simon
+
+--rqzD5py0kzyFAOWN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlIbcSwACgkQgtp0PDeOcDqOBgCeOSM/6n9iGytEOjNGDlcf+KDt
+9jgAoJvOSmvekfNclXubIfMsTntPEj0H
+=pPW/
+-----END PGP SIGNATURE-----
+
+--rqzD5py0kzyFAOWN--
