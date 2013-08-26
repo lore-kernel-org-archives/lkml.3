@@ -1,103 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab3HZVaW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 17:30:22 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:55547 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873Ab3HZVaR (ORCPT
+	id S1753005Ab3HZVbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 17:31:11 -0400
+Received: from a9-99.smtp-out.amazonses.com ([54.240.9.99]:39197 "EHLO
+	a9-99.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752980Ab3HZVbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 17:30:17 -0400
-From: "Nicholas A. Bellinger" <nab@daterainc.com>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Kent Overstreet <kmo@daterainc.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Nicholas Bellinger <nab@daterainc.com>
-Subject: [PATCH-v3 12/13] target: Add compare_and_write_post() completion callback fall through
-Date: Mon, 26 Aug 2013 21:13:45 +0000
-Message-Id: <1377551626-27447-13-git-send-email-nab@daterainc.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1377551626-27447-1-git-send-email-nab@daterainc.com>
-References: <1377551626-27447-1-git-send-email-nab@daterainc.com>
+	Mon, 26 Aug 2013 17:31:10 -0400
+X-Greylist: delayed 591 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 17:31:09 EDT
+Message-ID: <00000140bc8091c8-9572e4f0-5ddd-4a19-abb9-ca11895b0175-000000@email.amazonses.com>
+User-Agent: quilt/0.50-1
+Date: Mon, 26 Aug 2013 21:21:17 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org
+Cc: linux-arch@vger.kernel.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [guv v2 03/31] Coccinelle script for __get_cpu_var conversion
+References: <20130826204138.307369532@linux.com>
+X-SES-Outgoing: 2013.08.26-54.240.9.99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@daterainc.com>
+Much of the work was done by this coccinelle script.
 
-This patch changes target_complete_ok_work() to fall through
-after calling the se_cmd->transport_complete_callback() ->
-compare_and_write_post() callback, by keying off the existance
-of SCF_COMPARE_AND_WRITE_POST.
+Wont catch everything (since coccinelle aborts when it no longer can make
+sense out of macros, sigh) but it covers a lot of ground.
 
-This is necessary because once SCF_COMPARE_AND_WRITE_POST has
-been set by compare_and_write_post(), the SCSI response needs
-to be sent via TFO->queue_status().
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Martin Petersen <martin.petersen@oracle.com>
-Cc: Chris Mason <chris.mason@fusionio.com>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
----
- drivers/target/target_core_sbc.c       |    3 ++-
- drivers/target/target_core_transport.c |   19 ++++++++++---------
- 2 files changed, 12 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
-index 4076828..bb1b42b 100644
---- a/drivers/target/target_core_sbc.c
-+++ b/drivers/target/target_core_sbc.c
-@@ -375,7 +375,8 @@ static sense_reason_t compare_and_write_callback(struct se_cmd *cmd)
- 	buf = kzalloc(cmd->data_length, GFP_KERNEL);
- 	if (!buf) {
- 		pr_err("Unable to allocate compare_and_write buf\n");
--		return TCM_OUT_OF_RESOURCES;
-+		ret = TCM_OUT_OF_RESOURCES;
-+		goto out;
- 	}
- 
- 	write_sg = kzalloc(sizeof(struct scatterlist) * cmd->t_data_nents,
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 672cb37..e53c59b 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1909,17 +1909,18 @@ static void target_complete_ok_work(struct work_struct *work)
- 		sense_reason_t rc;
- 
- 		rc = cmd->transport_complete_callback(cmd);
--		if (!rc)
-+		if (!rc && !(cmd->se_cmd_flags & SCF_COMPARE_AND_WRITE_POST)) {
- 			return;
-+		} else if (rc) {
-+			ret = transport_send_check_condition_and_sense(cmd,
-+						rc, 0);
-+			if (ret == -EAGAIN || ret == -ENOMEM)
-+				goto queue_full;
- 
--		ret = transport_send_check_condition_and_sense(cmd,
--					rc, 0);
--		if (ret == -EAGAIN || ret == -ENOMEM)
--			goto queue_full;
--
--		transport_lun_remove_cmd(cmd);
--		transport_cmd_check_stop_to_fabric(cmd);
--		return;
-+			transport_lun_remove_cmd(cmd);
-+			transport_cmd_check_stop_to_fabric(cmd);
-+			return;
-+		}
- 	}
- 
- 	switch (cmd->data_direction) {
--- 
-1.7.2.5
+Index: linux/scripts/coccinelle/convert/__get_cpu_var.cocci
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux/scripts/coccinelle/convert/__get_cpu_var.cocci	2013-08-22 14:41:13.976518846 -0500
+@@ -0,0 +1,70 @@
++// Convert all &__get_cpu_var to this_cpu_ptr
++//
++// _get_cpu_var is defined as:
++//
++// #define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
++//
++//&__get_cpu_var() is therefore
++//
++//	this_cpu_ptr(&var);
++//
++// The use of this_cpu_ptr() instead of __get_cpu_var clarifies
++// that we are relocating a per cpu offset and that there are
++// no get/put semantics involved.
++//
++//
++// Convert all &__get_cpu_vars (and also related functions)
++// to this_cpu_ptr(). Multiple transformations are provided
++// to be able to beautify the source a bit.
++//
++// Christoph Lameter <cl@linux.com> August 20, 2013
++//
++
++@A@ expression E; @@
++
++...
++-(&__get_cpu_var(E))
+++this_cpu_ptr(&E)
++...
++
++@B@ expression E; @@
++
++...
++-(&__raw_get_cpu_var(E))
+++__this_cpu_ptr(&E)
++...
++
++@C@ expression E; @@
++
++...
++-&__get_cpu_var(E)
+++this_cpu_ptr(&E)
++...
++
++@D@ expression E; @@
++
++...
++-&__raw_get_cpu_var(E)
+++__this_cpu_ptr(&E)
++...
++
++@A2@ expression E; @@
++
++-(&__get_cpu_var(E))
+++this_cpu_ptr(&E)
++
++@B2@ expression E; @@
++
++-(&__raw_get_cpu_var(E))
+++__this_cpu_ptr(&E)
++
++@C2@ expression E; @@
++
++-&__get_cpu_var(E)
+++this_cpu_ptr(&E)
++
++@D2@ expression E; @@
++
++-&__raw_get_cpu_var(E)
+++__this_cpu_ptr(&E)
++
 
