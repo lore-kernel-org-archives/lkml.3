@@ -1,90 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab3HZWL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:11:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58235 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923Ab3HZWL5 (ORCPT
+	id S1752636Ab3HZWMo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:12:44 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:35477 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184Ab3HZWMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:11:57 -0400
-Date: Mon, 26 Aug 2013 15:14:14 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Meelis Roos <mroos@linux.ee>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steve Cotton <steve@s.cotton.clara.co.uk>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] USB: OHCI: fix build error related to ohci_suspend/resume
-Message-ID: <20130826221414.GC10063@kroah.com>
-References: <20130826042653.GA2778@kroah.com>
- <Pine.LNX.4.44L0.1308261051340.1445-100000@iolanthe.rowland.org>
- <20130826153840.GA29862@kroah.com>
- <20130826160627.GA11307@roeck-us.net>
- <20130826165022.GA2113@kroah.com>
- <20130826171903.GA21675@roeck-us.net>
+	Mon, 26 Aug 2013 18:12:43 -0400
+Date: Mon, 26 Aug 2013 15:12:40 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] h8300/kernel/setup.c: add "linux/initrd.h" to pass
+ compiling
+Message-ID: <20130826221240.GA12075@roeck-us.net>
+References: <521B2E75.1040802@asianux.com>
+ <CAMuHMdVXJvLfmNLFFW=TBLOi2_mVyZy+kr46oM5GVz_PK-bbvA@mail.gmail.com>
+ <521B369B.4010602@asianux.com>
+ <CAMuHMdVYjtfV9-VdkbKwMecz_NJ9YcOdLYVfmcEXSypbZY_TkA@mail.gmail.com>
+ <521B39CA.8060303@asianux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130826171903.GA21675@roeck-us.net>
+In-Reply-To: <521B39CA.8060303@asianux.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 10:19:03AM -0700, Guenter Roeck wrote:
-> On Mon, Aug 26, 2013 at 09:50:22AM -0700, Greg Kroah-Hartman wrote:
-> > On Mon, Aug 26, 2013 at 09:06:27AM -0700, Guenter Roeck wrote:
-> > > On Mon, Aug 26, 2013 at 08:38:40AM -0700, Greg Kroah-Hartman wrote:
-> > > > On Mon, Aug 26, 2013 at 10:53:53AM -0400, Alan Stern wrote:
-> > > > > Commit 9a11899c5e69 (USB: OHCI: add missing PCI PM callbacks to
-> > > > > ohci-pci.c) added missing ohci_suspend and ohci_resume callback
-> > > > > pointers, but forgot that these callbacks are declared and defined
-> > > > > only when CONFIG_PM is enabled.
-> > > > > 
-> > > > > This patch adds a preprocessor conditional to avoid build errors when
-> > > > > PM is disabled.
-> > > > > 
-> > > > > Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-> > > > > 
-> > > > > ---
-> > > > 
-> > > > Guenter and Meelis, does the patch below fix the problem for you?
-> > > > 
-> > > Tested-by: Guenter Roeck <linux@roeck-us.net>
-> > > 
-> > > Previously failing builds:
-> > > 	mips:ath79_defconfig
-> > > 	powerpc:ppc64e_defconfig
-> > > 	powerpc:cell_defconfig
-> > > 	powerpc:maple_defconfig
-> > > 	parisc:defconfig
-> > > 	tile:defconfig
-> > > 	sparc32:defconfig
-> > > 	sparc64:defconfig
-> > > 
-> > > 	as well as the powerpc qemu test (with the config file used
-> > > 	by the yocto project)
-> > > 
-> > > All builds pass with the patch applied, as does the qemu test.
+On Mon, Aug 26, 2013 at 07:19:38PM +0800, Chen Gang wrote:
+> On 08/26/2013 07:08 PM, Geert Uytterhoeven wrote:
+> > On Mon, Aug 26, 2013 at 1:06 PM, Chen Gang <gang.chen@asianux.com> wrote:
+> >> On 08/26/2013 07:00 PM, Geert Uytterhoeven wrote:
+> >>> On Mon, Aug 26, 2013 at 12:31 PM, Chen Gang <gang.chen@asianux.com> wrote:
+> >>>> --- a/arch/h8300/kernel/setup.c
+> >>>> +++ b/arch/h8300/kernel/setup.c
+> >>>> @@ -47,6 +47,9 @@
+> >>>>  #include <asm/regs267x.h>
+> >>>>  #endif
+> >>>>
+> >>>> +#if defined(CONFIG_BLK_DEV_INITRD)
+> >>>
+> >>> Why have you added the #ifdef?
+> >>>
+> >>
+> >> The related code is below (maybe we need add additional related
+> >> comments in the patch for it ?).
+> >>
+> >> in arch/h8300/kernel/setup.c
+> >>
+> >>  94 void __init setup_arch(char **cmdline_p)
+> >>  95 {
+> >>  96         int bootmap_size;
+> >>  97
+> >>  98         memory_start = (unsigned long) &_ramstart;
+> >>  99
+> >> 100         /* allow for ROMFS on the end of the kernel */
+> >> 101         if (memcmp((void *)memory_start, "-rom1fs-", 8) == 0) {
+> >> 102 #if defined(CONFIG_BLK_DEV_INITRD)
+> >> 103                 initrd_start = memory_start;
+> >> 104                 initrd_end = memory_start += be32_to_cpu(((unsigned long *) (memory_start))[2]);
+> >> 105 #else
+> >> 106                 memory_start += be32_to_cpu(((unsigned long *) memory_start)[2]);
+> >> 107 #endif
+> >> 108         }
 > > 
-> > Thanks for testing, I'll queue it up later today (at an airport right
-> > now, about to board a flight), and send it to Linus later tonight if no
-> > one else has any problems with it.
+> > Sure, it's used conditionally. But it doesn't harm to always include it.
+> > That means less #ifdefs in the code.
 > > 
-> To simplify this kind of testing, I added a 'testing' branch to the list of
-> branches I am auto-building. Right now it runs a complete test cycle with the
-> patch applied on top of v3.11-rc7. This should ensure that the patch doesn't
-> break any previously passing builds. You should see the results in the 'testing'
-> column of the stable queue build table on http://server.roeck-us.net:8010/builders
-> when you get out of the plane.
+> 
+> Hmm... I feel, add "#ifdefs" can make the code more clearer (consistent
+> with the "#ifdefs" 'for initrd_start' and 'end').
+> 
+The goal in the Linux kernel is to reduce the amount of ifdefs in the code
+by moving conditional code as much as possible into header files. That actually
+has a practical advantage - it ensures that all code is compiled.
 
-Thanks, all looks good, except for xtensa, which says I broke something,
-but I can't understand what, as I don't see any networking patches in my
-tree at the moment.
+You may agree or disagree with this approach, but you should follow it and not
+add new ifdefs when you write kernel code, much less unnecessary ones.
+If anything, you might try to remove existing ifdefs while you are at it.
 
-Any ideas?
+> For C code readers, more code doesn't mean more complex, if it can make
+> things clearer after add some more lines (and be sure of no negative
+> effect with performance), normally I prefer to add some more lines.
+> 
+The Linux kernel community tends to think otherwise. For my part I don't
+see how ifdefs, and much more so unecessary ones, make anything clearer.
+I would argue you'll end up not seeing the forest because of all the trees.
 
-thanks,
+> And this file has already had an area for all "#ifdefs include", I just
+> add it in this area, so at least, it can mach this file well, is it ?
+> 
+Your argument is along the line of "the code is bad anyway, so it is ok
+to make it worse". Not really a good argument if you want to get your code
+accepted.
 
-greg k-h
+I would suggest to read Documentation/SubmittingPatches, section 2.2,
+before you continue with your line of argument.
+
+Guenter
