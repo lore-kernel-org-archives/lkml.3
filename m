@@ -1,95 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab3HZKnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:43:16 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64792 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab3HZKnP (ORCPT
+	id S1756054Ab3HZKny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:43:54 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:12109 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3HZKnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:43:15 -0400
-Date: Mon, 26 Aug 2013 12:43:06 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@intel.com>
-cc: linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: Re: [PATCH 0/3] DMA: shdma: several stylistic improvements and
- support for new SoCs
-In-Reply-To: <20130825073525.GD8091@intel.com>
-Message-ID: <Pine.LNX.4.64.1308261136430.1767@axis700.grange>
-References: <Pine.LNX.4.64.1307021738500.1965@axis700.grange>
- <20130825073525.GD8091@intel.com>
+	Mon, 26 Aug 2013 06:43:53 -0400
+X-Spam-Score: -101.0
+Message-ID: <521B312B.2020806@asianux.com>
+Date: Mon, 26 Aug 2013 18:42:51 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:6L4CNNgUv/9RaBQmjEGeF2tlvjoN0MaKS7TKYeo5s3o
- QcxVSwyMLNvuPhTJYpDU2CKuBmTvtg0ucEYOnxGae3romjR5ph
- XY837G2Kii8jQxhTaY+rBdkRosoJ1mG0ZxfYkDPzQ8DUrDxOMV
- 9W3zwBmHBPZmDG7+NfS5Afr6rCUS4T/DiJDyM3CxBqa6X6WdiB
- bcRDGrmgIcsf40Xvx3uYXLW3OSmdcIynhR4l/hvhERBZGvMFv4
- yGKL1dEa9GrxXCwxfiNUwAd3YtVx1mKs8EjxFzEq2258NkgKqQ
- SHiGFM3LDsd6p+nlL94w6MI6yDbZyiS12LTkBNrfXUWxehbcxI
- O8YmdYLYW8UspraZ6keJrd/6DUxizxym9mqvGskJUyvuBN+ye0
- ZJKpwY0eY5W5Q==
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        James Hogan <james.hogan@imgtec.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel: Assembly: need add prefix for h8300 architecture.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
+Need add related prefix for h8300, or can not pass compiling by the
+latest linker.
 
-Thanks for applying the patches!
+The related error (allmodconfig for h8300):
 
-On Sun, 25 Aug 2013, Vinod Koul wrote:
+  /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `usr/initramfs_data.o' is incompatible with h8300h output
+  /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `kernel/modsign_certificate.o' is incompatible with h8300h output
 
-> On Tue, Jul 02, 2013 at 05:45:49PM +0200, Guennadi Liakhovetski wrote:
-> > Hi
-> > 
-> > The first two patches in this small series improve driver internals a bit 
-> > by using preferred APIs, the 3rd patch adds support for new DMAC versions, 
-> > present on AG5, APE6, H2.
-> Applied, thanks
-> 
-> Although the patch 1 didnt apply for me :( I have manually remove a hunk, I dont
-> which tree yoy genertaed this agaisnt!
+The cross-compiler's information:
 
-I'm not sure why it didn't apply for you. AFAICS, you mean this hunk:
+  [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-ld -v
+  GNU ld (GNU Binutils) 2.22
+  [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-as -v
+  GNU assembler version 2.22 (h8300-gchen-elf) using BFD version (GNU Binutils) 2.22
+  
+  [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-gcc -v
+  Using built-in specs.
+  COLLECT_GCC=/usr/local/bin/h8300-gchen-elf-gcc
+  COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/h8300-gchen-elf/4.8.0/lto-wrapper
+  Target: h8300-gchen-elf
+  Configured with: ../gcc-4.8.0/configure --target=h8300-gchen-elf --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no
+  Thread model: single
+  gcc version 4.8.0 (GCC) 
 
-diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
-index c7950be..3083d62 100644
---- a/drivers/dma/sh/shdma.c
-+++ b/drivers/dma/sh/shdma.c
 
-[snip]
-
-@@ -909,17 +881,12 @@ static int sh_dmae_remove(struct platform_device *pdev)
- {
- 	struct sh_dmae_device *shdev = platform_get_drvdata(pdev);
- 	struct dma_device *dma_dev = &shdev->shdma_dev.dma_dev;
--	struct resource *res;
--	int errirq = platform_get_irq(pdev, 0);
- 
- 	dma_async_device_unregister(dma_dev);
- 
- 	/* Is a NOP if this controller isn't registered with of-dma */
- 	of_dma_controller_free(pdev->dev.of_node);
- 
--	if (errirq > 0)
--		free_irq(errirq, shdev);
--
- 	spin_lock_irq(&sh_dmae_lock);
- 	list_del_rcu(&shdev->node);
- 	spin_unlock_irq(&sh_dmae_lock);
-
-It didn't apply, because it is based on top of "DMA: shdma: also support 
-single top-level DMAC DT nodes" which has been dropped for now in favour 
-of keeping a multiplexer node compulsory for shdma for now, sorry. But 
-just dropping it isn't right too. With managed error IRQ allocation 
-calling free_irq() on clean up path is wrong. I'll post an incremental 
-patch asap.
-
-Thanks
-Guennadi
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ kernel/modsign_certificate.S |    7 +++++++
+ usr/initramfs_data.S         |    7 +++++++
+ 2 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
+index 4a9a86d..d24acac 100644
+--- a/kernel/modsign_certificate.S
++++ b/kernel/modsign_certificate.S
+@@ -1,5 +1,12 @@
+ #include <linux/export.h>
+ 
++#if defined(CONFIG_CPU_H8300H)
++	.h8300h
++#endif
++#if defined(CONFIG_CPU_H8S)
++	.h8300s
++#endif
++
+ #define GLOBAL(name)	\
+ 	.globl VMLINUX_SYMBOL(name);	\
+ 	VMLINUX_SYMBOL(name):
+diff --git a/usr/initramfs_data.S b/usr/initramfs_data.S
+index c14322d..6a6c106 100644
+--- a/usr/initramfs_data.S
++++ b/usr/initramfs_data.S
+@@ -24,6 +24,13 @@
+ #include <linux/stringify.h>
+ #include <asm-generic/vmlinux.lds.h>
+ 
++#if defined(CONFIG_CPU_H8300H)
++	.h8300h
++#endif
++#if defined(CONFIG_CPU_H8S)
++	.h8300s
++#endif
++
+ .section .init.ramfs,"a"
+ __irf_start:
+ .incbin __stringify(INITRAMFS_IMAGE)
+-- 
+1.7.7.6
