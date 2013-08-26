@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab3HZKUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:20:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756645Ab3HZKUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:20:46 -0400
-Date: Mon, 26 Aug 2013 13:20:24 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Yann Droneaud <ydroneaud@opteya.com>
-Cc: Alexander Graf <agraf@suse.de>, Paolo Bonzini <pbonzini@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm-ppc@vger.kernel.org,
-        kvm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] kvm: use anon_inode_getfd() with O_CLOEXEC flag
-Message-ID: <20130826102023.GA8218@redhat.com>
-References: <cover.1377372576.git.ydroneaud@opteya.com>
+	id S1756718Ab3HZKVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:21:08 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:42927 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab3HZKVG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 06:21:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1377372576.git.ydroneaud@opteya.com>
+In-Reply-To: <521B2AF7.6070806@asianux.com>
+References: <521B2AF7.6070806@asianux.com>
+Date: Mon, 26 Aug 2013 12:21:05 +0200
+X-Google-Sender-Auth: DFG4QyIT3ykmSpOJ76yAJjNHtXo
+Message-ID: <CAMuHMdXT+ezyFGNisEaz62ReHxeNzZq0XgKR905OtyhmCnu6Kg@mail.gmail.com>
+Subject: Re: [PATCH] h8300: include: asm: Kbuild: add gpio.h for pass compiling
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Yoshinori Sato <ysato@users.sourceforge.jp>, Arnd Bergmann <arnd@arndb.de>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Dave Jones <davej@redhat.com>, David Sharp <dhsharp@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 24, 2013 at 10:14:06PM +0200, Yann Droneaud wrote:
-> Hi,
-> 
-> Following a patchset asking to change calls to get_unused_flag() [1]
-> to use O_CLOEXEC, Alex Williamson [2][3] decided to change VFIO
-> to use the flag.
-> 
-> Since it's a related subsystem to KVM, using O_CLOEXEC for
-> file descriptors created by KVM might be applicable too.
-> 
-> I'm suggesting to change calls to anon_inode_getfd() to use O_CLOEXEC
-> as default flag.
-> 
-> This patchset should be reviewed to not break existing userspace program.
-> 
-> BTW, if it's not applicable, I would suggest that new ioctls be added to
-> KVM subsystem, those ioctls would have a "flag" field added to their arguments.
-> Such "flag" would let userspace choose the open flag to use.
-> See for example other APIs using anon_inode_getfd() such as fanotify,
-> inotify, signalfd and timerfd.
-> 
-> You might be interested to read:
-> 
-> - Secure File Descriptor Handling (Ulrich Drepper, 2008)
->   http://udrepper.livejournal.com/20407.html
-> 
-> - Excuse me son, but your code is leaking !!! (Dan Walsh, March 2012) 
->   http://danwalsh.livejournal.com/53603.html
-> 
-Applied, thanks.
+On Mon, Aug 26, 2013 at 12:16 PM, Chen Gang <gang.chen@asianux.com> wrote:
+> Need add default "gpio.h" for h8300, or can not pass compiling.
+>
+> The related error (allmodconfig for h8300):
+>
+>   arch/h8300/kernel/h8300_ksyms.c:17:22: fatal error: asm/gpio.h: No such file or directory
+>    #include <asm/gpio.h>
+>                         ^
 
-> Regards.
-> 
-> [1] http://lkml.kernel.org/r/cover.1376327678.git.ydroneaud@opteya.com
-> [2] http://lkml.kernel.org/r/1377186804.25163.17.camel@ul30vt.home
-> [3] http://lkml.kernel.org/r/20130822171744.1297.13711.stgit@bling.home
-> 
-> Yann Droneaud (2):
->   kvm: use anon_inode_getfd() with O_CLOEXEC flag
->   ppc: kvm: use anon_inode_getfd() with O_CLOEXEC flag
-> 
->  arch/powerpc/kvm/book3s_64_mmu_hv.c | 2 +-
->  arch/powerpc/kvm/book3s_64_vio.c    | 2 +-
->  arch/powerpc/kvm/book3s_hv.c        | 2 +-
->  virt/kvm/kvm_main.c                 | 6 +++---
->  4 files changed, 6 insertions(+), 6 deletions(-)
-> 
-> -- 
-> 1.8.3.1
+I this include needed at all? Perhaps it can just be removed?
+
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/h8300/include/asm/Kbuild |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/h8300/include/asm/Kbuild b/arch/h8300/include/asm/Kbuild
+> index 8ada3cf..4c627aa 100644
+> --- a/arch/h8300/include/asm/Kbuild
+> +++ b/arch/h8300/include/asm/Kbuild
+> @@ -1,6 +1,7 @@
+>
+>  generic-y += clkdev.h
+>  generic-y += exec.h
+> +generic-y += gpio.h
+>  generic-y += linkage.h
+>  generic-y += mmu.h
+>  generic-y += module.h
+
+The only gpio-related exports in arch/h8300/kernel/h8300_ksyms.c are:
+
+EXPORT_SYMBOL(h8300_reserved_gpio);
+EXPORT_SYMBOL(h8300_free_gpio);
+EXPORT_SYMBOL(h8300_set_gpio_dir);
+
+and these are definitely not provided by asm-generic/gpio.h.
+
+Gr{oetje,eeting}s,
+
+                        Geert
 
 --
-			Gleb.
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
