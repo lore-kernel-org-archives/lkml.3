@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab3HZWpz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:45:55 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:36342 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388Ab3HZWpw (ORCPT
+	id S1752825Ab3HZWsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:48:25 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:42591 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400Ab3HZWp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:45:52 -0400
+	Mon, 26 Aug 2013 18:45:56 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Andreas Herrmann <andreas.herrmann@calxeda.com>,
         Lennert Buytenhek <buytenh@wantstofly.org>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 01/11] net: calxedaxgmac: remove NETIF_F_FRAGLIST setting
-Date: Mon, 26 Aug 2013 17:45:16 -0500
-Message-Id: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
+Subject: [PATCH 05/11] net: calxedaxgmac: update ring buffer tx_head after barriers
+Date: Mon, 26 Aug 2013 17:45:20 -0500
+Message-Id: <1377557126-10716-5-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
+References: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-The xgmac does not actually handle frag lists, so this option should not
-be set. It does not appear to have had any impact though.
+Ensure that the descriptor writes are visible before the ring buffer head
+is updated. Since writel is a barrier, we can simply update the head after
+the writel.
 
 Reported-by: Lennert Buytenhek <buytenh@wantstofly.org>
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 ---
- drivers/net/ethernet/calxeda/xgmac.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/calxeda/xgmac.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
-index 7cb148c..71f6720 100644
+index 64854ad..f630855 100644
 --- a/drivers/net/ethernet/calxeda/xgmac.c
 +++ b/drivers/net/ethernet/calxeda/xgmac.c
-@@ -1759,7 +1759,7 @@ static int xgmac_probe(struct platform_device *pdev)
- 	if (device_can_wakeup(priv->device))
- 		priv->wolopts = WAKE_MAGIC;	/* Magic Frame as default */
+@@ -1121,9 +1121,10 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	wmb();
+ 	desc_set_tx_owner(first, desc_flags | TXDESC_FIRST_SEG);
  
--	ndev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST | NETIF_F_HIGHDMA;
-+	ndev->hw_features = NETIF_F_SG | NETIF_F_HIGHDMA;
- 	if (readl(priv->base + XGMAC_DMA_HW_FEATURE) & DMA_HW_FEAT_TXCOESEL)
- 		ndev->hw_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
- 				     NETIF_F_RXCSUM;
++	writel(1, priv->base + XGMAC_DMA_TX_POLL);
++
+ 	priv->tx_head = dma_ring_incr(entry, DMA_TX_RING_SZ);
+ 
+-	writel(1, priv->base + XGMAC_DMA_TX_POLL);
+ 	if (dma_ring_space(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ) <
+ 	    MAX_SKB_FRAGS)
+ 		netif_stop_queue(dev);
 -- 
 1.8.1.2
 
