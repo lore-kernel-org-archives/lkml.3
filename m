@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab3HZRTD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 13:19:03 -0400
-Received: from 19.mo3.mail-out.ovh.net ([178.32.98.231]:37393 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752086Ab3HZRTA (ORCPT
+	id S1754098Ab3HZRTL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 13:19:11 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:43255 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab3HZRTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 13:19:00 -0400
-Message-ID: <521B8D9B.5020809@overkiz.com>
-Date: Mon, 26 Aug 2013 19:17:15 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 26 Aug 2013 13:19:06 -0400
+Date: Mon, 26 Aug 2013 10:19:03 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Meelis Roos <mroos@linux.ee>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steve Cotton <steve@s.cotton.clara.co.uk>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] USB: OHCI: fix build error related to ohci_suspend/resume
+Message-ID: <20130826171903.GA21675@roeck-us.net>
+References: <20130826042653.GA2778@kroah.com>
+ <Pine.LNX.4.44L0.1308261051340.1445-100000@iolanthe.rowland.org>
+ <20130826153840.GA29862@kroah.com>
+ <20130826160627.GA11307@roeck-us.net>
+ <20130826165022.GA2113@kroah.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [RFC PATCH 2/3] pinctrl: at91: add support for generic pinconf
-References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com> <1377380259-11290-1-git-send-email-b.brezillon@overkiz.com> <521B8822.50304@wwwdotorg.org>
-In-Reply-To: <521B8822.50304@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 10217541655858542669
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130826165022.GA2113@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/08/2013 18:53, Stephen Warren wrote:
-> On 08/24/2013 03:37 PM, Boris BREZILLON wrote:
->> Add support for generic pin configuration to pinctrl-at91 driver.
->> diff --git a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
->>   Required properties for iomux controller:
->> -- compatible: "atmel,at91rm9200-pinctrl"
->> +- compatible: "atmel,at91rm9200-pinctrl" or "atmel,at91sam9x5-pinctrl".
-> You seem to also be adding a second chip name to the list here, which is
-> more than the patch subject/description imply you're doing...
+On Mon, Aug 26, 2013 at 09:50:22AM -0700, Greg Kroah-Hartman wrote:
+> On Mon, Aug 26, 2013 at 09:06:27AM -0700, Guenter Roeck wrote:
+> > On Mon, Aug 26, 2013 at 08:38:40AM -0700, Greg Kroah-Hartman wrote:
+> > > On Mon, Aug 26, 2013 at 10:53:53AM -0400, Alan Stern wrote:
+> > > > Commit 9a11899c5e69 (USB: OHCI: add missing PCI PM callbacks to
+> > > > ohci-pci.c) added missing ohci_suspend and ohci_resume callback
+> > > > pointers, but forgot that these callbacks are declared and defined
+> > > > only when CONFIG_PM is enabled.
+> > > > 
+> > > > This patch adds a preprocessor conditional to avoid build errors when
+> > > > PM is disabled.
+> > > > 
+> > > > Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+> > > > 
+> > > > ---
+> > > 
+> > > Guenter and Meelis, does the patch below fix the problem for you?
+> > > 
+> > Tested-by: Guenter Roeck <linux@roeck-us.net>
+> > 
+> > Previously failing builds:
+> > 	mips:ath79_defconfig
+> > 	powerpc:ppc64e_defconfig
+> > 	powerpc:cell_defconfig
+> > 	powerpc:maple_defconfig
+> > 	parisc:defconfig
+> > 	tile:defconfig
+> > 	sparc32:defconfig
+> > 	sparc64:defconfig
+> > 
+> > 	as well as the powerpc qemu test (with the config file used
+> > 	by the yocto project)
+> > 
+> > All builds pass with the patch applied, as does the qemu test.
+> 
+> Thanks for testing, I'll queue it up later today (at an airport right
+> now, about to board a flight), and send it to Linus later tonight if no
+> one else has any problems with it.
+> 
+To simplify this kind of testing, I added a 'testing' branch to the list of
+branches I am auto-building. Right now it runs a complete test cycle with the
+patch applied on top of v3.11-rc7. This should ensure that the patch doesn't
+break any previously passing builds. You should see the results in the 'testing'
+column of the stable queue build table on http://server.roeck-us.net:8010/builders
+when you get out of the plane.
 
-This is an update of the documentation:
-"atmel,at91sam9x5-pinctrl" compatible is already used in the pinctrl 
-driver but the documention
-was not updated.
-
-But I agree, this should not be part of this series.
-
->> +  Add "generic-pinconf" to the compatible string list to use the generic pin
->> +  configuration syntax.
-> "generic-pinconf" is too generic of a compatible value for this binding
-> to define.
->
-> Instead, I think you want to either:
->
-> a)
->
-> Use compatible="atmel,at91rm9200-pinctrl" for the old binding,
-> use compatible="atmel,at91rm9200-pinctrl-generic" for the new binding
->
-> or:
->
-> b)
->
-> Define Boolean property atmel,generic-pinconf (perhaps a better name
-> could be chosen?). If it's not present, parse the node assuming the old
-> binding. If it is present, parse the node assuming the new binding.
->
-Okay.
-
-I thought this property string could be generic as it may concern other 
-drivers too
-(in order to keep compatibility with old dt ABI and add support the 
-generic pinconf binding).
-
-Anyway, I prefer the first proposition.
-
-pinctrl single driver is already using these names:
-
-|compatible = "pinctrl-single" for non generic pinconf binding
-||compatible = "pinconf-single" ||for generic pinconf binding|
-
-So I think we should use something similar:
-
-|compatible = "atmel,at91xx-pinctrl" for non generic pinconf binding
-||compatible = "|||atmel,at91xx-|pinconf" ||for generic pinconf binding|
-
-What do you think ?
-
-Best Regards,
-
-Boris
+Guenter
