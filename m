@@ -1,32 +1,40 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab3HXRj2 (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sat, 24 Aug 2013 13:39:28 -0400
-Received: from ns1.nurdns.com ([74.208.243.57]:57700 "HELO mail.nurdns.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750876Ab3HXRj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Aug 2013 13:39:27 -0400
-X-Greylist: delayed 3745 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Aug 2013 13:39:27 EDT
-Date: Sat, 24 Aug 2013 18:26:11 +0200
-From: ericnur@nur-realty.com
-X-Mailer: The Bat! (v3.98.4) UNREG
-Organization: fobos2006
-X-Priority: 3 (Normal)
-Message-ID: <5933837058.20130824183620@nur-realty.com>
-To: <tulikivi@tulikivi.fi>, <info@modelist143.ru>,
-        <linux-kernel@vger.kernel.org>, <waltercmarsh@aol.com>,
-        <hospedaria.anagri@vizzavi.net>
-Subject: =?koi8-r?Q?=CD=C1=D3=D4=C5=D2=D3=CB=C9=CA_=D0=D5=D4=D8_?=
-	=?koi8-r?Q?=D3=D0=C1=D3=D4=C9_=C7=CC=C1=DA=CB=C9_http=3A/?=
-	=?koi8-r?Q?/linkbox=2Ealtervista=2Eorg/743884?=
+	id S1752202Ab3HZS27 (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 26 Aug 2013 14:28:59 -0400
+Received: from mail.santa-fe.gov.ar ([200.12.192.42]:43116 "EHLO
+	mail.santa-fe.gov.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043Ab3HZS26 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 14:28:58 -0400
+X-Greylist: delayed 556 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 14:28:58 EDT
+Message-ID: <20130826151931.63182bropug5motv@webmail.santafe.gov.ar>
+Date: Mon, 26 Aug 2013 15:19:31 -0300
+From: Mrs Sonia Kim Fung <soniakim011@fuse.com>
+Reply-to: sonia.kim03@yahoo.com
+To: undisclosed-recipients:;
+Subject: Hi
 MIME-Version: 1.0
 Content-Type: text/plain;
-	charset="koi8-r";
-X-DBMail-PhysMessage-ID: 1429
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by spinics.net id r7OHdmNR029604
 
- èÏÒÏÛÉÊ ÓĞÏÓÏÂ ÓĞÁÓÔÉ ÇÌÁÚËÉ
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Dear Friend,
+I'm contacting you regarding an interesting business prospect which I  
+did like to share with you as my partner. I shall provide you more  
+info in
+your next email of acknowledgement.
+Regards,
+Sonia.
+
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
+
