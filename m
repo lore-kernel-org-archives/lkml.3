@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab3HZQuZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 12:50:25 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48389 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756994Ab3HZQuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 12:50:24 -0400
-Message-ID: <1377535823.1782.46.camel@joe-AO722>
-Subject: Re: [PATCH 05/24] Staging: winbond: phy_calibration: fixed some
- lines over 80 characters
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Iker Pedrosa <ikerpedrosam@gmail.com>, pavel@ucw.cz,
-        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        harsh1kumar@gmail.com, linux-kernel@vger.kernel.org,
-        mujeeb.adil@gmail.com, justinmattock@gmail.com
-Date: Mon, 26 Aug 2013 09:50:23 -0700
-In-Reply-To: <20130826155627.GB6329@mwanda>
-References: <1377529823-5116-1-git-send-email-ikerpedrosam@gmail.com>
-	 <1377529823-5116-6-git-send-email-ikerpedrosam@gmail.com>
-	 <20130826155627.GB6329@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1757269Ab3HZQup (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 12:50:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41360 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623Ab3HZQun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 12:50:43 -0400
+Message-ID: <521B875E.1010605@wwwdotorg.org>
+Date: Mon, 26 Aug 2013 10:50:38 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 1/3] pinctrl: add new generic pinconf config for deglitch
+ filter
+References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com> <1377380109-11247-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1377380109-11247-1-git-send-email-b.brezillon@overkiz.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-26 at 19:02 +0300, Dan Carpenter wrote:
-> On Mon, Aug 26, 2013 at 05:10:04PM +0200, Iker Pedrosa wrote:
-[]
-> > diff --git a/drivers/staging/winbond/phy_calibration.c b/drivers/staging/winbond/phy_calibration.c
-[]
-> > @@ -1233,8 +1233,10 @@ u8 _rx_iq_calibration_loop_winbond(struct hw_data *phw_data, u16 factor, u32 fre
-> >  		b_2 = (rot_image_q_b * 32768) / rot_tone_i_b -
-> >  			phw_data->iq_rsdl_phase_tx_d2;
-> >  
-> > -		PHY_DEBUG(("[CAL]    ** iq_rsdl_gain_tx_d2 = %d\n", phw_data->iq_rsdl_gain_tx_d2));
-> > -		PHY_DEBUG(("[CAL]    ** iq_rsdl_phase_tx_d2= %d\n", phw_data->iq_rsdl_phase_tx_d2));
-> > +		PHY_DEBUG(("[CAL]    ** iq_rsdl_gain_tx_d2 = %d\n",
-> > +				   phw_data->iq_rsdl_gain_tx_d2));
-> 
-> Don't redo this, but really these should be aligned like this:
-> 
-> 		PHY_DEBUG(("[CAL]    ** iq_rsdl_gain_tx_d2 = %d\n",
-> 			   phw_data->iq_rsdl_gain_tx_d2));
-> 
-> In the end, we're going to remove all these debugging prints so it's
-> not worth redoing in a later patch.  What you have is fine.  The
-> message itself is sort of nonsense.
+On 08/24/2013 03:35 PM, Boris BREZILLON wrote:
+> Add a new parameter to support deglitch filter configuration.
+> A deglitch filter works like a debounce filter but with a smaller
+> delay (nanoseconds).
 
-Especially true because the only #define for PHY_DEBUG is:
-
-#define PHY_DEBUG(msg, args...)
-
-None of this does anything anyway.
-
-It'd be better to send a removal of the whole lot.
-
-Does anyone still use this driver?
-
-
+Why not use the existing debounce property, just with a small delay
+specified. It seems like that's exactly what the property is for?
