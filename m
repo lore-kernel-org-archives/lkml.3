@@ -1,99 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab3HZJnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 05:43:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60501 "EHLO bear.ext.ti.com"
+	id S1756518Ab3HZJp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 05:45:56 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1994 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562Ab3HZJnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 05:43:45 -0400
-Message-ID: <521B2346.10307@ti.com>
-Date: Mon, 26 Aug 2013 15:13:34 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751562Ab3HZJpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 05:45:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,957,1367996400"; 
+   d="scan'208";a="286783644"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-kernel@vger.kernel.org, "Ed L. Cashin" <ecashin@coraid.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH] aoe: suppress compiler warnings
+Date: Mon, 26 Aug 2013 12:45:28 +0300
+Message-Id: <1377510328-25939-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>,
-        "'devicetree'" <devicetree@vger.kernel.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>, "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'Jean-Christophe PLAGNIOL-VILLARD'" <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: Re: [PATCH V7 0/3] Generic PHY driver for the Exynos SoC DP PHY
-References: <003e01cea23a$03aac850$0b0058f0$%han@samsung.com>
-In-Reply-To: <003e01cea23a$03aac850$0b0058f0$%han@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 26 August 2013 02:25 PM, Jingoo Han wrote:
-> This patch series adds a simple driver for the Samsung Exynos SoC
-> series DP transmitter PHY, using the generic PHY framework [1].
-> Previously the DP PHY used an internal DT node to control the PHY
-> power enable bit.
-> 
-> These patches was tested on Exynos5250.
-> 
-> This PATCH v7 follows:
->  * PATCH v6, sent on July, 9th 2013
->  * PATCH v5, sent on July, 8th 2013
->  * PATCH v4, sent on July, 2nd 2013
->  * PATCH v3, sent on July, 1st 2013
->  * PATCH v2, sent on June, 28th 2013
->  * PATCH v1, sent on June, 28th 2013
-> 
-> Changes from v6:
->   * Re-based on git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
-> 
-> Changes from v5:
->   * Re-based on git://gitorious.org/linuxphy/linuxphy.git
-> 
-> Changes from v4:
->   * Marked original bindings as deprecated in 'exynos_dp.txt'
->   * Fixed typo of commit message.
->   * Added Tomasz Figa's Reviewed-by.
-> 
-> Changes from v3:
->   * Added OF dependancy.
->   * Removed redundant local variable 'void __iomem *addr'.
->   * Removed unnecessary dev_set_drvdata().
->   * Added a patch that remove non-DT support for Exynos
->     Display Port driver.
->   * Removed unnecessary 'struct exynos_dp_platdata'.
->   * Kept supporting the original bindings for DT compatibility.
-> 
-> Changes from v2:
->   * Removed redundant spinlock
->   * Removed 'struct phy' from 'struct exynos_dp_video_phy'
->   * Updated 'samsung-phy.txt', instead of creating
->     'samsung,exynos5250-dp-video-phy.txt'.
->   * Removed unnecessary additional specifier from 'phys'
->     DT property.
->   * Added 'phys', 'phy-names' properties to 'exynos_dp.txt' file.
->   * Added Felipe Balbi's Acked-by.
-> 
-> Changes from v1:
->   * Replaced exynos_dp_video_phy_xlate() with of_phy_simple_xlate(),
->     as Kishon Vijay Abraham I guided.
->   * Set the value of phy-cells as 0, because the phy_provider implements
->     only one PHY.
->   * Removed unnecessary header include.
->   * Added '#ifdef CONFIG_OF' and of_match_ptr macro.
-> 
-> This series depends on the generic PHY framework [1]. These patches
-> refer to Sylwester Nawrocki's patches about Exynos MIPI [2].
-> 
-> [1] http://lwn.net/Articles/564188/
-> [2] http://www.spinics.net/lists/linux-samsung-soc/msg20098.html
-> 
-> Jingoo Han (3):
->   phy: Add driver for Exynos DP PHY
->   video: exynos_dp: remove non-DT support for Exynos Display Port
->   video: exynos_dp: Use the generic PHY driver
+This patch fixes following compiler warnings:
 
-FWIW,
-Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+drivers/block/aoe/aoecmd.c: In function ‘aoecmd_ata_rw’:
+drivers/block/aoe/aoecmd.c:383:17: warning: variable ‘t’ set but not used [-Wunused-but-set-variable]
+  struct aoetgt *t;
+                 ^
+drivers/block/aoe/aoecmd.c: In function ‘resend’:
+drivers/block/aoe/aoecmd.c:488:21: warning: variable ‘ah’ set but not used [-Wunused-but-set-variable]
+  struct aoe_atahdr *ah;
+                     ^
+drivers/block/aoe/aoedev.c: In function 'user_req':
+drivers/block/aoe/aoedev.c:252:174: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+  lim = min(sizeof(d->gd->disk_name) - (p - d->gd->disk_name), slen);
+                                                               ^
+
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/block/aoe/aoecmd.c | 4 ----
+ drivers/block/aoe/aoedev.c | 3 ++-
+ 2 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index 4d45dba..d251543 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -380,7 +380,6 @@ aoecmd_ata_rw(struct aoedev *d)
+ {
+ 	struct frame *f;
+ 	struct buf *buf;
+-	struct aoetgt *t;
+ 	struct sk_buff *skb;
+ 	struct sk_buff_head queue;
+ 	ulong bcnt, fbcnt;
+@@ -391,7 +390,6 @@ aoecmd_ata_rw(struct aoedev *d)
+ 	f = newframe(d);
+ 	if (f == NULL)
+ 		return 0;
+-	t = *d->tgt;
+ 	bcnt = d->maxbcnt;
+ 	if (bcnt == 0)
+ 		bcnt = DEFAULTBCNT;
+@@ -485,7 +483,6 @@ resend(struct aoedev *d, struct frame *f)
+ 	struct sk_buff *skb;
+ 	struct sk_buff_head queue;
+ 	struct aoe_hdr *h;
+-	struct aoe_atahdr *ah;
+ 	struct aoetgt *t;
+ 	char buf[128];
+ 	u32 n;
+@@ -500,7 +497,6 @@ resend(struct aoedev *d, struct frame *f)
+ 		return;
+ 	}
+ 	h = (struct aoe_hdr *) skb_mac_header(skb);
+-	ah = (struct aoe_atahdr *) (h+1);
+ 
+ 	if (!(f->flags & FFL_PROBE)) {
+ 		snprintf(buf, sizeof(buf),
+diff --git a/drivers/block/aoe/aoedev.c b/drivers/block/aoe/aoedev.c
+index 6f68095..29dcea3 100644
+--- a/drivers/block/aoe/aoedev.c
++++ b/drivers/block/aoe/aoedev.c
+@@ -249,7 +249,8 @@ user_req(char *s, size_t slen, struct aoedev *d)
+ 	if (!d->gd)
+ 		return 0;
+ 	p = kbasename(d->gd->disk_name);
+-	lim = min(sizeof(d->gd->disk_name) - (p - d->gd->disk_name), slen);
++	lim = min_t(size_t, sizeof(d->gd->disk_name) - (p - d->gd->disk_name),
++		slen);
+ 
+ 	return !strncmp(s, p, lim);
+ }
+-- 
+1.8.4.rc3
+
