@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab3HZV3y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 17:29:54 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:62372 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752675Ab3HZV3v (ORCPT
+	id S1752788Ab3HZVaE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 17:30:04 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63502 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762Ab3HZVaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 17:29:51 -0400
+	Mon, 26 Aug 2013 17:30:00 -0400
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: lkml <linux-kernel@vger.kernel.org>,
@@ -19,9 +19,9 @@ Cc: lkml <linux-kernel@vger.kernel.org>,
         James Bottomley <JBottomley@Parallels.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Nicholas Bellinger <nab@daterainc.com>
-Subject: [PATCH-v3 01/13] scsi: Add CDB definition for COMPARE_AND_WRITE
-Date: Mon, 26 Aug 2013 21:13:34 +0000
-Message-Id: <1377551626-27447-2-git-send-email-nab@daterainc.com>
+Subject: [PATCH-v3 05/13] target: Convert se_cmd->t_bidi_data_sg checks to use SCF_BIDI
+Date: Mon, 26 Aug 2013 21:13:38 +0000
+Message-Id: <1377551626-27447-6-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1377551626-27447-1-git-send-email-nab@daterainc.com>
 References: <1377551626-27447-1-git-send-email-nab@daterainc.com>
@@ -31,7 +31,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@daterainc.com>
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+Stop keying off se_cmd->t_bidi_data_sg within transport_complete_qf()
++ target_complete_ok_work(), and just use SCF_BIDI instead.
+
+Cc: Christoph Hellwig <hch@lst.de>
 Cc: Hannes Reinecke <hare@suse.de>
 Cc: Martin Petersen <martin.petersen@oracle.com>
 Cc: Chris Mason <chris.mason@fusionio.com>
@@ -39,21 +42,31 @@ Cc: James Bottomley <JBottomley@Parallels.com>
 Cc: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
 ---
- include/scsi/scsi.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/target/target_core_transport.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-index 4b87d99..6268062 100644
---- a/include/scsi/scsi.h
-+++ b/include/scsi/scsi.h
-@@ -144,6 +144,7 @@ enum scsi_timeouts {
- #define ACCESS_CONTROL_IN     0x86
- #define ACCESS_CONTROL_OUT    0x87
- #define READ_16               0x88
-+#define COMPARE_AND_WRITE     0x89
- #define WRITE_16              0x8a
- #define READ_ATTRIBUTE        0x8c
- #define WRITE_ATTRIBUTE	      0x8d
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 3d3dc97..781859e 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1832,7 +1832,7 @@ static void transport_complete_qf(struct se_cmd *cmd)
+ 		ret = cmd->se_tfo->queue_data_in(cmd);
+ 		break;
+ 	case DMA_TO_DEVICE:
+-		if (cmd->t_bidi_data_sg) {
++		if (cmd->se_cmd_flags & SCF_BIDI) {
+ 			ret = cmd->se_tfo->queue_data_in(cmd);
+ 			if (ret < 0)
+ 				break;
+@@ -1947,7 +1947,7 @@ static void target_complete_ok_work(struct work_struct *work)
+ 		/*
+ 		 * Check if we need to send READ payload for BIDI-COMMAND
+ 		 */
+-		if (cmd->t_bidi_data_sg) {
++		if (cmd->se_cmd_flags & SCF_BIDI) {
+ 			spin_lock(&cmd->se_lun->lun_sep_lock);
+ 			if (cmd->se_lun->lun_sep) {
+ 				cmd->se_lun->lun_sep->sep_stats.tx_data_octets +=
 -- 
 1.7.2.5
 
