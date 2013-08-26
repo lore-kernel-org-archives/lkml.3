@@ -1,163 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab3HZFiU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 01:38:20 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50354 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755512Ab3HZFiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 01:38:18 -0400
-From: Keerthy <j-keerthy@ti.com>
-To: <bcousson@baylibre.com>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <pawel.moll@arm.com>, <devicetree@vger.kernel.org>,
-        <rob.herring@calxeda.com>, <linux-arm-kernel@lists.infradead.org>,
-        <nm@ti.com>, <balajitk@ti.com>, <j-keerthy@ti.com>
-Subject: [PATCH] ARM: DTS: DRA7: Add TPS659038 PMIC nodes
-Date: Mon, 26 Aug 2013 11:06:51 +0530
-Message-ID: <1377495411-21984-1-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756087Ab3HZFkY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 01:40:24 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:41761 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755433Ab3HZFkX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 01:40:23 -0400
+Message-ID: <521AEA44.70608@hitachi.com>
+Date: Mon, 26 Aug 2013 14:40:20 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 01/10] tracing: Add support for SOFT_DISABLE to syscall
+ events
+References: <cover.1377213245.git.tom.zanussi@linux.intel.com> <2206e8bd6694105b1ba7e7faef9d725641f827d2.1377213245.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <2206e8bd6694105b1ba7e7faef9d725641f827d2.1377213245.git.tom.zanussi@linux.intel.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Patch adds nodes for TPS659038 PMIC for DRA7 boards.
+(2013/08/23 8:27), Tom Zanussi wrote:
+> The original SOFT_DISABLE patches didn't add support for soft disable
+> of syscall events; this adds it and paves the way for future patches
+> allowing triggers to be added to syscall events, since triggers are
+> built on top of SOFT_DISABLE.
+> 
+> Add an array of ftrace_event_file pointers indexed by syscall number
+> to the trace array and remove the existing enabled bitmaps, which as a
+> result are now redundant.  The ftrace_event_file structs in turn
+> contain the soft disable flags we need for per-syscall soft disable
+> accounting; later patches add additional 'trigger' flags and
+> per-syscall triggers and filters.
+> 
 
-It is based on top of:
-http://comments.gmane.org/gmane.linux.ports.arm.omap/102459.
+This looks good for me.
 
-Documentation:	Documentation/devicetree/bindings/mfd/palmas.txt
-		Documentation/devicetree/bindings/regulator/palmas-pmic.txt		
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Boot Tested on DRA7 d1 Board.
+> Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+> ---
+>  kernel/trace/trace.h          |  4 ++--
+>  kernel/trace/trace_syscalls.c | 36 ++++++++++++++++++++++++++++++------
+>  2 files changed, 32 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index fe39acd..b1227b9 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -192,8 +192,8 @@ struct trace_array {
+>  #ifdef CONFIG_FTRACE_SYSCALLS
+>  	int			sys_refcount_enter;
+>  	int			sys_refcount_exit;
+> -	DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
+> -	DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
+> +	struct ftrace_event_file *enter_syscall_files[NR_syscalls];
+> +	struct ftrace_event_file *exit_syscall_files[NR_syscalls];
+>  #endif
+>  	int			stop_count;
+>  	int			clock_id;
+> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+> index 559329d..230cdb6 100644
+> --- a/kernel/trace/trace_syscalls.c
+> +++ b/kernel/trace/trace_syscalls.c
+> @@ -302,6 +302,7 @@ static int __init syscall_exit_define_fields(struct ftrace_event_call *call)
+>  static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+>  {
+>  	struct trace_array *tr = data;
+> +	struct ftrace_event_file *ftrace_file;
+>  	struct syscall_trace_enter *entry;
+>  	struct syscall_metadata *sys_data;
+>  	struct ring_buffer_event *event;
+> @@ -314,7 +315,13 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+>  	syscall_nr = trace_get_syscall_nr(current, regs);
+>  	if (syscall_nr < 0)
+>  		return;
+> -	if (!test_bit(syscall_nr, tr->enabled_enter_syscalls))
+> +
+> +	/* Here we're inside the tp handler's rcu_read_lock (__DO_TRACE()) */
+> +	ftrace_file = rcu_dereference_raw(tr->enter_syscall_files[syscall_nr]);
+> +	if (!ftrace_file)
+> +		return;
+> +
+> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
+>  		return;
+>  
+>  	sys_data = syscall_nr_to_meta(syscall_nr);
+> @@ -345,6 +352,7 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+>  static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+>  {
+>  	struct trace_array *tr = data;
+> +	struct ftrace_event_file *ftrace_file;
+>  	struct syscall_trace_exit *entry;
+>  	struct syscall_metadata *sys_data;
+>  	struct ring_buffer_event *event;
+> @@ -356,7 +364,13 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+>  	syscall_nr = trace_get_syscall_nr(current, regs);
+>  	if (syscall_nr < 0)
+>  		return;
+> -	if (!test_bit(syscall_nr, tr->enabled_exit_syscalls))
+> +
+> +	/* Here we're inside the tp handler's rcu_read_lock (__DO_TRACE()) */
+> +	ftrace_file = rcu_dereference_raw(tr->exit_syscall_files[syscall_nr]);
+> +	if (!ftrace_file)
+> +		return;
+> +
+> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
+>  		return;
+>  
+>  	sys_data = syscall_nr_to_meta(syscall_nr);
+> @@ -397,7 +411,7 @@ static int reg_event_syscall_enter(struct ftrace_event_file *file,
+>  	if (!tr->sys_refcount_enter)
+>  		ret = register_trace_sys_enter(ftrace_syscall_enter, tr);
+>  	if (!ret) {
+> -		set_bit(num, tr->enabled_enter_syscalls);
+> +		rcu_assign_pointer(tr->enter_syscall_files[num], file);
+>  		tr->sys_refcount_enter++;
+>  	}
+>  	mutex_unlock(&syscall_trace_lock);
+> @@ -415,9 +429,14 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
+>  		return;
+>  	mutex_lock(&syscall_trace_lock);
+>  	tr->sys_refcount_enter--;
+> -	clear_bit(num, tr->enabled_enter_syscalls);
+> +	rcu_assign_pointer(tr->enter_syscall_files[num], NULL);
+>  	if (!tr->sys_refcount_enter)
+>  		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
+> +	/*
+> +	 * Callers expect the event to be completely disabled on
+> +	 * return, so wait for current handlers to finish.
+> +	 */
+> +	synchronize_sched();
+>  	mutex_unlock(&syscall_trace_lock);
+>  }
+>  
+> @@ -435,7 +454,7 @@ static int reg_event_syscall_exit(struct ftrace_event_file *file,
+>  	if (!tr->sys_refcount_exit)
+>  		ret = register_trace_sys_exit(ftrace_syscall_exit, tr);
+>  	if (!ret) {
+> -		set_bit(num, tr->enabled_exit_syscalls);
+> +		rcu_assign_pointer(tr->exit_syscall_files[num], file);
+>  		tr->sys_refcount_exit++;
+>  	}
+>  	mutex_unlock(&syscall_trace_lock);
+> @@ -453,9 +472,14 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
+>  		return;
+>  	mutex_lock(&syscall_trace_lock);
+>  	tr->sys_refcount_exit--;
+> -	clear_bit(num, tr->enabled_exit_syscalls);
+> +	rcu_assign_pointer(tr->exit_syscall_files[num], NULL);
+>  	if (!tr->sys_refcount_exit)
+>  		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
+> +	/*
+> +	 * Callers expect the event to be completely disabled on
+> +	 * return, so wait for current handlers to finish.
+> +	 */
+> +	synchronize_sched();
+>  	mutex_unlock(&syscall_trace_lock);
+>  }
+>  
+> 
 
-Signed-off-by: Keerthy <j-keerthy@ti.com>
----
- arch/arm/boot/dts/dra7-evm.dts |  118 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 118 insertions(+)
 
-Index: linux/arch/arm/boot/dts/dra7-evm.dts
-===================================================================
---- linux.orig/arch/arm/boot/dts/dra7-evm.dts	2013-08-26 09:57:52.496173554 +0530
-+++ linux/arch/arm/boot/dts/dra7-evm.dts	2013-08-26 10:38:44.995414695 +0530
-@@ -93,6 +93,119 @@
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&i2c1_pins>;
- 	clock-frequency = <400000>;
-+
-+	tps659038: tps659038@58 {
-+		compatible = "ti,tps659038";
-+		reg = <0x58>;
-+
-+		tps659038_pmic {
-+			compatible = "ti,tps659038-pmic";
-+
-+			regulators {
-+				smps123_reg: smps123 {
-+					/* VDD_MPU */
-+						regulator-name = "smps123";
-+						regulator-min-microvolt = < 850000>;
-+						regulator-max-microvolt = <1250000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				smps45_reg: smps45 {
-+						/* VDD_DSPEVE */
-+						regulator-name = "smps45";
-+						regulator-min-microvolt = < 850000>;
-+						regulator-max-microvolt = <1150000>;
-+						regulator-boot-on;
-+					};
-+
-+				smps6_reg: smps6 {
-+						/* VDD_GPU - over VDD_SMPS6 */
-+						regulator-name = "smps6";
-+						regulator-min-microvolt = <850000>;
-+						regulator-max-microvolt = <12500000>;
-+						regulator-boot-on;
-+					};
-+
-+				smps7_reg: smps7 {
-+						/* CORE_VDD */
-+						regulator-name = "smps7";
-+						regulator-min-microvolt = <850000>;
-+						regulator-max-microvolt = <1030000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				smps8_reg: smps8 {
-+						/* VDD_IVAHD */
-+						regulator-name = "smps8";
-+						regulator-min-microvolt = < 850000>;
-+						regulator-max-microvolt = <1250000>;
-+						regulator-boot-on;
-+					};
-+
-+				smps9_reg: smps9 {
-+						/* VDDS1V8 */
-+						regulator-name = "smps9";
-+						regulator-min-microvolt = <1800000>;
-+						regulator-max-microvolt = <1800000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				ldo1_reg: ldo1 {
-+						/* LDO1_OUT --> SDIO  */
-+						regulator-name = "ldo1";
-+						regulator-min-microvolt = <1800000>;
-+						regulator-max-microvolt = <3300000>;
-+						regulator-boot-on;
-+					};
-+
-+				ldo2_reg: ldo2 {
-+						/* VDD_RTCIO */
-+						/* LDO2 -> VDDSHV5, LDO2 also goes to CAN_PHY_3V3 */
-+						regulator-name = "ldo2";
-+						regulator-min-microvolt = <3300000>;
-+						regulator-max-microvolt = <3300000>;
-+						regulator-boot-on;
-+					};
-+
-+				ldo3_reg: ldo3 {
-+						/* VDDA_1V8_PHY */
-+						regulator-name = "ldo3";
-+						regulator-min-microvolt = <1800000>;
-+						regulator-max-microvolt = <1800000>;
-+						regulator-boot-on;
-+					};
-+
-+				ldo9_reg: ldo9 {
-+						/* VDD_RTC */
-+						regulator-name = "ldo9";
-+						regulator-min-microvolt = <1050000>;
-+						regulator-max-microvolt = <1050000>;
-+						regulator-boot-on;
-+					};
-+
-+				ldoln_reg: ldoln {
-+						/* VDDA_1V8_PLL */
-+						regulator-name = "ldoln";
-+						regulator-min-microvolt = <1800000>;
-+						regulator-max-microvolt = <1800000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				ldousb_reg: ldousb {
-+						/* VDDA_3V_USB: VDDA_USBHS33 */
-+						regulator-name = "ldousb";
-+						regulator-min-microvolt = <3300000>;
-+						regulator-max-microvolt = <3300000>;
-+						regulator-boot-on;
-+					};
-+
-+				};
-+			};
-+		};
- };
- 
- &i2c2 {
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
