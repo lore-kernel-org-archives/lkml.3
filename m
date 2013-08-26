@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab3HZQM1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 12:12:27 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:32771 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901Ab3HZQM0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 12:12:26 -0400
-Date: Mon, 26 Aug 2013 19:12:05 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Iker Pedrosa <ikerpedrosam@gmail.com>
-Cc: pavel@ucw.cz, devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        harsh1kumar@gmail.com, linux-kernel@vger.kernel.org,
-        mujeeb.adil@gmail.com, justinmattock@gmail.com
-Subject: Re: [PATCH 09/24] Staging: winbond: reg: fixed some lines over 80
- characters
-Message-ID: <20130826161205.GD6329@mwanda>
-References: <1377529823-5116-1-git-send-email-ikerpedrosam@gmail.com>
- <1377529823-5116-10-git-send-email-ikerpedrosam@gmail.com>
+	id S1756923Ab3HZQM6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 12:12:58 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:49552 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756653Ab3HZQM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 12:12:57 -0400
+Date: Mon, 26 Aug 2013 11:12:52 -0500
+From: Ben Myers <bpm@sgi.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Alex Elder <elder@kernel.org>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        Jeff Liu <jeff.liu@oracle.com>, Dave Chinner <david@fromorbit.com>
+Subject: Re: [patch] xfs: check for underflow in xfs_iformat_fork()
+Message-ID: <20130826161252.GV7153@sgi.com>
+References: <20130815055338.GC23580@elgon.mountain>
+ <520CA923.4060409@oracle.com>
+ <20130815143706.GI7153@sgi.com>
+ <20130815222650.GX6023@dastard>
+ <20130823173613.GT5262@sgi.com>
+ <20130826143714.GA6329@mwanda>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377529823-5116-10-git-send-email-ikerpedrosam@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20130826143714.GA6329@mwanda>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 05:10:08PM +0200, Iker Pedrosa wrote:
-> First of the patches that fixes the lines over 80 characters in reg.c
+Hey Dan,
+
+On Mon, Aug 26, 2013 at 05:37:15PM +0300, Dan Carpenter wrote:
+> On Fri, Aug 23, 2013 at 12:36:13PM -0500, Ben Myers wrote:
+> > Dan,
+> > 
+> > On Fri, Aug 16, 2013 at 08:26:50AM +1000, Dave Chinner wrote:
+> > > On Thu, Aug 15, 2013 at 09:37:06AM -0500, Ben Myers wrote:
+> > > > Hey Dan & Jeff,
+> > > > 
+> > > > On Thu, Aug 15, 2013 at 06:10:43PM +0800, Jeff Liu wrote:
+> > > > > On 08/15/2013 01:53 PM, Dan Carpenter wrote:
+> > > > > 
+> > > > > > The "di_size" variable comes from the disk and it's a signed 64 bit.
+> > > > > > We check the upper limit but we should check for negative numbers as
+> > > > > > well.
+> > > > > > 
+> > > > > > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > > > > > 
+> > > > > > diff --git a/fs/xfs/xfs_inode_fork.c b/fs/xfs/xfs_inode_fork.c
+> > > > > > index 123971b..849fc70 100644
+> > > > > > --- a/fs/xfs/xfs_inode_fork.c
+> > > > > > +++ b/fs/xfs/xfs_inode_fork.c
+> > > > > > @@ -167,7 +167,8 @@ xfs_iformat_fork(
+> > > > > >  			}
+> > > > > >  
+> > > > > >  			di_size = be64_to_cpu(dip->di_size);
+> > > > > > -			if (unlikely(di_size > XFS_DFORK_DSIZE(dip, ip->i_mount))) {
+> > > > > > +			if (unlikely(di_size < 0 ||
+> > > > > 
+> > > > > But the di_size is initialized to ZERO while allocating a new inode on disk.
+> > > > > I wonder if that is better to ASSERT in this case because the current check
+> > > > > is used to make sure that the item is inlined, or we don't need it at all.
+> > > > 
+> > > > Hmm.  Dan's additional check looks good to me.  In this case I'd say the forced
+> > > > shutdown is more appropriate than an assert, because here we're reading the
+> > > > inode from disk, as opposed to looking at a structure that is already incore
+> > > > which we think we've initialized.  We want to handle unexpected inputs from
+> > > > disk without crashing even if we are CONFIG_XFS_DEBUG.
+> > > 
+> > > There are lots of places where we only check di_size to be greater
+> > > than some value, and don't check for it being less than zero. Hence
+> > > I think that a better solution might be to di_size unsigned as that
+> > > will catch "negative" sizes for all types of situations.
+> > 
+> > What do you say to making di_size unsigned?  Any interest?
+> > 
 > 
-> Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
-> ---
->  drivers/staging/winbond/reg.c | 30 +++++++++++++++++-------------
->  1 file changed, 17 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
-> index 61916f5..b1d977a 100644
-> --- a/drivers/staging/winbond/reg.c
-> +++ b/drivers/staging/winbond/reg.c
-> @@ -809,12 +809,12 @@ u32 w89rf242_txvga_data[][5] = {
->  	{(0x05 << 24) | 0x24C7CA, 34, 0x00292315, 0x0800FEFF, 0x72724242}
->  };
->  
-> -/* ================================================================================================== */
-> +/* ========================================================================= */
+> I'm not the right person to change "lots of places".  Some of these
+> are probably subtle.  Just give me the reported-by and I'm happy.
 
-Just delete these.  They are not kernel style.
+I'll apply this for now, and we'll see if someone is interested enough to pick
+up the rest.
 
-regards,
-dan carpenter
-
+Thanks,
+	Ben
