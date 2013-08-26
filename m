@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab3HZUeS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 16:34:18 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:44864 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab3HZUeR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 16:34:17 -0400
-Date: Mon, 26 Aug 2013 21:34:12 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on
- /proc/*/{syscall,stack,personality}
-Message-ID: <20130826203412.GA2414@dztty>
-References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
- <871u5gqtw3.fsf@xmission.com>
+	id S1752451Ab3HZUhQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 16:37:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19048 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751570Ab3HZUhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 16:37:14 -0400
+Date: Mon, 26 Aug 2013 16:37:02 -0400
+From: Dave Jones <davej@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: unused swap offset / bad page map.
+Message-ID: <20130826203702.GA15407@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Cyrill Gorcunov <gorcunov@gmail.com>,
+	Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <20130819231836.GD14369@redhat.com>
+ <CAJd=RBA-UZmSTxNX63Vni+UPZBHwP4tvzE_qp1ZaHBqcNG7Fcw@mail.gmail.com>
+ <20130821204901.GA19802@redhat.com>
+ <CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com>
+ <20130823032127.GA5098@redhat.com>
+ <CAJd=RBArkh3sKVoOJUZBLngXtJubjx4-a3G6s7Tn0N=Pr1gU4g@mail.gmail.com>
+ <20130823035344.GB5098@redhat.com>
+ <CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
+ <20130826190757.GB27768@redhat.com>
+ <20130826201846.GA23724@moon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <871u5gqtw3.fsf@xmission.com>
+In-Reply-To: <20130826201846.GA23724@moon>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 09:49:48AM -0700, Eric W. Biederman wrote:
-> Djalal Harouni <tixxdz@opendz.org> writes:
-> 
-> > Avoid giving an fd on privileged files for free by switching these
-> > files to 0400 mode.
-> 
-> This seems to be a revert of Al's patch in March of 2011 based on broken
-> reasoning.
-Yes it reverts some parts of it which are not correct.
+On Tue, Aug 27, 2013 at 12:18:46AM +0400, Cyrill Gorcunov wrote:
+ > On Mon, Aug 26, 2013 at 03:08:22PM -0400, Dave Jones wrote:
+ > > On Mon, Aug 26, 2013 at 11:45:53AM +0800, Hillf Danton wrote:
+ > >  > On Fri, Aug 23, 2013 at 11:53 AM, Dave Jones <davej@redhat.com> wrote:
+ > >  > >
+ > >  > > It actually seems worse, seems I can trigger it even easier now, as if
+ > >  > > there's a leak.
+ > >  > >
+ > >  > Can you please try the new fix for TLB flush?
+ > >  > 
+ > >  > commit  2b047252d087be7f2ba
+ > >  > Fix TLB gather virtual address range invalidation corner cases
+ > > 
+ > > No luck.
+ > 
+ > Hi Dave, could you please put your .config somewhere so i would try
+ > to repeat this problem? (i've tried trinity with -C64 but it didn't
+ > trigger the issue).
 
-Yes the patch closes the races *during* read() time, but why the
-permissions were changed ?
+http://paste.fedoraproject.org/34944/77549285
+machine I'm using has 8gb ram, 8gb swap, and 4 cores.
 
-Note: it does not close any suid exec between open(),read(),lseek()...
+Try adding the -C64 to the invocation in scripts/test-multi.sh,
+and perhaps up'ing the NR_PROCESSES variable there too.
 
+	Dave
 
-History:
-This is the link of the original thread that added /proc/pid/stack
-support
-https://lkml.org/lkml/2008/11/7/109
-
-Quoting Andrew "I guess the 0400 mode on that file will suffice..."
-
-
-Here we do not have traceble checks at open() time, and the *only*
-protection at open() which is the 0400 mode was also removed!
-
-Please do check protections for /proc/*/mem
-
-> Al Viro commited:
-> > commit a9712bc12c40c172e393f85a9b2ba8db4bf59509
-> > Author: Al Viro <viro@zeniv.linux.org.uk>
-> > Date:   Wed Mar 23 15:52:50 2011 -0400
-> > 
-> >     deal with races in /proc/*/{syscall,stack,personality}
-> >     
-> >     All of those are rw-r--r-- and all are broken for suid - if you open
-> >     a file before the target does suid-root exec, you'll be still able
-> >     to access it.  For personality it's not a big deal, but for syscall
-> >     and stack it's a real problem.
-> >     
-> >     Fix: check that task is tracable for you at the time of read().
-> >     
-> >     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> 
-> How does changing the permissions to S_IRUSR prevent someone from
-> opening the file before, and reading the file after a suid exec?
-This will block opening files owned by other users, doing a suid will
-not help since you do not have an fd on the file.
-
-
-There is a big difference here:
-
-Currently you can get an fd on /proc/1/stack or whatever root owned
-process or files, later just do a suid exec to read from it.
-
-But with this simple change you can't. You will be able to open and get
-an fd only on the files owned by you (or the same user). Of course you
-can do a suid exec but you will only read input from this suid exec.
-You will not be able to read from arbitrary processes.
-
-
-There is a reason that these files were made 0400. Al's commit
-stated that currently all these files are "rw-r--r--" so add a check to
-close a race, but these files were "r--------" before the commit and not
-"r--r--r--" and it mistakenly changed them.
-
-> > This patch restores the old mode which was 0400
-> 
-> Which seems to add no security whatsoever and obscure the fact that
-> anyone who cares can read the file so what is the point?
-Well, I guess there is a big difference between 0400 and 0444
-
--- 
-Djalal Harouni
-http://opendz.org
