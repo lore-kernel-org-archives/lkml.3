@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab3HZKVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:21:08 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:42927 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab3HZKVG (ORCPT
+	id S1756736Ab3HZKWl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:22:41 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:42031 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab3HZKWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:21:06 -0400
+	Mon, 26 Aug 2013 06:22:39 -0400
+Message-ID: <521B2DE1.4060306@linux.vnet.ibm.com>
+Date: Mon, 26 Aug 2013 15:58:49 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <521B2AF7.6070806@asianux.com>
-References: <521B2AF7.6070806@asianux.com>
-Date: Mon, 26 Aug 2013 12:21:05 +0200
-X-Google-Sender-Auth: DFG4QyIT3ykmSpOJ76yAJjNHtXo
-Message-ID: <CAMuHMdXT+ezyFGNisEaz62ReHxeNzZq0XgKR905OtyhmCnu6Kg@mail.gmail.com>
-Subject: Re: [PATCH] h8300: include: asm: Kbuild: add gpio.h for pass compiling
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>, Arnd Bergmann <arnd@arndb.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Dave Jones <davej@redhat.com>, David Sharp <dhsharp@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, pbonzini@redhat.com,
+        jeremy@goop.org, konrad.wilk@oracle.com, peterz@infradead.org,
+        tglx@linutronix.de, agraf@suse.de, digitaleric@google.com,
+        riel@redhat.com, avi.kivity@gmail.com, habanero@linux.vnet.ibm.com,
+        chegu_vinod@hp.com, ouyang@cs.pitt.edu, drjones@redhat.com,
+        linux-doc@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, andi@firstfloor.org,
+        virtualization@lists.linux-foundation.org, mtosatti@redhat.com,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH V13 0/4] Paravirtualized ticket spinlocks for KVM host
+References: <y> <1377506916-26946-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20130826100401.GZ8218@redhat.com>
+In-Reply-To: <20130826100401.GZ8218@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082610-5816-0000-0000-0000099514C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 12:16 PM, Chen Gang <gang.chen@asianux.com> wrote:
-> Need add default "gpio.h" for h8300, or can not pass compiling.
->
-> The related error (allmodconfig for h8300):
->
->   arch/h8300/kernel/h8300_ksyms.c:17:22: fatal error: asm/gpio.h: No such file or directory
->    #include <asm/gpio.h>
->                         ^
+On 08/26/2013 03:34 PM, Gleb Natapov wrote:
+> On Mon, Aug 26, 2013 at 02:18:32PM +0530, Raghavendra K T wrote:
+>>
+>>   This series forms the kvm host part of paravirtual spinlock
+>>   based against kvm tree.
+>>
+>>   Please refer to https://lkml.org/lkml/2013/8/9/265 for
+>>   kvm guest and Xen, x86 part merged to -tip spinlocks.
+>>
+>>   Please note that:
+>>   kvm uapi: Add KICK_CPU and PV_UNHALT definition to uapi is a common patch
+>>   for both guest and host.
+>>
+> Thanks, applied. The patchset is not against kvm.git queue though, so I
+> had to fix one minor conflict manually.
 
-I this include needed at all? Perhaps it can just be removed?
+Thank you Gleb.
 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/h8300/include/asm/Kbuild |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/h8300/include/asm/Kbuild b/arch/h8300/include/asm/Kbuild
-> index 8ada3cf..4c627aa 100644
-> --- a/arch/h8300/include/asm/Kbuild
-> +++ b/arch/h8300/include/asm/Kbuild
-> @@ -1,6 +1,7 @@
->
->  generic-y += clkdev.h
->  generic-y += exec.h
-> +generic-y += gpio.h
->  generic-y += linkage.h
->  generic-y += mmu.h
->  generic-y += module.h
-
-The only gpio-related exports in arch/h8300/kernel/h8300_ksyms.c are:
-
-EXPORT_SYMBOL(h8300_reserved_gpio);
-EXPORT_SYMBOL(h8300_free_gpio);
-EXPORT_SYMBOL(h8300_set_gpio_dir);
-
-and these are definitely not provided by asm-generic/gpio.h.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
