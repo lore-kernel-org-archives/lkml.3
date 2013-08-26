@@ -1,83 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313Ab3HZUQC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 16:16:02 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:50877 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700Ab3HZUQA (ORCPT
+	id S1752373Ab3HZUQT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 16:16:19 -0400
+Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:42786 "EHLO
+	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752336Ab3HZUQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 16:16:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130826190757.GB27768@redhat.com>
-References: <20130807153030.GA25515@redhat.com>
-	<CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com>
-	<20130819231836.GD14369@redhat.com>
-	<CAJd=RBA-UZmSTxNX63Vni+UPZBHwP4tvzE_qp1ZaHBqcNG7Fcw@mail.gmail.com>
-	<20130821204901.GA19802@redhat.com>
-	<CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com>
-	<20130823032127.GA5098@redhat.com>
-	<CAJd=RBArkh3sKVoOJUZBLngXtJubjx4-a3G6s7Tn0N=Pr1gU4g@mail.gmail.com>
-	<20130823035344.GB5098@redhat.com>
-	<CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
-	<20130826190757.GB27768@redhat.com>
-Date: Mon, 26 Aug 2013 13:15:59 -0700
-X-Google-Sender-Auth: vcEzV4VeXwFmErqs8K0ZTTF1xLg
-Message-ID: <CA+55aFw_bhMOP73owFHRFHZDAYEdWgF9j-502Aq9tZe3tEfmwg@mail.gmail.com>
-Subject: Re: unused swap offset / bad page map.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Hillf Danton <dhillf@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 Aug 2013 16:16:18 -0400
+Message-ID: <00000140bc450c5e-5d281c7d-3555-49e2-8933-267f04e7541b-000000@email.amazonses.com>
+User-Agent: quilt/0.50-1
+Date: Mon, 26 Aug 2013 20:16:16 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org
+Cc: linux-arch@vger.kernel.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [guv v2 03/31] Coccinelle script for __get_cpu_var conversion
+References: <20130826200843.526699195@linux.com>
+X-SES-Outgoing: 2013.08.26-54.240.9.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 12:08 PM, Dave Jones <davej@redhat.com> wrote:
->
-> [ 4588.541886] swap_free: Unused swap offset entry 00002d15
-> [ 4588.541952] BUG: Bad page map in process trinity-kid12  pte:005a2a80 pmd:22c01f067
->
-> I can reproduce this pretty quickly by driving the system into swapping using
-> a few instances of 'trinity -C64' (this creates 64 threads)
->
-> I'm not sure how far back this bug goes, so I'll try some older kernels
-> and see if I can bisect it, because we don't seem to be getting closer
-> to figuring out what's actually happening..
+Much of the work was done by this coccinelle script.
 
-Bisecting would indeed be good. But I get the feeling that you'll need
-to go back a *long* time, because the swap_map[] code hasn't changed
-in ages.
+Wont catch everything (since coccinelle aborts when it no longer can make
+sense out of macros, sigh) but it covers a lot of ground.
 
-I'm adding Hugh Dickins to the cc just in case he hasn't seen this on
-linux-mm, because the swap_map[] code is complex as hell, and Hugh did
-touch some of it last. The whole swap_map[] thing is complicated by:
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
- - it's a single byte per swap entry
- - it's not even a *structured* byte, but a single counter that has
-several "fields" by hand
- - it has a count in the low 6 bits, with a magic "bad" value (which
-is also a magic "continuation" value if one of the high bits are set)
- - it has two magic bits: HAS_CACHE and CONTINUED
- - it has a _third_ magic value (SWAP_MAP_SHMEM) which is "CONTINUED+BAD"
- - we increment this nasty pseudo-counter wildly hackily, and and have
-magic special case checks for the odd cases
+Index: linux/scripts/coccinelle/convert/__get_cpu_var.cocci
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux/scripts/coccinelle/convert/__get_cpu_var.cocci	2013-08-22 14:41:13.976518846 -0500
+@@ -0,0 +1,70 @@
++// Convert all &__get_cpu_var to this_cpu_ptr
++//
++// _get_cpu_var is defined as:
++//
++// #define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
++//
++//&__get_cpu_var() is therefore
++//
++//	this_cpu_ptr(&var);
++//
++// The use of this_cpu_ptr() instead of __get_cpu_var clarifies
++// that we are relocating a per cpu offset and that there are
++// no get/put semantics involved.
++//
++//
++// Convert all &__get_cpu_vars (and also related functions)
++// to this_cpu_ptr(). Multiple transformations are provided
++// to be able to beautify the source a bit.
++//
++// Christoph Lameter <cl@linux.com> August 20, 2013
++//
++
++@A@ expression E; @@
++
++...
++-(&__get_cpu_var(E))
+++this_cpu_ptr(&E)
++...
++
++@B@ expression E; @@
++
++...
++-(&__raw_get_cpu_var(E))
+++__this_cpu_ptr(&E)
++...
++
++@C@ expression E; @@
++
++...
++-&__get_cpu_var(E)
+++this_cpu_ptr(&E)
++...
++
++@D@ expression E; @@
++
++...
++-&__raw_get_cpu_var(E)
+++__this_cpu_ptr(&E)
++...
++
++@A2@ expression E; @@
++
++-(&__get_cpu_var(E))
+++this_cpu_ptr(&E)
++
++@B2@ expression E; @@
++
++-(&__raw_get_cpu_var(E))
+++__this_cpu_ptr(&E)
++
++@C2@ expression E; @@
++
++-&__get_cpu_var(E)
+++this_cpu_ptr(&E)
++
++@D2@ expression E; @@
++
++-&__raw_get_cpu_var(E)
+++__this_cpu_ptr(&E)
++
 
-and if we get any of the special cases wrong, we'll
-increment/decrement it wrong, and we're screwed.
-
-The *locking* looks pretty simple, though. It's a simple spinlock. We
-do some optimistic tests outside the spinlock, but the actual
-allocation and modification seem to all be inside the lock and
-re-check any optimistic values afaik.
-
-So I'm almost likely to think that we are more likely to have
-something wrong in the messy magical special cases. I'm wondering if
-we should get rid of the continuation crap, for example, and expand
-the "one byte per swap page" to two bytes instead.
-
-Hugh, I think you know this code best, because you added the last
-special case (that SWAP_MAP_SHMEM value). Comments?
-
-                  Linus
