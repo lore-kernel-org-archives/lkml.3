@@ -1,119 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304Ab3HZWpn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:45:43 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:44633 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab3HZWpl (ORCPT
+	id S1752545Ab3HZWp5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:45:57 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:49038 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab3HZWpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:45:41 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: "Rafael J . Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: [PATCH] cpufreq: Fix timer/workqueue corruption due to double queueing
-Date: Mon, 26 Aug 2013 15:45:37 -0700
-Message-Id: <1377557137-1157-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.rc3.2.g2c2b664
+	Mon, 26 Aug 2013 18:45:55 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Andreas Herrmann <andreas.herrmann@calxeda.com>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 04/11] net: calxedaxgmac: fix possible skb free before tx complete
+Date: Mon, 26 Aug 2013 17:45:19 -0500
+Message-Id: <1377557126-10716-4-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
+References: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rob Herring <rob.herring@calxeda.com>
 
-When a CPU is hot removed we'll cancel all the delayed work items
-via gov_cancel_work(). Normally this will just cancel a delayed
-timer on each CPU that the policy is managing and the work won't
-run, but if the work is already running the workqueue code will
-wait for the work to finish before continuing to prevent the
-work items from re-queuing themselves like they normally do. This
-scheme will work most of the time, except for the case where the
-work function determines that it should adjust the delay for all
-other CPUs that the policy is managing. If this scenario occurs,
-the canceling CPU will cancel its own work but queue up the other
-CPUs works to run. For example:
+The TX completion code may have freed an skb before the entire sg list
+was transmitted. The DMA unmap calls for the fragments could also get
+skipped. Now set the skb pointer on every entry in the ring, not just
+the head of the sg list. We then use the FS (first segment) bit in the
+descriptors to determine skb head vs. fragment.
 
- CPU0                                        CPU1
- ----                                        ----
- cpu_down()
-  ...
-  __cpufreq_remove_dev()
-   cpufreq_governor_dbs()
-    case CPUFREQ_GOV_STOP:
-     gov_cancel_work(dbs_data, policy);
-      cpu0 work is canceled
-       timer is canceled
-       cpu1 work is canceled                    <work runs>
-       <waits for cpu1>                         od_dbs_timer()
-                                                 gov_queue_work(*, *, true);
- 						  cpu0 work queued
- 						  cpu1 work queued
-						  cpu2 work queued
-						  ...
-       cpu1 work is canceled
-       cpu2 work is canceled
-       ...
+This also fixes similar bug in xgmac_free_tx_skbufs where clean-up of
+a sg list that wraps at the end of the ring buffer would not get
+unmapped.
 
-At the end of the GOV_STOP case cpu0 still has a work queued to
-run although the code is expecting all of the works to be
-canceled. __cpufreq_remove_dev() will then proceed to
-re-initialize all the other CPUs works except for the CPU that is
-going down. The CPUFREQ_GOV_START case in cpufreq_governor_dbs()
-will trample over the queued work and debugobjects will spit out
-a warning:
-
-WARNING: at lib/debugobjects.c:260 debug_print_object+0x94/0xbc()
-ODEBUG: init active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x10
-Modules linked in:
-CPU: 0 PID: 1491 Comm: sh Tainted: G        W    3.10.0 #19
-[<c010c178>] (unwind_backtrace+0x0/0x11c) from [<c0109dec>] (show_stack+0x10/0x14)
-[<c0109dec>] (show_stack+0x10/0x14) from [<c01904cc>] (warn_slowpath_common+0x4c/0x6c)
-[<c01904cc>] (warn_slowpath_common+0x4c/0x6c) from [<c019056c>] (warn_slowpath_fmt+0x2c/0x3c)
-[<c019056c>] (warn_slowpath_fmt+0x2c/0x3c) from [<c0388a7c>] (debug_print_object+0x94/0xbc)
-[<c0388a7c>] (debug_print_object+0x94/0xbc) from [<c0388e34>] (__debug_object_init+0x2d0/0x340)
-[<c0388e34>] (__debug_object_init+0x2d0/0x340) from [<c019e3b0>] (init_timer_key+0x14/0xb0)
-[<c019e3b0>] (init_timer_key+0x14/0xb0) from [<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8)
-[<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8) from [<c06325a0>] (__cpufreq_governor+0xdc/0x1a4)
-[<c06325a0>] (__cpufreq_governor+0xdc/0x1a4) from [<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434)
-[<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434) from [<c08989f4>] (cpufreq_cpu_callback+0x60/0x80)
-[<c08989f4>] (cpufreq_cpu_callback+0x60/0x80) from [<c08a43c0>] (notifier_call_chain+0x38/0x68)
-[<c08a43c0>] (notifier_call_chain+0x38/0x68) from [<c01938e0>] (__cpu_notify+0x28/0x40)
-[<c01938e0>] (__cpu_notify+0x28/0x40) from [<c0892ad4>] (_cpu_down+0x7c/0x2c0)
-[<c0892ad4>] (_cpu_down+0x7c/0x2c0) from [<c0892d3c>] (cpu_down+0x24/0x40)
-[<c0892d3c>] (cpu_down+0x24/0x40) from [<c0893ea8>] (store_online+0x2c/0x74)
-[<c0893ea8>] (store_online+0x2c/0x74) from [<c04519d8>] (dev_attr_store+0x18/0x24)
-[<c04519d8>] (dev_attr_store+0x18/0x24) from [<c02a69d4>] (sysfs_write_file+0x100/0x148)
-[<c02a69d4>] (sysfs_write_file+0x100/0x148) from [<c0255c18>] (vfs_write+0xcc/0x174)
-[<c0255c18>] (vfs_write+0xcc/0x174) from [<c0255f70>] (SyS_write+0x38/0x64)
-[<c0255f70>] (SyS_write+0x38/0x64) from [<c0106120>] (ret_fast_syscall+0x0/0x30)
-
-The simplest fix is to check and see if the governor is being
-stopped and ignore the all_cpus flag so that only the work that's
-being canceled has the chance to re-queue itself.
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 ---
+ drivers/net/ethernet/calxeda/xgmac.c | 55 ++++++++++++++++--------------------
+ 1 file changed, 24 insertions(+), 31 deletions(-)
 
-This should probably go to stable. I think this all started happening 
-in commit 031299b3be30f3ec (cpufreq: governors: Avoid unnecessary per cpu
-timer interrupts, 2013-02-27).
-
- drivers/cpufreq/cpufreq_governor.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 7b839a8..0375a3c 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -133,7 +133,7 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
- {
- 	int i;
+diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
+index df7e3e2..64854ad 100644
+--- a/drivers/net/ethernet/calxeda/xgmac.c
++++ b/drivers/net/ethernet/calxeda/xgmac.c
+@@ -470,6 +470,11 @@ static inline int desc_get_tx_ls(struct xgmac_dma_desc *p)
+ 	return le32_to_cpu(p->flags) & TXDESC_LAST_SEG;
+ }
  
--	if (!all_cpus) {
-+	if (!all_cpus || !policy->governor_enabled) {
- 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
- 	} else {
- 		for_each_cpu(i, policy->cpus)
++static inline int desc_get_tx_fs(struct xgmac_dma_desc *p)
++{
++	return le32_to_cpu(p->flags) & TXDESC_FIRST_SEG;
++}
++
+ static inline u32 desc_get_buf_addr(struct xgmac_dma_desc *p)
+ {
+ 	return le32_to_cpu(p->buf1_addr);
+@@ -796,7 +801,7 @@ static void xgmac_free_rx_skbufs(struct xgmac_priv *priv)
+ 
+ static void xgmac_free_tx_skbufs(struct xgmac_priv *priv)
+ {
+-	int i, f;
++	int i;
+ 	struct xgmac_dma_desc *p;
+ 
+ 	if (!priv->tx_skbuff)
+@@ -807,16 +812,15 @@ static void xgmac_free_tx_skbufs(struct xgmac_priv *priv)
+ 			continue;
+ 
+ 		p = priv->dma_tx + i;
+-		dma_unmap_single(priv->device, desc_get_buf_addr(p),
+-				 desc_get_buf_len(p), DMA_TO_DEVICE);
+-
+-		for (f = 0; f < skb_shinfo(priv->tx_skbuff[i])->nr_frags; f++) {
+-			p = priv->dma_tx + i++;
++		if (desc_get_tx_fs(p))
++			dma_unmap_single(priv->device, desc_get_buf_addr(p),
++					 desc_get_buf_len(p), DMA_TO_DEVICE);
++		else
+ 			dma_unmap_page(priv->device, desc_get_buf_addr(p),
+ 				       desc_get_buf_len(p), DMA_TO_DEVICE);
+-		}
+ 
+-		dev_kfree_skb_any(priv->tx_skbuff[i]);
++		if (desc_get_tx_ls(p))
++			dev_kfree_skb_any(priv->tx_skbuff[i]);
+ 		priv->tx_skbuff[i] = NULL;
+ 	}
+ }
+@@ -853,8 +857,6 @@ static void xgmac_free_dma_desc_rings(struct xgmac_priv *priv)
+  */
+ static void xgmac_tx_complete(struct xgmac_priv *priv)
+ {
+-	int i;
+-
+ 	while (dma_ring_cnt(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ)) {
+ 		unsigned int entry = priv->tx_tail;
+ 		struct sk_buff *skb = priv->tx_skbuff[entry];
+@@ -864,33 +866,24 @@ static void xgmac_tx_complete(struct xgmac_priv *priv)
+ 		if (desc_get_owner(p))
+ 			break;
+ 
+-		/* Verify tx error by looking at the last segment */
+-		if (desc_get_tx_ls(p))
+-			desc_get_tx_status(priv, p);
+-
+ 		netdev_dbg(priv->dev, "tx ring: curr %d, dirty %d\n",
+ 			priv->tx_head, priv->tx_tail);
+ 
+-		dma_unmap_single(priv->device, desc_get_buf_addr(p),
+-				 desc_get_buf_len(p), DMA_TO_DEVICE);
+-
+-		priv->tx_skbuff[entry] = NULL;
+-		priv->tx_tail = dma_ring_incr(entry, DMA_TX_RING_SZ);
+-
+-		if (!skb) {
+-			continue;
+-		}
+-
+-		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+-			entry = priv->tx_tail = dma_ring_incr(priv->tx_tail,
+-							      DMA_TX_RING_SZ);
+-			p = priv->dma_tx + priv->tx_tail;
+-
++		if (desc_get_tx_fs(p))
++			dma_unmap_single(priv->device, desc_get_buf_addr(p),
++					 desc_get_buf_len(p), DMA_TO_DEVICE);
++		else
+ 			dma_unmap_page(priv->device, desc_get_buf_addr(p),
+ 				       desc_get_buf_len(p), DMA_TO_DEVICE);
++
++		/* Check tx error on the last segment */
++		if (desc_get_tx_ls(p)) {
++			desc_get_tx_status(priv, p);
++			dev_kfree_skb(skb);
+ 		}
+ 
+-		dev_kfree_skb(skb);
++		priv->tx_skbuff[entry] = NULL;
++		priv->tx_tail = dma_ring_incr(entry, DMA_TX_RING_SZ);
+ 	}
+ 
+ 	if (dma_ring_space(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ) >
+@@ -1110,7 +1103,7 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
+ 
+ 		entry = dma_ring_incr(entry, DMA_TX_RING_SZ);
+ 		desc = priv->dma_tx + entry;
+-		priv->tx_skbuff[entry] = NULL;
++		priv->tx_skbuff[entry] = skb;
+ 
+ 		desc_set_buf_addr_and_size(desc, paddr, len);
+ 		if (i < (nfrags - 1))
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.1.2
 
