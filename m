@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab3HZVm5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 17:42:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45499 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752336Ab3HZVmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 17:42:55 -0400
-Date: Mon, 26 Aug 2013 17:42:44 -0400
-From: Dave Jones <davej@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: unused swap offset / bad page map.
-Message-ID: <20130826214244.GA21146@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Cyrill Gorcunov <gorcunov@gmail.com>,
-	Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com>
- <20130823032127.GA5098@redhat.com>
- <CAJd=RBArkh3sKVoOJUZBLngXtJubjx4-a3G6s7Tn0N=Pr1gU4g@mail.gmail.com>
- <20130823035344.GB5098@redhat.com>
- <CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
- <20130826190757.GB27768@redhat.com>
- <20130826201846.GA23724@moon>
- <20130826203702.GA15407@redhat.com>
- <20130826204203.GB23724@moon>
- <20130826213754.GN3814@moon>
+	id S1752724Ab3HZVnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 17:43:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57989 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab3HZVno (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 17:43:44 -0400
+Date: Mon, 26 Aug 2013 11:55:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: [3.10][PATCH 4/4] mei: me: fix hardware reset flow
+Message-ID: <20130826185503.GB15992@kroah.com>
+References: <1377424189-5508-1-git-send-email-tomas.winkler@intel.com>
+ <1377424189-5508-5-git-send-email-tomas.winkler@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130826213754.GN3814@moon>
+In-Reply-To: <1377424189-5508-5-git-send-email-tomas.winkler@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 01:37:54AM +0400, Cyrill Gorcunov wrote:
- > On Tue, Aug 27, 2013 at 12:42:03AM +0400, Cyrill Gorcunov wrote:
- > > On Mon, Aug 26, 2013 at 04:37:02PM -0400, Dave Jones wrote:
- > > > 
- > > > Try adding the -C64 to the invocation in scripts/test-multi.sh,
- > > > and perhaps up'ing the NR_PROCESSES variable there too.
- > > 
- > > Thanks! I'll ping you if I manage to crash my instance.
- > 
- > So trinity tained kernel, but definitely not in place I'm interested.
- > 
- > [  320.904506] raw_sendmsg: trinity-child14 forgot to set AF_INET. Fix it!
- > [  329.570812] ------------[ cut here ]------------
- > [  329.571650] WARNING: CPU: 0 PID: 1982 at kernel/lockdep.c:3552 check_flags+0x18a/0x1c1()
- > [  329.571650] DEBUG_LOCKS_WARN_ON(current->softirqs_enabled)
- > [  329.571650] Modules linked in:
- > [  329.571650] CPU: 0 PID: 1982 Comm: trinity-child4 Not tainted 3.11.0-rc6-dirty #386
- > [  329.571650] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
- > [  329.571650]  0000000000000009 ffff88001ee03b10 ffffffff8157ac8a 0000000000000006
- > [  329.571650]  ffff88001ee03b60 ffff88001ee03b50 ffffffff81045bb2 ffffffff81583840
- > [  329.571650]  ffffffff81092620 ffff880002b48000 0000000000000046 ffffffff81a2f750
- > [  329.571650] Call Trace:
- > [  329.571650]  <IRQ>  [<ffffffff8157ac8a>] dump_stack+0x4f/0x84
- > [  329.571650]  [<ffffffff81045bb2>] warn_slowpath_common+0x81/0x9b
- > [  329.571650]  [<ffffffff81583840>] ? ftrace_call+0x5/0x2f
- > [  329.571650]  [<ffffffff81092620>] ? check_flags+0x18a/0x1c1
- > [  329.571650]  [<ffffffff81045c6f>] warn_slowpath_fmt+0x46/0x48
- > [  329.571650]  [<ffffffff81045c2e>] ? warn_slowpath_fmt+0x5/0x48
- > [  329.571650]  [<ffffffff81092620>] check_flags+0x18a/0x1c1
- > [  329.571650]  [<ffffffff81093595>] lock_is_held+0x30/0x5f
- > [  329.571650]  [<ffffffff810eb19e>] rcu_read_lock_held+0x36/0x38
- > [  329.571650]  [<ffffffff810f1b92>] perf_tp_event+0x92/0x220
- > [  329.571650]  [<ffffffff810f1d0e>] ? perf_tp_event+0x20e/0x220
- > [  329.571650]  [<ffffffff81049f6c>] ? __local_bh_enable+0x9a/0x9e
- > [  329.571650]  [<ffffffff810712f3>] ? get_parent_ip+0x3f/0x3f
- > [  329.571650]  [<ffffffff81049f6c>] ? __local_bh_enable+0x9a/0x9e
- > [  329.571650]  [<ffffffff810e3af1>] perf_ftrace_function_call+0xce/0xdc
+On Sun, Aug 25, 2013 at 12:49:49PM +0300, Tomas Winkler wrote:
+> stable: 3.10
+> commit ff96066e3171acdea356b331163495957cb833d0 char-misc
 
-when it rains, it pours.. 
- 
- > (since my config pretty similar to yours I tried to run trinity without
- >  kernel recompilation. At first i loaded swap space with crap data
- > 
- > [root@ovz trinity]# free 
- >              total       used       free     shared    buffers     cached
- > Mem:        493228     480188      13040          0       2912      12112
- > -/+ buffers/cache:     465164      28064
- > Swap:      2063356    1741304     322052
- > 
- > then run it as
- > 
- > [root@ovz trinity]# ./trinity -C64 --dangerous)
+Sorry, but I have to wait until the patch hits Linus's tree before I can
+accept it into a stable tree, you know that :(
 
-Yeah, for reproducing this bug, I'd stick to running it as a user, without --dangerous.
-you might still hit a few fairly-easy to trigger warn-on/printks. I run with
-this applied: http://paste.fedoraproject.org/34960/55323613/raw/ to make things
-a little less noisy.
+> Both H_IS and H_IE needs to be set to receive H_RDY
+> interrupt
+> 
+> 1. Assert H_IS to clear the interrupts during hw reset
+> and use mei_me_reg_write instead of mei_hcsr_set as the later
+> strips down the H_IS
+> 
+> 2. fix interrupt disablement embarrassing typo
+>   hcsr |= ~H_IE -> hcsr &= ~H_IE;
+> this will remove the unwanted interrupt on power down
+> 
+> 3. remove useless debug print outs
+> 
+> Cc: stable@vger.kernel.org
+> Cc: Shuah Khan <shuah.kh@samsung.com>
+> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> Conflicts:
+> 	drivers/misc/mei/hw-me.c
 
-	Dave
+What's this for?
 
+I'll wait for this to hit Linus's tree during the 3.12-rc1 merge window
+and then add it to the 3.10-stable tree, ok?
+
+thanks,
+
+greg k-h
