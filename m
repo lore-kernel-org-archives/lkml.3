@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab3HZBMj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 21:12:39 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:8693 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab3HZBMh (ORCPT
+	id S1755143Ab3HZBTK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 21:19:10 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:58639 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754509Ab3HZBTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 21:12:37 -0400
-X-Spam-Score: -101.0
-Message-ID: <521AAB43.3080604@asianux.com>
-Date: Mon, 26 Aug 2013 09:11:31 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: Steffen Klassert <steffen.klassert@secunet.com>,
-        linux-crypto@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel/padata.c: share code between CPU_ONLINE and
- CPU_DOWN_FAILED, same to CPU_DOWN_PREPARE and CPU_UP_CANCELED
-References: <5212E5E4.8010408@asianux.com> <5212E61F.7010602@asianux.com> <20130822051122.GB26773@secunet.com> <5215A134.90607@asianux.com> <20130822060503.GC26773@secunet.com> <5215B319.3020908@asianux.com> <20130823104448.GI26773@secunet.com> <20130823104731.GA30865@gondor.apana.org.au>
-In-Reply-To: <20130823104731.GA30865@gondor.apana.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sun, 25 Aug 2013 21:19:08 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v3 3/8] mm/hwpoison: fix race against poison thp
+Date: Mon, 26 Aug 2013 09:18:46 +0800
+Message-Id: <1377479931-7430-3-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1377479931-7430-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1377479931-7430-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082601-9264-0000-0000-00000464E2A6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2013 06:47 PM, Herbert Xu wrote:
-> On Fri, Aug 23, 2013 at 12:44:48PM +0200, Steffen Klassert wrote:
->> On Thu, Aug 22, 2013 at 02:43:37PM +0800, Chen Gang wrote:
->>> Share code between CPU_ONLINE and CPU_DOWN_FAILED, same to
->>> CPU_DOWN_PREPARE and CPU_UP_CANCELED.
->>>
->>> It will fix 2 bugs:
->>>
->>>   "not check the return value of __padata_remove_cpu() and __padata_add_cpu()".
->>>   "need add 'break' between CPU_UP_CANCELED and CPU_DOWN_FAILED".
->>>
->>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>
->> This looks ok to me, Herbert can you take this one?
-> 
-> Sure.
-> 
+v1 -> v2:
+ * unpoison thp fail  
 
-Thank you all.
+There is a race between hwpoison page and unpoison page, memory_failure
+set the page hwpoison and increase num_poisoned_pages without hold page
+lock, and one page count will be accounted against thp for num_poisoned_pages.
+However, unpoison can occur before memory_failure hold page lock and
+split transparent hugepage, unpoison will decrease num_poisoned_pages
+by 1 << compound_order since memory_failure has not yet split transparent
+hugepage with page lock held. That means we account one page for hwpoison
+and 1 << compound_order for unpoison. This patch fix it by inserting a 
+PageTransHuge check before doing TestClearPageHWPoison, unpoison failed 
+without clearing PageHWPoison and decreasing num_poisoned_pages.
 
-> Thanks,
-> 
 
-Thanks.
+            A                                                 	B
+    	memory_failue
+        TestSetPageHWPoison(p);
+        if (PageHuge(p))
+            nr_pages = 1 << compound_order(hpage);
+        else
+            nr_pages = 1;
+        atomic_long_add(nr_pages, &num_poisoned_pages);
+                                                            unpoison_memory
+	                                                        nr_pages = 1<< compound_trans_order(page);
+                                                            if(TestClearPageHWPoison(p))
+                                                            atomic_long_sub(nr_pages, &num_poisoned_pages);
+        lock page
+        if (!PageHWPoison(p))
+        	unlock page and return
+        hwpoison_user_mappings
+        if (PageTransHuge(hpage))
+        	split_huge_page(hpage);
+
+
+Suggested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ mm/memory-failure.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 5a4f4d6..a6c4752 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1339,6 +1339,16 @@ int unpoison_memory(unsigned long pfn)
+ 		return 0;
+ 	}
+ 
++	/*
++	 * unpoison_memory() can encounter thp only when the thp is being
++	 * worked by memory_failure() and the page lock is not held yet.
++	 * In such case, we yield to memory_failure() and make unpoison fail.
++	 */
++	if (PageTransHuge(page)) {
++		pr_info("MCE: Memory failure is now running on %#lx\n", pfn);
++			return 0;
++	}
++
+ 	nr_pages = 1 << compound_order(page);
+ 
+ 	if (!get_page_unless_zero(page)) {
 -- 
-Chen Gang
+1.8.1.2
+
