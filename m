@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab3HZSwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 14:52:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29306 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752166Ab3HZSwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 14:52:54 -0400
-Date: Mon, 26 Aug 2013 20:46:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Willy Tarreau <w@1wt.eu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] proc: make proc_fd_permission() thread-friendly
-Message-ID: <20130826184631.GA30917@redhat.com>
-References: <20130824212432.GA9299@1wt.eu> <20130825052317.GZ27005@ZenIV.linux.org.uk> <20130825065039.GB9299@1wt.eu> <CA+55aFwFeCRcwn4qo570Y15mKrN3jEdN757PcZhrXs7QYi8MYA@mail.gmail.com> <20130825194844.GA16717@redhat.com> <CA+55aFzbY3zYD1i5x02Z-6K3nHKzJj6227ZBYRLqij9y0eXRqQ@mail.gmail.com> <20130826153301.GA15890@redhat.com> <20130826163704.GA21763@redhat.com> <20130826175441.GA28856@redhat.com> <87ioyspaju.fsf@xmission.com>
+	id S1752511Ab3HZSy5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 14:54:57 -0400
+Received: from mail-gh0-f170.google.com ([209.85.160.170]:32966 "EHLO
+	mail-gh0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103Ab3HZSy4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 14:54:56 -0400
+Date: Mon, 26 Aug 2013 15:54:49 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH V2 12/15] perf tools: allow non-matching sample types
+Message-ID: <20130826185449.GA8765@ghostprotocols.net>
+References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com>
+ <1372319707-13892-13-git-send-email-adrian.hunter@intel.com>
+ <51CC6AAF.4030404@gmail.com>
+ <51D14CB6.206@intel.com>
+ <51D1D043.5030509@gmail.com>
+ <51D27CC6.1050209@intel.com>
+ <CABPqkBQar4SKq_A+=ShdjJgYfxW90yuD=M=WQ2HjFwR_bKxKkg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87ioyspaju.fsf@xmission.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CABPqkBQar4SKq_A+=ShdjJgYfxW90yuD=M=WQ2HjFwR_bKxKkg@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26, Eric W. Biederman wrote:
->
-> Oleg Nesterov <oleg@redhat.com> writes:
->
-> > proc_fd_permission() says "process can still access /proc/self/fd
-> > after it has executed a setuid()", but the "task_pid() = proc_pid()
-> > check only helps if the task is group leader, /proc/self points to
-> > /proc/leader-pid.
-> >
-> > Change this check to use task_tgid() so that the whole process can
-> > access /proc/self/fd.
->
-> There is at least a semantic goofiness here.
->
-> There is /proc/<tgid>/fd and /proc/<tgid>/task/<pid>/fd, and the same
-> permission check is used by both.
+Em Wed, Jul 03, 2013 at 08:44:25AM +0200, Stephane Eranian escreveu:
+> On Tue, Jul 2, 2013 at 9:09 AM, Adrian Hunter <adrian.hunter@intel.com> wrote:
+> > It would be more compelling to provide a use-case where that "waste"
+> > actually makes any difference.
 
-Yes, and we have /proc/<tid>/ which includes fd as well.
+> In my opinion, it's not so much of the "wasted" space than on the ease of use
+> for tools. With your change, tools would have to know something about the order
+> in which sample_type is laid out. And it just happens that it is not
+> as trivial as
+> expected. It is NOT the bit position order in sample_type. So this is more error
+> prone.
+ 
+> I prefer your IDENTIFIER solution better, yet it also implies that this flag is
+> special. It provides the event ID at the first position in the sample's body.
 
-> We might just want to have a /proc/thread symlink as well so people
-> don't have this issue.
+I'm trying to process Adrian's latest batch, but then I saw this
+discussion and since this compat part is the first patch and is
+controversial, i.e. Stephane seems to be against it as is David Ahern, I
+would like to get this compat thing to be moved to the end of the
+patchset, so that we could get the parts that everybody agrees should go
+in first and then further discuss the merits of forcing the
+compatibility up to where we can get the PERF_SAMPLE_ID info.
 
-Yes! I agree.
+Sorry Adrian, this has been thru a lot of versions :-\
 
-In particular, from the changelog:
+I tried doing it myself, but in the end you would have to take a look to
+see if I hadn't messed up something, so if you can do a  v13 with 
 
-	Note: CLONE_THREAD doesn't require CLONE_FILES so task->files can
-	differ,
+  [PATCH V12 01/13] perf tools: allow non-matching sample types
 
-so /proc/self/fd doesn't necessarily mean current->files, this can confuse
-the application.
+Moved to 13/13, I could then process the other patches and move on,
 
-And I also assume that you agree with this change ;)
+Allowing mixed sample types after this part that must be force made
+compatible allows us to do things in older kernels that we can't now, so
+it has merits, BTW.
 
-Oleg.
+Thanks,
 
+- Arnaldo
