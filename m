@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab3HZDBc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 23:01:32 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:35876 "EHLO
+	id S1755870Ab3HZDAj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 23:00:39 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:35873 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913Ab3HZDAl (ORCPT
+	with ESMTP id S1755779Ab3HZDAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 23:00:41 -0400
+	Sun, 25 Aug 2013 23:00:36 -0400
 From: Tiejun Chen <tiejun.chen@windriver.com>
 To: <benh@kernel.crashing.org>
 CC: <linux-kernel@vger.kernel.org>
-Subject: [v4][PATCH 5/8] book3e/kexec/kdump: introduce a kexec kernel flag
-Date: Mon, 26 Aug 2013 11:00:55 +0800
-Message-ID: <1377486058-30379-6-git-send-email-tiejun.chen@windriver.com>
+Subject: [v4][PATCH 2/8] powerpc/book3e: support CONFIG_RELOCATABLE
+Date: Mon, 26 Aug 2013 11:00:52 +0800
+Message-ID: <1377486058-30379-3-git-send-email-tiejun.chen@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1377486058-30379-1-git-send-email-tiejun.chen@windriver.com>
 References: <1377486058-30379-1-git-send-email-tiejun.chen@windriver.com>
@@ -22,122 +22,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to introduce a flag to indicate we're already running
-a kexec kernel then we can go proper path. For example, We
-shouldn't access spin_table from the bootloader to up any secondary
-cpu for kexec kernel, and kexec kernel already know how to jump to
-generic_secondary_smp_init.
+book3e is different with book3s since 3s includes the exception
+vectors code in head_64.S as it relies on absolute addressing
+which is only possible within this compilation unit. So we have
+to get that label address with got.
+
+And when boot a relocated kernel, we should reset ipvr properly again
+after .relocate.
 
 Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
 ---
- arch/powerpc/include/asm/smp.h    |    1 +
- arch/powerpc/kernel/head_64.S     |   10 ++++++++++
- arch/powerpc/kernel/misc_64.S     |    6 ++++++
- arch/powerpc/platforms/85xx/smp.c |   20 +++++++++++++++-----
- 4 files changed, 32 insertions(+), 5 deletions(-)
+ arch/powerpc/include/asm/exception-64e.h |   11 +++++++++++
+ arch/powerpc/kernel/exceptions-64e.S     |   18 +++++++++++++++++-
+ arch/powerpc/kernel/head_64.S            |   25 +++++++++++++++++++++++++
+ 3 files changed, 53 insertions(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/include/asm/smp.h b/arch/powerpc/include/asm/smp.h
-index 98da78e..92f7e61 100644
---- a/arch/powerpc/include/asm/smp.h
-+++ b/arch/powerpc/include/asm/smp.h
-@@ -207,6 +207,7 @@ extern void generic_secondary_thread_init(void);
- extern unsigned long __secondary_hold_spinloop;
- extern unsigned long __secondary_hold_acknowledge;
- extern char __secondary_hold;
-+extern unsigned long __run_at_kexec;
+diff --git a/arch/powerpc/include/asm/exception-64e.h b/arch/powerpc/include/asm/exception-64e.h
+index 51fa43e..371a77f 100644
+--- a/arch/powerpc/include/asm/exception-64e.h
++++ b/arch/powerpc/include/asm/exception-64e.h
+@@ -214,10 +214,21 @@ exc_##label##_book3e:
+ #define TLB_MISS_STATS_SAVE_INFO_BOLTED
+ #endif
  
- extern void __early_start(void);
- #endif /* __ASSEMBLY__ */
++#ifndef CONFIG_RELOCATABLE
+ #define SET_IVOR(vector_number, vector_offset)	\
+ 	li	r3,vector_offset@l; 		\
+ 	ori	r3,r3,interrupt_base_book3e@l;	\
+ 	mtspr	SPRN_IVOR##vector_number,r3;
++#else /* !CONFIG_RELOCATABLE */
++/* In relocatable case the value of the constant expression 'expr' is only
++ * offset. So instead, we should loads the address of label 'name'.
++ */
++#define SET_IVOR(vector_number, vector_offset)	\
++	LOAD_REG_ADDR(r3,interrupt_base_book3e);\
++	rlwinm	r3,r3,0,15,0;			\
++	ori	r3,r3,vector_offset@l;		\
++	mtspr	SPRN_IVOR##vector_number,r3;
++#endif /* CONFIG_RELOCATABLE */
+ 
+ #endif /* _ASM_POWERPC_EXCEPTION_64E_H */
+ 
+diff --git a/arch/powerpc/kernel/exceptions-64e.S b/arch/powerpc/kernel/exceptions-64e.S
+index 99cb68e..e71511c 100644
+--- a/arch/powerpc/kernel/exceptions-64e.S
++++ b/arch/powerpc/kernel/exceptions-64e.S
+@@ -1097,7 +1097,15 @@ skpinv:	addi	r6,r6,1				/* Increment */
+  * r4 = MAS0 w/TLBSEL & ESEL for the temp mapping
+  */
+ 	/* Now we branch the new virtual address mapped by this entry */
++#ifdef CONFIG_RELOCATABLE
++	/* We have to find out address from lr. */
++	bl	1f		/* Find our address */
++1:	mflr	r6
++	addi	r6,r6,(2f - 1b)
++	tovirt(r6,r6)
++#else
+ 	LOAD_REG_IMMEDIATE(r6,2f)
++#endif
+ 	lis	r7,MSR_KERNEL@h
+ 	ori	r7,r7,MSR_KERNEL@l
+ 	mtspr	SPRN_SRR0,r6
+@@ -1348,9 +1356,17 @@ _GLOBAL(book3e_secondary_thread_init)
+ 	mflr	r28
+ 	b	3b
+ 
+-_STATIC(init_core_book3e)
++_GLOBAL(init_core_book3e)
+ 	/* Establish the interrupt vector base */
++#ifdef CONFIG_RELOCATABLE
++/* In relocatable case the value of the constant expression 'expr' is only
++ * offset. So instead, we should loads the address of label 'name'.
++ */
++	tovirt(r2,r2)
++	LOAD_REG_ADDR(r3, interrupt_base_book3e)
++#else
+ 	LOAD_REG_IMMEDIATE(r3, interrupt_base_book3e)
++#endif
+ 	mtspr	SPRN_IVPR,r3
+ 	sync
+ 	blr
 diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
-index fd42f8a..fa74d20 100644
+index 3d11d80..27cfbcd 100644
 --- a/arch/powerpc/kernel/head_64.S
 +++ b/arch/powerpc/kernel/head_64.S
-@@ -89,6 +89,10 @@ __secondary_hold_spinloop:
- __secondary_hold_acknowledge:
- 	.llong	0x0
- 
-+	.globl	__run_at_kexec
-+__run_at_kexec:
-+	.llong	0x0	/* Flag for the secondary kernel from kexec. */
-+
- #ifdef CONFIG_RELOCATABLE
- 	/* This flag is set to 1 by a loader if the kernel should run
- 	 * at the loaded address instead of the linked address.  This
-@@ -426,6 +430,7 @@ _STATIC(__after_prom_start)
+@@ -414,12 +414,25 @@ _STATIC(__after_prom_start)
+ 	/* process relocations for the final address of the kernel */
+ 	lis	r25,PAGE_OFFSET@highest	/* compute virtual base of kernel */
+ 	sldi	r25,r25,32
++#if defined(CONFIG_PPC_BOOK3E)
++	tovirt(r26,r26)			/* on booke, we already run at PAGE_OFFSET */
++#endif
+ 	lwz	r7,__run_at_load-_stext(r26)
++#if defined(CONFIG_PPC_BOOK3E)
++	tophys(r26,r26)			/* Restore for the remains. */
++#endif
+ 	cmplwi	cr0,r7,1	/* flagged to stay where we are ? */
+ 	bne	1f
  	add	r25,r25,r26
  1:	mr	r3,r25
  	bl	.relocate
-+
- #if defined(CONFIG_PPC_BOOK3E)
- 	/* In relocatable case we always have to load the address of label 'name'
- 	 * to set IVPR. So after .relocate we have to update IVPR with current
-@@ -463,6 +468,11 @@ _STATIC(__after_prom_start)
- #if defined(CONFIG_PPC_BOOK3E)
- 	tovirt(r26,r26)			/* on booke, we already run at PAGE_OFFSET */
++#if defined(CONFIG_PPC_BOOK3E)
++	/* In relocatable case we always have to load the address of label 'name'
++	 * to set IVPR. So after .relocate we have to update IVPR with current
++	 * address of label.
++	 */
++	bl	.init_core_book3e
++#endif
  #endif
-+#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
-+	/* If relocated we need to restore this flag on that relocated address. */
-+	ld	r7,__run_at_kexec-_stext(r3)
-+	std	r7,__run_at_kexec-_stext(r26)
+ 
+ /*
+@@ -447,12 +460,24 @@ _STATIC(__after_prom_start)
+  * variable __run_at_load, if it is set the kernel is treated as relocatable
+  * kernel, otherwise it will be moved to PHYSICAL_START
+  */
++#if defined(CONFIG_PPC_BOOK3E)
++	tovirt(r26,r26)			/* on booke, we already run at PAGE_OFFSET */
 +#endif
  	lwz	r7,__run_at_load-_stext(r26)
- #if defined(CONFIG_PPC_BOOK3E)
- 	tophys(r26,r26)			/* Restore for the remains. */
-diff --git a/arch/powerpc/kernel/misc_64.S b/arch/powerpc/kernel/misc_64.S
-index 049be29..adf60b6 100644
---- a/arch/powerpc/kernel/misc_64.S
-+++ b/arch/powerpc/kernel/misc_64.S
-@@ -639,6 +639,12 @@ _GLOBAL(kexec_sequence)
- 	bl	.copy_and_flush	/* (dest, src, copy limit, start offset) */
- 1:	/* assume normal blr return */
- 
-+	/* notify we're going into kexec kernel for SMP. */
-+	LOAD_REG_ADDR(r3,__run_at_kexec)
-+	li	r4,1
-+	std	r4,0(r3)
-+	sync
-+
- 	/* release other cpus to the new kernel secondary start at 0x60 */
- 	mflr	r5
- 	li	r6,1
-diff --git a/arch/powerpc/platforms/85xx/smp.c b/arch/powerpc/platforms/85xx/smp.c
-index ea9c626..549948a 100644
---- a/arch/powerpc/platforms/85xx/smp.c
-+++ b/arch/powerpc/platforms/85xx/smp.c
-@@ -150,6 +150,9 @@ static int smp_85xx_kick_cpu(int nr)
- 	int hw_cpu = get_hard_smp_processor_id(nr);
- 	int ioremappable;
- 	int ret = 0;
-+#ifdef CONFIG_PPC64
-+	unsigned long *ptr = NULL;
++#if defined(CONFIG_PPC_BOOK3E)
++	tophys(r26,r26)			/* Restore for the remains. */
 +#endif
+ 	cmplwi	cr0,r7,1
+ 	bne	3f
  
- 	WARN_ON(nr < 0 || nr >= NR_CPUS);
- 	WARN_ON(hw_cpu < 0 || hw_cpu >= NR_CPUS);
-@@ -238,11 +241,18 @@ out:
- #else
- 	smp_generic_kick_cpu(nr);
- 
--	flush_spin_table(spin_table);
--	out_be32(&spin_table->pir, hw_cpu);
--	out_be64((u64 *)(&spin_table->addr_h),
--	  __pa((u64)*((unsigned long long *)generic_secondary_smp_init)));
--	flush_spin_table(spin_table);
-+	ptr  = (unsigned long *)((unsigned long)&__run_at_kexec);
-+	/* We shouldn't access spin_table from the bootloader to up any
-+	 * secondary cpu for kexec kernel, and kexec kernel already
-+	 * know how to jump to generic_secondary_smp_init.
-+	 */
-+	if (!*ptr) {
-+		flush_spin_table(spin_table);
-+		out_be32(&spin_table->pir, hw_cpu);
-+		out_be64((u64 *)(&spin_table->addr_h),
-+		 __pa((u64)*((unsigned long long *)generic_secondary_smp_init)));
-+		flush_spin_table(spin_table);
-+	}
++#ifdef CONFIG_PPC_BOOK3E
++	LOAD_REG_ADDR(r5, __end_interrupts)
++	LOAD_REG_ADDR(r11, _stext)
++	sub	r5,r5,r11
++#else
+ 	/* just copy interrupts */
+ 	LOAD_REG_IMMEDIATE(r5, __end_interrupts - _stext)
++#endif
+ 	b	5f
+ 3:
  #endif
- 
- 	local_irq_restore(flags);
 -- 
 1.7.9.5
 
