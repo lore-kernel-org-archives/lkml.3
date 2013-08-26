@@ -1,185 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab3HZMRL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 08:17:11 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38321 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636Ab3HZMRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 08:17:09 -0400
-Message-ID: <521B46F4.7080507@ti.com>
-Date: Mon, 26 Aug 2013 08:15:48 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756828Ab3HZMRm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 08:17:42 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:37611 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756242Ab3HZMRk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 08:17:40 -0400
+Message-ID: <521B4761.9010706@linux.vnet.ibm.com>
+Date: Mon, 26 Aug 2013 14:17:37 +0200
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <rui.zhang@intel.com>, <wni@nvidia.com>,
-        <durgadoss.r@intel.com>, <linux-pm@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>, Jean Delvare <khali@linux-fr.org>
-Subject: Re: [RFC PATCH 03/14] hwmon: lm75: expose to thermal fw via DT nodes
-References: <1377299755-5134-1-git-send-email-eduardo.valentin@ti.com> <1377299755-5134-4-git-send-email-eduardo.valentin@ti.com> <20130823235049.GB14810@roeck-us.net>
-In-Reply-To: <20130823235049.GB14810@roeck-us.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="hHcUpEbjGd9gJcRXvHj1dmn4V3UXS2TEE"
+To: Frantisek Hrbata <fhrbata@redhat.com>
+CC: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
+        rusty@rustcorp.com.au, linux-arch@vger.kernel.org, arnd@arndb.de,
+        mgahagan@redhat.com, agospoda@redhat.com
+Subject: Re: [RFC PATCH 1/4] gcov: move gcov structs definitions to a gcc
+ version specific file
+References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com> <1377247176-13537-2-git-send-email-fhrbata@redhat.com> <52177B46.6070404@linux.vnet.ibm.com> <20130823165045.GB2336@localhost.localdomain>
+In-Reply-To: <20130823165045.GB2336@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082612-5024-0000-0000-000007035B88
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---hHcUpEbjGd9gJcRXvHj1dmn4V3UXS2TEE
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 23-08-2013 19:50, Guenter Roeck wrote:
-> On Fri, Aug 23, 2013 at 07:15:44PM -0400, Eduardo Valentin wrote:
->> This patch adds to lm75 temperature sensor the possibility
->> to expose itself as thermal zone device, registered on the
->> thermal framework.
+On 23.08.2013 18:50, Frantisek Hrbata wrote:
+> On Fri, Aug 23, 2013 at 05:09:58PM +0200, Peter Oberparleiter wrote:
+>> On 23.08.2013 10:39, Frantisek Hrbata wrote:
+>>> Since also the gcov structures(gcov_info, gcov_fn_info, gcov_ctr_info) can
+>>> change between gcc releases, as shown in gcc 4.7, they cannot be defined in a
+>>> common header and need to be moved to a specific gcc implemention file. This
+>>> also requires to make the gcov_info structure opaque for the common code and to
+>>> introduce simple helpers for accessing data inside gcov_info.
 >>
->> The thermal zone is built only if a device tree node
->> describing a thermal zone for this sensor is present
->> inside the lm75 DT node. Otherwise, the driver behavior
->> will be the same.
+>> I've taken a similar approach in my version, although I stopped at isolating
+>> the code that handles the linked list. I like your version better since it's
+>> more consistent.
+> 
+> :) I also have doubts with the list "abstraction", it isn't very nice. I tried
+> to keep the changes as simple as possible in the generic code. I'm not sayint it
+> is the right approach, but your design is pretty good, so I had no urges to
+> change it more deeper. I'm of course open to any suggestions.
+
+I'd say go for this approach while it works and consider a replacement when it
+becomes necessary (because only then do we know what the requirements will be).
+
+>>> diff --git a/kernel/gcov/gcc_3_4.c b/kernel/gcov/gcc_3_4.c
+>>> index ae5bb42..27bc88a 100644
+>>> --- a/kernel/gcov/gcc_3_4.c
+>>> +++ b/kernel/gcov/gcc_3_4.c
+>>> @@ -21,6 +21,121 @@
+>>>  #include <linux/vmalloc.h>
+>>>  #include "gcov.h"
+>>>
+>>> +#define GCOV_COUNTERS		5
 >>
->> Cc: Jean Delvare <khali@linux-fr.org>
->> Cc: Guenter Roeck <linux@roeck-us.net>
->> Cc: lm-sensors@lm-sensors.org
->> Cc: linux-kernel@vger.kernel.org
->> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->> ---
->>  drivers/hwmon/lm75.c | 31 +++++++++++++++++++++++++++++++
->>  1 file changed, 31 insertions(+)
->>
->> diff --git a/drivers/hwmon/lm75.c b/drivers/hwmon/lm75.c
->> index c03b490..dc55908 100644
->> --- a/drivers/hwmon/lm75.c
->> +++ b/drivers/hwmon/lm75.c
->> @@ -27,6 +27,8 @@
->>  #include <linux/hwmon-sysfs.h>
->>  #include <linux/err.h>
->>  #include <linux/mutex.h>
->> +#include <linux/thermal.h>
->> +#include <linux/of.h>
->>  #include "lm75.h"
->> =20
->> =20
->> @@ -70,6 +72,7 @@ static const u8 LM75_REG_TEMP[3] =3D {
->>  /* Each client has this additional data */
->>  struct lm75_data {
->>  	struct device		*hwmon_dev;
->> +	struct thermal_zone_device	*tz;
->>  	struct mutex		update_lock;
->>  	u8			orig_conf;
->>  	u8			resolution;	/* In bits, between 9 and 12 */
->> @@ -92,6 +95,19 @@ static struct lm75_data *lm75_update_device(struct =
-device *dev);
->> =20
->>  /* sysfs attributes for hwmon */
->> =20
->> +static int lm75_read_temp(void *dev, unsigned long *temp)
->> +{
->> +	struct lm75_data *data =3D lm75_update_device(dev);
->> +
->> +	if (IS_ERR(data))
->> +		return PTR_ERR(data);
->> +
->> +	*temp =3D ((data->temp[0] >> (16 - data->resolution)) * 1000) >>
->> +			(data->resolution - 8);
->> +
-> The reported temperature can be negative, which would result in reporti=
-ng a very
-> high temperature (note this applies to the tmp102 driver patch as well)=
-=2E
->=20
+>> The value for GCOV_COUNTERS has been changed with GCC 4.3. Before it was 5,
+>> starting with GCC 4.3 the value is 8. While this is not strictly necessary, I'm
+>> wondering if this should be added here to prevent any unwanted side-effects.
+> 
+> Yes I was thinking about this two. My first idea was to use some define, maybe
+> in the Makefile during the gcc version check and set the number of counters
+> properly later based on this define. Something like
+> 
+> #if GCOV_GCC_VERIONS >= 0430
+> #define GCOV_COUNTERS 8
+> #elif ...
+> 
+> for the gcc_3_4.c implementation.
+> 
+> But I'm not sure what the new counters are good for and if they are really
+> needed for the coverage info. This would require deeper understanding what
+> and how the types of counters are used. At this point a simply did not change the
+> value for the format before gcc 4.7, because each counter type has a tag and
+> this should be backward compatible. We only miss the new counters. Again this is
+> something that probably deserves more attention. Thanks for pointing this out!
 
-Good point.
-
-> The computation is quite complex and matches the computation done in sh=
-ow_temp().
-> Given that, it would make sense to declare an inline function to conver=
-t the
-> register value to the temperature. This function can take the register =
-value
-> and the resolution as argument.
-
-Sounds reasonable. Modifying accordingly in next version.
-
->=20
-> Guenter
->=20
->> +	return 0;
->> +}
->> +
->>  static ssize_t show_temp(struct device *dev, struct device_attribute =
-*da,
->>  			 char *buf)
->>  {
->> @@ -271,11 +287,25 @@ lm75_probe(struct i2c_client *client, const stru=
-ct i2c_device_id *id)
->>  		goto exit_remove;
->>  	}
->> =20
->> +	if (of_find_property(client->dev.of_node, "monitored-zones", NULL)) =
-{
->> +		data->tz =3D thermal_zone_of_device_register(&client->dev,
->> +							   0,
->> +							   false, /* -hwmon */
->> +							   &client->dev,
->> +							   lm75_read_temp);
->> +		if (IS_ERR(data->tz)) {
->> +			status =3D PTR_ERR(data->tz);
->> +			goto exit_hwmon;
->> +		}
->> +	}
->> +
->>  	dev_info(&client->dev, "%s: sensor '%s'\n",
->>  		 dev_name(data->hwmon_dev), client->name);
->> =20
->>  	return 0;
->> =20
->> +exit_hwmon:
->> +	hwmon_device_unregister(data->hwmon_dev);
->>  exit_remove:
->>  	sysfs_remove_group(&client->dev.kobj, &lm75_group);
->>  	return status;
->> @@ -285,6 +315,7 @@ static int lm75_remove(struct i2c_client *client)
->>  {
->>  	struct lm75_data *data =3D i2c_get_clientdata(client);
->> =20
->> +	thermal_zone_device_unregister(data->tz);
->>  	hwmon_device_unregister(data->hwmon_dev);
->>  	sysfs_remove_group(&client->dev.kobj, &lm75_group);
->>  	lm75_write_value(client, LM75_REG_CONF, data->orig_conf);
->> --=20
->> 1.8.2.1.342.gfa7285d
->>
->>
->=20
->=20
+Starting with GCC 4.7 support, GCOV_COUNTERS will have a direct effect on the
+size of gcov_info, so an incorrect value will break the format code. The change
+I commented on was pre-4.7 code though, so its not that important there. On the
+other hand it could help to have a corresponding mechanism in place once
+GCOV_COUNTERS changes again. Maybe something like a macro to determine if GCC
+is below a certain level.
 
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
+Regards,
+  Peter
 
-Eduardo Valentin
+-- 
+Peter Oberparleiter
+Linux on System z Development - IBM Germany
 
-
---hHcUpEbjGd9gJcRXvHj1dmn4V3UXS2TEE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlIbRvQACgkQCXcVR3XQvP2uNwD+PyexTyWQze8fjI1aByceQ2ex
-7LRBNuAXvuG86GkP6RoA/0xTQ6J/pCNxnYjTe9vHNmclH8wbXxxC6qJLEyMeCKOb
-=U8XP
------END PGP SIGNATURE-----
-
---hHcUpEbjGd9gJcRXvHj1dmn4V3UXS2TEE--
