@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab3HZBTK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Aug 2013 21:19:10 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:58639 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754509Ab3HZBTI (ORCPT
+	id S1755619Ab3HZBTU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Aug 2013 21:19:20 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:60422 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268Ab3HZBTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Aug 2013 21:19:08 -0400
+	Sun, 25 Aug 2013 21:19:14 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
@@ -14,81 +14,57 @@ Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
         Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v3 3/8] mm/hwpoison: fix race against poison thp
-Date: Mon, 26 Aug 2013 09:18:46 +0800
-Message-Id: <1377479931-7430-3-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v3 7/8] mm/hwpoison: add '#' to madvise_hwpoison
+Date: Mon, 26 Aug 2013 09:18:50 +0800
+Message-Id: <1377479931-7430-7-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1377479931-7430-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1377479931-7430-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082601-9264-0000-0000-00000464E2A6
+x-cbid: 13082601-1618-0000-0000-000004831678
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v1 -> v2:
- * unpoison thp fail  
+Add '#' to madvise_hwpoison.
 
-There is a race between hwpoison page and unpoison page, memory_failure
-set the page hwpoison and increase num_poisoned_pages without hold page
-lock, and one page count will be accounted against thp for num_poisoned_pages.
-However, unpoison can occur before memory_failure hold page lock and
-split transparent hugepage, unpoison will decrease num_poisoned_pages
-by 1 << compound_order since memory_failure has not yet split transparent
-hugepage with page lock held. That means we account one page for hwpoison
-and 1 << compound_order for unpoison. This patch fix it by inserting a 
-PageTransHuge check before doing TestClearPageHWPoison, unpoison failed 
-without clearing PageHWPoison and decreasing num_poisoned_pages.
+Before patch:
 
+[   95.892866] Injecting memory failure for page 19d0 at b7786000
+[   95.893151] MCE 0x19d0: non LRU page recovery: Ignored
 
-            A                                                 	B
-    	memory_failue
-        TestSetPageHWPoison(p);
-        if (PageHuge(p))
-            nr_pages = 1 << compound_order(hpage);
-        else
-            nr_pages = 1;
-        atomic_long_add(nr_pages, &num_poisoned_pages);
-                                                            unpoison_memory
-	                                                        nr_pages = 1<< compound_trans_order(page);
-                                                            if(TestClearPageHWPoison(p))
-                                                            atomic_long_sub(nr_pages, &num_poisoned_pages);
-        lock page
-        if (!PageHWPoison(p))
-        	unlock page and return
-        hwpoison_user_mappings
-        if (PageTransHuge(hpage))
-        	split_huge_page(hpage);
+After patch:
 
+[   95.892866] Injecting memory failure for page 0x19d0 at 0xb7786000
+[   95.893151] MCE 0x19d0: non LRU page recovery: Ignored
 
-Suggested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- mm/memory-failure.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ mm/madvise.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 5a4f4d6..a6c4752 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1339,6 +1339,16 @@ int unpoison_memory(unsigned long pfn)
- 		return 0;
- 	}
- 
-+	/*
-+	 * unpoison_memory() can encounter thp only when the thp is being
-+	 * worked by memory_failure() and the page lock is not held yet.
-+	 * In such case, we yield to memory_failure() and make unpoison fail.
-+	 */
-+	if (PageTransHuge(page)) {
-+		pr_info("MCE: Memory failure is now running on %#lx\n", pfn);
-+			return 0;
-+	}
-+
- 	nr_pages = 1 << compound_order(page);
- 
- 	if (!get_page_unless_zero(page)) {
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 95795df..588bb19 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -353,14 +353,14 @@ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
+ 		if (ret != 1)
+ 			return ret;
+ 		if (bhv == MADV_SOFT_OFFLINE) {
+-			printk(KERN_INFO "Soft offlining page %lx at %lx\n",
++			pr_info("Soft offlining page %#lx at %#lx\n",
+ 				page_to_pfn(p), start);
+ 			ret = soft_offline_page(p, MF_COUNT_INCREASED);
+ 			if (ret)
+ 				break;
+ 			continue;
+ 		}
+-		printk(KERN_INFO "Injecting memory failure for page %lx at %lx\n",
++		pr_info("Injecting memory failure for page %#lx at %#lx\n",
+ 		       page_to_pfn(p), start);
+ 		/* Ignore return value for now */
+ 		memory_failure(page_to_pfn(p), 0, MF_COUNT_INCREASED);
 -- 
 1.8.1.2
 
