@@ -1,87 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab3HZMVF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 08:21:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33134 "EHLO mx1.redhat.com"
+	id S1756657Ab3HZMXY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 08:23:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62804 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab3HZMVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 08:21:03 -0400
-Message-ID: <521B482A.80908@redhat.com>
-Date: Mon, 26 Aug 2013 14:20:58 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1751737Ab3HZMXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 08:23:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,958,1367996400"; 
+   d="scan'208";a="393463563"
+Date: Mon, 26 Aug 2013 15:23:19 +0300
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: intel-gfx@lists.freedesktop.org, airlied@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i915: Update VGA arbiter support for newer devices
+Message-ID: <20130826122319.GO11428@intel.com>
+References: <20130824144701.23370.42110.stgit@bling.home>
 MIME-Version: 1.0
-To: =?Big5?B?tsCyTbap?= <ching2048@areca.com.tw>
-CC: james.bottomley@hansenpartnership.com,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, billion@areca.com.tw
-Subject: Re: [PATCH 1/3] arcmsr: Support Areca new SATA Raid Adapter ARC1214/1224/1264/1284
-References: <7A2818CC441F4BCE96D3B1E70CC3D76B@chingDT>
-In-Reply-To: <7A2818CC441F4BCE96D3B1E70CC3D76B@chingDT>
-Content-Type: text/plain; charset=Big5
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130824144701.23370.42110.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2013 06:14 AM, ¶À²M¶© wrote:
->  From: Ching <ching2048@areca.com.tw>
->
-> Support Areca new SATA Raid adapter ARC1214/1224/1264/1284.
-> Modify maximum outstanding command number, notify command complete with auto
-> request sense
-> Signed-off-by: Ching  <ching2048@areca.com.tw>
+On Sat, Aug 24, 2013 at 08:53:40AM -0600, Alex Williamson wrote:
+> This is intended to add VGA arbiter support for Intel HD graphics on
+> Core processors.  The old GMCH registers no longer exist, so even
+> though it appears that i915 participates in VGA arbitration, it doesn't
+> work.  On Intel HD graphics we already attempt to disable VGA regions
+> of the device.  This makes registering as a VGA client unnecessary since
+> we don't intend to operate differently depending on how many VGA devices
+> are present.  We can disable VGA memory regions by clearing the memory
+> enable bit in the VGA MSR.  That only leaves VGA IO, which we update
+> the VGA arbiter to know that we don't participate in VGA memory
+> arbitration.  We also add a hook on unload to re-enable memory and
+> reinstate VGA memory arbitration.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+> 
+> v2: I915_READ/WRITE accessors don't work in i915_disable_vga, use inb/outb
+>     directly.  Also, on the driver unbind VGA enable path, acquire legacy
+>     IO to re-enable VGA memory.  Correct comment.
+> 
+> As with v1, this depends on "vgaarb: Fixes for partial VGA opt-out".  With
+> all patches I'm able to assign a discrete PEG VGA device to a guest and
+> execute the VBIOS w/o interference from IGD or corruption of the IGD
+> framebuffer.
 
-Hi Ching,
-+static bool
-+arcmsr_hbaD_get_config(struct AdapterControlBlock *acb)
-+{
-...
-+	dma_coherent = dma_alloc_coherent(&pdev->dev, acb->uncache_size,
-+	&dma_coherent_handle, GFP_KERNEL);
-+	if (!dma_coherent) {
-+		pr_notice("DMA allocation failed...\n");
-+		return -ENOMEM;
-You've declared the return value as a bool so the function should return false or true.
----------------------------------------
-In arcmsr_alloc_ccb_pool
--	roundup_ccbsize = roundup(sizeof(struct CommandControlBlock) + (max_sg_entrys - 1) * sizeof(struct SG64ENTRY), 32);
--	acb->uncache_size = roundup_ccbsize * ARCMSR_MAX_FREECCB_NUM;
--	dma_coherent = dma_alloc_coherent(&pdev->dev, acb->uncache_size, &dma_coherent_handle, GFP_KERNEL);
--	if(!dma_coherent){
--		printk(KERN_NOTICE "arcmsr%d: dma_alloc_coherent got error\n", acb->host->host_no);
--		return -ENOMEM;
-+	switch (acb->adapter_type) {
-+	case ACB_ADAPTER_TYPE_A: {
-+		roundup_ccbsize =
-+		roundup(sizeof(struct CommandControlBlock) +
-+		max_sg_entrys * sizeof(struct SG64ENTRY), 32);
-+		acb->uncache_size = roundup_ccbsize *
-+			ARCMSR_MAX_FREECCB_NUM;
-+		dma_coherent = dma_alloc_coherent(&pdev->dev,
-+			acb->uncache_size, &dma_coherent_handle,
-+			GFP_KERNEL);
-...
-+	case ACB_ADAPTER_TYPE_B: {
-+		roundup_ccbsize = roundup(sizeof(struct CommandControlBlock) +
-+			(max_sg_entrys - 1) * sizeof(struct SG64ENTRY), 32);
-+		acb->uncache_size = roundup_ccbsize *
-+			ARCMSR_MAX_FREECCB_NUM;
-+		dma_coherent = dma_alloc_coherent(&pdev->dev,
-+			acb->uncache_size, &dma_coherent_handle,
-+			GFP_KERNEL);
-You've added a switch with  four almost identical
-cases, what is the point of splitting the code this way?
------------------------------------------
- struct AdapterControlBlock
-+	void *dma_coherent;
-+	dma_addr_t dma_coherent_handle;
-+	dma_addr_t dma_coherent_handle2;
-+	void *dma_coherent2;
-why do you need these pairs? Is there an adapter which uses both
-for example dma_coherent and dma_coherent2 at the same time?
+I glanced through those before, but I'll try to do a more thorough
+review soon.
 
-Please include the patch into the message body next time, it makes the review easier.
-Thanks, Tomas 
- 
+> 
+>  drivers/gpu/drm/i915/i915_dma.c      |    9 ++++++---
+>  drivers/gpu/drm/i915/intel_display.c |   24 ++++++++++++++++++++++++
+>  2 files changed, 30 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> index f466980..d9cf216 100644
+> --- a/drivers/gpu/drm/i915/i915_dma.c
+> +++ b/drivers/gpu/drm/i915/i915_dma.c
+> @@ -1287,9 +1287,12 @@ static int i915_load_modeset_init(struct drm_device *dev)
+>  	 * then we do not take part in VGA arbitration and the
+>  	 * vga_client_register() fails with -ENODEV.
+>  	 */
+> -	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
+> -	if (ret && ret != -ENODEV)
+> -		goto out;
+> +	if (!HAS_PCH_SPLIT(dev)) {
+> +		ret = vga_client_register(dev->pdev, dev, NULL,
+> +					  i915_vga_set_decode);
+> +		if (ret && ret != -ENODEV)
+> +			goto out;
+> +	}
 
+I think we should do something to fix i915_redisable_vga() for !pch
+platforms too. The MSR method should work for everything, so I'm leaning
+towards using it all the time. The other option would be add an mmio
+codepath into intel_disable_vga(), but then we have several codepaths
+to worry about.
+
+>  
+>  	intel_register_dsm_handler();
+>  
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index 5fb3058..2bb805c 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -9519,6 +9519,15 @@ static void i915_disable_vga(struct drm_device *dev)
+>  	outb(SR01, VGA_SR_INDEX);
+>  	sr1 = inb(VGA_SR_DATA);
+>  	outb(sr1 | 1<<5, VGA_SR_DATA);
+> +
+> +	/* Disable VGA memory on Intel HD */
+> +	if (HAS_PCH_SPLIT(dev)) {
+> +		outb(inb(VGA_MSR_READ) & ~VGA_MSR_MEM_EN, VGA_MSR_WRITE);
+> +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
+> +						   VGA_RSRC_NORMAL_IO |
+> +						   VGA_RSRC_NORMAL_MEM);
+> +	}
+> +
+>  	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
+>  	udelay(300);
+>  
+> @@ -9526,6 +9535,19 @@ static void i915_disable_vga(struct drm_device *dev)
+>  	POSTING_READ(vga_reg);
+>  }
+>  
+> +static void i915_enable_vga(struct drm_device *dev)
+> +{
+
+Not sure we need this actually. We don't re-enable the VGA display
+on unload, so you'll never see anything on the display anyway. But
+then again, I don't see any real harm in doing this either.
+
+> +	/* Enable VGA memory on Intel HD */
+> +	if (HAS_PCH_SPLIT(dev)) {
+> +		vga_get_uninterruptible(dev->pdev, VGA_RSRC_LEGACY_IO);
+> +		outb(inb(VGA_MSR_READ) | VGA_MSR_MEM_EN, VGA_MSR_WRITE);
+
+I was thinking we might save the MSR state during driver load and
+restore to that same state, but it could be a bit overkill.
+
+> +		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_MASK |
+
+Maybe spell out IO and MEM for legacy too. Otherwise it looks a
+bit cryptic.
+
+> +						   VGA_RSRC_NORMAL_IO |
+> +						   VGA_RSRC_NORMAL_MEM);
+> +		vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
+> +	}
+> +}
+> +
+>  void intel_modeset_init_hw(struct drm_device *dev)
+>  {
+>  	intel_init_power_well(dev);
+> @@ -9983,6 +10005,8 @@ void intel_modeset_cleanup(struct drm_device *dev)
+>  
+>  	intel_disable_fbc(dev);
+>  
+> +	i915_enable_vga(dev);
+> +
+>  	intel_disable_gt_powersave(dev);
+>  
+>  	ironlake_teardown_rc6(dev);
+
+-- 
+Ville Syrjälä
+Intel OTC
