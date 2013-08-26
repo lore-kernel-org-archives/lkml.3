@@ -1,98 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549Ab3HZKUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:20:08 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:58830 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486Ab3HZKUG (ORCPT
+	id S1756641Ab3HZKUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:20:32 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60266 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756568Ab3HZKU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:20:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130823182116.GE1230@lukather>
-References: <20130821094432.GA28249@lnx-rg> <20130823182116.GE1230@lukather>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Mon, 26 Aug 2013 12:19:43 +0200
-Message-ID: <CACQ1gAj7d0anm_G45YLCfbmYcE6AqpzURcGmJhpBsmBHeJLYPg@mail.gmail.com>
-Subject: Re: sun4i_handle_irq: WARNING at net/ipv4/tcp_input.c:2711 tcp_fastretrans_alert
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Stefan Roese <sr@denx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 Aug 2013 06:20:28 -0400
+Message-ID: <1377512423.20958.7.camel@dabdike>
+Subject: Re: [PATCH 3/3] arcmsr: Fix bug of updating adapter firmware
+ through ioctl(ARCHTTP) interface
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: =?UTF-8?Q?=E9=BB=83=E6=B8=85=E9=9A=86?= <ching2048@areca.com.tw>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, jejb@kernel.org
+Date: Mon, 26 Aug 2013 14:20:23 +0400
+In-Reply-To: <60A4377E7BEE4B2EA7855F9701B34BF0@chingDT>
+References: <60A4377E7BEE4B2EA7855F9701B34BF0@chingDT>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/8/23 Maxime Ripard <maxime.ripard@free-electrons.com>:
-> Hi Richard,
->
-> On Wed, Aug 21, 2013 at 11:47:20AM +0200, Richard GENOUD wrote:
->> Hi Maxime, Stephan
->>
->> I just realise that, *sometimes*, I have some warnings on my cubieboard
->> (6 since the 22 of july, and the board is runnning 24/24).
->
-> Wow, I'm impressed it worked this fine actually :)
-I use to host my wiky, ssh and xmpp servers (nfsroot on my NAS) and
-yep, it is rock solid so far !
+On Mon, 2013-08-26 at 12:28 +0800, 黃清隆 wrote:
+> From: Ching <ching2048@areca.com.tw>
+> 
+> Fix bug of updating adapter firmware through ioctl(ARCHTTP) interface.
+> Signed-off-by: Ching <ching2048@areca.com.tw>
+> ---
 
->
->> It has happened also on 3.10 + emac patches.
->> Here it is:
->> [27224.060000] ------------[ cut here ]------------
->> [27224.070000] WARNING: CPU: 0 PID: 0 at net/ipv4/tcp_input.c:2711 tcp_fastretrans_alert+0x717/0x734()
->> [27224.080000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.11.0-rc6-00010-g54f11ec #8
->> [27224.080000] [<c000f231>] (unwind_backtrace+0x1/0x98) from [<c000e2b7>] (show_stack+0xb/0xc)
->> [27224.090000] [<c000e2b7>] (show_stack+0xb/0xc) from [<c0013cd3>] (warn_slowpath_common+0x43/0x5c)
->> [27224.100000] [<c0013cd3>] (warn_slowpath_common+0x43/0x5c) from [<c0013d6d>] (warn_slowpath_null+0x11/0x14)
->> [27224.110000] [<c0013d6d>] (warn_slowpath_null+0x11/0x14) from [<c015eadf>] (tcp_fastretrans_alert+0x717/0x734)
->> [27224.120000] [<c015eadf>] (tcp_fastretrans_alert+0x717/0x734) from [<c015f32b>] (tcp_ack+0x6af/0x984)
->> [27224.130000] [<c015f32b>] (tcp_ack+0x6af/0x984) from [<c015fcab>] (tcp_rcv_established+0x93/0x3ec)
->> [27224.140000] [<c015fcab>] (tcp_rcv_established+0x93/0x3ec) from [<c0165621>] (tcp_v4_do_rcv+0xa1/0x160)
->> [27224.150000] [<c0165621>] (tcp_v4_do_rcv+0xa1/0x160) from [<c0167129>] (tcp_v4_rcv+0x4e9/0x500)
->> [27224.160000] [<c0167129>] (tcp_v4_rcv+0x4e9/0x500) from [<c015025d>] (ip_local_deliver_finish+0x79/0x180)
->> [27224.170000] [<c015025d>] (ip_local_deliver_finish+0x79/0x180) from [<c01500a1>] (ip_rcv_finish+0xc9/0x20c)
->> [27224.180000] [<c01500a1>] (ip_rcv_finish+0xc9/0x20c) from [<c0129493>] (__netif_receive_skb_core+0x287/0x3dc)
->> [27224.190000] [<c0129493>] (__netif_receive_skb_core+0x287/0x3dc) from [<c0129a8b>] (process_backlog+0x5b/0xd0)
->> [27224.200000] [<c0129a8b>] (process_backlog+0x5b/0xd0) from [<c012bc6f>] (net_rx_action+0x5f/0xe8)
->> [27224.200000] [<c012bc6f>] (net_rx_action+0x5f/0xe8) from [<c0015fc9>] (__do_softirq+0x91/0x134)
->> [27224.210000] [<c0015fc9>] (__do_softirq+0x91/0x134) from [<c0016251>] (irq_exit+0x59/0x80)
->> [27224.220000] [<c0016251>] (irq_exit+0x59/0x80) from [<c000d00d>] (handle_IRQ+0x21/0x54)
->> [27224.230000] [<c000d00d>] (handle_IRQ+0x21/0x54) from [<c00083ef>] (sun4i_handle_irq+0x1f/0x30)
->> [27224.240000] [<c00083ef>] (sun4i_handle_irq+0x1f/0x30) from [<c000ea1b>] (__irq_svc+0x3b/0x5c)
->> [27224.250000] Exception stack(0xc0287f70 to 0xc0287fb8)
->> [27224.250000] 7f60:                                     00000000 00000000 00000000 00000000
->> [27224.260000] 7f80: c0286000 c02ad7fd 00000001 c02ad7fd c028e084 413fc082 00000000 00000000
->> [27224.270000] 7fa0: 01000000 c0287fb8 c000d115 c000d116 40000033 ffffffff
->> [27224.270000] [<c000ea1b>] (__irq_svc+0x3b/0x5c) from [<c000d116>] (arch_cpu_idle+0x16/0x1c)
->> [27224.280000] [<c000d116>] (arch_cpu_idle+0x16/0x1c) from [<c002e69d>] (cpu_startup_entry+0x35/0xa0)
->> [27224.290000] [<c002e69d>] (cpu_startup_entry+0x35/0xa0) from [<c026f75f>] (start_kernel+0x1af/0x1f0)
->> [27224.300000] ---[ end trace 15641276e08fba8a ]---
->
-> Hmmm, that seems pretty far from the network/interrupt drivers, and it
-> looks like other users have seen this on !ARM machines:
-> http://forums.gentoo.org/viewtopic-p-7379928.html
-> https://bugzilla.redhat.com/show_bug.cgi?id=989251
->
-> There's a patch in the redhat's bugzilla, could you try to apply it and
-> see if it solves your problem?
-Thanks for those links !
-I'll give it a try.
+This one has a set of nasty checkpatch errors:
 
->
-> Maybe the netdev guys will have other ideas as well.
->
-> Thanks,
-> Maxime
->
-> --
-> Maxime Ripard, Free Electrons
-> Embedded Linux, Kernel and Android engineering
-> http://free-electrons.com
+WARNING: please, no spaces at the start of a line
+#31: FILE: drivers/scsi/arcmsr/arcmsr.h:801:
++    struct QBUFFER __iomem *);$
 
-Thanks !
+ERROR: space prohibited after that open parenthesis '('
+#283: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2141:
++       if ( iop_len > 0 ) {
 
--- 
-for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
+ERROR: space prohibited before that close parenthesis ')'
+#283: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2141:
++       if ( iop_len > 0 ) {
+
+ERROR: space prohibited after that open parenthesis '('
+#286: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2144:
++               if( buf1 == NULL)
+
+ERROR: space required before the open parenthesis '('
+#286: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2144:
++               if( buf1 == NULL)
+
+ERROR: return is not a function, parentheses are not required
+#287: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2145:
++                       return (0);
+
+ERROR: space required before the open parenthesis '('
+#293: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2151:
++               if(data_len)
+
+ERROR: space prohibited after that open parenthesis '('
+#307: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2165:
++               kfree( (uint8_t *)buf2);
+
+ERROR: return is not a function, parentheses are not required
+#310: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2168:
++       return (1);
+
+WARNING: please, no spaces at the start of a line
+#315: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2173:
++    struct QBUFFER __iomem *prbuffer) {$
+
+WARNING: braces {} are not necessary for single statement blocks
+#321: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2179:
++       if (acb->adapter_type & (ACB_ADAPTER_TYPE_C |
+ACB_ADAPTER_TYPE_D)) {
++               return(arcmsr_Read_iop_rqbuffer_in_DWORD(acb,
+prbuffer));
++       }
+
+ERROR: return is not a function, parentheses are not required
+#322: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2180:
++               return(arcmsr_Read_iop_rqbuffer_in_DWORD(acb,
+prbuffer));
+
+ERROR: return is not a function, parentheses are not required
+#335: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2193:
++       return (1);
+
+ERROR: need consistent spacing around '-' (ctx:WxV)
+#394: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2205:
++       buf_empty_len = (acb->rqbuf_lastindex - acb->rqbuf_firstindex
+-1) &
+                                                                      ^
+
+ERROR: need consistent spacing around '-' (ctx:WxV)
+#395: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2206:
++               (ARCMSR_MAX_QBUFFER -1);
+                                    ^
+
+ERROR: trailing whitespace
+#424: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2224:
++^I$
+
+ERROR: space prohibited after that open parenthesis '('
+#428: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2228:
++               if( buf1 == NULL)
+
+ERROR: space required before the open parenthesis '('
+#428: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2228:
++               if( buf1 == NULL)
+
+ERROR: space prohibited after that open parenthesis '('
+#557: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2252:
++               kfree( buf1);
+
+ERROR: spaces required around that '=' (ctx:VxV)
+#568: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2263:
++       int32_t allxfer_len=0;
+                           ^
+
+ERROR: trailing whitespace
+#569: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2264:
++^I$
+
+ERROR: trailing whitespace
+#578: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2273:
++^I^Iwhile ((acb->wqbuf_firstindex != acb->wqbuf_lastindex) $
+
+ERROR: spaces required around that '=' (ctx:VxV)
+#759: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2700:
++               for (i=0; i < 15; i++) {
+                      ^
+
+WARNING: line over 80 characters
+#766: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2707:
++                       } else if (acb->rqbuf_firstindex !=
+acb->rqbuf_lastindex) {
+
+ERROR: trailing whitespace
+#770: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2711:
++^I^I^I} else $
+
+WARNING: line over 80 characters
+#779: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2766:
++                                       acb->rqbuf_firstindex %=
+ARCMSR_MAX_QBUFFER;
+
+WARNING: line over 80 characters
+#787: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2819:
++               memcpy(pcmdmessagefld->messagedatabuffer, ver_addr,
+allxfer_len);
+
+ERROR: space required before the open parenthesis '('
+#837: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:2824:
++                       if(arcmsr_Read_iop_rqbuffer_data(acb, prbuffer)
+== 0)
+
+ERROR: spaces required around that '=' (ctx:VxV)
+#1071: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4279:
++               for (i=0; i < 200; i++) {
+                      ^
+
+WARNING: msleep < 20ms can sleep for up to 20ms; see
+Documentation/timers/timers-howto.txt
++                       msleep(10);
+WARNING: line over 80 characters
+#1074: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4282:
++                       if (outbound_doorbell &
+ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK) {
+
+ERROR: spaces required around that '=' (ctx:VxV)
+#1094: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4301:
++               for (i=0; i < 200; i++) {
+                      ^
+
+WARNING: msleep < 20ms can sleep for up to 20ms; see
+Documentation/timers/timers-howto.txt
++                       msleep(10);
+WARNING: line over 80 characters
+#1097: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4304:
++                       if (outbound_doorbell &
+ARCMSR_ARC1214_IOP2DRV_DATA_WRITE_OK) {
+
+WARNING: quoted string split across lines
+#1121: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4750:
++       sprintf(buf, "Areca %s Host Adapter RAID Controller%s\narcmsr "
++               "version %s\n",type, raid6 ? "( RAID6 capable)" : "",
+
+ERROR: space required after that ',' (ctx:VxV)
+#1121: FILE: drivers/scsi/arcmsr/arcmsr_hba.c:4750:
++               "version %s\n",type, raid6 ? "( RAID6 capable)" : "",
+                              ^
+
+total: 25 errors, 11 warnings, 1061 lines checked
+
+Please fix these and resend.
+
+Thanks,
+
+James
+
+
