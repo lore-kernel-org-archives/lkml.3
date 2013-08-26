@@ -1,121 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527Ab3HZL7P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 07:59:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50808 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab3HZL7N (ORCPT
+	id S1756745Ab3HZMAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 08:00:01 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43928 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752759Ab3HZL77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 07:59:13 -0400
-Date: Mon, 26 Aug 2013 04:58:37 -0700
-From: tip-bot for Liu Ping Fan <tipbot@zytor.com>
-Message-ID: <tip-25aa2957973d361081ac6c8b6e5a0d9d7a83fef6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, haokexin@gmail.com, pingfank@linux.vnet.ibm.com,
-        kernelfans@gmail.com, tglx@linutronix.de, len.brown@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        haokexin@gmail.com, yinghai@kernel.org, pingfank@linux.vnet.ibm.com,
-        kernelfans@gmail.com, tglx@linutronix.de, len.brown@intel.com
-In-Reply-To: <1377248327-19633-1-git-send-email-pingfank@linux.vnet.ibm.com>
-References: <1377248327-19633-1-git-send-email-pingfank@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86/ioapic:
-  Check attr against the previous setting when programmed more than once
-Git-Commit-ID: 25aa2957973d361081ac6c8b6e5a0d9d7a83fef6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 26 Aug 2013 07:59:59 -0400
+Date: Mon, 26 Aug 2013 12:59:05 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Message-ID: <20130826115905.GC10783@sirena.org.uk>
+References: <1376991562-26109-1-git-send-email-broonie@kernel.org>
+ <201308241801.45830.vapier@gentoo.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IpbVkmxF4tDyP/Kb"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 26 Aug 2013 04:58:45 -0700 (PDT)
+In-Reply-To: <201308241801.45830.vapier@gentoo.org>
+X-Cookie: Snow Day -- stay home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 78.32.9.209
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] blackfin: Ignore generated uImages
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  25aa2957973d361081ac6c8b6e5a0d9d7a83fef6
-Gitweb:     http://git.kernel.org/tip/25aa2957973d361081ac6c8b6e5a0d9d7a83fef6
-Author:     Liu Ping Fan <kernelfans@gmail.com>
-AuthorDate: Fri, 23 Aug 2013 16:58:47 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 26 Aug 2013 12:58:00 +0200
 
-x86/ioapic: Check attr against the previous setting when programmed more than once
+--IpbVkmxF4tDyP/Kb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-When programming ioapic pinX more than once, current code
-does not check whether the later attr (trigger & polarity) is the
-same as the former or not.
+On Sat, Aug 24, 2013 at 06:01:44PM -0400, Mike Frysinger wrote:
+> Acked-by: Mike Frysinger <vapier@gentoo.org>
 
-This causes broken semantics which can be observed in a qemu q35
-machine, where ioapic's ioredtbl[x] can never be set as low-active,
-even if the hpet driver registered it.
+Thanks.  Do you know who might be likely to apply this - MAINTAINERS
+lists you?
 
-And hpet driver may share a high-level active IRQ line with other
-devices. So in qemu, when hpet-dev asserts low-level as kernel
-expects, the kernel has no response.
+--IpbVkmxF4tDyP/Kb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-With this patch, we can observe an ioredtbl[x] set as low-active
-for hpet.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Fix it by reporting -EBUSY to the caller, when attr is different.
+iQIcBAEBAgAGBQJSG0MGAAoJELSic+t+oim9ixoP/0NGF6V3Tf+yKDNnueXfiyFd
+qbzo7TuvGW/ErLCeKQRkb+kbCDMbxZO4SwpjS64Nf9jCrly/yvP2Qy+6dsfMo8Jy
+KeWFZ7uk10TAHEW3ilD5uUnHavgUPo1G9dmZ+wrS+KaW2xFv8ZhN0lRUZIur4kAg
+q14xs0I1EQcnGP6prwX4eb2DPe1RAQmpwS0fffbjHza3gXH2qprd0vtpYqXV3FCK
+DQLqSkUChv6w1YjiQDMSo+xuxpPhwBzCKEUjSjEhvH+SbHaq4oti9XBGxt7Zftgu
+Unx+WYG55V+Z49HRcJdv1YxESSvOYEhoyDi02Xo/B2tr77eFfPIgL7JGSDk5JHvH
+NcvTlwIkZSbSZ8qJtb0hdoNfF7uggPhQpZD7yGAW2EOxVbS+voxuF5KQoPld92ik
+Y16tA7Su1UuH+qm3p1EjCfHMUFQEOVbjMToMoS2qFljE0x48ur4jQiIqYmdfGLtK
+d3huZp/l+w7w5R6XXKJFXbhjntuQmdAVIP7rHPP7uWhf/UrCoUR6AU5vbWjexc7s
+W+0/QqtDUElWbxCfcR5adUMsR8IyMzbTSzsHZEEDbna0I+YP/ys6HspnskwWSI7K
+X0lQnU1VoRZcpjUZs86CpU6YcMtW0C9n7nMRfhNGQBYE3wVDIbA+GVythD0sq7Kt
+9kkQYDI4b5yXkbknratO
+=Uhfo
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-Cc: Kevin Hao <haokexin@gmail.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1377248327-19633-1-git-send-email-pingfank@linux.vnet.ibm.com
-[ Made small readability edits to both the changelog and the code. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/acpi/boot.c    | 5 ++++-
- arch/x86/kernel/apic/io_apic.c | 9 ++++++---
- 2 files changed, 10 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 872a2d2..81aa73b 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -1120,6 +1120,7 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- 	int ioapic;
- 	int ioapic_pin;
- 	struct io_apic_irq_attr irq_attr;
-+	int ret;
- 
- 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
- 		return gsi;
-@@ -1149,7 +1150,9 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- 	set_io_apic_irq_attr(&irq_attr, ioapic, ioapic_pin,
- 			     trigger == ACPI_EDGE_SENSITIVE ? 0 : 1,
- 			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
--	io_apic_set_pci_routing(dev, gsi_to_irq(gsi), &irq_attr);
-+	ret = io_apic_set_pci_routing(dev, gsi_to_irq(gsi), &irq_attr);
-+	if (ret < 0)
-+		gsi = INT_MIN;
- 
- 	return gsi;
- }
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 260abc2..e63a5bd 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3380,12 +3380,15 @@ int io_apic_setup_irq_pin_once(unsigned int irq, int node,
- {
- 	unsigned int ioapic_idx = attr->ioapic, pin = attr->ioapic_pin;
- 	int ret;
-+	struct IO_APIC_route_entry orig_entry;
- 
- 	/* Avoid redundant programming */
- 	if (test_bit(pin, ioapics[ioapic_idx].pin_programmed)) {
--		pr_debug("Pin %d-%d already programmed\n",
--			 mpc_ioapic_id(ioapic_idx), pin);
--		return 0;
-+		pr_debug("Pin %d-%d already programmed\n", mpc_ioapic_id(ioapic_idx), pin);
-+		orig_entry = ioapic_read_entry(attr->ioapic, pin);
-+		if (attr->trigger == orig_entry.trigger && attr->polarity == orig_entry.polarity)
-+			return 0;
-+		return -EBUSY;
- 	}
- 	ret = io_apic_setup_irq_pin(irq, node, attr);
- 	if (!ret)
+--IpbVkmxF4tDyP/Kb--
