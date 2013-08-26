@@ -1,148 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab3HZNgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 09:36:53 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50201 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab3HZNgw (ORCPT
+	id S1756818Ab3HZNhJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 09:37:09 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:39365 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab3HZNhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 09:36:52 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2 14/20] mm, hugetlb: call vma_needs_reservation before entering alloc_huge_page()
-In-Reply-To: <1376040398-11212-15-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com> <1376040398-11212-15-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 26 Aug 2013 19:06:45 +0530
-Message-ID: <87vc2sd15e.fsf@linux.vnet.ibm.com>
+	Mon, 26 Aug 2013 09:37:07 -0400
+Date: Mon, 26 Aug 2013 21:36:58 +0800
+From: larmbr <nasa4836@gmail.com>
+To: linux-mm@kvack.org
+Cc: hannes@cmpxchg.org, mhocko@suse.cz, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
+        mgorman@suse.de, riel@redhat.com, nasa4836@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] mm/vmscan : use vmcan_swappiness( ) basing on MEMCG
+ config to elimiate unnecessary runtime cost
+Message-ID: <20130826133658.GA357@larmbr-lcx>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082613-2000-0000-0000-00000D766547
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+Currently, we get the vm_swappiness via vmscan_swappiness(), which
+calls global_reclaim() to check if this is a global reclaim. 
 
-> In order to validate that this failure is reasonable, we need to know
-> whether allocation request is for reserved or not on caller function.
-> So moving vma_needs_reservation() up to the caller of alloc_huge_page().
-> There is no functional change in this patch and following patch use
-> this information.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 8dff972..bc666cf 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1110,13 +1110,11 @@ static void vma_commit_reservation(struct hstate *h,
->  }
->
->  static struct page *alloc_huge_page(struct vm_area_struct *vma,
-> -				    unsigned long addr, int avoid_reserve)
-> +				    unsigned long addr, int use_reserve)
->  {
->  	struct hugepage_subpool *spool = subpool_vma(vma);
->  	struct hstate *h = hstate_vma(vma);
->  	struct page *page;
-> -	long chg;
-> -	bool use_reserve;
->  	int ret, idx;
->  	struct hugetlb_cgroup *h_cg;
->
-> @@ -1129,10 +1127,6 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  	 * need pages and subpool limit allocated allocated if no reserve
->  	 * mapping overlaps.
->  	 */
-> -	chg = vma_needs_reservation(h, vma, addr);
-> -	if (chg < 0)
-> -		return ERR_PTR(-ENOMEM);
-> -	use_reserve = (!chg && !avoid_reserve);
->  	if (!use_reserve)
->  		if (hugepage_subpool_get_pages(spool, 1))
->  			return ERR_PTR(-ENOSPC);
-> @@ -2504,6 +2498,8 @@ static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
->  	struct hstate *h = hstate_vma(vma);
->  	struct page *old_page, *new_page;
->  	int outside_reserve = 0;
-> +	long chg;
-> +	bool use_reserve;
->  	unsigned long mmun_start;	/* For mmu_notifiers */
->  	unsigned long mmun_end;		/* For mmu_notifiers */
->
-> @@ -2535,7 +2531,17 @@ retry_avoidcopy:
->
->  	/* Drop page_table_lock as buddy allocator may be called */
->  	spin_unlock(&mm->page_table_lock);
-> -	new_page = alloc_huge_page(vma, address, outside_reserve);
-> +	chg = vma_needs_reservation(h, vma, address);
-> +	if (chg == -ENOMEM) {
+Besides, the current implementation of global_reclaim() always returns 
+true for the !CONFIG_MEGCG case, and judges the other case by checking 
+whether scan_control->target_mem_cgroup is null or not.
 
-why not 
+Thus, we could just use two versions of vmscan_swappiness() based on 
+MEMCG Kconfig , to eliminate the unnecessary run-time cost for 
+the !CONFIG_MEMCG at all, and to squash all memcg-related checking
+into the CONFIG_MEMCG version.
 
-    if (chg < 0) ?
-
-Should we try to unmap the page from child and avoid cow here ?. May be
-with outside_reserve = 1 we will never have vma_needs_reservation fail.
-Any how it would be nice to document why this error case is different
-from alloc_huge_page error case.
+Signed-off-by: Zhan Jianyu <nasa4836@gmail.com>
+---
+mm/memcontrol.c |    6 +++++-
+mm/vmscan.c     |    9 +++++++--
+2 files changed, 12 insertions(+), 3 deletions(-)
 
 
-> +		page_cache_release(old_page);
-> +
-> +		/* Caller expects lock to be held */
-> +		spin_lock(&mm->page_table_lock);
-> +		return VM_FAULT_OOM;
-> +	}
-> +	use_reserve = !chg && !outside_reserve;
-> +
-> +	new_page = alloc_huge_page(vma, address, use_reserve);
->
->  	if (IS_ERR(new_page)) {
->  		long err = PTR_ERR(new_page);
-> @@ -2664,6 +2670,8 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  	struct page *page;
->  	struct address_space *mapping;
->  	pte_t new_pte;
-> +	long chg;
-> +	bool use_reserve;
->
->  	/*
->  	 * Currently, we are forced to kill the process in the event the
-> @@ -2689,7 +2697,15 @@ retry:
->  		size = i_size_read(mapping->host) >> huge_page_shift(h);
->  		if (idx >= size)
->  			goto out;
-> -		page = alloc_huge_page(vma, address, 0);
-> +
-> +		chg = vma_needs_reservation(h, vma, address);
-> +		if (chg == -ENOMEM) {
-
-if (chg < 0)
-
-> +			ret = VM_FAULT_OOM;
-> +			goto out;
-> +		}
-> +		use_reserve = !chg;
-> +
-> +		page = alloc_huge_page(vma, address, use_reserve);
->  		if (IS_ERR(page)) {
->  			ret = PTR_ERR(page);
->  			if (ret == -ENOMEM)
-> -- 
-> 1.7.9.5
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c5792a5..1290320 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1525,9 +1525,13 @@ static unsigned long mem_cgroup_margin(struct mem_cgroup *memcg)
+ 
+ int mem_cgroup_swappiness(struct mem_cgroup *memcg)
+ {
+-	struct cgroup *cgrp = memcg->css.cgroup;
++	struct cgroup *cgrp;
++
++	if (!memcg)
++		return vm_swappiness;
+ 
+ 	/* root ? */
++	cgrp = memcg->css.cgroup;
+ 	if (cgrp->parent == NULL)
+ 		return vm_swappiness;
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 2cff0d4..1de652d 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1742,12 +1742,17 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+ 	return shrink_inactive_list(nr_to_scan, lruvec, sc, lru);
+ }
+ 
++#ifdef CONFIG_MEMCG
+ static int vmscan_swappiness(struct scan_control *sc)
+ {
+-	if (global_reclaim(sc))
+-		return vm_swappiness;
+ 	return mem_cgroup_swappiness(sc->target_mem_cgroup);
+ }
++#else
++static int vmscan_swappiness(struct scan_control *sc)
++{
++	return vm_swappiness;
++}
++#endif
+ 
+ enum scan_balance {
+ 	SCAN_EQUAL,
