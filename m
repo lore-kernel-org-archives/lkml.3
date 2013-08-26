@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756429Ab3HZI35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 04:29:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57916 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822Ab3HZI34 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 04:29:56 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Benoit Cousson <bcousson@baylibre.com>, tony@atomide.com
-Cc: Joel Fernandes <joelf@ti.com>, santosh.shilimkar@ti.com,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mdp@ti.com>, Matt Porter <mporter@ti.com>,
-        Joel A Fernandes <joelagnel@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH v2] ARM: dts: add AM33XX EDMA support
-Date: Mon, 26 Aug 2013 10:29:44 +0200
-Message-Id: <1377505784-9820-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.8.4.rc3
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	id S1756564Ab3HZIdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:33:42 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:52866 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756052Ab3HZIdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 04:33:39 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Axel Lin <axel.lin@ingics.com>
+Subject: Re: [PATCH] pinctrl: rockchip: Simplify pin_to_bank equation
+Date: Mon, 26 Aug 2013 10:33:35 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+References: <1377244140.24387.1.camel@phoenix>
+In-Reply-To: <1377244140.24387.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308261033.35541.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Porter <mdp@ti.com>
+Am Freitag, 23. August 2013, 09:49:00 schrieb Axel Lin:
+> If (b->pin_base + b->nr_pins - 1) < pin is true, pin >= b->pin_base is
+> always true because b->nr_pins is never less than 0.
+> Thus this patch simplify the equation.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-Adds AM33XX EDMA support to the am33xx.dtsi as documented in
-Documentation/devicetree/bindings/dma/ti-edma.txt
+Acked-by: Heiko Stuebner <heiko@sntech.de>
 
-Joel: Drop DT entries that are non-hardware-description for now as discussed in [1]
-
-[1] https://patchwork.kernel.org/patch/2226761/
-
-Signed-off-by: Matt Porter <mporter@ti.com>
-Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
-Could someone please pick this up?
-
-v1..v2:
-	- s/edma@/dma-controller@/
-
- arch/arm/boot/dts/am33xx.dtsi | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 38b446b..784f774 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -96,6 +96,18 @@
- 			reg = <0x48200000 0x1000>;
- 		};
- 
-+		edma: dma-controller@49000000 {
-+			compatible = "ti,edma3";
-+			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
-+			reg =	<0x49000000 0x10000>,
-+				<0x44e10f90 0x10>;
-+			interrupts = <12 13 14>;
-+			#dma-cells = <1>;
-+			dma-channels = <64>;
-+			ti,edma-regions = <4>;
-+			ti,edma-slots = <256>;
-+		};
-+
- 		gpio0: gpio@44e07000 {
- 			compatible = "ti,omap4-gpio";
- 			ti,hwmods = "gpio1";
--- 
-1.8.4.rc3
+> ---
+>  drivers/pinctrl/pinctrl-rockchip.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-rockchip.c
+> b/drivers/pinctrl/pinctrl-rockchip.c index 319a64a..ea27806 100644
+> --- a/drivers/pinctrl/pinctrl-rockchip.c
+> +++ b/drivers/pinctrl/pinctrl-rockchip.c
+> @@ -186,8 +186,7 @@ static struct rockchip_pin_bank *pin_to_bank(struct
+> rockchip_pinctrl *info, {
+>  	struct rockchip_pin_bank *b = info->ctrl->pin_banks;
+> 
+> -	while ((pin >= b->pin_base) &&
+> -			((b->pin_base + b->nr_pins - 1) < pin))
+> +	while (pin >= (b->pin_base + b->nr_pins))
+>  		b++;
+> 
+>  	return b;
 
