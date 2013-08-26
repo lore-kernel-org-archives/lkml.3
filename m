@@ -1,45 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757001Ab3HZQUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 12:20:41 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:37140 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973Ab3HZQUk (ORCPT
+	id S1752569Ab3HZQYg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 12:24:36 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:53660 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab3HZQYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 12:20:40 -0400
-Date: Mon, 26 Aug 2013 19:20:20 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Iker Pedrosa <ikerpedrosam@gmail.com>
-Cc: pavel@ucw.cz, devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        harsh1kumar@gmail.com, linux-kernel@vger.kernel.org,
-        mujeeb.adil@gmail.com, justinmattock@gmail.com
-Subject: Re: [PATCH 09/24] Staging: winbond: reg: fixed some lines over 80
- characters
-Message-ID: <20130826162020.GE6329@mwanda>
-References: <1377529823-5116-1-git-send-email-ikerpedrosam@gmail.com>
- <1377529823-5116-10-git-send-email-ikerpedrosam@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377529823-5116-10-git-send-email-ikerpedrosam@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 26 Aug 2013 12:24:35 -0400
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Cc: Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH 1/2] procfs: restore 0400 permissions on /proc/*/{syscall,stack,personality}
+Date: Mon, 26 Aug 2013 17:23:59 +0100
+Message-Id: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 05:10:08PM +0200, Iker Pedrosa wrote:
-> @@ -926,7 +928,8 @@ static void Set_ChanIndep_RfData_al7230_24(struct hw_data *pHwData, u32 *pltmp,
->  	u8	i;
->  	for (i = 0; i < number; i++) {
->  		pHwData->phy_para[i] = al7230_rf_data_24[i];
-> -		pltmp[i] = (1 << 31) | (0 << 30) | (24 << 24) | (al7230_rf_data_24[i] & 0xffffff);
-> +		pltmp[i] = (1 << 31) | (0 << 30) | (24 << 24)
-> +				   | (al7230_rf_data_24[i] & 0xffffff);
+Avoid giving an fd on privileged files for free by switching these
+files to 0400 mode.
 
-It's always a bit hard for me to know how picky to be.  Normally the '|'
-would be on the first line here.
+This patch restores the old mode which was 0400
 
-regards,
-dan carpenter
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+---
+ fs/proc/base.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 1485e38..6b162cd 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2576,7 +2576,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	REG("environ",    S_IRUSR, proc_environ_operations),
+ 	INF("auxv",       S_IRUSR, proc_pid_auxv),
+ 	ONE("status",     S_IRUGO, proc_pid_status),
+-	ONE("personality", S_IRUGO, proc_pid_personality),
++	ONE("personality", S_IRUSR, proc_pid_personality),
+ 	INF("limits",	  S_IRUGO, proc_pid_limits),
+ #ifdef CONFIG_SCHED_DEBUG
+ 	REG("sched",      S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+@@ -2586,7 +2586,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ #endif
+ 	REG("comm",      S_IRUGO|S_IWUSR, proc_pid_set_comm_operations),
+ #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
+-	INF("syscall",    S_IRUGO, proc_pid_syscall),
++	INF("syscall",    S_IRUSR, proc_pid_syscall),
+ #endif
+ 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
+ 	ONE("stat",       S_IRUGO, proc_tgid_stat),
+@@ -2614,7 +2614,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	INF("wchan",      S_IRUGO, proc_pid_wchan),
+ #endif
+ #ifdef CONFIG_STACKTRACE
+-	ONE("stack",      S_IRUGO, proc_pid_stack),
++	ONE("stack",      S_IRUSR, proc_pid_stack),
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+ 	INF("schedstat",  S_IRUGO, proc_pid_schedstat),
+@@ -2915,14 +2915,14 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	REG("environ",   S_IRUSR, proc_environ_operations),
+ 	INF("auxv",      S_IRUSR, proc_pid_auxv),
+ 	ONE("status",    S_IRUGO, proc_pid_status),
+-	ONE("personality", S_IRUGO, proc_pid_personality),
++	ONE("personality", S_IRUSR, proc_pid_personality),
+ 	INF("limits",	 S_IRUGO, proc_pid_limits),
+ #ifdef CONFIG_SCHED_DEBUG
+ 	REG("sched",     S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+ #endif
+ 	REG("comm",      S_IRUGO|S_IWUSR, proc_pid_set_comm_operations),
+ #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
+-	INF("syscall",   S_IRUGO, proc_pid_syscall),
++	INF("syscall",   S_IRUSR, proc_pid_syscall),
+ #endif
+ 	INF("cmdline",   S_IRUGO, proc_pid_cmdline),
+ 	ONE("stat",      S_IRUGO, proc_tid_stat),
+@@ -2952,7 +2952,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	INF("wchan",     S_IRUGO, proc_pid_wchan),
+ #endif
+ #ifdef CONFIG_STACKTRACE
+-	ONE("stack",      S_IRUGO, proc_pid_stack),
++	ONE("stack",      S_IRUSR, proc_pid_stack),
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+ 	INF("schedstat", S_IRUGO, proc_pid_schedstat),
+-- 
+1.7.11.7
 
