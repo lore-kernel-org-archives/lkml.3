@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728Ab3HZIq3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 04:46:29 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:40008 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756419Ab3HZIq2 (ORCPT
+	id S1756576Ab3HZIuo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:50:44 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:16632 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751945Ab3HZIun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 04:46:28 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v4 1/10] mm/hwpoison: fix lose PG_dirty flag for errors on mlocked pages
-Date: Mon, 26 Aug 2013 16:46:05 +0800
-Message-Id: <1377506774-5377-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082608-5816-0000-0000-00000994B3D6
+	Mon, 26 Aug 2013 04:50:43 -0400
+Message-ID: <521B16B9.4000203@siemens.com>
+Date: Mon, 26 Aug 2013 10:50:01 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Fenghua Yu <fenghua.yu@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+        H Peter Anvin <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: x86-32: Early microcode loading stumbles over disabled DYNAMIC_FTRACE
+References: <5217908E.2040702@siemens.com> <20130823201751.GA16046@pd.tnic>
+In-Reply-To: <20130823201751.GA16046@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memory_failure() store the page flag of the error page before doing unmap,
-and (only) if the first check with page flags at the time decided the error
-page is unknown, it do the second check with the stored page flag since
-memory_failure() does unmapping of the error pages before doing page_action().
-This unmapping changes the page state, especially page_remove_rmap() (called
-from try_to_unmap_one()) clears PG_mlocked, so page_action() can't catch
-mlocked pages after that.
+On 2013-08-23 22:17, Borislav Petkov wrote:
+> On Fri, Aug 23, 2013 at 06:40:46PM +0200, Jan Kiszka wrote:
+>> Below some hunks to get it working again - at least in the absence of
+>> any microcode in the initrd. Marking all involved functions as __init
+>> is another option (as __init implies notrace). But I bet there is more
+>> hidden. I see e.g. a pr_warn() in find_cpio_init that should trigger
+>> the issue as well if we hit the error it reports (btw. printing at
+>> this point of the boot should not work anyway, should it?).
+> 
+> I guess we can do early_printk there instead as x86_64_start_kernel()
+> does it but I'm not sure for the 32-bit case where we call
+> load_ucode_bsp/ap before we've even enabled paging.
 
-However, memory_failure() can't handle memory errors on dirty mlocked pages
-correctly. try_to_unmap_one will move the dirty bit from pte to the physical
-page, the second check lose it since it check the stored page flag. This patch
-fix it by restore PG_dirty flag to stored page flag if the page is dirty.
+early_printk doesn't seem to work as well on 32-bit until paging was
+enabled.
 
-Testcase:
+Jan
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <errno.h>
-
-#define PAGES_TO_TEST 2
-#define PAGE_SIZE	4096
-
-int main(void)
-{
-	char *mem;
-	int i;
-
-	mem = mmap(NULL, PAGES_TO_TEST * PAGE_SIZE,
-			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_LOCKED, 0, 0);
-
-	for (i = 0; i < PAGES_TO_TEST; i++)
-		mem[i * PAGE_SIZE] = 'a';
-
-	if (madvise(mem, PAGES_TO_TEST * PAGE_SIZE, MADV_HWPOISON) == -1)
-		return -1;
-
-	return 0;
-}
-
-Before patch:
-
-[  912.839247] Injecting memory failure for page 7dfb8 at 7f6b4e37b000
-[  912.839257] MCE 0x7dfb8: clean mlocked LRU page recovery: Recovered
-[  912.845550] MCE 0x7dfb8: clean mlocked LRU page still referenced by 1 users
-[  912.852586] Injecting memory failure for page 7e6aa at 7f6b4e37c000
-[  912.852594] MCE 0x7e6aa: clean mlocked LRU page recovery: Recovered
-[  912.858936] MCE 0x7e6aa: clean mlocked LRU page still referenced by 1 users
-
-After patch:
-
-[  163.590225] Injecting memory failure for page 91bc2f at 7f9f5b0e5000
-[  163.590264] MCE 0x91bc2f: dirty mlocked LRU page recovery: Recovered
-[  163.596680] MCE 0x91bc2f: dirty mlocked LRU page still referenced by 1 users
-[  163.603831] Injecting memory failure for page 91cdd3 at 7f9f5b0e6000
-[  163.603852] MCE 0x91cdd3: dirty mlocked LRU page recovery: Recovered
-[  163.610305] MCE 0x91cdd3: dirty mlocked LRU page still referenced by 1 users
-
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- mm/memory-failure.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 2c13aa7..d5686d4 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1204,6 +1204,9 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
- 	for (ps = error_states;; ps++)
- 		if ((p->flags & ps->mask) == ps->res)
- 			break;
-+
-+	page_flags |= (p->flags & (1UL << PG_dirty));
-+
- 	if (!ps->mask)
- 		for (ps = error_states;; ps++)
- 			if ((page_flags & ps->mask) == ps->res)
 -- 
-1.8.1.2
-
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
