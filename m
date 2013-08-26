@@ -1,95 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab3HZWJH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:09:07 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:43215 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab3HZWJF (ORCPT
+	id S1752570Ab3HZWJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:09:17 -0400
+Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:56853 "EHLO
+	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752113Ab3HZWJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:09:05 -0400
-Date: Mon, 26 Aug 2013 15:08:45 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Dave Jones <davej@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: unused swap offset / bad page map.
-In-Reply-To: <CA+55aFwQbJbR3xij1+iGbvj3EQggF9NLGAfDbmA54FkKz9xfew@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1308261448490.4982@eggly.anvils>
-References: <20130807153030.GA25515@redhat.com> <CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com> <20130819231836.GD14369@redhat.com> <CAJd=RBA-UZmSTxNX63Vni+UPZBHwP4tvzE_qp1ZaHBqcNG7Fcw@mail.gmail.com> <20130821204901.GA19802@redhat.com>
- <CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com> <20130823032127.GA5098@redhat.com> <CAJd=RBArkh3sKVoOJUZBLngXtJubjx4-a3G6s7Tn0N=Pr1gU4g@mail.gmail.com> <20130823035344.GB5098@redhat.com> <CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
- <20130826190757.GB27768@redhat.com> <CA+55aFw_bhMOP73owFHRFHZDAYEdWgF9j-502Aq9tZe3tEfmwg@mail.gmail.com> <CA+55aFwQbJbR3xij1+iGbvj3EQggF9NLGAfDbmA54FkKz9xfew@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 26 Aug 2013 18:09:12 -0400
+X-Greylist: delayed 773 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 18:09:12 EDT
+Message-ID: <00000140bca09c47-54b56d47-a2ca-4f4d-969f-c868d11eb31d-000000@email.amazonses.com>
+User-Agent: quilt/0.50-1
+Date: Mon, 26 Aug 2013 21:56:17 +0000
+From: Christoph Lameter <cl@linux.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linuxfoundation.org, James Hogan <james.hogan@imgtec.com>
+Cc: linux-arch@vger.kernel.org
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [guv v2 30/31] metag: Replace __get_cpu_var uses
+References: <20130826204351.725357339@linux.com>
+X-SES-Outgoing: 2013.08.26-54.240.9.46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Aug 2013, Linus Torvalds wrote:
-> On Mon, Aug 26, 2013 at 1:15 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > So I'm almost likely to think that we are more likely to have
-> > something wrong in the messy magical special cases.
-> 
-> Of course, the good news would be if it actually ends up being the
-> soft-dirty stuff, and bisection hits something recent.
+__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
+address calculation via the form &__get_cpu_var(x). This calculates the address for
+the instance of the percpu variable of the current processor based on an offset.
 
-I suspect so.
+Others usage cases are for storing and retrieving data from the current processors percpu area.
+__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
 
-> 
-> So maybe I'm overly pessimistic. That messy swap_map[] code really
-> _is_ messy, but at the same time it should also be pretty well-tested.
-> I don't think it's been touched in years.
+__get_cpu_var() is defined as :
 
-Blame me for the byte-instead-of-short continuation stuff.
-But it's never yet shown any problem (okay, perhaps that's
-because it's so rare to need any continuation anyway).
 
-> 
-> That said, google does find "swap_free: Unused swap offset entry"
-> reports from over the years. Most of them seem to be single-bit
-> errors, though (ie when the entry is 00000100 or similar I'm more
-> inclined to blame a bit error
+#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
 
-Yes, historically they have usually represented either single-bit
-errors, or corruption of page tables by other kernel data.  The
-swap subsystem discovers it, but it's rarely an error of swap.
 
-So I don't care for Dave's suggestion much earlier in this thread,
-that swapoff should fail with -EINVAL if there has been a bad page
-taint: that doesn't necessarily interfere with swapoff at all.
 
-And besides, swapoff is killable: yes, if counts go wrong, it
-can cycle around endlessly, but it checks for signal_pending()
-each time around the loop.
+__get_cpu_var() always only does a address determination. However, store and retrieve operations
+could use a segment prefix (or global register on other platforms) to avoid the address calculation.
 
-> - in contrast your values look like "real" swap entries).
+this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
+optimized assembly code to read and write per cpu variables.
 
-Indeed they do.
 
-I just did a quick diff of 3.11-rc7/mm against 3.10, and here's
-a line in mremap which worries me.  That set_pte_at() is operating
-on anything that isn't pte_none(), so the pte_mksoft_dirty() looks
-prone to corrupt a swap entry.
+This patch converts __get_cpu_var into either and explicit address calculation using this_cpu_ptr()
+or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
+and less registers are used when code is generated.
 
-I've not tried matching up bits with Dave's reports, and just going
-into a meeting now, but this patch looks worth a try: probably Cyrill
-can improve it meanwhile to what he actually wants there (I'm
-surprised anything special is needed for just moving a pte).
+At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
 
-Hugh
+The patchset includes passes over all arches as well. Once these operations are used throughout then
+specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
+f.e. using a global register that may be set to the per cpu base.
 
---- 3.11-rc7/mm/mremap.c	2013-07-14 17:10:16.640003652 -0700
-+++ linux/mm/mremap.c	2013-08-26 14:46:14.460027627 -0700
-@@ -126,7 +126,7 @@ static void move_ptes(struct vm_area_str
- 			continue;
- 		pte = ptep_get_and_clear(mm, old_addr, old_pte);
- 		pte = move_pte(pte, new_vma->vm_page_prot, old_addr, new_addr);
--		set_pte_at(mm, new_addr, new_pte, pte_mksoft_dirty(pte));
-+		set_pte_at(mm, new_addr, new_pte, pte);
- 	}
+
+
+
+Transformations done to __get_cpu_var()
+
+
+1. Determine the address of the percpu instance of the current processor.
+
+	DEFINE_PER_CPU(int, y);
+	int *x = &__get_cpu_var(y);
+
+    Converts to
+
+	int *x = this_cpu_ptr(&y);
+
+
+2. Same as #1 but this time an array structure is involved.
+
+	DEFINE_PER_CPU(int, y[20]);
+	int *x = __get_cpu_var(y);
+
+    Converts to
+
+	int *x = this_cpu_ptr(y);
+
+
+3. Retrieve the content of the current processors instance of a per cpu variable.
+
+	DEFINE_PER_CPU(int, u);
+	int x = __get_cpu_var(y)
+
+   Converts to
+
+	int x = __this_cpu_read(y);
+
+
+4. Retrieve the content of a percpu struct
+
+	DEFINE_PER_CPU(struct mystruct, y);
+	struct mystruct x = __get_cpu_var(y);
+
+   Converts to
+
+	memcpy(this_cpu_ptr(&y), x, sizeof(x));
+
+
+5. Assignment to a per cpu variable
+
+	DEFINE_PER_CPU(int, y)
+	__get_cpu_var(y) = x;
+
+   Converts to
+
+	this_cpu_write(y, x);
+
+
+6. Increment/Decrement etc of a per cpu variable
+
+	DEFINE_PER_CPU(int, y);
+	__get_cpu_var(y)++
+
+   Converts to
+
+	this_cpu_inc(y)
+
+
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/arch/metag/kernel/perf/perf_event.c
+===================================================================
+--- linux.orig/arch/metag/kernel/perf/perf_event.c	2013-08-26 13:30:45.220186762 -0500
++++ linux/arch/metag/kernel/perf/perf_event.c	2013-08-26 13:30:45.216186804 -0500
+@@ -258,7 +258,7 @@ int metag_pmu_event_set_period(struct pe
  
- 	arch_leave_lazy_mmu_mode();
+ static void metag_pmu_start(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int idx = hwc->idx;
+ 
+@@ -306,7 +306,7 @@ static void metag_pmu_stop(struct perf_e
+ 
+ static int metag_pmu_add(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int idx = 0, ret = 0;
+ 
+@@ -348,7 +348,7 @@ out:
+ 
+ static void metag_pmu_del(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int idx = hwc->idx;
+ 
+@@ -607,7 +607,7 @@ static int _hw_perf_event_init(struct pe
+ 
+ static void metag_pmu_enable_counter(struct hw_perf_event *event, int idx)
+ {
+-	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
+ 	unsigned int config = event->config;
+ 	unsigned int tmp = config & 0xf0;
+ 	unsigned long flags;
+@@ -680,7 +680,7 @@ unlock:
+ 
+ static void metag_pmu_disable_counter(struct hw_perf_event *event, int idx)
+ {
+-	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
+ 	unsigned int tmp = 0;
+ 	unsigned long flags;
+ 
+@@ -728,7 +728,7 @@ out:
+ 
+ static void metag_pmu_write_counter(int idx, u32 val)
+ {
+-	struct cpu_hw_events *events = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *events = this_cpu_ptr(&cpu_hw_events);
+ 	u32 tmp = 0;
+ 	unsigned long flags;
+ 
+@@ -761,7 +761,7 @@ static int metag_pmu_event_map(int idx)
+ static irqreturn_t metag_pmu_counter_overflow(int irq, void *dev)
+ {
+ 	int idx = (int)dev;
+-	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
+ 	struct perf_event *event = cpuhw->events[idx];
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	struct pt_regs *regs = get_irq_regs();
+
