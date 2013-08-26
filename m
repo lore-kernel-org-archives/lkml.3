@@ -1,145 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab3HZMyY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 08:54:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:14401 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756777Ab3HZMyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 08:54:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,958,1367996400"; 
-   d="scan'208";a="392111740"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V12 02/13] perf tools: add pid to struct thread
-Date: Mon, 26 Aug 2013 16:00:19 +0300
-Message-Id: <1377522030-27870-3-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1377522030-27870-1-git-send-email-adrian.hunter@intel.com>
-References: <1377522030-27870-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1751760Ab3HZNBr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 09:01:47 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:36007 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab3HZNBq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 09:01:46 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v2 03/20] mm, hugetlb: fix subpool accounting handling
+In-Reply-To: <20130822074752.GH13415@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com> <1376040398-11212-4-git-send-email-iamjoonsoo.kim@lge.com> <87vc2zgzpn.fsf@linux.vnet.ibm.com> <20130822065038.GA13415@lge.com> <87y57u19ur.fsf@linux.vnet.ibm.com> <20130822074752.GH13415@lge.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 26 Aug 2013 18:31:35 +0530
+Message-ID: <871u5gehcg.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082612-2000-0000-0000-00000D7644C1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Record pid on struct thread.  The member is named 'pid_'
-to avoid confusion with the 'tid' member which was previously
-named 'pid'.
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/machine.c | 16 +++++++++++-----
- tools/perf/util/thread.c  |  3 ++-
- tools/perf/util/thread.h  |  3 ++-
- 3 files changed, 15 insertions(+), 7 deletions(-)
+> On Thu, Aug 22, 2013 at 12:38:12PM +0530, Aneesh Kumar K.V wrote:
+>> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+>> 
+>> > Hello, Aneesh.
+>> >
+>> > First of all, thank you for review!
+>> >
+>> > On Wed, Aug 21, 2013 at 02:58:20PM +0530, Aneesh Kumar K.V wrote:
+>> >> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+>> >> 
+>> >> > If we alloc hugepage with avoid_reserve, we don't dequeue reserved one.
+>> >> > So, we should check subpool counter when avoid_reserve.
+>> >> > This patch implement it.
+>> >> 
+>> >> Can you explain this better ? ie, if we don't have a reservation in the
+>> >> area chg != 0. So why look at avoid_reserve. 
+>> >
+>> > We don't consider avoid_reserve when chg != 0.
+>> > Look at following code.
+>> >
+>> > +       if (chg || avoid_reserve)
+>> > +               if (hugepage_subpool_get_pages(spool, 1))
+>> >
+>> > It means that if chg != 0, we skip to check avoid_reserve.
+>> 
+>> when whould be avoid_reserve == 1 and chg == 0 ?
+>
+> In this case, we should do hugepage_subpool_get_pages(), since we don't
+> get a reserved page due to avoid_reserve.
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 4514e7e..40d92f4 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -253,7 +253,8 @@ void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size)
- 	return;
- }
- 
--static struct thread *__machine__findnew_thread(struct machine *machine, pid_t tid,
-+static struct thread *__machine__findnew_thread(struct machine *machine,
-+						pid_t pid, pid_t tid,
- 						bool create)
- {
- 	struct rb_node **p = &machine->threads.rb_node;
-@@ -265,8 +266,11 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 	 * so most of the time we dont have to look up
- 	 * the full rbtree:
- 	 */
--	if (machine->last_match && machine->last_match->tid == tid)
-+	if (machine->last_match && machine->last_match->tid == tid) {
-+		if (pid && pid != machine->last_match->pid_)
-+			machine->last_match->pid_ = pid;
- 		return machine->last_match;
-+	}
- 
- 	while (*p != NULL) {
- 		parent = *p;
-@@ -274,6 +278,8 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 
- 		if (th->tid == tid) {
- 			machine->last_match = th;
-+			if (pid && pid != th->pid_)
-+				th->pid_ = pid;
- 			return th;
- 		}
- 
-@@ -286,7 +292,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 	if (!create)
- 		return NULL;
- 
--	th = thread__new(tid);
-+	th = thread__new(pid, tid);
- 	if (th != NULL) {
- 		rb_link_node(&th->rb_node, parent, p);
- 		rb_insert_color(&th->rb_node, &machine->threads);
-@@ -298,12 +304,12 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 
- struct thread *machine__findnew_thread(struct machine *machine, pid_t tid)
- {
--	return __machine__findnew_thread(machine, tid, true);
-+	return __machine__findnew_thread(machine, 0, tid, true);
- }
- 
- struct thread *machine__find_thread(struct machine *machine, pid_t tid)
- {
--	return __machine__findnew_thread(machine, tid, false);
-+	return __machine__findnew_thread(machine, 0, tid, false);
- }
- 
- int machine__process_comm_event(struct machine *machine, union perf_event *event)
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 6feeb88..e3d4a55 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -7,12 +7,13 @@
- #include "util.h"
- #include "debug.h"
- 
--struct thread *thread__new(pid_t tid)
-+struct thread *thread__new(pid_t pid, pid_t tid)
- {
- 	struct thread *self = zalloc(sizeof(*self));
- 
- 	if (self != NULL) {
- 		map_groups__init(&self->mg);
-+		self->pid_ = pid;
- 		self->tid = tid;
- 		self->ppid = -1;
- 		self->comm = malloc(32);
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 13c62c9..927b37f 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -12,6 +12,7 @@ struct thread {
- 		struct list_head node;
- 	};
- 	struct map_groups	mg;
-+	pid_t			pid_; /* Not all tools update this */
- 	pid_t			tid;
- 	pid_t			ppid;
- 	char			shortname[3];
-@@ -24,7 +25,7 @@ struct thread {
- 
- struct machine;
- 
--struct thread *thread__new(pid_t tid);
-+struct thread *thread__new(pid_t pid, pid_t tid);
- void thread__delete(struct thread *self);
- 
- int thread__set_comm(struct thread *self, const char *comm);
--- 
-1.7.11.7
+As per off-list discussion we had around this, please add additional
+information in commit message explaining when we have
+avoid_reserve == 1 and chg == 0
+
+Something like the below copied from call site.
+
+	 /* If the process that created a MAP_PRIVATE mapping is about to
+	  * perform a COW due to a shared page count, attempt to satisfy
+	  * the allocation without using the existing reserves
+          */
+
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+-aneesh
 
