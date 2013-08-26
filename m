@@ -1,96 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab3HZWXO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:23:14 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:34225 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab3HZWXM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:23:12 -0400
-Date: Mon, 26 Aug 2013 15:23:09 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Meelis Roos <mroos@linux.ee>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steve Cotton <steve@s.cotton.clara.co.uk>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] USB: OHCI: fix build error related to ohci_suspend/resume
-Message-ID: <20130826222308.GB12075@roeck-us.net>
-References: <20130826042653.GA2778@kroah.com>
- <Pine.LNX.4.44L0.1308261051340.1445-100000@iolanthe.rowland.org>
- <20130826153840.GA29862@kroah.com>
- <20130826160627.GA11307@roeck-us.net>
- <20130826165022.GA2113@kroah.com>
- <20130826171903.GA21675@roeck-us.net>
- <20130826221414.GC10063@kroah.com>
+	id S1752298Ab3HZW2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:28:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26717 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751734Ab3HZW2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 18:28:45 -0400
+Date: Mon, 26 Aug 2013 18:28:33 -0400
+From: Dave Jones <davej@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Hillf Danton <dhillf@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: unused swap offset / bad page map.
+Message-ID: <20130826222833.GA24320@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Hugh Dickins <hughd@google.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Cyrill Gorcunov <gorcunov@gmail.com>,
+	Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130821204901.GA19802@redhat.com>
+ <CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com>
+ <20130823032127.GA5098@redhat.com>
+ <CAJd=RBArkh3sKVoOJUZBLngXtJubjx4-a3G6s7Tn0N=Pr1gU4g@mail.gmail.com>
+ <20130823035344.GB5098@redhat.com>
+ <CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
+ <20130826190757.GB27768@redhat.com>
+ <CA+55aFw_bhMOP73owFHRFHZDAYEdWgF9j-502Aq9tZe3tEfmwg@mail.gmail.com>
+ <CA+55aFwQbJbR3xij1+iGbvj3EQggF9NLGAfDbmA54FkKz9xfew@mail.gmail.com>
+ <alpine.LNX.2.00.1308261448490.4982@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130826221414.GC10063@kroah.com>
+In-Reply-To: <alpine.LNX.2.00.1308261448490.4982@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 03:14:14PM -0700, Greg Kroah-Hartman wrote:
-> On Mon, Aug 26, 2013 at 10:19:03AM -0700, Guenter Roeck wrote:
-> > On Mon, Aug 26, 2013 at 09:50:22AM -0700, Greg Kroah-Hartman wrote:
-> > > On Mon, Aug 26, 2013 at 09:06:27AM -0700, Guenter Roeck wrote:
-> > > > On Mon, Aug 26, 2013 at 08:38:40AM -0700, Greg Kroah-Hartman wrote:
-> > > > > On Mon, Aug 26, 2013 at 10:53:53AM -0400, Alan Stern wrote:
-> > > > > > Commit 9a11899c5e69 (USB: OHCI: add missing PCI PM callbacks to
-> > > > > > ohci-pci.c) added missing ohci_suspend and ohci_resume callback
-> > > > > > pointers, but forgot that these callbacks are declared and defined
-> > > > > > only when CONFIG_PM is enabled.
-> > > > > > 
-> > > > > > This patch adds a preprocessor conditional to avoid build errors when
-> > > > > > PM is disabled.
-> > > > > > 
-> > > > > > Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-> > > > > > 
-> > > > > > ---
-> > > > > 
-> > > > > Guenter and Meelis, does the patch below fix the problem for you?
-> > > > > 
-> > > > Tested-by: Guenter Roeck <linux@roeck-us.net>
-> > > > 
-> > > > Previously failing builds:
-> > > > 	mips:ath79_defconfig
-> > > > 	powerpc:ppc64e_defconfig
-> > > > 	powerpc:cell_defconfig
-> > > > 	powerpc:maple_defconfig
-> > > > 	parisc:defconfig
-> > > > 	tile:defconfig
-> > > > 	sparc32:defconfig
-> > > > 	sparc64:defconfig
-> > > > 
-> > > > 	as well as the powerpc qemu test (with the config file used
-> > > > 	by the yocto project)
-> > > > 
-> > > > All builds pass with the patch applied, as does the qemu test.
-> > > 
-> > > Thanks for testing, I'll queue it up later today (at an airport right
-> > > now, about to board a flight), and send it to Linus later tonight if no
-> > > one else has any problems with it.
-> > > 
-> > To simplify this kind of testing, I added a 'testing' branch to the list of
-> > branches I am auto-building. Right now it runs a complete test cycle with the
-> > patch applied on top of v3.11-rc7. This should ensure that the patch doesn't
-> > break any previously passing builds. You should see the results in the 'testing'
-> > column of the stable queue build table on http://server.roeck-us.net:8010/builders
-> > when you get out of the plane.
-> 
-> Thanks, all looks good, except for xtensa, which says I broke something,
-> but I can't understand what, as I don't see any networking patches in my
-> tree at the moment. 
-> 
-That has been broken in Linus' tree for a while - at least since I started
-running my test builds. I don't understand xtensa good enough to know how
-to fix it. I have seen similar problems before, though, so I suspect it has
-something to do with the architecture and not with the affected file itself.
+On Mon, Aug 26, 2013 at 03:08:45PM -0700, Hugh Dickins wrote:
+ 
+ > > That said, google does find "swap_free: Unused swap offset entry"
+ > > reports from over the years. Most of them seem to be single-bit
+ > > errors, though (ie when the entry is 00000100 or similar I'm more
+ > > inclined to blame a bit error
+ > 
+ > Yes, historically they have usually represented either single-bit
+ > errors, or corruption of page tables by other kernel data.  The
+ > swap subsystem discovers it, but it's rarely an error of swap.
+ 
+Just to rule out bad hardware, I've seen this on two systems
+(admittedly the exact same spec, but still..)
 
-I submitted a patch to fix the broken arm:allmodconfig build. Hopefully
-it should find its way into Linus' tree in the near future.
+ > So I don't care for Dave's suggestion much earlier in this thread,
+ > that swapoff should fail with -EINVAL if there has been a bad page
+ > taint: that doesn't necessarily interfere with swapoff at all.
+ > 
+ > And besides, swapoff is killable: yes, if counts go wrong, it
+ > can cycle around endlessly, but it checks for signal_pending()
+ > each time around the loop.
 
-Guenter
+It might be killable, but if I've done /sbin/reboot, and the
+kernel dies in sys_swapoff because of the corruption, I won't
+get a chance to kill it, because at that point the shutdown process
+has killed my shell, sshd, and just about everything else.
+It mieans a grumpy walk to the other side of the house to prod a
+reset button.  So yeah, it might not be a mergable thing, but
+at least while bisecting it's pretty much a must-have.
+
+ > I just did a quick diff of 3.11-rc7/mm against 3.10, and here's
+ > a line in mremap which worries me.  That set_pte_at() is operating
+ > on anything that isn't pte_none(), so the pte_mksoft_dirty() looks
+ > prone to corrupt a swap entry.
+ > 
+ > I've not tried matching up bits with Dave's reports, and just going
+ > into a meeting now, but this patch looks worth a try: probably Cyrill
+ > can improve it meanwhile to what he actually wants there (I'm
+ > surprised anything special is needed for just moving a pte).
+ > 
+ > Hugh
+ > 
+ > --- 3.11-rc7/mm/mremap.c	2013-07-14 17:10:16.640003652 -0700
+ > +++ linux/mm/mremap.c	2013-08-26 14:46:14.460027627 -0700
+ > @@ -126,7 +126,7 @@ static void move_ptes(struct vm_area_str
+ >  			continue;
+ >  		pte = ptep_get_and_clear(mm, old_addr, old_pte);
+ >  		pte = move_pte(pte, new_vma->vm_page_prot, old_addr, new_addr);
+ > -		set_pte_at(mm, new_addr, new_pte, pte_mksoft_dirty(pte));
+ > +		set_pte_at(mm, new_addr, new_pte, pte);
+ >  	}
+
+I'll give this a shot once I'm done with the bisect.
+
+	Dave
+
