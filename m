@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab3HZIdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 04:33:40 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:53220 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756053Ab3HZIdi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 04:33:38 -0400
-Message-ID: <521B12DD.8010505@baylibre.com>
-Date: Mon, 26 Aug 2013 10:33:33 +0200
-From: Benoit Cousson <bcousson@baylibre.com>
-Organization: BayLibre
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1756595Ab3HZIeC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:34:02 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61520 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755699Ab3HZIeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 04:34:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,956,1367996400"; 
+   d="scan'208";a="368456500"
+Date: Mon, 26 Aug 2013 13:19:13 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: Re: [PATCH v5 0/7] DMA: shdma: switch DT to use OF device ID tables
+Message-ID: <20130826074913.GI2748@intel.com>
+References: <1375455042-24093-1-git-send-email-g.liakhovetski@gmx.de>
+ <20130825073656.GF8091@intel.com>
+ <20130826071725.GJ26682@verge.net.au>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: tony@atomide.com, Joel Fernandes <joelf@ti.com>, santosh.shilimkar@ti.com,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mdp@ti.com>, Matt Porter <mporter@ti.com>,
-        Joel A Fernandes <joelagnel@ti.com>
-Subject: Re: [PATCH] ARM: dts: add AM33XX EDMA support
-References: <1377284808-32412-1-git-send-email-bigeasy@linutronix.de>
-In-Reply-To: <1377284808-32412-1-git-send-email-bigeasy@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130826071725.GJ26682@verge.net.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On Mon, Aug 26, 2013 at 04:17:25PM +0900, Simon Horman wrote:
+> On Sun, Aug 25, 2013 at 01:06:57PM +0530, Vinod Koul wrote:
+> > On Fri, Aug 02, 2013 at 04:50:35PM +0200, Guennadi Liakhovetski wrote:
+> > > In this version of shdma Device Tree support I preserved the DT 
+> > > configuration approach via OF device ID tables from v4, but now it is only 
+> > > used for the DT-mode, the C-version is left untouched. In this series I 
+> > > only include one platform: r8a73a4-based APE6EVM, if accepted, others can 
+> > > be added easily. I also took care not to include mach/*.h headers in 
+> > > driver .c files. To illustrate the use of DT DMA support for MMC DMA on 
+> > > APE6EVM a patch from a previously separate patch series "DMA for MMCIF and 
+> > > SDHI devices in DT mode"
+> > I have applied all the dma patches, the ARM ones fail for me so should possible
+> > go thru ARM tree.
+> 
+> Guennadi, if you need me to queue up any patches please repost them
+> once their dependencies are available in a stable branch.
+I think Guennadi is on vacation, so can someone queue up the ARM patches and
+mierge them thru ARM tree...
 
-Is this patch different from that one:
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg92176.html
-
-Lokesh just pointed me this patch because it was missing for the 
-SHAM/AES series from Mark Greer.
-
-Bottom-line, I've just applied the original one along with a second one 
-that was adding EDMA in SPI.
-
-Regards,
-Benoit
-
-
-On 23/08/2013 21:06, Sebastian Andrzej Siewior wrote:
-> From: Matt Porter <mdp@ti.com>
->
-> Adds AM33XX EDMA support to the am33xx.dtsi as documented in
-> Documentation/devicetree/bindings/dma/ti-edma.txt
->
-> Joel: Drop DT entries that are non-hardware-description for now as discussed in [1]
->
-> [1] https://patchwork.kernel.org/patch/2226761/
->
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> Signed-off-by: Joel A Fernandes <joelagnel@ti.com>
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
-> Could someone please pick this up?
->
->   arch/arm/boot/dts/am33xx.dtsi | 12 ++++++++++++
->   1 file changed, 12 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index 38b446b..784f774 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -96,6 +96,18 @@
->   			reg = <0x48200000 0x1000>;
->   		};
->
-> +		edma: edma@49000000 {
-> +			compatible = "ti,edma3";
-> +			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
-> +			reg =	<0x49000000 0x10000>,
-> +				<0x44e10f90 0x10>;
-> +			interrupts = <12 13 14>;
-> +			#dma-cells = <1>;
-> +			dma-channels = <64>;
-> +			ti,edma-regions = <4>;
-> +			ti,edma-slots = <256>;
-> +		};
-> +
->   		gpio0: gpio@44e07000 {
->   			compatible = "ti,omap4-gpio";
->   			ti,hwmods = "gpio1";
->
-
+~Vinod
+-- 
