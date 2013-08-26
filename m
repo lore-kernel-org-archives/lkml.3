@@ -1,92 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab3HZM4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 08:56:34 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:46975 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757162Ab3HZM4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 08:56:32 -0400
-Date: Mon, 26 Aug 2013 20:55:57 +0800
-From: Richard Zhao <linuxzsc@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Zhao <rizhao@nvidia.com>, "djbw@fb.com" <djbw@fb.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] DMA: let filter functions of of_dma_simple_xlate
- possible check of_node
-Message-ID: <20130826125547.GA2733@richard-laptop>
-References: <1375408800-11789-1-git-send-email-rizhao@nvidia.com>
- <20130823012911.GB17925@rizhao-lap>
- <52178677.6090001@wwwdotorg.org>
- <1441310.1kjKG7uebg@avalon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1441310.1kjKG7uebg@avalon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757219Ab3HZM5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 08:57:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14401 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756892Ab3HZMyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 08:54:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,958,1367996400"; 
+   d="scan'208";a="392111782"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH V12 05/13] perf tools: remove unnecessary callchain validation
+Date: Mon, 26 Aug 2013 16:00:22 +0300
+Message-Id: <1377522030-27870-6-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1377522030-27870-1-git-send-email-adrian.hunter@intel.com>
+References: <1377522030-27870-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 02:17:43PM +0200, Laurent Pinchart wrote:
-> On Friday 23 August 2013 09:57:43 Stephen Warren wrote:
-> > On 08/22/2013 07:29 PM, Richard Zhao wrote:
-> > > On Fri, Aug 23, 2013 at 04:18:27AM +0800, Stephen Warren wrote:
-> > >> On 08/21/2013 11:19 PM, Richard Zhao wrote:
-> > >>> On Fri, Aug 02, 2013 at 10:00:00AM +0800, Richard Zhao wrote:
-> > >>>> pass of_phandle_args dma_spec to dma_request_channel in
-> > >>>> of_dma_simple_xlate, so the filter function could access of_node in
-> > >>>> of_phandle_args.
-> > >>>> 
-> > >>>> It also remove restriction of #dma-cells has to be one.
-> > >>>> 
-> > >>>> Signed-off-by: Richard Zhao <rizhao@nvidia.com>
-> > >>>> ---
-> > >>>> 
-> > >>>>  drivers/dma/edma.c     |  7 +++++--
-> > >>>>  drivers/dma/of-dma.c   | 10 ++++------
-> > >>>>  drivers/dma/omap-dma.c |  6 ++++--
-> > >>>>  3 files changed, 13 insertions(+), 10 deletions(-)
-> > >>> 
-> > >>> Hi Vinod,
-> > >>> 
-> > >>> Can you please pick up this change?
-> > >>> 
-> > >>> Hi Stephen,
-> > >>> 
-> > >>> Can you please give a ack or reviewed-by etc?
-> > >> 
-> > >> Hmm. Looking at the patch, I'm not sure it's right.
-> > >> 
-> > >> This patch simply passes all the specfier args to the filter function,
-> > >> and the code to check the equality of the of_node to the filter args is
-> > >> still duplicated in each DMA driver. Instead, the DMA core should be
-> > >> implementing the equality check, and only even calling the
-> > >> driver-specific filter function for devices where the client's phandle
-> > >> matches the DMA providing device's of_node handle.
-> > > 
-> > > Filter function is called in dmaengine core code, independent of dt.
-> > 
-> > The core code can still check if a dmaengine's driver was instantiated
-> > from DT and take additional actions in that case.
-> > 
-> > > And the reason why the driver has to write its own filter function is
-> > > it has to store slave id there in its own way.
-> > 
-> > I'm not saying don't call the driver's filter function, but rather that
-> > the dmaengine core should perform the common checks before doing so.
-> 
-> And it looks to me like the common case could even get rid of the driver's 
-> filter function:
-> 
-> https://lkml.org/lkml/2013/5/15/270
-> https://lkml.org/lkml/2013/3/25/250
-For general case, the slave id is not staticly bind to a specific channel.
+Now that the sample parsing correctly checks data sizes
+there is no reason for it to be done again for callchains.
 
-Thanks
-Richard
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/callchain.c |  8 --------
+ tools/perf/util/callchain.h |  5 -----
+ tools/perf/util/session.c   | 20 --------------------
+ 3 files changed, 33 deletions(-)
+
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 4fee33b..482f680 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -21,14 +21,6 @@
+ 
+ __thread struct callchain_cursor callchain_cursor;
+ 
+-bool ip_callchain__valid(struct ip_callchain *chain,
+-			 const union perf_event *event)
+-{
+-	unsigned int chain_size = event->header.size;
+-	chain_size -= (unsigned long)&event->ip.__more_data - (unsigned long)event;
+-	return chain->nr * sizeof(u64) <= chain_size;
+-}
+-
+ #define chain_for_each_child(child, parent)	\
+ 	list_for_each_entry(child, &parent->children, siblings)
+ 
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 812d5a0..2b585bc 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -109,11 +109,6 @@ int callchain_append(struct callchain_root *root,
+ int callchain_merge(struct callchain_cursor *cursor,
+ 		    struct callchain_root *dst, struct callchain_root *src);
+ 
+-struct ip_callchain;
+-union perf_event;
+-
+-bool ip_callchain__valid(struct ip_callchain *chain,
+-			 const union perf_event *event);
+ /*
+  * Initialize a cursor before adding entries inside, but keep
+  * the previously allocated entries as a cache.
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index da0a216..1d9ae82 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -997,22 +997,6 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 	}
+ }
+ 
+-static int perf_session__preprocess_sample(struct perf_session *session,
+-					   union perf_event *event, struct perf_sample *sample)
+-{
+-	if (event->header.type != PERF_RECORD_SAMPLE ||
+-	    !sample->callchain)
+-		return 0;
+-
+-	if (!ip_callchain__valid(sample->callchain, event)) {
+-		pr_debug("call-chain problem with event, skipping it.\n");
+-		++session->stats.nr_invalid_chains;
+-		session->stats.total_invalid_chains += sample->period;
+-		return -EINVAL;
+-	}
+-	return 0;
+-}
+-
+ static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
+ 					    struct perf_tool *tool, u64 file_offset)
+ {
+@@ -1075,10 +1059,6 @@ static int perf_session__process_event(struct perf_session *session,
+ 	if (ret)
+ 		return ret;
+ 
+-	/* Preprocess sample records - precheck callchains */
+-	if (perf_session__preprocess_sample(session, event, &sample))
+-		return 0;
+-
+ 	if (tool->ordered_samples) {
+ 		ret = perf_session_queue_event(session, event, &sample,
+ 					       file_offset);
+-- 
+1.7.11.7
+
