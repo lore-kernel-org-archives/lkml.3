@@ -1,66 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab3HZKCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:02:55 -0400
-Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:37346 "EHLO
-	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751693Ab3HZKCy (ORCPT
+	id S1756712Ab3HZKDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:03:14 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51248 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756687Ab3HZKDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:02:54 -0400
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <jszhang@marvell.com>, <jason@lakedaemon.net>, <andrew@lunn.ch>,
-        <gregory.clement@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>,
-        <ezequiel.garcia@free-electrons.com>, <mturquette@linaro.org>,
-        <sebastian.hesselbarth@gmail.com>, <linus.walleij@linaro.org>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 2/3] bus: mvebu: add missing of_node_put() to fix reference leak
-Date: Mon, 26 Aug 2013 17:56:20 +0800
-Message-ID: <1377510981-1793-3-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1377510981-1793-1-git-send-email-jszhang@marvell.com>
-References: <1377510981-1793-1-git-send-email-jszhang@marvell.com>
+	Mon, 26 Aug 2013 06:03:12 -0400
+Message-ID: <521B27DC.2070906@hitachi.com>
+Date: Mon, 26 Aug 2013 19:03:08 +0900
+From: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ric Wheeler <ricwheeler@gmail.com>
+Cc: emilne@redhat.com, James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [RFC PATCH] scsi: Add failfast mode to avoid infinite retry loop
+References: <20130819093925.7867.19221.stgit@ltc223.sdl.hitachi.co.jp>  <1376922616.2069.9.camel@dabdike.int.hansenpartnership.com>  <5213172E.1060905@hitachi.com> <1377022167.3872.13.camel@localhost.localdomain> <52172721.1040203@hitachi.com> <52175506.6010502@gmail.com>
+In-Reply-To: <52175506.6010502@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_node_put to properly decrement the refcount when we are
-done using a given node.
+(2013/08/23 21:26), Ric Wheeler wrote:
+> On 08/23/2013 05:10 AM, Eiichi Tsukata wrote:
+>> (2013/08/21 3:09), Ewan Milne wrote:
+>>> On Tue, 2013-08-20 at 16:13 +0900, Eiichi Tsukata wrote:
+>>>> (2013/08/19 23:30), James Bottomley wrote:
+>>>>> On Mon, 2013-08-19 at 18:39 +0900, Eiichi Tsukata wrote:
+>>>>>> Hello,
+>>>>>>
+>>>>>> This patch adds scsi device failfast mode to avoid infinite retry loop.
+>>>>>>
+>>>>>> Currently, scsi error handling in scsi_decide_disposition() and
+>>>>>> scsi_io_completion() unconditionally retries on some errors. This is because
+>>>>>> retryable errors are thought to be temporary and the scsi device will soon
+>>>>>> recover from those errors. Normally, such retry policy is appropriate because
+>>>>>> the device will soon recover from temporary error state.
+>>>>>> But there is no guarantee that device is able to recover from error state
+>>>>>> immediately. Some hardware error may prevent device from recovering.
+>>>>>> Therefore hardware error can results in infinite command retry loop. In fact,
+>>>>>> CHECK_CONDITION error with the sense-key = UNIT_ATTENTION caused infinite
+>>>>>> retry loop in our environment. As the comments in kernel source code says,
+>>>>>> UNIT_ATTENTION means the device must have been a power glitch and expected
+>>>>>> to immediately recover from the state. But it seems that hardware error
+>>>>>> caused permanent UNIT_ATTENTION error.
+>>>>>>
+>>>>>> To solve the above problem, this patch introduces scsi device "failfast mode".
+>>>>>> If failfast mode is enabled, retry counts of all scsi commands are limited to
+>>>>>> scsi->allowed(== SD_MAX_RETRIES == 5). All commands are prohibited to retry
+>>>>>> infinitely, and immediately fails when the retry count exceeds upper limit.
+>>>>>> Failfast mode is useful on mission critical systems which are required
+>>>>>> to keep running flawlessly because they need to failover to the secondary
+>>>>>> system once they detect failures.
+>>>>>> On default, failfast mode is disabled because failfast policy is not suitable
+>>>>>> for most use cases which can accept I/O latency due to device hardware error.
+>>>>>>
+>>>>>> To enable failfast mode(default disabled):
+>>>>>> # echo 1> /sys/bus/scsi/devices/X:X:X:X/failfast
+>>>>>> To disable:
+>>>>>> # echo 0> /sys/bus/scsi/devices/X:X:X:X/failfast
+>>>>>>
+>>>>>> Furthermore, I'm planning to make the upper limit count configurable.
+>>>>>> Currently, I have two plans to implement it:
+>>>>>> (1) set same upper limit count on all errors.
+>>>>>> (2) set upper limit count on each error.
+>>>>>> The first implementation is simple and easy to implement but not flexible.
+>>>>>> Someone wants to set different upper limit count on each errors depends on the
+>>>>>> scsi device they use. The second implementation satisfies such requirement
+>>>>>> but can be too fine-grained and annoying to configure because scsi error
+>>>>>> codes are so much. The default 5 times retry may too much on some errors but
+>>>>>> too few on other errors.
+>>>>>>
+>>>>>> Which would be the appropriate implementation?
+>>>>>> Any comments or suggestions are welcome as usual.
+>>>>>
+>>>>> I'm afraid you'll need to propose another solution. We have a large
+>>>>> selection of commands which, by design, retry until the command exceeds
+>>>>> it's timeout. UA is one of those (as are most of the others you're
+>>>>> limiting). How do you kick this device out of its UA return (because
+>>>>> that's the recovery that needs to happen)?
+>>>>>
+>>>>> James
+>>>>>
+>>>>>
+>>>>
+>>>> Thanks for reviewing, James.
+>>>>
+>>>> Originally, I planned that once the retry count exceeds its limit,
+>>>> a monitoring tool stops the server with the scsi prink error message
+>>>> as a trigger.
+>>>> Current failfast mode implementation is that the command fails when
+>>>> retry command exceeds its limit. However, I noticed that only printing error messages
+>>>> on retry counts excess without changing retry logic will be enough
+>>>> to stop the server and take fail over. Though there is no guarantee that
+>>>> userspace application can work properly on disk failure condition.
+>>>> So, now I'm considering that just calling panic() on retry excess is better.
+>>>>
+>>>> For that reason, I propose the solution that adding "panic_on_error" option to
+>>>> sysfs parameter and if panic_on_error mode is enabled the server panics
+>>>> immediately once it detects retry excess. Of course, it is disabled on default.
+>>>>
+>>>> I would appreciate it if you could give me some comments.
+>>>>
+>>>> Eiichi
+>>>> --
+>>>
+>>> For what it's worth, I've seen a report of a case where a storage array
+>>> returned a CHECK CONDITION with invalid sense data, which caused the
+>>> command to be retried indefinitely.
+>>
+>> Thank you for commenting, Ewan.
+>> I appreciate your information about indefinite retry on CHECK CONDITION.
+>>
+>>> I'm not sure what you can do about
+>>> this, if the device won't ever complete a command without an error.
+>>> Perhaps it should be offlined after sufficiently bad behavior.
+>>>
+>>> I don't think you want to panic on an error, though. In a clustered
+>>> environment it is possible that the other systems will all fail in the
+>>> same way, for example.
+>>>
+>>> -Ewan
+>>>
+>>
+>> Yes, basically the device should be offlined on error detection.
+>> Just offlining the disk is enough when an error occurs on "not" os-installed
+>> system disk. Panic is going too far on such case.
+>>
+>> However, in a clustered environment where computers use each its own disk and
+>> do not share the same disk, calling panic() will be suitable when an error
+>> occurs in system disk. Because even on such disk error, cluster monitoring
+>> tool may not be able to detect the system failure while heartbeat can continue
+>> working.
+>> So, I think basically offlining is enough and also, panic is necessary on some cases.
+>>
+>> Eiichi
+>>
+>
+> I think that most file systems would let you decide when to panic on an IO error
+> (like ext4's various mount options). Sometimes panic will be the right thing to do,
+ > but I think that should not be done in the SCSI system but at a higher layer.
+>
+> What if you have multiple LUN's and file systems and only lose one?
+ > Should we panic them all?
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
----
- drivers/bus/mvebu-mbus.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+My plan was to make it configurable whether or not to panic on each scsi device
+via sysfs. For example, you can make only the system disk panic on scsi error.
 
-diff --git a/drivers/bus/mvebu-mbus.c b/drivers/bus/mvebu-mbus.c
-index 33c6947..20da90f 100644
---- a/drivers/bus/mvebu-mbus.c
-+++ b/drivers/bus/mvebu-mbus.c
-@@ -837,6 +837,7 @@ int __init mvebu_mbus_init(const char *soc, phys_addr_t mbuswins_phys_base,
- {
- 	struct mvebu_mbus_state *mbus = &mbus_state;
- 	const struct of_device_id *of_id;
-+	struct device_node *np;
- 	int win;
- 
- 	for (of_id = of_mvebu_mbus_ids; of_id->compatible; of_id++)
-@@ -860,8 +861,11 @@ int __init mvebu_mbus_init(const char *soc, phys_addr_t mbuswins_phys_base,
- 		return -ENOMEM;
- 	}
- 
--	if (of_find_compatible_node(NULL, NULL, "marvell,coherency-fabric"))
-+	np = of_find_compatible_node(NULL, NULL, "marvell,coherency-fabric");
-+	if (np) {
- 		mbus->hw_io_coherency = 1;
-+		of_node_put(np);
-+	}
- 
- 	for (win = 0; win < mbus->soc->num_wins; win++)
- 		mvebu_mbus_disable_window(mbus, win);
--- 
-1.8.4.rc3
+>
+> Best regards,
+>
+> Ric
+>
 
+As you say, whether to panic or not should be decided on file systems or higher layer.
+Panic in SCSI subsystem is rather drastic.
+Thanks for letting me know the ext4 mount option(errors=panic).
+
+Best regards,
+
+Eiichi
