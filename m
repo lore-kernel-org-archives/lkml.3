@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab3HZWW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:22:26 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:48996 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab3HZWWY (ORCPT
+	id S1753018Ab3HZWXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:23:14 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:34225 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab3HZWXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:22:24 -0400
-Message-ID: <521BD523.3040706@tilera.com>
-Date: Mon, 26 Aug 2013 18:22:27 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 26 Aug 2013 18:23:12 -0400
+Date: Mon, 26 Aug 2013 15:23:09 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Meelis Roos <mroos@linux.ee>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steve Cotton <steve@s.cotton.clara.co.uk>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] USB: OHCI: fix build error related to ohci_suspend/resume
+Message-ID: <20130826222308.GB12075@roeck-us.net>
+References: <20130826042653.GA2778@kroah.com>
+ <Pine.LNX.4.44L0.1308261051340.1445-100000@iolanthe.rowland.org>
+ <20130826153840.GA29862@kroah.com>
+ <20130826160627.GA11307@roeck-us.net>
+ <20130826165022.GA2113@kroah.com>
+ <20130826171903.GA21675@roeck-us.net>
+ <20130826221414.GC10063@kroah.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Tejun Heo <tj@kernel.org>, <akpm@linuxfoundation.org>,
-        <linux-arch@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [guv v2 23/31] tile: Replace __get_cpu_var uses
-References: <20130826204351.725357339@linux.com> <00000140bc69acdb-3b2967b0-e224-424b-ad08-973515704be6-000000@email.amazonses.com>
-In-Reply-To: <00000140bc69acdb-3b2967b0-e224-424b-ad08-973515704be6-000000@email.amazonses.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130826221414.GC10063@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/26/2013 4:56 PM, Christoph Lameter wrote:
-> Index: linux/arch/tile/include/asm/irqflags.h
-> ===================================================================
-> --- linux.orig/arch/tile/include/asm/irqflags.h	2013-08-22 14:39:14.000000000 -0500
-> +++ linux/arch/tile/include/asm/irqflags.h	2013-08-22 14:39:57.453305409 -0500
+On Mon, Aug 26, 2013 at 03:14:14PM -0700, Greg Kroah-Hartman wrote:
+> On Mon, Aug 26, 2013 at 10:19:03AM -0700, Guenter Roeck wrote:
+> > On Mon, Aug 26, 2013 at 09:50:22AM -0700, Greg Kroah-Hartman wrote:
+> > > On Mon, Aug 26, 2013 at 09:06:27AM -0700, Guenter Roeck wrote:
+> > > > On Mon, Aug 26, 2013 at 08:38:40AM -0700, Greg Kroah-Hartman wrote:
+> > > > > On Mon, Aug 26, 2013 at 10:53:53AM -0400, Alan Stern wrote:
+> > > > > > Commit 9a11899c5e69 (USB: OHCI: add missing PCI PM callbacks to
+> > > > > > ohci-pci.c) added missing ohci_suspend and ohci_resume callback
+> > > > > > pointers, but forgot that these callbacks are declared and defined
+> > > > > > only when CONFIG_PM is enabled.
+> > > > > > 
+> > > > > > This patch adds a preprocessor conditional to avoid build errors when
+> > > > > > PM is disabled.
+> > > > > > 
+> > > > > > Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+> > > > > > 
+> > > > > > ---
+> > > > > 
+> > > > > Guenter and Meelis, does the patch below fix the problem for you?
+> > > > > 
+> > > > Tested-by: Guenter Roeck <linux@roeck-us.net>
+> > > > 
+> > > > Previously failing builds:
+> > > > 	mips:ath79_defconfig
+> > > > 	powerpc:ppc64e_defconfig
+> > > > 	powerpc:cell_defconfig
+> > > > 	powerpc:maple_defconfig
+> > > > 	parisc:defconfig
+> > > > 	tile:defconfig
+> > > > 	sparc32:defconfig
+> > > > 	sparc64:defconfig
+> > > > 
+> > > > 	as well as the powerpc qemu test (with the config file used
+> > > > 	by the yocto project)
+> > > > 
+> > > > All builds pass with the patch applied, as does the qemu test.
+> > > 
+> > > Thanks for testing, I'll queue it up later today (at an airport right
+> > > now, about to board a flight), and send it to Linus later tonight if no
+> > > one else has any problems with it.
+> > > 
+> > To simplify this kind of testing, I added a 'testing' branch to the list of
+> > branches I am auto-building. Right now it runs a complete test cycle with the
+> > patch applied on top of v3.11-rc7. This should ensure that the patch doesn't
+> > break any previously passing builds. You should see the results in the 'testing'
+> > column of the stable queue build table on http://server.roeck-us.net:8010/builders
+> > when you get out of the plane.
+> 
+> Thanks, all looks good, except for xtensa, which says I broke something,
+> but I can't understand what, as I don't see any networking patches in my
+> tree at the moment. 
+> 
+That has been broken in Linus' tree for a while - at least since I started
+running my test builds. I don't understand xtensa good enough to know how
+to fix it. I have seen similar problems before, though, so I suspect it has
+something to do with the architecture and not with the affected file itself.
 
-Nack to the changes to this file, with all due respect :-), since I have conflicting changes in the linux-tile tree that also remove all uses of __get_cpu_var from this file.  Note that there are places in this file where "this_cpu_and", etc., make sense; I don't know if it makes sense for your script to be looking for this kind of thing more generally.
+I submitted a patch to fix the broken arm:allmodconfig build. Hopefully
+it should find its way into Linus' tree in the near future.
 
-> -		__get_cpu_var(current_asid) = asid;
-> +		__this_cpu_read(current_asid) = asid;
-
-This should be __this_cpu_write(current_asid, asid).  You caught this idiom elsewhere so not sure if it was a script bug that caused it to be missed here?
-
-> -	int depth = __get_cpu_var(irq_depth)++;
-> +	int depth = __this_cpu_inc_return(irq_depth) - 1;
-
-I would omit the "-1" here and instead change the one test of "depth == 0" to be "depth == 1".
-
-> -	__get_cpu_var(current_asid) = min_asid = asid_range.start;
-> +	__this_cpu_write(current_asid, min_asid = asid_range.start);
-
-This was ugly before but now it's much worse :-)  Please just split it into an assignment to min_asid, then use __this_cpu_write() with min_asid.  Thanks.
-
-The rest is fine.  Would it make more sense for me to fold all these changes into the tile tree and just have it meet in linux-next?  There are certainly a bunch of other changes staged there which likely also include more uses of __get_cpu_var...
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Guenter
