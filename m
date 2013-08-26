@@ -1,116 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954Ab3HZJbO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 05:31:14 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:59077 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab3HZJbN (ORCPT
+	id S1755035Ab3HZJcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 05:32:46 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:35236 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab3HZJco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 05:31:13 -0400
+	Mon, 26 Aug 2013 05:32:44 -0400
 MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <alpine.DEB.2.10.1308231544420.1889@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1307081520520.10386@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1308231544420.1889@vincent-weaver-1.um.maine.edu>
-Date: Mon, 26 Aug 2013 11:31:11 +0200
-Message-ID: <CAMsRxf+FU4UhVvgVCww5CuNwfqOk915_-TKK4fC7daFoweMnQQ@mail.gmail.com>
-Subject: Re: [patch, resend] perf: export struct perf_branch_entry to userspace
-From: Stephane Eranian <eranian@googlemail.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130824001345.GD14810@roeck-us.net>
+References: <20130820192650.GA19470@srcf.ucam.org>
+	<6438184.2yT2NMB1CE@vostro.rjw.lan>
+	<20130821233942.GA21502@srcf.ucam.org>
+	<1810269.JOHnJ0H7P9@vostro.rjw.lan>
+	<20130822000306.GA21785@srcf.ucam.org>
+	<1377300343.5259.84.camel@dvhart-mobl4.amr.corp.intel.com>
+	<20130823233805.GA1801@srcf.ucam.org>
+	<1377301548.5259.91.camel@dvhart-mobl4.amr.corp.intel.com>
+	<20130824001345.GD14810@roeck-us.net>
+Date: Mon, 26 Aug 2013 11:32:44 +0200
+Message-ID: <CACRpkdb-qwDrKUp4+5OzPQ_tJPGB4B69GmO__i-KwjFTETSYqw@mail.gmail.com>
+Subject: Re: ACPI vs Device Tree - moving forward
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 9:51 PM, Vince Weaver <vincent.weaver@maine.edu> wrote:
->
-> On Mon, 8 Jul 2013, Vince Weaver wrote:
->
-> If PERF_SAMPLE_BRANCH_STACK is enabled then samples are returned
-> with the format { u64 from, to, flags } but the flags layout
-> is not specified.
->
-> This field has the type struct perf_branch_entry; move this
-> definition into include/uapi/linux/perf_event.h so users can
-> access these fields.
->
-> This is similar to the existing inclusion of perf_mem_data_src in
-> the include/uapi/linux/perf_event.h file.
->
-> Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
->
-This makes sense.
-Acked-by: Stephane Eranian <eranian@google.com>
+On Sat, Aug 24, 2013 at 2:13 AM, Guenter Roeck <linux@roeck-us.net> wrote:
 
->
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 8873f82..65b2553 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -64,30 +64,6 @@ struct perf_raw_record {
->  };
->
->  /*
-> - * single taken branch record layout:
-> - *
-> - *      from: source instruction (may not always be a branch insn)
-> - *        to: branch target
-> - *   mispred: branch target was mispredicted
-> - * predicted: branch target was predicted
-> - *
-> - * support for mispred, predicted is optional. In case it
-> - * is not supported mispred = predicted = 0.
-> - *
-> - *     in_tx: running in a hardware transaction
-> - *     abort: aborting a hardware transaction
-> - */
-> -struct perf_branch_entry {
-> -       __u64   from;
-> -       __u64   to;
-> -       __u64   mispred:1,  /* target mispredicted */
-> -               predicted:1,/* target predicted */
-> -               in_tx:1,    /* in transaction */
-> -               abort:1,    /* transaction abort */
-> -               reserved:60;
-> -};
-> -
-> -/*
->   * branch stack layout:
->   *  nr: number of taken branches stored in entries[]
->   *
-> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> index 0b1df41..c6e2f76 100644
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -685,4 +685,28 @@ union perf_mem_data_src {
->  #define PERF_MEM_S(a, s) \
->         (((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
->
-> +/*
-> + * single taken branch record layout:
-> + *
-> + *      from: source instruction (may not always be a branch insn)
-> + *        to: branch target
-> + *   mispred: branch target was mispredicted
-> + * predicted: branch target was predicted
-> + *
-> + * support for mispred, predicted is optional. In case it
-> + * is not supported mispred = predicted = 0.
-> + *
-> + *     in_tx: running in a hardware transaction
-> + *     abort: aborting a hardware transaction
-> + */
-> +struct perf_branch_entry {
-> +       __u64   from;
-> +       __u64   to;
-> +       __u64   mispred:1,  /* target mispredicted */
-> +               predicted:1,/* target predicted */
-> +               in_tx:1,    /* in transaction */
-> +               abort:1,    /* transaction abort */
-> +               reserved:60;
-> +};
-> +
->  #endif /* _UAPI_LINUX_PERF_EVENT_H */
+> Did the group conclude that the idea of FDT augmenting ACPI is not feasible ?
+
+I don't think anyone really knows. For example: how to specify a few
+config options through a FDT augmented ACPI system is trivial. Passing
+system-wide resources such as clocks, regulators, pin control handles,
+GPIOs, interrupts and DMA channels is a criss-cross operation and
+nobody knows if that will work because nobody tried to hash out
+the details of.
+
+> If not, the key question for me is how to implement it, and how to handle
+> all its little problems.
+
+It seems like we are in the "teenagers talking about sex" situation,
+everybody is talking about it but nobody is really doing it.
+Which makes it all pretty theoretical.
+
+> If yes, the key question for me is how to handle all the drivers which
+> assume fdt-style properties, and how to express all that information in ACPI
+> in a way which does not require a substantial driver rewrite (and, as you point
+> out, how that data would be described in ACPI consistently across multiple
+> vendors).
+
+For GPIO we have this:
+
+drivers/gpio/gpiolib-of.c
+drivers/gpio/gpiolib-acpi.c
+
+So one thing is clear: for this resource we're going to have two
+implementations.
+
+Yours,
+Linus Walleij
