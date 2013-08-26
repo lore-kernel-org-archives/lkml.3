@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459Ab3HZKcZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:32:25 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:1686 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab3HZKcY (ORCPT
+	id S1755610Ab3HZKdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:33:54 -0400
+Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:17548
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751741Ab3HZKdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:32:24 -0400
-X-Spam-Score: -101.0
-Message-ID: <521B2E75.1040802@asianux.com>
-Date: Mon, 26 Aug 2013 18:31:17 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 26 Aug 2013 06:33:53 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VS-6(zzbb2dI98dI9371I936eI1432I11fbIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h1155h)
+Message-ID: <521B2EF7.2050805@freescale.com>
+Date: Mon, 26 Aug 2013 18:33:27 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] h8300/kernel/setup.c: add "linux/initrd.h" to pass compiling
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Scott Wood <scottwood@freescale.com>, <vinod.koul@intel.com>,
+        <djbw@fb.com>, <leoli@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 2/3] DMA: Freescale: Add new 8-channel DMA engine device
+ tree nodes
+References: <1375094944-3343-1-git-send-email-hongbo.zhang@freescale.com>  <1375094944-3343-3-git-send-email-hongbo.zhang@freescale.com>  <521541EE.4010303@wwwdotorg.org> <1377126028.5029.52.camel@snotra.buserror.net> <52154A34.4020405@wwwdotorg.org> <5216D461.4010604@freescale.com>
+In-Reply-To: <5216D461.4010604@freescale.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need add "linux/initrd.h" to pass compiling.
+On 08/23/2013 11:17 AM, Hongbo Zhang wrote:
+> On 08/22/2013 07:16 AM, Stephen Warren wrote:
+>> On 08/21/2013 05:00 PM, Scott Wood wrote:
+>>> On Wed, 2013-08-21 at 16:40 -0600, Stephen Warren wrote:
+>>>> On 07/29/2013 04:49 AM, hongbo.zhang@freescale.com wrote:
+>>>>> +        - reg               : <registers mapping for channel>
+>>>>> +        - interrupts        : <interrupt mapping for DMA channel 
+>>>>> IRQ>
+>>>> s/interrupts/specifier/
+>>> Do you mean s/interrupt mapping/interrupt specifier/?
+>>>
+>>> And probably s/registers mapping/register specifier/ as well.
+>> Yup.
+>>
+> OK, I will update these descriptions.
+>
+Since Scott has clarified all the doubts, and no further comment till 
+now, so my next iteration will include this s/mapping/specifier only.
+I will sent it out this Tuesday, if there is still any comment/doubt, 
+please let me know.
 
-The related error (allmodconfig for h8300):
 
-  arch/h8300/kernel/setup.c: In function 'setup_arch':
-  arch/h8300/kernel/setup.c:103:3: error: 'initrd_start' undeclared (first use in this function)
-     initrd_start = memory_start;
-     ^
-  arch/h8300/kernel/setup.c:103:3: note: each undeclared identifier is reported only once for each function it appears in
-  arch/h8300/kernel/setup.c:104:3: error: 'initrd_end' undeclared (first use in this function)
-     initrd_end = memory_start += be32_to_cpu(((unsigned long *) (memory_start))[2]);
-     ^
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/h8300/kernel/setup.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/h8300/kernel/setup.c b/arch/h8300/kernel/setup.c
-index d0b1607..684e734 100644
---- a/arch/h8300/kernel/setup.c
-+++ b/arch/h8300/kernel/setup.c
-@@ -47,6 +47,9 @@
- #include <asm/regs267x.h>
- #endif
- 
-+#if defined(CONFIG_BLK_DEV_INITRD)
-+#include <linux/initrd.h>
-+#endif
- #define STUBSIZE 0xc000
- 
- unsigned long rom_length;
--- 
-1.7.7.6
