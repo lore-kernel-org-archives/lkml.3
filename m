@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab3HZTiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 15:38:04 -0400
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:33337 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab3HZTiC convert rfc822-to-8bit (ORCPT
+	id S1751885Ab3HZTnZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 15:43:25 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:65515 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664Ab3HZTnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 15:38:02 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: Julius Werner <jwerner@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        "Benson Leung" <bleung@chromium.org>, Felipe Balbi <balbi@ti.com>,
-        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>
-Subject: RE: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support for
- platform xHCs
-Thread-Topic: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support
- for platform xHCs
-Thread-Index: AQHOnfwYI9Np33Plqkq7vUNbfD4u75mgdUEAgAAzMICAADKpAIAAPKeA//+VVhCAB60tgP//i2hQ
-Date: Mon, 26 Aug 2013 19:37:56 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458DED818@US01WEMBX2.internal.synopsys.com>
-References: <1377040909-18428-1-git-send-email-jwerner@chromium.org>
- <20130821184042.GC3577@xanatos>
- <CAODwPW8tCFaykJnatyweJ96UzntRVNmo3WU1UYXw9nwp2bq_Ow@mail.gmail.com>
- <20130822004514.GB19747@xanatos>
- <CAODwPW99gLBtNQD=UyPq9DqY0TtNubR_7e+FymkfO5u2+et++Q@mail.gmail.com>
- <A2CA0424C0A6F04399FB9E1CD98E030458DEC6BC@US01WEMBX2.internal.synopsys.com>
- <20130826191411.GG5112@xanatos>
-In-Reply-To: <20130826191411.GG5112@xanatos>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 26 Aug 2013 15:43:24 -0400
+Message-ID: <521BAFD3.2060404@gmail.com>
+Date: Mon, 26 Aug 2013 13:43:15 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        paulmck@linux.vnet.ibm.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: suspicious RCU usage (perf)
+References: <20130826145838.GA8377@redhat.com> <20130826162928.GQ3871@linux.vnet.ibm.com> <20130826133041.3d750b1b@gandalf.local.home> <20130826175012.GA25202@redhat.com> <20130826141814.54dcaa89@gandalf.local.home> <20130826182907.GB25202@redhat.com>
+In-Reply-To: <20130826182907.GB25202@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Sarah Sharp [mailto:sarah.a.sharp@linux.intel.com]
-> Sent: Monday, August 26, 2013 12:14 PM
-> 
-> On Thu, Aug 22, 2013 at 05:11:49AM +0000, Paul Zimmerman wrote:
-> > > From: Julius Werner
-> > > Sent: Wednesday, August 21, 2013 9:22 PM
-> > >
-> > > > You need the USB 2.0 spec errata from 2011-11 that describes the changes
-> > > > made for BESL as well.  It's in the USB2-LPM-Errata-final.pdf and
-> > > > USB2_LinkPowerMangement_ECN[final].pdf files in this zip file:
-> > > >
-> > > > http://www.usb.org/developers/docs/usb_20_070113.zip
-> > > >
-> > > > I agree though, it's all a confusing mess for documentation on USB 2.0
-> > > > Link PM.
-> > >
-> > > Thanks, I hadn't found that first one yet. Do you also have a link for
-> > > the updated XHCI specification or a separate erratum document
-> > > describing the PORTHLPMC register referenced in the BESL patches (they
-> > > don't exist on DWC3, but I'm still curious)?
-> >
-> > Just to set the record straight :)
-> >
-> > The PORTHLPMC registers do exist on DWC3, starting with the 1.90a version
-> > of the core or thereabouts. They only supported the HIRD flavor of LPM,
-> > though. Only fairly recently has support for BESL been added, around
-> > version 2.41a or so.
-> 
-> And the 2.41a version that supports BESL properly sets the BLC flag in
-> the USB 2.0 Protocol extended capabilities for all the USB 2.0 ports?
-> Has this functionality been well-tested?
+On 8/26/13 12:29 PM, Dave Jones wrote:
+> On Mon, Aug 26, 2013 at 02:18:14PM -0400, Steven Rostedt wrote:
+>   > On Mon, 26 Aug 2013 13:50:12 -0400
+>   > Dave Jones <davej@redhat.com> wrote:
+>   > >
+>   > > This was triggered as a regular user fwiw.
+>   > > I had not been running perf, or any other tracing. It was just left
+>   > > fuzzing over the weekend with no interaction at all.
+>   >
+>   > So you are telling me that ftrace was enabled by a regular user? If so,
+>   > that's a huge issue.
+>
+> quite.
+>
+>   > So my question to you. If you were not running perf or any other
+>   > tracing, and this is all just non-root user. How the hell did perf
+>   > function tracing get started on your box????
+>
+> What mechanisms are available that would trigger it being enabled ?
+>
+> Is there some path through sys_perf_open_event that might be
+> missing a capability check perhaps ?
 
-In 2.41a it is described as an "early adopter" feature in the databook,
-and no mention is made of the BLC flag. So the answer there is "maybe".
-Starting with 2.50a it is a full-fledged feature and the databook does
-describe the BLC flag.
+Do you have /sys/kernel/debug with access permissions?
 
-So it may be safer to say that the feature is present starting with 2.50a.
-
-In 2.51a it has been well-tested in simulation. In actual hardware, it
-has only been briefly tested in an ad-hoc sort of way, since none of the
-standard drivers in the market support the feature yet, as far as we know.
-
-Once the support is fully working in the Linux driver we can try testing
-it there.
-
--- 
-Paul
+David
 
