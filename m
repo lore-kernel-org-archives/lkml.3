@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab3HZWqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:46:09 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:45966 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752585Ab3HZWqB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:46:01 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Andreas Herrmann <andreas.herrmann@calxeda.com>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 09/11] net: calxedaxgmac: remove some unused statistic counters
-Date: Mon, 26 Aug 2013 17:45:24 -0500
-Message-Id: <1377557126-10716-9-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
-References: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
+	id S1752753Ab3HZWqu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:46:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10008 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752076Ab3HZWqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 18:46:47 -0400
+Date: Mon, 26 Aug 2013 15:46:28 -0700
+From: Zach Brown <zab@redhat.com>
+To: "Nicholas A. Bellinger" <nab@daterainc.com>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Martin Petersen <martin.petersen@oracle.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Kent Overstreet <kmo@daterainc.com>, Theodore Tso <tytso@mit.edu>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH-v2 0/9] target: Add support for EXTENDED_COPY (VAAI)
+ offload emulation
+Message-ID: <20130826224628.GJ26818@lenny.home.zabbo.net>
+References: <1377554588-28394-1-git-send-email-nab@daterainc.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377554588-28394-1-git-send-email-nab@daterainc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Mon, Aug 26, 2013 at 10:02:59PM +0000, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@daterainc.com>
+> 
+> Hi folks,
+> 
+> This -v2 series adds support to target-core for generic EXTENDED_COPY offload
+> emulation as defined by SPC-4 using virtual (IBLOCK, FILEIO, RAMDISK)
+> backends.
 
-rx_sa_filter_fail and tx_undeflow events are unused and impossible
-to occur based on how the h/w is used. We never filter on source MAC
-address and TX store and forward mode prevents underflow events.
+Cool, thanks for sending this out.  I'll just stare blankly but
+supportively at the SCSI details.
 
-Reported-by: Lennert Buytenhek <buytenh@wantstofly.org>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
----
- drivers/net/ethernet/calxeda/xgmac.c | 3 ---
- 1 file changed, 3 deletions(-)
+I've been experimenting with the reasonable suggestion of using splice
+as the entry point into the high level fs methods that'd be backed by
+this stuff.  Let me get it cleaned up and sent out for review.
 
-diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
-index 9b6eff5..b206268 100644
---- a/drivers/net/ethernet/calxeda/xgmac.c
-+++ b/drivers/net/ethernet/calxeda/xgmac.c
-@@ -353,11 +353,9 @@ struct xgmac_extra_stats {
- 	/* Receive errors */
- 	unsigned long rx_watchdog;
- 	unsigned long rx_da_filter_fail;
--	unsigned long rx_sa_filter_fail;
- 	unsigned long rx_payload_error;
- 	unsigned long rx_ip_header_error;
- 	/* Tx/Rx IRQ errors */
--	unsigned long tx_undeflow;
- 	unsigned long tx_process_stopped;
- 	unsigned long rx_buf_unav;
- 	unsigned long rx_process_stopped;
-@@ -1584,7 +1582,6 @@ static const struct xgmac_stats xgmac_gstrings_stats[] = {
- 	XGMAC_STAT(rx_payload_error),
- 	XGMAC_STAT(rx_ip_header_error),
- 	XGMAC_STAT(rx_da_filter_fail),
--	XGMAC_STAT(rx_sa_filter_fail),
- 	XGMAC_STAT(fatal_bus_error),
- 	XGMAC_HW_STAT(rx_watchdog, XGMAC_MMC_RXWATCHDOG),
- 	XGMAC_HW_STAT(tx_vlan, XGMAC_MMC_TXVLANFRAME),
--- 
-1.8.1.2
+Hopefully with a few iterations of that we could test some block file
+systems on top of this.
 
+> This implemenation fully supports copy offload between the same device
+> backend, and across multiple device backends.  It supports copy offload
+> transparently across multiple target ports of different fabrics, eg:
+> iSCSI -> FC, FC -> iSER, iSER -> FCoE and so on.
+
+That's exciting!  I doubt that we want to be derailed by getting this
+working in the first pass, but it'd be fun to enable cross-fs copying
+once we got the fundamentals worked out
+
+- z
