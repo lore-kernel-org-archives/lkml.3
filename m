@@ -1,48 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab3HZKSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:18:45 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60242 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752244Ab3HZKSn (ORCPT
+	id S1756152Ab3HZKTR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:19:17 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:59918 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429Ab3HZKTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:18:43 -0400
-Message-ID: <1377512318.20958.5.camel@dabdike>
-Subject: Re: [PATCH 1/3] arcmsr: Support Areca new SATA Raid Adapter
- ARC1214/1224/1264/1284
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: =?UTF-8?Q?=E9=BB=83=E6=B8=85=E9=9A=86?= <ching2048@areca.com.tw>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, billion@areca.com.tw
-Date: Mon, 26 Aug 2013 14:18:38 +0400
-In-Reply-To: <7A2818CC441F4BCE96D3B1E70CC3D76B@chingDT>
-References: <7A2818CC441F4BCE96D3B1E70CC3D76B@chingDT>
+	Mon, 26 Aug 2013 06:19:15 -0400
+Subject: Re: [PATCH 02/18] asymmetric keys: implement
+ EMSA_PKCS1-v1_5-ENCODE in rsa
+From: joeyli <jlee@suse.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
+        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
+        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
+In-Reply-To: <20130825155309.GA5171@amd.pavel.ucw.cz>
+References: <1377169317-5959-1-git-send-email-jlee@suse.com>
+	 <1377169317-5959-3-git-send-email-jlee@suse.com>
+	 <20130825155309.GA5171@amd.pavel.ucw.cz>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 
+Date: Mon, 26 Aug 2013 18:17:49 +0800
+Message-ID: <1377512269.27967.29.camel@linux-s257.site>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-26 at 12:14 +0800, 黃清隆 wrote:
->  From: Ching <ching2048@areca.com.tw>
+Hi Pavel, 
+
+First, thanks for your review!
+
+於 日，2013-08-25 於 17:53 +0200，Pavel Machek 提到：
+> On Thu 2013-08-22 19:01:41, Lee, Chun-Yi wrote:
+> > Implement EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2] in rsa.c. It's the
+> > first step of signature generation operation
+> > (RSASSA-PKCS1-v1_5-SIGN).
 > 
-> Support Areca new SATA Raid adapter ARC1214/1224/1264/1284.
-> Modify maximum outstanding command number, notify command complete with auto
-> request sense
-> Signed-off-by: Ching  <ching2048@areca.com.tw>
+> Is this your own code, or did you copy it from somewhere?
+> 
 
-Checkpatch really doesn't like this:
+It's my own code, development base on RSA PKCS#1 spec. So the naming of
+variables are match with PKCS#1 spec.
 
-total: 1 errors, 173 warnings, 7131 lines checked
+> > +	if (!T)
+> > +		goto error_T;
+> > +
+> > +	memcpy(T, RSA_ASN1_templates[hash_algo].data, RSA_ASN1_templates[hash_algo].size);
+> > +	memcpy(T + RSA_ASN1_templates[hash_algo].size, pks->digest, pks->digest_size);
+> > +
+> > +	/* 3) check If emLen < tLen + 11, output "intended encoded message length too short" */
+> > +	if (emLen < tLen + 11) {
+> > +		ret = EINVAL;
+> > +		goto error_emLen;
+> > +	}
+> 
+> Normal kernel calling convention is 0 / -EINVAL.
 
-I fixed up the error and the few relevant warnings.  I don't really care
-about the lines over 80 characters.  However, if you're going to have
-long lines, don't split strings (another checkpatch complaint).  I'd
-also like to see the spurious braces removed in a later patch, please.
-The prinks without a KERN_ also need fixing.
+Yes, here is my mistake, I will modify it.
 
-James
+> 
+> > +	memcpy(EM + 2, PS, emLen - tLen - 3);
+> > +	EM[2 + emLen - tLen - 3] = 0x00;
+> > +	memcpy(EM + 2 + emLen - tLen - 3 + 1, T, tLen);
+> 
+> ThisDoesNotLookLikeKernelCode, NoCamelCase, please.
+> 
 
+Thanks for you point out, I will change it.
+
+> > +	*_EM = EM;
+> 
+> And we don't usually use _ prefix like this.
+> 
+
+Thanks! I will change it.
+
+> 
+> > --- a/include/crypto/public_key.h
+> > +++ b/include/crypto/public_key.h
+> > @@ -110,6 +110,8 @@ extern void public_key_destroy(void *payload);
+> >  struct public_key_signature {
+> >  	u8 *digest;
+> >  	u8 digest_size;			/* Number of bytes in digest */
+> > +	u8 *S;				/* signature S of length k octets */
+> 
+> u8 *signature?
+
+Yes, this 'S' is signature. I put the naming full match with spec for
+development, I will change it to match kernel rule. e.g. signature_S
+
+> 
+> > +	size_t k;			/* length k of signature S */
+> 
+> u8 *signature_length.
+> 
+
+I will use signature_leng_k to also match with PKCS#1 spec, I think it's
+better for review source code with the spec for debugging.
+
+
+Thanks a lot!
+Joey Lee
 
