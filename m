@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab3HZUE4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 16:04:56 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41172 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab3HZUEy (ORCPT
+	id S1752168Ab3HZUKj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 16:10:39 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:26949 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725Ab3HZUKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 16:04:54 -0400
-Date: Mon, 26 Aug 2013 16:04:50 -0400 (EDT)
-Message-Id: <20130826.160450.2176892065062148718.davem@davemloft.net>
-To: b.brezillon@overkiz.com
-Cc: nicolas.ferre@atmel.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        linux@arm.linux.org.uk, f.fainelli@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 0/2] net/cadence/macb: add support for dt phy definition
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1377186980-21902-1-git-send-email-b.brezillon@overkiz.com>
-References: <1377186980-21902-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 26 Aug 2013 13:04:54 -0700 (PDT)
+	Mon, 26 Aug 2013 16:10:38 -0400
+Date: Mon, 26 Aug 2013 22:10:35 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: "Yang, Fei" <fei.yang@intel.com>
+Cc: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: Can anyone suggest a better fix? Not sure if I understand the
+	problem, but the patch fixed it
+Message-ID: <20130826201035.GA21141@merkur.ravnborg.org>
+References: <02E7334B1630744CBDC55DA85862258348E431C1@ORSMSX102.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <02E7334B1630744CBDC55DA85862258348E431C1@ORSMSX102.amr.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-Date: Thu, 22 Aug 2013 17:56:20 +0200
+On Mon, Aug 26, 2013 at 07:22:46PM +0000, Yang, Fei wrote:
+> >From 5e6501efa26bc19dad0b43e3a2b0daa81408a8ae Mon Sep 17 00:00:00 2001
+> From: Fei Yang <fei.yang@intel.com>
+> Date: Mon, 26 Aug 2013 11:21:48 -0700
+> Subject: [PATCH] FIXDEP: error opening depfile
+>  
+> Met a kernel build issue where fixdep fails to open a depfile,
+> fixdep: error opening depfile: drivers/driver-name/.driver-code.o.d: No such file or directory
+> make[4]: *** [drivers/driver-name/driver-code.o] Error 2
+> make[3]: *** [drivers/driver-name] Error 2
+> Don't know why the expected file was not created, but the assumption that
+> the file had been created might not be true, so simply return for such failure.
 
-> This patch series adds support for ethernet phy definition using device
-> tree.
-> 
-> This may help in moving some at91 boards to dt (some of them define an
-> interrupt pin).
-> 
-> Tested on samad31ek.
+I tried to grep:
+git grep "driver-name"
 
-Series applied to net-next, thanks.
+No hits.
+
+Are you trying to fix a build issue with something out-of-tree - or is this only in linux-next?
+
+	Sam
