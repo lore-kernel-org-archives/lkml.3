@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304Ab3HZKR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:17:27 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:10827 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab3HZKRZ (ORCPT
+	id S1755497Ab3HZKSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:18:45 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60242 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752244Ab3HZKSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:17:25 -0400
-X-Spam-Score: -101.0
-Message-ID: <521B2AF7.6070806@asianux.com>
-Date: Mon, 26 Aug 2013 18:16:23 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Yoshinori Sato <ysato@users.sourceforge.jp>, Arnd Bergmann <arnd@arndb.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, davej@redhat.com,
-        David Sharp <dhsharp@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] h8300: include: asm: Kbuild: add gpio.h for pass compiling
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Aug 2013 06:18:43 -0400
+Message-ID: <1377512318.20958.5.camel@dabdike>
+Subject: Re: [PATCH 1/3] arcmsr: Support Areca new SATA Raid Adapter
+ ARC1214/1224/1264/1284
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: =?UTF-8?Q?=E9=BB=83=E6=B8=85=E9=9A=86?= <ching2048@areca.com.tw>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, billion@areca.com.tw
+Date: Mon, 26 Aug 2013 14:18:38 +0400
+In-Reply-To: <7A2818CC441F4BCE96D3B1E70CC3D76B@chingDT>
+References: <7A2818CC441F4BCE96D3B1E70CC3D76B@chingDT>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need add default "gpio.h" for h8300, or can not pass compiling.
+On Mon, 2013-08-26 at 12:14 +0800, 黃清隆 wrote:
+>  From: Ching <ching2048@areca.com.tw>
+> 
+> Support Areca new SATA Raid adapter ARC1214/1224/1264/1284.
+> Modify maximum outstanding command number, notify command complete with auto
+> request sense
+> Signed-off-by: Ching  <ching2048@areca.com.tw>
 
-The related error (allmodconfig for h8300):
+Checkpatch really doesn't like this:
 
-  arch/h8300/kernel/h8300_ksyms.c:17:22: fatal error: asm/gpio.h: No such file or directory
-   #include <asm/gpio.h>
-                        ^
+total: 1 errors, 173 warnings, 7131 lines checked
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/h8300/include/asm/Kbuild |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I fixed up the error and the few relevant warnings.  I don't really care
+about the lines over 80 characters.  However, if you're going to have
+long lines, don't split strings (another checkpatch complaint).  I'd
+also like to see the spurious braces removed in a later patch, please.
+The prinks without a KERN_ also need fixing.
 
-diff --git a/arch/h8300/include/asm/Kbuild b/arch/h8300/include/asm/Kbuild
-index 8ada3cf..4c627aa 100644
---- a/arch/h8300/include/asm/Kbuild
-+++ b/arch/h8300/include/asm/Kbuild
-@@ -1,6 +1,7 @@
- 
- generic-y += clkdev.h
- generic-y += exec.h
-+generic-y += gpio.h
- generic-y += linkage.h
- generic-y += mmu.h
- generic-y += module.h
--- 
-1.7.7.6
+James
+
+
