@@ -1,73 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab3HZRCv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 13:02:51 -0400
-Received: from 8.mo3.mail-out.ovh.net ([87.98.172.249]:52287 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752317Ab3HZRCu (ORCPT
+	id S1752329Ab3HZRNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 13:13:00 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:42182 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab3HZRM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 13:02:50 -0400
-Message-ID: <521B89D1.6010902@overkiz.com>
-Date: Mon, 26 Aug 2013 19:01:05 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [RFC PATCH 1/3] pinctrl: add new generic pinconf config for deglitch
- filter
-References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com> <1377380109-11247-1-git-send-email-b.brezillon@overkiz.com> <521B875E.1010605@wwwdotorg.org>
-In-Reply-To: <521B875E.1010605@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 9944510928858478669
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.500002/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Mon, 26 Aug 2013 13:12:58 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-90-521b8c92a992
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com, t.figa@samsung.com,
+        tomasz.figa@gmail.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        rob@landley.net, mturquette@linaro.org, thomas.abraham@linaro.org,
+        t.stanislaws@samsung.com, m.chehab@samsung.com, s.nawrocki@samsung.com,
+        m.szyprowski@samung.com, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH RFC 4/5] clk: samsung: Add clock driver for s5pc110/s5pv210
+Date: Mon, 26 Aug 2013 19:12:35 +0200
+Message-id: <1433697.46kixytlq2@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-45-generic; KDE/4.8.5; i686; ; )
+In-reply-to: <1377517114-20222-5-git-send-email-m.krawczuk@partner.samsung.com>
+References: <1377517114-20222-1-git-send-email-m.krawczuk@partner.samsung.com>
+ <1377517114-20222-5-git-send-email-m.krawczuk@partner.samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA03Ra0hTYRjAcd5z25k5O83bi0LCIEgpnVbwUhF9KY5BN6GkLGzqQSWn40yl
+	+aHE28zr8pK6SqcssDW1pkgOcXOaSKI5b100C0Rp6izUSiKybRL47cf7/F+eDw+Ni8eJIDo1
+	PZPj02VpEsqLGPm7wByuLguOkVbV+KCmwTESrZYXE6hcN02h0bxVATItzJCouUhPoEnzYwrV
+	v+3D0OykCNnbQ9CI8Q2OVioGCPT0nR1Dixo7hTR1bQQaaLViqN1R59KqmkTL/UUE6qhfIVCj
+	2kGioXo9QAbzH3A6kDU2GgFbkF9GsbqNKQG7Uq0BbI/2k4Bdft5AsnMzvRTbqb/H9q/1YmxF
+	lwGwpesfSXbDtJ99+eTKJdF1r5NJXFpqNsdHnLrllTLaVocpnD53Zt878VzwdU8JoGnIHIWP
+	KiNLgNDFADg+30G5LWZaANRvxpYAL5cLMGjMr8TdA4o5Dh+oDcBtP+YYXPs0Q7kjnDET0Pml
+	1RP5Mhdhg7NO4DbBHIA9nb88FjGhUG/77mn8mTNwrGWLcFvo6rsGhomdbdUATsxXEDsf9sGt
+	6nmPcSYE9llqyR0fgpbCh5QGMNpdmXZXpt2V6QBuAP6cIlGhTEiWR4YrZXJlVnpyeGKG3AQ8
+	d14KegWe5SIbYGgg8RYV5wXHiElZtlIltwFI4xI/Ec25nkRJMlUOx2fE81lpnNIGgmlCEiiy
+	Fp64LGaSZZncbY5TcPz/KUYLg3LB621pRli3KjbJIvVt5NabVNHoxZp1USDxPt+8rbFqpyPi
+	5gKl4s3uwagbDp1Awl/1aRsK5YXiu+Yik4/fiMPiB/eWHlGjqSrpwd/t0deGU+3chwCBPSX5
+	R02z/pyo5WzOUl5LVFxVfu1P87cL8Vj8xMbN9fvyhNrPjo7yDgmhTJFFhuG8UvYPsB2/2eMC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stephen,
+On Monday, August 26, 2013 01:38:33 PM Mateusz Krawczuk wrote:
+> This patch adds new, Common Clock Framework-based clock driver for Samsung
+> S5PV210 SoCs. The driver is just added, without enabling it yet.
+> 
+> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+> ---
+>  .../bindings/clock/samsung,s5pv210-clock.txt       |  72 ++
+>  drivers/clk/samsung/Makefile                       |   3 +-
+>  drivers/clk/samsung/clk-s5pv210.c                  | 732 +++++++++++++++++++++
+>  include/dt-bindings/clock/samsung,s5pv210-clock.h  | 221 +++++++
+>  4 files changed, 1027 insertions(+), 1 deletion(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/samsung,s5pv210-clock.txt
+>  create mode 100644 drivers/clk/samsung/clk-s5pv210.c
+>  create mode 100644 include/dt-bindings/clock/samsung,s5pv210-clock.h
 
-On 26/08/2013 18:50, Stephen Warren wrote:
-> On 08/24/2013 03:35 PM, Boris BREZILLON wrote:
->> Add a new parameter to support deglitch filter configuration.
->> A deglitch filter works like a debounce filter but with a smaller
->> delay (nanoseconds).
-> Why not use the existing debounce property, just with a small delay
-> specified. It seems like that's exactly what the property is for?
-That's one of the question I asked in my cover letter :-)
+[...]
 
-Indeed the at91 deglitch filter delay is not configurable and is statically
-assigned to half a master clk cycle (if master clk = 133MHz -> 8 ns).
-The debounce property argument is currently expressed in usecs.
+> diff --git a/drivers/clk/samsung/clk-s5pv210.c b/drivers/clk/samsung/clk-s5pv210.c
+> new file mode 100644
+> index 0000000..861d37d
+> --- /dev/null
+> +++ b/drivers/clk/samsung/clk-s5pv210.c
 
-This will result in always selecting the debounce filter (which is also
-available on at91 SoCs) over the deglitch filter.
+[...]
 
-Could we add a flag in the deglitch argument to specify the delay unit
-(nsecs or usecs) ?
+> +static unsigned long s5pv210_get_xom(void)
 
+This function can be marked with __init.
 
-Best Regards,
+> +{
+> +	unsigned long xom = 1;
+> +	void __iomem *chipid_base;
+> +	struct device_node *np;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "samsung,s5pv210-chipid");
+> +	if (np) {
+> +		chipid_base = of_iomap(np, 0);
 
-Boris
+How's about printing an error if !chipid_base?
+
+Also the code can be made a bit shorter:
+
+if (np) {
+	void __iomem *chipid_base = of_iomap(np, 0);
+...
+}
+
+> +		if (chipid_base)
+> +			xom = readl(chipid_base + 8);
+> +
+> +		iounmap(chipid_base);
+
+It seems that at least generic iounmap() accepts NULL argument but it 
+will be better not to call it if of_iomap() failed.
+
+> +	}
+> +
+> +	return xom;
+> +}
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
