@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab3HZECS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 00:02:18 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54411 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab3HZECR (ORCPT
+	id S1755665Ab3HZEEJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 00:04:09 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:32888 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268Ab3HZEEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 00:02:17 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <521AD347.1090601@roeck-us.net>
-Date: Sun, 25 Aug 2013 21:02:15 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 26 Aug 2013 00:04:07 -0400
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Steve Cotton <steve@s.cotton.clara.co.uk>
-Subject: Re: Commit 9a11899 (USB: OHCI: add missing PCI PM callbacks to ohci-pci.c)
- breaks several builds
-References: <521ACBEF.60006@roeck-us.net>
-In-Reply-To: <521ACBEF.60006@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Mon, 26 Aug 2013 12:04:05 +0800
+Message-ID: <CAPgLHd-Lj7MjTYGA6TNK2JtScORtd5NvAo3WZuM425sRJj8=tw@mail.gmail.com>
+Subject: [PATCH] vme: vme_ca91cx42.c: fix to pass correct device identity to free_irq()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: martyn.welch@ge.com, manohar.vanga@gmail.com, gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2013 08:30 PM, Guenter Roeck wrote:
-> Broken builds:
->      mips:ath79_defconfig
->      parisc:defconfig
->      sparc32:defconfig
->      sparc64:defconfig
->      tile:defconfig
->
-Add:
-	powerpc:ppc64e_defconfig
-	powerpc:cell_defconfig
-	powerps:maple_defconfig
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-That makes it 8 out of 82 builds, or roughly 10% of all builds.
+free_irq() expects the same device identity that was passed to
+corresponding request_irq(), otherwise the IRQ is not freed.
 
-My qemu test build for powerpc (which has its own config file)  fails as well :(.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/vme/bridges/vme_ca91cx42.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-Guenter
-
-> Error log:
-> drivers/usb/host/ohci-pci.c: In function 'ohci_pci_init':
-> drivers/usb/host/ohci-pci.c:309:35: error: 'ohci_suspend' undeclared (first use in this function)
-> drivers/usb/host/ohci-pci.c:309:35: note: each undeclared identifier is reported only once for each function it appears in
-> drivers/usb/host/ohci-pci.c:310:34: error: 'ohci_resume' undeclared (first use in this function)
-> make[3]: *** [drivers/usb/host/ohci-pci.o] Error 1
->
-> Guenter
+diff --git a/drivers/vme/bridges/vme_ca91cx42.c b/drivers/vme/bridges/vme_ca91cx42.c
+index 64bfea3..f24e234 100644
+--- a/drivers/vme/bridges/vme_ca91cx42.c
++++ b/drivers/vme/bridges/vme_ca91cx42.c
+@@ -243,6 +243,8 @@ static int ca91cx42_irq_init(struct vme_bridge *ca91cx42_bridge)
+ static void ca91cx42_irq_exit(struct ca91cx42_driver *bridge,
+ 	struct pci_dev *pdev)
+ {
++	struct vme_bridge *ca91cx42_bridge;
++
+ 	/* Disable interrupts from PCI to VME */
+ 	iowrite32(0, bridge->base + VINT_EN);
+ 
+@@ -251,7 +253,9 @@ static void ca91cx42_irq_exit(struct ca91cx42_driver *bridge,
+ 	/* Clear Any Pending PCI Interrupts */
+ 	iowrite32(0x00FFFFFF, bridge->base + LINT_STAT);
+ 
+-	free_irq(pdev->irq, pdev);
++	ca91cx42_bridge = container_of((void *)bridge, struct vme_bridge,
++				       driver_priv);
++	free_irq(pdev->irq, ca91cx42_bridge);
+ }
+ 
+ static int ca91cx42_iack_received(struct ca91cx42_driver *bridge, int level)
 
