@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab3HZTxg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 15:53:36 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:38326 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab3HZTxe convert rfc822-to-8bit (ORCPT
+	id S1752222Ab3HZT4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 15:56:45 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38465 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab3HZT4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 15:53:34 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: Julius Werner <jwerner@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        "Benson Leung" <bleung@chromium.org>, Felipe Balbi <balbi@ti.com>,
-        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>
-Subject: RE: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support for
- platform xHCs
-Thread-Topic: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support
- for platform xHCs
-Thread-Index: AQHOnfwYI9Np33Plqkq7vUNbfD4u75mgdUEAgAAzMICAADKpAIAAPKeA//+VVhCAB60tgP//i2hQgAAJMfA=
-Date: Mon, 26 Aug 2013 19:53:33 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458DED841@US01WEMBX2.internal.synopsys.com>
-References: <1377040909-18428-1-git-send-email-jwerner@chromium.org>
- <20130821184042.GC3577@xanatos>
- <CAODwPW8tCFaykJnatyweJ96UzntRVNmo3WU1UYXw9nwp2bq_Ow@mail.gmail.com>
- <20130822004514.GB19747@xanatos>
- <CAODwPW99gLBtNQD=UyPq9DqY0TtNubR_7e+FymkfO5u2+et++Q@mail.gmail.com>
- <A2CA0424C0A6F04399FB9E1CD98E030458DEC6BC@US01WEMBX2.internal.synopsys.com>
- <20130826191411.GG5112@xanatos>
- <A2CA0424C0A6F04399FB9E1CD98E030458DED818@US01WEMBX2.internal.synopsys.com>
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458DED818@US01WEMBX2.internal.synopsys.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 26 Aug 2013 15:56:44 -0400
+Date: Mon, 26 Aug 2013 20:56:32 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <20130826195632.GG10783@sirena.org.uk>
+References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
+ <5209BB6F.2000208@codeaurora.org>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aYDVKSzuImP48n7V"
+Content-Disposition: inline
+In-Reply-To: <5209BB6F.2000208@codeaurora.org>
+X-Cookie: Snow Day -- stay home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 78.32.9.209
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [ARM ATTEND] catching up on exploit mitigations
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Paul Zimmerman
-> Sent: Monday, August 26, 2013 12:38 PM
 
-...
+--aYDVKSzuImP48n7V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> So it may be safer to say that the feature is present starting with 2.50a.
-> 
-> In 2.51a it has been well-tested in simulation. In actual hardware, it
+On Mon, Aug 12, 2013 at 09:51:59PM -0700, Laura Abbott wrote:
+> On 7/30/2013 12:05 PM, Kees Cook wrote:
 
-That should have said:
+> >- RO and W^X kernel page table protections (similar to x86's
+> >DEBUG_RODATA and DEBUG_SET_MODULE_RONX; it's not clear to me how much
+> >LPAE and PXN is already handling this, if at all)
 
-"In 2.50a it has been well-tested in simulation..."
+> We've had support for RO/NX on our tree for a while. I'm interested
+> in attending the summit to share what we've done and to see how much
+> of it could be mainlined.
 
--- 
-Paul
+Is that related to the code that Google have in their tree?
 
+--aYDVKSzuImP48n7V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSG7LtAAoJELSic+t+oim9JHUQAJYA4eB6b+V4bEPr3VuD0Bon
+dOyEkcMO1TtgK3DgLfqbMbMXuoNqRKiGjbWEHv5MKNPYNFt+7OwKXibVUzvw3wbk
+Skgc/BqVx2O+Y6nwsOn3s6w2arQLs76P30QRMIx1b0bsqzaHqgsmlaCdS+spCOn+
+JVHWlf2kbmRlLlQg5fRZPmvvzzywqlnQJ7M5Iy+I1sHy7PwIC2PUUe5GykWpY0ig
+lJtsHu7+Y0roGn6WoW7r8+WgOjigxf1xwzaWGrvYmIiRbEtk1RTb35ki8cQeUOJa
+bwkb5YVRy4DZISJNFqZ7sFsmk9qjzIveB8H0+qP9ztediuPEaT5+S7XA0ZVs5kva
+d7VO7p2FJy+BKuS7F9ni701QTsbx3ZwungxXsnCot/cbFLHt9jyba6ZtH6yf1agX
+lgqB52cv1CCZhjGyRSDbz97bFPWlqvm+yDw+3VpOQycfveguplfGJVEsqLVPznUn
+PmfSZ2ju2BqT0IKXXGys+H6WGo6UFld2D7Dx+HD2ac3o1xlC1owX1Ttb83wLSA3F
+HmX8wv5bwCiv/MlKIQfHiwe65c4z7jgJm80+giQstpnQv981evu1QINhVWFtkKfw
+VeyfEbNsh0rvafSbU4TnSy4EOY0meYoTyen4oOBM+mTkQvUVW1C7GhCrfFH5vTLK
+EFxipo2bfh17bnnjh2mL
+=EMoJ
+-----END PGP SIGNATURE-----
+
+--aYDVKSzuImP48n7V--
