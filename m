@@ -1,67 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab3HZSL0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 14:11:26 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:45717 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3HZSLZ (ORCPT
+	id S1752446Ab3HZSLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 14:11:32 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:54090 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab3HZSL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 14:11:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFw20W9L8HV+VbTRNeQQM-_+aeUhvT9AAod5LGfb-7hE9g@mail.gmail.com>
-References: <CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com>
- <CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com>
- <20130822201530.GL31117@1wt.eu> <CALCETrXX--FWeoDMOTYNDOWkTKcWk=LcGs2oY7CQ9GU63CMLRg@mail.gmail.com>
- <CA+55aFzR71kJOOVzHKKaXW2Ph7wb6ivtVHPeR49PPcqpiCfPsA@mail.gmail.com>
- <CALCETrXXxRksU-YTY8WFJzeET9cWsPKo_=6e9RD=F+TS7xVMyQ@mail.gmail.com>
- <CA+55aFxqdV6CQ8UWkB1Z7HUB9GmRH4Jpw_UmmFqDqG01_DmsWw@mail.gmail.com>
- <20130823010726.GP27005@ZenIV.linux.org.uk> <20130825033741.GX27005@ZenIV.linux.org.uk>
- <CA+55aFxaKGcpdxKXK_axqyFz_oCvFm1Q=_fJLq8di97x_-cCig@mail.gmail.com>
- <20130825200605.GC27005@ZenIV.linux.org.uk> <CA+55aFyXq9kry7EtcnXOd_DWDVkDvVRWKLAfLOYHVsdY4RRJ8A@mail.gmail.com>
- <CA+55aFzcPFXei5j-i49+3kXZ5L9S-v66vrzU091EuXkSeg1G7A@mail.gmail.com> <CA+55aFw20W9L8HV+VbTRNeQQM-_+aeUhvT9AAod5LGfb-7hE9g@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 26 Aug 2013 11:11:04 -0700
-Message-ID: <CALCETrVVwWaQLL21u5y_c6cWN4QD75tm96DiJfxHQvvgbNDwNg@mail.gmail.com>
-Subject: Re: [PATCH v2] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Willy Tarreau <w@1wt.eu>,
-        "security@kernel.org" <security@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 26 Aug 2013 14:11:29 -0400
+From: Fabian Vogt <fabian@ritter-vogt.de>
+To: linux-gpio@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org, linus.walleij@linaro.org,
+        grant.likely@linaro.org, pawel.moll@arm.com, rob.herring@calxeda.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        Fabian Vogt <fabian@ritter-vogt.de>
+Subject: [PATCH V5] gpio: New driver for LSI ZEVIO SoCs
+Date: Mon, 26 Aug 2013 20:18:53 +0200
+Message-Id: <1377541133-7427-1-git-send-email-fabian@ritter-vogt.de>
+X-Mailer: git-send-email 1.8.1.4
+X-Provags-ID: V02:K0:zKBipwAF1Is3kgVPoTaKHcq5svrUbJAhjyJHUvfM3LB
+ yaFYu43zzB6nn7EwoBjPjyCkbaAyD0z3k2DnDoySWvOjKHGl32
+ PiDUtuBBQeAc8x/+x9wuuJf0OBuXNgVU+1Ro11JG403HBcISOC
+ cN+xu3BO30mBZjNH/YLEHN7Y+Vd9d5jCKDmLzFV7mg9YGe/RK2
+ hclZxaWTcvQlMTCOAgBgHqhoaUK5AYhcaK8im+W3h3xPJJH2MT
+ /EK4kHHWFmZE7qL5ROZogF9AVbwZQ5/OGpw2gmwFTLuQB/26un
+ dBAyp0xsGN4HB1qxs/UbQVmzCFZTOzpDgI7C6gUazbjjhnQBql
+ y16k2TI1TUgJftUmfzdQ8rqpyQiNa0yrzA2uf4TIbqgYZqEkIa
+ GgOEcjQjzy0oskb42lSvypxHPhM5LyqAy8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 11:07 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Aug 26, 2013 at 10:37 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> I'm playing with a patch that then in addition to the ptrace check
->> *also* requires that the file was opened with the same credentials as
->> the follower _or_ the task being followed. I'll see if that works out.
->
-> Chrome sandboxing still _works_ with the attached patch, but there's a
-> few audit messages about the sandbox being denied dac_read_search. And
-> I'm really not very happy with this anyway.
->
-> So I'm going to send it out (using email to archive things and see if
-> anybody has any comments), and then forget about it.
->
+This driver supports the GPIO controller found in LSI ZEVIO SoCs.
+It has been successfully tested on a TI nspire CX calculator.
+---
+ .../devicetree/bindings/gpio/gpio-zevio.txt        |  15 ++
+ drivers/gpio/Kconfig                               |   6 +
+ drivers/gpio/Makefile                              |   1 +
+ drivers/gpio/gpio-zevio.c                          | 210 +++++++++++++++++++++
+ 4 files changed, 232 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-zevio.txt
+ create mode 100644 drivers/gpio/gpio-zevio.c
 
-I'm still not thrilled with this approach.  I'll see if I can find a
-clean way to use fmode later today.
-
---Andy
-
->                   Linus
-
-
-
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-zevio.txt b/Documentation/devicetree/bindings/gpio/gpio-zevio.txt
+new file mode 100644
+index 0000000..a519f45
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-zevio.txt
+@@ -0,0 +1,15 @@
++Zevio GPIO controller
++
++Required properties:
++- compatible = "lsi,zevio-gpio"
++- reg = <BASEADDR SIZE>
++- #gpio-cells = <2>
++- gpio-controller;
++
++Example:
++	gpio: gpio@90000000 {
++		compatible = "lsi,zevio-gpio";
++		reg = <0x90000000 0x1000>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index b2450ba..49f8c62 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -138,6 +138,12 @@ config GPIO_EP93XX
+ 	depends on ARCH_EP93XX
+ 	select GPIO_GENERIC
+ 
++config GPIO_ZEVIO
++	bool "LSI ZEVIO SoC memory mapped GPIOs"
++	depends on OF
++	help
++	  Say yes here to support the GPIO controller in LSI ZEVIO SoCs.
++
+ config GPIO_MM_LANTIQ
+ 	bool "Lantiq Memory mapped GPIOs"
+ 	depends on LANTIQ && SOC_XWAY
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index ef3e983..b70cb1b 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -87,3 +87,4 @@ obj-$(CONFIG_GPIO_WM831X)	+= gpio-wm831x.o
+ obj-$(CONFIG_GPIO_WM8350)	+= gpio-wm8350.o
+ obj-$(CONFIG_GPIO_WM8994)	+= gpio-wm8994.o
+ obj-$(CONFIG_GPIO_XILINX)	+= gpio-xilinx.o
++obj-$(CONFIG_GPIO_ZEVIO)	+= gpio-zevio.o
+diff --git a/drivers/gpio/gpio-zevio.c b/drivers/gpio/gpio-zevio.c
+new file mode 100644
+index 0000000..c3215f8
+--- /dev/null
++++ b/drivers/gpio/gpio-zevio.c
+@@ -0,0 +1,210 @@
++/*
++ * GPIO controller in LSI ZEVIO SoCs.
++ *
++ * Author: Fabian Vogt <fabian@ritter-vogt.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/spinlock.h>
++#include <linux/errno.h>
++#include <linux/module.h>
++#include <linux/bitops.h>
++#include <linux/io.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
++#include <linux/slab.h>
++#include <linux/gpio.h>
++
++/*
++ * Memory layout:
++ * This chip has four gpio sections, each controls 8 GPIOs.
++ * Bit 0 in section 0 is GPIO 0, bit 2 in section 1 is GPIO 10.
++ * Disclaimer: Reverse engineered!
++ * For more information refer to:
++ * http://hackspire.unsads.com/wiki/index.php/Memory-mapped_I/O_ports#90000000_-_General_Purpose_I.2FO_.28GPIO.29
++ *
++ * 0x00-0x3F: Section 0
++ *     +0x00: Masked interrupt status (read-only)
++ *     +0x04: R: Interrupt status W: Reset interrupt status
++ *     +0x08: R: Interrupt mask W: Mask interrupt
++ *     +0x0C: W: Unmask interrupt (write-only)
++ *     +0x10: Direction: I/O=1/0
++ *     +0x14: Output
++ *     +0x18: Input (read-only)
++ *     +0x20: R: Level interrupt W: Set as level interrupt
++ * 0x40-0x7F: Section 1
++ * 0x80-0xBF: Section 2
++ * 0xC0-0xFF: Section 3
++ */
++
++#define ZEVIO_GPIO_SECTION_SIZE			0x40
++
++#define ZEVIO_GPIO_INT_MASKED_STATUS_OFFSET	0x00
++#define ZEVIO_GPIO_INT_STATUS_OFFSET		0x04
++#define ZEVIO_GPIO_INT_UNMASK_OFFSET		0x08
++#define ZEVIO_GPIO_INT_MASK_OFFSET		0x0C
++#define ZEVIO_GPIO_DIRECTION_OFFSET		0x10
++#define ZEVIO_GPIO_OUTPUT_OFFSET		0x14
++#define ZEVIO_GPIO_INPUT_OFFSET			0x18
++#define ZEVIO_GPIO_INT_STICKY_OFFSET		0x20
++
++#define to_zevio_gpio(chip) container_of(to_of_mm_gpio_chip(chip), \
++				struct zevio_gpio, chip)
++
++/* Bit of GPIO in section */
++#define ZEVIO_GPIO_BIT(gpio) (gpio&7)
++/* Offset to section of GPIO relative to base */
++#define ZEVIO_GPIO_SECTION_OFFSET(gpio) (((gpio>>3)&3)*ZEVIO_GPIO_SECTION_SIZE)
++/* Address of register, which is responsible for given GPIO */
++#define ZEVIO_GPIO(cntrlr, gpio, reg) IOMEM(cntrlr->chip.regs + \
++		ZEVIO_GPIO_SECTION_OFFSET(gpio) + ZEVIO_GPIO_##reg##_OFFSET)
++
++struct zevio_gpio {
++	spinlock_t		lock;
++	struct of_mm_gpio_chip	chip;
++};
++
++/* Functions for struct gpio_chip */
++static int zevio_gpio_get(struct gpio_chip *chip, unsigned pin)
++{
++	struct zevio_gpio *controller = to_zevio_gpio(chip);
++
++	/* Only reading allowed, so no spinlock needed */
++	u32 val = readl(ZEVIO_GPIO(controller, pin, INPUT));
++
++	return (val >> ZEVIO_GPIO_BIT(pin)) & 0x1;
++}
++
++static void zevio_gpio_set(struct gpio_chip *chip, unsigned pin, int value)
++{
++	struct zevio_gpio *controller = to_zevio_gpio(chip);
++	u32 val;
++
++	spin_lock(&controller->lock);
++	val = readl(ZEVIO_GPIO(controller, pin, OUTPUT));
++	if (value)
++		val |= BIT(ZEVIO_GPIO_BIT(pin));
++	else
++		val &= ~(BIT(ZEVIO_GPIO_BIT(pin)));
++
++	writel(val, ZEVIO_GPIO(controller, pin, OUTPUT));
++	spin_unlock(&controller->lock);
++}
++
++static int zevio_gpio_direction_input(struct gpio_chip *chip, unsigned pin)
++{
++	struct zevio_gpio *controller = to_zevio_gpio(chip);
++	u32 val;
++
++	spin_lock(&controller->lock);
++
++	val = readl(ZEVIO_GPIO(controller, pin, DIRECTION));
++	val |= BIT(ZEVIO_GPIO_BIT(pin));
++	writel(val, ZEVIO_GPIO(controller, pin, DIRECTION));
++
++	spin_unlock(&controller->lock);
++
++	return 0;
++}
++
++static int zevio_gpio_direction_output(struct gpio_chip *chip,
++				       unsigned pin, int value)
++{
++	struct zevio_gpio *controller = to_zevio_gpio(chip);
++	u32 val;
++
++	spin_lock(&controller->lock);
++	val = readl(ZEVIO_GPIO(controller, pin, OUTPUT));
++	if (value)
++		val |= BIT(ZEVIO_GPIO_BIT(pin));
++	else
++		val &= ~(BIT(ZEVIO_GPIO_BIT(pin)));
++
++	writel(val, ZEVIO_GPIO(controller, pin, OUTPUT));
++	val = readl(ZEVIO_GPIO(controller, pin, DIRECTION));
++	val &= ~(BIT(ZEVIO_GPIO_BIT(pin)));
++	writel(val, ZEVIO_GPIO(controller, pin, DIRECTION));
++
++	spin_unlock(&controller->lock);
++
++	return 0;
++}
++
++static int zevio_gpio_to_irq(struct gpio_chip *chip, unsigned pin)
++{
++	/* TODO: Implement IRQs.
++           Not implemented yet due to weird lockups */
++
++	return -ENXIO;
++}
++
++static struct gpio_chip zevio_gpio_chip = {
++	.direction_input	= zevio_gpio_direction_input,
++	.direction_output	= zevio_gpio_direction_output,
++	.set			= zevio_gpio_set,
++	.get			= zevio_gpio_get,
++	.to_irq			= zevio_gpio_to_irq,
++	.base			= 0,
++	.owner			= THIS_MODULE,
++	.ngpio			= 32,
++	.of_gpio_n_cells	= 2,
++};
++
++/* Initialization */
++static int zevio_gpio_probe(struct platform_device *pdev)
++{
++	struct zevio_gpio *controller;
++	int status, i;
++
++	controller = devm_kzalloc(&pdev->dev, sizeof(*controller), GFP_KERNEL);
++	if (!controller) {
++		dev_err(&pdev->dev, "not enough free memory\n");
++		return -ENOMEM;
++	}
++
++	/* Copy our reference */
++	controller->chip.gc = zevio_gpio_chip;
++	controller->chip.gc.dev = &pdev->dev;
++
++	status = of_mm_gpiochip_add(pdev->dev.of_node, &(controller->chip));
++	if (status) {
++		kfree(controller);
++		dev_err(&pdev->dev, "failed to add gpiochip: %d\n", status);
++		return status;
++	}
++
++	spin_lock_init(&(controller->lock));
++
++	/* Disable interrupts, they only cause errors */
++	for (i = 0; i < controller->chip.gc.ngpio; i += 8)
++		writel(0xFF, ZEVIO_GPIO(controller, i, INT_MASK));
++
++	dev_dbg(controller->chip.gc.dev, "ZEVIO GPIO controller set up!\n");
++
++	return 0;
++}
++
++static struct of_device_id zevio_gpio_of_match[] = {
++	{ .compatible = "lsi,zevio-gpio", },
++	{ },
++};
++
++MODULE_DEVICE_TABLE(of, zevio_gpio_of_match);
++
++static struct platform_driver zevio_gpio_driver = {
++	.driver		= {
++		.name	= "gpio-zevio",
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(zevio_gpio_of_match),
++	},
++	.probe		= zevio_gpio_probe,
++};
++
++module_platform_driver(zevio_gpio_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Fabian Vogt <fabian@ritter-vogt.de>");
++MODULE_DESCRIPTION("LSI ZEVIO SoC GPIO driver");
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.8.1.4
+
