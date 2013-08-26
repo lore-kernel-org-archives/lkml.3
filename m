@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab3HZIuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 04:50:44 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:16632 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab3HZIun (ORCPT
+	id S1756667Ab3HZIu5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:50:57 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:42233 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751945Ab3HZIuy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 04:50:43 -0400
-Message-ID: <521B16B9.4000203@siemens.com>
-Date: Mon, 26 Aug 2013 10:50:01 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Mon, 26 Aug 2013 04:50:54 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
-        H Peter Anvin <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: x86-32: Early microcode loading stumbles over disabled DYNAMIC_FTRACE
-References: <5217908E.2040702@siemens.com> <20130823201751.GA16046@pd.tnic>
-In-Reply-To: <20130823201751.GA16046@pd.tnic>
+In-Reply-To: <35306580.ZCUI1aZasW@vostro.rjw.lan>
+References: <CADRPPNSD+uj_t5+qbNW29y7SuJkB_vMck-DGFJFV4A0AmPC6pQ@mail.gmail.com>
+	<17024788.0xFN8jEV59@vostro.rjw.lan>
+	<02318724-F4F7-4D53-9926-872E9417F672@freescale.com>
+	<35306580.ZCUI1aZasW@vostro.rjw.lan>
+Date: Mon, 26 Aug 2013 16:50:53 +0800
+X-Google-Sender-Auth: YHNUVOD3ynZt-2wnOJsbQitQ-lo
+Message-ID: <CADRPPNRyJW8N0NCpi0C0dpx5QudLu5V_BeT+XW=mjaa4HnU6Lg@mail.gmail.com>
+Subject: Re: System suspend states and device driver suspend() callback
+From: Li Yang <leoli@freescale.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Li Yang-R58472 <r58472@freescale.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-08-23 22:17, Borislav Petkov wrote:
-> On Fri, Aug 23, 2013 at 06:40:46PM +0200, Jan Kiszka wrote:
->> Below some hunks to get it working again - at least in the absence of
->> any microcode in the initrd. Marking all involved functions as __init
->> is another option (as __init implies notrace). But I bet there is more
->> hidden. I see e.g. a pr_warn() in find_cpio_init that should trigger
->> the issue as well if we hit the error it reports (btw. printing at
->> this point of the boot should not work anyway, should it?).
-> 
-> I guess we can do early_printk there instead as x86_64_start_kernel()
-> does it but I'm not sure for the 32-bit case where we call
-> load_ucode_bsp/ap before we've even enabled paging.
+On Sat, Aug 17, 2013 at 7:53 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, August 16, 2013 05:13:42 PM Li Yang-R58472 wrote:
+>>
+>> 在 2013-8-16，下午7:22，"Rafael J. Wysocki" <rjw@sisk.pl> 写道：
+>>
+>> > On Friday, August 16, 2013 04:06:26 PM Li Yang wrote:
+>> >> Hi Guys,
+>> >>
+>> >> Is there a standard way for the device drivers to know if the system
+>> >> is going to “standby” mode or “mem” mode when the suspend() callbacks
+>> >> are called?
+>> >
+>> > No, there's none.
+>> >
+>> > What do you need that for?
+>>
+>> Some chips like ours are putting the on-chip devices into different low
+>> power states when entering different system low power states.  When we enter
+>> system standby, on-chip devices are clock gated.  While entering suspend to
+>> ram, on-chip devices are power gated.  We want to driver to act differently
+>> too when entering different suspend states.
+>
+> Can you possibly use platform suspend operations to implement that (in analogy
+> with ACPI suspend operations)?
 
-early_printk doesn't seem to work as well on 32-bit until paging was
-enabled.
+I agree it's best to get the state that the device will be in during
+suspend from the platform code.  Will it be better to have a standard
+interface to pass this information?  Given the fact that a single
+device can be used by different platforms even different architecture
+nowadays.  How about exposing some new callbacks from the
+platform_suspend_ops for the driver to use?
 
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+Regards,
+Leo
