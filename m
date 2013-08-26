@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab3HZUu7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 16:50:59 -0400
-Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:38087 "EHLO
-	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752288Ab3HZUu5 (ORCPT
+	id S1752585Ab3HZUvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 16:51:38 -0400
+Received: from a10-13.smtp-out.amazonses.com ([54.240.10.13]:55536 "EHLO
+	a10-13.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751711Ab3HZUvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 16:50:57 -0400
-X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 16:50:56 EDT
-Message-ID: <00000140bc5f14be-eda60f95-f72e-415e-abb6-eb8f5335d468-000000@email.amazonses.com>
+	Mon, 26 Aug 2013 16:51:35 -0400
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 16:51:34 EDT
+Message-ID: <00000140bc5f2f67-5accf952-d656-4033-af93-07c2dce30305-000000@email.amazonses.com>
 User-Agent: quilt/0.50-1
-Date: Mon, 26 Aug 2013 20:44:43 +0000
+Date: Mon, 26 Aug 2013 20:44:49 +0000
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
+Cc: akpm@linuxfoundation.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org
 Cc: linux-arch@vger.kernel.org
 Cc: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [guv v2 19/31] ia64: Replace __get_cpu_var uses
+Subject: [guv v2 21/31] sparc: Replace __get_cpu_var uses
 References: <20130826204351.725357339@linux.com>
-X-SES-Outgoing: 2013.08.26-54.240.9.66
+X-SES-Outgoing: 2013.08.26-54.240.10.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -125,348 +125,336 @@ Transformations done to __get_cpu_var()
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Index: linux/arch/alpha/kernel/perf_event.c
+Index: linux/arch/sparc/include/asm/cpudata_32.h
 ===================================================================
---- linux.orig/arch/alpha/kernel/perf_event.c	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/alpha/kernel/perf_event.c	2013-08-23 09:10:22.665620124 -0500
-@@ -803,7 +803,7 @@ static void alpha_perf_event_irq_handler
- 	struct hw_perf_event *hwc;
- 	int idx, j;
+--- linux.orig/arch/sparc/include/asm/cpudata_32.h	2013-08-22 14:34:54.000000000 -0500
++++ linux/arch/sparc/include/asm/cpudata_32.h	2013-08-22 14:37:15.942964723 -0500
+@@ -26,6 +26,6 @@ typedef struct {
  
--	__get_cpu_var(irq_pmi_count)++;
-+	__this_cpu_inc(irq_pmi_count);
- 	cpuc = &__get_cpu_var(cpu_hw_events);
+ DECLARE_PER_CPU(cpuinfo_sparc, __cpu_data);
+ #define cpu_data(__cpu) per_cpu(__cpu_data, (__cpu))
+-#define local_cpu_data() __get_cpu_var(__cpu_data)
++#define local_cpu_data() __this_cpu_read(__cpu_data)
  
- 	/* Completely counting through the PMC's period to trigger a new PMC
-Index: linux/arch/ia64/kernel/irq.c
+ #endif /* _SPARC_CPUDATA_H */
+Index: linux/arch/sparc/include/asm/cpudata_64.h
 ===================================================================
---- linux.orig/arch/ia64/kernel/irq.c	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/kernel/irq.c	2013-08-23 09:10:22.665620124 -0500
-@@ -42,7 +42,7 @@ ia64_vector __ia64_irq_to_vector(int irq
+--- linux.orig/arch/sparc/include/asm/cpudata_64.h	2013-08-22 14:34:54.000000000 -0500
++++ linux/arch/sparc/include/asm/cpudata_64.h	2013-08-22 14:37:15.942964723 -0500
+@@ -33,7 +33,7 @@ typedef struct {
  
- unsigned int __ia64_local_vector_to_irq (ia64_vector vec)
+ DECLARE_PER_CPU(cpuinfo_sparc, __cpu_data);
+ #define cpu_data(__cpu)		per_cpu(__cpu_data, (__cpu))
+-#define local_cpu_data()	__get_cpu_var(__cpu_data)
++#define local_cpu_data()	__this_cpu_read(__cpu_data)
+ 
+ extern const struct seq_operations cpuinfo_op;
+ 
+Index: linux/arch/sparc/kernel/kprobes.c
+===================================================================
+--- linux.orig/arch/sparc/kernel/kprobes.c	2013-08-22 14:34:54.000000000 -0500
++++ linux/arch/sparc/kernel/kprobes.c	2013-08-22 14:37:15.942964723 -0500
+@@ -82,7 +82,7 @@ static void __kprobes save_previous_kpro
+ 
+ static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
  {
--	return __get_cpu_var(vector_irq)[vec];
-+	return __this_cpu_read(vector_irq[vec]);
- }
- #endif
- 
-Index: linux/arch/ia64/kernel/irq_ia64.c
-===================================================================
---- linux.orig/arch/ia64/kernel/irq_ia64.c	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/kernel/irq_ia64.c	2013-08-23 09:10:22.669620084 -0500
-@@ -338,7 +338,7 @@ static irqreturn_t smp_irq_move_cleanup_
- 		int irq;
- 		struct irq_desc *desc;
- 		struct irq_cfg *cfg;
--		irq = __get_cpu_var(vector_irq)[vector];
-+		irq = __this_cpu_read(vector_irq[vector]);
- 		if (irq < 0)
- 			continue;
- 
-@@ -352,7 +352,7 @@ static irqreturn_t smp_irq_move_cleanup_
- 			goto unlock;
- 
- 		spin_lock_irqsave(&vector_lock, flags);
--		__get_cpu_var(vector_irq)[vector] = -1;
-+		__this_cpu_write(vector_irq[vector], -1);
- 		cpu_clear(me, vector_table[vector]);
- 		spin_unlock_irqrestore(&vector_lock, flags);
- 		cfg->move_cleanup_count--;
-Index: linux/arch/ia64/kernel/kprobes.c
-===================================================================
---- linux.orig/arch/ia64/kernel/kprobes.c	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/kernel/kprobes.c	2013-08-23 09:10:22.669620084 -0500
-@@ -396,7 +396,7 @@ static void __kprobes restore_previous_k
- {
- 	unsigned int i;
- 	i = atomic_read(&kcb->prev_kprobe_index);
--	__get_cpu_var(current_kprobe) = kcb->prev_kprobe[i-1].kp;
-+	__this_cpu_write(current_kprobe, kcb->prev_kprobe[i-1].kp);
- 	kcb->kprobe_status = kcb->prev_kprobe[i-1].status;
- 	atomic_sub(1, &kcb->prev_kprobe_index);
- }
-@@ -404,7 +404,7 @@ static void __kprobes restore_previous_k
- static void __kprobes set_current_kprobe(struct kprobe *p,
- 			struct kprobe_ctlblk *kcb)
+-	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
++	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
+ 	kcb->kprobe_status = kcb->prev_kprobe.status;
+ 	kcb->kprobe_orig_tnpc = kcb->prev_kprobe.orig_tnpc;
+ 	kcb->kprobe_orig_tstate_pil = kcb->prev_kprobe.orig_tstate_pil;
+@@ -91,7 +91,7 @@ static void __kprobes restore_previous_k
+ static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
+ 				struct kprobe_ctlblk *kcb)
  {
 -	__get_cpu_var(current_kprobe) = p;
 +	__this_cpu_write(current_kprobe, p);
+ 	kcb->kprobe_orig_tnpc = regs->tnpc;
+ 	kcb->kprobe_orig_tstate_pil = (regs->tstate & TSTATE_PIL);
  }
- 
- static void kretprobe_trampoline(void)
-@@ -823,7 +823,7 @@ static int __kprobes pre_kprobes_handler
- 			/*
- 			 * jprobe instrumented function just completed
- 			 */
+@@ -154,7 +154,7 @@ static int __kprobes kprobe_handler(stru
+ 				ret = 1;
+ 				goto no_kprobe;
+ 			}
 -			p = __get_cpu_var(current_kprobe);
 +			p = __this_cpu_read(current_kprobe);
- 			if (p->break_handler && p->break_handler(p, regs)) {
+ 			if (p->break_handler && p->break_handler(p, regs))
  				goto ss_probe;
- 			}
-Index: linux/arch/ia64/kernel/mca.c
+ 		}
+Index: linux/arch/sparc/kernel/leon_smp.c
 ===================================================================
---- linux.orig/arch/ia64/kernel/mca.c	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/kernel/mca.c	2013-08-23 09:11:54.244715775 -0500
-@@ -1341,7 +1341,7 @@ ia64_mca_handler(struct pt_regs *regs, s
- 		ia64_mlogbuf_finish(1);
- 	}
+--- linux.orig/arch/sparc/kernel/leon_smp.c	2013-08-22 14:34:54.000000000 -0500
++++ linux/arch/sparc/kernel/leon_smp.c	2013-08-22 14:37:15.942964723 -0500
+@@ -354,7 +354,7 @@ static void leon_ipi_resched(int cpu)
  
--	if (__get_cpu_var(ia64_mca_tr_reload)) {
-+	if (__this_cpu_read(ia64_mca_tr_reload)) {
- 		mca_insert_tr(0x1); /*Reload dynamic itrs*/
- 		mca_insert_tr(0x2); /*Reload dynamic itrs*/
- 	}
-@@ -1874,14 +1874,14 @@ ia64_mca_cpu_init(void *cpu_data)
- 		"MCA", cpu);
- 	format_mca_init_stack(data, offsetof(struct ia64_mca_cpu, init_stack),
- 		"INIT", cpu);
--	__get_cpu_var(ia64_mca_data) = __per_cpu_mca[cpu] = __pa(data);
-+	__this_cpu_write(ia64_mca_data, __per_cpu_mca[cpu] = __pa(data));
- 
- 	/*
- 	 * Stash away a copy of the PTE needed to map the per-CPU page.
- 	 * We may need it during MCA recovery.
- 	 */
--	__get_cpu_var(ia64_mca_per_cpu_pte) =
--		pte_val(mk_pte_phys(__pa(cpu_data), PAGE_KERNEL));
-+	__this_cpu_write(ia64_mca_per_cpu_pte,
-+		pte_val(mk_pte_phys(__pa(cpu_data), PAGE_KERNEL)));
- 
- 	/*
- 	 * Also, stash away a copy of the PAL address and the PTE
-@@ -1890,10 +1890,10 @@ ia64_mca_cpu_init(void *cpu_data)
- 	pal_vaddr = efi_get_pal_addr();
- 	if (!pal_vaddr)
- 		return;
--	__get_cpu_var(ia64_mca_pal_base) =
--		GRANULEROUNDDOWN((unsigned long) pal_vaddr);
--	__get_cpu_var(ia64_mca_pal_pte) = pte_val(mk_pte_phys(__pa(pal_vaddr),
--							      PAGE_KERNEL));
-+	__this_cpu_write(ia64_mca_pal_base,
-+		GRANULEROUNDDOWN((unsigned long) pal_vaddr));
-+	__this_cpu_write(ia64_mca_pal_pte, pte_val(mk_pte_phys(__pa(pal_vaddr),
-+							      PAGE_KERNEL)));
- }
- 
- static void ia64_mca_cmc_vector_adjust(void *dummy)
-Index: linux/arch/ia64/kernel/process.c
-===================================================================
---- linux.orig/arch/ia64/kernel/process.c	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/kernel/process.c	2013-08-23 09:10:22.669620084 -0500
-@@ -215,7 +215,7 @@ static inline void play_dead(void)
- 	unsigned int this_cpu = smp_processor_id();
- 
- 	/* Ack it */
--	__get_cpu_var(cpu_state) = CPU_DEAD;
-+	__this_cpu_write(cpu_state, CPU_DEAD);
- 
- 	max_xtp();
- 	local_irq_disable();
-@@ -273,7 +273,7 @@ ia64_save_extra (struct task_struct *tas
- 	if ((task->thread.flags & IA64_THREAD_PM_VALID) != 0)
- 		pfm_save_regs(task);
- 
--	info = __get_cpu_var(pfm_syst_info);
-+	info = __this_cpu_read(pfm_syst_info);
- 	if (info & PFM_CPUINFO_SYST_WIDE)
- 		pfm_syst_wide_update_task(task, info, 0);
- #endif
-@@ -293,7 +293,7 @@ ia64_load_extra (struct task_struct *tas
- 	if ((task->thread.flags & IA64_THREAD_PM_VALID) != 0)
- 		pfm_load_regs(task);
- 
--	info = __get_cpu_var(pfm_syst_info);
-+	info = __this_cpu_read(pfm_syst_info);
- 	if (info & PFM_CPUINFO_SYST_WIDE) 
- 		pfm_syst_wide_update_task(task, info, 1);
- #endif
-Index: linux/arch/ia64/sn/kernel/sn2/sn2_smp.c
-===================================================================
---- linux.orig/arch/ia64/sn/kernel/sn2/sn2_smp.c	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/sn/kernel/sn2/sn2_smp.c	2013-08-23 09:10:22.669620084 -0500
-@@ -134,8 +134,8 @@ sn2_ipi_flush_all_tlb(struct mm_struct *
- 	itc = ia64_get_itc();
- 	smp_flush_tlb_cpumask(*mm_cpumask(mm));
- 	itc = ia64_get_itc() - itc;
--	__get_cpu_var(ptcstats).shub_ipi_flushes_itc_clocks += itc;
--	__get_cpu_var(ptcstats).shub_ipi_flushes++;
-+	__this_cpu_add(ptcstats.shub_ipi_flushes_itc_clocks, itc);
-+	__this_cpu_inc(ptcstats.shub_ipi_flushes);
- }
- 
- /**
-@@ -199,14 +199,14 @@ sn2_global_tlb_purge(struct mm_struct *m
- 			start += (1UL << nbits);
- 		} while (start < end);
- 		ia64_srlz_i();
--		__get_cpu_var(ptcstats).ptc_l++;
-+		__this_cpu_inc(ptcstats.ptc_l);
- 		preempt_enable();
- 		return;
- 	}
- 
- 	if (atomic_read(&mm->mm_users) == 1 && mymm) {
- 		flush_tlb_mm(mm);
--		__get_cpu_var(ptcstats).change_rid++;
-+		__this_cpu_inc(ptcstats.change_rid);
- 		preempt_enable();
- 		return;
- 	}
-@@ -250,11 +250,11 @@ sn2_global_tlb_purge(struct mm_struct *m
- 	spin_lock_irqsave(PTC_LOCK(shub1), flags);
- 	itc2 = ia64_get_itc();
- 
--	__get_cpu_var(ptcstats).lock_itc_clocks += itc2 - itc;
--	__get_cpu_var(ptcstats).shub_ptc_flushes++;
--	__get_cpu_var(ptcstats).nodes_flushed += nix;
-+	__this_cpu_add(ptcstats.lock_itc_clocks, itc2 - itc);
-+	__this_cpu_inc(ptcstats.shub_ptc_flushes);
-+	__this_cpu_add(ptcstats.nodes_flushed, nix);
- 	if (!mymm)
--		 __get_cpu_var(ptcstats).shub_ptc_flushes_not_my_mm++;
-+		 __this_cpu_inc(ptcstats.shub_ptc_flushes_not_my_mm);
- 
- 	if (use_cpu_ptcga && !mymm) {
- 		old_rr = ia64_get_rr(start);
-@@ -299,9 +299,9 @@ sn2_global_tlb_purge(struct mm_struct *m
- 
- done:
- 	itc2 = ia64_get_itc() - itc2;
--	__get_cpu_var(ptcstats).shub_itc_clocks += itc2;
--	if (itc2 > __get_cpu_var(ptcstats).shub_itc_clocks_max)
--		__get_cpu_var(ptcstats).shub_itc_clocks_max = itc2;
-+	__this_cpu_add(ptcstats)shub_itc_clocks, itc2);
-+	if (itc2 > __this_cpu_read(ptcstats.shub_itc_clocks_max))
-+		__this_cpu_write(ptcstats).shub_itc_clocks_max, itc2);
- 
- 	if (old_rr) {
- 		ia64_set_rr(start, old_rr);
-@@ -311,7 +311,7 @@ done:
- 	spin_unlock_irqrestore(PTC_LOCK(shub1), flags);
- 
- 	if (flush_opt == 1 && deadlock) {
--		__get_cpu_var(ptcstats).deadlocks++;
-+		__this_cpu_inc(ptcstats.deadlocks);
- 		sn2_ipi_flush_all_tlb(mm);
- 	}
- 
-@@ -334,7 +334,7 @@ sn2_ptc_deadlock_recovery(short *nasids,
- 	short nasid, i;
- 	unsigned long *piows, zeroval, n;
- 
--	__get_cpu_var(ptcstats).deadlocks++;
-+	__this_cpu_inc(ptcstats.deadlocks);
- 
- 	piows = (unsigned long *) pda->pio_write_status_addr;
- 	zeroval = pda->pio_write_status_val;
-@@ -349,7 +349,7 @@ sn2_ptc_deadlock_recovery(short *nasids,
- 			ptc1 = CHANGE_NASID(nasid, ptc1);
- 
- 		n = sn2_ptc_deadlock_recovery_core(ptc0, data0, ptc1, data1, piows, zeroval);
--		__get_cpu_var(ptcstats).deadlocks2 += n;
-+		__this_cpu_add(ptcstats.deadlocks2, n);
- 	}
- 
- }
-Index: linux/arch/ia64/include/asm/hw_irq.h
-===================================================================
---- linux.orig/arch/ia64/include/asm/hw_irq.h	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/include/asm/hw_irq.h	2013-08-23 09:10:22.673620044 -0500
-@@ -160,7 +160,7 @@ static inline ia64_vector __ia64_irq_to_
- static inline unsigned int
- __ia64_local_vector_to_irq (ia64_vector vec)
+ void leonsmp_ipi_interrupt(void)
  {
--	return __get_cpu_var(vector_irq)[vec];
-+	return __this_cpu_read(vector_irq[vec]);
+-	struct leon_ipi_work *work = &__get_cpu_var(leon_ipi_work);
++	struct leon_ipi_work *work = this_cpu_ptr(&leon_ipi_work);
+ 
+ 	if (work->single) {
+ 		work->single = 0;
+Index: linux/arch/sparc/kernel/nmi.c
+===================================================================
+--- linux.orig/arch/sparc/kernel/nmi.c	2013-08-22 14:34:54.000000000 -0500
++++ linux/arch/sparc/kernel/nmi.c	2013-08-22 14:37:15.942964723 -0500
+@@ -111,20 +111,20 @@ notrace __kprobes void perfctr_irq(int i
+ 		pcr_ops->write_pcr(0, pcr_ops->pcr_nmi_disable);
+ 
+ 	sum = local_cpu_data().irq0_irqs;
+-	if (__get_cpu_var(nmi_touch)) {
+-		__get_cpu_var(nmi_touch) = 0;
++	if (__this_cpu_read(nmi_touch)) {
++		__this_cpu_write(nmi_touch, 0);
+ 		touched = 1;
+ 	}
+-	if (!touched && __get_cpu_var(last_irq_sum) == sum) {
++	if (!touched && __this_cpu_read(last_irq_sum) == sum) {
+ 		__this_cpu_inc(alert_counter);
+ 		if (__this_cpu_read(alert_counter) == 30 * nmi_hz)
+ 			die_nmi("BUG: NMI Watchdog detected LOCKUP",
+ 				regs, panic_on_timeout);
+ 	} else {
+-		__get_cpu_var(last_irq_sum) = sum;
++		__this_cpu_write(last_irq_sum, sum);
+ 		__this_cpu_write(alert_counter, 0);
+ 	}
+-	if (__get_cpu_var(wd_enabled)) {
++	if (__this_cpu_read(wd_enabled)) {
+ 		pcr_ops->write_pic(0, pcr_ops->nmi_picl_value(nmi_hz));
+ 		pcr_ops->write_pcr(0, pcr_ops->pcr_nmi_enable);
+ 	}
+@@ -166,7 +166,7 @@ static void report_broken_nmi(int cpu, i
+ void stop_nmi_watchdog(void *unused)
+ {
+ 	pcr_ops->write_pcr(0, pcr_ops->pcr_nmi_disable);
+-	__get_cpu_var(wd_enabled) = 0;
++	__this_cpu_write(wd_enabled, 0);
+ 	atomic_dec(&nmi_active);
  }
- #endif
  
-Index: linux/arch/ia64/include/asm/sn/nodepda.h
+@@ -219,7 +219,7 @@ error:
+ 
+ void start_nmi_watchdog(void *unused)
+ {
+-	__get_cpu_var(wd_enabled) = 1;
++	__this_cpu_write(wd_enabled, 1);
+ 	atomic_inc(&nmi_active);
+ 
+ 	pcr_ops->write_pcr(0, pcr_ops->pcr_nmi_disable);
+@@ -230,7 +230,7 @@ void start_nmi_watchdog(void *unused)
+ 
+ static void nmi_adjust_hz_one(void *unused)
+ {
+-	if (!__get_cpu_var(wd_enabled))
++	if (!__this_cpu_read(wd_enabled))
+ 		return;
+ 
+ 	pcr_ops->write_pcr(0, pcr_ops->pcr_nmi_disable);
+Index: linux/arch/sparc/kernel/pci_sun4v.c
 ===================================================================
---- linux.orig/arch/ia64/include/asm/sn/nodepda.h	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/include/asm/sn/nodepda.h	2013-08-23 09:10:22.673620044 -0500
-@@ -70,7 +70,7 @@ typedef struct nodepda_s nodepda_t;
+--- linux.orig/arch/sparc/kernel/pci_sun4v.c	2013-08-22 14:34:54.000000000 -0500
++++ linux/arch/sparc/kernel/pci_sun4v.c	2013-08-22 14:37:15.942964723 -0500
+@@ -48,7 +48,7 @@ static int iommu_batch_initialized;
+ /* Interrupts must be disabled.  */
+ static inline void iommu_batch_start(struct device *dev, unsigned long prot, unsigned long entry)
+ {
+-	struct iommu_batch *p = &__get_cpu_var(iommu_batch);
++	struct iommu_batch *p = this_cpu_ptr(&iommu_batch);
+ 
+ 	p->dev		= dev;
+ 	p->prot		= prot;
+@@ -94,7 +94,7 @@ static long iommu_batch_flush(struct iom
+ 
+ static inline void iommu_batch_new_entry(unsigned long entry)
+ {
+-	struct iommu_batch *p = &__get_cpu_var(iommu_batch);
++	struct iommu_batch *p = this_cpu_ptr(&iommu_batch);
+ 
+ 	if (p->entry + p->npages == entry)
+ 		return;
+@@ -106,7 +106,7 @@ static inline void iommu_batch_new_entry
+ /* Interrupts must be disabled.  */
+ static inline long iommu_batch_add(u64 phys_page)
+ {
+-	struct iommu_batch *p = &__get_cpu_var(iommu_batch);
++	struct iommu_batch *p = this_cpu_ptr(&iommu_batch);
+ 
+ 	BUG_ON(p->npages >= PGLIST_NENTS);
+ 
+@@ -120,7 +120,7 @@ static inline long iommu_batch_add(u64 p
+ /* Interrupts must be disabled.  */
+ static inline long iommu_batch_end(void)
+ {
+-	struct iommu_batch *p = &__get_cpu_var(iommu_batch);
++	struct iommu_batch *p = this_cpu_ptr(&iommu_batch);
+ 
+ 	BUG_ON(p->npages >= PGLIST_NENTS);
+ 
+Index: linux/arch/sparc/kernel/perf_event.c
+===================================================================
+--- linux.orig/arch/sparc/kernel/perf_event.c	2013-08-22 14:34:54.000000000 -0500
++++ linux/arch/sparc/kernel/perf_event.c	2013-08-22 14:37:15.946964681 -0500
+@@ -1013,7 +1013,7 @@ static void update_pcrs_for_enable(struc
+ 
+ static void sparc_pmu_enable(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int i;
+ 
+ 	if (cpuc->enabled)
+@@ -1031,7 +1031,7 @@ static void sparc_pmu_enable(struct pmu
+ 
+ static void sparc_pmu_disable(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int i;
+ 
+ 	if (!cpuc->enabled)
+@@ -1065,7 +1065,7 @@ static int active_event_index(struct cpu
+ 
+ static void sparc_pmu_start(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int idx = active_event_index(cpuc, event);
+ 
+ 	if (flags & PERF_EF_RELOAD) {
+@@ -1080,7 +1080,7 @@ static void sparc_pmu_start(struct perf_
+ 
+ static void sparc_pmu_stop(struct perf_event *event, int flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int idx = active_event_index(cpuc, event);
+ 
+ 	if (!(event->hw.state & PERF_HES_STOPPED)) {
+@@ -1096,7 +1096,7 @@ static void sparc_pmu_stop(struct perf_e
+ 
+ static void sparc_pmu_del(struct perf_event *event, int _flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	unsigned long flags;
+ 	int i;
+ 
+@@ -1133,7 +1133,7 @@ static void sparc_pmu_del(struct perf_ev
+ 
+ static void sparc_pmu_read(struct perf_event *event)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int idx = active_event_index(cpuc, event);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+@@ -1145,7 +1145,7 @@ static DEFINE_MUTEX(pmc_grab_mutex);
+ 
+ static void perf_stop_nmi_watchdog(void *unused)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int i;
+ 
+ 	stop_nmi_watchdog(NULL);
+@@ -1356,7 +1356,7 @@ static int collect_events(struct perf_ev
+ 
+ static int sparc_pmu_add(struct perf_event *event, int ef_flags)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int n0, ret = -EAGAIN;
+ 	unsigned long flags;
+ 
+@@ -1498,7 +1498,7 @@ static int sparc_pmu_event_init(struct p
   */
+ static void sparc_pmu_start_txn(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
  
- DECLARE_PER_CPU(struct nodepda_s *, __sn_nodepda);
--#define sn_nodepda		(__get_cpu_var(__sn_nodepda))
-+#define sn_nodepda		__this_cpu_read(__sn_nodepda)
- #define	NODEPDA(cnodeid)	(sn_nodepda->pernode_pdaindr[cnodeid])
- 
- /*
-Index: linux/arch/ia64/include/asm/switch_to.h
-===================================================================
---- linux.orig/arch/ia64/include/asm/switch_to.h	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/include/asm/switch_to.h	2013-08-23 09:10:22.673620044 -0500
-@@ -32,7 +32,7 @@ extern void ia64_load_extra (struct task
- 
- #ifdef CONFIG_PERFMON
-   DECLARE_PER_CPU(unsigned long, pfm_syst_info);
--# define PERFMON_IS_SYSWIDE() (__get_cpu_var(pfm_syst_info) & 0x1)
-+# define PERFMON_IS_SYSWIDE() (__this_cpu_read(pfm_syst_info) & 0x1)
- #else
- # define PERFMON_IS_SYSWIDE() (0)
- #endif
-Index: linux/arch/ia64/include/asm/sn/arch.h
-===================================================================
---- linux.orig/arch/ia64/include/asm/sn/arch.h	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/include/asm/sn/arch.h	2013-08-23 09:10:22.673620044 -0500
-@@ -57,7 +57,7 @@ struct sn_hub_info_s {
- 	u16 nasid_bitmask;
- };
- DECLARE_PER_CPU(struct sn_hub_info_s, __sn_hub_info);
--#define sn_hub_info 	(&__get_cpu_var(__sn_hub_info))
-+#define sn_hub_info 	this_cpu_ptr(&__sn_hub_info)
- #define is_shub2()	(sn_hub_info->shub2)
- #define is_shub1()	(sn_hub_info->shub2 == 0)
- 
-@@ -72,7 +72,7 @@ DECLARE_PER_CPU(struct sn_hub_info_s, __
-  * cpu.
+ 	perf_pmu_disable(pmu);
+ 	cpuhw->group_flag |= PERF_EVENT_TXN;
+@@ -1511,7 +1511,7 @@ static void sparc_pmu_start_txn(struct p
   */
- DECLARE_PER_CPU(short, __sn_cnodeid_to_nasid[MAX_COMPACT_NODES]);
--#define sn_cnodeid_to_nasid	(&__get_cpu_var(__sn_cnodeid_to_nasid[0]))
-+#define sn_cnodeid_to_nasid	this_cpu_ptr(&__sn_cnodeid_to_nasid[0])
+ static void sparc_pmu_cancel_txn(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
  
+ 	cpuhw->group_flag &= ~PERF_EVENT_TXN;
+ 	perf_pmu_enable(pmu);
+@@ -1524,13 +1524,13 @@ static void sparc_pmu_cancel_txn(struct
+  */
+ static int sparc_pmu_commit_txn(struct pmu *pmu)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	int n;
  
- extern u8 sn_partition_id;
-Index: linux/arch/ia64/include/asm/uv/uv_hub.h
+ 	if (!sparc_pmu)
+ 		return -EINVAL;
+ 
+-	cpuc = &__get_cpu_var(cpu_hw_events);
++	cpuc = this_cpu_ptr(&cpu_hw_events);
+ 	n = cpuc->n_events;
+ 	if (check_excludes(cpuc->event, 0, n))
+ 		return -EINVAL;
+@@ -1601,7 +1601,7 @@ static int __kprobes perf_event_nmi_hand
+ 
+ 	regs = args->regs;
+ 
+-	cpuc = &__get_cpu_var(cpu_hw_events);
++	cpuc = this_cpu_ptr(&cpu_hw_events);
+ 
+ 	/* If the PMU has the TOE IRQ enable bits, we need to do a
+ 	 * dummy write to the %pcr to clear the overflow bits and thus
+Index: linux/arch/sparc/kernel/sun4d_smp.c
 ===================================================================
---- linux.orig/arch/ia64/include/asm/uv/uv_hub.h	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/include/asm/uv/uv_hub.h	2013-08-23 09:10:22.673620044 -0500
-@@ -108,7 +108,7 @@ struct uv_hub_info_s {
- 	unsigned char	n_val;
- };
- DECLARE_PER_CPU(struct uv_hub_info_s, __uv_hub_info);
--#define uv_hub_info 		(&__get_cpu_var(__uv_hub_info))
-+#define uv_hub_info 		this_cpu_ptr(&__uv_hub_info)
- #define uv_cpu_hub_info(cpu)	(&per_cpu(__uv_hub_info, cpu))
+--- linux.orig/arch/sparc/kernel/sun4d_smp.c	2013-08-22 14:34:54.000000000 -0500
++++ linux/arch/sparc/kernel/sun4d_smp.c	2013-08-22 14:37:15.946964681 -0500
+@@ -204,7 +204,7 @@ static void __init smp4d_ipi_init(void)
  
- /*
-Index: linux/arch/ia64/kernel/traps.c
+ void sun4d_ipi_interrupt(void)
+ {
+-	struct sun4d_ipi_work *work = &__get_cpu_var(sun4d_ipi_work);
++	struct sun4d_ipi_work *work = this_cpu_ptr(&sun4d_ipi_work);
+ 
+ 	if (work->single) {
+ 		work->single = 0;
+Index: linux/arch/sparc/kernel/time_64.c
 ===================================================================
---- linux.orig/arch/ia64/kernel/traps.c	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/kernel/traps.c	2013-08-23 09:10:22.673620044 -0500
-@@ -299,7 +299,7 @@ handle_fpu_swa (int fp_fault, struct pt_
+--- linux.orig/arch/sparc/kernel/time_64.c	2013-08-22 14:34:54.000000000 -0500
++++ linux/arch/sparc/kernel/time_64.c	2013-08-22 14:37:15.946964681 -0500
+@@ -766,7 +766,7 @@ void setup_sparc64_timer(void)
+ 			     : /* no outputs */
+ 			     : "r" (pstate));
  
- 	if (!(current->thread.flags & IA64_THREAD_FPEMU_NOPRINT))  {
- 		unsigned long count, current_jiffies = jiffies;
--		struct fpu_swa_msg *cp = &__get_cpu_var(cpulast);
-+		struct fpu_swa_msg *cp = this_cpu_ptr(&cpulast);
+-	sevt = &__get_cpu_var(sparc64_events);
++	sevt = this_cpu_ptr(&sparc64_events);
  
- 		if (unlikely(current_jiffies > cp->time))
- 			cp->count = 0;
-Index: linux/arch/ia64/xen/time.c
+ 	memcpy(sevt, &sparc64_clockevent, sizeof(*sevt));
+ 	sevt->cpumask = cpumask_of(smp_processor_id());
+Index: linux/arch/sparc/mm/tlb.c
 ===================================================================
---- linux.orig/arch/ia64/xen/time.c	2013-08-23 09:10:22.673620044 -0500
-+++ linux/arch/ia64/xen/time.c	2013-08-23 09:10:22.673620044 -0500
-@@ -68,7 +68,7 @@ static void get_runstate_snapshot(struct
+--- linux.orig/arch/sparc/mm/tlb.c	2013-08-22 14:34:54.000000000 -0500
++++ linux/arch/sparc/mm/tlb.c	2013-08-22 14:37:15.946964681 -0500
+@@ -53,14 +53,14 @@ out:
  
- 	BUG_ON(preemptible());
+ void arch_enter_lazy_mmu_mode(void)
+ {
+-	struct tlb_batch *tb = &__get_cpu_var(tlb_batch);
++	struct tlb_batch *tb = this_cpu_ptr(&tlb_batch);
  
--	state = &__get_cpu_var(xen_runstate);
-+	state = this_cpu_ptr(&xen_runstate);
+ 	tb->active = 1;
+ }
  
- 	/*
- 	 * The runstate info is always updated by the hypervisor on
+ void arch_leave_lazy_mmu_mode(void)
+ {
+-	struct tlb_batch *tb = &__get_cpu_var(tlb_batch);
++	struct tlb_batch *tb = this_cpu_ptr(&tlb_batch);
+ 
+ 	if (tb->tlb_nr)
+ 		flush_tlb_pending();
 
