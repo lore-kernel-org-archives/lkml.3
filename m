@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab3HZLtN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 07:49:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34931 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756658Ab3HZLtL (ORCPT
+	id S1755924Ab3HZL5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 07:57:10 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:33432 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab3HZL5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 07:49:11 -0400
-Date: Mon, 26 Aug 2013 13:46:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Turner <pjt@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>, Lei Wen <leiwen@marvell.com>,
-        Rik van Riel <riel@surriel.com>, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 04/10] sched, fair: Shrink sg_lb_stats and play memset
- games
-Message-ID: <20130826114643.GJ31370@twins.programming.kicks-ass.net>
-References: <20130819160058.539049611@infradead.org>
- <20130819160425.310264395@infradead.org>
- <CAPM31R+xvAeD6401cZKNOzS4yZhcTLL-4kWbDVpYsamnMixMKg@mail.gmail.com>
+	Mon, 26 Aug 2013 07:57:08 -0400
+Message-ID: <521B428F.6020801@linux.vnet.ibm.com>
+Date: Mon, 26 Aug 2013 13:57:03 +0200
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM31R+xvAeD6401cZKNOzS4yZhcTLL-4kWbDVpYsamnMixMKg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Frantisek Hrbata <fhrbata@redhat.com>
+CC: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
+        Christophe Guillon <christophe.guillon@st.com>, rusty@rustcorp.com.au,
+        linux-arch@vger.kernel.org, arnd@arndb.de, mgahagan@redhat.com,
+        agospoda@redhat.com
+Subject: Re: [RFC PATCH 0/4] add support for gcov format introduced in gcc
+ 4.7
+References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com> <52177AD7.1030709@linux.vnet.ibm.com> <20130823161532.GA2336@localhost.localdomain>
+In-Reply-To: <20130823161532.GA2336@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082611-8372-0000-0000-000006FC6CA5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 24, 2013 at 03:15:57AM -0700, Paul Turner wrote:
-> > +static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
-> > +{
-> > +       /*
-> > +        * struct sd_lb_stats {
-> > +        *         struct sched_group *       busiest;             //     0  8
-> > +        *         struct sched_group *       this;                //     8  8
-> > +        *         long unsigned int          total_load;          //    16  8
-> > +        *         long unsigned int          total_pwr;           //    24  8
-> > +        *         long unsigned int          avg_load;            //    32  8
-> > +        *         struct sg_lb_stats {
-> > +        *                 long unsigned int  avg_load;            //    40  8
-> > +        *                 long unsigned int  group_load;          //    48  8
-> > +        *                 ...
-> > +        *         } busiest_stat;                                 //    40 56
-> > +        *         struct sg_lb_stats         this_stat;           //    96 56
-> > +        *
-> > +        *         // size: 152, cachelines: 3, members: 7
-> > +        *         // last cacheline: 24 bytes
-> > +        * };
-> > +        *
-> > +        * Skimp on the clearing to avoid duplicate work. We can avoid clearing
-> > +        * this_stat because update_sg_lb_stats() does a full clear/assignment.
-> > +        * We must however clear busiest_stat::avg_load because
-> > +        * update_sd_pick_busiest() reads this before assignment.
-> > +        */
+On 23.08.2013 18:15, Frantisek Hrbata wrote:
+> On Fri, Aug 23, 2013 at 05:08:07PM +0200, Peter Oberparleiter wrote:
+>> Most of your code looks very familiar. There's one feature missing though
+>> that Christophe brought up as a requirement: the ability for gcov-kernel
+>> to cope with kernel modules being compiled with GCC versions implementing
+>> a different gcov format (apparently this can happen in some embedded
+>> setups).
 > 
-> Does gcc seriously not get this right if we just write:
->   sds->busiest = NULL;
->   sds->local = NULL;
->   ....
+> Here follows quote from the gcc/gcov-io.h file
 > 
-> etc.?
+> <quote>
+> Coverage information is held in two files.  A notes file, which is
+> generated by the compiler, and a data file, which is generated by
+> the program under test.  Both files use a similar structure.  We do
+> not attempt to make these files backwards compatible with previous
+> versions, as you only need coverage information when developing a
+> program.  We do hold version information, so that mismatches can be
+> detected, and we use a format that allows tools to skip information
+> they do not understand or are not interested in.
+> </quote>
+> 
+> Also from my experience, I would expect that the gcov will be used during
+> development, meaning re-compilation isn't a big problem here. I for sure can be
+> missing something and I'm by no means saying it wouldn't be useful feature. Just
+> that it would complite things a little bit.
 
-There's a thought ;-) How about something like this?
+Here's the info I got from Christophe when we last discussed this feature:
+"The main issue is compilation of modules with a different
+compiler from the kernel. It is a quite common situation in embedded
+Linuxes, as modules can be published far after the core kernel, thus
+for our use it is a good feature."
 
- sds = (struct sd_lb_stats){
- 	.busiest = NULL,
-	.local = NULL,
+I'd say that if we can support that setup with manageable extra effort,
+it would be worth it.
 
-	.busiest_stat = {
-		.avg_load = 0,
-	},
- };
+>> Christophe proposed run-time version checking and a file-ops type function
+>> table which is chosen based on info->version. I found this approach
+>> somewhat intrusive and this would also not have covered the case where a
+>> new GCC versions was used to compile kernel modules for which the base
+>> kernel has no support. I tried to solve this requirement by combining
+>> two changes:
+>>
+>> 1) make the gcov-format generated by gcov-kernel compile-time configurable
+>> 2) separate the gcov-format specific code into a loadable kernel module
+> 
+> So if I understand it correctly you would separate the input
+> format(gcov_info) from the output(gcda files). Meaning no matter which gcc
+> compiled the module you can select the gcda format. And even if the kernel does
+> not know the new format you can simply compile a module supporting it, instead
+> of the whole kernel.
 
-C99 named initializers should ignore all unmentioned fields, and I think
-we don't actually touch any of the other fields unless something is set.
+Actually my proposal is far simpler:
+- the gcov-kernel module supports one GCC format (both gcov_info as well as .gcda)
+- the module can be recompiled with different format support
+- it will create correct .gcda files for all object files compiled with a
+  compatible compiler
+- for other object files, either the resulting .gcda files are unusable or no
+  .gcda file would be registered at all (based on info->version differences),
+  though that would raise the question on how to handle older GCC versions
+  into which the new gcov format code was integrated
+
+> Can you please give me an example why this is needed? As I wrote I'm not that
+> familiar with gcov and I'm probably missing something, but I do not understand
+> why this(handling several versions at runtime, not only the one used by gcc
+> during compilation) is useful(note my comment above about the gcov used during
+> development).
+
+See note above from Christophe: kernel and module are compiled by different parties
+at different times using different GCC versions, and apparently the production kernel
+has gcov support enabled or they are providing a separate test kernel for that.
+
+
+
+Regards,
+  Peter
+
+-- 
+Peter Oberparleiter
+Linux on System z Development - IBM Germany
 
