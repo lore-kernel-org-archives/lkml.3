@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab3HZTDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 15:03:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4987 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752393Ab3HZTDI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 15:03:08 -0400
-X-Authority-Analysis: v=2.0 cv=DqnUCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=4YNYSHFQjk8A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=jyE81Idm5WYA:10 a=20KFwNOVAAAA:8 a=8Q5PjHOKA_jmC8kFctUA:9 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 26 Aug 2013 15:03:04 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: suspicious RCU usage (perf)
-Message-ID: <20130826150304.090a1025@gandalf.local.home>
-In-Reply-To: <20130826182907.GB25202@redhat.com>
-References: <20130826145838.GA8377@redhat.com>
-	<20130826162928.GQ3871@linux.vnet.ibm.com>
-	<20130826133041.3d750b1b@gandalf.local.home>
-	<20130826175012.GA25202@redhat.com>
-	<20130826141814.54dcaa89@gandalf.local.home>
-	<20130826182907.GB25202@redhat.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752113Ab3HZTIg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 15:08:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31913 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751725Ab3HZTIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 15:08:35 -0400
+Date: Mon, 26 Aug 2013 15:08:22 -0400
+From: Dave Jones <davej@redhat.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: unused swap offset / bad page map.
+Message-ID: <20130826190757.GB27768@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <20130807153030.GA25515@redhat.com>
+ <CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com>
+ <20130819231836.GD14369@redhat.com>
+ <CAJd=RBA-UZmSTxNX63Vni+UPZBHwP4tvzE_qp1ZaHBqcNG7Fcw@mail.gmail.com>
+ <20130821204901.GA19802@redhat.com>
+ <CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com>
+ <20130823032127.GA5098@redhat.com>
+ <CAJd=RBArkh3sKVoOJUZBLngXtJubjx4-a3G6s7Tn0N=Pr1gU4g@mail.gmail.com>
+ <20130823035344.GB5098@redhat.com>
+ <CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Aug 2013 14:29:07 -0400
-Dave Jones <davej@redhat.com> wrote:
+On Mon, Aug 26, 2013 at 11:45:53AM +0800, Hillf Danton wrote:
+ > On Fri, Aug 23, 2013 at 11:53 AM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > It actually seems worse, seems I can trigger it even easier now, as if
+ > > there's a leak.
+ > >
+ > Can you please try the new fix for TLB flush?
+ > 
+ > commit  2b047252d087be7f2ba
+ > Fix TLB gather virtual address range invalidation corner cases
 
-> On Mon, Aug 26, 2013 at 02:18:14PM -0400, Steven Rostedt wrote:
->  > On Mon, 26 Aug 2013 13:50:12 -0400
->  > Dave Jones <davej@redhat.com> wrote:
->  > > 
->  > > This was triggered as a regular user fwiw.
->  > > I had not been running perf, or any other tracing. It was just left
->  > > fuzzing over the weekend with no interaction at all.
->  > 
->  > So you are telling me that ftrace was enabled by a regular user? If so,
->  > that's a huge issue.
->  
-> quite.
-> 
->  > So my question to you. If you were not running perf or any other
->  > tracing, and this is all just non-root user. How the hell did perf
->  > function tracing get started on your box????
-> 
-> What mechanisms are available that would trigger it being enabled ?
-> 
-> Is there some path through sys_perf_open_event that might be
-> missing a capability check perhaps ?
-> 
+No luck.
 
-That's a question for Ingo, Peter or Jiri.
+[ 4588.541886] swap_free: Unused swap offset entry 00002d15
+[ 4588.541952] BUG: Bad page map in process trinity-kid12  pte:005a2a80 pmd:22c01f067
+[ 4588.541979] addr:00007f0e95fa8000 vm_flags:00100073 anon_vma:ffff880217665550 mapping:          (null) index:1a42
+[ 4588.542011] Modules linked in: snd_seq_dummy fuse hidp bnep scsi_transport_iscsi rfcomm ipt_ULOG can_bcm can_raw nfnetlink nfc caif_socket caif af_802154 phonet af_rxrpc bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 xfs libcrc32c snd_hda_codec_realtek snd_hda_intel e1000e snd_hda_codec snd_hwdep ptp snd_seq snd_seq_device snd_pcm usb_debug pps_core pcspkr snd_page_alloc snd_timer snd soundcore
+[ 4588.542245] CPU: 2 PID: 25390 Comm: trinity-kid12 Not tainted 3.11.0-rc7+ #13 
+[ 4588.542321]  0000000000000000 ffff88021ba33c98 ffffffff816f9ddf 00007f0e95fa8000
+[ 4588.542354]  ffff88021ba33ce0 ffffffff81177047 00000000005a2a80 0000000000001a42
+[ 4588.542386]  00007f0e96000000 ffff88022c01fd40 00000000005a2a80 ffff88021ba33e00
+[ 4588.542418] Call Trace:
+[ 4588.542435]  [<ffffffff816f9ddf>] dump_stack+0x54/0x74
+[ 4588.542457]  [<ffffffff81177047>] print_bad_pte+0x187/0x220
+[ 4588.542478]  [<ffffffff81178874>] unmap_single_vma+0x524/0x850
+[ 4588.542500]  [<ffffffff81179ac9>] unmap_vmas+0x49/0x90
+[ 4588.542521]  [<ffffffff811822c5>] exit_mmap+0xc5/0x170
+[ 4588.542542]  [<ffffffff8104ffb7>] mmput+0x77/0x100
+[ 4588.542562]  [<ffffffff8105465d>] do_exit+0x28d/0xcd0
+[ 4588.542583]  [<ffffffff810c0085>] ? trace_hardirqs_on_caller+0x115/0x1e0
+[ 4588.542607]  [<ffffffff810c015d>] ? trace_hardirqs_on+0xd/0x10
+[ 4588.542629]  [<ffffffff8105643c>] do_group_exit+0x4c/0xc0
+[ 4588.543534]  [<ffffffff810564c4>] SyS_exit_group+0x14/0x20
+[ 4588.544438]  [<ffffffff8170d554>] tracesys+0xdd/0xe2
 
--- Steve
+I can reproduce this pretty quickly by driving the system into swapping using
+a few instances of 'trinity -C64' (this creates 64 threads) 
+
+I'm not sure how far back this bug goes, so I'll try some older kernels
+and see if I can bisect it, because we don't seem to be getting closer
+to figuring out what's actually happening..
+
+	Dave
+
