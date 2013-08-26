@@ -1,131 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab3HZPOD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 11:14:03 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:39464 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757013Ab3HZPLl (ORCPT
+	id S1757309Ab3HZPOP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 11:14:15 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:38776 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305Ab3HZPON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 11:11:41 -0400
-From: Iker Pedrosa <ikerpedrosam@gmail.com>
-To: pavel@ucw.cz
-Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com,
-        justinmattock@gmail.com, harsh1kumar@gmail.com,
-        dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 14/24] Staging: winbond: reg: fixed some lines over 80 characters
-Date: Mon, 26 Aug 2013 17:10:13 +0200
-Message-Id: <1377529823-5116-15-git-send-email-ikerpedrosam@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1377529823-5116-1-git-send-email-ikerpedrosam@gmail.com>
-References: <1377529823-5116-1-git-send-email-ikerpedrosam@gmail.com>
+	Mon, 26 Aug 2013 11:14:13 -0400
+Message-ID: <1377530045.8828.120.camel@edumazet-glaptop>
+Subject: Re: [PATCH] Fix the race between the fget() and close()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 26 Aug 2013 08:14:05 -0700
+In-Reply-To: <1377533569.26153.3.camel@cliu38-desktop-build>
+References: <1377533569.26153.3.camel@cliu38-desktop-build>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sixth of the patches that fixes the lines over 80 characters in reg.c
+On Tue, 2013-08-27 at 00:12 +0800, Chuansheng Liu wrote:
+> When one thread is calling sys_ioctl(), and another thread is calling
+> sys_close(), current code has protected most cases.
+> 
+> But for the below case, it will cause issue:
+> T1                                T2                             T3
+> sys_close(oldfile)                sys_open(newfile)              sys_ioctl(oldfile)
+>  -> __close_fd()
+>    lock file_lock
+>     assign NULL file
+>     put fd to be unused
+>    unlock file_lock
+> 				   get new fd is same as old
+> 				   assign newfile to same fd
+> 								   fget_flight()
+>                                                                     get the newfile!!!
+>     decrease file->f_count
+>      file->f_count == 0
+>       --> try to release file
+> 
+> The race is when T1 try to close one oldFD, T3 is trying to ioctl the oldFD,
+> if currently the new T2 is trying to open a newfile, it maybe get the newFD is
+> same as oldFD.
+> 
+> And normal case T3 should get NULL file pointer due to released by T1, but T3
+> get the newfile pointer, and continue the ioctl accessing.
+> 
+> It maybe causes unexpectable error, we hit one system panic at do_vfs_ioctl().
+> 
 
-Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
----
- drivers/staging/winbond/reg.c | 28 ++++++++++++++++++----------
- 1 file changed, 18 insertions(+), 10 deletions(-)
+Not clear if the bug is not elsewhere.
 
-diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
-index b05f9bd..50ca7dd 100644
---- a/drivers/staging/winbond/reg.c
-+++ b/drivers/staging/winbond/reg.c
-@@ -1738,7 +1738,8 @@ static void set_tx_power_per_channel_wb242(struct hw_data *pHwData,
-  *   None.
-  * ===========================================================================
-  */
--void RFSynthesizer_SwitchingChannel(struct hw_data *pHwData,  struct chan_info Channel)
-+void RFSynthesizer_SwitchingChannel(struct hw_data *pHwData,
-+					   struct chan_info Channel)
- {
- 	struct wb35_reg *reg = &pHwData->reg;
- 	u32	pltmp[16]; /* The 16 is the maximum capability of hardware */
-@@ -1891,9 +1892,9 @@ void RFSynthesizer_SwitchingChannel(struct hw_data *pHwData,  struct chan_info C
- 		/* BB: select 5 GHz */
- 		reg->BB50 &= ~(BIT(11) | BIT(12));
- 		if (Channel.ChanNo <= 64)
--			reg->BB50 |= BIT(12);				/* 10-5.25GHz */
-+			reg->BB50 |= BIT(12);			/* 10-5.25GHz */
- 		else if ((Channel.ChanNo >= 100) && (Channel.ChanNo <= 124))
--			reg->BB50 |= BIT(11);				/* 01-5.48GHz */
-+			reg->BB50 |= BIT(11);			/* 01-5.48GHz */
- 		else if ((Channel.ChanNo >= 128) && (Channel.ChanNo <= 161))
- 			reg->BB50 |= (BIT(12) | BIT(11));	/* 11-5.775GHz */
- 		else	/* Chan 184 ~ 196 will use bit[12-11] = 10 in version sh-src-1.2.25 */
-@@ -1968,7 +1969,8 @@ u8 RFSynthesizer_SetMaxim2828_24Power(struct hw_data *pHwData, u8 index)
- 	u32	PowerData;
- 	if (index > 1)
- 		index = 1;
--	PowerData = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(max2828_power_data_24[index], 18);
-+	PowerData = (1 << 31) | (0 << 30) | (18 << 24)
-+			    | BitReverse(max2828_power_data_24[index], 18);
- 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
- 	return index;
- }
-@@ -1978,7 +1980,8 @@ u8 RFSynthesizer_SetMaxim2828_50Power(struct hw_data *pHwData, u8 index)
- 	u32	PowerData;
- 	if (index > 1)
- 		index = 1;
--	PowerData = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(max2828_power_data_50[index], 18);
-+	PowerData = (1 << 31) | (0 << 30) | (18 << 24)
-+			    | BitReverse(max2828_power_data_50[index], 18);
- 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
- 	return index;
- }
-@@ -1988,7 +1991,8 @@ u8 RFSynthesizer_SetMaxim2827_24Power(struct hw_data *pHwData, u8 index)
- 	u32	PowerData;
- 	if (index > 1)
- 		index = 1;
--	PowerData = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(max2827_power_data_24[index], 18);
-+	PowerData = (1 << 31) | (0 << 30) | (18 << 24)
-+			    | BitReverse(max2827_power_data_24[index], 18);
- 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
- 	return index;
- }
-@@ -1998,7 +2002,8 @@ u8 RFSynthesizer_SetMaxim2827_50Power(struct hw_data *pHwData, u8 index)
- 	u32	PowerData;
- 	if (index > 1)
- 		index = 1;
--	PowerData = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(max2827_power_data_50[index], 18);
-+	PowerData = (1 << 31) | (0 << 30) | (18 << 24)
-+			    | BitReverse(max2827_power_data_50[index], 18);
- 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
- 	return index;
- }
-@@ -2008,7 +2013,8 @@ u8 RFSynthesizer_SetMaxim2825Power(struct hw_data *pHwData, u8 index)
- 	u32	PowerData;
- 	if (index > 1)
- 		index = 1;
--	PowerData = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(max2825_power_data_24[index], 18);
-+	PowerData = (1 << 31) | (0 << 30) | (18 << 24)
-+			    | BitReverse(max2825_power_data_24[index], 18);
- 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
- 	return index;
- }
-@@ -2026,7 +2032,8 @@ u8 RFSynthesizer_SetAiroha2230Power(struct hw_data *pHwData, u8 index)
- 	if (i == count)
- 		i--;
- 
--	PowerData = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse(al2230_txvga_data[i][0], 20);
-+	PowerData = (1 << 31) | (0 << 30) | (20 << 24)
-+			    | BitReverse(al2230_txvga_data[i][0], 20);
- 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
- 	return i;
- }
-@@ -2043,7 +2050,8 @@ u8 RFSynthesizer_SetAiroha7230Power(struct hw_data *pHwData, u8 index)
- 	}
- 	if (i == count)
- 		i--;
--	PowerData = (1 << 31) | (0 << 30) | (24 << 24) | (al7230_txvga_data[i][0] & 0xffffff);
-+	PowerData = (1 << 31) | (0 << 30) | (24 << 24)
-+			    | (al7230_txvga_data[i][0] & 0xffffff);
- 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
- 	return i;
- }
--- 
-1.8.1.2
+What panic did you have exactly ?
+
+> Here we can fix it that putting "put_unused_fd()" after filp_close(),
+> it can avoid this case.
+> 
+
+Three threads doing this kind of stuff cannot expect T3 gets the old or
+new file anyway. Its totally unspecified.
+
+
 
