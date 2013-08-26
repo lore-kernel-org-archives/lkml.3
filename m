@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab3HZW2r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:28:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26717 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734Ab3HZW2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:28:45 -0400
-Date: Mon, 26 Aug 2013 18:28:33 -0400
-From: Dave Jones <davej@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Hillf Danton <dhillf@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: unused swap offset / bad page map.
-Message-ID: <20130826222833.GA24320@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Hugh Dickins <hughd@google.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Cyrill Gorcunov <gorcunov@gmail.com>,
-	Hillf Danton <dhillf@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20130821204901.GA19802@redhat.com>
- <CAJd=RBBNCf5_V-nHjK0gOqS4OLMszgB7Rg_WMf4DvL-De+ZdHA@mail.gmail.com>
- <20130823032127.GA5098@redhat.com>
- <CAJd=RBArkh3sKVoOJUZBLngXtJubjx4-a3G6s7Tn0N=Pr1gU4g@mail.gmail.com>
- <20130823035344.GB5098@redhat.com>
- <CAJd=RBBtY-nJfo9nzG5gtgcvB2bz+sxpK5kX33o1sLeLhvEU1Q@mail.gmail.com>
- <20130826190757.GB27768@redhat.com>
- <CA+55aFw_bhMOP73owFHRFHZDAYEdWgF9j-502Aq9tZe3tEfmwg@mail.gmail.com>
- <CA+55aFwQbJbR3xij1+iGbvj3EQggF9NLGAfDbmA54FkKz9xfew@mail.gmail.com>
- <alpine.LNX.2.00.1308261448490.4982@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1308261448490.4982@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752456Ab3HZWcR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:32:17 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:55747 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973Ab3HZWcQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 18:32:16 -0400
+From: Gabriel de Perthuis <g2p.code@gmail.com>
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>
+Cc: Gabriel de Perthuis <g2p.code@gmail.com>
+Subject: [PATCH] bcache: register_quiet should still report errors
+Date: Tue, 27 Aug 2013 00:31:46 +0200
+Message-Id: <1377556306-29938-1-git-send-email-g2p.code@gmail.com>
+X-Mailer: git-send-email 1.8.4.rc0.5.g48765cc
+In-Reply-To: <521BD3C0.9070209@gmail.com>
+References: <521BD3C0.9070209@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 03:08:45PM -0700, Hugh Dickins wrote:
+register_quiet should still report all errors except
+"device already registered".
+
+Before this some potential errors would be silenced.
+
+Signed-off-by: Gabriel de Perthuis <g2p.code@gmail.com>
+---
+ drivers/md/bcache/super.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index a41c681..c3a3dc8 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1901,14 +1901,17 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 				  FMODE_READ|FMODE_WRITE|FMODE_EXCL,
+ 				  sb);
+ 	if (IS_ERR(bdev)) {
+ 		if (bdev == ERR_PTR(-EBUSY)) {
+ 			bdev = lookup_bdev(strim(path));
+-			if (!IS_ERR(bdev) && bch_is_open(bdev))
++			if (!IS_ERR(bdev) && bch_is_open(bdev)) {
++				if (attr == &ksysfs_register_quiet)
++					goto out;
+ 				err = "device already registered";
+-			else
++			} else {
+ 				err = "device busy";
++			}
+ 		}
+ 		goto err;
+ 	}
  
- > > That said, google does find "swap_free: Unused swap offset entry"
- > > reports from over the years. Most of them seem to be single-bit
- > > errors, though (ie when the entry is 00000100 or similar I'm more
- > > inclined to blame a bit error
- > 
- > Yes, historically they have usually represented either single-bit
- > errors, or corruption of page tables by other kernel data.  The
- > swap subsystem discovers it, but it's rarely an error of swap.
+ 	err = "failed to set blocksize";
+@@ -1942,12 +1945,11 @@ out:
+ 	return ret;
  
-Just to rule out bad hardware, I've seen this on two systems
-(admittedly the exact same spec, but still..)
-
- > So I don't care for Dave's suggestion much earlier in this thread,
- > that swapoff should fail with -EINVAL if there has been a bad page
- > taint: that doesn't necessarily interfere with swapoff at all.
- > 
- > And besides, swapoff is killable: yes, if counts go wrong, it
- > can cycle around endlessly, but it checks for signal_pending()
- > each time around the loop.
-
-It might be killable, but if I've done /sbin/reboot, and the
-kernel dies in sys_swapoff because of the corruption, I won't
-get a chance to kill it, because at that point the shutdown process
-has killed my shell, sshd, and just about everything else.
-It mieans a grumpy walk to the other side of the house to prod a
-reset button.  So yeah, it might not be a mergable thing, but
-at least while bisecting it's pretty much a must-have.
-
- > I just did a quick diff of 3.11-rc7/mm against 3.10, and here's
- > a line in mremap which worries me.  That set_pte_at() is operating
- > on anything that isn't pte_none(), so the pte_mksoft_dirty() looks
- > prone to corrupt a swap entry.
- > 
- > I've not tried matching up bits with Dave's reports, and just going
- > into a meeting now, but this patch looks worth a try: probably Cyrill
- > can improve it meanwhile to what he actually wants there (I'm
- > surprised anything special is needed for just moving a pte).
- > 
- > Hugh
- > 
- > --- 3.11-rc7/mm/mremap.c	2013-07-14 17:10:16.640003652 -0700
- > +++ linux/mm/mremap.c	2013-08-26 14:46:14.460027627 -0700
- > @@ -126,7 +126,7 @@ static void move_ptes(struct vm_area_str
- >  			continue;
- >  		pte = ptep_get_and_clear(mm, old_addr, old_pte);
- >  		pte = move_pte(pte, new_vma->vm_page_prot, old_addr, new_addr);
- > -		set_pte_at(mm, new_addr, new_pte, pte_mksoft_dirty(pte));
- > +		set_pte_at(mm, new_addr, new_pte, pte);
- >  	}
-
-I'll give this a shot once I'm done with the bisect.
-
-	Dave
+ err_close:
+ 	blkdev_put(bdev, FMODE_READ|FMODE_WRITE|FMODE_EXCL);
+ err:
+-	if (attr != &ksysfs_register_quiet)
+-		pr_info("error opening %s: %s", path, err);
++	pr_info("error opening %s: %s", path, err);
+ 	ret = -EINVAL;
+ 	goto out;
+ }
+ 
+ static int bcache_reboot(struct notifier_block *n, unsigned long code, void *x)
+-- 
+1.8.4.rc0.5.g48765cc
 
