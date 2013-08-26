@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab3HZTW6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 15:22:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:57551 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752103Ab3HZTW4 convert rfc822-to-8bit (ORCPT
+	id S1751954Ab3HZTf3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 15:35:29 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:59550 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab3HZTf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 15:22:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,961,1367996400"; 
-   d="scan'208,223";a="351857696"
-From: "Yang, Fei" <fei.yang@intel.com>
-To: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>
-Subject: Can anyone suggest a better fix? Not sure if I understand the
- problem, but the patch fixed it
-Thread-Topic: Can anyone suggest a better fix? Not sure if I understand the
- problem, but the patch fixed it
-Thread-Index: Ac6ikZoVxBxE4fuwQdCkVcy9DopOgA==
-Date: Mon, 26 Aug 2013 19:22:46 +0000
-Message-ID: <02E7334B1630744CBDC55DA85862258348E431C1@ORSMSX102.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 26 Aug 2013 15:35:27 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA+55aFzCghYYF1_dcvBY9XZ82TU9b=hhgFqkGoWpaZuKJ7R6_A@mail.gmail.com>
+References: <20130822201530.GL31117@1wt.eu>
+	<20130824182939.GA23630@redhat.com>
+	<20130824212432.GA9299@1wt.eu>
+	<20130825052317.GZ27005@ZenIV.linux.org.uk>
+	<20130825065039.GB9299@1wt.eu>
+	<CA+55aFwFeCRcwn4qo570Y15mKrN3jEdN757PcZhrXs7QYi8MYA@mail.gmail.com>
+	<20130825194844.GA16717@redhat.com>
+	<CA+55aFzbY3zYD1i5x02Z-6K3nHKzJj6227ZBYRLqij9y0eXRqQ@mail.gmail.com>
+	<20130826153301.GA15890@redhat.com>
+	<20130826163704.GA21763@redhat.com>
+	<20130826175441.GA28856@redhat.com>
+	<CA+55aFzCghYYF1_dcvBY9XZ82TU9b=hhgFqkGoWpaZuKJ7R6_A@mail.gmail.com>
+Date: Mon, 26 Aug 2013 12:35:26 -0700
+X-Google-Sender-Auth: 0tYriPBQgiiWHoalIY8yzD8sWwA
+Message-ID: <CA+55aFwAw=AZNqmDNip_P6WiY4zGRNWks-kLwN7ZgJ8JJsAx-A@mail.gmail.com>
+Subject: Re: [PATCH] proc: make proc_fd_permission() thread-friendly
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Willy Tarreau <w@1wt.eu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 5e6501efa26bc19dad0b43e3a2b0daa81408a8ae Mon Sep 17 00:00:00 2001
-From: Fei Yang <fei.yang@intel.com>
-Date: Mon, 26 Aug 2013 11:21:48 -0700
-Subject: [PATCH] FIXDEP: error opening depfile
- 
-Met a kernel build issue where fixdep fails to open a depfile,
-fixdep: error opening depfile: drivers/driver-name/.driver-code.o.d: No such file or directory
-make[4]: *** [drivers/driver-name/driver-code.o] Error 2
-make[3]: *** [drivers/driver-name] Error 2
-Don't know why the expected file was not created, but the assumption that
-the file had been created might not be true, so simply return for such failure.
- 
-Change-Id: I299c01f2e3f6e1d04b19ced34ebeb964e16494e6
-Signed-off-by: Fei Yang <fei.yang@intel.com>
----
- scripts/basic/fixdep.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
- 
-diff --git a/scripts/basic/fixdep.c b/scripts/basic/fixdep.c
-index cb1f50c..2c065e5 100644
---- a/scripts/basic/fixdep.c
-+++ b/scripts/basic/fixdep.c
-@@ -377,7 +377,7 @@ static void print_deps(void)
-        if (fd < 0) {
-                fprintf(stderr, "fixdep: error opening depfile: ");
-                perror(depfile);
--               exit(2);
-+               return;
-        }
-        if (fstat(fd, &st) < 0) {
-                 fprintf(stderr, "fixdep: error fstat'ing depfile: ");
--- 
-1.7.9.5
+On Mon, Aug 26, 2013 at 11:09 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Patch looks ok to me, but since this has never worked and nobody has
+> actually complained, I can't really convince myself that this is
+> critical.
+
+Actually, let's back-track..
+
+Did you try the other approach? Make /proc/self point to the thread
+instead of the task?
+
+The thread-group leader seems to have these extra files:
+
+ - autogroup, coredump_filter, mountstats, net, task
+
+but quite frankly, at least "net" and "task" look like they should
+exist there - with "task" pointing back to the actual task (it would
+make more sense for "/proc/<pid>/task" itself to be named "threads",
+but whatever).
+
+Yes, it would be semantically different, but it would mean that
+"/proc/self/fd/" would actually make sense in a way that it currently
+does *not* - which would seem fairly important, since the primary use
+for it tends to be /dev/stdin.
+
+And the other semantic differences might be much harder to notice.
+Worth testing?
+
+                 Linus
