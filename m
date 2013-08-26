@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab3HZQ6l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 12:58:41 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38889 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab3HZQ6j (ORCPT
+	id S1756775Ab3HZRCv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 13:02:51 -0400
+Received: from 8.mo3.mail-out.ovh.net ([87.98.172.249]:52287 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752317Ab3HZRCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 12:58:39 -0400
-Message-ID: <521B893C.4090109@wwwdotorg.org>
-Date: Mon, 26 Aug 2013 10:58:36 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 26 Aug 2013 13:02:50 -0400
+Message-ID: <521B89D1.6010902@overkiz.com>
+Date: Mon, 26 Aug 2013 19:01:05 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Fabian Vogt <fabian@ritter-vogt.de>
-CC: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
-        linus.walleij@linaro.org, grant.likely@linaro.org, pawel.moll@arm.com,
-        rob.herring@calxeda.com, mark.rutland@arm.com, ian.campbell@citrix.com
-Subject: Re: [PATCH V4] gpio: New driver for LSI ZEVIO SoCs
-References: <1377460180-6192-1-git-send-email-fabian@ritter-vogt.de>
-In-Reply-To: <1377460180-6192-1-git-send-email-fabian@ritter-vogt.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [RFC PATCH 1/3] pinctrl: add new generic pinconf config for deglitch
+ filter
+References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com> <1377380109-11247-1-git-send-email-b.brezillon@overkiz.com> <521B875E.1010605@wwwdotorg.org>
+In-Reply-To: <521B875E.1010605@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 9944510928858478669
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.500002/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2013 01:49 PM, Fabian Vogt wrote:
-> This driver supports the GPIO controller found in LSI ZEVIO SoCs.
-> It has been successfully tested on a TI nspire CX calculator.
+Hello Stephen,
 
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-zevio.txt b/Documentation/devicetree/bindings/gpio/gpio-zevio.txt
+On 26/08/2013 18:50, Stephen Warren wrote:
+> On 08/24/2013 03:35 PM, Boris BREZILLON wrote:
+>> Add a new parameter to support deglitch filter configuration.
+>> A deglitch filter works like a debounce filter but with a smaller
+>> delay (nanoseconds).
+> Why not use the existing debounce property, just with a small delay
+> specified. It seems like that's exactly what the property is for?
+That's one of the question I asked in my cover letter :-)
 
-> +Optional:
-> +- #ngpios = <32>: Number of GPIOs. Defaults to 32 if absent
+Indeed the at91 deglitch filter delay is not configurable and is statically
+assigned to half a master clk cycle (if master clk = 133MHz -> 8 ns).
+The debounce property argument is currently expressed in usecs.
 
-I think the GPIO count should be derived from the compatible value
-instead. If it turns out there's a clear need for the property, it can
-be added later in a backwards-compatible way.
+This will result in always selecting the debounce filter (which is also
+available on at91 SoCs) over the deglitch filter.
+
+Could we add a flag in the deglitch argument to specify the delay unit
+(nsecs or usecs) ?
+
+
+Best Regards,
+
+Boris
