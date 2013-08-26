@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab3HZRao (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 13:30:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14963 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab3HZRan (ORCPT
+	id S1752214Ab3HZRiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 13:38:00 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:33229 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab3HZRh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 13:30:43 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=4YNYSHFQjk8A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=jyE81Idm5WYA:10 a=VnNF1IyMAAAA:8 a=QpCRJz_wUkxhVmzCEa0A:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 26 Aug 2013 13:30:41 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: suspicious RCU usage (perf)
-Message-ID: <20130826133041.3d750b1b@gandalf.local.home>
-In-Reply-To: <20130826162928.GQ3871@linux.vnet.ibm.com>
-References: <20130826145838.GA8377@redhat.com>
-	<20130826162928.GQ3871@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Aug 2013 13:37:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFyXq9kry7EtcnXOd_DWDVkDvVRWKLAfLOYHVsdY4RRJ8A@mail.gmail.com>
+References: <CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com>
+	<CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com>
+	<20130822201530.GL31117@1wt.eu>
+	<CALCETrXX--FWeoDMOTYNDOWkTKcWk=LcGs2oY7CQ9GU63CMLRg@mail.gmail.com>
+	<CA+55aFzR71kJOOVzHKKaXW2Ph7wb6ivtVHPeR49PPcqpiCfPsA@mail.gmail.com>
+	<CALCETrXXxRksU-YTY8WFJzeET9cWsPKo_=6e9RD=F+TS7xVMyQ@mail.gmail.com>
+	<CA+55aFxqdV6CQ8UWkB1Z7HUB9GmRH4Jpw_UmmFqDqG01_DmsWw@mail.gmail.com>
+	<20130823010726.GP27005@ZenIV.linux.org.uk>
+	<20130825033741.GX27005@ZenIV.linux.org.uk>
+	<CA+55aFxaKGcpdxKXK_axqyFz_oCvFm1Q=_fJLq8di97x_-cCig@mail.gmail.com>
+	<20130825200605.GC27005@ZenIV.linux.org.uk>
+	<CA+55aFyXq9kry7EtcnXOd_DWDVkDvVRWKLAfLOYHVsdY4RRJ8A@mail.gmail.com>
+Date: Mon, 26 Aug 2013 10:37:57 -0700
+X-Google-Sender-Auth: XvZf5wBZ_IRVYgmYcRF_l_5LcK4
+Message-ID: <CA+55aFzcPFXei5j-i49+3kXZ5L9S-v66vrzU091EuXkSeg1G7A@mail.gmail.com>
+Subject: Re: [PATCH v2] vfs: Tighten up linkat(..., AT_EMPTY_PATH)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andy Lutomirski <luto@amacapital.net>, Willy Tarreau <w@1wt.eu>,
+        "security@kernel.org" <security@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Aug 2013 09:29:28 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Sun, Aug 25, 2013 at 1:23 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> So I'll just go back to square one, and wonder if we could/should just
+> make the rule be that in order to be in that LAST_BIND case, you
+> really have to have f_cred match your own credentials. Or have
+> CAP_SEARCH.
 
-> On Mon, Aug 26, 2013 at 10:58:38AM -0400, Dave Jones wrote:
-> > Another day, another rcu backtrace..
-> > This says rc6, but it's pretty darn close to rc7, I think it was running
-> > a build from Friday.
-> 
-> Could you please send your .config?  Also, were you running ftrace,
-> perf, RCU event tracing, or what?
-> 
-> Looks like you are running ftrace, but I though Steven had set that
-> up so that it could be called from an extended quiescent state.
-> 
+Nope. That doesn't work. It breaks the chrome sandboxing.
 
-I know exactly what the issue is. Yes ftrace is safe to call even from
-these extended quiescent states, the problem is that ftrace is also the
-infrastructure of other users, where some of those users are not safe.
-Namely, perf.
+Right now, following a /proc fd symlink requires ptrace access to the
+process. Which is actually pretty strict, and makes sense. But it does
+mean that there are other capabilities than CAP_DAC_READ_SEARCH at
+play.
 
-Right now perf is not safe to trace all functions, as some of those
-functions have this issue. I was going to add something like:
+I'm playing with a patch that then in addition to the ptrace check
+*also* requires that the file was opened with the same credentials as
+the follower _or_ the task being followed. I'll see if that works out.
 
-FTRACE_NON_SAFE(rcu_eqs_enter);
-
-where it will record locations that are not safe for all users, such
-that unless a function registers to ftrace with a flag of
-"FTRACE_FL_NON_SAFE_OK", anything that is on the non safe list (from
-the macro) will not be traced.
-
-Now, how urgent is this fix? perf can only trace functions as root, and
-there's no reason for perf to be tracing all functions at the moment.
-But yes, a root user could run that and get this warning. Because I was
-going to implement this for 3.12 and not for this release.
-
--- Steve
+                Linus
