@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab3HZJlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 05:41:12 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:10088 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab3HZJlK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 05:41:10 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Josh Wu <josh.wu@atmel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: device tree update for 3.12 #2
-Date: Mon, 26 Aug 2013 11:41:02 +0200
-Message-ID: <1377510062-14886-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	id S1756438Ab3HZJnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 05:43:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60501 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562Ab3HZJnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 05:43:45 -0400
+Message-ID: <521B2346.10307@ti.com>
+Date: Mon, 26 Aug 2013 15:13:34 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>,
+        "'devicetree'" <devicetree@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
+        "'Felipe Balbi'" <balbi@ti.com>, "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Jean-Christophe PLAGNIOL-VILLARD'" <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: Re: [PATCH V7 0/3] Generic PHY driver for the Exynos SoC DP PHY
+References: <003e01cea23a$03aac850$0b0058f0$%han@samsung.com>
+In-Reply-To: <003e01cea23a$03aac850$0b0058f0$%han@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+On Monday 26 August 2013 02:25 PM, Jingoo Han wrote:
+> This patch series adds a simple driver for the Samsung Exynos SoC
+> series DP transmitter PHY, using the generic PHY framework [1].
+> Previously the DP PHY used an internal DT node to control the PHY
+> power enable bit.
+> 
+> These patches was tested on Exynos5250.
+> 
+> This PATCH v7 follows:
+>  * PATCH v6, sent on July, 9th 2013
+>  * PATCH v5, sent on July, 8th 2013
+>  * PATCH v4, sent on July, 2nd 2013
+>  * PATCH v3, sent on July, 1st 2013
+>  * PATCH v2, sent on June, 28th 2013
+>  * PATCH v1, sent on June, 28th 2013
+> 
+> Changes from v6:
+>   * Re-based on git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git
+> 
+> Changes from v5:
+>   * Re-based on git://gitorious.org/linuxphy/linuxphy.git
+> 
+> Changes from v4:
+>   * Marked original bindings as deprecated in 'exynos_dp.txt'
+>   * Fixed typo of commit message.
+>   * Added Tomasz Figa's Reviewed-by.
+> 
+> Changes from v3:
+>   * Added OF dependancy.
+>   * Removed redundant local variable 'void __iomem *addr'.
+>   * Removed unnecessary dev_set_drvdata().
+>   * Added a patch that remove non-DT support for Exynos
+>     Display Port driver.
+>   * Removed unnecessary 'struct exynos_dp_platdata'.
+>   * Kept supporting the original bindings for DT compatibility.
+> 
+> Changes from v2:
+>   * Removed redundant spinlock
+>   * Removed 'struct phy' from 'struct exynos_dp_video_phy'
+>   * Updated 'samsung-phy.txt', instead of creating
+>     'samsung,exynos5250-dp-video-phy.txt'.
+>   * Removed unnecessary additional specifier from 'phys'
+>     DT property.
+>   * Added 'phys', 'phy-names' properties to 'exynos_dp.txt' file.
+>   * Added Felipe Balbi's Acked-by.
+> 
+> Changes from v1:
+>   * Replaced exynos_dp_video_phy_xlate() with of_phy_simple_xlate(),
+>     as Kishon Vijay Abraham I guided.
+>   * Set the value of phy-cells as 0, because the phy_provider implements
+>     only one PHY.
+>   * Removed unnecessary header include.
+>   * Added '#ifdef CONFIG_OF' and of_match_ptr macro.
+> 
+> This series depends on the generic PHY framework [1]. These patches
+> refer to Sylwester Nawrocki's patches about Exynos MIPI [2].
+> 
+> [1] http://lwn.net/Articles/564188/
+> [2] http://www.spinics.net/lists/linux-samsung-soc/msg20098.html
+> 
+> Jingoo Han (3):
+>   phy: Add driver for Exynos DP PHY
+>   video: exynos_dp: remove non-DT support for Exynos Display Port
+>   video: exynos_dp: Use the generic PHY driver
 
-This is a second update on the DT front for AT91 on 3.12. This series is
-stacked on top of patches that are already included in your at91/dt branch.
-
-The inclusion of these Nand Flash Controller properties in DT are related to
-the driver enhancement that is already queued in MTD tree:
-http://git.infradead.org/linux-mtd.git/commit/7dc37de7d59cdd1c4cdd472e1994c31b16d7b874
-
-Thanks, best regards,
-
-The following changes since commit 90d01929ad38259596371c78df8a9ecf37a7f815:
-
-  ARM: at91/dt: sam9x5ek: add sound configuration (2013-08-21 13:33:44 +0200)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-dt
-
-for you to fetch changes up to afa6a2a726766d8145dc87f47073c745aa0f0d01:
-
-  ARM: at91/dt: sama5d3xek: reduce the ROM code mapping for pmecc lookup table (2013-08-23 14:47:22 +0800)
-
-----------------------------------------------------------------
-AT91 DT changes for 3.12, take 2
-- addition of the Nand Flash Controller (NFC) in DT
-  for sama5d3 SoC. This NFC will enhance the traditional
-  Nand Flash handling (SMC + PMECC).
-
-----------------------------------------------------------------
-Josh Wu (3):
-      ARM: at91/dt: sama5d3xek: remove the useless NFC dt parameters
-      ARM: at91/dt: sama5d3xek: Enable NFC support in dts
-      ARM: at91/dt: sama5d3xek: reduce the ROM code mapping for pmecc lookup table
-
- arch/arm/boot/dts/sama5d3.dtsi    | 19 ++++++++++++++-----
- arch/arm/boot/dts/sama5d3xcm.dtsi |  2 --
- 2 files changed, 14 insertions(+), 7 deletions(-)
-
--- 
-Nicolas Ferre
+FWIW,
+Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
