@@ -1,58 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab3HZLj7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 07:39:59 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:39725 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756705Ab3HZLj5 (ORCPT
+	id S1756851Ab3HZLjv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 07:39:51 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:39118 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756837Ab3HZLjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 07:39:57 -0400
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <jszhang@marvell.com>, <jason@lakedaemon.net>, <andrew@lunn.ch>,
-        <gregory.clement@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>,
-        <ezequiel.garcia@free-electrons.com>, <mturquette@linaro.org>,
-        <sebastian.hesselbarth@gmail.com>, <linus.walleij@linaro.org>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 0/3] arm: mvebu: fix resource leak
-Date: Mon, 26 Aug 2013 19:36:55 +0800
-Message-ID: <1377517018-7716-1-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 1.8.4.rc3
+	Mon, 26 Aug 2013 07:39:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130823161532.GA2336@localhost.localdomain>
+References: <1377247176-13537-1-git-send-email-fhrbata@redhat.com>
+	<52177AD7.1030709@linux.vnet.ibm.com>
+	<20130823161532.GA2336@localhost.localdomain>
+Date: Mon, 26 Aug 2013 19:39:48 +0800
+Message-ID: <CAFiDJ5_S9Y_9t4kmkh5a9vK8bZFf1ZispTiWxj7PybxJpvYZ3w@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/4] add support for gcov format introduced in gcc 4.7
+From: "LF.Tan" <lftan.linux@gmail.com>
+To: Frantisek Hrbata <fhrbata@redhat.com>
+Cc: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, jstancek@redhat.com,
+        keescook@chromium.org, Christophe Guillon <christophe.guillon@st.com>,
+        rusty@rustcorp.com.au, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, mgahagan@redhat.com,
+        agospoda@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches try to fix resource leak by adding missing of_node_put(),
-iounmap or using devm_ioremap_resource() if available.
+Hi all
 
-v4:
-  - re-generate since Ezequiel's patches add DT support to the
-mvebu-mbus driver
+I am interested to enable Gcov on my platform (on a target board). I
+have tried to apply the 4 patches submitted by Frantisek Hrbata. But,
+the *.gcda is always empty. Note, I am using GCC 4.7.3.
 
-v3:
-  - remove the clk patch since it's already taken by Mike
-  - Add more commit log as suggested by Ezequiel Garcia
+I have followed the steps in Documentation/gcov.txt. I've mounted the
+NFS filesystem and it has access to the kernel build directory on host
+machine.The path for the kernel source in host and target are same.
 
-v2:
-  - use devm_ioremap_resource() as suggested by Ezequiel Garcia
-  - use gates_out instead of bail_out as suggested by Mike Turquette
+Let said my kernel module is under drivers/misc,
+drivers/misc/module.ko. Turn on Gcov in drivers/misc/Makefile.
 
-Jisheng Zhang (3):
-  arm: mvebu: add missing of_node_put() to fix reference leak
-  bus: mvebu: add missing of_node_put() to fix reference leak
-  pinctrl: mvebu: Convert to use devm_ioremap_resource
+1. mount -t debugfs none /sys/kernel/debug/
+2. insmod <PATH>/module.ko
+3. Perform some actions to excute code in module.ko
+4. rmmod <PATH>/module.ko
+5. Check /sys/kernel/debug/gcov/<PATH>/drivers/misc/. There is a soft
+link of module.gcno (I check the soft link is working), but
+module.gcda is empty.
 
- arch/arm/mach-mvebu/coherency.c         |  8 +++++++-
- arch/arm/mach-mvebu/platsmp.c           |  1 +
- arch/arm/mach-mvebu/pmsu.c              |  1 +
- arch/arm/mach-mvebu/system-controller.c |  1 +
- drivers/bus/mvebu-mbus.c                | 27 ++++++++++++++++++++-------
- drivers/pinctrl/mvebu/pinctrl-mvebu.c   | 11 +++++------
- 6 files changed, 35 insertions(+), 14 deletions(-)
+Any step is incorrect or missing? Or anyone know how to enable GCOV on
+target board? Please advice.
+I would like to enable GCOV in arch/ code as well.
+Thank you very much.
 
--- 
-1.8.4.rc3
+Cheers.
 
+On Sat, Aug 24, 2013 at 12:15 AM, Frantisek Hrbata <fhrbata@redhat.com> wrote:
+> On Fri, Aug 23, 2013 at 05:08:07PM +0200, Peter Oberparleiter wrote:
+>> On 23.08.2013 10:39, Frantisek Hrbata wrote:
+>> > This is an attempt to bring support for modified gcov format in gcc 4.7 to
+>> > the kernel. It tries to leverage the existing layout/abstraction, which was
+>> > designed keeping in mind that the gcov format could change, but some changes had
+>> > to be make. Mostly because the current model does not take into account that
+>> > even the core gcov structures, like gcov_info, could change. One part that could
+>> > be problematic is the addition of the .init_array section for constructors.
+>>
+>> It appears that gcc 4.7 support for gcov-kernel is quite important to a
+>> number of people, at least that is what I derive from the fact that I
+>> now know of 3 people who've been working on this support separately from
+>> each other: you, myself (I've been close to posting my own version to
+>> LKML) and Christophe Guillon.
+>
+> First, thank you for your quick reply. Second, great, I was worried there is no
+> interest to have the new format supported, because it's quite some time gcc 4.7
+> is out.
+>
+>>
+>> It's apparent now that I made a mistake delaying the discussion of the
+>> effort for too long, but I think your posting the patches opens up a
+>> good opportunity to combine the best of all previous efforts.
+>
+> To be honest I ran into this problem 14 days ago when I was asked to take a
+> look. So I cannot say I know everything about gcov format and stuff around it.
+> I mostly followed your original code after I got some idea of the gcov in-memory
+> layout. Meaning, I'm glad that there is also yours and Christophe's code and
+> I for sure welcome the "combine the best of all previous efforts" approach, even
+> if it means dropping my code :).
+>
+>>
+>> Most of your code looks very familiar. There's one feature missing though
+>> that Christophe brought up as a requirement: the ability for gcov-kernel
+>> to cope with kernel modules being compiled with GCC versions implementing
+>> a different gcov format (apparently this can happen in some embedded
+>> setups).
+>
+> Here follows quote from the gcc/gcov-io.h file
+>
+> <quote>
+> Coverage information is held in two files.  A notes file, which is
+> generated by the compiler, and a data file, which is generated by
+> the program under test.  Both files use a similar structure.  We do
+> not attempt to make these files backwards compatible with previous
+> versions, as you only need coverage information when developing a
+> program.  We do hold version information, so that mismatches can be
+> detected, and we use a format that allows tools to skip information
+> they do not understand or are not interested in.
+> </quote>
+>
+> Also from my experience, I would expect that the gcov will be used during
+> development, meaning re-compilation isn't a big problem here. I for sure can be
+> missing something and I'm by no means saying it wouldn't be useful feature. Just
+> that it would complite things a little bit.
+>
+>>
+>> Christophe proposed run-time version checking and a file-ops type function
+>> table which is chosen based on info->version. I found this approach
+>> somewhat intrusive and this would also not have covered the case where a
+>> new GCC versions was used to compile kernel modules for which the base
+>> kernel has no support. I tried to solve this requirement by combining
+>> two changes:
+>>
+>> 1) make the gcov-format generated by gcov-kernel compile-time configurable
+>> 2) separate the gcov-format specific code into a loadable kernel module
+>
+> So if I understand it correctly you would separate the input
+> format(gcov_info) from the output(gcda files). Meaning no matter which gcc
+> compiled the module you can select the gcda format. And even if the kernel does
+> not know the new format you can simply compile a module supporting it, instead
+> of the whole kernel.
+>
+> Can you please give me an example why this is needed? As I wrote I'm not that
+> familiar with gcov and I'm probably missing something, but I do not understand
+> why this(handling several versions at runtime, not only the one used by gcc
+> during compilation) is useful(note my comment above about the gcov used during
+> development).
+>
+>>
+>> This way, the gcov-format specific part of gcov-kernel could be replaced
+>> when working with a different version GCC. I'll post the corresponding
+>> patches as reply in another mail.
+>
+> Great, I will take a look, but it may take me some time :).
+>
+>>
+>> Back to your patches: I tested them and they work fine on s390x when
+>> compiled with GCC 4.3.4 and 4.7.2. I'll provide some more specific
+>> comments as replies to your patch-mails.
+>
+> Many thanks!
+>
+>>
+>>
+>> Regards,
+>>   Peter Oberparleiter
+>>
+>> --
+>> Peter Oberparleiter
+>> Linux on System z Development - IBM Germany
+>>
+>
+> --
+> Frantisek Hrbata
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
