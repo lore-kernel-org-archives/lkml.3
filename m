@@ -1,102 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab3HZWrm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 18:47:42 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:37858 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab3HZWqE (ORCPT
+	id S1752481Ab3HZWpz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 18:45:55 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:36342 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab3HZWpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 18:46:04 -0400
+	Mon, 26 Aug 2013 18:45:52 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Andreas Herrmann <andreas.herrmann@calxeda.com>,
         Lennert Buytenhek <buytenh@wantstofly.org>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 11/11] net: calxedaxgmac: fix xgmac_xmit DMA mapping error handling
-Date: Mon, 26 Aug 2013 17:45:26 -0500
-Message-Id: <1377557126-10716-11-git-send-email-robherring2@gmail.com>
+Subject: [PATCH 01/11] net: calxedaxgmac: remove NETIF_F_FRAGLIST setting
+Date: Mon, 26 Aug 2013 17:45:16 -0500
+Message-Id: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
-References: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-On a DMA mapping error in xgmac_xmit, we should simply free the skb and
-return NETDEV_TX_OK rather than -EIO. In the case of errors in mapping
-frags, we need to undo everything that has been setup.
+The xgmac does not actually handle frag lists, so this option should not
+be set. It does not appear to have had any impact though.
 
-Reported-by: Andreas Herrmann <andreas.herrmann@calxeda.com>
+Reported-by: Lennert Buytenhek <buytenh@wantstofly.org>
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 ---
- drivers/net/ethernet/calxeda/xgmac.c | 31 ++++++++++++++++++++++++++-----
- 1 file changed, 26 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/calxeda/xgmac.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
-index f149c08..0022887 100644
+index 7cb148c..71f6720 100644
 --- a/drivers/net/ethernet/calxeda/xgmac.c
 +++ b/drivers/net/ethernet/calxeda/xgmac.c
-@@ -466,6 +466,13 @@ static inline void desc_set_tx_owner(struct xgmac_dma_desc *p, u32 flags)
- 	p->flags = cpu_to_le32(tmpflags);
- }
+@@ -1759,7 +1759,7 @@ static int xgmac_probe(struct platform_device *pdev)
+ 	if (device_can_wakeup(priv->device))
+ 		priv->wolopts = WAKE_MAGIC;	/* Magic Frame as default */
  
-+static inline void desc_clear_tx_owner(struct xgmac_dma_desc *p)
-+{
-+	u32 tmpflags = le32_to_cpu(p->flags);
-+	tmpflags &= TXDESC_END_RING;
-+	p->flags = cpu_to_le32(tmpflags);
-+}
-+
- static inline int desc_get_tx_ls(struct xgmac_dma_desc *p)
- {
- 	return le32_to_cpu(p->flags) & TXDESC_LAST_SEG;
-@@ -1103,7 +1110,7 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
- 	paddr = dma_map_single(priv->device, skb->data, len, DMA_TO_DEVICE);
- 	if (dma_mapping_error(priv->device, paddr)) {
- 		dev_kfree_skb(skb);
--		return -EIO;
-+		return NETDEV_TX_OK;
- 	}
- 	priv->tx_skbuff[entry] = skb;
- 	desc_set_buf_addr_and_size(desc, paddr, len);
-@@ -1115,10 +1122,8 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
- 
- 		paddr = skb_frag_dma_map(priv->device, frag, 0, len,
- 					 DMA_TO_DEVICE);
--		if (dma_mapping_error(priv->device, paddr)) {
--			dev_kfree_skb(skb);
--			return -EIO;
--		}
-+		if (dma_mapping_error(priv->device, paddr))
-+			goto dma_err;
- 
- 		entry = dma_ring_incr(entry, DMA_TX_RING_SZ);
- 		desc = priv->dma_tx + entry;
-@@ -1154,6 +1159,22 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
- 			netif_wake_queue(dev);
- 	}
- 	return NETDEV_TX_OK;
-+
-+dma_err:
-+	entry = priv->tx_head;
-+	for ( ; i > 0; i--) {
-+		entry = dma_ring_incr(entry, DMA_TX_RING_SZ);
-+		desc = priv->dma_tx + entry;
-+		priv->tx_skbuff[entry] = NULL;
-+		dma_unmap_page(priv->device, desc_get_buf_addr(desc),
-+			       desc_get_buf_len(desc), DMA_TO_DEVICE);
-+		desc_clear_tx_owner(desc);
-+	}
-+	desc = first;
-+	dma_unmap_single(priv->device, desc_get_buf_addr(desc),
-+			 desc_get_buf_len(desc), DMA_TO_DEVICE);
-+	dev_kfree_skb(skb);
-+	return NETDEV_TX_OK;
- }
- 
- static int xgmac_rx(struct xgmac_priv *priv, int limit)
+-	ndev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST | NETIF_F_HIGHDMA;
++	ndev->hw_features = NETIF_F_SG | NETIF_F_HIGHDMA;
+ 	if (readl(priv->base + XGMAC_DMA_HW_FEATURE) & DMA_HW_FEAT_TXCOESEL)
+ 		ndev->hw_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+ 				     NETIF_F_RXCSUM;
 -- 
 1.8.1.2
 
