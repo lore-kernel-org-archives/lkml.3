@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab3HZSmZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 14:42:25 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:44492 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752230Ab3HZSmX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 14:42:23 -0400
-Message-ID: <521BA18D.70706@semaphore.gr>
-Date: Mon, 26 Aug 2013 21:42:21 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1752477Ab3HZSwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 14:52:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29306 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752166Ab3HZSwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 14:52:54 -0400
+Date: Mon, 26 Aug 2013 20:46:31 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Willy Tarreau <w@1wt.eu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] proc: make proc_fd_permission() thread-friendly
+Message-ID: <20130826184631.GA30917@redhat.com>
+References: <20130824212432.GA9299@1wt.eu> <20130825052317.GZ27005@ZenIV.linux.org.uk> <20130825065039.GB9299@1wt.eu> <CA+55aFwFeCRcwn4qo570Y15mKrN3jEdN757PcZhrXs7QYi8MYA@mail.gmail.com> <20130825194844.GA16717@redhat.com> <CA+55aFzbY3zYD1i5x02Z-6K3nHKzJj6227ZBYRLqij9y0eXRqQ@mail.gmail.com> <20130826153301.GA15890@redhat.com> <20130826163704.GA21763@redhat.com> <20130826175441.GA28856@redhat.com> <87ioyspaju.fsf@xmission.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>
-CC: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cpufreq: governor: Fix typos in comments
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ioyspaju.fsf@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- 'Governer' should be 'Governor'
-- 'S' is used for Siemens (electrical conductance) in SI units.
-Use small 's' for seconds.
+On 08/26, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > proc_fd_permission() says "process can still access /proc/self/fd
+> > after it has executed a setuid()", but the "task_pid() = proc_pid()
+> > check only helps if the task is group leader, /proc/self points to
+> > /proc/leader-pid.
+> >
+> > Change this check to use task_tgid() so that the whole process can
+> > access /proc/self/fd.
+>
+> There is at least a semantic goofiness here.
+>
+> There is /proc/<tgid>/fd and /proc/<tgid>/task/<pid>/fd, and the same
+> permission check is used by both.
 
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
----
- drivers/cpufreq/cpufreq_governor.c |  2 +-
- drivers/cpufreq/cpufreq_governor.h | 12 ++++++------
- 2 files changed, 7 insertions(+), 7 deletions(-)
+Yes, and we have /proc/<tid>/ which includes fd as well.
 
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 8742736..fea104a 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -230,7 +230,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 
- 		policy->governor_data = dbs_data;
- 
--		/* policy latency is in nS. Convert it to uS first */
-+		/* policy latency is in ns. Convert it to us first */
- 		latency = policy->cpuinfo.transition_latency / 1000;
- 		if (latency == 0)
- 			latency = 1;
-diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-index a02d78b..88cd39f 100644
---- a/drivers/cpufreq/cpufreq_governor.h
-+++ b/drivers/cpufreq/cpufreq_governor.h
-@@ -25,11 +25,11 @@
- /*
-  * The polling frequency depends on the capability of the processor. Default
-  * polling frequency is 1000 times the transition latency of the processor. The
-- * governor will work on any processor with transition latency <= 10mS, using
-+ * governor will work on any processor with transition latency <= 10ms, using
-  * appropriate sampling rate.
-  *
-- * For CPUs with transition latency > 10mS (mostly drivers with CPUFREQ_ETERNAL)
-- * this governor will not work. All times here are in uS.
-+ * For CPUs with transition latency > 10ms (mostly drivers with CPUFREQ_ETERNAL)
-+ * this governor will not work. All times here are in us (micro seconds).
-  */
- #define MIN_SAMPLING_RATE_RATIO			(2)
- #define LATENCY_MULTIPLIER			(1000)
-@@ -162,7 +162,7 @@ struct cs_cpu_dbs_info_s {
- 	unsigned int enable:1;
- };
- 
--/* Per policy Governers sysfs tunables */
-+/* Per policy Governors sysfs tunables */
- struct od_dbs_tuners {
- 	unsigned int ignore_nice_load;
- 	unsigned int sampling_rate;
-@@ -181,7 +181,7 @@ struct cs_dbs_tuners {
- 	unsigned int freq_step;
- };
- 
--/* Common Governer data across policies */
-+/* Common Governor data across policies */
- struct dbs_data;
- struct common_dbs_data {
- 	/* Common across governors */
-@@ -205,7 +205,7 @@ struct common_dbs_data {
- 	void *gov_ops;
- };
- 
--/* Governer Per policy data */
-+/* Governor Per policy data */
- struct dbs_data {
- 	struct common_dbs_data *cdata;
- 	unsigned int min_sampling_rate;
--- 
-1.8.3.1
+> We might just want to have a /proc/thread symlink as well so people
+> don't have this issue.
+
+Yes! I agree.
+
+In particular, from the changelog:
+
+	Note: CLONE_THREAD doesn't require CLONE_FILES so task->files can
+	differ,
+
+so /proc/self/fd doesn't necessarily mean current->files, this can confuse
+the application.
+
+And I also assume that you agree with this change ;)
+
+Oleg.
 
