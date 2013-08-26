@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab3HZIm6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 04:42:58 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:49664 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756415Ab3HZImy (ORCPT
+	id S1756652Ab3HZInJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:43:09 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:35851 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756430Ab3HZInB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 04:42:54 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: <mingo@redhat.com>, <hpa@zytor.com>, <x86@kernel.org>, <gleb@redhat.com>,
-        <pbonzini@redhat.com>
-Cc: <jeremy@goop.org>, <konrad.wilk@oracle.com>, <peterz@infradead.org>,
-        <tglx@linutronix.de>, <agraf@suse.de>, digitaleric@google.com,
-        <riel@redhat.com>, <avi.kivity@gmail.com>,
-        <habanero@linux.vnet.ibm.com>, <chegu_vinod@hp.com>,
-        <ouyang@cs.pitt.edu>, <drjones@redhat.com>, linux-doc@vger.kernel.org,
-        <torvalds@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <kvm@vger.kernel.org>, <andi@firstfloor.org>,
-        <virtualization@lists.linux-foundation.org>, <mtosatti@redhat.com>,
-        <srivatsa.vaddagiri@gmail.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Subject: [PATCH V13 1/4] kvm uapi: Add KICK_CPU and PV_UNHALT definition to uapi
-Date: Mon, 26 Aug 2013 14:18:33 +0530
-Message-Id: <1377506916-26946-2-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1377506916-26946-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-References: <y>
- <1377506916-26946-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082608-7164-0000-0000-000001006AFA
+	Mon, 26 Aug 2013 04:43:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPM31R+W56bOfex18i4+ywNKW5EJz0Rq32bGZbWEYVyKgKVy_A@mail.gmail.com>
+References: <20130819160058.539049611@infradead.org>
+	<20130819160425.230612223@infradead.org>
+	<CALZhoSRtyS1G6jpKwxqyx=GxFP8dvo0Qq=wGfNkw=Kya3yBEow@mail.gmail.com>
+	<CAPM31R+W56bOfex18i4+ywNKW5EJz0Rq32bGZbWEYVyKgKVy_A@mail.gmail.com>
+Date: Mon, 26 Aug 2013 16:42:58 +0800
+Message-ID: <CALZhoSRYRP+ap-yVvt06BhAMf4V+NE=6BsvQWf-bgRyPQt7+wQ@mail.gmail.com>
+Subject: Re: [PATCH 03/10] sched: Clean-up struct sd_lb_stat
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Paul Turner <pjt@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Lei Wen <leiwen@marvell.com>,
+        Rik van Riel <riel@surriel.com>, Joonsoo Kim <js1304@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this is needed by both guest and host.
+On Mon, Aug 26, 2013 at 12:36 PM, Paul Turner <pjt@google.com> wrote:
+> On Sun, Aug 25, 2013 at 7:56 PM, Lei Wen <adrian.wenl@gmail.com> wrote:
+>> On Tue, Aug 20, 2013 at 12:01 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>>
+>>> There is no reason to maintain separate variables for this_group
+>>> and busiest_group in sd_lb_stat, except saving some space.
+>>> But this structure is always allocated in stack, so this saving
+>>> isn't really benificial [peterz: reducing stack space is good; in this
+>>> case readability increases enough that I think its still beneficial]
+>>>
+>>> This patch unify these variables, so IMO, readability may be improved.
+>>>
+>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>> [peterz: lots of style edits, a few fixes and a rename]
+>>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>>> Link: http://lkml.kernel.org/r/1375778203-31343-4-git-send-email-iamjoonsoo.kim@lge.com
+>>> ---
+>>>  kernel/sched/fair.c |  225 +++++++++++++++++++++++++---------------------------
+>>>  1 file changed, 112 insertions(+), 113 deletions(-)
+>>>
+>>> --- a/kernel/sched/fair.c
+>>> +++ b/kernel/sched/fair.c
+>>> @@ -4277,36 +4277,6 @@ static unsigned long task_h_load(struct
+>>>
+>> [snip]...
+>>> -       env->imbalance = DIV_ROUND_CLOSEST(
+>>> -               sds->max_load * sds->busiest->sgp->power, SCHED_POWER_SCALE);
+>>> +       env->imbalance = DIV_ROUND_CLOSEST(sds->busiest_stat.avg_load *
+>>> +                               sds->busiest->sgp->power, SCHED_POWER_SCALE);
+>>>
+>>
+>> I am wondering whether we could change this line as below is more appropriate,
+>> since it would avoid the division here:
+>>        env->imbalance = (sds->busiest_stat.avg_load * sds->busiest->sgp->power)
+>>                                       >> SCHED_POWER_SHIFT;
+>>
+>> I am not sure whether compiler would be smarter enough to covert into
+>>>> operation,
+>> if it see SCHED_POWER_SCALE is 1024 here.
+>
+> This would change the rounding.  Fortunately, gcc is smart enough to
+> handle this.
 
-Originally-from: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Acked-by: Gleb Natapov <gleb@redhat.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/include/uapi/asm/kvm_para.h | 1 +
- include/uapi/linux/kvm_para.h        | 1 +
- 2 files changed, 2 insertions(+)
+Indeed, I check the assembly code, and it is really smart to do the changes.
 
-diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
-index 06fdbd9..94dc8ca 100644
---- a/arch/x86/include/uapi/asm/kvm_para.h
-+++ b/arch/x86/include/uapi/asm/kvm_para.h
-@@ -23,6 +23,7 @@
- #define KVM_FEATURE_ASYNC_PF		4
- #define KVM_FEATURE_STEAL_TIME		5
- #define KVM_FEATURE_PV_EOI		6
-+#define KVM_FEATURE_PV_UNHALT		7
- 
- /* The last 8 bits are used to indicate how to interpret the flags field
-  * in pvclock structure. If no bits are set, all flags are ignored.
-diff --git a/include/uapi/linux/kvm_para.h b/include/uapi/linux/kvm_para.h
-index cea2c5c..2841f86 100644
---- a/include/uapi/linux/kvm_para.h
-+++ b/include/uapi/linux/kvm_para.h
-@@ -19,6 +19,7 @@
- #define KVM_HC_MMU_OP			2
- #define KVM_HC_FEATURES			3
- #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
-+#define KVM_HC_KICK_CPU			5
- 
- /*
-  * hypercalls use architecture specific
--- 
-1.7.11.7
-
+Thanks,
+Lei
