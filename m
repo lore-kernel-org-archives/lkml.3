@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab3HZIpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 04:45:18 -0400
-Received: from smtp1.goneo.de ([212.90.139.80]:41162 "EHLO smtp1.goneo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756514Ab3HZIpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 04:45:16 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -2.834
-From: Lars Poeschel <poeschel@lemonage.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: am335x: support for multiple USB instances, v3
-Date: Mon, 26 Aug 2013 10:45:07 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, george.cherian@ti.com
-References: <1375471450-31154-1-git-send-email-bigeasy@linutronix.de>
-In-Reply-To: <1375471450-31154-1-git-send-email-bigeasy@linutronix.de>
+	id S1756161Ab3HZIqF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:46:05 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:45039 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab3HZIqD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 04:46:03 -0400
+Date: Mon, 26 Aug 2013 17:46:00 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: Re: [PATCH v5 0/7] DMA: shdma: switch DT to use OF device ID tables
+Message-ID: <20130826084600.GF10710@verge.net.au>
+References: <1375455042-24093-1-git-send-email-g.liakhovetski@gmx.de>
+ <20130825073656.GF8091@intel.com>
+ <20130826071725.GJ26682@verge.net.au>
+ <20130826074913.GI2748@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308261045.07825.poeschel@lemonage.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130826074913.GI2748@intel.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 August 2013 at 21:24:05, Sebastian Andrzej Siewior wrote:
-> Hi,
-> 
-> this series depends on Felipe's master tree and "usb: phy:
-> rename nop_usb_xceiv => usb_phy_gen_xceiv" which I posted earlier. I
-> created a -rc3 based branch for that patch [0]. If you fine with this
-> please let Tony know.
-> I updated the child nodes & the phy generic to use two small memory
-> spaces instead of one huge as discussed on mailing list in the last
-> spin. Patch contains the cppi41 dma driver which seems to work stable
-> so far in host mode. Device mode is currently disabled.
-> 
-> The complete series as used for testing is also available at [1]
-> 
-> [0] git://git.breakpoint.cc/cgit/bigeasy/linux.git nop_phy-rename
-> [1] git://git.breakpoint.cc/cgit/bigeasy/linux.git am335x_usb
+On Mon, Aug 26, 2013 at 01:19:13PM +0530, Vinod Koul wrote:
+> On Mon, Aug 26, 2013 at 04:17:25PM +0900, Simon Horman wrote:
+> > On Sun, Aug 25, 2013 at 01:06:57PM +0530, Vinod Koul wrote:
+> > > On Fri, Aug 02, 2013 at 04:50:35PM +0200, Guennadi Liakhovetski wrote:
+> > > > In this version of shdma Device Tree support I preserved the DT 
+> > > > configuration approach via OF device ID tables from v4, but now it is only 
+> > > > used for the DT-mode, the C-version is left untouched. In this series I 
+> > > > only include one platform: r8a73a4-based APE6EVM, if accepted, others can 
+> > > > be added easily. I also took care not to include mach/*.h headers in 
+> > > > driver .c files. To illustrate the use of DT DMA support for MMC DMA on 
+> > > > APE6EVM a patch from a previously separate patch series "DMA for MMCIF and 
+> > > > SDHI devices in DT mode"
+> > > I have applied all the dma patches, the ARM ones fail for me so should possible
+> > > go thru ARM tree.
+> > 
+> > Guennadi, if you need me to queue up any patches please repost them
+> > once their dependencies are available in a stable branch.
+> I think Guennadi is on vacation, so can someone queue up the ARM patches and
+> mierge them thru ARM tree...
 
-Tested-by: Lars Poeschel <poeschel@lemonage.de>
+I believe he is back from vacation.
