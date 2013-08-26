@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab3HZLi4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 07:38:56 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:48948 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab3HZLiy (ORCPT
+	id S1756332Ab3HZLjN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 07:39:13 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:26694 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755923Ab3HZLjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 07:38:54 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-40-521b3e4cb881
+	Mon, 26 Aug 2013 07:39:10 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-66-521b3e5c6e48
 From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
 To: kgene.kim@samsung.com
 Cc: kyungmin.park@samsung.com, t.figa@samsung.com, tomasz.figa@gmail.com,
@@ -20,72 +20,101 @@ Cc: kyungmin.park@samsung.com, t.figa@samsung.com, tomasz.figa@gmail.com,
         linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Subject: [PATCH RFC 0/5] ARM: s5pv210: move to common clk framework
-Date: Mon, 26 Aug 2013 13:38:29 +0200
-Message-id: <1377517114-20222-1-git-send-email-m.krawczuk@partner.samsung.com>
+Subject: [PATCH RFC 2/5] media: s5p-tv: Fix mixer driver to work with CCF
+Date: Mon, 26 Aug 2013 13:38:31 +0200
+Message-id: <1377517114-20222-3-git-send-email-m.krawczuk@partner.samsung.com>
 X-Mailer: git-send-email 1.8.1.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9jQV0fO+kggyU7+S3mHznHavGmt4PF
-	onfBVTaLs01v2C02Pb7GarGwbQmLxeVdc9gsZpzfx2Rx+zKvxcV18han15xitnjdd5jFYun1
-	i0wWTydcZLOYMH0ti8XhFQeYLNa9nA5kvWlntXh1sI3FYv2M1ywW89pfslocm7GE0WLVrj+M
-	DuIea+atYfRoae5h81jw+Qq7x+vJExg9ds66y+7xavVMVo871/aweWxeUu9x8N0eJo++LasY
-	Pbo/3WL1+LxJzmPj3NAA3igum5TUnMyy1CJ9uwSujGVnnjMVzBKuaD7dxdjAeJivi5GTQ0LA
-	RGLqx6msELaYxIV769m6GLk4hASmM0ps3nGcEcJpZ5KY0nqQHaSKTcBcYuKzTSwgtoiApERT
-	wx9mkCJmgRssEguO/gXq4OAQFnCWeL4nFKSGRUBVYtLcM2D1vAJ+Eh2td1kgtilI/Lx8gm0C
-	I/cCRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHx8Ex6B+OqBotDjAIcjEo8vAFs0kFC
-	rIllxZW5hxglOJiVRHjNRYFCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YW
-	pBbBZJk4OKUaGDOKQqWinTeqxm88LZKUr6S8+dO0K5rvnpdPsryU2yfiOD/AM+HJzFx1G8YP
-	ExoXJDsWrd3Uv8hhhtbP4qa425nR65c/Wx52Rcx/++HcL/oyrH/Wr7r8qWGp9vz6SLO81LvH
-	f9h+uCzOdrzRXevpJFlzJtdkG9HMBce/3xFi2Lsr9/Re3xdy9UosxRmJhlrMRcWJAOWLf4aD	AgAA
+In-reply-to: <1377517114-20222-1-git-send-email-m.krawczuk@partner.samsung.com>
+References: <1377517114-20222-1-git-send-email-m.krawczuk@partner.samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e+xoG6MnXSQwZevphbzj5xjtXjT28Fi
+	0bvgKpvF2aY37BabHl9jtVjYtoTF4vKuOWwWM87vY7K4fZnX4uI6eYvTa04xW7zuO8xisfT6
+	RSaLpxMusllMmL6WxeLwigNMFuteTgey3rSzWrw62MZisX7GaxaLee0vWS2OzVjCaLFq1x9G
+	B3GPNfPWMHq0NPeweSz4fIXd4/XkCYweO2fdZfd4tXomq8eda3vYPDYvqfc4+G4Pk0ffllWM
+	Ht2fbrF6fN4k57FxbmgAbxSXTUpqTmZZapG+XQJXxrfdz1gLJgtVvG2YzNbAuIK/i5GTQ0LA
+	RGLx8aWMELaYxIV769m6GLk4hASmM0o09/9iAkkICbQzSSy5HgJiswmYS0x8tokFxBYRkJRo
+	avjDDNLALHCDRWLB0b9gk4QFPCXm/zgA1swioCrx9kQfG4jNK+An8X39RFaIbQoSPy+fAItz
+	CvhL7GnpY4dY5idxbvk3lgmMvAsYGVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBMfPM+kd
+	jKsaLA4xCnAwKvHwBrBJBwmxJpYVV+YeYpTgYFYS4TUXBQrxpiRWVqUW5ccXleakFh9ilOZg
+	URLnPdhqHSgkkJ5YkpqdmlqQWgSTZeLglGpgnDlVuKnMbZ+vVAqT/NXknYaX93gzPfz7XGfn
+	57kzDLxnzL01u9F0ttyk7653N+zhT15/X2TjEf2Nc0oDzppcXZ4poVBh/28Z3+29jpItXd17
+	vv7nLbTpdC12MT60av4NXeume86Zf8TvlCg9SdvtyvFDqX/xh9/F/2d2xe1O5t/ctiTD/2V0
+	gxJLcUaioRZzUXEiAEjtrz6bAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series is the new s5pv210 clock implementation
-(using common clk framework).
+Replace clk_enable by clock_enable_prepare and clk_disable with clk_disable_unprepare.
+Clock prepare is required by Clock Common Framework, and old clock driver didn`t support it.
+Without it Common Clock Framework prints a warning.
 
-This implementation is compatible with device tree definition and board files.
+Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+---
+ drivers/media/platform/s5p-tv/mixer_drv.c | 33 +++++++++++++++++++++++++------
+ 1 file changed, 27 insertions(+), 6 deletions(-)
 
-This patch series is based on linux-next and has been tested on goni and aquila 
-boards using board file.
-
-This patch series require adding new registration method
-for PLL45xx and PLL46xx, which is included in this patch series:
-clk: samsung: pll: Use new registration method for PLL46xx
-http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg21653.html
-clk: samsung: pll: Use new registration method for PLL45xx
-http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg21652.html
-clk: samsung: exynos4: Rename exynos4_plls to exynos4x12_plls
-http://www.spinics.net/lists/arm-kernel/msg268486.html
-
-Mateusz Krawczuk (5):
-  media: s5p-tv: Fix sdo driver to work with CCF
-  media: s5p-tv: Fix mixer driver to work with CCF
-  ARM: samsung: add clock setup for FIMC and FIMD
-  clk: samsung: Add clock driver for s5pc110/s5pv210
-  ARM: s5pv210: Migrate clock handling to Common Clock Framework
-
- .../bindings/clock/samsung,s5pv210-clock.txt       |  72 ++
- arch/arm/mach-s5pv210/Kconfig                      |   9 +
- arch/arm/mach-s5pv210/Makefile                     |   4 +-
- arch/arm/mach-s5pv210/common.c                     |  22 +
- arch/arm/mach-s5pv210/common.h                     |  13 +
- arch/arm/mach-s5pv210/mach-aquila.c                |   1 +
- arch/arm/mach-s5pv210/mach-goni.c                  |  51 +-
- arch/arm/mach-s5pv210/mach-smdkc110.c              |   1 +
- arch/arm/mach-s5pv210/mach-smdkv210.c              |   1 +
- arch/arm/mach-s5pv210/mach-torbreck.c              |   1 +
- arch/arm/plat-samsung/Kconfig                      |   2 +-
- arch/arm/plat-samsung/init.c                       |   2 -
- drivers/clk/samsung/Makefile                       |   3 +-
- drivers/clk/samsung/clk-s5pv210.c                  | 732 +++++++++++++++++++++
- drivers/media/platform/s5p-tv/mixer_drv.c          |  33 +-
- drivers/media/platform/s5p-tv/sdo_drv.c            |  44 +-
- include/dt-bindings/clock/samsung,s5pv210-clock.h  | 221 +++++++
- 17 files changed, 1189 insertions(+), 23 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/samsung,s5pv210-clock.txt
- create mode 100644 drivers/clk/samsung/clk-s5pv210.c
- create mode 100644 include/dt-bindings/clock/samsung,s5pv210-clock.h
-
+diff --git a/drivers/media/platform/s5p-tv/mixer_drv.c b/drivers/media/platform/s5p-tv/mixer_drv.c
+index 51805a5..f889591 100644
+--- a/drivers/media/platform/s5p-tv/mixer_drv.c
++++ b/drivers/media/platform/s5p-tv/mixer_drv.c
+@@ -345,21 +345,42 @@ fail:
+ 
+ static int mxr_runtime_resume(struct device *dev)
+ {
++	int ret = 0;
+ 	struct mxr_device *mdev = to_mdev(dev);
+ 	struct mxr_resources *res = &mdev->res;
+ 
+ 	mxr_dbg(mdev, "resume - start\n");
+ 	mutex_lock(&mdev->mutex);
+ 	/* turn clocks on */
+-	clk_enable(res->mixer);
+-	clk_enable(res->vp);
+-	clk_enable(res->sclk_mixer);
++	ret = clk_prepare_enable(res->mixer);
++	if (ret < 0) {
++		dev_err(dev, "clk_prepare_enable(mixer) failed\n");
++		goto fail;
++	}
++	ret = clk_prepare_enable(res->vp);
++	if (ret < 0) {
++		dev_err(dev, "clk_prepare_enable(vp) failed\n");
++		goto fail_mixer;
++	}
++	ret = clk_prepare_enable(res->sclk_mixer);
++	if (ret < 0) {
++		dev_err(dev, "clk_prepare_enable(sclk_mixer) failed\n");
++		goto fail_vp;
++	}
+ 	/* apply default configuration */
+ 	mxr_reg_reset(mdev);
+ 	mxr_dbg(mdev, "resume - finished\n");
+ 
+ 	mutex_unlock(&mdev->mutex);
+ 	return 0;
++fail_vp:
++	clk_disable_unprepare(res->vp);
++fail_mixer:
++	clk_disable_unprepare(res->mixer);
++fail:
++	mutex_unlock(&mdev->mutex);
++	dev_info(dev, "resume failed\n");
++	return ret;
+ }
+ 
+ static int mxr_runtime_suspend(struct device *dev)
+@@ -369,9 +390,9 @@ static int mxr_runtime_suspend(struct device *dev)
+ 	mxr_dbg(mdev, "suspend - start\n");
+ 	mutex_lock(&mdev->mutex);
+ 	/* turn clocks off */
+-	clk_disable(res->sclk_mixer);
+-	clk_disable(res->vp);
+-	clk_disable(res->mixer);
++	clk_disable_unprepare(res->sclk_mixer);
++	clk_disable_unprepare(res->vp);
++	clk_disable_unprepare(res->mixer);
+ 	mutex_unlock(&mdev->mutex);
+ 	mxr_dbg(mdev, "suspend - finished\n");
+ 	return 0;
 -- 
 1.8.1.2
 
