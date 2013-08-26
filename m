@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031Ab3HZMzD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 08:55:03 -0400
+	id S1757109Ab3HZMzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 08:55:55 -0400
 Received: from mga11.intel.com ([192.55.52.93]:52649 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757011Ab3HZMy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 08:54:59 -0400
+	id S1757019Ab3HZMzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 08:55:02 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,958,1367996400"; 
-   d="scan'208";a="392111886"
+   d="scan'208";a="392111914"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V12 12/13] perf tools: add a function to calculate sample event size
-Date: Mon, 26 Aug 2013 16:00:29 +0300
-Message-Id: <1377522030-27870-13-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V12 13/13] perf tools: add a sample parsing test
+Date: Mon, 26 Aug 2013 16:00:30 +0300
+Message-Id: <1377522030-27870-14-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1377522030-27870-1-git-send-email-adrian.hunter@intel.com>
 References: <1377522030-27870-1-git-send-email-adrian.hunter@intel.com>
@@ -28,132 +28,378 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add perf_event__sample_event_size() which can be used when
-synthesizing sample events to determine how big the resulting
-event will be, and therefore how much memory to allocate.
+Add a test that checks that sample parsing is correctly
+implemented.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/event.h |  2 ++
- tools/perf/util/evsel.c | 92 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 94 insertions(+)
+ tools/perf/Makefile               |   1 +
+ tools/perf/tests/builtin-test.c   |   4 +
+ tools/perf/tests/sample-parsing.c | 316 ++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h          |   1 +
+ 4 files changed, 322 insertions(+)
+ create mode 100644 tools/perf/tests/sample-parsing.c
 
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 84f704f..a452504 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -245,6 +245,8 @@ int perf_event__preprocess_sample(const union perf_event *self,
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 868358c..a069578 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -439,6 +439,7 @@ PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
+ ifneq ($(OUTPUT),)
+   CFLAGS += -I$(OUTPUT)
+ endif
++LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
  
- const char *perf_event__name(unsigned int id);
- 
-+size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
-+				     u64 sample_regs_user, u64 read_format);
- int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 				  u64 sample_regs_user, u64 read_format,
- 				  const struct perf_sample *sample,
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 7d62373..e8745fb 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1465,6 +1465,98 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 	return 0;
- }
- 
-+size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
-+				     u64 sample_regs_user, u64 read_format)
+ ifdef NO_LIBELF
+ EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index f5af192..8ad9415 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -104,6 +104,10 @@ static struct test {
+ 		.func = test__code_reading,
+ 	},
+ 	{
++		.desc = "Test sample parsing",
++		.func = test__sample_parsing,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
+new file mode 100644
+index 0000000..77f598d
+--- /dev/null
++++ b/tools/perf/tests/sample-parsing.c
+@@ -0,0 +1,316 @@
++#include <stdbool.h>
++#include <inttypes.h>
++
++#include "util.h"
++#include "event.h"
++#include "evsel.h"
++
++#include "tests.h"
++
++#define COMP(m) do {					\
++	if (s1->m != s2->m) {				\
++		pr_debug("Samples differ at '"#m"'\n");	\
++		return false;				\
++	}						\
++} while (0)
++
++#define MCOMP(m) do {					\
++	if (memcmp(&s1->m, &s2->m, sizeof(s1->m))) {	\
++		pr_debug("Samples differ at '"#m"'\n");	\
++		return false;				\
++	}						\
++} while (0)
++
++static bool samples_same(const struct perf_sample *s1,
++			 const struct perf_sample *s2, u64 type, u64 regs_user,
++			 u64 read_format)
 +{
-+	size_t sz, result = sizeof(struct sample_event);
++	size_t i;
 +
 +	if (type & PERF_SAMPLE_IDENTIFIER)
-+		result += sizeof(u64);
++		COMP(id);
 +
 +	if (type & PERF_SAMPLE_IP)
-+		result += sizeof(u64);
++		COMP(ip);
 +
-+	if (type & PERF_SAMPLE_TID)
-+		result += sizeof(u64);
++	if (type & PERF_SAMPLE_TID) {
++		COMP(pid);
++		COMP(tid);
++	}
 +
 +	if (type & PERF_SAMPLE_TIME)
-+		result += sizeof(u64);
++		COMP(time);
 +
 +	if (type & PERF_SAMPLE_ADDR)
-+		result += sizeof(u64);
++		COMP(addr);
 +
 +	if (type & PERF_SAMPLE_ID)
-+		result += sizeof(u64);
++		COMP(id);
 +
 +	if (type & PERF_SAMPLE_STREAM_ID)
-+		result += sizeof(u64);
++		COMP(stream_id);
 +
 +	if (type & PERF_SAMPLE_CPU)
-+		result += sizeof(u64);
++		COMP(cpu);
 +
 +	if (type & PERF_SAMPLE_PERIOD)
-+		result += sizeof(u64);
++		COMP(period);
 +
 +	if (type & PERF_SAMPLE_READ) {
-+		result += sizeof(u64);
++		if (read_format & PERF_FORMAT_GROUP)
++			COMP(read.group.nr);
++		else
++			COMP(read.one.value);
 +		if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
-+			result += sizeof(u64);
++			COMP(read.time_enabled);
 +		if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
-+			result += sizeof(u64);
++			COMP(read.time_running);
 +		/* PERF_FORMAT_ID is forced for PERF_SAMPLE_READ */
 +		if (read_format & PERF_FORMAT_GROUP) {
-+			sz = sample->read.group.nr *
-+			     sizeof(struct sample_read_value);
-+			result += sz;
++			for (i = 0; i < s1->read.group.nr; i++)
++				MCOMP(read.group.values[i]);
 +		} else {
-+			result += sizeof(u64);
++			COMP(read.one.id);
 +		}
 +	}
 +
 +	if (type & PERF_SAMPLE_CALLCHAIN) {
-+		sz = (sample->callchain->nr + 1) * sizeof(u64);
-+		result += sz;
++		COMP(callchain->nr);
++		for (i = 0; i < s1->callchain->nr; i++)
++			COMP(callchain->ips[i]);
 +	}
 +
 +	if (type & PERF_SAMPLE_RAW) {
-+		result += sizeof(u32);
-+		result += sample->raw_size;
++		COMP(raw_size);
++		if (memcmp(s1->raw_data, s2->raw_data, s1->raw_size)) {
++			pr_debug("Samples differ at 'raw_data'\n");
++			return false;
++		}
 +	}
 +
 +	if (type & PERF_SAMPLE_BRANCH_STACK) {
-+		sz = sample->branch_stack->nr * sizeof(struct branch_entry);
-+		sz += sizeof(u64);
-+		result += sz;
++		COMP(branch_stack->nr);
++		for (i = 0; i < s1->branch_stack->nr; i++)
++			MCOMP(branch_stack->entries[i]);
 +	}
 +
 +	if (type & PERF_SAMPLE_REGS_USER) {
-+		if (sample->user_regs.abi) {
-+			result += sizeof(u64);
-+			sz = hweight_long(sample_regs_user) * sizeof(u64);
-+			result += sz;
-+		} else {
-+			result += sizeof(u64);
++		size_t sz = hweight_long(regs_user) * sizeof(u64);
++
++		COMP(user_regs.abi);
++		if (s1->user_regs.abi &&
++		    (!s1->user_regs.regs || !s2->user_regs.regs ||
++		     memcmp(s1->user_regs.regs, s2->user_regs.regs, sz))) {
++			pr_debug("Samples differ at 'user_regs'\n");
++			return false;
 +		}
 +	}
 +
 +	if (type & PERF_SAMPLE_STACK_USER) {
-+		sz = sample->user_stack.size;
-+		result += sizeof(u64);
-+		if (sz) {
-+			result += sz;
-+			result += sizeof(u64);
++		COMP(user_stack.size);
++		if (memcmp(s1->user_stack.data, s1->user_stack.data,
++			   s1->user_stack.size)) {
++			pr_debug("Samples differ at 'user_stack'\n");
++			return false;
 +		}
 +	}
 +
 +	if (type & PERF_SAMPLE_WEIGHT)
-+		result += sizeof(u64);
++		COMP(weight);
 +
 +	if (type & PERF_SAMPLE_DATA_SRC)
-+		result += sizeof(u64);
++		COMP(data_src);
 +
-+	return result;
++	return true;
 +}
 +
- int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 				  u64 sample_regs_user, u64 read_format,
- 				  const struct perf_sample *sample,
++static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
++{
++	struct perf_evsel evsel = {
++		.needs_swap = false,
++		.attr = {
++			.sample_type = sample_type,
++			.sample_regs_user = sample_regs_user,
++			.read_format = read_format,
++		},
++	};
++	union perf_event *event;
++	union {
++		struct ip_callchain callchain;
++		u64 data[64];
++	} callchain = {
++		/* 3 ips */
++		.data = {3, 201, 202, 203},
++	};
++	union {
++		struct branch_stack branch_stack;
++		u64 data[64];
++	} branch_stack = {
++		/* 1 branch_entry */
++		.data = {1, 211, 212, 213},
++	};
++	u64 user_regs[64];
++	const u64 raw_data[] = {0x123456780a0b0c0dULL, 0x1102030405060708ULL};
++	const u64 data[] = {0x2211443366558877ULL, 0, 0xaabbccddeeff4321ULL};
++	struct perf_sample sample = {
++		.ip		= 101,
++		.pid		= 102,
++		.tid		= 103,
++		.time		= 104,
++		.addr		= 105,
++		.id		= 106,
++		.stream_id	= 107,
++		.period		= 108,
++		.weight		= 109,
++		.cpu		= 110,
++		.raw_size	= sizeof(raw_data),
++		.data_src	= 111,
++		.raw_data	= (void *)raw_data,
++		.callchain	= &callchain.callchain,
++		.branch_stack	= &branch_stack.branch_stack,
++		.user_regs	= {
++			.abi	= PERF_SAMPLE_REGS_ABI_64,
++			.regs	= user_regs,
++		},
++		.user_stack	= {
++			.size	= sizeof(data),
++			.data	= (void *)data,
++		},
++		.read		= {
++			.time_enabled = 0x030a59d664fca7deULL,
++			.time_running = 0x011b6ae553eb98edULL,
++		},
++	};
++	struct sample_read_value values[] = {{1, 5}, {9, 3}, {2, 7}, {6, 4},};
++	struct perf_sample sample_out;
++	size_t i, sz, bufsz;
++	int err, ret = -1;
++
++	for (i = 0; i < sizeof(user_regs); i++)
++		*(i + (u8 *)user_regs) = i & 0xfe;
++
++	if (read_format & PERF_FORMAT_GROUP) {
++		sample.read.group.nr     = 4;
++		sample.read.group.values = values;
++	} else {
++		sample.read.one.value = 0x08789faeb786aa87ULL;
++		sample.read.one.id    = 99;
++	}
++
++	sz = perf_event__sample_event_size(&sample, sample_type,
++					   sample_regs_user, read_format);
++	bufsz = sz + 4096; /* Add a bit for overrun checking */
++	event = malloc(bufsz);
++	if (!event) {
++		pr_debug("malloc failed\n");
++		return -1;
++	}
++
++	memset(event, 0xff, bufsz);
++	event->header.type = PERF_RECORD_SAMPLE;
++	event->header.misc = 0;
++	event->header.size = sz;
++
++	err = perf_event__synthesize_sample(event, sample_type,
++					    sample_regs_user, read_format,
++					    &sample, false);
++	if (err) {
++		pr_debug("%s failed for sample_type %#"PRIx64", error %d\n",
++			 "perf_event__synthesize_sample", sample_type, err);
++		goto out_free;
++	}
++
++	/* The data does not contain 0xff so we use that to check the size */
++	for (i = bufsz; i > 0; i--) {
++		if (*(i - 1 + (u8 *)event) != 0xff)
++			break;
++	}
++	if (i != sz) {
++		pr_debug("Event size mismatch: actual %zu vs expected %zu\n",
++			 i, sz);
++		goto out_free;
++	}
++
++	evsel.sample_size = __perf_evsel__sample_size(sample_type);
++
++	err = perf_evsel__parse_sample(&evsel, event, &sample_out);
++	if (err) {
++		pr_debug("%s failed for sample_type %#"PRIx64", error %d\n",
++			 "perf_evsel__parse_sample", sample_type, err);
++		goto out_free;
++	}
++
++	if (!samples_same(&sample, &sample_out, sample_type,
++			  sample_regs_user, read_format)) {
++		pr_debug("parsing failed for sample_type %#"PRIx64"\n",
++			 sample_type);
++		goto out_free;
++	}
++
++	ret = 0;
++out_free:
++	free(event);
++	if (ret && read_format)
++		pr_debug("read_format %#"PRIx64"\n", read_format);
++	return ret;
++}
++
++/**
++ * test__sample_parsing - test sample parsing.
++ *
++ * This function implements a test that synthesizes a sample event, parses it
++ * and then checks that the parsed sample matches the original sample.  The test
++ * checks sample format bits separately and together.  If the test passes %0 is
++ * returned, otherwise %-1 is returned.
++ */
++int test__sample_parsing(void)
++{
++	const u64 rf[] = {4, 5, 6, 7, 12, 13, 14, 15};
++	u64 sample_type;
++	u64 sample_regs_user;
++	size_t i;
++	int err;
++
++	/*
++	 * Fail the test if it has not been updated when new sample format bits
++	 * were added.
++	 */
++	if (PERF_SAMPLE_MAX > PERF_SAMPLE_IDENTIFIER << 1) {
++		pr_debug("sample format has changed - test needs updating\n");
++		return -1;
++	}
++
++	/* Test each sample format bit separately */
++	for (sample_type = 1; sample_type != PERF_SAMPLE_MAX;
++	     sample_type <<= 1) {
++		/* Test read_format variations */
++		if (sample_type == PERF_SAMPLE_READ) {
++			for (i = 0; i < ARRAY_SIZE(rf); i++) {
++				err = do_test(sample_type, 0, rf[i]);
++				if (err)
++					return err;
++			}
++			continue;
++		}
++
++		if (sample_type == PERF_SAMPLE_REGS_USER)
++			sample_regs_user = 0x3fff;
++		else
++			sample_regs_user = 0;
++
++		err = do_test(sample_type, sample_regs_user, 0);
++		if (err)
++			return err;
++	}
++
++	/* Test all sample format bits together */
++	sample_type = PERF_SAMPLE_MAX - 1;
++	sample_regs_user = 0x3fff;
++	for (i = 0; i < ARRAY_SIZE(rf); i++) {
++		err = do_test(sample_type, sample_regs_user, rf[i]);
++		if (err)
++			return err;
++	}
++
++	return 0;
++}
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index c748f53..83d5b71 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -37,5 +37,6 @@ int test__task_exit(void);
+ int test__sw_clock_freq(void);
+ int test__perf_time_to_tsc(void);
+ int test__code_reading(void);
++int test__sample_parsing(void);
+ 
+ #endif /* TESTS_H */
 -- 
 1.7.11.7
 
