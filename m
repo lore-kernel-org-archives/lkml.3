@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab3HZVnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 17:43:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57989 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab3HZVno (ORCPT
+	id S1752776Ab3HZVpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 17:45:18 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:34343 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711Ab3HZVpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 17:43:44 -0400
-Date: Mon, 26 Aug 2013 11:55:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: [3.10][PATCH 4/4] mei: me: fix hardware reset flow
-Message-ID: <20130826185503.GB15992@kroah.com>
-References: <1377424189-5508-1-git-send-email-tomas.winkler@intel.com>
- <1377424189-5508-5-git-send-email-tomas.winkler@intel.com>
+	Mon, 26 Aug 2013 17:45:16 -0400
+Date: Mon, 26 Aug 2013 14:45:26 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Bcache fix for 3.11
+Message-ID: <20130826214526.GB2798@kmo-pixel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377424189-5508-5-git-send-email-tomas.winkler@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 25, 2013 at 12:49:49PM +0300, Tomas Winkler wrote:
-> stable: 3.10
-> commit ff96066e3171acdea356b331163495957cb833d0 char-misc
+Last writeback fix had a brown paper bag bug in it. The fix for that is
+a one liner though:
 
-Sorry, but I have to wait until the patch hits Linus's tree before I can
-accept it into a stable tree, you know that :(
+The following changes since commit 9df79a37eeb7ee89dc56aeed3051be676369359a:
 
-> Both H_IS and H_IE needs to be set to receive H_RDY
-> interrupt
-> 
-> 1. Assert H_IS to clear the interrupts during hw reset
-> and use mei_me_reg_write instead of mei_hcsr_set as the later
-> strips down the H_IS
-> 
-> 2. fix interrupt disablement embarrassing typo
->   hcsr |= ~H_IE -> hcsr &= ~H_IE;
-> this will remove the unwanted interrupt on power down
-> 
-> 3. remove useless debug print outs
-> 
-> Cc: stable@vger.kernel.org
-> Cc: Shuah Khan <shuah.kh@samsung.com>
-> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> Conflicts:
-> 	drivers/misc/mei/hw-me.c
+  bcache: Fix a flush/fua performance bug (2013-08-19 15:30:45 -0700)
 
-What's this for?
+are available in the git repository at:
 
-I'll wait for this to hit Linus's tree during the 3.12-rc1 merge window
-and then add it to the 3.10-stable tree, ok?
+  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.11
 
-thanks,
+for you to fetch changes up to 174c1412939888ffedc4da02b375bc579af2a93c:
 
-greg k-h
+  bcache: Fix a dumb CPU spinning bug in writeback (2013-08-23 16:30:22 -0700)
+
+----------------------------------------------------------------
+Kent Overstreet (1):
+      bcache: Fix a dumb CPU spinning bug in writeback
+
+ drivers/md/bcache/writeback.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
