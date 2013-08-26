@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab3HZK5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:57:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53464 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab3HZK5O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:57:14 -0400
-Date: Mon, 26 Aug 2013 03:59:30 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Fabio Coatti <fabio.coatti@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.10.9 Crash
-Message-ID: <20130826105930.GA25331@kroah.com>
-References: <1681718.fu8vXZyU0z@calvin>
+	id S1756699Ab3HZK6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:58:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47257 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751704Ab3HZK6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 06:58:46 -0400
+Date: Mon, 26 Aug 2013 12:58:42 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>
+Cc: Joe Perches <joe@perches.com>, Dan Carpenter <dan.carpenter@oracle.com>,
+        kernel-janitors@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pktcdvd: Fix defective misuses of pkt_<level>
+In-Reply-To: <alpine.LNX.2.00.1308070154230.10817@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1308261258150.2077@pobox.suse.cz>
+References: <20130801154452.GB5198@elgon.mountain> <1375474254.2034.134.camel@joe-AO722> <20130806132126.5c25f89bcd3311e636937712@linux-foundation.org> <alpine.LNX.2.00.1308070154230.10817@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1681718.fu8vXZyU0z@calvin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 10:36:30AM +0200, Fabio Coatti wrote:
-> Hi all, 
-> I'm remotely managing a 3.10.9 server and this morning I found it locked.
-> The only data I could gather is a screenshot (thru AMT interface).
-> I've ran it thru gocr and this is the result (some char got garbled but the 
-> bulk is ok).
-> The machine is pretty new and stable, nothin like this happened with previous 
-> 3.10.X
+On Wed, 7 Aug 2013, Jiri Kosina wrote:
 
-Can you reproduce this easily?  If so, can you use 'git bisect' to track
-down the offending patch?
+> > > Andrew, I believe Jiri picked up this series and
+> > > you can drop them from mm.  Thanks.
+> > 
+> > Shall do if/when they turn up in linux-next.
+> 
+> Pull request to Jens is there [1], but his branch has been silent for two 
+> weeks ...
+> 
+> [1] https://lkml.org/lkml/2013/7/30/277
 
-thanks,
+And here goes a friendly ping to Jens ... ? :)
 
-greg k-h
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
