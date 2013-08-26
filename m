@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757206Ab3HZQpB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 12:45:01 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59208 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757164Ab3HZQo7 (ORCPT
+	id S1752376Ab3HZQsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 12:48:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56336 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab3HZQsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 12:44:59 -0400
-Date: Mon, 26 Aug 2013 12:44:58 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Shawn Bohrer <sbohrer@rgmadvisors.com>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        <tomk@rgmadvisors.com>
-Subject: Re: [PATCH] USB: Fix compilation error when CONFIG_PM disabled
-In-Reply-To: <1377534914-7145-1-git-send-email-sbohrer@rgmadvisors.com>
-Message-ID: <Pine.LNX.4.44L0.1308261244170.1445-100000@iolanthe.rowland.org>
+	Mon, 26 Aug 2013 12:48:07 -0400
+Date: Mon, 26 Aug 2013 09:50:22 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Meelis Roos <mroos@linux.ee>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steve Cotton <steve@s.cotton.clara.co.uk>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] USB: OHCI: fix build error related to ohci_suspend/resume
+Message-ID: <20130826165022.GA2113@kroah.com>
+References: <20130826042653.GA2778@kroah.com>
+ <Pine.LNX.4.44L0.1308261051340.1445-100000@iolanthe.rowland.org>
+ <20130826153840.GA29862@kroah.com>
+ <20130826160627.GA11307@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130826160627.GA11307@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Aug 2013, Shawn Bohrer wrote:
-
-> Commit 9a11899c5e699a8d "USB: OHCI: add missing PCI PM callbacks to
-> ohci-pci.c" Introduced the following compilation errors when power
-> management is disabled:
+On Mon, Aug 26, 2013 at 09:06:27AM -0700, Guenter Roeck wrote:
+> On Mon, Aug 26, 2013 at 08:38:40AM -0700, Greg Kroah-Hartman wrote:
+> > On Mon, Aug 26, 2013 at 10:53:53AM -0400, Alan Stern wrote:
+> > > Commit 9a11899c5e69 (USB: OHCI: add missing PCI PM callbacks to
+> > > ohci-pci.c) added missing ohci_suspend and ohci_resume callback
+> > > pointers, but forgot that these callbacks are declared and defined
+> > > only when CONFIG_PM is enabled.
+> > > 
+> > > This patch adds a preprocessor conditional to avoid build errors when
+> > > PM is disabled.
+> > > 
+> > > Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+> > > 
+> > > ---
+> > 
+> > Guenter and Meelis, does the patch below fix the problem for you?
+> > 
+> Tested-by: Guenter Roeck <linux@roeck-us.net>
 > 
-> drivers/usb/host/ohci-pci.c: In function 'ohci_pci_init':
-> drivers/usb/host/ohci-pci.c:309:35: error: 'ohci_suspend' undeclared (first use in this function)
-> drivers/usb/host/ohci-pci.c:309:35: note: each undeclared identifier is reported only once for each function it appears in
-> drivers/usb/host/ohci-pci.c:310:34: error: 'ohci_resume' undeclared (first use in this function)
+> Previously failing builds:
+> 	mips:ath79_defconfig
+> 	powerpc:ppc64e_defconfig
+> 	powerpc:cell_defconfig
+> 	powerpc:maple_defconfig
+> 	parisc:defconfig
+> 	tile:defconfig
+> 	sparc32:defconfig
+> 	sparc64:defconfig
 > 
-> ohci_suspend and ohci_resume are only defined when CONFIG_PM is defined
-> so only use them under CONFIG_PM.
+> 	as well as the powerpc qemu test (with the config file used
+> 	by the yocto project)
+> 
+> All builds pass with the patch applied, as does the qemu test.
 
-Heh -- beat you to it.
+Thanks for testing, I'll queue it up later today (at an airport right
+now, about to board a flight), and send it to Linus later tonight if no
+one else has any problems with it.
 
-	http://marc.info/?l=linux-usb&m=137752885015904&w=2
+thanks,
 
-Alan Stern
-
+greg k-h
