@@ -1,112 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab3HZNdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 09:33:09 -0400
-Received: from 4.mo3.mail-out.ovh.net ([178.33.46.10]:52581 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751669Ab3HZNdH (ORCPT
+	id S1756766Ab3HZNgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 09:36:53 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50201 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab3HZNgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 09:33:07 -0400
-X-Greylist: delayed 443 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Aug 2013 09:33:07 EDT
-Message-ID: <521B5754.2070603@overkiz.com>
-Date: Mon, 26 Aug 2013 15:25:40 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 26 Aug 2013 09:36:52 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2 14/20] mm, hugetlb: call vma_needs_reservation before entering alloc_huge_page()
+In-Reply-To: <1376040398-11212-15-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com> <1376040398-11212-15-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 26 Aug 2013 19:06:45 +0530
+Message-ID: <87vc2sd15e.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Yang Wenyou <Wenyou.Yang@atmel.com>
-CC: Wim Van Sebroeck <wim@iguana.be>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH v2 0/4] watchdog: at91sam9_wdt: handle already configured
- wdt
-References: <1371799176-3408-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1371799176-3408-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 6306165379517872249
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrhedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrhedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082613-2000-0000-0000-00000D766547
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Yang,
+Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 
-Did you test/review this series ?
+> In order to validate that this failure is reasonable, we need to know
+> whether allocation request is for reserved or not on caller function.
+> So moving vma_needs_reservation() up to the caller of alloc_huge_page().
+> There is no functional change in this patch and following patch use
+> this information.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 8dff972..bc666cf 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1110,13 +1110,11 @@ static void vma_commit_reservation(struct hstate *h,
+>  }
+>
+>  static struct page *alloc_huge_page(struct vm_area_struct *vma,
+> -				    unsigned long addr, int avoid_reserve)
+> +				    unsigned long addr, int use_reserve)
+>  {
+>  	struct hugepage_subpool *spool = subpool_vma(vma);
+>  	struct hstate *h = hstate_vma(vma);
+>  	struct page *page;
+> -	long chg;
+> -	bool use_reserve;
+>  	int ret, idx;
+>  	struct hugetlb_cgroup *h_cg;
+>
+> @@ -1129,10 +1127,6 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>  	 * need pages and subpool limit allocated allocated if no reserve
+>  	 * mapping overlaps.
+>  	 */
+> -	chg = vma_needs_reservation(h, vma, addr);
+> -	if (chg < 0)
+> -		return ERR_PTR(-ENOMEM);
+> -	use_reserve = (!chg && !avoid_reserve);
+>  	if (!use_reserve)
+>  		if (hugepage_subpool_get_pages(spool, 1))
+>  			return ERR_PTR(-ENOSPC);
+> @@ -2504,6 +2498,8 @@ static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	struct hstate *h = hstate_vma(vma);
+>  	struct page *old_page, *new_page;
+>  	int outside_reserve = 0;
+> +	long chg;
+> +	bool use_reserve;
+>  	unsigned long mmun_start;	/* For mmu_notifiers */
+>  	unsigned long mmun_end;		/* For mmu_notifiers */
+>
+> @@ -2535,7 +2531,17 @@ retry_avoidcopy:
+>
+>  	/* Drop page_table_lock as buddy allocator may be called */
+>  	spin_unlock(&mm->page_table_lock);
+> -	new_page = alloc_huge_page(vma, address, outside_reserve);
+> +	chg = vma_needs_reservation(h, vma, address);
+> +	if (chg == -ENOMEM) {
 
-If you did, could you add your Acked, Reviewed and/or Tested-by.
-I'd really like to get this series merged to mainline.
+why not 
 
-Thanks.
+    if (chg < 0) ?
 
-Best Regards,
-Boris
+Should we try to unmap the page from child and avoid cow here ?. May be
+with outside_reserve = 1 we will never have vma_needs_reservation fail.
+Any how it would be nice to document why this error case is different
+from alloc_huge_page error case.
 
-On 21/06/2013 09:19, Boris BREZILLON wrote:
-> Hello,
+
+> +		page_cache_release(old_page);
+> +
+> +		/* Caller expects lock to be held */
+> +		spin_lock(&mm->page_table_lock);
+> +		return VM_FAULT_OOM;
+> +	}
+> +	use_reserve = !chg && !outside_reserve;
+> +
+> +	new_page = alloc_huge_page(vma, address, use_reserve);
 >
-> This patch series is a porposal to enhance the sam9 watchdog timer support.
+>  	if (IS_ERR(new_page)) {
+>  		long err = PTR_ERR(new_page);
+> @@ -2664,6 +2670,8 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	struct page *page;
+>  	struct address_space *mapping;
+>  	pte_t new_pte;
+> +	long chg;
+> +	bool use_reserve;
 >
-> The at91sam9 watchdog timer can only be configured once, and the current
-> implementation tries to configure it in a static way:
-> - 2 seconds timeout
-> - wdt restart every 500ms
->
-> If the timer has already been configured with different values, it returns an
-> error and do not create any watchdog device.
->
-> This is not critical if the watchdog is disabled, but if it has been enabled
-> with different timeout values it will lead to a SoC reset.
->
-> This patch series tries to address this issue by adapting the heartbeat value
-> according the WDT timer config:
-> - it first tries to configure the timer as requested.
-> - if it fails it fallbacks to the current config, adapting its heartbeat timer
-> to the needs
->
-> This patch series also move to a dynamically allocated at91wdt device instead
-> of the static instance. I'm not sure this is the best solution, so please tell
-> me if you prefer to keep static instance of watchdog.
->
-> It adds a new at91 wdt type: software. This new type make use of the at91 wdt
-> interrupt to trigger a software reboot.
->
-> Finally it adds several properties to the device tree bindings.
->
-> Best Regards,
-> Boris
->
-> Change since v1:
->   - fix typo in documentaion
->   - fix irq dt definition for sama5d3 SoC
->
-> Boris BREZILLON (4):
->    watchdog: at91sam9_wdt: better watchdog support
->    watchdog: at91sam9_wdt: update device tree doc
->    ARM: at91/dt: add sam9 watchdog default options to SoCs
->    ARM: at91/dt: add watchdog properties to kizbox board
->
->   .../devicetree/bindings/watchdog/atmel-wdt.txt     |   30 +-
->   arch/arm/boot/dts/at91sam9260.dtsi                 |    5 +
->   arch/arm/boot/dts/at91sam9263.dtsi                 |    5 +
->   arch/arm/boot/dts/at91sam9g45.dtsi                 |    5 +
->   arch/arm/boot/dts/at91sam9n12.dtsi                 |    5 +
->   arch/arm/boot/dts/at91sam9x5.dtsi                  |    5 +
->   arch/arm/boot/dts/kizbox.dts                       |    6 +
->   arch/arm/boot/dts/sama5d3.dtsi                     |    5 +
->   drivers/watchdog/at91sam9_wdt.c                    |  319 +++++++++++++++-----
->   9 files changed, 300 insertions(+), 85 deletions(-)
->
+>  	/*
+>  	 * Currently, we are forced to kill the process in the event the
+> @@ -2689,7 +2697,15 @@ retry:
+>  		size = i_size_read(mapping->host) >> huge_page_shift(h);
+>  		if (idx >= size)
+>  			goto out;
+> -		page = alloc_huge_page(vma, address, 0);
+> +
+> +		chg = vma_needs_reservation(h, vma, address);
+> +		if (chg == -ENOMEM) {
+
+if (chg < 0)
+
+> +			ret = VM_FAULT_OOM;
+> +			goto out;
+> +		}
+> +		use_reserve = !chg;
+> +
+> +		page = alloc_huge_page(vma, address, use_reserve);
+>  		if (IS_ERR(page)) {
+>  			ret = PTR_ERR(page);
+>  			if (ret == -ENOMEM)
+> -- 
+> 1.7.9.5
 
