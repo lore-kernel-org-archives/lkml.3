@@ -1,91 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab3HZOtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 10:49:21 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:42084 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857Ab3HZOtU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 10:49:20 -0400
-Date: Mon, 26 Aug 2013 22:49:05 +0800
-From: Richard Zhao <linuxzsc@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Richard Zhao <rizhao@nvidia.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "djbw@fb.com" <djbw@fb.com>
-Subject: Re: [PATCH] DMA: let filter functions of of_dma_simple_xlate
- possible check of_node
-Message-ID: <20130826144901.GB2733@richard-laptop>
-References: <1375408800-11789-1-git-send-email-rizhao@nvidia.com>
- <20130822051904.GA2685@rizhao-lap>
- <52167213.6090604@wwwdotorg.org>
- <20130823012911.GB17925@rizhao-lap>
- <52178677.6090001@wwwdotorg.org>
+	id S1756200Ab3HZOv3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 10:51:29 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:35034 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751801Ab3HZOv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 10:51:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] driver core / ACPI: Avoid device removal locking problems
+Date: Mon, 26 Aug 2013 17:02:08 +0200
+Message-ID: <1430120.G7JdUKlgj6@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <3389643.Fdir3g6c6B@vostro.rjw.lan>
+References: <1543475.L7gSB7lLAu@vostro.rjw.lan> <4785337.sqQqDSPcpL@vostro.rjw.lan> <3389643.Fdir3g6c6B@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52178677.6090001@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 09:57:43AM -0600, Stephen Warren wrote:
-> On 08/22/2013 07:29 PM, Richard Zhao wrote:
-> > On Fri, Aug 23, 2013 at 04:18:27AM +0800, Stephen Warren wrote:
-> >> On 08/21/2013 11:19 PM, Richard Zhao wrote:
-> >>> On Fri, Aug 02, 2013 at 10:00:00AM +0800, Richard Zhao wrote:
-> >>>> pass of_phandle_args dma_spec to dma_request_channel in of_dma_simple_xlate,
-> >>>> so the filter function could access of_node in of_phandle_args.
-> >>>>
-> >>>> It also remove restriction of #dma-cells has to be one.
-> >>>>
-> >>>> Signed-off-by: Richard Zhao <rizhao@nvidia.com>
-> >>>> ---
-> >>>>  drivers/dma/edma.c     |  7 +++++--
-> >>>>  drivers/dma/of-dma.c   | 10 ++++------
-> >>>>  drivers/dma/omap-dma.c |  6 ++++--
-> >>>>  3 files changed, 13 insertions(+), 10 deletions(-)
-> >>>>
-> >>>
-> >>> Hi Vinod,
-> >>>
-> >>> Can you please pick up this change?
-> >>>
-> >>> Hi Stephen,
-> >>>
-> >>> Can you please give a ack or reviewed-by etc?
-> >>
-> >> Hmm. Looking at the patch, I'm not sure it's right.
-> >>
-> >> This patch simply passes all the specfier args to the filter function,
-> >> and the code to check the equality of the of_node to the filter args is
-> >> still duplicated in each DMA driver. Instead, the DMA core should be
-> >> implementing the equality check, and only even calling the
-> >> driver-specific filter function for devices where the client's phandle
-> >> matches the DMA providing device's of_node handle.
-> > 
-> > Filter function is called in dmaengine core code, independent of dt.
-> 
-> The core code can still check if a dmaengine's driver was instantiated
-> from DT and take additional actions in that case.
+On Monday, August 26, 2013 04:43:26 PM Rafael J. Wysocki wrote:
+> On Monday, August 26, 2013 02:42:09 PM Rafael J. Wysocki wrote:
+> > On Monday, August 26, 2013 11:13:13 AM Gu Zheng wrote:
+> > > Hi Rafael,
 
->From perspective of core code, the filter function is not attached to
-any dma driver. So it doesn't care whether dt dma driver is instantiated.
-I'm not sure I've got your point. Can you please write pieces of code if
-possible?
-The goal of this patch is to use least changes to add check of dt node.
+[...]
 
-Thanks
-Richard
 > 
-> > And the reason why the driver has to write its own filter function is
-> > it has to store slave id there in its own way.
+> OK, so the patch below is quick and dirty and overkill, but it should make the
+> splat go away at least.
+
+And if this patch does make the splat go away for you, please also test the
+appended one (Tejun, thanks for the hint!).
+
+I'll address the ACPI part differently later.
+
+> ---
+>  drivers/acpi/scan.c |    3 ++-
+>  drivers/base/core.c |   36 ++++++++++++++++++++----------------
+>  2 files changed, 22 insertions(+), 17 deletions(-)
 > 
-> I'm not saying don't call the driver's filter function, but rather that
-> the dmaengine core should perform the common checks before doing so.
-> 
+> Index: linux-pm/drivers/base/core.c
+> ===================================================================
+> --- linux-pm.orig/drivers/base/core.c
+> +++ linux-pm/drivers/base/core.c
+> @@ -49,6 +49,18 @@ static struct kobject *dev_kobj;
+>  struct kobject *sysfs_dev_char_kobj;
+>  struct kobject *sysfs_dev_block_kobj;
+>  
+> +static DEFINE_MUTEX(device_hotplug_lock);
+> +
+> +void lock_device_hotplug(void)
+> +{
+> +	mutex_lock(&device_hotplug_lock);
+> +}
+> +
+> +void unlock_device_hotplug(void)
+> +{
+> +	mutex_unlock(&device_hotplug_lock);
+> +}
+> +
+>  #ifdef CONFIG_BLOCK
+>  static inline int device_is_not_partition(struct device *dev)
+>  {
+> @@ -408,9 +420,11 @@ static ssize_t show_online(struct device
+>  {
+>  	bool val;
+>  
+> -	lock_device_hotplug();
+> +	if (!mutex_trylock(&device_hotplug_lock))
+> +		return -EAGAIN;
+> +
+>  	val = !dev->offline;
+> -	unlock_device_hotplug();
+> +	mutex_unlock(&device_hotplug_lock);
+>  	return sprintf(buf, "%u\n", val);
+>  }
+>  
+> @@ -424,9 +438,11 @@ static ssize_t store_online(struct devic
+>  	if (ret < 0)
+>  		return ret;
+>  
+> -	lock_device_hotplug();
+> +	if (!mutex_trylock(&device_hotplug_lock))
+> +		return -EAGAIN;
+> +
+>  	ret = val ? device_online(dev) : device_offline(dev);
+> -	unlock_device_hotplug();
+> +	mutex_unlock(&device_hotplug_lock);
+>  	return ret < 0 ? ret : count;
+>  }
+>  
+> @@ -1479,18 +1495,6 @@ EXPORT_SYMBOL_GPL(put_device);
+>  EXPORT_SYMBOL_GPL(device_create_file);
+>  EXPORT_SYMBOL_GPL(device_remove_file);
+>  
+> -static DEFINE_MUTEX(device_hotplug_lock);
+> -
+> -void lock_device_hotplug(void)
+> -{
+> -	mutex_lock(&device_hotplug_lock);
+> -}
+> -
+> -void unlock_device_hotplug(void)
+> -{
+> -	mutex_unlock(&device_hotplug_lock);
+> -}
+> -
+>  static int device_check_offline(struct device *dev, void *not_used)
+>  {
+>  	int ret;
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c
+> +++ linux-pm/drivers/acpi/scan.c
+> @@ -510,7 +510,8 @@ acpi_eject_store(struct device *d, struc
+>  	if (ACPI_FAILURE(status) || !acpi_device->flags.ejectable)
+>  		return -ENODEV;
+>  
+> -	mutex_lock(&acpi_scan_lock);
+> +	if (!mutex_trylock(&acpi_scan_lock))
+> +		return -EAGAIN;
+>  
+>  	if (acpi_device->flags.eject_pending) {
+>  		/* ACPI eject notification event. */
+
+Thanks,
+Rafael
+
+
+---
+ drivers/base/core.c |   45 +++++++++++++++++++++++++++++++--------------
+ 1 file changed, 31 insertions(+), 14 deletions(-)
+
+Index: linux-pm/drivers/base/core.c
+===================================================================
+--- linux-pm.orig/drivers/base/core.c
++++ linux-pm/drivers/base/core.c
+@@ -49,6 +49,28 @@ static struct kobject *dev_kobj;
+ struct kobject *sysfs_dev_char_kobj;
+ struct kobject *sysfs_dev_block_kobj;
+ 
++static DEFINE_MUTEX(device_hotplug_lock);
++
++void lock_device_hotplug(void)
++{
++	mutex_lock(&device_hotplug_lock);
++}
++
++void unlock_device_hotplug(void)
++{
++	mutex_unlock(&device_hotplug_lock);
++}
++
++static int try_to_lock_device_hotplug(void)
++{
++	if (!mutex_trylock(&device_hotplug_lock)) {
++		/* Avoid busy waiting, 10 ms of sleep should do. */
++		msleep(10);
++		return restart_syscall();
++	}
++	return 0;
++}
++
+ #ifdef CONFIG_BLOCK
+ static inline int device_is_not_partition(struct device *dev)
+ {
+@@ -407,8 +429,12 @@ static ssize_t show_online(struct device
+ 			   char *buf)
+ {
+ 	bool val;
++	int ret;
++
++	ret = try_to_lock_device_hotplug();
++	if (ret)
++		return ret;
+ 
+-	lock_device_hotplug();
+ 	val = !dev->offline;
+ 	unlock_device_hotplug();
+ 	return sprintf(buf, "%u\n", val);
+@@ -424,7 +450,10 @@ static ssize_t store_online(struct devic
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	lock_device_hotplug();
++	ret = try_to_lock_device_hotplug();
++	if (ret)
++		return ret;
++
+ 	ret = val ? device_online(dev) : device_offline(dev);
+ 	unlock_device_hotplug();
+ 	return ret < 0 ? ret : count;
+@@ -1479,18 +1508,6 @@ EXPORT_SYMBOL_GPL(put_device);
+ EXPORT_SYMBOL_GPL(device_create_file);
+ EXPORT_SYMBOL_GPL(device_remove_file);
+ 
+-static DEFINE_MUTEX(device_hotplug_lock);
+-
+-void lock_device_hotplug(void)
+-{
+-	mutex_lock(&device_hotplug_lock);
+-}
+-
+-void unlock_device_hotplug(void)
+-{
+-	mutex_unlock(&device_hotplug_lock);
+-}
+-
+ static int device_check_offline(struct device *dev, void *not_used)
+ {
+ 	int ret;
+
