@@ -1,128 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757053Ab3HZPjZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1757083Ab3HZPj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 11:39:27 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:59502 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab3HZPjZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Aug 2013 11:39:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41077 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752160Ab3HZPjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 11:39:23 -0400
-Date: Mon, 26 Aug 2013 17:33:01 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Willy Tarreau <w@1wt.eu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "security@kernel.org" <security@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>
-Subject: Re: /proc/pid/fd && anon_inode_fops
-Message-ID: <20130826153301.GA15890@redhat.com>
-References: <CA+55aFw3AM2Xe2aNUKk0x8ZrZHbY4QnaRZbZdAqf1trT+dGDmQ@mail.gmail.com> <CALCETrU2xBykonV2N8bSysdycfZkCq_P5bUnrN5SjZo2_5dNrg@mail.gmail.com> <20130822201530.GL31117@1wt.eu> <20130824182939.GA23630@redhat.com> <20130824212432.GA9299@1wt.eu> <20130825052317.GZ27005@ZenIV.linux.org.uk> <20130825065039.GB9299@1wt.eu> <CA+55aFwFeCRcwn4qo570Y15mKrN3jEdN757PcZhrXs7QYi8MYA@mail.gmail.com> <20130825194844.GA16717@redhat.com> <CA+55aFzbY3zYD1i5x02Z-6K3nHKzJj6227ZBYRLqij9y0eXRqQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzbY3zYD1i5x02Z-6K3nHKzJj6227ZBYRLqij9y0eXRqQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH v3] ACPI: Fix osc flag setup ordering to allow pcie hotplug use when available
+Date: Mon, 26 Aug 2013 11:39:13 -0400
+Message-Id: <1377531553-17716-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com>
+References: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com>
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25, Linus Torvalds wrote:
->
-> On Sun, Aug 25, 2013 at 12:48 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > pid_revalidate() does inode->i_*id = GLOBAL_ROOT_*ID if task_dumpable()
-> > fails, but it can fail simply because ->mm = NULL.
-> >
-> > This means that almost everything in /proc/zombie-pid/ becomes root.
-> > Doesn't really hurt, but for what? Looks a bit strange imho.
->
-> The zombie case shouldn't be relevant, because a zombie will have
-> closed all the file descriptors anyway, so they no longer exist.
+Somewhere between 3.9 and 3.10 it seems the order in which pcie and acpi probed
+slots for hotplug capabilites got reversed.  While this isn't a big deal, it did
+uncover a bug in the ACPI bus setup path.  Specifically, acpi_pci_root_add calls
+pci_acpi_scan_root before setting the osc flags for the device handle.
+pci_acpi_scan_root, among other things uses device_is_managed_by_native_pciehp()
+to determine if a given slot has pcie hotplug capabilties, whcih checks the
+devices OSC_PCI_EXPRESS_NATIVE_HP_CONTROL flag.  Since that flag is not set
+until after pci_acpi_scan_root_completes, the acpi code never sees that pcie
+slots are hotplug capable and configures them all to use acpi instead.
 
-I specially mentioned that this is off-topic ;)
+Fix is pretty simple, just defer the scan until after the osc flags have been
+set on the device.  Tested by myself and it seems to work well.
 
-> That said, task_dumpable isn't wonderful, and I suspect we could drop
-> that logic entirely in the tid-fd case if we just use f_cred.
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Len Brown <lenb@kernel.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-acpi@vger.kernel.org
+CC: linux-pci@vger.kernel.org
 
-Probably yes, but I do not understand this S_IFLNK && uid/chmod magic
-in tid_fd_revalidate(). And afaics this should not affect readlink()
-anyway. So yes, ->f_cred makes more sense to me, but I can't comment.
+---
+Change notes:
+v2) eferred the disabling of aspm until after the acpi scan of the pci bus is
+complete.  This was done to allow proper handling of pcie 1.1 devices, as per:
 
+commit b8178f130e25c1bdac1c33e0996f1ff6e20ec08e
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date:   Mon Apr 1 15:47:39 2013 -0600
 
-But, afaics, speaking of task_dumpable() this doesn't matter. Please
-forget about /proc/fd or zombies. I can't even understand
-proc_pid_make_inode() or pid_revalidate().
+    Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
 
-	$ id
-	uid=1000(tst) gid=100(users) groups=100(users)
-	$ cp `which ls` ls
-	$ chmod a-r ./ls
-	$
-	$ ./ls -l /proc/self/
-	total 0
-	-r-------- 1 root root  0 Aug 26 06:35 auxv
-	-r--r--r-- 1 root root  0 Aug 26 06:35 cgroup
-	--w------- 1 root root  0 Aug 26 06:35 clear_refs
-	-r--r--r-- 1 root root  0 Aug 26 06:35 cmdline
-	-rw-r--r-- 1 root root  0 Aug 26 06:35 comm
-	-rw-r--r-- 1 root root  0 Aug 26 06:35 coredump_filter
-	lrwxrwxrwx 1 root root  0 Aug 26 06:35 cwd -> /home/tst
-	-r-------- 1 root root  0 Aug 26 06:35 environ
-	lrwxrwxrwx 1 root root  0 Aug 26 06:35 exe -> /home/tst/ls
-	dr-x------ 2 root root  0 Aug 26 06:35 fd
-	dr-x------ 2 root root  0 Aug 26 06:35 fdinfo
-	-rw-r--r-- 1 root root  0 Aug 26 06:35 gid_map
-	-r--r--r-- 1 root root  0 Aug 26 06:35 limits
-	-r--r--r-- 1 root root  0 Aug 26 06:35 maps
-	-rw------- 1 root root  0 Aug 26 06:35 mem
-	-r--r--r-- 1 root root  0 Aug 26 06:35 mountinfo
-	-r--r--r-- 1 root root  0 Aug 26 06:35 mounts
-	-r-------- 1 root root  0 Aug 26 06:35 mountstats
-	dr-xr-xr-x 4 tst  users 0 Aug 26 06:35 net
-	dr-x--x--x 2 root root  0 Aug 26 06:35 ns
-	-rw-r--r-- 1 root root  0 Aug 26 06:35 oom_adj
-	-r--r--r-- 1 root root  0 Aug 26 06:35 oom_score
-	-rw-r--r-- 1 root root  0 Aug 26 06:35 oom_score_adj
-	-r--r--r-- 1 root root  0 Aug 26 06:35 pagemap
-	-r--r--r-- 1 root root  0 Aug 26 06:35 personality
-	-rw-r--r-- 1 root root  0 Aug 26 06:35 projid_map
-	lrwxrwxrwx 1 root root  0 Aug 26 06:35 root -> /
-	-r--r--r-- 1 root root  0 Aug 26 06:35 smaps
-	-r--r--r-- 1 root root  0 Aug 26 06:35 stack
-	-r--r--r-- 1 root root  0 Aug 26 06:35 stat
-	-r--r--r-- 1 root root  0 Aug 26 06:35 statm
-	-r--r--r-- 1 root root  0 Aug 26 06:35 status
-	-r--r--r-- 1 root root  0 Aug 26 06:35 syscall
-	dr-xr-xr-x 3 tst  users 0 Aug 26 06:35 task
-	-rw-r--r-- 1 root root  0 Aug 26 06:35 uid_map
-	-r--r--r-- 1 root root  0 Aug 26 06:35 wchan
+As discussed previously in the thread the disable logic for aspm needs to be
+untangled and refactored, which is not something I'm sufficently versed in teh
+hotplug code to do right now, but this fixes the problem above, and prevents the
+problem that necessitated the revert without adding any visible complexity to
+the user, so I think its ok.
 
-For what? Say,
+v3) Fixup stupid authorship error
+---
+ drivers/acpi/pci_root.c | 54 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 32 insertions(+), 22 deletions(-)
 
-	-r--r--r-- 1 root root  0 Aug 26 06:35 status
-
-but it is S_IRUGO anyway, why do we need to change the owner?
-
-	dr-x------ 2 root root  0 Aug 26 06:35 fd
-
-OK, this means that I can't access this dir from another process.
-Not sure we really want this in this case but
-
-	$ ./ls /proc/self/fd
-	0  1  2  3
-
-still works, I guess thanks to proc_fd_permission().
-
-However, say,
-
-	-r-------- 1 root root  0 Aug 26 06:35 mountstats
-
-actually becomes unreadable even via /proc/self/.
-
-Imho, this all is confusing. Perhaps it makes sense to "chmod", say,
-/proc/pid/maps if !task_dumpable(), but "chown" looks strange.
-
-Oleg.
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index 5917839..1e80a90 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -378,6 +378,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 	struct acpi_pci_root *root;
+ 	u32 flags, base_flags;
+ 	acpi_handle handle = device->handle;
++	bool no_aspm = false;
+ 
+ 	root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
+ 	if (!root)
+@@ -437,27 +438,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 	flags = base_flags = OSC_PCI_SEGMENT_GROUPS_SUPPORT;
+ 	acpi_pci_osc_support(root, flags);
+ 
+-	/*
+-	 * TBD: Need PCI interface for enumeration/configuration of roots.
+-	 */
+-
+-	/*
+-	 * Scan the Root Bridge
+-	 * --------------------
+-	 * Must do this prior to any attempt to bind the root device, as the
+-	 * PCI namespace does not get created until this call is made (and
+-	 * thus the root bridge's pci_dev does not exist).
+-	 */
+-	root->bus = pci_acpi_scan_root(root);
+-	if (!root->bus) {
+-		dev_err(&device->dev,
+-			"Bus %04x:%02x not present in PCI namespace\n",
+-			root->segment, (unsigned int)root->secondary.start);
+-		result = -ENODEV;
+-		goto end;
+-	}
+-
+-	/* Indicate support for various _OSC capabilities. */
+ 	if (pci_ext_cfg_avail())
+ 		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
+ 	if (pcie_aspm_support_enabled()) {
+@@ -512,7 +492,14 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 				acpi_format_exception(status), flags);
+ 			dev_info(&device->dev,
+ 				 "ACPI _OSC control for PCIe not granted, disabling ASPM\n");
+-			pcie_no_aspm();
++			/*
++			 * We want to disable aspm here, but aspm_disabled
++			 * needs to remain in its state from boot so that we
++			 * properly handle pcie 1.1 devices.  So we set this
++			 * flag here, to defer the action until after the acpi
++			 * root scan
++			 */
++			no_aspm = true;
+ 		}
+ 	} else {
+ 		dev_info(&device->dev,
+@@ -520,6 +507,29 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 			 "(_OSC support mask: 0x%02x)\n", flags);
+ 	}
+ 
++	/*
++	 * TBD: Need PCI interface for enumeration/configuration of roots.
++	 */
++
++	/*
++	 * Scan the Root Bridge
++	 * --------------------
++	 * Must do this prior to any attempt to bind the root device, as the
++	 * PCI namespace does not get created until this call is made (and
++	 * thus the root bridge's pci_dev does not exist).
++	 */
++	root->bus = pci_acpi_scan_root(root);
++	if (!root->bus) {
++		dev_err(&device->dev,
++			"Bus %04x:%02x not present in PCI namespace\n",
++			root->segment, (unsigned int)root->secondary.start);
++		result = -ENODEV;
++		goto end;
++	}
++
++	if (no_aspm)
++		pcie_no_aspm();
++
+ 	pci_acpi_add_bus_pm_notifier(device, root->bus);
+ 	if (device->wakeup.flags.run_wake)
+ 		device_set_run_wake(root->bus->bridge, true);
+-- 
+1.8.1.4
 
