@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab3HZIPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 04:15:54 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54692 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755496Ab3HZIPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 04:15:51 -0400
-Message-ID: <521B0E79.6060506@ti.com>
-Date: Mon, 26 Aug 2013 13:44:49 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756235Ab3HZIXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 04:23:21 -0400
+Received: from mx-out.ocsa-data.net ([194.36.166.37]:54703 "EHLO
+	mx-out.ocsa-data.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755699Ab3HZIXT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 04:23:19 -0400
 MIME-Version: 1.0
-To: <gregkh@linuxfoundation.org>
-CC: Kishon Vijay Abraham I <kishon@ti.com>, <kyungmin.park@samsung.com>,
-        <balbi@ti.com>, <jg1.han@samsung.com>, <s.nawrocki@samsung.com>,
-        <kgene.kim@samsung.com>, <stern@rowland.harvard.edu>,
-        <broonie@kernel.org>, <tomasz.figa@gmail.com>, <arnd@arndb.de>,
-        <grant.likely@linaro.org>, <tony@atomide.com>, <swarren@nvidia.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>,
-        <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v11 0/8] PHY framework
-References: <1377063973-22044-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1377063973-22044-1-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Mon, 26 Aug 2013 10:23:12 +0200
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Alexander Graf <agraf@suse.de>, Gleb Natapov <gleb@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Alex Williamson <alex.williamson@redhat.com>, kvm-ppc@vger.kernel.org,
+        kvm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Paolo Bonzini <paolo.bonzini@gmail.com>
+Subject: Re: [PATCH 2/2] ppc: kvm: use =?UTF-8?Q?anon=5Finode=5Fgetfd=28?=
+ =?UTF-8?Q?=29=20with=20O=5FCLOEXEC=20flag?=
+Organization: OPTEYA
+In-Reply-To: <521B0622.9090208@redhat.com>
+References: <cover.1377372576.git.ydroneaud@opteya.com>
+ <b7ae23be3a3d4a2f57eca6cfc7f9361da883ceca.1377372576.git.ydroneaud@opteya.com>
+ <3557EF65-4327-4DAE-999A-B0EE13C433F5@suse.de> <521B0622.9090208@redhat.com>
+Message-ID: <156342996ba92cb5f49519b0c2e9d6ac@meuh.org>
+User-Agent: Roundcube Webmail/0.9.2
+X-abuse-contact: abuse@ocsa-data.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Le 26.08.2013 09:39, Paolo Bonzini a écrit :
+> Il 25/08/2013 17:04, Alexander Graf ha scritto:
+>> On 24.08.2013, at 21:14, Yann Droneaud wrote:
+>> 
+>>> 
+>>> This patch set O_CLOEXEC flag on all file descriptors created
+>>> with anon_inode_getfd() to not leak file descriptors across exec().
+>>> 
+>>> Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+>>> Link: 
+>>> http://lkml.kernel.org/r/cover.1377372576.git.ydroneaud@opteya.com
+>> 
+>> Reviewed-by: Alexander Graf <agraf@suse.de>
+>> 
+>> Would it make sense to simply inherit the O_CLOEXEC flag from the
+>> parent kvm fd instead? That would give user space the power to keep
+>> fds across exec() if it wants to.
+> 
+> Does it make sense to use non-O_CLOEXEC file descriptors with KVM at
+> all?  Besides fork() not being supported by KVM, as described in
+> Documentation/virtual/kvm/api.txt, the VMAs of the parent process go
+> away as soon as you exec().  I'm not sure how you can use the inherited
+> file descriptor in a sensible way after exec().
+> 
 
-On Wednesday 21 August 2013 11:16 AM, Kishon Vijay Abraham I wrote:
-> Added a generic PHY framework that provides a set of APIs for the PHY drivers
-> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
-> the PHY with or without using phandle.
-> 
-> This framework will be of use only to devices that uses external PHY (PHY
-> functionality is not embedded within the controller).
-> 
-> The intention of creating this framework is to bring the phy drivers spread
-> all over the Linux kernel to drivers/phy to increase code re-use and to
-> increase code maintainability.
-> 
-> Comments to make PHY as bus wasn't done because PHY devices can be part of
-> other bus and making a same device attached to multiple bus leads to bad
-> design.
-> 
-> If the PHY driver has to send notification on connect/disconnect, the PHY
-> driver should make use of the extcon framework. Using this susbsystem
-> to use extcon framwork will have to be analysed.
-> 
-> You can find this patch series @
-> git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git testing
+Sounds a lot like InfiniBand subsystem behavor: IB file descriptors
+are of no use accross exec() since memory mappings tied to those fds
+won't be available in the new process:
 
-Looks like there are not further comments on this series. Can you take this in
-your misc tree?
+https://lkml.org/lkml/2013/7/8/380
+http://mid.gmane.org/f58540dc64fec1ac0e496dfcd3cc1af7@meuh.org
 
-Thanks
-Kishon
+Regards.
+
+-- 
+Yann Droneaud
+OPTEYA
+
