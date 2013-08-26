@@ -1,113 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab3HZKrP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 06:47:15 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:35469 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab3HZKrO (ORCPT
+	id S1756598Ab3HZKu1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 06:50:27 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:56334 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab3HZKuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 06:47:14 -0400
-X-Spam-Score: -101.0
-Message-ID: <521B31F4.9090701@asianux.com>
-Date: Mon, 26 Aug 2013 18:46:12 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 26 Aug 2013 06:50:25 -0400
+Date: Mon, 26 Aug 2013 11:48:40 +0100
+From: Graeme Gregory <graeme.gregory@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, Darren Hart <dvhart@linux.intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: ACPI vs Device Tree - moving forward
+Message-ID: <20130826104840.GF31554@xora-yoga.xora.org.uk>
+References: <20130820192650.GA19470@srcf.ucam.org>
+ <6438184.2yT2NMB1CE@vostro.rjw.lan>
+ <20130821233942.GA21502@srcf.ucam.org>
+ <1810269.JOHnJ0H7P9@vostro.rjw.lan>
+ <20130822000306.GA21785@srcf.ucam.org>
+ <1377300343.5259.84.camel@dvhart-mobl4.amr.corp.intel.com>
+ <20130823233805.GA1801@srcf.ucam.org>
+ <1377301548.5259.91.camel@dvhart-mobl4.amr.corp.intel.com>
+ <20130824001345.GD14810@roeck-us.net>
+ <CACRpkdb-qwDrKUp4+5OzPQ_tJPGB4B69GmO__i-KwjFTETSYqw@mail.gmail.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: Assembly: need add prefix for h8300 architecture.
-References: <521B312B.2020806@asianux.com>
-In-Reply-To: <521B312B.2020806@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdb-qwDrKUp4+5OzPQ_tJPGB4B69GmO__i-KwjFTETSYqw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 26, 2013 at 11:32:44AM +0200, Linus Walleij wrote:
+> On Sat, Aug 24, 2013 at 2:13 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> 
+> > Did the group conclude that the idea of FDT augmenting ACPI is not feasible ?
+> 
+> I don't think anyone really knows. For example: how to specify a few
+> config options through a FDT augmented ACPI system is trivial. Passing
+> system-wide resources such as clocks, regulators, pin control handles,
+> GPIOs, interrupts and DMA channels is a criss-cross operation and
+> nobody knows if that will work because nobody tried to hash out
+> the details of.
+> 
+This bit the ACPI team at Linaro is currently trying to hash out.
 
-If this implementation is correct, the implementation still can be
-improved (at least, it is not quite well to hard code the architecture
-related code in "kernel/" and "usr/" sub-directory).
+> > If not, the key question for me is how to implement it, and how to handle
+> > all its little problems.
+> 
+> It seems like we are in the "teenagers talking about sex" situation,
+> everybody is talking about it but nobody is really doing it.
+> Which makes it all pretty theoretical.
+> 
+> > If yes, the key question for me is how to handle all the drivers which
+> > assume fdt-style properties, and how to express all that information in ACPI
+> > in a way which does not require a substantial driver rewrite (and, as you point
+> > out, how that data would be described in ACPI consistently across multiple
+> > vendors).
+> 
+> For GPIO we have this:
+> 
+> drivers/gpio/gpiolib-of.c
+> drivers/gpio/gpiolib-acpi.c
+> 
+> So one thing is clear: for this resource we're going to have two
+> implementations.
+> 
+My personal feeling is we will need two of everything at the ACPI/FDT level,
+but we can share commonality between the two subsystems in a more generic
+level. One thing we have been looking at it allowing some devices in ACPI
+and some in FDT type initialisations.
 
-But it seems, I have no right to add or move files, so welcome any
-members help do it.
+Within the Linaro ACPI team we are currently prototyping to try and settle
+some of the questions raised.
 
-And welcome any additional suggestions or completions.
+I do not think that trying to get OEMs to put FDT fragments inside ACPI will
+work, although that solution would certainly "solve" a lot of driver
+implementation issues.
 
-Thanks.
+Graeme
 
-On 08/26/2013 06:42 PM, Chen Gang wrote:
-> Need add related prefix for h8300, or can not pass compiling by the
-> latest linker.
-> 
-> The related error (allmodconfig for h8300):
-> 
->   /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `usr/initramfs_data.o' is incompatible with h8300h output
->   /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `kernel/modsign_certificate.o' is incompatible with h8300h output
-> 
-> The cross-compiler's information:
-> 
->   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-ld -v
->   GNU ld (GNU Binutils) 2.22
->   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-as -v
->   GNU assembler version 2.22 (h8300-gchen-elf) using BFD version (GNU Binutils) 2.22
->   
->   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-gcc -v
->   Using built-in specs.
->   COLLECT_GCC=/usr/local/bin/h8300-gchen-elf-gcc
->   COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/h8300-gchen-elf/4.8.0/lto-wrapper
->   Target: h8300-gchen-elf
->   Configured with: ../gcc-4.8.0/configure --target=h8300-gchen-elf --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no
->   Thread model: single
->   gcc version 4.8.0 (GCC) 
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  kernel/modsign_certificate.S |    7 +++++++
->  usr/initramfs_data.S         |    7 +++++++
->  2 files changed, 14 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
-> index 4a9a86d..d24acac 100644
-> --- a/kernel/modsign_certificate.S
-> +++ b/kernel/modsign_certificate.S
-> @@ -1,5 +1,12 @@
->  #include <linux/export.h>
->  
-> +#if defined(CONFIG_CPU_H8300H)
-> +	.h8300h
-> +#endif
-> +#if defined(CONFIG_CPU_H8S)
-> +	.h8300s
-> +#endif
-> +
->  #define GLOBAL(name)	\
->  	.globl VMLINUX_SYMBOL(name);	\
->  	VMLINUX_SYMBOL(name):
-> diff --git a/usr/initramfs_data.S b/usr/initramfs_data.S
-> index c14322d..6a6c106 100644
-> --- a/usr/initramfs_data.S
-> +++ b/usr/initramfs_data.S
-> @@ -24,6 +24,13 @@
->  #include <linux/stringify.h>
->  #include <asm-generic/vmlinux.lds.h>
->  
-> +#if defined(CONFIG_CPU_H8300H)
-> +	.h8300h
-> +#endif
-> +#if defined(CONFIG_CPU_H8S)
-> +	.h8300s
-> +#endif
-> +
->  .section .init.ramfs,"a"
->  __irf_start:
->  .incbin __stringify(INITRAMFS_IMAGE)
-> 
-
-
--- 
-Chen Gang
