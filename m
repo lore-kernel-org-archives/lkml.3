@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab3H0V2X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 17:28:23 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:58846 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab3H0V2V (ORCPT
+	id S1754543Ab3H0VcV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 17:32:21 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:61837 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205Ab3H0V2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 17:28:21 -0400
+	Tue, 27 Aug 2013 17:28:23 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Kukjin Kim <kgene.kim@samsung.com>,
         Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v2 02/16] ARM: dove: remove custom .init_time hook
-Date: Tue, 27 Aug 2013 23:27:56 +0200
-Message-Id: <1377638890-371-3-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH RFC v2 03/16] ARM: exynos: remove custom .init_time hook
+Date: Tue, 27 Aug 2013 23:27:57 +0200
+Message-Id: <1377638890-371-4-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -24,61 +25,84 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-remove custom .init_time hooks. While at it, also remove some obsolete
-includes.
+remove custom .init_time hooks.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-samsung-soc@vger.kernel.org 
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/mach-dove/board-dt.c |   17 +----------------
- 1 files changed, 1 insertions(+), 16 deletions(-)
+ arch/arm/mach-exynos/common.c          |    7 -------
+ arch/arm/mach-exynos/common.h          |    1 -
+ arch/arm/mach-exynos/mach-exynos4-dt.c |    1 -
+ arch/arm/mach-exynos/mach-exynos5-dt.c |    1 -
+ 4 files changed, 0 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/mach-dove/board-dt.c b/arch/arm/mach-dove/board-dt.c
-index 9a116d7..b527728 100644
---- a/arch/arm/mach-dove/board-dt.c
-+++ b/arch/arm/mach-dove/board-dt.c
-@@ -9,26 +9,12 @@
-  */
- 
- #include <linux/init.h>
+diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+index ba95e5d..587625b 100644
+--- a/arch/arm/mach-exynos/common.c
++++ b/arch/arm/mach-exynos/common.c
+@@ -27,7 +27,6 @@
+ #include <linux/irqdomain.h>
+ #include <linux/of_address.h>
+ #include <linux/clocksource.h>
 -#include <linux/clk-provider.h>
--#include <linux/clocksource.h>
--#include <linux/irqchip.h>
--#include <linux/of.h>
-+#include <linux/mbus.h>
- #include <linux/of_platform.h>
--#include <linux/platform_data/usb-ehci-orion.h>
- #include <asm/hardware/cache-tauros2.h>
- #include <asm/mach/arch.h>
--#include <mach/dove.h>
--#include <mach/pm.h>
--#include <plat/common.h>
--#include <plat/irq.h>
- #include "common.h"
+ #include <linux/irqchip/arm-gic.h>
+ #include <linux/irqchip/chained_irq.h>
  
--static void __init dove_dt_time_init(void)
+@@ -367,12 +366,6 @@ static void __init exynos5_map_io(void)
+ 		iotable_init(exynos5250_iodesc, ARRAY_SIZE(exynos5250_iodesc));
+ }
+ 
+-void __init exynos_init_time(void)
 -{
 -	of_clk_init(NULL);
 -	clocksource_of_init();
 -}
 -
- static void __init dove_dt_init(void)
- {
- 	pr_info("Dove 88AP510 SoC\n");
-@@ -47,7 +33,6 @@ static const char * const dove_dt_board_compat[] = {
+ struct bus_type exynos_subsys = {
+ 	.name		= "exynos-core",
+ 	.dev_name	= "exynos-core",
+diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
+index 8646a14..f0fa205 100644
+--- a/arch/arm/mach-exynos/common.h
++++ b/arch/arm/mach-exynos/common.h
+@@ -16,7 +16,6 @@
+ #include <linux/of.h>
  
- DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
- 	.map_io		= dove_map_io,
--	.init_time	= dove_dt_time_init,
- 	.init_machine	= dove_dt_init,
- 	.restart	= dove_restart,
- 	.dt_compat	= dove_dt_board_compat,
+ void mct_init(void __iomem *base, int irq_g0, int irq_l0, int irq_l1);
+-void exynos_init_time(void);
+ 
+ struct map_desc;
+ void exynos_init_io(void);
+diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
+index 0099c6c..7458dd4 100644
+--- a/arch/arm/mach-exynos/mach-exynos4-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
+@@ -54,7 +54,6 @@ DT_MACHINE_START(EXYNOS4210_DT, "Samsung Exynos4 (Flattened Device Tree)")
+ 	.init_early	= exynos_firmware_init,
+ 	.init_machine	= exynos4_dt_machine_init,
+ 	.init_late	= exynos_init_late,
+-	.init_time	= exynos_init_time,
+ 	.dt_compat	= exynos4_dt_compat,
+ 	.restart        = exynos4_restart,
+ 	.reserve	= exynos4_reserve,
+diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
+index f874b77..8829da2 100644
+--- a/arch/arm/mach-exynos/mach-exynos5-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
+@@ -76,7 +76,6 @@ DT_MACHINE_START(EXYNOS5_DT, "SAMSUNG EXYNOS5 (Flattened Device Tree)")
+ 	.map_io		= exynos_init_io,
+ 	.init_machine	= exynos5_dt_machine_init,
+ 	.init_late	= exynos_init_late,
+-	.init_time	= exynos_init_time,
+ 	.dt_compat	= exynos5_dt_compat,
+ 	.restart        = exynos5_restart,
+ 	.reserve	= exynos5_reserve,
 -- 
 1.7.2.5
 
