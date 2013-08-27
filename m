@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab3H0T3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 15:29:43 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:53333 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298Ab3H0T3l (ORCPT
+	id S1753861Ab3H0Tc3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 15:32:29 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:53564 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab3H0Tc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 15:29:41 -0400
-Date: Tue, 27 Aug 2013 12:29:40 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Randy Dunlap <rdunlap@infradead.org>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 27 (ceph)
-In-Reply-To: <521CF7D6.5090807@infradead.org>
-Message-ID: <alpine.DEB.2.00.1308271229230.24783@cobra.newdream.net>
-References: <20130827203008.1c54283d628ef706f51a866a@canb.auug.org.au> <521CF7D6.5090807@infradead.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 27 Aug 2013 15:32:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <7d1419dda1da70a8ad915f85b093a58b86bcaf3b.1377630856.git.luto@amacapital.net>
+References: <CA+55aFw20W9L8HV+VbTRNeQQM-_+aeUhvT9AAod5LGfb-7hE9g@mail.gmail.com>
+	<7d1419dda1da70a8ad915f85b093a58b86bcaf3b.1377630856.git.luto@amacapital.net>
+Date: Tue, 27 Aug 2013 12:32:26 -0700
+X-Google-Sender-Auth: lEFjgih0g8QNVEUMPLW6a636K6g
+Message-ID: <CA+55aFwtVH+MoG7Emt5V5wy2eDbYOBHBgOywRHFQ+Vm2XZn-Ag@mail.gmail.com>
+Subject: Re: [RFC PATCH] fs: Add user_file_or_path_at and use it for truncate
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Willy Tarreau <w@1wt.eu>,
+        Ingo Molnar <mingo@kernel.org>,
+        "security@kernel.org" <security@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Aug 2013, Randy Dunlap wrote:
-> On 08/27/13 03:30, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > I should know better than to take time off around -rc7 :-)
-> > 
-> > Changes since 20130822:
-> > 
-> 
-> on i386:
-> 
-> fs/built-in.o: In function `ceph_fallocate':
-> file.c:(.text+0x20b171): undefined reference to `__divdi3'
+On Tue, Aug 27, 2013 at 12:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> This is an experiment to see if we can get nice semantics for all syscalls
+> that either follow symlinks or allow AT_EMPTY_PATH without jumping through
+> enormous hoops.  This converts truncate (although you can't tell using
+> truncate from coreutils, because it actually uses open + ftruncate).
 
-I've fixed this up in the ceph tree.
+So this seems *way* too complex. I'd much rather see "nd->flags" get a
+LOOKUP_READONLY flag, for example, that gets set by
+proc_pid_follow_link() when it hits a read-only file descriptor (and
+gets cleared by other lookups).
 
-Thanks!
-sage
- 
+Wouldn't that be *much* more straightforward?
+
+             Linus
