@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab3H0VaX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 17:30:23 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:46065 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab3H0V2Z (ORCPT
+	id S1754324Ab3H0Va2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 17:30:28 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36537 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754284Ab3H0VaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 17:28:25 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v2 07/16] ARM: mvebu: remove custom .init_time hook
-Date: Tue, 27 Aug 2013 23:28:01 +0200
-Message-Id: <1377638890-371-8-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Tue, 27 Aug 2013 17:30:23 -0400
+Message-ID: <521D1A6A.8040001@wwwdotorg.org>
+Date: Tue, 27 Aug 2013 15:30:18 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: boris brezillon <b.brezillon@overkiz.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 2/3] pinctrl: at91: add support for generic pinconf
+References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com> <1377380259-11290-1-git-send-email-b.brezillon@overkiz.com> <20130826175333.GF18627@ns203013.ovh.net> <521BA235.1090104@overkiz.com> <521C22EA.1050908@wwwdotorg.org> <521C4177.4030104@overkiz.com>
+In-Reply-To: <521C4177.4030104@overkiz.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With arch/arm calling of_clk_init(NULL) from time_init(), we can now
-remove custom .init_time hooks.
+On 08/27/2013 12:04 AM, boris brezillon wrote:
+> On 27/08/2013 05:54, Stephen Warren wrote:
+>> On 08/26/2013 12:45 PM, boris brezillon wrote:
+>>> Hello Jean-Christophe,
+>>>
+>>> Le 26/08/2013 19:53, Jean-Christophe PLAGNIOL-VILLARD a écrit :
+>>>> On 23:37 Sat 24 Aug     , Boris BREZILLON wrote:
+>>>>> Add support for generic pin configuration to pinctrl-at91 driver.
+>> ...
+>>>>> a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+>> ...
+>>>>> configures various pad settings
+>>>>>    such as pull-up, multi drive, etc.
+>>>>>      Required properties for iomux controller:
+>>>>> -- compatible: "atmel,at91rm9200-pinctrl"
+>>>>> +- compatible: "atmel,at91rm9200-pinctrl" or
+>>>>> "atmel,at91sam9x5-pinctrl".
+>>>>> +  Add "generic-pinconf" to the compatible string list to use the
+>>>>> generic pin
+>> ...
+>>>>> +pinctrl@fffff400 {
+>>>>> +    #address-cells = <1>;
+>>>>> +    #size-cells = <1>;
+>>>>> +    ranges;
+>>>>> +    compatible = "atmel,at91rm9200-pinctrl", "generic-pinconf",
+>>>>> "simple-bus";
+>>>> nack your break the backword compatibility
+>>>>
+>>>> if we use a old kernel with this new dt nothing will work
+>>>> as the old kernel will never known the the "generic-pinconf" means
+>>>> anything
+>>> Your're right, I didn't think of this case (old kernel with new dt).
+>> Well, just to be clear: If a new DT uses a new compatible value of any
+>> kind, be it adding "generic-pinconf" or switching to "foo-yyy" rather
+>> than "foo-yyy", it won't be compatible... That somewhat implies that you
+>> can't ever replace an old binding with something new.
+> 
+> That's absolutely right, however the behaviour won't be the same in both
+> cases.
+> 
+> 1) If your (new) dt defines its pinctrl using the "foo-pinconf"
+> compatible string and
+>     your (old) kernel does not support it, the pinctrl will never probe
+> the pinctrl definitions.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Changelog:
-v1->v2:
-- only remove of_clk_init from custom timer hook, further cleanup
-  will be carried out later (Reported by Gregory Clement)
+True.
 
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-mvebu/armada-370-xp.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+>     Moreover, if you want to define both old ("foo-pinctrl") and new
+> ("foo-pinconf") pinctrl
+>     definitions in your dt in order to support several kernel versions,
+> nothing prevents you
+>     from doing it.
 
-diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
-index 829b573..164c62b 100644
---- a/arch/arm/mach-mvebu/armada-370-xp.c
-+++ b/arch/arm/mach-mvebu/armada-370-xp.c
-@@ -14,7 +14,6 @@
- 
- #include <linux/kernel.h>
- #include <linux/init.h>
--#include <linux/clk-provider.h>
- #include <linux/of_address.h>
- #include <linux/of_platform.h>
- #include <linux/io.h>
-@@ -36,7 +35,6 @@ static void __init armada_370_xp_map_io(void)
- 
- static void __init armada_370_xp_timer_and_clk_init(void)
- {
--	of_clk_init(NULL);
- 	armada_370_xp_timer_init();
- 	coherency_init();
- 	BUG_ON(mvebu_mbus_dt_init());
--- 
-1.7.2.5
+I don't know if that will work well; what happens if a kernel supports
+both the old and new compatible values, so that the new kernel is
+compatible with old DTs?
+
+> 2) In the other hand, if you use an additional "generic-pinconf"
+> compatible string to signify
+>     wether or not the pinctrl definition use the generic pinconf dt
+> binding, the (old) kernel
+>     will probe the pinctrl definitions, ignore the "generic-pinconf"
+> string, and fail when parsing
+>     the pinctrl configuration nodes (which are invalid pinctrl function
+> nodes in the current dt binding).
+>     We have the same problem when using the 'atmel,generic-pinconf'
+> property inside a pinctrl node:
+>     old kernels won't take this property into account.
+
+True.
 
