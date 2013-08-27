@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab3H0Iye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 04:54:34 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47370 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358Ab3H0ItA (ORCPT
+	id S1753625Ab3H0IzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 04:55:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35666 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753596Ab3H0IzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 04:49:00 -0400
-X-AuditID: 9c930197-b7b44ae00000347f-44-521c67fa615d
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 02/13] tracing/probes: Fix basic print type functions
-Date: Tue, 27 Aug 2013 17:48:45 +0900
-Message-Id: <1377593336-16828-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1377593336-16828-1-git-send-email-namhyung@kernel.org>
-References: <1377593336-16828-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 27 Aug 2013 04:55:06 -0400
+Message-ID: <521C6961.9020103@linutronix.de>
+Date: Tue, 27 Aug 2013 10:54:57 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
+CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
+References: <20130827181353.319c150858829df1bb68d60b@canb.auug.org.au>
+In-Reply-To: <20130827181353.319c150858829df1bb68d60b@canb.auug.org.au>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 08/27/2013 10:13 AM, Stephen Rothwell wrote:
 
-The print format of s32 type was "ld" and it's casted to "long".  So
-it turned out to print 4294967295 for "-1" on 64-bit systems.  Not
-sure whether it worked well on 32-bit systems.
+> Today's linux-next merge of the arm-soc tree got a conflict in 
+> arch/arm/boot/dts/am335x-bone.dts between commit 97238b35d5bb
+> ("usb: musb: dsps: use proper child nodes") from the  tree and
+> commit 63f6b2550aa0 ("ARM: dts: AM33XX: don't redefine OCP bus and
+> device nodes") from the arm-soc tree.
+> 
+> I fixed it up (probably incorrectly - see below) and can carry the
+> fix as necessary (no action is required).
 
-Anyway, it'd be better if we have exact format and type cast for each
-types on both of 32- and 64-bit systems.  In fact, the only difference
-is on s64/u64 types.
+You added the OCP node back and the USB nodes as I had them which
+should be fine.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/trace/trace_probe.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+How do we solve the conflict for the merge window? Is it possible for
+the ARM-SOC tree to create a topic branch for this commit?
 
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 412e959709b4..b571e4de0769 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -49,14 +49,19 @@ static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
- }									\
- static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
- 
--DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "%x", unsigned char)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned short)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%x", unsigned int)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s8,  "%d", signed char)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", short)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d", int)
-+#if BITS_PER_LONG == 32
- DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
- DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
-+#else /* BITS_PER_LONG == 64 */
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%lx", unsigned long)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%ld", long)
-+#endif
- 
- static inline void *get_rloc_data(u32 *dl)
- {
--- 
-1.7.11.7
+Greg: I do have a pending pull / patches [0] which also change the dts
+nodes according to the latest feedback + enabling an additional USB
+port in bone.
+If you take this in I could update the nodes later (with the topic
+branch merged) accordingly to the way it has been done in the ARM-SOC
+tree - unless you have other preferences.
 
+[0] http://www.spinics.net/lists/linux-usb/msg92595.html
+
+Sebastian
