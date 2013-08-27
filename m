@@ -1,48 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab3H0Vlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 17:41:49 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51569 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab3H0Vlq (ORCPT
+	id S1754202Ab3H0Vos (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 17:44:48 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:58056 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab3H0Vor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 17:41:46 -0400
-Message-ID: <521D1D16.9080106@wwwdotorg.org>
-Date: Tue, 27 Aug 2013 15:41:42 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 27 Aug 2013 17:44:47 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linux Containers <containers@lists.linux-foundation.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, <linux-fsdevel@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 27 Aug 2013 14:44:39 -0700
+Message-ID: <878uzmhkqg.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Johannes Thumshirn <johannes.thumshirn@men.de>
-CC: Rob Landley <rob@landley.net>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
-Subject: Re: [RFC][PATCH v2] documentation/devicetree: Move DT bindigns from
- gpio to watchdog
-References: <521672A1.6010202@wwwdotorg.org> <1377601837-18989-1-git-send-email-johannes.thumshirn@men.de>
-In-Reply-To: <1377601837-18989-1-git-send-email-johannes.thumshirn@men.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19OcjNoDJ6CsoDh/xYkEiacjOxT+qGvB+w=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.7 XMSubLong Long Subject
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.2600]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Linux Containers <containers@lists.linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [REVIEW][PATCH 1/2] userns: Better restrictions on when proc and sysfs can be mounted
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 05:10 AM, Johannes Thumshirn wrote:
-> I accidently put the devicetree bindings for the MEN A21 watchdog driver in
-> Documentation/devicetree/bindings/gpio instead of
-> Documentation/devicetree/bindings/watchdog, this patch addresses this error.
 
->  Changes to v1:
->  - Use named gpios, as suggested by Stephen Warren
+Rely on the fact that another flavor of the filesystem is already
+mounted and do not rely on state in the user namespace.
 
-The move and the change to the binding should probably be separate
-patches since they're logically separate things. I didn't intend you to
-update the rename patch to fix the binding issue I pointed out.
+Verify that the mounted filesystem is not covered in any significant
+way.  I would love to verify that the previously mounted filesystem
+has no mounts on top but there are at least the directories
+/proc/sys/fs/binfmt_misc and /sys/fs/cgroup/ that exist explicitly
+for other filesystems to mount on top of.
 
-Is the driver updated for this binding change? Are there DTs in released
-kernels that won't work now, or is the driver very new; there may be a
-need for the driver to support the old binding and the binding doc to
-document the old gpios property, but mark it deprecated.
+Refactor the test into a function named fs_fully_visible and call that
+function from the mount routines of proc and sysfs.  This makes this
+test local to the filesystems involved and the results current of when
+the mounts take place, removing a weird threading of the user
+namespace, the mount namespace and the filesystems themselves.
+
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ fs/namespace.c                 |   37 +++++++++++++++++++++++++------------
+ fs/proc/root.c                 |    7 +++++--
+ fs/sysfs/mount.c               |    3 ++-
+ include/linux/fs.h             |    1 +
+ include/linux/user_namespace.h |    4 ----
+ kernel/user.c                  |    2 --
+ kernel/user_namespace.c        |    2 --
+ 7 files changed, 33 insertions(+), 23 deletions(-)
+
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 64627f8..877e427 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2867,25 +2867,38 @@ bool current_chrooted(void)
+ 	return chrooted;
+ }
+ 
+-void update_mnt_policy(struct user_namespace *userns)
++bool fs_fully_visible(struct file_system_type *type)
+ {
+ 	struct mnt_namespace *ns = current->nsproxy->mnt_ns;
+ 	struct mount *mnt;
++	bool visible = false;
+ 
+-	down_read(&namespace_sem);
++	if (unlikely(!ns))
++		return false;
++
++	namespace_lock();
+ 	list_for_each_entry(mnt, &ns->list, mnt_list) {
+-		switch (mnt->mnt.mnt_sb->s_magic) {
+-		case SYSFS_MAGIC:
+-			userns->may_mount_sysfs = true;
+-			break;
+-		case PROC_SUPER_MAGIC:
+-			userns->may_mount_proc = true;
+-			break;
++		struct mount *child;
++		if (mnt->mnt.mnt_sb->s_type != type)
++			continue;
++
++		/* This mount is not fully visible if there are any child mounts
++		 * that cover anything except for empty directories.
++		 */
++		list_for_each_entry(child, &mnt->mnt_mounts, mnt_child) {
++			struct inode *inode = child->mnt_mountpoint->d_inode;
++			if (!S_ISDIR(inode->i_mode))
++				goto next;
++			if (inode->i_nlink != 2)
++				goto next;
+ 		}
+-		if (userns->may_mount_sysfs && userns->may_mount_proc)
+-			break;
++		visible = true;
++		goto found;
++	next:	;
+ 	}
+-	up_read(&namespace_sem);
++found:
++	namespace_unlock();
++	return visible;
+ }
+ 
+ static void *mntns_get(struct task_struct *task)
+diff --git a/fs/proc/root.c b/fs/proc/root.c
+index 38bd5d4..45e5fb7 100644
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -110,8 +110,11 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 		ns = task_active_pid_ns(current);
+ 		options = data;
+ 
+-		if (!current_user_ns()->may_mount_proc ||
+-		    !ns_capable(ns->user_ns, CAP_SYS_ADMIN))
++		if (!capable(CAP_SYS_ADMIN) && !fs_fully_visible(fs_type))
++			return ERR_PTR(-EPERM);
++
++		/* Does the mounter have privilege over the pid namespace? */
++		if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN))
+ 			return ERR_PTR(-EPERM);
+ 	}
+ 
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index afd8327..4a2da3a 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -112,7 +112,8 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
+ 	struct super_block *sb;
+ 	int error;
+ 
+-	if (!(flags & MS_KERNMOUNT) && !current_user_ns()->may_mount_sysfs)
++	if (!(flags & MS_KERNMOUNT) && !capable(CAP_SYS_ADMIN) &&
++	    !fs_fully_visible(fs_type))
+ 		return ERR_PTR(-EPERM);
+ 
+ 	info = kzalloc(sizeof(*info), GFP_KERNEL);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 9818747..3050c62 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1897,6 +1897,7 @@ extern int vfs_ustat(dev_t, struct kstatfs *);
+ extern int freeze_super(struct super_block *super);
+ extern int thaw_super(struct super_block *super);
+ extern bool our_mnt(struct vfsmount *mnt);
++extern bool fs_fully_visible(struct file_system_type *);
+ 
+ extern int current_umask(void);
+ 
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index b6b215f..4ce0093 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -26,8 +26,6 @@ struct user_namespace {
+ 	kuid_t			owner;
+ 	kgid_t			group;
+ 	unsigned int		proc_inum;
+-	bool			may_mount_sysfs;
+-	bool			may_mount_proc;
+ };
+ 
+ extern struct user_namespace init_user_ns;
+@@ -84,6 +82,4 @@ static inline void put_user_ns(struct user_namespace *ns)
+ 
+ #endif
+ 
+-void update_mnt_policy(struct user_namespace *userns);
+-
+ #endif /* _LINUX_USER_H */
+diff --git a/kernel/user.c b/kernel/user.c
+index 69b4c3d..5bbb919 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -51,8 +51,6 @@ struct user_namespace init_user_ns = {
+ 	.owner = GLOBAL_ROOT_UID,
+ 	.group = GLOBAL_ROOT_GID,
+ 	.proc_inum = PROC_USER_INIT_INO,
+-	.may_mount_sysfs = true,
+-	.may_mount_proc = true,
+ };
+ EXPORT_SYMBOL_GPL(init_user_ns);
+ 
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index d8c30db..d58ad1e 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -97,8 +97,6 @@ int create_user_ns(struct cred *new)
+ 
+ 	set_cred_user_ns(new, ns);
+ 
+-	update_mnt_policy(ns);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.5.4
+
