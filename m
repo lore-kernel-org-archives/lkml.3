@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab3H0IGp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 04:06:45 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:62347 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831Ab3H0IGl (ORCPT
+	id S1753148Ab3H0IHW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 04:07:22 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57417 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970Ab3H0IHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 04:06:41 -0400
-Date: Tue, 27 Aug 2013 09:06:35 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
- DBX500 DT
-Message-ID: <20130827080635.GC6152@lee--X1>
-References: <1370521041-32318-10-git-send-email-lee.jones@linaro.org>
- <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
- <20130820093034.GL31036@pengutronix.de>
- <20130822133730.GB23152@e106331-lin.cambridge.arm.com>
- <20130822141900.GB17154@lee--X1>
- <20130822151723.GE23152@e106331-lin.cambridge.arm.com>
- <20130822154116.GC17154@lee--X1>
- <20130822211912.GE31036@pengutronix.de>
- <20130823075607.GD17154@lee--X1>
- <20130823165539.GD7015@e106331-lin.cambridge.arm.com>
+	Tue, 27 Aug 2013 04:07:20 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-1b-521c5e3331b9
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
+References: <1376037909-17797-1-git-send-email-namhyung@kernel.org>
+	<1376037909-17797-11-git-send-email-namhyung@kernel.org>
+	<5204BCE6.2070102@hitachi.com>
+	<20130822124212.328c09c7@gandalf.local.home>
+	<5216A55B.4030400@huawei.com>
+	<20130822210830.784fac63@gandalf.local.home>
+Date: Tue, 27 Aug 2013 17:07:15 +0900
+In-Reply-To: <20130822210830.784fac63@gandalf.local.home> (Steven Rostedt's
+	message of "Thu, 22 Aug 2013 21:08:30 -0400")
+Message-ID: <87mwo3v9os.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130823165539.GD7015@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Aug 2013, Mark Rutland wrote:
+Hi Steven,
 
-> On Fri, Aug 23, 2013 at 08:56:07AM +0100, Lee Jones wrote:
-> > I had a short chat with Rob last night about this. I'm going to loop
-> > him in to the conversation, as he wrote the binding.
-> > 
-> > > > When most of the other clocks that we deal with are being requested,
-> > > > they rely on being index zero:
-> > > > 
-> > > >   drivers/i2c/busses/i2c-nomadik.c: dev->clk = clk_get(&adev->dev, NULL);
-> > > 
-> > > Look at drivers/clk/clkdev.c, there's some fuzzy matching
-> > > involved when you pass NULL as connection id.
-> > 
-> > Yes, I've been looking at that. This is why it works currently. I
-> > think I need to change all of the drivers to specify which clock they
-> > want. At the moment that 'fuzzy matching' is what's saving us. If
-> > anyone were to change our DTS file to match what the binding says,
-> > then it would cease to work. I'm guessing this is the same for all
-> > other DTS files too:
-> 
-> I think if anything, the binding document(s) should be updated to
-> describe that apb_pclk is referred to by name, and the names of the
-> other clocks should be described in the specific device bindings. We can
-> then modify the drivers which grab clock 0 to explicitly grab the first
-> clock by name, and backwards compatibility should not be broken.
-> 
-> I don't believe any other OS has implemented the common clock bindings,
-> and we've never supported the binding as described. Let's correct the
-> de-facto standard into a standard by decree.
+On Thu, 22 Aug 2013 21:08:30 -0400, Steven Rostedt wrote:
+> On Fri, 23 Aug 2013 07:57:15 +0800
+> "zhangwei(Jovi)" <jovi.zhangwei@huawei.com> wrote:
+>
+>
+>> > 
+>> > What about creating a per cpu buffer when uprobes are registered, and
+>> > delete them when they are finished? Basically what trace_printk() does
+>> > if it detects that there are users of trace_printk() in the kernel.
+>> > Note, it does not deallocate them when finished, as it is never
+>> > finished until reboot ;-)
+>> > 
+>> > -- Steve
+>> >
+>> I also thought out this approach, but the issue is we cannot fetch user
+>> memory into per-cpu buffer, because use per-cpu buffer should under
+>> preempt disabled, and fetching user memory could sleep.
+>
+> Actually, we could create a per_cpu mutex to match the per_cpu buffers.
+> This is not unlike what we do in -rt.
+>
+> 	int cpu;
+> 	struct mutex *mutex;
+> 	void *buf;
+>
+>
+> 	/*
+> 	 * Use per cpu buffers for fastest access, but we might migrate
+> 	 * So the mutex makes sure we have sole access to it.
+> 	 */
+>
+> 	cpu = raw_smp_processor_id();
+> 	mutex = per_cpu(uprobe_cpu_mutex, cpu);
+> 	buf = per_cpu(uprobe_cpu_buffer, cpu);
+>
+> 	mutex_lock(mutex);
+> 	store_trace_args(..., buf,...);
+> 	mutex_unlock(mutex);
+>
 
-I think we need to respect, or at least take into consideration the
-reason for the original 'de-facto' standard. Other OSes shouldn't be
-forced to provide a named clock request in order to obtain
-'apb_pclk'. If the binding says it should be first, then perhaps we
-should do just that. It's simply a matter of naming all subsequent
-clocks related to AMBA devices.
+Great!  I'll go with this approach.  Is it OK to you, Masami?
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks,
+Namhyung
