@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab3H0WTx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 18:19:53 -0400
-Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:4604
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751838Ab3H0WTv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 18:19:51 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(z551biz98dIc89bh154dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h906i1155h192ch)
-Date: Tue, 27 Aug 2013 15:19:46 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-tegra@vger.kernel.org>, <kernel@stlinux.com>,
-        <linux-samsung-soc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC v2 01/16] ARM: call clk_of_init from time_init
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1377638890-371-2-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1753460Ab3H0WZG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 18:25:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42403 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab3H0WZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 18:25:04 -0400
+Date: Tue, 27 Aug 2013 15:27:20 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/74] 3.10.10-stable review
+Message-ID: <20130827222720.GA27592@kroah.com>
+References: <20130827010424.535365435@linuxfoundation.org>
+ <521C2BA7.2010705@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377638890-371-2-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <521C2BA7.2010705@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <3837b119-baad-4e68-8805-2bc52c0135f9@DB9EHSMHS031.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 11:27:55PM +0200, Sebastian Hesselbarth wrote:
-> Most DT ARM machs require common clock providers initialized before timers.
-> Currently, arch/arm machs use .init_time to call clk_of_init right before
-> clocksource_of_init. This prevents to remove that hook and use the default
-> hook instead. clk_of_init is safe to call for non-DT platforms, so add
-> the call to ARM arch time_init by default. While at it, also reorder includes
-> alphabetically.
+On Mon, Aug 26, 2013 at 09:31:35PM -0700, Guenter Roeck wrote:
+> On 08/26/2013 06:07 PM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.10.10 release.
+> > There are 74 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Thu Aug 29 01:03:56 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.10-rc1.gz
+> > and the diffstat can be found below.
+> >
 > 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Changelog:
-> v1->v2:
-> - reorder includes alphabetically
+> Cross build results:
+> 	total: 85 pass: 85 fail: 0
+> Compared to 3.10.8:
+> 	total: 76 pass: 76 fail: 0
 > 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-tegra@vger.kernel.org
-> Cc: kernel@stlinux.com
-> Cc: linux-samsung-soc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/kernel/time.c |   24 ++++++++++++++----------
->  1 files changed, 14 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
-> index 98aee32..dd1028e 100644
-> --- a/arch/arm/kernel/time.c
-> +++ b/arch/arm/kernel/time.c
-> @@ -11,25 +11,26 @@
-[ ... ]
->  void __init time_init(void)
->  {
-> +	/* initalize common clocks before timers */
-> +	of_clk_init(NULL);
-> +
->  	if (machine_desc->init_time)
->  		machine_desc->init_time();
->  	else
+> qemu tests:
+> 	arm, microblaze, mips, mips64, ppc, x86, x86_64: pass (boot to login prompt)
+> 	
+> Note that the arm qemu test now passes because I found a workaround for the bug
+> causing the failure observed with the previous release, not because the bug was fixed.
 
-This forces zynq to move some initialization our clock code relies on to
-init_irq(). Also, the current code already takes an approach of
-doing either common init or machine specific init.
-I think it might be better to move the call to of_clk_init() down into
-the else branch of the if-else.
-Though, this probably contradicts the purpose of the whole series.
+Ah, but at least it doesn't fail now :)
 
-	Sören
+> More builds, more platforms tested, still no failures. Results look good.
 
+Thanks for testing all 3 of these kernels and letting me know.
 
+greg k-h
