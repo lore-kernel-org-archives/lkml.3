@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab3H0BHO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:07:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59451 "EHLO
+	id S1754574Ab3H0BTW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:19:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59488 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697Ab3H0BHI (ORCPT
+	with ESMTP id S1753374Ab3H0BHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:08 -0400
+	Mon, 26 Aug 2013 21:07:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Luciano Coelho <luciano.coelho@intel.com>
-Subject: [ 02/74] mac80211: dont wait for TX status forever
-Date: Mon, 26 Aug 2013 18:08:00 -0700
-Message-Id: <20130827010425.237521617@linuxfoundation.org>
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 08/74] NFC: llcp: Fix non blocking sockets connections
+Date: Mon, 26 Aug 2013 18:08:06 -0700
+Message-Id: <20130827010426.259043153@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -27,67 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Samuel Ortiz <sameo@linux.intel.com>
 
-commit cb236d2d713cff83d024a82b836757d9e2b50715 upstream.
+commit b4011239a08e7e6c2c6e970dfa9e8ecb73139261 upstream.
 
-TX status notification can get lost, or the frames could
-get stuck on the queue, so don't wait for the callback
-from the driver forever and instead time out after half
-a second.
+Without the new LLCP_CONNECTING state, non blocking sockets will be
+woken up with a POLLHUP right after calling connect() because their
+state is stuck at LLCP_CLOSED.
+That prevents userspace from implementing any proper non blocking
+socket based NFC p2p client.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Luciano Coelho <luciano.coelho@intel.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- net/mac80211/mlme.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ net/nfc/llcp.h      |    1 +
+ net/nfc/llcp_sock.c |    8 +++++---
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -31,10 +31,12 @@
- #include "led.h"
+--- a/net/nfc/llcp.h
++++ b/net/nfc/llcp.h
+@@ -19,6 +19,7 @@
  
- #define IEEE80211_AUTH_TIMEOUT		(HZ / 5)
-+#define IEEE80211_AUTH_TIMEOUT_LONG	(HZ / 2)
- #define IEEE80211_AUTH_TIMEOUT_SHORT	(HZ / 10)
- #define IEEE80211_AUTH_MAX_TRIES	3
- #define IEEE80211_AUTH_WAIT_ASSOC	(HZ * 5)
- #define IEEE80211_ASSOC_TIMEOUT		(HZ / 5)
-+#define IEEE80211_ASSOC_TIMEOUT_LONG	(HZ / 2)
- #define IEEE80211_ASSOC_TIMEOUT_SHORT	(HZ / 10)
- #define IEEE80211_ASSOC_MAX_TRIES	3
+ enum llcp_state {
+ 	LLCP_CONNECTED = 1, /* wait_for_packet() wants that */
++	LLCP_CONNECTING,
+ 	LLCP_CLOSED,
+ 	LLCP_BOUND,
+ 	LLCP_LISTEN,
+--- a/net/nfc/llcp_sock.c
++++ b/net/nfc/llcp_sock.c
+@@ -571,7 +571,7 @@ static unsigned int llcp_sock_poll(struc
+ 	if (sk->sk_shutdown == SHUTDOWN_MASK)
+ 		mask |= POLLHUP;
  
-@@ -3470,10 +3472,13 @@ static int ieee80211_probe_auth(struct i
+-	if (sock_writeable(sk))
++	if (sock_writeable(sk) && sk->sk_state == LLCP_CONNECTED)
+ 		mask |= POLLOUT | POLLWRNORM | POLLWRBAND;
+ 	else
+ 		set_bit(SOCK_ASYNC_NOSPACE, &sk->sk_socket->flags);
+@@ -722,14 +722,16 @@ static int llcp_sock_connect(struct sock
+ 	if (ret)
+ 		goto sock_unlink;
  
- 	if (tx_flags == 0) {
- 		auth_data->timeout = jiffies + IEEE80211_AUTH_TIMEOUT;
--		ifmgd->auth_data->timeout_started = true;
-+		auth_data->timeout_started = true;
- 		run_again(ifmgd, auth_data->timeout);
- 	} else {
--		auth_data->timeout_started = false;
-+		auth_data->timeout =
-+			round_jiffies_up(jiffies + IEEE80211_AUTH_TIMEOUT_LONG);
-+		auth_data->timeout_started = true;
-+		run_again(ifmgd, auth_data->timeout);
- 	}
++	sk->sk_state = LLCP_CONNECTING;
++
+ 	ret = sock_wait_state(sk, LLCP_CONNECTED,
+ 			      sock_sndtimeo(sk, flags & O_NONBLOCK));
+-	if (ret)
++	if (ret && ret != -EINPROGRESS)
+ 		goto sock_unlink;
  
- 	return 0;
-@@ -3510,7 +3515,11 @@ static int ieee80211_do_assoc(struct iee
- 		assoc_data->timeout_started = true;
- 		run_again(&sdata->u.mgd, assoc_data->timeout);
- 	} else {
--		assoc_data->timeout_started = false;
-+		assoc_data->timeout =
-+			round_jiffies_up(jiffies +
-+					 IEEE80211_ASSOC_TIMEOUT_LONG);
-+		assoc_data->timeout_started = true;
-+		run_again(&sdata->u.mgd, assoc_data->timeout);
- 	}
+ 	release_sock(sk);
  
- 	return 0;
+-	return 0;
++	return ret;
+ 
+ sock_unlink:
+ 	nfc_llcp_put_ssap(local, llcp_sock->ssap);
 
 
