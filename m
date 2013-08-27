@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab3H0B3H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:29:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59344 "EHLO
+	id S1755298Ab3H0B3p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:29:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59329 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab3H0BGk (ORCPT
+	with ESMTP id S1753120Ab3H0BGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:06:40 -0400
+	Mon, 26 Aug 2013 21:06:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 03/13] zd1201: do not use stack as URB transfer_buffer
-Date: Mon, 26 Aug 2013 18:08:35 -0700
-Message-Id: <20130827010310.115433485@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 13/13] x86/xen: do not identity map UNUSABLE regions in the machine E820
+Date: Mon, 26 Aug 2013 18:08:45 -0700
+Message-Id: <20130827010310.845320600@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010309.850395966@linuxfoundation.org>
 References: <20130827010309.850395966@linuxfoundation.org>
@@ -27,38 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 1206ff4ff9d2ef7468a355328bc58ac6ebf5be44 upstream.
+commit 3bc38cbceb85881a8eb789ee1aa56678038b1909 upstream.
 
-Patch fixes zd1201 not to use stack as URB transfer_buffer. URB buffers need
-to be DMA-able, which stack is not.
+If there are UNUSABLE regions in the machine memory map, dom0 will
+attempt to map them 1:1 which is not permitted by Xen and the kernel
+will crash.
 
-Patch is only compile tested.
+There isn't anything interesting in the UNUSABLE region that the dom0
+kernel needs access to so we can avoid making the 1:1 mapping and
+treat it as RAM.
 
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+We only do this for dom0, as that is where tboot case shows up.
+A PV domU could have an UNUSABLE region in its pseudo-physical map
+and would need to be handled in another patch.
+
+This fixes a boot failure on hosts with tboot.
+
+tboot marks a region in the e820 map as unusable and the dom0 kernel
+would attempt to map this region and Xen does not permit unusable
+regions to be mapped by guests.
+
+  (XEN)  0000000000000000 - 0000000000060000 (usable)
+  (XEN)  0000000000060000 - 0000000000068000 (reserved)
+  (XEN)  0000000000068000 - 000000000009e000 (usable)
+  (XEN)  0000000000100000 - 0000000000800000 (usable)
+  (XEN)  0000000000800000 - 0000000000972000 (unusable)
+
+tboot marked this region as unusable.
+
+  (XEN)  0000000000972000 - 00000000cf200000 (usable)
+  (XEN)  00000000cf200000 - 00000000cf38f000 (reserved)
+  (XEN)  00000000cf38f000 - 00000000cf3ce000 (ACPI data)
+  (XEN)  00000000cf3ce000 - 00000000d0000000 (reserved)
+  (XEN)  00000000e0000000 - 00000000f0000000 (reserved)
+  (XEN)  00000000fe000000 - 0000000100000000 (reserved)
+  (XEN)  0000000100000000 - 0000000630000000 (usable)
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+[v1: Altered the patch and description with domU's with UNUSABLE regions]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/zd1201.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/xen/setup.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/net/wireless/zd1201.c
-+++ b/drivers/net/wireless/zd1201.c
-@@ -98,10 +98,12 @@ static int zd1201_fw_upload(struct usb_d
- 		goto exit;
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -213,6 +213,17 @@ static void xen_align_and_add_e820_regio
+ 	e820_add_region(start, end - start, type);
+ }
  
- 	err = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), 0x4,
--	    USB_DIR_IN | 0x40, 0,0, &ret, sizeof(ret), ZD1201_FW_TIMEOUT);
-+	    USB_DIR_IN | 0x40, 0, 0, buf, sizeof(ret), ZD1201_FW_TIMEOUT);
- 	if (err < 0)
- 		goto exit;
- 
-+	memcpy(&ret, buf, sizeof(ret));
++void xen_ignore_unusable(struct e820entry *list, size_t map_size)
++{
++	struct e820entry *entry;
++	unsigned int i;
 +
- 	if (ret & 0x80) {
- 		err = -EIO;
- 		goto exit;
++	for (i = 0, entry = list; i < map_size; i++, entry++) {
++		if (entry->type == E820_UNUSABLE)
++			entry->type = E820_RAM;
++	}
++}
++
+ /**
+  * machine_specific_memory_setup - Hook for machine specific memory setup.
+  **/
+@@ -251,6 +262,17 @@ char * __init xen_memory_setup(void)
+ 	}
+ 	BUG_ON(rc);
+ 
++	/*
++	 * Xen won't allow a 1:1 mapping to be created to UNUSABLE
++	 * regions, so if we're using the machine memory map leave the
++	 * region as RAM as it is in the pseudo-physical map.
++	 *
++	 * UNUSABLE regions in domUs are not handled and will need
++	 * a patch in the future.
++	 */
++	if (xen_initial_domain())
++		xen_ignore_unusable(map, memmap.nr_entries);
++
+ 	/* Make sure the Xen-supplied memory map is well-ordered. */
+ 	sanitize_e820_map(map, memmap.nr_entries, &memmap.nr_entries);
+ 
 
 
