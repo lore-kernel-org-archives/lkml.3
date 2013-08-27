@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab3H0RfR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 13:35:17 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:43335 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752150Ab3H0RfP (ORCPT
+	id S1753523Ab3H0RgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 13:36:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38719 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab3H0RgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 13:35:15 -0400
-X-Sasl-enc: C+VDiVXNqTgXmkt3wPbQZZAtR8eDpdzj+jSf2jkm1Qch 1377624914
-Date: Tue, 27 Aug 2013 10:37:32 -0700
-From: Greg KH <greg@kroah.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Benoit Cousson <bcousson@baylibre.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        linux-next@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org,
-        "khilman@linaro.org" <khilman@linaro.org>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
-Message-ID: <20130827173732.GC21564@kroah.com>
-References: <20130827181353.319c150858829df1bb68d60b@canb.auug.org.au>
- <521C6961.9020103@linutronix.de>
- <CABxcv=mg6t5wPqpF3j5sr_76qfZ7N7KgpWhcKSGoPTOcaR=V6A@mail.gmail.com>
- <521CA888.1080909@baylibre.com>
- <521CAF59.1090203@linutronix.de>
- <521CB046.9070408@baylibre.com>
- <521CB18B.4080000@linutronix.de>
- <521CB239.6050409@baylibre.com>
- <521CB403.8010307@linutronix.de>
+	Tue, 27 Aug 2013 13:36:01 -0400
+Date: Tue, 27 Aug 2013 10:38:19 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Alexander Savchenko <oleksandr.savchenko@ti.com>, jslaby@suse.cz,
+        linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        balbi@ti.com, linux-omap <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] serial: omap: Fix IRQ handling return value
+Message-ID: <20130827173819.GD21564@kroah.com>
+References: <1374067753-29560-1-git-send-email-oleksandr.savchenko@ti.com>
+ <CAGa+x84dE_RwN2G1y_9OJFxnq3JKq5g0YZd+mFueOjjvMzyyew@mail.gmail.com>
+ <CAGa+x859+7H3pjZfTFcECe4qMt4=SE_kmToZBt9zoVt0=sUcvA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <521CB403.8010307@linutronix.de>
+In-Reply-To: <CAGa+x859+7H3pjZfTFcECe4qMt4=SE_kmToZBt9zoVt0=sUcvA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 04:13:23PM +0200, Sebastian Andrzej Siewior wrote:
-> On 08/27/2013 04:05 PM, Benoit Cousson wrote:
-> > On 27/08/2013 16:02, Sebastian Andrzej Siewior wrote:
-> >> On 08/27/2013 03:57 PM, Benoit Cousson wrote:
-> >>> + Kevin,
-> >>>
-> >>> On 27/08/2013 15:53, Sebastian Andrzej Siewior wrote:
-> >>>> What do we do now?
-> >>>
-> >>> Cannot you just merge the stable arm-soc/dt branch into your branch
-> >>> before applying your patches?
-> >>
-> >> That is up to Greg. This changes sat in his usb-next tree for a while
-> >> now. And before they hit Greg they were in Felipe's tree for a while.
-> >>
-> >> To be exact, last .dts change via USB was:
-> >>
-> >> Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> >> AuthorDate: Thu Jun 20 12:13:04 2013 +0200
-> >> Commit:     Felipe Balbi <balbi@ti.com>
-> >> CommitDate: Fri Aug 9 17:40:16 2013 +0300
-> >>
-> >>     usb: musb dma: add cppi41 dma driver
-> > 
-> > Mmm, if that branch is supposed to be stable, I'm not sure it will be
-> > doable...
-> > 
-> > Maybe we should do the other way around? And merge usb-next into
-> > arm-soc/dt.
-> > 
-> > Kevin, Olof?
+On Tue, Aug 27, 2013 at 07:30:19AM -0700, Kevin Hilman wrote:
+> Greg,
 > 
-> Please be aware that I have no response so far regarding [0] from Greg.
 > 
-> [0] http://www.spinics.net/lists/linux-usb/msg92595.html
+> On Tue, Aug 20, 2013 at 8:44 AM, Kevin Hilman <khilman@linaro.org> wrote:
+> > +Felipe
+> >
+> > On Wed, Jul 17, 2013 at 6:29 AM, Alexander Savchenko
+> > <oleksandr.savchenko@ti.com> wrote:
+> >> From: Ruchika Kharwar <ruchika@ti.com>
+> >>
+> >> Ensure the Interrupt handling routine return IRQ_HANDLED vs
+> >> IRQ_NONE.
+> >
+> > Why?
+> >
+> > By unconditionally returning IRQ_HANDLED, this patch will surely break
+> > systems where the UART IRQ is shared with other platforms.
+> >
+> > I just noticed this patch when bisecting a related problem.  Why
+> > wasn't this Cc'd to linux-omap where OMAP users might have been more
+> > likely to see it?
+> >
+> > Greg, without a better justification in the changelog, I think this
+> > patch should be dropped from tty-next.
+> 
+> Can you drop this from tty-next please?
+> 
+> The authors aren't responding (one of the ti.com addresses bounced)
+> and this "fix" is most is not correct.
 
-Nor will you, given that I am not the one to take these patches, Felipe
-is.  I noticed now that you said "please route around Felipe", but
-sorry, no, I'm not going to do that unless there's a really good reason.
-Felipe seems to be around at the moment, please work with him on this.
-
-sorry,
+Yes, sorry, behind on my pending tty patch queue.  I'll try to get to it
+this week.
 
 greg k-h
