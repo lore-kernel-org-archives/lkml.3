@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab3H0OUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 10:20:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36473 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752059Ab3H0OUF (ORCPT
+	id S1753351Ab3H0O1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 10:27:24 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42555 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751626Ab3H0O1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 10:20:05 -0400
-Date: Tue, 27 Aug 2013 16:19:58 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [RFC v1 0/5] ARM: Initial support for Marvell Armada 1500
-Message-ID: <20130827161958.5e71890d@skate>
-In-Reply-To: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Aug 2013 10:27:23 -0400
+Date: Tue, 27 Aug 2013 15:27:01 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64: move elf notes into readonly segment
+Message-ID: <20130827142700.GB27164@darko.cambridge.arm.com>
+References: <1377271002.7359.2.camel@deneb.redhat.com>
+ <20130827104949.GE19897@arm.com>
+ <1377608461.2127.15.camel@deneb.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377608461.2127.15.camel@deneb.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sebastian Hesselbarth,
+On Tue, Aug 27, 2013 at 02:01:01PM +0100, Mark Salter wrote:
+> On Tue, 2013-08-27 at 11:49 +0100, Catalin Marinas wrote:
+> > On Fri, Aug 23, 2013 at 04:16:42PM +0100, Mark Salter wrote:
+> > > The current vmlinux.lds.S places the notes sections between the
+> > > end of rw data and start of bss. This means that _edata doesn't
+> > > really point to the end of data. Since notes are read-only, this
+> > > patch moves them to the read-only segment so that _edata does
+> > > point to the end of initialized rw data.
+> > > 
+> > > Signed-off-by: Mark Salter <msalter@redhat.com>
+> > > ---
+> > >  arch/arm64/kernel/vmlinux.lds.S | 3 +--
+> > >  1 file changed, 1 insertion(+), 2 deletions(-)
+> > > 
+> > > diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
+> > > index f5e5574..f8ab9d8 100644
+> > > --- a/arch/arm64/kernel/vmlinux.lds.S
+> > > +++ b/arch/arm64/kernel/vmlinux.lds.S
+> > > @@ -71,6 +71,7 @@ SECTIONS
+> > >  
+> > >  	RO_DATA(PAGE_SIZE)
+> > >  	EXCEPTION_TABLE(8)
+> > > +	NOTES
+> > >  	_etext = .;			/* End of text and rodata section */
+> > >  
+> > >  	. = ALIGN(PAGE_SIZE);
+> > > @@ -122,8 +123,6 @@ SECTIONS
+> > >  	}
+> > >  	_edata_loc = __data_loc + SIZEOF(.data);
+> > >  
+> > > -	NOTES
+> > > -
+> > >  	BSS_SECTION(0, 0, 0)
+> > >  	_end = .;
+> > 
+> > The _edata is set before NOTES, so I don't fully understand where the
+> > problem is.
+> > 
+> The problem *is* _edata before the NOTES. We need a symbol to mark the
+> end of initialized data. This should be _edata but _edata doesn't
+> currently account for NOTES. In the EFI stub I'm working on, the PE/COFF
+> header needs to know the end of the image. If we use _edata, we wouldn't
+> include NOTES, so we're left with __bss_start. But _bss_start may not be
+> exactly right because of alignment rounding and it is ugly to use for
+> that purpose. So we either need a new symbol following NOTES, or move
+> _edata past NOTES, or move NOTES. I chose the latter because NOTES are
+> readonly and don't really need to be part of the RW segment.
 
-On Fri, 16 Aug 2013 21:41:33 +0200, Sebastian Hesselbarth wrote:
-> This is a RFC adding initial support for the Marvell Armada 1500
-> (88DE3100) found on various consumer devices (Chromecast, GoogleTV).
-> 
-> Actually, it is a two-fold RFC also raising discussions on mach-mvebu
-> cleanup roadmap to allow other SoCs to hop into it. While mach-mvebu
-> originally was created to add support for Armada 370/XP and merge
-> existing Marvell Orion familiy into it, I am not so sure about
-> Armada 1500 fits that well (the mbus has gone!).
+OK, I got it now. I'll queue the patch for 3.12.
 
-After talking a bit with engineers within Marvell that work on this
-SoC, I'm inclined to think that using mach-mvebu for this family of SoC
-is not a good idea.
+Thanks.
 
-The reasons are:
-
- * This family of SoC is architecturally completely different from the
-   family of Orion SoC: they use completely different hardware blocks
-   (i.e none of the plat-orion stuff would apply, and none of the
-   Orion device drivers would be useful), they don't use the MBus
-   mechanism, etc. They are really a different family of SoC, almost as
-   if they were coming from a different SoC company.
-
- * The SMP and power management code, as well as all the "glue"
-   platform code that typically sits in mach-<foo> is going to be
-   substantially, if not completely different from the one in
-   mach-mvebu. I already believe doing all the "glue" platform code in
-   mach-mvebu for all of Kirkwood, Dove, 370/XP, Orion5x and MV78xx0 is
-   going to be a challenge, so I'd suggest to not add to this challenge
-   a completely separate family of SOCs.
-
-The codename used for those Armada 1500 SOCs is "Berlin", so a name
-like mach-berlin, or mach-mvberlin (if we want to keep 'mv' to identify
-the founder) seems like a good name.
-
-Also, to help us understand the organization of the family of SOCs, I
-asked a few informations to Marvell, and here is what I could collect:
-
-"""
-BGxname		CPU core	codename	L2 cache controller	internal name
-BG2		PJ4B		Armada1500	Tauros3			MV88DE3100
-BG2-CT		Cortex-A9	N/A		PL310			N/A
-BG3		Cortex-A15	N/A		CA15 integrated		N/A
-"""
-
-As was told that the Armada X or MV88DEx names are not used during
-development, and what Marvell is really using are the BGxx names.
-
-Best regards,
-
-Thomas
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Catalin
