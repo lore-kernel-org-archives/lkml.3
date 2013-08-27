@@ -1,112 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab3H0QUh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 12:20:37 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53252 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753296Ab3H0QUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 12:20:34 -0400
-Message-ID: <1377620432.6337.12.camel@joe-AO722>
-Subject: Re: [PATCHv2 1/2] dev-core: fix build break when DEBUG is enabled
-From: Joe Perches <joe@perches.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Jason Baron <jbaron@akamai.com>
-Cc: sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org,
-        dmitry.kasatkin@gmail.com, linux-kernel@vger.kernel.org
-Date: Tue, 27 Aug 2013 09:20:32 -0700
-In-Reply-To: <7f53397d0aa93e644124037d44188da5067336fc.1377614854.git.d.kasatkin@samsung.com>
-References: <7f53397d0aa93e644124037d44188da5067336fc.1377614854.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1753667Ab3H0QVH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 12:21:07 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55904 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab3H0QVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 12:21:05 -0400
+Date: Tue, 27 Aug 2013 12:20:56 -0400 (EDT)
+Message-Id: <20130827.122056.419758783951274884.davem@davemloft.net>
+To: b.brezillon@overkiz.com
+Cc: nicolas.ferre@atmel.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        linux@arm.linux.org.uk, f.fainelli@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 0/2] net/cadence/macb: add support for dt phy definition
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <521C586A.7080604@overkiz.com>
+References: <1377186980-21902-1-git-send-email-b.brezillon@overkiz.com>
+	<20130826.160450.2176892065062148718.davem@davemloft.net>
+	<521C586A.7080604@overkiz.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 27 Aug 2013 09:21:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-27 at 17:47 +0300, Dmitry Kasatkin wrote:
-> When DEBUG is defined, dev_dbg_ratelimited uses dynamic debug data
-> structures even when CONFIG_DYNAMIC_DEBUG is not defined.
-> It leads to build break.
-> For example, when I try to use dev_dbg_ratelimited in USB code and
-> CONFIG_USB_DEBUG is enabled, but CONFIG_DYNAMIC_DEBUG is not, I get:
+From: boris brezillon <b.brezillon@overkiz.com>
+Date: Tue, 27 Aug 2013 09:42:34 +0200
 
-Jason?
+> Could you apply, the 3rd version of this series instead ?
 
-Seems mostly sensible to me but I think the first check
-needs to be
+There can never be an "instead" or reverting patches I've said I've
+applied already.
 
-#if defined(CONFIG_DYNAMIC_DEBUG) && defined(DEBUG)
-
-Also, it's curious why it was ever using __dynamic_pr_debug
-instead of __dynamic_dev_dbg
-
-Maybe for completeness there should be a
-dev_vdbg_ratelimited too.
-
-Additional bit below...
-
->   CC [M]  drivers/usb/host/xhci-ring.o
->   drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_intr_tx’:
->   drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘DEFINE_DYNAMIC_DEBUG_METADATA’ [-Werror=implicit-function-declaration]
->   drivers/usb/host/xhci-ring.c:3059:3: error: ‘descriptor’ undeclared (first use in this function)
->   drivers/usb/host/xhci-ring.c:3059:3: note: each undeclared identifier is reported only once for each function it appears in
->   drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘__dynamic_pr_debug’ [-Werror=implicit-function-declaration]
->   drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_isoc_tx_prepare’:
->   drivers/usb/host/xhci-ring.c:3847:3: error: ‘descriptor’ undeclared (first use in this function)
->   cc1: some warnings being treated as errors
->   make[2]: *** [drivers/usb/host/xhci-ring.o] Error 1
->   make[1]: *** [drivers/usb/host] Error 2
->   make: *** [drivers/usb/] Error 2
-> 
-> This patch separates definition for CONFIG_DYNAMIC_DEBUG and DEBUG cases.
-> 
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> ---
->  include/linux/device.h | 17 ++++++++++++++---
->  1 file changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/device.h b/include/linux/device.h
-> index 22b546a..d336beb 100644
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -1099,17 +1099,28 @@ do {									\
->  	dev_level_ratelimited(dev_notice, dev, fmt, ##__VA_ARGS__)
->  #define dev_info_ratelimited(dev, fmt, ...)				\
->  	dev_level_ratelimited(dev_info, dev, fmt, ##__VA_ARGS__)
-> -#if defined(CONFIG_DYNAMIC_DEBUG) || defined(DEBUG)
-> +#if defined(CONFIG_DYNAMIC_DEBUG)
-
-I think this needs to be
-
-#if defined(CONFIG_DYNAMIC_DEBUG) && defined(DEBUG)
-
->  #define dev_dbg_ratelimited(dev, fmt, ...)				\
->  do {									\
->  	static DEFINE_RATELIMIT_STATE(_rs,				\
->  				      DEFAULT_RATELIMIT_INTERVAL,	\
->  				      DEFAULT_RATELIMIT_BURST);		\
->  	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);			\
-> +	/* descriptor check is first to prevent flooding with		\
-> +	   "callbacks suppressed" */					\
->  	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT) &&	\
->  	    __ratelimit(&_rs))						\
-> -		__dynamic_pr_debug(&descriptor, pr_fmt(fmt),		\
-> -				   ##__VA_ARGS__);			\
-> +		__dynamic_dev_dbg(&descriptor, dev, fmt,		\
-> +				  ##__VA_ARGS__);			\
-> +} while (0)
-> +#elif defined(DEBUG)
-> +#define dev_dbg_ratelimited(dev, fmt, ...)				\
-> +do {									\
-> +	static DEFINE_RATELIMIT_STATE(_rs,				\
-> +				      DEFAULT_RATELIMIT_INTERVAL,	\
-> +				      DEFAULT_RATELIMIT_BURST);		\
-> +	if (__ratelimit(&_rs))						\
-> +		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
->  } while (0)
->  #else
->  #define dev_dbg_ratelimited(dev, fmt, ...)			\
-
-
-
+If you want changes, you have to submit follow-on fixes.
