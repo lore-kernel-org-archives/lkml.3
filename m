@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab3H0BFz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:05:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59189 "EHLO
+	id S1753074Ab3H0BGP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:06:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59187 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab3H0BCw (ORCPT
+	with ESMTP id S1752597Ab3H0BCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Aug 2013 21:02:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 2/9] xen/events: initialize local per-cpu mask for all possible events
-Date: Mon, 26 Aug 2013 18:04:53 -0700
-Message-Id: <20130827010251.815986899@linuxfoundation.org>
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 1/9] zd1201: do not use stack as URB transfer_buffer
+Date: Mon, 26 Aug 2013 18:04:52 -0700
+Message-Id: <20130827010251.745094635@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010251.636183797@linuxfoundation.org>
 References: <20130827010251.636183797@linuxfoundation.org>
@@ -27,43 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
 
-commit 84ca7a8e45dafb49cd5ca90a343ba033e2885c17 upstream.
+commit 1206ff4ff9d2ef7468a355328bc58ac6ebf5be44 upstream.
 
-The sizeof() argument in init_evtchn_cpu_bindings() is incorrect
-resulting in only the first 64 (or 32 in 32-bit guests) ports having
-their bindings being initialized to VCPU 0.
+Patch fixes zd1201 not to use stack as URB transfer_buffer. URB buffers need
+to be DMA-able, which stack is not.
 
-In most cases this does not cause a problem as request_irq() will set
-the irq affinity which will set the correct local per-cpu mask.
-However, if the request_irq() is called on a VCPU other than 0, there
-is a window between the unmasking of the event and the affinity being
-set were an event may be lost because it is not locally unmasked on
-any VCPU. If request_irq() is called on VCPU 0 then local irqs are
-disabled during the window and the race does not occur.
+Patch is only compile tested.
 
-Fix this by initializing all NR_EVENT_CHANNEL bits in the local
-per-cpu masks.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/events.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/zd1201.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -317,7 +317,7 @@ static void init_evtchn_cpu_bindings(voi
+--- a/drivers/net/wireless/zd1201.c
++++ b/drivers/net/wireless/zd1201.c
+@@ -98,10 +98,12 @@ static int zd1201_fw_upload(struct usb_d
+ 		goto exit;
  
- 	for_each_possible_cpu(i)
- 		memset(per_cpu(cpu_evtchn_mask, i),
--		       (i == 0) ? ~0 : 0, sizeof(*per_cpu(cpu_evtchn_mask, i)));
-+		       (i == 0) ? ~0 : 0, NR_EVENT_CHANNELS/8);
- }
+ 	err = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), 0x4,
+-	    USB_DIR_IN | 0x40, 0,0, &ret, sizeof(ret), ZD1201_FW_TIMEOUT);
++	    USB_DIR_IN | 0x40, 0, 0, buf, sizeof(ret), ZD1201_FW_TIMEOUT);
+ 	if (err < 0)
+ 		goto exit;
  
- static inline void clear_evtchn(int port)
++	memcpy(&ret, buf, sizeof(ret));
++
+ 	if (ret & 0x80) {
+ 		err = -EIO;
+ 		goto exit;
 
 
