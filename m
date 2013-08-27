@@ -1,219 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab3H0IBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 04:01:25 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:38366 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab3H0IBX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 04:01:23 -0400
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-To: linux-gpio@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Archit Taneja <archit@ti.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Subject: [PATCH v5] gpio: pcf857x: Add OF support
-Date: Tue, 27 Aug 2013 10:02:39 +0200
-Message-Id: <1377590559-14279-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Mailer: git-send-email 1.8.1.5
+	id S1753063Ab3H0IC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 04:02:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55921 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752267Ab3H0ICY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 04:02:24 -0400
+Date: Tue, 27 Aug 2013 10:02:20 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>,
+        Alexander Holler <holler@ahsoftware.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/3] HID: Win 8 multitouch panels detection in core
+In-Reply-To: <521BC4D7.5050507@linux.intel.com>
+Message-ID: <alpine.LNX.2.00.1308271002120.2077@pobox.suse.cz>
+References: <1377175869-5336-1-git-send-email-benjamin.tissoires@redhat.com> <20130822175515.GA5215@polaris.bitmath.org> <alpine.LNX.2.00.1308261342430.2077@pobox.suse.cz> <521BC4D7.5050507@linux.intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add DT bindings for the pcf857x-compatible chips and parse the device
-tree node in the driver.
+On Mon, 26 Aug 2013, Srinivas Pandruvada wrote:
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- .../devicetree/bindings/gpio/gpio-pcf857x.txt      | 71 ++++++++++++++++++++++
- drivers/gpio/gpio-pcf857x.c                        | 44 +++++++++++---
- 2 files changed, 107 insertions(+), 8 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt
+> > > > Srinivas, I still did not added your tested-by as I made minors
+> > > > modifications of
+> > > > the patches 1 and 2. Now only the patch 1 will impact sensor_hub, and
+> > > > patch 2
+> > > > will not impact this. Maybe just wait for Henrik to put his
+> > > > "Reviewed-by" before
+> > > > giving one last test.
+> > > Here goes:
+> > > 
+> > >      Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+> > Thanks guys. Not applying this just yet, waiting for Tested-by: from
+> > Srinivas.
+> > 
+> Tested-by: Srinivas Pandruvada<srinivas.pandruvada@linux.intel.com>
 
-Changes since v4:
+Applied, thanks everybody.
 
-- Don't try to get ngpio from of_device_id data, we already get it from
-  i2c_device_id
-
-Changes since v3:
-
-- Get rid of the #ifdef CONFIG_OF in the probe function
-- Give DT node priority over platform data
-
-Changes since v2:
-
-- Replace mention about interrupts software configuration in DT bindings
-  documentation with an explanation of the hardware configuration.
-
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt b/Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt
-new file mode 100644
-index 0000000..d261391
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt
-@@ -0,0 +1,71 @@
-+* PCF857x-compatible I/O expanders
-+
-+The PCF857x-compatible chips have "quasi-bidirectional" I/O pins that can be
-+driven high by a pull-up current source or driven low to ground. This combines
-+the direction and output level into a single bit per pin, which can't be read
-+back. We can't actually know at initialization time whether a pin is configured
-+(a) as output and driving the signal low/high, or (b) as input and reporting a
-+low/high value, without knowing the last value written since the chip came out
-+of reset (if any). The only reliable solution for setting up pin direction is
-+thus to do it explicitly.
-+
-+Required Properties:
-+
-+  - compatible: should be one of the following.
-+    - "maxim,max7328": For the Maxim MAX7378
-+    - "maxim,max7329": For the Maxim MAX7329
-+    - "nxp,pca8574": For the NXP PCA8574
-+    - "nxp,pca8575": For the NXP PCA8575
-+    - "nxp,pca9670": For the NXP PCA9670
-+    - "nxp,pca9671": For the NXP PCA9671
-+    - "nxp,pca9672": For the NXP PCA9672
-+    - "nxp,pca9673": For the NXP PCA9673
-+    - "nxp,pca9674": For the NXP PCA9674
-+    - "nxp,pca9675": For the NXP PCA9675
-+    - "nxp,pcf8574": For the NXP PCF8574
-+    - "nxp,pcf8574a": For the NXP PCF8574A
-+    - "nxp,pcf8575": For the NXP PCF8575
-+    - "ti,tca9554": For the TI TCA9554
-+
-+  - reg: I2C slave address.
-+
-+  - gpio-controller: Marks the device node as a gpio controller.
-+  - #gpio-cells: Should be 2. The first cell is the GPIO number and the second
-+    cell specifies GPIO flags, as defined in <dt-bindings/gpio/gpio.h>. Only the
-+    GPIO_ACTIVE_HIGH and GPIO_ACTIVE_LOW flags are supported.
-+
-+Optional Properties:
-+
-+  - pins-initial-state: Bitmask that specifies the initial state of each pin.
-+  When a bit is set to zero, the corresponding pin will be initialized to the
-+  input (pulled-up) state. When the  bit is set to one, the pin will be
-+  initialized the the low-level output state. If the property is not specified
-+  all pins will be initialized to the input state.
-+
-+  The I/O expander can detect input state changes, and thus optionally act as
-+  an interrupt controller. When the expander interrupt pin is connected all the
-+  following properties must be set. For more information please see the
-+  interrupt controller device tree bindings documentation available at
-+  Documentation/devicetree/bindings/interrupt-controller/interrupts.txt.
-+
-+  - interrupt-controller: Identifies the node as an interrupt controller.
-+  - #interrupt-cells: Number of cells to encode an interrupt source, shall be 2.
-+  - interrupt-parent: phandle of the parent interrupt controller.
-+  - interrupts: Interrupt specifier for the controllers interrupt.
-+
-+
-+Please refer to gpio.txt in this directory for details of the common GPIO
-+bindings used by client devices.
-+
-+Example: PCF8575 I/O expander node
-+
-+	pcf8575: gpio@20 {
-+		compatible = "nxp,pcf8575";
-+		reg = <0x20>;
-+		interrupt-parent = <&irqpin2>;
-+		interrupts = <3 0>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+	};
-diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
-index 9e61bb0..864dd8c 100644
---- a/drivers/gpio/gpio-pcf857x.c
-+++ b/drivers/gpio/gpio-pcf857x.c
-@@ -26,6 +26,8 @@
- #include <linux/irqdomain.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- #include <linux/workqueue.h>
-@@ -50,6 +52,27 @@ static const struct i2c_device_id pcf857x_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, pcf857x_id);
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id pcf857x_of_table[] = {
-+	{ .compatible = "nxp,pcf8574" },
-+	{ .compatible = "nxp,pcf8574a" },
-+	{ .compatible = "nxp,pca8574" },
-+	{ .compatible = "nxp,pca9670" },
-+	{ .compatible = "nxp,pca9672" },
-+	{ .compatible = "nxp,pca9674" },
-+	{ .compatible = "nxp,pcf8575" },
-+	{ .compatible = "nxp,pca8575" },
-+	{ .compatible = "nxp,pca9671" },
-+	{ .compatible = "nxp,pca9673" },
-+	{ .compatible = "nxp,pca9675" },
-+	{ .compatible = "maxim,max7328" },
-+	{ .compatible = "maxim,max7329" },
-+	{ .compatible = "ti,tca9554" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, pcf857x_of_table);
-+#endif
-+
- /*
-  * The pcf857x, pca857x, and pca967x chips only expose one read and one
-  * write register.  Writing a "one" bit (to match the reset state) lets
-@@ -257,14 +280,18 @@ fail:
- static int pcf857x_probe(struct i2c_client *client,
- 			 const struct i2c_device_id *id)
- {
--	struct pcf857x_platform_data	*pdata;
-+	struct pcf857x_platform_data	*pdata = dev_get_platdata(&client->dev);
-+	struct device_node		*np = client->dev.of_node;
- 	struct pcf857x			*gpio;
-+	unsigned int			n_latch = 0;
- 	int				status;
- 
--	pdata = dev_get_platdata(&client->dev);
--	if (!pdata) {
-+	if (IS_ENABLED(CONFIG_OF) && np)
-+		of_property_read_u32(np, "pins-initial-state", &n_latch);
-+	else if (pdata)
-+		n_latch = pdata->n_latch;
-+	else
- 		dev_dbg(&client->dev, "no platform data\n");
--	}
- 
- 	/* Allocate, initialize, and register this gpio_chip. */
- 	gpio = devm_kzalloc(&client->dev, sizeof(*gpio), GFP_KERNEL);
-@@ -357,11 +384,11 @@ static int pcf857x_probe(struct i2c_client *client,
- 	 * may cause transient glitching since it can't know the last value
- 	 * written (some pins may need to be driven low).
- 	 *
--	 * Using pdata->n_latch avoids that trouble.  When left initialized
--	 * to zero, our software copy of the "latch" then matches the chip's
--	 * all-ones reset state.  Otherwise it flags pins to be driven low.
-+	 * Using n_latch avoids that trouble.  When left initialized to zero,
-+	 * our software copy of the "latch" then matches the chip's all-ones
-+	 * reset state.  Otherwise it flags pins to be driven low.
- 	 */
--	gpio->out = pdata ? ~pdata->n_latch : ~0;
-+	gpio->out = ~n_latch;
- 	gpio->status = gpio->out;
- 
- 	status = gpiochip_add(&gpio->chip);
-@@ -423,6 +450,7 @@ static struct i2c_driver pcf857x_driver = {
- 	.driver = {
- 		.name	= "pcf857x",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(pcf857x_of_table),
- 	},
- 	.probe	= pcf857x_probe,
- 	.remove	= pcf857x_remove,
 -- 
-Regards,
-
-Laurent Pinchart
-
+Jiri Kosina
+SUSE Labs
