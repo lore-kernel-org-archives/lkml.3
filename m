@@ -1,335 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab3H0OQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 10:16:42 -0400
-Received: from 7of9.schinagl.nl ([88.159.158.68]:51360 "EHLO 7of9.schinagl.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753562Ab3H0OQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 10:16:29 -0400
-From: oliver+list@schinagl.nl
-To: arnd@arndb.de, gregkh@linuxfoundation.org
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        andy.shevchenko@gmail.com, maxime.ripard@free-electrons.com,
-        tomasz.figa@gmail.com, Oliver Schinagl <oliver@schinagl.nl>
-Subject: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-Date: Tue, 27 Aug 2013 16:13:04 +0200
-Message-Id: <1377612785-7868-2-git-send-email-oliver+list@schinagl.nl>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1377612785-7868-1-git-send-email-oliver+list@schinagl.nl>
-References: <1377612785-7868-1-git-send-email-oliver+list@schinagl.nl>
+	id S1753695Ab3H0OQq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 10:16:46 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:31224 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753621Ab3H0OQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 10:16:43 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-67-521cb4c8c28b
+Message-id: <521CB4C5.2050804@samsung.com>
+Date: Tue, 27 Aug 2013 17:16:37 +0300
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] xhci:prevent "callbacks suppressed" when debug is not
+ enabled
+References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
+ <70b3564625bbda6247cc5627041344fef8a762ae.1376582695.git.d.kasatkin@samsung.com>
+ <20130816001716.GA7367@kroah.com> <20130816172635.GA7975@xanatos>
+ <20130816173000.GA8210@xanatos>
+ <CACE9dm9Rw55HdwsKRYvecCFCAO137uU4iv5yLnEMzc-0pRZCsg@mail.gmail.com>
+ <20130816174516.GA20389@kroah.com>
+In-reply-to: <20130816174516.GA20389@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xy7ontsgEGcw4bG3xZWmdRfPi9WwW
+	l3fNYbO4tus+q0XziVPMDqweO2fdZfdYvOclk8e8k4Ee++euYff4vEkugDWKyyYlNSezLLVI
+	3y6BK+PpyW0sBaslK6Yv3cbWwHhSsIuRk0NCwERiye+fTBC2mMSFe+vZQGwhgaWMErPXRHUx
+	cgHZjUwSn2a/Y4dw5jJKdC9YzA5SxSugJdG7px2sg0VAVWLRz1Vgk9gE9CQ2NP8AqxEViJBY
+	ueQBK0S9oMSPyfdYQGwRAQ2Jl0dvsYAMZQbZduNhFzNIQhio4dbPVlaIM5qZJWbfNgexOQX0
+	JT68bwZbxiygI7G/dRqULS+xec1bZoh6VYnutWvZIN5RlDg9+RzzBEbhWUh2z0LSPgtJ+wJG
+	5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIZHxZQfj4mNWhxgFOBiVeHgtNssECbEmlhVX
+	5h5ilOBgVhLh3b0CKMSbklhZlVqUH19UmpNafIiRiYNTqoGRufDYD62Z/wNnNFkW3b+S777I
+	76JPtOAd/vt5NvnKyf+7zrtvF4s31DuWN8lq9z7blvqwkrMPNrdzxR2qUanunTjz4et58xfm
+	KCic3XH71sGjTLMvhD/bYKgisVl1a7jF36Bft7k2h064ks357fP0hrlpOSK5B6ZNNTM3eGfM
+	tjP5wgavs8qrlFiKMxINtZiLihMBvpNdiGoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oliver Schinagl <oliver@schinagl.nl>
+On 16/08/13 20:45, Greg KH wrote:
+> On Fri, Aug 16, 2013 at 08:38:12PM +0300, Dmitry Kasatkin wrote:
+>> On Fri, Aug 16, 2013 at 8:30 PM, Sarah Sharp <sarah.a.sharp@intel.com> wrote:
+>>> On Fri, Aug 16, 2013 at 10:26:35AM -0700, Sarah Sharp wrote:
+>>>> On Thu, Aug 15, 2013 at 05:17:16PM -0700, Greg KH wrote:
+>>>>> On Thu, Aug 15, 2013 at 07:04:55PM +0300, Dmitry Kasatkin wrote:
+>>>>>> When debug is not enabled and dev_dbg() will expand to nothing,
+>>>>>> log might be flooded with "callbacks suppressed". If it was not
+>>>>>> done on purpose, better to use dev_dbg_ratelimited() instead.
+>>>>>>
+>>>>>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+>>>>>> ---
+>>>>>>  drivers/usb/host/xhci-ring.c | 6 ++----
+>>>>>>  1 file changed, 2 insertions(+), 4 deletions(-)
+>>>>>
+>>>>> Sarah, does this patch conflict with the trace debug patches being
+>>>>> worked on?  I'll hold off on applying it for now, let me know if it's ok
+>>>>> or not.
+>>>> It doesn't conflict with the trace debug patches, because those only
+>>>> effect debugging with xhci_dbg with the host device, not dev_dbg with
+>>>> the USB device.  This should apply fine to usb-next.
+>>> At another glance, the patch removes two if blocks, but doesn't
+>>> re-indent the rest of the lines:
+>>>
+>>>> @@ -3060,8 +3060,7 @@ int xhci_queue_intr_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+>>>>        * to set the polling interval (once the API is added).
+>>>>        */
+>>>>       if (xhci_interval != ep_interval) {
+>>>> -             if (printk_ratelimit())
+>>>> -                     dev_dbg(&urb->dev->dev, "Driver uses different interval"
+>>>> +             dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
+>>>>                                       " (%d microframe%s) than xHCI "
+>>>>                                       "(%d microframe%s)\n",
+>>>>                                       ep_interval,
+>>> That should probably be fixed.
+>> It actually looks correct when patch is applied.
+>>
+>> But it depends what you mean of course.
+>> It looks like it was before:
+>> dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
+>>                                        " (%d microframe%s) than xHCI "
+>>                                        "(%d microframe%s)\n",
+>>                                        ep_interval,
+>>                                         ep_interval == 1 ? "" : "s",
+>>
+>> Or may be you mean:
+>> dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
+>>                                " (%d microframe%s) than xHCI "
+>>                                "(%d microframe%s)\n",
+>>                                ep_interval,
+>>                                ep_interval == 1 ? "" : "s",
+> No, it should look like:
+>
+> 		dev_dbg_ratelimited(&urb->dev->dev,
+> 				    "Driver uses different interval (%d microframe%s) than xHCI (%d microframe%s)\n",
+> 				     ep_interval, ep_interval == 1 ? "" : "s",
 
-Allwinner has electric fuses (efuse) on their line of chips. This driver
-reads those fuses, seeds the kernel entropy and exports them as a sysfs
-node.
+Hello. Sorry I was distracted so much from the kernel.
 
-These fuses are most likly to be programmed at the factory, encoding
-things like Chip ID, some sort of serial number etc and appear to be
-reasonable unique.
-While in theory, these should be writeable by the user, it will probably
-be inconvinient to do so. Allwinner recommends that a certain input pin,
-labeled 'efuse_vddq', be connected to GND. To write these fuses however,
-a 2.5 V programming voltage needs to be applied to this pin.
+But putting string to one line make it much over 80 chars.
+Is that considered OK?
 
-Even so, they can still be used to generate a board-unique mac from,
-board unique RSA key and seed the kernel RNG.
+- Dmitry
 
-On sun7i additional storage is available, this is initially used for an
-UEFI BOOT key, Secure JTAG key, HDMI-HDCP key and vendor specific keys.
-
-Currently supported are the following known chips:
-Allwinner sun4i (A10)
-Allwinner sun5i (A10s, A13)
-Allwinner sun7i (A20)
-
-Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
----
- Documentation/ABI/stable/sysfs-driver-sunxi-sid    |  22 +++
- .../bindings/misc/allwinner,sunxi-sid.txt          |  16 ++
- drivers/misc/eeprom/Kconfig                        |  19 +++
- drivers/misc/eeprom/Makefile                       |   1 +
- drivers/misc/eeprom/sunxi_sid.c                    | 177 +++++++++++++++++++++
- 5 files changed, 235 insertions(+)
- create mode 100644 Documentation/ABI/stable/sysfs-driver-sunxi-sid
- create mode 100644 Documentation/devicetree/bindings/misc/allwinner,sunxi-sid.txt
- create mode 100644 drivers/misc/eeprom/sunxi_sid.c
-
-diff --git a/Documentation/ABI/stable/sysfs-driver-sunxi-sid b/Documentation/ABI/stable/sysfs-driver-sunxi-sid
-new file mode 100644
-index 0000000..b04ec05
---- /dev/null
-+++ b/Documentation/ABI/stable/sysfs-driver-sunxi-sid
-@@ -0,0 +1,22 @@
-+What:		/sys/devices/soc.0/1c23800.eeprom/eeprom
-+Date:		August 2013
-+Contact:	Oliver Schinagl <oliver@schinagl.nl>
-+Description:	read-only access to the SID (Security-ID) on current
-+		A-series SoC's from Allwinner. Currently supports A10, A10s, A13
-+		and A20 CPU's. The earlier A1x series of SoCs exports 16 bytes,
-+		whereas the newer A20 SoC exposes 512 bytes split into sections.
-+		Besides the 16 bytes of SID, there's also an SJTAG area,
-+		HDMI-HDCP key and some custom keys. Below a quick overview, for
-+		details see the user manual:
-+		0x000  128 bit root-key (sun[457]i)
-+		0x010  128 bit boot-key (sun7i)
-+		0x020   64 bit security-jtag-key (sun7i)
-+		0x028   16 bit key configuration (sun7i)
-+		0x02b   16 bit custom-vendor-key (sun7i)
-+		0x02c  320 bit low general key (sun7i)
-+		0x040   32 bit read-control access (sun7i)
-+		0x064  224 bit low general key (sun7i)
-+		0x080 2304 bit HDCP-key (sun7i)
-+		0x1a0  768 bit high general key (sun7i)
-+Users:		any user space application which wants to read the SID on
-+		Allwinner's A-series of CPU's.
-diff --git a/Documentation/devicetree/bindings/misc/allwinner,sunxi-sid.txt b/Documentation/devicetree/bindings/misc/allwinner,sunxi-sid.txt
-new file mode 100644
-index 0000000..2103a44
---- /dev/null
-+++ b/Documentation/devicetree/bindings/misc/allwinner,sunxi-sid.txt
-@@ -0,0 +1,16 @@
-+Allwinner sunxi-sid
-+
-+Required properties:
-+- compatible: "allwinner,sun4i-sid" or "allwinner,sun7i-sid".
-+- reg: Should contain registers location and length
-+
-+Example for sun4i:
-+	sid@01c23800 {
-+		compatible = "allwinner,sun4i-sid";
-+		reg = <0x01c23800 0x10>
-+	};
-+Example for sun7i
-+	sid@01c23800 {
-+		compatible = "allwinner,sun7i-sid";
-+		reg = <0x01c23800 0x200>
-+	};
-diff --git a/drivers/misc/eeprom/Kconfig b/drivers/misc/eeprom/Kconfig
-index 04f2e1f..bc6a14c 100644
---- a/drivers/misc/eeprom/Kconfig
-+++ b/drivers/misc/eeprom/Kconfig
-@@ -96,4 +96,23 @@ config EEPROM_DIGSY_MTC_CFG
- 
- 	  If unsure, say N.
- 
-+config EEPROM_SUNXI_SID
-+	tristate "Allwinner sunxi security ID support"
-+	depends on ARCH_SUNXI && SYSFS
-+	help
-+	  This is a driver for the 'security ID' available on various Allwinner
-+	  devices.
-+	  Currently supported are:
-+		sun4i (A10)
-+		sun5i (A10s, A13)
-+		sun7i (A20)
-+
-+	  Due to the potential risks involved with changing e-fuses,
-+	  this driver is read-only
-+
-+	  For more information visit http://linux-sunxi.org/SID
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called sunxi_sid.
-+
- endmenu
-diff --git a/drivers/misc/eeprom/Makefile b/drivers/misc/eeprom/Makefile
-index fc1e81d..9507aec 100644
---- a/drivers/misc/eeprom/Makefile
-+++ b/drivers/misc/eeprom/Makefile
-@@ -4,4 +4,5 @@ obj-$(CONFIG_EEPROM_LEGACY)	+= eeprom.o
- obj-$(CONFIG_EEPROM_MAX6875)	+= max6875.o
- obj-$(CONFIG_EEPROM_93CX6)	+= eeprom_93cx6.o
- obj-$(CONFIG_EEPROM_93XX46)	+= eeprom_93xx46.o
-+obj-$(CONFIG_EEPROM_SUNXI_SID)	+= sunxi_sid.o
- obj-$(CONFIG_EEPROM_DIGSY_MTC_CFG) += digsy_mtc_eeprom.o
-diff --git a/drivers/misc/eeprom/sunxi_sid.c b/drivers/misc/eeprom/sunxi_sid.c
-new file mode 100644
-index 0000000..6fac205
---- /dev/null
-+++ b/drivers/misc/eeprom/sunxi_sid.c
-@@ -0,0 +1,177 @@
-+/*
-+ * Copyright (c) 2013 Oliver Schinagl <oliver@schinagl.nl>
-+ * http://www.linux-sunxi.org
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * This driver exposes the Allwinner security ID, efuses exported in byte-
-+ * sized chunks.
-+ */
-+
-+#include <linux/compiler.h>
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/export.h>
-+#include <linux/fs.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/kobject.h>
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/random.h>
-+#include <linux/slab.h>
-+#include <linux/stat.h>
-+#include <linux/sysfs.h>
-+#include <linux/types.h>
-+
-+#define DRV_NAME "sunxi-sid"
-+
-+struct sunxi_sid_data {
-+	void __iomem *reg_base;
-+	unsigned int keysize;
-+};
-+
-+/* We read the entire key, due to a 32 bit read alignment requirement. Since we
-+ * want to return the requested byte, this resuls in somewhat slower code and
-+ * uses 4 times more reads as needed but keeps code simpler. Since the SID is
-+ * only very rarly probed, this is not really an issue.
-+ */
-+static u8 sunxi_sid_read_byte(const struct sunxi_sid_data *sid_data,
-+			      const unsigned int offset)
-+{
-+	u32 sid_key;
-+
-+	if (offset >= sid_data->keysize)
-+		return 0;
-+
-+	sid_key = ioread32be(sid_data->reg_base + round_down(offset, 4));
-+	sid_key >>= (offset % 4) * 8;
-+
-+	return sid_key; /* Only return the last byte */
-+}
-+
-+static ssize_t sid_read(struct file *fd, struct kobject *kobj,
-+			struct bin_attribute *attr, char *buf,
-+			loff_t pos, size_t size)
-+{
-+	struct platform_device *pdev;
-+	struct sunxi_sid_data *sid_data;
-+	int i;
-+
-+	pdev = to_platform_device(kobj_to_dev(kobj));
-+	sid_data = platform_get_drvdata(pdev);
-+
-+	if (pos < 0 || pos >= sid_data->keysize)
-+		return 0;
-+	if (size > sid_data->keysize - pos)
-+		size = sid_data->keysize - pos;
-+
-+	for (i = 0; i < size; i++)
-+		buf[i] = sunxi_sid_read_byte(sid_data, pos + i);
-+
-+	return i;
-+}
-+
-+static struct bin_attribute sid_bin_attr = {
-+	.attr = { .name = "eeprom", .mode = S_IRUGO, },
-+	.read = sid_read,
-+};
-+
-+static struct bin_attribute *sunxi_sid_bin_attrs[] = {
-+	&sid_bin_attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group sunxi_sid_group = {
-+	.bin_attrs = sunxi_sid_bin_attrs,
-+};
-+
-+static const struct attribute_group *sunxi_sid_groups[] = {
-+	&sunxi_sid_group,
-+	NULL,
-+};
-+
-+static int sunxi_sid_remove(struct platform_device *pdev)
-+{
-+	struct sunxi_sid_data *sid_data;
-+
-+	device_remove_bin_file(&pdev->dev, &sid_bin_attr); /* fixme */
-+	sid_data = platform_get_drvdata(pdev);
-+	devm_kfree(&pdev->dev, sid_data);
-+	dev_dbg(&pdev->dev, "driver unloaded\n");
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id sunxi_sid_of_match[] = {
-+	{ .compatible = "allwinner,sun4i-sid", .data = (void *)16},
-+	{ .compatible = "allwinner,sun7i-sid", .data = (void *)512},
-+	{/* sentinel */},
-+};
-+MODULE_DEVICE_TABLE(of, sunxi_sid_of_match);
-+
-+static int __init sunxi_sid_probe(struct platform_device *pdev)
-+{
-+	struct sunxi_sid_data *sid_data;
-+	struct resource *res;
-+	const struct of_device_id *of_dev_id;
-+	u8 *entropy;
-+	unsigned int i;
-+
-+	sid_data = devm_kzalloc(&pdev->dev, sizeof(struct sunxi_sid_data),
-+				GFP_KERNEL);
-+	if (!sid_data)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	sid_data->reg_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(sid_data->reg_base))
-+		return PTR_ERR(sid_data->reg_base);
-+
-+	of_dev_id = of_match_device(sunxi_sid_of_match, &pdev->dev);
-+	if (!of_dev_id)
-+		return -ENODEV;
-+	sid_data->keysize = (int)of_dev_id->data;
-+
-+	platform_set_drvdata(pdev, sid_data);
-+
-+	sid_bin_attr.size = sid_data->keysize; /* ugly */
-+	if (device_create_bin_file(&pdev->dev, &sid_bin_attr)) /* fixme */
-+		return -ENODEV;
-+
-+	entropy = kzalloc(sizeof(u8) * sid_data->keysize, GFP_KERNEL);
-+	for (i = 0; i < sid_data->keysize; i++)
-+		entropy[i] = sunxi_sid_read_byte(sid_data, i);
-+	add_device_randomness(entropy, sid_data->keysize);
-+	kfree(entropy);
-+
-+	dev_dbg(&pdev->dev, "loaded\n");
-+
-+	return 0;
-+}
-+
-+static struct platform_driver sunxi_sid_driver = {
-+	.probe = sunxi_sid_probe,
-+	.remove = sunxi_sid_remove,
-+	.driver = {
-+		.name = DRV_NAME,
-+		.owner = THIS_MODULE,
-+		.of_match_table = sunxi_sid_of_match,
-+		/* .groups = sunxi_sid_groups, proper way */
-+	},
-+};
-+module_platform_driver(sunxi_sid_driver);
-+
-+MODULE_AUTHOR("Oliver Schinagl <oliver@schinagl.nl>");
-+MODULE_DESCRIPTION("Allwinner sunxi security id driver");
-+MODULE_LICENSE("GPL");
--- 
-1.8.1.5
+> and the rest of that call indented the same way.
+>
+> thanks,
+>
+> greg k-h
+>
 
