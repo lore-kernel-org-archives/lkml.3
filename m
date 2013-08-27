@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab3H0Qjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 12:39:39 -0400
-Received: from 8.mo1.mail-out.ovh.net ([178.33.110.239]:56759 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753273Ab3H0Qji (ORCPT
+	id S1753594Ab3H0Qj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 12:39:57 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:36951 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab3H0Qjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 12:39:38 -0400
-X-Greylist: delayed 12011 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Aug 2013 12:39:37 EDT
-Message-ID: <521CD61C.8010103@overkiz.com>
-Date: Tue, 27 Aug 2013 18:38:52 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 27 Aug 2013 12:39:55 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: nicolas.ferre@atmel.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        linux@arm.linux.org.uk, f.fainelli@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [PATCH 0/2] net/cadence/macb: add support for dt phy definition
-References: <1377186980-21902-1-git-send-email-b.brezillon@overkiz.com> <20130826.160450.2176892065062148718.davem@davemloft.net> <521C586A.7080604@overkiz.com> <20130827.122056.419758783951274884.davem@davemloft.net>
-In-Reply-To: <20130827.122056.419758783951274884.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 15428487900348512293
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <20130827144004.GB19425@redhat.com>
+References: <20130825065039.GB9299@1wt.eu>
+	<CA+55aFwFeCRcwn4qo570Y15mKrN3jEdN757PcZhrXs7QYi8MYA@mail.gmail.com>
+	<20130825194844.GA16717@redhat.com>
+	<CA+55aFzbY3zYD1i5x02Z-6K3nHKzJj6227ZBYRLqij9y0eXRqQ@mail.gmail.com>
+	<20130826153301.GA15890@redhat.com>
+	<20130826163704.GA21763@redhat.com>
+	<20130826175441.GA28856@redhat.com>
+	<CA+55aFzCghYYF1_dcvBY9XZ82TU9b=hhgFqkGoWpaZuKJ7R6_A@mail.gmail.com>
+	<CA+55aFwAw=AZNqmDNip_P6WiY4zGRNWks-kLwN7ZgJ8JJsAx-A@mail.gmail.com>
+	<20130827143938.GA19425@redhat.com>
+	<20130827144004.GB19425@redhat.com>
+Date: Tue, 27 Aug 2013 09:39:54 -0700
+X-Google-Sender-Auth: Behd6Kg0nziKtz8uo-oZR5LFbYY
+Message-ID: <CA+55aFzoXyA8TU5XXqaNj1EzZ9H-pbTbJ85--zhWzAOLThyjSQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] proc: make /proc/self point to thread
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Willy Tarreau <w@1wt.eu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/08/2013 18:20, David Miller wrote:
-> From: boris brezillon <b.brezillon@overkiz.com>
-> Date: Tue, 27 Aug 2013 09:42:34 +0200
+On Tue, Aug 27, 2013 at 7:40 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> /proc/self points to /proc/<tgid>, not to /proc/<tid>, and thus
+> "self" actually means "group leader".
 >
->> Could you apply, the 3rd version of this series instead ?
-> There can never be an "instead" or reverting patches I've said I've
-> applied already.
->
-> If you want changes, you have to submit follow-on fixes.
+> Change fs/proc/self.c to print the caller's tid, this is probably
+> what the users actually expect.
 
-Hello David,
+Yeah, thinking more about this, this can't work. I think you'd need to
+use "/proc/<tgid>/task/<tid>" wouldn't you?
 
-I sent the incremental patches based on your net-next branch:
-https://lkml.org/lkml/2013/8/27/257
-https://lkml.org/lkml/2013/8/27/259
+Or perhaps even more complicated, and say "if it's a task group
+leader, keep the old /proc/<tgid>, otherwise do the full thread path".
 
-Thanks.
+Anyway, does not not sound worth it. Your previous simple patch is
+probably the right thing to do.
 
-Best Regards,
-
-Boris
+             Linus
