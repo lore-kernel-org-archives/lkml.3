@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab3H0HcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 03:32:17 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57058 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349Ab3H0HcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 03:32:16 -0400
-Message-ID: <1377588720.3819.113.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Tue, 27 Aug 2013 17:32:00 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752829Ab3H0HcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 03:32:24 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:50957 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab3H0HcT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 03:32:19 -0400
+Date: Tue, 27 Aug 2013 08:32:13 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH 1/1] mfd: omap-usb-host: Staticize usbhs_driver_name
+Message-ID: <20130827073213.GA6152@lee--X1>
+References: <1377256378-13677-1-git-send-email-sachin.kamat@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1377256378-13677-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On Fri, 23 Aug 2013, Sachin Kamat wrote:
 
-Here are 3 bug fixes that should probably go into 3.11 since I'm also
-tagging them for stable.
+> usbhs_driver_name is used only in this file. Make it static.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  drivers/mfd/omap-usb-host.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Once fixes our old /proc/powerpc/lparcfg file which provides partition
-informations when running under our hypervisor and also acts as a
-user-triggerable Oops when hot :-(
+Applied, thanks.
 
-The other two respectively are a one liner to fix a HVSI protocol
-handshake problem causing the console to fail to show up on a bunch of
-machines until we reach userspace, which I deem annoying enough to
-warrant going to stable, and a nasty gcc miscompile causing us to
-pass virtual instead of physical addresses to the firmware under some
-circumstances.
-
-Cheers,
-Ben.
-The following changes since commit 28e61cc466d8daace4b0f04ba2b83e0bd68f5832:
-
-  powerpc/tm: Fix context switching TAR, PPR and DSCR SPRs (2013-08-09 18:07:12 +1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to d220980b701d838560a70de691b53be007e99e78:
-
-  powerpc/hvsi: Increase handshake timeout from 200ms to 400ms. (2013-08-27 16:59:56 +1000)
-
-----------------------------------------------------------------
-Benjamin Herrenschmidt (1):
-      powerpc: Don't Oops when accessing /proc/powerpc/lparcfg without hypervisor
-
-Eugene Surovegin (1):
-      powerpc/hvsi: Increase handshake timeout from 200ms to 400ms.
-
-Paul Mackerras (1):
-      powerpc: Work around gcc miscompilation of __pa() on 64-bit
-
- arch/powerpc/Kconfig            |  1 +
- arch/powerpc/include/asm/page.h | 10 ++++++++++
- arch/powerpc/kernel/lparcfg.c   | 22 +++++++++-------------
- drivers/tty/hvc/hvsi_lib.c      |  4 ++--
- 4 files changed, 22 insertions(+), 15 deletions(-)
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
