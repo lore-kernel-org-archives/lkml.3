@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab3H0BMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:12:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59603 "EHLO
+	id S1754064Ab3H0BMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:12:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59606 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab3H0BHe (ORCPT
+	with ESMTP id S1753577Ab3H0BHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Aug 2013 21:07:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roland Dreier <roland@purestorage.com>,
-        David Milburn <dmilburn@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 66/74] SCSI: sg: Fix user memory corruption when SG_IO is interrupted by a signal
-Date: Mon, 26 Aug 2013 18:09:04 -0700
-Message-Id: <20130827010437.982754977@linuxfoundation.org>
+        Jeff Shorey <shoreyjeff@gmail.com>, Radu Caragea <sinaelgl@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 67/74] Revert "x86 get_unmapped_area(): use proper mmap base for bottom-up direction"
+Date: Mon, 26 Aug 2013 18:09:05 -0700
+Message-Id: <20130827010438.367831189@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -28,128 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 35dc248383bbab0a7203fca4d722875bc81ef091 upstream.
+commit 5ea80f76a56605a190a7ea16846c82aa63dbd0aa upstream.
 
-There is a nasty bug in the SCSI SG_IO ioctl that in some circumstances
-leads to one process writing data into the address space of some other
-random unrelated process if the ioctl is interrupted by a signal.
-What happens is the following:
+This reverts commit df54d6fa54275ce59660453e29d1228c2b45a826.
 
- - A process issues an SG_IO ioctl with direction DXFER_FROM_DEV (ie the
-   underlying SCSI command will transfer data from the SCSI device to
-   the buffer provided in the ioctl)
+The commit isn't necessarily wrong, but because it recalculates the
+random mmap_base every time, it seems to confuse user memory allocators
+that expect contiguous mmap allocations even when the mmap address isn't
+specified.
 
- - Before the command finishes, a signal is sent to the process waiting
-   in the ioctl.  This will end up waking up the sg_ioctl() code:
+In particular, the MATLAB Java runtime seems to be unhappy. See
 
-		result = wait_event_interruptible(sfp->read_wait,
-			(srp_done(sfp, srp) || sdp->detached));
+  https://bugzilla.kernel.org/show_bug.cgi?id=60774
 
-   but neither srp_done() nor sdp->detached is true, so we end up just
-   setting srp->orphan and returning to userspace:
+So we'll want to apply the random offset only once, and Radu has a patch
+for that.  Revert this older commit in order to apply the other one.
 
-		srp->orphan = 1;
-		write_unlock_irq(&sfp->rq_list_lock);
-		return result;	/* -ERESTARTSYS because signal hit process */
-
-   At this point the original process is done with the ioctl and
-   blithely goes ahead handling the signal, reissuing the ioctl, etc.
-
- - Eventually, the SCSI command issued by the first ioctl finishes and
-   ends up in sg_rq_end_io().  At the end of that function, we run through:
-
-	write_lock_irqsave(&sfp->rq_list_lock, iflags);
-	if (unlikely(srp->orphan)) {
-		if (sfp->keep_orphan)
-			srp->sg_io_owned = 0;
-		else
-			done = 0;
-	}
-	srp->done = done;
-	write_unlock_irqrestore(&sfp->rq_list_lock, iflags);
-
-	if (likely(done)) {
-		/* Now wake up any sg_read() that is waiting for this
-		 * packet.
-		 */
-		wake_up_interruptible(&sfp->read_wait);
-		kill_fasync(&sfp->async_qp, SIGPOLL, POLL_IN);
-		kref_put(&sfp->f_ref, sg_remove_sfp);
-	} else {
-		INIT_WORK(&srp->ew.work, sg_rq_end_io_usercontext);
-		schedule_work(&srp->ew.work);
-	}
-
-   Since srp->orphan *is* set, we set done to 0 (assuming the
-   userspace app has not set keep_orphan via an SG_SET_KEEP_ORPHAN
-   ioctl), and therefore we end up scheduling sg_rq_end_io_usercontext()
-   to run in a workqueue.
-
- - In workqueue context we go through sg_rq_end_io_usercontext() ->
-   sg_finish_rem_req() -> blk_rq_unmap_user() -> ... ->
-   bio_uncopy_user() -> __bio_copy_iov() -> copy_to_user().
-
-   The key point here is that we are doing copy_to_user() on a
-   workqueue -- that is, we're on a kernel thread with current->mm
-   equal to whatever random previous user process was scheduled before
-   this kernel thread.  So we end up copying whatever data the SCSI
-   command returned to the virtual address of the buffer passed into
-   the original ioctl, but it's quite likely we do this copying into a
-   different address space!
-
-As suggested by James Bottomley <James.Bottomley@hansenpartnership.com>,
-add a check for current->mm (which is NULL if we're on a kernel thread
-without a real userspace address space) in bio_uncopy_user(), and skip
-the copy if we're on a kernel thread.
-
-There's no reason that I can think of for any caller of bio_uncopy_user()
-to want to do copying on a kernel thread with a random active userspace
-address space.
-
-Huge thanks to Costa Sapuntzakis <costa@purestorage.com> for the
-original pointer to this bug in the sg code.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Tested-by: David Milburn <dmilburn@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Jeff Shorey <shoreyjeff@gmail.com>
+Cc: Radu Caragea <sinaelgl@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/bio.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ arch/x86/kernel/sys_x86_64.c |    2 +-
+ arch/x86/mm/mmap.c           |    2 +-
+ include/linux/sched.h        |    1 -
+ 3 files changed, 2 insertions(+), 3 deletions(-)
 
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -1045,12 +1045,22 @@ static int __bio_copy_iov(struct bio *bi
- int bio_uncopy_user(struct bio *bio)
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -101,7 +101,7 @@ static void find_start_end(unsigned long
+ 				*begin = new_begin;
+ 		}
+ 	} else {
+-		*begin = mmap_legacy_base();
++		*begin = TASK_UNMAPPED_BASE;
+ 		*end = TASK_SIZE;
+ 	}
+ }
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -98,7 +98,7 @@ static unsigned long mmap_base(void)
+  * Bottom-up (legacy) layout on X86_32 did not support randomization, X86_64
+  * does, but not when emulating X86_32
+  */
+-unsigned long mmap_legacy_base(void)
++static unsigned long mmap_legacy_base(void)
  {
- 	struct bio_map_data *bmd = bio->bi_private;
--	int ret = 0;
-+	struct bio_vec *bvec;
-+	int ret = 0, i;
+ 	if (mmap_is_ia32())
+ 		return TASK_UNMAPPED_BASE;
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -314,7 +314,6 @@ struct nsproxy;
+ struct user_namespace;
  
--	if (!bio_flagged(bio, BIO_NULL_MAPPED))
--		ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
--				     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
--				     0, bmd->is_our_pages);
-+	if (!bio_flagged(bio, BIO_NULL_MAPPED)) {
-+		/*
-+		 * if we're in a workqueue, the request is orphaned, so
-+		 * don't copy into a random user address space, just free.
-+		 */
-+		if (current->mm)
-+			ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
-+					     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
-+					     0, bmd->is_our_pages);
-+		else if (bmd->is_our_pages)
-+			bio_for_each_segment_all(bvec, bio, i)
-+				__free_page(bvec->bv_page);
-+	}
- 	bio_free_map_data(bmd);
- 	bio_put(bio);
- 	return ret;
+ #ifdef CONFIG_MMU
+-extern unsigned long mmap_legacy_base(void);
+ extern void arch_pick_mmap_layout(struct mm_struct *mm);
+ extern unsigned long
+ arch_get_unmapped_area(struct file *, unsigned long, unsigned long,
 
 
