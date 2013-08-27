@@ -1,172 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357Ab3H0Vef (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 17:34:35 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:42973 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982Ab3H0Ved (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 17:34:33 -0400
+	id S1754665Ab3H0VfH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 17:35:07 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37764 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753878Ab3H0VfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 17:35:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH] driver core / ACPI: Avoid device removal locking problems
+Date: Tue, 27 Aug 2013 23:45:46 +0200
+Message-ID: <2885746.SMJa75jgiX@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130827183644.GC12212@mtj.dyndns.org>
+References: <1543475.L7gSB7lLAu@vostro.rjw.lan> <521C6FA8.4070804@cn.fujitsu.com> <20130827183644.GC12212@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1377531553-17716-1-git-send-email-nhorman@tuxdriver.com>
-References: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com> <1377531553-17716-1-git-send-email-nhorman@tuxdriver.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 27 Aug 2013 15:34:11 -0600
-Message-ID: <CAErSpo7tne+NvO-idW8Dt-9FZaGOHjTEDcQ8mC6K1PG6M=ftvg@mail.gmail.com>
-Subject: Re: [PATCH v3] ACPI: Fix osc flag setup ordering to allow pcie
- hotplug use when available
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Stefan Seyfried <stefan.seyfried@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Stefan]
+On Tuesday, August 27, 2013 02:36:44 PM Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Aug 27, 2013 at 05:21:44PM +0800, Gu Zheng wrote:
+> > >> OK, so the patch below is quick and dirty and overkill, but it should make the
+> > >> splat go away at least.
+> > > 
+> > > And if this patch does make the splat go away for you, please also test the
+> > > appended one (Tejun, thanks for the hint!).
+> > > 
+> > > I'll address the ACPI part differently later.
+> > 
+> > What about changing device_hotplug_lock and acpi_scan_lock to rwsem? like the
+> > attached one(With a preliminary test, it also can make the splat go away).:)
+> 
+> Hmmm.. I don't get it.  How is introducing another rwlock whic may
+> cause the operation, even reading the status, to fail randomly a
+> better option?
 
-On Mon, Aug 26, 2013 at 9:39 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> Somewhere between 3.9 and 3.10 it seems the order in which pcie and acpi probed
-> slots for hotplug capabilites got reversed.  While this isn't a big deal, it did
-> uncover a bug in the ACPI bus setup path.  Specifically, acpi_pci_root_add calls
-> pci_acpi_scan_root before setting the osc flags for the device handle.
-> pci_acpi_scan_root, among other things uses device_is_managed_by_native_pciehp()
-> to determine if a given slot has pcie hotplug capabilties, whcih checks the
-> devices OSC_PCI_EXPRESS_NATIVE_HP_CONTROL flag.  Since that flag is not set
-> until after pci_acpi_scan_root_completes, the acpi code never sees that pcie
-> slots are hotplug capable and configures them all to use acpi instead.
+That's more about replacing an existing mutex with an rwsem, but I don't think
+it helps anyway.  And as I said before, the acpi_eject_store() case is entirely
+separate in my opinion.
 
-I'd like to make it more explicit what we're fixing.  Apparently this
-is a regression between v3.9 and v3.10.
+> It's harier and more brittle.  We probably want to
+> implement better solution in sysfs for files which interact with
+> device addition / removal paths but for now I think Rafael's patch is
+> the right direction.
 
-Is this a fix for problems like
-https://bugzilla.kernel.org/show_bug.cgi?id=60736 ?  That bug is that
-an ExpressCard slot doesn't work unless we boot with
-"acpiphp.disable=1".  I think what happens there is that acpiphp
-claims the slot before we run _OSC, so pciehp doesn't claim it, even
-though _OSC did grant us control over native PCIe hotplug.
+I've thought about that a bit over the last several hours and I'm still
+thinking that that patch is a bit overkill, because it will trigger the
+restart_syscall() for all cases when device_hotplug_lock is locked, even
+if they can't lead to any deadlocks.  The only deadlockish situation is
+when device *removal* is in progress when store_online(), for example,
+is called.
 
-> Fix is pretty simple, just defer the scan until after the osc flags have been
-> set on the device.  Tested by myself and it seems to work well.
->
-> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> CC: Len Brown <lenb@kernel.org>
-> CC: "Rafael J. Wysocki" <rjw@sisk.pl>
-> CC: Bjorn Helgaas <bhelgaas@google.com>
-> CC: linux-acpi@vger.kernel.org
-> CC: linux-pci@vger.kernel.org
->
-> ---
-> Change notes:
-> v2) eferred the disabling of aspm until after the acpi scan of the pci bus is
-> complete.  This was done to allow proper handling of pcie 1.1 devices, as per:
->
-> commit b8178f130e25c1bdac1c33e0996f1ff6e20ec08e
-> Author: Bjorn Helgaas <bhelgaas@google.com>
-> Date:   Mon Apr 1 15:47:39 2013 -0600
->
->     Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
->
-> As discussed previously in the thread the disable logic for aspm needs to be
-> untangled and refactored, which is not something I'm sufficently versed in teh
-> hotplug code to do right now, but this fixes the problem above, and prevents the
-> problem that necessitated the revert without adding any visible complexity to
-> the user, so I think its ok.
->
-> v3) Fixup stupid authorship error
-> ---
->  drivers/acpi/pci_root.c | 54 +++++++++++++++++++++++++++++--------------------
->  1 file changed, 32 insertions(+), 22 deletions(-)
->
-> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> index 5917839..1e80a90 100644
-> --- a/drivers/acpi/pci_root.c
-> +++ b/drivers/acpi/pci_root.c
-> @@ -378,6 +378,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
->         struct acpi_pci_root *root;
->         u32 flags, base_flags;
->         acpi_handle handle = device->handle;
-> +       bool no_aspm = false;
->
->         root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
->         if (!root)
-> @@ -437,27 +438,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
->         flags = base_flags = OSC_PCI_SEGMENT_GROUPS_SUPPORT;
->         acpi_pci_osc_support(root, flags);
->
-> -       /*
-> -        * TBD: Need PCI interface for enumeration/configuration of roots.
-> -        */
-> -
-> -       /*
-> -        * Scan the Root Bridge
-> -        * --------------------
-> -        * Must do this prior to any attempt to bind the root device, as the
-> -        * PCI namespace does not get created until this call is made (and
-> -        * thus the root bridge's pci_dev does not exist).
-> -        */
-> -       root->bus = pci_acpi_scan_root(root);
-> -       if (!root->bus) {
-> -               dev_err(&device->dev,
-> -                       "Bus %04x:%02x not present in PCI namespace\n",
-> -                       root->segment, (unsigned int)root->secondary.start);
-> -               result = -ENODEV;
-> -               goto end;
-> -       }
-> -
-> -       /* Indicate support for various _OSC capabilities. */
->         if (pci_ext_cfg_avail())
->                 flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
->         if (pcie_aspm_support_enabled()) {
-> @@ -512,7 +492,14 @@ static int acpi_pci_root_add(struct acpi_device *device,
->                                 acpi_format_exception(status), flags);
->                         dev_info(&device->dev,
->                                  "ACPI _OSC control for PCIe not granted, disabling ASPM\n");
-> -                       pcie_no_aspm();
-> +                       /*
-> +                        * We want to disable aspm here, but aspm_disabled
-> +                        * needs to remain in its state from boot so that we
-> +                        * properly handle pcie 1.1 devices.  So we set this
-> +                        * flag here, to defer the action until after the acpi
-> +                        * root scan
-> +                        */
-> +                       no_aspm = true;
->                 }
->         } else {
->                 dev_info(&device->dev,
-> @@ -520,6 +507,29 @@ static int acpi_pci_root_add(struct acpi_device *device,
->                          "(_OSC support mask: 0x%02x)\n", flags);
->         }
->
-> +       /*
-> +        * TBD: Need PCI interface for enumeration/configuration of roots.
-> +        */
-> +
-> +       /*
-> +        * Scan the Root Bridge
-> +        * --------------------
-> +        * Must do this prior to any attempt to bind the root device, as the
-> +        * PCI namespace does not get created until this call is made (and
-> +        * thus the root bridge's pci_dev does not exist).
-> +        */
-> +       root->bus = pci_acpi_scan_root(root);
-> +       if (!root->bus) {
-> +               dev_err(&device->dev,
-> +                       "Bus %04x:%02x not present in PCI namespace\n",
-> +                       root->segment, (unsigned int)root->secondary.start);
-> +               result = -ENODEV;
-> +               goto end;
-> +       }
-> +
-> +       if (no_aspm)
-> +               pcie_no_aspm();
-> +
->         pci_acpi_add_bus_pm_notifier(device, root->bus);
->         if (device->wakeup.flags.run_wake)
->                 device_set_run_wake(root->bus->bridge, true);
-> --
-> 1.8.1.4
->
+So to address that particular situation without adding too much overhead for
+other cases, I've come up with the appended patch (untested for now).
+
+This is how it is supposed to work.
+
+There are three "lock levels" for device hotplug, "normal", "remove"
+and "weak".  The difference is related to how __lock_device_hotplug()
+works.  Namely, if device hotplug is currently locked, that function
+will either block or return false, depending on the "current lock
+level" and its argument (the "new lock level").  The rules here are
+that false is returned immediately if the "current lock level" is
+"remove" and the "new lock level" is "weak".  The function blocks
+for all other combinations of the two.
+
+There are two functions supposed to use device hotplug "lock levels"
+other than "normal": store_online() and acpi_scan_hot_remove().
+Everybody else is supposed to use "normal" (well, there are more
+potential users of "weak" in drivers/base/memory.c).
+
+acpi_scan_hot_remove() uses the "remove" lock level to indicate
+that it is going to remove devices while holding device hotplug
+locked.  In turn, store_online() uses the "weak" lock level so
+that it doesn't block when devices are being removed with device
+hotplug locked, because that may lead to a deadlock.
+
+show_online() actually doesn't need to lock device hotplug, but
+it is useful to serialize it with respect to device_offline()
+and device_online() (in case user space attempts to run them
+concurrently).
+
+---
+ drivers/acpi/scan.c    |    4 +-
+ drivers/base/core.c    |   72 ++++++++++++++++++++++++++++++++++++++-----------
+ include/linux/device.h |   25 ++++++++++++++++-
+ 3 files changed, 83 insertions(+), 18 deletions(-)
+
+Index: linux-pm/drivers/base/core.c
+===================================================================
+--- linux-pm.orig/drivers/base/core.c
++++ linux-pm/drivers/base/core.c
+@@ -49,6 +49,55 @@ static struct kobject *dev_kobj;
+ struct kobject *sysfs_dev_char_kobj;
+ struct kobject *sysfs_dev_block_kobj;
+ 
++static struct {
++	struct task_struct *holder;
++	enum dev_hotplug_lock_type type;
++	struct mutex lock; /* Synchronizes accesses to holder and type */
++	wait_queue_head_t wait_queue;
++} device_hotplug = {
++	.holder = NULL,
++	.type = DEV_HOTPLUG_LOCK_NONE,
++	.lock = __MUTEX_INITIALIZER(device_hotplug.lock),
++	.wait_queue = __WAIT_QUEUE_HEAD_INITIALIZER(device_hotplug.wait_queue),
++};
++
++bool __lock_device_hotplug(enum dev_hotplug_lock_type type)
++{
++	DEFINE_WAIT(wait);
++	bool ret = true;
++
++	mutex_lock(&device_hotplug.lock);
++	for (;;) {
++		prepare_to_wait(&device_hotplug.wait_queue, &wait,
++				TASK_UNINTERRUPTIBLE);
++		if (!device_hotplug.holder) {
++			device_hotplug.holder = current;
++			device_hotplug.type = type;
++			break;
++		} else if (type == DEV_HOTPLUG_LOCK_WEAK
++		    && device_hotplug.type == DEV_HOTPLUG_LOCK_REMOVE) {
++			ret = false;
++			break;
++		}
++		mutex_unlock(&device_hotplug.lock);
++		schedule();
++		mutex_lock(&device_hotplug.lock);
++	}
++	finish_wait(&device_hotplug.wait_queue, &wait);
++	mutex_unlock(&device_hotplug.lock);
++	return ret;
++}
++
++void unlock_device_hotplug(void)
++{
++	mutex_lock(&device_hotplug.lock);
++	BUG_ON(device_hotplug.holder != current);
++	device_hotplug.holder = NULL;
++	device_hotplug.type = DEV_HOTPLUG_LOCK_NONE;
++	wake_up(&device_hotplug.wait_queue);
++	mutex_unlock(&device_hotplug.lock);
++}
++
+ #ifdef CONFIG_BLOCK
+ static inline int device_is_not_partition(struct device *dev)
+ {
+@@ -408,9 +457,10 @@ static ssize_t show_online(struct device
+ {
+ 	bool val;
+ 
+-	lock_device_hotplug();
++	/* Serialize against device_online() and device_offline(). */
++	device_lock(dev);
+ 	val = !dev->offline;
+-	unlock_device_hotplug();
++	device_unlock(dev);
+ 	return sprintf(buf, "%u\n", val);
+ }
+ 
+@@ -424,7 +474,11 @@ static ssize_t store_online(struct devic
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	lock_device_hotplug();
++	if (!__lock_device_hotplug(DEV_HOTPLUG_LOCK_WEAK)) {
++		/* Avoid busy looping (10 ms delay should do). */
++		msleep(10);
++		return restart_syscall();
++	}
+ 	ret = val ? device_online(dev) : device_offline(dev);
+ 	unlock_device_hotplug();
+ 	return ret < 0 ? ret : count;
+@@ -1479,18 +1533,6 @@ EXPORT_SYMBOL_GPL(put_device);
+ EXPORT_SYMBOL_GPL(device_create_file);
+ EXPORT_SYMBOL_GPL(device_remove_file);
+ 
+-static DEFINE_MUTEX(device_hotplug_lock);
+-
+-void lock_device_hotplug(void)
+-{
+-	mutex_lock(&device_hotplug_lock);
+-}
+-
+-void unlock_device_hotplug(void)
+-{
+-	mutex_unlock(&device_hotplug_lock);
+-}
+-
+ static int device_check_offline(struct device *dev, void *not_used)
+ {
+ 	int ret;
+Index: linux-pm/include/linux/device.h
+===================================================================
+--- linux-pm.orig/include/linux/device.h
++++ linux-pm/include/linux/device.h
+@@ -893,8 +893,31 @@ static inline bool device_supports_offli
+ 	return dev->bus && dev->bus->offline && dev->bus->online;
+ }
+ 
+-extern void lock_device_hotplug(void);
++enum dev_hotplug_lock_type {
++	DEV_HOTPLUG_LOCK_NONE,
++	DEV_HOTPLUG_LOCK_NORMAL,
++	DEV_HOTPLUG_LOCK_REMOVE,
++	DEV_HOTPLUG_LOCK_WEAK,
++};
++
++extern bool __lock_device_hotplug(enum dev_hotplug_lock_type);
+ extern void unlock_device_hotplug(void);
++
++static inline void lock_device_hotplug(void)
++{
++	__lock_device_hotplug(DEV_HOTPLUG_LOCK_NORMAL);
++}
++
++static inline void lock_device_hot_remove(void)
++{
++	__lock_device_hotplug(DEV_HOTPLUG_LOCK_REMOVE);
++}
++
++static inline void unlock_device_hot_remove(void)
++{
++	unlock_device_hotplug();
++}
++
+ extern int device_offline(struct device *dev);
+ extern int device_online(struct device *dev);
+ /*
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -204,7 +204,7 @@ static int acpi_scan_hot_remove(struct a
+ 		return -EINVAL;
+ 	}
+ 
+-	lock_device_hotplug();
++	lock_device_hot_remove();
+ 
+ 	/*
+ 	 * Carry out two passes here and ignore errors in the first pass,
+@@ -249,7 +249,7 @@ static int acpi_scan_hot_remove(struct a
+ 
+ 	acpi_bus_trim(device);
+ 
+-	unlock_device_hotplug();
++	unlock_device_hot_remove();
+ 
+ 	/* Device node has been unregistered. */
+ 	put_device(&device->dev);
+
