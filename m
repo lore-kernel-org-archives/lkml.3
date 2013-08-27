@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab3H0BIj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:08:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59671 "EHLO
+	id S1753821Ab3H0BIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:08:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59657 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab3H0BHn (ORCPT
+	with ESMTP id S1753689Ab3H0BHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Aug 2013 21:07:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 54/74] nilfs2: remove double bio_put() in nilfs_end_bio_write() for BIO_EOPNOTSUPP error
-Date: Mon, 26 Aug 2013 18:08:52 -0700
-Message-Id: <20130827010435.578380623@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [ 45/74] arm64: perf: fix array out of bounds access in armpmu_map_hw_event()
+Date: Mon, 26 Aug 2013 18:08:43 -0700
+Message-Id: <20130827010433.999570304@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -30,37 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 2df37a19c686c2d7c4e9b4ce1505b5141e3e5552 upstream.
+commit 868f6fea8fa63f09acbfa93256d0d2abdcabff79 upstream.
 
-Remove double call of bio_put() in nilfs_end_bio_write() for the case of
-BIO_EOPNOTSUPP error detection.  The issue was found by Dan Carpenter
-and he suggests first version of the fix too.
+This is a port of d9f966357b14 ("ARM: 7810/1: perf: Fix array out of
+bounds access in armpmu_map_hw_event()") to arm64, which fixes an oops
+in the arm64 perf backend found as a result of Vince's fuzzing tool.
 
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/segbuf.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arm64/kernel/perf_event.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/fs/nilfs2/segbuf.c
-+++ b/fs/nilfs2/segbuf.c
-@@ -345,8 +345,7 @@ static void nilfs_end_bio_write(struct b
+--- a/arch/arm64/kernel/perf_event.c
++++ b/arch/arm64/kernel/perf_event.c
+@@ -107,7 +107,12 @@ armpmu_map_cache_event(const unsigned (*
+ static int
+ armpmu_map_event(const unsigned (*event_map)[PERF_COUNT_HW_MAX], u64 config)
+ {
+-	int mapping = (*event_map)[config];
++	int mapping;
++
++	if (config >= PERF_COUNT_HW_MAX)
++		return -EINVAL;
++
++	mapping = (*event_map)[config];
+ 	return mapping == HW_OP_UNSUPPORTED ? -ENOENT : mapping;
+ }
  
- 	if (err == -EOPNOTSUPP) {
- 		set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
--		bio_put(bio);
--		/* to be detected by submit_seg_bio() */
-+		/* to be detected by nilfs_segbuf_submit_bio() */
- 	}
- 
- 	if (!uptodate)
 
 
