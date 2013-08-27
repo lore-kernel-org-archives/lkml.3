@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab3H0PBY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 11:01:24 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:55930 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab3H0PBV (ORCPT
+	id S1753960Ab3H0PBs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 11:01:48 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:58339 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab3H0PBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 11:01:21 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Benoit Cousson <bcousson@baylibre.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, linux-next@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
-Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
-References: <20130827181353.319c150858829df1bb68d60b@canb.auug.org.au>
-	<521C6961.9020103@linutronix.de>
-	<CABxcv=mg6t5wPqpF3j5sr_76qfZ7N7KgpWhcKSGoPTOcaR=V6A@mail.gmail.com>
-	<521CA888.1080909@baylibre.com> <521CAF59.1090203@linutronix.de>
-	<521CB046.9070408@baylibre.com>
-Date: Tue, 27 Aug 2013 08:01:18 -0700
-In-Reply-To: <521CB046.9070408@baylibre.com> (Benoit Cousson's message of
-	"Tue, 27 Aug 2013 15:57:26 +0200")
-Message-ID: <878uznxjnl.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 27 Aug 2013 11:01:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAHOfOo0kdByd3T0LL4tBpy-aFtJS6bRK7D=rPc6Si0iv03CLKQ@mail.gmail.com>
+References: <CAHOfOo21+hSwFrXZuoMppcivcOonhx-m1p-yyZsm6c5UCh0joQ@mail.gmail.com>
+ <CAHOfOo0kdByd3T0LL4tBpy-aFtJS6bRK7D=rPc6Si0iv03CLKQ@mail.gmail.com>
+From: Andrew Brooks <arb@sat.dundee.ac.uk>
+Date: Tue, 27 Aug 2013 16:01:25 +0100
+Message-ID: <CAHOfOo2jn==97EQ4ka7CdBf9UGfEhtZrs-22YB+HgV=8Z0FqUg@mail.gmail.com>
+Subject: Re: niu lock-up (Transmit timed out, resetting) and NETDEV WATCHDOG
+To: Linux Net-Dev Mailing List <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benoit Cousson <bcousson@baylibre.com> writes:
+Hi
 
-> + Kevin,
->
-> On 27/08/2013 15:53, Sebastian Andrzej Siewior wrote:
->> On 08/27/2013 03:24 PM, Benoit Cousson wrote:
->>> Hi Sebatian,
->>
->> Hi Benoit,
->>
->>> Yes. DT patches are an endless source of merge conflicts if they are
->>> merge throught different trees.
->>
->> Usually there are small conflicts because two people added / changed a
->> node nearby. This patch turned the .dts file almost upside down.
->
-> Yes, that's true.
->
->>> What was discussed with Olof and Arnd during Connect is that we should
->>> avoid merging DT patches outside arm-soc tree to avoid that kind of
->>> situation.
->>
->> I am aware of this now. However these changes belonged together because
->> a) they belonged together and b) would break the driver until the .dts
->> changes and driver code is in-sync.
->> In future I am going to ask you for a topic branch so I can get my
->> changes in one piece without breaking stuff in the middle.
->>
->> What do we do now?
->
-> Cannot you just merge the stable arm-soc/dt branch into your branch
-> before applying your patches?
+> On 26 March 2013 13:44, Andrew Brooks <arb@sat.dundee.ac.uk> wrote:
+>> Using niu driver for this card: Oracle/SUN Multithreaded 10-Gigabit
+>> Ethernet Network Controller and after a period the interface will hang
+>> with errors every 5 seconds
+>> "niu: xxx: eth2: Transmit timed out, resetting"
 
-Unfortunately, the next/dt branch of arm-soc is not necessarily stable
-so should *not* be merged.  In fact none of the arm-soc branches should
-be considered stable.
+Here's more information about the problem:
+When the interface hangs we see these messages from the driver:
 
-As was already mentioned, this should be split up into driver changes
-and DTS changes through arm-soc.  They'll both merge for v3.12.
+[3408740.816032] niu: niu_interrupt() ldg[ffff8807141d16d0](18)
+v0[8000000000] v1[0] v2[0]
+[3408740.816036] niu 0000:09:00.0: eth2: niu_txchan_intr() cs[b860b860000c000]
+[3408740.816038] niu 0000:09:00.0: eth2: niu_poll_core() v0[0000008000000000]
+[3408740.816040] niu 0000:09:00.0: eth2: niu_tx_work() pkt_cnt[0] cons[119]
+[3408740.816042] niu: niu_interrupt() ldg[ffff8807141d16d0](18)
+v0[8000000000] v1[0] v2[0]
+[3408740.820004] [sched_delayed] sched: RT throttling activated
+[3408740.824021] niu 0000:09:00.0: eth2: Disable interrupts
+[3408740.824044] niu 0000:09:00.0: eth2: Disable RX MAC
+[3408740.824048] niu 0000:09:00.0: eth2: Disable IPP
+[3408740.824054] niu 0000:09:00.0: eth2: Stop TX channels
+[3408740.824641] niu 0000:09:00.0: eth2: Stop RX channels
+[3408740.824652] niu 0000:09:00.0: eth2: Reset TX channels
+[3408740.825212] niu 0000:09:00.0: eth2: Reset RX channels
+[3408740.825999] niu 0000:09:00.0: eth2: Initialize TXC
+[3408740.826002] niu 0000:09:00.0: eth2: Initialize TX channels
 
-BTW, how did this patch get merged without a signoff/ack from the OMAP
-DT maintainer in the first place?  Hmm, looks like Benoit was not copied
-nor was linux-omap or linux-arm-kernel copied in the original mails.
+However the interface doesn't recover :-(
+Are there any clues there?
 
-Kevin
+Thanks!
