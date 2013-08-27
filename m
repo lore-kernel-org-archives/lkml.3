@@ -1,216 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab3H0BXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:23:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59434 "EHLO
+	id S1753276Ab3H0BHD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:07:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59377 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab3H0BHF (ORCPT
+	with ESMTP id S1753118Ab3H0BGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:05 -0400
+	Mon, 26 Aug 2013 21:06:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 24/74] tracing: Change tracing_fops/snapshot_fops to rely on tracing_get_cpu()
-Date: Mon, 26 Aug 2013 18:08:22 -0700
-Message-Id: <20130827010429.577748192@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/74] 3.10.10-stable review
+Date: Mon, 26 Aug 2013 18:07:58 -0700
+Message-Id: <20130827010424.535365435@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
-References: <20130827010424.535365435@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.10.10 release.
+There are 74 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Aug 29 01:03:56 UTC 2013.
+Anything received after that time might be too late.
 
-From: Oleg Nesterov <oleg@redhat.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.10-rc1.gz
+and the diffstat can be found below.
 
-commit 6484c71cbc170634fa131b6d022d86d61686b88b upstream.
+thanks,
 
-tracing_open() and tracing_snapshot_open() are racy, the memory
-inode->i_private points to can be already freed.
+greg k-h
 
-Convert these last users of "inode->i_private == trace_cpu" to
-use "i_private = trace_array" and rely on tracing_get_cpu().
+-------------
+Pseudo-Shortlog of commits:
 
-v2: incorporate the fix from Steven, tracing_release() must not
-    blindly dereference file->private_data unless we know that
-    the file was opened for reading.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.10.10-rc1
 
-Link: http://lkml.kernel.org/r/20130723152610.GA23737@redhat.com
+Kent Overstreet <koverstreet@google.com>
+    bcache: FUA fixes
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Kumar Amit Mehta <gmate.amit@gmail.com>
+    md: bcache: io.c: fix a potential NULL pointer dereference
 
----
- kernel/trace/trace.c |   50 ++++++++++++++++++++++----------------------------
- 1 file changed, 22 insertions(+), 28 deletions(-)
+Tomas Winkler <tomas.winkler@intel.com>
+    mei: me: fix waiting for hw ready
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2853,9 +2853,9 @@ static const struct seq_operations trace
- };
- 
- static struct trace_iterator *
--__tracing_open(struct trace_array *tr, struct trace_cpu *tc,
--	       struct inode *inode, struct file *file, bool snapshot)
-+__tracing_open(struct inode *inode, struct file *file, bool snapshot)
- {
-+	struct trace_array *tr = inode->i_private;
- 	struct trace_iterator *iter;
- 	int cpu;
- 
-@@ -2896,8 +2896,8 @@ __tracing_open(struct trace_array *tr, s
- 		iter->trace_buffer = &tr->trace_buffer;
- 	iter->snapshot = snapshot;
- 	iter->pos = -1;
-+	iter->cpu_file = tracing_get_cpu(inode);
- 	mutex_init(&iter->mutex);
--	iter->cpu_file = tc->cpu;
- 
- 	/* Notify the tracer early; before we stop tracing. */
- 	if (iter->trace && iter->trace->open)
-@@ -2977,22 +2977,18 @@ int tracing_open_generic_tr(struct inode
- 
- static int tracing_release(struct inode *inode, struct file *file)
- {
-+	struct trace_array *tr = inode->i_private;
- 	struct seq_file *m = file->private_data;
- 	struct trace_iterator *iter;
--	struct trace_array *tr;
- 	int cpu;
- 
--	/* Writes do not use seq_file, need to grab tr from inode */
- 	if (!(file->f_mode & FMODE_READ)) {
--		struct trace_cpu *tc = inode->i_private;
--
--		trace_array_put(tc->tr);
-+		trace_array_put(tr);
- 		return 0;
- 	}
- 
-+	/* Writes do not use seq_file */
- 	iter = m->private;
--	tr = iter->tr;
--
- 	mutex_lock(&trace_types_lock);
- 
- 	for_each_tracing_cpu(cpu) {
-@@ -3039,8 +3035,7 @@ static int tracing_single_release_tr(str
- 
- static int tracing_open(struct inode *inode, struct file *file)
- {
--	struct trace_cpu *tc = inode->i_private;
--	struct trace_array *tr = tc->tr;
-+	struct trace_array *tr = inode->i_private;
- 	struct trace_iterator *iter;
- 	int ret = 0;
- 
-@@ -3048,16 +3043,17 @@ static int tracing_open(struct inode *in
- 		return -ENODEV;
- 
- 	/* If this file was open for write, then erase contents */
--	if ((file->f_mode & FMODE_WRITE) &&
--	    (file->f_flags & O_TRUNC)) {
--		if (tc->cpu == RING_BUFFER_ALL_CPUS)
-+	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC)) {
-+		int cpu = tracing_get_cpu(inode);
-+
-+		if (cpu == RING_BUFFER_ALL_CPUS)
- 			tracing_reset_online_cpus(&tr->trace_buffer);
- 		else
--			tracing_reset(&tr->trace_buffer, tc->cpu);
-+			tracing_reset(&tr->trace_buffer, cpu);
- 	}
- 
- 	if (file->f_mode & FMODE_READ) {
--		iter = __tracing_open(tr, tc, inode, file, false);
-+		iter = __tracing_open(inode, file, false);
- 		if (IS_ERR(iter))
- 			ret = PTR_ERR(iter);
- 		else if (trace_flags & TRACE_ITER_LATENCY_FMT)
-@@ -4672,8 +4668,7 @@ struct ftrace_buffer_info {
- #ifdef CONFIG_TRACER_SNAPSHOT
- static int tracing_snapshot_open(struct inode *inode, struct file *file)
- {
--	struct trace_cpu *tc = inode->i_private;
--	struct trace_array *tr = tc->tr;
-+	struct trace_array *tr = inode->i_private;
- 	struct trace_iterator *iter;
- 	struct seq_file *m;
- 	int ret = 0;
-@@ -4682,7 +4677,7 @@ static int tracing_snapshot_open(struct
- 		return -ENODEV;
- 
- 	if (file->f_mode & FMODE_READ) {
--		iter = __tracing_open(tr, tc, inode, file, true);
-+		iter = __tracing_open(inode, file, true);
- 		if (IS_ERR(iter))
- 			ret = PTR_ERR(iter);
- 	} else {
-@@ -4699,8 +4694,8 @@ static int tracing_snapshot_open(struct
- 		ret = 0;
- 
- 		iter->tr = tr;
--		iter->trace_buffer = &tc->tr->max_buffer;
--		iter->cpu_file = tc->cpu;
-+		iter->trace_buffer = &tr->max_buffer;
-+		iter->cpu_file = tracing_get_cpu(inode);
- 		m->private = iter;
- 		file->private_data = m;
- 	}
-@@ -5517,7 +5512,6 @@ trace_create_cpu_file(const char *name,
- static void
- tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
- {
--	struct trace_array_cpu *data = per_cpu_ptr(tr->trace_buffer.data, cpu);
- 	struct dentry *d_percpu = tracing_dentry_percpu(tr, cpu);
- 	struct dentry *d_cpu;
- 	char cpu_dir[30]; /* 30 characters should be more than enough */
-@@ -5538,7 +5532,7 @@ tracing_init_debugfs_percpu(struct trace
- 
- 	/* per cpu trace */
- 	trace_create_cpu_file("trace", 0644, d_cpu,
--				&data->trace_cpu, cpu, &tracing_fops);
-+				tr, cpu, &tracing_fops);
- 
- 	trace_create_cpu_file("trace_pipe_raw", 0444, d_cpu,
- 				tr, cpu, &tracing_buffers_fops);
-@@ -5551,7 +5545,7 @@ tracing_init_debugfs_percpu(struct trace
- 
- #ifdef CONFIG_TRACER_SNAPSHOT
- 	trace_create_cpu_file("snapshot", 0644, d_cpu,
--				&data->trace_cpu, cpu, &snapshot_fops);
-+				tr, cpu, &snapshot_fops);
- 
- 	trace_create_cpu_file("snapshot_raw", 0444, d_cpu,
- 				tr, cpu, &snapshot_raw_fops);
-@@ -6117,7 +6111,7 @@ init_tracer_debugfs(struct trace_array *
- 			  tr, &tracing_iter_fops);
- 
- 	trace_create_file("trace", 0644, d_tracer,
--			(void *)&tr->trace_cpu, &tracing_fops);
-+			  tr, &tracing_fops);
- 
- 	trace_create_file("trace_pipe", 0444, d_tracer,
- 			  tr, &tracing_pipe_fops);
-@@ -6138,11 +6132,11 @@ init_tracer_debugfs(struct trace_array *
- 			  &trace_clock_fops);
- 
- 	trace_create_file("tracing_on", 0644, d_tracer,
--			    tr, &rb_simple_fops);
-+			  tr, &rb_simple_fops);
- 
- #ifdef CONFIG_TRACER_SNAPSHOT
- 	trace_create_file("snapshot", 0644, d_tracer,
--			  (void *)&tr->trace_cpu, &snapshot_fops);
-+			  tr, &snapshot_fops);
- #endif
- 
- 	for_each_tracing_cpu(cpu)
+Tomas Winkler <tomas.winkler@intel.com>
+    mei: don't have to clean the state on power up
+
+Tomas Winkler <tomas.winkler@intel.com>
+    mei: me: fix reset state machine
+
+David Vrabel <david.vrabel@citrix.com>
+    x86/xen: do not identity map UNUSABLE regions in the machine E820
+
+Radu Caragea <sinaelgl@gmail.com>
+    x86 get_unmapped_area: Access mmap_legacy_base through mm_struct member
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    Revert "x86 get_unmapped_area(): use proper mmap base for bottom-up direction"
+
+Roland Dreier <roland@purestorage.com>
+    SCSI: sg: Fix user memory corruption when SG_IO is interrupted by a signal
+
+Anton Blanchard <anton@samba.org>
+    SCSI: lpfc: Don't force CONFIG_GENERIC_CSUM on
+
+Martin Peschke <mpeschke@linux.vnet.ibm.com>
+    SCSI: zfcp: fix schedule-inside-lock in scsi_device list loops
+
+Martin Peschke <mpeschke@linux.vnet.ibm.com>
+    SCSI: zfcp: fix lock imbalance by reworking request queue locking
+
+Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+    iwlwifi: pcie: disable L1 Active after pci_enable_device
+
+Stanislaw Gruszka <sgruszka@redhat.com>
+    iwlwifi: dvm: fix calling ieee80211_chswitch_done() with NULL
+
+Terry Suereth <terry.suereth@gmail.com>
+    libata: apply behavioral quirks to sil3826 PMP
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    Hostap: copying wrong data prism2_ioctl_giwaplist()
+
+Anthony Foiani <anthony.foiani@gmail.com>
+    sata_fsl: save irqs while coalescing
+
+Anatolij Gustschin <agust@denx.de>
+    usb: phy: fix build breakage
+
+Daniel Drake <dsd@laptop.org>
+    drivers/platform/olpc/olpc-ec.c: initialise earlier
+
+Vyacheslav Dubeyko <slava@dubeyko.com>
+    nilfs2: fix issue with counting number of bio requests for BIO_EOPNOTSUPP error detection
+
+Vyacheslav Dubeyko <slava@dubeyko.com>
+    nilfs2: remove double bio_put() in nilfs_end_bio_write() for BIO_EOPNOTSUPP error
+
+Wladislav Wiebe <wladislav.kw@gmail.com>
+    of: fdt: fix memory initialization for expanded DT
+
+Chris Wilson <chris@chris-wilson.co.uk>
+    drm/i915: Invalidate TLBs for the rings after a reset
+
+Rafał Miłecki <zajec5@gmail.com>
+    drm/radeon: fix WREG32_OR macro setting bits in a register
+
+Christian König <christian.koenig@amd.com>
+    drm/radeon: fix UVD message buffer validation
+
+Alex Deucher <alexander.deucher@amd.com>
+    drm/radeon/r7xx: fix copy paste typo in golden register setup
+
+Ian Abbott <abbotti@mev.co.uk>
+    staging: comedi: bug-fix NULL pointer dereference on failed attach
+
+Nicolas Pitre <nicolas.pitre@linaro.org>
+    ARM: 7816/1: CONFIG_KUSER_HELPERS: fix help text
+
+Will Deacon <will.deacon@arm.com>
+    arm64: perf: fix event validation for software group leaders
+
+Will Deacon <will.deacon@arm.com>
+    arm64: perf: fix array out of bounds access in armpmu_map_hw_event()
+
+Nicolas Ferre <nicolas.ferre@atmel.com>
+    ARM: at91/DT: fix at91sam9n12ek memory node
+
+Sekhar Nori <nsekhar@ti.com>
+    ARM: davinci: nand: specify ecc strength
+
+David Vrabel <david.vrabel@citrix.com>
+    xen/events: mask events when changing their VCPU binding
+
+David Vrabel <david.vrabel@citrix.com>
+    xen/events: initialize local per-cpu mask for all possible events
+
+Daniel Drake <dsd@laptop.org>
+    x86: Don't clear olpc_ofw_header when sentinel is detected
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    VFS: collect_mounts() should return an ERR_PTR
+
+Jussi Kivilinna <jussi.kivilinna@iki.fi>
+    zd1201: do not use stack as URB transfer_buffer
+
+Joern Rennecke <joern.rennecke@embecosm.com>
+    ARC: [lib] strchr breakage in Big-endian configuration
+
+Chuck Anderson <chuck.anderson@oracle.com>
+    xen/smp: initialize IPI vectors before marking CPU online
+
+Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+    ftrace: Check module functions being traced on reload
+
+Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+    tracing/uprobes: Fail to unregister if probe event files are in use
+
+Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+    tracing/kprobes: Fail to unregister if probe event files are in use
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: trace_remove_event_call() should fail if call/file is in use
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Change remove_event_file_dir() to clear "d_subdirs"->i_private
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Introduce remove_event_file_dir()
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Change f_start() to take event_mutex and verify i_private != NULL
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Change event_filter_read/write to verify i_private != NULL
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Change event_enable/disable_read() to verify i_private != NULL
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Turn event/id->i_private into call->event.type
+
+Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+    ftrace: Add check for NULL regs if ops has SAVE_REGS set
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Change tracing_fops/snapshot_fops to rely on tracing_get_cpu()
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Change tracing_entries_fops to rely on tracing_get_cpu()
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Change tracing_stats_fops to rely on tracing_get_cpu()
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Change tracing_buffers_fops to rely on tracing_get_cpu()
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Change tracing_pipe_fops() to rely on tracing_get_cpu()
+
+Oleg Nesterov <oleg@redhat.com>
+    tracing: Introduce trace_create_cpu_file() and tracing_get_cpu()
+
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+    tracing/kprobe: Wait for disabling all running kprobe handlers
+
+Namhyung Kim <namhyung.kim@lge.com>
+    tracing: Do not call kmem_cache_free() on allocation failure
+
+Johannes Berg <johannes.berg@intel.com>
+    iwlwifi: mvm: adjust firmware D3 configuration API
+
+Johannes Berg <johannes.berg@intel.com>
+    iwlwifi: bump required firmware API version for 3160/7260
+
+Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+    iwlwifi: mvm: unregister leds when registration failed
+
+Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+    iwlwifi: mvm: take the seqno from packet if transmit failed
+
+Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+    iwlwifi: mvm: don't set the MCAST queue in STA's queue list
+
+Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+    iwlwifi: mvm: properly tell the fw that a STA is awake
+
+Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+    iwlwifi: mvm: fix MCAST in AP mode
+
+Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+    iwlwifi: mvm: correctly configure MCAST in AP mode
+
+Samuel Ortiz <sameo@linux.intel.com>
+    NFC: llcp: Fix non blocking sockets connections
+
+Nicolas Ferre <nicolas.ferre@atmel.com>
+    ARM: at91: at91sam9x5 RTC is not compatible with at91rm9200 one
+
+Vineet Gupta <Vineet.Gupta1@synopsys.com>
+    ARC: gdbserver breakage in Big-Endian configuration #2
+
+Vineet Gupta <Vineet.Gupta1@synopsys.com>
+    ARC: gdbserver breakage in Big-Endian configuration #1
+
+Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+    ACPI: Try harder to resolve _ADR collisions for bridges
+
+Jeff Wu <zlinuxkernel@gmail.com>
+    ACPI: add _STA evaluation at do_acpi_find_child()
+
+Johannes Berg <johannes.berg@intel.com>
+    mac80211: don't wait for TX status forever
+
+Dominik Dingel <dingel@linux.vnet.ibm.com>
+    KVM: s390: move kvm_guest_enter,exit closer to sie
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                      |   4 +-
+ arch/arc/include/asm/ptrace.h                 |   2 +
+ arch/arc/include/asm/syscall.h                |   5 +-
+ arch/arc/kernel/entry.S                       |   4 +-
+ arch/arc/lib/strchr-700.S                     |  10 ++
+ arch/arm/boot/dts/at91sam9n12ek.dts           |   4 +-
+ arch/arm/boot/dts/at91sam9x5.dtsi             |   2 +-
+ arch/arm/mach-davinci/board-dm355-leopard.c   |   1 +
+ arch/arm/mach-davinci/board-dm644x-evm.c      |   1 +
+ arch/arm/mach-davinci/board-dm646x-evm.c      |   1 +
+ arch/arm/mach-davinci/board-neuros-osd2.c     |   1 +
+ arch/arm/mm/Kconfig                           |   9 +-
+ arch/arm64/kernel/perf_event.c                |  10 +-
+ arch/s390/kvm/kvm-s390.c                      |  21 ++-
+ arch/x86/include/asm/bootparam_utils.h        |   4 +-
+ arch/x86/kernel/sys_x86_64.c                  |   2 +-
+ arch/x86/mm/mmap.c                            |   8 +-
+ arch/x86/xen/setup.c                          |  22 +++
+ arch/x86/xen/smp.c                            |  11 +-
+ drivers/acpi/glue.c                           |  95 ++++++++++--
+ drivers/ata/libata-pmp.c                      |  12 +-
+ drivers/ata/sata_fsl.c                        |   5 +-
+ drivers/gpu/drm/i915/i915_reg.h               |   2 +
+ drivers/gpu/drm/i915/intel_ringbuffer.c       |  12 ++
+ drivers/gpu/drm/radeon/radeon.h               |   2 +-
+ drivers/gpu/drm/radeon/radeon_uvd.c           |   8 ++
+ drivers/gpu/drm/radeon/rv770.c                |  12 +-
+ drivers/md/bcache/btree.c                     |  23 ++-
+ drivers/md/bcache/io.c                        |   2 +
+ drivers/md/bcache/journal.c                   |   2 +-
+ drivers/md/bcache/request.c                   |  13 +-
+ drivers/misc/mei/hw-me.c                      |  14 +-
+ drivers/misc/mei/init.c                       |   3 +-
+ drivers/net/wireless/hostap/hostap_ioctl.c    |   4 +-
+ drivers/net/wireless/iwlwifi/dvm/mac80211.c   |   5 +-
+ drivers/net/wireless/iwlwifi/iwl-7000.c       |  12 +-
+ drivers/net/wireless/iwlwifi/mvm/fw-api-d3.h  |   4 +-
+ drivers/net/wireless/iwlwifi/mvm/fw-api-mac.h |   8 +-
+ drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c   |  11 +-
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c   |   6 +-
+ drivers/net/wireless/iwlwifi/mvm/mvm.h        |   1 +
+ drivers/net/wireless/iwlwifi/mvm/sta.c        |  11 +-
+ drivers/net/wireless/iwlwifi/mvm/tx.c         |   6 +-
+ drivers/net/wireless/iwlwifi/pcie/trans.c     |  10 +-
+ drivers/net/wireless/zd1201.c                 |   4 +-
+ drivers/of/fdt.c                              |   2 +
+ drivers/pci/pci-acpi.c                        |  15 +-
+ drivers/platform/olpc/olpc-ec.c               |   2 +-
+ drivers/s390/scsi/zfcp_erp.c                  |  29 +++-
+ drivers/s390/scsi/zfcp_qdio.c                 |   8 +-
+ drivers/scsi/Kconfig                          |   1 -
+ drivers/staging/comedi/drivers.c              |   2 +-
+ drivers/usb/phy/phy-fsl-usb.h                 |   2 +-
+ drivers/usb/phy/phy-fsm-usb.c                 |   2 +-
+ drivers/xen/events.c                          |  13 +-
+ fs/bio.c                                      |  20 ++-
+ fs/namespace.c                                |   2 +-
+ fs/nilfs2/segbuf.c                            |   5 +-
+ include/acpi/acpi_bus.h                       |   6 +-
+ include/linux/ftrace_event.h                  |   2 +-
+ include/linux/mm_types.h                      |   1 +
+ include/linux/sched.h                         |   1 -
+ include/linux/wait.h                          |  57 ++++++++
+ kernel/trace/ftrace.c                         |  89 ++++++++++--
+ kernel/trace/trace.c                          | 173 +++++++++++-----------
+ kernel/trace/trace_events.c                   | 198 ++++++++++++++++----------
+ kernel/trace/trace_events_filter.c            |  17 +--
+ kernel/trace/trace_kprobe.c                   |  42 ++++--
+ kernel/trace/trace_uprobe.c                   |  51 +++++--
+ net/mac80211/mlme.c                           |  15 +-
+ net/nfc/llcp.h                                |   1 +
+ net/nfc/llcp_sock.c                           |   8 +-
+ 72 files changed, 811 insertions(+), 362 deletions(-)
 
 
