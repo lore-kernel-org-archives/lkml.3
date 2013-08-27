@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab3H0SdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 14:33:09 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:52670 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154Ab3H0Sc7 (ORCPT
+	id S1753956Ab3H0Sdi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 14:33:38 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:56710 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752Ab3H0ScE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 14:32:59 -0400
-Subject: [PATCH V6 7/7] powernv/cpuidle: Enable idle powernv cpu to call
- into the cpuidle framework.
+	Tue, 27 Aug 2013 14:32:04 -0400
+Subject: [PATCH V6 3/7] pseries/cpuidle: Make pseries_idle backend driver a
+ non-module.
 To: linux-pm@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
 From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
@@ -17,67 +17,52 @@ Cc: b.zolnierkie@samsung.com, benh@kernel.crashing.org,
         michael@ellerman.id.au, scottwood@freescale.com,
         srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
         svaidy@linux.vnet.ibm.com
-Date: Wed, 28 Aug 2013 00:02:12 +0530
-Message-ID: <20130827183207.18579.92954.stgit@deepthi.in.ibm.com>
+Date: Wed, 28 Aug 2013 00:01:16 +0530
+Message-ID: <20130827183115.18579.60906.stgit@deepthi.in.ibm.com>
 In-Reply-To: <20130827183016.18579.16595.stgit@deepthi.in.ibm.com>
 References: <20130827183016.18579.16595.stgit@deepthi.in.ibm.com>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082718-8878-0000-0000-00000895B7B2
+x-cbid: 13082718-1618-0000-0000-000004862E5D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables idle cpu on the powernv platform  to hook on to the cpuidle
-framework, if available, else call on to default idle platform
-code.
+Currently pseries_idle cpuidle backend driver cannot be
+built as a module due to dependencies. Therefore the driver has
+to be built in. The dependency is around update_snooze_delay() defined
+in cpuidle driver and called from kernel/sysfs.c.
+This patch is removes all the module related code.
 
 Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 ---
- arch/powerpc/platforms/powernv/setup.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ drivers/cpuidle/cpuidle-ibm-power.c |   15 +--------------
+ 1 file changed, 1 insertion(+), 14 deletions(-)
 
-diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
-index 84438af..fc62f21 100644
---- a/arch/powerpc/platforms/powernv/setup.c
-+++ b/arch/powerpc/platforms/powernv/setup.c
-@@ -25,6 +25,7 @@
- #include <linux/of.h>
- #include <linux/interrupt.h>
- #include <linux/bug.h>
-+#include <linux/cpuidle.h>
- 
- #include <asm/machdep.h>
- #include <asm/firmware.h>
-@@ -175,6 +176,17 @@ static void __init pnv_setup_machdep_rtas(void)
+diff --git a/drivers/cpuidle/cpuidle-ibm-power.c b/drivers/cpuidle/cpuidle-ibm-power.c
+index b42b948..262db3c 100644
+--- a/drivers/cpuidle/cpuidle-ibm-power.c
++++ b/drivers/cpuidle/cpuidle-ibm-power.c
+@@ -288,17 +288,4 @@ static int __init pseries_processor_idle_init(void)
+ 	return 0;
  }
- #endif /* CONFIG_PPC_POWERNV_RTAS */
  
-+void powernv_idle(void)
-+{
-+	/* Hook to cpuidle framework if available, else
-+	 * call on default platform idle code
-+	 */
-+	if (cpuidle_idle_call()) {
-+		HMT_low();
-+		HMT_very_low();
-+	}
-+}
-+
- static int __init pnv_probe(void)
- {
- 	unsigned long root = of_get_flat_dt_root();
-@@ -205,7 +217,7 @@ define_machine(powernv) {
- 	.show_cpuinfo		= pnv_show_cpuinfo,
- 	.progress		= pnv_progress,
- 	.machine_shutdown	= pnv_shutdown,
--	.power_save             = power7_idle,
-+	.power_save             = powernv_idle,
- 	.calibrate_decr		= generic_calibrate_decr,
- #ifdef CONFIG_KEXEC
- 	.kexec_cpu_down		= pnv_kexec_cpu_down,
+-static void __exit pseries_processor_idle_exit(void)
+-{
+-
+-	unregister_cpu_notifier(&setup_hotplug_notifier);
+-	cpuidle_unregister(&pseries_idle_driver);
+-	return;
+-}
+-
+-module_init(pseries_processor_idle_init);
+-module_exit(pseries_processor_idle_exit);
+-
+-MODULE_AUTHOR("Deepthi Dharwar <deepthi@linux.vnet.ibm.com>");
+-MODULE_DESCRIPTION("Cpuidle driver for POWER");
+-MODULE_LICENSE("GPL");
++device_initcall(pseries_processor_idle_init);
 
