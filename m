@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab3H0B3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:29:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59329 "EHLO
+	id S1755275Ab3H0B3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:29:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59336 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753120Ab3H0BGj (ORCPT
+	with ESMTP id S1753126Ab3H0BGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Aug 2013 21:06:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 13/13] x86/xen: do not identity map UNUSABLE regions in the machine E820
-Date: Mon, 26 Aug 2013 18:08:45 -0700
-Message-Id: <20130827010310.845320600@linuxfoundation.org>
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [ 01/13] workqueue: fix possible stall on try_to_grab_pending() of a delayed work item
+Date: Mon, 26 Aug 2013 18:08:33 -0700
+Message-Id: <20130827010309.960499859@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010309.850395966@linuxfoundation.org>
 References: <20130827010309.850395966@linuxfoundation.org>
@@ -27,90 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 3bc38cbceb85881a8eb789ee1aa56678038b1909 upstream.
+commit 3aa62497594430ea522050b75c033f71f2c60ee6 upstream.
 
-If there are UNUSABLE regions in the machine memory map, dom0 will
-attempt to map them 1:1 which is not permitted by Xen and the kernel
-will crash.
+Currently, when try_to_grab_pending() grabs a delayed work item, it
+leaves its linked work items alone on the delayed_works.  The linked
+work items are always NO_COLOR and will cause future
+cwq_activate_first_delayed() increase cwq->nr_active incorrectly, and
+may cause the whole cwq to stall.  For example,
 
-There isn't anything interesting in the UNUSABLE region that the dom0
-kernel needs access to so we can avoid making the 1:1 mapping and
-treat it as RAM.
+state: cwq->max_active = 1, cwq->nr_active = 1
+       one work in cwq->pool, many in cwq->delayed_works.
 
-We only do this for dom0, as that is where tboot case shows up.
-A PV domU could have an UNUSABLE region in its pseudo-physical map
-and would need to be handled in another patch.
+step1: try_to_grab_pending() removes a work item from delayed_works
+       but leaves its NO_COLOR linked work items on it.
 
-This fixes a boot failure on hosts with tboot.
+step2: Later on, cwq_activate_first_delayed() activates the linked
+       work item increasing ->nr_active.
 
-tboot marks a region in the e820 map as unusable and the dom0 kernel
-would attempt to map this region and Xen does not permit unusable
-regions to be mapped by guests.
+step3: cwq->nr_active = 1, but all activated work items of the cwq are
+       NO_COLOR.  When they finish, cwq->nr_active will not be
+       decreased due to NO_COLOR, and no further work items will be
+       activated from cwq->delayed_works. the cwq stalls.
 
-  (XEN)  0000000000000000 - 0000000000060000 (usable)
-  (XEN)  0000000000060000 - 0000000000068000 (reserved)
-  (XEN)  0000000000068000 - 000000000009e000 (usable)
-  (XEN)  0000000000100000 - 0000000000800000 (usable)
-  (XEN)  0000000000800000 - 0000000000972000 (unusable)
+Fix it by ensuring the target work item is activated before stealing
+PENDING in try_to_grab_pending().  This ensures that all the linked
+work items are activated without incorrectly bumping cwq->nr_active.
 
-tboot marked this region as unusable.
+tj: Updated comment and description.
 
-  (XEN)  0000000000972000 - 00000000cf200000 (usable)
-  (XEN)  00000000cf200000 - 00000000cf38f000 (reserved)
-  (XEN)  00000000cf38f000 - 00000000cf3ce000 (ACPI data)
-  (XEN)  00000000cf3ce000 - 00000000d0000000 (reserved)
-  (XEN)  00000000e0000000 - 00000000f0000000 (reserved)
-  (XEN)  00000000fe000000 - 0000000100000000 (reserved)
-  (XEN)  0000000100000000 - 0000000630000000 (usable)
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-[v1: Altered the patch and description with domU's with UNUSABLE regions]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[lizf: backported to 3.4: adjust context]
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/xen/setup.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ kernel/workqueue.c |   25 ++++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -213,6 +213,17 @@ static void xen_align_and_add_e820_regio
- 	e820_add_region(start, end - start, type);
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1721,10 +1721,9 @@ static void move_linked_works(struct wor
+ 		*nextp = n;
  }
  
-+void xen_ignore_unusable(struct e820entry *list, size_t map_size)
+-static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
++static void cwq_activate_delayed_work(struct work_struct *work)
+ {
+-	struct work_struct *work = list_first_entry(&cwq->delayed_works,
+-						    struct work_struct, entry);
++	struct cpu_workqueue_struct *cwq = get_work_cwq(work);
+ 	struct list_head *pos = gcwq_determine_ins_pos(cwq->gcwq, cwq);
+ 
+ 	trace_workqueue_activate_work(work);
+@@ -1733,6 +1732,14 @@ static void cwq_activate_first_delayed(s
+ 	cwq->nr_active++;
+ }
+ 
++static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
 +{
-+	struct e820entry *entry;
-+	unsigned int i;
++	struct work_struct *work = list_first_entry(&cwq->delayed_works,
++						    struct work_struct, entry);
 +
-+	for (i = 0, entry = list; i < map_size; i++, entry++) {
-+		if (entry->type == E820_UNUSABLE)
-+			entry->type = E820_RAM;
-+	}
++	cwq_activate_delayed_work(work);
 +}
 +
  /**
-  * machine_specific_memory_setup - Hook for machine specific memory setup.
-  **/
-@@ -251,6 +262,17 @@ char * __init xen_memory_setup(void)
- 	}
- 	BUG_ON(rc);
- 
-+	/*
-+	 * Xen won't allow a 1:1 mapping to be created to UNUSABLE
-+	 * regions, so if we're using the machine memory map leave the
-+	 * region as RAM as it is in the pseudo-physical map.
-+	 *
-+	 * UNUSABLE regions in domUs are not handled and will need
-+	 * a patch in the future.
-+	 */
-+	if (xen_initial_domain())
-+		xen_ignore_unusable(map, memmap.nr_entries);
+  * cwq_dec_nr_in_flight - decrement cwq's nr_in_flight
+  * @cwq: cwq of interest
+@@ -2625,6 +2632,18 @@ static int try_to_grab_pending(struct wo
+ 		smp_rmb();
+ 		if (gcwq == get_work_gcwq(work)) {
+ 			debug_work_deactivate(work);
 +
- 	/* Make sure the Xen-supplied memory map is well-ordered. */
- 	sanitize_e820_map(map, memmap.nr_entries, &memmap.nr_entries);
- 
++			/*
++			 * A delayed work item cannot be grabbed directly
++			 * because it might have linked NO_COLOR work items
++			 * which, if left on the delayed_list, will confuse
++			 * cwq->nr_active management later on and cause
++			 * stall.  Make sure the work item is activated
++			 * before grabbing.
++			 */
++			if (*work_data_bits(work) & WORK_STRUCT_DELAYED)
++				cwq_activate_delayed_work(work);
++
+ 			list_del_init(&work->entry);
+ 			cwq_dec_nr_in_flight(get_work_cwq(work),
+ 				get_work_color(work),
 
 
