@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714Ab3H0BHp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:07:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59603 "EHLO
+	id S1753837Ab3H0BIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:08:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab3H0BHf (ORCPT
+	with ESMTP id S1753587Ab3H0BHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:35 -0400
+	Mon, 26 Aug 2013 21:07:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 69/74] x86/xen: do not identity map UNUSABLE regions in the machine E820
-Date: Mon, 26 Aug 2013 18:09:07 -0700
-Message-Id: <20130827010438.703081365@linuxfoundation.org>
+        Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 54/74] nilfs2: remove double bio_put() in nilfs_end_bio_write() for BIO_EOPNOTSUPP error
+Date: Mon, 26 Aug 2013 18:08:52 -0700
+Message-Id: <20130827010435.578380623@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -27,90 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
 
-commit 3bc38cbceb85881a8eb789ee1aa56678038b1909 upstream.
+commit 2df37a19c686c2d7c4e9b4ce1505b5141e3e5552 upstream.
 
-If there are UNUSABLE regions in the machine memory map, dom0 will
-attempt to map them 1:1 which is not permitted by Xen and the kernel
-will crash.
+Remove double call of bio_put() in nilfs_end_bio_write() for the case of
+BIO_EOPNOTSUPP error detection.  The issue was found by Dan Carpenter
+and he suggests first version of the fix too.
 
-There isn't anything interesting in the UNUSABLE region that the dom0
-kernel needs access to so we can avoid making the 1:1 mapping and
-treat it as RAM.
-
-We only do this for dom0, as that is where tboot case shows up.
-A PV domU could have an UNUSABLE region in its pseudo-physical map
-and would need to be handled in another patch.
-
-This fixes a boot failure on hosts with tboot.
-
-tboot marks a region in the e820 map as unusable and the dom0 kernel
-would attempt to map this region and Xen does not permit unusable
-regions to be mapped by guests.
-
-  (XEN)  0000000000000000 - 0000000000060000 (usable)
-  (XEN)  0000000000060000 - 0000000000068000 (reserved)
-  (XEN)  0000000000068000 - 000000000009e000 (usable)
-  (XEN)  0000000000100000 - 0000000000800000 (usable)
-  (XEN)  0000000000800000 - 0000000000972000 (unusable)
-
-tboot marked this region as unusable.
-
-  (XEN)  0000000000972000 - 00000000cf200000 (usable)
-  (XEN)  00000000cf200000 - 00000000cf38f000 (reserved)
-  (XEN)  00000000cf38f000 - 00000000cf3ce000 (ACPI data)
-  (XEN)  00000000cf3ce000 - 00000000d0000000 (reserved)
-  (XEN)  00000000e0000000 - 00000000f0000000 (reserved)
-  (XEN)  00000000fe000000 - 0000000100000000 (reserved)
-  (XEN)  0000000100000000 - 0000000630000000 (usable)
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-[v1: Altered the patch and description with domU's with UNUSABLE regions]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/setup.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ fs/nilfs2/segbuf.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -313,6 +313,17 @@ static void xen_align_and_add_e820_regio
- 	e820_add_region(start, end - start, type);
- }
+--- a/fs/nilfs2/segbuf.c
++++ b/fs/nilfs2/segbuf.c
+@@ -345,8 +345,7 @@ static void nilfs_end_bio_write(struct b
  
-+void xen_ignore_unusable(struct e820entry *list, size_t map_size)
-+{
-+	struct e820entry *entry;
-+	unsigned int i;
-+
-+	for (i = 0, entry = list; i < map_size; i++, entry++) {
-+		if (entry->type == E820_UNUSABLE)
-+			entry->type = E820_RAM;
-+	}
-+}
-+
- /**
-  * machine_specific_memory_setup - Hook for machine specific memory setup.
-  **/
-@@ -353,6 +364,17 @@ char * __init xen_memory_setup(void)
+ 	if (err == -EOPNOTSUPP) {
+ 		set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
+-		bio_put(bio);
+-		/* to be detected by submit_seg_bio() */
++		/* to be detected by nilfs_segbuf_submit_bio() */
  	}
- 	BUG_ON(rc);
  
-+	/*
-+	 * Xen won't allow a 1:1 mapping to be created to UNUSABLE
-+	 * regions, so if we're using the machine memory map leave the
-+	 * region as RAM as it is in the pseudo-physical map.
-+	 *
-+	 * UNUSABLE regions in domUs are not handled and will need
-+	 * a patch in the future.
-+	 */
-+	if (xen_initial_domain())
-+		xen_ignore_unusable(map, memmap.nr_entries);
-+
- 	/* Make sure the Xen-supplied memory map is well-ordered. */
- 	sanitize_e820_map(map, memmap.nr_entries, &memmap.nr_entries);
- 
+ 	if (!uptodate)
 
 
