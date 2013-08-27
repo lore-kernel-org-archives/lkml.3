@@ -1,121 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377Ab3H0LzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 07:55:09 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:14115 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753141Ab3H0LzG (ORCPT
+	id S1753379Ab3H0L66 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 07:58:58 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:38423 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab3H0L64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 07:55:06 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-69-521c93979eb5
-From: Tomasz Figa <t.figa@samsung.com>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: Archit Taneja <archit@ti.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Wolfram Sang <wsa@the-dreams.de>, grant.likely@secretlab.ca
-Subject: Re: [PATCH v5] gpio: pcf857x: Add OF support
-Date: Tue, 27 Aug 2013 13:55 +0200
-Message-id: <1830640.BeoA2uHWDI@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11 (Linux/3.10.9-gentoo; KDE/4.11.0; x86_64; ; )
-In-reply-to: <521C63A0.10902@ti.com>
-References: <1377590559-14279-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
- <2063335.Uqxok8bYMn@flatron> <521C63A0.10902@ti.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t/xa7rTJ8sEGZx5qW5xe99vRosDsx+y
-	Wsw/co7V4tWZjWwWE5vusFhM+bOcyWLT42usFpvn/2G0uLxrDpvF7CX9LBbzPu9ksli1Cyi2
-	8sQsZgdej52z7rJ7zO6Yyepx59oeNo/NS+o9zs9YyOjx86WOx8lTT1g8jt/YzuTxeZNcAGcU
-	l01Kak5mWWqRvl0CV8bj6SdYClrFKvbPesjawLhfsIuRk0NCwETi1sTV7BC2mMSFe+vZuhi5
-	OIQEljJK/J86hwXC6WKSuN82hRGkik1ATeJzwyM2EFtEQF3i2Y9zjCBFzAKHmCWWzt/LApIQ
-	FjCVaP90CqyIRUBJ4vjayWAreAU0JVrenQCL8wM1v9v2lKmLkYNDVMBFou9vJojJKaAi8f27
-	GsTeSYwS24+9YYVoFZT4Mfke2HhmAXmJffunskLYWhLrdx5nmsAoOAtJ2SwkZbOQlC1gZF7F
-	KJpamlxQnJSea6RXnJhbXJqXrpecn7uJERJfX3cwLj1mdYhRgINRiYf3YYt0kBBrYllxZe4h
-	RgkOZiUR3qnNMkFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGOce/3R01wWDXd/2XfWy8/9rPmtS
-	zr2py+fmlRZvlpkueFc0NN1bgynt6JqlhtGOx1lrGu2Uzl1efePEv8X72+dFnBRm2bH2dsBB
-	jTO3yu8s3/ZqG/PeNIkyg+JPauyR5+U4Pxht8fC99yGlMHaKwQofhwcewsm1enFJ15c0in3/
-	86KSs7OiQVaJpTgj0VCLuag4EQBNhsLojQIAAA==
+	Tue, 27 Aug 2013 07:58:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAFrcx1n5eA4zz+nUhraE_fi_Usc=PCZTC=RCT=S285K4=jqHSg@mail.gmail.com>
+References: <CAFrcx1n5eA4zz+nUhraE_fi_Usc=PCZTC=RCT=S285K4=jqHSg@mail.gmail.com>
+Date: Tue, 27 Aug 2013 13:58:55 +0200
+Message-ID: <CAFrcx1nr4-qyzC=zFRdnMavHy5p_r9Ng+zSVwNPk6snYtBm6gw@mail.gmail.com>
+Subject: Fwd: perf: callchain feature on ARM - question about libunwind API
+From: Jean Pihet <jean.pihet@linaro.org>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 of August 2013 14:00:24 Archit Taneja wrote:
-> Hi,
-> 
-> On Tuesday 27 August 2013 01:44 PM, Tomasz Figa wrote:
-> > Hi Laurent,
-> > 
-> > On Tuesday 27 of August 2013 10:02:39 Laurent Pinchart wrote:
-> >> Add DT bindings for the pcf857x-compatible chips and parse the device
-> >> tree node in the driver.
-> >> 
-> >> Signed-off-by: Laurent Pinchart
-> >> <laurent.pinchart+renesas@ideasonboard.com> ---
-> >> 
-> >>   .../devicetree/bindings/gpio/gpio-pcf857x.txt      | 71
-> >> 
-> >> ++++++++++++++++++++++ drivers/gpio/gpio-pcf857x.c
-> >> 
-> >>    | 44 +++++++++++--- 2 files changed, 107 insertions(+), 8
-> >> 
-> >> deletions(-)
-> >> 
-> >>   create mode 100644
-> >> 
-> >> Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt
-> >> 
-> >> Changes since v4:
-> >> 
-> >> - Don't try to get ngpio from of_device_id data, we already get it
-> >> from
-> >> 
-> >>    i2c_device_id
-> > 
-> > Hmm, I'm not sure how this is supposed to work.
-> > 
-> > How does the I2C core resolve OF compatible name to particular entry in
-> > id_table? I believe it simply passes NULL as the second argument of
-> > .probe() if the device is instantiated based on OF compatible string
-> > and
-> > not one in the legacy ID table.
-> 
-> It doesn't pass the second argument as NULL. If you look at
-> i2c_device_probe() in drivers/i2c/i2c-core.c, the second argument to
-> probe is passed as: i2c_match_id(driver->id_table, client)
-> 
-> This will extract the i2c_device_id pointer from the id_table.
+Hi!
 
-Yes, there is a chance that it will not return NULL, but I think that 
-relying on this is rather flawed.
+I am looking for info and help on the libunwind API.
 
-If you look at the whole code path, you can see that it's only a 
-coincidence that this works. See the execution flow:
- - I2C adapter driver calls of_i2c_register_devices(),
- - of_i2c_register_devices() calls of_modalias_node() for every device on 
-this bus,
- - of_modalias_node() stores the second substring of compatible string 
-separated by a comma, if there is one or the whole compatible otherwise to 
-the output buffer (type field of i2c_board_info struct, as passed by 
-of_i2c_register_devices()),
- - of_i2c_register_devices() then calls i2c_new_device() with the resulting 
-info struct,
- - i2c_new_device() takes info->type and copies its contents to client-
->name,
- - then a bit later, I2C core calls i2c_match_id(), which does matching of 
-client->name against id_table of the driver and the resulting i2c_device_id 
-entry (or NULL) is then passed to driver's .probe() callback.
+What I am trying to achieve is to allow the callchain feature on perf
+for ARM (v7 to start with, then ARMv8), from the DWARF info found in
+the .debug_frame section.
 
-So if it happens that compatible is not equal to "<vendor>,<ID from legacy 
-I2C table>", then the matching will fail and NULL will be passed.
+>From the source code in tools/perf I have added the call to
+dwarf_find_debug_frame to load and parse the debug info from
+.debug_frame. This works correctly, all IP ranges are found from the
+debug code (test program and libraries). Then at some point I get an
+assertion: 'perf: dwarf/Gparser.c:459: fetch_proc_info: Assertion
+`c->pi.unwind_info' failed.' At that point c->pi is NULL. Cf. below
+for more info.
 
-[CCing Wolfram and Grant, as they should now more about this behavior and 
-whether it's intentional or no]
+It looks like I am not using the libunwind API as it should, so that
+the perf code apparently builds a list of IP ranges to resolve but
+cannot use it later on to gather statistics on the runtime info.
 
-Best regards,
-Tomasz
+Any idea on how to progress? I am also looking at the *_proc_info API
+of libunwind.
 
+Here is the patch I am using below.
+
+Cheers,
+Jean
+
+---
+Debug log:
+
+perf report --sort symbol --call-graph --stdio
+
+_Uarm_step: calling dwarf_step(ip=0x8464, c->dwarf@0xbee150f8,
+c->dwarf.pi@0xb2bc0008)
+unwind: find_proc_info dso /home/linaro/perf-libunwind/
+test_app/stress_bt
+read_unwind_spec_debug_frame: .debug_frame offset=9304
+opened file '/home/linaro/perf-libunwind/test_app/stress_bt'. Section
+header at offset 18152
+read 3160 bytes of .debug_frame from offset 9304
+...
+_ULarm_step: calling dwarf_step(ip=0xb6e6e764, c->dwarf@0xbee07508,
+c->dwarf.pi@0xb6e955c0)
+_ULarm_find_proc_info: looking for IP=0xb6e6e763
+opened file '/usr/lib/arm-linux-gnueabihf/libunwind.so.8'. Section
+header at offset 513260
+read 17072 bytes of .debug_frame from offset 451836
+_ULarm_dwarf_search_unwind_table: looking for IP=0xb6e6e763
+_ULarm_find_proc_info returns 0
+...
+perf: dwarf/Gparser.c:459: fetch_proc_info: Assertion
+`c->pi.unwind_info' failed.
+
+
+---
+Patch to the kernel source:
+
+diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
+index 958723b..dd97688 100644
+--- a/tools/perf/util/unwind.c
++++ b/tools/perf/util/unwind.c
+@@ -39,6 +39,14 @@ UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
+
+ #define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
+
++extern int
++UNW_OBJ(dwarf_find_debug_frame) (int found, unw_dyn_info_t *di_debug,
++                unw_word_t ip, unw_word_t segbase,
++                const char* obj_name, unw_word_t start,
++                unw_word_t end);
++
++#define dwarf_find_debug_frame UNW_OBJ(dwarf_find_debug_frame)
++
+ #define DW_EH_PE_FORMAT_MASK   0x0f    /* format of the encoded value */
+ #define DW_EH_PE_APPL_MASK 0x70    /* how the value is to be applied */
+
+@@ -245,8 +253,9 @@ static int unwind_spec_ehframe(struct dso *dso,
+struct      machine *machine,
+    return 0;
+ }
+
+-static int read_unwind_spec(struct dso *dso, struct machine *machine,
+-               u64 *table_data, u64 *segbase, u64 *fde_count)
++static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
++                    u64 *table_data, u64 *segbase,
++                    u64 *fde_count)
+ {
+    int ret = -EINVAL, fd;
+    u64 offset;
+@@ -255,18 +264,40 @@ static int read_unwind_spec(struct dso *dso,
+struct       machine *machine,
+    if (fd < 0)
+        return -EINVAL;
+
++   /* Check the .eh_frame section for unwinding info */
+    offset = elf_section_offset(fd, ".eh_frame_hdr");
+    close(fd);
+
+-   if (offset)
++   if (offset) {
++       fprintf(stderr, "%s: .eh_frame offset=%llu\n", __func__, offset);
+        ret = unwind_spec_ehframe(dso, machine, offset,
+                      table_data, segbase,
+                      fde_count);
++   }
+
+-   /* TODO .debug_frame check if eh_frame_hdr fails */
+    return ret;
+ }
+
++static int read_unwind_spec_debug_frame(struct dso *dso,
++                   struct machine *machine,
++                   u64 *segbase)
++{
++   int fd = dso__data_fd(dso, machine);
++   if (fd < 0)
++       return -EINVAL;
++
++   /* Check the .debug_frame section for unwinding info */
++   *segbase = elf_section_offset(fd, ".debug_frame");
++   close(fd);
++
++   fprintf(stderr, "%s: .debug_frame offset=%llu\n", __func__, *segbase);
++
++   if (!segbase)
++       return -EINVAL;
++
++   return 0;
++}
++
+ static struct map *find_map(unw_word_t ip, struct unwind_info *ui)
+ {
+    struct addr_location al;
+@@ -289,22 +320,32 @@ find_proc_info(unw_addr_space_t as, unw_word_t
+ip,        unw_proc_info_t *pi,
+    if (!map || !map->dso)
+        return -EINVAL;
+
+-   pr_debug("unwind: find_proc_info dso %s\n", map->dso->name);
++   fprintf(stderr, "unwind: find_proc_info dso %s\n", map->dso->name);
++
++   /* Check the .eh_frame section for unwinding info */
++   if (!read_unwind_spec_eh_frame(map->dso, ui->machine,
++                      &table_data, &segbase, &fde_count)) {
++       memset(&di, 0, sizeof(di));
++       di.format   = UNW_INFO_FORMAT_REMOTE_TABLE;
++       di.start_ip = map->start;
++       di.end_ip   = map->end;
++       di.u.rti.segbase    = map->start + segbase;
++       di.u.rti.table_data = map->start + table_data;
++       di.u.rti.table_len  = fde_count * sizeof(struct table_entry)
++                 / sizeof(unw_word_t);
++       return dwarf_search_unwind_table(as, ip, &di, pi,
++                        need_unwind_info, arg);
++   }
+
+-   if (read_unwind_spec(map->dso, ui->machine,
+-                &table_data, &segbase, &fde_count))
+-       return -EINVAL;
++   /* Check the .debug_frame section for unwinding info */
++   if (!read_unwind_spec_debug_frame(map->dso, ui->machine, &segbase)) {
++       memset(&di, 0, sizeof(di));
++       if (dwarf_find_debug_frame(0, &di, ip, segbase, map->dso->name,
++                      map->start, map->end))
++           return 0;
++   }
+
+-   memset(&di, 0, sizeof(di));
+-   di.format   = UNW_INFO_FORMAT_REMOTE_TABLE;
+-   di.start_ip = map->start;
+-   di.end_ip   = map->end;
+-   di.u.rti.segbase    = map->start + segbase;
+-   di.u.rti.table_data = map->start + table_data;
+-   di.u.rti.table_len  = fde_count * sizeof(struct table_entry)
+-                 / sizeof(unw_word_t);
+-   return dwarf_search_unwind_table(as, ip, &di, pi,
+-                    need_unwind_info, arg);
++   return -EINVAL;
+ }
+
+ static int access_fpreg(unw_addr_space_t __maybe_unused as,
