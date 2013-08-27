@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab3H0JOr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 05:14:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32508 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753031Ab3H0JOo convert rfc822-to-8bit (ORCPT
+	id S1753104Ab3H0JOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 05:14:46 -0400
+Received: from mo3.mail-out.ovh.net ([178.32.228.3]:55290 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab3H0JOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Aug 2013 05:14:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,967,1367996400"; 
-   d="scan'208";a="369063675"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        "Konstantin Khlebnikov" <khlebnikov@openvz.org>
-Subject: RE: [3.10][PATCH 4/4] mei: me: fix hardware reset flow
-Thread-Topic: [3.10][PATCH 4/4] mei: me: fix hardware reset flow
-Thread-Index: AQHOoXjP6Pl5NRmR1kOSzyTDOHPpapmnpk+AgAEgLDA=
-Date: Tue, 27 Aug 2013 09:14:40 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AE9B8C7@HASMSX106.ger.corp.intel.com>
-References: <1377424189-5508-1-git-send-email-tomas.winkler@intel.com>
- <1377424189-5508-5-git-send-email-tomas.winkler@intel.com>
- <20130826185503.GB15992@kroah.com>
-In-Reply-To: <20130826185503.GB15992@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Message-ID: <521C6DD7.8030308@overkiz.com>
+Date: Tue, 27 Aug 2013 11:13:59 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
+To: Florian Fainelli <f.fainelli@gmail.com>
+CC: David Miller <davem@davemloft.net>, nicolas.ferre@atmel.com,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH 0/2] net/cadence/macb: add support for dt phy definition
+References: <1377186980-21902-1-git-send-email-b.brezillon@overkiz.com> <20130826.160450.2176892065062148718.davem@davemloft.net> <521C586A.7080604@overkiz.com> <CAGVrzcYBT5aCmdaiGTm34kVu1UQssxB_EHvvj+t0phT58hcsZQ@mail.gmail.com>
+In-Reply-To: <CAGVrzcYBT5aCmdaiGTm34kVu1UQssxB_EHvvj+t0phT58hcsZQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 7928587145782130928
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 27/08/2013 11:07, Florian Fainelli wrote:
+> Hello Boris,
+>
+> 2013/8/27 boris brezillon <b.brezillon@overkiz.com>:
+>> Hello Dave,
+>>
+>>
+>> On 26/08/2013 22:04, David Miller wrote:
+>>> From: Boris BREZILLON <b.brezillon@overkiz.com>
+>>> Date: Thu, 22 Aug 2013 17:56:20 +0200
+>>>
+>>>> This patch series adds support for ethernet phy definition using device
+>>>> tree.
+>>>>
+>>>> This may help in moving some at91 boards to dt (some of them define an
+>>>> interrupt pin).
+>>>>
+>>>> Tested on samad31ek.
+>>> Series applied to net-next, thanks.
+>> Could you apply, the 3rd version of this series instead ?
+>>
+>> It fixes one bug when no phy is discovered and use the appropriate address
+>> for the phy dt node.
+>>
+>> Sorry for the inconvenience.
+> You will probably have to resubmit an incremental patch, I have never
+> seen David pick up another version of a patch once it has been pushed
+> out:
+>
+> http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=8c038e7e14b1c5f156745e3c4df0a3aa46173dd9
+> http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=148cbb53ace32f584d208764c7f7e6aa8edb970c
+Okay, I will submit patches (based on net-next branch) to fix those bugs.
 
+Thanks.
 
-> 
-> On Sun, Aug 25, 2013 at 12:49:49PM +0300, Tomas Winkler wrote:
-> > stable: 3.10
-> > commit ff96066e3171acdea356b331163495957cb833d0 char-misc
-> 
-> Sorry, but I have to wait until the patch hits Linus's tree before I can accept it
-> into a stable tree, you know that :(
-> 
-Yes I understand the process, though this patch was intended upstream I marked it 3.11 https://lkml.org/lkml/2013/7/30/117. 
-So I just advice distors to pick it for their 3.10
-
-Thanks 
-Tomas.
+Best Regards,
+Boris
