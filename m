@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab3H0BIi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:08:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59657 "EHLO
+	id S1753681Ab3H0BHm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:07:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59622 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689Ab3H0BHn (ORCPT
+	with ESMTP id S1753550Ab3H0BHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:43 -0400
+	Mon, 26 Aug 2013 21:07:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [ 45/74] arm64: perf: fix array out of bounds access in armpmu_map_hw_event()
-Date: Mon, 26 Aug 2013 18:08:43 -0700
-Message-Id: <20130827010433.999570304@linuxfoundation.org>
+        Shuah Khan <shuah.kh@samsung.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [ 70/74] mei: me: fix reset state machine
+Date: Mon, 26 Aug 2013 18:09:08 -0700
+Message-Id: <20130827010438.863544393@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -27,37 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit 868f6fea8fa63f09acbfa93256d0d2abdcabff79 upstream.
+commit 315a383ad7dbd484fafb93ef08038e3dbafbb7a8 upstream.
 
-This is a port of d9f966357b14 ("ARM: 7810/1: perf: Fix array out of
-bounds access in armpmu_map_hw_event()") to arm64, which fixes an oops
-in the arm64 perf backend found as a result of Vince's fuzzing tool.
+ME HW ready bit is down after hw reset was asserted or on error.
+Only on error we need to enter the reset flow, additional reset
+need to be prevented when reset was triggered during
+initialization , power up/down or a reset is already in progress
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Tested-by: Shuah Khan <shuah.kh@samsung.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/perf_event.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/misc/mei/hw-me.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/arm64/kernel/perf_event.c
-+++ b/arch/arm64/kernel/perf_event.c
-@@ -107,7 +107,12 @@ armpmu_map_cache_event(const unsigned (*
- static int
- armpmu_map_event(const unsigned (*event_map)[PERF_COUNT_HW_MAX], u64 config)
- {
--	int mapping = (*event_map)[config];
-+	int mapping;
-+
-+	if (config >= PERF_COUNT_HW_MAX)
-+		return -EINVAL;
-+
-+	mapping = (*event_map)[config];
- 	return mapping == HW_OP_UNSUPPORTED ? -ENOENT : mapping;
- }
- 
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -482,7 +482,9 @@ irqreturn_t mei_me_irq_thread_handler(in
+ 	/* check if ME wants a reset */
+ 	if (!mei_hw_is_ready(dev) &&
+ 	    dev->dev_state != MEI_DEV_RESETTING &&
+-	    dev->dev_state != MEI_DEV_INITIALIZING) {
++	    dev->dev_state != MEI_DEV_INITIALIZING &&
++	    dev->dev_state != MEI_DEV_POWER_DOWN &&
++	    dev->dev_state != MEI_DEV_POWER_UP) {
+ 		dev_dbg(&dev->pdev->dev, "FW not ready.\n");
+ 		mei_reset(dev, 1);
+ 		mutex_unlock(&dev->device_lock);
 
 
