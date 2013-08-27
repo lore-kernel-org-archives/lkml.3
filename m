@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab3H0N5c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 09:57:32 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:36368 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab3H0N5a (ORCPT
+	id S1753509Ab3H0N6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 09:58:16 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:35416 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925Ab3H0N6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 09:57:30 -0400
-Message-ID: <521CB046.9070408@baylibre.com>
-Date: Tue, 27 Aug 2013 15:57:26 +0200
-From: Benoit Cousson <bcousson@baylibre.com>
-Organization: BayLibre
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 27 Aug 2013 09:58:15 -0400
+Message-ID: <521CB074.3040900@gmail.com>
+Date: Tue, 27 Aug 2013 07:58:12 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Javier Martinez Canillas <javier@dowhile0.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, linux-next@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        "khilman@linaro.org" <khilman@linaro.org>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
-References: <20130827181353.319c150858829df1bb68d60b@canb.auug.org.au> <521C6961.9020103@linutronix.de> <CABxcv=mg6t5wPqpF3j5sr_76qfZ7N7KgpWhcKSGoPTOcaR=V6A@mail.gmail.com> <521CA888.1080909@baylibre.com> <521CAF59.1090203@linutronix.de>
-In-Reply-To: <521CAF59.1090203@linutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Dave Jones <davej@redhat.com>, paulmck@linux.vnet.ibm.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: suspicious RCU usage (perf)
+References: <20130826145838.GA8377@redhat.com> <20130826162928.GQ3871@linux.vnet.ibm.com> <20130826133041.3d750b1b@gandalf.local.home> <20130826175012.GA25202@redhat.com> <20130826141814.54dcaa89@gandalf.local.home> <20130826182907.GB25202@redhat.com> <521BAFD3.2060404@gmail.com> <20130826194923.GA1549@redhat.com> <20130827091011.18ed8b59@gandalf.local.home>
+In-Reply-To: <20130827091011.18ed8b59@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Kevin,
-
-On 27/08/2013 15:53, Sebastian Andrzej Siewior wrote:
-> On 08/27/2013 03:24 PM, Benoit Cousson wrote:
->> Hi Sebatian,
+On 8/27/13 7:10 AM, Steven Rostedt wrote:
+> On Mon, 26 Aug 2013 15:49:24 -0400
+> Dave Jones <davej@redhat.com> wrote:
 >
-> Hi Benoit,
 >
->> Yes. DT patches are an endless source of merge conflicts if they are
->> merge throught different trees.
+>>   > Do you have /sys/kernel/debug with access permissions?
+>>
+>> Ah, yeah, that'll be it. Good catch.
+>>
+>> Sorry for the false alarm Steve ;)
 >
-> Usually there are small conflicts because two people added / changed a
-> node nearby. This patch turned the .dts file almost upside down.
+> Yeah, but it still does not explain how perf got started. Perf requires
+> a sys_perf_event_open() call to run.
 
-Yes, that's true.
+Per Peter's response another option is the paranoia level:
 
->> What was discussed with Olof and Arnd during Connect is that we should
->> avoid merging DT patches outside arm-soc tree to avoid that kind of
->> situation.
->
-> I am aware of this now. However these changes belonged together because
-> a) they belonged together and b) would break the driver until the .dts
-> changes and driver code is in-sync.
-> In future I am going to ask you for a topic branch so I can get my
-> changes in one piece without breaking stuff in the middle.
->
-> What do we do now?
+# perf event paranoia level:
+# -1 - not paranoid at all
+#  0 - disallow raw tracepoint access for unpriv
+#  1 - disallow cpu events for unpriv
+#  2 - disallow kernel profiling for unpriv
+kernel.perf_event_paranoid = -1
 
-Cannot you just merge the stable arm-soc/dt branch into your branch 
-before applying your patches?
+I keep my dev box at -1 and set /sys/kernel/debug to 755 to run perf as 
+non-root.
 
-Regards
-Benoit
-
+David
