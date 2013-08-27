@@ -1,77 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab3H0CvB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 22:51:01 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44171 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab3H0CvA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 22:51:00 -0400
-Date: Tue, 27 Aug 2013 12:50:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: linux-next: build failure after merge of the libata tree
-Message-Id: <20130827125049.62d12bba371fe8d9df85a227@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__27_Aug_2013_12_50_49_+1000_=k7K61buwNQ=beQf"
+	id S1752656Ab3H0DF0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 23:05:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53852 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752530Ab3H0DFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 23:05:20 -0400
+Date: Mon, 26 Aug 2013 23:04:48 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
+ task->pid and task->tgid
+Message-ID: <20130827030448.GE21110@madcap2.tricolour.ca>
+References: <cover.1377032086.git.rgb@redhat.com>
+ <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
+ <20130822200555.GN31370@twins.programming.kicks-ass.net>
+ <20130822214347.GB21110@madcap2.tricolour.ca>
+ <20130823192807.GA6504@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130823192807.GA6504@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Aug_2013_12_50_49_+1000_=k7K61buwNQ=beQf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Aug 23, 2013 at 09:28:07PM +0200, Oleg Nesterov wrote:
+> On 08/22, Richard Guy Briggs wrote:
+> >
+> > On Thu, Aug 22, 2013 at 10:05:55PM +0200, Peter Zijlstra wrote:
+> > >
+> > > Why would you ever want to do this? It just makes these tests more
+> > > expensive for no gain what so ff'ing ever.
+> >
+> > Backups are generally considered a good idea, but in this case, I'd
+> > quote:
+> 
+> And perhaps you are right. At least we can probably kill task->tgid.
+> And I agree, it would be nice to kill task->pid.
+> 
+> But: I also agree with Peter, we should try to not make the current
+> code more expensive.
 
-Hi Tejun,
+I don't disagree.  I was given some hope by Eric Biederman that it might
+not cause cache-line misses...
 
-After merging the libata tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> Anyway. Imho, you should not mix the different things in one series.
+> If you want to fix audit, do not add the patches like 10/12 or 11/12
+> into this series.
 
-In file included from drivers/ata/libata-pmp.c:14:0:
-drivers/ata/libata.h:136:1: error: unknown type name 'acpi_handle'
- static inline acpi_handle ata_dev_acpi_handle(struct ata_device *dev) { re=
-turn NULL; }
- ^
+They were included to gain reassurance that PIDs reported in audit logs
+were accurate.  If those assurances can be made, then I can limit my
+work to audit itself.
 
-And several others.
+> Or 3/12.
 
-Caused by commit f1bc1e4c44b1 ("ata: acpi: rework the ata acpi bind
-support").  All the world does not have the ACPI include files
-included via some other path ... nor wants them, I suspect.
+That is a cleanup to make clear what parts are actually pid-related and
+what isn't.
 
-I have used the libata tree from next-20130822 for today.
+> OK, I agree sys_getppid() in audit_log_task_info() looks
+> strange at least. Just fix it using the helpers we already have and
+> add the new helpers later. Or send the patch(es) which adds the new
+> helpers first.
 
-P.S. drivers/ata/libata.h seems to assume that a lot of other stuff is
-included that it does not include explicitly ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Patch 04/12 is that helper.  It is used in only two places in audit (and
+once in apparmor), so I could have duplicated the code, but since it
+needs rcu locking, an inline funciton in the audit namespace seemed
+somewhat pointless when it could just as easily be shared with other
+subsystems.
 
---Signature=_Tue__27_Aug_2013_12_50_49_+1000_=k7K61buwNQ=beQf
-Content-Type: application/pgp-signature
+> Or task_pid_nr_init_ns()... For what? We already have task_pid_nr().
+> Use the helper we already have, or introduce the new one first and
+> change the current users of task_pid_nr().
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+If task_struct::pid is definitely not going away, then that whole part
+is moot and we'll just use task_pid_nr() as is.
 
-iQIcBAEBCAAGBQJSHBQNAAoJEECxmPOUX5FEzCgP/Rr758i/nJeBaVal/H4XxTwM
-UxfYZXJZ5dAKV/ht7HZLNJ3xxj0efKEzZ8mH3hLDy05JRBDZILA+StLgBjsoD004
-tM+IWYiootA2aDBUKOGzt2JcS2t61AWXZmxFhesdU+CiUzvu4fnVVF2sdR3WLBY2
-Xfh0N3S3aqcudLeXPPAsz0UgcQCYOn8st45Nd3Q3j57SwwOxW4ycnk7FPTrAtCP4
-3+k6TfC0w+flrbLOqWGZlJQG7yU9t7aqGCywl0CZCN9U9cGIsWKf19149wPnfLhY
-kASn2Xi6RIx21eUpdKXLmO/7Rt20PDLfAqeihp4b0+ySne+oRjAvZuzA0gtgfRh2
-JLreCGHRsTrSlca4pFi95xjeCnkfle2o69osXggGw6Yx093OW2AcV7cBdD56tQ0I
-6uGXCRhAr0+LrNarvz75SDBy6Y0FNoTmzNm2BLxVjIv321aQtM5AZmqTCb2XHOCP
-0EngFX84VaTxMunNi7CIiskNxIsxnALOqjdDx/cWgbgLCdGLeXYvRWEjjigFc3es
-kv6FrOAlJ0bydcB7Q8o9rb0MDxn/G13eTAcBotMqnow/ck6Fv46A+0GuLNjUMkg2
-MiYRMF7g9nMq80YkDQFISJxS6q/wZ/cX23CASzOEyN3bJhY+ryjz7BkukbQW98Kc
-jiKZ5kzRgZsDFV1H1uMb
-=FLgJ
------END PGP SIGNATURE-----
+> In short. Fortunately you do not need to convince me, I do not
+> maintain audit or namespaces ;) But imho this series looks a bit
+> confusing.
 
---Signature=_Tue__27_Aug_2013_12_50_49_+1000_=k7K61buwNQ=beQf--
+It is incomplete.  The last step(s) were intended to purge
+task_struct::pid (or abstract it using task_pid_nr()), which haven't
+been submitted yet.  The whole point of the patchset was to give
+confidence in the PIDs reported in any audit logs.
+
+> Oleg.
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer
+Kernel Security
+AMER ENG Base Operating Systems
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635
+Internal: (81) 32635
+Alt: +1.613.693.0684x3545
