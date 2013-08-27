@@ -1,133 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab3H0Cgc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 22:36:32 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56297 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab3H0Cgb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 22:36:31 -0400
-X-AuditID: 9c930179-b7c0bae0000040ac-7d-521c10ad43b2
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH/RFC] perf list: Skip unsupported events
-Date: Tue, 27 Aug 2013 11:36:24 +0900
-Message-Id: <1377570984-14255-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-X-Brightmail-Tracker: AAAAAA==
+	id S1752652Ab3H0Chz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 22:37:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61110 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751995Ab3H0Chy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 22:37:54 -0400
+Date: Mon, 26 Aug 2013 22:37:22 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
+ task->pid and task->tgid
+Message-ID: <20130827023722.GB21098@madcap2.tricolour.ca>
+References: <cover.1377032086.git.rgb@redhat.com>
+ <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
+ <20130822200555.GN31370@twins.programming.kicks-ass.net>
+ <20130822214347.GB21110@madcap2.tricolour.ca>
+ <20130823063621.GO31370@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130823063621.GO31370@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Fri, Aug 23, 2013 at 08:36:21AM +0200, Peter Zijlstra wrote:
+> On Thu, Aug 22, 2013 at 05:43:47PM -0400, Richard Guy Briggs wrote:
+> > On Thu, Aug 22, 2013 at 10:05:55PM +0200, Peter Zijlstra wrote:
+> > > On Tue, Aug 20, 2013 at 05:32:03PM -0400, Richard Guy Briggs wrote:
+> > > > This stops these four task helper functions from using the deprecated and
+> > > > error-prone task->pid and task->tgid.
+> > > > 
+> > > > (informed by ebiederman's ea5a4d01)
+> > > > Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> > > > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > > > ---
+> > > >  include/linux/sched.h |    8 ++++----
+> > > >  1 files changed, 4 insertions(+), 4 deletions(-)
+> > > > 
+> > > > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > > > index 8e69807..46e739d 100644
+> > > > --- a/include/linux/sched.h
+> > > > +++ b/include/linux/sched.h
+> > > > @@ -1579,7 +1579,7 @@ static inline int pid_alive(struct task_struct *p)
+> > > >   */
+> > > >  static inline int is_global_init(struct task_struct *tsk)
+> > > >  {
+> > > > -	return tsk->pid == 1;
+> > > > +	return task_pid_nr(tsk) == 1;
+> > > >  }
+> > > >  
+> > > >  extern struct pid *cad_pid;
+> > > > @@ -1930,7 +1930,7 @@ extern struct task_struct *idle_task(int cpu);
+> > > >   */
+> > > >  static inline bool is_idle_task(const struct task_struct *p)
+> > > >  {
+> > > > -	return p->pid == 0;
+> > > > +	return task_pid(p) == &init_struct_pid;
+> > > >  }
+> > > >  extern struct task_struct *curr_task(int cpu);
+> > > >  extern void set_curr_task(int cpu, struct task_struct *p);
+> > > 
+> > > Why would you ever want to do this? It just makes these tests more
+> > > expensive for no gain what so ff'ing ever.
+> > 
+> > Backups are generally considered a good idea, but in this case, I'd
+> > quote:
+> > 	"A man with one watch knows what time it is. A man with two is
+> > 	never certain."
+> 
+> Except that's not the case, with namespaces there's a clear hierarchy
+> and the task_struct::pid is the one true value aka. root namespace.
 
-Some hardware events might not be supported on a system.  Listing
-those events seems meaningless and confusing to users.  Let's skip
-them.
+Peter, I agonized over the access efficiency of dropping this one or the
+duplicate in task_struct::pids and this one was far easier to drop in
+terms of somehow always forcing
+task->pids[PIDTYPE_PID].pid->numbers[0].nr to point to task->pid.
 
-Before:
-  $ perf list cache | wc -l
-  33
+It should be possible to audit the kernel to make certain task->pid is
+only ever written at the time of task creation and copied to its own
+task->pids[PIDTYPE_PID].pid->numbers[0].nr at the time of task creation
+so that the two values are consistent.  Continuously auditing the kernel
+so this is the case would be a bit more of a challenge.
 
-After:
-  $ perf list cache | wc -l
-  27
+Would it be reasonable to suggest task_struct::pid only be accessed by
+the existing inlined task_pid_nr() converted to const?
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/parse-events.c | 41 +++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 39 insertions(+), 2 deletions(-)
+The goal is to gain assurance that any PIDs referred to in audit logs
+are indisputable.
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 9cba92386a82..b5e5860c5484 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -15,6 +15,7 @@
- #define YY_EXTRA_TYPE int
- #include "parse-events-flex.h"
- #include "pmu.h"
-+#include "thread_map.h"
- 
- #define MAX_NAME_LEN 100
- 
-@@ -1072,6 +1073,33 @@ int is_valid_tracepoint(const char *event_string)
- 	return 0;
- }
- 
-+bool is_event_supported(u8 type, unsigned config)
-+{
-+	bool ret = true;
-+	struct perf_evsel *evsel;
-+	struct perf_event_attr attr = {
-+		.type = type,
-+		.config = config,
-+		.disabled = 1,
-+		.exclude_kernel = 1,
-+	};
-+	struct {
-+		struct thread_map map;
-+		int threads[1];
-+	} tmap = {
-+		.map.nr	 = 1,
-+		.threads = { 0 },
-+	};
-+
-+	evsel = perf_evsel__new(&attr, 0);
-+	if (evsel) {
-+		ret = perf_evsel__open(evsel, NULL, &tmap.map) >= 0;
-+		perf_evsel__delete(evsel);
-+	}
-+
-+	return ret;
-+}
-+
- static void __print_events_type(u8 type, struct event_symbol *syms,
- 				unsigned max)
- {
-@@ -1079,14 +1107,16 @@ static void __print_events_type(u8 type, struct event_symbol *syms,
- 	unsigned i;
- 
- 	for (i = 0; i < max ; i++, syms++) {
-+		if (!is_event_supported(type, i))
-+			continue;
-+
- 		if (strlen(syms->alias))
- 			snprintf(name, sizeof(name),  "%s OR %s",
- 				 syms->symbol, syms->alias);
- 		else
- 			snprintf(name, sizeof(name), "%s", syms->symbol);
- 
--		printf("  %-50s [%s]\n", name,
--			event_type_descriptors[type]);
-+		printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
- 	}
- }
- 
-@@ -1115,6 +1145,10 @@ int print_hwcache_events(const char *event_glob, bool name_only)
- 				if (event_glob != NULL && !strglobmatch(name, event_glob))
- 					continue;
- 
-+				if (!is_event_supported(PERF_TYPE_HW_CACHE,
-+							type | (op << 8) | (i << 16)))
-+					continue;
-+
- 				if (name_only)
- 					printf("%s ", name);
- 				else
-@@ -1144,6 +1178,9 @@ static void print_symbol_events(const char *event_glob, unsigned type,
- 		      (syms->alias && strglobmatch(syms->alias, event_glob))))
- 			continue;
- 
-+		if (!is_event_supported(type, i))
-+			continue;
-+
- 		if (name_only) {
- 			printf("%s ", syms->symbol);
- 			continue;
--- 
-1.7.11.7
+Would you be alright with doing away with task_struct::tgid?
 
+> Furthermore idle threads really are special and it doesn't make sense to
+> address them in any but the root namespace, doubly so because only
+> kernel space does this.
+
+If that is the case, and the above holds true, then we don't need the
+second hunk, I agree.
+
+> As for the init thread, that function is called is_global_init() for
+> crying out loud, what numb nut doesn't get that that's supposed to be
+> using the root namespace?
+
+A process in another pid namespace?  If that's never going to happen,
+then drop it.
+
+> Seriously, you namespace guys should stop messing things up and
+> confusing yourselves and others.
+
+"you namespace guys"?  I'm not a namespace guy.  I'm a rusty kernel
+network security guy taking on audit, trying to prepare it for moving
+into a more and more namespace-enabled place of
+containerization/light-virtualization.
+
+We aren't ready for it yet, but there is demand to run additional auditd
+daemons in other pid namespaces and some of this work is trying to move
+in that direction.
+
+This patchset certainly wasn't intended to be ready for adoption just
+yet.  It was this sort of discussion I was hoping to have.
+
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer
+Kernel Security
+AMER ENG Base Operating Systems
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635
+Internal: (81) 32635
+Alt: +1.613.693.0684x3545
