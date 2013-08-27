@@ -1,204 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab3H0L66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 07:58:58 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:38423 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937Ab3H0L64 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 07:58:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFrcx1n5eA4zz+nUhraE_fi_Usc=PCZTC=RCT=S285K4=jqHSg@mail.gmail.com>
-References: <CAFrcx1n5eA4zz+nUhraE_fi_Usc=PCZTC=RCT=S285K4=jqHSg@mail.gmail.com>
-Date: Tue, 27 Aug 2013 13:58:55 +0200
-Message-ID: <CAFrcx1nr4-qyzC=zFRdnMavHy5p_r9Ng+zSVwNPk6snYtBm6gw@mail.gmail.com>
-Subject: Fwd: perf: callchain feature on ARM - question about libunwind API
-From: Jean Pihet <jean.pihet@linaro.org>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753266Ab3H0MA1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 08:00:27 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:16302 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753083Ab3H0MAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 08:00:25 -0400
+From: Andrey Vagin <avagin@openvz.org>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Andrey Vagin <avagin@openvz.org>, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux.com>, Glauber Costa <glommer@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, stable@vger.kernel.org.#.3.8
+Subject: [PATCH] memcg: check that kmem_cache has memcg_params before accessing it
+Date: Tue, 27 Aug 2013 15:56:51 +0400
+Message-Id: <1377604611-3442-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+If the system had a few memory groups and all of them were destroyed,
+memcg_limited_groups_array_size has non-zero value, but all new caches
+are created without memcg_params, because memcg_kmem_enabled() returns
+false.
 
-I am looking for info and help on the libunwind API.
+We try to enumirate child caches in a few places and all of them are
+potentially dangerous.
 
-What I am trying to achieve is to allow the callchain feature on perf
-for ARM (v7 to start with, then ARMv8), from the DWARF info found in
-the .debug_frame section.
+For example my kernel is compiled with CONFIG_SLAB and it crashed when I
+tryed to mount a NFS share after a few experiments with kmemcg.
 
->From the source code in tools/perf I have added the call to
-dwarf_find_debug_frame to load and parse the debug info from
-.debug_frame. This works correctly, all IP ranges are found from the
-debug code (test program and libraries). Then at some point I get an
-assertion: 'perf: dwarf/Gparser.c:459: fetch_proc_info: Assertion
-`c->pi.unwind_info' failed.' At that point c->pi is NULL. Cf. below
-for more info.
+[   92.563747] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+[   92.564553] IP: [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
+[   92.564553] PGD b942a067 PUD b999f067 PMD 0
+[   92.564553] Oops: 0000 [#1] SMP
+[   92.564553] Modules linked in: fscache(+) ip6table_filter ip6_tables iptable_filter ip_tables i2c_piix4 pcspkr virtio_net virtio_balloon i2c_core floppy
+[   92.564553] CPU: 0 PID: 357 Comm: modprobe Not tainted 3.11.0-rc7+ #59
+[   92.564553] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[   92.564553] task: ffff8800b9f98240 ti: ffff8800ba32e000 task.ti: ffff8800ba32e000
+[   92.564553] RIP: 0010:[<ffffffff8118166a>]  [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
+[   92.564553] RSP: 0018:ffff8800ba32fb70  EFLAGS: 00010246
+[   92.564553] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000006
+[   92.564553] RDX: 0000000000000000 RSI: ffff8800b9f98910 RDI: 0000000000000246
+[   92.564553] RBP: ffff8800ba32fba0 R08: 0000000000000002 R09: 0000000000000004
+[   92.564553] R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000010
+[   92.564553] R13: 0000000000000008 R14: 00000000000000d0 R15: ffff8800375d0200
+[   92.564553] FS:  00007f55f1378740(0000) GS:ffff8800bfa00000(0000) knlGS:0000000000000000
+[   92.564553] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   92.564553] CR2: 00007f24feba57a0 CR3: 0000000037b51000 CR4: 00000000000006f0
+[   92.564553] Stack:
+[   92.564553]  0000002000000000 0000000000000020 ffff8800375d0200 0000000000000010
+[   92.564553]  0000000000000080 0000000000000000 ffff8800ba32fbd0 ffffffff811816f9
+[   92.564553]  000000d0ba32ffd8 ffff8800375d0200 ffff8800375d0200 0000000000000080
+[   92.564553] Call Trace:
+[   92.564553]  [<ffffffff811816f9>] enable_cpucache+0x49/0x100
+[   92.564553]  [<ffffffff8162adc5>] setup_cpu_cache+0x215/0x280
+[   92.564553]  [<ffffffff81181baa>] __kmem_cache_create+0x2fa/0x450
+[   92.564553]  [<ffffffff81152274>] kmem_cache_create_memcg+0x214/0x350
+[   92.564553]  [<ffffffffa005fe50>] ? __fscache_invalidate+0xe0/0xe0 [fscache]
+[   92.564553]  [<ffffffff811523db>] kmem_cache_create+0x2b/0x30
+[   92.564553]  [<ffffffffa007019b>] fscache_init+0x19b/0x230 [fscache]
+[   92.564553]  [<ffffffffa0070000>] ? 0xffffffffa006ffff
+[   92.564553]  [<ffffffff810002ca>] do_one_initcall+0xfa/0x1b0
+[   92.564553]  [<ffffffff81042a03>] ? set_memory_nx+0x43/0x50
+[   92.564553]  [<ffffffff810cadd1>] load_module+0x1c41/0x26d0
+[   92.564553]  [<ffffffff810c7040>] ? store_uevent+0x40/0x40
+[   92.564553]  [<ffffffff810cb9f6>] SyS_finit_module+0x86/0xb0
+[   92.564553]  [<ffffffff81644659>] system_call_fastpath+0x16/0x1b
+[   92.564553] Code: c6 b0 b6 81 81 48 c7 c7 c1 ba 9f 81 e8 af de 4a 00 44 8b 0d c1 54 6d 01 45 85 c9 7e 34 31 db 66 90 49 8b 87 e0 00 00 00 48 63 d3 <48> 8b 7c d0 08 48 85 ff 74 11 8b 75 d4 45 89 f0 44 89 e9 44 89
+[   92.564553] RIP  [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
+[   92.564553]  RSP <ffff8800ba32fb70>
+[   92.564553] CR2: 0000000000000008
+[   92.610992] ---[ end trace adf2b24549e1f11d ]---
 
-It looks like I am not using the libunwind API as it should, so that
-the perf code apparently builds a list of IP ranges to resolve but
-cannot use it later on to gather statistics on the runtime info.
-
-Any idea on how to progress? I am also looking at the *_proc_info API
-of libunwind.
-
-Here is the patch I am using below.
-
-Cheers,
-Jean
-
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Glauber Costa <glommer@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joonsoo Kim <js1304@gmail.com>
+Cc: stable@vger.kernel.org # 3.8
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
 ---
-Debug log:
+ mm/slab.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-perf report --sort symbol --call-graph --stdio
-
-_Uarm_step: calling dwarf_step(ip=0x8464, c->dwarf@0xbee150f8,
-c->dwarf.pi@0xb2bc0008)
-unwind: find_proc_info dso /home/linaro/perf-libunwind/
-test_app/stress_bt
-read_unwind_spec_debug_frame: .debug_frame offset=9304
-opened file '/home/linaro/perf-libunwind/test_app/stress_bt'. Section
-header at offset 18152
-read 3160 bytes of .debug_frame from offset 9304
-...
-_ULarm_step: calling dwarf_step(ip=0xb6e6e764, c->dwarf@0xbee07508,
-c->dwarf.pi@0xb6e955c0)
-_ULarm_find_proc_info: looking for IP=0xb6e6e763
-opened file '/usr/lib/arm-linux-gnueabihf/libunwind.so.8'. Section
-header at offset 513260
-read 17072 bytes of .debug_frame from offset 451836
-_ULarm_dwarf_search_unwind_table: looking for IP=0xb6e6e763
-_ULarm_find_proc_info returns 0
-...
-perf: dwarf/Gparser.c:459: fetch_proc_info: Assertion
-`c->pi.unwind_info' failed.
-
-
----
-Patch to the kernel source:
-
-diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
-index 958723b..dd97688 100644
---- a/tools/perf/util/unwind.c
-+++ b/tools/perf/util/unwind.c
-@@ -39,6 +39,14 @@ UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
-
- #define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
-
-+extern int
-+UNW_OBJ(dwarf_find_debug_frame) (int found, unw_dyn_info_t *di_debug,
-+                unw_word_t ip, unw_word_t segbase,
-+                const char* obj_name, unw_word_t start,
-+                unw_word_t end);
-+
-+#define dwarf_find_debug_frame UNW_OBJ(dwarf_find_debug_frame)
-+
- #define DW_EH_PE_FORMAT_MASK   0x0f    /* format of the encoded value */
- #define DW_EH_PE_APPL_MASK 0x70    /* how the value is to be applied */
-
-@@ -245,8 +253,9 @@ static int unwind_spec_ehframe(struct dso *dso,
-struct      machine *machine,
-    return 0;
- }
-
--static int read_unwind_spec(struct dso *dso, struct machine *machine,
--               u64 *table_data, u64 *segbase, u64 *fde_count)
-+static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
-+                    u64 *table_data, u64 *segbase,
-+                    u64 *fde_count)
+diff --git a/mm/slab.h b/mm/slab.h
+index 620ceed..a535033 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -162,6 +162,8 @@ static inline const char *cache_name(struct kmem_cache *s)
+ 
+ static inline struct kmem_cache *cache_from_memcg(struct kmem_cache *s, int idx)
  {
-    int ret = -EINVAL, fd;
-    u64 offset;
-@@ -255,18 +264,40 @@ static int read_unwind_spec(struct dso *dso,
-struct       machine *machine,
-    if (fd < 0)
-        return -EINVAL;
-
-+   /* Check the .eh_frame section for unwinding info */
-    offset = elf_section_offset(fd, ".eh_frame_hdr");
-    close(fd);
-
--   if (offset)
-+   if (offset) {
-+       fprintf(stderr, "%s: .eh_frame offset=%llu\n", __func__, offset);
-        ret = unwind_spec_ehframe(dso, machine, offset,
-                      table_data, segbase,
-                      fde_count);
-+   }
-
--   /* TODO .debug_frame check if eh_frame_hdr fails */
-    return ret;
++	if (!s->memcg_params)
++		return NULL;
+ 	return s->memcg_params->memcg_caches[idx];
  }
+ 
+-- 
+1.8.3.1
 
-+static int read_unwind_spec_debug_frame(struct dso *dso,
-+                   struct machine *machine,
-+                   u64 *segbase)
-+{
-+   int fd = dso__data_fd(dso, machine);
-+   if (fd < 0)
-+       return -EINVAL;
-+
-+   /* Check the .debug_frame section for unwinding info */
-+   *segbase = elf_section_offset(fd, ".debug_frame");
-+   close(fd);
-+
-+   fprintf(stderr, "%s: .debug_frame offset=%llu\n", __func__, *segbase);
-+
-+   if (!segbase)
-+       return -EINVAL;
-+
-+   return 0;
-+}
-+
- static struct map *find_map(unw_word_t ip, struct unwind_info *ui)
- {
-    struct addr_location al;
-@@ -289,22 +320,32 @@ find_proc_info(unw_addr_space_t as, unw_word_t
-ip,        unw_proc_info_t *pi,
-    if (!map || !map->dso)
-        return -EINVAL;
-
--   pr_debug("unwind: find_proc_info dso %s\n", map->dso->name);
-+   fprintf(stderr, "unwind: find_proc_info dso %s\n", map->dso->name);
-+
-+   /* Check the .eh_frame section for unwinding info */
-+   if (!read_unwind_spec_eh_frame(map->dso, ui->machine,
-+                      &table_data, &segbase, &fde_count)) {
-+       memset(&di, 0, sizeof(di));
-+       di.format   = UNW_INFO_FORMAT_REMOTE_TABLE;
-+       di.start_ip = map->start;
-+       di.end_ip   = map->end;
-+       di.u.rti.segbase    = map->start + segbase;
-+       di.u.rti.table_data = map->start + table_data;
-+       di.u.rti.table_len  = fde_count * sizeof(struct table_entry)
-+                 / sizeof(unw_word_t);
-+       return dwarf_search_unwind_table(as, ip, &di, pi,
-+                        need_unwind_info, arg);
-+   }
-
--   if (read_unwind_spec(map->dso, ui->machine,
--                &table_data, &segbase, &fde_count))
--       return -EINVAL;
-+   /* Check the .debug_frame section for unwinding info */
-+   if (!read_unwind_spec_debug_frame(map->dso, ui->machine, &segbase)) {
-+       memset(&di, 0, sizeof(di));
-+       if (dwarf_find_debug_frame(0, &di, ip, segbase, map->dso->name,
-+                      map->start, map->end))
-+           return 0;
-+   }
-
--   memset(&di, 0, sizeof(di));
--   di.format   = UNW_INFO_FORMAT_REMOTE_TABLE;
--   di.start_ip = map->start;
--   di.end_ip   = map->end;
--   di.u.rti.segbase    = map->start + segbase;
--   di.u.rti.table_data = map->start + table_data;
--   di.u.rti.table_len  = fde_count * sizeof(struct table_entry)
--                 / sizeof(unw_word_t);
--   return dwarf_search_unwind_table(as, ip, &di, pi,
--                    need_unwind_info, arg);
-+   return -EINVAL;
- }
-
- static int access_fpreg(unw_addr_space_t __maybe_unused as,
