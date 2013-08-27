@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab3H0B2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:28:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59359 "EHLO
+	id S1753862Ab3H0B22 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:28:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154Ab3H0BGm (ORCPT
+	with ESMTP id S1752940Ab3H0BGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Aug 2013 21:06:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wladislav Wiebe <wladislav.kw@gmail.com>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [ 06/13] of: fdt: fix memory initialization for expanded DT
-Date: Mon, 26 Aug 2013 18:08:38 -0700
-Message-Id: <20130827010310.332481761@linuxfoundation.org>
+        Thiago Macieira <thiago@kde.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 05/13] drm/i915: Invalidate TLBs for the rings after a reset
+Date: Mon, 26 Aug 2013 18:08:37 -0700
+Message-Id: <20130827010310.260124104@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010309.850395966@linuxfoundation.org>
 References: <20130827010309.850395966@linuxfoundation.org>
@@ -28,52 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wladislav Wiebe <wladislav.kw@gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 9e40127526e857fa3f29d51e83277204fbdfc6ba upstream.
+commit 884020bf3d2a3787a1cc6df902e98e0eec60330b upstream.
 
-Already existing property flags are filled wrong for properties created from
-initial FDT. This could cause problems if this DYNAMIC device-tree functions
-are used later, i.e. properties are attached/detached/replaced. Simply dumping
-flags from the running system show, that some initial static (not allocated via
-kzmalloc()) nodes are marked as dynamic.
+After any "soft gfx reset" we must manually invalidate the TLBs
+associated with each ring. Empirically, it seems that a
+suspend/resume or D3-D0 cycle count as a "soft reset". The symptom is
+that the hardware would fail to note the new address for its status
+page, and so it would continue to write the shadow registers and
+breadcrumbs into the old physical address (now used by something
+completely different, scary). Whereas the driver would read the new
+status page and never see any progress, it would appear that the GPU
+hung immediately upon resume.
 
-I putted some debug extensions to property_proc_show(..) :
-..
-+       if (OF_IS_DYNAMIC(pp))
-+               pr_err("DEBUG: xxx : OF_IS_DYNAMIC\n");
-+       if (OF_IS_DETACHED(pp))
-+               pr_err("DEBUG: xxx : OF_IS_DETACHED\n");
+Based on a patch by naresh kumar kachhi <naresh.kumar.kacchi@intel.com>
 
-when you operate on the nodes (e.g.: ~$ cat /proc/device-tree/*some_node*) you
-will see that those flags are filled wrong, basically in most cases it will dump
-a DYNAMIC or DETACHED status, which is in not true.
-(BTW. this OF_IS_DETACHED is a own define for debug purposes which which just
-make a test_bit(OF_DETACHED, &x->_flags)
-
-If nodes are dynamic kernel is allowed to kfree() them. But it will crash
-attempting to do so on the nodes from FDT -- they are not allocated via
-kzmalloc().
-
-Signed-off-by: Wladislav Wiebe <wladislav.kw@gmail.com>
-Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Reported-by: Thiago Macieira <thiago@kde.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64725
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Tested-by: Thiago Macieira <thiago@kde.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/fdt.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/i915/i915_reg.h         |    2 ++
+ drivers/gpu/drm/i915/intel_ringbuffer.c |   12 ++++++++++++
+ 2 files changed, 14 insertions(+)
 
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -390,6 +390,8 @@ static void __unflatten_device_tree(stru
- 	mem = (unsigned long)
- 		dt_alloc(size + 4, __alignof__(struct device_node));
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -502,6 +502,8 @@
+ 					will not assert AGPBUSY# and will only
+ 					be delivered when out of C3. */
+ #define   INSTPM_FORCE_ORDERING				(1<<7) /* GEN6+ */
++#define   INSTPM_TLB_INVALIDATE	(1<<9)
++#define   INSTPM_SYNC_FLUSH	(1<<5)
+ #define ACTHD	        0x020c8
+ #define FW_BLC		0x020d8
+ #define FW_BLC2		0x020dc
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -767,6 +767,18 @@ void intel_ring_setup_status_page(struct
  
-+	memset((void *)mem, 0, size);
+ 	I915_WRITE(mmio, (u32)ring->status_page.gfx_addr);
+ 	POSTING_READ(mmio);
 +
- 	((__be32 *)mem)[size / 4] = cpu_to_be32(0xdeadbeef);
++	/* Flush the TLB for this page */
++	if (INTEL_INFO(dev)->gen >= 6) {
++		u32 reg = RING_INSTPM(ring->mmio_base);
++		I915_WRITE(reg,
++			   _MASKED_BIT_ENABLE(INSTPM_TLB_INVALIDATE |
++					      INSTPM_SYNC_FLUSH));
++		if (wait_for((I915_READ(reg) & INSTPM_SYNC_FLUSH) == 0,
++			     1000))
++			DRM_ERROR("%s: wait for SyncFlush to complete for TLB invalidation timed out\n",
++				  ring->name);
++	}
+ }
  
- 	pr_debug("  unflattening %lx...\n", mem);
+ static int
 
 
