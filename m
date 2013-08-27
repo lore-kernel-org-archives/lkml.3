@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab3H0Jar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 05:30:47 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:48960 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798Ab3H0Jao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 05:30:44 -0400
-Date: Tue, 27 Aug 2013 11:30:41 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        herbert@gondor.hengli.com.au, gang.chen@asianux.com
-Subject: Re: [PATCH] kernel/padata.c: Register hotcpu notifier after
- initialization
-Message-ID: <20130827093041.GD7660@secunet.com>
-References: <1377256353-7979-1-git-send-email-richard@nod.at>
+	id S1753442Ab3H0JbF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 05:31:05 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:54638 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753286Ab3H0Ja6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 05:30:58 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Aug 2013 05:30:57 EDT
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377256353-7979-1-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 27 Aug 2013 09:30:42.0124 (UTC) FILETIME=[1961F8C0:01CEA308]
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 0/2] fs: supply inode uid/gid setting interface
+Date: Tue, 27 Aug 2013 10:20:50 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7307@saturn3.aculab.com>
+In-Reply-To: <5217100E.6080506@huawei.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 0/2] fs: supply inode uid/gid setting interface
+Thread-Index: Ac6gVhETAVIrgXolTpuhJOiKWrBv8ACsAHtw
+References: <1377226118-43756-1-git-send-email-rui.xiang@huawei.com> <20130823041010.GA12296@kroah.com> <5217100E.6080506@huawei.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Rui Xiang" <rui.xiang@huawei.com>, "Greg KH" <gregkh@linuxfoundation.org>
+Cc: <linux-s390@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
+        <linux-rdma@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <viro@zeniv.linux.org.uk>,
+        <cgroups@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <v9fs-developer@lists.sourceforge.net>,
+        <linuxppc-dev@lists.ozlabs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 01:12:33PM +0200, Richard Weinberger wrote:
-> padata_cpu_callback() takes pinst->lock, to avoid taking
-> an uninitialized lock, register the notifier after it's
-> initialization.
+> Subject: Re: [PATCH 0/2] fs: supply inode uid/gid setting interface
 > 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
+> On 2013/8/23 12:10, Greg KH wrote:
+> > On Fri, Aug 23, 2013 at 10:48:36AM +0800, Rui Xiang wrote:
+> >> This patchset implements an accessor functions to set uid/gid
+> >> in inode struct. Just finish code clean up.
+> >
+> > Why?
+> >
+> It can introduce a new function to reduce some codes.
+>  Just clean up.
 
-Looks ok,
+In what sense is it a 'cleanup' ?
 
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+To my mind it just means that anyone reading the code has
+to go and look at another file in order to see what the
+function does (it might be expected to be more complex).
+
+It also adds run time cost, while probably not directly
+measurable I suspect it more than doubles the execution
+time of that code fragment - do that everywhere and the
+system will run like a sick pig.
+
+The only real use for accessor functions is when you
+don't want the structure offset to be public.
+In this case that is obviously not the case since
+all the drivers are directly accessing other members
+of the structure.
+
+	David
+
+
+
