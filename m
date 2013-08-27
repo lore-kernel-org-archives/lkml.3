@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab3H0Ui5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 16:38:57 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37473 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab3H0Ui4 (ORCPT
+	id S1754087Ab3H0UlB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 16:41:01 -0400
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:10959 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab3H0Uk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 16:38:56 -0400
-Message-ID: <521D0E40.3010302@ti.com>
-Date: Tue, 27 Aug 2013 16:38:24 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Lars Poeschel <larsi@wh2.tu-dresden.de>, <poeschel@lemonage.de>,
-        <grant.likely@linaro.org>, <linus.walleij@linaro.org>,
-        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <galak@codeaurora.org>,
-        <pawel.moll@arm.com>, <tomasz.figa@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
-        Rajendra Nayak <rnayak@ti.com>
-Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
-References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <521D0964.2080209@wwwdotorg.org>
-In-Reply-To: <521D0964.2080209@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Aug 2013 16:40:59 -0400
+X-AuditID: cbfec37c-b7fd86d00000670b-83-521d0ed956d0
+Message-id: <521D0ED6.30301@samsung.com>
+Date: Tue, 27 Aug 2013 14:40:54 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 0/9] 3.0.94-stable review
+References: <20130827010251.636183797@linuxfoundation.org>
+In-reply-to: <20130827010251.636183797@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9hX92bfLJBBi/PWVjMWb+GzaJ58Xo2
+	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
+	pG+XwJVxeHsPY0E7T8WHb74NjLc5uxg5OSQETCS6ew+xQNhiEhfurWfrYuTiEBJYxigx51Y7
+	M4TTyyTxqfssK4SzmVGi58J9JpAWXgENiQmbTzOD2CwCqhKnnp4Ei7MJqEt8fr2DHcQWEpCT
+	aFqyGqxGVCBCYuWSB6wQvYISPybfA1stImAs0X92Flg9s8AxRomFzSYgtjDQ/KU/TwD1cgDN
+	sZLo/iEBEuYUsJaYde4eI0S5tcTKSdugbHmJzWveMkOsVZb4c/kUE0irhICixPbVVhMYRWYh
+	WTwLSfcsJN0LGJlXMYqVFicXFCelp1YY6xUn5haX5qXrJefnbmKExEvNDsZ7X20OMQpwMCrx
+	8FpslgkSYk0sK67MPcQowcGsJMJb8h8oxJuSWFmVWpQfX1Sak1p8iJGJg1OqgdH077nzs5aL
+	bTlkxGrXyP53p/2PL5cnRalHbX/l/Trj4JunS/qUDDm1n4h8Dpsn+jvxcMG6DXFPPqZkXavo
+	rp8adc9NkaGo++MryY5f1mKVRS/Uoq3bxYWfrm01Yrhi/X35QoaHW0zK/ynd25S77ovFgh3N
+	OY7FjQXLy14uZZvbGsUpavrfk0+JpTgj0VCLuag4EQDNAEjxdQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 August 2013 04:17 PM, Stephen Warren wrote:
-> On 08/26/2013 08:07 AM, Lars Poeschel wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
->>
->> Currently the kernel is ambigously treating GPIOs and interrupts
->> from a GPIO controller: GPIOs and interrupts are treated as
->> orthogonal. This unfortunately makes it unclear how to actually
->> retrieve and request a GPIO line or interrupt from a GPIO
->> controller in the device tree probe path.
-> 
-> I still think that this patch is the wrong approach. Instead, the logic
-> should be hooked into gpio_request() and request_irq(). This patch only
-> addresses DT, and ignores anything else, hence doesn't seem like the
-> right level of abstraction to plug in, since the issue is not related to DT.
-> 
-On the issue, Rajendra cooked up a patch [1] to handle the issue at
-irqdomain level which was shot down after further discussion. It might
-be useful for the discussion here. Ofcourse it was also targeted to
-solve only DT issue.
+On 08/26/2013 07:04 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.0.94 release.
+> There are 9 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Aug 29 01:02:44 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.94-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
+> -------------
 
-Regards,
-Santosh
+3.0.94
+------
+3.0.94-rc1 applied cleanly to 3.0.93
 
-[1]
-"[PATCH] irqdomain: Do a gpio_request in case of a gpio irq_chip"
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg83451.html
+Compiled and booted on the following systems:
 
+Samsung Series 9 900X4C Intel Corei5
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
+dmesgs look good. No regressions compared to the previous dmesgs for 
+this release. dmesg emerg, crit, alert, err are clean. No regressions in 
+warn.
+
+Cross-compile testing: HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+
+Cross-compile tests results:
+
+alpha: defconfig passed
+arm: defconfig passed
+arm64: not applicable
+blackfin: defconfig passed
+c6x: not applicable
+mips: defconfig passed
+mipsel: defconfig passed
+powerpc: wii_defconfig passed
+sh: defconfig passed
+sparc: defconfig passed
+tile: tilegx_defconfig passed
+
+-- Shuah
+
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
