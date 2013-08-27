@@ -1,457 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3H0OsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 10:48:18 -0400
-Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:51386 "EHLO
-	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753082Ab3H0OsQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 10:48:16 -0400
-Date: Tue, 27 Aug 2013 14:48:14 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Chris Metcalf <cmetcalf@tilera.com>
-cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [guv v2 23/31] tile: Replace __get_cpu_var uses
-In-Reply-To: <521BD523.3040706@tilera.com>
-Message-ID: <00000140c03f13d6-07480caf-b5b0-440b-af95-04878ee9f46c-000000@email.amazonses.com>
-References: <20130826204351.725357339@linux.com> <00000140bc69acdb-3b2967b0-e224-424b-ad08-973515704be6-000000@email.amazonses.com> <521BD523.3040706@tilera.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753949Ab3H0OtJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 10:49:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45296 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753620Ab3H0OtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 10:49:08 -0400
+Message-ID: <521CBC61.2030904@suse.de>
+Date: Tue, 27 Aug 2013 16:49:05 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.08.27-54.240.9.58
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: axboe@kernel.dk, JBottomley@parallels.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [patch|rfc] block: fix race between request completion and timeout
+ handling
+References: <x49ppszqkbg.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49ppszqkbg.fsf@segfault.boston.devel.redhat.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Aug 2013, Chris Metcalf wrote:
-
-> On 8/26/2013 4:56 PM, Christoph Lameter wrote:
-> > Index: linux/arch/tile/include/asm/irqflags.h
-> > ===================================================================
-> > --- linux.orig/arch/tile/include/asm/irqflags.h	2013-08-22 14:39:14.000000000 -0500
-> > +++ linux/arch/tile/include/asm/irqflags.h	2013-08-22 14:39:57.453305409 -0500
->
-> Nack to the changes to this file, with all due respect :-), since I have conflicting changes in the linux-tile tree that also remove all uses of __get_cpu_var from this file.  Note that there are places in this file where "this_cpu_and", etc., make sense; I don't know if it makes sense for your script to be looking for this kind of thing more generally.
-
-Ok. Dropped that part.
-
-> > -		__get_cpu_var(current_asid) = asid;
-> > +		__this_cpu_read(current_asid) = asid;
->
-> This should be __this_cpu_write(current_asid, asid).  You caught this
-> idiom elsewhere so not sure if it was a script bug that caused it to be
-> missed here?
-
-No these cases were rare and had to be fixed up manually. Missed that one.
-
-> > -	int depth = __get_cpu_var(irq_depth)++;
-> > +	int depth = __this_cpu_inc_return(irq_depth) - 1;
->
-> I would omit the "-1" here and instead change the one test of "depth == 0" to be "depth == 1".
-
-Ok.
-
- > -	__get_cpu_var(current_asid) = min_asid = asid_range.start;
-> > +	__this_cpu_write(current_asid, min_asid = asid_range.start);
->
-> This was ugly before but now it's much worse :-)  Please just split it
-> into an assignment to min_asid, then use __this_cpu_write() with
-> min_asid.  Thanks.
-
-Ok.
-
-> The rest is fine.  Would it make more sense for me to fold all these
-> changes into the tile tree and just have it meet in linux-next?  There
-> are certainly a bunch of other changes staged there which likely also
-> include more uses of __get_cpu_var...
-
-Yes. Please stage this patch for the next merge window.
-
-Fixed up patch follows:
-
-
-Subject: tile: Replace __get_cpu_var uses
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-
-__get_cpu_var() is used for multiple purposes in the kernel source. One of them is
-address calculation via the form &__get_cpu_var(x). This calculates the address for
-the instance of the percpu variable of the current processor based on an offset.
-
-Others usage cases are for storing and retrieving data from the current processors percpu area.
-__get_cpu_var() can be used as an lvalue when writing data or on the right side of an assignment.
-
-__get_cpu_var() is defined as :
-
-
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does a address determination. However, store and retrieve operations
-could use a segment prefix (or global register on other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a percpu area and use
-optimized assembly code to read and write per cpu variables.
-
-
-This patch converts __get_cpu_var into either and explicit address calculation using this_cpu_ptr()
-or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
-and less registers are used when code is generated.
-
-At the end of the patchset all uses of __get_cpu_var have been removed so the macro is removed too.
-
-The patchset includes passes over all arches as well. Once these operations are used throughout then
-specialized macros can be defined in non -x86 arches as well in order to optimize per cpu access by
-f.e. using a global register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu variable.
-
-	DEFINE_PER_CPU(int, u);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(this_cpu_ptr(&y), x, sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	this_cpu_inc(y)
-
-
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/arch/tile/include/asm/mmu_context.h
-===================================================================
---- linux.orig/arch/tile/include/asm/mmu_context.h	2013-08-27 09:42:50.925976615 -0500
-+++ linux/arch/tile/include/asm/mmu_context.h	2013-08-27 09:42:50.913976738 -0500
-@@ -84,7 +84,7 @@ static inline void enter_lazy_tlb(struct
- 	 * clear any pending DMA interrupts.
- 	 */
- 	if (current->thread.tile_dma_state.enabled)
--		install_page_table(mm->pgd, __get_cpu_var(current_asid));
-+		install_page_table(mm->pgd, __this_cpu_read(current_asid));
- #endif
- }
-
-@@ -96,12 +96,12 @@ static inline void switch_mm(struct mm_s
- 		int cpu = smp_processor_id();
-
- 		/* Pick new ASID. */
--		int asid = __get_cpu_var(current_asid) + 1;
-+		int asid = __this_cpu_read(current_asid) + 1;
- 		if (asid > max_asid) {
- 			asid = min_asid;
- 			local_flush_tlb();
- 		}
--		__get_cpu_var(current_asid) = asid;
-+		__this_cpu_write(current_asid, asid);
-
- 		/* Clear cpu from the old mm, and set it in the new one. */
- 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
-Index: linux/arch/tile/kernel/irq.c
-===================================================================
---- linux.orig/arch/tile/kernel/irq.c	2013-08-27 09:42:50.925976615 -0500
-+++ linux/arch/tile/kernel/irq.c	2013-08-27 09:44:04.321219883 -0500
-@@ -77,7 +77,7 @@ static DEFINE_SPINLOCK(available_irqs_lo
-  */
- void tile_dev_intr(struct pt_regs *regs, int intnum)
- {
--	int depth = __get_cpu_var(irq_depth)++;
-+	int depth = __this_cpu_inc_return(irq_depth);
- 	unsigned long original_irqs;
- 	unsigned long remaining_irqs;
- 	struct pt_regs *old_regs;
-@@ -124,7 +124,7 @@ void tile_dev_intr(struct pt_regs *regs,
-
- 		/* Count device irqs; Linux IPIs are counted elsewhere. */
- 		if (irq != IRQ_RESCHEDULE)
--			__get_cpu_var(irq_stat).irq_dev_intr_count++;
-+			__this_cpu_inc(irq_stat.irq_dev_intr_count);
-
- 		generic_handle_irq(irq);
- 	}
-@@ -134,10 +134,10 @@ void tile_dev_intr(struct pt_regs *regs,
- 	 * including any that were reenabled during interrupt
- 	 * handling.
- 	 */
--	if (depth == 0)
--		unmask_irqs(~__get_cpu_var(irq_disable_mask));
-+	if (depth == 1)
-+		unmask_irqs(~__this_cpu_read(irq_disable_mask));
-
--	__get_cpu_var(irq_depth)--;
-+	__this_cpu_dec(irq_depth);
-
- 	/*
- 	 * Track time spent against the current process again and
-@@ -155,7 +155,7 @@ void tile_dev_intr(struct pt_regs *regs,
- static void tile_irq_chip_enable(struct irq_data *d)
- {
- 	get_cpu_var(irq_disable_mask) &= ~(1UL << d->irq);
--	if (__get_cpu_var(irq_depth) == 0)
-+	if (__this_cpu_read(irq_depth) == 0)
- 		unmask_irqs(1UL << d->irq);
- 	put_cpu_var(irq_disable_mask);
- }
-@@ -201,7 +201,7 @@ static void tile_irq_chip_ack(struct irq
-  */
- static void tile_irq_chip_eoi(struct irq_data *d)
- {
--	if (!(__get_cpu_var(irq_disable_mask) & (1UL << d->irq)))
-+	if (!(__this_cpu_read(irq_disable_mask) & (1UL << d->irq)))
- 		unmask_irqs(1UL << d->irq);
- }
-
-Index: linux/arch/tile/kernel/messaging.c
-===================================================================
---- linux.orig/arch/tile/kernel/messaging.c	2013-08-27 09:42:50.925976615 -0500
-+++ linux/arch/tile/kernel/messaging.c	2013-08-27 09:42:50.913976738 -0500
-@@ -28,7 +28,7 @@ static DEFINE_PER_CPU(HV_MsgState, msg_s
- void init_messaging(void)
- {
- 	/* Allocate storage for messages in kernel space */
--	HV_MsgState *state = &__get_cpu_var(msg_state);
-+	HV_MsgState *state = this_cpu_ptr(&msg_state);
- 	int rc = hv_register_message_state(state);
- 	if (rc != HV_OK)
- 		panic("hv_register_message_state: error %d", rc);
-@@ -68,7 +68,7 @@ void hv_message_intr(struct pt_regs *reg
- #endif
-
- 	while (1) {
--		rmi = hv_receive_message(__get_cpu_var(msg_state),
-+		rmi = hv_receive_message(__this_cpu_read(msg_state),
- 					 (HV_VirtAddr) message,
- 					 sizeof(message));
- 		if (rmi.msglen == 0)
-@@ -96,7 +96,7 @@ void hv_message_intr(struct pt_regs *reg
- 			struct hv_driver_cb *cb =
- 				(struct hv_driver_cb *)him->intarg;
- 			cb->callback(cb, him->intdata);
--			__get_cpu_var(irq_stat).irq_hv_msg_count++;
-+			__this_cpu_inc(irq_stat.irq_hv_msg_count);
- 		}
- 	}
-
-Index: linux/arch/tile/kernel/process.c
-===================================================================
---- linux.orig/arch/tile/kernel/process.c	2013-08-27 09:42:50.925976615 -0500
-+++ linux/arch/tile/kernel/process.c	2013-08-27 09:42:50.913976738 -0500
-@@ -63,7 +63,7 @@ early_param("idle", idle_setup);
-
- void arch_cpu_idle(void)
- {
--	__get_cpu_var(irq_stat).idle_timestamp = jiffies;
-+	__this_cpu_write(irq_stat.idle_timestamp, jiffies);
- 	_cpu_idle();
- }
-
-Index: linux/arch/tile/kernel/setup.c
-===================================================================
---- linux.orig/arch/tile/kernel/setup.c	2013-08-27 09:42:50.925976615 -0500
-+++ linux/arch/tile/kernel/setup.c	2013-08-27 09:44:57.600670623 -0500
-@@ -1119,7 +1119,8 @@ static void __init validate_hv(void)
- 	 * various asid variables to their appropriate initial states.
- 	 */
- 	asid_range = hv_inquire_asid(0);
--	__get_cpu_var(current_asid) = min_asid = asid_range.start;
-+	min_asid = asid_range.start;
-+	__this_cpu_write(current_asid, min_asid);
- 	max_asid = asid_range.start + asid_range.size - 1;
-
- 	if (hv_confstr(HV_CONFSTR_CHIP_MODEL, (HV_VirtAddr)chip_model,
-Index: linux/arch/tile/kernel/single_step.c
-===================================================================
---- linux.orig/arch/tile/kernel/single_step.c	2013-08-27 09:42:50.925976615 -0500
-+++ linux/arch/tile/kernel/single_step.c	2013-08-27 09:42:50.917976698 -0500
-@@ -732,7 +732,7 @@ static DEFINE_PER_CPU(unsigned long, ss_
-
- void gx_singlestep_handle(struct pt_regs *regs, int fault_num)
- {
--	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
-+	unsigned long *ss_pc = this_cpu_ptr(&ss_saved_pc);
- 	struct thread_info *info = (void *)current_thread_info();
- 	int is_single_step = test_ti_thread_flag(info, TIF_SINGLESTEP);
- 	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
-@@ -758,7 +758,7 @@ void gx_singlestep_handle(struct pt_regs
-
- void single_step_once(struct pt_regs *regs)
- {
--	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
-+	unsigned long *ss_pc = this_cpu_ptr(&ss_saved_pc);
- 	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
-
- 	*ss_pc = regs->pc;
-Index: linux/arch/tile/kernel/smp.c
-===================================================================
---- linux.orig/arch/tile/kernel/smp.c	2013-08-27 09:42:50.925976615 -0500
-+++ linux/arch/tile/kernel/smp.c	2013-08-27 09:42:50.917976698 -0500
-@@ -176,7 +176,7 @@ void flush_icache_range(unsigned long st
- /* Called when smp_send_reschedule() triggers IRQ_RESCHEDULE. */
- static irqreturn_t handle_reschedule_ipi(int irq, void *token)
- {
--	__get_cpu_var(irq_stat).irq_resched_count++;
-+	__this_cpu_inc(irq_stat.irq_resched_count);
- 	scheduler_ipi();
-
- 	return IRQ_HANDLED;
-Index: linux/arch/tile/kernel/smpboot.c
-===================================================================
---- linux.orig/arch/tile/kernel/smpboot.c	2013-08-27 09:42:50.925976615 -0500
-+++ linux/arch/tile/kernel/smpboot.c	2013-08-27 09:42:50.917976698 -0500
-@@ -41,7 +41,7 @@ void __init smp_prepare_boot_cpu(void)
- 	int cpu = smp_processor_id();
- 	set_cpu_online(cpu, 1);
- 	set_cpu_present(cpu, 1);
--	__get_cpu_var(cpu_state) = CPU_ONLINE;
-+	__this_cpu_write(cpu_state, CPU_ONLINE);
-
- 	init_messaging();
- }
-@@ -156,7 +156,7 @@ static void start_secondary(void)
- 	/* printk(KERN_DEBUG "Initializing CPU#%d\n", cpuid); */
-
- 	/* Initialize the current asid for our first page table. */
--	__get_cpu_var(current_asid) = min_asid;
-+	__this_cpu_write(current_asid, min_asid);
-
- 	/* Set up this thread as another owner of the init_mm */
- 	atomic_inc(&init_mm.mm_count);
-@@ -199,7 +199,7 @@ void online_secondary(void)
- 	notify_cpu_starting(smp_processor_id());
-
- 	set_cpu_online(smp_processor_id(), 1);
--	__get_cpu_var(cpu_state) = CPU_ONLINE;
-+	__this_cpu_write(cpu_state, CPU_ONLINE);
-
- 	/* Set up tile-specific state for this cpu. */
- 	setup_cpu(0);
-Index: linux/arch/tile/kernel/time.c
-===================================================================
---- linux.orig/arch/tile/kernel/time.c	2013-08-27 09:42:50.925976615 -0500
-+++ linux/arch/tile/kernel/time.c	2013-08-27 09:42:50.917976698 -0500
-@@ -161,7 +161,7 @@ static DEFINE_PER_CPU(struct clock_event
-
- void setup_tile_timer(void)
- {
--	struct clock_event_device *evt = &__get_cpu_var(tile_timer);
-+	struct clock_event_device *evt = this_cpu_ptr(&tile_timer);
-
- 	/* Fill in fields that are speed-specific. */
- 	clockevents_calc_mult_shift(evt, cycles_per_sec, TILE_MINSEC);
-@@ -181,7 +181,7 @@ void setup_tile_timer(void)
- void do_timer_interrupt(struct pt_regs *regs, int fault_num)
- {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
--	struct clock_event_device *evt = &__get_cpu_var(tile_timer);
-+	struct clock_event_device *evt = this_cpu_ptr(&tile_timer);
-
- 	/*
- 	 * Mask the timer interrupt here, since we are a oneshot timer
-@@ -193,7 +193,7 @@ void do_timer_interrupt(struct pt_regs *
- 	irq_enter();
-
- 	/* Track interrupt count. */
--	__get_cpu_var(irq_stat).irq_timer_count++;
-+	__this_cpu_inc(irq_stat.irq_timer_count);
-
- 	/* Call the generic timer handler */
- 	evt->event_handler(evt);
-@@ -234,6 +234,6 @@ cycles_t ns2cycles(unsigned long nsecs)
- 	 * We do not have to disable preemption here as each core has the same
- 	 * clock frequency.
- 	 */
--	struct clock_event_device *dev = &__raw_get_cpu_var(tile_timer);
-+	struct clock_event_device *dev = __this_cpu_ptr(&tile_timer);
- 	return ((u64)nsecs * dev->mult) >> dev->shift;
- }
-Index: linux/arch/tile/mm/highmem.c
-===================================================================
---- linux.orig/arch/tile/mm/highmem.c	2013-08-27 09:42:50.925976615 -0500
-+++ linux/arch/tile/mm/highmem.c	2013-08-27 09:42:50.917976698 -0500
-@@ -103,7 +103,7 @@ static void kmap_atomic_register(struct
- 	spin_lock(&amp_lock);
-
- 	/* With interrupts disabled, now fill in the per-cpu info. */
--	amp = &__get_cpu_var(amps).per_type[type];
-+	amp = this_cpu_ptr(&amps.per_type[type]);
- 	amp->page = page;
- 	amp->cpu = smp_processor_id();
- 	amp->va = va;
-Index: linux/arch/tile/mm/init.c
-===================================================================
---- linux.orig/arch/tile/mm/init.c	2013-08-27 09:42:50.925976615 -0500
-+++ linux/arch/tile/mm/init.c	2013-08-27 09:42:50.917976698 -0500
-@@ -625,14 +625,14 @@ static void __init kernel_physical_mappi
- 	interrupt_mask_set_mask(-1ULL);
- 	rc = flush_and_install_context(__pa(pgtables),
- 				       init_pgprot((unsigned long)pgtables),
--				       __get_cpu_var(current_asid),
-+				       __this_cpu_read(current_asid),
- 				       cpumask_bits(my_cpu_mask));
- 	interrupt_mask_restore_mask(irqmask);
- 	BUG_ON(rc != 0);
-
- 	/* Copy the page table back to the normal swapper_pg_dir. */
- 	memcpy(pgd_base, pgtables, sizeof(pgtables));
--	__install_page_table(pgd_base, __get_cpu_var(current_asid),
-+	__install_page_table(pgd_base, __this_cpu_read(current_asid),
- 			     swapper_pgprot);
-
- 	/*
+On 08/27/2013 04:28 PM, Jeff Moyer wrote:
+> Hi,
+> 
+> We have several reports (against a distro kernel) of panics in
+> blk_requeue_request that look like this:
+> 
+> kernel BUG at block/blk-core.c:1045!
+> invalid opcode: 0000 [#1] SMP
+> last sysfs file: /sys/devices/pci0000:40/0000:40:03.0/0000:55:00.0/infiniband_mad/umad0/port
+> CPU 0
+> Modules linked in: ipmi_si ipmi_devintf ipmi_msghandler bonding rdma_ucm(U) rdma_cm(U) iw_cm(U) ib_addr(U) ib_ipoib(U) ib_cm(U) ib_sa(U) ipv6 ib_uverbs(U) ib_umad(U) iw_nes(U) libcrc32c mlx4_ib(U) mlx4_en(U) mlx4_core(U) ib_mthca(U) ib_mad(U) ib_core(U) cdc_ether usbnet mii microcode i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma dca be2net sg ses enclosure ext4 mbcache jbd2 sd_mod crc_t10dif ahci megaraid_sas(U) dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
+> 
+> Pid: 491, comm: scsi_eh_0 Tainted: G        W  ----------------   2.6.32-220.13.1.el6.x86_64 #1 IBM  -[8722PAX]-/00D1461
+> RIP: 0010:[<ffffffff8124e424>]  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+> RSP: 0018:ffff881057eefd60  EFLAGS: 00010012
+> RAX: ffff881d99e3e8a8 RBX: ffff881d99e3e780 RCX: ffff881d99e3e8a8
+> RDX: ffff881d99e3e8a8 RSI: ffff881d99e3e780 RDI: ffff881d99e3e780
+> RBP: ffff881057eefd80 R08: ffff881057eefe90 R09: 0000000000000000
+> R10: 0000000000000000 R11: 0000000000000000 R12: ffff881057f92338
+> R13: 0000000000000000 R14: ffff881057f92338 R15: ffff883058188000
+> FS:  0000000000000000(0000) GS:ffff880040200000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+> CR2: 00000000006d3ec0 CR3: 000000302cd7d000 CR4: 00000000000406b0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process scsi_eh_0 (pid: 491, threadinfo ffff881057eee000, task ffff881057e29540)
+> Stack:
+>  0000000000001057 0000000000000286 ffff8810275efdc0 ffff881057f16000
+> <0> ffff881057eefdd0 ffffffff81362323 ffff881057eefe20 ffffffff8135f393
+> <0> ffff881057e29af8 ffff8810275efdc0 ffff881057eefe78 ffff881057eefe90
+> Call Trace:
+>  [<ffffffff81362323>] __scsi_queue_insert+0xa3/0x150
+>  [<ffffffff8135f393>] ? scsi_eh_ready_devs+0x5e3/0x850
+>  [<ffffffff81362a23>] scsi_queue_insert+0x13/0x20
+>  [<ffffffff8135e4d4>] scsi_eh_flush_done_q+0x104/0x160
+>  [<ffffffff8135fb6b>] scsi_error_handler+0x35b/0x660
+>  [<ffffffff8135f810>] ? scsi_error_handler+0x0/0x660
+>  [<ffffffff810908c6>] kthread+0x96/0xa0
+>  [<ffffffff8100c14a>] child_rip+0xa/0x20
+>  [<ffffffff81090830>] ? kthread+0x0/0xa0
+>  [<ffffffff8100c140>] ? child_rip+0x0/0x20
+> Code: 00 00 eb d1 4c 8b 2d 3c 8f 97 00 4d 85 ed 74 bf 49 8b 45 00 49 83 c5 08 48 89 de 4c 89 e7 ff d0 49 8b 45 00 48 85 c0 75 eb eb a4 <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
+> RIP  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+>  RSP <ffff881057eefd60>
+> 
+> The RIP is this line:
+>         BUG_ON(blk_queued_rq(rq));
+> 
+> After digging through the code, I think there may be a race between the
+> request completion and the timer handler running.
+> 
+> A timer is started for each request put on the device's queue (see
+> blk_start_request->blk_add_timer).  If the request does not complete
+> before the timer expires, the timer handler (blk_rq_timed_out_timer)
+> will mark the request complete atomically:
+> 
+> static inline int blk_mark_rq_complete(struct request *rq)
+> {
+>         return test_and_set_bit(REQ_ATOM_COMPLETE, &rq->atomic_flags);
+> }
+> 
+> and then call blk_rq_timed_out.  The latter function will call
+> scsi_times_out, which will return one of BLK_EH_HANDLED,
+> BLK_EH_RESET_TIMER or BLK_EH_NOT_HANDLED.  If BLK_EH_RESET_TIMER is
+> returned, blk_clear_rq_complete is called, and blk_add_timer is again
+> called to simply wait longer for the request to complete.
+> 
+> Now, if the request happens to complete while this is going on, what
+> happens?  Given that we know the completion handler will bail if it
+> finds the REQ_ATOM_COMPLETE bit set, we need to focus on the completion
+> handler running after that bit is cleared.  So, from the above
+> paragraph, after the call to blk_clear_rq_complete.  If the completion
+> sets REQ_ATOM_COMPLETE before the BUG_ON in blk_add_timer, we go boom
+> there (I haven't seen this in the cores).  Next, if we get the
+> completion before the call to list_add_tail, then the timer will
+> eventually fire for an old req, which may either be freed or reallocated
+> (there is evidence that this might be the case).  Finally, if the
+> completion comes in *after* the addition to the timeout list, I think
+> it's harmless.  The request will be removed from the timeout list,
+> req_atom_complete will be set, and all will be well.
+> 
+> This RFC patch moves the BUG_ON(test_bit(REQ_ATOM_COMPLETE,
+> &req->atomic_flags)); from blk_add_timer to the only caller that could
+> trip over it (blk_start_request).  It then inverts the calls to
+> blk_clear_rq_complete and blk_add_timer in blk_rq_timed_out to address
+> the race.  I've boot tested this patch, but nothing more.
+> 
+> Jens, James, others, what do you think?
+> 
+Hmm. I've been chasing down a similar if not identical issue for
+several months now. So it looks a likely candidate.
+I'll give it some more thought.
+
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
