@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab3H0Qll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 12:41:41 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56219 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab3H0Qlk (ORCPT
+	id S1753437Ab3H0Qpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 12:45:52 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:63214 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996Ab3H0Qpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 12:41:40 -0400
-Date: Tue, 27 Aug 2013 12:41:36 -0400 (EDT)
-Message-Id: <20130827.124136.926975779215612126.davem@davemloft.net>
-To: b.brezillon@overkiz.com
-Cc: nicolas.ferre@atmel.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        linux@arm.linux.org.uk, f.fainelli@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 0/2] net/cadence/macb: add support for dt phy definition
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <521CD61C.8010103@overkiz.com>
-References: <521C586A.7080604@overkiz.com>
-	<20130827.122056.419758783951274884.davem@davemloft.net>
-	<521CD61C.8010103@overkiz.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 27 Aug 2013 12:45:51 -0400
+Message-ID: <521CD7B9.7060208@gmail.com>
+Date: Tue, 27 Aug 2013 18:45:45 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+CC: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [RFC v1 0/5] ARM: Initial support for Marvell Armada 1500
+References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130827161958.5e71890d@skate>
+In-Reply-To: <20130827161958.5e71890d@skate>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 27 Aug 2013 09:41:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: boris brezillon <b.brezillon@overkiz.com>
-Date: Tue, 27 Aug 2013 18:38:52 +0200
-
-> On 27/08/2013 18:20, David Miller wrote:
->> From: boris brezillon <b.brezillon@overkiz.com>
->> Date: Tue, 27 Aug 2013 09:42:34 +0200
+On 08/27/13 16:19, Thomas Petazzoni wrote:
+> On Fri, 16 Aug 2013 21:41:33 +0200, Sebastian Hesselbarth wrote:
+>> This is a RFC adding initial support for the Marvell Armada 1500
+>> (88DE3100) found on various consumer devices (Chromecast, GoogleTV).
 >>
->>> Could you apply, the 3rd version of this series instead ?
->> There can never be an "instead" or reverting patches I've said I've
->> applied already.
->>
->> If you want changes, you have to submit follow-on fixes.
-> 
-> Hello David,
-> 
-> I sent the incremental patches based on your net-next branch:
-> https://lkml.org/lkml/2013/8/27/257
-> https://lkml.org/lkml/2013/8/27/259
+>> Actually, it is a two-fold RFC also raising discussions on mach-mvebu
+>> cleanup roadmap to allow other SoCs to hop into it. While mach-mvebu
+>> originally was created to add support for Armada 370/XP and merge
+>> existing Marvell Orion familiy into it, I am not so sure about
+>> Armada 1500 fits that well (the mbus has gone!).
+>
+> After talking a bit with engineers within Marvell that work on this
+> SoC, I'm inclined to think that using mach-mvebu for this family of SoC
+> is not a good idea.
 
-The place to check to see if your patch is queued up is here:
+Thomas,
 
-http://patchwork.ozlabs.org/project/netdev/list/
+thanks for the info below. Reading a little bit through the GPL'ed
+source, I also quickly came to the same conclusion. It is more likely
+we can reuse some stuff from other SoCs than Orion or Armada 370/XP.
 
-If it's there, it's not necessary to notify me of anything.
+> The reasons are:
+>
+>   * This family of SoC is architecturally completely different from the
+>     family of Orion SoC: they use completely different hardware blocks
+>     (i.e none of the plat-orion stuff would apply, and none of the
+>     Orion device drivers would be useful), they don't use the MBus
+>     mechanism, etc. They are really a different family of SoC, almost as
+>     if they were coming from a different SoC company.
+>
+>   * The SMP and power management code, as well as all the "glue"
+>     platform code that typically sits in mach-<foo> is going to be
+>     substantially, if not completely different from the one in
+>     mach-mvebu. I already believe doing all the "glue" platform code in
+>     mach-mvebu for all of Kirkwood, Dove, 370/XP, Orion5x and MV78xx0 is
+>     going to be a challenge, so I'd suggest to not add to this challenge
+>     a completely separate family of SOCs.
+>
+> The codename used for those Armada 1500 SOCs is "Berlin", so a name
+> like mach-berlin, or mach-mvberlin (if we want to keep 'mv' to identify
+> the founder) seems like a good name.
+
+I have already moved it under mach-mv88de3xxx as for now, all SoCs
+Marvell is providing as DE (Digital Entertainment) fit in that. I like
+mach-codename style more than plain numbers, maybe I rename the folder
+to mach-berlin before posting.
+
+Speaking of "berlin", they found a 2WW bomb in my home town center today
+and are evacuating apartments. Mine too, so it looks like I'll have
+some time to prepare v2 tonight..
+
+> Also, to help us understand the organization of the family of SOCs, I
+> asked a few informations to Marvell, and here is what I could collect:
+>
+> """
+> BGxname		CPU core	codename	L2 cache controller	internal name
+> BG2		PJ4B		Armada1500	Tauros3			MV88DE3100
+> BG2-CT		Cortex-A9	N/A		PL310			N/A
+> BG3		Cortex-A15	N/A		CA15 integrated		N/A
+> """
+>
+> As was told that the Armada X or MV88DEx names are not used during
+> development, and what Marvell is really using are the BGxx names.
+
+Ok, I'll add that info to Marvell SoC documentation also.
+
+Sebastian
+
