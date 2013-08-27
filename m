@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab3H0PqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 11:46:07 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:46964 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751570Ab3H0PqF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 11:46:05 -0400
-Message-ID: <521CC9B8.2020801@semaphore.gr>
-Date: Tue, 27 Aug 2013 18:46:00 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1753466Ab3H0Pvh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 11:51:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54397 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751808Ab3H0Pvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 11:51:36 -0400
+Date: Tue, 27 Aug 2013 17:45:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Willy Tarreau <w@1wt.eu>,
+        Brad Spengler <spender@grsecurity.net>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] proc: make proc_fd_permission() thread-friendly
+Message-ID: <20130827154513.GA27943@redhat.com>
+References: <20130825065039.GB9299@1wt.eu> <CA+55aFwFeCRcwn4qo570Y15mKrN3jEdN757PcZhrXs7QYi8MYA@mail.gmail.com> <20130825194844.GA16717@redhat.com> <CA+55aFzbY3zYD1i5x02Z-6K3nHKzJj6227ZBYRLqij9y0eXRqQ@mail.gmail.com> <20130826153301.GA15890@redhat.com> <20130826163704.GA21763@redhat.com> <20130826175441.GA28856@redhat.com> <CA+55aFzCghYYF1_dcvBY9XZ82TU9b=hhgFqkGoWpaZuKJ7R6_A@mail.gmail.com> <CA+55aFwAw=AZNqmDNip_P6WiY4zGRNWks-kLwN7ZgJ8JJsAx-A@mail.gmail.com> <CALCETrXP-mYBPRon=0NzexW1FK1Qxz2+Bwv7-WeHBQpvW7ywRg@mail.gmail.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: governors: Remove duplicate check of target
- freq in supported range
-References: <521BA068.8030003@semaphore.gr> <CAKohpo=xBmpEv=oN1qEnq9RKhfjtc4wZayVYyVzjWOU8BnwVJQ@mail.gmail.com>
-In-Reply-To: <CAKohpo=xBmpEv=oN1qEnq9RKhfjtc4wZayVYyVzjWOU8BnwVJQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXP-mYBPRon=0NzexW1FK1Qxz2+Bwv7-WeHBQpvW7ywRg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 08:57 AM, Viresh Kumar wrote:
-> On 27 August 2013 00:07, Stratos Karafotis <stratosk@semaphore.gr> wrote:
->>   drivers/cpufreq/cpufreq_conservative.c | 4 ----
-> 
-> Get rid of few more checks..
-> 
-> /* if we are already at full speed then break out early */
-> if (dbs_info->requested_freq == policy->max)
-> return;
-> 
-> 
-> /*
-> * if we cannot reduce the frequency anymore, break out early
-> */
-> if (policy->cur == policy->min)
-> return;
-> 
+On 08/26, Andy Lutomirski wrote:
+>
+> On Aug 26, 2013 12:35 PM, "Linus Torvalds" <torvalds@linux-foundation.org>
+> wrote:
+> >
+> > Yes, it would be semantically different, but it would mean that
+> > "/proc/self/fd/" would actually make sense in a way that it currently
+> > does *not* - which would seem fairly important, since the primary use
+> > for it tends to be /dev/stdin.
+> >
+> > And the other semantic differences might be much harder to notice.
+> > Worth testing?
+>
+> The "children" subdirectory will be different.  But it's already screwed up.
 
-I think we should keep these checks because:
+No, it lives in tid_base_stuff, it should be only visible in
+/proc/*/task/tid/ dir.
 
-1) They shorten the execution code (there is no unnecessary call of
-__cpufreq_driver_target)
-2) In case my patch will be accepted, we need them to avoid continuously
-increase of dbs_info->requested_freq.With my patch the requested_freq
-can temporarily overcome policy->min and policy->max. __cpufreq_driver_target
-will select the correct frequency (within policy->min and policy->max).
-Then, dbs_cpufreq_notifier will adjust requested_freq.
+(and perhaps it also makes sense to remove mem/exe-like things from
+ tid_base_stuff...)
 
-I hope the logic in 2) to be acceptable.
+Anyway I agree, this change is risky.
 
+Oleg.
 
-Thanks,
-Stratos
