@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab3H0BO4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:14:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59540 "EHLO
+	id S1754237Ab3H0BOy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:14:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59532 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab3H0BH1 (ORCPT
+	with ESMTP id S1752460Ab3H0BH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Aug 2013 21:07:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Drake <dsd@laptop.org>, Andres Salomon <dilinger@queued.net>,
-        Paul Fox <pgf@laptop.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 56/74] drivers/platform/olpc/olpc-ec.c: initialise earlier
-Date: Mon, 26 Aug 2013 18:08:54 -0700
-Message-Id: <20130827010436.135711045@linuxfoundation.org>
+        Anatolij Gustschin <agust@denx.de>
+Subject: [ 57/74] usb: phy: fix build breakage
+Date: Mon, 26 Aug 2013 18:08:55 -0700
+Message-Id: <20130827010436.385566133@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -29,48 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Drake <dsd@laptop.org>
+From: Anatolij Gustschin <agust@denx.de>
 
-commit 93dbc1b3b506e16c1f6d5b5dcfe756a85cb1dc58 upstream.
+commit 52d5b9aba1f5790ca3231c262979c2c3e26dd99b upstream.
 
-Being a low-level component, various drivers (e.g.  olpc-battery) assume
-that it is ok to communicate with the OLPC Embedded Controller during
-probe.  Therefore the OLPC EC driver must be initialised before other
-drivers try to use it.  This was the case until it was recently moved
-out of arch/x86 and restructured around commits ac2504151f5a ("Platform:
-OLPC: turn EC driver into a platform_driver") and 85f90cf6ca56 ("x86:
-OLPC: switch over to using new EC driver on x86").
+Commit 94ae9843 (usb: phy: rename all phy drivers to phy-$name-usb.c)
+renamed drivers/usb/phy/otg_fsm.h to drivers/usb/phy/phy-fsm-usb.h
+but changed drivers/usb/phy/phy-fsm-usb.c to include not existing
+"phy-otg-fsm.h" instead of new "phy-fsm-usb.h". This breaks building:
+  ...
+  drivers/usb/phy/phy-fsm-usb.c:32:25: fatal error: phy-otg-fsm.h: No such file or directory
+  compilation terminated.
+  make[3]: *** [drivers/usb/phy/phy-fsm-usb.o] Error 1
 
-Use arch_initcall so that olpc-ec is readied earlier, matching the
-previous behaviour.
+This commit also missed to modify drivers/usb/phy/phy-fsl-usb.h
+to include new "phy-fsm-usb.h" instead of "otg_fsm.h" resulting
+in another build breakage:
+  ...
+  In file included from drivers/usb/phy/phy-fsl-usb.c:46:0:
+  drivers/usb/phy/phy-fsl-usb.h:18:21: fatal error: otg_fsm.h: No such file or directory
+  compilation terminated.
+  make[3]: *** [drivers/usb/phy/phy-fsl-usb.o] Error 1
 
-Fixes a regression introduced in Linux-3.6 where various drivers such as
-olpc-battery and olpc-xo1-sci failed to load due to an inability to
-communicate with the EC.  The user-visible effect was a lack of battery
-monitoring, missing ebook/lid switch input devices, etc.
+Fix both issues.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Cc: Andres Salomon <dilinger@queued.net>
-Cc: Paul Fox <pgf@laptop.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/olpc/olpc-ec.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/phy/phy-fsl-usb.h |    2 +-
+ drivers/usb/phy/phy-fsm-usb.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/platform/olpc/olpc-ec.c
-+++ b/drivers/platform/olpc/olpc-ec.c
-@@ -330,7 +330,7 @@ static int __init olpc_ec_init_module(vo
- 	return platform_driver_register(&olpc_ec_plat_driver);
- }
+--- a/drivers/usb/phy/phy-fsl-usb.h
++++ b/drivers/usb/phy/phy-fsl-usb.h
+@@ -15,7 +15,7 @@
+  * 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
  
--module_init(olpc_ec_init_module);
-+arch_initcall(olpc_ec_init_module);
+-#include "otg_fsm.h"
++#include "phy-fsm-usb.h"
+ #include <linux/usb/otg.h>
+ #include <linux/ioctl.h>
  
- MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
- MODULE_LICENSE("GPL");
+--- a/drivers/usb/phy/phy-fsm-usb.c
++++ b/drivers/usb/phy/phy-fsm-usb.c
+@@ -29,7 +29,7 @@
+ #include <linux/usb/gadget.h>
+ #include <linux/usb/otg.h>
+ 
+-#include "phy-otg-fsm.h"
++#include "phy-fsm-usb.h"
+ 
+ /* Change USB protocol when there is a protocol change */
+ static int otg_set_protocol(struct otg_fsm *fsm, int protocol)
 
 
