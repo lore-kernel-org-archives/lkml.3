@@ -1,94 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab3H0KIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 06:08:32 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:58405 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961Ab3H0KI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 06:08:29 -0400
+	id S1753233Ab3H0KKD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 06:10:03 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:44374 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752623Ab3H0KKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 06:10:01 -0400
+Message-ID: <521C7AF0.1020903@imgtec.com>
+Date: Tue, 27 Aug 2013 11:09:52 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVM+q=PjZ+Q_wR2-BGrbs+gBcGyKFhOqGZdZWyxjMjB0g@mail.gmail.com>
-References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
-	<1376189294-32022-27-git-send-email-yinghai@kernel.org>
-	<CANVTcTYhdiptB_sOUyveBfieg0VkTGdor16kCHKkJDemHzcWXw@mail.gmail.com>
-	<CAE9FiQVSRMdinMKQdJUB_q8pAK-ei-Q-if+8K5yyz=HRTHbCTA@mail.gmail.com>
-	<CANVTcTZT-0bg=GBdo06=1--NgyMEM6-pFX8DjMxh=7JYtaTLpw@mail.gmail.com>
-	<CAE9FiQVM+q=PjZ+Q_wR2-BGrbs+gBcGyKFhOqGZdZWyxjMjB0g@mail.gmail.com>
-Date: Tue, 27 Aug 2013 18:08:27 +0800
-Message-ID: <CANVTcTbGrh-LccBiC5CHRc9dh9jUOwup-MVa-iHK65n+TTXE2A@mail.gmail.com>
-Subject: Re: [PATCH v4 26/28] PCI, x86, ACPI: Link acpi ioapic register to ioapic
-From: rui wang <ruiv.wang@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Mike Turquette <mturquette@linaro.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: Re: linux-next: manual merge of the clk tree with Linus' tree
+References: <20130827190304.c3f2f891f20d078d66b703b1@canb.auug.org.au>
+In-Reply-To: <20130827190304.c3f2f891f20d078d66b703b1@canb.auug.org.au>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="X09MRfRa7snNnIFpOU1B33IOENhS5vHj3"
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_08_27_11_10_00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/27/13, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Aug 26, 2013 at 11:44 PM, rui wang <ruiv.wang@gmail.com> wrote:
->> On 8/27/13, Yinghai Lu <yinghai@kernel.org> wrote:
->>> On Fri, Aug 23, 2013 at 5:51 PM, rui wang <ruiv.wang@gmail.com> wrote:
->>>> On 8/11/13, Yinghai Lu <yinghai@kernel.org> wrote:
->>>>> During ioapic hotplug, acpi_register_ioapic will be called.
->>>>> Now for x86, that function is blank.
->>>>> Fill that will update __mp_register_ioapic to use those ioapic.
->>>>>
->>>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>>>> ---
->>>>>  arch/x86/kernel/acpi/boot.c | 10 ++++++----
->>>>>  1 file changed, 6 insertions(+), 4 deletions(-)
->>>>>
->>>>> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
->>>>> index 5be15d1..4a5336d 100644
->>>>> --- a/arch/x86/kernel/acpi/boot.c
->>>>> +++ b/arch/x86/kernel/acpi/boot.c
->>>>> @@ -707,16 +707,18 @@ EXPORT_SYMBOL(acpi_unmap_lsapic);
->>>>>
->>>>>  int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32
->>>>> gsi_base)
->>>>>  {
->>>>> -     /* TBD */
->>>>> -     return -EINVAL;
->>>>> +     unsigned long long id = 0;
->>>>> +
->>>>> +     acpi_evaluate_integer(handle, "_UID", NULL, &id);
->>>>
->>>> We cannot assume that "_UID" is an integer. "_UID" can be either an
->>>> integer or a string. Need to consider the case when it is a string.
->>>
->>> Yes.
->>>
->>> But do you have test case for ioapic that _UID is not integer?
->>>
->>
->> Yes I have an IOAPIC with an _UID of:
->>
->>         Name (_UID, "IOAPIC01")  // _UID: Unique ID
->>
->> It's a bit challenge how you'll conjure unique identifiers from both
->> integers and strings. If you have a new patch I can help try it out.
->
-> Then do you have _MAT with that ioapic device or else?
->
-> need to find the _MAT entry with GSM matching to find out ioapic id.
->
+--X09MRfRa7snNnIFpOU1B33IOENhS5vHj3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-There's no _MAT for the IOAPICs. I only find _MAT for the LAPICs. But
-there's a static MADT in APIC.dsl which contains IOAPIC entries with
-ioapic ids.
+On 27/08/13 10:03, Stephen Rothwell wrote:
+> Hi Mike,
+>=20
+> Today's linux-next merge of the clk tree got a conflict in
+> drivers/clk/zynq/clkc.c between commits 252957cc3a2d ("clk/zynq/clkc: A=
+dd
+> dedicated spinlock for the SWDT") and 765b7d4c4cb3
+> ("clk/zynq/clkc: Add CLK_SET_RATE_PARENT flag to ethernet muxes") from
+> Linus' tree and commit 819c1de344c5 ("clk: add CLK_SET_RATE_NO_REPARENT=
+
+> flag") from the clk tree.
+>=20
+> I fixed it up (see below and in a couple of places I chose
+> CLK_SET_RATE_NO_REPARENT over CLK_SET_RATE_PARENT, which may, of course=
+,
+> be wrong) and can carry the fix as necessary (no action is required).
+
+The case you mentioned looks correct to me.
+
+I can't see todays -next yet, but if by "choose CLK_SET_RATE_NO_REPARENT
+over CLK_SET_RATE_PARENT" you mean one branch adds CLK_SET_RATE_PARENT,
+clk-next adds CLK_SET_RATE_NO_REPARENT, and the resolution ends up with
+only CLK_SET_RATE_NOREPARENT then that sounds wrong, as the two flags
+are orthogonal.
 
 Thanks
-Rui
+James
 
->
-> Thanks
->
-> Yinghai
->
+
+--X09MRfRa7snNnIFpOU1B33IOENhS5vHj3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSHHr2AAoJEKHZs+irPybfGHgP/j6sDUy2LuGW1itm+H+lXGHf
+DTmo6IBsWN1F2nn0LOpY1SnA/qSrmGoWTz9OSGuLq2UCUxDGJ/QYPMjl9E6TWqjI
+h7GaByf832kqqKbHvU+MQNadNP7SEhPHopgTBcedvTwLUd1myxkUN+Y1tEs/x9ne
+H9vj5faQqZ1xQ6D+6jfUfN3R7iTacXQiaJ5DaQF8UMdcDd8AdQmSSFk6R1XFfydZ
+ULGJfoLORCswPzhjQqyvUW3h4M7etGrDZKiQDNHt8K3levC48KPxnBkt6pd2JzgT
+Roq8TuBRadI9QQEYdNBjQ+2nYdirl8qUAcVt/wH0NUKp58rgp7R1jiaiCIB9vVEd
+10KICgTGkF2nFtyi6iPHkn92Xeehj85A/Vb5C9NV0wNpVfvyWR/59jvuZDLWcCHT
+SWNQ+am6OeHZx4q31eToJRYlnRICNImY4TpLfURC/ZrG/if4JNxkr9ttE6RFVhGq
+mQZSVw0CzUgZd9X+nl1WagCMi3r04gX4Q+LnfVBAEiYWn0768Pj5j9oaNkD3/kWm
+JIVdKSg+0mD2ewAIzuzFD2RhKLT7csZL+Ae/nrMb6wSjjCDcjPgmRRvlvRq+4DpV
+0QJ5TaPK4sCxluGDr54ZJ63fF1CkhXHs9iVcHrM8QAt4hTWKMpB/9NStk8PdRUH/
+CHyFfXsR31T8gKY9BYSX
+=EOm4
+-----END PGP SIGNATURE-----
+
+--X09MRfRa7snNnIFpOU1B33IOENhS5vHj3--
+
