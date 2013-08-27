@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab3H0WGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 18:06:09 -0400
-Received: from tex.lwn.net ([70.33.254.29]:50528 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753878Ab3H0WGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 18:06:06 -0400
-Date: Tue, 27 Aug 2013 16:06:04 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/16] slab: overloading the RCU head over the LRU for
- RCU free
-Message-ID: <20130827160604.5ca4161c@lwn.net>
-In-Reply-To: <1377161065-30552-8-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1377161065-30552-8-git-send-email-iamjoonsoo.kim@lge.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1753866Ab3H0WJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 18:09:31 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:47481 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab3H0WJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 18:09:29 -0400
+Message-ID: <521D2394.7030005@gmail.com>
+Date: Wed, 28 Aug 2013 00:09:24 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Stephen Warren <swarren@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC v2 13/16] ARM: tegra: split tegra_pmc_init() in two
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-14-git-send-email-sebastian.hesselbarth@gmail.com> <521D214C.80809@wwwdotorg.org>
+In-Reply-To: <521D214C.80809@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Aug 2013 17:44:16 +0900
-Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+On 08/27/13 23:59, Stephen Warren wrote:
+> On 08/27/2013 03:28 PM, Sebastian Hesselbarth wrote:
+>> From: Stephen Warren <swarren@nvidia.com>
+>>
+>> Tegra's board file currently initializes clocks much earlier than those
+>> for most other ARM SoCs. The reason is:
+>>
+>> * The PMC HW block is involved in the path of some interrupts (i.e. it
+>> inverts, or not, the IRQ input pin dedicated to the PMIC).
+>>
+>> * So, that part of the PMC must be initialized early so that the IRQ
+>> polarity is correct.
+>>
+>> * The PMC initialization is currently monolithic, and the PMC has some
+>> clock inputs, so the init routine ends up calling of_clk_get_by_name(),
+>> and hence clocks must be set up early too.
+>>
+>> In order to defer clock initialization to the more typical location,
+>> split out the portions of tegra_pmc_init() that are truly IRQ-related
+>> into a separate tegra_pmc_init_irq(), which can be called from the
+>> machine descriptor's .init_irq() function, and defer the rest until
+>> the machine descriptor's .init_machine() function. With arch/arm calling
+>> of_clk_init(NULL) from time_init() this also allows the removal of
+>> .init_time() hook.
+>>
+>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>> ---
+>> Changelog:
+>> v1->v2:
+>> - took Stephen Warren's patch provided to separate Tegra's pmc_init
+>> - sqashed in .init_time removal and reworded patch text
+>
+> I think it'd be better to keep the 2 patches separate so the two logical
+> changes are in different patches. I suppose it isn't a huge deal though.
+>
+> Either way, on this patch, your S-o-b line is missing above.
 
-> With build-time size checking, we can overload the RCU head over the LRU
-> of struct page to free pages of a slab in rcu context. This really help to
-> implement to overload the struct slab over the struct page and this
-> eventually reduce memory usage and cache footprint of the SLAB.
+Stephen,
 
-So I'm taking a look at this, trying to figure out what's actually in
-struct page while this stuff is going on without my head exploding.  A
-couple of questions come to mind.
+I was already wondering here, if I should separate the patches into 
+preparation and actual removal. I put that question into the cover
+letter and removed it from this patch text ;)
 
->  static void kmem_rcu_free(struct rcu_head *head)
->  {
-> -	struct slab_rcu *slab_rcu = (struct slab_rcu *)head;
-> -	struct kmem_cache *cachep = slab_rcu->page->slab_cache;
-> +	struct kmem_cache *cachep;
-> +	struct page *page;
->  
-> -	kmem_freepages(cachep, slab_rcu->page);
-> +	page = container_of((struct list_head *)head, struct page, lru);
-> +	cachep = page->slab_cache;
-> +
-> +	kmem_freepages(cachep, page);
->  }
+As you suggest to use preparation/removal, I will take that approach
+for the final patch set. Will take you original unmodified patch then.
 
-Is there a reason why you don't add the rcu_head structure as another field
-in that union alongside lru rather than playing casting games here?  This
-stuff is hard enough to follow as it is without adding that into the mix.
-
-The other question I had is: this field also overlays slab_page.  I guess
-that, by the time RCU comes into play, there will be no further use of
-slab_page?  It might be nice to document that somewhere if it's the case.
-
-Thanks,
-
-jon
+Sebastian
