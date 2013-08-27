@@ -1,153 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab3H0ELL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 00:11:11 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43283 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab3H0ELJ (ORCPT
+	id S1752988Ab3H0EMo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 00:12:44 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:34451 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752373Ab3H0EMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 00:11:09 -0400
-Date: Tue, 27 Aug 2013 14:10:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Simon Wunderlich <simon.wunderlich@s2003.tu-chemnitz.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Mathias Kretschmer <mathias.kretschmer@fokus.fraunhofer.de>
-Subject: linux-next: manual merge of the net-next tree with the wireless
- tree
-Message-Id: <20130827141056.d4e343a874a7b21eecc0ee5c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__27_Aug_2013_14_10_56_+1000_+U60qZKggG99iGre"
+	Tue, 27 Aug 2013 00:12:43 -0400
+X-Spam-Score: -101.0
+Message-ID: <521C26FA.8050208@asianux.com>
+Date: Tue, 27 Aug 2013 12:11:38 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Yoshinori Sato <ysato@users.sourceforge.jp>, Arnd Bergmann <arnd@arndb.de>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        Dave Jones <davej@redhat.com>, David Sharp <dhsharp@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] h8300: include: asm: Kbuild: add gpio.h for pass compiling
+References: <521B2AF7.6070806@asianux.com> <CAMuHMdXT+ezyFGNisEaz62ReHxeNzZq0XgKR905OtyhmCnu6Kg@mail.gmail.com> <521B3514.305@asianux.com>
+In-Reply-To: <521B3514.305@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Aug_2013_14_10_56_+1000_+U60qZKggG99iGre
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/26/2013 06:59 PM, Chen Gang wrote:
+> On 08/26/2013 06:21 PM, Geert Uytterhoeven wrote:
+>> On Mon, Aug 26, 2013 at 12:16 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>>> Need add default "gpio.h" for h8300, or can not pass compiling.
+>>>
+>>> The related error (allmodconfig for h8300):
+>>>
+>>>   arch/h8300/kernel/h8300_ksyms.c:17:22: fatal error: asm/gpio.h: No such file or directory
+>>>    #include <asm/gpio.h>
+>>>                         ^
+>>
+>> I this include needed at all? Perhaps it can just be removed?
+>>
+> 
+> Pardon ?  Do you mean, only removing it  will be OK ?
+> 
+>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>> ---
+>>>  arch/h8300/include/asm/Kbuild |    1 +
+>>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/arch/h8300/include/asm/Kbuild b/arch/h8300/include/asm/Kbuild
+>>> index 8ada3cf..4c627aa 100644
+>>> --- a/arch/h8300/include/asm/Kbuild
+>>> +++ b/arch/h8300/include/asm/Kbuild
+>>> @@ -1,6 +1,7 @@
+>>>
+>>>  generic-y += clkdev.h
+>>>  generic-y += exec.h
+>>> +generic-y += gpio.h
+>>>  generic-y += linkage.h
+>>>  generic-y += mmu.h
+>>>  generic-y += module.h
+>>
+>> The only gpio-related exports in arch/h8300/kernel/h8300_ksyms.c are:
+>>
+>> EXPORT_SYMBOL(h8300_reserved_gpio);
+>> EXPORT_SYMBOL(h8300_free_gpio);
+>> EXPORT_SYMBOL(h8300_set_gpio_dir);
+>>
+>> and these are definitely not provided by asm-generic/gpio.h.
+>>
+> 
+> Yeah, I will try to remove "#include <asm/gpio.h>" to see whether can
+> pass compiling, tomorrow.  :-)
+> 
+> And now, I feel (just guess), it will not, for h8300 really need gpio
+> (it has "gpio-internal.h"), commonly it will need "asm/gpio.h" too.
+> 
+> Tomorrow, I will try to prove whether my guess is correct or not.  ;-).
+> 
 
-Hi all,
+After reading the related code (search "gpio.h" in root source tree),
+it seems what you said is correct, my guess is incorrect.  :-(
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/mac80211/ibss.c between commit 75a423f493ff ("mac80211: ibss: fix
-ignored channel parameter") from the wireless tree and commit
-7ca15a0ae865 ("mac80211: allow scanning for 5/10 MHz channels in IBSS")
-from the net-next tree.
+Hmm... but better to get final conclusion after finish allmodconfig
+compiling.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Now, I am compiling, and excuse me, I can not finish today because of
+some issues (mainly for 'gcc 4.8.0', part for 'ld 2.22', and part for
+kernel), I will 'process' them, hope can finish before 2013-08-31.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc net/mac80211/ibss.c
-index 2d45643,e08387c..0000000
---- a/net/mac80211/ibss.c
-+++ b/net/mac80211/ibss.c
-@@@ -48,12 -49,13 +49,14 @@@ static void __ieee80211_sta_join_ibss(s
-  	u8 *pos;
-  	struct ieee80211_supported_band *sband;
-  	struct cfg80211_bss *bss;
-- 	u32 bss_change;
-- 	u8 supp_rates[IEEE80211_MAX_SUPP_RATES];
-+ 	u32 bss_change, rate_flags, rates =3D 0, rates_added =3D 0;
-  	struct cfg80211_chan_def chandef;
- +	struct ieee80211_channel *chan;
-+ 	enum nl80211_bss_scan_width scan_width;
-+ 	bool have_higher_than_11mbit =3D false;
-  	struct beacon_data *presp;
-  	int frame_len;
-+ 	int shift;
- =20
-  	sdata_assert_lock(sdata);
- =20
-@@@ -82,10 -84,16 +85,18 @@@
- =20
-  	sdata->drop_unencrypted =3D capability & WLAN_CAPABILITY_PRIVACY ? 1 : 0;
- =20
- -	chandef =3D ifibss->chandef;
- +	/* make a copy of the chandef, it could be modified below. */
- +	chandef =3D *req_chandef;
- +	chan =3D chandef.chan;
-  	if (!cfg80211_reg_can_beacon(local->hw.wiphy, &chandef)) {
-+ 		if (chandef.width =3D=3D NL80211_CHAN_WIDTH_5 ||
-+ 		    chandef.width =3D=3D NL80211_CHAN_WIDTH_10 ||
-+ 		    chandef.width =3D=3D NL80211_CHAN_WIDTH_20_NOHT ||
-+ 		    chandef.width =3D=3D NL80211_CHAN_WIDTH_20) {
-+ 			sdata_info(sdata,
-+ 				   "Failed to join IBSS, beacons forbidden\n");
-+ 			return;
-+ 		}
-  		chandef.width =3D NL80211_CHAN_WIDTH_20;
-  		chandef.center_freq1 =3D chan->center_freq;
-  	}
-@@@ -267,35 -310,18 +314,39 @@@ static void ieee80211_sta_join_ibss(str
-  	int i, j;
-  	u16 beacon_int =3D cbss->beacon_interval;
-  	const struct cfg80211_bss_ies *ies;
- +	enum nl80211_channel_type chan_type;
-  	u64 tsf;
-+ 	u32 rate_flags;
-+ 	int shift;
- =20
-  	sdata_assert_lock(sdata);
- =20
-  	if (beacon_int < 10)
-  		beacon_int =3D 10;
- =20
- +	switch (sdata->u.ibss.chandef.width) {
- +	case NL80211_CHAN_WIDTH_20_NOHT:
- +	case NL80211_CHAN_WIDTH_20:
- +	case NL80211_CHAN_WIDTH_40:
- +		chan_type =3D cfg80211_get_chandef_type(&sdata->u.ibss.chandef);
- +		cfg80211_chandef_create(&chandef, cbss->channel, chan_type);
- +		break;
- +	case NL80211_CHAN_WIDTH_5:
- +	case NL80211_CHAN_WIDTH_10:
- +		cfg80211_chandef_create(&chandef, cbss->channel,
- +					NL80211_CHAN_WIDTH_20_NOHT);
- +		chandef.width =3D sdata->u.ibss.chandef.width;
- +		break;
- +	default:
- +		/* fall back to 20 MHz for unsupported modes */
- +		cfg80211_chandef_create(&chandef, cbss->channel,
- +					NL80211_CHAN_WIDTH_20_NOHT);
- +		break;
- +	}
- +
-  	sband =3D sdata->local->hw.wiphy->bands[cbss->channel->band];
-+ 	rate_flags =3D ieee80211_chandef_rate_flags(&sdata->u.ibss.chandef);
-+ 	shift =3D ieee80211_vif_get_shift(&sdata->vif);
- =20
-  	basic_rates =3D 0;
- =20
+Welcome additional suggestions or completions.
 
---Signature=_Tue__27_Aug_2013_14_10_56_+1000_+U60qZKggG99iGre
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+> 
+> Thanks.
+> 
+>> Gr{oetje,eeting}s,
+>>
+>>                         Geert
+>>
+>> --
+>> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>>
+>> In personal conversations with technical people, I call myself a hacker. But
+>> when I'm talking to journalists I just say "programmer" or something like that.
+>>                                 -- Linus Torvalds
+>>
+>>
+> 
+> 
 
-iQIcBAEBCAAGBQJSHCbUAAoJEECxmPOUX5FEoqcP/RDyGSx6d+bNpw7NP/Nm1U8+
-7j6HQCu9/006H/cqiz0ie2l/Z07blIwRq32oIpqxWhDReJ7GHtFMkP3pDwCH+Jsm
-DMgpshKJmGJN8yLmY3eciq5IQ54W+Uux81X+IUhrWftqX2dRC4t64jz8agP82upf
-mIarAah2HZIDnKxIPILiyzF50QpjcR4rYBxrF287AYBQDkOPzl+i0WL7jYvjMF0p
-KiMFFec0KL4hLJA5zR/C4MRAsNasKnI4ZGi/U5y19WiR7BG1pmJWdAIiP2G9mC5L
-iVwK+/SA3e3mKoENtZaSPPdjGmsdDpnUO/SmPvdE6bayXe/e9qOAiPsal/q1z2kb
-wguUyWUZoadACBVrBQ9MDHgvb0gEWoMJHPdNLZA5Ih6G+6SPITnSfofLtgvnIGQr
-JlspWDePHJGAV28BvimLf5NC0PX2KtpiA82BDxIteQlXMacYvJVMdWR8q/OMBe1e
-YfwFg9xF8OoIJJS/+Zd1NnSwJsPan4bMI1/I9pokvAILofNW/2FzZukdt4XAhdfn
-z5Nq5c7/LClZu8F2qD76MMDXE57AXcM+fKVgPqXFDX+xHkU7yIIzmj81P8b8URl0
-SHWD6TxakIfMohqOnt23ZXQIFubSR0k8R9dOqbYTRtbS29bK9QDDURjOFf2hcnUU
-EsOLYKhUlo1kt4rFICwB
-=sPtG
------END PGP SIGNATURE-----
 
---Signature=_Tue__27_Aug_2013_14_10_56_+1000_+U60qZKggG99iGre--
+-- 
+Chen Gang
