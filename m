@@ -1,197 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab3H0W6f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 18:58:35 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:59409 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752099Ab3H0W6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 18:58:34 -0400
-Date: Tue, 27 Aug 2013 17:58:28 -0500
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
-Subject: [PATCH v2 1/2] rsxx: Handling failed pci_map_page on PowerPC and
- double free.
-Message-ID: <20130827225827.GB7368@oc6784271780.ibm.com>
+	id S1754043Ab3H0W6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 18:58:47 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:35334 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753942Ab3H0W6p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 18:58:45 -0400
+Message-ID: <521D2F1F.1070103@gmail.com>
+Date: Wed, 28 Aug 2013 00:58:39 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082722-0320-0000-0000-000000D0D985
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-tegra@vger.kernel.org, kernel@stlinux.com,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC v2 01/16] ARM: call clk_of_init from time_init
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-2-git-send-email-sebastian.hesselbarth@gmail.com> <3837b119-baad-4e68-8805-2bc52c0135f9@DB9EHSMHS031.ehs.local>
+In-Reply-To: <3837b119-baad-4e68-8805-2bc52c0135f9@DB9EHSMHS031.ehs.local>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+On 08/28/13 00:19, Sören Brinkmann wrote:
+> On Tue, Aug 27, 2013 at 11:27:55PM +0200, Sebastian Hesselbarth wrote:
+>> Most DT ARM machs require common clock providers initialized before timers.
+>> Currently, arch/arm machs use .init_time to call clk_of_init right before
+>> clocksource_of_init. This prevents to remove that hook and use the default
+>> hook instead. clk_of_init is safe to call for non-DT platforms, so add
+>> the call to ARM arch time_init by default. While at it, also reorder includes
+>> alphabetically.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+>> Changelog:
+>> v1->v2:
+>> - reorder includes alphabetically
+>>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: linux-tegra@vger.kernel.org
+>> Cc: kernel@stlinux.com
+>> Cc: linux-samsung-soc@vger.kernel.org
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   arch/arm/kernel/time.c |   24 ++++++++++++++----------
+>>   1 files changed, 14 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
+>> index 98aee32..dd1028e 100644
+>> --- a/arch/arm/kernel/time.c
+>> +++ b/arch/arm/kernel/time.c
+>> @@ -11,25 +11,26 @@
+> [ ... ]
+>>   void __init time_init(void)
+>>   {
+>> +	/* initalize common clocks before timers */
+>> +	of_clk_init(NULL);
+>> +
+>>   	if (machine_desc->init_time)
+>>   		machine_desc->init_time();
+>>   	else
+>
+> This forces zynq to move some initialization our clock code relies on to
+> init_irq(). Also, the current code already takes an approach of
+> doing either common init or machine specific init.
 
-The rsxx driver was not checking the correct value during a
-pci_map_page failure. Fixing this also uncovered a
-double free if the bio was returned before it was
-broken up into indiviadual 4k dmas, that is also
-fixed here.
+Soeren,
 
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
--------------------------------------------------------------------------------
+you know that patch 16/16 takes care of zynq's clock init?
 
+It's your own patch you provided from the last RFC. Looking at it, it
+moves  zynq_sclr_init() to .init_irq and removes the call to
+of_clk_init() from zynq_clock_init() which is called by
+zynq_sclr_init().
 
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/core.c linux-block/drivers/block/rsxx/core.c
---- linux-block-vanilla/drivers/block/rsxx/core.c	2013-08-26 15:36:48.915801516 -0500
-+++ linux-block/drivers/block/rsxx/core.c	2013-08-26 15:58:15.572827498 -0500
-@@ -654,7 +654,8 @@ static void rsxx_eeh_failure(struct pci_
- 	for (i = 0; i < card->n_targets; i++) {
- 		spin_lock_bh(&card->ctrl[i].queue_lock);
- 		cnt = rsxx_cleanup_dma_queue(&card->ctrl[i],
--					     &card->ctrl[i].queue);
-+					     &card->ctrl[i].queue,
-+					     COMPLETE_DMA);
- 		spin_unlock_bh(&card->ctrl[i].queue_lock);
- 
- 		cnt += rsxx_dma_cancel(&card->ctrl[i]);
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
---- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-08-26 15:36:48.966788143 -0500
-+++ linux-block/drivers/block/rsxx/dma.c	2013-08-26 16:00:43.934717159 -0500
-@@ -221,6 +221,19 @@ static void dma_intr_coal_auto_tune(stru
- }
- 
- /*----------------- RSXX DMA Handling -------------------*/
-+static void rsxx_free_dma(struct rsxx_dma_ctrl *ctrl, struct rsxx_dma *dma)
-+{
-+	if (!pci_dma_mapping_error(ctrl->card->dev, dma->dma_addr)) {
-+		pci_unmap_page(ctrl->card->dev, dma->dma_addr,
-+			       get_dma_size(dma),
-+			       dma->cmd == HW_CMD_BLK_WRITE ?
-+					   PCI_DMA_TODEVICE :
-+					   PCI_DMA_FROMDEVICE);
-+	}
-+
-+	kmem_cache_free(rsxx_dma_pool, dma);
-+}
-+
- static void rsxx_complete_dma(struct rsxx_dma_ctrl *ctrl,
- 				  struct rsxx_dma *dma,
- 				  unsigned int status)
-@@ -232,21 +245,14 @@ static void rsxx_complete_dma(struct rsx
- 	if (status & DMA_CANCELLED)
- 		ctrl->stats.dma_cancelled++;
- 
--	if (dma->dma_addr)
--		pci_unmap_page(ctrl->card->dev, dma->dma_addr,
--			       get_dma_size(dma),
--			       dma->cmd == HW_CMD_BLK_WRITE ?
--					   PCI_DMA_TODEVICE :
--					   PCI_DMA_FROMDEVICE);
--
- 	if (dma->cb)
- 		dma->cb(ctrl->card, dma->cb_data, status ? 1 : 0);
- 
--	kmem_cache_free(rsxx_dma_pool, dma);
-+	rsxx_free_dma(ctrl, dma);
- }
- 
- int rsxx_cleanup_dma_queue(struct rsxx_dma_ctrl *ctrl,
--			   struct list_head *q)
-+			   struct list_head *q, unsigned int done)
- {
- 	struct rsxx_dma *dma;
- 	struct rsxx_dma *tmp;
-@@ -254,7 +260,10 @@ int rsxx_cleanup_dma_queue(struct rsxx_d
- 
- 	list_for_each_entry_safe(dma, tmp, q, list) {
- 		list_del(&dma->list);
--		rsxx_complete_dma(ctrl, dma, DMA_CANCELLED);
-+		if (done & COMPLETE_DMA)
-+			rsxx_complete_dma(ctrl, dma, DMA_CANCELLED);
-+		else
-+			rsxx_free_dma(ctrl, dma);
- 		cnt++;
- 	}
- 
-@@ -370,7 +379,7 @@ static void dma_engine_stalled(unsigned 
- 
- 		/* Clean up the DMA queue */
- 		spin_lock(&ctrl->queue_lock);
--		cnt = rsxx_cleanup_dma_queue(ctrl, &ctrl->queue);
-+		cnt = rsxx_cleanup_dma_queue(ctrl, &ctrl->queue, COMPLETE_DMA);
- 		spin_unlock(&ctrl->queue_lock);
- 
- 		cnt += rsxx_dma_cancel(ctrl);
-@@ -623,7 +632,7 @@ static int rsxx_queue_dma(struct rsxx_ca
- 	dma->dma_addr = pci_map_page(card->dev, page, pg_off, dma_len,
- 				     dir ? PCI_DMA_TODEVICE :
- 				     PCI_DMA_FROMDEVICE);
--	if (!dma->dma_addr) {
-+	if (pci_dma_mapping_error(ctrl->card->dev, dma->dma_addr)) {
- 		kmem_cache_free(rsxx_dma_pool, dma);
- 		return -ENOMEM;
- 	}
-@@ -736,11 +745,9 @@ int rsxx_dma_queue_bio(struct rsxx_cardi
- 	return 0;
- 
- bvec_err:
--	for (i = 0; i < card->n_targets; i++) {
--		spin_lock_bh(&card->ctrl[i].queue_lock);
--		rsxx_cleanup_dma_queue(&card->ctrl[i], &dma_list[i]);
--		spin_unlock_bh(&card->ctrl[i].queue_lock);
--	}
-+	for (i = 0; i < card->n_targets; i++)
-+		rsxx_cleanup_dma_queue(&card->ctrl[i], &dma_list[i],
-+					FREE_DMA);
- 
- 	return st;
- }
-@@ -990,7 +997,7 @@ void rsxx_dma_destroy(struct rsxx_cardin
- 
- 		/* Clean up the DMA queue */
- 		spin_lock_bh(&ctrl->queue_lock);
--		rsxx_cleanup_dma_queue(ctrl, &ctrl->queue);
-+		rsxx_cleanup_dma_queue(ctrl, &ctrl->queue, COMPLETE_DMA);
- 		spin_unlock_bh(&ctrl->queue_lock);
- 
- 		rsxx_dma_cancel(ctrl);
-@@ -1045,7 +1052,7 @@ int rsxx_eeh_save_issued_dmas(struct rsx
- 		card->ctrl[i].e_cnt = 0;
- 
- 		list_for_each_entry(dma, &card->ctrl[i].queue, list) {
--			if (dma->dma_addr)
-+			if (!pci_dma_mapping_error(ctrl->card->dev, dma->dma_addr))
- 				pci_unmap_page(card->dev, dma->dma_addr,
- 					       get_dma_size(dma),
- 					       dma->cmd == HW_CMD_BLK_WRITE ?
-@@ -1073,7 +1080,7 @@ int rsxx_eeh_remap_dmas(struct rsxx_card
- 					dma->cmd == HW_CMD_BLK_WRITE ?
- 					PCI_DMA_TODEVICE :
- 					PCI_DMA_FROMDEVICE);
--			if (!dma->dma_addr) {
-+			if (pci_dma_mapping_error(ctrl->card->dev, dma->dma_addr)) {
- 				spin_unlock_bh(&card->ctrl[i].queue_lock);
- 				kmem_cache_free(rsxx_dma_pool, dma);
- 				return -ENOMEM;
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h linux-block/drivers/block/rsxx/rsxx_priv.h
---- linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h	2013-08-26 15:36:48.996733795 -0500
-+++ linux-block/drivers/block/rsxx/rsxx_priv.h	2013-08-26 15:58:15.576827372 -0500
-@@ -345,6 +345,11 @@ enum rsxx_creg_stat {
- 	CREG_STAT_TAG_MASK	= 0x0000ff00,
- };
- 
-+enum rsxx_dma_finish {
-+	FREE_DMA	= 0x0,
-+	COMPLETE_DMA	= 0x1,
-+};
-+
- static inline unsigned int CREG_DATA(int N)
- {
- 	return CREG_DATA0 + (N << 2);
-@@ -379,7 +384,9 @@ typedef void (*rsxx_dma_cb)(struct rsxx_
- int rsxx_dma_setup(struct rsxx_cardinfo *card);
- void rsxx_dma_destroy(struct rsxx_cardinfo *card);
- int rsxx_dma_init(void);
--int rsxx_cleanup_dma_queue(struct rsxx_dma_ctrl *ctrl, struct list_head *q);
-+int rsxx_cleanup_dma_queue(struct rsxx_dma_ctrl *ctrl,
-+				struct list_head *q,
-+				unsigned int done);
- int rsxx_dma_cancel(struct rsxx_dma_ctrl *ctrl);
- void rsxx_dma_cleanup(void);
- void rsxx_dma_queue_reset(struct rsxx_cardinfo *card);
+Isn't that solving the above issues for mach-zynq?
+
+> I think it might be better to move the call to of_clk_init() down into
+> the else branch of the if-else.
+
+Possibly, yes. But we could also unconditionally call of_clk_init() at
+the beginning of time_init() and call clocksource_of_init() at the end.
+That will make .init_time() to some fixup hook between initialization of 
+clocks and timers.
+
+> Though, this probably contradicts the purpose of the whole series.
+
+Hmm, the purpose was to allow most platforms to remove a custom
+.init_time hook only calling of_clk_init() and clocksource_of_init().
+
+If we move of_clk_init() above also in the else-branch the purpose
+is still met.
+
+Sebastian
 
