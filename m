@@ -1,104 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab3H0MA1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 08:00:27 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:16302 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab3H0MAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 08:00:25 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux.com>, Glauber Costa <glommer@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, stable@vger.kernel.org.#.3.8
-Subject: [PATCH] memcg: check that kmem_cache has memcg_params before accessing it
-Date: Tue, 27 Aug 2013 15:56:51 +0400
-Message-Id: <1377604611-3442-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.3.1
+	id S1753389Ab3H0MDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 08:03:36 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:52951 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752997Ab3H0MDf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 08:03:35 -0400
+Message-ID: <521C9594.30901@hitachi.com>
+Date: Tue, 27 Aug 2013 21:03:32 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 12/13] tracing/uprobes: Add more fetch functions
+References: <1377593336-16828-1-git-send-email-namhyung@kernel.org> <1377593336-16828-13-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1377593336-16828-13-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the system had a few memory groups and all of them were destroyed,
-memcg_limited_groups_array_size has non-zero value, but all new caches
-are created without memcg_params, because memcg_kmem_enabled() returns
-false.
+(2013/08/27 17:48), Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Implement uprobe-specific stack and memory fetch functions and add
+> them to the uprobes_fetch_type_table.  Other fetch fucntions will be
+> shared with kprobes.
+> 
+> Original-patch-by: Hyeoncheol Lee <cheol.lee@lge.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/trace/trace_probe.c  |   9 ++-
+>  kernel/trace/trace_probe.h  |   1 +
+>  kernel/trace/trace_uprobe.c | 188 +++++++++++++++++++++++++++++++++++++++++++-
+>  3 files changed, 192 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+> index eaee44d5d9d1..70cd3bfde5a6 100644
+> --- a/kernel/trace/trace_probe.c
+> +++ b/kernel/trace/trace_probe.c
+> @@ -101,6 +101,10 @@ struct deref_fetch_param {
+>  	fetch_func_t		fetch_size;
+>  };
+>  
+> +/*
+> + * For uprobes, it'll get a vaddr from first call_fetch() so pass NULL
+> + * as a priv on the second dprm->fetch() not to translate it to vaddr again.
+> + */
+>  #define DEFINE_FETCH_deref(type)					\
+>  __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
+>  				    void *data, void *dest, void *priv)	\
+> @@ -110,13 +114,14 @@ __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
+>  	call_fetch(&dprm->orig, regs, &addr, priv);			\
+>  	if (addr) {							\
+>  		addr += dprm->offset;					\
+> -		dprm->fetch(regs, (void *)addr, dest, priv);		\
+> +		dprm->fetch(regs, (void *)addr, dest, NULL);		\
+>  	} else								\
+>  		*(type *)dest = 0;					\
+>  }
+>  DEFINE_BASIC_FETCH_FUNCS(deref)
+>  DEFINE_FETCH_deref(string)
+>  
+> +/* Same as above */
+>  __kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
+>  					void *data, void *dest, void *priv)
+>  {
+> @@ -126,7 +131,7 @@ __kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
+>  	call_fetch(&dprm->orig, regs, &addr, priv);
+>  	if (addr && dprm->fetch_size) {
+>  		addr += dprm->offset;
+> -		dprm->fetch_size(regs, (void *)addr, dest, priv);
+> +		dprm->fetch_size(regs, (void *)addr, dest, NULL);
+>  	} else
+>  		*(string_size *)dest = 0;
+>  }
+> diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+> index fc7edf3749ef..b1e7d722c354 100644
+> --- a/kernel/trace/trace_probe.h
+> +++ b/kernel/trace/trace_probe.h
+> @@ -263,6 +263,7 @@ ASSIGN_FETCH_FUNC(bitfield, ftype),			\
+>  #define NR_FETCH_TYPES		10
+>  
+>  extern const struct fetch_type kprobes_fetch_type_table[];
+> +extern const struct fetch_type uprobes_fetch_type_table[];
+>  
+>  static inline __kprobes void call_fetch(struct fetch_param *fprm,
+>  				 struct pt_regs *regs, void *dest, void *priv)
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index fc5f8aa62156..89d4b86abbe1 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -530,6 +530,186 @@ static const struct file_operations uprobe_profile_ops = {
+>  	.release	= seq_release,
+>  };
+>  
+> +#ifdef CONFIG_STACK_GROWSUP
+> +static unsigned long adjust_stack_addr(unsigned long addr, unsigned n)
+> +{
+> +	return addr - (n * sizeof(long));
+> +}
+> +
+> +static bool within_user_stack(struct vm_area_struct *vma, unsigned long addr,
+> +			      unsigned int n)
+> +{
+> +	return vma->vm_start <= adjust_stack_addr(addr, n);
+> +}
+> +#else
+> +static unsigned long adjust_stack_addr(unsigned long addr, unsigned n)
+> +{
+> +	return addr + (n * sizeof(long));
+> +}
+> +
+> +static bool within_user_stack(struct vm_area_struct *vma, unsigned long addr,
+> +			      unsigned int n)
+> +{
+> +	return vma->vm_end >= adjust_stack_addr(addr, n);
+> +}
+> +#endif
+> +
+> +static unsigned long get_user_stack_nth(struct pt_regs *regs, unsigned int n)
+> +{
+> +	struct vm_area_struct *vma;
+> +	unsigned long addr = GET_USP(regs);
 
-We try to enumirate child caches in a few places and all of them are
-potentially dangerous.
+I recommend you to use user_stack_pointer() rather than GET_USP here.
+Since some arch seem not to have correct GET_USP implementation (e.g. arm),
+kernel build will be failed.
 
-For example my kernel is compiled with CONFIG_SLAB and it crashed when I
-tryed to mount a NFS share after a few experiments with kmemcg.
+And at least trace_probe.c part is good for me.
 
-[   92.563747] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-[   92.564553] IP: [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
-[   92.564553] PGD b942a067 PUD b999f067 PMD 0
-[   92.564553] Oops: 0000 [#1] SMP
-[   92.564553] Modules linked in: fscache(+) ip6table_filter ip6_tables iptable_filter ip_tables i2c_piix4 pcspkr virtio_net virtio_balloon i2c_core floppy
-[   92.564553] CPU: 0 PID: 357 Comm: modprobe Not tainted 3.11.0-rc7+ #59
-[   92.564553] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   92.564553] task: ffff8800b9f98240 ti: ffff8800ba32e000 task.ti: ffff8800ba32e000
-[   92.564553] RIP: 0010:[<ffffffff8118166a>]  [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
-[   92.564553] RSP: 0018:ffff8800ba32fb70  EFLAGS: 00010246
-[   92.564553] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000006
-[   92.564553] RDX: 0000000000000000 RSI: ffff8800b9f98910 RDI: 0000000000000246
-[   92.564553] RBP: ffff8800ba32fba0 R08: 0000000000000002 R09: 0000000000000004
-[   92.564553] R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000010
-[   92.564553] R13: 0000000000000008 R14: 00000000000000d0 R15: ffff8800375d0200
-[   92.564553] FS:  00007f55f1378740(0000) GS:ffff8800bfa00000(0000) knlGS:0000000000000000
-[   92.564553] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   92.564553] CR2: 00007f24feba57a0 CR3: 0000000037b51000 CR4: 00000000000006f0
-[   92.564553] Stack:
-[   92.564553]  0000002000000000 0000000000000020 ffff8800375d0200 0000000000000010
-[   92.564553]  0000000000000080 0000000000000000 ffff8800ba32fbd0 ffffffff811816f9
-[   92.564553]  000000d0ba32ffd8 ffff8800375d0200 ffff8800375d0200 0000000000000080
-[   92.564553] Call Trace:
-[   92.564553]  [<ffffffff811816f9>] enable_cpucache+0x49/0x100
-[   92.564553]  [<ffffffff8162adc5>] setup_cpu_cache+0x215/0x280
-[   92.564553]  [<ffffffff81181baa>] __kmem_cache_create+0x2fa/0x450
-[   92.564553]  [<ffffffff81152274>] kmem_cache_create_memcg+0x214/0x350
-[   92.564553]  [<ffffffffa005fe50>] ? __fscache_invalidate+0xe0/0xe0 [fscache]
-[   92.564553]  [<ffffffff811523db>] kmem_cache_create+0x2b/0x30
-[   92.564553]  [<ffffffffa007019b>] fscache_init+0x19b/0x230 [fscache]
-[   92.564553]  [<ffffffffa0070000>] ? 0xffffffffa006ffff
-[   92.564553]  [<ffffffff810002ca>] do_one_initcall+0xfa/0x1b0
-[   92.564553]  [<ffffffff81042a03>] ? set_memory_nx+0x43/0x50
-[   92.564553]  [<ffffffff810cadd1>] load_module+0x1c41/0x26d0
-[   92.564553]  [<ffffffff810c7040>] ? store_uevent+0x40/0x40
-[   92.564553]  [<ffffffff810cb9f6>] SyS_finit_module+0x86/0xb0
-[   92.564553]  [<ffffffff81644659>] system_call_fastpath+0x16/0x1b
-[   92.564553] Code: c6 b0 b6 81 81 48 c7 c7 c1 ba 9f 81 e8 af de 4a 00 44 8b 0d c1 54 6d 01 45 85 c9 7e 34 31 db 66 90 49 8b 87 e0 00 00 00 48 63 d3 <48> 8b 7c d0 08 48 85 ff 74 11 8b 75 d4 45 89 f0 44 89 e9 44 89
-[   92.564553] RIP  [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
-[   92.564553]  RSP <ffff8800ba32fb70>
-[   92.564553] CR2: 0000000000000008
-[   92.610992] ---[ end trace adf2b24549e1f11d ]---
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <js1304@gmail.com>
-Cc: stable@vger.kernel.org # 3.8
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- mm/slab.h | 2 ++
- 1 file changed, 2 insertions(+)
+Thank you,
 
-diff --git a/mm/slab.h b/mm/slab.h
-index 620ceed..a535033 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -162,6 +162,8 @@ static inline const char *cache_name(struct kmem_cache *s)
- 
- static inline struct kmem_cache *cache_from_memcg(struct kmem_cache *s, int idx)
- {
-+	if (!s->memcg_params)
-+		return NULL;
- 	return s->memcg_params->memcg_caches[idx];
- }
- 
 -- 
-1.8.3.1
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
