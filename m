@@ -1,55 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3H0Jmg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 05:42:36 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54286 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752858Ab3H0Jmd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 05:42:33 -0400
-Date: Tue, 27 Aug 2013 10:41:43 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [guv v2 22/31] arm: Replace __get_cpu_var uses
-Message-ID: <20130827094143.GC19897@arm.com>
-References: <20130826204351.725357339@linux.com>
- <00000140bc5f3c35-f4075639-884b-4ae3-b7bd-d945b44d7cf5-000000@email.amazonses.com>
+	id S1753920Ab3H0JoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 05:44:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60671 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753437Ab3H0JoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 05:44:23 -0400
+Date: Tue, 27 Aug 2013 11:44:19 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Bjorn Helgaas <bhelgaas@google.com>, Adam Radford <linuxraid@lsi.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH] PCI: add quirk for 3ware 9650SE controller
+Message-ID: <alpine.LNX.2.00.1308271141080.2077@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000140bc5f3c35-f4075639-884b-4ae3-b7bd-d945b44d7cf5-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 09:44:52PM +0100, Christoph Lameter wrote:
-> This patch converts __get_cpu_var into either and explicit address calculation using this_cpu_ptr()
-> or into a use of this_cpu operations that use the offset. Thereby address calcualtions are avoided
-> and less registers are used when code is generated.
-...
-> Index: linux/arch/arm64/kernel/debug-monitors.c
-> ===================================================================
-> --- linux.orig/arch/arm64/kernel/debug-monitors.c	2013-08-26 13:48:40.956794980 -0500
-> +++ linux/arch/arm64/kernel/debug-monitors.c	2013-08-26 13:48:40.952795024 -0500
-...
-> Index: linux/arch/arm64/kernel/hw_breakpoint.c
-> ===================================================================
-> --- linux.orig/arch/arm64/kernel/hw_breakpoint.c	2013-08-26 13:48:40.956794980 -0500
-> +++ linux/arch/arm64/kernel/hw_breakpoint.c	2013-08-26 13:48:40.952795024 -0500
-...
-> Index: linux/arch/arm64/kernel/perf_event.c
-> ===================================================================
-> --- linux.orig/arch/arm64/kernel/perf_event.c	2013-08-26 13:48:40.956794980 -0500
-> +++ linux/arch/arm64/kernel/perf_event.c	2013-08-26 13:48:40.952795024 -0500
+Commit d5dea7d95 ("PCI: msi: Disable msi interrupts when we initialize a 
+pci device") makes MSIs be forcibly disabled at boot time.
 
-For the arm64 bits:
+It turns out that this breaks 3ware controller -- if MSIs are disabled 
+during PCI discovery of this controller, the device doesn't work properly 
+(it doesn't respond to any commands that are being sent to it after 
+initialization).
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Reverting d5dea7d95 or not force-disabling MSIs in pci_msi_init_pci_dev()
+makes the device work properly again.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+
+I am adding Adam Radford as a recepient as well, to see whether he is able 
+to provide some more explanation why this device would expose this 
+behavior.
+Thanks.
+
+ drivers/pci/msi.c    |    3 +++
+ drivers/pci/quirks.c |   10 ++++++++++
+ include/linux/pci.h  |    1 +
+ 3 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index aca7578..4f36b8b 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -1040,6 +1040,9 @@ void pci_msi_init_pci_dev(struct pci_dev *dev)
+ {
+ 	INIT_LIST_HEAD(&dev->msi_list);
+ 
++	if (dev->broken_msi_disable)
++		return;
++
+ 	/* Disable the msi hardware to avoid screaming interrupts
+ 	 * during boot.  This is the power on reset default so
+ 	 * usually this should be a noop.
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index e85d230..4ba3400 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2890,6 +2890,16 @@ static void quirk_intel_ntb(struct pci_dev *dev)
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x0e08, quirk_intel_ntb);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x0e0d, quirk_intel_ntb);
+ 
++/*
++ * 3ware 9650SE controller doesn't properly initialize if MSI are
++ * disabled on it during PCI device discovery
++ */
++static void quirk_broken_msi_disable(struct pci_dev *dev)
++{
++	dev->broken_msi_disable = 1;
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_3WARE, 0x1004, quirk_broken_msi_disable);
++
+ static ktime_t fixup_debug_start(struct pci_dev *dev,
+ 				 void (*fn)(struct pci_dev *dev))
+ {
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 0fd1f15..c327d74 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -341,6 +341,7 @@ struct pci_dev {
+ #ifdef CONFIG_PCI_MSI
+ 	struct list_head msi_list;
+ 	struct kset *msi_kset;
++	unsigned int	broken_msi_disable:1;
+ #endif
+ 	struct pci_vpd *vpd;
+ #ifdef CONFIG_PCI_ATS
+
+-- 
+Jiri Kosina
+SUSE Labs
