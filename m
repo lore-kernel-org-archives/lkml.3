@@ -1,132 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab3H0Srf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 14:47:35 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57868 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab3H0Srd (ORCPT
+	id S1753591Ab3H0Srm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 14:47:42 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58876 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab3H0Srj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 14:47:33 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J . Wysocki" <rjw@sisk.pl>
-Subject: [PATCH] cpufreq: Fix timer/workqueue corruption due to double queueing
-Date: Tue, 27 Aug 2013 11:47:29 -0700
-Message-Id: <1377629249-1177-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <CAKohpoktPNtSMRn0dEVjcEW5_62E+_UEgySOBJ-hG+r=NU3V2w@mail.gmail.com>
+	Tue, 27 Aug 2013 14:47:39 -0400
+Date: Tue, 27 Aug 2013 13:46:58 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: <balbi@ti.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>,
+        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [RFC 2/2] usb: dwc3: Add Qualcomm DWC3 glue layer driver
+Message-ID: <20130827184658.GS3005@radagast>
+Reply-To: <balbi@ti.com>
+References: <1375789991-30041-1-git-send-email-iivanov@mm-sol.com>
+ <1375789991-30041-3-git-send-email-iivanov@mm-sol.com>
+ <20130809132349.GC12041@radagast>
+ <1376064558.7709.31.camel@iivanov-dev.int.mm-sol.com>
+ <20130812182439.GG27954@radagast>
+ <1376472497.2132.6.camel@iivanov-dev.int.mm-sol.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2KGcTUzwJ+J1jnia"
+Content-Disposition: inline
+In-Reply-To: <1376472497.2132.6.camel@iivanov-dev.int.mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a CPU is hot removed we'll cancel all the delayed work items
-via gov_cancel_work(). Normally this will just cancel a delayed
-timer on each CPU that the policy is managing and the work won't
-run, but if the work is already running the workqueue code will
-wait for the work to finish before continuing to prevent the
-work items from re-queuing themselves like they normally do. This
-scheme will work most of the time, except for the case where the
-work function determines that it should adjust the delay for all
-other CPUs that the policy is managing. If this scenario occurs,
-the canceling CPU will cancel its own work but queue up the other
-CPUs works to run. For example:
+--2KGcTUzwJ+J1jnia
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- CPU0                                        CPU1
- ----                                        ----
- cpu_down()
-  ...
-  __cpufreq_remove_dev()
-   cpufreq_governor_dbs()
-    case CPUFREQ_GOV_STOP:
-     gov_cancel_work(dbs_data, policy);
-      cpu0 work is canceled
-       timer is canceled
-       cpu1 work is canceled                    <work runs>
-       <waits for cpu1>                         od_dbs_timer()
-                                                 gov_queue_work(*, *, true);
- 						  cpu0 work queued
- 						  cpu1 work queued
-						  cpu2 work queued
-						  ...
-       cpu1 work is canceled
-       cpu2 work is canceled
-       ...
+On Wed, Aug 14, 2013 at 12:28:17PM +0300, Ivan T. Ivanov wrote:
+>=20
+> Hi,=20
+>=20
+> On Mon, 2013-08-12 at 13:24 -0500, Felipe Balbi wrote:=20
+> > On Fri, Aug 09, 2013 at 07:09:18PM +0300, Ivan T. Ivanov wrote:
+> > > Hi,=20
+> > >=20
+> > > On Fri, 2013-08-09 at 16:23 +0300, Felipe Balbi wrote:
+> > > > Hi,
+> > > >=20
+> > > > On Tue, Aug 06, 2013 at 02:53:11PM +0300, Ivan T. Ivanov wrote:
+> > > > > diff --git a/drivers/usb/dwc3/dwc3-msm.c b/drivers/usb/dwc3/dwc3-=
+msm.c
+> > > > > new file mode 100644
+> > > > > index 0000000..e509abc
+> > > > > --- /dev/null
+> > > > > +++ b/drivers/usb/dwc3/dwc3-msm.c
+> > > > > @@ -0,0 +1,175 @@
+> > > > > +#undef CONFIG_REGULATOR
+> > > >=20
+> > > > why ??????
+> > > >=20
+> > >=20
+> > > 1. This shows that driver is still not fully tested=20
+> > >    Regulators support is still missing in the MSM
+> > > 2. Helps me to load driver successfully.=20
+> >=20
+> > Then remove all the regulator-related code from this.
+>=20
+> I would like to keep them. I will just remove #undef line.=20
+> Code will continue to build fine. And once regulators drivers=20
+> are upstreamed this driver 'will not' require further
+> modifications.
 
-At the end of the GOV_STOP case cpu0 still has a work queued to
-run although the code is expecting all of the works to be
-canceled. __cpufreq_remove_dev() will then proceed to
-re-initialize all the other CPUs works except for the CPU that is
-going down. The CPUFREQ_GOV_START case in cpufreq_governor_dbs()
-will trample over the queued work and debugobjects will spit out
-a warning:
+fair enough.
 
-WARNING: at lib/debugobjects.c:260 debug_print_object+0x94/0xbc()
-ODEBUG: init active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x10
-Modules linked in:
-CPU: 0 PID: 1491 Comm: sh Tainted: G        W    3.10.0 #19
-[<c010c178>] (unwind_backtrace+0x0/0x11c) from [<c0109dec>] (show_stack+0x10/0x14)
-[<c0109dec>] (show_stack+0x10/0x14) from [<c01904cc>] (warn_slowpath_common+0x4c/0x6c)
-[<c01904cc>] (warn_slowpath_common+0x4c/0x6c) from [<c019056c>] (warn_slowpath_fmt+0x2c/0x3c)
-[<c019056c>] (warn_slowpath_fmt+0x2c/0x3c) from [<c0388a7c>] (debug_print_object+0x94/0xbc)
-[<c0388a7c>] (debug_print_object+0x94/0xbc) from [<c0388e34>] (__debug_object_init+0x2d0/0x340)
-[<c0388e34>] (__debug_object_init+0x2d0/0x340) from [<c019e3b0>] (init_timer_key+0x14/0xb0)
-[<c019e3b0>] (init_timer_key+0x14/0xb0) from [<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8)
-[<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8) from [<c06325a0>] (__cpufreq_governor+0xdc/0x1a4)
-[<c06325a0>] (__cpufreq_governor+0xdc/0x1a4) from [<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434)
-[<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434) from [<c08989f4>] (cpufreq_cpu_callback+0x60/0x80)
-[<c08989f4>] (cpufreq_cpu_callback+0x60/0x80) from [<c08a43c0>] (notifier_call_chain+0x38/0x68)
-[<c08a43c0>] (notifier_call_chain+0x38/0x68) from [<c01938e0>] (__cpu_notify+0x28/0x40)
-[<c01938e0>] (__cpu_notify+0x28/0x40) from [<c0892ad4>] (_cpu_down+0x7c/0x2c0)
-[<c0892ad4>] (_cpu_down+0x7c/0x2c0) from [<c0892d3c>] (cpu_down+0x24/0x40)
-[<c0892d3c>] (cpu_down+0x24/0x40) from [<c0893ea8>] (store_online+0x2c/0x74)
-[<c0893ea8>] (store_online+0x2c/0x74) from [<c04519d8>] (dev_attr_store+0x18/0x24)
-[<c04519d8>] (dev_attr_store+0x18/0x24) from [<c02a69d4>] (sysfs_write_file+0x100/0x148)
-[<c02a69d4>] (sysfs_write_file+0x100/0x148) from [<c0255c18>] (vfs_write+0xcc/0x174)
-[<c0255c18>] (vfs_write+0xcc/0x174) from [<c0255f70>] (SyS_write+0x38/0x64)
-[<c0255f70>] (SyS_write+0x38/0x64) from [<c0106120>] (ret_fast_syscall+0x0/0x30)
+--=20
+balbi
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+--2KGcTUzwJ+J1jnia
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-On 08/27, Viresh Kumar wrote:
-> On 27 August 2013 04:15, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> > +++ b/drivers/cpufreq/cpufreq_governor.c
-> > @@ -133,7 +133,7 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
-> >  {
-> >         int i;
-> >
-> > -       if (!all_cpus) {
-> > +       if (!all_cpus || !policy->governor_enabled) {
-> >                 __gov_queue_work(smp_processor_id(), dbs_data, delay);
-> >         } else {
-> >                 for_each_cpu(i, policy->cpus)
-> 
-> Shouldn't we simply do this instead at the top of this function?
-> 
-> > +       if (!policy->governor_enabled)
-> > +              return;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Sure that works just as well. Here's a patch.
+iQIcBAEBAgAGBQJSHPQiAAoJEIaOsuA1yqREzzgP/1xZM/lS8jUehIde9h9hoptE
+G2E9c8fhLtBGdktTWIO53BxzkWpc2yAXePzdwh3EM/bIbtaVtgL7Yih9NxlszRXf
+Qzgf3IwcWy0LricvG5/diKAOFrdqgSYqZiLq6pDDpsh2vt0flWTHjQXFrGXjn2gx
+NK6AgWPhuenwtJrg8GRNOV/I9u+WzknxDM4hh/ft9uiEOk3vaXbVRWVcWaCB2KTm
+DN/tuTxqqYEO5glVCRQK2GhYqrjAiOKXkbNv12/3A20c7jLN4SnUJtFP5iUD0+BP
+BHcK3xD28GvojNibSA1ZBOLCTqbuHhoHAKPd54Szt7TmbofgD+9ykWxmFEPyg+JL
+4xk+UXd03iQVjVFFgtLDRZ/WubutmryNDNob6gxCFJDbxTOum41KW9SsDp7lVZc7
+3MecSBH11K7lDskl3l8d4wxt13KWNEOuWr0yxlXepVVbrpEQWPSpJq/vRxuGN3Ci
+3pVTcLYSiczJfgF0d3PpzqMgNK16z0gxFPJ0DFJVPyYk2JSUL7HXAQIz3X9AnxCM
+XaAgU32bV6++r2KX6TMQzyXdQjf85/hi1axl0HbRLYTbFJHXekqT2j7LyjCFRUmZ
++aLB+fKZg+Y5bpQsv5vvABqAmebsLZ0StWoOcwRd2/Bgsj5j/+DaOcQylxsj4rIM
+zvrdbxSpmBu3j0wSL0Th
+=+AaF
+-----END PGP SIGNATURE-----
 
- drivers/cpufreq/cpufreq_governor.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 7b839a8..b9b20fd 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -133,6 +133,9 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
- {
- 	int i;
- 
-+	if (!policy->governor_enabled)
-+		return;
-+
- 	if (!all_cpus) {
- 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
- 	} else {
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+--2KGcTUzwJ+J1jnia--
