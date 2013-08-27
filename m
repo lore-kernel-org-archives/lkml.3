@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab3H0B1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:27:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59371 "EHLO
+	id S1755173Ab3H0B2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:28:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59359 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173Ab3H0BGn (ORCPT
+	with ESMTP id S1753154Ab3H0BGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:06:43 -0400
+	Mon, 26 Aug 2013 21:06:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 08/13] nilfs2: fix issue with counting number of bio requests for BIO_EOPNOTSUPP error detection
-Date: Mon, 26 Aug 2013 18:08:40 -0700
-Message-Id: <20130827010310.481016614@linuxfoundation.org>
+        Wladislav Wiebe <wladislav.kw@gmail.com>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [ 06/13] of: fdt: fix memory initialization for expanded DT
+Date: Mon, 26 Aug 2013 18:08:38 -0700
+Message-Id: <20130827010310.332481761@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010309.850395966@linuxfoundation.org>
 References: <20130827010309.850395966@linuxfoundation.org>
@@ -30,53 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+From: Wladislav Wiebe <wladislav.kw@gmail.com>
 
-commit 4bf93b50fd04118ac7f33a3c2b8a0a1f9fa80bc9 upstream.
+commit 9e40127526e857fa3f29d51e83277204fbdfc6ba upstream.
 
-Fix the issue with improper counting number of flying bio requests for
-BIO_EOPNOTSUPP error detection case.
+Already existing property flags are filled wrong for properties created from
+initial FDT. This could cause problems if this DYNAMIC device-tree functions
+are used later, i.e. properties are attached/detached/replaced. Simply dumping
+flags from the running system show, that some initial static (not allocated via
+kzmalloc()) nodes are marked as dynamic.
 
-The sb_nbio must be incremented exactly the same number of times as
-complete() function was called (or will be called) because
-nilfs_segbuf_wait() will call wail_for_completion() for the number of
-times set to sb_nbio:
+I putted some debug extensions to property_proc_show(..) :
+..
++       if (OF_IS_DYNAMIC(pp))
++               pr_err("DEBUG: xxx : OF_IS_DYNAMIC\n");
++       if (OF_IS_DETACHED(pp))
++               pr_err("DEBUG: xxx : OF_IS_DETACHED\n");
 
-  do {
-      wait_for_completion(&segbuf->sb_bio_event);
-  } while (--segbuf->sb_nbio > 0);
+when you operate on the nodes (e.g.: ~$ cat /proc/device-tree/*some_node*) you
+will see that those flags are filled wrong, basically in most cases it will dump
+a DYNAMIC or DETACHED status, which is in not true.
+(BTW. this OF_IS_DETACHED is a own define for debug purposes which which just
+make a test_bit(OF_DETACHED, &x->_flags)
 
-Two functions complete() and wait_for_completion() must be called the
-same number of times for the same sb_bio_event.  Otherwise,
-wait_for_completion() will hang or leak.
+If nodes are dynamic kernel is allowed to kfree() them. But it will crash
+attempting to do so on the nodes from FDT -- they are not allocated via
+kzmalloc().
 
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Wladislav Wiebe <wladislav.kw@gmail.com>
+Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/segbuf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/of/fdt.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/nilfs2/segbuf.c
-+++ b/fs/nilfs2/segbuf.c
-@@ -376,12 +376,12 @@ static int nilfs_segbuf_submit_bio(struc
- 	bio->bi_private = segbuf;
- 	bio_get(bio);
- 	submit_bio(mode, bio);
-+	segbuf->sb_nbio++;
- 	if (bio_flagged(bio, BIO_EOPNOTSUPP)) {
- 		bio_put(bio);
- 		err = -EOPNOTSUPP;
- 		goto failed;
- 	}
--	segbuf->sb_nbio++;
- 	bio_put(bio);
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -390,6 +390,8 @@ static void __unflatten_device_tree(stru
+ 	mem = (unsigned long)
+ 		dt_alloc(size + 4, __alignof__(struct device_node));
  
- 	wi->bio = NULL;
++	memset((void *)mem, 0, size);
++
+ 	((__be32 *)mem)[size / 4] = cpu_to_be32(0xdeadbeef);
+ 
+ 	pr_debug("  unflattening %lx...\n", mem);
 
 
