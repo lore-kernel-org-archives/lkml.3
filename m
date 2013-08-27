@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab3H0BWJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:22:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59442 "EHLO
+	id S1754746Ab3H0BW3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:22:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59436 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302Ab3H0BHG (ORCPT
+	with ESMTP id S1753294Ab3H0BHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:06 -0400
+	Mon, 26 Aug 2013 21:07:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 27/74] tracing: Change event_enable/disable_read() to verify i_private != NULL
-Date: Mon, 26 Aug 2013 18:08:25 -0700
-Message-Id: <20130827010430.091772554@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 25/74] ftrace: Add check for NULL regs if ops has SAVE_REGS set
+Date: Mon, 26 Aug 2013 18:08:23 -0700
+Message-Id: <20130827010429.741891938@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -27,88 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit bc6f6b08dee5645770efb4b76186ded313f23752 upstream.
+commit 195a8afc7ac962f8da795549fe38e825f1372b0d upstream.
 
-tracing_open_generic_file() is racy, ftrace_event_file can be
-already freed by rmdir or trace_remove_event_call().
+If a ftrace ops is registered with the SAVE_REGS flag set, and there's
+already a ops registered to one of its functions but without the
+SAVE_REGS flag, there's a small race window where the SAVE_REGS ops gets
+added to the list of callbacks to call for that function before the
+callback trampoline gets set to save the regs.
 
-Change event_enable_read() and event_disable_read() to read and
-verify "file = i_private" under event_mutex.
+The problem is, the function is not currently saving regs, which opens
+a small race window where the ops that is expecting regs to be passed
+to it, wont. This can cause a crash if the callback were to reference
+the regs, as the SAVE_REGS guarantees that regs will be set.
 
-This fixes nothing, but now we can change debugfs_remove("enable")
-callers to nullify ->i_private and fix the the problem.
+To fix this, we add a check in the loop case where it checks if the ops
+has the SAVE_REGS flag set, and if so, it will ignore it if regs is
+not set.
 
-Link: http://lkml.kernel.org/r/20130726172536.GA3612@redhat.com
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- kernel/trace/trace_events.c |   28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+ kernel/trace/ftrace.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -682,13 +682,23 @@ static ssize_t
- event_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
- 		  loff_t *ppos)
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1416,12 +1416,22 @@ ftrace_hash_move(struct ftrace_ops *ops,
+  * the hashes are freed with call_rcu_sched().
+  */
+ static int
+-ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
++ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip, void *regs)
  {
--	struct ftrace_event_file *file = filp->private_data;
-+	struct ftrace_event_file *file;
-+	unsigned long flags;
- 	char *buf;
- 
--	if (file->flags & FTRACE_EVENT_FL_ENABLED) {
--		if (file->flags & FTRACE_EVENT_FL_SOFT_DISABLED)
-+	mutex_lock(&event_mutex);
-+	file = event_file_data(filp);
-+	if (likely(file))
-+		flags = file->flags;
-+	mutex_unlock(&event_mutex);
-+
-+	if (!file)
-+		return -ENODEV;
-+
-+	if (flags & FTRACE_EVENT_FL_ENABLED) {
-+		if (flags & FTRACE_EVENT_FL_SOFT_DISABLED)
- 			buf = "0*\n";
--		else if (file->flags & FTRACE_EVENT_FL_SOFT_MODE)
-+		else if (flags & FTRACE_EVENT_FL_SOFT_MODE)
- 			buf = "1*\n";
- 		else
- 			buf = "1\n";
-@@ -702,13 +712,10 @@ static ssize_t
- event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 		   loff_t *ppos)
- {
--	struct ftrace_event_file *file = filp->private_data;
-+	struct ftrace_event_file *file;
- 	unsigned long val;
+ 	struct ftrace_hash *filter_hash;
+ 	struct ftrace_hash *notrace_hash;
  	int ret;
  
--	if (!file)
--		return -EINVAL;
--
- 	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
- 	if (ret)
- 		return ret;
-@@ -720,8 +727,11 @@ event_enable_write(struct file *filp, co
- 	switch (val) {
- 	case 0:
- 	case 1:
-+		ret = -ENODEV;
- 		mutex_lock(&event_mutex);
--		ret = ftrace_event_enable_disable(file, val);
-+		file = event_file_data(filp);
-+		if (likely(file))
-+			ret = ftrace_event_enable_disable(file, val);
- 		mutex_unlock(&event_mutex);
- 		break;
++#ifdef CONFIG_DYNAMIC_FTRACE_WITH_REGS
++	/*
++	 * There's a small race when adding ops that the ftrace handler
++	 * that wants regs, may be called without them. We can not
++	 * allow that handler to be called if regs is NULL.
++	 */
++	if (regs == NULL && (ops->flags & FTRACE_OPS_FL_SAVE_REGS))
++		return 0;
++#endif
++
+ 	filter_hash = rcu_dereference_raw_notrace(ops->filter_hash);
+ 	notrace_hash = rcu_dereference_raw_notrace(ops->notrace_hash);
  
+@@ -4188,7 +4198,7 @@ static inline void ftrace_startup_enable
+ # define ftrace_shutdown_sysctl()	do { } while (0)
+ 
+ static inline int
+-ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
++ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip, void *regs)
+ {
+ 	return 1;
+ }
+@@ -4211,7 +4221,7 @@ ftrace_ops_control_func(unsigned long ip
+ 	do_for_each_ftrace_op(op, ftrace_control_list) {
+ 		if (!(op->flags & FTRACE_OPS_FL_STUB) &&
+ 		    !ftrace_function_local_disabled(op) &&
+-		    ftrace_ops_test(op, ip))
++		    ftrace_ops_test(op, ip, regs))
+ 			op->func(ip, parent_ip, op, regs);
+ 	} while_for_each_ftrace_op(op);
+ 	trace_recursion_clear(TRACE_CONTROL_BIT);
+@@ -4244,7 +4254,7 @@ __ftrace_ops_list_func(unsigned long ip,
+ 	 */
+ 	preempt_disable_notrace();
+ 	do_for_each_ftrace_op(op, ftrace_ops_list) {
+-		if (ftrace_ops_test(op, ip))
++		if (ftrace_ops_test(op, ip, regs))
+ 			op->func(ip, parent_ip, op, regs);
+ 	} while_for_each_ftrace_op(op);
+ 	preempt_enable_notrace();
 
 
