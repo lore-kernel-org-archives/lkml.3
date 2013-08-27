@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab3H0Qvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 12:51:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37501 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753409Ab3H0Qvc (ORCPT
+	id S1753776Ab3H0Qx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 12:53:27 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:39355 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079Ab3H0QxZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 12:51:32 -0400
-Date: Tue, 27 Aug 2013 18:51:29 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [RFC v1 0/5] ARM: Initial support for Marvell Armada 1500
-Message-ID: <20130827185129.31bd0c9e@skate>
-In-Reply-To: <521CD7B9.7060208@gmail.com>
-References: <1376682098-10580-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20130827161958.5e71890d@skate>
-	<521CD7B9.7060208@gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Aug 2013 12:53:25 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: =?utf-8?q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        James Hogan <james.hogan@imgtec.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <20f57100-4440-4353-9c84-6e5781f7c6d3@DB9EHSMHS025.ehs.local>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Michal Simek <michal.simek@xilinx.com>
+References: <20130827190304.c3f2f891f20d078d66b703b1@canb.auug.org.au>
+ <521C7AF0.1020903@imgtec.com>
+ <20f57100-4440-4353-9c84-6e5781f7c6d3@DB9EHSMHS025.ehs.local>
+Message-ID: <20130827165319.8231.9@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: linux-next: manual merge of the clk tree with Linus' tree
+Date: Tue, 27 Aug 2013 09:53:19 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sebastian Hesselbarth,
-
-On Tue, 27 Aug 2013 18:45:45 +0200, Sebastian Hesselbarth wrote:
-
-> > After talking a bit with engineers within Marvell that work on this
-> > SoC, I'm inclined to think that using mach-mvebu for this family of SoC
-> > is not a good idea.
+Quoting Sören Brinkmann (2013-08-27 08:44:11)
+> On Tue, Aug 27, 2013 at 11:09:52AM +0100, James Hogan wrote:
+> > On 27/08/13 10:03, Stephen Rothwell wrote:
+> > > Hi Mike,
+> > > 
+> > > Today's linux-next merge of the clk tree got a conflict in
+> > > drivers/clk/zynq/clkc.c between commits 252957cc3a2d ("clk/zynq/clkc: Add
+> > > dedicated spinlock for the SWDT") and 765b7d4c4cb3
+> > > ("clk/zynq/clkc: Add CLK_SET_RATE_PARENT flag to ethernet muxes") from
+> > > Linus' tree and commit 819c1de344c5 ("clk: add CLK_SET_RATE_NO_REPARENT
+> > > flag") from the clk tree.
+> > > 
+> > > I fixed it up (see below and in a couple of places I chose
+> > > CLK_SET_RATE_NO_REPARENT over CLK_SET_RATE_PARENT, which may, of course,
+> > > be wrong) and can carry the fix as necessary (no action is required).
+> > 
+> > The case you mentioned looks correct to me.
+> > 
+> > I can't see todays -next yet, but if by "choose CLK_SET_RATE_NO_REPARENT
+> > over CLK_SET_RATE_PARENT" you mean one branch adds CLK_SET_RATE_PARENT,
+> > clk-next adds CLK_SET_RATE_NO_REPARENT, and the resolution ends up with
+> > only CLK_SET_RATE_NOREPARENT then that sounds wrong, as the two flags
+> > are orthogonal.
 > 
-> Thomas,
+> I can just agree, the case included in the mail looks correct, but in
+> case of other conflicts both flags should be set. Just like in the case
+> shown here.
+
+Stephen's fix is correct. The Zynq patches came in as fixes so I think
+this will be a rare event.
+
+Regards,
+Mike
+
 > 
-> thanks for the info below. Reading a little bit through the GPL'ed
-> source, I also quickly came to the same conclusion. It is more likely
-> we can reuse some stuff from other SoCs than Orion or Armada 370/XP.
-
-Yes, many of the IP blocks are for example DesignWare IPs, or ARM IPs
-in the case of the Cortex-A based variants.
-
-> > The codename used for those Armada 1500 SOCs is "Berlin", so a name
-> > like mach-berlin, or mach-mvberlin (if we want to keep 'mv' to identify
-> > the founder) seems like a good name.
-> 
-> I have already moved it under mach-mv88de3xxx as for now, all SoCs
-> Marvell is providing as DE (Digital Entertainment) fit in that. I like
-> mach-codename style more than plain numbers, maybe I rename the folder
-> to mach-berlin before posting.
-
-I also like mach-berlin a bit more than mach-mve88de3xxx, for a very
-silly reason: when during a discussion you have to say mach-mv88de3xxx,
-it's pretty annoying. We already have the horrible mach-mv78xx0, let's
-not add more of this :)
-
-> Speaking of "berlin", they found a 2WW bomb in my home town center today
-> and are evacuating apartments. Mine too, so it looks like I'll have
-> some time to prepare v2 tonight..
-
-Doh!
-
-> > Also, to help us understand the organization of the family of SOCs, I
-> > asked a few informations to Marvell, and here is what I could collect:
-> >
-> > """
-> > BGxname		CPU core	codename	L2 cache controller	internal name
-> > BG2		PJ4B		Armada1500	Tauros3			MV88DE3100
-> > BG2-CT		Cortex-A9	N/A		PL310			N/A
-> > BG3		Cortex-A15	N/A		CA15 integrated		N/A
-> > """
-> >
-> > As was told that the Armada X or MV88DEx names are not used during
-> > development, and what Marvell is really using are the BGxx names.
-> 
-> Ok, I'll add that info to Marvell SoC documentation also.
-
-That'd be nice indeed.
-
-Thanks!
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+>         Sören
