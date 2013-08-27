@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab3H0B22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:28:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59352 "EHLO
+	id S1753148Ab3H0BGl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:06:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59323 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752940Ab3H0BGm (ORCPT
+	with ESMTP id S1753113Ab3H0BGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:06:42 -0400
+	Mon, 26 Aug 2013 21:06:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thiago Macieira <thiago@kde.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 05/13] drm/i915: Invalidate TLBs for the rings after a reset
-Date: Mon, 26 Aug 2013 18:08:37 -0700
-Message-Id: <20130827010310.260124104@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 11/13] SCSI: zfcp: fix lock imbalance by reworking request queue locking
+Date: Mon, 26 Aug 2013 18:08:43 -0700
+Message-Id: <20130827010310.701936195@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010309.850395966@linuxfoundation.org>
 References: <20130827010309.850395966@linuxfoundation.org>
@@ -28,65 +30,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 
-commit 884020bf3d2a3787a1cc6df902e98e0eec60330b upstream.
+commit d79ff142624e1be080ad8d09101f7004d79c36e1 upstream.
 
-After any "soft gfx reset" we must manually invalidate the TLBs
-associated with each ring. Empirically, it seems that a
-suspend/resume or D3-D0 cycle count as a "soft reset". The symptom is
-that the hardware would fail to note the new address for its status
-page, and so it would continue to write the shadow registers and
-breadcrumbs into the old physical address (now used by something
-completely different, scary). Whereas the driver would read the new
-status page and never see any progress, it would appear that the GPU
-hung immediately upon resume.
+This patch adds wait_event_interruptible_lock_irq_timeout(), which is a
+straight-forward descendant of wait_event_interruptible_timeout() and
+wait_event_interruptible_lock_irq().
 
-Based on a patch by naresh kumar kachhi <naresh.kumar.kacchi@intel.com>
+The zfcp driver used to call wait_event_interruptible_timeout()
+in combination with some intricate and error-prone locking. Using
+wait_event_interruptible_lock_irq_timeout() as a replacement
+nicely cleans up that locking.
 
-Reported-by: Thiago Macieira <thiago@kde.org>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64725
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Tested-by: Thiago Macieira <thiago@kde.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+This rework removes a situation that resulted in a locking imbalance
+in zfcp_qdio_sbal_get():
+
+BUG: workqueue leaked lock or atomic: events/1/0xffffff00/10
+    last function: zfcp_fc_wka_port_offline+0x0/0xa0 [zfcp]
+
+It was introduced by commit c2af7545aaff3495d9bf9a7608c52f0af86fb194
+"[SCSI] zfcp: Do not wait for SBALs on stopped queue", which had a new
+code path related to ZFCP_STATUS_ADAPTER_QDIOUP that took an early exit
+without a required lock being held. The problem occured when a
+special, non-SCSI I/O request was being submitted in process context,
+when the adapter's queues had been torn down. In this case the bug
+surfaced when the Fibre Channel port connection for a well-known address
+was closed during a concurrent adapter shut-down procedure, which is a
+rare constellation.
+
+This patch also fixes these warnings from the sparse tool (make C=1):
+
+drivers/s390/scsi/zfcp_qdio.c:224:12: warning: context imbalance in
+ 'zfcp_qdio_sbal_check' - wrong count at exit
+drivers/s390/scsi/zfcp_qdio.c:244:5: warning: context imbalance in
+ 'zfcp_qdio_sbal_get' - unexpected unlock
+
+Last but not least, we get rid of that crappy lock-unlock-lock
+sequence at the beginning of the critical section.
+
+It is okay to call zfcp_erp_adapter_reopen() with req_q_lock held.
+
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h         |    2 ++
- drivers/gpu/drm/i915/intel_ringbuffer.c |   12 ++++++++++++
- 2 files changed, 14 insertions(+)
+ drivers/s390/scsi/zfcp_qdio.c |    8 +----
+ include/linux/wait.h          |   57 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -502,6 +502,8 @@
- 					will not assert AGPBUSY# and will only
- 					be delivered when out of C3. */
- #define   INSTPM_FORCE_ORDERING				(1<<7) /* GEN6+ */
-+#define   INSTPM_TLB_INVALIDATE	(1<<9)
-+#define   INSTPM_SYNC_FLUSH	(1<<5)
- #define ACTHD	        0x020c8
- #define FW_BLC		0x020d8
- #define FW_BLC2		0x020dc
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -767,6 +767,18 @@ void intel_ring_setup_status_page(struct
+--- a/drivers/s390/scsi/zfcp_qdio.c
++++ b/drivers/s390/scsi/zfcp_qdio.c
+@@ -224,11 +224,9 @@ int zfcp_qdio_sbals_from_sg(struct zfcp_
  
- 	I915_WRITE(mmio, (u32)ring->status_page.gfx_addr);
- 	POSTING_READ(mmio);
-+
-+	/* Flush the TLB for this page */
-+	if (INTEL_INFO(dev)->gen >= 6) {
-+		u32 reg = RING_INSTPM(ring->mmio_base);
-+		I915_WRITE(reg,
-+			   _MASKED_BIT_ENABLE(INSTPM_TLB_INVALIDATE |
-+					      INSTPM_SYNC_FLUSH));
-+		if (wait_for((I915_READ(reg) & INSTPM_SYNC_FLUSH) == 0,
-+			     1000))
-+			DRM_ERROR("%s: wait for SyncFlush to complete for TLB invalidation timed out\n",
-+				  ring->name);
-+	}
+ static int zfcp_qdio_sbal_check(struct zfcp_qdio *qdio)
+ {
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	if (atomic_read(&qdio->req_q_free) ||
+ 	    !(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return 1;
+-	spin_unlock_irq(&qdio->req_q_lock);
+ 	return 0;
  }
  
- static int
+@@ -246,9 +244,8 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio
+ {
+ 	long ret;
+ 
+-	spin_unlock_irq(&qdio->req_q_lock);
+-	ret = wait_event_interruptible_timeout(qdio->req_q_wq,
+-			       zfcp_qdio_sbal_check(qdio), 5 * HZ);
++	ret = wait_event_interruptible_lock_irq_timeout(qdio->req_q_wq,
++		       zfcp_qdio_sbal_check(qdio), qdio->req_q_lock, 5 * HZ);
+ 
+ 	if (!(atomic_read(&qdio->adapter->status) & ZFCP_STATUS_ADAPTER_QDIOUP))
+ 		return -EIO;
+@@ -262,7 +259,6 @@ int zfcp_qdio_sbal_get(struct zfcp_qdio
+ 		zfcp_erp_adapter_reopen(qdio->adapter, 0, "qdsbg_1");
+ 	}
+ 
+-	spin_lock_irq(&qdio->req_q_lock);
+ 	return -EIO;
+ }
+ 
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -530,6 +530,63 @@ do {									\
+ 	 ? 0 : __wait_event_interruptible_locked(wq, condition, 1, 1))
+ 
+ 
++#define __wait_event_interruptible_lock_irq_timeout(wq, condition,	\
++						    lock, ret)		\
++do {									\
++	DEFINE_WAIT(__wait);						\
++									\
++	for (;;) {							\
++		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
++		if (condition)						\
++			break;						\
++		if (signal_pending(current)) {				\
++			ret = -ERESTARTSYS;				\
++			break;						\
++		}							\
++		spin_unlock_irq(&lock);					\
++		ret = schedule_timeout(ret);				\
++		spin_lock_irq(&lock);					\
++		if (!ret)						\
++			break;						\
++	}								\
++	finish_wait(&wq, &__wait);					\
++} while (0)
++
++/**
++ * wait_event_interruptible_lock_irq_timeout - sleep until a condition gets true or a timeout elapses.
++ *		The condition is checked under the lock. This is expected
++ *		to be called with the lock taken.
++ * @wq: the waitqueue to wait on
++ * @condition: a C expression for the event to wait for
++ * @lock: a locked spinlock_t, which will be released before schedule()
++ *	  and reacquired afterwards.
++ * @timeout: timeout, in jiffies
++ *
++ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
++ * @condition evaluates to true or signal is received. The @condition is
++ * checked each time the waitqueue @wq is woken up.
++ *
++ * wake_up() has to be called after changing any variable that could
++ * change the result of the wait condition.
++ *
++ * This is supposed to be called while holding the lock. The lock is
++ * dropped before going to sleep and is reacquired afterwards.
++ *
++ * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
++ * was interrupted by a signal, and the remaining jiffies otherwise
++ * if the condition evaluated to true before the timeout elapsed.
++ */
++#define wait_event_interruptible_lock_irq_timeout(wq, condition, lock,	\
++						  timeout)		\
++({									\
++	int __ret = timeout;						\
++									\
++	if (!(condition))						\
++		__wait_event_interruptible_lock_irq_timeout(		\
++					wq, condition, lock, __ret);	\
++	__ret;								\
++})
++
+ 
+ #define __wait_event_killable(wq, condition, ret)			\
+ do {									\
 
 
