@@ -1,162 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab3H0GXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 02:23:41 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:43852 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab3H0GXj (ORCPT
+	id S1752711Ab3H0G0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 02:26:09 -0400
+Received: from 5.mo1.mail-out.ovh.net ([178.33.45.107]:54776 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752349Ab3H0G0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 02:23:39 -0400
-X-Spam-Score: -101.0
-Message-ID: <521C45AB.2020204@asianux.com>
-Date: Tue, 27 Aug 2013 14:22:35 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 27 Aug 2013 02:26:08 -0400
+Message-ID: <521C4451.1060908@overkiz.com>
+Date: Tue, 27 Aug 2013 08:16:49 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        James Hogan <james.hogan@imgtec.com>, Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: Assembly: need add prefix for h8300 architecture.
-References: <521B312B.2020806@asianux.com> <521B31F4.9090701@asianux.com> <87txibbtt3.fsf@rustcorp.com.au>
-In-Reply-To: <87txibbtt3.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [RFC PATCH 1/3] pinctrl: add new generic pinconf config for deglitch
+ filter
+References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com> <1377380109-11247-1-git-send-email-b.brezillon@overkiz.com> <521B875E.1010605@wwwdotorg.org> <521B89D1.6010902@overkiz.com> <521C2347.4080702@wwwdotorg.org>
+In-Reply-To: <521C2347.4080702@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 4925249143003510861
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.500073/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 01:12 PM, Rusty Russell wrote:
-> Chen Gang <gang.chen@asianux.com> writes:
->> If this implementation is correct, the implementation still can be
->> improved (at least, it is not quite well to hard code the architecture
->> related code in "kernel/" and "usr/" sub-directory).
+On 27/08/2013 05:55, Stephen Warren wrote:
+> On 08/26/2013 11:01 AM, boris brezillon wrote:
+>> Hello Stephen,
 >>
->> But it seems, I have no right to add or move files, so welcome any
->> members help do it.
+>> On 26/08/2013 18:50, Stephen Warren wrote:
+>>> On 08/24/2013 03:35 PM, Boris BREZILLON wrote:
+>>>> Add a new parameter to support deglitch filter configuration.
+>>>> A deglitch filter works like a debounce filter but with a smaller
+>>>> delay (nanoseconds).
+>>> Why not use the existing debounce property, just with a small delay
+>>> specified. It seems like that's exactly what the property is for?
+>> That's one of the question I asked in my cover letter :-)
 >>
->> And welcome any additional suggestions or completions.
-> 
-> Hmm, how about something like:
-> 
-> #ifdef CONFIG_ARCH_ASM_INCBIN_NEEDS_PREFIX
-> #include <asm/incbin_prefix.h>
->         ASM_INCBIN_PREFIX
-> #endif /* ARCH_ASM_INCBIN_NEEDS_PREFIX */
-> 
-> Then h8300 can define ARCH_ASM_INCBIN_NEEDS_PREFIX in Kconfig and define
-> ASM_INCBIN_PREFIX in arch/h8300/include/asm/incbin_prefix.h?
-> 
-
-Thank you for your reply firstly, I think your way is OK (valuable to
-continue think of the details implementation).
-
-And excuse me, I continued replying multiple times for this thread (I
-am just continue improving it).
-
-Current status:
-
-  after check the binutils-2.22 source code, we know if use "-no-warn-mismatch" for 'ld', it can avoid this issue.
-
-  and also for another 'ld' issue (which I occurs but not send mail), need use "-accept-unknown-input-arch" for 'ld':
-    "Relocatable linking with relocations from format elf32-h8300 (firmware/keyspan/mpr.fw.gen.o) to format elf32-h8300 (firmware/built-in.o) is not supported"
-
-  ... maybe find more issues during compiling with 'allmodconfig'.
-
-
-My opinion:
-
-  if h8300 is still one of important architecture, we need try to "let our binary match 'ld'"
-  else just use skipping parameters is OK.
-
-  In my current feeling, h8300 is not one of important architecture, so I choose 2nd.
-
-
-Welcome additional suggestion or completions.
-
-
-Thanks.
-
-
-> Cheers,
-> Rusty.
-> 
->> On 08/26/2013 06:42 PM, Chen Gang wrote:
->>> Need add related prefix for h8300, or can not pass compiling by the
->>> latest linker.
->>>
->>> The related error (allmodconfig for h8300):
->>>
->>>   /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `usr/initramfs_data.o' is incompatible with h8300h output
->>>   /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `kernel/modsign_certificate.o' is incompatible with h8300h output
->>>
->>> The cross-compiler's information:
->>>
->>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-ld -v
->>>   GNU ld (GNU Binutils) 2.22
->>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-as -v
->>>   GNU assembler version 2.22 (h8300-gchen-elf) using BFD version (GNU Binutils) 2.22
->>>   
->>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-gcc -v
->>>   Using built-in specs.
->>>   COLLECT_GCC=/usr/local/bin/h8300-gchen-elf-gcc
->>>   COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/h8300-gchen-elf/4.8.0/lto-wrapper
->>>   Target: h8300-gchen-elf
->>>   Configured with: ../gcc-4.8.0/configure --target=h8300-gchen-elf --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no
->>>   Thread model: single
->>>   gcc version 4.8.0 (GCC) 
->>>
->>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>> ---
->>>  kernel/modsign_certificate.S |    7 +++++++
->>>  usr/initramfs_data.S         |    7 +++++++
->>>  2 files changed, 14 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
->>> index 4a9a86d..d24acac 100644
->>> --- a/kernel/modsign_certificate.S
->>> +++ b/kernel/modsign_certificate.S
->>> @@ -1,5 +1,12 @@
->>>  #include <linux/export.h>
->>>  
->>> +#if defined(CONFIG_CPU_H8300H)
->>> +	.h8300h
->>> +#endif
->>> +#if defined(CONFIG_CPU_H8S)
->>> +	.h8300s
->>> +#endif
->>> +
->>>  #define GLOBAL(name)	\
->>>  	.globl VMLINUX_SYMBOL(name);	\
->>>  	VMLINUX_SYMBOL(name):
->>> diff --git a/usr/initramfs_data.S b/usr/initramfs_data.S
->>> index c14322d..6a6c106 100644
->>> --- a/usr/initramfs_data.S
->>> +++ b/usr/initramfs_data.S
->>> @@ -24,6 +24,13 @@
->>>  #include <linux/stringify.h>
->>>  #include <asm-generic/vmlinux.lds.h>
->>>  
->>> +#if defined(CONFIG_CPU_H8300H)
->>> +	.h8300h
->>> +#endif
->>> +#if defined(CONFIG_CPU_H8S)
->>> +	.h8300s
->>> +#endif
->>> +
->>>  .section .init.ramfs,"a"
->>>  __irf_start:
->>>  .incbin __stringify(INITRAMFS_IMAGE)
->>>
+>> Indeed the at91 deglitch filter delay is not configurable and is statically
+>> assigned to half a master clk cycle (if master clk = 133MHz -> 8 ns).
+>> The debounce property argument is currently expressed in usecs.
 >>
+>> This will result in always selecting the debounce filter (which is also
+>> available on at91 SoCs) over the deglitch filter.
 >>
->> -- 
->> Chen Gang
-> 
-> 
+>> Could we add a flag in the deglitch argument to specify the delay unit
+>> (nsecs or usecs) ?
+> If the value is hard-coded in HW, why not use non-zero (or 1) to enable
+> and zero to disable?
+
+Indeed at91 pins support both deglitch and debounce filter and I have to 
+choose
+between the two given the argument value (in usec).
+
+Here's what I can do:
+
+if (arg >= 1/2 * slowclock)    /* debounce case */
+     /* choose debounce filter and configure the delay
+         according to the given argument value */
+else                                          /* deglitch case */
+     /* choose deglitch filter */
 
 
--- 
-Chen Gang
+Slow clock is running at 32KHz which gives a 30 usec clock cycle.
+
+>
+> (this kind of thing is why I'm not convinced that generic pinconf works
+> so well... What if we need psecs in the future?)
+
+Should I keep the at91 native pinconf binding and add the missing flags 
+to this binding
+(OUTPUT configuration flags) ?
+
+This was another question I asked in my cover letter: wether or not the 
+generic pinconf
+binding should be used.
+
