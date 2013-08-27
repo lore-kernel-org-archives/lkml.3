@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab3H0WJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 18:09:31 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:47481 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab3H0WJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 18:09:29 -0400
-Message-ID: <521D2394.7030005@gmail.com>
-Date: Wed, 28 Aug 2013 00:09:24 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753607Ab3H0WM5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 18:12:57 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:45134 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751625Ab3H0WM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 18:12:56 -0400
+To: kgene.kim@samsung.com
+Subject: [PATCH v3 0/4] ARM: S3C24XX: add dmaengine based dma-driver
+Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        linus.walleij@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+Date: Wed, 28 Aug 2013 00:12:41 +0200
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Stephen Warren <swarren@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v2 13/16] ARM: tegra: split tegra_pmc_init() in two
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-14-git-send-email-sebastian.hesselbarth@gmail.com> <521D214C.80809@wwwdotorg.org>
-In-Reply-To: <521D214C.80809@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201308280012.41638.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/13 23:59, Stephen Warren wrote:
-> On 08/27/2013 03:28 PM, Sebastian Hesselbarth wrote:
->> From: Stephen Warren <swarren@nvidia.com>
->>
->> Tegra's board file currently initializes clocks much earlier than those
->> for most other ARM SoCs. The reason is:
->>
->> * The PMC HW block is involved in the path of some interrupts (i.e. it
->> inverts, or not, the IRQ input pin dedicated to the PMIC).
->>
->> * So, that part of the PMC must be initialized early so that the IRQ
->> polarity is correct.
->>
->> * The PMC initialization is currently monolithic, and the PMC has some
->> clock inputs, so the init routine ends up calling of_clk_get_by_name(),
->> and hence clocks must be set up early too.
->>
->> In order to defer clock initialization to the more typical location,
->> split out the portions of tegra_pmc_init() that are truly IRQ-related
->> into a separate tegra_pmc_init_irq(), which can be called from the
->> machine descriptor's .init_irq() function, and defer the rest until
->> the machine descriptor's .init_machine() function. With arch/arm calling
->> of_clk_init(NULL) from time_init() this also allows the removal of
->> .init_time() hook.
->>
->> Signed-off-by: Stephen Warren <swarren@nvidia.com>
->> ---
->> Changelog:
->> v1->v2:
->> - took Stephen Warren's patch provided to separate Tegra's pmc_init
->> - sqashed in .init_time removal and reworded patch text
->
-> I think it'd be better to keep the 2 patches separate so the two logical
-> changes are in different patches. I suppose it isn't a huge deal though.
->
-> Either way, on this patch, your S-o-b line is missing above.
+This series tries to provide a basic dmaengine driver for the s3c24xx
+SoCs to subsequently retire the old one with custom API.
 
-Stephen,
+Since v2 only some small fixes to the dma driver itself were added.
 
-I was already wondering here, if I should separate the patches into 
-preparation and actual removal. I put that question into the cover
-letter and removed it from this patch text ;)
+Since v1 three big changes happened (appart from fixing received comments):
 
-As you suggest to use preparation/removal, I will take that approach
-for the final patch set. Will take you original unmodified patch then.
+For one the limitation of sg-lists to 1 element is gone.Secondly the
+specifics of the virtual channels (target bus, handshake, etc) are not
+encoded with channel ids but in the platformdata - making a later dt
+binding easier, as these informations can there be gathered by the xlate
+function. And lastly I also added a preliminary mechanism to handle the
+specific needs for the earlier variants of the driver.
 
-Sebastian
+While s3c2443 and later can use any channel for any peripheral with just
+marking the target-peripheral-id in a register, earlier SoCs can only use
+specific channels and the target-ids also vary depending on the channel.
+
+Therefore on newer SoCs the chansel element only needs to contain the
+requested target-id, while on the older variants use it to encode both
+the valid channels and the channel-specific peripheral-id.
+
+On affected SoCs the target-id is always 3 bit wide, so we use these and
+an additional 4th bit to hold the valid state. As the older SoCs all have
+4 dma channels this can live happily in an u16 element.
+
+The s3c24xx series will most likely not see any new offspring, but even
+if it happens any new model will probably use the newer more flexible
+variant of the dma controller, so this should not restrict anything
+in the future.
+
+Example:
+SDI is valid on channels 0, 2 and 3 - with varying hw request sources.
+For it the chansel field would look like
+
+ ((BIT(3) | 1) << 3 * 4) | // channel 3, with request source 1
+ ((BIT(3) | 2) << 2 * 4) | // channel 2, with request source 2
+ ((BIT(3) | 2) << 0 * 4)   // channel 0, with request source 2
+
+
+Heiko Stuebner (4):
+  ARM: S3C24XX: number the dma clocks
+  dmaengine: add driver for Samsung s3c24xx SoCs
+  ARM: S3C24XX: add platform-devices for new dma driver for s3c2412 and
+    s3c2443
+  ARM: SAMSUNG: set s3c24xx_dma_filter for s3c64xx-spi0 device
+
+ arch/arm/mach-s3c24xx/clock-s3c2412.c     |    8 +-
+ arch/arm/mach-s3c24xx/common-s3c2443.c    |   12 +-
+ arch/arm/mach-s3c24xx/common.c            |  106 +++
+ arch/arm/mach-s3c24xx/common.h            |    3 +
+ arch/arm/mach-s3c24xx/mach-jive.c         |    1 +
+ arch/arm/mach-s3c24xx/mach-smdk2413.c     |    1 +
+ arch/arm/mach-s3c24xx/mach-smdk2416.c     |    1 +
+ arch/arm/mach-s3c24xx/mach-smdk2443.c     |    1 +
+ arch/arm/mach-s3c24xx/mach-vstms.c        |    1 +
+ arch/arm/plat-samsung/devs.c              |    5 +-
+ drivers/dma/Kconfig                       |   12 +
+ drivers/dma/Makefile                      |    1 +
+ drivers/dma/s3c24xx-dma.c                 | 1285 +++++++++++++++++++++++++++++
+ include/linux/platform_data/dma-s3c24xx.h |   43 +
+ 14 files changed, 1469 insertions(+), 11 deletions(-)
+ create mode 100644 drivers/dma/s3c24xx-dma.c
+ create mode 100644 include/linux/platform_data/dma-s3c24xx.h
+
+-- 
+1.7.10.4
+
