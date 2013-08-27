@@ -1,214 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab3H0IOn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 04:14:43 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31320 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab3H0IOa (ORCPT
+	id S1753336Ab3H0IPX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 04:15:23 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:42522 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab3H0IPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 04:14:30 -0400
-Message-ID: <521C606C.3000109@oracle.com>
-Date: Tue, 27 Aug 2013 16:16:44 +0800
-From: vaughan <vaughan.cao@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Tue, 27 Aug 2013 04:15:20 -0400
+Date: Tue, 27 Aug 2013 10:14:46 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/7] PCI: tegra: replace devm_request_and_ioremap by
+ devm_ioremap_resource
+Message-ID: <20130827081443.GI8686@ulmo>
+References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1376911241-27720-2-git-send-email-Julia.Lawall@lip6.fr>
+ <20130819120249.GA5740@ulmo>
+ <CAErSpo5oOnfhi+aRi-Z3kCwS1VpYSO6FX5O_MOZmWNLcfhhA9w@mail.gmail.com>
+ <20130819201224.GC5191@mithrandir>
+ <CAErSpo6U9i16gdaYGpWqgLaFteXpy1erCUw55SqkHLcbypP=vA@mail.gmail.com>
 MIME-Version: 1.0
-To: dgilbert@interlog.com
-CC: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] [SCSI] sg: fix race condition in sg_open
-References: <1374075246-22923-1-git-send-email-vaughan.cao@oracle.com> <1374468033-8947-1-git-send-email-vaughan.cao@oracle.com> <20130722170338.GA15824@logfs.org> <51F9EB97.7070305@interlog.com> <51FC9449.4060906@interlog.com> <51FF0BC0.5020702@oracle.com> <5200108A.9020008@interlog.com> <52099E1B.5000203@oracle.com> <5209A50E.8090300@interlog.com>
-In-Reply-To: <5209A50E.8090300@interlog.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MFZs98Tklfu0WsCO"
+Content-Disposition: inline
+In-Reply-To: <CAErSpo6U9i16gdaYGpWqgLaFteXpy1erCUw55SqkHLcbypP=vA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 11:16 AM, Douglas Gilbert wrote:
-> On 13-08-12 10:46 PM, vaughan wrote:
->> On 08/06/2013 04:52 AM, Douglas Gilbert wrote:
->>> On 13-08-04 10:19 PM, vaughan wrote:
->>>> On 08/03/2013 01:25 PM, Douglas Gilbert wrote:
->>>>> On 13-08-01 01:01 AM, Douglas Gilbert wrote:
->>>>>> On 13-07-22 01:03 PM, Jörn Engel wrote:
->>>>>>> On Mon, 22 July 2013 12:40:29 +0800, Vaughan Cao wrote:
->>>>>>>>
->>>>>>>> There is a race when open sg with O_EXCL flag. Also a race may
->>>>>>>> happen between
->>>>>>>> sg_open and sg_remove.
->>>>>>>>
->>>>>>>> Changes from v4:
->>>>>>>>     * [3/4] use ERR_PTR series instead of adding another
->>>>>>>> parameter in
->>>>>>>> sg_add_sfp
->>>>>>>>     * [4/4] fix conflict for cherry-pick from v3.
->>>>>>>>
->>>>>>>> Changes from v3:
->>>>>>>>     * release o_sem in sg_release(), not in sg_remove_sfp().
->>>>>>>>     * not set exclude with sfd_lock held.
->>>>>>>>
->>>>>>>> Vaughan Cao (4):
->>>>>>>>      [SCSI] sg: use rwsem to solve race during exclusive open
->>>>>>>>      [SCSI] sg: no need sg_open_exclusive_lock
->>>>>>>>      [SCSI] sg: checking sdp->detached isn't protected when open
->>>>>>>>      [SCSI] sg: push file descriptor list locking down to
->>>>>>>> per-device
->>>>>>>>        locking
->>>>>>>>
->>>>>>>>     drivers/scsi/sg.c | 178
->>>>>>>> +++++++++++++++++++++++++-----------------------------
->>>>>>>>     1 file changed, 83 insertions(+), 95 deletions(-)
->>>>>>>
->>>>>>> Patchset looks good to me, although I didn't test it on hardware
->>>>>>> yet.
->>>>>>> Signed-off-by: Joern Engel <joern@logfs.org>
->>>>>>>
->>>>>>> James, care to pick this up?
->>>>>>
->>>>>> Acked-by: Douglas Gilbert <dgilbert@interlog.com>
->>>>>>
->>>>>> Tested O_EXCL with multiple processes and threads; passed.
->>>>>> sg driver prior to this patch had "leaky" O_EXCL logic
->>>>>> according to the same test. Block device passed.
->>>>>>
->>>>>> James, could you clean this up:
->>>>>>      drivers/scsi/sg.c:242:6: warning: unused variable ‘res’
->>>>>> [-Wunused-variable]
->>>>>
->>>>> Further testing suggests this patch on the sg driver is
->>>>> broken, so I'll rescind my ack.
->>>>>
->>>>> The case it is broken for is when a device is opened
->>>>> without O_EXCL. Now if, while it is open, a second
->>>>> thread/process tries to open the same device O_EXCL
->>>>> then IMO the second open should fail with EBUSY.
->>>>>
->>>>> My testing shows that O_EXCL opens properly deflect
->>>>> other O_EXCL opens.
->>>> Hi  Doug,
->>>>
->>>> My test don't have this issue. The routine is something as below:
->>>>
->>>> I start three opens without O_EXCL, wait 30s each, and open with
->>>> O_EXCL|O_NONBLOCK, it failed with EBUSY.
->>>> And I also call myopen with/without O_EXCL many times in background at
->>>> the same time, and the test is passed. I don't know why it failed in
->>>> your test.
->>>>
->>>> Usage: myopen [-e][-n][-d delay] -f file
->>>>         -e: exclude
->>>>         -n: nonblock
->>>>         -d: delay N seconds and then close.
->>>>
->>>> [root@vacaowol5 16835013]# ./myopen  -f /dev/sg5 -d 30 &
->>>> [1] 3417
->>>> [root@vacaowol5 16835013]# ./myopen  -f /dev/sg5 -d 30 &
->>>> [2] 3418
->>>> [root@vacaowol5 16835013]# ./myopen  -f /dev/sg5 -d 30 &
->>>> [3] 3419
->>>> [root@vacaowol5 16835013]# cat /proc/scsi/sg/debug
->>>> max_active_device=6(origin 1)
->>>>    def_reserved_size=32768
->>>>    >>> device=sg5 scsi5 chan=0 id=1 lun=0   em=0 sg_tablesize=55
->>>> excl=0
->>>>      FD(1): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
->>>>      cmd_q=0 f_packid=0 k_orphan=0 closed=0
->>>>        No requests active
->>>>      FD(2): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
->>>>      cmd_q=0 f_packid=0 k_orphan=0 closed=0
->>>>        No requests active
->>>>      FD(3): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
->>>>      cmd_q=0 f_packid=0 k_orphan=0 closed=0
->>>>        No requests active
->>>>
->>>> [root@vacaowol5 16835013]# ./myopen -e -n  -f /dev/sg5 -d 30 &
->>>> [4] 3422
->>>> [3422:3351] /dev/sg5:exclude: Device or resource busy
->>>>
->>>> [4]+  Exit 1                  ./myopen -e -n -f /dev/sg5 -d 30
->>>>
->>>> [root@vacaowol5 16835013]# cat /proc/scsi/sg/debug
->>>> max_active_device=6(origin 1)
->>>>    def_reserved_size=32768
->>>>    >>> device=sg5 scsi5 chan=0 id=1 lun=0   em=0 sg_tablesize=55
->>>> excl=0
->>>>      FD(1): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
->>>>      cmd_q=0 f_packid=0 k_orphan=0 closed=0
->>>>        No requests active
->>>>      FD(2): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
->>>>      cmd_q=0 f_packid=0 k_orphan=0 closed=0
->>>>        No requests active
->>>>      FD(3): timeout=60000ms bufflen=32768 (res)sgat=1 low_dma=0
->>>>      cmd_q=0 f_packid=0 k_orphan=0 closed=0
->>>>        No requests active
->>>> [root@vacaowol5 16835013]# cat /proc/scsi/sg/debug
->>>> [1]   Done                    ./myopen -f /dev/sg5 -d 30
->>>> [2]-  Done                    ./myopen -f /dev/sg5 -d 30
->>>> [3]+  Done                    ./myopen -f /dev/sg5 -d 30
->>>>
->>>
->>> Hi,
->>> After the initial failures about 36 hours ago, retesting
->>> yesterday and today has not produced any unexpected
->>> failures. And I have been trying hard on lk 3.10.4 and
->>> lk 3.10.5 .
->>>
->>> My test program is a bit more intense than yours and can
->>> be found in the sg3_utils beta in the News section of this
->>> page:
->>>    http://sg.danny.cz/sg/
->>>
->>> It is in the examples directory, two variants called
->>> sg_tst_excl and sg_tst_excl2 . You will need a recent gcc
->>> compiler, IOW something that can compile c++11 . gcc 4.7.3
->>> in Ubuntu 13.04 only just manages, fedora 19 should do
->>> better with gcc 4.8.1 . The threading is implemented using
->>> pthreads so it should be reliable.
->>>
->>> Typically I run multiple instances (processes) and each has
->>> multiple threads. One instance can run '-x' which will cause
->>> its first thread not to use O_EXCL **. All my tests currently
->>> use O_NONBLOCK and that leads to lots of EBUSYs (sometimes
->>> in the billions).
->>>
->>> Doug Gilbert
->>>
->>>
->>> ** Using '-x' on two instances will cause an expected failure
->>>     so can be used as a control.
->>>
->> Hi Doug,
->>
->> Can I regard this as you ACK it again?
->
-> Hi,
-> I'd like you to test your setup with sg_tst_excl or sg_tst_excl2 .
-> Since my last email, I have not seen any more failures with those
-> tests on the patched sg driver but I did see a couple on
-> /dev/sd* . With sg_tst_excl2, bsg devices can be used and since bsg
-> accepts and ignores O_EXCL, it fails reliably.
->
-> BTW I use scsi_debug with 'delay=0' for a pseudo device.
->
-> Doug Gilbert
-Hi Doug,
 
-I run test for sg and sd drivers with both sg_tst_excl and sg_tst_excl2
-on kernel vanilla 3.10.9 with mypatches included on Fedora19 x86_64
-baremachine.
-* I've tried several times with different -w and -n setting, no failure
-for sg driver found.
-* It's easy to find failure on both patched and non-patched kernel for
-sd driver with the following test command:
-    ./sg_tst_excl -w 3 -n 2000 -t 16 -x $1 &
-    ./sg_tst_excl -w 3 -n 2000 -t 16 $1 &
-    ./sg_tst_excl -w 0 -n 2000 -t 16 $1 &
-    ./sg_tst_excl -w -1 -n 2000 -t 16 $1 &
-    ./sg_tst_excl -w -2 -n 2000 -t 16 $1 &
-I think option '-w 0/-1/-2' is significant to trigger the failure, since
-when I only use '-w >0', test usually passed.
+--MFZs98Tklfu0WsCO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Aug 19, 2013 at 02:49:07PM -0600, Bjorn Helgaas wrote:
+> On Mon, Aug 19, 2013 at 2:12 PM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+> > On Mon, Aug 19, 2013 at 02:04:24PM -0600, Bjorn Helgaas wrote:
+> >> On Mon, Aug 19, 2013 at 6:02 AM, Thierry Reding
+> >> <thierry.reding@gmail.com> wrote:
+> >>
+> >> > Bjorn, how do you want to handle patches to the Tegra PCIe driver in=
+ the
+> >> > future? Do you want me to prepare a branch and pull from that or wou=
+ld
+> >> > you rather just take simple patches?
+> >>
+> >> I'm in the habit of applying patches from email, so that's easy for
+> >> me.  But a branch would be OK, too.
+> >
+> > Patches work for me too. Is this cleanup patch something that you'd be
+> > comfortable with applying after 3.12-rc1 or would you rather defer it to
+> > 3.13?
+>=20
+> I'm not really sure how we should manage drivers/pci/host/*.  Those
+> files are mostly arch code, and I'm not sure it's useful for me to be
+> in the middle of managing them.
+>=20
+> I assume Stephen or somebody has a tree with the pci-tegra.c stuff
+> that's in -next right now; it seems like it'd be simplest to just add
+> this patch there and merge in during the v3.12 merge window.
 
-Thanks,
-Vaughan
+If Stephen's fine with it I suppose we could take pci-tegra.c driver
+changes through the Tegra tree. But I think it'd be good if we could
+still Cc you on patches so you're aware of what we're doing (that is
+the same for all drivers drivers/pci/host/*). And we're going to need
+your Acked-by on the patches as well.
+
+Thierry
+
+--MFZs98Tklfu0WsCO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSHF/zAAoJEN0jrNd/PrOh4LcQAJvIRnYZFA6phiVFvyQON8YI
+EinzYiHmV02pb5MDFKUivA2yDKSiy86MJRcVxNpRW/JxvXwFTdbpiN8B/7qtrCsC
+2uwrtFlKo0WGktGYJsIVM57aarPEBl66GMcAliAmDTBD1x6z00QCOjwdbociDmWO
+aZRUjn2IK+ZFvKAijiM8OZWForsiCriWNUUILGUZXggR8FNK8Tu3BtO0/1BNBJgA
+LGbcqzSLd8KHJlXXSkXKvzESpvx9q4nhe1Q+D/r92CW3jlJDgu9FQ4IjVC0Z2dav
+e+52ueTWOexlIT8lyf//hSn7W9EWvsuBxiWihwHg/nMUcHII8aUl3k9DzJz43yc0
+m+it531Sbtcu+/PsMOti3+GWBwwqt6pb5JYlSyNLhUAtKVUw35bp/uR6mr072c3d
+D2s4exsHRwHipB+GYNAEOMWVS76wE4ngNmCRViKNcIrHkNH7fDuJ1gJFyjNrCxtD
+erx2i6GHs9cQahd69EBMoZhTxGhQJ5xT8VQyJ6VxuSwJFtVVZuTShN/n+b9jQJll
+uDoCn2w6CYY2OSDvKLe9vBFBCtqIVjQePcKoJSoEiKzCtuOkeujMI44/kRY0qAUL
+63vaPUu7RAnDscd61Ay5uS2aRyjy62Dre6Atohkzb4BtNxtrZW3v2XG27keaKe40
+jcM6e+Iuq23A2UnHzW0O
+=g8NQ
+-----END PGP SIGNATURE-----
+
+--MFZs98Tklfu0WsCO--
