@@ -1,74 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab3H0FT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 01:19:57 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:36999 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3H0FT4 (ORCPT
+	id S1752853Ab3H0FZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 01:25:53 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:48425 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab3H0FZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 01:19:56 -0400
-Message-ID: <521C36F4.8030607@linux.vnet.ibm.com>
-Date: Tue, 27 Aug 2013 10:49:48 +0530
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 27 Aug 2013 01:25:52 -0400
+X-Spam-Score: -101.0
+Message-ID: <521C3820.9010102@asianux.com>
+Date: Tue, 27 Aug 2013 13:24:48 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>
-CC: "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "jkenisto@linux.vnet.ibm.com" <jkenisto@linux.vnet.ibm.com>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        "mahesh@linux.vnet.ibm.com" <mahesh@linux.vnet.ibm.com>,
-        "ccross@android.com" <ccross@android.com>
-Subject: Re: [RFC PATCH v2 04/11] pstore: Add compression support to pstore
-References: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420> <20130816131805.3338.68767.stgit@aruna-ThinkPad-T420> <A5ED84D3BB3A384992CBB9C77DEDA4D443E8F0D7@USINDEM103.corp.hds.com> <3908561D78D1C84285E8C5FCA982C28F31CC7AC0@ORSMSX106.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31CC7AC0@ORSMSX106.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        James Hogan <james.hogan@imgtec.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: Assembly: need add prefix for h8300 architecture.
+References: <521B312B.2020806@asianux.com> <521B31F4.9090701@asianux.com> <521C0B86.3030402@asianux.com>
+In-Reply-To: <521C0B86.3030402@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082705-4790-0000-0000-000009FE6B2D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 August 2013 04:47 AM, Luck, Tony wrote:
-> <1>[  383.209057] RIP  [<ffffffff813d3946>] sysrq_handle_crash+0x16/0x20
-> <4>[  383.209057]  RSP <ffff88006f551e80>
-> <4>[  383.209057] CR2: 0000000000000000
-> <4>[  383.209057] ---[ end trace 04a1cddad37b4b33 ]---
-> <3>[  383.209057] pstore: compression failed for Part 2 returned -5
-> <3>[  383.209057] pstore: Capture uncompressed oops/panic report of Part 2
-> <3>[  383.209057] pstore: compression failed for Part 5 returned -5
->
-> Interesting.  With ERST backend I didn't see these messages.  Traces in
-> pstore recovered files go as far as the line before the "---[ end trace 04a1cddad37b4b33 ]---"
->
-> Why the difference depending on which back end is in use?
->
-> But I agree that we shouldn't have these messages.  They use up space
-> in the persistent store that could be better used saving some more lines
-> from earlier in the console log.
-
-Yeah. We can remove these messages as it will add to the space consumed. But it 
-would
-be good to know why the compression failed with efivars case.
-
-Seiji,
-
-Could you let us know the efivars buffer size with which the pstore is 
-registered when
-the failure occurred.
-
-Regards,
-Aruna
 
 
->
-> -Tony
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
->
+After check binutils-2.22 source code, can pass "-no-warn-mismatch" to
+'ld' to avoid this error.
 
+I will send patch v2 for it.
+
+:-)
+
+On 08/27/2013 10:14 AM, Chen Gang wrote:
+> On 08/26/2013 06:46 PM, Chen Gang wrote:
+>>
+>> If this implementation is correct, the implementation still can be
+>> improved (at least, it is not quite well to hard code the architecture
+>> related code in "kernel/" and "usr/" sub-directory).
+>>
+>> But it seems, I have no right to add or move files, so welcome any
+>> members help do it.
+>>
+> 
+> Sorry, what I said above ("...have no right...") is not quite precise:
+> 
+>   it is only my current feelings, maybe misunderstand something.
+>   also maybe can find better fixing ways more than "add or move files".
+> 
+> 
+> Thanks.
+> 
+>> And welcome any additional suggestions or completions.
+>>
+>> Thanks.
+>>
+>> On 08/26/2013 06:42 PM, Chen Gang wrote:
+>>> Need add related prefix for h8300, or can not pass compiling by the
+>>> latest linker.
+>>>
+>>> The related error (allmodconfig for h8300):
+>>>
+>>>   /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `usr/initramfs_data.o' is incompatible with h8300h output
+>>>   /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `kernel/modsign_certificate.o' is incompatible with h8300h output
+>>>
+>>> The cross-compiler's information:
+>>>
+>>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-ld -v
+>>>   GNU ld (GNU Binutils) 2.22
+>>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-as -v
+>>>   GNU assembler version 2.22 (h8300-gchen-elf) using BFD version (GNU Binutils) 2.22
+>>>   
+>>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-gcc -v
+>>>   Using built-in specs.
+>>>   COLLECT_GCC=/usr/local/bin/h8300-gchen-elf-gcc
+>>>   COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/h8300-gchen-elf/4.8.0/lto-wrapper
+>>>   Target: h8300-gchen-elf
+>>>   Configured with: ../gcc-4.8.0/configure --target=h8300-gchen-elf --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no
+>>>   Thread model: single
+>>>   gcc version 4.8.0 (GCC) 
+>>>
+>>>
+>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>> ---
+>>>  kernel/modsign_certificate.S |    7 +++++++
+>>>  usr/initramfs_data.S         |    7 +++++++
+>>>  2 files changed, 14 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
+>>> index 4a9a86d..d24acac 100644
+>>> --- a/kernel/modsign_certificate.S
+>>> +++ b/kernel/modsign_certificate.S
+>>> @@ -1,5 +1,12 @@
+>>>  #include <linux/export.h>
+>>>  
+>>> +#if defined(CONFIG_CPU_H8300H)
+>>> +	.h8300h
+>>> +#endif
+>>> +#if defined(CONFIG_CPU_H8S)
+>>> +	.h8300s
+>>> +#endif
+>>> +
+>>>  #define GLOBAL(name)	\
+>>>  	.globl VMLINUX_SYMBOL(name);	\
+>>>  	VMLINUX_SYMBOL(name):
+>>> diff --git a/usr/initramfs_data.S b/usr/initramfs_data.S
+>>> index c14322d..6a6c106 100644
+>>> --- a/usr/initramfs_data.S
+>>> +++ b/usr/initramfs_data.S
+>>> @@ -24,6 +24,13 @@
+>>>  #include <linux/stringify.h>
+>>>  #include <asm-generic/vmlinux.lds.h>
+>>>  
+>>> +#if defined(CONFIG_CPU_H8300H)
+>>> +	.h8300h
+>>> +#endif
+>>> +#if defined(CONFIG_CPU_H8S)
+>>> +	.h8300s
+>>> +#endif
+>>> +
+>>>  .section .init.ramfs,"a"
+>>>  __irf_start:
+>>>  .incbin __stringify(INITRAMFS_IMAGE)
+>>>
+>>
+>>
+> 
+> 
+
+
+-- 
+Chen Gang
