@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab3H0G7J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 02:59:09 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:37196 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab3H0G7I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 02:59:08 -0400
-Date: Tue, 27 Aug 2013 08:58:53 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>, linux-arch@vger.kernel.org,
-        Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [guv v2 25/31] avr32: Replace __get_cpu_var uses
-Message-ID: <20130827065853.GA2153@samfundet.no>
-References: <20130826204351.725357339@linux.com>
- <00000140bc69acd0-a726b027-118a-48bd-a832-a6454a9dfe04-000000@email.amazonses.com>
+	id S1752652Ab3H0HUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 03:20:22 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35559 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752349Ab3H0HUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 03:20:21 -0400
+Message-ID: <521C532B.7030009@ti.com>
+Date: Tue, 27 Aug 2013 12:50:11 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000140bc69acd0-a726b027-118a-48bd-a832-a6454a9dfe04-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Mark Brown <broonie@kernel.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the spi tree
+References: <20130827161511.47ee5028fa50811a2adf586d@canb.auug.org.au>
+In-Reply-To: <20130827161511.47ee5028fa50811a2adf586d@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Mon 26 Aug 2013 20:56:16 +0000 or thereabout, Christoph Lameter wrote:
+Hi,
+On Tuesday 27 August 2013 11:45 AM, Stephen Rothwell wrote:
+> Hi Mark,
+>
+> After merging the spi tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+>
+> In file included from drivers/spi/spi-ti-qspi.c:19:0:
+> include/linux/module.h:87:32: error: '__mod_of_device_table' aliased to undefined symbol 'dra7xxx_qspi_match'
+>   extern const struct gtype##_id __mod_##gtype##_table  \
+>                                  ^
+> include/linux/module.h:145:3: note: in expansion of macro 'MODULE_GENERIC_TABLE'
+>     MODULE_GENERIC_TABLE(type##_device,name)
+>     ^
+> drivers/spi/spi-ti-qspi.c:458:1: note: in expansion of macro 'MODULE_DEVICE_TABLE'
+>   MODULE_DEVICE_TABLE(of, dra7xxx_qspi_match);
+>   ^
+>
+> Caused by commit 505a14954e2d ("spi/qspi: Add qspi flash controller").
+>
+> Clearly not build tested as a module. :-(
+Yes, module build test was missed.  I will send a patch for this
+to Mark.
+> I have used the spi tree from next-20130822 for today.
 
-<snipp reasoning>
-
-> Index: linux/arch/avr32/kernel/kprobes.c
-> ===================================================================
-> --- linux.orig/arch/avr32/kernel/kprobes.c	2013-08-26 13:25:18.000000000 -0500
-> +++ linux/arch/avr32/kernel/kprobes.c	2013-08-26 13:27:09.758485808 -0500
-> @@ -104,7 +104,7 @@ static void __kprobes resume_execution(s
->  
->  static void __kprobes set_current_kprobe(struct kprobe *p)
->  {
-> -	__get_cpu_var(current_kprobe) = p;
-> +	__this_cpu_write(current_kprobe, p);
->  }
->  
->  static int __kprobes kprobe_handler(struct pt_regs *regs)
-
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-
--- 
-mvh
-Hans-Christian Egtvedt
