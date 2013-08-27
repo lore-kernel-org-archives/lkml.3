@@ -1,185 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab3H0MGe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 08:06:34 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:42862 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab3H0MGd (ORCPT
+	id S1753346Ab3H0MLo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 08:11:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60500 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab3H0MLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 08:06:33 -0400
-X-Spam-Score: -101.0
-Message-ID: <521C95FD.5060600@asianux.com>
-Date: Tue, 27 Aug 2013 20:05:17 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 27 Aug 2013 08:11:43 -0400
+Date: Tue, 27 Aug 2013 14:11:33 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH 11/12] pid: rewrite task helper functions avoiding
+ task->pid and task->tgid
+Message-ID: <20130827121133.GD10002@twins.programming.kicks-ass.net>
+References: <cover.1377032086.git.rgb@redhat.com>
+ <bbf1d1952bd17e3b19ecbafb1d1603d0bed72381.1377032086.git.rgb@redhat.com>
+ <20130822200555.GN31370@twins.programming.kicks-ass.net>
+ <20130822214347.GB21110@madcap2.tricolour.ca>
+ <20130823063621.GO31370@twins.programming.kicks-ass.net>
+ <20130827023722.GB21098@madcap2.tricolour.ca>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        James Hogan <james.hogan@imgtec.com>, Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: Assembly: need add prefix for h8300 architecture.
-References: <521B312B.2020806@asianux.com> <521B31F4.9090701@asianux.com> <87txibbtt3.fsf@rustcorp.com.au> <521C45AB.2020204@asianux.com>
-In-Reply-To: <521C45AB.2020204@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130827023722.GB21098@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 02:22 PM, Chen Gang wrote:
-> On 08/27/2013 01:12 PM, Rusty Russell wrote:
->> Chen Gang <gang.chen@asianux.com> writes:
->>> If this implementation is correct, the implementation still can be
->>> improved (at least, it is not quite well to hard code the architecture
->>> related code in "kernel/" and "usr/" sub-directory).
->>>
->>> But it seems, I have no right to add or move files, so welcome any
->>> members help do it.
->>>
->>> And welcome any additional suggestions or completions.
->>
->> Hmm, how about something like:
->>
->> #ifdef CONFIG_ARCH_ASM_INCBIN_NEEDS_PREFIX
->> #include <asm/incbin_prefix.h>
->>         ASM_INCBIN_PREFIX
->> #endif /* ARCH_ASM_INCBIN_NEEDS_PREFIX */
->>
->> Then h8300 can define ARCH_ASM_INCBIN_NEEDS_PREFIX in Kconfig and define
->> ASM_INCBIN_PREFIX in arch/h8300/include/asm/incbin_prefix.h?
->>
+On Mon, Aug 26, 2013 at 10:37:22PM -0400, Richard Guy Briggs wrote:
+> On Fri, Aug 23, 2013 at 08:36:21AM +0200, Peter Zijlstra wrote:
+> > Except that's not the case, with namespaces there's a clear hierarchy
+> > and the task_struct::pid is the one true value aka. root namespace.
 > 
-> Thank you for your reply firstly, I think your way is OK (valuable to
-> continue think of the details implementation).
-> 
+> Peter, I agonized over the access efficiency of dropping this one or the
+> duplicate in task_struct::pids and this one was far easier to drop in
+> terms of somehow always forcing
+> task->pids[PIDTYPE_PID].pid->numbers[0].nr to point to task->pid.
 
-The final result is: we have to use this way (mark 'h8300h' explicitly)
-to fix this issue. (build-in.o requires "h8300h", but the default value
-of the ".S" files are "h8300").
+You mean there's more than 1 site that sets task_struct::pid? I thought
+we only assign that thing once in fork.c someplace.
 
-"-no-warn-mismatch" and "-accept-unknown-input-arch" have no effect with
-the same issue under firmware sub-directory (after reading 'ld' code, we
-know there are additional stricter checking for it).
+> It should be possible to audit the kernel to make certain task->pid is
+> only ever written at the time of task creation and copied to its own
+> task->pids[PIDTYPE_PID].pid->numbers[0].nr at the time of task creation
+> so that the two values are consistent.  Continuously auditing the kernel
+> so this is the case would be a bit more of a challenge.
 
-After let 'h8300' pass allmodconfig, I will send patch v3 (may need some
-days for waiting gcc issues).
+I know there's people running scripts over git commits to catch abuse,
+if this is scriptable that might be doable.
 
+> Would it be reasonable to suggest task_struct::pid only be accessed by
+> the existing inlined task_pid_nr() converted to const?
 
-Welcome any additional suggestions or completions (especially for
-modifying the firmware files, I have no experience for it).
+Sure that works for me, alternatively what's wrong with making
+task_struct::pid itself a const pid_t ? Then assignment will need an
+ugly cast to even work.
 
+> The goal is to gain assurance that any PIDs referred to in audit logs
+> are indisputable.
+> 
+> Would you be alright with doing away with task_struct::tgid?
 
-Thanks.
+So I don't particularly use that one much -- if at all. So no I don't
+mind it too much.
 
+> > Furthermore idle threads really are special and it doesn't make sense to
+> > address them in any but the root namespace, doubly so because only
+> > kernel space does this.
+> 
+> If that is the case, and the above holds true, then we don't need the
+> second hunk, I agree.
 
-> And excuse me, I continued replying multiple times for this thread (I
-> am just continue improving it).
-> 
-> Current status:
-> 
->   after check the binutils-2.22 source code, we know if use "-no-warn-mismatch" for 'ld', it can avoid this issue.
-> 
->   and also for another 'ld' issue (which I occurs but not send mail), need use "-accept-unknown-input-arch" for 'ld':
->     "Relocatable linking with relocations from format elf32-h8300 (firmware/keyspan/mpr.fw.gen.o) to format elf32-h8300 (firmware/built-in.o) is not supported"
-> 
->   ... maybe find more issues during compiling with 'allmodconfig'.
-> 
-> 
-> My opinion:
-> 
->   if h8300 is still one of important architecture, we need try to "let our binary match 'ld'"
->   else just use skipping parameters is OK.
-> 
->   In my current feeling, h8300 is not one of important architecture, so I choose 2nd.
-> 
-> 
-> Welcome additional suggestion or completions.
-> 
-> 
-> Thanks.
-> 
-> 
->> Cheers,
->> Rusty.
->>
->>> On 08/26/2013 06:42 PM, Chen Gang wrote:
->>>> Need add related prefix for h8300, or can not pass compiling by the
->>>> latest linker.
->>>>
->>>> The related error (allmodconfig for h8300):
->>>>
->>>>   /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `usr/initramfs_data.o' is incompatible with h8300h output
->>>>   /usr/local/bin/h8300-gchen-elf-ld: h8300 architecture of input file `kernel/modsign_certificate.o' is incompatible with h8300h output
->>>>
->>>> The cross-compiler's information:
->>>>
->>>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-ld -v
->>>>   GNU ld (GNU Binutils) 2.22
->>>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-as -v
->>>>   GNU assembler version 2.22 (h8300-gchen-elf) using BFD version (GNU Binutils) 2.22
->>>>   
->>>>   [root@dhcp122 linux-next]# /usr/local/bin/h8300-gchen-elf-gcc -v
->>>>   Using built-in specs.
->>>>   COLLECT_GCC=/usr/local/bin/h8300-gchen-elf-gcc
->>>>   COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/h8300-gchen-elf/4.8.0/lto-wrapper
->>>>   Target: h8300-gchen-elf
->>>>   Configured with: ../gcc-4.8.0/configure --target=h8300-gchen-elf --without-header --disable-nls --enable-language=c --disable-threads --disable-shared --enable-werror=no
->>>>   Thread model: single
->>>>   gcc version 4.8.0 (GCC) 
->>>>
->>>>
->>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>>> ---
->>>>  kernel/modsign_certificate.S |    7 +++++++
->>>>  usr/initramfs_data.S         |    7 +++++++
->>>>  2 files changed, 14 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
->>>> index 4a9a86d..d24acac 100644
->>>> --- a/kernel/modsign_certificate.S
->>>> +++ b/kernel/modsign_certificate.S
->>>> @@ -1,5 +1,12 @@
->>>>  #include <linux/export.h>
->>>>  
->>>> +#if defined(CONFIG_CPU_H8300H)
->>>> +	.h8300h
->>>> +#endif
->>>> +#if defined(CONFIG_CPU_H8S)
->>>> +	.h8300s
->>>> +#endif
->>>> +
->>>>  #define GLOBAL(name)	\
->>>>  	.globl VMLINUX_SYMBOL(name);	\
->>>>  	VMLINUX_SYMBOL(name):
->>>> diff --git a/usr/initramfs_data.S b/usr/initramfs_data.S
->>>> index c14322d..6a6c106 100644
->>>> --- a/usr/initramfs_data.S
->>>> +++ b/usr/initramfs_data.S
->>>> @@ -24,6 +24,13 @@
->>>>  #include <linux/stringify.h>
->>>>  #include <asm-generic/vmlinux.lds.h>
->>>>  
->>>> +#if defined(CONFIG_CPU_H8300H)
->>>> +	.h8300h
->>>> +#endif
->>>> +#if defined(CONFIG_CPU_H8S)
->>>> +	.h8300s
->>>> +#endif
->>>> +
->>>>  .section .init.ramfs,"a"
->>>>  __irf_start:
->>>>  .incbin __stringify(INITRAMFS_IMAGE)
->>>>
->>>
->>>
->>> -- 
->>> Chen Gang
->>
->>
-> 
-> 
+It should be the case -- not entirely sure it is the case, but in any
+case pid-0 should be 'special' by all accounts.
 
+> > As for the init thread, that function is called is_global_init() for
+> > crying out loud, what numb nut doesn't get that that's supposed to be
+> > using the root namespace?
+> 
+> A process in another pid namespace?  If that's never going to happen,
+> then drop it.
 
--- 
-Chen Gang
+That'd be a bug I suppose, you want the 'global' init when using that
+function. I don't use this function, never have. So I really don't know
+_that_ much about it. It just seems to me that the name really implies
+it wants the root init process and not any other.
+
+> > Seriously, you namespace guys should stop messing things up and
+> > confusing yourselves and others.
+> 
+> "you namespace guys"?  I'm not a namespace guy.  I'm a rusty kernel
+> network security guy taking on audit, trying to prepare it for moving
+> into a more and more namespace-enabled place of
+> containerization/light-virtualization.
+
+Well, you let yourself in with 'those' people ;-)
+
+> We aren't ready for it yet, but there is demand to run additional auditd
+> daemons in other pid namespaces and some of this work is trying to move
+> in that direction.
+
+So afaict that's 'simply' writing the 'right' pid to your logger, right?
+Your additional concern that the pid space isn't corrupted sounds a bit
+superfluous to me, we don't typically muck about with pids, stuff would
+horribly break if we did that.
+
+There's a few special cases, like the idle threads having pid-0 and
+'simple' people like myself prefer to use task_struct::pid for debugging
+when we run our simple kernels without all this namespace stuff enabled.
+
+The entire task->pids[PIDTYPE_PID].pid->numbers[0].nr thing just seems
+increddibly unwieldy and double dereferences, even if the lines are
+'hot' are worse than single derefs.
