@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab3H0IFZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 04:05:25 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:48211 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab3H0IFW (ORCPT
+	id S1753080Ab3H0IGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 04:06:45 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:62347 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab3H0IGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 04:05:22 -0400
-Date: Tue, 27 Aug 2013 10:04:48 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: tbergstrom@nvidia.com, dri-devel@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] host1x: hdmi: Make sure clock is enabled before dumping
- registers
-Message-ID: <20130827080447.GH8686@ulmo>
-References: <1375173303-4275-1-git-send-email-mperttunen@nvidia.com>
+	Tue, 27 Aug 2013 04:06:41 -0400
+Date: Tue, 27 Aug 2013 09:06:35 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
+ DBX500 DT
+Message-ID: <20130827080635.GC6152@lee--X1>
+References: <1370521041-32318-10-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbE86HgPr+7LZD9BFU_OsDFFFWTaFHW_i2fNXivKZ-3Dw@mail.gmail.com>
+ <20130820093034.GL31036@pengutronix.de>
+ <20130822133730.GB23152@e106331-lin.cambridge.arm.com>
+ <20130822141900.GB17154@lee--X1>
+ <20130822151723.GE23152@e106331-lin.cambridge.arm.com>
+ <20130822154116.GC17154@lee--X1>
+ <20130822211912.GE31036@pengutronix.de>
+ <20130823075607.GD17154@lee--X1>
+ <20130823165539.GD7015@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CNfT9TXqV7nd4cfk"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1375173303-4275-1-git-send-email-mperttunen@nvidia.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130823165539.GD7015@e106331-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 23 Aug 2013, Mark Rutland wrote:
 
---CNfT9TXqV7nd4cfk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Fri, Aug 23, 2013 at 08:56:07AM +0100, Lee Jones wrote:
+> > I had a short chat with Rob last night about this. I'm going to loop
+> > him in to the conversation, as he wrote the binding.
+> > 
+> > > > When most of the other clocks that we deal with are being requested,
+> > > > they rely on being index zero:
+> > > > 
+> > > >   drivers/i2c/busses/i2c-nomadik.c: dev->clk = clk_get(&adev->dev, NULL);
+> > > 
+> > > Look at drivers/clk/clkdev.c, there's some fuzzy matching
+> > > involved when you pass NULL as connection id.
+> > 
+> > Yes, I've been looking at that. This is why it works currently. I
+> > think I need to change all of the drivers to specify which clock they
+> > want. At the moment that 'fuzzy matching' is what's saving us. If
+> > anyone were to change our DTS file to match what the binding says,
+> > then it would cease to work. I'm guessing this is the same for all
+> > other DTS files too:
+> 
+> I think if anything, the binding document(s) should be updated to
+> describe that apb_pclk is referred to by name, and the names of the
+> other clocks should be described in the specific device bindings. We can
+> then modify the drivers which grab clock 0 to explicitly grab the first
+> clock by name, and backwards compatibility should not be broken.
+> 
+> I don't believe any other OS has implemented the common clock bindings,
+> and we've never supported the binding as described. Let's correct the
+> de-facto standard into a standard by decree.
 
-On Tue, Jul 30, 2013 at 11:35:03AM +0300, Mikko Perttunen wrote:
-> The debugfs register dumping function did not enable the HDMI clock.
-> This led to a possible system hang when reading the debugfs entry
-> while no HDMI cable was connected to the system. This patch makes
-> sure that the clock is enabled during the read.
->=20
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-> ---
->  drivers/gpu/host1x/drm/hdmi.c | 7 +++++++
->  1 file changed, 7 insertions(+)
+I think we need to respect, or at least take into consideration the
+reason for the original 'de-facto' standard. Other OSes shouldn't be
+forced to provide a named clock request in order to obtain
+'apb_pclk'. If the binding says it should be first, then perhaps we
+should do just that. It's simply a matter of naming all subsequent
+clocks related to AMBA devices.
 
-Applied, thanks.
-
-Thierry
-
---CNfT9TXqV7nd4cfk
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSHF2fAAoJEN0jrNd/PrOhjD0P/25n4NrF/zsYVKXY7oDEeM0k
-D24bAqBHLySDysys0DEqhA6XQZV3JoBkGK++QjEAoRAE/A6a5dzTbwQbELhlO8+z
-iuLuYx7aBuJh7lT1ghvoctgP2p8lJvD1FhrVS/ucTYJyNhnNebp2gXW45PqUOG61
-YleJ1kfYBKI6lEZgZ6JP5AWdVxD8ETrqs9zoSjY+1KK93Q70y87JSzMqR0/ounJO
-JXYdXepWa8yIC7ywwaTykcFvpgXPEjocn06i7BJr4MS5axYhJvcfKIWxRVBXwYA5
-Z14RmGOuVlmvlkUsc3F+9udjgKzzm6XG38QtXY1QsIcwYWQQqfT7uPpcP1P4mu81
-8xtrw58ZPDzJhbk3v8310MYg81q2f7HtZ9jnZPQIn7eTa7646xmhHtdC9ZD+IUjx
-QYAY+X9X4FtGDqMRZnonK3FcI+ao0xI9rdwnMbUNDpWf2trOxiDAeDYaLa1EkJ+1
-5J/B61FRVi4N3fB/IEntLcMVBSAPiIrXQUDpTANgOLDm1KYr5FDTLM711wmUeHMd
-2toNbMdvEuisNkHoDfXyAm5Tsq7Yg9dahPHTluUQAvZqDS44fef/lPn7zFJtqAuG
-ikcn8l6OrFwpv/Qm5ptmVNs5ZCpqrn08VYj/J2mlzcIm7PTd1zakJpPcJmOvn9s7
-0QvKcvOxlbphSUCGUev2
-=8APv
------END PGP SIGNATURE-----
-
---CNfT9TXqV7nd4cfk--
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
