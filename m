@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab3H0BYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:24:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59416 "EHLO
+	id S1754035Ab3H0BYg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:24:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59421 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab3H0BHC (ORCPT
+	with ESMTP id S1753272Ab3H0BHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Aug 2013 21:07:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [ 01/74] KVM: s390: move kvm_guest_enter,exit closer to sie
-Date: Mon, 26 Aug 2013 18:07:59 -0700
-Message-Id: <20130827010425.079132653@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 20/74] tracing: Change tracing_pipe_fops() to rely on tracing_get_cpu()
+Date: Mon, 26 Aug 2013 18:08:18 -0700
+Message-Id: <20130827010428.827796431@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -28,65 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dominik Dingel <dingel@linux.vnet.ibm.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 2b29a9fdcb92bfc6b6f4c412d71505869de61a56 upstream.
+commit 15544209cb0b5312e5220a9337a1fe61d1a1f2d9 upstream.
 
-Any uaccess between guest_enter and guest_exit could trigger a page fault,
-the page fault handler would handle it as a guest fault and translate a
-user address as guest address.
+tracing_open_pipe() is racy, the memory inode->i_private points to
+can be already freed.
 
-Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Change debugfs_create_file("trace_pipe", data) callers to to pass
+"data = tr", tracing_open_pipe() can use tracing_get_cpu().
+
+Link: http://lkml.kernel.org/r/20130723152557.GA23717@redhat.com
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- arch/s390/kvm/kvm-s390.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ kernel/trace/trace.c |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -622,14 +622,25 @@ static int __vcpu_run(struct kvm_vcpu *v
- 		kvm_s390_deliver_pending_interrupts(vcpu);
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3950,8 +3950,7 @@ tracing_max_lat_write(struct file *filp,
  
- 	vcpu->arch.sie_block->icptcode = 0;
--	preempt_disable();
--	kvm_guest_enter();
--	preempt_enable();
- 	VCPU_EVENT(vcpu, 6, "entering sie flags %x",
- 		   atomic_read(&vcpu->arch.sie_block->cpuflags));
- 	trace_kvm_s390_sie_enter(vcpu,
- 				 atomic_read(&vcpu->arch.sie_block->cpuflags));
-+
-+	/*
-+	 * As PF_VCPU will be used in fault handler, between guest_enter
-+	 * and guest_exit should be no uaccess.
-+	 */
-+	preempt_disable();
-+	kvm_guest_enter();
-+	preempt_enable();
- 	rc = sie64a(vcpu->arch.sie_block, vcpu->run->s.regs.gprs);
-+	kvm_guest_exit();
-+
-+	VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
-+		   vcpu->arch.sie_block->icptcode);
-+	trace_kvm_s390_sie_exit(vcpu, vcpu->arch.sie_block->icptcode);
-+
- 	if (rc) {
- 		if (kvm_is_ucontrol(vcpu->kvm)) {
- 			rc = SIE_INTERCEPT_UCONTROL;
-@@ -639,10 +650,6 @@ static int __vcpu_run(struct kvm_vcpu *v
- 			rc = kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
- 		}
- 	}
--	VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
--		   vcpu->arch.sie_block->icptcode);
--	trace_kvm_s390_sie_exit(vcpu, vcpu->arch.sie_block->icptcode);
--	kvm_guest_exit();
+ static int tracing_open_pipe(struct inode *inode, struct file *filp)
+ {
+-	struct trace_cpu *tc = inode->i_private;
+-	struct trace_array *tr = tc->tr;
++	struct trace_array *tr = inode->i_private;
+ 	struct trace_iterator *iter;
+ 	int ret = 0;
  
- 	memcpy(&vcpu->run->s.regs.gprs[14], &vcpu->arch.sie_block->gg14, 16);
- 	return rc;
+@@ -3997,9 +3996,9 @@ static int tracing_open_pipe(struct inod
+ 	if (trace_clocks[tr->clock_id].in_ns)
+ 		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
+ 
+-	iter->cpu_file = tc->cpu;
+-	iter->tr = tc->tr;
+-	iter->trace_buffer = &tc->tr->trace_buffer;
++	iter->tr = tr;
++	iter->trace_buffer = &tr->trace_buffer;
++	iter->cpu_file = tracing_get_cpu(inode);
+ 	mutex_init(&iter->mutex);
+ 	filp->private_data = iter;
+ 
+@@ -4022,8 +4021,7 @@ fail:
+ static int tracing_release_pipe(struct inode *inode, struct file *file)
+ {
+ 	struct trace_iterator *iter = file->private_data;
+-	struct trace_cpu *tc = inode->i_private;
+-	struct trace_array *tr = tc->tr;
++	struct trace_array *tr = inode->i_private;
+ 
+ 	mutex_lock(&trace_types_lock);
+ 
+@@ -5563,7 +5561,7 @@ tracing_init_debugfs_percpu(struct trace
+ 
+ 	/* per cpu trace_pipe */
+ 	trace_create_cpu_file("trace_pipe", 0444, d_cpu,
+-				&data->trace_cpu, cpu, &tracing_pipe_fops);
++				tr, cpu, &tracing_pipe_fops);
+ 
+ 	/* per cpu trace */
+ 	trace_create_cpu_file("trace", 0644, d_cpu,
+@@ -6149,7 +6147,7 @@ init_tracer_debugfs(struct trace_array *
+ 			(void *)&tr->trace_cpu, &tracing_fops);
+ 
+ 	trace_create_file("trace_pipe", 0444, d_tracer,
+-			(void *)&tr->trace_cpu, &tracing_pipe_fops);
++			  tr, &tracing_pipe_fops);
+ 
+ 	trace_create_file("buffer_size_kb", 0644, d_tracer,
+ 			(void *)&tr->trace_cpu, &tracing_entries_fops);
 
 
