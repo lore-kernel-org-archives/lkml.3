@@ -1,90 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab3H0LRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 07:17:47 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.143]:57221 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752315Ab3H0LRo (ORCPT
+	id S1753190Ab3H0LTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 07:19:49 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52401 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752913Ab3H0LTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 07:17:44 -0400
-X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Aug 2013 07:17:43 EDT
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-11.tower-179.messagelabs.com!1377601877!29774342!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.11; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Tue, 27 Aug 2013 13:11:18 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Rob Landley <rob@landley.net>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>
-Subject: [RFC][PATCH v2] documentation/devicetree: Move DT bindigns from gpio to watchdog
-Date: Tue, 27 Aug 2013 13:10:37 +0200
-Message-ID: <1377601837-18989-1-git-send-email-johannes.thumshirn@men.de>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <521672A1.6010202@wwwdotorg.org>
-References: <521672A1.6010202@wwwdotorg.org>
+	Tue, 27 Aug 2013 07:19:47 -0400
+Date: Tue, 27 Aug 2013 12:19:05 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v4 3/5] ARM64: arch_timer: add support to configure and
+ enable event stream
+Message-ID: <20130827111905.GF19897@arm.com>
+References: <1377274749-6196-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <1377274749-6196-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 27 Aug 2013 11:11:17.0546 (UTC) FILETIME=[26C648A0:01CEA316]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377274749-6196-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I accidently put the devicetree bindings for the MEN A21 watchdog driver in
-Documentation/devicetree/bindings/gpio instead of
-Documentation/devicetree/bindings/watchdog, this patch addresses this error.
+On Fri, Aug 23, 2013 at 05:19:07PM +0100, Sudeep KarkadaNagesha wrote:
+> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+> index 00b09d0..0f57158 100644
+> --- a/arch/arm64/include/asm/arch_timer.h
+> +++ b/arch/arm64/include/asm/arch_timer.h
+> @@ -97,21 +97,53 @@ static inline u32 arch_timer_get_cntfrq(void)
+>  	return val;
+>  }
+>  
+> -static inline void arch_counter_set_user_access(void)
+> +static inline u32 arch_timer_get_cntkctl(void)
+>  {
+>  	u32 cntkctl;
+> -
+>  	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
+> +	return cntkctl;
+> +}
+> +
+> +static inline void arch_timer_set_cntkctl(u32 cntkctl)
+> +{
+> +	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+> +}
+> +
+> +static inline void arch_counter_set_user_access(void)
+> +{
+> +	u32 cntkctl = arch_timer_get_cntkctl();
+>  
+>  	/* Disable user access to the timers and the physical counter. */
+>  	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
+>  			| ARCH_TIMER_USR_VT_ACCESS_EN
+>  			| ARCH_TIMER_USR_PCT_ACCESS_EN);
+>  
+> -	/* Enable user access to the virtual counter. */
+> +	/* Enable user access to the virtual counter */
 
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Wim Van Sebroeck <wim@iguana.be>
-Cc: Guenter Roeck <linux@roeck-us.net>
----
- Changes to v1:
- - Use named gpios, as suggested by Stephen Warren
+This change isn't needed here. Just move it to the first patch which
+adds the comment.
 
- .../bindings/{gpio => watchdog}/men-a021-wdt.txt   |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
- rename Documentation/devicetree/bindings/{gpio => watchdog}/men-a021-wdt.txt (61%)
+>  	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
+>  
+> -	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+> +	arch_timer_set_cntkctl(cntkctl);
+> +}
+> +
+> +static inline void arch_timer_evtstrm_config(bool enable, int divider)
+> +{
+> +	u32 cntkctl = arch_timer_get_cntkctl();
+> +	if (enable) {
+> +		cntkctl &= ~ARCH_TIMER_EVT_TRIGGER_MASK;
+> +		/* Set the divider and enable virtual event stream */
+> +		cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
+> +				| ARCH_TIMER_VIRT_EVT_EN;
+> +	} else {
+> +		cntkctl &= ~ARCH_TIMER_VIRT_EVT_EN; /* disable event stream */
+> +	}
+> +	arch_timer_set_cntkctl(cntkctl);
+> +}
+> +
+> +static inline void arch_timer_set_hwcap_evtstrm(void)
+> +{
+> +	elf_hwcap |= HWCAP_EVTSTRM;
+> +#ifdef CONFIG_COMPAT
+> +	compat_dyn_elf_hwcap |= COMPAT_HWCAP_EVTSTRM;
+> +#endif
+>  }
+>  
+>  static inline u64 arch_counter_get_cntvct(void)
+> diff --git a/arch/arm64/include/asm/hwcap.h b/arch/arm64/include/asm/hwcap.h
+> index 6d4482f..022d771 100644
+> --- a/arch/arm64/include/asm/hwcap.h
+> +++ b/arch/arm64/include/asm/hwcap.h
+> @@ -30,6 +30,7 @@
+>  #define COMPAT_HWCAP_IDIVA	(1 << 17)
+>  #define COMPAT_HWCAP_IDIVT	(1 << 18)
+>  #define COMPAT_HWCAP_IDIV	(COMPAT_HWCAP_IDIVA|COMPAT_HWCAP_IDIVT)
+> +#define COMPAT_HWCAP_EVTSTRM	(1 << 21)
+>  
+>  #ifndef __ASSEMBLY__
+>  /*
+> @@ -37,11 +38,15 @@
+>   * instruction set this cpu supports.
+>   */
+>  #define ELF_HWCAP		(elf_hwcap)
+> +#ifdef CONFIG_COMPAT
+>  #define COMPAT_ELF_HWCAP	(COMPAT_HWCAP_HALF|COMPAT_HWCAP_THUMB|\
+>  				 COMPAT_HWCAP_FAST_MULT|COMPAT_HWCAP_EDSP|\
+>  				 COMPAT_HWCAP_TLS|COMPAT_HWCAP_VFP|\
+>  				 COMPAT_HWCAP_VFPv3|COMPAT_HWCAP_VFPv4|\
+> -				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV)
+> +				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV|\
+> +				 compat_dyn_elf_hwcap)
+> +extern unsigned int compat_dyn_elf_hwcap;
+> +#endif
 
-diff --git a/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt b/Documentation/devicetree/bindings/watchdog/men-a021-wdt.txt
-similarity index 61%
-rename from Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
-rename to Documentation/devicetree/bindings/watchdog/men-a021-wdt.txt
-index 370dee3..0008f28 100644
---- a/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
-+++ b/Documentation/devicetree/bindings/watchdog/men-a021-wdt.txt
-@@ -16,10 +16,10 @@ Optional properties:
- Example:
- 	watchdog {
- 		compatible ="men,a021-wdt";
--		gpios = <&gpio3 9  1	/* WD_EN */
--			 &gpio3 10 1	/* WD_FAST */
--			 &gpio3 11 1	/* WD_TRIG */
--			 &gpio3 6  1	/* RST_CAUSE[0] */
--			 &gpio3 7  1	/* RST_CAUSE[1] */
--			 &gpio3 8  1>;	/* RST_CAUSE[2] */
-+		enable-gpio = <&gpio3 9 1>; /* WD_EN */
-+		fast-gpio = <&gpio3 10 1>;  /* WD_FAST */
-+		trig-gpio = <&gpio3 11 1>;  /* WD_TRIG */
-+		rst-gpios = <&gpio3 6 1     /* RST_CAUSE[0] */
-+			     &gpio3 7 1     /* RST_CAUSE[1] */
-+			     &gpio3 8 1>;   /* RST_CAUSE[2] */
- 	};
---
-1.7.9.5
+Can we just have a compat_elf_hwcap which is initialised to all the
+above and avoid compat_dyn_elf_hwcap?
 
+-- 
+Catalin
