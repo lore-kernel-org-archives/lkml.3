@@ -1,110 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab3H0Vz0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 17:55:26 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59274 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab3H0VzY (ORCPT
+	id S1753960Ab3H0V5P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 17:57:15 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:48648 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab3H0V5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 17:55:24 -0400
-Message-ID: <521D2047.8030300@wwwdotorg.org>
-Date: Tue, 27 Aug 2013 15:55:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 27 Aug 2013 17:57:13 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <878uzmhkqg.fsf@xmission.com>
+	<CALCETrWPDzuoaJp2ko5jAbwYUBqSdPjvO5uGo-gZVsS4Wm1PKQ@mail.gmail.com>
+Date: Tue, 27 Aug 2013 14:57:05 -0700
+In-Reply-To: <CALCETrWPDzuoaJp2ko5jAbwYUBqSdPjvO5uGo-gZVsS4Wm1PKQ@mail.gmail.com>
+	(Andy Lutomirski's message of "Tue, 27 Aug 2013 14:47:07 -0700")
+Message-ID: <87a9k2g5la.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Josh Cartwright <joshc@codeaurora.org>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH RFC v2 3/5] spmi: add generic SPMI controller binding
- documentation
-References: <cover.1377202730.git.joshc@codeaurora.org> <e42576b69ef3d4e624fbfa2f32f6f79a931b55d6.1377202730.git.joshc@codeaurora.org> <5217DB0C.7000101@wwwdotorg.org> <20130827170120.GR4035@joshc.qualcomm.com>
-In-Reply-To: <20130827170120.GR4035@joshc.qualcomm.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18GNZngfEeHFrb16oEMDib+7NI7BgRUgH0=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0027]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+Subject: Re: [REVIEW][PATCH 1/2] userns: Better restrictions on when proc and sysfs can be mounted
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 11:01 AM, Josh Cartwright wrote:
-...
-> If we want to ensure for the generic bindings that we are fulling
-> characterizing/describing the SPMI bus, then we'll additionally need to
-> tackle an additional identified assumption:
-> 
->   4. One master per SPMI bus.  (The SPMI spec allows for up to 4
->      masters)
-> 
-> On the Snapdragon 800 series, there exists only one software-controlled
-> master, but it is conceivably possible to have a setup with two
-> software-controlled masters on the same SPMI bus.
-> 
-> This necessarily means that the description of the slaves and the
-> masters will need to be decoupled; I'm imagining a generic binding
-> supporting multiple masters would look something like this:
+Andy Lutomirski <luto@amacapital.net> writes:
 
-Is there a need to represent the other masters in the DT? Sure they're
-there in HW, but if there's no specific way for the
-CPU-to-which-the-DT-applies to actually interact with those other
-masters (except perhaps by experiencing some arbitration delays) then
-presumably there's no need to represent the other masters in DT?
+> On Tue, Aug 27, 2013 at 2:44 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>>
+>> Rely on the fact that another flavor of the filesystem is already
+>> mounted and do not rely on state in the user namespace.
+>
+> Possibly dumb question: does this check whether the pre-existing mount
+> has hidepid set?
 
-> 	master0: master@0 {
-> 		compatible = "...";
-> 		#spmi-master-cells = <0>;
-> 		spmi-mid = <0>;
-> 
-> 		...
-> 	};
-> 
-> 	master2: master@2 {
-> 		compatible = "...";
-> 		#spmi-master-cells = <0>;
-> 		spmi-mid = <2>;
-> 
-> 		...
-> 	};
-> 
-> 	spmi_bus {
-> 		compatible = "...";
-> 
-> 		spmi-masters = <&master0 &master2>;
-> 
-> 		foo@0 {
-> 			compatible = "...";
-> 			reg = <0 ...>;
-> 		};
-> 
-> 		foo@8 {
-> 			compatible = "...";
-> 			reg = <8 ...>;
-> 		};
-> 	};
-> 
-> (This will also necessitate a change in the underlying SPMI driver
-> model, in the current implementation, a SPMI master 'owns' a particular
-> device.  This is not a valid assumption to make.)
-> 
-> Would this property-containing-phandle-vector be considered the
-> canonical way of representing nodes with multiple parents in the device
-> tree?
+Not currently. 
 
-I don't think I've seen anything like this before, although that
-in-and-of-itself doesn't make it wrong.
+It may be worth doing something with respect to hidepid.  I forget what
+hidepid tries to do, and I need to dash.  But feel free to cook up a
+follow on patch.
 
-Another approach might be to encode master-vs-slave into a cell in the
-reg property? Something like:
+My goal is simply to reduce the hack level and increase the readability
+and maintainability of the code.
 
-cell 0 - address type (0: master, 1: unique ID, 2: group ID, ...)
-cell 1 - address value
-
-I haven't thought much about that; perhaps there are disadvantages doing
-that.
+Eric
