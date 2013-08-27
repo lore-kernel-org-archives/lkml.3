@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab3H0BHM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:07:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59457 "EHLO
+	id S1754644Ab3H0BUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:20:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59479 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324Ab3H0BHJ (ORCPT
+	with ESMTP id S1753349Ab3H0BHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:09 -0400
+	Mon, 26 Aug 2013 21:07:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 30/74] tracing: Introduce remove_event_file_dir()
-Date: Mon, 26 Aug 2013 18:08:28 -0700
-Message-Id: <20130827010430.947291028@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, <stable@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Noam Camus <noamc@ezchip.com>, Anton Kolesov <akolesov@synopsys.com>,
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: [ 05/74] ARC: gdbserver breakage in Big-Endian configuration #1
+Date: Mon, 26 Aug 2013 18:08:03 -0700
+Message-Id: <20130827010425.743028026@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -27,111 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 
-commit f6a84bdc75b5c11621dec58db73fe102cbaf40cc upstream.
+[Based on mainline commit 502a0c775c7f0a: "ARC: pt_regs update #5"]
 
-Preparation for the next patch. Extract the common code from
-remove_event_from_tracers() and __trace_remove_event_dirs()
-into the new helper, remove_event_file_dir().
+gdbserver needs @stop_pc, served by ptrace, but fetched from pt_regs
+differently, based on in_brkpt_traps(), which in turn relies on
+additional machine state in pt_regs->event bitfield.
 
-The patch looks more complicated than it actually is, it also
-moves remove_subsystem() up to avoid the forward declaration.
+        unsigned long orig_r8:16, event:16;
 
-Link: http://lkml.kernel.org/r/20130726172547.GA3629@redhat.com
+For big endian config, this macro was returning false, despite being in
+breakpoint Trap exception, causing wrong @stop_pc to be returned to gdb.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Issue #1: In BE, @event above is at offset 2 in word, while a STW insn
+          at offset 0 was used to update it. Resort to using ST insn
+	  which updates the half-word at right location.
+
+Issue #2: The union involving bitfields causes all the members to be
+	  laid out at offset 0. So with fix #1 above, ASM was now
+	  updating at offset 2, "C" code was still referencing at
+	  offset 0. Fixed by wrapping bitfield in a struct.
+
+Reported-by: Noam Camus <noamc@ezchip.com>
+Tested-by: Anton Kolesov <akolesov@synopsys.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_events.c |   47 +++++++++++++++++++++-----------------------
- 1 file changed, 23 insertions(+), 24 deletions(-)
+ arch/arc/include/asm/ptrace.h |    2 ++
+ arch/arc/kernel/entry.S       |    4 ++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -407,11 +407,31 @@ static void put_system(struct ftrace_sub
- 	mutex_unlock(&event_mutex);
- }
+--- a/arch/arc/include/asm/ptrace.h
++++ b/arch/arc/include/asm/ptrace.h
+@@ -52,12 +52,14 @@ struct pt_regs {
  
-+static void remove_subsystem(struct ftrace_subsystem_dir *dir)
-+{
-+	if (!dir)
-+		return;
-+
-+	if (!--dir->nr_events) {
-+		debugfs_remove_recursive(dir->entry);
-+		list_del(&dir->list);
-+		__put_system_dir(dir);
-+	}
-+}
-+
- static void *event_file_data(struct file *filp)
- {
- 	return ACCESS_ONCE(file_inode(filp)->i_private);
- }
+ 	/*to distinguish bet excp, syscall, irq */
+ 	union {
++		struct {
+ #ifdef CONFIG_CPU_BIG_ENDIAN
+ 		/* so that assembly code is same for LE/BE */
+ 		unsigned long orig_r8:16, event:16;
+ #else
+ 		unsigned long event:16, orig_r8:16;
+ #endif
++		};
+ 		long orig_r8_word;
+ 	};
+ };
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -498,7 +498,7 @@ tracesys_exit:
+ trap_with_param:
  
-+static void remove_event_file_dir(struct ftrace_event_file *file)
-+{
-+	list_del(&file->list);
-+	debugfs_remove_recursive(file->dir);
-+	remove_subsystem(file->system);
-+	kmem_cache_free(file_cachep, file);
-+}
-+
- /*
-  * Open and update trace_array ref count.
-  * Must have the current trace_array passed to it.
-@@ -1571,33 +1591,16 @@ event_create_dir(struct dentry *parent,
- 	return 0;
- }
+ 	; stop_pc info by gdb needs this info
+-	stw orig_r8_IS_BRKPT, [sp, PT_orig_r8]
++	st  orig_r8_IS_BRKPT, [sp, PT_orig_r8]
  
--static void remove_subsystem(struct ftrace_subsystem_dir *dir)
--{
--	if (!dir)
--		return;
--
--	if (!--dir->nr_events) {
--		debugfs_remove_recursive(dir->entry);
--		list_del(&dir->list);
--		__put_system_dir(dir);
--	}
--}
--
- static void remove_event_from_tracers(struct ftrace_event_call *call)
- {
- 	struct ftrace_event_file *file;
- 	struct trace_array *tr;
+ 	mov r0, r12
+ 	lr  r1, [efa]
+@@ -723,7 +723,7 @@ not_exception:
+ 	; things to what they were, before returning from L2 context
+ 	;----------------------------------------------------------------
  
- 	do_for_each_event_file_safe(tr, file) {
--
- 		if (file->event_call != call)
- 			continue;
+-	ldw  r9, [sp, PT_orig_r8]      ; get orig_r8 to make sure it is
++	ld   r9, [sp, PT_orig_r8]      ; get orig_r8 to make sure it is
+ 	brne r9, orig_r8_IS_IRQ2, 149f ; infact a L2 ISR ret path
  
--		list_del(&file->list);
--		debugfs_remove_recursive(file->dir);
--		remove_subsystem(file->system);
--		kmem_cache_free(file_cachep, file);
--
-+		remove_event_file_dir(file);
- 		/*
- 		 * The do_for_each_event_file_safe() is
- 		 * a double loop. After finding the call for this
-@@ -2330,12 +2333,8 @@ __trace_remove_event_dirs(struct trace_a
- {
- 	struct ftrace_event_file *file, *next;
- 
--	list_for_each_entry_safe(file, next, &tr->events, list) {
--		list_del(&file->list);
--		debugfs_remove_recursive(file->dir);
--		remove_subsystem(file->system);
--		kmem_cache_free(file_cachep, file);
--	}
-+	list_for_each_entry_safe(file, next, &tr->events, list)
-+		remove_event_file_dir(file);
- }
- 
- static void
+ 	ld r9, [sp, PT_status32]       ; get statu32_l2 (saved in pt_regs)
 
 
