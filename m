@@ -1,101 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab3H0Rgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 13:36:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38727 "EHLO
+	id S1752731Ab3H0RjT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 13:39:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38734 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab3H0Rgv (ORCPT
+	with ESMTP id S1751700Ab3H0RjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 13:36:51 -0400
-Date: Tue, 27 Aug 2013 10:39:08 -0700
+	Tue, 27 Aug 2013 13:39:18 -0400
+Date: Tue, 27 Aug 2013 10:41:36 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] xhci:prevent "callbacks suppressed" when debug is
- not enabled
-Message-ID: <20130827173908.GE21564@kroah.com>
-References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
- <70b3564625bbda6247cc5627041344fef8a762ae.1376582695.git.d.kasatkin@samsung.com>
- <20130816001716.GA7367@kroah.com>
- <20130816172635.GA7975@xanatos>
- <20130816173000.GA8210@xanatos>
- <CACE9dm9Rw55HdwsKRYvecCFCAO137uU4iv5yLnEMzc-0pRZCsg@mail.gmail.com>
- <20130816174516.GA20389@kroah.com>
- <521CB4C5.2050804@samsung.com>
+To: jbaron@akamai.com
+Cc: joe@perches.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dynamic debug: line queries failing due to uninitialized
+ local variable
+Message-ID: <20130827174136.GG21564@kroah.com>
+References: <20130827165003.79F28FE066@prod-mail-relay02.akamai.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <521CB4C5.2050804@samsung.com>
+In-Reply-To: <20130827165003.79F28FE066@prod-mail-relay02.akamai.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 05:16:37PM +0300, Dmitry Kasatkin wrote:
-> On 16/08/13 20:45, Greg KH wrote:
-> > On Fri, Aug 16, 2013 at 08:38:12PM +0300, Dmitry Kasatkin wrote:
-> >> On Fri, Aug 16, 2013 at 8:30 PM, Sarah Sharp <sarah.a.sharp@intel.com> wrote:
-> >>> On Fri, Aug 16, 2013 at 10:26:35AM -0700, Sarah Sharp wrote:
-> >>>> On Thu, Aug 15, 2013 at 05:17:16PM -0700, Greg KH wrote:
-> >>>>> On Thu, Aug 15, 2013 at 07:04:55PM +0300, Dmitry Kasatkin wrote:
-> >>>>>> When debug is not enabled and dev_dbg() will expand to nothing,
-> >>>>>> log might be flooded with "callbacks suppressed". If it was not
-> >>>>>> done on purpose, better to use dev_dbg_ratelimited() instead.
-> >>>>>>
-> >>>>>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> >>>>>> ---
-> >>>>>>  drivers/usb/host/xhci-ring.c | 6 ++----
-> >>>>>>  1 file changed, 2 insertions(+), 4 deletions(-)
-> >>>>>
-> >>>>> Sarah, does this patch conflict with the trace debug patches being
-> >>>>> worked on?  I'll hold off on applying it for now, let me know if it's ok
-> >>>>> or not.
-> >>>> It doesn't conflict with the trace debug patches, because those only
-> >>>> effect debugging with xhci_dbg with the host device, not dev_dbg with
-> >>>> the USB device.  This should apply fine to usb-next.
-> >>> At another glance, the patch removes two if blocks, but doesn't
-> >>> re-indent the rest of the lines:
-> >>>
-> >>>> @@ -3060,8 +3060,7 @@ int xhci_queue_intr_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
-> >>>>        * to set the polling interval (once the API is added).
-> >>>>        */
-> >>>>       if (xhci_interval != ep_interval) {
-> >>>> -             if (printk_ratelimit())
-> >>>> -                     dev_dbg(&urb->dev->dev, "Driver uses different interval"
-> >>>> +             dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
-> >>>>                                       " (%d microframe%s) than xHCI "
-> >>>>                                       "(%d microframe%s)\n",
-> >>>>                                       ep_interval,
-> >>> That should probably be fixed.
-> >> It actually looks correct when patch is applied.
-> >>
-> >> But it depends what you mean of course.
-> >> It looks like it was before:
-> >> dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
-> >>                                        " (%d microframe%s) than xHCI "
-> >>                                        "(%d microframe%s)\n",
-> >>                                        ep_interval,
-> >>                                         ep_interval == 1 ? "" : "s",
-> >>
-> >> Or may be you mean:
-> >> dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
-> >>                                " (%d microframe%s) than xHCI "
-> >>                                "(%d microframe%s)\n",
-> >>                                ep_interval,
-> >>                                ep_interval == 1 ? "" : "s",
-> > No, it should look like:
-> >
-> > 		dev_dbg_ratelimited(&urb->dev->dev,
-> > 				    "Driver uses different interval (%d microframe%s) than xHCI (%d microframe%s)\n",
-> > 				     ep_interval, ep_interval == 1 ? "" : "s",
+On Tue, Aug 27, 2013 at 04:50:03PM +0000, jbaron@akamai.com wrote:
+> Settings of the form, 'line x module y +p', can fail arbitrarily due to an
+> uninitialized local variable. With this patch results are consistent, as
+> expected.
 > 
-> Hello. Sorry I was distracted so much from the kernel.
-> 
-> But putting string to one line make it much over 80 chars.
-> Is that considered OK?
+> Signed-off-by: Jason Baron <jbaron@akamai.com>
+> ---
+>  lib/dynamic_debug.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Yes it is.
+How far back should this patch go for older kernels?  Is this a bug that
+people are hitting today and causing problems, or is it only a 3.11-rc
+issue?
 
+thanks,
+
+greg k-h
