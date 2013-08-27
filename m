@@ -1,128 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab3H0OtJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 10:49:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45296 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753620Ab3H0OtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 10:49:08 -0400
-Message-ID: <521CBC61.2030904@suse.de>
-Date: Tue, 27 Aug 2013 16:49:05 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753975Ab3H0Ot3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 10:49:29 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42886 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753809Ab3H0Ot0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 10:49:26 -0400
+Date: Tue, 27 Aug 2013 15:48:23 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: leizhen <thunder.leizhen@huawei.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "Liujiang (Gerry)" <jiang.liu@huawei.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Huxinwei <huxinwei@huawei.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Lizefan <lizefan@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [BUG] ARM64: Create 4K page size mmu memory map at init time
+ will trigger exception.
+Message-ID: <20130827144823.GD27164@darko.cambridge.arm.com>
+References: <BFAC7FA8F7636E45AB9ECBAC17346F3434557683@SZXEML508-MBS.china.huawei.com>
+ <20130822161614.GE1352@arm.com>
+ <20130823171605.GH10971@arm.com>
+ <521C9DB3.60305@huawei.com>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: axboe@kernel.dk, JBottomley@parallels.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [patch|rfc] block: fix race between request completion and timeout
- handling
-References: <x49ppszqkbg.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49ppszqkbg.fsf@segfault.boston.devel.redhat.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521C9DB3.60305@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 04:28 PM, Jeff Moyer wrote:
-> Hi,
-> 
-> We have several reports (against a distro kernel) of panics in
-> blk_requeue_request that look like this:
-> 
-> kernel BUG at block/blk-core.c:1045!
-> invalid opcode: 0000 [#1] SMP
-> last sysfs file: /sys/devices/pci0000:40/0000:40:03.0/0000:55:00.0/infiniband_mad/umad0/port
-> CPU 0
-> Modules linked in: ipmi_si ipmi_devintf ipmi_msghandler bonding rdma_ucm(U) rdma_cm(U) iw_cm(U) ib_addr(U) ib_ipoib(U) ib_cm(U) ib_sa(U) ipv6 ib_uverbs(U) ib_umad(U) iw_nes(U) libcrc32c mlx4_ib(U) mlx4_en(U) mlx4_core(U) ib_mthca(U) ib_mad(U) ib_core(U) cdc_ether usbnet mii microcode i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma dca be2net sg ses enclosure ext4 mbcache jbd2 sd_mod crc_t10dif ahci megaraid_sas(U) dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
-> 
-> Pid: 491, comm: scsi_eh_0 Tainted: G        W  ----------------   2.6.32-220.13.1.el6.x86_64 #1 IBM  -[8722PAX]-/00D1461
-> RIP: 0010:[<ffffffff8124e424>]  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
-> RSP: 0018:ffff881057eefd60  EFLAGS: 00010012
-> RAX: ffff881d99e3e8a8 RBX: ffff881d99e3e780 RCX: ffff881d99e3e8a8
-> RDX: ffff881d99e3e8a8 RSI: ffff881d99e3e780 RDI: ffff881d99e3e780
-> RBP: ffff881057eefd80 R08: ffff881057eefe90 R09: 0000000000000000
-> R10: 0000000000000000 R11: 0000000000000000 R12: ffff881057f92338
-> R13: 0000000000000000 R14: ffff881057f92338 R15: ffff883058188000
-> FS:  0000000000000000(0000) GS:ffff880040200000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
-> CR2: 00000000006d3ec0 CR3: 000000302cd7d000 CR4: 00000000000406b0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process scsi_eh_0 (pid: 491, threadinfo ffff881057eee000, task ffff881057e29540)
-> Stack:
->  0000000000001057 0000000000000286 ffff8810275efdc0 ffff881057f16000
-> <0> ffff881057eefdd0 ffffffff81362323 ffff881057eefe20 ffffffff8135f393
-> <0> ffff881057e29af8 ffff8810275efdc0 ffff881057eefe78 ffff881057eefe90
-> Call Trace:
->  [<ffffffff81362323>] __scsi_queue_insert+0xa3/0x150
->  [<ffffffff8135f393>] ? scsi_eh_ready_devs+0x5e3/0x850
->  [<ffffffff81362a23>] scsi_queue_insert+0x13/0x20
->  [<ffffffff8135e4d4>] scsi_eh_flush_done_q+0x104/0x160
->  [<ffffffff8135fb6b>] scsi_error_handler+0x35b/0x660
->  [<ffffffff8135f810>] ? scsi_error_handler+0x0/0x660
->  [<ffffffff810908c6>] kthread+0x96/0xa0
->  [<ffffffff8100c14a>] child_rip+0xa/0x20
->  [<ffffffff81090830>] ? kthread+0x0/0xa0
->  [<ffffffff8100c140>] ? child_rip+0x0/0x20
-> Code: 00 00 eb d1 4c 8b 2d 3c 8f 97 00 4d 85 ed 74 bf 49 8b 45 00 49 83 c5 08 48 89 de 4c 89 e7 ff d0 49 8b 45 00 48 85 c0 75 eb eb a4 <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
-> RIP  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
->  RSP <ffff881057eefd60>
-> 
-> The RIP is this line:
->         BUG_ON(blk_queued_rq(rq));
-> 
-> After digging through the code, I think there may be a race between the
-> request completion and the timer handler running.
-> 
-> A timer is started for each request put on the device's queue (see
-> blk_start_request->blk_add_timer).  If the request does not complete
-> before the timer expires, the timer handler (blk_rq_timed_out_timer)
-> will mark the request complete atomically:
-> 
-> static inline int blk_mark_rq_complete(struct request *rq)
-> {
->         return test_and_set_bit(REQ_ATOM_COMPLETE, &rq->atomic_flags);
-> }
-> 
-> and then call blk_rq_timed_out.  The latter function will call
-> scsi_times_out, which will return one of BLK_EH_HANDLED,
-> BLK_EH_RESET_TIMER or BLK_EH_NOT_HANDLED.  If BLK_EH_RESET_TIMER is
-> returned, blk_clear_rq_complete is called, and blk_add_timer is again
-> called to simply wait longer for the request to complete.
-> 
-> Now, if the request happens to complete while this is going on, what
-> happens?  Given that we know the completion handler will bail if it
-> finds the REQ_ATOM_COMPLETE bit set, we need to focus on the completion
-> handler running after that bit is cleared.  So, from the above
-> paragraph, after the call to blk_clear_rq_complete.  If the completion
-> sets REQ_ATOM_COMPLETE before the BUG_ON in blk_add_timer, we go boom
-> there (I haven't seen this in the cores).  Next, if we get the
-> completion before the call to list_add_tail, then the timer will
-> eventually fire for an old req, which may either be freed or reallocated
-> (there is evidence that this might be the case).  Finally, if the
-> completion comes in *after* the addition to the timeout list, I think
-> it's harmless.  The request will be removed from the timeout list,
-> req_atom_complete will be set, and all will be well.
-> 
-> This RFC patch moves the BUG_ON(test_bit(REQ_ATOM_COMPLETE,
-> &req->atomic_flags)); from blk_add_timer to the only caller that could
-> trip over it (blk_start_request).  It then inverts the calls to
-> blk_clear_rq_complete and blk_add_timer in blk_rq_timed_out to address
-> the race.  I've boot tested this patch, but nothing more.
-> 
-> Jens, James, others, what do you think?
-> 
-Hmm. I've been chasing down a similar if not identical issue for
-several months now. So it looks a likely candidate.
-I'll give it some more thought.
+On Tue, Aug 27, 2013 at 01:38:11PM +0100, leizhen wrote:
+> On 2013/8/24 1:16, Catalin Marinas wrote:
+> > On Thu, Aug 22, 2013 at 05:16:14PM +0100, Catalin Marinas wrote:
+> >> On Thu, Aug 22, 2013 at 04:35:29AM +0100, Leizhen (ThunderTown, Euler) wrote:
+> >>> This problem is on ARM64. When CONFIG_ARM64_64K_PAGES is not opened, the memory
+> >>> map size can be 2M(section) and 4K(PAGE). First, OS will create map for pgd
+> >>> (level 1 table) and level 2 table which in swapper_pg_dir. Then, OS register
+> >>> mem block into memblock.memory according to memory node in fdt, like memory@0,
+> >>> and create map in setup_arch-->paging_init. If all mem block start address and
+> >>> size is integral multiple of 2M, there is no problem, because we will create 2M
+> >>> section size map whose entries locate in level 2 table. But if it is not
+> >>> integral multiple of 2M, we should create level 3 table, which granule is 4K.
+> >>> Now, current implementtion is call early_alloc-->memblock_alloc to alloc memory
+> >>> for level 3 table. This function will find a 4K free memory which locate in
+> >>> memblock.memory tail(high address), but paging_init is create map from low
+> >>> address to high address, so new alloced memory is not mapped, write page talbe
+> >>> entry to it will trigger exception.
+> >>
+> >> I see how this can happen. There is a memblock_set_current_limit to
+> >> PGDIR_SIZE (1GB, we have a pre-allocated pmd) and in my tests I had at
+> >> least 1GB of RAM which got mapped first and didn't have this problem.
+> >> I'll come up with a patch tomorrow.
+> > 
+> > Could you please try this patch?
+...
+> I test this patch on my board, it's passed. But I think there still
+> some little problem. First, we align start address and truncate last,
+> which will cause some memory wasted.
 
-Cheers,
+It truncates the start of the first block, which should really be
+2MB-aligned (as per Documentation/arm64/booting.txt).
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+> Second, if we update current_limit after each memblock mapped, the
+> page alloced by early_alloc will be more dispersedly. So I fix this
+> bug like below:
+
+I thought about this but was worried if some platform has a small
+initial block followed by huge blocks. I'm happy to simply limit the
+early memblock allocations to the first block and assume that it is
+large enough for other page table allocations.
+
+Also note that this is (intermediate) physical space. Locality would
+probably help on some hardware implementations that do TLB caching of
+the stage 2 (IPA->PA) translations.
+
+> If page size is 4K, a 4K size level 2 tables can map 1G, so 512G need
+> 512 * 4K. And max level 3 tables number is (memblock num) * 2(if both
+> head part and tail part not multiple of 2M), 2M = 256 * 2 * 4K. We
+> first alloc 2M memory, map it, then free it, and mark current_limit at
+> this boundary.
+
+What I don't really like is that it makes assumptions about how the
+memblock allocator works. If one wants to take out every page every x MB
+you end up allocating more for level 3 tables, so the 2MB assumption no
+longer works (and I've seen this in the past to work around a hardware
+bug).
+
+So I would rather assume that the first block is large enough and limit
+the initial allocation to this block. If anyone complains we can revisit
+it later.
+
+So on top of my original patch:
+
+diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
+index 49a0bc2..f557ebb 100644
+--- a/arch/arm64/mm/mmu.c
++++ b/arch/arm64/mm/mmu.c
+@@ -335,11 +335,6 @@ static void __init map_mem(void)
+ #endif
+ 
+                create_mapping(start, __phys_to_virt(start), end - start);
+-
+-               /*
+-                * Mapping created, extend the current memblock limit.
+-                */
+-               memblock_set_current_limit(end);
+        }
+ 
+        /* Limit no longer required. */
+
