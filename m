@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab3H0BX1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:23:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59432 "EHLO
+	id S1754862Ab3H0BYh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:24:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59416 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278Ab3H0BHE (ORCPT
+	with ESMTP id S1753269Ab3H0BHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:04 -0400
+	Mon, 26 Aug 2013 21:07:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 23/74] tracing: Change tracing_entries_fops to rely on tracing_get_cpu()
-Date: Mon, 26 Aug 2013 18:08:21 -0700
-Message-Id: <20130827010429.415773887@linuxfoundation.org>
+        Dominik Dingel <dingel@linux.vnet.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [ 01/74] KVM: s390: move kvm_guest_enter,exit closer to sie
+Date: Mon, 26 Aug 2013 18:07:59 -0700
+Message-Id: <20130827010425.079132653@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -26,157 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Dominik Dingel <dingel@linux.vnet.ibm.com>
 
-commit 0bc392ee46d0fd8e6b678457ef71f074f19a03c5 upstream.
+commit 2b29a9fdcb92bfc6b6f4c412d71505869de61a56 upstream.
 
-tracing_open_generic_tc() is racy, the memory inode->i_private
-points to can be already freed.
+Any uaccess between guest_enter and guest_exit could trigger a page fault,
+the page fault handler would handle it as a guest fault and translate a
+user address as guest address.
 
-1. Change its last user, tracing_entries_fops, to use
-   tracing_*_generic_tr() instead.
-
-2. Change debugfs_create_file("buffer_size_kb", data) callers
-   to pass "data = tr".
-
-3. Change tracing_entries_read() and tracing_entries_write() to
-   use tracing_get_cpu().
-
-4. Kill the no longer used tracing_open_generic_tc() and
-   tracing_release_generic_tc().
-
-Link: http://lkml.kernel.org/r/20130723152606.GA23730@redhat.com
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- kernel/trace/trace.c |   49 ++++++++++++-------------------------------------
- 1 file changed, 12 insertions(+), 37 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2975,23 +2975,6 @@ int tracing_open_generic_tr(struct inode
- 	return 0;
- }
+---
+ arch/s390/kvm/kvm-s390.c |   21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
+
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -622,14 +622,25 @@ static int __vcpu_run(struct kvm_vcpu *v
+ 		kvm_s390_deliver_pending_interrupts(vcpu);
  
--int tracing_open_generic_tc(struct inode *inode, struct file *filp)
--{
--	struct trace_cpu *tc = inode->i_private;
--	struct trace_array *tr = tc->tr;
--
--	if (tracing_disabled)
--		return -ENODEV;
--
--	if (trace_array_get(tr) < 0)
--		return -ENODEV;
--
--	filp->private_data = inode->i_private;
--
--	return 0;
--
--}
--
- static int tracing_release(struct inode *inode, struct file *file)
- {
- 	struct seq_file *m = file->private_data;
-@@ -3045,15 +3028,6 @@ static int tracing_release_generic_tr(st
- 	return 0;
- }
+ 	vcpu->arch.sie_block->icptcode = 0;
+-	preempt_disable();
+-	kvm_guest_enter();
+-	preempt_enable();
+ 	VCPU_EVENT(vcpu, 6, "entering sie flags %x",
+ 		   atomic_read(&vcpu->arch.sie_block->cpuflags));
+ 	trace_kvm_s390_sie_enter(vcpu,
+ 				 atomic_read(&vcpu->arch.sie_block->cpuflags));
++
++	/*
++	 * As PF_VCPU will be used in fault handler, between guest_enter
++	 * and guest_exit should be no uaccess.
++	 */
++	preempt_disable();
++	kvm_guest_enter();
++	preempt_enable();
+ 	rc = sie64a(vcpu->arch.sie_block, vcpu->run->s.regs.gprs);
++	kvm_guest_exit();
++
++	VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
++		   vcpu->arch.sie_block->icptcode);
++	trace_kvm_s390_sie_exit(vcpu, vcpu->arch.sie_block->icptcode);
++
+ 	if (rc) {
+ 		if (kvm_is_ucontrol(vcpu->kvm)) {
+ 			rc = SIE_INTERCEPT_UCONTROL;
+@@ -639,10 +650,6 @@ static int __vcpu_run(struct kvm_vcpu *v
+ 			rc = kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
+ 		}
+ 	}
+-	VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
+-		   vcpu->arch.sie_block->icptcode);
+-	trace_kvm_s390_sie_exit(vcpu, vcpu->arch.sie_block->icptcode);
+-	kvm_guest_exit();
  
--static int tracing_release_generic_tc(struct inode *inode, struct file *file)
--{
--	struct trace_cpu *tc = inode->i_private;
--	struct trace_array *tr = tc->tr;
--
--	trace_array_put(tr);
--	return 0;
--}
--
- static int tracing_single_release_tr(struct inode *inode, struct file *file)
- {
- 	struct trace_array *tr = inode->i_private;
-@@ -4374,15 +4348,16 @@ static ssize_t
- tracing_entries_read(struct file *filp, char __user *ubuf,
- 		     size_t cnt, loff_t *ppos)
- {
--	struct trace_cpu *tc = filp->private_data;
--	struct trace_array *tr = tc->tr;
-+	struct inode *inode = file_inode(filp);
-+	struct trace_array *tr = inode->i_private;
-+	int cpu = tracing_get_cpu(inode);
- 	char buf[64];
- 	int r = 0;
- 	ssize_t ret;
- 
- 	mutex_lock(&trace_types_lock);
- 
--	if (tc->cpu == RING_BUFFER_ALL_CPUS) {
-+	if (cpu == RING_BUFFER_ALL_CPUS) {
- 		int cpu, buf_size_same;
- 		unsigned long size;
- 
-@@ -4409,7 +4384,7 @@ tracing_entries_read(struct file *filp,
- 		} else
- 			r = sprintf(buf, "X\n");
- 	} else
--		r = sprintf(buf, "%lu\n", per_cpu_ptr(tr->trace_buffer.data, tc->cpu)->entries >> 10);
-+		r = sprintf(buf, "%lu\n", per_cpu_ptr(tr->trace_buffer.data, cpu)->entries >> 10);
- 
- 	mutex_unlock(&trace_types_lock);
- 
-@@ -4421,7 +4396,8 @@ static ssize_t
- tracing_entries_write(struct file *filp, const char __user *ubuf,
- 		      size_t cnt, loff_t *ppos)
- {
--	struct trace_cpu *tc = filp->private_data;
-+	struct inode *inode = file_inode(filp);
-+	struct trace_array *tr = inode->i_private;
- 	unsigned long val;
- 	int ret;
- 
-@@ -4435,8 +4411,7 @@ tracing_entries_write(struct file *filp,
- 
- 	/* value is in KB */
- 	val <<= 10;
--
--	ret = tracing_resize_ring_buffer(tc->tr, val, tc->cpu);
-+	ret = tracing_resize_ring_buffer(tr, val, tracing_get_cpu(inode));
- 	if (ret < 0)
- 		return ret;
- 
-@@ -4884,11 +4859,11 @@ static const struct file_operations trac
- };
- 
- static const struct file_operations tracing_entries_fops = {
--	.open		= tracing_open_generic_tc,
-+	.open		= tracing_open_generic_tr,
- 	.read		= tracing_entries_read,
- 	.write		= tracing_entries_write,
- 	.llseek		= generic_file_llseek,
--	.release	= tracing_release_generic_tc,
-+	.release	= tracing_release_generic_tr,
- };
- 
- static const struct file_operations tracing_total_entries_fops = {
-@@ -5572,7 +5547,7 @@ tracing_init_debugfs_percpu(struct trace
- 				tr, cpu, &tracing_stats_fops);
- 
- 	trace_create_cpu_file("buffer_size_kb", 0444, d_cpu,
--				&data->trace_cpu, cpu, &tracing_entries_fops);
-+				tr, cpu, &tracing_entries_fops);
- 
- #ifdef CONFIG_TRACER_SNAPSHOT
- 	trace_create_cpu_file("snapshot", 0644, d_cpu,
-@@ -6148,7 +6123,7 @@ init_tracer_debugfs(struct trace_array *
- 			  tr, &tracing_pipe_fops);
- 
- 	trace_create_file("buffer_size_kb", 0644, d_tracer,
--			(void *)&tr->trace_cpu, &tracing_entries_fops);
-+			  tr, &tracing_entries_fops);
- 
- 	trace_create_file("buffer_total_size_kb", 0444, d_tracer,
- 			  tr, &tracing_total_entries_fops);
+ 	memcpy(&vcpu->run->s.regs.gprs[14], &vcpu->arch.sie_block->gg14, 16);
+ 	return rc;
 
 
