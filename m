@@ -1,99 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab3H0Lar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 07:30:47 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51835 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab3H0Lap (ORCPT
+	id S1753369Ab3H0Lax (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 07:30:53 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33839 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776Ab3H0Lav convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 07:30:45 -0400
-Date: Tue, 27 Aug 2013 13:30:44 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: joeyli <jlee@suse.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
-        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 17/18] Hibernate: introduced SNAPSHOT_SIG_HASH config
- for select hash algorithm
-Message-ID: <20130827113044.GB20527@amd.pavel.ucw.cz>
-References: <1377169317-5959-1-git-send-email-jlee@suse.com>
- <1377169317-5959-18-git-send-email-jlee@suse.com>
- <20130825164329.GL5171@amd.pavel.ucw.cz>
- <1377598937.20140.12.camel@linux-s257.site>
+	Tue, 27 Aug 2013 07:30:51 -0400
+Message-ID: <521C8DF4.3030209@arm.com>
+Date: Tue, 27 Aug 2013 12:31:00 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1377598937.20140.12.camel@linux-s257.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v4 3/5] ARM64: arch_timer: add support to configure and
+ enable event stream
+References: <1377274749-6196-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1377274749-6196-4-git-send-email-Sudeep.KarkadaNagesha@arm.com> <20130827111905.GF19897@arm.com>
+In-Reply-To: <20130827111905.GF19897@arm.com>
+X-OriginalArrivalTime: 27 Aug 2013 11:30:47.0144 (UTC) FILETIME=[DFE8C680:01CEA318]
+X-MC-Unique: 113082712304902401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-08-27 18:22:17, joeyli wrote:
-> 於 日，2013-08-25 於 18:43 +0200，Pavel Machek 提到：
-> > On Thu 2013-08-22 19:01:56, Lee, Chun-Yi wrote:
-> > > This patch introduced SNAPSHOT_SIG_HASH config for user to select which
-> > > hash algorithm will be used during signature generation of snapshot.
-> > > 
-> > > v2:
-> > > Add define check of oCONFIG_SNAPSHOT_VERIFICATION in snapshot.c before
-> > > declare pkey_hash().
-> > > 
-> > > Reviewed-by: Jiri Kosina <jkosina@suse.cz>
-> > > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> > > ---
-> > >  kernel/power/Kconfig    |   46 ++++++++++++++++++++++++++++++++++++++++++++++
-> > >  kernel/power/snapshot.c |   27 ++++++++++++++++++++++-----
-> > >  2 files changed, 68 insertions(+), 5 deletions(-)
-> > > 
-> > > diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-> > > index b592d88..79b34fa 100644
-> > > --- a/kernel/power/Kconfig
-> > > +++ b/kernel/power/Kconfig
-> > > @@ -78,6 +78,52 @@ config SNAPSHOT_VERIFICATION
-> > >  	  dependent on UEFI environment. EFI bootloader should generate the
-> > >  	  key-pair.
-> > >  
-> > > +choice
-> > > +	prompt "Which hash algorithm should snapshot be signed with?"
-> > > +        depends on SNAPSHOT_VERIFICATION
-> > > +        help
-> > > +          This determines which sort of hashing algorithm will be used during
-> > > +          signature generation of snapshot. This algorithm _must_ be built into
-> > > +	  the kernel directly so that signature verification can take place.
-> > > +	  It is not possible to load a signed snapshot containing the algorithm
-> > > +	  to check the signature on that module.
-> > 
-> > Like if 1000 ifdefs you already added to the code are not enough, you
-> > make some new ones?
-> > 									Pavel
-> > 
-> 
-> This SNAPSHOT_SIG_HASH kernel config is to select which SHA algorithms
-> used for generate digest of snapshot. The configuration will captured by
-> a const char* in code:
-> 
-> +static const char *snapshot_hash = CONFIG_SNAPSHOT_SIG_HASH;
-> +
-> +static int pkey_hash(void)
-> 
-> So, there doesn't have any ifdef block derived from this new config.
+Hi Catalin,
 
-I'd say select one hash function, and use it. There's no need to make
-it configurable.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+On 27/08/13 12:19, Catalin Marinas wrote:
+> On Fri, Aug 23, 2013 at 05:19:07PM +0100, Sudeep KarkadaNagesha wrote:
+>> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+>> index 00b09d0..0f57158 100644
+>> --- a/arch/arm64/include/asm/arch_timer.h
+>> +++ b/arch/arm64/include/asm/arch_timer.h
+>> @@ -97,21 +97,53 @@ static inline u32 arch_timer_get_cntfrq(void)
+>>  	return val;
+>>  }
+>>  
+>> -static inline void arch_counter_set_user_access(void)
+>> +static inline u32 arch_timer_get_cntkctl(void)
+>>  {
+>>  	u32 cntkctl;
+>> -
+>>  	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
+>> +	return cntkctl;
+>> +}
+>> +
+>> +static inline void arch_timer_set_cntkctl(u32 cntkctl)
+>> +{
+>> +	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+>> +}
+>> +
+>> +static inline void arch_counter_set_user_access(void)
+>> +{
+>> +	u32 cntkctl = arch_timer_get_cntkctl();
+>>  
+>>  	/* Disable user access to the timers and the physical counter. */
+>>  	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
+>>  			| ARCH_TIMER_USR_VT_ACCESS_EN
+>>  			| ARCH_TIMER_USR_PCT_ACCESS_EN);
+>>  
+>> -	/* Enable user access to the virtual counter. */
+>> +	/* Enable user access to the virtual counter */
+> 
+> This change isn't needed here. Just move it to the first patch which
+> adds the comment.
+> 
+It's a mistake, accidentally removed leading '.'
+I will remove this.
+
+>>  	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
+>>  
+>> -	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+>> +	arch_timer_set_cntkctl(cntkctl);
+>> +}
+>> +
+>> +static inline void arch_timer_evtstrm_config(bool enable, int divider)
+>> +{
+>> +	u32 cntkctl = arch_timer_get_cntkctl();
+>> +	if (enable) {
+>> +		cntkctl &= ~ARCH_TIMER_EVT_TRIGGER_MASK;
+>> +		/* Set the divider and enable virtual event stream */
+>> +		cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
+>> +				| ARCH_TIMER_VIRT_EVT_EN;
+>> +	} else {
+>> +		cntkctl &= ~ARCH_TIMER_VIRT_EVT_EN; /* disable event stream */
+>> +	}
+>> +	arch_timer_set_cntkctl(cntkctl);
+>> +}
+>> +
+>> +static inline void arch_timer_set_hwcap_evtstrm(void)
+>> +{
+>> +	elf_hwcap |= HWCAP_EVTSTRM;
+>> +#ifdef CONFIG_COMPAT
+>> +	compat_dyn_elf_hwcap |= COMPAT_HWCAP_EVTSTRM;
+>> +#endif
+>>  }
+>>  
+>>  static inline u64 arch_counter_get_cntvct(void)
+>> diff --git a/arch/arm64/include/asm/hwcap.h b/arch/arm64/include/asm/hwcap.h
+>> index 6d4482f..022d771 100644
+>> --- a/arch/arm64/include/asm/hwcap.h
+>> +++ b/arch/arm64/include/asm/hwcap.h
+>> @@ -30,6 +30,7 @@
+>>  #define COMPAT_HWCAP_IDIVA	(1 << 17)
+>>  #define COMPAT_HWCAP_IDIVT	(1 << 18)
+>>  #define COMPAT_HWCAP_IDIV	(COMPAT_HWCAP_IDIVA|COMPAT_HWCAP_IDIVT)
+>> +#define COMPAT_HWCAP_EVTSTRM	(1 << 21)
+>>  
+>>  #ifndef __ASSEMBLY__
+>>  /*
+>> @@ -37,11 +38,15 @@
+>>   * instruction set this cpu supports.
+>>   */
+>>  #define ELF_HWCAP		(elf_hwcap)
+>> +#ifdef CONFIG_COMPAT
+>>  #define COMPAT_ELF_HWCAP	(COMPAT_HWCAP_HALF|COMPAT_HWCAP_THUMB|\
+>>  				 COMPAT_HWCAP_FAST_MULT|COMPAT_HWCAP_EDSP|\
+>>  				 COMPAT_HWCAP_TLS|COMPAT_HWCAP_VFP|\
+>>  				 COMPAT_HWCAP_VFPv3|COMPAT_HWCAP_VFPv4|\
+>> -				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV)
+>> +				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV|\
+>> +				 compat_dyn_elf_hwcap)
+>> +extern unsigned int compat_dyn_elf_hwcap;
+>> +#endif
+> 
+> Can we just have a compat_elf_hwcap which is initialised to all the
+> above and avoid compat_dyn_elf_hwcap?
+> 
+It was Will's suggestion(https://lkml.org/lkml/2013/8/20/425)
+Moreover with config option now it makes more sense to retain it.
+It avoids having conditional definition. Let me know your opinion.
+
+Regards,
+Sudeep
+
+
