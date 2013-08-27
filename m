@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab3H0Hnf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 03:43:35 -0400
-Received: from 11.mo3.mail-out.ovh.net ([87.98.184.158]:36319 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753171Ab3H0Hnd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 03:43:33 -0400
-Message-ID: <521C586A.7080604@overkiz.com>
-Date: Tue, 27 Aug 2013 09:42:34 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752701Ab3H0HtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 03:49:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57580 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752267Ab3H0HtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 03:49:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,966,1367996400"; 
+   d="asc'?scan'208";a="386984870"
+Date: Tue, 27 Aug 2013 03:37:01 -0400
+From: Chen Gong <gong.chen@linux.intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] mm/hwpoison: fix return value of madvise_hwpoison
+Message-ID: <20130827073701.GA23035@gchen.bj.intel.com>
+Mail-Followup-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+	Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andi Kleen <andi@firstfloor.org>,
+	Fengguang Wu <fengguang.wu@intel.com>,
+	Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org
+References: <1377571171-9958-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1377571171-9958-3-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1377574096-y8hxgzdw-mutt-n-horiguchi@ah.jp.nec.com>
+ <521c1f3f.813d320a.6ba7.5a17SMTPIN_ADDED_BROKEN@mx.google.com>
+ <1377574896-5k1diwl4-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: nicolas.ferre@atmel.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        linux@arm.linux.org.uk, f.fainelli@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH 0/2] net/cadence/macb: add support for dt phy definition
-References: <1377186980-21902-1-git-send-email-b.brezillon@overkiz.com> <20130826.160450.2176892065062148718.davem@davemloft.net>
-In-Reply-To: <20130826.160450.2176892065062148718.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 6384696897707210789
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
+Content-Disposition: inline
+In-Reply-To: <1377574896-5k1diwl4-mutt-n-horiguchi@ah.jp.nec.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dave,
 
-On 26/08/2013 22:04, David Miller wrote:
-> From: Boris BREZILLON <b.brezillon@overkiz.com>
-> Date: Thu, 22 Aug 2013 17:56:20 +0200
->
->> This patch series adds support for ethernet phy definition using device
->> tree.
->>
->> This may help in moving some at91 boards to dt (some of them define an
->> interrupt pin).
->>
->> Tested on samad31ek.
-> Series applied to net-next, thanks.
-Could you apply, the 3rd version of this series instead ?
+--VbJkn9YxBvnuCH5J
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It fixes one bug when no phy is discovered and use the appropriate address
-for the phy dt node.
+On Mon, Aug 26, 2013 at 11:41:36PM -0400, Naoya Horiguchi wrote:
+> Date: Mon, 26 Aug 2013 23:41:36 -0400
+> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen
+>  <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>, Tony Luck
+>  <tony.luck@intel.com>, gong.chen@linux.intel.com, linux-mm@kvack.org,
+>  linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v2 3/3] mm/hwpoison: fix return value of
+>  madvise_hwpoison
+> User-Agent: Mutt 1.5.21 (2010-09-15)
+>=20
+> On Tue, Aug 27, 2013 at 11:38:27AM +0800, Wanpeng Li wrote:
+> > Hi Naoya,
+> > On Mon, Aug 26, 2013 at 11:28:16PM -0400, Naoya Horiguchi wrote:
+> > >On Tue, Aug 27, 2013 at 10:39:31AM +0800, Wanpeng Li wrote:
+> > >> The return value outside for loop is always zero which means madvise=
+_hwpoison=20
+> > >> return success, however, this is not truth for soft_offline_page w/ =
+failure
+> > >> return value.
+> > >
+> > >I don't understand what you want to do for what reason. Could you clar=
+ify
+> > >those?
+> >=20
+> > int ret is defined in two place in madvise_hwpoison. One is out of for
+> > loop and its value is always zero(zero means success for madvise), the=
+=20
+> > other one is in for loop. The soft_offline_page function maybe return=
+=20
+> > -EBUSY and break, however, the ret out of for loop is return which mean=
+s=20
+> > madvise_hwpoison success.=20
+>=20
+> Oh, I see. Thanks.
+>=20
+I don't think such change is a good idea. The original code is obviously
+easy to confuse people. Why not removing redundant local variable?
 
-Sorry for the inconvenience.
 
-Best Regards,
+--VbJkn9YxBvnuCH5J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Boris
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSHFcdAAoJEI01n1+kOSLHTbYP/R/a1ImSf2zyC3hd41apzJc0
+cLpn4+TgZeXT7Fj49PgyNCEOaQP7HUfAJko2wzSGkILWwouj3cmC9nSofGsDpZkk
+4mMnEAuVbLC0CasrgJoFdH75WenRT1RWE/kAEqsRnloUsDK/i3rVCeRe36KC6Qzv
+R0meh0aWnkywA4L8kUo+/QoqpIfvr9kNgdahfjXqN9FEFN6X30IOSNkKO3+UP2c9
+OJDWjdMco9svzgXKQysI3geYAUomy0G0qSC25or7E//Bym6boFhzWfU6Hg+aNu9a
+AT+WR2JfWx6K+m5dFs0M0jnF1AroTN5sGPBxXoIVVCItuF9QVwPnoep9rSa1Zpd0
+xgpzqzQdTsq+1e7a5K7IyOMNn/0G/YPl6hMD2xqOZ9hws64ccbtKDrYXACrxucJ4
+9DnCxoJQW/7ZXeETAOcF4NmWBSsS9Qg2e927OVxAu+AHG1M+U/WvRoAbRF51ks1G
+yyp5DobqhBK5YrduM2RPZR1OMcfURBUitBOlW7nnza1rNdh0SjYSsBrcef7LjAcK
+IYNlIACQ7ClMhsC5JaeyvE59tAZ3vnU/4M9uMH00zAlS81GwNVMK1gnrO+kvFd+d
+j4ban8J+xRDQoOrLFZ5d9eeVyZPwt2g18xCHwVuGeEJqXDXVDOg8+zATFE6oYABu
+tysHTdCwapZm3O5g3jaJ
+=pD/o
+-----END PGP SIGNATURE-----
+
+--VbJkn9YxBvnuCH5J--
