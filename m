@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3H0Sdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 14:33:38 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:56710 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752Ab3H0ScE (ORCPT
+	id S1753991Ab3H0Sdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 14:33:52 -0400
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:57314 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab3H0Sdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 14:32:04 -0400
-Subject: [PATCH V6 3/7] pseries/cpuidle: Make pseries_idle backend driver a
- non-module.
-To: linux-pm@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Cc: b.zolnierkie@samsung.com, benh@kernel.crashing.org,
-        daniel.lezcano@linaro.org, dongsheng.wang@freescale.com,
-        michael@ellerman.id.au, scottwood@freescale.com,
-        srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com
-Date: Wed, 28 Aug 2013 00:01:16 +0530
-Message-ID: <20130827183115.18579.60906.stgit@deepthi.in.ibm.com>
-In-Reply-To: <20130827183016.18579.16595.stgit@deepthi.in.ibm.com>
-References: <20130827183016.18579.16595.stgit@deepthi.in.ibm.com>
-User-Agent: StGit/0.16
+	Tue, 27 Aug 2013 14:33:51 -0400
+Date: Tue, 27 Aug 2013 14:33:44 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the cgroup tree
+Message-ID: <20130827183344.GB12212@mtj.dyndns.org>
+References: <20130827201716.528af63c96b66bb2446fc4b7@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082718-1618-0000-0000-000004862E5D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130827201716.528af63c96b66bb2446fc4b7@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently pseries_idle cpuidle backend driver cannot be
-built as a module due to dependencies. Therefore the driver has
-to be built in. The dependency is around update_snooze_delay() defined
-in cpuidle driver and called from kernel/sysfs.c.
-This patch is removes all the module related code.
+On Tue, Aug 27, 2013 at 08:17:16PM +1000, Stephen Rothwell wrote:
+> Hi Tejun,
+> 
+> After merging the cgroup tree, today's linux-next build (i386 defconfig)
+> produced this warning:
+> 
+> kernel/cgroup.c: In function 'css_from_id':
+> kernel/cgroup.c:5723:3: warning: passing argument 2 of 'cgroup_css' makes pointer from integer without a cast [enabled by default]
+> kernel/cgroup.c:237:36: note: expected 'struct cgroup_subsys *' but argument is of type 'int'
+> 
+> Introduced by commit ca8bdcaff0d7 ("cgroup: make cgroup_css() take
+> cgroup_subsys * instead and allow NULL subsys").
 
-Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Yeap, the conversion missed a newly added function, which BTW
+currently doesn't have any users.  Applied the following fix.
+
+Thanks a lot!
+
+>From d1625964da51bda61306ad3ec45307a799c21f08 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 27 Aug 2013 14:27:23 -0400
+Subject: [PATCH] cgroup: fix cgroup_css() invocation in css_from_id()
+
+ca8bdcaff0 ("cgroup: make cgroup_css() take cgroup_subsys * instead
+and allow NULL subsys") missed one conversion in css_from_id(), which
+was newly added.  As css_from_id() doesn't have any user yet, this
+doesn't break anything other than generating a build warning.
+
+Convert it.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
 ---
- drivers/cpuidle/cpuidle-ibm-power.c |   15 +--------------
- 1 file changed, 1 insertion(+), 14 deletions(-)
+ kernel/cgroup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/cpuidle/cpuidle-ibm-power.c b/drivers/cpuidle/cpuidle-ibm-power.c
-index b42b948..262db3c 100644
---- a/drivers/cpuidle/cpuidle-ibm-power.c
-+++ b/drivers/cpuidle/cpuidle-ibm-power.c
-@@ -288,17 +288,4 @@ static int __init pseries_processor_idle_init(void)
- 	return 0;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index e76698d..b5f4989 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -5729,7 +5729,7 @@ struct cgroup_subsys_state *css_from_id(int id, struct cgroup_subsys *ss)
+ 
+ 	cgrp = idr_find(&ss->root->cgroup_idr, id);
+ 	if (cgrp)
+-		return cgroup_css(cgrp, ss->subsys_id);
++		return cgroup_css(cgrp, ss);
+ 	return NULL;
  }
  
--static void __exit pseries_processor_idle_exit(void)
--{
--
--	unregister_cpu_notifier(&setup_hotplug_notifier);
--	cpuidle_unregister(&pseries_idle_driver);
--	return;
--}
--
--module_init(pseries_processor_idle_init);
--module_exit(pseries_processor_idle_exit);
--
--MODULE_AUTHOR("Deepthi Dharwar <deepthi@linux.vnet.ibm.com>");
--MODULE_DESCRIPTION("Cpuidle driver for POWER");
--MODULE_LICENSE("GPL");
-+device_initcall(pseries_processor_idle_init);
-
+-- 
+1.8.3.1
