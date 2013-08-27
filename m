@@ -1,194 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3H0XBy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 19:01:54 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:56839 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab3H0XBv convert rfc822-to-8bit (ORCPT
+	id S1753445Ab3H0XIg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 19:08:36 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52437 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab3H0XIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 19:01:51 -0400
+	Tue, 27 Aug 2013 19:08:35 -0400
+Date: Wed, 28 Aug 2013 00:08:27 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Willy Tarreau <w@1wt.eu>,
+        Ingo Molnar <mingo@kernel.org>,
+        "security@kernel.org" <security@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: Re: [RFC PATCH] fs: Add user_file_or_path_at and use it for truncate
+Message-ID: <20130827230827.GI27005@ZenIV.linux.org.uk>
+References: <CA+55aFw20W9L8HV+VbTRNeQQM-_+aeUhvT9AAod5LGfb-7hE9g@mail.gmail.com>
+ <7d1419dda1da70a8ad915f85b093a58b86bcaf3b.1377630856.git.luto@amacapital.net>
 MIME-Version: 1.0
-In-Reply-To: <F6FB0E698C9B3143BDF729DF222866466FD44279@ORSMSX110.amr.corp.intel.com>
-References: <CAErSpo53L3-feEw0qZvBTmRrY+SXpGrGU6oxZg3wVjH1M8JDXg@mail.gmail.com>
- <F6FB0E698C9B3143BDF729DF222866466FD41225@ORSMSX110.amr.corp.intel.com>
- <CAErSpo5AiRw7HvGQMq-n596ZkHJs_KJNn346yf+jc7yti-xpUw@mail.gmail.com>
- <CAErSpo4E9LNrfqTq1_WUoAx68_krw23BjSYbPpJPOr=zbq98xA@mail.gmail.com>
- <CAErSpo6Ky1FQeRjjbhja2KC7EYGJ2nR1ZNuYjYi89DoqLse2cw@mail.gmail.com>
- <CAErSpo7m=YB=1cHSBTwufTHAiAd+k9Re2s-ro509BELOgK8j7Q@mail.gmail.com>
- <F6FB0E698C9B3143BDF729DF222866466FD4418D@ORSMSX110.amr.corp.intel.com>
- <20130823185240.GA1507@google.com> <F6FB0E698C9B3143BDF729DF222866466FD4421F@ORSMSX110.amr.corp.intel.com>
- <CAErSpo4VLBon21cSzaigVqy6dS7=qfVRuPTTGuWAz+GLJWmNog@mail.gmail.com> <F6FB0E698C9B3143BDF729DF222866466FD44279@ORSMSX110.amr.corp.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 27 Aug 2013 17:01:30 -0600
-Message-ID: <CAErSpo6pLsDTOPRgV0Qb3W9OSGZXkNOeBk+i47RyoFjK-xPEJw@mail.gmail.com>
-Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type 00
- to PF Nacked" messages
-To: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
-Cc: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Don Dutile <ddutile@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7d1419dda1da70a8ad915f85b093a58b86bcaf3b.1377630856.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 3:41 PM, Skidmore, Donald C
-<donald.c.skidmore@intel.com> wrote:
->> -----Original Message-----
->> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
->> Sent: Friday, August 23, 2013 1:43 PM
->> To: Skidmore, Donald C
->> Cc: e1000-devel@lists.sourceforge.net; linux-pci@vger.kernel.org; linux-
->> kernel@vger.kernel.org; Don Dutile
->> Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type 00
->> to PF Nacked" messages
->>
->> On Fri, Aug 23, 2013 at 2:37 PM, Skidmore, Donald C
->> <donald.c.skidmore@intel.com> wrote:
->> >> -----Original Message-----
->> >> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
->> >> Sent: Friday, August 23, 2013 11:53 AM
->> >> To: Skidmore, Donald C
->> >> Cc: e1000-devel@lists.sourceforge.net; linux-pci@vger.kernel.org;
->> >> linux- kernel@vger.kernel.org; Don Dutile
->> >> Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of
->> >> type 00 to PF Nacked" messages
->> >>
->> >> On Fri, Aug 23, 2013 at 06:25:06PM +0000, Skidmore, Donald C wrote:
->> >> > > -----Original Message-----
->> >> > > From: Bjorn Helgaas [mailto:bhelgaas@google.com]
->> >> > > Sent: Friday, August 23, 2013 9:53 AM
->> >> > > To: Skidmore, Donald C
->> >> > > Cc: e1000-devel@lists.sourceforge.net; linux-pci@vger.kernel.org;
->> >> > > linux- kernel@vger.kernel.org; Don Dutile
->> >> > > Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last
->> >> > > Request of type 00 to PF Nacked" messages
->> >> > >
->> >> > > On Tue, Aug 20, 2013 at 5:37 PM, Bjorn Helgaas
->> >> > > <bhelgaas@google.com>
->> >> > > wrote:
->> >> > > > On Tue, Aug 20, 2013 at 5:08 PM, Bjorn Helgaas
->> >> > > > <bhelgaas@google.com>
->> >> > > wrote:
->> >> > > >> On Tue, Aug 13, 2013 at 8:23 PM, Bjorn Helgaas
->> >> > > >> <bhelgaas@google.com>
->> >> > > wrote:
->> >> > > >
->> >> > > >>> I played with this a little more and found this:
->> >> > > >>>
->> >> > > >>> 1) Magma card in z420, connected to chassis containing X540:
->> >> > > >>> fails (original report)
->> >> > > >>> 2) X540 in z420, Magma card in z420, connected to empty chassis:
->> >> > > >>> fails
->> >> > > >>> 3) X540 in z420, Magma card in z420 but no cable to chassis:
->> >> > > >>> works
->> >> > > >
->> >> > > > For what it's worth, I tried config 3 again with v3.11-rc6, and
->> >> > > > it failed the same way.  I haven't bothered with config 2.
->> >> > > > It's not 100% reproducible, but at least it doesn't seem
->> >> > > > related to the expansion chassis.
->> >> > > >
->> >> > > > I attached the logs from config 3 to
->> >> > > > https://bugzilla.kernel.org/show_bug.cgi?id=60776
->> >> > >
->> >> > > Is there anything I can do to help debug this?  Add
->> >> > > instrumentation, etc.?  It seems like I'm doing the simplest
->> >> > > possible thing -- just writing to the sysfs sriov_num_vfs file to enable
->> VFs.
->> >> > >
->> >> > > I almost think it must be related to my config somehow if nobody
->> >> > > else is seeing this, but at the same time, my config also seems
->> >> > > the simplest possible, so I don't know what I could be doing that's
->> unusual.
->> >> > >
->> >> > > Bjorn
->> >> >
->> >> > Hey Bjorn,
->> >> >
->> >> > I'm may be little confused so bear with me.
->> >> >
->> >> > Option 1 = (your normal set up), Magma card plugged to chasis, X540
->> >> > in
->> >> chasis.
->> >> > Option 2 = Magma card plugged to chasis, X540 in z420 system.
->> >> > Option 3 = Magma card UNplugged from chasis, x540 in z420 system.
->> >> >
->> >> > Options 1 & 2 - always fail
->> >> > Option 3 - sometimes fails (unsure at what rate failure occurs)
->> >> >
->> >> > Please correct me if I messed any of that up. :)
->> >>
->> >> Generally correct.  I've seen failures in all three configs, so I'm
->> >> only concerned with the simplest for now (config 3, no expansion chassis).
->> >>
->> >> > Another question I have relates to the lspci output you supplied in
->> >> > the
->> >> bugzilla.  I'm not seeing the VF devices (i.e. 08:10.0) did you run
->> >> lspci before you created the VF's?  If so could we see one while the failure
->> was occurring?
->> >>
->> >> That's correct, I collected the lspci output before reproducing the
->> >> problem.  I can't easily collect lspci afterwards because the machine
->> >> isn't responsive after the problem starts.
->> >>
->> >> > Also could you download the latest ixgbevf from source forge?
->> >> >
->> >> > https://sourceforge.net/projects/e1000/files/ixgbevf%20stable/
->> >> >
->> >> > If we add debugging messages it will be easier to patch this driver
->> >> > and it
->> >> contains our latest validated code base.
->> >>
->> >> I can do that if it turns out to be necessary.  But John Haller gave
->> >> me a good clue off-list:
->> >>
->> >> John wrote:
->> >> > I assume you want the VFs to be instantiated in a VM.  To do this,
->> >> > you need to blacklist the ixgbevf driver in the host (or not
->> >> > compile it into the host), or it will try to associate the driver
->> >> > in the host, rather than in the VM where you want it.  Then, the VM
->> >> > needs the ixgbevf driver, which will hopefully do a better job of
->> >> > talking to the mailbox in the host.  There is some work to assign
->> >> > the VF(s) to the VM, but I don't remember that offhand.
->> >>
->> >> I don't have any VMs (I started this whole thing because I was
->> >> looking at a PCI hotplug issue related to SR-IOV, so I don't really care
->> about VMs).
->> >>
->> >> So the ixgbevf driver on the *host* is claiming the new VFs, and it
->> >> sounds like maybe it can't handle that?
->> >>
->> >> Bjorn
->> >
->> > Not to speak for John, but I believe he was saying if you want to use your
->> VF's in a VM you need to make sure you don't run the ixgbevf driver on the
->> host as it will "claim" the VF's.  If you are NOT running any VM's then it is
->> perfectly fine to have both ixgbe and ixgbevf loaded.
->>
->> OK.  It certainly *seemed* surprising to have the ixgbevf driver blow up,
->> even if it was an error on my part to load it in the host.  Just let me know if
->> there's any more testing I can do.
->>
->> Bjorn
->
-> Something is leading to the mbx messages being messed up as event by the " Last Request of type 03 to PF Nacked" messages.   Have you tried reseting the ixgbevf port (ethtool -r <your port>)?  Is it even possible to do this as you mentioned that in the failure state the machine isn't very responsive?
->
-> If it might be worthwhile to add logging into the ixgbevf and ixgbe drivers around the mbx messages, with the hope being that it would help show what is going between the two.  There have been some changes in that area of the ixgbevf code as of late, so working off the latest source forge driver would the easiest for me to send you patch on.  Sadly we haven't been able to recreate the failure here so it makes it rather hard to debug.
+On Tue, Aug 27, 2013 at 12:16:34PM -0700, Andy Lutomirski wrote:
+> This is an experiment to see if we can get nice semantics for all syscalls
+> that either follow symlinks or allow AT_EMPTY_PATH without jumping through
+> enormous hoops.  This converts truncate (although you can't tell using
+> truncate from coreutils, because it actually uses open + ftruncate).
+> 
+> The basic idea is that there's a new helper function
+> user_file_or_path_at.  It takes an fd and a path and, depending on
+> flags, the emptiness of the path, and whether path is a magic /proc
+> symlink (or a symlink to a magic /proc/symlink), it returns either a
+> struct path or a struct file *.
 
-I haven't been able to reproduce the problem with the 2.10.3 ixgbevf
-driver from http://sourceforge.net/projects/e1000/files/ixgbevf%20stable/
+No.  
 
-I did notice what looks like a printk format problem and what appears
-to be a bare MAC address with no label:
+> +	path_get(&nd->path);
+> +	if (nd->flags & LOOKUP_FILE) {
+> +		if (nd->last_symlink_file)
+> +			fput(nd->last_symlink_file);
+> +		nd->last_symlink_file = file;
 
-[  316.699504] ixgbevf: eth%d: ixgbevf_init_interrupt_scheme:
-Multiqueue Disabled: Rx Queue count = 1, Tx Queue count = 1
-[  316.710897] ixgbevf: eth3: ixgbevf_probe: Intel(R) X540 Virtual Function
-[  316.717608] 08:88:ff:ff:0d:ec
+This is ugly (and costs quite a bit of overhead)
 
-Sorry for wasting so much time on something that appears to be already fixed.
+> -static int proc_cwd_link(struct dentry *dentry, struct path *path)
+> +static int proc_cwd_link(struct dentry *dentry, struct file_or_path *link)
 
-Bjorn
+... and this is even more vile.  Vetoed, for being too ugly to live.
+
+I think I've a saner approach, not involving anything that ugly; I'll post
+a writeup later tonight.
