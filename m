@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743Ab3H0K0N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 06:26:13 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38356 "EHLO
+	id S1753789Ab3H0K1N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 06:27:13 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38371 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752538Ab3H0K0L (ORCPT
+	by vger.kernel.org with ESMTP id S1752143Ab3H0K1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 06:26:11 -0400
-Date: Tue, 27 Aug 2013 11:26:08 +0100
+	Tue, 27 Aug 2013 06:27:11 -0400
+Date: Tue, 27 Aug 2013 11:27:08 +0100
 From: Mark Rutland <mark.rutland@arm.com>
 To: Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
@@ -24,38 +24,35 @@ Cc: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
         "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Jean Delvare <khali@linux-fr.org>
-Subject: Re: [RFC PATCH 03/14] hwmon: lm75: expose to thermal fw via DT
+Subject: Re: [RFC PATCH 04/14] hwmon: tmp102: expose to thermal fw via DT
  nodes
-Message-ID: <20130827102608.GD19893@e106331-lin.cambridge.arm.com>
+Message-ID: <20130827102708.GE19893@e106331-lin.cambridge.arm.com>
 References: <1377299755-5134-1-git-send-email-eduardo.valentin@ti.com>
- <1377299755-5134-4-git-send-email-eduardo.valentin@ti.com>
+ <1377299755-5134-5-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377299755-5134-4-git-send-email-eduardo.valentin@ti.com>
+In-Reply-To: <1377299755-5134-5-git-send-email-eduardo.valentin@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 24, 2013 at 12:15:44AM +0100, Eduardo Valentin wrote:
-> This patch adds to lm75 temperature sensor the possibility
+On Sat, Aug 24, 2013 at 12:15:45AM +0100, Eduardo Valentin wrote:
+> This patch adds to tmp102 temperature sensor the possibility
 > to expose itself as thermal zone device, registered on the
 > thermal framework.
 > 
 > The thermal zone is built only if a device tree node
 > describing a thermal zone for this sensor is present
-> inside the lm75 DT node. Otherwise, the driver behavior
+> inside the tmp102 DT node. Otherwise, the driver behavior
 > will be the same.
 
-There'll need to be a binding document if you're extending the lm75
-binding. See the comment at the top of [1]. However, I don't think you
-need this at all, as I explain in my comments on the previous patch.
+Similarly to the lm75, this requires a binding document update, but I
+don't think the binding extension's necessary anyway.
 
 Thanks,
 Mark.
-
-[1] Documentation/devicetree/bindings/i2c/trivial-devices.txt
 
 > 
 > Cc: Jean Delvare <khali@linux-fr.org>
@@ -64,84 +61,78 @@ Mark.
 > Cc: linux-kernel@vger.kernel.org
 > Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 > ---
->  drivers/hwmon/lm75.c | 31 +++++++++++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
+>  drivers/hwmon/tmp102.c | 26 ++++++++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
 > 
-> diff --git a/drivers/hwmon/lm75.c b/drivers/hwmon/lm75.c
-> index c03b490..dc55908 100644
-> --- a/drivers/hwmon/lm75.c
-> +++ b/drivers/hwmon/lm75.c
+> diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
+> index d7b47ab..0f1e44a 100644
+> --- a/drivers/hwmon/tmp102.c
+> +++ b/drivers/hwmon/tmp102.c
 > @@ -27,6 +27,8 @@
->  #include <linux/hwmon-sysfs.h>
->  #include <linux/err.h>
 >  #include <linux/mutex.h>
+>  #include <linux/device.h>
+>  #include <linux/jiffies.h>
 > +#include <linux/thermal.h>
 > +#include <linux/of.h>
->  #include "lm75.h"
 >  
+>  #define	DRIVER_NAME "tmp102"
 >  
-> @@ -70,6 +72,7 @@ static const u8 LM75_REG_TEMP[3] = {
->  /* Each client has this additional data */
->  struct lm75_data {
->  	struct device		*hwmon_dev;
-> +	struct thermal_zone_device	*tz;
->  	struct mutex		update_lock;
->  	u8			orig_conf;
->  	u8			resolution;	/* In bits, between 9 and 12 */
-> @@ -92,6 +95,19 @@ static struct lm75_data *lm75_update_device(struct device *dev);
+> @@ -50,6 +52,7 @@
 >  
->  /* sysfs attributes for hwmon */
+>  struct tmp102 {
+>  	struct device *hwmon_dev;
+> +	struct thermal_zone_device *tz;
+>  	struct mutex lock;
+>  	u16 config_orig;
+>  	unsigned long last_update;
+> @@ -93,6 +96,15 @@ static struct tmp102 *tmp102_update_device(struct i2c_client *client)
+>  	return tmp102;
+>  }
 >  
-> +static int lm75_read_temp(void *dev, unsigned long *temp)
+> +static int tmp102_read_temp(void *dev, unsigned long *temp)
 > +{
-> +	struct lm75_data *data = lm75_update_device(dev);
+> +	struct tmp102 *tmp102 = tmp102_update_device(to_i2c_client(dev));
 > +
-> +	if (IS_ERR(data))
-> +		return PTR_ERR(data);
-> +
-> +	*temp = ((data->temp[0] >> (16 - data->resolution)) * 1000) >>
-> +			(data->resolution - 8);
+> +	*temp = tmp102->temp[0];
 > +
 > +	return 0;
 > +}
 > +
->  static ssize_t show_temp(struct device *dev, struct device_attribute *da,
->  			 char *buf)
->  {
-> @@ -271,11 +287,25 @@ lm75_probe(struct i2c_client *client, const struct i2c_device_id *id)
->  		goto exit_remove;
+>  static ssize_t tmp102_show_temp(struct device *dev,
+>  				struct device_attribute *attr,
+>  				char *buf)
+> @@ -204,10 +216,23 @@ static int tmp102_probe(struct i2c_client *client,
+>  		goto fail_remove_sysfs;
 >  	}
 >  
 > +	if (of_find_property(client->dev.of_node, "monitored-zones", NULL)) {
-> +		data->tz = thermal_zone_of_device_register(&client->dev,
-> +							   0,
-> +							   false, /* -hwmon */
-> +							   &client->dev,
-> +							   lm75_read_temp);
-> +		if (IS_ERR(data->tz)) {
-> +			status = PTR_ERR(data->tz);
+> +		tmp102->tz = thermal_zone_of_device_register(&client->dev, 0,
+> +							     false, /* -hwmon */
+> +							     &client->dev,
+> +							     tmp102_read_temp);
+> +		if (IS_ERR(tmp102->tz)) {
+> +			status = PTR_ERR(tmp102->tz);
 > +			goto exit_hwmon;
 > +		}
 > +	}
 > +
->  	dev_info(&client->dev, "%s: sensor '%s'\n",
->  		 dev_name(data->hwmon_dev), client->name);
+>  	dev_info(&client->dev, "initialized\n");
 >  
 >  	return 0;
 >  
 > +exit_hwmon:
-> +	hwmon_device_unregister(data->hwmon_dev);
->  exit_remove:
->  	sysfs_remove_group(&client->dev.kobj, &lm75_group);
->  	return status;
-> @@ -285,6 +315,7 @@ static int lm75_remove(struct i2c_client *client)
+> +	hwmon_device_unregister(tmp102->hwmon_dev);
+>  fail_remove_sysfs:
+>  	sysfs_remove_group(&client->dev.kobj, &tmp102_attr_group);
+>  fail_restore_config:
+> @@ -220,6 +245,7 @@ static int tmp102_remove(struct i2c_client *client)
 >  {
->  	struct lm75_data *data = i2c_get_clientdata(client);
+>  	struct tmp102 *tmp102 = i2c_get_clientdata(client);
 >  
-> +	thermal_zone_device_unregister(data->tz);
->  	hwmon_device_unregister(data->hwmon_dev);
->  	sysfs_remove_group(&client->dev.kobj, &lm75_group);
->  	lm75_write_value(client, LM75_REG_CONF, data->orig_conf);
+> +	thermal_zone_device_unregister(tmp102->tz);
+>  	hwmon_device_unregister(tmp102->hwmon_dev);
+>  	sysfs_remove_group(&client->dev.kobj, &tmp102_attr_group);
+>  
 > -- 
 > 1.8.2.1.342.gfa7285d
 > 
