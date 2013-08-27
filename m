@@ -1,86 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab3H0XNf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 19:13:35 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:52056 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab3H0XNd (ORCPT
+	id S1753570Ab3H0XNe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 19:13:34 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:55888 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab3H0XNc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 19:13:33 -0400
+	Tue, 27 Aug 2013 19:13:32 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20130827230827.GI27005@ZenIV.linux.org.uk>
-References: <CA+55aFw20W9L8HV+VbTRNeQQM-_+aeUhvT9AAod5LGfb-7hE9g@mail.gmail.com>
- <7d1419dda1da70a8ad915f85b093a58b86bcaf3b.1377630856.git.luto@amacapital.net> <20130827230827.GI27005@ZenIV.linux.org.uk>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 27 Aug 2013 16:13:12 -0700
-Message-ID: <CALCETrWi7_ObM58oeSUahzvNVsrjGSgsqfRSXWoUcEpYVby=Ng@mail.gmail.com>
-Subject: Re: [RFC PATCH] fs: Add user_file_or_path_at and use it for truncate
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Willy Tarreau <w@1wt.eu>,
-        Ingo Molnar <mingo@kernel.org>,
-        "security@kernel.org" <security@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1377638890-371-5-git-send-email-sebastian.hesselbarth@gmail.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1377638890-371-5-git-send-email-sebastian.hesselbarth@gmail.com>
+Message-ID: <20130827231326.8231.21675@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH RFC v2 04/16] ARM: highbank: remove custom .init_time hook
+Date: Tue, 27 Aug 2013 16:13:26 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 4:08 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Tue, Aug 27, 2013 at 12:16:34PM -0700, Andy Lutomirski wrote:
->> This is an experiment to see if we can get nice semantics for all syscalls
->> that either follow symlinks or allow AT_EMPTY_PATH without jumping through
->> enormous hoops.  This converts truncate (although you can't tell using
->> truncate from coreutils, because it actually uses open + ftruncate).
->>
->> The basic idea is that there's a new helper function
->> user_file_or_path_at.  It takes an fd and a path and, depending on
->> flags, the emptiness of the path, and whether path is a magic /proc
->> symlink (or a symlink to a magic /proc/symlink), it returns either a
->> struct path or a struct file *.
->
-> No.
+Quoting Sebastian Hesselbarth (2013-08-27 14:27:58)
+> With arch/arm calling of_clk_init(NULL) from time_init(), we can now
+> remove custom .init_time hooks. Highbank clock provider need a reference
+> to system registers, as a workaround current clk driver maps those
+> independent of arch code now.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
 
-I'm curious what's wrong with the general concept.  (I agree that the
-implementation is heinous.)
+Acked-by: Mike Turquette <mturquette@linaro.org>
 
-If I ever wanted to add a new *at syscall, I'd like to be able to do:
-
-int sys_whateverat(int dfd, const char __user *name, int flags)
-{
-  resolve_the_thing(dfd, name, flags);
-  if (it's a file) {
-    check fmode;
-  } else {
-    inode_permission();
-  }
-
-  actually_do_something(inode);
-
-  unreference_whatever_i_got();
-
-  return ret;
-}
-
-thereby killing the fwhatever and whateverat birds with one stone.
-
-
->
->> +     path_get(&nd->path);
->> +     if (nd->flags & LOOKUP_FILE) {
->> +             if (nd->last_symlink_file)
->> +                     fput(nd->last_symlink_file);
->> +             nd->last_symlink_file = file;
->
-> This is ugly (and costs quite a bit of overhead)
->
->> -static int proc_cwd_link(struct dentry *dentry, struct path *path)
->> +static int proc_cwd_link(struct dentry *dentry, struct file_or_path *link)
->
-> ... and this is even more vile.  Vetoed, for being too ugly to live.
-
-...phew.  I wasn't looking forward to testing and debugging my crap :)
-
---Andy
+> ---
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/mach-highbank/highbank.c |   23 +++++++----------------
+>  drivers/clk/clk-highbank.c        |   10 +++++++---
+>  2 files changed, 14 insertions(+), 19 deletions(-)
+> 
+> diff --git a/arch/arm/mach-highbank/highbank.c b/arch/arm/mach-highbank/highbank.c
+> index 8881579..fa36d14 100644
+> --- a/arch/arm/mach-highbank/highbank.c
+> +++ b/arch/arm/mach-highbank/highbank.c
+> @@ -27,7 +27,6 @@
+>  #include <linux/of_address.h>
+>  #include <linux/smp.h>
+>  #include <linux/amba/bus.h>
+> -#include <linux/clk-provider.h>
+>  
+>  #include <asm/cacheflush.h>
+>  #include <asm/cputype.h>
+> @@ -88,20 +87,6 @@ static void __init highbank_init_irq(void)
+>  #endif
+>  }
+>  
+> -static void __init highbank_timer_init(void)
+> -{
+> -       struct device_node *np;
+> -
+> -       /* Map system registers */
+> -       np = of_find_compatible_node(NULL, NULL, "calxeda,hb-sregs");
+> -       sregs_base = of_iomap(np, 0);
+> -       WARN_ON(!sregs_base);
+> -
+> -       of_clk_init(NULL);
+> -
+> -       clocksource_of_init();
+> -}
+> -
+>  static void highbank_power_off(void)
+>  {
+>         highbank_set_pwr_shutdown();
+> @@ -160,6 +145,13 @@ static struct notifier_block highbank_platform_nb = {
+>  
+>  static void __init highbank_init(void)
+>  {
+> +       struct device_node *np;
+> +
+> +       /* Map system registers */
+> +       np = of_find_compatible_node(NULL, NULL, "calxeda,hb-sregs");
+> +       sregs_base = of_iomap(np, 0);
+> +       WARN_ON(!sregs_base);
+> +
+>         pm_power_off = highbank_power_off;
+>         highbank_pm_init();
+>  
+> @@ -178,7 +170,6 @@ static const char *highbank_match[] __initconst = {
+>  DT_MACHINE_START(HIGHBANK, "Highbank")
+>         .smp            = smp_ops(highbank_smp_ops),
+>         .init_irq       = highbank_init_irq,
+> -       .init_time      = highbank_timer_init,
+>         .init_machine   = highbank_init,
+>         .dt_compat      = highbank_match,
+>         .restart        = highbank_restart,
+> diff --git a/drivers/clk/clk-highbank.c b/drivers/clk/clk-highbank.c
+> index 2e08cb0..2e7e9d9 100644
+> --- a/drivers/clk/clk-highbank.c
+> +++ b/drivers/clk/clk-highbank.c
+> @@ -20,8 +20,7 @@
+>  #include <linux/clk-provider.h>
+>  #include <linux/io.h>
+>  #include <linux/of.h>
+> -
+> -extern void __iomem *sregs_base;
+> +#include <linux/of_address.h>
+>  
+>  #define HB_PLL_LOCK_500                0x20000000
+>  #define HB_PLL_LOCK            0x10000000
+> @@ -280,6 +279,7 @@ static __init struct clk *hb_clk_init(struct device_node *node, const struct clk
+>         const char *clk_name = node->name;
+>         const char *parent_name;
+>         struct clk_init_data init;
+> +       struct device_node *srnp;
+>         int rc;
+>  
+>         rc = of_property_read_u32(node, "reg", &reg);
+> @@ -290,7 +290,11 @@ static __init struct clk *hb_clk_init(struct device_node *node, const struct clk
+>         if (WARN_ON(!hb_clk))
+>                 return NULL;
+>  
+> -       hb_clk->reg = sregs_base + reg;
+> +       /* Map system registers */
+> +       srnp = of_find_compatible_node(NULL, NULL, "calxeda,hb-sregs");
+> +       hb_clk->reg = of_iomap(srnp, 0);
+> +       BUG_ON(!hb_clk->reg);
+> +       hb_clk->reg += reg;
+>  
+>         of_property_read_string(node, "clock-output-names", &clk_name);
+>  
+> -- 
+> 1.7.2.5
