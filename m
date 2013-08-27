@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab3H0RTM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 13:19:12 -0400
-Received: from sauhun.de ([89.238.76.85]:44533 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752513Ab3H0RTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 13:19:11 -0400
-Date: Tue, 27 Aug 2013 19:18:55 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, devicetree-discuss@lists.ozlabs.org,
-        Archit Taneja <archit@ti.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        grant.likely@secretlab.ca
-Subject: Re: [PATCH v5] gpio: pcf857x: Add OF support
-Message-ID: <20130827171854.GA2988@katana>
-References: <1377590559-14279-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
- <521C63A0.10902@ti.com>
- <1830640.BeoA2uHWDI@amdc1227>
- <2400176.9Vcd5TUYl9@avalon>
+	id S1752391Ab3H0RYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 13:24:12 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:46744 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab3H0RYL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 13:24:11 -0400
+Date: Tue, 27 Aug 2013 18:24:06 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on
+ /proc/*/{syscall,stack,personality}
+Message-ID: <20130827172406.GA2664@dztty>
+References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
+ <871u5gqtw3.fsf@xmission.com>
+ <20130826172054.GE27005@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2400176.9Vcd5TUYl9@avalon>
+In-Reply-To: <20130826172054.GE27005@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Al,
 
---h31gzZEtNLTqOjlF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-
-> The driver should support the same chip models reardless of whether it's =
-used=20
-> with or without DT. If an entry in the OF table has no corresponding entr=
-y in=20
-> the I2C table I would consider that as a driver bug.
-
-Linus Walleij posted a patch to support DT only probing, but too many
-side-effects showed up. Some were fixable (probe regressions) and some
-need more work, if feasible at all. Most prominent is that runtime
-instantiation of i2c slaves currently needs an entry in the i2c table.
+On Mon, Aug 26, 2013 at 06:20:55PM +0100, Al Viro wrote:
+> On Mon, Aug 26, 2013 at 09:49:48AM -0700, Eric W. Biederman wrote:
+> 
+> > How does changing the permissions to S_IRUSR prevent someone from
+> > opening the file before, and reading the file after a suid exec?
+> > 
+> > > This patch restores the old mode which was 0400
+> > 
+> > Which seems to add no security whatsoever and obscure the fact that
+> > anyone who cares can read the file so what is the point?
+> 
+> Two words: "security sclerosis".  Both patches NAKed, of course.
+These particular tissues "are being hardened", no cure for them
 
 
---h31gzZEtNLTqOjlF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+More seriously, Al your commit a9712bc12c40c172e393f85 closes the races
+during read() ok, but can you please share some light why the permission
+mode was changed ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+1)
+The commit log states that all these files are "rw-r--r--" which was not
+correct, they were "r--------" before that commit.
 
-iQIcBAEBAgAGBQJSHN9+AAoJEBQN5MwUoCm2K1cP/3zpfYNXdtAE0fr/YCTZbSzO
-VZn3LjZXj1zh7FNsySEPkXwVtX2j5ckfJ9/550BNRA5qvOeoCb+ij7/LN7skkoRg
-82JxWLmVyZFA8+QVW8uWSKHq/iqNT2nNFoAsocDBOvRoTHnekBQfODqJR8SbrSPd
-GaBwKJH3WDz0PUhZxpupjeoFM538/VSS9cRgIO6uX1vEj85PpnKYqCNpHHIJQlo/
-zJPcDODmIQv8vfaDUS8/nlYwbD93smLkrIl0mzau0nj63zyQkNowIjJ0r/9FqSNc
-Kd9SbqRWMkrBWFuG2zpWcMfziucBQerlgMqD9hJs0gTm/a6hzl/YRwSJ8atAFmaG
-52ApjQ4cHU08TiPXP8ljC5xuT4LPEbX9zPrjFZpFkGf9BNd033RFPZCHnSbqwayI
-UdBujDuCabPn8CGxuLPJ1eY8CwUt/6/tOAP1j2OeWFH0j0rE/pZTDoQ5m8HVg91E
-86+rlfdBXd4+0iF8Uw0oyL4gznAPxqFSiyy+d/K7AMfEBDPaA7y9OW5N30NL7NUO
-CjhgzyAyzxYNbvGE1MUfdrJjzkuVXi7OqOYYVuneVaBz63a7PWhWn3PCWiqZWX8h
-rzDHB959I3IFecyj82ylYGcTabjmeKBWbi1XzVsrxEgssNlTKkYz/Q62NbDwMn6C
-o5hTtR9YHwD9Fk+Uytyv
-=FPRk
------END PGP SIGNATURE-----
+2)
+The commit log says also:
+"if you open a file before the target does suid-root exec, you'll be still
+able to access it." so you do the task is tracable check at read()
 
---h31gzZEtNLTqOjlF--
+But what if you open a file of a privileged target or a target that does
+suid-root exec later, and pass the fd to a suid-root exec to read() from
+it later, you will still pass that tracable check.
+
+And currently a non-privileged process can get an fd on all these
+/proc/*/stack files even root owned ones.
+
+So why not restore the old behaviour and block a process from getting an
+fd on /proc/*/stack files that belong to other processes?
+
+
+The original thread that added the /proc/*/stack feature:
+https://lkml.org/lkml/2008/11/7/109
+
+They noted that it should be under 0400 permissions
+
+So why remove that, or why not restore the old safe behaviour ?
+
+
+Hope to get a response
+
+Thanks Al
+
+-- 
+Djalal Harouni
+http://opendz.org
