@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab3H0B1f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:27:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59362 "EHLO
+	id S1755142Ab3H0B1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:27:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59371 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab3H0BGn (ORCPT
+	with ESMTP id S1753173Ab3H0BGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Aug 2013 21:06:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -15,9 +15,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 07/13] nilfs2: remove double bio_put() in nilfs_end_bio_write() for BIO_EOPNOTSUPP error
-Date: Mon, 26 Aug 2013 18:08:39 -0700
-Message-Id: <20130827010310.406636624@linuxfoundation.org>
+Subject: [ 08/13] nilfs2: fix issue with counting number of bio requests for BIO_EOPNOTSUPP error detection
+Date: Mon, 26 Aug 2013 18:08:40 -0700
+Message-Id: <20130827010310.481016614@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010309.850395966@linuxfoundation.org>
 References: <20130827010309.850395966@linuxfoundation.org>
@@ -32,14 +32,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vyacheslav Dubeyko <slava@dubeyko.com>
 
-commit 2df37a19c686c2d7c4e9b4ce1505b5141e3e5552 upstream.
+commit 4bf93b50fd04118ac7f33a3c2b8a0a1f9fa80bc9 upstream.
 
-Remove double call of bio_put() in nilfs_end_bio_write() for the case of
-BIO_EOPNOTSUPP error detection.  The issue was found by Dan Carpenter
-and he suggests first version of the fix too.
+Fix the issue with improper counting number of flying bio requests for
+BIO_EOPNOTSUPP error detection case.
+
+The sb_nbio must be incremented exactly the same number of times as
+complete() function was called (or will be called) because
+nilfs_segbuf_wait() will call wail_for_completion() for the number of
+times set to sb_nbio:
+
+  do {
+      wait_for_completion(&segbuf->sb_bio_event);
+  } while (--segbuf->sb_nbio > 0);
+
+Two functions complete() and wait_for_completion() must be called the
+same number of times for the same sb_bio_event.  Otherwise,
+wait_for_completion() will hang or leak.
 
 Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
 Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
@@ -47,20 +59,24 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/segbuf.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/nilfs2/segbuf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/fs/nilfs2/segbuf.c
 +++ b/fs/nilfs2/segbuf.c
-@@ -345,8 +345,7 @@ static void nilfs_end_bio_write(struct b
- 
- 	if (err == -EOPNOTSUPP) {
- 		set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
--		bio_put(bio);
--		/* to be detected by submit_seg_bio() */
-+		/* to be detected by nilfs_segbuf_submit_bio() */
+@@ -376,12 +376,12 @@ static int nilfs_segbuf_submit_bio(struc
+ 	bio->bi_private = segbuf;
+ 	bio_get(bio);
+ 	submit_bio(mode, bio);
++	segbuf->sb_nbio++;
+ 	if (bio_flagged(bio, BIO_EOPNOTSUPP)) {
+ 		bio_put(bio);
+ 		err = -EOPNOTSUPP;
+ 		goto failed;
  	}
+-	segbuf->sb_nbio++;
+ 	bio_put(bio);
  
- 	if (!uptodate)
+ 	wi->bio = NULL;
 
 
