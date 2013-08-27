@@ -1,55 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466Ab3H0Pvh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 11:51:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54397 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751808Ab3H0Pvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 11:51:36 -0400
-Date: Tue, 27 Aug 2013 17:45:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Willy Tarreau <w@1wt.eu>,
-        Brad Spengler <spender@grsecurity.net>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] proc: make proc_fd_permission() thread-friendly
-Message-ID: <20130827154513.GA27943@redhat.com>
-References: <20130825065039.GB9299@1wt.eu> <CA+55aFwFeCRcwn4qo570Y15mKrN3jEdN757PcZhrXs7QYi8MYA@mail.gmail.com> <20130825194844.GA16717@redhat.com> <CA+55aFzbY3zYD1i5x02Z-6K3nHKzJj6227ZBYRLqij9y0eXRqQ@mail.gmail.com> <20130826153301.GA15890@redhat.com> <20130826163704.GA21763@redhat.com> <20130826175441.GA28856@redhat.com> <CA+55aFzCghYYF1_dcvBY9XZ82TU9b=hhgFqkGoWpaZuKJ7R6_A@mail.gmail.com> <CA+55aFwAw=AZNqmDNip_P6WiY4zGRNWks-kLwN7ZgJ8JJsAx-A@mail.gmail.com> <CALCETrXP-mYBPRon=0NzexW1FK1Qxz2+Bwv7-WeHBQpvW7ywRg@mail.gmail.com>
+	id S1753537Ab3H0Pvq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 11:51:46 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:35646 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab3H0Pvo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 11:51:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXP-mYBPRon=0NzexW1FK1Qxz2+Bwv7-WeHBQpvW7ywRg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130827140805.GB10210@lee--X1>
+References: <20130820093034.GL31036@pengutronix.de>
+	<20130822133730.GB23152@e106331-lin.cambridge.arm.com>
+	<20130822141900.GB17154@lee--X1>
+	<20130822151723.GE23152@e106331-lin.cambridge.arm.com>
+	<20130822154116.GC17154@lee--X1>
+	<20130822211912.GE31036@pengutronix.de>
+	<20130823075607.GD17154@lee--X1>
+	<20130823165539.GD7015@e106331-lin.cambridge.arm.com>
+	<20130827080635.GC6152@lee--X1>
+	<20130827134621.GJ19893@e106331-lin.cambridge.arm.com>
+	<20130827140805.GB10210@lee--X1>
+Date: Tue, 27 Aug 2013 10:51:43 -0500
+Message-ID: <CAL_JsqJU6HA46J2HBRFaOgd_23d4UoLuGtMZYKtsZR1+7brKvg@mail.gmail.com>
+Subject: Re: [PATCH 09/33] ARM: ux500: Supply the I2C clocks lookup to the
+ DBX500 DT
+From: Rob Herring <robherring2@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Pawel Moll <pawel.moll@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26, Andy Lutomirski wrote:
+On Tue, Aug 27, 2013 at 9:08 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Tue, 27 Aug 2013, Mark Rutland wrote:
 >
-> On Aug 26, 2013 12:35 PM, "Linus Torvalds" <torvalds@linux-foundation.org>
-> wrote:
-> >
-> > Yes, it would be semantically different, but it would mean that
-> > "/proc/self/fd/" would actually make sense in a way that it currently
-> > does *not* - which would seem fairly important, since the primary use
-> > for it tends to be /dev/stdin.
-> >
-> > And the other semantic differences might be much harder to notice.
-> > Worth testing?
->
-> The "children" subdirectory will be different.  But it's already screwed up.
+>> On Tue, Aug 27, 2013 at 09:06:35AM +0100, Lee Jones wrote:
+>> > On Fri, 23 Aug 2013, Mark Rutland wrote:
+>> >
+>> > > On Fri, Aug 23, 2013 at 08:56:07AM +0100, Lee Jones wrote:
+>> > > > I had a short chat with Rob last night about this. I'm going to loop
+>> > > > him in to the conversation, as he wrote the binding.
+>> > > >
+>> > > > > > When most of the other clocks that we deal with are being requested,
+>> > > > > > they rely on being index zero:
+>> > > > > >
+>> > > > > >   drivers/i2c/busses/i2c-nomadik.c: dev->clk = clk_get(&adev->dev, NULL);
+>> > > > >
+>> > > > > Look at drivers/clk/clkdev.c, there's some fuzzy matching
+>> > > > > involved when you pass NULL as connection id.
+>> > > >
+>> > > > Yes, I've been looking at that. This is why it works currently. I
+>> > > > think I need to change all of the drivers to specify which clock they
+>> > > > want. At the moment that 'fuzzy matching' is what's saving us. If
+>> > > > anyone were to change our DTS file to match what the binding says,
+>> > > > then it would cease to work. I'm guessing this is the same for all
+>> > > > other DTS files too:
+>> > >
+>> > > I think if anything, the binding document(s) should be updated to
+>> > > describe that apb_pclk is referred to by name, and the names of the
+>> > > other clocks should be described in the specific device bindings. We can
+>> > > then modify the drivers which grab clock 0 to explicitly grab the first
+>> > > clock by name, and backwards compatibility should not be broken.
+>> > >
+>> > > I don't believe any other OS has implemented the common clock bindings,
+>> > > and we've never supported the binding as described. Let's correct the
+>> > > de-facto standard into a standard by decree.
+>> >
+>> > I think we need to respect, or at least take into consideration the
+>> > reason for the original 'de-facto' standard. Other OSes shouldn't be
+>> > forced to provide a named clock request in order to obtain
+>> > 'apb_pclk'. If the binding says it should be first, then perhaps we
+>> > should do just that. It's simply a matter of naming all subsequent
+>> > clocks related to AMBA devices.
+>>
+>> Ideally, yes. However, we have to be careful to not break compatibility.
+>>
+>> I took a look at existing primecell drivers and what they do. The
+>> situation isn't so bad (with the exception of the
+>> half-dt/half-platform-code mess):
+>>
+>> * Some don't deal with clocks at all (no clk* in the driver). pl320 is
+>>   in the ecx-common dtsi with only apb_pclk but has no binding
+>>   defined. Some have no clocks defined in the dt and are presumably few
+>>   clocks by platform data or are non-functional.
+>>
+>>   I'm not sure how these DTs are going to be supported if and when we
+>>   remove the platform data they depend upon. If we're really going to do
+>>   that, then they are clearly not supported as-is long term.
+>>
+>> * The pl022 driver grabs the first clock to figure out the rate of the
+>>   spi bus (assuming it is SSPCLK). The SSPCLK input is not defined in
+>>   the binding. The ste-u300 dts has two clock-names, "apb_pclk" and
+>>   "spi_clk" (in that order), but they refer to the same clock.
+>>
+>>   Given the existing driver simply grabs the first clock and they're
+>>   both the same, we could re-order the names and make the driver grab
+>>   the second clock. That wouldn't break backwards compatibility with the
+>>   sole dts file we have using the binding, though this assumes no-one
+>>   else has a dt lying around with different clocks.
+>>
+>> * pl010 grabs the first clock given to it to figure out the uart rate
+>>   (assuming it is UARTCLK), but it's only in integratorap.dts, without
+>>   clocks, and is presumably fed by platform data. There is no binding
+>>   document.
+>>
+>>   pl011 grabs the first clock given to figure out the UART rate
+>>   (assuming it is UARTCLK). The binding explicitly states it's only
+>>   given apb_pclk, despite UARTCLK and PCLK being separate inputs to the
+>>   IP block.
+>>
+>>   These two bindings don't describe the hardware, and should be fixed.
+>>   The only way I can think to make this work without breaknig backwards
+>>   compatibility would be to try to grab the second clock and then fall
+>>   back to the first if there isn't one. The other option is to break
+>>   backwards compatibility, but I'm not sure that's much of an option.
 
-No, it lives in tid_base_stuff, it should be only visible in
-/proc/*/task/tid/ dir.
+This was an oversight since highbank has a single clock. But yes, this
+should be 2 clocks. It should be fixed and in a compatible way please.
 
-(and perhaps it also makes sense to remove mem/exe-like things from
- tid_base_stuff...)
+>> * pl111 has no driver or binding in mainline, but appears in dts files.
+>>   Those dts files clcdclk and apb_pclk, in that order. We could fix
+>>   those before a driver starts using them.
 
-Anyway I agree, this change is risky.
+I think this was waiting for some generic display bindings? Pawel may know.
 
-Oleg.
-
+Rob
