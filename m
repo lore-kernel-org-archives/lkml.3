@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab3H0BHS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:07:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59445 "EHLO
+	id S1753402Ab3H0BHQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:07:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59448 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab3H0BHH (ORCPT
+	with ESMTP id S1753252Ab3H0BHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:07 -0400
+	Mon, 26 Aug 2013 21:07:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 28/74] tracing: Change event_filter_read/write to verify i_private != NULL
-Date: Mon, 26 Aug 2013 18:08:26 -0700
-Message-Id: <20130827010430.449531821@linuxfoundation.org>
+Subject: [ 29/74] tracing: Change f_start() to take event_mutex and verify i_private != NULL
+Date: Mon, 26 Aug 2013 18:08:27 -0700
+Message-Id: <20130827010430.783793391@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -29,21 +29,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oleg Nesterov <oleg@redhat.com>
 
-commit e2912b091c26b8ea95e5e00a43a7ac620f6c94a6 upstream.
+commit c5a44a1200c6eda2202434f25325e8ad19533fca upstream.
 
-event_filter_read/write() are racy, ftrace_event_call can be already
-freed by trace_remove_event_call() callers.
+trace_format_open() and trace_format_seq_ops are racy, nothing
+protects ftrace_event_call from trace_remove_event_call().
 
-1. Shift mutex_lock(event_mutex) from print/apply_event_filter to
-   the callers.
+Change f_start() to take event_mutex and verify i_private != NULL,
+change f_stop() to drop this lock.
 
-2. Change the callers, event_filter_read() and event_filter_write()
-   to read i_private under this mutex and abort if it is NULL.
-
-This fixes nothing, but now we can change debugfs_remove("filter")
+This fixes nothing, but now we can change debugfs_remove("format")
 callers to nullify ->i_private and fix the the problem.
 
-Link: http://lkml.kernel.org/r/20130726172540.GA3619@redhat.com
+Note: the usage of event_mutex is sub-optimal but simple, we can
+change this later.
+
+Link: http://lkml.kernel.org/r/20130726172543.GA3622@redhat.com
 
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
@@ -52,129 +52,65 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 
 ---
- kernel/trace/trace_events.c        |   26 +++++++++++++++++++-------
- kernel/trace/trace_events_filter.c |   17 ++++++-----------
- 2 files changed, 25 insertions(+), 18 deletions(-)
+ kernel/trace/trace_events.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -1002,21 +1002,28 @@ static ssize_t
- event_filter_read(struct file *filp, char __user *ubuf, size_t cnt,
- 		  loff_t *ppos)
+@@ -838,7 +838,7 @@ enum {
+ 
+ static void *f_next(struct seq_file *m, void *v, loff_t *pos)
  {
--	struct ftrace_event_call *call = filp->private_data;
-+	struct ftrace_event_call *call;
- 	struct trace_seq *s;
--	int r;
-+	int r = -ENODEV;
+-	struct ftrace_event_call *call = m->private;
++	struct ftrace_event_call *call = event_file_data(m->private);
+ 	struct ftrace_event_field *field;
+ 	struct list_head *common_head = &ftrace_common_fields;
+ 	struct list_head *head = trace_get_fields(call);
+@@ -882,6 +882,11 @@ static void *f_start(struct seq_file *m,
+ 	loff_t l = 0;
+ 	void *p;
  
- 	if (*ppos)
- 		return 0;
- 
- 	s = kmalloc(sizeof(*s), GFP_KERNEL);
-+
- 	if (!s)
- 		return -ENOMEM;
- 
- 	trace_seq_init(s);
- 
--	print_event_filter(call, s);
--	r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->len);
++	/* ->stop() is called even if ->start() fails */
 +	mutex_lock(&event_mutex);
-+	call = event_file_data(filp);
-+	if (call)
-+		print_event_filter(call, s);
-+	mutex_unlock(&event_mutex);
++	if (!event_file_data(m->private))
++		return ERR_PTR(-ENODEV);
 +
-+	if (call)
-+		r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->len);
+ 	/* Start by showing the header */
+ 	if (!*pos)
+ 		return (void *)FORMAT_HEADER;
+@@ -896,7 +901,7 @@ static void *f_start(struct seq_file *m,
  
- 	kfree(s);
- 
-@@ -1027,9 +1034,9 @@ static ssize_t
- event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 		   loff_t *ppos)
+ static int f_show(struct seq_file *m, void *v)
  {
--	struct ftrace_event_call *call = filp->private_data;
-+	struct ftrace_event_call *call;
- 	char *buf;
--	int err;
-+	int err = -ENODEV;
+-	struct ftrace_event_call *call = m->private;
++	struct ftrace_event_call *call = event_file_data(m->private);
+ 	struct ftrace_event_field *field;
+ 	const char *array_descriptor;
  
- 	if (cnt >= PAGE_SIZE)
- 		return -EINVAL;
-@@ -1044,7 +1051,12 @@ event_filter_write(struct file *filp, co
- 	}
- 	buf[cnt] = '\0';
+@@ -947,6 +952,7 @@ static int f_show(struct seq_file *m, vo
  
--	err = apply_event_filter(call, buf);
-+	mutex_lock(&event_mutex);
-+	call = event_file_data(filp);
-+	if (call)
-+		err = apply_event_filter(call, buf);
+ static void f_stop(struct seq_file *m, void *p)
+ {
 +	mutex_unlock(&event_mutex);
-+
- 	free_page((unsigned long) buf);
- 	if (err < 0)
- 		return err;
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -631,17 +631,15 @@ static void append_filter_err(struct fil
- 	free_page((unsigned long) buf);
  }
  
-+/* caller must hold event_mutex */
- void print_event_filter(struct ftrace_event_call *call, struct trace_seq *s)
+ static const struct seq_operations trace_format_seq_ops = {
+@@ -958,7 +964,6 @@ static const struct seq_operations trace
+ 
+ static int trace_format_open(struct inode *inode, struct file *file)
  {
--	struct event_filter *filter;
-+	struct event_filter *filter = call->filter;
+-	struct ftrace_event_call *call = inode->i_private;
+ 	struct seq_file *m;
+ 	int ret;
  
--	mutex_lock(&event_mutex);
--	filter = call->filter;
- 	if (filter && filter->filter_string)
- 		trace_seq_printf(s, "%s\n", filter->filter_string);
- 	else
- 		trace_seq_printf(s, "none\n");
--	mutex_unlock(&event_mutex);
- }
+@@ -967,7 +972,7 @@ static int trace_format_open(struct inod
+ 		return ret;
  
- void print_subsystem_event_filter(struct event_subsystem *system,
-@@ -1835,23 +1833,22 @@ static int create_system_filter(struct e
- 	return err;
- }
+ 	m = file->private_data;
+-	m->private = call;
++	m->private = file;
  
-+/* caller must hold event_mutex */
- int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
- {
- 	struct event_filter *filter;
--	int err = 0;
--
--	mutex_lock(&event_mutex);
-+	int err;
- 
- 	if (!strcmp(strstrip(filter_string), "0")) {
- 		filter_disable(call);
- 		filter = call->filter;
- 		if (!filter)
--			goto out_unlock;
-+			return 0;
- 		RCU_INIT_POINTER(call->filter, NULL);
- 		/* Make sure the filter is not being used */
- 		synchronize_sched();
- 		__free_filter(filter);
--		goto out_unlock;
-+		return 0;
- 	}
- 
- 	err = create_filter(call, filter_string, true, &filter);
-@@ -1878,8 +1875,6 @@ int apply_event_filter(struct ftrace_eve
- 			__free_filter(tmp);
- 		}
- 	}
--out_unlock:
--	mutex_unlock(&event_mutex);
- 
- 	return err;
+ 	return 0;
  }
 
 
