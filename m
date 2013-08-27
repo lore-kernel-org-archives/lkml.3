@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab3H0BJI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:09:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59667 "EHLO
+	id S1753905Ab3H0BJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:09:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59654 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab3H0BHm (ORCPT
+	with ESMTP id S1753656Ab3H0BHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:42 -0400
+	Mon, 26 Aug 2013 21:07:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wladislav Wiebe <wladislav.kw@gmail.com>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [ 53/74] of: fdt: fix memory initialization for expanded DT
-Date: Mon, 26 Aug 2013 18:08:51 -0700
-Message-Id: <20130827010435.422724070@linuxfoundation.org>
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 50/74] drm/radeon: fix UVD message buffer validation
+Date: Mon, 26 Aug 2013 18:08:48 -0700
+Message-Id: <20130827010434.877723106@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,52 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wladislav Wiebe <wladislav.kw@gmail.com>
+From: Christian König <christian.koenig@amd.com>
 
-commit 9e40127526e857fa3f29d51e83277204fbdfc6ba upstream.
+commit 112a6d0c071808f6d48354fc8834a574e5dcefc0 upstream.
 
-Already existing property flags are filled wrong for properties created from
-initial FDT. This could cause problems if this DYNAMIC device-tree functions
-are used later, i.e. properties are attached/detached/replaced. Simply dumping
-flags from the running system show, that some initial static (not allocated via
-kzmalloc()) nodes are marked as dynamic.
+When the message buffer is currently moving block until it is idle again.
 
-I putted some debug extensions to property_proc_show(..) :
-..
-+       if (OF_IS_DYNAMIC(pp))
-+               pr_err("DEBUG: xxx : OF_IS_DYNAMIC\n");
-+       if (OF_IS_DETACHED(pp))
-+               pr_err("DEBUG: xxx : OF_IS_DETACHED\n");
-
-when you operate on the nodes (e.g.: ~$ cat /proc/device-tree/*some_node*) you
-will see that those flags are filled wrong, basically in most cases it will dump
-a DYNAMIC or DETACHED status, which is in not true.
-(BTW. this OF_IS_DETACHED is a own define for debug purposes which which just
-make a test_bit(OF_DETACHED, &x->_flags)
-
-If nodes are dynamic kernel is allowed to kfree() them. But it will crash
-attempting to do so on the nodes from FDT -- they are not allocated via
-kzmalloc().
-
-Signed-off-by: Wladislav Wiebe <wladislav.kw@gmail.com>
-Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/fdt.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/radeon/radeon_uvd.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -392,6 +392,8 @@ static void __unflatten_device_tree(stru
- 	mem = (unsigned long)
- 		dt_alloc(size + 4, __alignof__(struct device_node));
+--- a/drivers/gpu/drm/radeon/radeon_uvd.c
++++ b/drivers/gpu/drm/radeon/radeon_uvd.c
+@@ -359,6 +359,14 @@ static int radeon_uvd_cs_msg(struct rade
+ 		return -EINVAL;
+ 	}
  
-+	memset((void *)mem, 0, size);
++	if (bo->tbo.sync_obj) {
++		r = radeon_fence_wait(bo->tbo.sync_obj, false);
++		if (r) {
++			DRM_ERROR("Failed waiting for UVD message (%d)!\n", r);
++			return r;
++		}
++	}
 +
- 	((__be32 *)mem)[size / 4] = cpu_to_be32(0xdeadbeef);
- 
- 	pr_debug("  unflattening %lx...\n", mem);
+ 	r = radeon_bo_kmap(bo, &ptr);
+ 	if (r)
+ 		return r;
 
 
