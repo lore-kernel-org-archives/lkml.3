@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab3H0B0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:26:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59396 "EHLO
+	id S1755035Ab3H0B0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:26:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59392 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab3H0BG7 (ORCPT
+	with ESMTP id S1753225Ab3H0BG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:06:59 -0400
+	Mon, 26 Aug 2013 21:06:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 15/74] iwlwifi: bump required firmware API version for 3160/7260
-Date: Mon, 26 Aug 2013 18:08:13 -0700
-Message-Id: <20130827010427.714126149@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: [ 14/74] iwlwifi: mvm: unregister leds when registration failed
+Date: Mon, 26 Aug 2013 18:08:12 -0700
+Message-Id: <20130827010427.554156414@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -26,47 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit a2d0909a687b4d250cc2b7481072e361678745ba upstream.
+commit b7327d89ae694a89f9934d428bde520b77b3131c upstream.
 
-As the firmware API has changed significantly and we don't
-have support code for the old APIs, bump the version to be
-able to release the version 7 API firmware. Unfortunately
-this means that the driver in 3.9 and 3.10 can't work, but
-that's still better than crashing the device/driver there.
+This was missing and prevented any further attempts
+to load the module.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes@sipsolutions.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-7000.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-7000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-7000.c
-@@ -67,16 +67,16 @@
- #include "iwl-agn-hw.h"
+--- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+@@ -243,7 +243,11 @@ int iwl_mvm_mac_setup_register(struct iw
+ 	if (ret)
+ 		return ret;
  
- /* Highest firmware API version supported */
--#define IWL7260_UCODE_API_MAX	6
--#define IWL3160_UCODE_API_MAX	6
-+#define IWL7260_UCODE_API_MAX	7
-+#define IWL3160_UCODE_API_MAX	7
+-	return ieee80211_register_hw(mvm->hw);
++	ret = ieee80211_register_hw(mvm->hw);
++	if (ret)
++		iwl_mvm_leds_exit(mvm);
++
++	return ret;
+ }
  
- /* Oldest version we won't warn about */
--#define IWL7260_UCODE_API_OK	6
--#define IWL3160_UCODE_API_OK	6
-+#define IWL7260_UCODE_API_OK	7
-+#define IWL3160_UCODE_API_OK	7
- 
- /* Lowest firmware API version supported */
--#define IWL7260_UCODE_API_MIN	6
--#define IWL3160_UCODE_API_MIN	6
-+#define IWL7260_UCODE_API_MIN	7
-+#define IWL3160_UCODE_API_MIN	7
- 
- /* NVM versions */
- #define IWL7260_NVM_VERSION		0x0a1d
+ static void iwl_mvm_mac_tx(struct ieee80211_hw *hw,
 
 
