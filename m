@@ -1,110 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab3H0Hmg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 03:42:36 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:49883 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab3H0Hme (ORCPT
+	id S1753168Ab3H0Hna (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 03:43:30 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37482 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752824Ab3H0Hn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 03:42:34 -0400
-Message-ID: <521C587E.6050706@atmel.com>
-Date: Tue, 27 Aug 2013 09:42:54 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: boris brezillon <b.brezillon@overkiz.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Linus Walleij" <linus.walleij@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        "Heiko Stuebner" <heiko@sntech.de>,
-        James Hogan <james.hogan@imgtec.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 1/3] pinctrl: add new generic pinconf config for deglitch
- filter
-References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com> <1377380109-11247-1-git-send-email-b.brezillon@overkiz.com> <521B875E.1010605@wwwdotorg.org> <521B89D1.6010902@overkiz.com> <521C2347.4080702@wwwdotorg.org> <521C4451.1060908@overkiz.com>
-In-Reply-To: <521C4451.1060908@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Tue, 27 Aug 2013 03:43:29 -0400
+Date: Tue, 27 Aug 2013 17:43:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Shlomo Pongratz <shlomop@mellanox.com>,
+        Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org
+Subject: linux-next: manual merge of the scsi tree with the infiniband tree
+Message-Id: <20130827174317.10e4f4b7a244f2bf640a9b59@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__27_Aug_2013_17_43_17_+1000_Yr5m4xcjOCaPAzWS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/08/2013 08:16, boris brezillon :
-> On 27/08/2013 05:55, Stephen Warren wrote:
->> On 08/26/2013 11:01 AM, boris brezillon wrote:
->>> Hello Stephen,
->>>
->>> On 26/08/2013 18:50, Stephen Warren wrote:
->>>> On 08/24/2013 03:35 PM, Boris BREZILLON wrote:
->>>>> Add a new parameter to support deglitch filter configuration.
->>>>> A deglitch filter works like a debounce filter but with a smaller
->>>>> delay (nanoseconds).
->>>> Why not use the existing debounce property, just with a small delay
->>>> specified. It seems like that's exactly what the property is for?
->>> That's one of the question I asked in my cover letter :-)
->>>
->>> Indeed the at91 deglitch filter delay is not configurable and is statically
->>> assigned to half a master clk cycle (if master clk = 133MHz -> 8 ns).
->>> The debounce property argument is currently expressed in usecs.
->>>
->>> This will result in always selecting the debounce filter (which is also
->>> available on at91 SoCs) over the deglitch filter.
->>>
->>> Could we add a flag in the deglitch argument to specify the delay unit
->>> (nsecs or usecs) ?
->> If the value is hard-coded in HW, why not use non-zero (or 1) to enable
->> and zero to disable?
->
-> Indeed at91 pins support both deglitch and debounce filter and I have to
-> choose
-> between the two given the argument value (in usec).
->
-> Here's what I can do:
->
-> if (arg >= 1/2 * slowclock)    /* debounce case */
->       /* choose debounce filter and configure the delay
->           according to the given argument value */
-> else                                          /* deglitch case */
->       /* choose deglitch filter */
->
->
-> Slow clock is running at 32KHz which gives a 30 usec clock cycle.
+--Signature=_Tue__27_Aug_2013_17_43_17_+1000_Yr5m4xcjOCaPAzWS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I am not in favor for this kind of complicated heuristic. Deglitch and 
-Debounce filters are different features in at91 (even if they pursuit 
-the same goal). So I do prefer to let the user choose which feature is 
-preferred for his application and add a different flag.
+Hi James,
 
+Today's linux-next merge of the scsi tree got a conflict in
+drivers/infiniband/ulp/iser/iser_initiator.c between commit b7f04513090c
+("IB/iser: Accept session->cmds_max from user space") from the infiniband
+tree and commit 6a06a4b8cff8 ("[SCSI] IB/iser: Add Discovery support")
+from the scsi tree.
 
->> (this kind of thing is why I'm not convinced that generic pinconf works
->> so well... What if we need psecs in the future?)
->
-> Should I keep the at91 native pinconf binding and add the missing flags
-> to this binding
-> (OUTPUT configuration flags) ?
->
-> This was another question I asked in my cover letter: wether or not the
-> generic pinconf
-> binding should be used.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-The question is: how much this "generic" pinconf is... well... generic! 
-And it is not a answer I can give.
-On the other hand, if the "generic" is not going to overcome the native 
-pinctrl, I do not feel like switching to this at the cost of changing 
-the whole dtsi/dts entries that we already have.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-So, it is more to Linus and Stephen to give us clues about this...
+diff --cc drivers/infiniband/ulp/iser/iser_initiator.c
+index bdc38f4,b31fa1d..0000000
+--- a/drivers/infiniband/ulp/iser/iser_initiator.c
++++ b/drivers/infiniband/ulp/iser/iser_initiator.c
+@@@ -342,10 -249,15 +343,16 @@@ static int iser_post_rx_bufs(struct isc
+  	WARN_ON(iser_conn->ib_conn->post_recv_buf_count !=3D 1);
+  	WARN_ON(atomic_read(&iser_conn->ib_conn->post_send_buf_count) !=3D 0);
+ =20
+- 	iser_dbg("Initially post: %d\n", iser_conn->ib_conn->min_posted_rx);
++ 	if (session->discovery_sess) {
++ 		iser_info("Discovery session, re-using login RX buffer\n");
++ 		return 0;
++ 	} else
++ 		iser_info("Normal session, posting batch of RX %d buffers\n",
+ -			  ISER_MIN_POSTED_RX);
+++			  iser_conn->ib_conn->min_posted_rx);
++=20
+  	/* Initial post receive buffers */
+ -	if (iser_post_recvm(iser_conn->ib_conn, ISER_MIN_POSTED_RX))
+ +	if (iser_post_recvm(iser_conn->ib_conn,
+ +			    iser_conn->ib_conn->min_posted_rx))
+  		return -ENOMEM;
+ =20
+  	return 0;
 
-Bye,
--- 
-Nicolas Ferre
+--Signature=_Tue__27_Aug_2013_17_43_17_+1000_Yr5m4xcjOCaPAzWS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSHFiaAAoJEECxmPOUX5FE8wIP/3p66oVR07GoiJ/SOQ6MHjd8
+KsDEm88hO7BS8ERBW66QpW0jqSYJzFCzf8KSRA7pJ/ky88iNnpkkHzNZrqSyZdpF
+DOFR/FaBYdVm1xRD/TdizviZt5qMRRcdMLPlfXPKLgzWhaMeokz2FfgjOfg66nU3
+eDSaaRmg+YlnDWYmBKxRfpOgmocPa7g+dgpB0HdLvf56oHCh0jUyO10gIuC5ik3m
+2+MMTnS954z1N4BP8gLdS5nPzTmTbCJbamPnP0QfLF+W4Ao89Ueiu71UvdkyoIwM
+yLBDMdGtycqHxMC+PDLgWE5ZGHAeKuykaV818bXgbmf3vZ1VPNu9AayHd6L7ouDh
+HMXEys7gOlhTc3Z8HhMqM5sU81fhaWhMKY/7RgpIjDkImaE6jUF0wHwoURFQJADv
+Kr5h60bH6h6tm0yEDnyrDO/indnWNBg9RH3KwF7/LqlHhj8lyfnzMjUv0icZ4Svq
+HO89hH4zVCCCcExNyRvZIq17RLiTvraBtZ5vX7iVqEKt6XT6wNtFn3WI+AVP9v5Q
+JHtSfXE5494immJKeBwwridqqA1O/FjTS0rX9nQITTHFRcbd5Ky7KT2BraLK3rlG
+/lRtWgNdmUd289JkjTvrMeEvrFEp5Q91vL/dCAVqli2aUoahDuVUUd+Z4wIJ1kMr
+J2WtVevaC0Y75iVojFab
+=uio2
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Aug_2013_17_43_17_+1000_Yr5m4xcjOCaPAzWS--
