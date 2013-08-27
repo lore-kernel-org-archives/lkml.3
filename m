@@ -1,141 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab3H0D3a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 23:29:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59266 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752302Ab3H0D33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 23:29:29 -0400
-Date: Mon, 26 Aug 2013 23:28:09 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        gong.chen@linux.intel.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1377574089-uu6o2agw-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1377571171-9958-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1377571171-9958-1-git-send-email-liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 1/3] mm/hwpoison: fix bug triggered by unpoison empty
- zero page
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
+	id S1752871Ab3H0Dak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 23:30:40 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:47235 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752359Ab3H0Daj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 23:30:39 -0400
+Date: Tue, 27 Aug 2013 11:27:46 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Jason Cooper <jason@lakedaemon.net>
+CC: "andrew@lunn.ch" <andrew@lunn.ch>,
+        "gregory.clement@free-electrons.com" 
+	<gregory.clement@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 0/3] arm: mvebu: fix resource leak
+Message-ID: <20130827112746.2e5abc73@xhacker>
+In-Reply-To: <20130827032237.GA19598@titan.lakedaemon.net>
+References: <1377517018-7716-1-git-send-email-jszhang@marvell.com>
+	<20130826204523.GD24470@titan.lakedaemon.net>
+	<20130827110120.0a9fab2a@xhacker>
+	<20130827032237.GA19598@titan.lakedaemon.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1377571171-9958-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 10:39:29AM +0800, Wanpeng Li wrote:
-> v1 -> v2:
->  * ignore empty zero page for madvise_hwpoison directly
-> 
-> [   57.579580] Injecting memory failure for page 0x19d0 at 0xb77d2000
-> [   57.579824] MCE 0x19d0: non LRU page recovery: Ignored
-> [   91.290453] MCE: Software-unpoisoned page 0x19d0
-> [   91.290456] BUG: Bad page state in process bash  pfn:019d0
-> [   91.290466] page:f3461a00 count:0 mapcount:0 mapping:  (null) index:0x0
-> [   91.290467] page flags: 0x40000404(referenced|reserved)
-> [   91.290469] Modules linked in: nfsd auth_rpcgss i915 nfs_acl nfs lockd video drm_kms_helper drm bnep rfcomm sunrpc bluetooth psmouse parport_pc ppdev lp serio_raw fscache parport gpio_ich lpc_ich mac_hid i2c_algo_bit tpm_tis wmi usb_storage hid_generic usbhid hid e1000e firewire_ohci firewire_core ahci ptp libahci pps_core crc_itu_t
-> [   91.290486] CPU: 3 PID: 2123 Comm: bash Not tainted 3.11.0-rc6+ #12
-> [   91.290487] Hardware name: LENOVO 7034DD7/        , BIOS 9HKT47AUS 01//2012
-> [   91.290488]  00000000 00000000 e9625ea0 c15ec49b f3461a00 e9625eb8 c15ea119 c17cbf18
-> [   91.290491]  ef084314 000019d0 f3461a00 e9625ed8 c110dc8a f3461a00 00000001 00000000
-> [   91.290494]  f3461a00 40000404 00000000 e9625ef8 c110dcc1 f3461a00 f3461a00 000019d0
-> [   91.290497] Call Trace:
-> [   91.290501]  [<c15ec49b>] dump_stack+0x41/0x52
-> [   91.290504]  [<c15ea119>] bad_page+0xcf/0xeb
-> [   91.290515]  [<c110dc8a>] free_pages_prepare+0x12a/0x140
-> [   91.290517]  [<c110dcc1>] free_hot_cold_page+0x21/0x110
-> [   91.290519]  [<c11123c1>] __put_single_page+0x21/0x30
-> [   91.290521]  [<c1112815>] put_page+0x25/0x40
-> [   91.290524]  [<c11544e7>] unpoison_memory+0x107/0x200
-> [   91.290526]  [<c104a537>] ? ns_capable+0x27/0x60
-> [   91.290528]  [<c1155720>] hwpoison_unpoison+0x20/0x30
-> [   91.290530]  [<c1178266>] simple_attr_write+0xb6/0xd0
-> [   91.290532]  [<c11781b0>] ? generic_fh_to_dentry+0x50/0x50
-> [   91.290535]  [<c1158c60>] vfs_write+0xa0/0x1b0
-> [   91.290537]  [<c11781b0>] ? generic_fh_to_dentry+0x50/0x50
-> [   91.290539]  [<c11590df>] SyS_write+0x4f/0x90
-> [   91.290549]  [<c15f9a81>] sysenter_do_call+0x12/0x22
-> [   91.290550] Disabling lock debugging due to kernel taint
-> 
-> Testcase:
-> 
-> #define _GNU_SOURCE
-> #include <stdlib.h>
-> #include <stdio.h>
-> #include <sys/mman.h>
-> #include <unistd.h>
-> #include <fcntl.h>
-> #include <sys/types.h>
-> #include <errno.h>
-> 
-> #define PAGES_TO_TEST 1
-> #define PAGE_SIZE	4096
-> 
-> int main(void)
-> {
-> 	char *mem;
-> 
-> 	mem = mmap(NULL, PAGES_TO_TEST * PAGE_SIZE,
-> 			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-> 
-> 	if (madvise(mem, PAGES_TO_TEST * PAGE_SIZE, MADV_HWPOISON) == -1)
-> 		return -1;
-> 
-> 	munmap(mem, PAGES_TO_TEST * PAGE_SIZE);
-> 
-> 	return 0;
-> }
-> 
-> There is one page reference count for default empty zero page, madvise_hwpoison
-> add another one by get_user_pages_fast. memory_hwpoison reduce one page reference
-> count since it's a non LRU page. unpoison_memory release the last page reference
-> count and free empty zero page to buddy system which is not correct since empty
-> zero page has PG_reserved flag. This patch fix it by ignore empty zero page for 
-> madvise_hwpoison directly. 
-> 
-> Suggested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Dear Jason,
 
-Thank you.
+On Mon, 26 Aug 2013 20:22:37 -0700
+Jason Cooper <jason@lakedaemon.net> wrote:
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-
-> ---
->  mm/madvise.c        | 2 ++
->  mm/memory-failure.c | 3 +++
->  2 files changed, 5 insertions(+)
+> On Tue, Aug 27, 2013 at 11:01:20AM +0800, Jisheng Zhang wrote:
+> > Dear Jason,
+> > 
+> > On Mon, 26 Aug 2013 13:45:23 -0700
+> > Jason Cooper <jason@lakedaemon.net> wrote:
+> > 
+> > > On Mon, Aug 26, 2013 at 07:36:55PM +0800, Jisheng Zhang wrote:
+> > > > These patches try to fix resource leak by adding missing
+> > > > of_node_put(), iounmap or using devm_ioremap_resource() if available.
+> > > > 
+> > > > v4:
+> > > >   - re-generate since Ezequiel's patches add DT support to the
+> > > > mvebu-mbus driver
+> > > 
+> > > grrr.  I hate to ask this, but can you please rebase patches 1 and 2
+> > > against mvebu/fixes-non-critical?  No need to add back in the mvebu-mbus
+> > > hunk.
+> > 
+> > patch 1 also fixes one similar trivial issue introduced since
+> > 994c8c94b419e "ARM: mvebu: Remove the harcoded BootROM window allocation"
+> > in linux-next tree
+> > 
+> > patch 2 is updated to fix similar trivial issue introduce since
+> > 6839cfa82f99 "bus: mvebu-mbus: Introduce device tree binding"
+> > 
+> > These two commits aren't included in mvebu/fixes-non-criticial yet. Could
+> > you please give suggestion?
 > 
-> diff --git a/mm/madvise.c b/mm/madvise.c
-> index 212f5f1..a20764c 100644
-> --- a/mm/madvise.c
-> +++ b/mm/madvise.c
-> @@ -352,6 +352,8 @@ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
->  		int ret = get_user_pages_fast(start, 1, 0, &p);
->  		if (ret != 1)
->  			return ret;
-> +		if (page_to_pfn(p) == my_zero_pfn(0))
-> +			continue;
->  		if (bhv == MADV_SOFT_OFFLINE) {
->  			pr_info("Soft offlining page %#lx at %#lx\n",
->  				page_to_pfn(p), start);
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index 7cdabc0..68cbca0 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -1331,6 +1331,9 @@ int unpoison_memory(unsigned long pfn)
->  	if (!pfn_valid(pfn))
->  		return -ENXIO;
->  
-> +	if (pfn == my_zero_pfn(0))
-> +		return 0;
-> +
->  	p = pfn_to_page(pfn);
->  	page = compound_head(p);
+> Yes, that's correct.  We prefer to have patch submitters base off of a
+> mainline tag (eg v3.11-rc7).  conflicts between patchsets are then
+> caught and resolved when branches are merged.  If done correctly, the
+> merge resolution should be obvious in most cases.
+> 
+> The upstream maintainers _prefer_ to see those conflicts because it
+> gives them a better sense of who is tinkering in the same code-paths.
+> 
+> Trying to base patches off of disparate branches in order to
+> 'pre-resolve' those conflicts creates unnecessary dependencies and
+> non-obvious merge-resolutions.
+> 
+> In this case I asked you base off of mvebu/fixes-non-critical because
+> that is where I will be applying them for queueing to arm-soc.  You
+> could also base off of v3.11-rc7, there's nothing in
+> mvebu/fixes-non-critical that should conflict with your changes.
+> 
+
+Got it. Thanks very much for your excellent explanation.
+
+Will do and send out patches latter.
+
+Best Regards,
+Jisheng
