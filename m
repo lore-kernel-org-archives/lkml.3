@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab3H0NMg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 09:12:36 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:51970 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab3H0NMf (ORCPT
+	id S1753309Ab3H0NOS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 09:14:18 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:45932 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414Ab3H0NOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 09:12:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1377590237-11046-1-git-send-email-andreas@gaisler.com>
-References: <1377590237-11046-1-git-send-email-andreas@gaisler.com>
-Date: Tue, 27 Aug 2013 08:12:34 -0500
-Message-ID: <CAL_JsqJ4M3L8BXTTRYzt1=hgZ=BUqhNA5RoE8Z=CtvE4qpPb8w@mail.gmail.com>
-Subject: Re: [PATCH] of: Define of_irq_find_parent dummy for !defined(CONFIG_OF_IRQ)
-From: Rob Herring <robherring2@gmail.com>
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>, software@gaisler.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Aug 2013 09:14:16 -0400
+Subject: Re: [PATCH 11/18] Hibernate: introduced RSA key-pair to verify
+ signature of snapshot
+From: joeyli <jlee@suse.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
+        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
+        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Takashi Iwai <tiwai@suse.de>
+In-Reply-To: <20130827112943.GA20527@amd.pavel.ucw.cz>
+References: <1377169317-5959-1-git-send-email-jlee@suse.com>
+	 <1377169317-5959-12-git-send-email-jlee@suse.com>
+	 <20130825162554.GH5171@amd.pavel.ucw.cz>
+	 <1377594283.20140.3.camel@linux-s257.site>
+	 <20130827112943.GA20527@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Aug 2013 21:12:39 +0800
+Message-ID: <1377609159.20140.32.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 2:57 AM, Andreas Larsson <andreas@gaisler.com> wrote:
-> This changes the dummy version of of_irq_find_parent to be defined when
-> !defined(CONFIG_OF_IRQ) instead of when !defined(CONFIG_OF). Without
-> this of_irq_find_parent is undefined on SPARC that defines CONFIG_OF but
-> not CONFIG_OF_IRQ.
+於 二，2013-08-27 於 13:29 +0200，Pavel Machek 提到：
+> > > > @@ -1205,6 +1290,10 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
+> > > >  
+> > > >  	setup_efi_pci(boot_params);
+> > > >  
+> > > > +#ifdef CONFIG_SNAPSHOT_VERIFICATION
+> > > > +	setup_s4_keys(boot_params);
+> > > > +#endif
+> > > > +
+> > > 
+> > > Move ifdef inside the function?
+> > 
+> > OK, I will define a dummy function for non-verification situation.
+> 
+> IIRC you can just put the #ifdef inside the function body. 
+> 									Pavel
 
-Can you give me some clue about where the failure is. This function
-has been here a while, so what changed?
+I want use inline dummy function like saveable_highmem_page() in
+snapshot.c, maybe it's	 better then additional function call?
 
-Rob
 
->
-> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
-> ---
->  include/linux/of_irq.h |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
->
-> diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-> index 535cecf..d0059a9 100644
-> --- a/include/linux/of_irq.h
-> +++ b/include/linux/of_irq.h
-> @@ -83,11 +83,13 @@ static inline unsigned int irq_of_parse_and_map(struct device_node *dev,
->  {
->         return 0;
->  }
-> +#endif /* !CONFIG_OF */
-> +
-> +#endif /* __OF_IRQ_H */
->
-> +#if !defined(CONFIG_OF_IRQ)
->  static inline void *of_irq_find_parent(struct device_node *child)
->  {
->         return NULL;
->  }
-> -#endif /* !CONFIG_OF */
-> -
-> -#endif /* __OF_IRQ_H */
-> +#endif /* !CONFIG_OF_IRQ */
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks a lot!
+Joey Lee
+
