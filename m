@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab3H0BRy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:17:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59504 "EHLO
+	id S1753102Ab3H0BSa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:18:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59497 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753455Ab3H0BHW (ORCPT
+	with ESMTP id S1753437Ab3H0BHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:22 -0400
+	Mon, 26 Aug 2013 21:07:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 38/74] zd1201: do not use stack as URB transfer_buffer
-Date: Mon, 26 Aug 2013 18:08:36 -0700
-Message-Id: <20130827010432.542879376@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 34/74] tracing/uprobes: Fail to unregister if probe event files are in use
+Date: Mon, 26 Aug 2013 18:08:32 -0700
+Message-Id: <20130827010431.601207347@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -27,38 +26,160 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 1206ff4ff9d2ef7468a355328bc58ac6ebf5be44 upstream.
+commit c6c2401d8bbaf9edc189b4c35a8cb2780b8b988e upstream.
 
-Patch fixes zd1201 not to use stack as URB transfer_buffer. URB buffers need
-to be DMA-able, which stack is not.
+Uprobes suffer the same problem that kprobes have. There's a race between
+writing to the "enable" file and removing the probe. The probe checks for
+it being in use and if it is not, goes about deleting the probe and the
+event that represents it. But the problem with that is, after it checks
+if it is in use it can be enabled, and the deletion of the event (access
+to the probe) will fail, as it is in use. But the uprobe will still be
+deleted. This is a problem as the event can reference the uprobe that
+was deleted.
 
-Patch is only compile tested.
+The fix is to remove the event first, and check to make sure the event
+removal succeeds. Then it is safe to remove the probe.
 
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+When the event exists, either ftrace or perf can enable the probe and
+prevent the event from being removed.
+
+Link: http://lkml.kernel.org/r/20130704034038.991525256@goodmis.org
+
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/zd1201.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/trace/trace_uprobe.c |   51 ++++++++++++++++++++++++++++++++------------
+ 1 file changed, 38 insertions(+), 13 deletions(-)
 
---- a/drivers/net/wireless/zd1201.c
-+++ b/drivers/net/wireless/zd1201.c
-@@ -98,10 +98,12 @@ static int zd1201_fw_upload(struct usb_d
- 		goto exit;
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -70,7 +70,7 @@ struct trace_uprobe {
+ 	(sizeof(struct probe_arg) * (n)))
  
- 	err = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), 0x4,
--	    USB_DIR_IN | 0x40, 0,0, &ret, sizeof(ret), ZD1201_FW_TIMEOUT);
-+	    USB_DIR_IN | 0x40, 0, 0, buf, sizeof(ret), ZD1201_FW_TIMEOUT);
- 	if (err < 0)
- 		goto exit;
+ static int register_uprobe_event(struct trace_uprobe *tu);
+-static void unregister_uprobe_event(struct trace_uprobe *tu);
++static int unregister_uprobe_event(struct trace_uprobe *tu);
  
-+	memcpy(&ret, buf, sizeof(ret));
+ static DEFINE_MUTEX(uprobe_lock);
+ static LIST_HEAD(uprobe_list);
+@@ -164,11 +164,17 @@ static struct trace_uprobe *find_probe_e
+ }
+ 
+ /* Unregister a trace_uprobe and probe_event: call with locking uprobe_lock */
+-static void unregister_trace_uprobe(struct trace_uprobe *tu)
++static int unregister_trace_uprobe(struct trace_uprobe *tu)
+ {
++	int ret;
 +
- 	if (ret & 0x80) {
- 		err = -EIO;
- 		goto exit;
++	ret = unregister_uprobe_event(tu);
++	if (ret)
++		return ret;
++
+ 	list_del(&tu->list);
+-	unregister_uprobe_event(tu);
+ 	free_trace_uprobe(tu);
++	return 0;
+ }
+ 
+ /* Register a trace_uprobe and probe_event */
+@@ -181,9 +187,12 @@ static int register_trace_uprobe(struct
+ 
+ 	/* register as an event */
+ 	old_tp = find_probe_event(tu->call.name, tu->call.class->system);
+-	if (old_tp)
++	if (old_tp) {
+ 		/* delete old event */
+-		unregister_trace_uprobe(old_tp);
++		ret = unregister_trace_uprobe(old_tp);
++		if (ret)
++			goto end;
++	}
+ 
+ 	ret = register_uprobe_event(tu);
+ 	if (ret) {
+@@ -256,6 +265,8 @@ static int create_trace_uprobe(int argc,
+ 		group = UPROBE_EVENT_SYSTEM;
+ 
+ 	if (is_delete) {
++		int ret;
++
+ 		if (!event) {
+ 			pr_info("Delete command needs an event name.\n");
+ 			return -EINVAL;
+@@ -269,9 +280,9 @@ static int create_trace_uprobe(int argc,
+ 			return -ENOENT;
+ 		}
+ 		/* delete an event */
+-		unregister_trace_uprobe(tu);
++		ret = unregister_trace_uprobe(tu);
+ 		mutex_unlock(&uprobe_lock);
+-		return 0;
++		return ret;
+ 	}
+ 
+ 	if (argc < 2) {
+@@ -408,16 +419,20 @@ fail_address_parse:
+ 	return ret;
+ }
+ 
+-static void cleanup_all_probes(void)
++static int cleanup_all_probes(void)
+ {
+ 	struct trace_uprobe *tu;
++	int ret = 0;
+ 
+ 	mutex_lock(&uprobe_lock);
+ 	while (!list_empty(&uprobe_list)) {
+ 		tu = list_entry(uprobe_list.next, struct trace_uprobe, list);
+-		unregister_trace_uprobe(tu);
++		ret = unregister_trace_uprobe(tu);
++		if (ret)
++			break;
+ 	}
+ 	mutex_unlock(&uprobe_lock);
++	return ret;
+ }
+ 
+ /* Probes listing interfaces */
+@@ -462,8 +477,13 @@ static const struct seq_operations probe
+ 
+ static int probes_open(struct inode *inode, struct file *file)
+ {
+-	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC))
+-		cleanup_all_probes();
++	int ret;
++
++	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC)) {
++		ret = cleanup_all_probes();
++		if (ret)
++			return ret;
++	}
+ 
+ 	return seq_open(file, &probes_seq_op);
+ }
+@@ -970,12 +990,17 @@ static int register_uprobe_event(struct
+ 	return ret;
+ }
+ 
+-static void unregister_uprobe_event(struct trace_uprobe *tu)
++static int unregister_uprobe_event(struct trace_uprobe *tu)
+ {
++	int ret;
++
+ 	/* tu->event is unregistered in trace_remove_event_call() */
+-	trace_remove_event_call(&tu->call);
++	ret = trace_remove_event_call(&tu->call);
++	if (ret)
++		return ret;
+ 	kfree(tu->call.print_fmt);
+ 	tu->call.print_fmt = NULL;
++	return 0;
+ }
+ 
+ /* Make a trace interface for controling probe points */
 
 
