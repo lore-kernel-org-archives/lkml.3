@@ -1,84 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab3H0Hwx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 03:52:53 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:46768 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab3H0Hww (ORCPT
+	id S1752931Ab3H0Hz2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 03:55:28 -0400
+Received: from 219-118-191-131.cust.bit-drive.ne.jp ([219.118.191.131]:47363
+	"EHLO mail.omesemicon.co.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752627Ab3H0Hz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 03:52:52 -0400
-Date: Tue, 27 Aug 2013 08:52:47 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 32/40] ARM: ux500: Delete U8500 UIB support when booting
- with ATAGs
-Message-ID: <20130827075247.GB6152@lee--X1>
-References: <1377260620-18829-1-git-send-email-lee.jones@linaro.org>
- <1377260620-18829-33-git-send-email-lee.jones@linaro.org>
- <CACRpkdZJ_2HF_r8cKpMrG1Usy5bD8Fr7GM_k2Btzxgk71G-VvA@mail.gmail.com>
- <CACRpkdZGD3O-iYiT7sNbyx8imKGOF+uk864BA97FhzJ5EksD+g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZGD3O-iYiT7sNbyx8imKGOF+uk864BA97FhzJ5EksD+g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Aug 2013 03:55:27 -0400
+From: Nguyen Viet Dung <nv-dung@jinso.co.jp>
+To: linux-i2c@vger.kernel.org, wsa@the-dreams.de
+Cc: linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com
+Subject: [PATCH v3 0/1 resend] ARM: shmobile: r8a7790: add I2C support
+Date: Tue, 27 Aug 2013 16:55:21 +0900
+Message-Id: <1377590122-9309-1-git-send-email-nv-dung@jinso.co.jp>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Aug 2013, Linus Walleij wrote:
+Hi Wolfram
+CC Morimoto
 
-> On Fri, Aug 23, 2013 at 2:53 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> 
-> > It is not true at all that all HREFs have the STUIB mounted.
-> 
-> Hm I'm confused here...
-> 
-> arch/arm/boot/dts/[ste-]stuib.dtsi does define this stuff
-> so forget about the misplaced comments.
-> 
-> For *all* HREF boards. As it is included from both
-> [ste-]hrefprev60.dts and [ste-]hrefv60plus.dts
-> 
-> However it is only really mounted on some of the HREFs,
-> and the following stays valid:
-> 
-> > This detection needs to stay for now, unless we go and define
-> > in the device tree which UIB is mounted, which would be unfortunate
-> > as we can very well auto-detect it, and that makes it easier for
-> > a user to just swap the UIB and test the other toch screen
-> > (for example).
-> 
-> So it would be really nice to keep this autodetection.
-> 
-> What would be nice if we could mark all the STUIB as
-> "disabled" in the device trees, and then augment the device tree
-> at boot depending on if we find something at 0x44 as in this
-> test:
-> 
-> > -       /* U8500-UIB has the TC35893 at 0x44 on I2C0, the ST-UIB doesn't. */
-> > -       ret = i2c_smbus_xfer(i2c0, 0x44, 0, I2C_SMBUS_WRITE, 0,
-> > -                       I2C_SMBUS_QUICK, NULL);
-> 
-> And then mark these as "okay" in the DT.
-> 
-> That's pretty high-tech but I bet we can pull it off (and set
-> a good example).
+Please consider the following patch for the r8a7790 Soc.
+This patch modify I2C driver of rcar-H1 to usable on both rcar-H1 and rcar-H2.
+It was developed base on the renesas-devel-20130722 branch and
+have tested on the Lager board.
 
-Well, this stuff is possible, but it doesn't really have anything to
-do with this patch-set. We can reuse 'some' of this code, but we'd need
-to think of a new way to represent it. That coupled with the fact that
-the Device Tree boot doesn't use any of this stuff yet leads to
-believe we can keep this removal patch in the set and re-introduce the
-key parts when we've had a chat about the new implementation.
+V3: Using the ID tables to resolve the difference between H1 and H2.
+
+Thanks,
+Nguyen viet Dung
+
+Nguyen Viet Dung (1):
+  i2c: rcar: modify I2C driver
+
+ drivers/i2c/busses/i2c-rcar.c |   37 +++++++++++++++++++++++++++++++++++--
+ 1 file changed, 35 insertions(+), 2 deletions(-)
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
