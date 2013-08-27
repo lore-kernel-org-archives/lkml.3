@@ -1,112 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab3H0Ds6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 23:48:58 -0400
-Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:11301
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752705Ab3H0Ds4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 23:48:56 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Xiubo Li-B47053 <B47053@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Subject: RE: [PATCH 4/4] Documentation: Add device tree bindings for
- Freescale FTM PWM
-Thread-Topic: [PATCH 4/4] Documentation: Add device tree bindings for
- Freescale FTM PWM
-Thread-Index: AQHOnhwezjS9uM7qaEqpBdTwwEdnOZmgDXMAgABm0CCAAFCAAIABpeeAgADHM4CAA8nKEIAA9i2AgABz/iA=
-Date: Tue, 27 Aug 2013 03:48:51 +0000
-Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F827E61F2@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1377054462-6283-1-git-send-email-Li.Xiubo@freescale.com>
- <1377054462-6283-5-git-send-email-Li.Xiubo@freescale.com>
- <1473340.OXSHEp7d4P@flatron>
- <1DD289F6464F0949A2FCA5AA6DC23F827D2244@039-SN2MPN1-013.039d.mgd.msft.net>
- <20130822062610.GR31036@pengutronix.de> <20130823073612.GB3535@ulmo>
- <5217B807.7020800@wwwdotorg.org>
- <1DD289F6464F0949A2FCA5AA6DC23F827E11AC@039-SN2MPN1-012.039d.mgd.msft.net>
- <521BB40D.7040001@wwwdotorg.org>
-In-Reply-To: <521BB40D.7040001@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.56]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1752986Ab3H0DtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 23:49:21 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:47879 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939Ab3H0DtT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 23:49:19 -0400
+Date: Tue, 27 Aug 2013 07:48:43 +0400
+From: Andrew Savchenko <bircoph@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, viro@zeniv.linux.org.uk,
+        suspend-devel@lists.sourceforge.net
+Subject: Re: [BUG] 3.7-rc regression bisected: s2disk fails to resume image:
+ Processes could not be frozen, cannot continue resuming
+Message-Id: <20130827074843.ba1b6f62cc0a6dca8e47c06c@gmail.com>
+In-Reply-To: <20130812234415.7db639bb0d664e56b6ab2ab2@gmail.com>
+References: <20130812234415.7db639bb0d664e56b6ab2ab2@gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__27_Aug_2013_07_48_43_+0400_CL.jnCuWb39YUep0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+--Signature=_Tue__27_Aug_2013_07_48_43_+0400_CL.jnCuWb39YUep0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hello,
 
-> Subject: Re: [PATCH 4/4] Documentation: Add device tree bindings for
-> Freescale FTM PWM
-> 
-> On 08/25/2013 11:35 PM, Xiubo Li-B47053 wrote:
-> >> Subject: Re: [PATCH 4/4] Documentation: Add device tree bindings for
-> ...
-> >>> Why do you need to manipulate the pinctrl to en/disable a channel?
-> >>
-> >> This is because in Vybrid VF610 TOWER board, there are 4 leds, and
-> >> each led's one point(diode's positive pole) is connected to 3.3V, and
-> >> the other point is connected to pwm's one channel. When the 4
-> >> pinctrls are configured as enable at the same time, the 4 pinctrls is
-> >> low valtage, and the 4 leds will be lighted up as default, then when
-> >> you enable/disable one led will effects others.
-> >>
-> >> These pinctrls are belong to pwm, and I don't think led or other
-> >> customer could control them directly.
-> >> So, here I authorize the 4 pinctrls to each channel controls.
-> >>
-> > "
-> > For the reason above, I have to control the pinctrls separately.
-> >
-> > If all the pinctrls set as default state, the 8 pinctrls must be
-> controlled together.
-> > And the 4 leds will all be lighted up as default and will influence
-> each other.
-> 
-> Sorry, that still doesn't make much sense. Either way though, having
-> separate pinctrl setup for a single device isn't going to work. You'll
-> either need to have all combinations of 4 (8?) PWMs represented as
-> pinctrl states(!), or register separate PWM devices so that they get
-> independant pinctrl states.
->
-Well, I have ever thought about registering separate PWM device for each channel.
-But, if so, how should I control the pinctrl of each PWM(actually one channel of FTM PWM) ?
-I must select "default" state(the "default" state here, the pinctrl must be setup as "dsN" or "chN-idle" state we discussed before) when probing, and when customers .request-->.config-->.enable the PWM I also must select an "active" state to config the pinctrl...
-Thus, this is still not static. I think this isn't much different from the current.
+On Mon, 12 Aug 2013 23:44:15 +0400 Andrew Savchenko wrote:
+> after a kernel update from 3.5.7 to the latest stable I found that
+> user-space resume (from suspend-1.0 aka uswsusp) no longer works.
+> Kernel-space suspend and resume work fine (e.g. echo disk
+> > /sys/power/state), problem is with user-space support. (I need
+> user-space version because it supports image encryption.)
+>=20
+> After resume (essentially linuxrc) application loads image it fails
+> to apply it:
+>=20
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D
+> Processes could not be frozen, cannot continue resuming.
+> Error 11: Resource temporarily unavailable
+>=20
+> You can now boot the system and lose the saved state
+> or reboot and try again.
+>=20
+> [Notice that if you decide to reboot, you MUST NOT mount
+> any filesystems before a successful resume.
+> Resuming after some filesystems have been mounted
+> will badly damage these filesystems.]
+>=20
+> Do you want to continue booting (Y/n)?
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D
+>=20
+> Error code wasn't originally showed, I added it to suspend tool to
+> aid debugging. Essentially freeze ioctl on /dev/snapshot fails with
+> this error.
+>=20
+> I bisected a commit which introduces this bug:
+>=20
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D
+> commit ba4df2808a86f8b103c4db0b8807649383e9bd13=20
+> Author: Al Viro <viro@zeniv.linux.org.uk>=20
+> Date:   Tue Oct 2 15:29:10 2012 -0400=20
+>=20
+>     don't bother with kernel_thread/kernel_execve for launching
+> linuxrc=20
+>     exec_usermodehelper_fns() will do just fine...=20
+>    =20
+>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>=20
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D
+>=20
+> In fact this commit induced/triggered at least two bugs: the first one
+> I'm facing now and the second one was fixed in commit
+> f0de17c0babe7f29381892def6b37e9181a53410:
+> make sure that /linuxrc has std{in,out,err}.
+>=20
+> As a temporarily workaround for this issue I reverted all changes for
+> init/do_mounts_initrd.c up to the latest working commit
+> cb450766bcafc7bd7d40e9a5a0050745e8c68b3e considering the kernel API
+> changes (kernel_execve -> sys_execve). See linuxrc-workaround.patch.
+> I understand this isn't a proper solution, I just want to show what
+> code works for me.
+>=20
+> I also found an interesting LKML discussion about s2disk and freezer
+> issue: http://www.spinics.net/lists/linux-nfs/msg38160.html
+> Maybe it is related to this bug, but patch proposed there doesn't in
+> my case.
+>=20
+> Kernel config which fails with
+> ba4df2808a86f8b103c4db0b8807649383e9bd13 and works with
+> f0de17c0babe7f29381892def6b37e9181a53410 is also attached.
+>=20
+> As this issue maybe hardware related, the system is 32-bit EEE PC
+> 1000H with Atom N270, 2GB RAM, 750 GB SATA drive.
+>=20
+> Additional (but probably useless) information on this bug may be found
+> here: https://forums.gentoo.org/viewtopic-p-7371120.html
 
-Also if having all combinations of 8 PWMs represented as pinctrl states, how could I deal with the problem about LEDs ?
+This bug is still here with 3.11-rc7 and 3.10.9.
+I opened a kernel bug 60802 for this issue:
+https://bugzilla.kernel.org/show_bug.cgi?id=3D60802
 
+Any ideas?
 
+Best regards,
+Andrew Savchenko
 
-Thanks very much,
+--Signature=_Tue__27_Aug_2013_07_48_43_+0400_CL.jnCuWb39YUep0
+Content-Type: application/pgp-signature
 
---
-Best Regards,
-Xiubo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iQIcBAEBAgAGBQJSHCG1AAoJEFZZU7lTcnVsIuMP+gO5gi9xzulMwXr+aVpVCP6B
+gHn2QGE7MiX+KNuq+seG0fTbfdkXwJTFmHYGm0BnH8y5DMavMil0IFE+JtpTzW0U
+CJ7/HxqA23cs7eDz6v+93rqAnhGy0q0MaUZ4+77A+lazy7kP9DdWuicxVaxTDBZq
+ok/6dm675Emo2XuPSKWkyhcRnxkg0bgBpq7abayyyBlGZjIbf6F066xQ4sfR6KmX
+Nl7+9lzkGKVo41loI1GVVVm3hzrVla2VuhfuD+NxZ93yicdTtUiqDLZ2JQzhMfmj
+xQSJghcQsec1x87uedFr1QLg4m44+dBgnL6XKFTIo1YnDo/ABFQ7EV7W9Xc9B5zL
+t6O4Ym941+d+XyZ2U6+YWwLyh2CEvvci5eVUQ03+EEn3p3BRdub79+Styc1yYVah
+ru9bLnFrgywmH3W+vJtXSkz0gEHKObJo/NJKZaXCbw76IeTHK3SzFP1KJ8HUAq5n
+Aqin2Sb4udbIckve2sS1iS+kg8zzqOkLsFVzjaJky8rwCyYTSIFGJig+BRkMsEc6
+pGmrkmJTcCYIL0twuiDNpN8QI5aCfnmujtrrGfvFQhrhwcMoEs6kNanE3rgBF999
+Vpz1kvPN/XKbFNB74gJuPhIa/2w4LuEEzaCdVKeilVDh9qJrXH0ex/SEq1harb9f
+hLJp03ZXNyJjrYN1sBHA
+=yoXa
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Aug_2013_07_48_43_+0400_CL.jnCuWb39YUep0--
