@@ -1,144 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab3H0T6F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 15:58:05 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35027 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421Ab3H0T6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 15:58:02 -0400
-Date: Tue, 27 Aug 2013 14:56:52 -0500
+	id S1754008Ab3H0T7o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 15:59:44 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50380 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753749Ab3H0T7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 15:59:41 -0400
+Date: Tue, 27 Aug 2013 14:58:59 -0500
 From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <greg@kroah.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "khilman@linaro.org" <khilman@linaro.org>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
-Message-ID: <20130827195652.GE3005@radagast>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Kumar Gala <galak@codeaurora.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "idos@codeaurora.org" <idos@codeaurora.org>,
+        "mgautam@codeaurora.org" <mgautam@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v4 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
+ for DWC3 core
+Message-ID: <20130827195859.GF3005@radagast>
 Reply-To: <balbi@ti.com>
-References: <CABxcv=mg6t5wPqpF3j5sr_76qfZ7N7KgpWhcKSGoPTOcaR=V6A@mail.gmail.com>
- <521CA888.1080909@baylibre.com>
- <521CAF59.1090203@linutronix.de>
- <521CB046.9070408@baylibre.com>
- <521CB18B.4080000@linutronix.de>
- <521CB239.6050409@baylibre.com>
- <521CB403.8010307@linutronix.de>
- <20130827173732.GC21564@kroah.com>
- <20130827183732.GP3005@radagast>
- <20130827193021.GA30113@kroah.com>
+References: <1376992565-22292-3-git-send-email-iivanov@mm-sol.com>
+ <20130820122907.GU26587@radagast>
+ <1377005543.26268.22.camel@iivanov-dev.int.mm-sol.com>
+ <20130820133712.GC26587@radagast>
+ <1377007751.26268.27.camel@iivanov-dev.int.mm-sol.com>
+ <20130820143319.GG26587@radagast>
+ <1377010458.26268.30.camel@iivanov-dev.int.mm-sol.com>
+ <8691FDFE-326E-4198-838A-202D9EC988E1@codeaurora.org>
+ <1377012381.26268.42.camel@iivanov-dev.int.mm-sol.com>
+ <A2CA0424C0A6F04399FB9E1CD98E030458DECB7C@US01WEMBX2.internal.synopsys.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fLJtL2Vwvoz5kz8d"
+	protocol="application/pgp-signature"; boundary="8hYiR1SWmJV79WGg"
 Content-Disposition: inline
-In-Reply-To: <20130827193021.GA30113@kroah.com>
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458DECB7C@US01WEMBX2.internal.synopsys.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---fLJtL2Vwvoz5kz8d
+--8hYiR1SWmJV79WGg
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-On Tue, Aug 27, 2013 at 12:30:21PM -0700, Greg KH wrote:
-> On Tue, Aug 27, 2013 at 01:37:32PM -0500, Felipe Balbi wrote:
-> > Hi,
+On Thu, Aug 22, 2013 at 09:24:49PM +0000, Paul Zimmerman wrote:
+> > From: Ivan T. Ivanov [mailto:iivanov@mm-sol.com]
+> > Sent: Tuesday, August 20, 2013 8:26 AM
 > >=20
-> > On Tue, Aug 27, 2013 at 10:37:32AM -0700, Greg KH wrote:
-> > > On Tue, Aug 27, 2013 at 04:13:23PM +0200, Sebastian Andrzej Siewior w=
-rote:
-> > > > On 08/27/2013 04:05 PM, Benoit Cousson wrote:
-> > > > > On 27/08/2013 16:02, Sebastian Andrzej Siewior wrote:
-> > > > >> On 08/27/2013 03:57 PM, Benoit Cousson wrote:
-> > > > >>> + Kevin,
-> > > > >>>
-> > > > >>> On 27/08/2013 15:53, Sebastian Andrzej Siewior wrote:
-> > > > >>>> What do we do now?
-> > > > >>>
-> > > > >>> Cannot you just merge the stable arm-soc/dt branch into your br=
-anch
-> > > > >>> before applying your patches?
-> > > > >>
-> > > > >> That is up to Greg. This changes sat in his usb-next tree for a =
-while
-> > > > >> now. And before they hit Greg they were in Felipe's tree for a w=
-hile.
-> > > > >>
-> > > > >> To be exact, last .dts change via USB was:
-> > > > >>
-> > > > >> Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> > > > >> AuthorDate: Thu Jun 20 12:13:04 2013 +0200
-> > > > >> Commit:     Felipe Balbi <balbi@ti.com>
-> > > > >> CommitDate: Fri Aug 9 17:40:16 2013 +0300
-> > > > >>
-> > > > >>     usb: musb dma: add cppi41 dma driver
-> > > > >=20
-> > > > > Mmm, if that branch is supposed to be stable, I'm not sure it wil=
-l be
-> > > > > doable...
-> > > > >=20
-> > > > > Maybe we should do the other way around? And merge usb-next into
-> > > > > arm-soc/dt.
-> > > > >=20
-> > > > > Kevin, Olof?
-> > > >=20
-> > > > Please be aware that I have no response so far regarding [0] from G=
-reg.
-> > > >=20
-> > > > [0] http://www.spinics.net/lists/linux-usb/msg92595.html
-> > >=20
-> > > Nor will you, given that I am not the one to take these patches, Feli=
-pe
-> > > is.  I noticed now that you said "please route around Felipe", but
-> > > sorry, no, I'm not going to do that unless there's a really good reas=
-on.
-> > > Felipe seems to be around at the moment, please work with him on this.
+> > On Tue, 2013-08-20 at 10:01 -0500, Kumar Gala wrote:
+> > > On Aug 20, 2013, at 9:54 AM, Ivan T. Ivanov wrote:
+> > >
+> > > >
+> > > > Hi,
+> > > >
+> > > > On Tue, 2013-08-20 at 09:33 -0500, Felipe Balbi wrote:
+> > > >> On Tue, Aug 20, 2013 at 05:09:11PM +0300, Ivan T. Ivanov wrote:
+> > > >>>
+> > > >>> On Tue, 2013-08-20 at 08:37 -0500, Felipe Balbi wrote:
+> > > >>>>
+> > > >>>> On Tue, Aug 20, 2013 at 04:32:23PM +0300, Ivan T. Ivanov wrote:
+> > > >>>>>
+> > > >>>>> I think they are SNPS DesignWare PHY's, additionally
+> > > >>>>> wrapped with Qualcomm logic. I could substitute "dwc3"
+> > > >>>>> with just "dw", which will be more correct.
+> > > >>>>
+> > > >>>> alright, thank you. Let's add Paul to the loop since he might ha=
+ve very
+> > > >>>> good insight in the synopsys PHYs.
+> > > >>>>
+> > > >>>> mental note: if any other platform shows up with Synopsys PHY, a=
+sk them
+> > > >>>> to use this driver instead :-)
+> > > >>>
+> > > >>> I really doubt that this will bi possible. Control of the PHY's is
+> > > >>> not directly trough ULPI, UTMI or PIPE3 interfaces, but trough
+> > > >>> QSCRATCH registers, which of course is highly Qualcomm specific.
+> > > >>
+> > > >> isn't it a memory mapped IP ? doesn't synopsys provide their own s=
+et of
+> > > >> registers ?
+> > > >
+> > > > From what I see it is not directly mapped. How QSCRATCH write and
+> > > > reads transactions are translated to DW IP is unclear to me.
+> > >
+> > >
+> > > I think the question is how does SW access them?
 > >=20
-> > If you will still take a 'part2' pull request from me, I can send you
-> > urgent bugfixes by friday. If I have some time left, I can even try to
-> > get that sorted out by tomorrow.
+> > "USB QSCRATCH Hardware registers" don't ask me what is this :-)
+> > or like Pawel says: "it depends on the SOC" .
 >=20
-> For 3.12 stuff, like "fixes", sure, I can take them this week, that
-> should give us a week or so for linux-next testing, right?
+> To answer the question "doesn't synopsys provide their own set of
+> registers", we provide registers in our USB cores to access the PHYs
+> through I2C, ULPI/UTMI, or PIPE3 interfaces. But if someone wants to use
+> our PHY with some other controller that doesn't provide that, then they
+> may need to implement their own register set, as Qualcomm has apparently
+> done.
 
-that's correct. I have most of them already queued up, let me just go
-over my linux-usb maildir again and make sure I got all the important
-stuff in.
+thanks for clarifying. that pretty much hinders writing any sort of
+generic drivers for Synopsys' PHYs though :-s
 
-cheers, thanks for opening this 'window'.
+But I guess that's alright.
 
 --=20
 balbi
 
---fLJtL2Vwvoz5kz8d
+--8hYiR1SWmJV79WGg
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSHQSEAAoJEIaOsuA1yqRE/v8P/09fTxEq3rzBWWKN5gJapG7O
-eG0xpfEVvQFUWbet7DWRQjehRc8bVVemPsH295hv2yV1yUGoJIps5RQnv6vbj2Ka
-fMTs0G7YDoHDDkg2SgxqeTRxGoLgnuE4QXqzgRZhsyGSjTfBYhUDjfQyGVGGgy2a
-+Nmri9qm6JcTfCpwxeSQsSZnT1XYda7p2WCmLcJ21fJymmOaanNoQG9wh15U2qFJ
-z33YOaZwOFLfrYNkyWaXo4lbNNXb0c43GlnF3fbKnoAhWiL1LJj/FOTW6sN7yd1d
-ZzhZzKdhVGSekH/RK8ehitVBHlRgZMNpQ2MdhUsFLnp2NdcGb6l2jwCf1GgXwBiy
-qniR0kqaTSB6fHtRQYq0EutLdsa4xGEPn5M106D9MLiYxWolUhqyLRmu64FGIb7D
-JwIO3SWhecaf2xQWtkOBn8k5o06kzwNsEh8qFs2uk6YXlBDQcVaBoXXuUvkP5Xpx
-g2yETkFoTB5WIHOC7IUnpTIxAe/msi3P9XFs0G2TAJePxYWGvilKSaQvWtS5f/LG
-Ta5AcrtDQHHF46qzU68iIlxVRuMohdfywYme1qcp/sdkVpFbvotxmwKDKOUIirVr
-ARAlH7gdH8vy8SKP2qHsImKU+rkgicM1azRBAiD5L6TFuHR+20euSTR9/I9CM71+
-kSjYqYdRlgVn6Yqwieqg
-=0im4
+iQIcBAEBAgAGBQJSHQUDAAoJEIaOsuA1yqREE5AP/2ZZ5zmei7G9/mOyYAwyr3/z
+79+Q+X/YxO2IKZSGZvH7fEyIbIsVBGq1BxFJTOyhkg6EyHkZixZeUotzMcMtcNB9
+OsSkZTlVNLGa737/U0FAHwG9xLXrL3pHKiZepuZ3V2ch/2MlCY1IQn2BmBjfsrC+
+PNHEjYyn1266O6r2JVJuiHv3sWyUI1cIbDn8d8jJG2pvbAAuEhmkgWMHZkSFvtco
+MrORQpW4beCZAYPtdsukl4jllXIa1Uu+J0+ff5ViHzTZxK4xGpYIQU3smLkU/F52
+hWdqr/gfsWSQa3/sHn6zJEaoQW/HlySAOaD6SzHCoLFUoemDqYkg0w0HPBRS8+lP
+g4ON6lvPywt0xOTzrgbGRp+OORnVwQOuKnfAI16aio/NZPsuIJKP8ECrVYjVno1b
+kkzg7x6i6ziSZ3iYimuN3w6hEG+RoK9qe/eCgmi8SuenpifOtdhjl7QexgAx5gC6
+j4Ux4/bGtg0oawzqfAuh87aC1XRn1EZjEHQWo8VH8iVbIWbLIH5NcAaq5U6EqraF
+4YLMOFGIjMgp8y+MAaIilZqiyBrRz24p+om1riZQOWLlYZZjjJPunhWI5BmA71mT
+3LMdpnJLLYceHQjgBPm2WSyvwFqMSiNzicmPpgY8312/utPUX5KkBv3J1/nIeFge
+39L0sMFx6xf3DhMmYM5F
+=OD97
 -----END PGP SIGNATURE-----
 
---fLJtL2Vwvoz5kz8d--
+--8hYiR1SWmJV79WGg--
