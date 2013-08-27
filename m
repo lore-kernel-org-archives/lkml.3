@@ -1,105 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab3H0OcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 10:32:20 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:52335 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab3H0OcS (ORCPT
+	id S1753463Ab3H0Ohp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 10:37:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36667 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752059Ab3H0Oho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 10:32:18 -0400
+	Tue, 27 Aug 2013 10:37:44 -0400
+Date: Tue, 27 Aug 2013 11:37:43 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Baruch Siach <baruch@tkos.co.il>,
+        Will Deacon <will.deacon@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v4 1/4] lib: Introduce atomic MMIO modify
+Message-ID: <20130827143742.GA6616@localhost>
+References: <1377358532-23802-1-git-send-email-ezequiel.garcia@free-electrons.com>
+ <1377358532-23802-2-git-send-email-ezequiel.garcia@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGa+x866vUhX-uctWfZpw42hW7bRTG92Qz=4j=gWL-vgpdryDg@mail.gmail.com>
-References: <1373277884-3006-1-git-send-email-oleksandr.savchenko@ti.com>
-	<CAGa+x866vUhX-uctWfZpw42hW7bRTG92Qz=4j=gWL-vgpdryDg@mail.gmail.com>
-Date: Tue, 27 Aug 2013 07:32:17 -0700
-Message-ID: <CAGa+x841NUxPYgixzGgU0Y87BJCDDSAZC+-WAQ46T8_hDT385A@mail.gmail.com>
-Subject: Re: [PATCH] OMAP: UART: Keep the TX fifo full when possible
-From: Kevin Hilman <khilman@linaro.org>
-To: gregkh@linuxfoundation.org
-Cc: jslaby@suse.cz, matts@commtech-fastcom.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        David Howells <dhowells@redhat.com>, linux-serial@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1377358532-23802-2-git-send-email-ezequiel.garcia@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+(Adding Andrew Morton in Cc)
 
-On Tue, Aug 20, 2013 at 8:57 AM, Kevin Hilman <khilman@linaro.org> wrote:
-> + Felipe
->
-> On Mon, Jul 8, 2013 at 3:04 AM, Alexander Savchenko
-> <oleksandr.savchenko@ti.com> wrote:
->> From: Dmitry Fink <finik@ti.com>
->>
->> Current logic results in interrupt storm since the fifo
->> is constantly below the threshold level. Change the logic
->> to fill all the available spaces in the fifo as long as
->> we have data to minimize the possibilty of underflow and
->> elimiate excessive interrupts.
->>
->> Signed-off-by: Dmitry Fink <finik@ti.com>
->> Signed-off-by: Alexander Savchenko <oleksandr.savchenko@ti.com>
->
-> Hmm, another OMAP serial patch that wasn't Cc'd to linux-omap where
-> OMAP users might have seen it. :(
->
-> I just bisected a strange problem in linux-next on OMAP3 down to this
-> patch.  Reverting it fixes the problem.
->
-> On OMAP3530 Beagle and Overo, after boot, doing a 'cat /proc/cpuinfo'
-> was not returning to a prompt, suggesting something strange with the
-> FIFO.  Hitting return gets me back to a prompt.
->
-> Greg, this one should also be dropped from tty-next until it can be
-> further investgated and the problem solved.
+On Sat, Aug 24, 2013 at 12:35:29PM -0300, Ezequiel Garcia wrote:
+> Some platforms have MMIO regions that are shared across orthogonal
+> subsystems. This commit implements a possible solution for the
+> thread-safe access of such regions through a spinlock-protected API.
+> 
+> Concurrent access is protected with a single spinlock for the
+> entire MMIO address space. While this protects shared-registers,
+> it also serializes access to unrelated/unshared registers.
+> 
+> Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> ---
+>  include/linux/io.h |  5 +++++
+>  lib/Makefile       |  2 +-
+>  lib/atomicio.c     | 27 +++++++++++++++++++++++++++
+>  3 files changed, 33 insertions(+), 1 deletion(-)
+>  create mode 100644 lib/atomicio.c
+> 
+> diff --git a/include/linux/io.h b/include/linux/io.h
+> index f4f42fa..c331dcb 100644
+> --- a/include/linux/io.h
+> +++ b/include/linux/io.h
+> @@ -101,4 +101,9 @@ static inline void arch_phys_wc_del(int handle)
+>  #define arch_phys_wc_add arch_phys_wc_add
+>  #endif
+>  
+> +#ifndef __HAVE_ARCH_ATOMIC_IO_MODIFY
+> +/* Atomic MMIO-wide IO modify */
+> +extern void atomic_io_modify(void __iomem *reg, u32 mask, u32 set);
+> +#endif
+> +
+>  #endif /* _LINUX_IO_H */
+> diff --git a/lib/Makefile b/lib/Makefile
+> index 7baccfd..695d6e2 100644
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+>  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+>  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+>  	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+> -	 earlycpio.o percpu-refcount.o
+> +	 earlycpio.o percpu-refcount.o atomicio.o
+>  
+>  obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+>  lib-$(CONFIG_MMU) += ioremap.o
+> diff --git a/lib/atomicio.c b/lib/atomicio.c
+> new file mode 100644
+> index 0000000..1750f9d
+> --- /dev/null
+> +++ b/lib/atomicio.c
+> @@ -0,0 +1,27 @@
+> +#include <linux/io.h>
+> +#include <linux/spinlock.h>
+> +
+> +#ifndef __HAVE_ARCH_ATOMIC_IO_MODIFY
+> +/*
+> + * Generic atomic MMIO modify.
+> + *
+> + * Allows thread-safe access to registers shared by unrelated subsystems.
+> + * The access is protected by a single MMIO-wide lock.
+> + *
+> + * Optimized variants can be implemented on a per-architecture basis.
+> + */
+> +static DEFINE_RAW_SPINLOCK(__io_lock);
+> +void atomic_io_modify(void __iomem *reg, u32 mask, u32 set)
+> +{
+> +	unsigned long flags;
+> +	u32 value;
+> +
+> +	raw_spin_lock_irqsave(&__io_lock, flags);
+> +	value = readl(reg) & ~mask;
+> +	value |= (set & mask);
+> +	writel(value, reg);
+> +	raw_spin_unlock_irqrestore(&__io_lock, flags);
+> +
+> +}
+> +EXPORT_SYMBOL(atomic_io_modify);
+> +#endif
+> -- 
+> 1.8.1.5
+> 
 
-Can this one be dropped from tty-next too until it can be
-investigated.  The author's ti.com addresses are bouncing, and this
-has introduced a regression in -next.
+So, assuming this is ready to be merged (and knowing right now it's probably
+a very bad time in the release cylce to ask), who is supposed to pick
+this patch?
 
-Kevin
-
->> ---
->>  drivers/tty/serial/omap-serial.c |    3 ++-
->>  include/uapi/linux/serial_reg.h  |    1 +
->>  2 files changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
->> index b6d1728..5c9b074 100644
->> --- a/drivers/tty/serial/omap-serial.c
->> +++ b/drivers/tty/serial/omap-serial.c
->> @@ -310,7 +310,8 @@ static void transmit_chars(struct uart_omap_port *up, unsigned int lsr)
->>                 serial_omap_stop_tx(&up->port);
->>                 return;
->>         }
->> -       count = up->port.fifosize / 4;
->> +       count = up->port.fifosize -
->> +               (serial_in(up, UART_OMAP_TXFIFO_LVL) & 0xFF);
->>         do {
->>                 serial_out(up, UART_TX, xmit->buf[xmit->tail]);
->>                 xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
->> diff --git a/include/uapi/linux/serial_reg.h b/include/uapi/linux/serial_reg.h
->> index e632260..97c26be 100644
->> --- a/include/uapi/linux/serial_reg.h
->> +++ b/include/uapi/linux/serial_reg.h
->> @@ -366,6 +366,7 @@
->>  #define UART_OMAP_MDR1_FIR_MODE                0x05    /* FIR mode */
->>  #define UART_OMAP_MDR1_CIR_MODE                0x06    /* CIR mode */
->>  #define UART_OMAP_MDR1_DISABLE         0x07    /* Disable (default state) */
->> +#define UART_OMAP_TXFIFO_LVL           0x1A    /* TX FIFO fullness */
->>
->>  /*
->>   * These are definitions for the Exar XR17V35X and XR17(C|D)15X
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks!
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
