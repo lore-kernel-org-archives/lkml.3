@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab3H0QUe (ORCPT <rfc822;w@1wt.eu>);
+	id S1753578Ab3H0QUh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 12:20:37 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:53252 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753296Ab3H0QUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Aug 2013 12:20:34 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:37320 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab3H0QUc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 12:20:32 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Benoit Cousson <bcousson@baylibre.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, linux-next@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
-Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
-References: <20130827181353.319c150858829df1bb68d60b@canb.auug.org.au>
-	<521C6961.9020103@linutronix.de>
-	<CABxcv=mg6t5wPqpF3j5sr_76qfZ7N7KgpWhcKSGoPTOcaR=V6A@mail.gmail.com>
-	<521CA888.1080909@baylibre.com> <521CAF59.1090203@linutronix.de>
-	<521CB046.9070408@baylibre.com> <878uznxjnl.fsf@linaro.org>
-	<521CC4E3.8030204@linutronix.de>
-Date: Tue, 27 Aug 2013 09:20:26 -0700
-Message-ID: <87mwo3umut.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+Message-ID: <1377620432.6337.12.camel@joe-AO722>
+Subject: Re: [PATCHv2 1/2] dev-core: fix build break when DEBUG is enabled
+From: Joe Perches <joe@perches.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Jason Baron <jbaron@akamai.com>
+Cc: sarah.a.sharp@linux.intel.com, gregkh@linuxfoundation.org,
+        dmitry.kasatkin@gmail.com, linux-kernel@vger.kernel.org
+Date: Tue, 27 Aug 2013 09:20:32 -0700
+In-Reply-To: <7f53397d0aa93e644124037d44188da5067336fc.1377614854.git.d.kasatkin@samsung.com>
+References: <7f53397d0aa93e644124037d44188da5067336fc.1377614854.git.d.kasatkin@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian Andrzej Siewior <bigeasy@linutronix.de> writes:
+On Tue, 2013-08-27 at 17:47 +0300, Dmitry Kasatkin wrote:
+> When DEBUG is defined, dev_dbg_ratelimited uses dynamic debug data
+> structures even when CONFIG_DYNAMIC_DEBUG is not defined.
+> It leads to build break.
+> For example, when I try to use dev_dbg_ratelimited in USB code and
+> CONFIG_USB_DEBUG is enabled, but CONFIG_DYNAMIC_DEBUG is not, I get:
 
-> On 08/27/2013 05:01 PM, Kevin Hilman wrote:
->>>> What do we do now?
->>>
->>> Cannot you just merge the stable arm-soc/dt branch into your branch
->>> before applying your patches?
->> 
->> Unfortunately, the next/dt branch of arm-soc is not necessarily stable
->> so should *not* be merged.  In fact none of the arm-soc branches should
->> be considered stable.
->> 
->> As was already mentioned, this should be split up into driver changes
->> and DTS changes through arm-soc.  They'll both merge for v3.12.
->
-> But splitting will break the driver until .dts & code is in sync again.
+Jason?
 
-I wouldn't lose any sleep about breaking the driver since this was not
-merged properly for various reasons (as Olof has pointed out.)
+Seems mostly sensible to me but I think the first check
+needs to be
 
-Unfortunately, since it's already in Greg's stable tree, we're now left
-to clean up the mess in arm-soc land [grmbl]
+#if defined(CONFIG_DYNAMIC_DEBUG) && defined(DEBUG)
 
-Kevin
+Also, it's curious why it was ever using __dynamic_pr_debug
+instead of __dynamic_dev_dbg
 
+Maybe for completeness there should be a
+dev_vdbg_ratelimited too.
+
+Additional bit below...
+
+>   CC [M]  drivers/usb/host/xhci-ring.o
+>   drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_intr_tx’:
+>   drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘DEFINE_DYNAMIC_DEBUG_METADATA’ [-Werror=implicit-function-declaration]
+>   drivers/usb/host/xhci-ring.c:3059:3: error: ‘descriptor’ undeclared (first use in this function)
+>   drivers/usb/host/xhci-ring.c:3059:3: note: each undeclared identifier is reported only once for each function it appears in
+>   drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘__dynamic_pr_debug’ [-Werror=implicit-function-declaration]
+>   drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_isoc_tx_prepare’:
+>   drivers/usb/host/xhci-ring.c:3847:3: error: ‘descriptor’ undeclared (first use in this function)
+>   cc1: some warnings being treated as errors
+>   make[2]: *** [drivers/usb/host/xhci-ring.o] Error 1
+>   make[1]: *** [drivers/usb/host] Error 2
+>   make: *** [drivers/usb/] Error 2
+> 
+> This patch separates definition for CONFIG_DYNAMIC_DEBUG and DEBUG cases.
+> 
+> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> ---
+>  include/linux/device.h | 17 ++++++++++++++---
+>  1 file changed, 14 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index 22b546a..d336beb 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -1099,17 +1099,28 @@ do {									\
+>  	dev_level_ratelimited(dev_notice, dev, fmt, ##__VA_ARGS__)
+>  #define dev_info_ratelimited(dev, fmt, ...)				\
+>  	dev_level_ratelimited(dev_info, dev, fmt, ##__VA_ARGS__)
+> -#if defined(CONFIG_DYNAMIC_DEBUG) || defined(DEBUG)
+> +#if defined(CONFIG_DYNAMIC_DEBUG)
+
+I think this needs to be
+
+#if defined(CONFIG_DYNAMIC_DEBUG) && defined(DEBUG)
+
+>  #define dev_dbg_ratelimited(dev, fmt, ...)				\
+>  do {									\
+>  	static DEFINE_RATELIMIT_STATE(_rs,				\
+>  				      DEFAULT_RATELIMIT_INTERVAL,	\
+>  				      DEFAULT_RATELIMIT_BURST);		\
+>  	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);			\
+> +	/* descriptor check is first to prevent flooding with		\
+> +	   "callbacks suppressed" */					\
+>  	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT) &&	\
+>  	    __ratelimit(&_rs))						\
+> -		__dynamic_pr_debug(&descriptor, pr_fmt(fmt),		\
+> -				   ##__VA_ARGS__);			\
+> +		__dynamic_dev_dbg(&descriptor, dev, fmt,		\
+> +				  ##__VA_ARGS__);			\
+> +} while (0)
+> +#elif defined(DEBUG)
+> +#define dev_dbg_ratelimited(dev, fmt, ...)				\
+> +do {									\
+> +	static DEFINE_RATELIMIT_STATE(_rs,				\
+> +				      DEFAULT_RATELIMIT_INTERVAL,	\
+> +				      DEFAULT_RATELIMIT_BURST);		\
+> +	if (__ratelimit(&_rs))						\
+> +		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
+>  } while (0)
+>  #else
+>  #define dev_dbg_ratelimited(dev, fmt, ...)			\
 
 
 
