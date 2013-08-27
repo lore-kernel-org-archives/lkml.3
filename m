@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab3H0Eyu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 00:54:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41801 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752538Ab3H0Eys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 00:54:48 -0400
-X-IronPort-AV: E=Sophos;i="4.89,965,1367942400"; 
-   d="scan'208";a="8313453"
-Message-ID: <521C3013.1070003@cn.fujitsu.com>
-Date: Tue, 27 Aug 2013 12:50:27 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-CC: unlisted-recipients:;;linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	unlisted-recipients:;linux-fsdevel@vger.kernel.org
-					     ^-missing end of address
-Subject: Re: [PATCH] f2fs: fix omitting to update inode page
-References: <1377520082-20526-1-git-send-email-jaegeuk.kim@samsung.com>
-In-Reply-To: <1377520082-20526-1-git-send-email-jaegeuk.kim@samsung.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/27 12:52:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/27 12:52:50,
-	Serialize complete at 2013/08/27 12:52:50
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752924Ab3H0E5v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 00:57:51 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50602 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538Ab3H0E5t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 00:57:49 -0400
+Date: Tue, 27 Aug 2013 14:57:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [guv 00/16] [RFC] percpu: Replace __get_cpu_var uses throughout
+ the kernel
+Message-Id: <20130827145738.92ade046470e4f1887d54cbf@canb.auug.org.au>
+In-Reply-To: <00000140ac8debd6-6f9e64f9-1107-4336-91ef-77cdf764b96a-000000@email.amazonses.com>
+References: <00000140ac8debd6-6f9e64f9-1107-4336-91ef-77cdf764b96a-000000@email.amazonses.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__27_Aug_2013_14_57_38_+1000_1Evf/1470jYKAaZr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2013 08:28 PM, Jaegeuk Kim wrote:
+--Signature=_Tue__27_Aug_2013_14_57_38_+1000_1Evf/1470jYKAaZr
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The f2fs_set_link updates its parent inode number, so we should sync this to
-> the inode block.
-> Otherwise, the data can be lost after sudden-power-off.
-> 
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> ---
->  fs/f2fs/namei.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-> index 4e47518..9e90d31 100644
-> --- a/fs/f2fs/namei.c
-> +++ b/fs/f2fs/namei.c
-> @@ -447,6 +447,7 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
->  		else
->  			release_orphan_inode(sbi);
->  
-> +		update_inode_page(old_inode):
+Hi Christoph,
 
-':' --> ';'
+On Fri, 23 Aug 2013 19:01:56 +0000 Christoph Lameter <cl@linux.com> wrote:
+>
+> At the end of the patchset all uses of __get_cpu_var have been removed so=
+ the macro is removed too.
 
->  		update_inode_page(new_inode);
->  	} else {
->  		err = f2fs_add_link(new_dentry, old_inode);
+However you get these to Linus, please do not do this last step until the
+following merge window.  I can pretty much guarantee that new usages will
+be added between the generation of the patch set and their integration.
 
+Its also helpful (to me, at least) if these can be routed via various
+subsystem trees to lower the number of conflicts ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Tue__27_Aug_2013_14_57_38_+1000_1Evf/1470jYKAaZr
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSHDHGAAoJEECxmPOUX5FE2JQP+QFZ+YX/JhkUiG7x62rWIrrz
+ETeNt4X58mCvPg/gMCODiLPKuKKwZlmgWzgHbYm5hRJffSuJTfiuEc9TaFOa3+nw
+wsbfg1/c4Vv6iIvzRhcEFwFQZV5oYqKYB6QuR8X7UycjhecH7FyGnQYfkKqLsYRF
+oJVCzy9O2Gvax3rmG4tqHfJoIKO3KL1ausCphIjUi09W3XsfnZMehtw1eQOVHn9i
+IbzknBoaox8iQSVuF/eViW3FL4rxvlYP9pmVupna0U4HNum1ZawrLt4IXKnsDI2k
+KubOWmZVh4wcJqr3zc0uEbjiJBy+9GsPSUBxuN3IJBqKAadUcsxkMdr24R+ODUJA
+zCRq8Mopo8zHukHDtiMb5Zqod+pmCUihXXMk3ymH/1SydOCE5l8EfrfXJT5HftPE
+u7T6P0nXyV+d217t4UpiDSW0SWFORGvWCYmwfJ2tMBnEgtF8t560A2V/Yuk8Geup
+j+bB1QYKkAtG/PnPYPFCvGivkendF1b/1ByC6jyIlmwyaj3GlvkzlTqsjQUcCoS2
+zWlhwvxnn3mM8c0/NhlNnDhRY2wWftagQ+QHQhXhPpBBSGNv+2KuefGE+u0VTC8y
+XgRDXEz/T40gFOe4zIrb4OHJirG3TcJ/ECaRsSR93LQJiVGFm4luO5EgGqNkmWEE
+TAq5rBnSGciHFHBp16dk
+=RIEh
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Aug_2013_14_57_38_+1000_1Evf/1470jYKAaZr--
