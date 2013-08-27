@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3H0QHa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 12:07:30 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:37480 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379Ab3H0QH0 (ORCPT
+	id S1752922Ab3H0QLM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 12:11:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54243 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596Ab3H0QLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 12:07:26 -0400
+	Tue, 27 Aug 2013 12:11:10 -0400
+Message-ID: <521CCF9B.9000004@wwwdotorg.org>
+Date: Tue, 27 Aug 2013 10:11:07 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <521CC9B8.2020801@semaphore.gr>
-References: <521BA068.8030003@semaphore.gr>
-	<CAKohpo=xBmpEv=oN1qEnq9RKhfjtc4wZayVYyVzjWOU8BnwVJQ@mail.gmail.com>
-	<521CC9B8.2020801@semaphore.gr>
-Date: Tue, 27 Aug 2013 21:37:25 +0530
-Message-ID: <CAKohpo=XhHtRfsVrUZr0DQCK5L5zU_6DB4PBOA4QrJBvvcbe0Q@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: governors: Remove duplicate check of target freq
- in supported range
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        kernel-janitors@vger.kernel.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/7] PCI: tegra: replace devm_request_and_ioremap by devm_ioremap_resource
+References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr> <1376911241-27720-2-git-send-email-Julia.Lawall@lip6.fr> <20130819120249.GA5740@ulmo> <CAErSpo5oOnfhi+aRi-Z3kCwS1VpYSO6FX5O_MOZmWNLcfhhA9w@mail.gmail.com> <20130819201224.GC5191@mithrandir> <CAErSpo6U9i16gdaYGpWqgLaFteXpy1erCUw55SqkHLcbypP=vA@mail.gmail.com> <20130827081443.GI8686@ulmo>
+In-Reply-To: <20130827081443.GI8686@ulmo>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 August 2013 21:16, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> I think we should keep these checks because:
->
-> 1) They shorten the execution code (there is no unnecessary call of
-> __cpufreq_driver_target)
+On 08/27/2013 02:14 AM, Thierry Reding wrote:
+> On Mon, Aug 19, 2013 at 02:49:07PM -0600, Bjorn Helgaas wrote:
+>> On Mon, Aug 19, 2013 at 2:12 PM, Thierry Reding 
+>> <thierry.reding@gmail.com> wrote:
+>>> On Mon, Aug 19, 2013 at 02:04:24PM -0600, Bjorn Helgaas wrote:
+>>>> On Mon, Aug 19, 2013 at 6:02 AM, Thierry Reding 
+>>>> <thierry.reding@gmail.com> wrote:
+>>>> 
+>>>>> Bjorn, how do you want to handle patches to the Tegra PCIe
+>>>>> driver in the future? Do you want me to prepare a branch
+>>>>> and pull from that or would you rather just take simple
+>>>>> patches?
+>>>> 
+>>>> I'm in the habit of applying patches from email, so that's
+>>>> easy for me.  But a branch would be OK, too.
+>>> 
+>>> Patches work for me too. Is this cleanup patch something that
+>>> you'd be comfortable with applying after 3.12-rc1 or would you
+>>> rather defer it to 3.13?
+>> 
+>> I'm not really sure how we should manage drivers/pci/host/*.
+>> Those files are mostly arch code, and I'm not sure it's useful
+>> for me to be in the middle of managing them.
+>> 
+>> I assume Stephen or somebody has a tree with the pci-tegra.c
+>> stuff that's in -next right now; it seems like it'd be simplest
+>> to just add this patch there and merge in during the v3.12 merge
+>> window.
+> 
+> If Stephen's fine with it I suppose we could take pci-tegra.c
+> driver changes through the Tegra tree. But I think it'd be good if
+> we could still Cc you on patches so you're aware of what we're
+> doing (that is the same for all drivers drivers/pci/host/*). And
+> we're going to need your Acked-by on the patches as well.
 
-I don't really count this one.. This is how code is present everywhere in
-kernel.. These checks are present in routines and callers don't need to
-take care of them..
-
-> 2) In case my patch will be accepted, we need them to avoid continuously
-> increase of dbs_info->requested_freq.With my patch the requested_freq
-> can temporarily overcome policy->min and policy->max. __cpufreq_driver_target
-> will select the correct frequency (within policy->min and policy->max).
-> Then, dbs_cpufreq_notifier will adjust requested_freq.
-
-Sorry, I couldn't understand what you meant here :(
+I can push Tegra PCIe patches through the arm-soc tree before
+3.12-rc1, but after that point, I think it's best if they go through
+the PCIe tree, unless there's some cross-subsystem dependency for a
+specific patch, and with the new PCIe driver, that's less likely.
