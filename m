@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab3H0Xqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 19:46:53 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:42558 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422Ab3H0Xqw (ORCPT
+	id S1754249Ab3H0Xss (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 19:48:48 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52653 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab3H0Xsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 19:46:52 -0400
-Date: Tue, 27 Aug 2013 16:46:49 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: werner <w.landgraf@ru.ru>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.11-rc6 many problems,  wil6210 , snd-pcsp , ibmphp
-Message-ID: <20130827234649.GA24002@roeck-us.net>
-References: <web-25718928@zbackend1.aha.ru>
+	Tue, 27 Aug 2013 19:48:45 -0400
+Message-ID: <521D3ADC.6050703@codeaurora.org>
+Date: Tue, 27 Aug 2013 16:48:44 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <web-25718928@zbackend1.aha.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-serial@vger.kernel.org, Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v2 0/5] Document msm_serial bindings and support newer
+ uartdms
+References: <1377067686-31957-1-git-send-email-sboyd@codeaurora.org> <20130827232351.GA27119@kroah.com>
+In-Reply-To: <20130827232351.GA27119@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 02:50:30PM -0400, werner wrote:
-> With compiling and using this, have too much problems
-> 
-[ ... ]
+On 08/27/13 16:23, Greg Kroah-Hartman wrote:
+> On Tue, Aug 20, 2013 at 11:48:01PM -0700, Stephen Boyd wrote:
+>> This patchset aligns the msm_serial driver more with downstream usage and
+>> also documents the msm_serial driver's DT binding. Along the way we
+>> update the clock names and add support for newer UARTDM hardware that
+>> isn't part of a GSBI and make the console layer use the extra registers in
+>> UARTDM.
+>>
+>> Changes since v1:
+>>  * Dropped _clk postfix from {core,iface}_clk
+>>  * Split DT binding into two files
+>>  * Renamed DT binding files to match compatible strings
+>>  * Fixed up DT review comments
+>>  * Added new patch 5/5 (more than 1 char for UARTDM)
+> I took patches 1, 3, and 5 from this series, as it seems that the dt
+> bindings are still being discussed.
 
-> 
->   CC      arch/x86/crypto/crc32c-intel.mod.o
->   LD [M]  arch/x86/crypto/crc32c-intel.ko
->   CC      arch/x86/crypto/salsa20-i586.mod.o
->   LD [M]  arch/x86/crypto/salsa20-i586.ko
->   CC      arch/x86/kvm/kvm-amd.mod.o
->   LD [M]  arch/x86/kvm/kvm-amd.ko
->   CC      arch/x86/kvm/kvm-intel.mod.o
->   LD [M]  arch/x86/kvm/kvm-intel.ko
->   CC      arch/x86/kvm/kvm.mod.o
->   LD [M]  arch/x86/kvm/kvm.ko
->   CC      crypto/ansi_cprng.mod.o
-> gcc: crypto/ansi_cprng.mod.c: No such file or directory
-> gcc: no input files
-> make[1]: [crypto/ansi_cprng.mod.o] Error 1 (ignored)
->   LD [M]  crypto/ansi_cprng.ko
-> ld: crypto/ansi_cprng.mod.o: No such file: No such file or directory
-> make[1]: [crypto/ansi_cprng.ko] Error 1 (ignored)
->   CC      crypto/ccm.mod.o
-> gcc: crypto/ccm.mod.c: No such file or directory
-> gcc: no input files
+Thanks Greg. I'll resend the patches right now. I got sidetracked on
+other things.
 
-(and so on)
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-This is a side effect of commit ea4054a2384 (handle huge number of modules).
-See https://lkml.org/lkml/2013/5/8/493.
-
-Guenter
