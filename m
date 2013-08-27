@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567Ab3H0BCT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:02:19 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:53122 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab3H0BCR (ORCPT
+	id S1752586Ab3H0BCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:02:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59185 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab3H0BCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:02:17 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: security@kernel.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+	Mon, 26 Aug 2013 21:02:44 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
         stable@vger.kernel.org
-References: <cover.1377196394.git.luto@amacapital.net>
-	<cover.1377196394.git.luto@amacapital.net>
-	<ff9dd301d8c91ec02362d52494b4a640f370bc68.1377196394.git.luto@amacapital.net>
-Date: Mon, 26 Aug 2013 18:02:09 -0700
-In-Reply-To: <ff9dd301d8c91ec02362d52494b4a640f370bc68.1377196394.git.luto@amacapital.net>
-	(Andy Lutomirski's message of "Thu, 22 Aug 2013 11:39:15 -0700")
-Message-ID: <8738pwndym.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19Nn00hGSSkaJRQQo1WtecVqdNEgzaj1cY=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0941]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Andy Lutomirski <luto@amacapital.net>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 1/2] net: Check the correct namespace when spoofing pid over SCM_RIGHTS
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Subject: [ 0/9] 3.0.94-stable review
+Date: Mon, 26 Aug 2013 18:04:51 -0700
+Message-Id: <20130827010251.636183797@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@amacapital.net> writes:
+This is the start of the stable review cycle for the 3.0.94 release.
+There are 9 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-> This is a security bug.
->
-> The follow-up will fix nsproxy to discourage this type of issue from
-> happening again.
+Responses should be made by Thu Aug 29 01:02:44 UTC 2013.
+Anything received after that time might be too late.
 
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
->
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  net/core/scm.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/net/core/scm.c b/net/core/scm.c
-> index 03795d0..b4da80b 100644
-> --- a/net/core/scm.c
-> +++ b/net/core/scm.c
-> @@ -54,7 +54,7 @@ static __inline__ int scm_check_creds(struct ucred *creds)
->  		return -EINVAL;
->  
->  	if ((creds->pid == task_tgid_vnr(current) ||
-> -	     ns_capable(current->nsproxy->pid_ns->user_ns, CAP_SYS_ADMIN)) &&
-> +	     ns_capable(task_active_pid_ns(current)->user_ns, CAP_SYS_ADMIN)) &&
->  	    ((uid_eq(uid, cred->uid)   || uid_eq(uid, cred->euid) ||
->  	      uid_eq(uid, cred->suid)) || nsown_capable(CAP_SETUID)) &&
->  	    ((gid_eq(gid, cred->gid)   || gid_eq(gid, cred->egid) ||
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.94-rc1.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.0.94-rc1
+
+Martin Peschke <mpeschke@linux.vnet.ibm.com>
+    SCSI: zfcp: fix schedule-inside-lock in scsi_device list loops
+
+Martin Peschke <mpeschke@linux.vnet.ibm.com>
+    SCSI: zfcp: fix lock imbalance by reworking request queue locking
+
+Terry Suereth <terry.suereth@gmail.com>
+    libata: apply behavioral quirks to sil3826 PMP
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    Hostap: copying wrong data prism2_ioctl_giwaplist()
+
+Vyacheslav Dubeyko <slava@dubeyko.com>
+    nilfs2: fix issue with counting number of bio requests for BIO_EOPNOTSUPP error detection
+
+Vyacheslav Dubeyko <slava@dubeyko.com>
+    nilfs2: remove double bio_put() in nilfs_end_bio_write() for BIO_EOPNOTSUPP error
+
+Wladislav Wiebe <wladislav.kw@gmail.com>
+    of: fdt: fix memory initialization for expanded DT
+
+David Vrabel <david.vrabel@citrix.com>
+    xen/events: initialize local per-cpu mask for all possible events
+
+Jussi Kivilinna <jussi.kivilinna@iki.fi>
+    zd1201: do not use stack as URB transfer_buffer
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                   |  4 +--
+ drivers/ata/libata-pmp.c                   | 12 +++----
+ drivers/net/wireless/hostap/hostap_ioctl.c |  4 +--
+ drivers/net/wireless/zd1201.c              |  4 ++-
+ drivers/of/fdt.c                           |  2 ++
+ drivers/s390/scsi/zfcp_erp.c               | 29 +++++++++++----
+ drivers/s390/scsi/zfcp_qdio.c              |  8 ++---
+ drivers/xen/events.c                       |  2 +-
+ fs/nilfs2/segbuf.c                         |  5 ++-
+ include/linux/wait.h                       | 57 ++++++++++++++++++++++++++++++
+ 10 files changed, 99 insertions(+), 28 deletions(-)
+
+
