@@ -1,501 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab3H0TQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 15:16:59 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:33122 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab3H0TQ5 (ORCPT
+	id S1753801Ab3H0TRS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 15:17:18 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:41709 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab3H0TRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 15:16:57 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@kernel.org>,
-        "security@kernel.org" <security@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Brad Spengler <spender@grsecurity.net>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC PATCH] fs: Add user_file_or_path_at and use it for truncate
-Date: Tue, 27 Aug 2013 12:16:34 -0700
-Message-Id: <7d1419dda1da70a8ad915f85b093a58b86bcaf3b.1377630856.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <CA+55aFw20W9L8HV+VbTRNeQQM-_+aeUhvT9AAod5LGfb-7hE9g@mail.gmail.com>
-References: <CA+55aFw20W9L8HV+VbTRNeQQM-_+aeUhvT9AAod5LGfb-7hE9g@mail.gmail.com>
+	Tue, 27 Aug 2013 15:17:15 -0400
+Message-ID: <521CFB38.8080705@gmail.com>
+Date: Tue, 27 Aug 2013 12:17:12 -0700
+From: Tim Bird <tbird20d@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: grant.likely@linaro.org, linus.walleij@linaro.org,
+        linux-gpio@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, tbird20d@gmail.com, tim.bird@sonymobile.com
+Subject: RFC: Bug in error handling in gpiolib.c
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an experiment to see if we can get nice semantics for all syscalls
-that either follow symlinks or allow AT_EMPTY_PATH without jumping through
-enormous hoops.  This converts truncate (although you can't tell using
-truncate from coreutils, because it actually uses open + ftruncate).
+Hi all,
 
-The basic idea is that there's a new helper function
-user_file_or_path_at.  It takes an fd and a path and, depending on
-flags, the emptiness of the path, and whether path is a magic /proc
-symlink (or a symlink to a magic /proc/symlink), it returns either a
-struct path or a struct file *.
+There appears to be a bug in the error handling in
+drivers/gpi/gpiolib.c  In certain error cases
+desc_to_gpio() is called to get the gpio number
+for an error message, but this may happen on code
+paths where desc->chip is NULL.  This causes a panic
+on my system in gpiod_request(), as follows:
 
-To make this genuinely useful, something similar will need to happen for
-open/openat.
+[    4.838393] Unable to handle kernel NULL pointer dereference at virtual address 00000044
+[    4.846379] pgd = c0204000
+[    4.849041] [00000044] *pgd=00000000
+[    4.852572] Internal error: Oops: 5 [#1] PREEMPT ARM
+[    4.857470] CPU: 0 PID: 1 Comm: swapper Not tainted 3.11.0-rc1-00306-g0db7796-dirty #78
+[    4.865373] task: ef01fb80 ti: ef034000 task.ti: ef034000
+[    4.870703] PC is at gpiod_request+0x84/0x2c8
+[    4.874995] LR is at gpiod_request+0x84/0x2c8
+[    4.879293] pc : [<c03373c0>]    lr : [<c03373c0>]    psr: 40000093
+[    4.879293] sp : ef035e00  ip : 000008d0  fp : 00000000
+[    4.890631] r10: 00000000  r9 : ef07ee20  r8 : 40000013
+[    4.895788] r7 : ef034000  r6 : c0482c88  r5 : c0529b90  r4 : fffffdfb
+[    4.902232] r3 : 00000000  r2 : ef035d78  r1 : 00000000  r0 : 00000011
+[    4.908681] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[    4.915982] Control: 10c5787d  Table: 80204059  DAC: 00000015
+[    4.921652] Process swapper (pid: 1, stack limit = 0xef034230)
+[    4.927408] Stack: (0xef035e00 to 0xef036000)
+[    4.931711] 5e00: 00000000 ef07ee00 ef199880 ef19ae00 ef07ee20 00000001 ef19ae80 c036d0d0
+[    4.939789] 5e20: c0481694 c0482e38 ef07c440 00000035 ef07ee20 ef07ee20 c04f9298 ef07ee00
+[    4.947865] 5e40: 00000000 c052b6b8 00000000 c04ab224 00000000 c037ff84 ef07ee20 c04f9298
+[    4.955943] 5e60: c052b6b0 c03625c8 ef07c440 c04bbd4c ef07ee20 c04f9298 ef07ee54 ef19bdc0
+[    4.964019] 5e80: c04bbd4c c0362840 00000000 c04f9298 c03627b4 c0360c00 ef063318 ef07baf0
+[    4.972097] 5ea0: 00000000 c04f9298 c04f9884 c0361390 c0482e38 c0316f9c c04f9298 c04c021c
+[    4.980174] 5ec0: fa7e5603 00000000 c04bbd4c c0362e1c c04f9884 c04f9274 c04c021c fa7e5603
+[    4.988250] 5ee0: 00000000 c04bbd4c c04ab224 c0381160 00000000 00000006 c04c021c c04ab888
+[    4.996327] 5f00: 00000030 00000000 fa7e5603 00000000 c04ff100 40000013 c04d0e98 00000001
+[    5.004406] 5f20: c05339ff c04305dc 0000003c c0234950 ef035f5c c023ee94 c0483d94 c0494388
+[    5.012481] 5f40: 00000006 00000006 c04d0e8c 00000006 00000006 c04c021c c04c3428 c04ff140
+[    5.020558] 5f60: 0000003c c04c0228 c04ab224 c04aba64 00000006 00000006 c04ab224 ffffffff
+[    5.028635] 5f80: ef035f9c c023ed44 00000000 c041d20c 00000000 00000000 00000000 00000000
+[    5.036713] 5fa0: 00000000 c041d214 00000000 c020e298 00000000 00000000 00000000 00000000
+[    5.044790] 5fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+[    5.052866] 5fe0: 00000000 00000000 00000000 00000000 00000013 00000000 ffffffff ffffffff
+[    5.060961] [<c03373c0>] (gpiod_request+0x84/0x2c8) from [<c036d0d0>] (lc898300_probe+0x1c4/0x49c)
+[    5.069804] [<c036d0d0>] (lc898300_probe+0x1c4/0x49c) from [<c037ff84>] (i2c_device_probe+0x88/0xcc)
+[    5.078830] [<c037ff84>] (i2c_device_probe+0x88/0xcc) from [<c03625c8>] (driver_probe_device+0xe4/0x2d0)
+[    5.088192] [<c03625c8>] (driver_probe_device+0xe4/0x2d0) from [<c0362840>] (__driver_attach+0x8c/0x90)
+[    5.097470] [<c0362840>] (__driver_attach+0x8c/0x90) from [<c0360c00>] (bus_for_each_dev+0x54/0x88)
+[    5.106405] [<c0360c00>] (bus_for_each_dev+0x54/0x88) from [<c0361390>] (bus_add_driver+0xc8/0x22c)
+[    5.115342] [<c0361390>] (bus_add_driver+0xc8/0x22c) from [<c0362e1c>] (driver_register+0x78/0x14c)
+[    5.124282] [<c0362e1c>] (driver_register+0x78/0x14c) from [<c0381160>] (i2c_register_driver+0x2c/0xc8)
+[    5.133568] [<c0381160>] (i2c_register_driver+0x2c/0xc8) from [<c04ab888>] (do_one_initcall+0x50/0x144)
+[    5.142842] [<c04ab888>] (do_one_initcall+0x50/0x144) from [<c04aba64>] (kernel_init_freeable+0xe8/0x1ac)
+[    5.152293] [<c04aba64>] (kernel_init_freeable+0xe8/0x1ac) from [<c041d214>] (kernel_init+0x8/0xe4)
+[    5.161233] [<c041d214>] (kernel_init+0x8/0xe4) from [<c020e298>] (ret_from_fork+0x14/0x3c)
+[    5.169471] Code: 03c7703f 1a000025 e59f0214 eb039ba7 (e59a3044) 
+[    5.175507] ---[ end trace 3e6eedf8393bc047 ]---
+[    5.180035] note: swapper[1] exited with preempt_count 1
+[    5.185368] Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+[    5.185368] 
 
-The lifetime rules for the contents of struct nameidata seem weird.
-If all users first memset the thing to zero and called nd_put or
-something when they were done, this would be cleaner.  But they don't.
+This is happening with a (likely broken) gpio driver, but it would be
+better to get an error message rather than a panic in that case, I think.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+I wrote the following patch as a workaround, but I'm not sure if this
+is the best solution.  It's a bit kludgy. It fixes the code in
+gpiod_request, but the same problem is present in other routines
+(gpiod_direction_input, gpiod_direction_output, gpiod_set_debounce).
+Since this is something of a corner case, I'm not sure if the null check
+should be added to desc_to_gpio(), but that's another way to handle it. 
+Technically, code should not be calling those other routines without
+having done a gpio_request() first, so maybe this is sufficient.
+
+Let me know what you think.
+
+Thanks,
+ -- Tim Bird
+Senior Software Engineer, Sony Mobile Communication
+Architecture Group Chair, CE Workgroup, Linux Foundation
+
+Here's my patch:
+Subject: [PATCH] gpio: avoid panic on NULL desc->chip in gpiod_request
+
+Avoid calling desc_to_gpio if desc->chip is NULL, as this will
+cause a kernel panic.
+
+In the code above this, there is a test for chip==NULL, which
+comes to the 'done' label if true.  In this case, the code
+panics, since desc_to_gpio() uses desc->chip to look up the
+gpio number.
+
+The possibility of calling desc_to_gpio() with a NULL desc->chip
+is present in other locations (gpiod_direction_input,
+gpiod_direction_output, gpiod_set_debounce) which this fix
+doesn't catch.
+
+Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
 ---
- fs/namei.c            | 73 ++++++++++++++++++++++++++++++++++++++++
- fs/open.c             | 93 +++++++++++++++++++++++++++++----------------------
- fs/proc/base.c        | 44 +++++++++++++-----------
- fs/proc/fd.c          | 10 +++---
- fs/proc/internal.h    |  3 +-
- include/linux/namei.h | 14 ++++++++
- 6 files changed, 171 insertions(+), 66 deletions(-)
+ drivers/gpio/gpiolib.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 89a612e..0d905ac 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -691,6 +691,28 @@ void nd_jump_link(struct nameidata *nd, struct path *path)
- 	nd->flags |= LOOKUP_JUMPED;
- }
- 
-+/*
-+ * Helper for /proc/pid/fd/N-style magic links.  This is like nd_jump_link
-+ * except that it will apply additional security checks.  Caller must have
-+ * taken a reference to file beforehand.
-+ */
-+void nd_jump_link_file(struct nameidata *nd, struct file *file)
-+{
-+	path_put(&nd->path);
-+
-+	nd->path = file->f_path;
-+	path_get(&nd->path);
-+	if (nd->flags & LOOKUP_FILE) {
-+		if (nd->last_symlink_file)
-+			fput(nd->last_symlink_file);
-+		nd->last_symlink_file = file;
-+	} else {
-+		fput(file);
-+	}
-+	nd->inode = nd->path.dentry->d_inode;
-+	nd->flags |= LOOKUP_JUMPED;
-+}
-+
- static inline void put_link(struct nameidata *nd, struct path *link, void *cookie)
- {
- 	struct inode *inode = link->dentry->d_inode;
-@@ -842,6 +864,10 @@ follow_link(struct path *link, struct nameidata *nd, void **p)
- 		goto out_put_nd_path;
- 
- 	nd->last_type = LAST_BIND;
-+	if (unlikely((nd->flags & LOOKUP_FILE) && nd->last_symlink_file)) {
-+		fput(nd->last_symlink_file);
-+		nd->last_symlink_file = NULL;
-+	}
- 	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
- 	error = PTR_ERR(*p);
- 	if (IS_ERR(*p))
-@@ -2156,6 +2182,53 @@ int user_path_at(int dfd, const char __user *name, unsigned flags,
- 	return user_path_at_empty(dfd, name, flags, path, NULL);
- }
- 
-+int user_file_or_path_at(int dfd, const char __user *filename,
-+			 int lookup_flags, bool null_filename_okay,
-+			 struct file_or_path *out)
-+{
-+	struct nameidata nd;
-+	struct filename *tmp;
-+	int err;
-+	int empty = 0;
-+
-+	if (!filename && null_filename_okay) {
-+		out->file = fget(dfd);
-+		return out->file ? 0 : -EBADF;
-+	}
-+
-+	tmp = getname_flags(filename, lookup_flags, &empty);
-+	if (IS_ERR(tmp))
-+		return PTR_ERR(tmp);
-+
-+	if (empty) {
-+		out->file = fget(dfd);
-+		return out->file ? 0 : -EBADF;
-+	}
-+
-+	nd.last_symlink_file = NULL;
-+	BUG_ON(lookup_flags & LOOKUP_PARENT);
-+
-+	err = filename_lookup(dfd, tmp, lookup_flags | LOOKUP_FILE, &nd);
-+	putname(tmp);
-+	if (!err) {
-+		if (nd.last_symlink_file && nd.last_type == LAST_BIND) {
-+			out->file = nd.last_symlink_file;
-+			memset(&out->path, 0, sizeof(out->path));
-+			path_put(&nd.path);
-+		} else {
-+			out->path = nd.path;
-+			out->file = NULL;
-+			if (nd.last_symlink_file)
-+				fput(nd.last_symlink_file);
-+		}
-+	} else {
-+		if (nd.last_symlink_file)
-+			fput(nd.last_symlink_file);
-+	}
-+
-+	return err;
-+}
-+
- /*
-  * NB: most callers don't do anything directly with the reference to the
-  *     to struct filename, but the nd->last pointer points into the name string
-diff --git a/fs/open.c b/fs/open.c
-index 7931f76..1349b43 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -114,20 +114,66 @@ out:
- }
- EXPORT_SYMBOL_GPL(vfs_truncate);
- 
-+static long do_truncate_file(struct file *file, loff_t length, int small)
-+{
-+	struct inode *inode;
-+	struct dentry *dentry;
-+	int error;
-+
-+	error = -EINVAL;
-+	if (length < 0)
-+		goto out;
-+
-+	/* explicitly opened as large or we are on 64-bit box */
-+	if (file->f_flags & O_LARGEFILE)
-+		small = 0;
-+
-+	dentry = file->f_path.dentry;
-+	inode = dentry->d_inode;
-+	error = -EINVAL;
-+	if (!S_ISREG(inode->i_mode) || !(file->f_mode & FMODE_WRITE))
-+		goto out;
-+
-+	error = -EINVAL;
-+	/* Cannot ftruncate over 2^31 bytes without large file support */
-+	if (small && length > MAX_NON_LFS)
-+		goto out;
-+
-+	error = -EPERM;
-+	if (IS_APPEND(inode))
-+		goto out;
-+
-+	sb_start_write(inode->i_sb);
-+	error = locks_verify_truncate(inode, file, length);
-+	if (!error)
-+		error = security_path_truncate(&file->f_path);
-+	if (!error)
-+		error = do_truncate(dentry, length, ATTR_MTIME|ATTR_CTIME, file);
-+	sb_end_write(inode->i_sb);
-+out:
-+	return error;
-+}
-+
- static long do_sys_truncate(const char __user *pathname, loff_t length)
- {
--	unsigned int lookup_flags = LOOKUP_FOLLOW;
--	struct path path;
-+	struct file_or_path obj;
-+	int lookup_flags = LOOKUP_FOLLOW;
- 	int error;
- 
- 	if (length < 0)	/* sorry, but loff_t says... */
- 		return -EINVAL;
- 
- retry:
--	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
-+	error = user_file_or_path_at(AT_FDCWD, pathname,
-+				     LOOKUP_FOLLOW, false, &obj);
- 	if (!error) {
--		error = vfs_truncate(&path, length);
--		path_put(&path);
-+		if (obj.file) {
-+			error = do_truncate_file(obj.file, length, 0);
-+			fput(obj.file);
-+		} else {
-+			error = vfs_truncate(&obj.path, length);
-+			path_put(&obj.path);
-+		}
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index ff0fd65..61e9963 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1445,9 +1445,15 @@ static int gpiod_request(struct gpio_desc *desc, const char *label)
+ 		spin_lock_irqsave(&gpio_lock, flags);
  	}
- 	if (retry_estale(error, lookup_flags)) {
- 		lookup_flags |= LOOKUP_REVAL;
-@@ -150,48 +196,15 @@ COMPAT_SYSCALL_DEFINE2(truncate, const char __user *, path, compat_off_t, length
- 
- static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
- {
--	struct inode *inode;
--	struct dentry *dentry;
- 	struct fd f;
- 	int error;
- 
--	error = -EINVAL;
--	if (length < 0)
--		goto out;
- 	error = -EBADF;
- 	f = fdget(fd);
- 	if (!f.file)
--		goto out;
--
--	/* explicitly opened as large or we are on 64-bit box */
--	if (f.file->f_flags & O_LARGEFILE)
--		small = 0;
--
--	dentry = f.file->f_path.dentry;
--	inode = dentry->d_inode;
--	error = -EINVAL;
--	if (!S_ISREG(inode->i_mode) || !(f.file->f_mode & FMODE_WRITE))
--		goto out_putf;
--
--	error = -EINVAL;
--	/* Cannot ftruncate over 2^31 bytes without large file support */
--	if (small && length > MAX_NON_LFS)
--		goto out_putf;
--
--	error = -EPERM;
--	if (IS_APPEND(inode))
--		goto out_putf;
--
--	sb_start_write(inode->i_sb);
--	error = locks_verify_truncate(inode, f.file, length);
--	if (!error)
--		error = security_path_truncate(&f.file->f_path);
--	if (!error)
--		error = do_truncate(dentry, length, ATTR_MTIME|ATTR_CTIME, f.file);
--	sb_end_write(inode->i_sb);
--out_putf:
-+		return error;
-+	error = do_truncate_file(f.file, length, small);
- 	fdput(f);
--out:
- 	return error;
- }
- 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 1485e38..ac28ff3 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -171,7 +171,7 @@ static int get_task_root(struct task_struct *task, struct path *root)
- 	return result;
- }
- 
--static int proc_cwd_link(struct dentry *dentry, struct path *path)
-+static int proc_cwd_link(struct dentry *dentry, struct file_or_path *link)
- {
- 	struct task_struct *task = get_proc_task(dentry->d_inode);
- 	int result = -ENOENT;
-@@ -179,7 +179,8 @@ static int proc_cwd_link(struct dentry *dentry, struct path *path)
- 	if (task) {
- 		task_lock(task);
- 		if (task->fs) {
--			get_fs_pwd(task->fs, path);
-+			link->file = NULL;
-+			get_fs_pwd(task->fs, &link->path);
- 			result = 0;
- 		}
- 		task_unlock(task);
-@@ -188,13 +189,14 @@ static int proc_cwd_link(struct dentry *dentry, struct path *path)
- 	return result;
- }
- 
--static int proc_root_link(struct dentry *dentry, struct path *path)
-+static int proc_root_link(struct dentry *dentry, struct file_or_path *link)
- {
- 	struct task_struct *task = get_proc_task(dentry->d_inode);
- 	int result = -ENOENT;
- 
- 	if (task) {
--		result = get_task_root(task, path);
-+		link->file = NULL;
-+		result = get_task_root(task, &link->path);
- 		put_task_struct(task);
- 	}
- 	return result;
-@@ -1430,11 +1432,10 @@ static const struct file_operations proc_pid_set_comm_operations = {
- 	.release	= single_release,
- };
- 
--static int proc_exe_link(struct dentry *dentry, struct path *exe_path)
-+static int proc_exe_link(struct dentry *dentry, struct file_or_path *link)
- {
- 	struct task_struct *task;
- 	struct mm_struct *mm;
--	struct file *exe_file;
- 
- 	task = get_proc_task(dentry->d_inode);
- 	if (!task)
-@@ -1443,32 +1444,32 @@ static int proc_exe_link(struct dentry *dentry, struct path *exe_path)
- 	put_task_struct(task);
- 	if (!mm)
- 		return -ENOENT;
--	exe_file = get_mm_exe_file(mm);
-+	link->file = get_mm_exe_file(mm);
- 	mmput(mm);
--	if (exe_file) {
--		*exe_path = exe_file->f_path;
--		path_get(&exe_file->f_path);
--		fput(exe_file);
-+	if (link->file)
- 		return 0;
--	} else
-+	else
- 		return -ENOENT;
- }
- 
- static void *proc_pid_follow_link(struct dentry *dentry, struct nameidata *nd)
- {
- 	struct inode *inode = dentry->d_inode;
--	struct path path;
-+	struct file_or_path link;
- 	int error = -EACCES;
- 
- 	/* Are we allowed to snoop on the tasks file descriptors? */
- 	if (!proc_fd_access_allowed(inode))
- 		goto out;
- 
--	error = PROC_I(inode)->op.proc_get_link(dentry, &path);
-+	error = PROC_I(inode)->op.proc_get_link(dentry, &link);
- 	if (error)
- 		goto out;
- 
--	nd_jump_link(nd, &path);
-+	if (link.file)
-+		nd_jump_link_file(nd, link.file);
-+	else
-+		nd_jump_link(nd, &link.path);
- 	return NULL;
- out:
- 	return ERR_PTR(error);
-@@ -1502,18 +1503,23 @@ static int proc_pid_readlink(struct dentry * dentry, char __user * buffer, int b
- {
- 	int error = -EACCES;
- 	struct inode *inode = dentry->d_inode;
--	struct path path;
-+	struct file_or_path link;
- 
- 	/* Are we allowed to snoop on the tasks file descriptors? */
- 	if (!proc_fd_access_allowed(inode))
- 		goto out;
- 
--	error = PROC_I(inode)->op.proc_get_link(dentry, &path);
-+	error = PROC_I(inode)->op.proc_get_link(dentry, &link);
- 	if (error)
- 		goto out;
- 
--	error = do_proc_readlink(&path, buffer, buflen);
--	path_put(&path);
-+	if (link.file) {
-+		error = do_proc_readlink(&link.file->f_path, buffer, buflen);
-+		fput(link.file);
-+	} else {
-+		error = do_proc_readlink(&link.path, buffer, buflen);
-+		path_put(&link.path);
+ done:
+-	if (status)
+-		pr_debug("_gpio_request: gpio-%d (%s) status %d\n",
+-			 desc_to_gpio(desc), label ? : "?", status);
++	if (status) {
++		if (desc->chip) {
++			pr_debug("_gpio_request: gpio-%d (%s) status %d\n",
++				 desc_to_gpio(desc), label ? : "?", status);
++		} else {
++			pr_debug("_gpio_request: gpio-?? (%s) status %d\n",
++				 label ? : "?", status);
++		}
 +	}
- out:
- 	return error;
+ 	spin_unlock_irqrestore(&gpio_lock, flags);
+ 	return status;
  }
-diff --git a/fs/proc/fd.c b/fs/proc/fd.c
-index 0ff80f9..4c88fc2 100644
---- a/fs/proc/fd.c
-+++ b/fs/proc/fd.c
-@@ -137,7 +137,7 @@ static const struct dentry_operations tid_fd_dentry_operations = {
- 	.d_delete	= pid_delete_dentry,
- };
- 
--static int proc_fd_link(struct dentry *dentry, struct path *path)
-+static int proc_fd_link(struct dentry *dentry, struct file_or_path *link)
- {
- 	struct files_struct *files = NULL;
- 	struct task_struct *task;
-@@ -151,13 +151,11 @@ static int proc_fd_link(struct dentry *dentry, struct path *path)
- 
- 	if (files) {
- 		int fd = proc_fd(dentry->d_inode);
--		struct file *fd_file;
- 
- 		spin_lock(&files->file_lock);
--		fd_file = fcheck_files(files, fd);
--		if (fd_file) {
--			*path = fd_file->f_path;
--			path_get(&fd_file->f_path);
-+		link->file = fcheck_files(files, fd);
-+		if (link->file) {
-+			get_file(link->file);
- 			ret = 0;
- 		}
- 		spin_unlock(&files->file_lock);
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index 651d09a..fc936d5 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -14,6 +14,7 @@
- #include <linux/spinlock.h>
- #include <linux/atomic.h>
- #include <linux/binfmts.h>
-+#include <linux/namei.h>
- 
- struct ctl_table_header;
- struct mempolicy;
-@@ -51,7 +52,7 @@ struct proc_dir_entry {
- };
- 
- union proc_op {
--	int (*proc_get_link)(struct dentry *, struct path *);
-+	int (*proc_get_link)(struct dentry *, struct file_or_path *link);
- 	int (*proc_read)(struct task_struct *task, char *page);
- 	int (*proc_show)(struct seq_file *m,
- 		struct pid_namespace *ns, struct pid *pid,
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 5a5ff57..77f585e 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -15,6 +15,7 @@ struct nameidata {
- 	struct qstr	last;
- 	struct path	root;
- 	struct inode	*inode; /* path.dentry.d_inode */
-+	struct file	*last_symlink_file;
- 	unsigned int	flags;
- 	unsigned	seq;
- 	int		last_type;
-@@ -56,9 +57,21 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
- #define LOOKUP_ROOT		0x2000
- #define LOOKUP_EMPTY		0x4000
- 
-+#define LOOKUP_FILE		0x8000
-+
- extern int user_path_at(int, const char __user *, unsigned, struct path *);
- extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
- 
-+struct file_or_path
-+{
-+	struct file *file;
-+	struct path path;
-+};
-+
-+extern int user_file_or_path_at(int dfd, const char __user *filename,
-+				int lookup_flags, bool null_filename_okay,
-+				struct file_or_path *out);
-+
- #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
- #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
- #define user_path_dir(name, path) \
-@@ -83,6 +96,7 @@ extern struct dentry *lock_rename(struct dentry *, struct dentry *);
- extern void unlock_rename(struct dentry *, struct dentry *);
- 
- extern void nd_jump_link(struct nameidata *nd, struct path *path);
-+extern void nd_jump_link_file(struct nameidata *nd, struct file *file);
- 
- static inline void nd_set_link(struct nameidata *nd, char *path)
- {
--- 
-1.8.3.1
-
+-- 1.8.2.2 
