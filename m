@@ -1,164 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab3H0J3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 05:29:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37270 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752111Ab3H0J3f (ORCPT
+	id S1753310Ab3H0JaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 05:30:15 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:11511 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752824Ab3H0JaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 05:29:35 -0400
-Date: Tue, 27 Aug 2013 10:29:32 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "wni@nvidia.com" <wni@nvidia.com>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC PATCH 01/14] cpufreq: cpufreq-cpu0: add dt node parsing
- for 'cooling-zones'
-Message-ID: <20130827092931.GB19893@e106331-lin.cambridge.arm.com>
-References: <1377299755-5134-1-git-send-email-eduardo.valentin@ti.com>
- <1377299755-5134-2-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377299755-5134-2-git-send-email-eduardo.valentin@ti.com>
-Thread-Topic: [RFC PATCH 01/14] cpufreq: cpufreq-cpu0: add dt node parsing
- for 'cooling-zones'
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 27 Aug 2013 05:30:12 -0400
+X-AuditID: cbfec7f5-b7ef66d00000795a-a9-521c71a2b032
+Message-id: <521C71A1.4070609@samsung.com>
+Date: Tue, 27 Aug 2013 11:30:09 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Cc: linus.walleij@linaro.org, t.figa@samsung.com, thomas.abraham@linaro.org,
+        kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH 1/4] pinctrl: Add s5pv210 support to pinctrl-exynos
+References: <1377595171-31116-1-git-send-email-m.krawczuk@partner.samsung.com>
+In-reply-to: <1377595171-31116-1-git-send-email-m.krawczuk@partner.samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xK7qLCmWCDFqm2lj0LrjKZjHlz3Im
+	i02Pr7FaXN41h81ixvl9TBan15xitlg/4zWLxbEZSxgdODzuXNvD5rF5Sb3HwXd7mDz6tqxi
+	9Pi8SS6ANYrLJiU1J7MstUjfLoEr48G1qIJFXBW3N3QwNjCe4+hi5OSQEDCRmHbxDCuELSZx
+	4d56ti5GLg4hgaWMEqfP32CFcD4xSix7+oUNpIpXQEti4vwT7CA2i4CqxO+PexlBbDYBQ4ne
+	o31gtqhAgMTiJefYIeoFJX5MvscCYosImEq8u3sNbAOzwFlGiVfrO4ASHBzCAu4Spz7WgtQI
+	CfhJ7L+zmQnE5hTwl3gw5xgziM0soCOxv3UaG4QtL7F5zVvmCYwCs5CsmIWkbBaSsgWMzKsY
+	RVNLkwuKk9JzjfSKE3OLS/PS9ZLzczcxQoL96w7GpcesDjEKcDAq8fA+bJEOEmJNLCuuzD3E
+	KMHBrCTCy3UHKMSbklhZlVqUH19UmpNafIiRiYNTqoFx8o9ZhrJMBgzXNVO3sXg5d095kPZa
+	tXDi4Ymbq0Rat57P+1m7cdrrH4rHn3PNe1h8pmXie+XAhw+F6lLcRPp5RNIu5i3tvObZe3nz
+	0RK7jgyX+C0LNkhvtRDNcN5md4RBROqHGL/m0Zesv6xiKt1zz8ryWUi2Xft6Xi7xV9vP2l6h
+	Mmbz0FAlluKMREMt5qLiRACbOPt/VAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 24, 2013 at 12:15:42AM +0100, Eduardo Valentin wrote:
-> This patch changes the cpufreq-cpu0 driver to consider if
-> a cpu needs cooling (with cpufreq). In case the cooling is needed,
-> it can be flagged at the cpu0 device tree node, with the list
-> of zones property 'cooling-zones'.
-> 
-> In case this list of zones is present, the driver will
-> load a cpufreq cooling device in the system. The cpufreq-cpu0
-> driver is not interested in determining how the system should
-> be using the cooling device. The driver is responsible
-> only of loading the cooling device.
-> 
-> Describing how the cooling device will be used can be
-> accomplished by setting up a thermal zone that references
-> and is composed by the cpufreq cooling device.
-> 
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: cpufreq@vger.kernel.org
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+Hi,
+
+Just a few nits...
+
+On 08/27/2013 11:19 AM, Mateusz Krawczuk wrote:
+> This patch implements pinctrl for s5pv210 and adds required device tree bindings.
+
+Would be good to wrap this to not exceed 80 columns.
+
+> Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
 > ---
->  Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt |  4 ++++
->  drivers/cpufreq/cpufreq-cpu0.c                             | 12 ++++++++++++
->  2 files changed, 16 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-> index 051f764..add50f7 100644
-> --- a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-> +++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-> @@ -15,6 +15,9 @@ Optional properties:
->  - clock-latency: Specify the possible maximum transition latency for clock,
->    in unit of nanoseconds.
->  - voltage-tolerance: Specify the CPU voltage tolerance in percentage.
-> +- cooling-zones: A list of thermal zones phandles. The generic cpu
-> +  cooling (freq clipping) is loaded by the generic cpufreq-cpu0 driver
-> +  in case the device tree node has this list.
+[...]
+> diff --git a/drivers/pinctrl/pinctrl-exynos.c b/drivers/pinctrl/pinctrl-exynos.c
+> index a74b3cb..fc3e1d7 100644
+> --- a/drivers/pinctrl/pinctrl-exynos.c
+> +++ b/drivers/pinctrl/pinctrl-exynos.c
+> @@ -660,6 +660,64 @@ static void exynos_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
+>  			exynos_pinctrl_resume_bank(drvdata, bank);
+>  }
+>  
+> +/* pin banks of s5pv210 pin-controller */
+> +static struct samsung_pin_bank s5pv210_pin_banks0[] = {
 
-Bindings should not describe the behaviour of any kernel (and for that
-reason I'm not very keen on the current cpufreq-cpu0 binding document).
+Couldn't it be 'static const' ?
 
-Bindings should simply describe the hardware. This addition could
-instead be:
+> +	EXYNOS_PIN_BANK_EINTG(8, 0x000, "gpa0", 0x00),
+> +	EXYNOS_PIN_BANK_EINTG(6, 0x020, "gpa1", 0x04),
+> +	EXYNOS_PIN_BANK_EINTG(8, 0x040, "gpb", 0x08),
+> +	EXYNOS_PIN_BANK_EINTG(5, 0x060, "gpc0", 0x0c),
+> +	EXYNOS_PIN_BANK_EINTG(5, 0x080, "gpc1", 0x10),
+> +	EXYNOS_PIN_BANK_EINTG(4, 0x0A0, "gpd0", 0x14),
+> +	EXYNOS_PIN_BANK_EINTG(4, 0x0C0, "gpd1", 0x18),
+> +	EXYNOS_PIN_BANK_EINTG(5, 0x0E0, "gpe0", 0x1c),
 
- - cooling-zones: a list of thermal zone phandles.
+How about consistently using lower case for the hex numbers ?
 
-However, as the thermal zone binding doesn't seem to have appeared by
-this patch, it should get moved later anyway...
-
+--
 Thanks,
-Mark.
-
->  
->  Examples:
->  
-> @@ -33,6 +36,7 @@ cpus {
->  			198000  850000
->  		>;
->  		clock-latency = <61036>; /* two CLK32 periods */
-> +		cooling-zones = <&cpu_thermal>;
->  	};
->  
->  	cpu@1 {
-> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-> index ad1fde2..ede6487 100644
-> --- a/drivers/cpufreq/cpufreq-cpu0.c
-> +++ b/drivers/cpufreq/cpufreq-cpu0.c
-> @@ -20,6 +20,9 @@
->  #include <linux/platform_device.h>
->  #include <linux/regulator/consumer.h>
->  #include <linux/slab.h>
-> +#include <linux/thermal.h>
-> +#include <linux/cpu_cooling.h>
-> +#include <linux/cpumask.h>
->  
->  static unsigned int transition_latency;
->  static unsigned int voltage_tolerance; /* in percentage */
-> @@ -28,6 +31,7 @@ static struct device *cpu_dev;
->  static struct clk *cpu_clk;
->  static struct regulator *cpu_reg;
->  static struct cpufreq_frequency_table *freq_table;
-> +static struct thermal_cooling_device *cdev;
->  
->  static int cpu0_verify_speed(struct cpufreq_policy *policy)
->  {
-> @@ -268,6 +272,13 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
->  		goto out_free_table;
->  	}
->  
-> +	/*
-> +	 * For now, just loading the cooling device;
-> +	 * thermal DT code takes care of matching them.
-> +	 */
-> +	if (of_find_property(np, "cooling-zones", NULL))
-> +		cdev = cpufreq_cooling_register(cpu_present_mask);
-> +
->  	of_node_put(np);
->  	of_node_put(parent);
->  	return 0;
-> @@ -283,6 +294,7 @@ out_put_parent:
->  
->  static int cpu0_cpufreq_remove(struct platform_device *pdev)
->  {
-> +	cpufreq_cooling_unregister(cdev);
->  	cpufreq_unregister_driver(&cpu0_cpufreq_driver);
->  	opp_free_cpufreq_table(cpu_dev, &freq_table);
->  
-> -- 
-> 1.8.2.1.342.gfa7285d
-> 
-> 
+Sylwester
