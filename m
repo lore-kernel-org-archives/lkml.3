@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab3H0ONd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 10:13:33 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37332 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab3H0ONb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 10:13:31 -0400
-Message-ID: <521CB403.8010307@linutronix.de>
-Date: Tue, 27 Aug 2013 16:13:23 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	id S1753513Ab3H0ONw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 10:13:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752186Ab3H0ONv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 10:13:51 -0400
+Date: Tue, 27 Aug 2013 10:13:30 -0400
+From: Dave Jones <davej@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: suspicious RCU usage (perf)
+Message-ID: <20130827141330.GA21890@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	David Ahern <dsahern@gmail.com>,
+	Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130826145838.GA8377@redhat.com>
+ <20130826162928.GQ3871@linux.vnet.ibm.com>
+ <20130826133041.3d750b1b@gandalf.local.home>
+ <20130826175012.GA25202@redhat.com>
+ <20130826141814.54dcaa89@gandalf.local.home>
+ <20130826182907.GB25202@redhat.com>
+ <521BAFD3.2060404@gmail.com>
+ <20130826194923.GA1549@redhat.com>
+ <20130827091011.18ed8b59@gandalf.local.home>
+ <521CB074.3040900@gmail.com>
 MIME-Version: 1.0
-To: Benoit Cousson <bcousson@baylibre.com>
-CC: Javier Martinez Canillas <javier@dowhile0.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, linux-next@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        "khilman@linaro.org" <khilman@linaro.org>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the usb tree
-References: <20130827181353.319c150858829df1bb68d60b@canb.auug.org.au> <521C6961.9020103@linutronix.de> <CABxcv=mg6t5wPqpF3j5sr_76qfZ7N7KgpWhcKSGoPTOcaR=V6A@mail.gmail.com> <521CA888.1080909@baylibre.com> <521CAF59.1090203@linutronix.de> <521CB046.9070408@baylibre.com> <521CB18B.4080000@linutronix.de> <521CB239.6050409@baylibre.com>
-In-Reply-To: <521CB239.6050409@baylibre.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521CB074.3040900@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 04:05 PM, Benoit Cousson wrote:
-> On 27/08/2013 16:02, Sebastian Andrzej Siewior wrote:
->> On 08/27/2013 03:57 PM, Benoit Cousson wrote:
->>> + Kevin,
->>>
->>> On 27/08/2013 15:53, Sebastian Andrzej Siewior wrote:
->>>> What do we do now?
->>>
->>> Cannot you just merge the stable arm-soc/dt branch into your branch
->>> before applying your patches?
->>
->> That is up to Greg. This changes sat in his usb-next tree for a while
->> now. And before they hit Greg they were in Felipe's tree for a while.
->>
->> To be exact, last .dts change via USB was:
->>
->> Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->> AuthorDate: Thu Jun 20 12:13:04 2013 +0200
->> Commit:     Felipe Balbi <balbi@ti.com>
->> CommitDate: Fri Aug 9 17:40:16 2013 +0300
->>
->>     usb: musb dma: add cppi41 dma driver
-> 
-> Mmm, if that branch is supposed to be stable, I'm not sure it will be
-> doable...
-> 
-> Maybe we should do the other way around? And merge usb-next into
-> arm-soc/dt.
-> 
-> Kevin, Olof?
+On Tue, Aug 27, 2013 at 07:58:12AM -0600, David Ahern wrote:
+ > On 8/27/13 7:10 AM, Steven Rostedt wrote:
+ > > On Mon, 26 Aug 2013 15:49:24 -0400
+ > > Dave Jones <davej@redhat.com> wrote:
+ > >
+ > >
+ > >>   > Do you have /sys/kernel/debug with access permissions?
+ > >>
+ > >> Ah, yeah, that'll be it. Good catch.
+ > >>
+ > >> Sorry for the false alarm Steve ;)
+ > >
+ > > Yeah, but it still does not explain how perf got started. Perf requires
+ > > a sys_perf_event_open() call to run.
+ > 
+ > Per Peter's response another option is the paranoia level:
+ > 
+ > # perf event paranoia level:
+ > # -1 - not paranoid at all
+ > #  0 - disallow raw tracepoint access for unpriv
+ > #  1 - disallow cpu events for unpriv
+ > #  2 - disallow kernel profiling for unpriv
+ > kernel.perf_event_paranoid = -1
 
-Please be aware that I have no response so far regarding [0] from Greg.
+This I have set to 1 on that box. (The default)
 
-[0] http://www.spinics.net/lists/linux-usb/msg92595.html
+	Dave
 
-> Regards,
-> Benoit
-
-Sebastian
