@@ -1,133 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab3HZXxV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 19:53:21 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35170 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189Ab3HZXxU (ORCPT
+	id S1752549Ab3HZXzY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 19:55:24 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:34605 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752359Ab3HZXzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 19:53:20 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <521BE989.4090100@jp.fujitsu.com>
-Date: Tue, 27 Aug 2013 08:49:29 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Russ Anderson <rja@sgi.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH v2] [BUGFIX] drivers/base: fix show_mem_removable to handle
- missing sections
-References: <20130823162317.GB10988@sgi.com>
-In-Reply-To: <20130823162317.GB10988@sgi.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Mon, 26 Aug 2013 19:55:23 -0400
+Message-ID: <1377561741.32763.205.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH-v2 0/9] target: Add support for EXTENDED_COPY (VAAI)
+ offload emulation
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Zach Brown <zab@redhat.com>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Martin Petersen <martin.petersen@oracle.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Kent Overstreet <kmo@daterainc.com>, Theodore Tso <tytso@mit.edu>,
+        James Bottomley <JBottomley@Parallels.com>
+Date: Mon, 26 Aug 2013 17:02:21 -0700
+In-Reply-To: <20130826224628.GJ26818@lenny.home.zabbo.net>
+References: <1377554588-28394-1-git-send-email-nab@daterainc.com>
+	 <20130826224628.GJ26818@lenny.home.zabbo.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/24 1:23), Russ Anderson wrote:
-> "cat /sys/devices/system/memory/memory*/removable" crashed the system.
->
-> The problem is that show_mem_removable() is passing a
-> bad pfn to is_mem_section_removable(), which causes
-> if (!node_online(page_to_nid(page))) to blow up.
-> Why is it passing in a bad pfn?
->
-> show_mem_removable() will loop sections_per_block times.
-> sections_per_block is 16, but mem->section_count is 8,
-> indicating holes in this memory block.  Checking that
-> the memory section is present before checking to see
-> if the memory section is removable fixes the problem.
->
-> v2: Add change suggested by Yasuaki Ishimatsu.
->
-> Signed-off-by: Russ Anderson <rja@sgi.com>
+On Mon, 2013-08-26 at 15:46 -0700, Zach Brown wrote:
+> On Mon, Aug 26, 2013 at 10:02:59PM +0000, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@daterainc.com>
+> > 
+> > Hi folks,
+> > 
+> > This -v2 series adds support to target-core for generic EXTENDED_COPY offload
+> > emulation as defined by SPC-4 using virtual (IBLOCK, FILEIO, RAMDISK)
+> > backends.
+> 
+> Cool, thanks for sending this out.  I'll just stare blankly but
+> supportively at the SCSI details.
+> 
+> I've been experimenting with the reasonable suggestion of using splice
+> as the entry point into the high level fs methods that'd be backed by
+> this stuff.  Let me get it cleaned up and sent out for review.
+> 
+> Hopefully with a few iterations of that we could test some block file
+> systems on top of this.
 
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Looking forward to seeing your copy offload work at the fs level, along
+with the block -> SCSI client copy offload pieces from MKP.
 
-Thanks,
-Yasuaki Ishimatsu
+Along with having proper VAAI support in target-core for ESX clients,
+the larger intention behind getting this upstream is to seed the KVM
+ecosystem with storage primitives previously out of reach to most users.
 
+> 
+> > This implemenation fully supports copy offload between the same device
+> > backend, and across multiple device backends.  It supports copy offload
+> > transparently across multiple target ports of different fabrics, eg:
+> > iSCSI -> FC, FC -> iSER, iSER -> FCoE and so on.
+> 
+> That's exciting!  I doubt that we want to be derailed by getting this
+> working in the first pass, but it'd be fun to enable cross-fs copying
+> once we got the fundamentals worked out
+> 
 
->
->
-> The failing output:
-> -----------------------------------------------------------
-> harp5-sys:~ # cat /sys/devices/system/memory/memory*/removable
-> 0
-> 1
-> 1
-> 1
-> 1
-> 1
-> 1
-> 1
-> 1
-> 1
-> 1
-> 1
-> 1
-> 1
-> [  372.111178] BUG: unable to handle kernel paging request at ffffea00c3200000
-> [  372.119230] IP: [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
-> [  372.127022] PGD 83ffd4067 PUD 37bdfce067 PMD 0
-> [  372.132109] Oops: 0000 [#1] SMP
-> [  372.135730] Modules linked in: autofs4 binfmt_misc rdma_ucm rdma_cm iw_cm ib_addr ib_srp scsi_transport_srp scsi_tgt ib_ipoib ib_cm ib_uverbs ib_umad iw_cxgb3 cxgb3 mdio mlx4_en mlx4_ib ib_sa mlx4_core ib_mthca ib_mad ib_core fuse nls_iso8859_1 nls_cp437 vfat fat joydev loop hid_generic usbhid hid hwperf(O) numatools(O) dm_mod iTCO_wdt ipv6 iTCO_vendor_support igb i2c_i801 ioatdma i2c_algo_bit ehci_pci pcspkr lpc_ich i2c_core ehci_hcd ptp sg mfd_core dca rtc_cmos pps_core mperf button xhci_hcd sd_mod crc_t10dif usbcore usb_common scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh gru(O) xvma(O) xfs crc32c libcrc32c thermal sata_nv processor piix mptsas mptscsih scsi_transport_sas mptbase megaraid_sas fan thermal_sys hwmon ext3 jbd ata_piix ahci libahci libata scsi_mod
-> [  372.213536] CPU: 4 PID: 5991 Comm: cat Tainted: G           O 3.11.0-rc5-rja-uv+ #10
-> [  372.222173] Hardware name: SGI UV2000/ROMLEY, BIOS SGI UV 2000/3000 series BIOS 01/15/2013
-> [  372.231391] task: ffff88081f034580 ti: ffff880820022000 task.ti: ffff880820022000
-> [  372.239737] RIP: 0010:[<ffffffff81117ed1>]  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
-> [  372.250229] RSP: 0018:ffff880820023df8  EFLAGS: 00010287
-> [  372.256151] RAX: 0000000000040000 RBX: ffffea00c3200000 RCX: 0000000000000004
-> [  372.264111] RDX: ffffea00c30b0000 RSI: 00000000001c0000 RDI: ffffea00c3200000
-> [  372.272071] RBP: ffff880820023e38 R08: 0000000000000000 R09: 0000000000000001
-> [  372.280030] R10: 0000000000000000 R11: 0000000000000001 R12: ffffea00c33c0000
-> [  372.287987] R13: 0000160000000000 R14: 6db6db6db6db6db7 R15: 0000000000000001
-> [  372.295945] FS:  00007ffff7fb2700(0000) GS:ffff88083fc80000(0000) knlGS:0000000000000000
-> [  372.304970] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  372.311378] CR2: ffffea00c3200000 CR3: 000000081b954000 CR4: 00000000000407e0
-> [  372.319335] Stack:
-> [  372.321575]  ffff880820023e38 ffffffff81161e94 ffffffff81d9e940 0000000000000009
-> [  372.329872]  0000000000000000 ffff8817bb97b800 ffff88081e928000 ffff8817bb97b870
-> [  372.338167]  ffff880820023e68 ffffffff813730d1 fffffffffffffffb ffffffff81a97600
-> [  372.346463] Call Trace:
-> [  372.349201]  [<ffffffff81161e94>] ? is_mem_section_removable+0x84/0x110
-> [  372.356579]  [<ffffffff813730d1>] show_mem_removable+0x41/0x70
-> [  372.363094]  [<ffffffff8135be8a>] dev_attr_show+0x2a/0x60
-> [  372.369122]  [<ffffffff811e1817>] sysfs_read_file+0xf7/0x1c0
-> [  372.375441]  [<ffffffff8116e7e8>] vfs_read+0xc8/0x130
-> [  372.381076]  [<ffffffff8116ee5d>] SyS_read+0x5d/0xa0
-> [  372.386624]  [<ffffffff814bfa12>] system_call_fastpath+0x16/0x1b
-> [  372.393313] Code: 01 00 00 00 e9 3c ff ff ff 90 0f b6 4a 30 44 89 d8 d3 e0 89 c1 83 e9 01 48 63 c9 49 01 c8 eb 92 66 2e 0f 1f 84 00 00 00 00 00 55 <48> 8b 0f 49 89 f8 48 89 e5 48 89 ca 48 c1 ea 36 0f a3 15 d8 2f
-> [  372.415032] RIP  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
-> [  372.422905]  RSP <ffff880820023df8>
-> [  372.426792] CR2: ffffea00c3200000
-> ---------------------------------------------------------
->
->
-> ---
->   drivers/base/memory.c |    2 ++
->   1 file changed, 2 insertions(+)
->
-> Index: linux/drivers/base/memory.c
-> ===================================================================
-> --- linux.orig/drivers/base/memory.c	2013-08-23 11:09:32.433772674 -0500
-> +++ linux/drivers/base/memory.c	2013-08-23 11:21:13.338046321 -0500
-> @@ -141,6 +141,8 @@ static ssize_t show_mem_removable(struct
->   		container_of(dev, struct memory_block, dev);
->
->   	for (i = 0; i < sections_per_block; i++) {
-> +		if (!present_section_nr(mem->start_section_nr + i))
-> +			continue;
->   		pfn = section_nr_to_pfn(mem->start_section_nr + i);
->   		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
->   	}
->
+Indeed, a single filesystem -> single device case is a reasonable place
+to start.
 
+For the multiple filesystem -> multiple device case, a potential
+interface needs to plumb the block device and it's underlying NAA IEEE
+WWNs down to SCSI.  The target side EXTENDED_COPY logic uses this
+information in target descriptors of type 0xe4 to locate destination /
+source devices, depending on if the PUSH / PULL copy method is employed.
+
+For using physical SCSI devices below the filesystem, this would seem
+straight-forward enough.  For the stacking raw block device cases
+however, this poses alot more interesting set of problems..
+
+MKP, have you thought about how copy offload might work with stacking
+block devices..?
+
+--nab
 
