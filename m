@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab3H0RYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 13:24:12 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:46744 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab3H0RYL (ORCPT
+	id S1753169Ab3H0R2E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 13:28:04 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:64165 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab3H0R2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 13:24:11 -0400
-Date: Tue, 27 Aug 2013 18:24:06 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH 1/2] procfs: restore 0400 permissions on
- /proc/*/{syscall,stack,personality}
-Message-ID: <20130827172406.GA2664@dztty>
-References: <1377534240-13227-1-git-send-email-tixxdz@opendz.org>
- <871u5gqtw3.fsf@xmission.com>
- <20130826172054.GE27005@ZenIV.linux.org.uk>
+	Tue, 27 Aug 2013 13:28:03 -0400
+Message-ID: <521CE19D.2000805@cogentembedded.com>
+Date: Tue, 27 Aug 2013 21:27:57 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130826172054.GE27005@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rupesh Gujare <rupesh.gujare@atmel.com>
+CC: devel@linuxdriverproject.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 4/4] staging: ozwpan: Return error, if PD is not connected.
+References: <1377618823-12246-1-git-send-email-rupesh.gujare@atmel.com> <1377618823-12246-4-git-send-email-rupesh.gujare@atmel.com>
+In-Reply-To: <1377618823-12246-4-git-send-email-rupesh.gujare@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+Hello.
 
-On Mon, Aug 26, 2013 at 06:20:55PM +0100, Al Viro wrote:
-> On Mon, Aug 26, 2013 at 09:49:48AM -0700, Eric W. Biederman wrote:
-> 
-> > How does changing the permissions to S_IRUSR prevent someone from
-> > opening the file before, and reading the file after a suid exec?
-> > 
-> > > This patch restores the old mode which was 0400
-> > 
-> > Which seems to add no security whatsoever and obscure the fact that
-> > anyone who cares can read the file so what is the point?
-> 
-> Two words: "security sclerosis".  Both patches NAKed, of course.
-These particular tissues "are being hardened", no cure for them
+On 08/27/2013 07:53 PM, Rupesh Gujare wrote:
 
+> Return error if we receive write(), while PD is not connected.
 
-More seriously, Al your commit a9712bc12c40c172e393f85 closes the races
-during read() ok, but can you please share some light why the permission
-mode was changed ?
+> Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
+> ---
+>   drivers/staging/ozwpan/ozcdev.c |    2 ++
+>   1 file changed, 2 insertions(+)
 
-1)
-The commit log states that all these files are "rw-r--r--" which was not
-correct, they were "r--------" before that commit.
+> diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
+> index 03b41ee..22cb2ae 100644
+> --- a/drivers/staging/ozwpan/ozcdev.c
+> +++ b/drivers/staging/ozwpan/ozcdev.c
+> @@ -162,6 +162,8 @@ static ssize_t oz_cdev_write(struct file *filp, const char __user *buf,
+>   	spin_unlock_bh(&g_cdev.lock);
+>   	if (pd == NULL)
+>   		return -1;
 
-2)
-The commit log says also:
-"if you open a file before the target does suid-root exec, you'll be still
-able to access it." so you do the task is tracable check at read()
+    Note that returning -EPERM here is hardly correct.
 
-But what if you open a file of a privileged target or a target that does
-suid-root exec later, and pass the fd to a suid-root exec to read() from
-it later, you will still pass that tracable check.
+> +	if (!(pd->state & OZ_PD_S_CONNECTED))
+> +		return -ENXIO;
 
-And currently a non-privileged process can get an fd on all these
-/proc/*/stack files even root owned ones.
+WBR, Sergei
 
-So why not restore the old behaviour and block a process from getting an
-fd on /proc/*/stack files that belong to other processes?
-
-
-The original thread that added the /proc/*/stack feature:
-https://lkml.org/lkml/2008/11/7/109
-
-They noted that it should be under 0400 permissions
-
-So why remove that, or why not restore the old safe behaviour ?
-
-
-Hope to get a response
-
-Thanks Al
-
--- 
-Djalal Harouni
-http://opendz.org
