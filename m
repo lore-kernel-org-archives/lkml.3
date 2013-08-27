@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab3H0MfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 08:35:25 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:57935 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719Ab3H0MfX (ORCPT
+	id S1753191Ab3H0MhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 08:37:00 -0400
+Received: from 3.mo1.mail-out.ovh.net ([46.105.60.232]:59272 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753087Ab3H0Mg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 08:35:23 -0400
-Message-ID: <521C9D14.7090502@linaro.org>
-Date: Tue, 27 Aug 2013 07:35:32 -0500
-From: Alex Elder <alex.elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Yehuda Sadeh <yehuda@inktank.com>,
-        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>,
-        ceph-devel@vger.kernel.org
-Subject: Re: [PATCH 02/15] rbd: convert bus code to use bus_groups
-References: <1377293081-10957-1-git-send-email-gregkh@linuxfoundation.org> <1377293081-10957-2-git-send-email-gregkh@linuxfoundation.org>
-In-Reply-To: <1377293081-10957-2-git-send-email-gregkh@linuxfoundation.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Aug 2013 08:36:59 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [PATCH] net/cadence/macb: fix invalid 0 return if no phy is discovered on mii init
+Date: Tue, 27 Aug 2013 14:36:14 +0200
+Message-Id: <1377606974-21240-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 11331056662814030048
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrheehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2013 04:24 PM, Greg Kroah-Hartman wrote:
-> The bus_attrs field of struct bus_type is going away soon, dev_groups
-> should be used instead.  This converts the RBD bus code to use the
-> correct field.
-> 
-> Cc: Yehuda Sadeh <yehuda@inktank.com>
-> Cc: Sage Weil <sage@inktank.com>
-> Cc: Alex Elder <elder@inktank.com>
+Replace misleading -1 (-EPERM) by a more appropriate return code (-ENXIO)
+in macb_mii_probe function.
+Save macb_mii_probe return before branching to err_out_unregister to avoid
+erronous 0 return.
 
-Looks reasonable to me.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/net/ethernet/cadence/macb.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Acked-by: Alex Elder <elder@linaro.org>
-
-> Cc: <ceph-devel@vger.kernel.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  drivers/block/rbd.c | 14 +++++++++-----
->  1 file changed, 9 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-> index 4ad2ad9a..191cd177 100644
-> --- a/drivers/block/rbd.c
-> +++ b/drivers/block/rbd.c
-> @@ -397,15 +397,19 @@ static ssize_t rbd_remove(struct bus_type *bus, const char *buf,
->  static int rbd_dev_image_probe(struct rbd_device *rbd_dev, bool mapping);
->  static void rbd_spec_put(struct rbd_spec *spec);
->  
-> -static struct bus_attribute rbd_bus_attrs[] = {
-> -	__ATTR(add, S_IWUSR, NULL, rbd_add),
-> -	__ATTR(remove, S_IWUSR, NULL, rbd_remove),
-> -	__ATTR_NULL
-> +static BUS_ATTR(add, S_IWUSR, NULL, rbd_add);
-> +static BUS_ATTR(remove, S_IWUSR, NULL, rbd_remove);
-> +
-> +static struct attribute *rbd_bus_attrs[] = {
-> +	&bus_attr_add.attr,
-> +	&bus_attr_remove.attr,
-> +	NULL,
->  };
-> +ATTRIBUTE_GROUPS(rbd_bus);
->  
->  static struct bus_type rbd_bus_type = {
->  	.name		= "rbd",
-> -	.bus_attrs	= rbd_bus_attrs,
-> +	.bus_groups	= rbd_bus_groups,
->  };
->  
->  static void rbd_root_dev_release(struct device *dev)
-> 
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index fe06ab0..7660c45 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -276,7 +276,7 @@ static int macb_mii_probe(struct net_device *dev)
+ 	phydev = phy_find_first(bp->mii_bus);
+ 	if (!phydev) {
+ 		netdev_err(dev, "no PHY found\n");
+-		return -1;
++		return -ENXIO;
+ 	}
+ 
+ 	pdata = dev_get_platdata(&bp->pdev->dev);
+@@ -379,9 +379,9 @@ int macb_mii_init(struct macb *bp)
+ 	if (err)
+ 		goto err_out_free_mdio_irq;
+ 
+-	if (macb_mii_probe(bp->dev) != 0) {
++	err = macb_mii_probe(bp->dev);
++	if (err)
+ 		goto err_out_unregister_bus;
+-	}
+ 
+ 	return 0;
+ 
+-- 
+1.7.9.5
 
