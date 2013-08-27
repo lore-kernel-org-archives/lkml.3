@@ -1,104 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab3H0Mzg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 08:55:36 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:39973 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab3H0Mze (ORCPT
+	id S1753309Ab3H0M4f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 08:56:35 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:47885 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752877Ab3H0M4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 08:55:34 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: devicetree-discuss@lists.ozlabs.org, Archit Taneja <archit@ti.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Wolfram Sang <wsa@the-dreams.de>, grant.likely@secretlab.ca
-Subject: Re: [PATCH v5] gpio: pcf857x: Add OF support
-Date: Tue, 27 Aug 2013 14:56:55 +0200
-Message-ID: <2400176.9Vcd5TUYl9@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1830640.BeoA2uHWDI@amdc1227>
-References: <1377590559-14279-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <521C63A0.10902@ti.com> <1830640.BeoA2uHWDI@amdc1227>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 27 Aug 2013 08:56:33 -0400
+Subject: Re: [PATCH 17/18] Hibernate: introduced SNAPSHOT_SIG_HASH config
+ for select hash algorithm
+From: joeyli <jlee@suse.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
+        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
+        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Matt Fleming <matt.fleming@intel.com>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
+In-Reply-To: <20130827113044.GB20527@amd.pavel.ucw.cz>
+References: <1377169317-5959-1-git-send-email-jlee@suse.com>
+	 <1377169317-5959-18-git-send-email-jlee@suse.com>
+	 <20130825164329.GL5171@amd.pavel.ucw.cz>
+	 <1377598937.20140.12.camel@linux-s257.site>
+	 <20130827113044.GB20527@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Aug 2013 20:54:57 +0800
+Message-ID: <1377608097.20140.30.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
-
-On Tuesday 27 August 2013 13:55:00 Tomasz Figa wrote:
-> On Tuesday 27 of August 2013 14:00:24 Archit Taneja wrote:
-> > On Tuesday 27 August 2013 01:44 PM, Tomasz Figa wrote:
-> > > On Tuesday 27 of August 2013 10:02:39 Laurent Pinchart wrote:
-> > >> Add DT bindings for the pcf857x-compatible chips and parse the device
-> > >> tree node in the driver.
-> > >> 
-> > >> Signed-off-by: Laurent Pinchart
-> > >> <laurent.pinchart+renesas@ideasonboard.com> ---
-> > >> 
-> > >>   .../devicetree/bindings/gpio/gpio-pcf857x.txt      | 71 +++++++++++++
-> > >>   drivers/gpio/gpio-pcf857x.c                        | 44 ++++++++++---
-> > >>   2 files changed, 107 insertions(+), 8 deletions(-)
-> > >>   create mode 100644
-> > >> Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt
-> > >> 
-> > >> Changes since v4:
-> > >> 
-> > >> - Don't try to get ngpio from of_device_id data, we already get it
-> > >>   from i2c_device_id
+於 二，2013-08-27 於 13:30 +0200，Pavel Machek 提到：
+> On Tue 2013-08-27 18:22:17, joeyli wrote:
+> > 於 日，2013-08-25 於 18:43 +0200，Pavel Machek 提到：
+> > > On Thu 2013-08-22 19:01:56, Lee, Chun-Yi wrote:
+> > > > This patch introduced SNAPSHOT_SIG_HASH config for user to select which
+> > > > hash algorithm will be used during signature generation of snapshot.
+> > > > 
+> > > > v2:
+> > > > Add define check of oCONFIG_SNAPSHOT_VERIFICATION in snapshot.c before
+> > > > declare pkey_hash().
+> > > > 
+> > > > Reviewed-by: Jiri Kosina <jkosina@suse.cz>
+> > > > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+> > > > ---
+> > > >  kernel/power/Kconfig    |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+> > > >  kernel/power/snapshot.c |   27 ++++++++++++++++++++++-----
+> > > >  2 files changed, 68 insertions(+), 5 deletions(-)
+> > > > 
+> > > > diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+> > > > index b592d88..79b34fa 100644
+> > > > --- a/kernel/power/Kconfig
+> > > > +++ b/kernel/power/Kconfig
+> > > > @@ -78,6 +78,52 @@ config SNAPSHOT_VERIFICATION
+> > > >  	  dependent on UEFI environment. EFI bootloader should generate the
+> > > >  	  key-pair.
+> > > >  
+> > > > +choice
+> > > > +	prompt "Which hash algorithm should snapshot be signed with?"
+> > > > +        depends on SNAPSHOT_VERIFICATION
+> > > > +        help
+> > > > +          This determines which sort of hashing algorithm will be used during
+> > > > +          signature generation of snapshot. This algorithm _must_ be built into
+> > > > +	  the kernel directly so that signature verification can take place.
+> > > > +	  It is not possible to load a signed snapshot containing the algorithm
+> > > > +	  to check the signature on that module.
 > > > 
-> > > Hmm, I'm not sure how this is supposed to work.
+> > > Like if 1000 ifdefs you already added to the code are not enough, you
+> > > make some new ones?
+> > > 									Pavel
 > > > 
-> > > How does the I2C core resolve OF compatible name to particular entry in
-> > > id_table? I believe it simply passes NULL as the second argument of
-> > > .probe() if the device is instantiated based on OF compatible string
-> > > and not one in the legacy ID table.
 > > 
-> > It doesn't pass the second argument as NULL. If you look at
-> > i2c_device_probe() in drivers/i2c/i2c-core.c, the second argument to
-> > probe is passed as: i2c_match_id(driver->id_table, client)
+> > This SNAPSHOT_SIG_HASH kernel config is to select which SHA algorithms
+> > used for generate digest of snapshot. The configuration will captured by
+> > a const char* in code:
 > > 
-> > This will extract the i2c_device_id pointer from the id_table.
+> > +static const char *snapshot_hash = CONFIG_SNAPSHOT_SIG_HASH;
+> > +
+> > +static int pkey_hash(void)
+> > 
+> > So, there doesn't have any ifdef block derived from this new config.
 > 
-> Yes, there is a chance that it will not return NULL, but I think that
-> relying on this is rather flawed.
-> 
-> If you look at the whole code path, you can see that it's only a
-> coincidence that this works. See the execution flow:
->  - I2C adapter driver calls of_i2c_register_devices(),
->  - of_i2c_register_devices() calls of_modalias_node() for every device on
-> this bus,
->  - of_modalias_node() stores the second substring of compatible string
-> separated by a comma, if there is one or the whole compatible otherwise to
-> the output buffer (type field of i2c_board_info struct, as passed by
-> of_i2c_register_devices()),
->  - of_i2c_register_devices() then calls i2c_new_device() with the resulting
-> info struct,
->  - i2c_new_device() takes info->type and copies its contents to client->name
->  - then a bit later, I2C core calls i2c_match_id(), which does matching of
-> client->name against id_table of the driver and the resulting i2c_device_id
-> entry (or NULL) is then passed to driver's .probe() callback.
-> 
-> So if it happens that compatible is not equal to "<vendor>,<ID from legacy
-> I2C table>", then the matching will fail and NULL will be passed.
+> I'd say select one hash function, and use it. There's no need to make
+> it configurable.
+> 									Pavel
 
-The driver should support the same chip models reardless of whether it's used 
-with or without DT. If an entry in the OF table has no corresponding entry in 
-the I2C table I would consider that as a driver bug. It would be caught early, 
-as the driver would crash at probe time, so it will likely not make it to 
-mainline (unless we merge untested code, but that's another issue :-)).
+There have better performance when SHA algorithm output shorter hash
+result. On the other hand, longer hash result provide better security.
 
-> [CCing Wolfram and Grant, as they should now more about this behavior and
-> whether it's intentional or no]
+And, on 64-bits system, the SHA512 has better performance then SHA256.
 
--- 
-Regards,
+Due to user have different use case and different hardware, why not give
+them this option to make decision?
 
-Laurent Pinchart
+
+Thanks a lot!
+Joey LEe
 
