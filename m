@@ -1,47 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab3H0As4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 20:48:56 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47252 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307Ab3H0Asz (ORCPT
+	id S1752601Ab3H0AvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 20:51:25 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:63536 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752341Ab3H0AvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 20:48:55 -0400
-Date: Tue, 27 Aug 2013 01:48:52 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix the race between the fget() and close()
-Message-ID: <20130827004852.GH27005@ZenIV.linux.org.uk>
-References: <1377533569.26153.3.camel@cliu38-desktop-build>
- <20130826112946.GD27005@ZenIV.linux.org.uk>
- <27240C0AC20F114CBF8149A2696CBE4A01AEEE31@SHSMSX101.ccr.corp.intel.com>
- <20130827004247.GG27005@ZenIV.linux.org.uk>
+	Mon, 26 Aug 2013 20:51:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130827004247.GG27005@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <520A15B1.2030401@gmx.at>
+References: <520A15B1.2030401@gmx.at>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 26 Aug 2013 17:51:01 -0700
+Message-ID: <CAK5ve-Jo-NfTpMnXtQ5QybbW4iqDFnD7-RcdoCDSNL21-1dNHw@mail.gmail.com>
+Subject: Re: [PATCH] leds: trigger: ledtrig-backlight: Fix invalid memory
+ access in fb_event notification callback
+To: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
+        "Milo(Woogyom) Kim" <milo.kim@ti.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 01:42:47AM +0100, Al Viro wrote:
-> Might be buggered refcounting on struct file somewhere (i.e. extra fput() done,
-> getting the file freed *before* close(), leaving a dangling pointer in
-> descriptor table).  Might be memory corruption of some kind, slapping junk
-> pointer into descriptor table.  Might be buggered refcounting on struct
-> dentry - if extra dput() is done somewhere, dentry might get freed under
-> us or become negative.
-> 
-> Hell, might be buggered refcounting on descriptor table - binder is playing
-> interesting games there.  Try to reproduce that with CONFIG_DEBUG_KMEMLEAK
-> and slab debugging turned on, see if you hit anything from those; if it's
-> more or less readily reproducible, I would start with that - too many
-> scenarios involve broken refcounting of one sort or another.
+On Tue, Aug 13, 2013 at 4:17 AM, Manfred Schlaegl
+<manfred.schlaegl@gmx.at> wrote:
+> fb_notifier_callback is called on any event fired by fb_notifier_call_chain. Events may, or may not contain some data (fb_event.data).
+> In case of FB_EVENT_BLANK fb_event.data contains a pointer to an integer holding the blank state. The Problem is, that in ledtrig-backlight.c - fb_notifier_callback the pointer to blank state is
+> dereferenced BEFORE the event-type is checked.
+> Obviously this leads to problems with other events than FB_EVENT_BLANK, where fb_event.data is undefined or NULL.
+> It seems, that this problem existed ever since the driver was added.
+>
+> Like in drivers/video/backlight/backlight.c line 43 I would suggest to return immediately on events other than FB_EVENT_BLANK.
+>
 
-Nevermind dentry refcounting - you get NULL dentry, not NULL inode.
-Other scenarios still remain, so I'd really recommend slab/kmemleak
-debugging turned on.
+Indeed, this is an issue. Thanks for this nice catch and fixing.
+
+I merged this patch into my tree and it will hit 3.11 release.
+
+Thanks,
+-Bryan
+
+> Signed-off-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+> ---
+>
+> Background information:
+> I'm currently working on a IMX53(ARM) based hardware and Linux 3.11-rc5 and detected a problem in drivers/leds/trigger/ledtrig-backlight.c
+> ledtrig is used on our hardware (besides pwm-backlight) to switch off a gpio-line connected to display-supply enable-line, when the display is blanked.
+> On first boot after configuring ledtrig I detected an invalid memory access in ledtrig-backlight.c - fb_notifier_callback. In my special case the segfault was caused by an FB_EVENT_FB_REGISTERED,
+> fired with undefined fb_event.data in drivers/video/fbmem.c line 1653.
+>
+>
+> diff --git a/drivers/leds/trigger/ledtrig-backlight.c b/drivers/leds/trigger/ledtrig-backlight.c
+> index 3c9c88a..2538dbe 100644
+> --- a/drivers/leds/trigger/ledtrig-backlight.c
+> +++ b/drivers/leds/trigger/ledtrig-backlight.c
+> @@ -36,26 +36,28 @@ static int fb_notifier_callback(struct notifier_block *p,
+>                                         struct bl_trig_notifier, notifier);
+>         struct led_classdev *led = n->led;
+>         struct fb_event *fb_event = data;
+> -       int *blank = fb_event->data;
+> -       int new_status = *blank ? BLANK : UNBLANK;
+> +       int *blank;
+> +       int new_status;
+> +
+> +       /* If we aren't interested in this event, skip it immediately ... */
+> +       if (event != FB_EVENT_BLANK)
+> +               return 0;
+>
+> -       switch (event) {
+> -       case FB_EVENT_BLANK:
+> -               if (new_status == n->old_status)
+> -                       break;
+> +       blank = fb_event->data;
+> +       new_status = *blank ? BLANK : UNBLANK;
+>
+> -               if ((n->old_status == UNBLANK) ^ n->invert) {
+> -                       n->brightness = led->brightness;
+> -                       __led_set_brightness(led, LED_OFF);
+> -               } else {
+> -                       __led_set_brightness(led, n->brightness);
+> -               }
+> +       if (new_status == n->old_status)
+> +               return 0;
+>
+> -               n->old_status = new_status;
+> -
+> -               break;
+> +       if ((n->old_status == UNBLANK) ^ n->invert) {
+> +               n->brightness = led->brightness;
+> +               __led_set_brightness(led, LED_OFF);
+> +       } else {
+> +               __led_set_brightness(led, n->brightness);
+>         }
+>
+> +       n->old_status = new_status;
+> +
+>         return 0;
+>  }
+>
+>
+>
+>
