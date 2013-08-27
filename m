@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab3H0BO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:14:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59532 "EHLO
+	id S1753516Ab3H0BH1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:07:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59504 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab3H0BH0 (ORCPT
+	with ESMTP id S1752460Ab3H0BHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:26 -0400
+	Mon, 26 Aug 2013 21:07:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 33/74] tracing/kprobes: Fail to unregister if probe event files are in use
-Date: Mon, 26 Aug 2013 18:08:31 -0700
-Message-Id: <20130827010431.424437768@linuxfoundation.org>
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 36/74] xen/smp: initialize IPI vectors before marking CPU online
+Date: Mon, 26 Aug 2013 18:08:34 -0700
+Message-Id: <20130827010432.247202762@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -27,163 +28,185 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Chuck Anderson <chuck.anderson@oracle.com>
 
-commit 40c32592668b727cbfcf7b1c0567f581bd62a5e4 upstream.
+commit fc78d343fa74514f6fd117b5ef4cd27e4ac30236 upstream.
 
-When a probe is being removed, it cleans up the event files that correspond
-to the probe. But there is a race between writing to one of these files
-and deleting the probe. This is especially true for the "enable" file.
+An older PVHVM guest (v3.0 based) crashed during vCPU hot-plug with:
 
-	CPU 0				CPU 1
-	-----				-----
+	kernel BUG at drivers/xen/events.c:1328!
 
-				  fd = open("enable",O_WRONLY);
+RCU has detected that a CPU has not entered a quiescent state within the
+grace period.  It needs to send the CPU a reschedule IPI if it is not
+offline.  rcu_implicit_offline_qs() does this check:
 
-  probes_open()
-  release_all_trace_probes()
-  unregister_trace_probe()
-  if (trace_probe_is_enabled(tp))
-	return -EBUSY
+	/*
+	 * If the CPU is offline, it is in a quiescent state.  We can
+	 * trust its state not to change because interrupts are disabled.
+	 */
+	if (cpu_is_offline(rdp->cpu)) {
+		rdp->offline_fqs++;
+		return 1;
+	}
 
-				   write(fd, "1", 1)
-				   __ftrace_set_clr_event()
-				   call->class->reg()
-				    (kprobe_register)
-				     enable_trace_probe(tp)
+	Else the CPU is online.  Send it a reschedule IPI.
 
-  __unregister_trace_probe(tp);
-  list_del(&tp->list)
-  unregister_probe_event(tp) <-- fails!
-  free_trace_probe(tp)
+The CPU is in the middle of being hot-plugged and has been marked online
+(!cpu_is_offline()).  See start_secondary():
 
-				   write(fd, "0", 1)
-				   __ftrace_set_clr_event()
-				   call->class->unreg
-				    (kprobe_register)
-				    disable_trace_probe(tp) <-- BOOM!
+	set_cpu_online(smp_processor_id(), true);
+	...
+	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
 
-A test program was written that used two threads to simulate the
-above scenario adding a nanosleep() interval to change the timings
-and after several thousand runs, it was able to trigger this bug
-and crash:
+start_secondary() then waits for the CPU bringing up the hot-plugged CPU to
+mark it as active:
 
-BUG: unable to handle kernel paging request at 00000005000000f9
-IP: [<ffffffff810dee70>] probes_open+0x3b/0xa7
-PGD 7808a067 PUD 0
-Oops: 0000 [#1] PREEMPT SMP
-Dumping ftrace buffer:
----------------------------------
-Modules linked in: ipt_MASQUERADE sunrpc ip6t_REJECT nf_conntrack_ipv6
-CPU: 1 PID: 2070 Comm: test-kprobe-rem Not tainted 3.11.0-rc3-test+ #47
-Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-task: ffff880077756440 ti: ffff880076e52000 task.ti: ffff880076e52000
-RIP: 0010:[<ffffffff810dee70>]  [<ffffffff810dee70>] probes_open+0x3b/0xa7
-RSP: 0018:ffff880076e53c38  EFLAGS: 00010203
-RAX: 0000000500000001 RBX: ffff88007844f440 RCX: 0000000000000003
-RDX: 0000000000000003 RSI: 0000000000000003 RDI: ffff880076e52000
-RBP: ffff880076e53c58 R08: ffff880076e53bd8 R09: 0000000000000000
-R10: ffff880077756440 R11: 0000000000000006 R12: ffffffff810dee35
-R13: ffff880079250418 R14: 0000000000000000 R15: ffff88007844f450
-FS:  00007f87a276f700(0000) GS:ffff88007d480000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00000005000000f9 CR3: 0000000077262000 CR4: 00000000000007e0
-Stack:
- ffff880076e53c58 ffffffff81219ea0 ffff88007844f440 ffffffff810dee35
- ffff880076e53ca8 ffffffff81130f78 ffff8800772986c0 ffff8800796f93a0
- ffffffff81d1b5d8 ffff880076e53e04 0000000000000000 ffff88007844f440
-Call Trace:
- [<ffffffff81219ea0>] ? security_file_open+0x2c/0x30
- [<ffffffff810dee35>] ? unregister_trace_probe+0x4b/0x4b
- [<ffffffff81130f78>] do_dentry_open+0x162/0x226
- [<ffffffff81131186>] finish_open+0x46/0x54
- [<ffffffff8113f30b>] do_last+0x7f6/0x996
- [<ffffffff8113cc6f>] ? inode_permission+0x42/0x44
- [<ffffffff8113f6dd>] path_openat+0x232/0x496
- [<ffffffff8113fc30>] do_filp_open+0x3a/0x8a
- [<ffffffff8114ab32>] ? __alloc_fd+0x168/0x17a
- [<ffffffff81131f4e>] do_sys_open+0x70/0x102
- [<ffffffff8108f06e>] ? trace_hardirqs_on_caller+0x160/0x197
- [<ffffffff81131ffe>] SyS_open+0x1e/0x20
- [<ffffffff81522742>] system_call_fastpath+0x16/0x1b
-Code: e5 41 54 53 48 89 f3 48 83 ec 10 48 23 56 78 48 39 c2 75 6c 31 f6 48 c7
-RIP  [<ffffffff810dee70>] probes_open+0x3b/0xa7
- RSP <ffff880076e53c38>
-CR2: 00000005000000f9
----[ end trace 35f17d68fc569897 ]---
+	/*
+	 * Wait until the cpu which brought this one up marked it
+	 * online before enabling interrupts. If we don't do that then
+	 * we can end up waking up the softirq thread before this cpu
+	 * reached the active state, which makes the scheduler unhappy
+	 * and schedule the softirq thread on the wrong cpu. This is
+	 * only observable with forced threaded interrupts, but in
+	 * theory it could also happen w/o them. It's just way harder
+	 * to achieve.
+	 */
+	while (!cpumask_test_cpu(smp_processor_id(), cpu_active_mask))
+		cpu_relax();
 
-The unregister_trace_probe() must be done first, and if it fails it must
-fail the removal of the kprobe.
+	/* enable local interrupts */
+	local_irq_enable();
 
-Several changes have already been made by Oleg Nesterov and Masami Hiramatsu
-to allow moving the unregister_probe_event() before the removal of
-the probe and exit the function if it fails. This prevents the tp
-structure from being used after it is freed.
+The CPU being hot-plugged will be marked active after it has been fully
+initialized by the CPU managing the hot-plug.  In the Xen PVHVM case
+xen_smp_intr_init() is called to set up the hot-plugged vCPU's
+XEN_RESCHEDULE_VECTOR.
 
-Link: http://lkml.kernel.org/r/20130704034038.819592356@goodmis.org
+The hot-plugging CPU is marked online, not marked active and does not have
+its IPI vectors set up.  rcu_implicit_offline_qs() sees the hot-plugging
+cpu is !cpu_is_offline() and tries to send it a reschedule IPI:
+This will lead to:
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+	kernel BUG at drivers/xen/events.c:1328!
+
+	xen_send_IPI_one()
+	xen_smp_send_reschedule()
+	rcu_implicit_offline_qs()
+	rcu_implicit_dynticks_qs()
+	force_qs_rnp()
+	force_quiescent_state()
+	__rcu_process_callbacks()
+	rcu_process_callbacks()
+	__do_softirq()
+	call_softirq()
+	do_softirq()
+	irq_exit()
+	xen_evtchn_do_upcall()
+
+because xen_send_IPI_one() will attempt to use an uninitialized IRQ for
+the XEN_RESCHEDULE_VECTOR.
+
+There is at least one other place that has caused the same crash:
+
+	xen_smp_send_reschedule()
+	wake_up_idle_cpu()
+	add_timer_on()
+	clocksource_watchdog()
+	call_timer_fn()
+	run_timer_softirq()
+	__do_softirq()
+	call_softirq()
+	do_softirq()
+	irq_exit()
+	xen_evtchn_do_upcall()
+	xen_hvm_callback_vector()
+
+clocksource_watchdog() uses cpu_online_mask to pick the next CPU to handle
+a watchdog timer:
+
+	/*
+	 * Cycle through CPUs to check if the CPUs stay synchronized
+	 * to each other.
+	 */
+	next_cpu = cpumask_next(raw_smp_processor_id(), cpu_online_mask);
+	if (next_cpu >= nr_cpu_ids)
+		next_cpu = cpumask_first(cpu_online_mask);
+	watchdog_timer.expires += WATCHDOG_INTERVAL;
+	add_timer_on(&watchdog_timer, next_cpu);
+
+This resulted in an attempt to send an IPI to a hot-plugging CPU that
+had not initialized its reschedule vector. One option would be to make
+the RCU code check to not check for CPU offline but for CPU active.
+As becoming active is done after a CPU is online (in older kernels).
+
+But Srivatsa pointed out that "the cpu_active vs cpu_online ordering has been
+completely reworked - in the online path, cpu_active is set *before* cpu_online,
+and also, in the cpu offline path, the cpu_active bit is reset in the CPU_DYING
+notification instead of CPU_DOWN_PREPARE." Drilling in this the bring-up
+path: "[brought up CPU].. send out a CPU_STARTING notification, and in response
+to that, the scheduler sets the CPU in the cpu_active_mask. Again, this mask
+is better left to the scheduler alone, since it has the intelligence to use it
+judiciously."
+
+The conclusion was that:
+"
+1. At the IPI sender side:
+
+   It is incorrect to send an IPI to an offline CPU (cpu not present in
+   the cpu_online_mask). There are numerous places where we check this
+   and warn/complain.
+
+2. At the IPI receiver side:
+
+   It is incorrect to let the world know of our presence (by setting
+   ourselves in global bitmasks) until our initialization steps are complete
+   to such an extent that we can handle the consequences (such as
+   receiving interrupts without crashing the sender etc.)
+" (from Srivatsa)
+
+As the native code enables the interrupts at some point we need to be
+able to service them. In other words a CPU must have valid IPI vectors
+if it has been marked online.
+
+It doesn't need to handle the IPI (interrupts may be disabled) but needs
+to have valid IPI vectors because another CPU may find it in cpu_online_mask
+and attempt to send it an IPI.
+
+This patch will change the order of the Xen vCPU bring-up functions so that
+Xen vectors have been set up before start_secondary() is called.
+It also will not continue to bring up a Xen vCPU if xen_smp_intr_init() fails
+to initialize it.
+
+Orabug 13823853
+Signed-off-by Chuck Anderson <chuck.anderson@oracle.com>
+Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_kprobe.c |   21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+ arch/x86/xen/smp.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -90,7 +90,7 @@ static __kprobes bool trace_probe_is_on_
- }
- 
- static int register_probe_event(struct trace_probe *tp);
--static void unregister_probe_event(struct trace_probe *tp);
-+static int unregister_probe_event(struct trace_probe *tp);
- 
- static DEFINE_MUTEX(probe_lock);
- static LIST_HEAD(probe_list);
-@@ -411,9 +411,12 @@ static int unregister_trace_probe(struct
- 	if (trace_probe_is_enabled(tp))
- 		return -EBUSY;
- 
-+	/* Will fail if probe is being used by ftrace or perf */
-+	if (unregister_probe_event(tp))
-+		return -EBUSY;
-+
- 	__unregister_trace_probe(tp);
- 	list_del(&tp->list);
--	unregister_probe_event(tp);
- 
- 	return 0;
- }
-@@ -692,7 +695,9 @@ static int release_all_trace_probes(void
- 	/* TODO: Use batch unregistration */
- 	while (!list_empty(&probe_list)) {
- 		tp = list_entry(probe_list.next, struct trace_probe, list);
--		unregister_trace_probe(tp);
-+		ret = unregister_trace_probe(tp);
-+		if (ret)
-+			goto end;
- 		free_trace_probe(tp);
- 	}
- 
-@@ -1325,11 +1330,15 @@ static int register_probe_event(struct t
- 	return ret;
- }
- 
--static void unregister_probe_event(struct trace_probe *tp)
-+static int unregister_probe_event(struct trace_probe *tp)
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -667,8 +667,15 @@ static void __init xen_hvm_smp_prepare_c
+ static int __cpuinit xen_hvm_cpu_up(unsigned int cpu, struct task_struct *tidle)
  {
-+	int ret;
-+
- 	/* tp->event is unregistered in trace_remove_event_call() */
--	trace_remove_event_call(&tp->call);
--	kfree(tp->call.print_fmt);
-+	ret = trace_remove_event_call(&tp->call);
-+	if (!ret)
-+		kfree(tp->call.print_fmt);
-+	return ret;
+ 	int rc;
+-	rc = native_cpu_up(cpu, tidle);
+-	WARN_ON (xen_smp_intr_init(cpu));
++	/*
++	 * xen_smp_intr_init() needs to run before native_cpu_up()
++	 * so that IPI vectors are set up on the booting CPU before
++	 * it is marked online in native_cpu_up().
++	*/
++	rc = xen_smp_intr_init(cpu);
++	WARN_ON(rc);
++	if (!rc)
++		rc =  native_cpu_up(cpu, tidle);
+ 	return rc;
  }
  
- /* Make a debugfs interface for controlling probe points */
 
 
