@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab3H0BQw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:16:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59532 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484Ab3H0BHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753478Ab3H0BHY (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 26 Aug 2013 21:07:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59501 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab3H0BHU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 21:07:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>
-Subject: [ 42/74] xen/events: mask events when changing their VCPU binding
-Date: Mon, 26 Aug 2013 18:08:40 -0700
-Message-Id: <20130827010433.238225232@linuxfoundation.org>
+        =?UTF-8?q?J=C3=B6rn=20Engel?= <joern@logfs.org>,
+        Dave Jones <davej@redhat.com>, Steve Hodgson <steve@purestorage.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 35/74] ftrace: Check module functions being traced on reload
+Date: Mon, 26 Aug 2013 18:08:33 -0700
+Message-Id: <20130827010431.989598015@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,67 +31,240 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 4704fe4f03a5ab27e3c36184af85d5000e0f8a48 upstream.
+commit 8c4f3c3fa9681dc549cd35419b259496082fef8b upstream.
 
-When a event is being bound to a VCPU there is a window between the
-EVTCHNOP_bind_vpcu call and the adjustment of the local per-cpu masks
-where an event may be lost.  The hypervisor upcalls the new VCPU but
-the kernel thinks that event is still bound to the old VCPU and
-ignores it.
+There's been a nasty bug that would show up and not give much info.
+The bug displayed the following warning:
 
-There is even a problem when the event is being bound to the same VCPU
-as there is a small window beween the clear_bit() and set_bit() calls
-in bind_evtchn_to_cpu().  When scanning for pending events, the kernel
-may read the bit when it is momentarily clear and ignore the event.
+ WARNING: at kernel/trace/ftrace.c:1529 __ftrace_hash_rec_update+0x1e3/0x230()
+ Pid: 20903, comm: bash Tainted: G           O 3.6.11+ #38405.trunk
+ Call Trace:
+  [<ffffffff8103e5ff>] warn_slowpath_common+0x7f/0xc0
+  [<ffffffff8103e65a>] warn_slowpath_null+0x1a/0x20
+  [<ffffffff810c2ee3>] __ftrace_hash_rec_update+0x1e3/0x230
+  [<ffffffff810c4f28>] ftrace_hash_move+0x28/0x1d0
+  [<ffffffff811401cc>] ? kfree+0x2c/0x110
+  [<ffffffff810c68ee>] ftrace_regex_release+0x8e/0x150
+  [<ffffffff81149f1e>] __fput+0xae/0x220
+  [<ffffffff8114a09e>] ____fput+0xe/0x10
+  [<ffffffff8105fa22>] task_work_run+0x72/0x90
+  [<ffffffff810028ec>] do_notify_resume+0x6c/0xc0
+  [<ffffffff8126596e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
+  [<ffffffff815c0f88>] int_signal+0x12/0x17
+ ---[ end trace 793179526ee09b2c ]---
 
-Avoid this by masking the event during the whole bind operation.
+It was finally narrowed down to unloading a module that was being traced.
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reviewed-by: Jan Beulich <jbeulich@suse.com>
+It was actually more than that. When functions are being traced, there's
+a table of all functions that have a ref count of the number of active
+tracers attached to that function. When a function trace callback is
+registered to a function, the function's record ref count is incremented.
+When it is unregistered, the function's record ref count is decremented.
+If an inconsistency is detected (ref count goes below zero) the above
+warning is shown and the function tracing is permanently disabled until
+reboot.
+
+The ftrace callback ops holds a hash of functions that it filters on
+(and/or filters off). If the hash is empty, the default means to filter
+all functions (for the filter_hash) or to disable no functions (for the
+notrace_hash).
+
+When a module is unloaded, it frees the function records that represent
+the module functions. These records exist on their own pages, that is
+function records for one module will not exist on the same page as
+function records for other modules or even the core kernel.
+
+Now when a module unloads, the records that represents its functions are
+freed. When the module is loaded again, the records are recreated with
+a default ref count of zero (unless there's a callback that traces all
+functions, then they will also be traced, and the ref count will be
+incremented).
+
+The problem is that if an ftrace callback hash includes functions of the
+module being unloaded, those hash entries will not be removed. If the
+module is reloaded in the same location, the hash entries still point
+to the functions of the module but the module's ref counts do not reflect
+that.
+
+With the help of Steve and Joern, we found a reproducer:
+
+ Using uinput module and uinput_release function.
+
+ cd /sys/kernel/debug/tracing
+ modprobe uinput
+ echo uinput_release > set_ftrace_filter
+ echo function > current_tracer
+ rmmod uinput
+ modprobe uinput
+ # check /proc/modules to see if loaded in same addr, otherwise try again
+ echo nop > current_tracer
+
+ [BOOM]
+
+The above loads the uinput module, which creates a table of functions that
+can be traced within the module.
+
+We add uinput_release to the filter_hash to trace just that function.
+
+Enable function tracincg, which increments the ref count of the record
+associated to uinput_release.
+
+Remove uinput, which frees the records including the one that represents
+uinput_release.
+
+Load the uinput module again (and make sure it's at the same address).
+This recreates the function records all with a ref count of zero,
+including uinput_release.
+
+Disable function tracing, which will decrement the ref count for uinput_release
+which is now zero because of the module removal and reload, and we have
+a mismatch (below zero ref count).
+
+The solution is to check all currently tracing ftrace callbacks to see if any
+are tracing any of the module's functions when a module is loaded (it already does
+that with callbacks that trace all functions). If a callback happens to have
+a module function being traced, it increments that records ref count and starts
+tracing that function.
+
+There may be a strange side effect with this, where tracing module functions
+on unload and then reloading a new module may have that new module's functions
+being traced. This may be something that confuses the user, but it's not
+a big deal. Another approach is to disable all callback hashes on module unload,
+but this leaves some ftrace callbacks that may not be registered, but can
+still have hashes tracing the module's function where ftrace doesn't know about
+it. That situation can cause the same bug. This solution solves that case too.
+Another benefit of this solution, is it is possible to trace a module's
+function on unload and load.
+
+Link: http://lkml.kernel.org/r/20130705142629.GA325@redhat.com
+
+Reported-by: Jörn Engel <joern@logfs.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Steve Hodgson <steve@purestorage.com>
+Tested-by: Steve Hodgson <steve@purestorage.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/events.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ kernel/trace/ftrace.c |   71 +++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 62 insertions(+), 9 deletions(-)
 
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1492,8 +1492,10 @@ void rebind_evtchn_irq(int evtchn, int i
- /* Rebind an evtchn so that it gets delivered to a specific cpu */
- static int rebind_irq_to_cpu(unsigned irq, unsigned tcpu)
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2144,12 +2144,57 @@ static cycle_t		ftrace_update_time;
+ static unsigned long	ftrace_update_cnt;
+ unsigned long		ftrace_update_tot_cnt;
+ 
+-static int ops_traces_mod(struct ftrace_ops *ops)
++static inline int ops_traces_mod(struct ftrace_ops *ops)
  {
-+	struct shared_info *s = HYPERVISOR_shared_info;
- 	struct evtchn_bind_vcpu bind_vcpu;
- 	int evtchn = evtchn_from_irq(irq);
-+	int masked;
- 
- 	if (!VALID_EVTCHN(evtchn))
- 		return -1;
-@@ -1510,6 +1512,12 @@ static int rebind_irq_to_cpu(unsigned ir
- 	bind_vcpu.vcpu = tcpu;
- 
- 	/*
-+	 * Mask the event while changing the VCPU binding to prevent
-+	 * it being delivered on an unexpected VCPU.
-+	 */
-+	masked = sync_test_and_set_bit(evtchn, BM(s->evtchn_mask));
-+
+-	struct ftrace_hash *hash;
 +	/*
- 	 * If this fails, it usually just indicates that we're dealing with a
- 	 * virq or IPI channel, which don't actually need to be rebound. Ignore
- 	 * it, but don't do the xenlinux-level rebind in that case.
-@@ -1517,6 +1525,9 @@ static int rebind_irq_to_cpu(unsigned ir
- 	if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_vcpu, &bind_vcpu) >= 0)
- 		bind_evtchn_to_cpu(evtchn, tcpu);
- 
-+	if (!masked)
-+		unmask_evtchn(evtchn);
++	 * Filter_hash being empty will default to trace module.
++	 * But notrace hash requires a test of individual module functions.
++	 */
++	return ftrace_hash_empty(ops->filter_hash) &&
++		ftrace_hash_empty(ops->notrace_hash);
++}
 +
- 	return 0;
++/*
++ * Check if the current ops references the record.
++ *
++ * If the ops traces all functions, then it was already accounted for.
++ * If the ops does not trace the current record function, skip it.
++ * If the ops ignores the function via notrace filter, skip it.
++ */
++static inline bool
++ops_references_rec(struct ftrace_ops *ops, struct dyn_ftrace *rec)
++{
++	/* If ops isn't enabled, ignore it */
++	if (!(ops->flags & FTRACE_OPS_FL_ENABLED))
++		return 0;
++
++	/* If ops traces all mods, we already accounted for it */
++	if (ops_traces_mod(ops))
++		return 0;
++
++	/* The function must be in the filter */
++	if (!ftrace_hash_empty(ops->filter_hash) &&
++	    !ftrace_lookup_ip(ops->filter_hash, rec->ip))
++		return 0;
++
++	/* If in notrace hash, we ignore it too */
++	if (ftrace_lookup_ip(ops->notrace_hash, rec->ip))
++		return 0;
++
++	return 1;
++}
++
++static int referenced_filters(struct dyn_ftrace *rec)
++{
++	struct ftrace_ops *ops;
++	int cnt = 0;
+ 
+-	hash = ops->filter_hash;
+-	return ftrace_hash_empty(hash);
++	for (ops = ftrace_ops_list; ops != &ftrace_list_end; ops = ops->next) {
++		if (ops_references_rec(ops, rec))
++		    cnt++;
++	}
++
++	return cnt;
  }
  
+ static int ftrace_update_code(struct module *mod)
+@@ -2158,6 +2203,7 @@ static int ftrace_update_code(struct mod
+ 	struct dyn_ftrace *p;
+ 	cycle_t start, stop;
+ 	unsigned long ref = 0;
++	bool test = false;
+ 	int i;
+ 
+ 	/*
+@@ -2171,9 +2217,12 @@ static int ftrace_update_code(struct mod
+ 
+ 		for (ops = ftrace_ops_list;
+ 		     ops != &ftrace_list_end; ops = ops->next) {
+-			if (ops->flags & FTRACE_OPS_FL_ENABLED &&
+-			    ops_traces_mod(ops))
+-				ref++;
++			if (ops->flags & FTRACE_OPS_FL_ENABLED) {
++				if (ops_traces_mod(ops))
++					ref++;
++				else
++					test = true;
++			}
+ 		}
+ 	}
+ 
+@@ -2183,12 +2232,16 @@ static int ftrace_update_code(struct mod
+ 	for (pg = ftrace_new_pgs; pg; pg = pg->next) {
+ 
+ 		for (i = 0; i < pg->index; i++) {
++			int cnt = ref;
++
+ 			/* If something went wrong, bail without enabling anything */
+ 			if (unlikely(ftrace_disabled))
+ 				return -1;
+ 
+ 			p = &pg->records[i];
+-			p->flags = ref;
++			if (test)
++				cnt += referenced_filters(p);
++			p->flags = cnt;
+ 
+ 			/*
+ 			 * Do the initial record conversion from mcount jump
+@@ -2208,7 +2261,7 @@ static int ftrace_update_code(struct mod
+ 			 * conversion puts the module to the correct state, thus
+ 			 * passing the ftrace_make_call check.
+ 			 */
+-			if (ftrace_start_up && ref) {
++			if (ftrace_start_up && cnt) {
+ 				int failed = __ftrace_replace_code(p, 1);
+ 				if (failed)
+ 					ftrace_bug(failed, p->ip);
 
 
