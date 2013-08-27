@@ -1,54 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab3H0U1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 16:27:50 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:65346 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab3H0U1s (ORCPT
+	id S1754209Ab3H0U2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 16:28:03 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45089 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754148Ab3H0U2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 16:27:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAODwPW_W9gu+nwNzpq3sfcOCDkyppu6K8C9+S8OZt_A0qHqNEg@mail.gmail.com>
-References: <1375812017-6287-1-git-send-email-jwerner@chromium.org>
-	<20130808092615.GF14648@e106331-lin.cambridge.arm.com>
-	<CAODwPW-j=JjunZU3zewrE1_-WoW-RXLmKVQypzxmo_BOYjc3VA@mail.gmail.com>
-	<1729120.r596vOTlMW@flatron>
-	<CAODwPW_W9gu+nwNzpq3sfcOCDkyppu6K8C9+S8OZt_A0qHqNEg@mail.gmail.com>
-Date: Tue, 27 Aug 2013 13:27:48 -0700
-X-Google-Sender-Auth: ks4MppkJPCS63lka2nUZWtLabeE
-Message-ID: <CAODwPW8KG2ZxOFf936H233g35KVPjDp+f8e3qgkd4Z7NN9RAtQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v5] usb: phy-samsung-usb: Simplify PMU register handling
-From: Julius Werner <jwerner@chromium.org>
-To: Julius Werner <jwerner@chromium.org>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Aug 2013 16:28:00 -0400
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Asias He <asias@redhat.com>, Kent Overstreet <kmo@daterainc.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@gentwo.org>,
+        Nicholas Bellinger <nab@daterainc.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>
+Subject: [PATCH-v4 6/6] iscsi-target: Convert to per-cpu ida_alloc + ida_free command map
+Date: Tue, 27 Aug 2013 20:11:46 +0000
+Message-Id: <1377634306-13981-7-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1377634306-13981-1-git-send-email-nab@linux-iscsi.org>
+References: <1377634306-13981-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*Ping!*
+From: Nicholas Bellinger <nab@daterainc.com>
 
-Are there still unanswered concerns left with this patch? I hope my
-prior mails could clear up why I think that the PMU register
-description in the device tree for a specific PHY is represents the
-hardware more accurately after my patch, and my analysis of the
-Exynos4 situation currently not being implemented (and therefore not
-needing to be addressed by this patch) was correct. Please let me know
-if you have further objections... and if not, could we agree to have
-this picked up somewhere?
+This patch changes iscsi-target to use transport_alloc_session_tags()
+pre-allocation logic for per-cpu session tag pooling with internal
+ida_alloc() + ida_free() calls based upon the saved se_cmd->map_tag id.
 
-Thanks,
-Julius
+This includes tag pool setup based upon per NodeACL queue_depth after
+locating se_node_acl in iscsi_target_locate_portal().
+
+Also update iscsit_allocate_cmd() and iscsit_release_cmd() to use
+percpu_ida_alloc() and percpu_ida_free() respectively.
+
+v2 changes:
+  - Fix bug with SessionType=Discovery in iscsi_target_locate_portal()
+
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Nicholas Bellinger <nab@daterainc.com>
+---
+ drivers/target/iscsi/iscsi_target_core.h |    2 ++
+ drivers/target/iscsi/iscsi_target_nego.c |   28 ++++++++++++++++++++++++----
+ drivers/target/iscsi/iscsi_target_util.c |   27 ++++++++++++++++++++-------
+ 3 files changed, 46 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/target/iscsi/iscsi_target_core.h b/drivers/target/iscsi/iscsi_target_core.h
+index 5e1a068..e37b3b0 100644
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -17,6 +17,8 @@
+ #define SECONDS_FOR_ASYNC_TEXT		10
+ #define SECONDS_FOR_LOGOUT_COMP		15
+ #define WHITE_SPACE			" \t\v\f\n\r"
++#define ISCSIT_MIN_TAGS			16
++#define ISCSIT_EXTRA_TAGS		8
+ 
+ /* struct iscsi_node_attrib sanity values */
+ #define NA_DATAOUT_TIMEOUT		3
+diff --git a/drivers/target/iscsi/iscsi_target_nego.c b/drivers/target/iscsi/iscsi_target_nego.c
+index daebe32..582b2db 100644
+--- a/drivers/target/iscsi/iscsi_target_nego.c
++++ b/drivers/target/iscsi/iscsi_target_nego.c
+@@ -876,8 +876,9 @@ int iscsi_target_locate_portal(
+ 	struct iscsi_tiqn *tiqn;
+ 	struct iscsi_tpg_np *tpg_np = NULL;
+ 	struct iscsi_login_req *login_req;
+-	u32 payload_length;
+-	int sessiontype = 0, ret = 0;
++	struct se_node_acl *se_nacl;
++	u32 payload_length, queue_depth = 0;
++	int sessiontype = 0, ret = 0, tag_num, tag_size;
+ 
+ 	login->np = np;
+ 
+@@ -973,7 +974,7 @@ int iscsi_target_locate_portal(
+ 			goto out;
+ 		}
+ 		ret = 0;
+-		goto out;
++		goto alloc_tags;
+ 	}
+ 
+ get_target:
+@@ -1070,8 +1071,27 @@ get_target:
+ 		ret = -1;
+ 		goto out;
+ 	}
++	se_nacl = sess->se_sess->se_node_acl;
++	queue_depth = se_nacl->queue_depth;
++	/*
++	 * Setup pre-allocated tags based upon allowed per NodeACL CmdSN
++	 * depth for non immediate commands, plus extra tags for immediate
++	 * commands.
++	 *
++	 * Also enforce a ISCSIT_MIN_TAGS to prevent unnecessary contention
++	 * in per-cpu-ida tag allocation logic + small queue_depth.
++	 */
++alloc_tags:
++	tag_num = max_t(u32, ISCSIT_MIN_TAGS, queue_depth);
++	tag_num += ISCSIT_EXTRA_TAGS;
++	tag_size = sizeof(struct iscsi_cmd) + conn->conn_transport->priv_size;
+ 
+-	ret = 0;
++	ret = transport_alloc_session_tags(sess->se_sess, tag_num, tag_size);
++	if (ret < 0) {
++		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
++				    ISCSI_LOGIN_STATUS_NO_RESOURCES);
++		ret = -1;
++	}
+ out:
+ 	kfree(tmpbuf);
+ 	return ret;
+diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
+index 5784cad..68f5644 100644
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -19,6 +19,7 @@
+  ******************************************************************************/
+ 
+ #include <linux/list.h>
++#include <linux/idr.h>
+ #include <scsi/scsi_tcq.h>
+ #include <scsi/iscsi_proto.h>
+ #include <target/target_core_base.h>
+@@ -156,13 +157,15 @@ void iscsit_free_r2ts_from_list(struct iscsi_cmd *cmd)
+ struct iscsi_cmd *iscsit_allocate_cmd(struct iscsi_conn *conn, gfp_t gfp_mask)
+ {
+ 	struct iscsi_cmd *cmd;
+-	int priv_size = conn->conn_transport->priv_size;
++	struct se_session *se_sess = conn->sess->se_sess;
++	int size, tag;
+ 
+-	cmd = kzalloc(sizeof(struct iscsi_cmd) + priv_size, gfp_mask);
+-	if (!cmd) {
+-		pr_err("Unable to allocate memory for struct iscsi_cmd.\n");
+-		return NULL;
+-	}
++	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, gfp_mask);
++	size = sizeof(struct iscsi_cmd) + conn->conn_transport->priv_size;
++	cmd = (struct iscsi_cmd *)(se_sess->sess_cmd_map + (tag * size));
++	memset(cmd, 0, size);
++
++	cmd->se_cmd.map_tag = tag;
+ 	cmd->conn = conn;
+ 	INIT_LIST_HEAD(&cmd->i_conn_node);
+ 	INIT_LIST_HEAD(&cmd->datain_list);
+@@ -678,6 +681,16 @@ void iscsit_free_queue_reqs_for_conn(struct iscsi_conn *conn)
+ 
+ void iscsit_release_cmd(struct iscsi_cmd *cmd)
+ {
++	struct iscsi_session *sess;
++	struct se_cmd *se_cmd = &cmd->se_cmd;
++
++	if (cmd->conn)
++		sess = cmd->conn->sess;
++	else
++		sess = cmd->sess;
++
++	BUG_ON(!sess || !sess->se_sess);
++
+ 	kfree(cmd->buf_ptr);
+ 	kfree(cmd->pdu_list);
+ 	kfree(cmd->seq_list);
+@@ -685,7 +698,7 @@ void iscsit_release_cmd(struct iscsi_cmd *cmd)
+ 	kfree(cmd->iov_data);
+ 	kfree(cmd->text_in_ptr);
+ 
+-	kfree(cmd);
++	percpu_ida_free(&sess->se_sess->sess_tag_pool, se_cmd->map_tag);
+ }
+ EXPORT_SYMBOL(iscsit_release_cmd);
+ 
+-- 
+1.7.2.5
+
