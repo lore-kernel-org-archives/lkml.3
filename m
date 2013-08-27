@@ -1,203 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab3H0DX6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 23:23:58 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:36705 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab3H0DX4 (ORCPT
+	id S1752762Ab3H0D2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 23:28:20 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:55409 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab3H0D2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 23:23:56 -0400
-Subject: Re: [PATCH 12/18] Hibernate: generate and verify signature of
- snapshot
-From: joeyli <jlee@suse.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
-        David Howells <dhowells@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>
-In-Reply-To: <20130825163648.GI5171@amd.pavel.ucw.cz>
-References: <1377169317-5959-1-git-send-email-jlee@suse.com>
-	 <1377169317-5959-13-git-send-email-jlee@suse.com>
-	 <20130825163648.GI5171@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Aug 2013 11:22:28 +0800
-Message-ID: <1377573748.27967.60.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 26 Aug 2013 23:28:19 -0400
+Date: Mon, 26 Aug 2013 22:28:10 -0500 (CDT)
+From: Ashley Lai <ashley@ashleylai.com>
+To: Mathias.LEBLANC@st.com, jean-luc.blanc@st.com,
+        =?ISO-8859-15?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>,
+        linux-kernel@vger.kernel.org
+cc: tpmdd-devel@lists.sourceforge.net,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        "Rajiv Andrade (mail@srajiv.net)" <mail@srajiv.net>,
+        "Sirrix AG (tpmdd@sirrix.com)" <tpmdd@sirrix.com>,
+        andy.shevchenko@gmail.com, adlai@linux.vnet.ibm.com
+Subject: Re: TPM: STMicroelectronics st33 driver SPI
+In-Reply-To: <201308230054.34660.PeterHuewe@gmx.de>
+Message-ID: <alpine.DEB.2.02.1308262145290.13156@fishsauce>
+References: <35286B1AE75A7C47BFF0870081A31B4B4C87C3BED8@SAFEX1MAIL4.st.com> <201308171245.20964.PeterHuewe@gmx.de> <CALfuBuR9ucum5Na=f_rqUgAZxrdAdOBQ1BZDbpCCKDsk2TUVXQ@mail.gmail.com> <201308230054.34660.PeterHuewe@gmx.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel, 
 
-Thanks for your time to review my patches.
+Please see my comments below.  Did you get a chance to run the trousers 
+testsuite?
 
-於 日，2013-08-25 於 18:36 +0200，Pavel Machek 提到：
-> On Thu 2013-08-22 19:01:51, Lee, Chun-Yi wrote:
-> > This patch add the code for generate/verify signature of snapshot, it
-> > put the signature to snapshot header. This approach can support both
-> > on userspace hibernate and in-kernel hibernate.
-> > 
-> > v2:
-> > - Due to loaded S4 sign key before ExitBootServices, we need forward key from
-> >   boot kernel to resume target kernel. So this patch add a empty page in
-> >   snapshot image, then we keep the pfn of this empty page in snapshot header.
-> >   When system resume from hibernate, we fill new sign key to this empty page
-> >   space after snapshot image checked pass. This mechanism let boot kernel can
-> >   forward new sign key to resume target kernel but don't need write new private
-> >   key to any other storage, e.g. swap.
-> > 
-> > Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-> > Reviewed-by: Jiri Kosina <jkosina@suse.cz>
-> > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> > ---
-> >  kernel/power/power.h    |    6 +
-> >  kernel/power/snapshot.c |  280 +++++++++++++++++++++++++++++++++++++++++++++-
-> >  kernel/power/swap.c     |   14 +++
-> >  kernel/power/user.c     |    9 ++
-> >  4 files changed, 302 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/kernel/power/power.h b/kernel/power/power.h
-> > index 69a81d8..84e0b06 100644
-> > --- a/kernel/power/power.h
-> > +++ b/kernel/power/power.h
-> > @@ -3,6 +3,9 @@
-> >  #include <linux/utsname.h>
-> >  #include <linux/freezer.h>
-> >  
-> > +/* The maximum length of snapshot signature */
-> > +#define SIG_LENG 512
-> > +
-> >  struct swsusp_info {
-> >  	struct new_utsname	uts;
-> >  	u32			version_code;
-> > @@ -11,6 +14,8 @@ struct swsusp_info {
-> >  	unsigned long		image_pages;
-> >  	unsigned long		pages;
-> >  	unsigned long		size;
-> > +	unsigned long           skey_data_buf_pfn;
-> > +	u8			signature[SIG_LENG];
-> >  } __attribute__((aligned(PAGE_SIZE)));
-> 
-> SIG_LEN or SIG_LENGTH. Select one.
-> 
+git://trousers.git.sourceforge.net/gitroot/trousers/testsuite
 
-I will use SIG_LEN at next version, thanks!
++static u8 spi_read8_reg(struct tpm_chip *tpm, u8 tpm_register,
++                   u8 *tpm_data, u16 tpm_size)
++{
++       ...
++
++       /* header + status byte + size of the data + status byte */
++       value = spi_sync_transfer(dev, &xfer, 1);
++
++       if (tpm_size > 0 && value == 0) {
++               nbr_dummy_bytes = 2;
+Why use 2 for the dummy bytes?  Some comments here would be 
+helpful.  Should we use a #define for 2?
 
-> 
-> > +static int
-> >  copy_data_pages(struct memory_bitmap *copy_bm, struct memory_bitmap *orig_bm)
-> >  {
-> >  	struct zone *zone;
-> > -	unsigned long pfn;
-> > +	unsigned long pfn, dst_pfn;
-> ...
-> > +	tfm = crypto_alloc_shash(SNAPSHOT_HASH, 0, 0);
-> > +	if (IS_ERR(tfm)) {
-> > +		pr_err("IS_ERR(tfm): %ld", PTR_ERR(tfm));
-> > +		return PTR_ERR(tfm);
-> > +	}
-> > +
-> > +	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
-> > +	digest_size = crypto_shash_digestsize(tfm);
-> > +	digest = kzalloc(digest_size + desc_size, GFP_KERNEL);
-> 
-> Are you sure GFP_KERNEL allocation is okay at this phase of
-> hibernation?
-> 
-> Could the hashing be done at later phase, when writing the image to
-> disk?
-> 
+...
 
-Thanks for you point out!
++static unsigned long wait_for_serirq_timeout(struct tpm_chip *chip,
++        bool condition, unsigned long timeout)
++{
++       long status = 0;
++       struct spi_device *client;
++       struct st33zp24_platform_data *pin_infos;
++
++       client = (struct spi_device __force *)chip->vendor.iobase;
++       pin_infos = client->dev.platform_data;
++
++       status = wait_for_completion_interruptible_timeout(
++                               &pin_infos->irq_detection, timeout);
++       if (status > 0)
++               enable_irq(gpio_to_irq(pin_infos->io_serirq));
++       gpio_direction_input(pin_infos->io_serirq);
++
++       if (!status)
++               return -EBUSY;
+This function returns -EBUSY but the return function type is unsigned.
 
-Yes, call memory allocate here is not a good design due to it causes
-garbage in snapshot that will not released by resumed kernel.
+...
 
-I just finished another implementation, the respin patch extracts the
-signature generation code to another function then call the function in
-swsusp_save() after copy_data_pages() finished. We can write to memory
-at that stage.
++static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
++{
++       u32 size = 0, burstcnt, len;
++       long status = 0;
++
++       while (size < count &&
++              wait_for_stat(chip,
++                            TPM_STS_DATA_AVAIL | TPM_STS_VALID,
++                            chip->vendor.timeout_c,
++                            &chip->vendor.read_queue)
++                                               == 0) {
++               burstcnt = get_burstcount(chip);
++               len = min_t(int, burstcnt, count - size);
 
-> >  
-> > +void **h_buf;
-> 
-> helpfully named.
-> 
+What if get_burstcount returns -EBUSY?  Should burstcnt be checked
+and handled here in case of error?
 
-I will change the name to handle_buffers;
++               status = spi_read8_reg(chip, TPM_DATA_FIFO, buf + size, 
+len);
++               if (status < 0)
++                       return status;
++
++
+Extra empty line here.
++               size += len;
 
-> > +	ret = verify_signature(s4_wake_key, pks);
-> > +	if (ret) {
-> > +		pr_err("snapshot S4 signature verification fail: %d\n", ret);
-> > +		goto error_verify;
-> > +	} else
-> > +		pr_info("snapshot S4 signature verification pass!\n");
-> > +
-> > +	if (pks->rsa.s)
-> > +		mpi_free(pks->rsa.s);
-> > +	kfree(pks);
-> 
-> ret = 0 and fall through?
-> 
+See above comment.  If len is -EBUSY, there might be an issue here.
 
-When verification success, verify_signature() will return 0.
++       }
++return size;
 
-Yes, here have duplicate code, I will clear up it.
+...
 
-> > +	return 0;
-> > +
-> > +error_verify:
-> > +	if (pks->rsa.s)
-> > +		mpi_free(pks->rsa.s);
-> > +error_mpi:
-> > +	kfree(pks);
-> > +	return ret;
-> > +}
-> 
-> 
-> > +	ret = crypto_shash_final(desc, digest);
-> > +	if (ret)
-> > +		goto error_shash;
-> > +
-> > +	ret = snapshot_verify_signature(digest, digest_size);
-> > +	if (ret)
-> > +		goto error_verify;
-> > +
-> > +	kfree(h_buf);
-> > +	kfree(digest);
-> > +	crypto_free_shash(tfm);
-> > +	return 0;
-> 
-> These four lines can be deleted.
-> 
++static int tpm_stm_spi_send(struct tpm_chip *chip, unsigned char *buf,
++                           size_t len)
++{
+...
++	for (i = 0; i < len - 1;) {
++		burstcnt = get_burstcount(chip);
+Again burstcnt needs to be checked to make sure it is > 0.
 
-Yes, here also duplicate, I will remove.
++		size = min_t(int, len - i - 1, burstcnt);
++		ret = spi_write8_reg(chip, TPM_DATA_FIFO, buf, size);
++		if (ret < 0)
++			goto out_err;
++		i += size;
++	}
+...
++       /* write last byte */
++       spi_write8_reg(chip, TPM_DATA_FIFO, buf + len - 1, 1);
+Should we check for the return code here?  A few lines below it checks 
+for the return value.
+...
++
++
++       /* go and do it */
++       data = TPM_STS_GO;
++       ret = spi_write8_reg(chip, TPM_STS, &data, 1);
 
-> > +
-> > +error_verify:
-> > +error_shash:
-> > +	kfree(h_buf);
-> > +	kfree(digest);
-> > +error_digest:
-> > +	crypto_free_shash(tfm);
-> > +	return ret;
-> > +}
-> > +
-> 									Pavel
+Regards,
+--Ashley Lai
 
-
-Thanks a lot!
-Joey Lee
 
