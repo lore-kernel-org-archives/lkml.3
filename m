@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab3H0VLO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 17:11:14 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35979 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076Ab3H0VLN (ORCPT
+	id S1753809Ab3H0V20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 17:28:26 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:37743 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076Ab3H0V2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 17:11:13 -0400
-Date: Tue, 27 Aug 2013 22:10:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Message-ID: <20130827211046.GE10783@sirena.org.uk>
-References: <20130827153754.a28ce27a424e4cbeab503079@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oIK88BWnNPSddvdK"
-Content-Disposition: inline
-In-Reply-To: <20130827153754.a28ce27a424e4cbeab503079@canb.auug.org.au>
-X-Cookie: Snow Day -- stay home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: manual merge of the regulator tree with the pm tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Tue, 27 Aug 2013 17:28:22 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-tegra@vger.kernel.org, kernel@stlinux.com,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC v2 01/16] ARM: call clk_of_init from time_init
+Date: Tue, 27 Aug 2013 23:27:55 +0200
+Message-Id: <1377638890-371-2-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Most DT ARM machs require common clock providers initialized before timers.
+Currently, arch/arm machs use .init_time to call clk_of_init right before
+clocksource_of_init. This prevents to remove that hook and use the default
+hook instead. clk_of_init is safe to call for non-DT platforms, so add
+the call to ARM arch time_init by default. While at it, also reorder includes
+alphabetically.
 
---oIK88BWnNPSddvdK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Changelog:
+v1->v2:
+- reorder includes alphabetically
 
-On Tue, Aug 27, 2013 at 03:37:54PM +1000, Stephen Rothwell wrote:
-> Hi all,
->=20
-> Today's linux-next merge of the regulator tree got a conflict in
-> drivers/cpufreq/cpufreq-cpu0.c between commit f837a9b5ab05 ("cpufreq:
-> cpufreq-cpu0: remove device tree parsing for cpu nodes") from the  tree
-> and commit 7d748971c0c0 ("cpufreq: cpufreq-cpu0: Use
-> devm_regulator_get_optional()") from the regulator tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-tegra@vger.kernel.org
+Cc: kernel@stlinux.com
+Cc: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/kernel/time.c |   24 ++++++++++++++----------
+ 1 files changed, 14 insertions(+), 10 deletions(-)
 
-The resolution looks good to me.
+diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
+index 98aee32..dd1028e 100644
+--- a/arch/arm/kernel/time.c
++++ b/arch/arm/kernel/time.c
+@@ -11,25 +11,26 @@
+  *  This file contains the ARM-specific time handling details:
+  *  reading the RTC at bootup, etc...
+  */
++#include <linux/clk-provider.h>
++#include <linux/clocksource.h>
++#include <linux/errno.h>
+ #include <linux/export.h>
+-#include <linux/kernel.h>
+-#include <linux/interrupt.h>
+-#include <linux/time.h>
+ #include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/kernel.h>
++#include <linux/profile.h>
+ #include <linux/sched.h>
++#include <linux/sched_clock.h>
+ #include <linux/smp.h>
++#include <linux/time.h>
+ #include <linux/timex.h>
+-#include <linux/errno.h>
+-#include <linux/profile.h>
+ #include <linux/timer.h>
+-#include <linux/clocksource.h>
+-#include <linux/irq.h>
+-#include <linux/sched_clock.h>
+ 
+-#include <asm/thread_info.h>
+-#include <asm/stacktrace.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/time.h>
++#include <asm/stacktrace.h>
++#include <asm/thread_info.h>
+ 
+ #if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE) || \
+     defined(CONFIG_NVRAM) || defined(CONFIG_NVRAM_MODULE)
+@@ -116,6 +117,9 @@ int __init register_persistent_clock(clock_access_fn read_boot,
+ 
+ void __init time_init(void)
+ {
++	/* initalize common clocks before timers */
++	of_clk_init(NULL);
++
+ 	if (machine_desc->init_time)
+ 		machine_desc->init_time();
+ 	else
+-- 
+1.7.2.5
 
---oIK88BWnNPSddvdK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSHRXSAAoJELSic+t+oim9nSYP/0rwFGkSPJ+uOAuqOyb0Zf0n
-T9/vdS3RwCU9F1SYIB36u2YfUifud+zGAN/fh5AvWh/ZEFZl0wu82kuhL2SbIy7A
-/SwuThuDTWg0z4Qj5fd1uE8qP1WYo3Bq2xvhpVitnV8comG4j7wj08OHEouZy1zJ
-i7mZb999m3caBcTX8g3nW1Xo0+jp5zJmKWymwDq2WyFbjD8np9QqrCp9CTGSSFfN
-WlR03OiJYIBCS9h+dMs+O8m2Qe54QiwgyyiKW7XJYwgLMAndfl47PLnBTDdIevhh
-lkOjMGh6l3nGcsiZlAXcdia/af+u285s2bG8Sor1VS7vHfHJ3pRp5CoLtvH1eANL
-mU6LvP64klCWPZzX3Roqre9zp47YZR4Gqa3zCDHjmuzn3InA9u6RPrasNQm2EP5d
-hQ6xtreyCTqrA4B/A3Zui73Fxe4wnVGFULHKggRHJgBJOxKGwOgzS2PE38kQvIuy
-oa3wgODqGzFU109BSO18HTkamnpSAZU4FSiEGrFa0gNP2rowbjlr4HyYOGLJFB+0
-7dAzzaz3KOpUXONttIyBlsN0GEGzvlxuJJpH7nWGp0BXD+m7lzroceZh4FfVQfZf
-1X93HkXlIrQmYxfBZWIw4ssQDULEp3neDtFNb7As0USlVmni1ruAxaH4WlEswY8N
-vWMs0aUnIZj0mJRpvbDE
-=WoZW
------END PGP SIGNATURE-----
-
---oIK88BWnNPSddvdK--
