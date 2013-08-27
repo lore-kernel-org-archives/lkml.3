@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab3H0BCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:02:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59200 "EHLO
+	id S1752833Ab3H0BEA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:04:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59216 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab3H0BCx (ORCPT
+	with ESMTP id S1752687Ab3H0BCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:02:53 -0400
+	Mon, 26 Aug 2013 21:02:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 4/9] nilfs2: remove double bio_put() in nilfs_end_bio_write() for BIO_EOPNOTSUPP error
-Date: Mon, 26 Aug 2013 18:04:55 -0700
-Message-Id: <20130827010251.966922561@linuxfoundation.org>
+        Terry Suereth <terry.suereth@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 7/9] libata: apply behavioral quirks to sil3826 PMP
+Date: Mon, 26 Aug 2013 18:04:58 -0700
+Message-Id: <20130827010252.189491841@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010251.636183797@linuxfoundation.org>
 References: <20130827010251.636183797@linuxfoundation.org>
@@ -30,37 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+From: Terry Suereth <terry.suereth@gmail.com>
 
-commit 2df37a19c686c2d7c4e9b4ce1505b5141e3e5552 upstream.
+commit 8ffff94d20b7eb446e848e0046107d51b17a20a8 upstream.
 
-Remove double call of bio_put() in nilfs_end_bio_write() for the case of
-BIO_EOPNOTSUPP error detection.  The issue was found by Dan Carpenter
-and he suggests first version of the fix too.
+Fixing support for the Silicon Image 3826 port multiplier, by applying
+to it the same quirks applied to the Silicon Image 3726.  Specifically
+fixes the repeated timeout/reset process which previously afflicted
+the 3726, as described from line 290.  Slightly based on notes from:
 
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+https://bugzilla.redhat.com/show_bug.cgi?id=890237
+
+Signed-off-by: Terry Suereth <terry.suereth@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/segbuf.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/ata/libata-pmp.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/fs/nilfs2/segbuf.c
-+++ b/fs/nilfs2/segbuf.c
-@@ -345,8 +345,7 @@ static void nilfs_end_bio_write(struct b
+--- a/drivers/ata/libata-pmp.c
++++ b/drivers/ata/libata-pmp.c
+@@ -288,24 +288,24 @@ static int sata_pmp_configure(struct ata
  
- 	if (err == -EOPNOTSUPP) {
- 		set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
--		bio_put(bio);
--		/* to be detected by submit_seg_bio() */
-+		/* to be detected by nilfs_segbuf_submit_bio() */
+ 	/* Disable sending Early R_OK.
+ 	 * With "cached read" HDD testing and multiple ports busy on a SATA
+-	 * host controller, 3726 PMP will very rarely drop a deferred
++	 * host controller, 3x26 PMP will very rarely drop a deferred
+ 	 * R_OK that was intended for the host. Symptom will be all
+ 	 * 5 drives under test will timeout, get reset, and recover.
+ 	 */
+-	if (vendor == 0x1095 && devid == 0x3726) {
++	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
+ 		u32 reg;
+ 
+ 		err_mask = sata_pmp_read(&ap->link, PMP_GSCR_SII_POL, &reg);
+ 		if (err_mask) {
+ 			rc = -EIO;
+-			reason = "failed to read Sil3726 Private Register";
++			reason = "failed to read Sil3x26 Private Register";
+ 			goto fail;
+ 		}
+ 		reg &= ~0x1;
+ 		err_mask = sata_pmp_write(&ap->link, PMP_GSCR_SII_POL, reg);
+ 		if (err_mask) {
+ 			rc = -EIO;
+-			reason = "failed to write Sil3726 Private Register";
++			reason = "failed to write Sil3x26 Private Register";
+ 			goto fail;
+ 		}
  	}
+@@ -383,8 +383,8 @@ static void sata_pmp_quirks(struct ata_p
+ 	u16 devid = sata_pmp_gscr_devid(gscr);
+ 	struct ata_link *link;
  
- 	if (!uptodate)
+-	if (vendor == 0x1095 && devid == 0x3726) {
+-		/* sil3726 quirks */
++	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
++		/* sil3x26 quirks */
+ 		ata_for_each_link(link, ap, EDGE) {
+ 			/* link reports offline after LPM */
+ 			link->flags |= ATA_LFLAG_NO_LPM;
 
 
