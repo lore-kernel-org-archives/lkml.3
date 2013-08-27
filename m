@@ -1,144 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab3H0JC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 05:02:26 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:45270 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751825Ab3H0JCW (ORCPT
+	id S1753357Ab3H0JDU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 05:03:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51113 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936Ab3H0JDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 05:02:22 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: Colin Cross <ccross@android.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joseph Lo <josephl@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Date: Tue, 27 Aug 2013 01:57:43 -0700
-Subject: RE: [PATCH 3/3] cpuidle: coupled: fix race condition between pokes
- and safe state
-Thread-Topic: [PATCH 3/3] cpuidle: coupled: fix race condition between pokes
- and safe state
-Thread-Index: Ac6gOUvyJJHDZkuLSNq/1MsKrjpp9ACyWb4g
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE3DBD2B9E21@SC-VEXCH4.marvell.com>
-References: <1377287112-12018-1-git-send-email-ccross@android.com>
- <1377287112-12018-3-git-send-email-ccross@android.com>
-In-Reply-To: <1377287112-12018-3-git-send-email-ccross@android.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	Tue, 27 Aug 2013 05:03:18 -0400
+Date: Tue, 27 Aug 2013 19:03:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: linux-next: manual merge of the clk tree with Linus' tree
+Message-Id: <20130827190304.c3f2f891f20d078d66b703b1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__27_Aug_2013_19_03_04_+1000_smeSy=9ICZuZa=n_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7R92VPQ029066
 
-> -----Original Message-----
-> From: Colin Cross [mailto:ccross@android.com]
-> Sent: 2013ƒÍ8‘¬24»’ 3:45
-> To: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; Neil Zhang; Joseph Lo;
-> linux-tegra@vger.kernel.org; Colin Cross; stable@vger.kernel.org; Rafael J.
-> Wysocki; Daniel Lezcano
-> Subject: [PATCH 3/3] cpuidle: coupled: fix race condition between pokes and safe
-> state
-> 
-> The coupled cpuidle waiting loop clears pending pokes before entering the safe
-> state.  If a poke arrives just before the pokes are cleared, but after the while
-> loop condition checks, the poke will be lost and the cpu will stay in the safe state
-> until another interrupt arrives.  This may cause the cpu that sent the poke to
-> spin in the ready loop with interrupts off until another cpu receives an interrupt,
-> and if no other cpus have interrupts routed to them it can spin forever.
-> 
-> Change the return value of cpuidle_coupled_clear_pokes to return if a poke was
-> cleared, and move the need_resched() checks into the callers.  In the waiting
-> loop, if a poke was cleared restart the loop to repeat the while condition checks.
-> 
-> Reported-by: Neil Zhang <zhangwm@marvell.com>
-> CC: stable@vger.kernel.org
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  drivers/cpuidle/coupled.c | 20 ++++++++++++++------
->  1 file changed, 14 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c index
-> bbc4ba5..c91230b 100644
-> --- a/drivers/cpuidle/coupled.c
-> +++ b/drivers/cpuidle/coupled.c
-> @@ -408,19 +408,22 @@ static void cpuidle_coupled_set_done(int cpu, struct
-> cpuidle_coupled *coupled)
->   * been processed and the poke bit has been cleared.
->   *
->   * Other interrupts may also be processed while interrupts are enabled, so
-> - * need_resched() must be tested after turning interrupts off again to make sure
-> + * need_resched() must be tested after this function returns to make
-> + sure
->   * the interrupt didn't schedule work that should take the cpu out of idle.
->   *
-> - * Returns 0 if need_resched was false, -EINTR if need_resched was true.
-> + * Returns 0 if no poke was pending, 1 if a poke was cleared.
->   */
->  static int cpuidle_coupled_clear_pokes(int cpu)  {
-> +	if (!cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
-> +		return 0;
-> +
->  	local_irq_enable();
->  	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poke_pending))
->  		cpu_relax();
->  	local_irq_disable();
-> 
-> -	return need_resched() ? -EINTR : 0;
-> +	return 1;
->  }
-> 
->  static bool cpuidle_coupled_any_pokes_pending(struct cpuidle_coupled
-> *coupled) @@ -464,7 +467,8 @@ int cpuidle_enter_state_coupled(struct
-> cpuidle_device *dev,
->  		return -EINVAL;
-> 
->  	while (coupled->prevent) {
-> -		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
-> +		cpuidle_coupled_clear_pokes(dev->cpu);
-> +		if (need_resched()) {
->  			local_irq_enable();
->  			return entered_state;
->  		}
-> @@ -503,7 +507,10 @@ retry:
->  	 */
->  	while (!cpuidle_coupled_cpus_waiting(coupled) ||
->  			!cpumask_test_cpu(dev->cpu, &cpuidle_coupled_poked)) {
-> -		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
-> +		if (cpuidle_coupled_clear_pokes(dev->cpu))
-> +			continue;
-> +
-> +		if (need_resched()) {
->  			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
->  			goto out;
->  		}
-> @@ -518,7 +525,8 @@ retry:
->  		local_irq_disable();
->  	}
-> 
-> -	if (cpuidle_coupled_clear_pokes(dev->cpu)) {
-> +	cpuidle_coupled_clear_pokes(dev->cpu);
-> +	if (need_resched()) {
->  		cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
->  		goto out;
->  	}
-> --
-> 1.8.3
+--Signature=_Tue__27_Aug_2013_19_03_04_+1000_smeSy=9ICZuZa=n_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think this patch should also be workable.
-Thanks.
+Hi Mike,
 
-Reviewed-by: Neil Zhang <zhangwm@marvell.com>
+Today's linux-next merge of the clk tree got a conflict in
+drivers/clk/zynq/clkc.c between commits 252957cc3a2d ("clk/zynq/clkc: Add
+dedicated spinlock for the SWDT") and 765b7d4c4cb3
+("clk/zynq/clkc: Add CLK_SET_RATE_PARENT flag to ethernet muxes") from
+Linus' tree and commit 819c1de344c5 ("clk: add CLK_SET_RATE_NO_REPARENT
+flag") from the clk tree.
 
-Best Regards,
-Neil Zhang
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+I fixed it up (see below and in a couple of places I chose
+CLK_SET_RATE_NO_REPARENT over CLK_SET_RATE_PARENT, which may, of course,
+be wrong) and can carry the fix as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/clk/zynq/clkc.c
+index 089d3e3,e05c9e3..0000000
+--- a/drivers/clk/zynq/clkc.c
++++ b/drivers/clk/zynq/clkc.c
+@@@ -293,8 -294,9 +295,9 @@@ static void __init zynq_clk_setup(struc
+  			swdt_ext_clk_mux_parents[i + 1] =3D dummy_nm;
+  	}
+  	clks[swdt] =3D clk_register_mux(NULL, clk_output_name[swdt],
+- 			swdt_ext_clk_mux_parents, 2, CLK_SET_RATE_PARENT,
+- 			SLCR_SWDT_CLK_SEL, 0, 1, 0, &swdtclk_lock);
++ 			swdt_ext_clk_mux_parents, 2, CLK_SET_RATE_PARENT |
++ 			CLK_SET_RATE_NO_REPARENT, SLCR_SWDT_CLK_SEL, 0, 1, 0,
+ -			&gem0clk_lock);
+++			&swdtclk_lock);
+ =20
+  	/* DDR clocks */
+  	clk =3D clk_register_divider(NULL, "ddr2x_div", "ddrpll", 0,
+
+--Signature=_Tue__27_Aug_2013_19_03_04_+1000_smeSy=9ICZuZa=n_
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSHGtMAAoJEECxmPOUX5FET5AP/imuch8fTXd6BpvpM2iCdkkg
+IVBaW3A2+GX2Um/CDYus1lo/kt9y2ZJvn+LTR3Vi7jbI/in5epMwxDR7ZcgbeuHN
+uTC55vJtOBFt5qfe/bcO/RS3fWntIq+0UU1EXg/Gd8LmwbB2qH8xWHOccvZjOMt0
+RK9E4KR9YhSRV+qpVP3gVNBG7xIYzNU5XwwJKfZYwE8j9ZWwvdepoPGfQ+j2XkfS
+cwLAtmX1wZ+2Jz1549IbNOhZK+zfzl3NO4tLrjuB/Emc2oRbXdTUuWeFaSUK0JRu
+Fzz8Nh8evCCWwqtVvyZLs8UPqE+fCX6HNFHAKJW94Z/+ziS2+p16EVfsCb3cA57C
+dHWJHSqhGhcNvqCXG8rBMaulMKwRsb8lpZCVksyNAtnqnlI/+tzWSKGNLuWjOokB
+isC4rqe694PQBjMEJooflb8Ghv/0ppn4Ex6ytjdgjKkCXrT5FPSn0Ie8MIWU6z+w
+evK9EKqetY8hXjybJeuaoNtYAwkRHMzQnrXH+5Puh1e04jQ14Kr/d/pvw3P0yfYA
+XLu/MZU69kKVqP9T0KZIefYb4xjQWD2DTA+YtjRbI9N02pjtwYtHjHi2BoDSVx0U
+29c/YryH0cd7nxo683x6LU5A5n51C2d7BrORxFyUzfgVO9uGkGehvbtA7V1L9G0t
+DjlzDLqOO31H0ER0CIqp
+=neZX
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Aug_2013_19_03_04_+1000_smeSy=9ICZuZa=n_--
