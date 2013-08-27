@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab3H0BMO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:12:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59616 "EHLO
+	id S1754082Ab3H0BMd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:12:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59603 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585Ab3H0BHf (ORCPT
+	with ESMTP id S1753569Ab3H0BHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:35 -0400
+	Mon, 26 Aug 2013 21:07:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Radu Caragea <sinaelgl@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Adrian Sendroiu <molecula2788@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 68/74] x86 get_unmapped_area: Access mmap_legacy_base through mm_struct member
-Date: Mon, 26 Aug 2013 18:09:06 -0700
-Message-Id: <20130827010438.570570474@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        David Milburn <dmilburn@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 66/74] SCSI: sg: Fix user memory corruption when SG_IO is interrupted by a signal
+Date: Mon, 26 Aug 2013 18:09:04 -0700
+Message-Id: <20130827010437.982754977@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -32,71 +28,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Radu Caragea <sinaelgl@gmail.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 41aacc1eea645c99edbe8fbcf78a97dc9b862adc upstream.
+commit 35dc248383bbab0a7203fca4d722875bc81ef091 upstream.
 
-This is the updated version of df54d6fa5427 ("x86 get_unmapped_area():
-use proper mmap base for bottom-up direction") that only randomizes the
-mmap base address once.
+There is a nasty bug in the SCSI SG_IO ioctl that in some circumstances
+leads to one process writing data into the address space of some other
+random unrelated process if the ioctl is interrupted by a signal.
+What happens is the following:
 
-Signed-off-by: Radu Caragea <sinaelgl@gmail.com>
-Reported-and-tested-by: Jeff Shorey <shoreyjeff@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Adrian Sendroiu <molecula2788@gmail.com>
-Cc: Kamal Mostafa <kamal@canonical.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+ - A process issues an SG_IO ioctl with direction DXFER_FROM_DEV (ie the
+   underlying SCSI command will transfer data from the SCSI device to
+   the buffer provided in the ioctl)
+
+ - Before the command finishes, a signal is sent to the process waiting
+   in the ioctl.  This will end up waking up the sg_ioctl() code:
+
+		result = wait_event_interruptible(sfp->read_wait,
+			(srp_done(sfp, srp) || sdp->detached));
+
+   but neither srp_done() nor sdp->detached is true, so we end up just
+   setting srp->orphan and returning to userspace:
+
+		srp->orphan = 1;
+		write_unlock_irq(&sfp->rq_list_lock);
+		return result;	/* -ERESTARTSYS because signal hit process */
+
+   At this point the original process is done with the ioctl and
+   blithely goes ahead handling the signal, reissuing the ioctl, etc.
+
+ - Eventually, the SCSI command issued by the first ioctl finishes and
+   ends up in sg_rq_end_io().  At the end of that function, we run through:
+
+	write_lock_irqsave(&sfp->rq_list_lock, iflags);
+	if (unlikely(srp->orphan)) {
+		if (sfp->keep_orphan)
+			srp->sg_io_owned = 0;
+		else
+			done = 0;
+	}
+	srp->done = done;
+	write_unlock_irqrestore(&sfp->rq_list_lock, iflags);
+
+	if (likely(done)) {
+		/* Now wake up any sg_read() that is waiting for this
+		 * packet.
+		 */
+		wake_up_interruptible(&sfp->read_wait);
+		kill_fasync(&sfp->async_qp, SIGPOLL, POLL_IN);
+		kref_put(&sfp->f_ref, sg_remove_sfp);
+	} else {
+		INIT_WORK(&srp->ew.work, sg_rq_end_io_usercontext);
+		schedule_work(&srp->ew.work);
+	}
+
+   Since srp->orphan *is* set, we set done to 0 (assuming the
+   userspace app has not set keep_orphan via an SG_SET_KEEP_ORPHAN
+   ioctl), and therefore we end up scheduling sg_rq_end_io_usercontext()
+   to run in a workqueue.
+
+ - In workqueue context we go through sg_rq_end_io_usercontext() ->
+   sg_finish_rem_req() -> blk_rq_unmap_user() -> ... ->
+   bio_uncopy_user() -> __bio_copy_iov() -> copy_to_user().
+
+   The key point here is that we are doing copy_to_user() on a
+   workqueue -- that is, we're on a kernel thread with current->mm
+   equal to whatever random previous user process was scheduled before
+   this kernel thread.  So we end up copying whatever data the SCSI
+   command returned to the virtual address of the buffer passed into
+   the original ioctl, but it's quite likely we do this copying into a
+   different address space!
+
+As suggested by James Bottomley <James.Bottomley@hansenpartnership.com>,
+add a check for current->mm (which is NULL if we're on a kernel thread
+without a real userspace address space) in bio_uncopy_user(), and skip
+the copy if we're on a kernel thread.
+
+There's no reason that I can think of for any caller of bio_uncopy_user()
+to want to do copying on a kernel thread with a random active userspace
+address space.
+
+Huge thanks to Costa Sapuntzakis <costa@purestorage.com> for the
+original pointer to this bug in the sg code.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Tested-by: David Milburn <dmilburn@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/sys_x86_64.c |    2 +-
- arch/x86/mm/mmap.c           |    6 ++++--
- include/linux/mm_types.h     |    1 +
- 3 files changed, 6 insertions(+), 3 deletions(-)
+ fs/bio.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/arch/x86/kernel/sys_x86_64.c
-+++ b/arch/x86/kernel/sys_x86_64.c
-@@ -101,7 +101,7 @@ static void find_start_end(unsigned long
- 				*begin = new_begin;
- 		}
- 	} else {
--		*begin = TASK_UNMAPPED_BASE;
-+		*begin = current->mm->mmap_legacy_base;
- 		*end = TASK_SIZE;
- 	}
- }
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -112,12 +112,14 @@ static unsigned long mmap_legacy_base(vo
-  */
- void arch_pick_mmap_layout(struct mm_struct *mm)
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -1045,12 +1045,22 @@ static int __bio_copy_iov(struct bio *bi
+ int bio_uncopy_user(struct bio *bio)
  {
-+	mm->mmap_legacy_base = mmap_legacy_base();
-+	mm->mmap_base = mmap_base();
-+
- 	if (mmap_is_legacy()) {
--		mm->mmap_base = mmap_legacy_base();
-+		mm->mmap_base = mm->mmap_legacy_base;
- 		mm->get_unmapped_area = arch_get_unmapped_area;
- 		mm->unmap_area = arch_unmap_area;
- 	} else {
--		mm->mmap_base = mmap_base();
- 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
- 		mm->unmap_area = arch_unmap_area_topdown;
- 	}
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -333,6 +333,7 @@ struct mm_struct {
- 	void (*unmap_area) (struct mm_struct *mm, unsigned long addr);
- #endif
- 	unsigned long mmap_base;		/* base of mmap area */
-+	unsigned long mmap_legacy_base;         /* base of mmap area in bottom-up allocations */
- 	unsigned long task_size;		/* size of task vm space */
- 	unsigned long cached_hole_size; 	/* if non-zero, the largest hole below free_area_cache */
- 	unsigned long free_area_cache;		/* first hole of size cached_hole_size or larger */
+ 	struct bio_map_data *bmd = bio->bi_private;
+-	int ret = 0;
++	struct bio_vec *bvec;
++	int ret = 0, i;
+ 
+-	if (!bio_flagged(bio, BIO_NULL_MAPPED))
+-		ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
+-				     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
+-				     0, bmd->is_our_pages);
++	if (!bio_flagged(bio, BIO_NULL_MAPPED)) {
++		/*
++		 * if we're in a workqueue, the request is orphaned, so
++		 * don't copy into a random user address space, just free.
++		 */
++		if (current->mm)
++			ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
++					     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
++					     0, bmd->is_our_pages);
++		else if (bmd->is_our_pages)
++			bio_for_each_segment_all(bvec, bio, i)
++				__free_page(bvec->bv_page);
++	}
+ 	bio_free_map_data(bmd);
+ 	bio_put(bio);
+ 	return ret;
 
 
