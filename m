@@ -1,201 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727Ab3H0Sbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 14:31:53 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:55311 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696Ab3H0Sbw (ORCPT
+	id S1753802Ab3H0ScF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 14:32:05 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:28945 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab3H0ScD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 14:31:52 -0400
-Subject: [PATCH V6 2/7] pseries/cpuidle: Use cpuidle_register() for
- initialisation.
-To: linux-pm@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Cc: b.zolnierkie@samsung.com, benh@kernel.crashing.org,
-        daniel.lezcano@linaro.org, dongsheng.wang@freescale.com,
-        michael@ellerman.id.au, scottwood@freescale.com,
-        srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com
-Date: Wed, 28 Aug 2013 00:01:00 +0530
-Message-ID: <20130827183056.18579.32934.stgit@deepthi.in.ibm.com>
-In-Reply-To: <20130827183016.18579.16595.stgit@deepthi.in.ibm.com>
-References: <20130827183016.18579.16595.stgit@deepthi.in.ibm.com>
-User-Agent: StGit/0.16
+	Tue, 27 Aug 2013 14:32:03 -0400
+Message-ID: <1377628317.13272.64.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH 06/11] net: calxedaxgmac: fix race with tx queue
+ stop/wake
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann@calxeda.com>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Date: Tue, 27 Aug 2013 19:31:57 +0100
+In-Reply-To: <1377557126-10716-6-git-send-email-robherring2@gmail.com>
+References: <1377557126-10716-1-git-send-email-robherring2@gmail.com>
+	 <1377557126-10716-6-git-send-email-robherring2@gmail.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082718-5490-0000-0000-0000040D2499
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20108.005
+X-TM-AS-Result: No--18.432400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces the cpuidle driver and devices initialisation
-calls with a single generic cpuidle_register() call
-and also includes minor refactoring of the code around it.
+On Mon, 2013-08-26 at 17:45 -0500, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> Since the xgmac transmit start and completion work locklessly, it is
+> possible for xgmac_xmit to stop the tx queue after the xgmac_tx_complete
+> has run resulting in the tx queue never being woken up. Fix this by
+> ensuring that ring buffer index updates are visible and serialize the
+> queue wake with netif_tx_lock.
+>
+> The implementation used here was copied from
+> drivers/net/ethernet/broadcom/tg3.c.
+> 
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> ---
+>  drivers/net/ethernet/calxeda/xgmac.c | 25 +++++++++++++++++++------
+>  1 file changed, 19 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
+> index f630855..cd5872c 100644
+> --- a/drivers/net/ethernet/calxeda/xgmac.c
+> +++ b/drivers/net/ethernet/calxeda/xgmac.c
+> @@ -410,6 +410,9 @@ struct xgmac_priv {
+>  #define dma_ring_space(h, t, s)	CIRC_SPACE(h, t, s)
+>  #define dma_ring_cnt(h, t, s)	CIRC_CNT(h, t, s)
+>  
+> +#define tx_dma_ring_space(p) \
+> +	dma_ring_space((p)->tx_head, (p)->tx_tail, DMA_TX_RING_SZ)
+> +
+>  /* XGMAC Descriptor Access Helpers */
+>  static inline void desc_set_buf_len(struct xgmac_dma_desc *p, u32 buf_sz)
+>  {
+> @@ -886,9 +889,14 @@ static void xgmac_tx_complete(struct xgmac_priv *priv)
+>  		priv->tx_tail = dma_ring_incr(entry, DMA_TX_RING_SZ);
+>  	}
+>  
+> -	if (dma_ring_space(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ) >
+> -	    MAX_SKB_FRAGS)
+> -		netif_wake_queue(priv->dev);
+> +	/* Ensure tx_tail is visible to xgmac_xmit */
+> +	smp_mb();
+> +	if (unlikely(netif_queue_stopped(priv->dev))) {
+> +		netif_tx_lock(priv->dev);
+> +		if (tx_dma_ring_space(priv) > MAX_SKB_FRAGS)
+> +			netif_wake_queue(priv->dev);
+> +		netif_tx_unlock(priv->dev);
+> +	}
+>  }
 
-Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
----
- drivers/cpuidle/cpuidle-ibm-power.c |   80 +++++------------------------------
- 1 file changed, 12 insertions(+), 68 deletions(-)
+You don't need to take the TX lock for this.  The memory barriers
+provide sufficient synchronisation.
 
-diff --git a/drivers/cpuidle/cpuidle-ibm-power.c b/drivers/cpuidle/cpuidle-ibm-power.c
-index c905b99..b42b948 100644
---- a/drivers/cpuidle/cpuidle-ibm-power.c
-+++ b/drivers/cpuidle/cpuidle-ibm-power.c
-@@ -1,5 +1,5 @@
- /*
-- *  processor_idle - idle state cpuidle driver.
-+ *  cpuidle-ibm-power - idle state cpuidle driver.
-  *  Adapted from drivers/idle/intel_idle.c and
-  *  drivers/acpi/processor_idle.c
-  *
-@@ -28,7 +28,6 @@ struct cpuidle_driver pseries_idle_driver = {
- #define MAX_IDLE_STATE_COUNT	2
- 
- static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
--static struct cpuidle_device __percpu *pseries_cpuidle_devices;
- static struct cpuidle_state *cpuidle_state_table;
- 
- static inline void idle_loop_prolog(unsigned long *in_purr)
-@@ -52,13 +51,12 @@ static int snooze_loop(struct cpuidle_device *dev,
- 			int index)
- {
- 	unsigned long in_purr;
--	int cpu = dev->cpu;
- 
- 	idle_loop_prolog(&in_purr);
- 	local_irq_enable();
- 	set_thread_flag(TIF_POLLING_NRFLAG);
- 
--	while ((!need_resched()) && cpu_online(cpu)) {
-+	while (!need_resched()) {
- 		ppc64_runlatch_off();
- 		HMT_low();
- 		HMT_very_low();
-@@ -187,7 +185,7 @@ static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
- {
- 	int hotcpu = (unsigned long)hcpu;
- 	struct cpuidle_device *dev =
--			per_cpu_ptr(pseries_cpuidle_devices, hotcpu);
-+			per_cpu(cpuidle_devices, hotcpu);
- 
- 	if (dev && cpuidle_get_driver()) {
- 		switch (action) {
-@@ -244,50 +242,6 @@ static int pseries_cpuidle_driver_init(void)
- 	return 0;
- }
- 
--/* pseries_idle_devices_uninit(void)
-- * unregister cpuidle devices and de-allocate memory
-- */
--static void pseries_idle_devices_uninit(void)
--{
--	int i;
--	struct cpuidle_device *dev;
--
--	for_each_possible_cpu(i) {
--		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
--		cpuidle_unregister_device(dev);
--	}
--
--	free_percpu(pseries_cpuidle_devices);
--	return;
--}
--
--/* pseries_idle_devices_init()
-- * allocate, initialize and register cpuidle device
-- */
--static int pseries_idle_devices_init(void)
--{
--	int i;
--	struct cpuidle_driver *drv = &pseries_idle_driver;
--	struct cpuidle_device *dev;
--
--	pseries_cpuidle_devices = alloc_percpu(struct cpuidle_device);
--	if (pseries_cpuidle_devices == NULL)
--		return -ENOMEM;
--
--	for_each_possible_cpu(i) {
--		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
--		dev->state_count = drv->state_count;
--		dev->cpu = i;
--		if (cpuidle_register_device(dev)) {
--			printk(KERN_DEBUG \
--				"cpuidle_register_device %d failed!\n", i);
--			return -EIO;
--		}
--	}
--
--	return 0;
--}
--
- /*
-  * pseries_idle_probe()
-  * Choose state table for shared versus dedicated partition
-@@ -295,9 +249,6 @@ static int pseries_idle_devices_init(void)
- static int pseries_idle_probe(void)
- {
- 
--	if (!firmware_has_feature(FW_FEATURE_SPLPAR))
--		return -ENODEV;
--
- 	if (cpuidle_disable != IDLE_NO_OVERRIDE)
- 		return -ENODEV;
- 
-@@ -306,10 +257,13 @@ static int pseries_idle_probe(void)
- 		return -EPERM;
- 	}
- 
--	if (get_lppaca()->shared_proc)
--		cpuidle_state_table = shared_states;
--	else
--		cpuidle_state_table = dedicated_states;
-+	if (firmware_has_feature(FW_FEATURE_SPLPAR)) {
-+		if (get_lppaca()->shared_proc)
-+			cpuidle_state_table = shared_states;
-+		else
-+			cpuidle_state_table = dedicated_states;
-+	} else
-+		return -ENODEV;
- 
- 	return 0;
- }
-@@ -323,22 +277,14 @@ static int __init pseries_processor_idle_init(void)
- 		return retval;
- 
- 	pseries_cpuidle_driver_init();
--	retval = cpuidle_register_driver(&pseries_idle_driver);
-+	retval = cpuidle_register(&pseries_idle_driver, NULL);
- 	if (retval) {
- 		printk(KERN_DEBUG "Registration of pseries driver failed.\n");
- 		return retval;
- 	}
- 
--	retval = pseries_idle_devices_init();
--	if (retval) {
--		pseries_idle_devices_uninit();
--		cpuidle_unregister_driver(&pseries_idle_driver);
--		return retval;
--	}
--
- 	register_cpu_notifier(&setup_hotplug_notifier);
- 	printk(KERN_DEBUG "pseries_idle_driver registered\n");
--
- 	return 0;
- }
- 
-@@ -346,9 +292,7 @@ static void __exit pseries_processor_idle_exit(void)
- {
- 
- 	unregister_cpu_notifier(&setup_hotplug_notifier);
--	pseries_idle_devices_uninit();
--	cpuidle_unregister_driver(&pseries_idle_driver);
--
-+	cpuidle_unregister(&pseries_idle_driver);
- 	return;
- }
- 
+>  static void xgmac_tx_timeout_work(struct work_struct *work)
+> @@ -1125,10 +1133,15 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
+>  
+>  	priv->tx_head = dma_ring_incr(entry, DMA_TX_RING_SZ);
+>  
+> -	if (dma_ring_space(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ) <
+> -	    MAX_SKB_FRAGS)
+> +	/* Ensure tx_head update is visible to tx completion */
+> +	smp_mb();
+> +	if (unlikely(tx_dma_ring_space(priv) < MAX_SKB_FRAGS)) {
+>  		netif_stop_queue(dev);
+> -
+> +		/* Ensure netif_stop_queue is visible to tx completion */
+> +		smp_mb();
+> +		if (tx_dma_ring_space(priv) > MAX_SKB_FRAGS)
+> +			netif_wake_queue(dev);
+
+You should use netif_start_queue() rather than netif_wake_queue(), since
+you know the TX scheduler is already active.
+
+Ben.
+
+> +	}
+>  	return NETDEV_TX_OK;
+>  }
+>  
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
