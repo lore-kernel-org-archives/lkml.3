@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab3H0MPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 08:15:13 -0400
-Received: from forward6.mail.yandex.net ([77.88.60.125]:35149 "EHLO
-	forward6.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab3H0MPL (ORCPT
+	id S1753062Ab3H0MQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 08:16:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60621 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab3H0MQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 08:15:11 -0400
-X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Aug 2013 08:15:11 EDT
-From: Alexander Fyodorov <halcy@yandex.ru>
-To: Waiman Long <waiman.long@hp.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <521BB71F.6080300@hp.com>
-References: <15321377012704@web8h.yandex.ru> <52142D6C.6000400@hp.com> <336901377100289@web16f.yandex.ru> <5215638E.5020702@hp.com> <169431377178121@web21f.yandex.ru> <521BB71F.6080300@hp.com>
-Subject: Re: [PATCH RFC v2 1/2] qspinlock: Introducing a 4-byte queue spinlock implementation
+	Tue, 27 Aug 2013 08:16:39 -0400
+Date: Tue, 27 Aug 2013 14:16:29 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dave Jones <davej@redhat.com>, paulmck@linux.vnet.ibm.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: suspicious RCU usage (perf)
+Message-ID: <20130827121629.GE10002@twins.programming.kicks-ass.net>
+References: <20130826145838.GA8377@redhat.com>
+ <20130826162928.GQ3871@linux.vnet.ibm.com>
+ <20130826133041.3d750b1b@gandalf.local.home>
+ <20130826175012.GA25202@redhat.com>
+ <20130826141814.54dcaa89@gandalf.local.home>
+ <20130826182907.GB25202@redhat.com>
+ <20130826150304.090a1025@gandalf.local.home>
 MIME-Version: 1.0
-Message-Id: <66111377605355@web12m.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 27 Aug 2013 16:09:15 +0400
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130826150304.090a1025@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I also thought that the x86 spinlock unlock path was an atomic add. It
-> just comes to my realization recently that this is not the case. The
-> UNLOCK_LOCK_PREFIX will be mapped to "" except for some old 32-bit x86
-> processors.
+On Mon, Aug 26, 2013 at 03:03:04PM -0400, Steven Rostedt wrote:
+> > Is there some path through sys_perf_open_event that might be
+> > missing a capability check perhaps ?
+> > 
+> 
+> That's a question for Ingo, Peter or Jiri.
 
-Hmm, I didn't know that. Looking through Google found these rules for x86 memory ordering:
-  * Loads are not reordered with other loads.
-  * Stores are not reordered with other stores.
-  * Stores are not reordered with older loads.
-So x86 memory model is rather strict and memory barrier is really not needed in the unlock path - xadd is a store and thus behaves like a memory barrier, and since only lock's owner modifies "ticket.head" the "add" instruction need not be atomic.
+Its not something I've looked at recently, git blames Jiri and fweisbec
+for most of that code.
 
-But this is true only for x86, other architectures have more relaxed memory ordering. Maybe we should allow arch code to redefine queue_spin_unlock()? And define a version without smp_mb() for x86?
+Permission checks appear to live in
+kernel/trace/trace_event_perf.c:perf_trace_event_perm().
