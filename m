@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab3H0BSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:18:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59497 "EHLO
+	id S1753425Ab3H0BHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:07:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59445 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab3H0BHT (ORCPT
+	with ESMTP id S1753316Ab3H0BHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:19 -0400
+	Mon, 26 Aug 2013 21:07:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 34/74] tracing/uprobes: Fail to unregister if probe event files are in use
-Date: Mon, 26 Aug 2013 18:08:32 -0700
-Message-Id: <20130827010431.601207347@linuxfoundation.org>
+Subject: [ 28/74] tracing: Change event_filter_read/write to verify i_private != NULL
+Date: Mon, 26 Aug 2013 18:08:26 -0700
+Message-Id: <20130827010430.449531821@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -26,160 +27,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit c6c2401d8bbaf9edc189b4c35a8cb2780b8b988e upstream.
+commit e2912b091c26b8ea95e5e00a43a7ac620f6c94a6 upstream.
 
-Uprobes suffer the same problem that kprobes have. There's a race between
-writing to the "enable" file and removing the probe. The probe checks for
-it being in use and if it is not, goes about deleting the probe and the
-event that represents it. But the problem with that is, after it checks
-if it is in use it can be enabled, and the deletion of the event (access
-to the probe) will fail, as it is in use. But the uprobe will still be
-deleted. This is a problem as the event can reference the uprobe that
-was deleted.
+event_filter_read/write() are racy, ftrace_event_call can be already
+freed by trace_remove_event_call() callers.
 
-The fix is to remove the event first, and check to make sure the event
-removal succeeds. Then it is safe to remove the probe.
+1. Shift mutex_lock(event_mutex) from print/apply_event_filter to
+   the callers.
 
-When the event exists, either ftrace or perf can enable the probe and
-prevent the event from being removed.
+2. Change the callers, event_filter_read() and event_filter_write()
+   to read i_private under this mutex and abort if it is NULL.
 
-Link: http://lkml.kernel.org/r/20130704034038.991525256@goodmis.org
+This fixes nothing, but now we can change debugfs_remove("filter")
+callers to nullify ->i_private and fix the the problem.
 
-Acked-by: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20130726172540.GA3619@redhat.com
+
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- kernel/trace/trace_uprobe.c |   51 ++++++++++++++++++++++++++++++++------------
- 1 file changed, 38 insertions(+), 13 deletions(-)
 
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -70,7 +70,7 @@ struct trace_uprobe {
- 	(sizeof(struct probe_arg) * (n)))
- 
- static int register_uprobe_event(struct trace_uprobe *tu);
--static void unregister_uprobe_event(struct trace_uprobe *tu);
-+static int unregister_uprobe_event(struct trace_uprobe *tu);
- 
- static DEFINE_MUTEX(uprobe_lock);
- static LIST_HEAD(uprobe_list);
-@@ -164,11 +164,17 @@ static struct trace_uprobe *find_probe_e
- }
- 
- /* Unregister a trace_uprobe and probe_event: call with locking uprobe_lock */
--static void unregister_trace_uprobe(struct trace_uprobe *tu)
-+static int unregister_trace_uprobe(struct trace_uprobe *tu)
+---
+ kernel/trace/trace_events.c        |   26 +++++++++++++++++++-------
+ kernel/trace/trace_events_filter.c |   17 ++++++-----------
+ 2 files changed, 25 insertions(+), 18 deletions(-)
+
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1002,21 +1002,28 @@ static ssize_t
+ event_filter_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 		  loff_t *ppos)
  {
-+	int ret;
+-	struct ftrace_event_call *call = filp->private_data;
++	struct ftrace_event_call *call;
+ 	struct trace_seq *s;
+-	int r;
++	int r = -ENODEV;
+ 
+ 	if (*ppos)
+ 		return 0;
+ 
+ 	s = kmalloc(sizeof(*s), GFP_KERNEL);
 +
-+	ret = unregister_uprobe_event(tu);
-+	if (ret)
-+		return ret;
+ 	if (!s)
+ 		return -ENOMEM;
+ 
+ 	trace_seq_init(s);
+ 
+-	print_event_filter(call, s);
+-	r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->len);
++	mutex_lock(&event_mutex);
++	call = event_file_data(filp);
++	if (call)
++		print_event_filter(call, s);
++	mutex_unlock(&event_mutex);
 +
- 	list_del(&tu->list);
--	unregister_uprobe_event(tu);
- 	free_trace_uprobe(tu);
-+	return 0;
++	if (call)
++		r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->len);
+ 
+ 	kfree(s);
+ 
+@@ -1027,9 +1034,9 @@ static ssize_t
+ event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 		   loff_t *ppos)
+ {
+-	struct ftrace_event_call *call = filp->private_data;
++	struct ftrace_event_call *call;
+ 	char *buf;
+-	int err;
++	int err = -ENODEV;
+ 
+ 	if (cnt >= PAGE_SIZE)
+ 		return -EINVAL;
+@@ -1044,7 +1051,12 @@ event_filter_write(struct file *filp, co
+ 	}
+ 	buf[cnt] = '\0';
+ 
+-	err = apply_event_filter(call, buf);
++	mutex_lock(&event_mutex);
++	call = event_file_data(filp);
++	if (call)
++		err = apply_event_filter(call, buf);
++	mutex_unlock(&event_mutex);
++
+ 	free_page((unsigned long) buf);
+ 	if (err < 0)
+ 		return err;
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -631,17 +631,15 @@ static void append_filter_err(struct fil
+ 	free_page((unsigned long) buf);
  }
  
- /* Register a trace_uprobe and probe_event */
-@@ -181,9 +187,12 @@ static int register_trace_uprobe(struct
++/* caller must hold event_mutex */
+ void print_event_filter(struct ftrace_event_call *call, struct trace_seq *s)
+ {
+-	struct event_filter *filter;
++	struct event_filter *filter = call->filter;
  
- 	/* register as an event */
- 	old_tp = find_probe_event(tu->call.name, tu->call.class->system);
--	if (old_tp)
-+	if (old_tp) {
- 		/* delete old event */
--		unregister_trace_uprobe(old_tp);
-+		ret = unregister_trace_uprobe(old_tp);
-+		if (ret)
-+			goto end;
-+	}
+-	mutex_lock(&event_mutex);
+-	filter = call->filter;
+ 	if (filter && filter->filter_string)
+ 		trace_seq_printf(s, "%s\n", filter->filter_string);
+ 	else
+ 		trace_seq_printf(s, "none\n");
+-	mutex_unlock(&event_mutex);
+ }
  
- 	ret = register_uprobe_event(tu);
- 	if (ret) {
-@@ -256,6 +265,8 @@ static int create_trace_uprobe(int argc,
- 		group = UPROBE_EVENT_SYSTEM;
+ void print_subsystem_event_filter(struct event_subsystem *system,
+@@ -1835,23 +1833,22 @@ static int create_system_filter(struct e
+ 	return err;
+ }
  
- 	if (is_delete) {
-+		int ret;
-+
- 		if (!event) {
- 			pr_info("Delete command needs an event name.\n");
- 			return -EINVAL;
-@@ -269,9 +280,9 @@ static int create_trace_uprobe(int argc,
- 			return -ENOENT;
++/* caller must hold event_mutex */
+ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
+ {
+ 	struct event_filter *filter;
+-	int err = 0;
+-
+-	mutex_lock(&event_mutex);
++	int err;
+ 
+ 	if (!strcmp(strstrip(filter_string), "0")) {
+ 		filter_disable(call);
+ 		filter = call->filter;
+ 		if (!filter)
+-			goto out_unlock;
++			return 0;
+ 		RCU_INIT_POINTER(call->filter, NULL);
+ 		/* Make sure the filter is not being used */
+ 		synchronize_sched();
+ 		__free_filter(filter);
+-		goto out_unlock;
++		return 0;
+ 	}
+ 
+ 	err = create_filter(call, filter_string, true, &filter);
+@@ -1878,8 +1875,6 @@ int apply_event_filter(struct ftrace_eve
+ 			__free_filter(tmp);
  		}
- 		/* delete an event */
--		unregister_trace_uprobe(tu);
-+		ret = unregister_trace_uprobe(tu);
- 		mutex_unlock(&uprobe_lock);
--		return 0;
-+		return ret;
  	}
+-out_unlock:
+-	mutex_unlock(&event_mutex);
  
- 	if (argc < 2) {
-@@ -408,16 +419,20 @@ fail_address_parse:
- 	return ret;
+ 	return err;
  }
- 
--static void cleanup_all_probes(void)
-+static int cleanup_all_probes(void)
- {
- 	struct trace_uprobe *tu;
-+	int ret = 0;
- 
- 	mutex_lock(&uprobe_lock);
- 	while (!list_empty(&uprobe_list)) {
- 		tu = list_entry(uprobe_list.next, struct trace_uprobe, list);
--		unregister_trace_uprobe(tu);
-+		ret = unregister_trace_uprobe(tu);
-+		if (ret)
-+			break;
- 	}
- 	mutex_unlock(&uprobe_lock);
-+	return ret;
- }
- 
- /* Probes listing interfaces */
-@@ -462,8 +477,13 @@ static const struct seq_operations probe
- 
- static int probes_open(struct inode *inode, struct file *file)
- {
--	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC))
--		cleanup_all_probes();
-+	int ret;
-+
-+	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC)) {
-+		ret = cleanup_all_probes();
-+		if (ret)
-+			return ret;
-+	}
- 
- 	return seq_open(file, &probes_seq_op);
- }
-@@ -970,12 +990,17 @@ static int register_uprobe_event(struct
- 	return ret;
- }
- 
--static void unregister_uprobe_event(struct trace_uprobe *tu)
-+static int unregister_uprobe_event(struct trace_uprobe *tu)
- {
-+	int ret;
-+
- 	/* tu->event is unregistered in trace_remove_event_call() */
--	trace_remove_event_call(&tu->call);
-+	ret = trace_remove_event_call(&tu->call);
-+	if (ret)
-+		return ret;
- 	kfree(tu->call.print_fmt);
- 	tu->call.print_fmt = NULL;
-+	return 0;
- }
- 
- /* Make a trace interface for controling probe points */
 
 
