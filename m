@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab3H0IC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 04:02:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55921 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752267Ab3H0ICY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 04:02:24 -0400
-Date: Tue, 27 Aug 2013 10:02:20 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>,
-        Alexander Holler <holler@ahsoftware.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/3] HID: Win 8 multitouch panels detection in core
-In-Reply-To: <521BC4D7.5050507@linux.intel.com>
-Message-ID: <alpine.LNX.2.00.1308271002120.2077@pobox.suse.cz>
-References: <1377175869-5336-1-git-send-email-benjamin.tissoires@redhat.com> <20130822175515.GA5215@polaris.bitmath.org> <alpine.LNX.2.00.1308261342430.2077@pobox.suse.cz> <521BC4D7.5050507@linux.intel.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752956Ab3H0IDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 04:03:18 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55918 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab3H0IDP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 04:03:15 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-d5-521c5d41067a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] perf ui/gtk: Separate out GTK code to a shared object (v4)
+References: <1376029689-32593-1-git-send-email-namhyung@kernel.org>
+	<20130819140500.GA3053@ghostprotocols.net>
+	<20130819151734.GB3053@ghostprotocols.net>
+Date: Tue, 27 Aug 2013 17:03:12 +0900
+In-Reply-To: <20130819151734.GB3053@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Mon, 19 Aug 2013 12:17:34 -0300")
+Message-ID: <87r4dfv9vj.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Aug 2013, Srinivas Pandruvada wrote:
+Hi Arnaldo,
 
-> > > > Srinivas, I still did not added your tested-by as I made minors
-> > > > modifications of
-> > > > the patches 1 and 2. Now only the patch 1 will impact sensor_hub, and
-> > > > patch 2
-> > > > will not impact this. Maybe just wait for Henrik to put his
-> > > > "Reviewed-by" before
-> > > > giving one last test.
-> > > Here goes:
-> > > 
-> > >      Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
-> > Thanks guys. Not applying this just yet, waiting for Tested-by: from
-> > Srinivas.
-> > 
-> Tested-by: Srinivas Pandruvada<srinivas.pandruvada@linux.intel.com>
+Sorry for late reply.
 
-Applied, thanks everybody.
+On Mon, 19 Aug 2013 12:17:34 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Aug 19, 2013 at 11:05:00AM -0300, Arnaldo Carvalho de Melo escreveu:
+>> But I expected that after the first patch 'perf --gtk' would work, and
+>> it doesn't.
+>> 
+>> Now even after I applied the whole series I don't get --gtk to work,
+>> neither as a non-root nor as root :-\
+>> 
+>> Investigating...
+>
+> Somehow I expected ~/lib64/ was in the ld library path, it was not, duh,
+> after I added it, and applied all three patches, it works as expected,
+> so can we:
+>
+> 1. combine the three patches into just one so that we keep the 'perf
+> report --gtk' bisectable?
+>
+> 2. add a patch to warn the user when '--gtk' is specified but no
+>    libperf-gtk.so file is found in the loader library path?
 
--- 
-Jiri Kosina
-SUSE Labs
+Hmm.. makes sense.  I'll do the option 1 (include the warning).
+
+Thanks,
+Namhyung
