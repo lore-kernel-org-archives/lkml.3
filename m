@@ -1,136 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab3H0Qxt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 12:53:49 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:49670 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753672Ab3H0Qxs (ORCPT
+	id S1752095Ab3H0RBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 13:01:05 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:63418 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465Ab3H0RBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 12:53:48 -0400
-Date: Tue, 27 Aug 2013 17:53:10 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v4 1/5] ARM/ARM64: arch_timer: add macros for bits in
- control register
-Message-ID: <20130827165310.GJ19897@arm.com>
-References: <1377274749-6196-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1377274749-6196-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <20130827112144.GG19897@arm.com>
- <521C8F82.6070301@arm.com>
- <20130827145250.GE27164@darko.cambridge.arm.com>
- <521CC368.6050307@arm.com>
+	Tue, 27 Aug 2013 13:01:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <521CC368.6050307@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130827165039.GC2886@sgi.com>
+References: <87wqo050fc.fsf@tassilo.jf.intel.com>
+	<1376663644-153546-1-git-send-email-athorlton@sgi.com>
+	<1376663644-153546-2-git-send-email-athorlton@sgi.com>
+	<520E672C.3080102@intel.com>
+	<20130816181728.GQ26093@sgi.com>
+	<20130816185212.GA3568@shutemov.name>
+	<20130827165039.GC2886@sgi.com>
+Date: Tue, 27 Aug 2013 12:01:01 -0500
+Message-ID: <CAPp3RGqifK=tum94nGKcqSmDpzj3ceC_ZDo7KNLOz4KHjqv5mw@mail.gmail.com>
+Subject: Re: [PATCH 1/8] THP: Use real address for NUMA policy
+From: Robin Holt <robinmholt@gmail.com>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 04:19:04PM +0100, Sudeep KarkadaNagesha wrote:
-> On 27/08/13 15:52, Catalin Marinas wrote:
-> > On Tue, Aug 27, 2013 at 12:37:38PM +0100, Sudeep KarkadaNagesha wrote:
-> >> On 27/08/13 12:21, Catalin Marinas wrote:
-> >>> On Fri, Aug 23, 2013 at 05:19:05PM +0100, Sudeep KarkadaNagesha wrote:
-> >>>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> >>>>
-> >>>> Add macros to describe the bitfields in the ARM architected timer
-> >>>> control register to make code easy to understand.
-> >>>>
-> >>>> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> >>>> Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> >>>> Reviewed-by: Will Deacon <will.deacon@arm.com>
-> >>>> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> >>>> ---
-> >>>>  arch/arm/include/asm/arch_timer.h    |  9 +++++++--
-> >>>>  arch/arm64/include/asm/arch_timer.h  | 12 ++++++++----
-> >>>>  include/clocksource/arm_arch_timer.h |  8 ++++++++
-> >>>>  3 files changed, 23 insertions(+), 6 deletions(-)
-> >>>>
-> >>>> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-> >>>> index e406d57..9ef74da 100644
-> >>>> --- a/arch/arm/include/asm/arch_timer.h
-> >>>> +++ b/arch/arm/include/asm/arch_timer.h
-> >>>> @@ -95,8 +95,13 @@ static inline void arch_counter_set_user_access(void)
-> >>>>  
-> >>>>  	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
-> >>>>  
-> >>>> -	/* disable user access to everything */
-> >>>> -	cntkctl &= ~((3 << 8) | (7 << 0));
-> >>>> +	/* Disable user access to both physical/virtual counters/timers. */
-> >>>> +	/* Also disable virtual event stream */
-> >>>> +	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
-> >>>> +			| ARCH_TIMER_USR_VT_ACCESS_EN
-> >>>> +			| ARCH_TIMER_VIRT_EVT_EN
-> >>>> +			| ARCH_TIMER_USR_VCT_ACCESS_EN
-> >>>> +			| ARCH_TIMER_USR_PCT_ACCESS_EN);
-> >>>>  
-> >>>>  	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
-> >>>>  }
-> >>>> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-> >>>> index 98abd47..00b09d0 100644
-> >>>> --- a/arch/arm64/include/asm/arch_timer.h
-> >>>> +++ b/arch/arm64/include/asm/arch_timer.h
-> >>>> @@ -101,12 +101,16 @@ static inline void arch_counter_set_user_access(void)
-> >>>>  {
-> >>>>  	u32 cntkctl;
-> >>>>  
-> >>>> -	/* Disable user access to the timers and the physical counter. */
-> >>>>  	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
-> >>>> -	cntkctl &= ~((3 << 8) | (1 << 0));
-> >>>>  
-> >>>> -	/* Enable user access to the virtual counter and frequency. */
-> >>>> -	cntkctl |= (1 << 1);
-> >>>> +	/* Disable user access to the timers and the physical counter. */
-> >>>> +	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
-> >>>> +			| ARCH_TIMER_USR_VT_ACCESS_EN
-> >>>> +			| ARCH_TIMER_USR_PCT_ACCESS_EN);
-> >>>> +
-> >>>> +	/* Enable user access to the virtual counter. */
-> >>>> +	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
-> >>>> +
-> >>>>  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
-> >>>
-> >>> For consistency with arm, I think we should also disable the event
-> >>> stream explicitly here.
-> >>>
-> >> Yes it's done. In PATCH 3/5, a new function arch_timer_evtstrm_config is
-> >> added which is always called(PATCH 4/5). It's either enabled or disabled
-> >> explicitly based on config option for event stream.
-> > 
-> > OK, just that in this patch arm and arm64 had different settings with
-> > regards to the event stream.
-> 
-> Yes correct but that's how it is currently. This patch is not modifying
-> anything functional, just adding macros.
-> 
-> > BTW, can we not avoid clearing the event stream via the
-> > arch_timer_evtstrm_config(false) and always assume the default as
-> > disabled? Do you ever go back into low power mode with event stream
-> > disabled and come back with it enabled?
-> 
-> Yes that can be done. But since the cold/warm reset involves other
-> firmware which can modify that bit, IMO it would be better to do it
-> explicitly as CONFIG_ARM_ARCH_TIMER_EVTSTREAM=n has to ensure its
-> disabled. Though I don't have a strong opinion on this, the reason for
-> my inclination towards explicit disable is because of platform firmware.
-> e.g. on V2P_CA15_A7/TC2 bootmon/secure firmware enables this bit based
-> on some settings in board.txt
-> I can remove as it's disabled on reset(ARM ARM says its reset value is
-> 0) but with the assumption that other firmware don't modify that bit.
+Alex,
 
-For initial boot we can initialise it and clear the EVNTEN bit. For
-subsequent CPU low power events I assume we save/restore the cntkctl
-register? If we do, we only need to check
-CONFIG_ARM_ARCH_TIMER_EVTSTREAM once during initialisation.
+Although the explanation seems plausible, have you verified this is
+actually possible?  You could make a simple pthread test case which
+allocates a getpagesize() * <number-of-threads> area, prints its
+address and then each thread migrate and reference their page.  Have
+the task then sleep(<long-time>) before exit.  Look at the physical
+address space with dlook for those virtual addresses in both the THP
+and non-THP cases.
 
--- 
-Catalin
+Thanks,
+Robin
+
+On Tue, Aug 27, 2013 at 11:50 AM, Alex Thorlton <athorlton@sgi.com> wrote:
+>> Here's more up-to-date version: https://lkml.org/lkml/2012/8/20/337
+>
+> These don't seem to give us a noticeable performance change either:
+>
+> With THP:
+>
+> real    22m34.279s
+> user    10797m35.984s
+> sys     39m18.188s
+>
+> Without THP:
+>
+> real    4m48.957s
+> user    2118m23.208s
+> sys     113m12.740s
+>
+> Looks like we got a few minutes faster on the with THP case, but it's
+> still significantly slower, and that could just be a fluke result; we're
+> still floating at about a 5x performance degradation.
+>
+> I talked with one of our performance/benchmarking experts last week and
+> he's done a bit more research into the actual problem here, so I've got
+> a bit more information:
+>
+> The real performance hit, based on our testing, seems to be coming from
+> the increased latency that comes into play on large NUMA systems when a
+> process has to go off-node to read from/write to memory.
+>
+> To give an extreme example, say we have a 16 node system with 8 cores
+> per node. If we have a job that shares a 2MB data structure between 128
+> threads, with THP on, the first thread to touch the structure will
+> allocate all 2MB of space for that structure in a 2MB page, local to its
+> socket.  This means that all the memory accessses for the other 120
+> threads will be remote acceses.  With THP off, each thread could locally
+> allocate a number of 4K pages sufficient to hold the chunk of the
+> structure on which it needs to work, significantly reducing the number
+> of remote accesses that each thread will need to perform.
+>
+> So, with that in mind, do we agree that a per-process tunable (or
+> something similar) to control THP seems like a reasonable method to
+> handle this issue?
+>
+> Just want to confirm that everyone likes this approach before moving
+> forward with another revision of the patch.  I'm currently in favor of
+> moving this to a per-mm tunable, since that seems to make more sense
+> when it comes to threaded jobs. Also, a decent chunk of the code I've
+> already written can be reused with this approach, and prctl will still
+> be an appropriate place from which to control the behavior. Andrew
+> Morton suggested possibly controlling this through the ELF header, but
+> I'm going to lean towards the per-mm route unless anyone has a major
+> objection to it.
+>
+> - Alex
