@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab3H0BHF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:07:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59383 "EHLO
+	id S1753993Ab3H0BXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:23:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59434 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab3H0BG4 (ORCPT
+	with ESMTP id S1753284Ab3H0BHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:06:56 -0400
+	Mon, 26 Aug 2013 21:07:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 11/74] iwlwifi: mvm: properly tell the fw that a STA is awake
-Date: Mon, 26 Aug 2013 18:08:09 -0700
-Message-Id: <20130827010427.051035637@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 24/74] tracing: Change tracing_fops/snapshot_fops to rely on tracing_get_cpu()
+Date: Mon, 26 Aug 2013 18:08:22 -0700
+Message-Id: <20130827010429.577748192@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -27,40 +26,191 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 5af01772ee1d6e96849adf728ff837bd71b119c0 upstream.
+commit 6484c71cbc170634fa131b6d022d86d61686b88b upstream.
 
-The firmware API wasn't being used correctly, fix that.
+tracing_open() and tracing_snapshot_open() are racy, the memory
+inode->i_private points to can be already freed.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Convert these last users of "inode->i_private == trace_cpu" to
+use "i_private = trace_array" and rely on tracing_get_cpu().
+
+v2: incorporate the fix from Steven, tracing_release() must not
+    blindly dereference file->private_data unless we know that
+    the file was opened for reading.
+
+Link: http://lkml.kernel.org/r/20130723152610.GA23737@redhat.com
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/sta.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ kernel/trace/trace.c |   50 ++++++++++++++++++++++----------------------------
+ 1 file changed, 22 insertions(+), 28 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/sta.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/sta.c
-@@ -1296,17 +1296,11 @@ void iwl_mvm_sta_modify_ps_wake(struct i
- 	struct iwl_mvm_add_sta_cmd cmd = {
- 		.add_modify = STA_MODE_MODIFY,
- 		.sta_id = mvmsta->sta_id,
--		.modify_mask = STA_MODIFY_SLEEPING_STA_TX_COUNT,
--		.sleep_state_flags = cpu_to_le16(STA_SLEEP_STATE_AWAKE),
-+		.station_flags_msk = cpu_to_le32(STA_FLG_PS),
- 		.mac_id_n_color = cpu_to_le32(mvmsta->mac_id_n_color),
- 	};
- 	int ret;
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2853,9 +2853,9 @@ static const struct seq_operations trace
+ };
  
--	/*
--	 * Same modify mask for sleep_tx_count and sleep_state_flags but this
--	 * should be fine since if we set the STA as "awake", then
--	 * sleep_tx_count is not relevant.
--	 */
- 	ret = iwl_mvm_send_cmd_pdu(mvm, ADD_STA, CMD_ASYNC, sizeof(cmd), &cmd);
- 	if (ret)
- 		IWL_ERR(mvm, "Failed to send ADD_STA command (%d)\n", ret);
+ static struct trace_iterator *
+-__tracing_open(struct trace_array *tr, struct trace_cpu *tc,
+-	       struct inode *inode, struct file *file, bool snapshot)
++__tracing_open(struct inode *inode, struct file *file, bool snapshot)
+ {
++	struct trace_array *tr = inode->i_private;
+ 	struct trace_iterator *iter;
+ 	int cpu;
+ 
+@@ -2896,8 +2896,8 @@ __tracing_open(struct trace_array *tr, s
+ 		iter->trace_buffer = &tr->trace_buffer;
+ 	iter->snapshot = snapshot;
+ 	iter->pos = -1;
++	iter->cpu_file = tracing_get_cpu(inode);
+ 	mutex_init(&iter->mutex);
+-	iter->cpu_file = tc->cpu;
+ 
+ 	/* Notify the tracer early; before we stop tracing. */
+ 	if (iter->trace && iter->trace->open)
+@@ -2977,22 +2977,18 @@ int tracing_open_generic_tr(struct inode
+ 
+ static int tracing_release(struct inode *inode, struct file *file)
+ {
++	struct trace_array *tr = inode->i_private;
+ 	struct seq_file *m = file->private_data;
+ 	struct trace_iterator *iter;
+-	struct trace_array *tr;
+ 	int cpu;
+ 
+-	/* Writes do not use seq_file, need to grab tr from inode */
+ 	if (!(file->f_mode & FMODE_READ)) {
+-		struct trace_cpu *tc = inode->i_private;
+-
+-		trace_array_put(tc->tr);
++		trace_array_put(tr);
+ 		return 0;
+ 	}
+ 
++	/* Writes do not use seq_file */
+ 	iter = m->private;
+-	tr = iter->tr;
+-
+ 	mutex_lock(&trace_types_lock);
+ 
+ 	for_each_tracing_cpu(cpu) {
+@@ -3039,8 +3035,7 @@ static int tracing_single_release_tr(str
+ 
+ static int tracing_open(struct inode *inode, struct file *file)
+ {
+-	struct trace_cpu *tc = inode->i_private;
+-	struct trace_array *tr = tc->tr;
++	struct trace_array *tr = inode->i_private;
+ 	struct trace_iterator *iter;
+ 	int ret = 0;
+ 
+@@ -3048,16 +3043,17 @@ static int tracing_open(struct inode *in
+ 		return -ENODEV;
+ 
+ 	/* If this file was open for write, then erase contents */
+-	if ((file->f_mode & FMODE_WRITE) &&
+-	    (file->f_flags & O_TRUNC)) {
+-		if (tc->cpu == RING_BUFFER_ALL_CPUS)
++	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC)) {
++		int cpu = tracing_get_cpu(inode);
++
++		if (cpu == RING_BUFFER_ALL_CPUS)
+ 			tracing_reset_online_cpus(&tr->trace_buffer);
+ 		else
+-			tracing_reset(&tr->trace_buffer, tc->cpu);
++			tracing_reset(&tr->trace_buffer, cpu);
+ 	}
+ 
+ 	if (file->f_mode & FMODE_READ) {
+-		iter = __tracing_open(tr, tc, inode, file, false);
++		iter = __tracing_open(inode, file, false);
+ 		if (IS_ERR(iter))
+ 			ret = PTR_ERR(iter);
+ 		else if (trace_flags & TRACE_ITER_LATENCY_FMT)
+@@ -4672,8 +4668,7 @@ struct ftrace_buffer_info {
+ #ifdef CONFIG_TRACER_SNAPSHOT
+ static int tracing_snapshot_open(struct inode *inode, struct file *file)
+ {
+-	struct trace_cpu *tc = inode->i_private;
+-	struct trace_array *tr = tc->tr;
++	struct trace_array *tr = inode->i_private;
+ 	struct trace_iterator *iter;
+ 	struct seq_file *m;
+ 	int ret = 0;
+@@ -4682,7 +4677,7 @@ static int tracing_snapshot_open(struct
+ 		return -ENODEV;
+ 
+ 	if (file->f_mode & FMODE_READ) {
+-		iter = __tracing_open(tr, tc, inode, file, true);
++		iter = __tracing_open(inode, file, true);
+ 		if (IS_ERR(iter))
+ 			ret = PTR_ERR(iter);
+ 	} else {
+@@ -4699,8 +4694,8 @@ static int tracing_snapshot_open(struct
+ 		ret = 0;
+ 
+ 		iter->tr = tr;
+-		iter->trace_buffer = &tc->tr->max_buffer;
+-		iter->cpu_file = tc->cpu;
++		iter->trace_buffer = &tr->max_buffer;
++		iter->cpu_file = tracing_get_cpu(inode);
+ 		m->private = iter;
+ 		file->private_data = m;
+ 	}
+@@ -5517,7 +5512,6 @@ trace_create_cpu_file(const char *name,
+ static void
+ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
+ {
+-	struct trace_array_cpu *data = per_cpu_ptr(tr->trace_buffer.data, cpu);
+ 	struct dentry *d_percpu = tracing_dentry_percpu(tr, cpu);
+ 	struct dentry *d_cpu;
+ 	char cpu_dir[30]; /* 30 characters should be more than enough */
+@@ -5538,7 +5532,7 @@ tracing_init_debugfs_percpu(struct trace
+ 
+ 	/* per cpu trace */
+ 	trace_create_cpu_file("trace", 0644, d_cpu,
+-				&data->trace_cpu, cpu, &tracing_fops);
++				tr, cpu, &tracing_fops);
+ 
+ 	trace_create_cpu_file("trace_pipe_raw", 0444, d_cpu,
+ 				tr, cpu, &tracing_buffers_fops);
+@@ -5551,7 +5545,7 @@ tracing_init_debugfs_percpu(struct trace
+ 
+ #ifdef CONFIG_TRACER_SNAPSHOT
+ 	trace_create_cpu_file("snapshot", 0644, d_cpu,
+-				&data->trace_cpu, cpu, &snapshot_fops);
++				tr, cpu, &snapshot_fops);
+ 
+ 	trace_create_cpu_file("snapshot_raw", 0444, d_cpu,
+ 				tr, cpu, &snapshot_raw_fops);
+@@ -6117,7 +6111,7 @@ init_tracer_debugfs(struct trace_array *
+ 			  tr, &tracing_iter_fops);
+ 
+ 	trace_create_file("trace", 0644, d_tracer,
+-			(void *)&tr->trace_cpu, &tracing_fops);
++			  tr, &tracing_fops);
+ 
+ 	trace_create_file("trace_pipe", 0444, d_tracer,
+ 			  tr, &tracing_pipe_fops);
+@@ -6138,11 +6132,11 @@ init_tracer_debugfs(struct trace_array *
+ 			  &trace_clock_fops);
+ 
+ 	trace_create_file("tracing_on", 0644, d_tracer,
+-			    tr, &rb_simple_fops);
++			  tr, &rb_simple_fops);
+ 
+ #ifdef CONFIG_TRACER_SNAPSHOT
+ 	trace_create_file("snapshot", 0644, d_tracer,
+-			  (void *)&tr->trace_cpu, &snapshot_fops);
++			  tr, &snapshot_fops);
+ #endif
+ 
+ 	for_each_tracing_cpu(cpu)
 
 
