@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab3H0BOf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:14:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59561 "EHLO
+	id S1754291Ab3H0BO7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:14:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59532 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab3H0BH2 (ORCPT
+	with ESMTP id S1753504Ab3H0BH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:07:28 -0400
+	Mon, 26 Aug 2013 21:07:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anthony Foiani <anthony.foiani@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 58/74] sata_fsl: save irqs while coalescing
-Date: Mon, 26 Aug 2013 18:08:56 -0700
-Message-Id: <20130827010436.543648486@linuxfoundation.org>
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 33/74] tracing/kprobes: Fail to unregister if probe event files are in use
+Date: Mon, 26 Aug 2013 18:08:31 -0700
+Message-Id: <20130827010431.424437768@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
 In-Reply-To: <20130827010424.535365435@linuxfoundation.org>
 References: <20130827010424.535365435@linuxfoundation.org>
@@ -26,126 +27,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anthony Foiani <anthony.foiani@gmail.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 99bbdfa6bdcb4bdf5be914a48e9b46941bf30819 upstream.
+commit 40c32592668b727cbfcf7b1c0567f581bd62a5e4 upstream.
 
-Before this patch, I was seeing the following lockdep splat on my
-MPC8315 (PPC32) target:
+When a probe is being removed, it cleans up the event files that correspond
+to the probe. But there is a race between writing to one of these files
+and deleting the probe. This is especially true for the "enable" file.
 
-  [    9.086051] =================================
-  [    9.090393] [ INFO: inconsistent lock state ]
-  [    9.094744] 3.9.7-ajf-gc39503d #1 Not tainted
-  [    9.099087] ---------------------------------
-  [    9.103432] inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
-  [    9.109431] scsi_eh_1/39 [HC1[1]:SC0[0]:HE0:SE1] takes:
-  [    9.114642]  (&(&host->lock)->rlock){?.+...}, at: [<c02f4168>] sata_fsl_interrupt+0x50/0x250
-  [    9.123137] {HARDIRQ-ON-W} state was registered at:
-  [    9.128004]   [<c006cdb8>] lock_acquire+0x90/0xf4
-  [    9.132737]   [<c043ef04>] _raw_spin_lock+0x34/0x4c
-  [    9.137645]   [<c02f3560>] fsl_sata_set_irq_coalescing+0x68/0x100
-  [    9.143750]   [<c02f36a0>] sata_fsl_init_controller+0xa8/0xc0
-  [    9.149505]   [<c02f3f10>] sata_fsl_probe+0x17c/0x2e8
-  [    9.154568]   [<c02acc90>] driver_probe_device+0x90/0x248
-  [    9.159987]   [<c02acf0c>] __driver_attach+0xc4/0xc8
-  [    9.164964]   [<c02aae74>] bus_for_each_dev+0x5c/0xa8
-  [    9.170028]   [<c02ac218>] bus_add_driver+0x100/0x26c
-  [    9.175091]   [<c02ad638>] driver_register+0x88/0x198
-  [    9.180155]   [<c0003a24>] do_one_initcall+0x58/0x1b4
-  [    9.185226]   [<c05aeeac>] kernel_init_freeable+0x118/0x1c0
-  [    9.190823]   [<c0004110>] kernel_init+0x18/0x108
-  [    9.195542]   [<c000f6b8>] ret_from_kernel_thread+0x64/0x6c
-  [    9.201142] irq event stamp: 160
-  [    9.204366] hardirqs last  enabled at (159): [<c043f778>] _raw_spin_unlock_irq+0x30/0x50
-  [    9.212469] hardirqs last disabled at (160): [<c000f414>] reenable_mmu+0x30/0x88
-  [    9.219867] softirqs last  enabled at (144): [<c002ae5c>] __do_softirq+0x168/0x218
-  [    9.227435] softirqs last disabled at (137): [<c002b0d4>] irq_exit+0xa8/0xb4
-  [    9.234481]
-  [    9.234481] other info that might help us debug this:
-  [    9.240995]  Possible unsafe locking scenario:
-  [    9.240995]
-  [    9.246898]        CPU0
-  [    9.249337]        ----
-  [    9.251776]   lock(&(&host->lock)->rlock);
-  [    9.255878]   <Interrupt>
-  [    9.258492]     lock(&(&host->lock)->rlock);
-  [    9.262765]
-  [    9.262765]  *** DEADLOCK ***
-  [    9.262765]
-  [    9.268684] no locks held by scsi_eh_1/39.
-  [    9.272767]
-  [    9.272767] stack backtrace:
-  [    9.277117] Call Trace:
-  [    9.279589] [cfff9da0] [c0008504] show_stack+0x48/0x150 (unreliable)
-  [    9.285972] [cfff9de0] [c0447d5c] print_usage_bug.part.35+0x268/0x27c
-  [    9.292425] [cfff9e10] [c006ace4] mark_lock+0x2ac/0x658
-  [    9.297660] [cfff9e40] [c006b7e4] __lock_acquire+0x754/0x1840
-  [    9.303414] [cfff9ee0] [c006cdb8] lock_acquire+0x90/0xf4
-  [    9.308745] [cfff9f20] [c043ef04] _raw_spin_lock+0x34/0x4c
-  [    9.314250] [cfff9f30] [c02f4168] sata_fsl_interrupt+0x50/0x250
-  [    9.320187] [cfff9f70] [c0079ff0] handle_irq_event_percpu+0x90/0x254
-  [    9.326547] [cfff9fc0] [c007a1fc] handle_irq_event+0x48/0x78
-  [    9.332220] [cfff9fe0] [c007c95c] handle_level_irq+0x9c/0x104
-  [    9.337981] [cfff9ff0] [c000d978] call_handle_irq+0x18/0x28
-  [    9.343568] [cc7139f0] [c000608c] do_IRQ+0xf0/0x1a8
-  [    9.348464] [cc713a20] [c000fc8c] ret_from_except+0x0/0x14
-  [    9.353983] --- Exception: 501 at _raw_spin_unlock_irq+0x40/0x50
-  [    9.353983]     LR = _raw_spin_unlock_irq+0x30/0x50
-  [    9.364839] [cc713af0] [c043db10] wait_for_common+0xac/0x188
-  [    9.370513] [cc713b30] [c02ddee4] ata_exec_internal_sg+0x2b0/0x4f0
-  [    9.376699] [cc713be0] [c02de18c] ata_exec_internal+0x68/0xa8
-  [    9.382454] [cc713c20] [c02de4b8] ata_dev_read_id+0x158/0x594
-  [    9.388205] [cc713ca0] [c02ec244] ata_eh_recover+0xd88/0x13d0
-  [    9.393962] [cc713d20] [c02f2520] sata_pmp_error_handler+0xc0/0x8ac
-  [    9.400234] [cc713dd0] [c02ecdc8] ata_scsi_port_error_handler+0x464/0x5e8
-  [    9.407023] [cc713e10] [c02ecfd0] ata_scsi_error+0x84/0xb8
-  [    9.412528] [cc713e40] [c02c4974] scsi_error_handler+0xd8/0x47c
-  [    9.418457] [cc713eb0] [c004737c] kthread+0xa8/0xac
-  [    9.423355] [cc713f40] [c000f6b8] ret_from_kernel_thread+0x64/0x6c
+	CPU 0				CPU 1
+	-----				-----
 
-This fix was suggested by Bhushan Bharat <R65777@freescale.com>, and
-was discussed in email at:
+				  fd = open("enable",O_WRONLY);
 
-  http://linuxppc.10917.n7.nabble.com/MPC8315-reboot-failure-lockdep-splat-possibly-related-tp75162.html
+  probes_open()
+  release_all_trace_probes()
+  unregister_trace_probe()
+  if (trace_probe_is_enabled(tp))
+	return -EBUSY
 
-Same patch successfully tested with 3.9.7.  linux-next compiled but
-not tested on hardware.
+				   write(fd, "1", 1)
+				   __ftrace_set_clr_event()
+				   call->class->reg()
+				    (kprobe_register)
+				     enable_trace_probe(tp)
 
-This patch is based off linux-next tag next-20130819
-(which is commit 66a01bae29d11916c09f9f5a937cafe7d402e4a5 )
+  __unregister_trace_probe(tp);
+  list_del(&tp->list)
+  unregister_probe_event(tp) <-- fails!
+  free_trace_probe(tp)
 
-Signed-off-by: Anthony Foiani <anthony.foiani@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+				   write(fd, "0", 1)
+				   __ftrace_set_clr_event()
+				   call->class->unreg
+				    (kprobe_register)
+				    disable_trace_probe(tp) <-- BOOM!
+
+A test program was written that used two threads to simulate the
+above scenario adding a nanosleep() interval to change the timings
+and after several thousand runs, it was able to trigger this bug
+and crash:
+
+BUG: unable to handle kernel paging request at 00000005000000f9
+IP: [<ffffffff810dee70>] probes_open+0x3b/0xa7
+PGD 7808a067 PUD 0
+Oops: 0000 [#1] PREEMPT SMP
+Dumping ftrace buffer:
+---------------------------------
+Modules linked in: ipt_MASQUERADE sunrpc ip6t_REJECT nf_conntrack_ipv6
+CPU: 1 PID: 2070 Comm: test-kprobe-rem Not tainted 3.11.0-rc3-test+ #47
+Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+task: ffff880077756440 ti: ffff880076e52000 task.ti: ffff880076e52000
+RIP: 0010:[<ffffffff810dee70>]  [<ffffffff810dee70>] probes_open+0x3b/0xa7
+RSP: 0018:ffff880076e53c38  EFLAGS: 00010203
+RAX: 0000000500000001 RBX: ffff88007844f440 RCX: 0000000000000003
+RDX: 0000000000000003 RSI: 0000000000000003 RDI: ffff880076e52000
+RBP: ffff880076e53c58 R08: ffff880076e53bd8 R09: 0000000000000000
+R10: ffff880077756440 R11: 0000000000000006 R12: ffffffff810dee35
+R13: ffff880079250418 R14: 0000000000000000 R15: ffff88007844f450
+FS:  00007f87a276f700(0000) GS:ffff88007d480000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00000005000000f9 CR3: 0000000077262000 CR4: 00000000000007e0
+Stack:
+ ffff880076e53c58 ffffffff81219ea0 ffff88007844f440 ffffffff810dee35
+ ffff880076e53ca8 ffffffff81130f78 ffff8800772986c0 ffff8800796f93a0
+ ffffffff81d1b5d8 ffff880076e53e04 0000000000000000 ffff88007844f440
+Call Trace:
+ [<ffffffff81219ea0>] ? security_file_open+0x2c/0x30
+ [<ffffffff810dee35>] ? unregister_trace_probe+0x4b/0x4b
+ [<ffffffff81130f78>] do_dentry_open+0x162/0x226
+ [<ffffffff81131186>] finish_open+0x46/0x54
+ [<ffffffff8113f30b>] do_last+0x7f6/0x996
+ [<ffffffff8113cc6f>] ? inode_permission+0x42/0x44
+ [<ffffffff8113f6dd>] path_openat+0x232/0x496
+ [<ffffffff8113fc30>] do_filp_open+0x3a/0x8a
+ [<ffffffff8114ab32>] ? __alloc_fd+0x168/0x17a
+ [<ffffffff81131f4e>] do_sys_open+0x70/0x102
+ [<ffffffff8108f06e>] ? trace_hardirqs_on_caller+0x160/0x197
+ [<ffffffff81131ffe>] SyS_open+0x1e/0x20
+ [<ffffffff81522742>] system_call_fastpath+0x16/0x1b
+Code: e5 41 54 53 48 89 f3 48 83 ec 10 48 23 56 78 48 39 c2 75 6c 31 f6 48 c7
+RIP  [<ffffffff810dee70>] probes_open+0x3b/0xa7
+ RSP <ffff880076e53c38>
+CR2: 00000005000000f9
+---[ end trace 35f17d68fc569897 ]---
+
+The unregister_trace_probe() must be done first, and if it fails it must
+fail the removal of the kprobe.
+
+Several changes have already been made by Oleg Nesterov and Masami Hiramatsu
+to allow moving the unregister_probe_event() before the removal of
+the probe and exit the function if it fails. This prevents the tp
+structure from being used after it is freed.
+
+Link: http://lkml.kernel.org/r/20130704034038.819592356@goodmis.org
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/sata_fsl.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ kernel/trace/trace_kprobe.c |   21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
 
---- a/drivers/ata/sata_fsl.c
-+++ b/drivers/ata/sata_fsl.c
-@@ -293,6 +293,7 @@ static void fsl_sata_set_irq_coalescing(
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -90,7 +90,7 @@ static __kprobes bool trace_probe_is_on_
+ }
+ 
+ static int register_probe_event(struct trace_probe *tp);
+-static void unregister_probe_event(struct trace_probe *tp);
++static int unregister_probe_event(struct trace_probe *tp);
+ 
+ static DEFINE_MUTEX(probe_lock);
+ static LIST_HEAD(probe_list);
+@@ -411,9 +411,12 @@ static int unregister_trace_probe(struct
+ 	if (trace_probe_is_enabled(tp))
+ 		return -EBUSY;
+ 
++	/* Will fail if probe is being used by ftrace or perf */
++	if (unregister_probe_event(tp))
++		return -EBUSY;
++
+ 	__unregister_trace_probe(tp);
+ 	list_del(&tp->list);
+-	unregister_probe_event(tp);
+ 
+ 	return 0;
+ }
+@@ -692,7 +695,9 @@ static int release_all_trace_probes(void
+ 	/* TODO: Use batch unregistration */
+ 	while (!list_empty(&probe_list)) {
+ 		tp = list_entry(probe_list.next, struct trace_probe, list);
+-		unregister_trace_probe(tp);
++		ret = unregister_trace_probe(tp);
++		if (ret)
++			goto end;
+ 		free_trace_probe(tp);
+ 	}
+ 
+@@ -1325,11 +1330,15 @@ static int register_probe_event(struct t
+ 	return ret;
+ }
+ 
+-static void unregister_probe_event(struct trace_probe *tp)
++static int unregister_probe_event(struct trace_probe *tp)
  {
- 	struct sata_fsl_host_priv *host_priv = host->private_data;
- 	void __iomem *hcr_base = host_priv->hcr_base;
-+	unsigned long flags;
++	int ret;
++
+ 	/* tp->event is unregistered in trace_remove_event_call() */
+-	trace_remove_event_call(&tp->call);
+-	kfree(tp->call.print_fmt);
++	ret = trace_remove_event_call(&tp->call);
++	if (!ret)
++		kfree(tp->call.print_fmt);
++	return ret;
+ }
  
- 	if (count > ICC_MAX_INT_COUNT_THRESHOLD)
- 		count = ICC_MAX_INT_COUNT_THRESHOLD;
-@@ -305,12 +306,12 @@ static void fsl_sata_set_irq_coalescing(
- 			(count > ICC_MIN_INT_COUNT_THRESHOLD))
- 		ticks = ICC_SAFE_INT_TICKS;
- 
--	spin_lock(&host->lock);
-+	spin_lock_irqsave(&host->lock, flags);
- 	iowrite32((count << 24 | ticks), hcr_base + ICC);
- 
- 	intr_coalescing_count = count;
- 	intr_coalescing_ticks = ticks;
--	spin_unlock(&host->lock);
-+	spin_unlock_irqrestore(&host->lock, flags);
- 
- 	DPRINTK("interrupt coalescing, count = 0x%x, ticks = %x\n",
- 			intr_coalescing_count, intr_coalescing_ticks);
+ /* Make a debugfs interface for controlling probe points */
 
 
