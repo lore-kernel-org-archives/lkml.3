@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab3H0Xof (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 19:44:35 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:54151 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408Ab3H0Xoc (ORCPT
+	id S1754016Ab3H0Xqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 19:46:53 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:42558 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab3H0Xqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 19:44:32 -0400
-Date: Tue, 27 Aug 2013 19:43:45 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Stefan Seyfried <stefan.seyfried@googlemail.com>
-Subject: Re: [PATCH v3] ACPI: Fix osc flag setup ordering to allow pcie
- hotplug use when available
-Message-ID: <20130827234345.GA11187@neilslaptop.think-freely.org>
-References: <1377278379-9054-1-git-send-email-nhorman@tuxdriver.com>
- <1377531553-17716-1-git-send-email-nhorman@tuxdriver.com>
- <CAErSpo7tne+NvO-idW8Dt-9FZaGOHjTEDcQ8mC6K1PG6M=ftvg@mail.gmail.com>
+	Tue, 27 Aug 2013 19:46:52 -0400
+Date: Tue, 27 Aug 2013 16:46:49 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: werner <w.landgraf@ru.ru>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.11-rc6 many problems,  wil6210 , snd-pcsp , ibmphp
+Message-ID: <20130827234649.GA24002@roeck-us.net>
+References: <web-25718928@zbackend1.aha.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo7tne+NvO-idW8Dt-9FZaGOHjTEDcQ8mC6K1PG6M=ftvg@mail.gmail.com>
+In-Reply-To: <web-25718928@zbackend1.aha.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 03:34:11PM -0600, Bjorn Helgaas wrote:
-> [+cc Stefan]
+On Fri, Aug 23, 2013 at 02:50:30PM -0400, werner wrote:
+> With compiling and using this, have too much problems
 > 
-> On Mon, Aug 26, 2013 at 9:39 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> > Somewhere between 3.9 and 3.10 it seems the order in which pcie and acpi probed
-> > slots for hotplug capabilites got reversed.  While this isn't a big deal, it did
-> > uncover a bug in the ACPI bus setup path.  Specifically, acpi_pci_root_add calls
-> > pci_acpi_scan_root before setting the osc flags for the device handle.
-> > pci_acpi_scan_root, among other things uses device_is_managed_by_native_pciehp()
-> > to determine if a given slot has pcie hotplug capabilties, whcih checks the
-> > devices OSC_PCI_EXPRESS_NATIVE_HP_CONTROL flag.  Since that flag is not set
-> > until after pci_acpi_scan_root_completes, the acpi code never sees that pcie
-> > slots are hotplug capable and configures them all to use acpi instead.
-> 
-> I'd like to make it more explicit what we're fixing.  Apparently this
-> is a regression between v3.9 and v3.10.
-> 
-> Is this a fix for problems like
-> https://bugzilla.kernel.org/show_bug.cgi?id=60736 ?  That bug is that
-> an ExpressCard slot doesn't work unless we boot with
-> "acpiphp.disable=1".  I think what happens there is that acpiphp
-> claims the slot before we run _OSC, so pciehp doesn't claim it, even
-> though _OSC did grant us control over native PCIe hotplug.
-> 
-Yes, that bug is precisely what I am trying to fix (although your wording above is
-inverted from the problem in the bug).  What happens is that acpiphp claims the
-pcie ports, because acpiphp init runs first, and we haven't yet parsed _OSC,
-which would have told acpiphp to yield control to pciehp.  The initial fix I
-proposed fixed this by parsing _OSC prior to running the acpiphp bus scan, but
-that reintroduced the problem of not handling pcie 1.1 aspm properly.  That has
-been fixed in v2/v3 by deferring the setting of aspm_disable until after the bus
-scan.
+[ ... ]
 
-Shall I submit a v4 with an updated changelog?
+> 
+>   CC      arch/x86/crypto/crc32c-intel.mod.o
+>   LD [M]  arch/x86/crypto/crc32c-intel.ko
+>   CC      arch/x86/crypto/salsa20-i586.mod.o
+>   LD [M]  arch/x86/crypto/salsa20-i586.ko
+>   CC      arch/x86/kvm/kvm-amd.mod.o
+>   LD [M]  arch/x86/kvm/kvm-amd.ko
+>   CC      arch/x86/kvm/kvm-intel.mod.o
+>   LD [M]  arch/x86/kvm/kvm-intel.ko
+>   CC      arch/x86/kvm/kvm.mod.o
+>   LD [M]  arch/x86/kvm/kvm.ko
+>   CC      crypto/ansi_cprng.mod.o
+> gcc: crypto/ansi_cprng.mod.c: No such file or directory
+> gcc: no input files
+> make[1]: [crypto/ansi_cprng.mod.o] Error 1 (ignored)
+>   LD [M]  crypto/ansi_cprng.ko
+> ld: crypto/ansi_cprng.mod.o: No such file: No such file or directory
+> make[1]: [crypto/ansi_cprng.ko] Error 1 (ignored)
+>   CC      crypto/ccm.mod.o
+> gcc: crypto/ccm.mod.c: No such file or directory
+> gcc: no input files
 
-Best
-Neil
+(and so on)
 
+This is a side effect of commit ea4054a2384 (handle huge number of modules).
+See https://lkml.org/lkml/2013/5/8/493.
+
+Guenter
