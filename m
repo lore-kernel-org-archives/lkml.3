@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716Ab3H0URW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 16:17:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29811 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab3H0URV (ORCPT
+	id S1753926Ab3H0URr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 16:17:47 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58989 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864Ab3H0URq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 16:17:21 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=7p2ErawryrAA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=65ulK5L86BMA:10 a=QyXUC8HyAAAA:8 a=cxfEerseVHsqx6nTsVkA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 27 Aug 2013 16:17:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 02/10] tracing: add basic event trigger framework
-Message-ID: <20130827161720.37d81839@gandalf.local.home>
-In-Reply-To: <efa194f41ca2bb52d355060d5109606aaf733315.1377631572.git.tom.zanussi@linux.intel.com>
-References: <cover.1377631572.git.tom.zanussi@linux.intel.com>
-	<efa194f41ca2bb52d355060d5109606aaf733315.1377631572.git.tom.zanussi@linux.intel.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 27 Aug 2013 16:17:46 -0400
+Message-ID: <521D0964.2080209@wwwdotorg.org>
+Date: Tue, 27 Aug 2013 14:17:40 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+CC: poeschel@lemonage.de, grant.likely@linaro.org, linus.walleij@linaro.org,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, mark.rutland@arm.com,
+        ian.campbell@citrix.com, galak@codeaurora.org, pawel.moll@arm.com,
+        tomasz.figa@gmail.com,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de>
+In-Reply-To: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Aug 2013 14:40:14 -0500
-Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
+On 08/26/2013 08:07 AM, Lars Poeschel wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Currently the kernel is ambigously treating GPIOs and interrupts
+> from a GPIO controller: GPIOs and interrupts are treated as
+> orthogonal. This unfortunately makes it unclear how to actually
+> retrieve and request a GPIO line or interrupt from a GPIO
+> controller in the device tree probe path.
 
-> +
-> +	if (copy_from_user(buf, ubuf, cnt)) {
-> +		free_page((unsigned long) buf);
-> +		return -EFAULT;
-> +	}
-> +	buf[cnt] = '\0';
-> +	strim(buf);
-> +
-> +	mutex_lock(&event_mutex);
-> +	event_file = event_file_data(file);
-> +	if (unlikely(!event_file)) {
-> +		mutex_unlock(&event_mutex);
-> +		free_page((unsigned long) buf);
-
-Nitpick... Nuke the space before "buf".
-
--- Steve
-
-> +		return -ENODEV;
-> +	}
-> +	ret = trigger_process_regex(event_file, buf, enable);
-> +	mutex_unlock(&event_mutex);
-> +
-> +	free_page((unsigned long) buf);
-> +	if (ret < 0)
-> +		goto out;
+I still think that this patch is the wrong approach. Instead, the logic
+should be hooked into gpio_request() and request_irq(). This patch only
+addresses DT, and ignores anything else, hence doesn't seem like the
+right level of abstraction to plug in, since the issue is not related to DT.
