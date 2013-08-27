@@ -1,82 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab3H0SDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 14:03:25 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:56684 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab3H0SDW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 14:03:22 -0400
+	id S1753464Ab3H0SHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 14:07:09 -0400
+Received: from fieldses.org ([174.143.236.118]:42360 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752354Ab3H0SHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 14:07:06 -0400
+Date: Tue, 27 Aug 2013 14:06:55 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        linux-ext4@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: Re: Issues with a rather unusual configured NFS server
+Message-ID: <20130827180655.GE14809@fieldses.org>
+References: <52075E01.7030506@gmx.de>
+ <20130812143640.GF4596@quack.suse.cz>
+ <20130813215313.GH17781@fieldses.org>
 MIME-Version: 1.0
-In-Reply-To: <521CCF9B.9000004@wwwdotorg.org>
-References: <1376911241-27720-1-git-send-email-Julia.Lawall@lip6.fr>
- <1376911241-27720-2-git-send-email-Julia.Lawall@lip6.fr> <20130819120249.GA5740@ulmo>
- <CAErSpo5oOnfhi+aRi-Z3kCwS1VpYSO6FX5O_MOZmWNLcfhhA9w@mail.gmail.com>
- <20130819201224.GC5191@mithrandir> <CAErSpo6U9i16gdaYGpWqgLaFteXpy1erCUw55SqkHLcbypP=vA@mail.gmail.com>
- <20130827081443.GI8686@ulmo> <521CCF9B.9000004@wwwdotorg.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 27 Aug 2013 12:03:01 -0600
-Message-ID: <CAErSpo461H=3qD5Xb7rKkMcQ1_ipyAQ5Tv2VhZD4j578A+Bd9w@mail.gmail.com>
-Subject: Re: [PATCH 1/7] PCI: tegra: replace devm_request_and_ioremap by devm_ioremap_resource
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130813215313.GH17781@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 10:11 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 08/27/2013 02:14 AM, Thierry Reding wrote:
->> On Mon, Aug 19, 2013 at 02:49:07PM -0600, Bjorn Helgaas wrote:
->>> On Mon, Aug 19, 2013 at 2:12 PM, Thierry Reding
->>> <thierry.reding@gmail.com> wrote:
->>>> On Mon, Aug 19, 2013 at 02:04:24PM -0600, Bjorn Helgaas wrote:
->>>>> On Mon, Aug 19, 2013 at 6:02 AM, Thierry Reding
->>>>> <thierry.reding@gmail.com> wrote:
->>>>>
->>>>>> Bjorn, how do you want to handle patches to the Tegra PCIe
->>>>>> driver in the future? Do you want me to prepare a branch
->>>>>> and pull from that or would you rather just take simple
->>>>>> patches?
->>>>>
->>>>> I'm in the habit of applying patches from email, so that's
->>>>> easy for me.  But a branch would be OK, too.
->>>>
->>>> Patches work for me too. Is this cleanup patch something that
->>>> you'd be comfortable with applying after 3.12-rc1 or would you
->>>> rather defer it to 3.13?
->>>
->>> I'm not really sure how we should manage drivers/pci/host/*.
->>> Those files are mostly arch code, and I'm not sure it's useful
->>> for me to be in the middle of managing them.
->>>
->>> I assume Stephen or somebody has a tree with the pci-tegra.c
->>> stuff that's in -next right now; it seems like it'd be simplest
->>> to just add this patch there and merge in during the v3.12 merge
->>> window.
->>
->> If Stephen's fine with it I suppose we could take pci-tegra.c
->> driver changes through the Tegra tree. But I think it'd be good if
->> we could still Cc you on patches so you're aware of what we're
->> doing (that is the same for all drivers drivers/pci/host/*). And
->> we're going to need your Acked-by on the patches as well.
+On Tue, Aug 13, 2013 at 05:53:14PM -0400, bfields wrote:
+> On Mon, Aug 12, 2013 at 04:36:40PM +0200, Jan Kara wrote:
+> > On Sun 11-08-13 11:48:49, Toralf Förster wrote:
+> > > so that the server either crashes (if it is a user mode linux image) or at least its reboot functionality got broken
+> > > - if the NFS server is hammered with scary NFS calls using a fuzzy tool running at a remote NFS client under a non-privileged user id.
+> > > 
+> > > It can re reproduced, if
+> > > 	- the NFS share is an EXT3 or EXT4 directory
+> > > 	- and it is created at file located at tempfs and mounted via loop device
+> > > 	- and the NFS server is forced to umount the NFS share
+> > > 	- and the server forced to restart the NSF service afterwards
+> > > 	- and trinity is used
+> > > 
+> > > I could find a scenario for an automated bisect. 2 times it brought this commit 
+> > > commit 68a3396178e6688ad7367202cdf0af8ed03c8727
+> > > Author: J. Bruce Fields <bfields@redhat.com>
+> > > Date:   Thu Mar 21 11:21:50 2013 -0400
+> > > 
+> > >     nfsd4: shut down more of delegation earlier
+> 
+> Thanks for the report.  I think I see the problem--after this commit
+> nfs4_set_delegation() failures result in nfs4_put_delegation being
+> called, but nfs4_put_delegation doesn't free the nfs4_file that has
+> already been set by alloc_init_deleg().
+> 
+> Let me think about how to fix that....
 
-I think you have my Acked-by for this case already (from Aug 20).  And
-feel free to copy me on anything you like; my delete key works well :)
+Sorry for the slow response--can you check whether this fixes the
+problem?
 
-> I can push Tegra PCIe patches through the arm-soc tree before
-> 3.12-rc1, but after that point, I think it's best if they go through
-> the PCIe tree, unless there's some cross-subsystem dependency for a
-> specific patch, and with the new PCIe driver, that's less likely.
+--b.
 
-I'm OK with merging things through my tree.  It just seemed like there
-was a lot of recent Tegra activity that included a few Tegra PCI
-changes, and no benefit to trying to split the PCI stuff from the
-non-PCI stuff.  Hopefully it will calm down, because I don't have time
-to be in the middle of major Tegra stuff.
+commit 624a0ee0375940ce4aa36330b0b5a70af6d2b6f5
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Thu Aug 15 16:55:26 2013 -0400
 
-Bjorn
+    nfsd4: fix leak of inode reference on delegation failure
+    
+    This fixes a regression from 68a3396178e6688ad7367202cdf0af8ed03c8727
+    "nfsd4: shut down more of delegation earlier".
+    
+    After that commit, nfs4_set_delegation() failures result in
+    nfs4_put_delegation being called, but nfs4_put_delegation doesn't free
+    the nfs4_file that has already been set by alloc_init_deleg().
+    
+    This can result in an oops on later unmounting the exported filesystem.
+    
+    Note also delaying the fi_had_conflict check we're able to return a
+    better error (hence give 4.1 clients a better idea why the delegation
+    failed; though note CONFLICT isn't an exact match here, as that's
+    supposed to indicate a current conflict, but all we know here is that
+    there was one recently).
+    
+    Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index eb9cf81..0874998 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -368,11 +368,8 @@ static struct nfs4_delegation *
+ alloc_init_deleg(struct nfs4_client *clp, struct nfs4_ol_stateid *stp, struct svc_fh *current_fh)
+ {
+ 	struct nfs4_delegation *dp;
+-	struct nfs4_file *fp = stp->st_file;
+ 
+ 	dprintk("NFSD alloc_init_deleg\n");
+-	if (fp->fi_had_conflict)
+-		return NULL;
+ 	if (num_delegations > max_delegations)
+ 		return NULL;
+ 	dp = delegstateid(nfs4_alloc_stid(clp, deleg_slab));
+@@ -389,8 +386,7 @@ alloc_init_deleg(struct nfs4_client *clp, struct nfs4_ol_stateid *stp, struct sv
+ 	INIT_LIST_HEAD(&dp->dl_perfile);
+ 	INIT_LIST_HEAD(&dp->dl_perclnt);
+ 	INIT_LIST_HEAD(&dp->dl_recall_lru);
+-	get_nfs4_file(fp);
+-	dp->dl_file = fp;
++	dp->dl_file = NULL;
+ 	dp->dl_type = NFS4_OPEN_DELEGATE_READ;
+ 	fh_copy_shallow(&dp->dl_fh, &current_fh->fh_handle);
+ 	dp->dl_time = 0;
+@@ -3044,22 +3040,35 @@ static int nfs4_setlease(struct nfs4_delegation *dp)
+ 	return 0;
+ }
+ 
+-static int nfs4_set_delegation(struct nfs4_delegation *dp)
++static int nfs4_set_delegation(struct nfs4_delegation *dp, struct nfs4_file *fp)
+ {
+-	struct nfs4_file *fp = dp->dl_file;
++	int status;
+ 
+-	if (!fp->fi_lease)
+-		return nfs4_setlease(dp);
++	if (fp->fi_had_conflict)
++		return -EAGAIN;
++	get_nfs4_file(fp);
++	dp->dl_file = fp;
++	if (!fp->fi_lease) {
++		status = nfs4_setlease(dp);
++		if (status)
++			goto out_free;
++		return 0;
++	}
+ 	spin_lock(&recall_lock);
+ 	if (fp->fi_had_conflict) {
+ 		spin_unlock(&recall_lock);
+-		return -EAGAIN;
++		status = -EAGAIN;
++		goto out_free;
+ 	}
+ 	atomic_inc(&fp->fi_delegees);
+ 	list_add(&dp->dl_perfile, &fp->fi_delegations);
+ 	spin_unlock(&recall_lock);
+ 	list_add(&dp->dl_perclnt, &dp->dl_stid.sc_client->cl_delegations);
+ 	return 0;
++out_free:
++	put_nfs4_file(fp);
++	dp->dl_file = fp;
++	return status;
+ }
+ 
+ static void nfsd4_open_deleg_none_ext(struct nfsd4_open *open, int status)
+@@ -3134,7 +3143,7 @@ nfs4_open_delegation(struct net *net, struct svc_fh *fh,
+ 	dp = alloc_init_deleg(oo->oo_owner.so_client, stp, fh);
+ 	if (dp == NULL)
+ 		goto out_no_deleg;
+-	status = nfs4_set_delegation(dp);
++	status = nfs4_set_delegation(dp, stp->st_file);
+ 	if (status)
+ 		goto out_free;
+ 
