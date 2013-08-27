@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab3H0R2E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 13:28:04 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:64165 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab3H0R2D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 13:28:03 -0400
-Message-ID: <521CE19D.2000805@cogentembedded.com>
-Date: Tue, 27 Aug 2013 21:27:57 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1753414Ab3H0R2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 13:28:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18171 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753309Ab3H0R2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 13:28:32 -0400
+Date: Tue, 27 Aug 2013 19:21:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        John Johansen <john.johansen@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kentaro Takeda <takedakn@nttdata.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 03/12] pid: get ppid pid_t of task in init_pid_ns safely
+Message-ID: <20130827172155.GC29147@redhat.com>
+References: <cover.1377032086.git.rgb@redhat.com> <a411b87ba4c4af251166ee5877cb8c646cf7826c.1377032086.git.rgb@redhat.com>
 MIME-Version: 1.0
-To: Rupesh Gujare <rupesh.gujare@atmel.com>
-CC: devel@linuxdriverproject.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH 4/4] staging: ozwpan: Return error, if PD is not connected.
-References: <1377618823-12246-1-git-send-email-rupesh.gujare@atmel.com> <1377618823-12246-4-git-send-email-rupesh.gujare@atmel.com>
-In-Reply-To: <1377618823-12246-4-git-send-email-rupesh.gujare@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <a411b87ba4c4af251166ee5877cb8c646cf7826c.1377032086.git.rgb@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 08/20, Richard Guy Briggs wrote:
+>
+> Added the functions
+>         task_ppid()
+>         task_ppid_nr_ns()
+>         task_ppid_nr_init_ns()
+> to safely abstract the lookup of the PPID
 
-On 08/27/2013 07:53 PM, Rupesh Gujare wrote:
+but it is not safe.
 
-> Return error if we receive write(), while PD is not connected.
+> +static inline struct pid *task_ppid(struct task_struct *task)
+> +{
+> +	return task_tgid(rcu_dereference(current->real_parent));
+                                         ^^^^^^^
+task?
 
-> Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
-> ---
->   drivers/staging/ozwpan/ozcdev.c |    2 ++
->   1 file changed, 2 insertions(+)
+> +static inline pid_t task_ppid_nr_ns(struct task_struct *tsk,
+> +					struct pid_namespace *ns)
+> +{
+> +	pid_t pid;
+> +
+> +	rcu_read_lock();
+> +	pid = pid_nr_ns(task_ppid(current), ns);
+                                  ^^^^^^^
+again.
 
-> diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
-> index 03b41ee..22cb2ae 100644
-> --- a/drivers/staging/ozwpan/ozcdev.c
-> +++ b/drivers/staging/ozwpan/ozcdev.c
-> @@ -162,6 +162,8 @@ static ssize_t oz_cdev_write(struct file *filp, const char __user *buf,
->   	spin_unlock_bh(&g_cdev.lock);
->   	if (pd == NULL)
->   		return -1;
+> +	rcu_read_unlock();
 
-    Note that returning -EPERM here is hardly correct.
+And why this is safe?
 
-> +	if (!(pd->state & OZ_PD_S_CONNECTED))
-> +		return -ENXIO;
+rcu_read_lock() can't help if tsk was already dead _before_ it takes
+the rcu lock. ->real_parent can point the already freed/reused/unmapped
+memory.
 
-WBR, Sergei
+This is safe if, for example, the caller alredy holds rcu_read_lock()
+and tsk was found by find_task_by*(), or tsk is current.
+
+Richard, just in case... I am going to vacation, I will be completely
+offline till Sep 10.
+
+Oleg.
 
