@@ -1,110 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab3H0VdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 17:33:21 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49486 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab3H0VdT (ORCPT
+	id S1753936Ab3H0VeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 17:34:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41487 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab3H0VeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 17:33:19 -0400
-Message-ID: <521D1B19.6080204@wwwdotorg.org>
-Date: Tue, 27 Aug 2013 15:33:13 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: boris brezillon <b.brezillon@overkiz.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, James Hogan <james.hogan@imgtec.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 1/3] pinctrl: add new generic pinconf config for deglitch
- filter
-References: <1377379926-11163-1-git-send-email-b.brezillon@overkiz.com> <1377380109-11247-1-git-send-email-b.brezillon@overkiz.com> <521B875E.1010605@wwwdotorg.org> <521B89D1.6010902@overkiz.com> <521C2347.4080702@wwwdotorg.org> <521C4451.1060908@overkiz.com> <521C587E.6050706@atmel.com>
-In-Reply-To: <521C587E.6050706@atmel.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Aug 2013 17:34:17 -0400
+Date: Tue, 27 Aug 2013 14:34:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Chen Gong <gong.chen@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] mm/hwpoison: fix return value of
+ madvise_hwpoison
+Message-Id: <20130827143415.fa284d67f0ae838079b5a5aa@linux-foundation.org>
+In-Reply-To: <521c5ddd.c9fc440a.2724.ffff8c70SMTPIN_ADDED_BROKEN@mx.google.com>
+References: <1377571171-9958-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	<1377571171-9958-3-git-send-email-liwanp@linux.vnet.ibm.com>
+	<1377574096-y8hxgzdw-mutt-n-horiguchi@ah.jp.nec.com>
+	<521c1f3f.813d320a.6ba7.5a17SMTPIN_ADDED_BROKEN@mx.google.com>
+	<1377574896-5k1diwl4-mutt-n-horiguchi@ah.jp.nec.com>
+	<20130827073701.GA23035@gchen.bj.intel.com>
+	<521c5ddd.c9fc440a.2724.ffff8c70SMTPIN_ADDED_BROKEN@mx.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 01:42 AM, Nicolas Ferre wrote:
-> On 27/08/2013 08:16, boris brezillon :
->> On 27/08/2013 05:55, Stephen Warren wrote:
->>> On 08/26/2013 11:01 AM, boris brezillon wrote:
->>>> Hello Stephen,
->>>>
->>>> On 26/08/2013 18:50, Stephen Warren wrote:
->>>>> On 08/24/2013 03:35 PM, Boris BREZILLON wrote:
->>>>>> Add a new parameter to support deglitch filter configuration.
->>>>>> A deglitch filter works like a debounce filter but with a smaller
->>>>>> delay (nanoseconds).
->>>>> Why not use the existing debounce property, just with a small delay
->>>>> specified. It seems like that's exactly what the property is for?
->>>> That's one of the question I asked in my cover letter :-)
->>>>
->>>> Indeed the at91 deglitch filter delay is not configurable and is
->>>> statically
->>>> assigned to half a master clk cycle (if master clk = 133MHz -> 8 ns).
->>>> The debounce property argument is currently expressed in usecs.
->>>>
->>>> This will result in always selecting the debounce filter (which is also
->>>> available on at91 SoCs) over the deglitch filter.
->>>>
->>>> Could we add a flag in the deglitch argument to specify the delay unit
->>>> (nsecs or usecs) ?
->>> If the value is hard-coded in HW, why not use non-zero (or 1) to enable
->>> and zero to disable?
->>
->> Indeed at91 pins support both deglitch and debounce filter and I have to
->> choose
->> between the two given the argument value (in usec).
->>
->> Here's what I can do:
->>
->> if (arg >= 1/2 * slowclock)    /* debounce case */
->>       /* choose debounce filter and configure the delay
->>           according to the given argument value */
->> else                                          /* deglitch case */
->>       /* choose deglitch filter */
->>
->>
->> Slow clock is running at 32KHz which gives a 30 usec clock cycle.
-> 
-> I am not in favor for this kind of complicated heuristic. Deglitch and
-> Debounce filters are different features in at91 (even if they pursuit
-> the same goal). So I do prefer to let the user choose which feature is
-> preferred for his application and add a different flag.
-> 
-> 
->>> (this kind of thing is why I'm not convinced that generic pinconf works
->>> so well... What if we need psecs in the future?)
->>
->> Should I keep the at91 native pinconf binding and add the missing flags
->> to this binding
->> (OUTPUT configuration flags) ?
->>
->> This was another question I asked in my cover letter: wether or not the
->> generic pinconf
->> binding should be used.
-> 
-> The question is: how much this "generic" pinconf is... well... generic!
+On Tue, 27 Aug 2013 16:02:29 +0800 Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
 
-This is why I don't really like the concept of generic pinconf; it ends
-up being more: whoever defines something first imposes their SoCs'
-viewpoint on that feature/property, and then everything else is declared
-non-generic.
+> Hi Chen,
+> On Tue, Aug 27, 2013 at 03:37:01AM -0400, Chen Gong wrote:
+> >> On Tue, Aug 27, 2013 at 11:38:27AM +0800, Wanpeng Li wrote:
+> >> > Hi Naoya,
+> >> > On Mon, Aug 26, 2013 at 11:28:16PM -0400, Naoya Horiguchi wrote:
+> >> > >On Tue, Aug 27, 2013 at 10:39:31AM +0800, Wanpeng Li wrote:
+> >> > >> The return value outside for loop is always zero which means madvise_hwpoison 
+> >> > >> return success, however, this is not truth for soft_offline_page w/ failure
+> >> > >> return value.
+> >> > >
+> >> > >I don't understand what you want to do for what reason. Could you clarify
+> >> > >those?
+> >> > 
+> >> > int ret is defined in two place in madvise_hwpoison. One is out of for
+> >> > loop and its value is always zero(zero means success for madvise), the 
+> >> > other one is in for loop. The soft_offline_page function maybe return 
+> >> > -EBUSY and break, however, the ret out of for loop is return which means 
+> >> > madvise_hwpoison success. 
+> >> 
+> >> Oh, I see. Thanks.
+> >> 
+> >I don't think such change is a good idea. The original code is obviously
+> >easy to confuse people. Why not removing redundant local variable?
+> >
+> 
+> I think the trick here is get_user_pages_fast will return the number of
+> pages pinned. It is always 1 in madvise_hwpoison, the return value of 
+> memory_failure is ignored. Therefore we still need to reset ret to 0 
+> before return madvise_hwpoison. 
 
-In many cases, I think bindings will need to add SoC-specific properties
-beyond generic pinconf (or perhaps only use SoC-specific properties and
-ignore generic pinconf).
+erk, madvise_hwpoison() has two locals with the same name.   Bad.
 
-In the case of deglitch here, perhaps that's the best answer.
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: mm/madvise.c:madvise_hwpoison(): remove local `ret'
+
+madvise_hwpoison() has two locals called "ret".  Fix it all up.
+
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ mm/madvise.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff -puN mm/madvise.c~a mm/madvise.c
+--- a/mm/madvise.c~a
++++ a/mm/madvise.c
+@@ -343,15 +343,16 @@ static long madvise_remove(struct vm_are
+  */
+ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
+ {
+-	int ret = 0;
+-
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 	for (; start < end; start += PAGE_SIZE) {
+ 		struct page *p;
+-		int ret = get_user_pages_fast(start, 1, 0, &p);
++		int ret;
++		
++		ret = get_user_pages_fast(start, 1, 0, &p);
+ 		if (ret != 1)
+ 			return ret;
++
+ 		if (PageHWPoison(p)) {
+ 			put_page(p);
+ 			continue;
+@@ -369,7 +370,7 @@ static int madvise_hwpoison(int bhv, uns
+ 		/* Ignore return value for now */
+ 		memory_failure(page_to_pfn(p), 0, MF_COUNT_INCREASED);
+ 	}
+-	return ret;
++	return 0;
+ }
+ #endif
+ 
+_
+
