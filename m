@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab3H0TFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 15:05:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5018 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753298Ab3H0TFW convert rfc822-to-8bit (ORCPT
+	id S1753463Ab3H0TNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 15:13:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22337 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202Ab3H0TM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 15:05:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,969,1367996400"; 
-   d="scan'208";a="387300758"
-From: "Yang, Fei" <fei.yang@intel.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>
-Subject: RE: Can anyone suggest a better fix? Not sure if I understand the
-	problem, but the patch fixed it
-Thread-Topic: Can anyone suggest a better fix? Not sure if I understand the
-	problem, but the patch fixed it
-Thread-Index: AQHOophf0CjjG6Ws2kGkt7Ne1kn48JmpZ2Gg
-Date: Tue, 27 Aug 2013 19:05:20 +0000
-Message-ID: <02E7334B1630744CBDC55DA85862258348E458D8@ORSMSX102.amr.corp.intel.com>
-References: <02E7334B1630744CBDC55DA85862258348E431C1@ORSMSX102.amr.corp.intel.com>
- <20130826201035.GA21141@merkur.ravnborg.org>
-In-Reply-To: <20130826201035.GA21141@merkur.ravnborg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 27 Aug 2013 15:12:59 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=7p2ErawryrAA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=65ulK5L86BMA:10 a=QyXUC8HyAAAA:8 a=4rSY6Nn_G-8_SeuGBAQA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Tue, 27 Aug 2013 15:12:57 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 02/10] tracing: add basic event trigger framework
+Message-ID: <20130827151257.49e23316@gandalf.local.home>
+In-Reply-To: <923484a1826a9c5b872450dc60fe41a6815a1709.1377573424.git.tom.zanussi@linux.intel.com>
+References: <cover.1377573424.git.tom.zanussi@linux.intel.com>
+	<923484a1826a9c5b872450dc60fe41a6815a1709.1377573424.git.tom.zanussi@linux.intel.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> From: Fei Yang <fei.yang@intel.com>
->> Date: Mon, 26 Aug 2013 11:21:48 -0700
->> Subject: [PATCH] FIXDEP: error opening depfile
->>  
->> Met a kernel build issue where fixdep fails to open a depfile,
->> fixdep: error opening depfile: drivers/driver-name/.driver-code.o.d: 
->> No such file or directory
->> make[4]: *** [drivers/driver-name/driver-code.o] Error 2
->> make[3]: *** [drivers/driver-name] Error 2 Don't know why the expected 
->> file was not created, but the assumption that the file had been 
->> created might not be true, so simply return for such failure.
+On Mon, 26 Aug 2013 22:55:59 -0500
+Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
 
-> I tried to grep:
-> git grep "driver-name"
->
-> No hits.
->
->Are you trying to fix a build issue with something out-of-tree - or is this only in linux-next?
 
-Oh, I changed the driver and file name in the error message to avoid unnecessary confusion as the driver is not an upstream one. But this issue happens randomly, not 100% reproducible. And it happens on different driver sometimes. So I don't think it would be driver related and pointing out the driver name would not help much anyway.
-What I'm trying to understand is under what condition fixdep is triggered in the kernel build process. Is the .d file always generated for every driver? If that file is always created, could it be a timing issue that the .d file was actually created but then deleted when fixdep trying to find it?
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index b1227b9..1733ac9 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -1016,9 +1016,184 @@ extern void trace_event_enable_cmd_record(bool enable);
+>  extern int event_trace_add_tracer(struct dentry *parent, struct trace_array *tr);
+>  extern int event_trace_del_tracer(struct trace_array *tr);
+>  
+> +extern struct ftrace_event_file *find_event_file(struct trace_array *tr,
+> +						 const char *system,
+> +						 const char *event);
 
-Thank you Sam! I'm not familiar with kernel build scripts, any idea is really appreciated.
+This patch breaks bisection as you need to remove the static from
+find_event_file() too.
 
--Fei
+Also, it adds a lot of warnings like "register_event_command" defined
+but not used.
 
+My scripts will fail this patch if it adds a warning. No static
+function should be added without being used.
+
+-- Steve
+
+> +
+> +static inline void *event_file_data(struct file *filp)
+> +{
+> +	return ACCESS_ONCE(file_inode(filp)->i_private);
+> +}
+> +
+>  extern struct mutex event_mutex;
+>  extern struct list_head ftrace_events;
+>  
