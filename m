@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab3H0Iv6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 04:51:58 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54307 "EHLO
+	id S1753481Ab3H0IxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 04:53:17 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52972 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab3H0ItE (ORCPT
+	with ESMTP id S1752701Ab3H0ItB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 04:49:04 -0400
-X-AuditID: 9c930197-b7b44ae00000347f-4d-521c67fb13a5
+	Tue, 27 Aug 2013 04:49:01 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-46-521c67fa1c06
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
@@ -17,9 +17,9 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
         Oleg Nesterov <oleg@redhat.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 08/13] tracing/kprobes: Move common functions to trace_probe.h
-Date: Tue, 27 Aug 2013 17:48:51 +0900
-Message-Id: <1377593336-16828-9-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 04/13] tracing/kprobes: Add fetch{,_size} member into deref fetch method
+Date: Tue, 27 Aug 2013 17:48:47 +0900
+Message-Id: <1377593336-16828-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1377593336-16828-1-git-send-email-namhyung@kernel.org>
 References: <1377593336-16828-1-git-send-email-namhyung@kernel.org>
@@ -28,137 +28,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Hyeoncheol Lee <cheol.lee@lge.com>
 
-The __get_data_size() and store_trace_args() will be used by uprobes
-too.  Move them to a common location.
+The deref fetch methods access a memory region but it assumes that
+it's a kernel memory since uprobes does not support them.
+
+Add ->fetch and ->fetch_size member in order to provide a proper
+access methods for supporting uprobes.
 
 Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Hyeoncheol Lee <cheol.lee@lge.com>
+[namhyung@kernel.org: Split original patch into pieces as requested]
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_kprobe.c | 48 ---------------------------------------------
- kernel/trace/trace_probe.h  | 48 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 48 insertions(+), 48 deletions(-)
+ kernel/trace/trace_probe.c | 22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 6d33cfee9448..2a668516f0e4 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -909,54 +909,6 @@ const struct fetch_type kprobes_fetch_type_table[] = {
- 	ASSIGN_FETCH_TYPE(s64, u64, 1),
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index 41f654d24cd9..b7b8bda02d6e 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -97,6 +97,8 @@ DEFINE_BASIC_FETCH_FUNCS(retval)
+ struct deref_fetch_param {
+ 	struct fetch_param	orig;
+ 	long			offset;
++	fetch_func_t		fetch;
++	fetch_func_t		fetch_size;
  };
  
--/* Sum up total data length for dynamic arraies (strings) */
--static __kprobes int __get_data_size(struct trace_probe *tp,
--				     struct pt_regs *regs)
--{
--	int i, ret = 0;
--	u32 len;
--
--	for (i = 0; i < tp->nr_args; i++)
--		if (unlikely(tp->args[i].fetch_size.fn)) {
--			call_fetch(&tp->args[i].fetch_size, regs, &len);
--			ret += len;
--		}
--
--	return ret;
--}
--
--/* Store the value of each argument */
--static __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
--				       struct pt_regs *regs,
--				       u8 *data, int maxlen)
--{
--	int i;
--	u32 end = tp->size;
--	u32 *dl;	/* Data (relative) location */
--
--	for (i = 0; i < tp->nr_args; i++) {
--		if (unlikely(tp->args[i].fetch_size.fn)) {
--			/*
--			 * First, we set the relative location and
--			 * maximum data length to *dl
--			 */
--			dl = (u32 *)(data + tp->args[i].offset);
--			*dl = make_data_rloc(maxlen, end - tp->args[i].offset);
--			/* Then try to fetch string or dynamic array data */
--			call_fetch(&tp->args[i].fetch, regs, dl);
--			/* Reduce maximum length */
--			end += get_rloc_len(*dl);
--			maxlen -= get_rloc_len(*dl);
--			/* Trick here, convert data_rloc to data_loc */
--			*dl = convert_rloc_to_loc(*dl,
--				 ent_size + tp->args[i].offset);
--		} else
--			/* Just fetching data normally */
--			call_fetch(&tp->args[i].fetch, regs,
--				   data + tp->args[i].offset);
--	}
--}
--
- /* Kprobe handler */
- static __kprobes void
- __kprobe_trace_func(struct trace_kprobe *tp, struct pt_regs *regs,
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index 63e5da4e3073..189a40baea98 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -302,3 +302,51 @@ extern ssize_t traceprobe_probes_write(struct file *file,
- 		int (*createfn)(int, char**));
+ #define DEFINE_FETCH_deref(type)					\
+@@ -108,13 +110,26 @@ __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
+ 	call_fetch(&dprm->orig, regs, &addr);				\
+ 	if (addr) {							\
+ 		addr += dprm->offset;					\
+-		fetch_memory_##type(regs, (void *)addr, dest);		\
++		dprm->fetch(regs, (void *)addr, dest);			\
+ 	} else								\
+ 		*(type *)dest = 0;					\
+ }
+ DEFINE_BASIC_FETCH_FUNCS(deref)
+ DEFINE_FETCH_deref(string)
+-DEFINE_FETCH_deref(string_size)
++
++__kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
++						   void *data, void *dest)
++{
++	struct deref_fetch_param *dprm = data;
++	unsigned long addr;
++
++	call_fetch(&dprm->orig, regs, &addr);
++	if (addr && dprm->fetch_size) {
++		addr += dprm->offset;
++		dprm->fetch_size(regs, (void *)addr, dest);
++	} else
++		*(string_size *)dest = 0;
++}
  
- extern int traceprobe_command(const char *buf, int (*createfn)(int, char**));
-+
-+/* Sum up total data length for dynamic arraies (strings) */
-+static inline __kprobes int
-+__get_data_size(struct trace_probe *tp, struct pt_regs *regs)
-+{
-+	int i, ret = 0;
-+	u32 len;
-+
-+	for (i = 0; i < tp->nr_args; i++)
-+		if (unlikely(tp->args[i].fetch_size.fn)) {
-+			call_fetch(&tp->args[i].fetch_size, regs, &len);
-+			ret += len;
-+		}
-+
-+	return ret;
-+}
-+
-+/* Store the value of each argument */
-+static inline __kprobes void
-+store_trace_args(int ent_size, struct trace_probe *tp, struct pt_regs *regs,
-+		 u8 *data, int maxlen)
-+{
-+	int i;
-+	u32 end = tp->size;
-+	u32 *dl;	/* Data (relative) location */
-+
-+	for (i = 0; i < tp->nr_args; i++) {
-+		if (unlikely(tp->args[i].fetch_size.fn)) {
-+			/*
-+			 * First, we set the relative location and
-+			 * maximum data length to *dl
-+			 */
-+			dl = (u32 *)(data + tp->args[i].offset);
-+			*dl = make_data_rloc(maxlen, end - tp->args[i].offset);
-+			/* Then try to fetch string or dynamic array data */
-+			call_fetch(&tp->args[i].fetch, regs, dl);
-+			/* Reduce maximum length */
-+			end += get_rloc_len(*dl);
-+			maxlen -= get_rloc_len(*dl);
-+			/* Trick here, convert data_rloc to data_loc */
-+			*dl = convert_rloc_to_loc(*dl,
-+				 ent_size + tp->args[i].offset);
-+		} else
-+			/* Just fetching data normally */
-+			call_fetch(&tp->args[i].fetch, regs,
-+				   data + tp->args[i].offset);
-+	}
-+}
+ static __kprobes void update_deref_fetch_param(struct deref_fetch_param *data)
+ {
+@@ -394,6 +409,9 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 				return -ENOMEM;
+ 
+ 			dprm->offset = offset;
++			dprm->fetch = t->fetch[FETCH_MTD_memory];
++			dprm->fetch_size = get_fetch_size_function(t,
++							dprm->fetch, ttbl);
+ 			ret = parse_probe_arg(arg, t2, &dprm->orig, is_return,
+ 							is_kprobe);
+ 			if (ret)
 -- 
 1.7.11.7
 
