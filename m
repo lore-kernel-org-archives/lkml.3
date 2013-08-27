@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab3H0Kn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 06:43:27 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:41012 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab3H0KnZ (ORCPT
+	id S1753276Ab3H0Koz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 06:44:55 -0400
+Received: from [65.55.88.14] ([65.55.88.14]:47931 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752084Ab3H0Kox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 06:43:25 -0400
-Date: Tue, 27 Aug 2013 18:34:22 +0800
-From: larmbr <nasa4836@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com, dhowells@redhat.com, nasa4836@gmail.com
-Subject: [PATCH] Documentation/memory-barriers: fix a error that mistakes a
- CPU notion in Section Transitivity
-Message-ID: <20130827103422.GA17355@larmbr-lcx>
+	Tue, 27 Aug 2013 06:44:53 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
+        <vinod.koul@intel.com>, <djbw@fb.com>
+CC: <devicetree@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH v8 0/3] DMA: Freescale: Add support for 8-channel DMA engine
+Date: Tue, 27 Aug 2013 18:42:00 +0800
+Message-ID: <1377600123-5746-1-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory-barriers document may has a error in Section TRANSITIVITY.
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-For transitivity, see a example below, given that
+Hi DMA and DT maintainers, please have a look at these V8 patches.
 
-* CPU 2's load from X follows CPU 1's store to X, and 
-  CPU 2's load from Y preceds CPU 3's store to Y.
+Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
+adds support this DMA engine.
+
+V7->V8 changes:
+- change the word "mapping" to "specifier" for reg and interrupts description
+
+V6->V7 changes:
+- only remove unnecessary "CHIP-dma" explanations in [1/3]
+
+V5->V6 changes:
+- minor updates of descriptions in binding document and Kconfig
+- remove [4/4], that should be another patch in future
+
+V4->V5 changes:
+- update description in the dt binding document, to make it more resonable
+- add new patch [4/4] to eliminate a compiling warning which already exists
+  for a long time
+
+V3->V4 changes:
+- introduce new patch [1/3] to revise the legacy dma binding document
+- and then add new paragraph to describe new dt node binding in [2/3]
+- rebase to latest kernel v3.11-rc1
+
+V2->V3 changes:
+- edit Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+- edit text string in Kconfig and the driver files, using "elo series" to
+  mention all the current "elo*"
+
+V1->V2 changes:
+- removed the codes handling the register dgsr1, since it isn't used currently
+- renamed the DMA DT compatible to "fsl,elo3-dma"
+- renamed the new dts files to "elo3-dma-<n>.dtsi"
+
+Hongbo Zhang (3):
+  DMA: Freescale: revise device tree binding document
+  DMA: Freescale: Add new 8-channel DMA engine device tree nodes
+  DMA: Freescale: update driver to support 8-channel DMA engine
+
+ .../devicetree/bindings/powerpc/fsl/dma.txt        |  128 ++++++++++++++------
+ arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+ arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   81 +++++++++++++
+ arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   81 +++++++++++++
+ arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+ drivers/dma/Kconfig                                |    9 +-
+ drivers/dma/fsldma.c                               |    9 +-
+ drivers/dma/fsldma.h                               |    2 +-
+ 8 files changed, 271 insertions(+), 47 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+
+-- 
+1.7.9.5
 
 
- CPU 1                   CPU 2                   CPU 3
- ======================= ======================= =======================
-         { X = 0, Y = 0 }
- STORE X=1               LOAD X                  STORE Y=1
-                         <read barrier>          <general barrier>
-                         LOAD Y                  LOAD X
 
-The <read barrier> in CPU 2 is inadquate, because it could _only_ guarantees
-that load operation _happen before_ load operation after the barrier, with
-respect to CPU 3, which constrained by a general barrier, but provide _NO_
-guarantee that CPU 1' store X will happen before the <read barrier>.
-
-Therefore, if this example runs on a system where CPUs 1 and 3 share a store buffer
-or a level of cache, CPU 3 might have early access to CPU 1's writes.
-
-The original text has mistaken CPU 2 for CPU 3, so this patch fixes this, and adds
-a paragraph to explain why a <full barrier> should guarantee this.
-
-Signed-off-by: Zhan Jianyu <nasa4836@gmail.com>
----
-Documentation/memory-barriers.txt |   11 +++++++++--
-1 file changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index fa5d8a9..590a5a9 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -992,6 +992,13 @@ transitivity.  Therefore, in the above example, if CPU 2's load from X
- returns 1 and its load from Y returns 0, then CPU 3's load from X must
- also return 1.
- 
-+The key point is that CPU 1's storing 1 to X preceds CPU 2's loading 1
-+from X, and CPU 2's loading 0 from Y preceds CPU 3's storing 1 to Y,
-+which implies a ordering that the general barrier in CPU 2 guarantees:
-+all store and load operations must happen before those after the barrier
-+with respect to view of CPU 3, which constrained by a general barrier, too.
-+Thus, CPU 3's load from X must return 1.
-+
- However, transitivity is -not- guaranteed for read or write barriers.
- For example, suppose that CPU 2's general barrier in the above example
- is changed to a read barrier as shown below:
-@@ -1009,8 +1016,8 @@ and CPU 3's load from X to return 0.
- 
- The key point is that although CPU 2's read barrier orders its pair
- of loads, it does not guarantee to order CPU 1's store.  Therefore, if
--this example runs on a system where CPUs 1 and 2 share a store buffer
--or a level of cache, CPU 2 might have early access to CPU 1's writes.
-+this example runs on a system where CPUs 1 and 3 share a store buffer
-+or a level of cache, CPU 3 might have early access to CPU 1's writes.
- General barriers are therefore required to ensure that all CPUs agree
- on the combined order of CPU 1's and CPU 2's accesses.
- 
