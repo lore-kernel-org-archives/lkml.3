@@ -1,119 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab3H0B3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 21:29:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59336 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126Ab3H0BGj (ORCPT
+	id S1752691Ab3H0BbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 21:31:22 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:50633 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752Ab3H0BbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 21:06:39 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [ 01/13] workqueue: fix possible stall on try_to_grab_pending() of a delayed work item
-Date: Mon, 26 Aug 2013 18:08:33 -0700
-Message-Id: <20130827010309.960499859@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.6.g82e253f.dirty
-In-Reply-To: <20130827010309.850395966@linuxfoundation.org>
-References: <20130827010309.850395966@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Mon, 26 Aug 2013 21:31:21 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        gong.chen@linux.intel.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH 1/3] mm/hwpoison: fix memory failure still hold reference count after unpoison empty zero page
+Date: Tue, 27 Aug 2013 09:30:52 +0800
+Message-Id: <1377567054-32442-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13082701-5490-0000-0000-0000040BE2E0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+madvise hwpoison inject will poison the read-only empty zero page if there is 
+no write access before poison. Empty zero page reference count will be increased 
+for hwpoison, subsequent poison zero page will return directly since page has
+already been set PG_hwpoison, however, page reference count is still increased 
+by get_user_pages_fast. The unpoison process will unpoison the empty zero page 
+and decrease the reference count successfully for the fist time, however, 
+subsequent unpoison empty zero page will return directly since page has already 
+been unpoisoned and without decrease the page reference count of empty zero page.
+This patch fix it by make madvise_hwpoison() put a page and return immediately
+(without calling memory_failure() or soft_offline_page()) when the page is already 
+hwpoisoned.
 
-------------------
+Testcase:
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+#define _GNU_SOURCE
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <errno.h>
 
-commit 3aa62497594430ea522050b75c033f71f2c60ee6 upstream.
+#define PAGES_TO_TEST 3
+#define PAGE_SIZE	4096
 
-Currently, when try_to_grab_pending() grabs a delayed work item, it
-leaves its linked work items alone on the delayed_works.  The linked
-work items are always NO_COLOR and will cause future
-cwq_activate_first_delayed() increase cwq->nr_active incorrectly, and
-may cause the whole cwq to stall.  For example,
+int main(void)
+{
+	char *mem;
+	int i;
 
-state: cwq->max_active = 1, cwq->nr_active = 1
-       one work in cwq->pool, many in cwq->delayed_works.
+	mem = mmap(NULL, PAGES_TO_TEST * PAGE_SIZE,
+			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 
-step1: try_to_grab_pending() removes a work item from delayed_works
-       but leaves its NO_COLOR linked work items on it.
+	if (madvise(mem, PAGES_TO_TEST * PAGE_SIZE, MADV_HWPOISON) == -1)
+		return -1;
+	
+	munmap(mem, PAGES_TO_TEST * PAGE_SIZE);
 
-step2: Later on, cwq_activate_first_delayed() activates the linked
-       work item increasing ->nr_active.
+	return 0;
+}
 
-step3: cwq->nr_active = 1, but all activated work items of the cwq are
-       NO_COLOR.  When they finish, cwq->nr_active will not be
-       decreased due to NO_COLOR, and no further work items will be
-       activated from cwq->delayed_works. the cwq stalls.
+Add printk to dump page reference count:
 
-Fix it by ensuring the target work item is activated before stealing
-PENDING in try_to_grab_pending().  This ensures that all the linked
-work items are activated without incorrectly bumping cwq->nr_active.
+[   93.075959] Injecting memory failure for page 0x19d0 at 0xb77d8000
+[   93.076207] MCE 0x19d0: non LRU page recovery: Ignored
+[   93.076209] pfn 0x19d0, page count = 1 after memory failure
+[   93.076220] Injecting memory failure for page 0x19d0 at 0xb77d9000
+[   93.076221] MCE 0x19d0: already hardware poisoned
+[   93.076222] pfn 0x19d0, page count = 2 after memory failure
+[   93.076224] Injecting memory failure for page 0x19d0 at 0xb77da000
+[   93.076224] MCE 0x19d0: already hardware poisoned
+[   93.076225] pfn 0x19d0, page count = 3 after memory failure
 
-tj: Updated comment and description.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-[lizf: backported to 3.4: adjust context]
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Suggested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- kernel/workqueue.c |   25 ++++++++++++++++++++++---
- 1 file changed, 22 insertions(+), 3 deletions(-)
+ mm/madvise.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1721,10 +1721,9 @@ static void move_linked_works(struct wor
- 		*nextp = n;
- }
- 
--static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
-+static void cwq_activate_delayed_work(struct work_struct *work)
- {
--	struct work_struct *work = list_first_entry(&cwq->delayed_works,
--						    struct work_struct, entry);
-+	struct cpu_workqueue_struct *cwq = get_work_cwq(work);
- 	struct list_head *pos = gcwq_determine_ins_pos(cwq->gcwq, cwq);
- 
- 	trace_workqueue_activate_work(work);
-@@ -1733,6 +1732,14 @@ static void cwq_activate_first_delayed(s
- 	cwq->nr_active++;
- }
- 
-+static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
-+{
-+	struct work_struct *work = list_first_entry(&cwq->delayed_works,
-+						    struct work_struct, entry);
-+
-+	cwq_activate_delayed_work(work);
-+}
-+
- /**
-  * cwq_dec_nr_in_flight - decrement cwq's nr_in_flight
-  * @cwq: cwq of interest
-@@ -2625,6 +2632,18 @@ static int try_to_grab_pending(struct wo
- 		smp_rmb();
- 		if (gcwq == get_work_gcwq(work)) {
- 			debug_work_deactivate(work);
-+
-+			/*
-+			 * A delayed work item cannot be grabbed directly
-+			 * because it might have linked NO_COLOR work items
-+			 * which, if left on the delayed_list, will confuse
-+			 * cwq->nr_active management later on and cause
-+			 * stall.  Make sure the work item is activated
-+			 * before grabbing.
-+			 */
-+			if (*work_data_bits(work) & WORK_STRUCT_DELAYED)
-+				cwq_activate_delayed_work(work);
-+
- 			list_del_init(&work->entry);
- 			cwq_dec_nr_in_flight(get_work_cwq(work),
- 				get_work_color(work),
-
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 212f5f1..0956ae9 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -352,6 +352,10 @@ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
+ 		int ret = get_user_pages_fast(start, 1, 0, &p);
+ 		if (ret != 1)
+ 			return ret;
++		if (PageHWPoison(p)) {
++			put_page(p);
++			continue;
++		}
+ 		if (bhv == MADV_SOFT_OFFLINE) {
+ 			pr_info("Soft offlining page %#lx at %#lx\n",
+ 				page_to_pfn(p), start);
+-- 
+1.8.1.2
 
