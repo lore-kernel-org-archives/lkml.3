@@ -1,94 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab3H0Mje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 08:39:34 -0400
-Received: from mailout01.t-online.de ([194.25.134.80]:59394 "EHLO
-	mailout01.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab3H0Mj3 (ORCPT
+	id S1753374Ab3H0MkV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 08:40:21 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:9734 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab3H0MkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 08:39:29 -0400
-X-Greylist: delayed 2246 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Aug 2013 08:39:29 EDT
-Date: Tue, 27 Aug 2013 14:01:42 +0200
-From: Manfred Hollstein <mhollstein@t-online.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: joeyli <jlee@suse.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-crypto@vger.kernel.org,
-        opensuse-kernel@opensuse.org, David Howells <dhowells@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH 11/18] Hibernate: introduced RSA key-pair to verify
- signature of snapshot
-Message-ID: <20130827120142.GA4314@saturn.hollstein.homelinux.org>
-Mail-Followup-To: Manfred Hollstein <mhollstein@t-online.de>,
-	Pavel Machek <pavel@ucw.cz>, joeyli <jlee@suse.com>,
-	linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-	linux-efi@vger.kernel.org, linux-pm@vger.kernel.org,
-	linux-crypto@vger.kernel.org, opensuse-kernel@opensuse.org,
-	David Howells <dhowells@redhat.com>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Matthew Garrett <mjg59@srcf.ucam.org>,
-	Len Brown <len.brown@intel.com>, Josh Boyer <jwboyer@redhat.com>,
-	Vojtech Pavlik <vojtech@suse.cz>,
-	Matt Fleming <matt.fleming@intel.com>,
-	James Bottomley <james.bottomley@hansenpartnership.com>,
-	Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	Herbert Xu <herbert@gondor.apana.org.au>,
-	"David S. Miller" <davem@davemloft.net>,
-	"H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-	Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
-	Takashi Iwai <tiwai@suse.de>
-References: <1377169317-5959-1-git-send-email-jlee@suse.com>
- <1377169317-5959-12-git-send-email-jlee@suse.com>
- <20130825162554.GH5171@amd.pavel.ucw.cz>
- <1377594283.20140.3.camel@linux-s257.site>
- <20130827112943.GA20527@amd.pavel.ucw.cz>
+	Tue, 27 Aug 2013 08:40:19 -0400
+Message-ID: <521C9DB3.60305@huawei.com>
+Date: Tue, 27 Aug 2013 20:38:11 +0800
+From: leizhen <thunder.leizhen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130827112943.GA20527@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ID: Z1ShPTZfQhnLJfWiwjUC19izcQenFE9Qvacqf+eMNh5AMTDkxciEUnZ7FBBzHU7Q1y
-X-TOI-MSGID: 0bbe169a-84aa-4c5c-99bc-892de1e07059
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "Liujiang (Gerry)" <jiang.liu@huawei.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Huxinwei <huxinwei@huawei.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Lizefan <lizefan@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [BUG] ARM64: Create 4K page size mmu memory map at init time
+ will trigger exception.
+References: <BFAC7FA8F7636E45AB9ECBAC17346F3434557683@SZXEML508-MBS.china.huawei.com> <20130822161614.GE1352@arm.com> <20130823171605.GH10971@arm.com>
+In-Reply-To: <20130823171605.GH10971@arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.208]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Aug 2013, 13:29:43 +0200, Pavel Machek wrote:
-> > > > @@ -1205,6 +1290,10 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
-> > > >  
-> > > >  	setup_efi_pci(boot_params);
-> > > >  
-> > > > +#ifdef CONFIG_SNAPSHOT_VERIFICATION
-> > > > +	setup_s4_keys(boot_params);
-> > > > +#endif
-> > > > +
-> > > 
-> > > Move ifdef inside the function?
-> > 
-> > OK, I will define a dummy function for non-verification situation.
+On 2013/8/24 1:16, Catalin Marinas wrote:
+> On Thu, Aug 22, 2013 at 05:16:14PM +0100, Catalin Marinas wrote:
+>> On Thu, Aug 22, 2013 at 04:35:29AM +0100, Leizhen (ThunderTown, Euler) wrote:
+>>> This problem is on ARM64. When CONFIG_ARM64_64K_PAGES is not opened, the memory
+>>> map size can be 2M(section) and 4K(PAGE). First, OS will create map for pgd
+>>> (level 1 table) and level 2 table which in swapper_pg_dir. Then, OS register
+>>> mem block into memblock.memory according to memory node in fdt, like memory@0,
+>>> and create map in setup_arch-->paging_init. If all mem block start address and
+>>> size is integral multiple of 2M, there is no problem, because we will create 2M
+>>> section size map whose entries locate in level 2 table. But if it is not
+>>> integral multiple of 2M, we should create level 3 table, which granule is 4K.
+>>> Now, current implementtion is call early_alloc-->memblock_alloc to alloc memory
+>>> for level 3 table. This function will find a 4K free memory which locate in
+>>> memblock.memory tail(high address), but paging_init is create map from low
+>>> address to high address, so new alloced memory is not mapped, write page talbe
+>>> entry to it will trigger exception.
+>>
+>> I see how this can happen. There is a memblock_set_current_limit to
+>> PGDIR_SIZE (1GB, we have a pre-allocated pmd) and in my tests I had at
+>> least 1GB of RAM which got mapped first and didn't have this problem.
+>> I'll come up with a patch tomorrow.
 > 
-> IIRC you can just put the #ifdef inside the function body. 
+> Could you please try this patch?
+> 
+> -------------------------8<---------------------------------------
+> 
+>>From 3a35771339b7eea105925d1d573aedbeeea59ef0 Mon Sep 17 00:00:00 2001
+> From: Catalin Marinas <catalin.marinas@arm.com>
+> Date: Fri, 23 Aug 2013 18:04:44 +0100
+> Subject: [PATCH] arm64: Fix mapping of memory banks not ending on a PMD_SIZE
+>  boundary
+> 
+> The map_mem() function limits the current memblock limit to PGDIR_SIZE
+> (the initial swapper_pg_dir mapping) to avoid create_mapping()
+> allocating memory from unmapped areas. However, if the first block is
+> within PGDIR_SIZE and not ending on a PMD_SIZE boundary, when 4K page
+> configuration is enabled, create_mapping() will try to allocate a pte
+> page. Such page may be returned by memblock_alloc() from the end of such
+> bank (or any subsequent bank within PGDIR_SIZE) which is not mapped yet.
+> 
+> The patch limits the current memblock limit to the aligned end of the
+> first bank and gradually increases it as more memory is mapped. It also
+> ensures that the start of the first bank is aligned to PMD_SIZE to avoid
+> pte page allocation for this mapping.
+> 
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Reported-by: "Leizhen (ThunderTown, Euler)" <thunder.leizhen@huawei.com>
+> ---
+>  arch/arm64/mm/mmu.c | 28 ++++++++++++++++++++++++++--
+>  1 file changed, 26 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
+> index a8d1059..49a0bc2 100644
+> --- a/arch/arm64/mm/mmu.c
+> +++ b/arch/arm64/mm/mmu.c
+> @@ -296,6 +296,7 @@ void __iomem * __init early_io_map(phys_addr_t phys, unsigned long virt)
+>  static void __init map_mem(void)
+>  {
+>  	struct memblock_region *reg;
+> +	phys_addr_t limit;
+>  
+>  	/*
+>  	 * Temporarily limit the memblock range. We need to do this as
+> @@ -303,9 +304,11 @@ static void __init map_mem(void)
+>  	 * memory addressable from the initial direct kernel mapping.
+>  	 *
+>  	 * The initial direct kernel mapping, located at swapper_pg_dir,
+> -	 * gives us PGDIR_SIZE memory starting from PHYS_OFFSET (aligned).
+> +	 * gives us PGDIR_SIZE memory starting from PHYS_OFFSET (which must be
+> +	 * aligned to 2MB as per Documentation/arm64/booting.txt).
+>  	 */
+> -	memblock_set_current_limit((PHYS_OFFSET & PGDIR_MASK) + PGDIR_SIZE);
+> +	limit = PHYS_OFFSET + PGDIR_SIZE;
+> +	memblock_set_current_limit(limit);
+>  
+>  	/* map all the memory banks */
+>  	for_each_memblock(memory, reg) {
+> @@ -315,7 +318,28 @@ static void __init map_mem(void)
+>  		if (start >= end)
+>  			break;
+>  
+> +#ifndef CONFIG_ARM64_64K_PAGES
+> +		/*
+> +		 * For the first memory bank align the start address and
+> +		 * current memblock limit to prevent create_mapping() from
+> +		 * allocating pte page tables from unmapped memory.
+> +		 * When 64K pages are enabled, the pte page table for the
+> +		 * first PGDIR_SIZE is already present in swapper_pg_dir.
+> +		 */
+> +		if (start < limit)
+> +			start = ALIGN(start, PMD_SIZE);
+> +		if (end < limit) {
+> +			limit = end & PMD_MASK;
+> +			memblock_set_current_limit(limit);
+> +		}
+> +#endif
+> +
+>  		create_mapping(start, __phys_to_virt(start), end - start);
+> +
+> +		/*
+> +		 * Mapping created, extend the current memblock limit.
+> +		 */
+> +		memblock_set_current_limit(end);
+>  	}
+>  
+>  	/* Limit no longer required. */
+> 
+> .
+> 
 
-This is certainly not to be invoked on a frequent basis (and therefore
-not on a hot path), but from a more general angle, wouldn't this leave
-a(nother) plain "jsr... rts" sequence without any effect other than
-burning a few cycles? If the whole function call can be disabled
-(ignored) in a certain configuration, it shouldn't call at all, should
-it?
 
-Cheers.
+I test this patch on my board, it's passed. But I think there still some little problem. First, we align start address and truncate last, which will cause some memory wasted. Second, if we update
+current_limit after each memblock mapped, the page alloced by early_alloc will be more dispersedly. So I fix this bug like below:
 
-l8er
-manfred
+If page size is 4K, a 4K size level 2 tables can map 1G, so 512G need 512 * 4K. And max level 3 tables number is (memblock num) * 2(if both head part and tail part not multiple of 2M), 2M = 256 * 2 *
+4K. We first alloc 2M memory, map it, then free it, and mark current_limit at this boundary.
+
+diff -Naur a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
+--- a/arch/arm64/mm/mmu.c	2013-08-27 11:54:35.000000000 +0000
++++ b/arch/arm64/mm/mmu.c	2013-08-27 11:54:17.000000000 +0000
+@@ -167,13 +167,29 @@
+ 	return ptr;
+ }
+
++static void __init *table_alloc(phys_addr_t limit, unsigned long sz)
++{
++    void *ptr = early_alloc(sz);
++
++    if (!ptr) {
++        /*
++         * Mapping created, extend the current memblock limit.
++         */
++        memblock_set_current_limit(limit);
++
++        ptr = early_alloc(sz);
++    }
++
++    return ptr;
++}
++
+ static void __init alloc_init_pte(pmd_t *pmd, unsigned long addr,
+ 				  unsigned long end, unsigned long pfn)
+ {
+ 	pte_t *pte;
+
+ 	if (pmd_none(*pmd)) {
+-		pte = early_alloc(PTRS_PER_PTE * sizeof(pte_t));
++		pte = table_alloc(__pfn_to_phys(pfn), PTRS_PER_PTE * sizeof(pte_t));
+ 		__pmd_populate(pmd, __pa(pte), PMD_TYPE_TABLE);
+ 	}
+ 	BUG_ON(pmd_bad(*pmd));
+@@ -195,7 +211,7 @@
+ 	 * Check for initial section mappings in the pgd/pud and remove them.
+ 	 */
+ 	if (pud_none(*pud) || pud_bad(*pud)) {
+-		pmd = early_alloc(PTRS_PER_PMD * sizeof(pmd_t));
++		pmd = table_alloc(phys, PTRS_PER_PMD * sizeof(pmd_t));
+ 		pud_populate(&init_mm, pud, pmd);
+ 	}
+
+@@ -307,6 +323,24 @@
+ 	 */
+ 	memblock_set_current_limit((PHYS_OFFSET & PGDIR_MASK) + PGDIR_SIZE);
+
++#ifndef CONFIG_ARM64_64K_PAGES
++{
++    phys_addr_t table;
++    phys_addr_t tablesize = PMD_SIZE;
++
++    table = memblock_alloc(tablesize, PMD_SIZE);
++
++    if (table) {
++        create_mapping(table, __phys_to_virt(table), tablesize);
++
++        memblock_free(table, tablesize);
++        memblock_add(table, tablesize);
++
++        memblock_set_current_limit(table + tablesize);
++    }
++}
++#endif
++
+ 	/* map all the memory banks */
+ 	for_each_memblock(memory, reg) {
+ 		phys_addr_t start = reg->base;
+
+
+
