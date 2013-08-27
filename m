@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab3H0JjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 05:39:13 -0400
+	id S1753565Ab3H0JjV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 05:39:21 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:49294 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752847Ab3H0JjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 05:39:10 -0400
+	id S1753256Ab3H0JjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 05:39:14 -0400
 X-IronPort-AV: E=Sophos;i="4.89,967,1367942400"; 
-   d="scan'208";a="8317099"
+   d="scan'208";a="8317104"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -20,158 +20,120 @@ To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         zhangyanfei@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH 00/11] x86, memblock: Allocate memory near kernel image before SRAT parsed.
-Date: Tue, 27 Aug 2013 17:37:37 +0800
-Message-Id: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH 05/11] memblock: Introduce allocation order to memblock.
+Date: Tue, 27 Aug 2013 17:37:42 +0800
+Message-Id: <1377596268-31552-6-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/08/27 17:37:09,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/27 17:37:13,
-	Serialize complete at 2013/08/27 17:37:13
+ 2013/08/27 17:37:14,
+	Serialize complete at 2013/08/27 17:37:14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set is based on tj's suggestion, and not fully tested. 
-Just for review and discussion.
+The Linux kernel cannot migrate pages used by the kernel. As a result, kernel
+pages cannot be hot-removed. So we cannot allocate hotpluggable memory for
+the kernel.
 
+ACPI SRAT (System Resource Affinity Table) contains the memory hotplug info.
+But before SRAT is parsed, memblock has already started to allocate memory
+for the kernel. So we need to prevent memblock from doing this.
 
-[Problem]
+In a memory hotplug system, any numa node the kernel resides in should
+be unhotpluggable. And for a modern server, each node could have at least
+16GB memory. So memory around the kernel image is highly likely unhotpluggable.
 
-The current Linux cannot migrate pages used by the kerenl because
-of the kernel direct mapping. In Linux kernel space, va = pa + PAGE_OFFSET.
-When the pa is changed, we cannot simply update the pagetable and
-keep the va unmodified. So the kernel pages are not migratable.
+So the basic idea is: Allocate memory from the end of the kernel image and
+to the higher memory. Since memory allocation before SRAT is parsed won't
+be too much, it could highly likely be in the same node with kernel image.
 
-There are also some other issues will cause the kernel pages not migratable.
-For example, the physical address may be cached somewhere and will be used.
-It is not to update all the caches.
+The current memblock can only allocate memory from high address to low.
+So this patch introduces the allocation order to memblock. It could be
+used to tell memblock to allocate memory from high to low or from low
+to high.
 
-When doing memory hotplug in Linux, we first migrate all the pages in one
-memory device somewhere else, and then remove the device. But if pages are
-used by the kernel, they are not migratable. As a result, memory used by
-the kernel cannot be hot-removed.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ include/linux/memblock.h |   15 +++++++++++++++
+ mm/memblock.c            |   13 +++++++++++++
+ 2 files changed, 28 insertions(+), 0 deletions(-)
 
-Modifying the kernel direct mapping mechanism is too difficult to do. And
-it may cause the kernel performance down and unstable. So we use the following
-way to do memory hotplug.
-
-
-[What we are doing]
-
-In Linux, memory in one numa node is divided into several zones. One of the
-zones is ZONE_MOVABLE, which the kernel won't use.
-
-In order to implement memory hotplug in Linux, we are going to arrange all
-hotpluggable memory in ZONE_MOVABLE so that the kernel won't use these memory.
-To do this, we need ACPI's help.
-
-In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
-affinities in SRAT record every memory range in the system, and also, flags
-specifying if the memory range is hotpluggable.
-(Please refer to ACPI spec 5.0 5.2.16)
-
-With the help of SRAT, we have to do the following two things to achieve our
-goal:
-
-1. When doing memory hot-add, allow the users arranging hotpluggable as
-   ZONE_MOVABLE.
-   (This has been done by the MOVABLE_NODE functionality in Linux.)
-
-2. when the system is booting, prevent bootmem allocator from allocating
-   hotpluggable memory for the kernel before the memory initialization
-   finishes.
-
-The problem 2 is the key problem we are going to solve. But before solving it,
-we need some preparation. Please see below.
-
-
-[Preparation]
-
-Bootloader has to load the kernel image into memory. And this memory must be 
-unhotpluggable. We cannot prevent this anyway. So in a memory hotplug system, 
-we can assume any node the kernel resides in is not hotpluggable.
-
-Before SRAT is parsed, we don't know which memory ranges are hotpluggable. But
-memblock has already started to work. In the current kernel, memblock allocates 
-the following memory before SRAT is parsed:
-
-setup_arch()
- |->memblock_x86_fill()            /* memblock is ready */
- |......
- |->early_reserve_e820_mpc_new()   /* allocate memory under 1MB */
- |->reserve_real_mode()            /* allocate memory under 1MB */
- |->init_mem_mapping()             /* allocate page tables, about 2MB to map 1GB memory */
- |->dma_contiguous_reserve()       /* specified by user, should be low */
- |->setup_log_buf()                /* specified by user, several mega bytes */
- |->relocate_initrd()              /* could be large, but will be freed after boot, should reorder */
- |->acpi_initrd_override()         /* several mega bytes */
- |->reserve_crashkernel()          /* could be large, should reorder */
- |......
- |->initmem_init()                 /* Parse SRAT */
-
-According to Tejun's advice, before SRAT is parsed, we should try our best to
-allocate memory near the kernel image. Since the whole node the kernel resides 
-in won't be hotpluggable, and for a modern server, a node may have at least 16GB
-memory, allocating several mega bytes memory around the kernel image won't cross
-to hotpluggable memory.
-
-
-[About this patch-set]
-
-So this patch-set does the following:
-
-1. Make memblock be able to allocate memory from low address to high address.
-   Also introduce low limit to prevent memblock allocating memory too low.
-
-2. Improve init_mem_mapping() to support allocate page tables from low address 
-   to high address.
-
-3. Introduce "movablenode" boot option to enable and disable this functionality.
-
-PS: Reordering of relocate_initrd() and reserve_crashkernel() has not been done 
-    yet. acpi_initrd_override() needs to access initrd with virtual address. So 
-    relocate_initrd() must be done before acpi_initrd_override().
-
-
-Tang Chen (11):
-  memblock: Rename current_limit to current_limit_high in memblock.
-  memblock: Rename memblock_set_current_limit() to
-    memblock_set_current_limit_high().
-  memblock: Introduce lowest limit in memblock.
-  memblock: Introduce memblock_set_current_limit_low() to set lower
-    limit of memblock.
-  memblock: Introduce allocation order to memblock.
-  memblock: Improve memblock to support allocation from lower address.
-  x86, memblock: Set lowest limit for memblock_alloc_base_nid().
-  x86, acpi, memblock: Use __memblock_alloc_base() in
-    acpi_initrd_override()
-  mem-hotplug: Introduce movablenode boot option to {en|dis}able using
-    SRAT.
-  x86, mem-hotplug: Support initialize page tables from low to high.
-  x86, mem_hotplug: Allocate memory near kernel image before SRAT is
-    parsed.
-
- Documentation/kernel-parameters.txt |   15 ++++
- arch/arm/mm/mmu.c                   |    2 +-
- arch/arm64/mm/mmu.c                 |    4 +-
- arch/microblaze/mm/init.c           |    2 +-
- arch/powerpc/mm/40x_mmu.c           |    4 +-
- arch/powerpc/mm/44x_mmu.c           |    2 +-
- arch/powerpc/mm/fsl_booke_mmu.c     |    4 +-
- arch/powerpc/mm/hash_utils_64.c     |    4 +-
- arch/powerpc/mm/init_32.c           |    4 +-
- arch/powerpc/mm/ppc_mmu_32.c        |    4 +-
- arch/powerpc/mm/tlb_nohash.c        |    4 +-
- arch/unicore32/mm/mmu.c             |    2 +-
- arch/x86/kernel/setup.c             |   41 ++++++++++-
- arch/x86/mm/init.c                  |  119 ++++++++++++++++++++++++--------
- drivers/acpi/osl.c                  |    4 +-
- include/linux/memblock.h            |   33 ++++++++--
- include/linux/memory_hotplug.h      |    5 ++
- mm/memblock.c                       |  131 +++++++++++++++++++++++++++++-----
- mm/memory_hotplug.c                 |    9 +++
- mm/nobootmem.c                      |    4 +-
- 20 files changed, 320 insertions(+), 77 deletions(-)
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index cabd685..f233c1f 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -19,6 +19,11 @@
+ 
+ #define INIT_MEMBLOCK_REGIONS	128
+ 
++/* Allocation order. */
++#define MEMBLOCK_ORDER_HIGH_TO_LOW	0
++#define MEMBLOCK_ORDER_LOW_TO_HIGH	1
++#define MEMBLOCK_ORDER_DEFAULT		MEMBLOCK_ORDER_HIGH_TO_LOW
++
+ struct memblock_region {
+ 	phys_addr_t base;
+ 	phys_addr_t size;
+@@ -35,6 +40,7 @@ struct memblock_type {
+ };
+ 
+ struct memblock {
++	int current_order;	/* allocate from higher or lower address */
+ 	phys_addr_t current_limit_low;	/* lower boundary of accessable range */
+ 	phys_addr_t current_limit_high;	/* upper boundary of accessable range */
+ 	struct memblock_type memory;
+@@ -174,6 +180,15 @@ static inline void memblock_dump_all(void)
+ }
+ 
+ /**
++ * memblock_set_current_order - Set the current allocation order to allow
++ *                         allocating memory from higher to lower address or
++ *                         from lower to higher address
++ * @order: In which order to allocate memory. Could be
++ *         MEMBLOCK_ORDER_{HIGH_TO_LOW|LOW_TO_HIGH}
++ */
++void memblock_set_current_order(int order);
++
++/**
+  * memblock_set_current_limit_low - Set the current allocation lower limit to
+  *                         allow limiting allocations to what is currently
+  *                         accessible during boot
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 54c1c2e..8f1e2d4 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -32,6 +32,7 @@ struct memblock memblock __initdata_memblock = {
+ 	.reserved.cnt		= 1,	/* empty dummy entry */
+ 	.reserved.max		= INIT_MEMBLOCK_REGIONS,
+ 
++	.current_order		= MEMBLOCK_ORDER_DEFAULT,
+ 	.current_limit_low	= 0,
+ 	.current_limit_high	= MEMBLOCK_ALLOC_ANYWHERE,
+ };
+@@ -989,6 +990,18 @@ void __init_memblock memblock_trim_memory(phys_addr_t align)
+ 	}
+ }
+ 
++void __init_memblock memblock_set_current_order(int order)
++{
++	if (order != MEMBLOCK_ORDER_HIGH_TO_LOW &&
++	    order != MEMBLOCK_ORDER_LOW_TO_HIGH) {
++		pr_warn("memblock: Failed to set allocation order. "
++			"Invalid order type: %d\n", order);
++		return;
++	}
++
++	memblock.current_order = order;
++}
++
+ void __init_memblock memblock_set_current_limit_low(phys_addr_t limit)
+ {
+ 	memblock.current_limit_low = limit;
+-- 
+1.7.1
 
