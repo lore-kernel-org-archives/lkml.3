@@ -1,405 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab3H0ISJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 04:18:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48948 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753027Ab3H0ISE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 04:18:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,966,1367996400"; 
-   d="scan'208";a="352105210"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V13 11/12] perf tools: add a sample parsing test
-Date: Tue, 27 Aug 2013 11:23:13 +0300
-Message-Id: <1377591794-30553-12-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1377591794-30553-1-git-send-email-adrian.hunter@intel.com>
-References: <1377591794-30553-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1753465Ab3H0ISX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 04:18:23 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52831 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027Ab3H0ISR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 04:18:17 -0400
+Date: Tue, 27 Aug 2013 18:18:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: linux-next: manual merge of the arm-soc tree with the usb tree
+Message-Id: <20130827181813.c40de9771c6b33ad5eba9bec@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__27_Aug_2013_18_18_13_+1000_5XbEoUnJmcjg7s6i"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a test that checks that sample parsing is correctly
-implemented.
+--Signature=_Tue__27_Aug_2013_18_18_13_+1000_5XbEoUnJmcjg7s6i
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/Makefile               |   1 +
- tools/perf/tests/builtin-test.c   |   4 +
- tools/perf/tests/sample-parsing.c | 316 ++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h          |   1 +
- 4 files changed, 322 insertions(+)
- create mode 100644 tools/perf/tests/sample-parsing.c
+Hi all,
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 845cc76..ecebfd0 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -439,6 +439,7 @@ PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
- ifneq ($(OUTPUT),)
-   CFLAGS += -I$(OUTPUT)
- endif
-+LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
- 
- ifdef NO_LIBELF
- EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index f5af192..8ad9415 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -104,6 +104,10 @@ static struct test {
- 		.func = test__code_reading,
- 	},
- 	{
-+		.desc = "Test sample parsing",
-+		.func = test__sample_parsing,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
-new file mode 100644
-index 0000000..77f598d
---- /dev/null
-+++ b/tools/perf/tests/sample-parsing.c
-@@ -0,0 +1,316 @@
-+#include <stdbool.h>
-+#include <inttypes.h>
-+
-+#include "util.h"
-+#include "event.h"
-+#include "evsel.h"
-+
-+#include "tests.h"
-+
-+#define COMP(m) do {					\
-+	if (s1->m != s2->m) {				\
-+		pr_debug("Samples differ at '"#m"'\n");	\
-+		return false;				\
-+	}						\
-+} while (0)
-+
-+#define MCOMP(m) do {					\
-+	if (memcmp(&s1->m, &s2->m, sizeof(s1->m))) {	\
-+		pr_debug("Samples differ at '"#m"'\n");	\
-+		return false;				\
-+	}						\
-+} while (0)
-+
-+static bool samples_same(const struct perf_sample *s1,
-+			 const struct perf_sample *s2, u64 type, u64 regs_user,
-+			 u64 read_format)
-+{
-+	size_t i;
-+
-+	if (type & PERF_SAMPLE_IDENTIFIER)
-+		COMP(id);
-+
-+	if (type & PERF_SAMPLE_IP)
-+		COMP(ip);
-+
-+	if (type & PERF_SAMPLE_TID) {
-+		COMP(pid);
-+		COMP(tid);
-+	}
-+
-+	if (type & PERF_SAMPLE_TIME)
-+		COMP(time);
-+
-+	if (type & PERF_SAMPLE_ADDR)
-+		COMP(addr);
-+
-+	if (type & PERF_SAMPLE_ID)
-+		COMP(id);
-+
-+	if (type & PERF_SAMPLE_STREAM_ID)
-+		COMP(stream_id);
-+
-+	if (type & PERF_SAMPLE_CPU)
-+		COMP(cpu);
-+
-+	if (type & PERF_SAMPLE_PERIOD)
-+		COMP(period);
-+
-+	if (type & PERF_SAMPLE_READ) {
-+		if (read_format & PERF_FORMAT_GROUP)
-+			COMP(read.group.nr);
-+		else
-+			COMP(read.one.value);
-+		if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
-+			COMP(read.time_enabled);
-+		if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
-+			COMP(read.time_running);
-+		/* PERF_FORMAT_ID is forced for PERF_SAMPLE_READ */
-+		if (read_format & PERF_FORMAT_GROUP) {
-+			for (i = 0; i < s1->read.group.nr; i++)
-+				MCOMP(read.group.values[i]);
-+		} else {
-+			COMP(read.one.id);
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_CALLCHAIN) {
-+		COMP(callchain->nr);
-+		for (i = 0; i < s1->callchain->nr; i++)
-+			COMP(callchain->ips[i]);
-+	}
-+
-+	if (type & PERF_SAMPLE_RAW) {
-+		COMP(raw_size);
-+		if (memcmp(s1->raw_data, s2->raw_data, s1->raw_size)) {
-+			pr_debug("Samples differ at 'raw_data'\n");
-+			return false;
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_BRANCH_STACK) {
-+		COMP(branch_stack->nr);
-+		for (i = 0; i < s1->branch_stack->nr; i++)
-+			MCOMP(branch_stack->entries[i]);
-+	}
-+
-+	if (type & PERF_SAMPLE_REGS_USER) {
-+		size_t sz = hweight_long(regs_user) * sizeof(u64);
-+
-+		COMP(user_regs.abi);
-+		if (s1->user_regs.abi &&
-+		    (!s1->user_regs.regs || !s2->user_regs.regs ||
-+		     memcmp(s1->user_regs.regs, s2->user_regs.regs, sz))) {
-+			pr_debug("Samples differ at 'user_regs'\n");
-+			return false;
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_STACK_USER) {
-+		COMP(user_stack.size);
-+		if (memcmp(s1->user_stack.data, s1->user_stack.data,
-+			   s1->user_stack.size)) {
-+			pr_debug("Samples differ at 'user_stack'\n");
-+			return false;
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_WEIGHT)
-+		COMP(weight);
-+
-+	if (type & PERF_SAMPLE_DATA_SRC)
-+		COMP(data_src);
-+
-+	return true;
-+}
-+
-+static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
-+{
-+	struct perf_evsel evsel = {
-+		.needs_swap = false,
-+		.attr = {
-+			.sample_type = sample_type,
-+			.sample_regs_user = sample_regs_user,
-+			.read_format = read_format,
-+		},
-+	};
-+	union perf_event *event;
-+	union {
-+		struct ip_callchain callchain;
-+		u64 data[64];
-+	} callchain = {
-+		/* 3 ips */
-+		.data = {3, 201, 202, 203},
-+	};
-+	union {
-+		struct branch_stack branch_stack;
-+		u64 data[64];
-+	} branch_stack = {
-+		/* 1 branch_entry */
-+		.data = {1, 211, 212, 213},
-+	};
-+	u64 user_regs[64];
-+	const u64 raw_data[] = {0x123456780a0b0c0dULL, 0x1102030405060708ULL};
-+	const u64 data[] = {0x2211443366558877ULL, 0, 0xaabbccddeeff4321ULL};
-+	struct perf_sample sample = {
-+		.ip		= 101,
-+		.pid		= 102,
-+		.tid		= 103,
-+		.time		= 104,
-+		.addr		= 105,
-+		.id		= 106,
-+		.stream_id	= 107,
-+		.period		= 108,
-+		.weight		= 109,
-+		.cpu		= 110,
-+		.raw_size	= sizeof(raw_data),
-+		.data_src	= 111,
-+		.raw_data	= (void *)raw_data,
-+		.callchain	= &callchain.callchain,
-+		.branch_stack	= &branch_stack.branch_stack,
-+		.user_regs	= {
-+			.abi	= PERF_SAMPLE_REGS_ABI_64,
-+			.regs	= user_regs,
-+		},
-+		.user_stack	= {
-+			.size	= sizeof(data),
-+			.data	= (void *)data,
-+		},
-+		.read		= {
-+			.time_enabled = 0x030a59d664fca7deULL,
-+			.time_running = 0x011b6ae553eb98edULL,
-+		},
-+	};
-+	struct sample_read_value values[] = {{1, 5}, {9, 3}, {2, 7}, {6, 4},};
-+	struct perf_sample sample_out;
-+	size_t i, sz, bufsz;
-+	int err, ret = -1;
-+
-+	for (i = 0; i < sizeof(user_regs); i++)
-+		*(i + (u8 *)user_regs) = i & 0xfe;
-+
-+	if (read_format & PERF_FORMAT_GROUP) {
-+		sample.read.group.nr     = 4;
-+		sample.read.group.values = values;
-+	} else {
-+		sample.read.one.value = 0x08789faeb786aa87ULL;
-+		sample.read.one.id    = 99;
-+	}
-+
-+	sz = perf_event__sample_event_size(&sample, sample_type,
-+					   sample_regs_user, read_format);
-+	bufsz = sz + 4096; /* Add a bit for overrun checking */
-+	event = malloc(bufsz);
-+	if (!event) {
-+		pr_debug("malloc failed\n");
-+		return -1;
-+	}
-+
-+	memset(event, 0xff, bufsz);
-+	event->header.type = PERF_RECORD_SAMPLE;
-+	event->header.misc = 0;
-+	event->header.size = sz;
-+
-+	err = perf_event__synthesize_sample(event, sample_type,
-+					    sample_regs_user, read_format,
-+					    &sample, false);
-+	if (err) {
-+		pr_debug("%s failed for sample_type %#"PRIx64", error %d\n",
-+			 "perf_event__synthesize_sample", sample_type, err);
-+		goto out_free;
-+	}
-+
-+	/* The data does not contain 0xff so we use that to check the size */
-+	for (i = bufsz; i > 0; i--) {
-+		if (*(i - 1 + (u8 *)event) != 0xff)
-+			break;
-+	}
-+	if (i != sz) {
-+		pr_debug("Event size mismatch: actual %zu vs expected %zu\n",
-+			 i, sz);
-+		goto out_free;
-+	}
-+
-+	evsel.sample_size = __perf_evsel__sample_size(sample_type);
-+
-+	err = perf_evsel__parse_sample(&evsel, event, &sample_out);
-+	if (err) {
-+		pr_debug("%s failed for sample_type %#"PRIx64", error %d\n",
-+			 "perf_evsel__parse_sample", sample_type, err);
-+		goto out_free;
-+	}
-+
-+	if (!samples_same(&sample, &sample_out, sample_type,
-+			  sample_regs_user, read_format)) {
-+		pr_debug("parsing failed for sample_type %#"PRIx64"\n",
-+			 sample_type);
-+		goto out_free;
-+	}
-+
-+	ret = 0;
-+out_free:
-+	free(event);
-+	if (ret && read_format)
-+		pr_debug("read_format %#"PRIx64"\n", read_format);
-+	return ret;
-+}
-+
-+/**
-+ * test__sample_parsing - test sample parsing.
-+ *
-+ * This function implements a test that synthesizes a sample event, parses it
-+ * and then checks that the parsed sample matches the original sample.  The test
-+ * checks sample format bits separately and together.  If the test passes %0 is
-+ * returned, otherwise %-1 is returned.
-+ */
-+int test__sample_parsing(void)
-+{
-+	const u64 rf[] = {4, 5, 6, 7, 12, 13, 14, 15};
-+	u64 sample_type;
-+	u64 sample_regs_user;
-+	size_t i;
-+	int err;
-+
-+	/*
-+	 * Fail the test if it has not been updated when new sample format bits
-+	 * were added.
-+	 */
-+	if (PERF_SAMPLE_MAX > PERF_SAMPLE_IDENTIFIER << 1) {
-+		pr_debug("sample format has changed - test needs updating\n");
-+		return -1;
-+	}
-+
-+	/* Test each sample format bit separately */
-+	for (sample_type = 1; sample_type != PERF_SAMPLE_MAX;
-+	     sample_type <<= 1) {
-+		/* Test read_format variations */
-+		if (sample_type == PERF_SAMPLE_READ) {
-+			for (i = 0; i < ARRAY_SIZE(rf); i++) {
-+				err = do_test(sample_type, 0, rf[i]);
-+				if (err)
-+					return err;
-+			}
-+			continue;
-+		}
-+
-+		if (sample_type == PERF_SAMPLE_REGS_USER)
-+			sample_regs_user = 0x3fff;
-+		else
-+			sample_regs_user = 0;
-+
-+		err = do_test(sample_type, sample_regs_user, 0);
-+		if (err)
-+			return err;
-+	}
-+
-+	/* Test all sample format bits together */
-+	sample_type = PERF_SAMPLE_MAX - 1;
-+	sample_regs_user = 0x3fff;
-+	for (i = 0; i < ARRAY_SIZE(rf); i++) {
-+		err = do_test(sample_type, sample_regs_user, rf[i]);
-+		if (err)
-+			return err;
-+	}
-+
-+	return 0;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index c748f53..83d5b71 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -37,5 +37,6 @@ int test__task_exit(void);
- int test__sw_clock_freq(void);
- int test__perf_time_to_tsc(void);
- int test__code_reading(void);
-+int test__sample_parsing(void);
- 
- #endif /* TESTS_H */
--- 
-1.7.11.7
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/boot/dts/am335x-evm.dts between commits 97238b35d5bb ("usb:
+musb: dsps: use proper child nodes") and 9b3452d1fa3c ("usb: musb dma:
+add cppi41 dma driver") from the usb tree and commit 63f6b2550aa0 ("ARM:
+dts: AM33XX: don't redefine OCP bus and device nodes") from the arm-soc
+tree.
 
+I fixed it up (probably incorrectly - see below) and can carry the fix as
+necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/boot/dts/am335x-evm.dts
+index c26c16c,1a0f33e..0000000
+--- a/arch/arm/boot/dts/am335x-evm.dts
++++ b/arch/arm/boot/dts/am335x-evm.dts
+@@@ -24,323 -24,6 +24,36 @@@
+  		reg =3D <0x80000000 0x10000000>; /* 256 MB */
+  	};
+ =20
+- 	am33xx_pinmux: pinmux@44e10800 {
+- 		pinctrl-names =3D "default";
+- 		pinctrl-0 =3D <&matrix_keypad_s0 &volume_keys_s0 &clkout2_pin>;
+-=20
+- 		matrix_keypad_s0: matrix_keypad_s0 {
+- 			pinctrl-single,pins =3D <
+- 				0x54 (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a5.gpio1_21 */
+- 				0x58 (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a6.gpio1_22 */
+- 				0x64 (PIN_INPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a9.gpio1_25 */
+- 				0x68 (PIN_INPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a10.gpio1_26 */
+- 				0x6c (PIN_INPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a11.gpio1_27 */
+- 			>;
+- 		};
+-=20
+- 		volume_keys_s0: volume_keys_s0 {
+- 			pinctrl-single,pins =3D <
+- 				0x150 (PIN_INPUT_PULLDOWN | MUX_MODE7)	/* spi0_sclk.gpio0_2 */
+- 				0x154 (PIN_INPUT_PULLDOWN | MUX_MODE7)	/* spi0_d0.gpio0_3 */
+- 			>;
+- 		};
+-=20
+- 		i2c0_pins: pinmux_i2c0_pins {
+- 			pinctrl-single,pins =3D <
+- 				0x188 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_sda.i2c0_sda */
+- 				0x18c (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_scl.i2c0_scl */
+- 			>;
+- 		};
+-=20
+- 		i2c1_pins: pinmux_i2c1_pins {
+- 			pinctrl-single,pins =3D <
+- 				0x158 (PIN_INPUT_PULLUP | MUX_MODE2)	/* spi0_d1.i2c1_sda */
+- 				0x15c (PIN_INPUT_PULLUP | MUX_MODE2)	/* spi0_cs0.i2c1_scl */
+- 			>;
+- 		};
+-=20
+- 		uart0_pins: pinmux_uart0_pins {
+- 			pinctrl-single,pins =3D <
+- 				0x170 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart0_rxd.uart0_rxd */
+- 				0x174 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* uart0_txd.uart0_txd */
+- 			>;
+- 		};
+-=20
+- 		clkout2_pin: pinmux_clkout2_pin {
+- 			pinctrl-single,pins =3D <
+- 				0x1b4 (PIN_OUTPUT_PULLDOWN | MUX_MODE3)	/* xdma_event_intr1.clkout2 */
+- 			>;
+- 		};
+-=20
+- 		nandflash_pins_s0: nandflash_pins_s0 {
+- 			pinctrl-single,pins =3D <
+- 				0x0 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad0.gpmc_ad0 */
+- 				0x4 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad1.gpmc_ad1 */
+- 				0x8 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad2.gpmc_ad2 */
+- 				0xc (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad3.gpmc_ad3 */
+- 				0x10 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad4.gpmc_ad4 */
+- 				0x14 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad5.gpmc_ad5 */
+- 				0x18 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad6.gpmc_ad6 */
+- 				0x1c (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_ad7.gpmc_ad7 */
+- 				0x70 (PIN_INPUT_PULLUP | MUX_MODE0)	/* gpmc_wait0.gpmc_wait0 */
+- 				0x74 (PIN_INPUT_PULLUP | MUX_MODE7)	/* gpmc_wpn.gpio0_30 */
+- 				0x7c (PIN_OUTPUT | MUX_MODE0)		/* gpmc_csn0.gpmc_csn0  */
+- 				0x90 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_advn_ale.gpmc_advn_ale */
+- 				0x94 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_oen_ren.gpmc_oen_ren */
+- 				0x98 (PIN_OUTPUT | MUX_MODE0)		/* gpmc_wen.gpmc_wen */
+- 				0x9c (PIN_OUTPUT | MUX_MODE0)		/* gpmc_be0n_cle.gpmc_be0n_cle */
+- 			>;
+- 		};
+-=20
+- 		ecap0_pins: backlight_pins {
+- 			pinctrl-single,pins =3D <
+- 				0x164 0x0	/* eCAP0_in_PWM0_out.eCAP0_in_PWM0_out MODE0 */
+- 			>;
+- 		};
+-=20
+- 		cpsw_default: cpsw_default {
+- 			pinctrl-single,pins =3D <
+- 				/* Slave 1 */
+- 				0x114 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txen.rgmii1_tctl */
+- 				0x118 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxdv.rgmii1_rctl */
+- 				0x11c (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd3.rgmii1_td3 */
+- 				0x120 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd2.rgmii1_td2 */
+- 				0x124 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd1.rgmii1_td1 */
+- 				0x128 (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txd0.rgmii1_td0 */
+- 				0x12c (PIN_OUTPUT_PULLDOWN | MUX_MODE2)	/* mii1_txclk.rgmii1_tclk */
+- 				0x130 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxclk.rgmii1_rclk */
+- 				0x134 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd3.rgmii1_rd3 */
+- 				0x138 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd2.rgmii1_rd2 */
+- 				0x13c (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd1.rgmii1_rd1 */
+- 				0x140 (PIN_INPUT_PULLDOWN | MUX_MODE2)	/* mii1_rxd0.rgmii1_rd0 */
+- 			>;
+- 		};
+-=20
+- 		cpsw_sleep: cpsw_sleep {
+- 			pinctrl-single,pins =3D <
+- 				/* Slave 1 reset value */
+- 				0x114 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x118 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x11c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x120 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x124 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x128 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x12c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x130 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x134 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x138 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x13c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x140 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 			>;
+- 		};
+-=20
+- 		davinci_mdio_default: davinci_mdio_default {
+- 			pinctrl-single,pins =3D <
+- 				/* MDIO */
+- 				0x148 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)	/* mdio_data.mdi=
+o_data */
+- 				0x14c (PIN_OUTPUT_PULLUP | MUX_MODE0)			/* mdio_clk.mdio_clk */
+- 			>;
+- 		};
+-=20
+- 		davinci_mdio_sleep: davinci_mdio_sleep {
+- 			pinctrl-single,pins =3D <
+- 				/* MDIO reset value */
+- 				0x148 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 				0x14c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+- 			>;
+- 		};
+- 	};
+-=20
+ +	ocp {
+- 		uart0: serial@44e09000 {
+- 			pinctrl-names =3D "default";
+- 			pinctrl-0 =3D <&uart0_pins>;
+-=20
+- 			status =3D "okay";
+- 		};
+-=20
+- 		i2c0: i2c@44e0b000 {
+- 			pinctrl-names =3D "default";
+- 			pinctrl-0 =3D <&i2c0_pins>;
+-=20
+- 			status =3D "okay";
+- 			clock-frequency =3D <400000>;
+-=20
+- 			tps: tps@2d {
+- 				reg =3D <0x2d>;
+- 			};
+- 		};
+-=20
+ +		musb: usb@47400000 {
+ +			status =3D "okay";
+ +
+ +			control@44e10000 {
+ +				status =3D "okay";
+ +			};
+ +
+ +			phy@47401300 {
+ +				status =3D "okay";
+ +			};
+ +
+ +			phy@47401b00 {
+ +				status =3D "okay";
+ +			};
+ +
+ +			usb@47401000 {
+ +				status =3D "okay";
+ +			};
+ +
+ +			usb@47401800 {
+ +				status =3D "okay";
+ +			};
+ +
+ +			dma@07402000  {
+ +				status =3D "okay";
+ +			};
+ +		};
+-=20
+- 		i2c1: i2c@4802a000 {
+- 			pinctrl-names =3D "default";
+- 			pinctrl-0 =3D <&i2c1_pins>;
+-=20
+- 			status =3D "okay";
+- 			clock-frequency =3D <100000>;
+-=20
+- 			lis331dlh: lis331dlh@18 {
+- 				compatible =3D "st,lis331dlh", "st,lis3lv02d";
+- 				reg =3D <0x18>;
+- 				Vdd-supply =3D <&lis3_reg>;
+- 				Vdd_IO-supply =3D <&lis3_reg>;
+-=20
+- 				st,click-single-x;
+- 				st,click-single-y;
+- 				st,click-single-z;
+- 				st,click-thresh-x =3D <10>;
+- 				st,click-thresh-y =3D <10>;
+- 				st,click-thresh-z =3D <10>;
+- 				st,irq1-click;
+- 				st,irq2-click;
+- 				st,wakeup-x-lo;
+- 				st,wakeup-x-hi;
+- 				st,wakeup-y-lo;
+- 				st,wakeup-y-hi;
+- 				st,wakeup-z-lo;
+- 				st,wakeup-z-hi;
+- 				st,min-limit-x =3D <120>;
+- 				st,min-limit-y =3D <120>;
+- 				st,min-limit-z =3D <140>;
+- 				st,max-limit-x =3D <550>;
+- 				st,max-limit-y =3D <550>;
+- 				st,max-limit-z =3D <750>;
+- 			};
+-=20
+- 			tsl2550: tsl2550@39 {
+- 				compatible =3D "taos,tsl2550";
+- 				reg =3D <0x39>;
+- 			};
+-=20
+- 			tmp275: tmp275@48 {
+- 				compatible =3D "ti,tmp275";
+- 				reg =3D <0x48>;
+- 			};
+- 		};
+-=20
+- 		elm: elm@48080000 {
+- 			status =3D "okay";
+- 		};
+-=20
+- 		epwmss0: epwmss@48300000 {
+- 			status =3D "okay";
+-=20
+- 			ecap0: ecap@48300100 {
+- 				status =3D "okay";
+- 				pinctrl-names =3D "default";
+- 				pinctrl-0 =3D <&ecap0_pins>;
+- 			};
+- 		};
+-=20
+- 		gpmc: gpmc@50000000 {
+- 			status =3D "okay";
+- 			pinctrl-names =3D "default";
+- 			pinctrl-0 =3D <&nandflash_pins_s0>;
+- 			ranges =3D <0 0 0x08000000 0x10000000>;	/* CS0: NAND */
+- 			nand@0,0 {
+- 				reg =3D <0 0 0>; /* CS0, offset 0 */
+- 				nand-bus-width =3D <8>;
+- 				ti,nand-ecc-opt =3D "bch8";
+- 				gpmc,device-nand =3D "true";
+- 				gpmc,device-width =3D <1>;
+- 				gpmc,sync-clk-ps =3D <0>;
+- 				gpmc,cs-on-ns =3D <0>;
+- 				gpmc,cs-rd-off-ns =3D <44>;
+- 				gpmc,cs-wr-off-ns =3D <44>;
+- 				gpmc,adv-on-ns =3D <6>;
+- 				gpmc,adv-rd-off-ns =3D <34>;
+- 				gpmc,adv-wr-off-ns =3D <44>;
+- 				gpmc,we-on-ns =3D <0>;
+- 				gpmc,we-off-ns =3D <40>;
+- 				gpmc,oe-on-ns =3D <0>;
+- 				gpmc,oe-off-ns =3D <54>;
+- 				gpmc,access-ns =3D <64>;
+- 				gpmc,rd-cycle-ns =3D <82>;
+- 				gpmc,wr-cycle-ns =3D <82>;
+- 				gpmc,wait-on-read =3D "true";
+- 				gpmc,wait-on-write =3D "true";
+- 				gpmc,bus-turnaround-ns =3D <0>;
+- 				gpmc,cycle2cycle-delay-ns =3D <0>;
+- 				gpmc,clk-activation-ns =3D <0>;
+- 				gpmc,wait-monitoring-ns =3D <0>;
+- 				gpmc,wr-access-ns =3D <40>;
+- 				gpmc,wr-data-mux-bus-ns =3D <0>;
+-=20
+- 				#address-cells =3D <1>;
+- 				#size-cells =3D <1>;
+- 				elm_id =3D <&elm>;
+-=20
+- 				/* MTD partition table */
+- 				partition@0 {
+- 					label =3D "SPL1";
+- 					reg =3D <0x00000000 0x000020000>;
+- 				};
+-=20
+- 				partition@1 {
+- 					label =3D "SPL2";
+- 					reg =3D <0x00020000 0x00020000>;
+- 				};
+-=20
+- 				partition@2 {
+- 					label =3D "SPL3";
+- 					reg =3D <0x00040000 0x00020000>;
+- 				};
+-=20
+- 				partition@3 {
+- 					label =3D "SPL4";
+- 					reg =3D <0x00060000 0x00020000>;
+- 				};
+-=20
+- 				partition@4 {
+- 					label =3D "U-boot";
+- 					reg =3D <0x00080000 0x001e0000>;
+- 				};
+-=20
+- 				partition@5 {
+- 					label =3D "environment";
+- 					reg =3D <0x00260000 0x00020000>;
+- 				};
+-=20
+- 				partition@6 {
+- 					label =3D "Kernel";
+- 					reg =3D <0x00280000 0x00500000>;
+- 				};
+-=20
+- 				partition@7 {
+- 					label =3D "File-System";
+- 					reg =3D <0x00780000 0x0F880000>;
+- 				};
+- 			};
+- 		};
+ +	};
+ +
+  	vbat: fixedregulator@0 {
+  		compatible =3D "regulator-fixed";
+  		regulator-name =3D "vbat";
+
+--Signature=_Tue__27_Aug_2013_18_18_13_+1000_5XbEoUnJmcjg7s6i
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSHGDFAAoJEECxmPOUX5FEhHQP/2tF6O8oPI4/KR5EkiEb+Xf/
+UrsR1vul6yroLh7cAXhe4jgE3DBvaD87xGpbF68umREfVthYD565/0ZPGbwVxerj
+chx26urMlViIdGmtlg7zSwfIq46UFgxeCIGaMETCneO5eTgjKkeTC2ec/q1bcnSJ
+yoBhrKUVfJwZtfkdmPFM23DvUYwtL8zn5W4da98Jn7MegxCTZyVIVAXqHGR1/6KP
+Q96AsXQCeh9LaJBVE7q54cf++8tUMkQVvNj6+RSJhLsts49kmpgjUW7TJuREsqRB
+6IVX91IVaBZbTZPMeNvK3uN/XG1zdf88q9lQgUiHbKWD2+jUVdYrikfc3BtMSzNz
+kxwGBc7Tz6x/Gqbhi9jQBC7YNna+l3TfkQhKrKVpxR7YKPLk0ovbuCssCYo8K94J
+51fZlK1N8HwBAOjk9+h4j8gB7xzfpQcGGXqPP0XtnB1GqlC6gcgpUEh0Dp3B0o8H
+wO9fUuJpRmxkxZU3aRoJRQRXoO1zqNYiTBcF/DIDEuBeFvjvdosgtuJuqtMkKfBv
+k+8wx59gCsTP6v0dzY+s71KOfub//JXfpLxvu/G0HkutZekQVh5jZrkvfDfj6C4a
+hIHSCHfKIVzcaGJ5t5HrN10aLzK+QN7qzoQrRYN64hWSUlBTxoIi++tEHrlQJKdk
+vXdt6JuxFnSrqsA6GqVy
+=U5kN
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Aug_2013_18_18_13_+1000_5XbEoUnJmcjg7s6i--
