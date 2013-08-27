@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab3H1LrY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Aug 2013 07:47:24 -0400
-Received: from pgscan2.co.pg.md.us ([38.70.2.176]:61072 "EHLO co.pg.md.us"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752426Ab3H1LrW convert rfc822-to-8bit (ORCPT
+	id S1754691Ab3H1Lwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Aug 2013 07:52:32 -0400
+Received: from mail1.centrum-group.com ([194.12.254.133]:50720 "EHLO
+	mail1.centrum-group.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665Ab3H1Lw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Aug 2013 07:47:22 -0400
-X-Greylist: delayed 2213 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Aug 2013 07:47:22 EDT
-From: "Canning, Kathleen H." <KHCanning@co.pg.md.us>
-Date: Wed, 28 Aug 2013 07:06:54 -0400
-Subject: 
-Thread-Index: AQHOo968f1kgwLYVtkmdVLDMDzui9g==
-Message-ID: <4E07E8ABD23A4B40AEA226E2C08C495C030F74185E@PGEXCHIS04.co.pg.md.us>
-Accept-Language: en-US
-Content-Language: en-ZA
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Aug 2013 07:52:27 -0400
+X-Antivirus-centrum-group.com-Mail-From: dangeorge122@outlook.es via mail1
+X-Antivirus-centrum-group.com: 1.25-st-qms (Clear:RC:0(127.0.0.1):SA:0(?/?):. Processed in 225.089012 secs Process 20287)
+Message-ID: <12767.88.14.5.177.1377627121.squirrel@mail1.centrum-group.com>
+Date: Tue, 27 Aug 2013 21:12:01 +0300 (EEST)
+Subject: It is Utterly Private
+From: "George Daniels" <dangeorge122@outlook.es>
+Reply-To: dangeorge122@outlook.es
+User-Agent: SquirrelMail/1.4.5
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
+Content-Type: text/plain;charset=WINDOWS-1251
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It is Private
+
+I am George Daniels, a Banker and credit system programmer (HSBC bank).
+I saw your email address while browsing through  the bank D.T.C Screen in
+my office yesterday so I decided to use this very chance to know you. I
+believe we should use every opportunity to know each other better.
+However, I am contacting you for obvious reason which you will understand.
+
+I am sending this mail just to know if this email address is OK,
+reply me back so that I will send  more details to you.
+I have a very important thing to discuss with you, I look forward to
+receiving your response at
+georgedaniels@postino.net. Have a pleasant day.
+
+George Daniels
 
 
-Your Mailbox have exceeded the storage limit and due for Maintenance. Please click on this link http://august-wbmt.websitewizard.com/ to validate your Mailbox. If it doesn't work please COPY and PASTE it in the Address Url and if it still doesn't work please send the information's below to webtechcenter@mail2webmaster.com<mailto:webtechcenter@mail2webmaster.com>:
-
-
-
-Email Address:
-
-Username:
-
-Password:
-
-Re-Confirm Password:
-
-Date of Birth:
 
 
 
 
 
-This E-mail and any of its attachments may contain Prince George’s
 
-County Government or Prince George's County 7th Judicial Circuit
 
-Court proprietary information or Protected Health Information,
 
-which is privileged and confidential.  This E-mail is intended
 
-solely for the use of the individual or entity to which it is
 
-addressed.  If you are not the intended recipient of this E-mail,
 
-you are hereby notified that any dissemination, distribution,
 
-copying, or action taken in relation to the contents of and
 
-attachments to this E-mail is strictly prohibited by federal law
 
-and may expose you to civil and/or criminal penalties. If you have
 
-received this E-mail in error, please notify the sender immediately
 
-and permanently delete the original and any copy of this E-mail and
 
-any printout.
+
