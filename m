@@ -1,54 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab3H0W5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 18:57:10 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:37231 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab3H0W5J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 18:57:09 -0400
-Date: Tue, 27 Aug 2013 17:57:03 -0500
+	id S1753878Ab3H0W6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 18:58:35 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:59409 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752099Ab3H0W6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 18:58:34 -0400
+Date: Tue, 27 Aug 2013 17:58:28 -0500
 From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
-Subject: [PATCH v2 0/2] rsxx: RSXX driver Bug fixes.
-Message-ID: <20130827225703.GA7368@oc6784271780.ibm.com>
+Subject: [PATCH v2 1/2] rsxx: Handling failed pci_map_page on PowerPC and
+ double free.
+Message-ID: <20130827225827.GB7368@oc6784271780.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.20 (2009-12-10)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082722-5518-0000-0000-0000118073F3
+x-cbid: 13082722-0320-0000-0000-000000D0D985
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The incoming patch series contains 2 patches for the
-rsxx driver (drivers/block/rsxx). I sent a patch series
-containing 5 patches a couple weeks ago, which contained
-version 1 of the this series.
+From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 
-Version 2 changes:
-o Patches 3 thru 5 were removed because of importance.
-o pci_dma_mapping_error was added to check the return
-  status of pci_map_page.
+The rsxx driver was not checking the correct value during a
+pci_map_page failure. Fixing this also uncovered a
+double free if the bio was returned before it was
+broken up into indiviadual 4k dmas, that is also
+fixed here.
 
-Patch 1:
-	The driver wasn't handling the return value
-	of pci_map_page correctly for the PowerPC
-	architecture. This also uncovered a double
-	free scenario that is fixed here.
+Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+-------------------------------------------------------------------------------
 
-Patch 2:
-	In this patch, the pci_map_page function has
-	been moved into our issued workqueue to prevent
-	an us running out of mappable addresses on non-
-	HWWD PCIe x8 slots. The maximum amount that
-	can possible be mapped at one time now is:
-	255 dmas X 4 dma channels X 4096 Bytes.
 
-Regards,
-- Philip Kelleher
-	
+diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/core.c linux-block/drivers/block/rsxx/core.c
+--- linux-block-vanilla/drivers/block/rsxx/core.c	2013-08-26 15:36:48.915801516 -0500
++++ linux-block/drivers/block/rsxx/core.c	2013-08-26 15:58:15.572827498 -0500
+@@ -654,7 +654,8 @@ static void rsxx_eeh_failure(struct pci_
+ 	for (i = 0; i < card->n_targets; i++) {
+ 		spin_lock_bh(&card->ctrl[i].queue_lock);
+ 		cnt = rsxx_cleanup_dma_queue(&card->ctrl[i],
+-					     &card->ctrl[i].queue);
++					     &card->ctrl[i].queue,
++					     COMPLETE_DMA);
+ 		spin_unlock_bh(&card->ctrl[i].queue_lock);
+ 
+ 		cnt += rsxx_dma_cancel(&card->ctrl[i]);
+diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
+--- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-08-26 15:36:48.966788143 -0500
++++ linux-block/drivers/block/rsxx/dma.c	2013-08-26 16:00:43.934717159 -0500
+@@ -221,6 +221,19 @@ static void dma_intr_coal_auto_tune(stru
+ }
+ 
+ /*----------------- RSXX DMA Handling -------------------*/
++static void rsxx_free_dma(struct rsxx_dma_ctrl *ctrl, struct rsxx_dma *dma)
++{
++	if (!pci_dma_mapping_error(ctrl->card->dev, dma->dma_addr)) {
++		pci_unmap_page(ctrl->card->dev, dma->dma_addr,
++			       get_dma_size(dma),
++			       dma->cmd == HW_CMD_BLK_WRITE ?
++					   PCI_DMA_TODEVICE :
++					   PCI_DMA_FROMDEVICE);
++	}
++
++	kmem_cache_free(rsxx_dma_pool, dma);
++}
++
+ static void rsxx_complete_dma(struct rsxx_dma_ctrl *ctrl,
+ 				  struct rsxx_dma *dma,
+ 				  unsigned int status)
+@@ -232,21 +245,14 @@ static void rsxx_complete_dma(struct rsx
+ 	if (status & DMA_CANCELLED)
+ 		ctrl->stats.dma_cancelled++;
+ 
+-	if (dma->dma_addr)
+-		pci_unmap_page(ctrl->card->dev, dma->dma_addr,
+-			       get_dma_size(dma),
+-			       dma->cmd == HW_CMD_BLK_WRITE ?
+-					   PCI_DMA_TODEVICE :
+-					   PCI_DMA_FROMDEVICE);
+-
+ 	if (dma->cb)
+ 		dma->cb(ctrl->card, dma->cb_data, status ? 1 : 0);
+ 
+-	kmem_cache_free(rsxx_dma_pool, dma);
++	rsxx_free_dma(ctrl, dma);
+ }
+ 
+ int rsxx_cleanup_dma_queue(struct rsxx_dma_ctrl *ctrl,
+-			   struct list_head *q)
++			   struct list_head *q, unsigned int done)
+ {
+ 	struct rsxx_dma *dma;
+ 	struct rsxx_dma *tmp;
+@@ -254,7 +260,10 @@ int rsxx_cleanup_dma_queue(struct rsxx_d
+ 
+ 	list_for_each_entry_safe(dma, tmp, q, list) {
+ 		list_del(&dma->list);
+-		rsxx_complete_dma(ctrl, dma, DMA_CANCELLED);
++		if (done & COMPLETE_DMA)
++			rsxx_complete_dma(ctrl, dma, DMA_CANCELLED);
++		else
++			rsxx_free_dma(ctrl, dma);
+ 		cnt++;
+ 	}
+ 
+@@ -370,7 +379,7 @@ static void dma_engine_stalled(unsigned 
+ 
+ 		/* Clean up the DMA queue */
+ 		spin_lock(&ctrl->queue_lock);
+-		cnt = rsxx_cleanup_dma_queue(ctrl, &ctrl->queue);
++		cnt = rsxx_cleanup_dma_queue(ctrl, &ctrl->queue, COMPLETE_DMA);
+ 		spin_unlock(&ctrl->queue_lock);
+ 
+ 		cnt += rsxx_dma_cancel(ctrl);
+@@ -623,7 +632,7 @@ static int rsxx_queue_dma(struct rsxx_ca
+ 	dma->dma_addr = pci_map_page(card->dev, page, pg_off, dma_len,
+ 				     dir ? PCI_DMA_TODEVICE :
+ 				     PCI_DMA_FROMDEVICE);
+-	if (!dma->dma_addr) {
++	if (pci_dma_mapping_error(ctrl->card->dev, dma->dma_addr)) {
+ 		kmem_cache_free(rsxx_dma_pool, dma);
+ 		return -ENOMEM;
+ 	}
+@@ -736,11 +745,9 @@ int rsxx_dma_queue_bio(struct rsxx_cardi
+ 	return 0;
+ 
+ bvec_err:
+-	for (i = 0; i < card->n_targets; i++) {
+-		spin_lock_bh(&card->ctrl[i].queue_lock);
+-		rsxx_cleanup_dma_queue(&card->ctrl[i], &dma_list[i]);
+-		spin_unlock_bh(&card->ctrl[i].queue_lock);
+-	}
++	for (i = 0; i < card->n_targets; i++)
++		rsxx_cleanup_dma_queue(&card->ctrl[i], &dma_list[i],
++					FREE_DMA);
+ 
+ 	return st;
+ }
+@@ -990,7 +997,7 @@ void rsxx_dma_destroy(struct rsxx_cardin
+ 
+ 		/* Clean up the DMA queue */
+ 		spin_lock_bh(&ctrl->queue_lock);
+-		rsxx_cleanup_dma_queue(ctrl, &ctrl->queue);
++		rsxx_cleanup_dma_queue(ctrl, &ctrl->queue, COMPLETE_DMA);
+ 		spin_unlock_bh(&ctrl->queue_lock);
+ 
+ 		rsxx_dma_cancel(ctrl);
+@@ -1045,7 +1052,7 @@ int rsxx_eeh_save_issued_dmas(struct rsx
+ 		card->ctrl[i].e_cnt = 0;
+ 
+ 		list_for_each_entry(dma, &card->ctrl[i].queue, list) {
+-			if (dma->dma_addr)
++			if (!pci_dma_mapping_error(ctrl->card->dev, dma->dma_addr))
+ 				pci_unmap_page(card->dev, dma->dma_addr,
+ 					       get_dma_size(dma),
+ 					       dma->cmd == HW_CMD_BLK_WRITE ?
+@@ -1073,7 +1080,7 @@ int rsxx_eeh_remap_dmas(struct rsxx_card
+ 					dma->cmd == HW_CMD_BLK_WRITE ?
+ 					PCI_DMA_TODEVICE :
+ 					PCI_DMA_FROMDEVICE);
+-			if (!dma->dma_addr) {
++			if (pci_dma_mapping_error(ctrl->card->dev, dma->dma_addr)) {
+ 				spin_unlock_bh(&card->ctrl[i].queue_lock);
+ 				kmem_cache_free(rsxx_dma_pool, dma);
+ 				return -ENOMEM;
+diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h linux-block/drivers/block/rsxx/rsxx_priv.h
+--- linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h	2013-08-26 15:36:48.996733795 -0500
++++ linux-block/drivers/block/rsxx/rsxx_priv.h	2013-08-26 15:58:15.576827372 -0500
+@@ -345,6 +345,11 @@ enum rsxx_creg_stat {
+ 	CREG_STAT_TAG_MASK	= 0x0000ff00,
+ };
+ 
++enum rsxx_dma_finish {
++	FREE_DMA	= 0x0,
++	COMPLETE_DMA	= 0x1,
++};
++
+ static inline unsigned int CREG_DATA(int N)
+ {
+ 	return CREG_DATA0 + (N << 2);
+@@ -379,7 +384,9 @@ typedef void (*rsxx_dma_cb)(struct rsxx_
+ int rsxx_dma_setup(struct rsxx_cardinfo *card);
+ void rsxx_dma_destroy(struct rsxx_cardinfo *card);
+ int rsxx_dma_init(void);
+-int rsxx_cleanup_dma_queue(struct rsxx_dma_ctrl *ctrl, struct list_head *q);
++int rsxx_cleanup_dma_queue(struct rsxx_dma_ctrl *ctrl,
++				struct list_head *q,
++				unsigned int done);
+ int rsxx_dma_cancel(struct rsxx_dma_ctrl *ctrl);
+ void rsxx_dma_cleanup(void);
+ void rsxx_dma_queue_reset(struct rsxx_cardinfo *card);
 
