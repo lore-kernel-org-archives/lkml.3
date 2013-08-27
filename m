@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab3H0Sc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 14:32:28 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:55261 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab3H0ScY (ORCPT
+	id S1753856Ab3H0Scr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 14:32:47 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44481 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab3H0Scp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 14:32:24 -0400
-Subject: [PATCH V6 5/7] POWER/cpuidle: Generic POWER CPUIDLE driver
- supporting PSERIES.
+	Tue, 27 Aug 2013 14:32:45 -0400
+Subject: [PATCH V6 6/7] POWER/cpuidle: Enable powernv cpuidle support.
 To: linux-pm@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
 From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
@@ -17,8 +16,8 @@ Cc: b.zolnierkie@samsung.com, benh@kernel.crashing.org,
         michael@ellerman.id.au, scottwood@freescale.com,
         srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
         svaidy@linux.vnet.ibm.com
-Date: Wed, 28 Aug 2013 00:01:39 +0530
-Message-ID: <20130827183137.18579.74586.stgit@deepthi.in.ibm.com>
+Date: Wed, 28 Aug 2013 00:01:47 +0530
+Message-ID: <20130827183145.18579.9940.stgit@deepthi.in.ibm.com>
 In-Reply-To: <20130827183016.18579.16595.stgit@deepthi.in.ibm.com>
 References: <20130827183016.18579.16595.stgit@deepthi.in.ibm.com>
 User-Agent: StGit/0.16
@@ -27,110 +26,96 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13082718-2674-0000-0000-00000A67E0AD
+x-cbid: 13082718-5140-0000-0000-000003BC254F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes cleanup and refactoring of the
-existing code to make the driver POWER generic.
-* Re-naming the functions from pseries to generic power.
-* Re-naming the backend driver from pseries_idle to
-  ibm-power-idle.
+The following patch extends the current power backend
+idle driver to the powernv platform.
 
 Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 ---
- drivers/cpuidle/cpuidle-ibm-power.c |   32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ drivers/cpuidle/cpuidle-ibm-power.c |   39 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 36 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/cpuidle/cpuidle-ibm-power.c b/drivers/cpuidle/cpuidle-ibm-power.c
-index 14ebdb4..162deda 100644
+index 162deda..f8905c3 100644
 --- a/drivers/cpuidle/cpuidle-ibm-power.c
 +++ b/drivers/cpuidle/cpuidle-ibm-power.c
-@@ -20,8 +20,8 @@
- #include <asm/runlatch.h>
- #include <asm/plpar_wrappers.h>
+@@ -48,9 +48,10 @@ static int snooze_loop(struct cpuidle_device *dev,
+ 			struct cpuidle_driver *drv,
+ 			int index)
+ {
+-	unsigned long in_purr;
++	unsigned long in_purr = 0;
  
--struct cpuidle_driver pseries_idle_driver = {
--	.name             = "pseries_idle",
-+struct cpuidle_driver power_idle_driver = {
-+	.name             = "ibm_power_idle",
- 	.owner            = THIS_MODULE,
+-	idle_loop_prolog(&in_purr);
++	if (firmware_has_feature(FW_FEATURE_SPLPAR))
++		idle_loop_prolog(&in_purr);
+ 	local_irq_enable();
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 
+@@ -64,7 +65,8 @@ static int snooze_loop(struct cpuidle_device *dev,
+ 	clear_thread_flag(TIF_POLLING_NRFLAG);
+ 	smp_mb();
+ 
+-	idle_loop_epilog(in_purr);
++	if (firmware_has_feature(FW_FEATURE_SPLPAR))
++		idle_loop_epilog(in_purr);
+ 
+ 	return index;
+ }
+@@ -128,6 +130,15 @@ static int shared_cede_loop(struct cpuidle_device *dev,
+ 	return index;
+ }
+ 
++static int nap_loop(struct cpuidle_device *dev,
++			struct cpuidle_driver *drv,
++			int index)
++{
++	ppc64_runlatch_off();
++	power7_idle();
++	return index;
++}
++
+ /*
+  * States for dedicated partition case.
+  */
+@@ -161,6 +172,23 @@ static struct cpuidle_state shared_states[] = {
+ 		.enter = &shared_cede_loop },
  };
  
-@@ -178,7 +178,7 @@ void update_smt_snooze_delay(int cpu, int residency)
- 			drv->states[1].target_residency = residency;
- }
- 
--static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
-+static int power_cpuidle_add_cpu_notifier(struct notifier_block *n,
- 			unsigned long action, void *hcpu)
++static struct cpuidle_state powernv_states[] = {
++	{ /* Snooze */
++		.name = "snooze",
++		.desc = "snooze",
++		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.exit_latency = 0,
++		.target_residency = 0,
++		.enter = &snooze_loop },
++	{ /* NAP */
++		.name = "NAP",
++		.desc = "NAP",
++		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.exit_latency = 10,
++		.target_residency = 100,
++		.enter = &nap_loop },
++};
++
+ void update_smt_snooze_delay(int cpu, int residency)
  {
- 	int hotcpu = (unsigned long)hcpu;
-@@ -209,16 +209,16 @@ static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
- }
+ 	struct cpuidle_driver *drv = cpuidle_get_driver();
+@@ -254,6 +282,11 @@ static int power_idle_probe(void)
+ 			cpuidle_state_table = dedicated_states;
+ 			max_idle_state = ARRAY_SIZE(dedicated_states);
+ 		}
++
++	} else if (firmware_has_feature(FW_FEATURE_OPALv3)) {
++		cpuidle_state_table = powernv_states;
++		max_idle_state = ARRAY_SIZE(powernv_states);
++
+ 	} else
+ 		return -ENODEV;
  
- static struct notifier_block setup_hotplug_notifier = {
--	.notifier_call = pseries_cpuidle_add_cpu_notifier,
-+	.notifier_call = power_cpuidle_add_cpu_notifier,
- };
- 
- /*
-- * pseries_cpuidle_driver_init()
-+ * power_cpuidle_driver_init()
-  */
--static int pseries_cpuidle_driver_init(void)
-+static int power_cpuidle_driver_init(void)
- {
- 	int idle_state;
--	struct cpuidle_driver *drv = &pseries_idle_driver;
-+	struct cpuidle_driver *drv = &power_idle_driver;
- 
- 	drv->state_count = 0;
- 	for (idle_state = 0; idle_state < max_idle_state; ++idle_state) {
-@@ -237,10 +237,10 @@ static int pseries_cpuidle_driver_init(void)
- }
- 
- /*
-- * pseries_idle_probe()
-+ * power_idle_probe()
-  * Choose state table for shared versus dedicated partition
-  */
--static int pseries_idle_probe(void)
-+static int power_idle_probe(void)
- {
- 
- 	if (cpuidle_disable != IDLE_NO_OVERRIDE)
-@@ -260,24 +260,24 @@ static int pseries_idle_probe(void)
- 	return 0;
- }
- 
--static int __init pseries_processor_idle_init(void)
-+static int __init power_processor_idle_init(void)
- {
- 	int retval;
- 
--	retval = pseries_idle_probe();
-+	retval = power_idle_probe();
- 	if (retval)
- 		return retval;
- 
--	pseries_cpuidle_driver_init();
--	retval = cpuidle_register(&pseries_idle_driver, NULL);
-+	power_cpuidle_driver_init();
-+	retval = cpuidle_register(&power_idle_driver, NULL);
- 	if (retval) {
--		printk(KERN_DEBUG "Registration of pseries driver failed.\n");
-+		printk(KERN_DEBUG "Registration of ibm_power_idle driver failed.\n");
- 		return retval;
- 	}
- 
- 	register_cpu_notifier(&setup_hotplug_notifier);
--	printk(KERN_DEBUG "pseries_idle_driver registered\n");
-+	printk(KERN_DEBUG "ibm_power_idle registered\n");
- 	return 0;
- }
- 
--device_initcall(pseries_processor_idle_init);
-+device_initcall(power_processor_idle_init);
 
