@@ -1,65 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab3H0Qx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 12:53:27 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:39355 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab3H0QxZ convert rfc822-to-8bit (ORCPT
+	id S1753829Ab3H0Qxt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 12:53:49 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:49670 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753672Ab3H0Qxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 12:53:25 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 27 Aug 2013 12:53:48 -0400
+Date: Tue, 27 Aug 2013 17:53:10 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v4 1/5] ARM/ARM64: arch_timer: add macros for bits in
+ control register
+Message-ID: <20130827165310.GJ19897@arm.com>
+References: <1377274749-6196-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <1377274749-6196-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <20130827112144.GG19897@arm.com>
+ <521C8F82.6070301@arm.com>
+ <20130827145250.GE27164@darko.cambridge.arm.com>
+ <521CC368.6050307@arm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: =?utf-8?q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        James Hogan <james.hogan@imgtec.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <20f57100-4440-4353-9c84-6e5781f7c6d3@DB9EHSMHS025.ehs.local>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Michal Simek <michal.simek@xilinx.com>
-References: <20130827190304.c3f2f891f20d078d66b703b1@canb.auug.org.au>
- <521C7AF0.1020903@imgtec.com>
- <20f57100-4440-4353-9c84-6e5781f7c6d3@DB9EHSMHS025.ehs.local>
-Message-ID: <20130827165319.8231.9@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: linux-next: manual merge of the clk tree with Linus' tree
-Date: Tue, 27 Aug 2013 09:53:19 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <521CC368.6050307@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sören Brinkmann (2013-08-27 08:44:11)
-> On Tue, Aug 27, 2013 at 11:09:52AM +0100, James Hogan wrote:
-> > On 27/08/13 10:03, Stephen Rothwell wrote:
-> > > Hi Mike,
-> > > 
-> > > Today's linux-next merge of the clk tree got a conflict in
-> > > drivers/clk/zynq/clkc.c between commits 252957cc3a2d ("clk/zynq/clkc: Add
-> > > dedicated spinlock for the SWDT") and 765b7d4c4cb3
-> > > ("clk/zynq/clkc: Add CLK_SET_RATE_PARENT flag to ethernet muxes") from
-> > > Linus' tree and commit 819c1de344c5 ("clk: add CLK_SET_RATE_NO_REPARENT
-> > > flag") from the clk tree.
-> > > 
-> > > I fixed it up (see below and in a couple of places I chose
-> > > CLK_SET_RATE_NO_REPARENT over CLK_SET_RATE_PARENT, which may, of course,
-> > > be wrong) and can carry the fix as necessary (no action is required).
+On Tue, Aug 27, 2013 at 04:19:04PM +0100, Sudeep KarkadaNagesha wrote:
+> On 27/08/13 15:52, Catalin Marinas wrote:
+> > On Tue, Aug 27, 2013 at 12:37:38PM +0100, Sudeep KarkadaNagesha wrote:
+> >> On 27/08/13 12:21, Catalin Marinas wrote:
+> >>> On Fri, Aug 23, 2013 at 05:19:05PM +0100, Sudeep KarkadaNagesha wrote:
+> >>>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> >>>>
+> >>>> Add macros to describe the bitfields in the ARM architected timer
+> >>>> control register to make code easy to understand.
+> >>>>
+> >>>> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> >>>> Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> >>>> Reviewed-by: Will Deacon <will.deacon@arm.com>
+> >>>> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> >>>> ---
+> >>>>  arch/arm/include/asm/arch_timer.h    |  9 +++++++--
+> >>>>  arch/arm64/include/asm/arch_timer.h  | 12 ++++++++----
+> >>>>  include/clocksource/arm_arch_timer.h |  8 ++++++++
+> >>>>  3 files changed, 23 insertions(+), 6 deletions(-)
+> >>>>
+> >>>> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+> >>>> index e406d57..9ef74da 100644
+> >>>> --- a/arch/arm/include/asm/arch_timer.h
+> >>>> +++ b/arch/arm/include/asm/arch_timer.h
+> >>>> @@ -95,8 +95,13 @@ static inline void arch_counter_set_user_access(void)
+> >>>>  
+> >>>>  	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
+> >>>>  
+> >>>> -	/* disable user access to everything */
+> >>>> -	cntkctl &= ~((3 << 8) | (7 << 0));
+> >>>> +	/* Disable user access to both physical/virtual counters/timers. */
+> >>>> +	/* Also disable virtual event stream */
+> >>>> +	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
+> >>>> +			| ARCH_TIMER_USR_VT_ACCESS_EN
+> >>>> +			| ARCH_TIMER_VIRT_EVT_EN
+> >>>> +			| ARCH_TIMER_USR_VCT_ACCESS_EN
+> >>>> +			| ARCH_TIMER_USR_PCT_ACCESS_EN);
+> >>>>  
+> >>>>  	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
+> >>>>  }
+> >>>> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+> >>>> index 98abd47..00b09d0 100644
+> >>>> --- a/arch/arm64/include/asm/arch_timer.h
+> >>>> +++ b/arch/arm64/include/asm/arch_timer.h
+> >>>> @@ -101,12 +101,16 @@ static inline void arch_counter_set_user_access(void)
+> >>>>  {
+> >>>>  	u32 cntkctl;
+> >>>>  
+> >>>> -	/* Disable user access to the timers and the physical counter. */
+> >>>>  	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
+> >>>> -	cntkctl &= ~((3 << 8) | (1 << 0));
+> >>>>  
+> >>>> -	/* Enable user access to the virtual counter and frequency. */
+> >>>> -	cntkctl |= (1 << 1);
+> >>>> +	/* Disable user access to the timers and the physical counter. */
+> >>>> +	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
+> >>>> +			| ARCH_TIMER_USR_VT_ACCESS_EN
+> >>>> +			| ARCH_TIMER_USR_PCT_ACCESS_EN);
+> >>>> +
+> >>>> +	/* Enable user access to the virtual counter. */
+> >>>> +	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
+> >>>> +
+> >>>>  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+> >>>
+> >>> For consistency with arm, I think we should also disable the event
+> >>> stream explicitly here.
+> >>>
+> >> Yes it's done. In PATCH 3/5, a new function arch_timer_evtstrm_config is
+> >> added which is always called(PATCH 4/5). It's either enabled or disabled
+> >> explicitly based on config option for event stream.
 > > 
-> > The case you mentioned looks correct to me.
-> > 
-> > I can't see todays -next yet, but if by "choose CLK_SET_RATE_NO_REPARENT
-> > over CLK_SET_RATE_PARENT" you mean one branch adds CLK_SET_RATE_PARENT,
-> > clk-next adds CLK_SET_RATE_NO_REPARENT, and the resolution ends up with
-> > only CLK_SET_RATE_NOREPARENT then that sounds wrong, as the two flags
-> > are orthogonal.
+> > OK, just that in this patch arm and arm64 had different settings with
+> > regards to the event stream.
 > 
-> I can just agree, the case included in the mail looks correct, but in
-> case of other conflicts both flags should be set. Just like in the case
-> shown here.
-
-Stephen's fix is correct. The Zynq patches came in as fixes so I think
-this will be a rare event.
-
-Regards,
-Mike
-
+> Yes correct but that's how it is currently. This patch is not modifying
+> anything functional, just adding macros.
 > 
->         Sören
+> > BTW, can we not avoid clearing the event stream via the
+> > arch_timer_evtstrm_config(false) and always assume the default as
+> > disabled? Do you ever go back into low power mode with event stream
+> > disabled and come back with it enabled?
+> 
+> Yes that can be done. But since the cold/warm reset involves other
+> firmware which can modify that bit, IMO it would be better to do it
+> explicitly as CONFIG_ARM_ARCH_TIMER_EVTSTREAM=n has to ensure its
+> disabled. Though I don't have a strong opinion on this, the reason for
+> my inclination towards explicit disable is because of platform firmware.
+> e.g. on V2P_CA15_A7/TC2 bootmon/secure firmware enables this bit based
+> on some settings in board.txt
+> I can remove as it's disabled on reset(ARM ARM says its reset value is
+> 0) but with the assumption that other firmware don't modify that bit.
+
+For initial boot we can initialise it and clear the EVNTEN bit. For
+subsequent CPU low power events I assume we save/restore the cntkctl
+register? If we do, we only need to check
+CONFIG_ARM_ARCH_TIMER_EVTSTREAM once during initialisation.
+
+-- 
+Catalin
