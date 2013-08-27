@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab3H0AlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Aug 2013 20:41:00 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:46411 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab3H0Ak6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Aug 2013 20:40:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANVTcTYhdiptB_sOUyveBfieg0VkTGdor16kCHKkJDemHzcWXw@mail.gmail.com>
-References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
-	<1376189294-32022-27-git-send-email-yinghai@kernel.org>
-	<CANVTcTYhdiptB_sOUyveBfieg0VkTGdor16kCHKkJDemHzcWXw@mail.gmail.com>
-Date: Mon, 26 Aug 2013 17:40:57 -0700
-X-Google-Sender-Auth: AZn5vWu3jUIaSfHQrBRO8Tk2FVg
-Message-ID: <CAE9FiQVSRMdinMKQdJUB_q8pAK-ei-Q-if+8K5yyz=HRTHbCTA@mail.gmail.com>
-Subject: Re: [PATCH v4 26/28] PCI, x86, ACPI: Link acpi ioapic register to ioapic
-From: Yinghai Lu <yinghai@kernel.org>
-To: rui wang <ruiv.wang@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	id S1752561Ab3H0Ald (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Aug 2013 20:41:33 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:35850 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752189Ab3H0Alb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Aug 2013 20:41:31 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Joseph Lo <josephl@nvidia.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [GIT PULL]: CPUFreq: ARM Fixes for 3.12
+Date: Tue, 27 Aug 2013 02:52:10 +0200
+Message-ID: <1633112.3VJ8iVoDW6@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAKohpo=2msHhAWqqe==yLCszE5U6ccSti31E82eovkb4emJd5A@mail.gmail.com>
+References: <CAKohpoksNiGT+r3JTY6KFwnDFA5OYE-vQe8W_9GT-fN21UMrfQ@mail.gmail.com> <CAKohpo=2msHhAWqqe==yLCszE5U6ccSti31E82eovkb4emJd5A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 23, 2013 at 5:51 PM, rui wang <ruiv.wang@gmail.com> wrote:
-> On 8/11/13, Yinghai Lu <yinghai@kernel.org> wrote:
->> During ioapic hotplug, acpi_register_ioapic will be called.
->> Now for x86, that function is blank.
->> Fill that will update __mp_register_ioapic to use those ioapic.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> ---
->>  arch/x86/kernel/acpi/boot.c | 10 ++++++----
->>  1 file changed, 6 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
->> index 5be15d1..4a5336d 100644
->> --- a/arch/x86/kernel/acpi/boot.c
->> +++ b/arch/x86/kernel/acpi/boot.c
->> @@ -707,16 +707,18 @@ EXPORT_SYMBOL(acpi_unmap_lsapic);
->>
->>  int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base)
->>  {
->> -     /* TBD */
->> -     return -EINVAL;
->> +     unsigned long long id = 0;
->> +
->> +     acpi_evaluate_integer(handle, "_UID", NULL, &id);
->
-> We cannot assume that "_UID" is an integer. "_UID" can be either an
-> integer or a string. Need to consider the case when it is a string.
+On Monday, August 26, 2013 07:36:56 PM Viresh Kumar wrote:
+> On 26 August 2013 11:48, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > Hi Rafael,
+> >
+> > Hopefully this is the last patch for 3.12 for ARM CPUFreq subsystem.
+> 
+> Another last minute patch from Sascha..
+> 
+> -----------x------------------x------------------
+> 
+> The following changes since commit b36f4be3de1b123d8601de062e7dbfc904f305fb:
+> 
+>   Linux 3.11-rc6 (2013-08-18 14:36:53 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.linaro.org/people/vireshk/linux.git cpufreq-fixes
+> 
+> for you to fetch changes up to fae19b84724ff93c1ac59ce1eecc1411f8269d9e:
+> 
+>   cpufreq: imx6q: Fix clock enable balance (2013-08-26 19:34:07 +0530)
+> 
+> ----------------------------------------------------------------
+> Joseph Lo (1):
+>       cpufreq: tegra: fix the wrong clock name
+> 
+> Sascha Hauer (1):
+>       cpufreq: imx6q: Fix clock enable balance
 
-Yes.
+Pulled, thanks Viresh!
 
-But do you have test case for ioapic that _UID is not integer?
-
-Thanks
-
-Yinghai
