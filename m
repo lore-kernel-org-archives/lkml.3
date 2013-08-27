@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab3H0Srm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 14:47:42 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58876 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab3H0Srj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Aug 2013 14:47:39 -0400
-Date: Tue, 27 Aug 2013 13:46:58 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: <balbi@ti.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>,
-        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [RFC 2/2] usb: dwc3: Add Qualcomm DWC3 glue layer driver
-Message-ID: <20130827184658.GS3005@radagast>
-Reply-To: <balbi@ti.com>
-References: <1375789991-30041-1-git-send-email-iivanov@mm-sol.com>
- <1375789991-30041-3-git-send-email-iivanov@mm-sol.com>
- <20130809132349.GC12041@radagast>
- <1376064558.7709.31.camel@iivanov-dev.int.mm-sol.com>
- <20130812182439.GG27954@radagast>
- <1376472497.2132.6.camel@iivanov-dev.int.mm-sol.com>
+	id S1753625Ab3H0Stv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 14:49:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41957 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752354Ab3H0Stu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Aug 2013 14:49:50 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130827093454.GJ26909@phenom.ffwll.local>
+References: <1374870772-4592-1-git-send-email-jbarnes@virtuousgeek.org> <20130827093454.GJ26909@phenom.ffwll.local>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2KGcTUzwJ+J1jnia"
-Content-Disposition: inline
-In-Reply-To: <1376472497.2132.6.camel@iivanov-dev.int.mm-sol.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [Intel-gfx] Updated stolen mem patches
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 27 Aug 2013 13:49:08 -0500
+To: Daniel Vetter <daniel@ffwll.ch>, Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, torvalds@linux-foundation.org, tglx@linutronix.de
+Message-ID: <52896c00-6711-4558-9754-e1bba1f81078@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---2KGcTUzwJ+J1jnia
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If noone hers to them first poke me tomorrow. On an aircraft right now.
 
-On Wed, Aug 14, 2013 at 12:28:17PM +0300, Ivan T. Ivanov wrote:
->=20
-> Hi,=20
->=20
-> On Mon, 2013-08-12 at 13:24 -0500, Felipe Balbi wrote:=20
-> > On Fri, Aug 09, 2013 at 07:09:18PM +0300, Ivan T. Ivanov wrote:
-> > > Hi,=20
-> > >=20
-> > > On Fri, 2013-08-09 at 16:23 +0300, Felipe Balbi wrote:
-> > > > Hi,
-> > > >=20
-> > > > On Tue, Aug 06, 2013 at 02:53:11PM +0300, Ivan T. Ivanov wrote:
-> > > > > diff --git a/drivers/usb/dwc3/dwc3-msm.c b/drivers/usb/dwc3/dwc3-=
-msm.c
-> > > > > new file mode 100644
-> > > > > index 0000000..e509abc
-> > > > > --- /dev/null
-> > > > > +++ b/drivers/usb/dwc3/dwc3-msm.c
-> > > > > @@ -0,0 +1,175 @@
-> > > > > +#undef CONFIG_REGULATOR
-> > > >=20
-> > > > why ??????
-> > > >=20
-> > >=20
-> > > 1. This shows that driver is still not fully tested=20
-> > >    Regulators support is still missing in the MSM
-> > > 2. Helps me to load driver successfully.=20
-> >=20
-> > Then remove all the regulator-related code from this.
->=20
-> I would like to keep them. I will just remove #undef line.=20
-> Code will continue to build fine. And once regulators drivers=20
-> are upstreamed this driver 'will not' require further
-> modifications.
+Daniel Vetter <daniel@ffwll.ch> wrote:
+>On Fri, Jul 26, 2013 at 01:32:50PM -0700, Jesse Barnes wrote:
+>> These address the comments I've received so far, but omit the new
+>E820
+>> type for this mem.
+>> 
+>> Chris's patches could go on top if desired; they add a new type and
+>> resource reservation function for looking up regions by name.  That
+>> allows us to remove some duplicate code in the driver for finding
+>stolen
+>> space.
+>> 
+>> But I think these two are ready as-is.  How should we merge them? 
+>Just
+>> through the i915 tree since the first one touches our headers?  that
+>and
+>> there probably won't be conflicts on the early-quirks file; that's
+>not
+>> touch too often...
+>
+>Just noticed that these patches aren't in -next yet - somehow I've
+>thought
+>they'd go in in through the x86 tree.
+>
+>Ingo et al: Should I merge these through drm-intel-next or will you
+>pick
+>them up?
+>
+>Thanks, Daniel
 
-fair enough.
-
---=20
-balbi
-
---2KGcTUzwJ+J1jnia
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSHPQiAAoJEIaOsuA1yqREzzgP/1xZM/lS8jUehIde9h9hoptE
-G2E9c8fhLtBGdktTWIO53BxzkWpc2yAXePzdwh3EM/bIbtaVtgL7Yih9NxlszRXf
-Qzgf3IwcWy0LricvG5/diKAOFrdqgSYqZiLq6pDDpsh2vt0flWTHjQXFrGXjn2gx
-NK6AgWPhuenwtJrg8GRNOV/I9u+WzknxDM4hh/ft9uiEOk3vaXbVRWVcWaCB2KTm
-DN/tuTxqqYEO5glVCRQK2GhYqrjAiOKXkbNv12/3A20c7jLN4SnUJtFP5iUD0+BP
-BHcK3xD28GvojNibSA1ZBOLCTqbuHhoHAKPd54Szt7TmbofgD+9ykWxmFEPyg+JL
-4xk+UXd03iQVjVFFgtLDRZ/WubutmryNDNob6gxCFJDbxTOum41KW9SsDp7lVZc7
-3MecSBH11K7lDskl3l8d4wxt13KWNEOuWr0yxlXepVVbrpEQWPSpJq/vRxuGN3Ci
-3pVTcLYSiczJfgF0d3PpzqMgNK16z0gxFPJ0DFJVPyYk2JSUL7HXAQIz3X9AnxCM
-XaAgU32bV6++r2KX6TMQzyXdQjf85/hi1axl0HbRLYTbFJHXekqT2j7LyjCFRUmZ
-+aLB+fKZg+Y5bpQsv5vvABqAmebsLZ0StWoOcwRd2/Bgsj5j/+DaOcQylxsj4rIM
-zvrdbxSpmBu3j0wSL0Th
-=+AaF
------END PGP SIGNATURE-----
-
---2KGcTUzwJ+J1jnia--
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
