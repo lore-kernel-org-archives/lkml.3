@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab3H0Tks (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Aug 2013 15:40:48 -0400
-Received: from mga03.intel.com ([143.182.124.21]:50887 "EHLO mga03.intel.com"
+	id S1754138Ab3H0Tkr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Aug 2013 15:40:47 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41569 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753681Ab3H0Tkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753821Ab3H0Tkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Aug 2013 15:40:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,970,1367996400"; 
-   d="scan'208";a="352406118"
+   d="scan'208";a="392864001"
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 To: rostedt@goodmis.org
 Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
         Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH v7 01/10] tracing: Add support for SOFT_DISABLE to syscall events
-Date: Tue, 27 Aug 2013 14:40:13 -0500
-Message-Id: <a21a85892674dedf8ded3b2f0e83bd8106f5c22f.1377631572.git.tom.zanussi@linux.intel.com>
+Subject: [PATCH v7 09/10] tracing: add documentation for trace event triggers
+Date: Tue, 27 Aug 2013 14:40:21 -0500
+Message-Id: <dcaba0a95e6e4fc1cfdd0ac4dba810f3ab62dcee.1377631572.git.tom.zanussi@linux.intel.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <cover.1377631572.git.tom.zanussi@linux.intel.com>
 References: <cover.1377631572.git.tom.zanussi@linux.intel.com>
@@ -25,139 +25,229 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original SOFT_DISABLE patches didn't add support for soft disable
-of syscall events; this adds it and paves the way for future patches
-allowing triggers to be added to syscall events, since triggers are
-built on top of SOFT_DISABLE.
-
-Add an array of ftrace_event_file pointers indexed by syscall number
-to the trace array and remove the existing enabled bitmaps, which as a
-result are now redundant.  The ftrace_event_file structs in turn
-contain the soft disable flags we need for per-syscall soft disable
-accounting; later patches add additional 'trigger' flags and
-per-syscall triggers and filters.
+Provide a basic overview of trace event triggers and document the
+available trigger commands, along with a few simple examples.
 
 Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 ---
- kernel/trace/trace.h          |  4 ++--
- kernel/trace/trace_syscalls.c | 36 ++++++++++++++++++++++++++++++------
- 2 files changed, 32 insertions(+), 8 deletions(-)
+ Documentation/trace/events.txt | 207 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 207 insertions(+)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index fe39acd..b1227b9 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -192,8 +192,8 @@ struct trace_array {
- #ifdef CONFIG_FTRACE_SYSCALLS
- 	int			sys_refcount_enter;
- 	int			sys_refcount_exit;
--	DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
--	DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
-+	struct ftrace_event_file *enter_syscall_files[NR_syscalls];
-+	struct ftrace_event_file *exit_syscall_files[NR_syscalls];
- #endif
- 	int			stop_count;
- 	int			clock_id;
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 559329d..230cdb6 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -302,6 +302,7 @@ static int __init syscall_exit_define_fields(struct ftrace_event_call *call)
- static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- {
- 	struct trace_array *tr = data;
-+	struct ftrace_event_file *ftrace_file;
- 	struct syscall_trace_enter *entry;
- 	struct syscall_metadata *sys_data;
- 	struct ring_buffer_event *event;
-@@ -314,7 +315,13 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- 	syscall_nr = trace_get_syscall_nr(current, regs);
- 	if (syscall_nr < 0)
- 		return;
--	if (!test_bit(syscall_nr, tr->enabled_enter_syscalls))
+diff --git a/Documentation/trace/events.txt b/Documentation/trace/events.txt
+index 37732a2..c94435d 100644
+--- a/Documentation/trace/events.txt
++++ b/Documentation/trace/events.txt
+@@ -287,3 +287,210 @@ their old filters):
+ prev_pid == 0
+ # cat sched_wakeup/filter
+ common_pid == 0
 +
-+	/* Here we're inside the tp handler's rcu_read_lock (__DO_TRACE()) */
-+	ftrace_file = rcu_dereference_raw(tr->enter_syscall_files[syscall_nr]);
-+	if (!ftrace_file)
-+		return;
++6. Event triggers
++=================
 +
-+	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
- 		return;
- 
- 	sys_data = syscall_nr_to_meta(syscall_nr);
-@@ -345,6 +352,7 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
- static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
- {
- 	struct trace_array *tr = data;
-+	struct ftrace_event_file *ftrace_file;
- 	struct syscall_trace_exit *entry;
- 	struct syscall_metadata *sys_data;
- 	struct ring_buffer_event *event;
-@@ -356,7 +364,13 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
- 	syscall_nr = trace_get_syscall_nr(current, regs);
- 	if (syscall_nr < 0)
- 		return;
--	if (!test_bit(syscall_nr, tr->enabled_exit_syscalls))
++Trace events can be made to conditionally invoke trigger 'commands'
++which can take various forms and are described in detail below;
++examples would be enabling or disabling other trace events or invoking
++a stack trace whenever the trace event is hit.  Whenever a trace event
++with attached triggers is invoked, the set of trigger commands
++associated with that event is invoked.  Any given trigger can
++additionally have an event filter of the same form as described in
++section 5 (Event filtering) associated with it - the command will only
++be invoked if the event being invoked passes the associated filter.
++If no filter is associated with the trigger, it always passes.
 +
-+	/* Here we're inside the tp handler's rcu_read_lock (__DO_TRACE()) */
-+	ftrace_file = rcu_dereference_raw(tr->exit_syscall_files[syscall_nr]);
-+	if (!ftrace_file)
-+		return;
++Triggers are added to and removed from a particular event by writing
++trigger expressions to the 'trigger' file for the given event.
 +
-+	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
- 		return;
- 
- 	sys_data = syscall_nr_to_meta(syscall_nr);
-@@ -397,7 +411,7 @@ static int reg_event_syscall_enter(struct ftrace_event_file *file,
- 	if (!tr->sys_refcount_enter)
- 		ret = register_trace_sys_enter(ftrace_syscall_enter, tr);
- 	if (!ret) {
--		set_bit(num, tr->enabled_enter_syscalls);
-+		rcu_assign_pointer(tr->enter_syscall_files[num], file);
- 		tr->sys_refcount_enter++;
- 	}
- 	mutex_unlock(&syscall_trace_lock);
-@@ -415,9 +429,14 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
- 		return;
- 	mutex_lock(&syscall_trace_lock);
- 	tr->sys_refcount_enter--;
--	clear_bit(num, tr->enabled_enter_syscalls);
-+	rcu_assign_pointer(tr->enter_syscall_files[num], NULL);
- 	if (!tr->sys_refcount_enter)
- 		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
-+	/*
-+	 * Callers expect the event to be completely disabled on
-+	 * return, so wait for current handlers to finish.
-+	 */
-+	synchronize_sched();
- 	mutex_unlock(&syscall_trace_lock);
- }
- 
-@@ -435,7 +454,7 @@ static int reg_event_syscall_exit(struct ftrace_event_file *file,
- 	if (!tr->sys_refcount_exit)
- 		ret = register_trace_sys_exit(ftrace_syscall_exit, tr);
- 	if (!ret) {
--		set_bit(num, tr->enabled_exit_syscalls);
-+		rcu_assign_pointer(tr->exit_syscall_files[num], file);
- 		tr->sys_refcount_exit++;
- 	}
- 	mutex_unlock(&syscall_trace_lock);
-@@ -453,9 +472,14 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
- 		return;
- 	mutex_lock(&syscall_trace_lock);
- 	tr->sys_refcount_exit--;
--	clear_bit(num, tr->enabled_exit_syscalls);
-+	rcu_assign_pointer(tr->exit_syscall_files[num], NULL);
- 	if (!tr->sys_refcount_exit)
- 		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
-+	/*
-+	 * Callers expect the event to be completely disabled on
-+	 * return, so wait for current handlers to finish.
-+	 */
-+	synchronize_sched();
- 	mutex_unlock(&syscall_trace_lock);
- }
- 
++A given event can have any number of triggers associated with it,
++subject to any restrictions that individual commands may have in that
++regard.
++
++Event triggers are implemented on top of "soft" mode, which means that
++whenever a trace event has one or more triggers associated with it,
++the event is activated even if it isn't actually enabled, but is
++disabled in a "soft" mode.  That is, the tracepoint will be called,
++but just will not be traced, unless of course it's actually enabled.
++This scheme allows triggers to be invoked even for events that aren't
++enabled, and also allows the current event filter implementation to be
++used for conditionally invoking triggers.
++
++The syntax for event triggers is roughly based on the syntax for
++set_ftrace_filter 'ftrace filter commands' (see the 'Filter commands'
++section of Documentation/trace/ftrace.txt), but there are major
++differences and the implementation isn't currently tied to it in any
++way, so beware about making generalizations between the two.
++
++6.1 Expression syntax
++---------------------
++
++Triggers are added by echoing the command to the 'trigger' file:
++
++  # echo 'command[:count] [if filter]' > trigger
++
++Triggers are removed by echoing the same command but starting with '!'
++to the 'trigger' file:
++
++  # echo '!command[:count] [if filter]' > trigger
++
++The [if filter] part isn't used in matching commands when removing, so
++leaving that off in a '!' command will accomplish the same thing as
++having it in.
++
++The filter syntax is the same as that described in the 'Event
++filtering' section above.
++
++For ease of use, writing to the trigger file using '>' currently just
++adds or removes a single trigger and there's no explicit '>>' support
++('>' actually behaves like '>>') or truncation support to remove all
++triggers (you have to use '!' for each one added.)
++
++6.2 Supported trigger commands
++------------------------------
++
++The following commands are supported:
++
++- enable_event/disable_event
++
++  These commands can enable or disable another trace event whenever
++  the triggering event is hit.  When these commands are registered,
++  the other trace event is activated, but disabled in a "soft" mode.
++  That is, the tracepoint will be called, but just will not be traced.
++  The event tracepoint stays in this mode as long as there's a trigger
++  in effect that can trigger it.
++
++  For example, the following trigger causes kmalloc events to be
++  traced when a read system call is entered, and the :1 at the end
++  specifies that this enablement happens only once:
++
++  # echo 'enable_event:kmem:kmalloc:1' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
++
++  The following trigger causes kmalloc events to stop being traced
++  when a read system call exits.  This disablement happens on every
++  read system call exit:
++
++  # echo 'disable_event:kmem:kmalloc' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
++
++  The format is:
++
++      enable_event:<system>:<event>[:count]
++      disable_event:<system>:<event>[:count]
++
++  To remove the above commands:
++
++  # echo '!enable_event:kmem:kmalloc:1' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
++
++  # echo '!disable_event:kmem:kmalloc' > \
++      /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
++
++  Note that there can be any number of enable/disable_event triggers
++  per triggering event, but there can only be one trigger per
++  triggered event. e.g. sys_enter_read can have triggers enabling both
++  kmem:kmalloc and sched:sched_switch, but can't have two kmem:kmalloc
++  versions such as kmem:kmalloc and kmem:kmalloc:1 or 'kmem:kmalloc if
++  bytes_req == 256' and 'kmem:kmalloc if bytes_alloc == 256' (they
++  could be combined into a single filter on kmem:kmalloc though).
++
++- stacktrace
++
++  This command dumps a stacktrace in the trace buffer whenever the
++  triggering event occurs.
++
++  For example, the following trigger dumps a stacktrace every time the
++  kmalloc tracepoint is hit:
++
++  # echo 'stacktrace' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
++
++  The following trigger dumps a stacktrace the first 5 times a kmalloc
++  request happens with a size >= 64K
++
++  # echo 'stacktrace:5 if bytes_req >= 65536' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
++
++  The format is:
++
++      stacktrace[:count]
++
++  To remove the above commands:
++
++  # echo '!stacktrace' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
++
++  # echo '!stacktrace:5 if bytes_req >= 65536' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
++
++  The latter can also be removed more simply by the following (without
++  the filter):
++
++  # echo '!stacktrace:5' > \
++        /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
++
++  Note that there can be only one stacktrace trigger per triggering
++  event.
++
++- snapshot
++
++  This command causes a snapshot to be triggered whenever the
++  triggering event occurs.
++
++  The following command creates a snapshot every time a block request
++  queue is unplugged with a depth > 1.  If you were tracing a set of
++  events or functions at the time, the snapshot trace buffer would
++  capture those events when the trigger event occured:
++
++  # echo 'snapshot if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  To only snapshot once:
++
++  # echo 'snapshot:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  To remove the above commands:
++
++  # echo '!snapshot if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  # echo '!snapshot:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  Note that there can be only one snapshot trigger per triggering
++  event.
++
++- traceon/traceoff
++
++  These commands turn tracing on and off when the specified events are
++  hit. The parameter determines how many times the tracing system is
++  turned on and off. If unspecified, there is no limit.
++
++  The following command turns tracing off the first time a block
++  request queue is unplugged with a depth > 1.  If you were tracing a
++  set of events or functions at the time, you could then examine the
++  trace buffer to see the sequence of events that led up to the
++  trigger event:
++
++  # echo 'traceoff:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  To always disable tracing when nr_rq  > 1 :
++
++  # echo 'traceoff if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  To remove the above commands:
++
++  # echo '!traceoff:1 if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  # echo '!traceoff if nr_rq > 1' > \
++        /sys/kernel/debug/tracing/events/block/block_unplug/trigger
++
++  Note that there can be only one traceon or traceoff trigger per
++  triggering event.
 -- 
 1.7.11.4
 
